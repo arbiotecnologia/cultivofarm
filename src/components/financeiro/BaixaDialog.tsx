@@ -23,7 +23,19 @@ import {
   mapearErroBaixaRecebimento,
   validarBaixaRecebimento,
 } from "@/lib/financeiro/baixaRecebimento";
+import {
+  ErroBaixaIncerta,
+  ErroBaixaPagarLocal,
+  MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
+  MSG_PAGAMENTO_NAO_CONFIRMADO,
+  acumuladosParcelaPagar,
+  calcularSaldoPagavel,
+  classificarErroBaixaPagar,
+  executarComDeadlineBaixaPagar,
+  validarBaixaPagar,
+} from "@/lib/financeiro/contasPagar";
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
+import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
 
 type Kind = "receivable" | "payable";
 
@@ -37,12 +49,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const idempotencyRef = useRef<string>(crypto.randomUUID());
   const receber = kind === "receivable";
 
-  const today = receber ? hojeSaoPaulo() : new Date().toISOString().slice(0, 10);
+  const today = hojeSaoPaulo();
   const empty: any = { payment_date: today, amount: 0, payment_method_id: "", bank_account_id: "", discount_amount: 0, interest_amount: 0, penalty_amount: 0, notes: "" };
   const [form, setForm] = useState<any>(empty);
   const [file, setFile] = useState<File | null>(null);
   /** Baixa persistida cujo comprovante falhou: payload travado, só reenvio. */
   const [pendente, setPendente] = useState<{ paymentId: string } | null>(null);
+  /** Resultado incerto (timeout/rede/desconhecido): bloqueia novo envio até conferência. */
+  const [exigeConferencia, setExigeConferencia] = useState(false);
 
   const settingsQuery = useQuery({
     queryKey: ["fin-settings"],
@@ -57,15 +71,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const acum = acumuladosParcela(installment);
   const saldoInicial = receber
     ? calcularSaldoRecebivel(installment)
-    : installment
-      ? Number(installment.original_amount) - Number(installment.received_amount ?? installment.paid_amount ?? 0) - Number(installment.discount_amount ?? 0)
-      : 0;
+    : calcularSaldoPagavel(installment);
 
   useEffect(() => {
     if (open) {
       setForm({ ...empty, amount: Math.max(0, saldoInicial) });
       setFile(null);
       setPendente(null);
+      setExigeConferencia(false);
       idempotencyRef.current = crypto.randomUUID();
     } /* eslint-disable-line */
   }, [open, installment?.id]);
@@ -85,10 +98,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   function invalidarTudo() {
     if (receber) CHAVES_INVALIDACAO_RECEBER.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    else qc.invalidateQueries();
+    else CHAVES_INVALIDACAO_PAGAR.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
 
   const save = useMutation({
+    retry: false,
     mutationFn: async () => {
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
 
@@ -109,6 +123,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         return { reenvio: true as const };
       }
 
+      // Resultado incerto anterior: nenhum novo envio com nova chave até conferência.
+      if (!receber && exigeConferencia) throw new ErroBaixaLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
+
       if (receber) {
         const erro = validarBaixaRecebimento({
           parcela: installment,
@@ -121,14 +138,16 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         });
         if (erro) throw new ErroBaixaLocal(erro);
       } else {
-        if (!user) throw new ErroBaixaLocal("Sessão expirada");
-        if (!installment) throw new ErroBaixaLocal("Parcela não selecionada");
-        if (!form.payment_method_id) throw new ErroBaixaLocal("Selecione a forma de pagamento");
-        if (!form.amount || Number(form.amount) <= 0) throw new ErroBaixaLocal("Valor inválido");
-        const _jaPago = Number(installment.received_amount ?? installment.paid_amount ?? 0);
-        const _saldo = Number(installment.original_amount) + (Number(form.interest_amount) || 0) + (Number(form.penalty_amount) || 0) - (Number(form.discount_amount) || 0) - _jaPago;
-        if (Number(form.amount) - _saldo > 0.005) throw new ErroBaixaLocal("Valor excede o saldo da parcela.");
-        if (requireReceipt && !file) throw new ErroBaixaLocal("O anexo do comprovante é obrigatório para esta operação.");
+        const erro = validarBaixaPagar({
+          parcela: installment,
+          form,
+          metodosAtivos: (pms as any[]).map((p) => String(p.id)),
+          settingsCarregadas: settingsQuery.isSuccess,
+          exigeComprovante: !!requireReceipt,
+          temArquivo: !!file,
+          temSessao: !!user,
+        });
+        if (erro) throw new ErroBaixaPagarLocal(erro);
       }
 
       const ownerType = ownerTypeBase;
@@ -147,12 +166,29 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
       const rpcName = receber ? "rpc_register_receivable_payment" : "rpc_register_payable_payment";
       const amountKey = receber ? "amount_received" : "amount_paid";
-      const { data: paymentId, error } = await supabase.rpc(rpcName as any, {
-        p_installment_id: installment.id,
-        p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
-      });
+      const chamar = async (signal: AbortSignal | undefined) => {
+        let req = (supabase as any).rpc(rpcName as any, {
+          p_installment_id: installment.id,
+          p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
+        });
+        if (signal && typeof req?.abortSignal === "function") req = req.abortSignal(signal);
+        return await req;
+      };
+
+      // Payable: prazo rígido cobrindo pré-fetch/auth + RPC. Receivable mantém o
+      // fluxo original.
+      const { data: paymentId, error } = receber
+        ? await supabase.rpc(rpcName as any, {
+            p_installment_id: installment.id,
+            p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
+          })
+        : await executarComDeadlineBaixaPagar(chamar);
       if (error) throw error;
-      if (!paymentId) throw new ErroBaixaLocal("Falha ao registrar pagamento.");
+      // Sucesso estrito: a RPC deve retornar um UUID de pagamento.
+      const pid = typeof paymentId === "string" ? paymentId : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pid)) {
+        throw receber ? new ErroBaixaLocal("Falha ao registrar pagamento.") : new ErroBaixaIncerta();
+      }
 
       if (file) {
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
@@ -175,7 +211,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       invalidarTudo();
       if (r?.comprovantePendente) {
         setPendente({ paymentId: r.paymentId });
-        toast.error(MSG_COMPROVANTE_PENDENTE);
+        toast.error(receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE);
         return;
       }
       if (r?.reenvio) {
@@ -190,34 +226,42 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
-      // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
-      toast.error(mapearErroBaixaRecebimento(e));
+      if (receber) {
+        // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
+        toast.error(mapearErroBaixaRecebimento(e));
+        return;
+      }
+      // Classificação única ponta a ponta: incerto trava novo envio até conferência.
+      const c = classificarErroBaixaPagar(e);
+      if (c.exigeConferencia) setExigeConferencia(true);
+      toast.error(c.mensagem);
     },
   });
 
+  const acumP = acumuladosParcelaPagar(installment);
   // Payable mantém exatamente o fallback original (received_amount ?? paid_amount).
-  const jaRecebido = receber ? acum.recebido : Number(installment?.received_amount ?? installment?.paid_amount ?? 0) || 0;
-  const valorOriginal = receber ? acum.original : Number(installment?.original_amount ?? 0) || 0;
+  const jaRecebido = receber ? acum.recebido : acumP.pago;
+  const valorOriginal = receber ? acum.original : acumP.original;
   const desc = Number(form.discount_amount) || 0;
   const juros = Number(form.interest_amount) || 0;
   const multa = Number(form.penalty_amount) || 0;
   const valorBaixa = Number(form.amount) || 0;
   const saldoFinal = receber
     ? calcularSaldoRecebivel(installment, form)
-    : valorOriginal + juros + multa - desc - jaRecebido;
+    : calcularSaldoPagavel(installment, form);
   const saldoRestante = saldoFinal - valorBaixa;
 
-  const settingsBloqueado = receber && !settingsQuery.isSuccess;
+  const settingsBloqueado = !settingsQuery.isSuccess;
   const gravando = save.isPending;
-  // Edição travada por pendência de comprovante OU enquanto grava.
-  const travado = !!pendente || gravando;
+  // Edição travada por pendência de comprovante, resultado incerto OU enquanto grava.
+  const travado = !!pendente || gravando || exigeConferencia;
 
-  /** Fechar nunca apaga a pendência em silêncio: exige confirmação e indica onde retomar. */
+  /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
   function tentarFechar() {
     if (gravando) return;
     if (pendente) {
       const ok = window.confirm(
-        "O recebimento já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?",
+        `O ${receber ? "recebimento" : "pagamento"} já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?`,
       );
       if (!ok) return;
     }
@@ -231,9 +275,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           <DialogTitle>Registrar {receber ? "Recebimento" : "Pagamento"}</DialogTitle>
         </DialogHeader>
 
+        {exigeConferencia && !pendente && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
+            {MSG_PAGAMENTO_NAO_CONFIRMADO} Ao fechar, reabra a baixa somente depois de conferir a lista.
+          </div>
+        )}
         {pendente && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
-            {MSG_COMPROVANTE_PENDENTE} Se fechar esta janela, retome o envio pelo drawer de anexos da conta.
+            {receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE} Se fechar esta janela, retome o envio pelo drawer de anexos da conta.
           </div>
         )}
         {settingsBloqueado && (
@@ -252,11 +301,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             <p className="text-sm font-medium mb-1">Parcela #{installment.installment_number} · venc. {formatDateDisplay(installment.due_date + "T12:00:00")}</p>
             <div className="grid grid-cols-2 gap-x-3">
               <span className="text-muted-foreground">Valor original:</span><span className="text-right">{brl(valorOriginal)}</span>
-              {receber && (<>
-                <span className="text-muted-foreground">+ Juros acumulados:</span><span className="text-right">{brl(acum.juros)}</span>
-                <span className="text-muted-foreground">+ Multa acumulada:</span><span className="text-right">{brl(acum.multa)}</span>
-                <span className="text-muted-foreground">− Desconto acumulado:</span><span className="text-right">{brl(acum.desconto)}</span>
-              </>)}
+              <span className="text-muted-foreground">+ Juros acumulados:</span><span className="text-right">{brl(receber ? acum.juros : acumP.juros)}</span>
+              <span className="text-muted-foreground">+ Multa acumulada:</span><span className="text-right">{brl(receber ? acum.multa : acumP.multa)}</span>
+              <span className="text-muted-foreground">− Desconto acumulado:</span><span className="text-right">{brl(receber ? acum.desconto : acumP.desconto)}</span>
               <span className="text-muted-foreground">Já {receber ? "recebido" : "pago"}:</span><span className="text-right">{brl(jaRecebido)}</span>
               <span className="text-muted-foreground">+ Juros desta baixa:</span><span className="text-right">{brl(juros)}</span>
               <span className="text-muted-foreground">+ Multa desta baixa:</span><span className="text-right">{brl(multa)}</span>
@@ -342,8 +389,10 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           <Button variant="outline" onClick={tentarFechar} disabled={gravando}>{pendente ? "Fechar" : "Cancelar"}</Button>
           <Button
             onClick={() => save.mutate()}
-            // Reenvio só exige arquivo: settings/método/saldo não bloqueiam a baixa já persistida.
-            disabled={gravando || (pendente ? !file : settingsBloqueado)}
+            // Reenvio só exige arquivo (baixa já persistida, zero RPC de baixa).
+            // Resultado incerto trava novo envio até conferência explícita.
+            // Nova baixa: settings carregadas obrigatórias.
+            disabled={gravando || (pendente ? !file : exigeConferencia || settingsBloqueado)}
           >
             {pendente ? "Reenviar comprovante" : "Confirmar"}
           </Button>
