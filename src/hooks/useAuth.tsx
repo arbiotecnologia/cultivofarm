@@ -170,10 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     mountedRef.current = true;
+    // StrictMode/remontagem: o efeito anterior pode ter deixado um usuário
+    // marcado como carregado sem que o fetch tenha aplicado estado. Zerar aqui
+    // garante que o novo setup agende o carregamento do mesmo usuário.
+    loadedUserIdRef.current = null;
     // H9-G Bloco 2E — contexto de portal nunca pode ser herdado por outro
     // usuário: qualquer troca de identidade limpa a escolha persistida.
     let lastUserId: string | null = null;
     let handledAuthEvent = false;
+    let effectCancelled = false;
+
 
     // O carregamento NUNCA parte da pilha do callback de onAuthStateChange
     // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
@@ -198,17 +204,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         const nextUserId = session?.user?.id ?? null;
-        if (lastUserId && nextUserId && lastUserId !== nextUserId) {
+        const identityChanged = !!(lastUserId && nextUserId && lastUserId !== nextUserId);
+        if (identityChanged) {
           clearActivePortalContext();
         }
         lastUserId = nextUserId;
 
         if (nextUserId) {
+          // Troca de identidade: perfil/papéis do usuário anterior são
+          // descartados imediatamente, sem esperar o novo carregamento.
+          if (identityChanged) clearIdentityState();
           // Eventos repetidos do mesmo usuário não recarregam nada.
           if (loadedUserIdRef.current === nextUserId) return;
           setLoading(true);
           setError(null);
           scheduleLoad(nextUserId);
+
         } else {
           generationRef.current += 1;
           if (timerRef.current) {
@@ -244,7 +255,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Erro ao verificar sessão inicial:", err);
-        if (mountedRef.current) setLoading(false);
+        // getSession obsoleto (efeito já descartado ou evento de auth já
+        // assumiu o controle) não pode desligar o loading do usuário atual.
+        if (mountedRef.current && !effectCancelled && !handledAuthEvent) {
+          setLoading(false);
+        }
       }
     };
 
@@ -252,13 +267,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mountedRef.current = false;
+      effectCancelled = true;
       generationRef.current += 1;
+      loadedUserIdRef.current = null;
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
       subscription.unsubscribe();
     };
+
   }, []);
 
 

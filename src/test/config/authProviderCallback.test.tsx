@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
+import { StrictMode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
 
 // ---------- mock do cliente canônico ----------
 type Handler = (event: string, session: any) => unknown;
@@ -65,8 +67,19 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: {
       onAuthStateChange: (handler: any) => {
         h.listeners.push(handler);
-        return { data: { subscription: { unsubscribe: h.unsubscribe } } };
+        return {
+          data: {
+            subscription: {
+              unsubscribe: (...args: any[]) => {
+                const i = h.listeners.indexOf(handler);
+                if (i >= 0) h.listeners.splice(i, 1);
+                return h.unsubscribe(...args);
+              },
+            },
+          },
+        };
       },
+
       getSession: async () => h.getSession(),
       signOut: (...args: any[]) => h.signOut(...args),
     },
@@ -100,16 +113,18 @@ function Probe() {
   );
 }
 
-function renderProvider() {
+function renderProvider(strict = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const tree = (
     <QueryClientProvider client={client}>
       <AuthProvider>
         <Probe />
       </AuthProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
 }
+
 
 const sessionA = { user: { id: "user-a" } };
 const sessionB = { user: { id: "user-b" } };
@@ -123,6 +138,11 @@ beforeEach(() => {
   profileRow = { id: "p1", user_id: "user-a", nome: "A", email: "a@x.com", ativo: true };
   rolesRows = [{ role: "administrador" }];
   initialSession = null;
+  h.getSession = async () => {
+    if (insideCallback) callsInsideCallback += 1;
+    return { data: { session: initialSession }, error: null };
+  };
+
   signOutSpy.mockClear();
   unsubscribe.mockClear();
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -227,4 +247,46 @@ describe("AuthProvider — callback de autenticação", () => {
     expect(unsubscribe).toHaveBeenCalled();
     await new Promise((r) => setTimeout(r, 80));
   });
+
+  it("StrictMode (setup→cleanup→setup) ainda carrega o mesmo usuário", async () => {
+    initialSession = sessionA;
+    renderProvider(true);
+    // apenas o listener do segundo setup permanece ativo
+    expect(listeners.length).toBe(1);
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    expect(screen.getByTestId("loading").textContent).toBe("false");
+  });
+
+  it("troca A→B limpa perfil e papéis imediatamente", async () => {
+    renderProvider();
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    profileDelay = 40;
+    profileRow = { id: "p2", user_id: "user-b", nome: "B", email: "b@x.com", ativo: true };
+    rolesRows = [{ role: "consultor_tecnico" }];
+    await act(async () => {
+      emit("SIGNED_IN", sessionB);
+    });
+    expect(screen.getByTestId("role").textContent).toBe("-");
+    expect(screen.getByTestId("loading").textContent).toBe("true");
+    await waitFor(
+      () => expect(screen.getByTestId("role").textContent).toBe("consultor_tecnico"),
+      { timeout: 500 },
+    );
+  });
+
+  it("getSession antigo que rejeita depois do evento não desliga o loading", async () => {
+    h.getSession = async () => {
+      await new Promise((r) => setTimeout(r, 20));
+      throw new Error("sessão obsoleta");
+    };
+    renderProvider();
+    profileDelay = 80;
+    emit("SIGNED_IN", sessionB);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(screen.getByTestId("loading").textContent).toBe("true");
+    h.getSession = async () => ({ data: { session: initialSession }, error: null });
+  });
 });
+
