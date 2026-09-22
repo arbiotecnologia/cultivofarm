@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
@@ -329,7 +330,7 @@ describe("ContaDrawer payable — três pontas", () => {
     resultados = res;
     abrirDrawer();
     const aba = await screen.findByRole("tab", { name: "Parcelas" });
-    fireEvent.click(aba);
+    await userEvent.click(aba);
   }
 
   it("Resumo mostra Carregando… (não zeros) enquanto as parcelas carregam", async () => {
@@ -346,13 +347,9 @@ describe("ContaDrawer payable — três pontas", () => {
       accounts_payable: { data: CONTA_PAGAR, error: null },
       accounts_payable_installments: { data: [], error: null },
     });
-    await waitFor(() => {
-      const aba = screen.getByRole("tab", { name: "Parcelas" });
-      if (aba.getAttribute("data-state") !== "active") throw new Error("aba inativa");
-      const tds = document.querySelectorAll('[role="tabpanel"] td');
-      if (!tds.length) throw new Error("sem td ainda");
-      console.log("PARCELAS_TD:", Array.from(tds).map((t) => t.textContent).join(" | "));
-    });
+    await waitFor(() => expect(screen.getByText("Sem parcelas")).toBeInTheDocument());
+    const td = screen.getByText("Sem parcelas").closest("td");
+    expect(td?.getAttribute("colspan")).toBe("10");
   });
 
   it("parcela CANCELED exibe saldo não cobrável (—) e fica fora do resumo", async () => {
