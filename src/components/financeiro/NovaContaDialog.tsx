@@ -181,13 +181,21 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
         payload.supplier_invoice_date = form.supplier_invoice_date || null;
       }
 
-      const { data, error } = await (supabase as any).rpc("rpc_create_financial_title" as any, {
-        p_kind: kind,
-        p_payload: payload,
-      });
+      const chamar = async (signal: AbortSignal | undefined) => {
+        let req = (supabase as any).rpc("rpc_create_financial_title" as any, {
+          p_kind: kind,
+          p_payload: payload,
+        });
+        if (signal && typeof req?.abortSignal === "function") req = req.abortSignal(signal);
+        return await req;
+      };
+
+      const { data, error } = isReceivable
+        ? await executarComDeadlineNovaConta(chamar)
+        : await chamar(undefined);
       if (error) throw error;
       if (isReceivable && !criacaoBemSucedida(data)) {
-        throw new ErroNovaContaLocal(MSG_NOVA_CONTA_NAO_CONFIRMADA);
+        throw new ErroCriacaoIncerta();
       }
       return data;
     },
@@ -204,10 +212,11 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
         toast.error(e?.message || "Falha ao criar título financeiro");
         return;
       }
-      const msg = mapearErroNovaConta(e);
-      if (msg === MSG_NOVA_CONTA_NAO_CONFIRMADA) setExigeConferencia(true);
-      toast.error(msg);
+      const { mensagem, exigeConferencia: exige } = classificarErroNovaConta(e);
+      if (exige) setExigeConferencia(true);
+      toast.error(mensagem);
     },
+
   });
 
   const enviando = save.isPending;
