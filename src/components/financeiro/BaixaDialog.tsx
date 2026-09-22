@@ -62,6 +62,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const [pendente, setPendente] = useState<{ paymentId: string } | null>(null);
   /** Resultado incerto (timeout/rede/desconhecido): bloqueia novo envio até conferência. */
   const [exigeConferencia, setExigeConferencia] = useState(false);
+  /** Journal local ilegível/corrompido: bloqueia envio sem apagar nada. */
+  const [journalFalha, setJournalFalha] = useState(false);
+
   /** Tentativa incerta preservada (mesma chave e mesmo payload) para repetição idempotente. */
   const tentativaRef = useRef<TentativaBaixaPagar | null>(null);
   /** Guarda síncrona contra duplo clique (o estado de pendência do React é assíncrono). */
