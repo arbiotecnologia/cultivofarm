@@ -76,6 +76,8 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
 
   const carregandoBase = contaLoading || instLoading;
   const erroBase = contaErro || instErro;
+  // Conta carregada mas parcelas ainda carregando: Resumo não pode exibir zeros.
+  const aguardandoParcelas = !!conta && instLoading && !installments.length;
 
   if (erroBase) {
     return (
