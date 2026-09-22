@@ -198,6 +198,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Escuta mudanças na autenticação — callback estritamente síncrono.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Efeito descartado (StrictMode/unmount) nunca aplica estado.
+        if (effectCancelled) return;
         handledAuthEvent = true;
         console.log("Auth event:", event, session?.user?.id);
         setSession(session);
