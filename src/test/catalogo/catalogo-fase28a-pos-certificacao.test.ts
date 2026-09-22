@@ -105,6 +105,12 @@ describe("FASE 28A — nenhuma migration nova nesta fase", () => {
       // Fase S1 — núcleo de dados SaaS (tabelas saas_*/organization_subscriptions).
       // Não altera nenhuma tabela de negócio existente.
       "20260922154526_3c081c07-9ce8-4f78-8355-a660aef594b4.sql",
+      // Fase Superadmin — papel de plataforma SaaS: enum, trava de concessão
+      // e correção de guards/policies. Nenhum usuário criado, nenhum dado alterado.
+      "20260922160033_90eac344-6cbb-45dc-8b61-275cbc8d11cc.sql",
+      "20260922160218_b19bd8e6-cb90-4d27-805e-c97272039918.sql",
+      "20260922160417_ea6c34e3-2ae3-44fb-9777-909e5cd46774.sql",
+      "20260922160736_29af83f9-2f0d-4770-91d4-264de788ccc5.sql",
     ]);
     const foraDoPadrao = migrations
       .filter((f: string) => f.slice(0, 14) > "20260905000000")
