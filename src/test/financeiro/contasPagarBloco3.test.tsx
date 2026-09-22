@@ -32,7 +32,7 @@ describe("tentativa incerta de pagamento — persistência mínima", () => {
     idempotencyKey: "key-1",
     parcelaId: "inst-1",
     usuarioId: "u1",
-    payload: { amount_paid: 75, idempotency_key: "key-1" },
+    payload: { amount_paid: 75, idempotency_key: "key-1", payment_date: "2026-09-22", payment_method_id: "pm-1" },
     criadoEm: "2026-09-22T00:00:00.000Z",
   };
 

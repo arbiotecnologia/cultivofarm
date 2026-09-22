@@ -441,16 +441,43 @@ export const MSG_JOURNAL_INDISPONIVEL =
 export const MSG_JOURNAL_CORROMPIDO =
   "Existe um registro local desta baixa que não pôde ser lido. Nenhum novo pagamento será enviado: confira a conta antes de continuar.";
 
+/** Mensagem segura quando a liberação após conferência não pôde ser comprovada. */
+export const MSG_CONFERENCIA_NAO_LIBERADA =
+  "Não foi possível remover o registro local desta tentativa. Por segurança, a baixa continua bloqueada com a mesma chave. Tente novamente.";
+
+/**
+ * Valida a consistência mínima exigida para repetir EXATAMENTE a tentativa:
+ * payload objeto (nunca array), chave presente e coerente, e campos essenciais
+ * de replay válidos. Registro inconsistente é tratado como corrompido.
+ */
+export function tentativaBaixaPagarValida(t: unknown): t is TentativaBaixaPagar {
+  const c = t as TentativaBaixaPagar | null;
+  if (!c || typeof c !== "object") return false;
+  if (typeof c.idempotencyKey !== "string" || !c.idempotencyKey.trim()) return false;
+  if (typeof c.usuarioId !== "string" || !c.usuarioId) return false;
+  if (typeof c.parcelaId !== "string" || !c.parcelaId) return false;
+  const p = c.payload as Record<string, unknown> | null | undefined;
+  if (!p || typeof p !== "object" || Array.isArray(p)) return false;
+  if (typeof p.idempotency_key !== "string" || !p.idempotency_key.trim()) return false;
+  if (p.idempotency_key !== c.idempotencyKey) return false;
+  if (typeof p.payment_date !== "string" || !p.payment_date.trim()) return false;
+  if (typeof p.payment_method_id !== "string" || !p.payment_method_id.trim()) return false;
+  const valor = p.amount_paid;
+  if (typeof valor !== "number" || !Number.isFinite(valor) || valor <= 0) return false;
+  return true;
+}
+
 /** Grava o mínimo necessário para repetir EXATAMENTE a mesma tentativa. */
 export function salvarTentativaIncerta(t: TentativaBaixaPagar): void {
   const s = storage();
-  if (!s || !t.usuarioId || !t.parcelaId || !t.idempotencyKey) return;
+  if (!s || !tentativaBaixaPagarValida(t)) return;
   try {
     s.setItem(chaveTentativaPagar(t.usuarioId, t.parcelaId), JSON.stringify(t));
   } catch {
     /* persistência é best-effort; o estado em memória continua bloqueando */
   }
 }
+
 
 /**
  * Persiste a tentativa ANTES de qualquer RPC e confirma lendo de volta o
@@ -460,7 +487,8 @@ export function salvarTentativaIncerta(t: TentativaBaixaPagar): void {
  */
 export function persistirTentativaAntesEnvio(t: TentativaBaixaPagar): boolean {
   const s = storage();
-  if (!s || !t.usuarioId || !t.parcelaId || !t.idempotencyKey) return false;
+  if (!s || !tentativaBaixaPagarValida(t)) return false;
+
   const chave = chaveTentativaPagar(t.usuarioId, t.parcelaId);
   let serializado: string;
   try {
@@ -511,16 +539,13 @@ export function lerJournalTentativa(
     return { estado: "falha" };
   }
   if (
-    !t ||
-    typeof t.idempotencyKey !== "string" ||
-    !t.idempotencyKey ||
+    !tentativaBaixaPagarValida(t) ||
     t.usuarioId !== usuarioId ||
-    t.parcelaId !== parcelaId ||
-    !t.payload ||
-    typeof t.payload !== "object"
+    t.parcelaId !== parcelaId
   ) {
     return { estado: "falha" };
   }
+
   return { estado: "ok", tentativa: t };
 }
 

@@ -29,6 +29,8 @@ import {
   ErroBaixaPagarLocal,
   MSG_JOURNAL_CORROMPIDO,
   MSG_JOURNAL_INDISPONIVEL,
+  MSG_CONFERENCIA_NAO_LIBERADA,
+
   MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
   MSG_PAGAMENTO_NAO_CONFIRMADO,
   acumuladosParcelaPagar,
@@ -418,15 +420,20 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     onClose();
   }
 
-  /** Conferência explícita do usuário: libera o formulário e descarta a tentativa guardada. */
+  /** Conferência explícita do usuário: só libera se a remoção do journal for comprovada. */
   function confirmarConferencia() {
     if (gravando) return;
-    limparTentativaIncerta(user?.id, installment?.id);
+    const removido = limparTentativaIncerta(user?.id, installment?.id);
+    if (!removido) {
+      toast.error(MSG_CONFERENCIA_NAO_LIBERADA);
+      return;
+    }
     tentativaRef.current = null;
     setExigeConferencia(false);
     idempotencyRef.current = crypto.randomUUID();
     setForm({ ...empty, amount: Math.max(0, saldoInicial) });
   }
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) tentarFechar(); }}>
