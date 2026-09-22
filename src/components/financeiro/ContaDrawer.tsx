@@ -148,18 +148,34 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow>
+                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead>{isReceivable && <TableHead>Juros</TableHead>}{isReceivable && <TableHead>Multa</TableHead>}{isReceivable && <TableHead>Desconto</TableHead>}{isReceivable && <TableHead>Saldo</TableHead>}<TableHead>Status</TableHead><TableHead></TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
+                    {instLoading && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Carregando parcelas…</TableCell></TableRow>}
+                    {!instLoading && instErro && (
+                      <TableRow>
+                        <TableCell colSpan={isReceivable ? 10 : 6} className="text-center py-8">
+                          <div className="flex flex-col items-center gap-2 text-sm text-destructive">
+                            <span>Não foi possível carregar as parcelas.</span>
+                            <Button size="sm" variant="outline" onClick={() => refetchInst()}>Tentar novamente</Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {installments.map((r: any) => {
                       const recebido = kind === "receivable" ? r.received_amount : r.paid_amount;
                       const aberto = r.status !== "PAID" && r.status !== "CANCELED";
+                      const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : null;
                       return (
                         <TableRow key={r.id}>
                           <TableCell>{r.installment_number}</TableCell>
                           <TableCell>{fmtDate(r.due_date)}</TableCell>
                           <TableCell>{brl(r.original_amount)}</TableCell>
                           <TableCell>{brl(recebido)}</TableCell>
+                          {isReceivable && <TableCell>{brl(r.interest_amount)}</TableCell>}
+                          {isReceivable && <TableCell>{brl(r.penalty_amount)}</TableCell>}
+                          {isReceivable && <TableCell>{brl(r.discount_amount)}</TableCell>}
+                          {isReceivable && <TableCell className="font-medium">{brl(saldoP)}</TableCell>}
                           <TableCell><StatusBadge status={r.status} /></TableCell>
                           <TableCell className="text-right space-x-1">
                             {aberto && <Button size="sm" variant="outline" onClick={() => setBaixa(r)}><Wallet className="h-3 w-3 mr-1" />Baixar</Button>}
@@ -168,7 +184,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                         </TableRow>
                       );
                     })}
-                    {!installments.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Sem parcelas</TableCell></TableRow>}
+                    {!installments.length && !instLoading && !instErro && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Sem parcelas</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </div>
