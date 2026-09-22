@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 const path = (rel: string) => resolve(process.cwd(), rel);
 const read = (rel: string) => readFileSync(path(rel), "utf8");
 
-const M_HOME = "20260922171500_superadmin_home_plataforma_read.sql";
+const M_HOME = "20260922211137_7eae146c-4343-4633-a7ea-844c9e857ee6.sql";
 
 const app = read("src/App.tsx");
 const permissions = read("src/lib/permissions.ts");
