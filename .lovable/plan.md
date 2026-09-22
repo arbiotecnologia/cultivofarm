@@ -1,28 +1,70 @@
-# Gate de prontidão fiscal — correção local auditável
+# Fase 0 — Auditoria pré-homologação de segurança e isolamento multiempresa (somente leitura)
 
-## Escopo e segurança
-- Trabalhar exclusivamente no repositório; não consultar ou escrever no Supabase remoto, publicar funções, emitir documentos ou criar certificados, séries ou fixtures persistentes.
-- Preservar o destino `swzpzcwiasxmjutrmvkm`, JWT, CORS, permissões e bloqueios de produção/preflight.
+Nesta rodada nada é alterado: sem código, sem banco, sem migrations, sem policies, sem Edge Functions, sem usuários, secrets, Storage ou publicação. A entrega é um relatório de evidências do estado atual.
 
-## Correções identificadas
-1. **Certificado A1:** adicionar o guard canônico nas funções existentes de upload e revogação, antes de criar clientes; validar acesso à empresa com a identidade autenticada antes de usar privilégios de serviço ou gravar ciphertext.
-2. **Revogação:** falhar de forma explícita se a leitura do material falhar; preservar o caminho do objeto para nova tentativa quando sua remoção falhar, evitando limpeza falsamente concluída.
-3. **Interface do certificado:** interpretar apenas códigos permitidos nas respostas de erro, sem ecoar mensagens internas; bloquear envios simultâneos, limpar material temporário e atualizar prontidão após upload/revogação. Corrigir textos que dizem que a senha é cifrada/persistida: ela serve apenas para abrir o A1 em memória.
-4. **Série NF-e:** corrigir a desconexão comprovada entre `nfe_series` textual na tela e `nfe_series_number`/`nfe_environment_code` usados pelo gate. Integrar a edição à configuração existente, com série inteira 1–999 e ambiente 2. O contador canônico fica em `fiscal_document_series`, com faixa 0–999999999; não criar escrita direta desprotegida nem reservar numeração como atalho de cadastro. Preparar o contrato local seguro necessário se não existir caminho administrativo autorizado.
-5. **Estados da tela:** corrigir somente problemas comprovados de erro, carregamento, repetição e disposição em telas pequenas; manter os fluxos atuais.
+## Sondagens já feitas (estado atual, medido agora)
 
-## Provisionamento do bucket
-O bucket ausente é um bloqueio remoto confirmado pelo operador. As ferramentas desta plataforma exigem criação/configuração de buckets pela **Storage API**, não SQL em `storage.buckets`; migrations locais também são gerenciadas pela ferramenta de migrations, cuja execução remota está proibida nesta rodada.
+No Supabase canônico `swzpzcwiasxmjutrmvkm`, schema `public`:
 
-Preparar um artefato versionado de provisionamento **não executado**, com nome `fiscal-certificates`, privado, limite 10485760 bytes e MIME `application/octet-stream`, instruções idempotentes e reversão segura que preserve objetos existentes. Não apresentar esse artefato como migration SQL aplicada ou criar uma migration vazia que sugira provisionamento concluído. Registrar expressamente essa diferença em relação à entrega solicitada.
+- 230 tabelas; 0 sem RLS habilitada; 6 com RLS habilitada e nenhuma policy (bloqueio total via Data API — precisam ser nomeadas e classificadas).
+- 0 tabelas com grant para `anon`.
+- 678 funções SECURITY DEFINER; 0 sem `search_path` fixo.
+- 24 views.
+- Apenas 2 colunas chamadas `organization_id` em todo o schema — ou seja, o isolamento multiempresa hoje não é colunar/global; precisa ser mapeado caminho a caminho (cliente, parceiro, empresa fiscal).
+- 38 Edge Functions no repositório; `src/config/permissions.ts`, `portalMenus.ts`, `navigation.ts` e guardas de rota existem e serão comparados ao backend.
+- Plano H15 (isolamento fiscal por empresa) existe em `.lovable/plan/h15-...` e será confrontado com o schema atual.
 
-## Validação e entrega
-- Testes de contrato e regressão fiscais/configuração: autorização por organização, erro saneado, limpeza/retry, duplicação, faixas numéricas e gates.
-- Conferir sinais automáticos de build/typecheck; não afirmar validação não executada. Testes visuais locais somente sem acesso a dados remotos; sem mocks no produto.
-- Relatório com arquivos, achados, correções, evidências, limitações e identificador de commit disponível (commits são gerenciados pela plataforma).
-- Homologação com A1/senha/série reais, provisionamento e deploy permanecem bloqueados até execução autorizada pelo operador.
+Nada além disso está afirmado ainda; todo o resto do relatório será baseado em consultas e leituras feitas durante a execução.
 
-## Detalhes técnicos
-- Reutilizar o helper canônico compartilhado e os helpers/RLS H15; não relaxar ACL nem alterar migrations H13–H16.
-- Separar autorização autenticada das operações elevadas de Storage; manter respostas sem senha, PFX, ciphertext, IV, caminhos, stack ou segredos.
-- Concluir a revisão independente de certificado antes das alterações; documentar quaisquer lacunas adicionais confirmadas, sem ampliar regras fiscais.
+## Como a auditoria será executada
+
+Todas as etapas são leitura: consultas de catálogo (`pg_policies`, `pg_proc`, `information_schema`, `storage.buckets`), linter/advisors do Supabase e leitura de arquivos do repositório. Nenhuma sonda que grave dados, nenhum usuário de teste. Cenários que exigem sessão real de cada perfil serão marcados como "pendente de teste autenticado na Fase de homologação".
+
+### Etapa A — Ambiente e identidade
+Confirmar ref canônico em client, guards, `config.toml` e Edges; conferir divergências de `.env` gerenciado; nenhum segredo exibido.
+
+### Etapa B — Tenants, perfis e vínculos
+Inventariar `organizations`, `user_roles`, `partner_users`, `partner_user_clients`, `partner_technician_clients`, vínculos produtor↔cliente e técnicos. Contagens e estrutura, sem PII desnecessária.
+
+### Etapa C — RLS, policies e grants
+Para as 230 tabelas: RLS/FORCE RLS, policies por comando, roles alvo, predicados sem filtro de tenant, grants por role, tabelas sem policy efetiva.
+
+### Etapa D — Isolamento multiempresa
+Classificar cada tabela sensível pelo caminho de tenant real (direto, indireto via cliente/parceiro/OS, ou inexistente). Procurar policies com `TO authenticated` sem predicado de escopo, colunas de tenant atualizáveis pelo cliente, FKs cross-tenant e registros órfãos.
+
+### Etapa E — Autorização de perfis
+Matriz perfil × portal × rota × tabela/RPC: comparar `permissions.ts`, menus e guardas com o que o banco realmente permite. Cobre todos os 13 papéis do enum `app_role`.
+
+### Etapa F — Funções e RPCs
+Das 678 SECURITY DEFINER: owner, EXECUTE grants (incluindo `PUBLIC`/`anon`), uso de `auth.uid()`, parâmetros de identidade/organização manipuláveis, potencial de escalonamento.
+
+### Etapa G — Edge Functions
+`verify_jwt` por função, uso de service_role, validação de papel/tenant no servidor, CORS, webhooks, idempotência e endpoints que confiam em IDs vindos do cliente.
+
+### Etapa H — Storage
+Buckets públicos/privados, policies de `storage.objects`, isolamento por pasta, IDOR/enumeração.
+
+### Etapa I — Auth e ciclo de vida do usuário
+Provisionamento, edição de perfil/papel, senha, desativação, risco de autoelevação (inclui `create-user`, `admin-update-user-password`, `admin_edit_user_profile_v1`).
+
+### Etapa J — Views e integridade
+`security_invoker`/`security_barrier` nas 24 views; FKs, uniqueness por tenant, índices, cascatas, soft delete.
+
+### Etapa K — Fiscal/financeiro + H15
+Isolamento em `company_fiscal_settings`, `fiscal_invoices`, certificados, séries, AR/AP, documentos e pagamentos; o que do H15 já está no schema e o que segue pendente.
+
+### Etapa L — Advisors e linter
+Executar o linter do Supabase e consolidar alertas atuais.
+
+## Entrega
+
+Um documento em `docs/auditorias/fase0-seguranca-isolamento-2026-09-22.md` com as seções pedidas: (A) resumo executivo, (B) matriz empresa/perfil/portal/backend, (C) inventário RLS/policies/grants, (D) inventário SECURITY DEFINER/Edge/Storage, (E) vulnerabilidades priorizadas, (F) comparação com auditorias e planos existentes, (G) plano de correção em fases independentes e reversíveis, (H) critérios de aceite e testes por fase, (I) GO/NO-GO técnico para iniciar homologação.
+
+Cada achado levará: classificação (CRÍTICO/ALTO/MÉDIO/BAIXO/INFORMATIVO), evidência concreta, cenário de exploração, correção recomendada, risco de regressão, dependências e se é bloqueador.
+
+Escrever esse arquivo de relatório é a única gravação da rodada. Se preferir receber tudo apenas no chat, sem criar o arquivo, é só dizer.
+
+## Premissas
+
+- Volume alto (230 tabelas, 678 funções, 38 Edges): o relatório priorizará tabelas e caminhos sensíveis, com inventários completos em forma agregada e detalhamento nos pontos de risco.
+- Nenhuma afirmação de "seguro" sem evidência coletada nesta rodada.
