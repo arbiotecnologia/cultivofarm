@@ -57,9 +57,10 @@ function abrir(kind: "receivable" | "payable" = "receivable") {
 async function selecionar(idTrigger: string, nomeOpcao: string) {
   const trigger = document.querySelector(`#${idTrigger}`) as HTMLElement;
   expect(trigger).not.toBeNull();
-  fireEvent.pointerDown(trigger);
-  const opcao = await screen.findByRole("option", { name: nomeOpcao });
+  fireEvent.keyDown(trigger, { key: "Enter", code: "Enter" });
+  const opcao = await screen.findByRole("option", { name: nomeOpcao }, { timeout: 3000 });
   fireEvent.click(opcao);
+  fireEvent.keyDown(document.activeElement ?? trigger, { key: "Enter", code: "Enter" });
 }
 
 function preencherBase() {
