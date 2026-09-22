@@ -220,6 +220,7 @@ describe("NovaContaDialog — Conta a Receber", () => {
       financial_cost_centers: { data: [], error: null },
     };
     abrir();
+    await screen.findByText("Cliente A");
     fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Descrição é obrigatória."));
     expect(rpcMock).not.toHaveBeenCalled();
