@@ -388,8 +388,10 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           <Button variant="outline" onClick={tentarFechar} disabled={gravando}>{pendente ? "Fechar" : "Cancelar"}</Button>
           <Button
             onClick={() => save.mutate()}
-            // Reenvio só exige arquivo: settings/método/saldo não bloqueiam a baixa já persistida.
-            disabled={gravando || (pendente ? !file : settingsBloqueado)}
+            // Reenvio só exige arquivo (baixa já persistida, zero RPC de baixa).
+            // Resultado incerto trava novo envio até conferência explícita.
+            // Nova baixa: settings carregadas obrigatórias.
+            disabled={gravando || (pendente ? !file : exigeConferencia || settingsBloqueado)}
           >
             {pendente ? "Reenviar comprovante" : "Confirmar"}
           </Button>
