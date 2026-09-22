@@ -63,32 +63,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
 
-  const fetchProfileAndRole = async (userId: string) => {
+  // Controle de corrida: cada carregamento recebe uma geração. Resultado de
+  // geração antiga (usuário A) nunca aplica estado após B/logout/unmount.
+  const generationRef = useRef(0);
+  const mountedRef = useRef(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Último usuário cujo carregamento já foi iniciado com sucesso — evita
+  // tempestade de cargas em SIGNED_IN/INITIAL_SESSION repetidos.
+  const loadedUserIdRef = useRef<string | null>(null);
+
+  const clearIdentityState = () => {
+    setProfile(null);
+    setRoles([]);
+    setPrimaryRole(null);
+  };
+
+  const fetchProfileAndRole = async (userId: string, generation?: number) => {
+    const gen = generation ?? generationRef.current;
+    const isCurrent = () => mountedRef.current && gen === generationRef.current;
     try {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
         .maybeSingle();
-      
+
       if (profileError) throw profileError;
+      if (!isCurrent()) return;
 
       const profile = profileData as Profile | null;
       
       if (!profile) {
         console.error("Profile not found for user:", userId);
+        loadedUserIdRef.current = null;
+        clearIdentityState();
         setError("Seu perfil não foi encontrado. Por favor, entre em contato com o suporte.");
         setLoading(false);
         return;
       }
 
       if (profile.ativo === false) {
+        loadedUserIdRef.current = null;
         setError("Sua conta está inativa.");
-        await supabase.auth.signOut();
-        setProfile(null);
-        setRoles([]);
-        setPrimaryRole(null);
+        clearIdentityState();
         setLoading(false);
+        await supabase.auth.signOut();
         return;
       }
 
@@ -104,6 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Error fetching roles:", roleError);
         throw roleError;
       }
+
+      if (!isCurrent()) return;
 
       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
       const primary = pickPrimaryRole(userRoles);
@@ -128,6 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     } catch (err: any) {
       console.error("Erro ao carregar perfil/função:", err);
+      if (!isCurrent()) return;
+      // Falha de autorização/carregamento limpa papéis antigos e libera nova
+      // tentativa (não marca o usuário como já carregado).
+      loadedUserIdRef.current = null;
+      clearIdentityState();
       setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
       setLoading(false);
     }
@@ -136,17 +162,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = async () => {
     if (user) {
       setLoading(true);
-      await fetchProfileAndRole(user.id);
+      const gen = ++generationRef.current;
+      loadedUserIdRef.current = user.id;
+      await fetchProfileAndRole(user.id, gen);
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     // H9-G Bloco 2E — contexto de portal nunca pode ser herdado por outro
     // usuário: qualquer troca de identidade limpa a escolha persistida.
     let lastUserId: string | null = null;
-    // Escuta mudanças na autenticação
+    let handledAuthEvent = false;
+
+    // O carregamento NUNCA parte da pilha do callback de onAuthStateChange
+    // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
+    // como macrotask separada.
+    const scheduleLoad = (userId: string) => {
+      const gen = ++generationRef.current;
+      loadedUserIdRef.current = userId;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        if (!mountedRef.current || gen !== generationRef.current) return;
+        void fetchProfileAndRole(userId, gen);
+      }, 0);
+    };
+
+    // Escuta mudanças na autenticação — callback estritamente síncrono.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        handledAuthEvent = true;
         console.log("Auth event:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
@@ -157,44 +203,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         lastUserId = nextUserId;
 
-        if (session?.user) {
+        if (nextUserId) {
+          // Eventos repetidos do mesmo usuário não recarregam nada.
+          if (loadedUserIdRef.current === nextUserId) return;
           setLoading(true);
           setError(null);
-          fetchProfileAndRole(session.user.id);
+          scheduleLoad(nextUserId);
         } else {
-
-          setProfile(null);
-          setRoles([]);
-          setPrimaryRole(null);
+          generationRef.current += 1;
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+          }
+          loadedUserIdRef.current = null;
+          clearIdentityState();
           setError(null);
           setLoading(false);
         }
       }
     );
 
-    // Verifica sessão inicial
+    // Verifica sessão inicial apenas se o INITIAL_SESSION ainda não chegou —
+    // evita disputa duplicada entre getSession e o evento.
     const checkInitialSession = async () => {
+      if (handledAuthEvent) return;
       try {
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
+        if (!mountedRef.current || handledAuthEvent) return;
 
         if (initialSession?.user) {
           setSession(initialSession);
           setUser(initialSession.user);
-          await fetchProfileAndRole(initialSession.user.id);
+          lastUserId = initialSession.user.id;
+          if (loadedUserIdRef.current !== initialSession.user.id) {
+            scheduleLoad(initialSession.user.id);
+          }
         } else {
           setLoading(false);
         }
       } catch (err) {
         console.error("Erro ao verificar sessão inicial:", err);
-        setLoading(false);
+        if (mountedRef.current) setLoading(false);
       }
     };
 
-    checkInitialSession();
+    void checkInitialSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mountedRef.current = false;
+      generationRef.current += 1;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      subscription.unsubscribe();
+    };
   }, []);
+
 
   // Cross-tab: reage a eventos de troca/limpeza/logout emitidos em outras abas.
   useEffect(() => {
