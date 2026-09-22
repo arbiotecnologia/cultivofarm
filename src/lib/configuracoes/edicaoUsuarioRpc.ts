@@ -169,9 +169,15 @@ const MENSAGENS_ERRO_EDICAO: Record<string, string> = {
   user_edit_client_not_found:
     "Algum cliente vinculado não foi encontrado. Recarregue a lista e tente novamente.",
   user_edit_partner_unavailable: "O parceiro B2B informado não está disponível.",
+  // Proteção do último administrador ativo (servidor, SQLSTATE PT409).
+  user_last_active_admin:
+    "Não é possível remover ou desativar o último administrador ativo. Mantenha outro administrador ativo antes de continuar.",
 };
 
-const TOKEN_ERRO_EDICAO = /user_edit_[a-z0-9_]+/g;
+/** Mensagem segura da proteção do último administrador ativo (edição e status). */
+export const MSG_ULTIMO_ADMIN_ATIVO = MENSAGENS_ERRO_EDICAO.user_last_active_admin;
+
+const TOKEN_ERRO_EDICAO = /user_edit_[a-z0-9_]+|user_last_active_admin/g;
 
 /** Origem da falha, para classificação única ponta a ponta (mutationFn → onError). */
 export type OrigemErroEdicao = "local" | "rpc" | "ambiguo";
