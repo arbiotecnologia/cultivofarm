@@ -404,7 +404,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
               chave nova é gerada, mesmo fechando e reabrindo esta janela.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => save.mutate({ repetir: true })} disabled={gravando}>
+              <Button size="sm" variant="outline" onClick={() => iniciarEnvio({ repetir: true })} disabled={gravando}>
                 Repetir a mesma tentativa
               </Button>
               <Button size="sm" variant="ghost" onClick={confirmarConferencia} disabled={gravando}>
