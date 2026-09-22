@@ -86,7 +86,10 @@ describe("agregação de documentos do drawer receivable", () => {
         { id: "d-1", owner_type: "PAYMENT_RECEIVABLE", owner_id: "pay-1", document_type: "RECEIPT" },
         { id: "d-2", owner_type: "PAYMENT_RECEIVABLE", owner_id: "pay-2", document_type: "RECEIPT" },
       ],
-      pagamentos,
+      [
+        ...pagamentos,
+        { id: "pay-2", installment_id: "inst-1", payment_date: "2026-09-21", is_reversal: true, reversed_payment_id: "pay-1" },
+      ],
       parcelas,
     );
     expect(docs).toHaveLength(2);
@@ -94,6 +97,8 @@ describe("agregação de documentos do drawer receivable", () => {
     expect(vigentes).toHaveLength(0);
     expect(docs.every((d) => d.estornado)).toBe(true);
   });
+
+  it("deduplica por id", () => {
     const docs = agregarDocumentosReceber(
       "ar-1",
       [
