@@ -55,8 +55,8 @@ describe("agregação de documentos do drawer receivable", () => {
     const docs = agregarDocumentosReceber(
       "ar-1",
       [
-        { id: "d-1", owner_type: "RECEIVABLE", owner_id: "ar-1", document_type: "INVOICE", file_name: "nf.pdf" },
-        { id: "d-2", owner_type: "PAYMENT_RECEIVABLE", owner_id: "pay-1", document_type: "RECEIPT", file_name: "comp.pdf" },
+        { id: "d-1", owner_type: "RECEIVABLE", owner_id: "ar-1", document_type: "INVOICE" },
+        { id: "d-2", owner_type: "PAYMENT_RECEIVABLE", owner_id: "pay-1", document_type: "RECEIPT" },
       ],
       pagamentos,
       parcelas,
