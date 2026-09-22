@@ -172,17 +172,18 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                     {installments.map((r: any) => {
                       const recebido = kind === "receivable" ? r.received_amount : r.paid_amount;
                       const aberto = r.status !== "PAID" && r.status !== "CANCELED";
-                      const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : null;
+                      // Mesma fórmula dos KPIs em ambos os ramos.
+                      const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : saldoParcelaPagar(r);
                       return (
                         <TableRow key={r.id}>
                           <TableCell>{r.installment_number}</TableCell>
                           <TableCell>{fmtDate(r.due_date)}</TableCell>
                           <TableCell>{brl(r.original_amount)}</TableCell>
                           <TableCell>{brl(recebido)}</TableCell>
-                          {isReceivable && <TableCell>{brl(r.interest_amount)}</TableCell>}
-                          {isReceivable && <TableCell>{brl(r.penalty_amount)}</TableCell>}
-                          {isReceivable && <TableCell>{brl(r.discount_amount)}</TableCell>}
-                          {isReceivable && <TableCell className="font-medium">{brl(saldoP)}</TableCell>}
+                          <TableCell>{brl(r.interest_amount)}</TableCell>
+                          <TableCell>{brl(r.penalty_amount)}</TableCell>
+                          <TableCell>{brl(r.discount_amount)}</TableCell>
+                          {aberto && <TableCell className="font-medium">{brl(saldoP)}</TableCell>}
                           <TableCell><StatusBadge status={r.status} /></TableCell>
                           <TableCell className="text-right space-x-1">
                             {aberto && <Button size="sm" variant="outline" onClick={() => setBaixa(r)}><Wallet className="h-3 w-3 mr-1" />Baixar</Button>}
