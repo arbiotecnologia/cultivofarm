@@ -149,13 +149,21 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         if (!user) throw erroAnexo("Sessão expirada. Entre novamente para reenviar o comprovante.");
         if (!pendente.paymentId) throw erroAnexo("Não foi possível identificar a baixa registrada.");
         if (!file) throw erroAnexo("Selecione o comprovante para reenviar.");
-        await anexarComprovanteBaixa(supabase, {
-          ownerType: ownerTypeBase,
-          paymentId: pendente.paymentId,
-          idempotencyKey: idempotencyRef.current,
-          file,
-          uploadedBy: user.id,
-        });
+        // Toda falha aqui é falha de ANEXO de uma baixa já confirmada: nunca
+        // vira resultado incerto, nunca persiste tentativa, nunca dispara RPC.
+        try {
+          await anexarComprovanteBaixa(supabase, {
+            ownerType: ownerTypeBase,
+            paymentId: pendente.paymentId,
+            idempotencyKey: idempotencyRef.current,
+            file,
+            uploadedBy: user.id,
+          });
+        } catch {
+          throw erroAnexo(
+            "Não foi possível anexar o comprovante. O pagamento continua registrado; tente enviar o arquivo novamente.",
+          );
+        }
         return { reenvio: true as const };
       }
 
