@@ -243,8 +243,6 @@ export function mapearErroEdicaoUsuario(erro: unknown): string {
  */
 export function edicaoExigeRecargaAposErro(erro: unknown): boolean {
   return classificarErroRpcEdicao(erro).exigeRecarga;
-export function edicaoExigeRecargaAposErro(erro: unknown): boolean {
-  return classificarErroRpcEdicao(erro).exigeRecarga;
 }
 
 /** Prazo máximo da edição de usuário (cobre pré-fetch/auth + RPC). */
