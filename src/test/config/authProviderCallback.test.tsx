@@ -242,4 +242,46 @@ describe("AuthProvider — callback de autenticação", () => {
     expect(unsubscribe).toHaveBeenCalled();
     await new Promise((r) => setTimeout(r, 80));
   });
+
+  it("StrictMode (setup→cleanup→setup) ainda carrega o mesmo usuário", async () => {
+    initialSession = sessionA;
+    renderProvider(true);
+    // apenas o listener do segundo setup permanece ativo
+    expect(listeners.length).toBe(1);
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    expect(screen.getByTestId("loading").textContent).toBe("false");
+  });
+
+  it("troca A→B limpa perfil e papéis imediatamente", async () => {
+    renderProvider();
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    profileDelay = 40;
+    profileRow = { id: "p2", user_id: "user-b", nome: "B", email: "b@x.com", ativo: true };
+    rolesRows = [{ role: "consultor_tecnico" }];
+    await act(async () => {
+      emit("SIGNED_IN", sessionB);
+    });
+    expect(screen.getByTestId("role").textContent).toBe("-");
+    expect(screen.getByTestId("loading").textContent).toBe("true");
+    await waitFor(
+      () => expect(screen.getByTestId("role").textContent).toBe("consultor_tecnico"),
+      { timeout: 500 },
+    );
+  });
+
+  it("getSession antigo que rejeita depois do evento não desliga o loading", async () => {
+    h.getSession = async () => {
+      await new Promise((r) => setTimeout(r, 20));
+      throw new Error("sessão obsoleta");
+    };
+    renderProvider();
+    profileDelay = 80;
+    emit("SIGNED_IN", sessionB);
+    await new Promise((r) => setTimeout(r, 40));
+    expect(screen.getByTestId("loading").textContent).toBe("true");
+    h.getSession = async () => ({ data: { session: initialSession }, error: null });
+  });
 });
+
