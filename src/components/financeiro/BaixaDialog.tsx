@@ -27,18 +27,22 @@ import {
   ErroAnexoPagarLocal,
   ErroBaixaIncerta,
   ErroBaixaPagarLocal,
+  MSG_JOURNAL_CORROMPIDO,
+  MSG_JOURNAL_INDISPONIVEL,
   MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
   MSG_PAGAMENTO_NAO_CONFIRMADO,
   acumuladosParcelaPagar,
   calcularSaldoPagavel,
   classificarErroBaixaPagar,
   executarComDeadlineBaixaPagar,
-  lerTentativaIncerta,
+  lerJournalTentativa,
   limparTentativaIncerta,
+  persistirTentativaAntesEnvio,
   salvarTentativaIncerta,
   validarBaixaPagar,
   type TentativaBaixaPagar,
 } from "@/lib/financeiro/contasPagar";
+
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
 import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
 
@@ -62,6 +66,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const [pendente, setPendente] = useState<{ paymentId: string } | null>(null);
   /** Resultado incerto (timeout/rede/desconhecido): bloqueia novo envio até conferência. */
   const [exigeConferencia, setExigeConferencia] = useState(false);
+  /** Journal local ilegível/corrompido: bloqueia envio sem apagar nada. */
+  const [journalFalha, setJournalFalha] = useState(false);
+
   /** Tentativa incerta preservada (mesma chave e mesmo payload) para repetição idempotente. */
   const tentativaRef = useRef<TentativaBaixaPagar | null>(null);
   /** Guarda síncrona contra duplo clique (o estado de pendência do React é assíncrono). */
@@ -88,9 +95,13 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     if (open) {
       setFile(null);
       setPendente(null);
-      // Payable: uma tentativa incerta anterior (mesmo usuário + mesma parcela)
-      // sobrevive a fechar/reabrir e remontar. Nunca geramos chave nova em silêncio.
-      const anterior = receber ? null : lerTentativaIncerta(user?.id, installment?.id);
+      // Payable: uma tentativa anterior (mesmo usuário + mesma parcela) sobrevive
+      // a fechar/reabrir e remontar. Nunca geramos chave nova em silêncio.
+      const leitura = receber
+        ? ({ estado: "ausente" } as const)
+        : lerJournalTentativa(user?.id, installment?.id);
+      const anterior = leitura.estado === "ok" ? leitura.tentativa : null;
+      setJournalFalha(leitura.estado === "falha");
       if (anterior) {
         tentativaRef.current = anterior;
         idempotencyRef.current = anterior.idempotencyKey;
@@ -115,6 +126,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
     } /* eslint-disable-line */
   }, [open, installment?.id, user?.id]);
+
 
   const { data: pms = [] } = useQuery({
     queryKey: ["fin-pm-active"],
@@ -167,6 +179,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         return { reenvio: true as const };
       }
 
+      // Journal local ilegível/corrompido: nada é apagado e nada é enviado.
+      if (!receber && journalFalha) {
+        throw new ErroBaixaPagarLocal(MSG_JOURNAL_CORROMPIDO);
+      }
+
       // Resultado incerto anterior: nenhum novo envio com nova chave até conferência.
       // Só a repetição explícita da MESMA tentativa (mesma chave e mesmo payload) é aceita.
       if (!receber && exigeConferencia && !repetir) {
@@ -175,6 +192,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (repetir && !tentativaRef.current) {
         throw new ErroBaixaPagarLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
       }
+
 
       if (!repetir) {
         if (receber) {
@@ -223,17 +241,29 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             [amountKey]: Number(form.amount),
           };
 
-      // Payable: a tentativa fica registrada em memória antes do envio para que um
-      // resultado incerto possa ser repetido sem gerar nova chave.
-      if (!receber && user && installment?.id) {
-        tentativaRef.current = {
+      // Payable: a tentativa é registrada em memória E no journal local ANTES do
+      // envio, com leitura de volta conferida. Assim um refresh/remount enquanto
+      // a RPC está pendente restaura o bloqueio com a MESMA chave e payload.
+      // Falha de storage/quota/leitura => zero RPC e nenhuma chave nova.
+      if (!receber) {
+        if (!user || !installment?.id) {
+          throw new ErroBaixaPagarLocal(MSG_JOURNAL_INDISPONIVEL);
+        }
+        const tentativa: TentativaBaixaPagar = {
           idempotencyKey: String(payloadFinal.idempotency_key),
           parcelaId: String(installment.id),
           usuarioId: user.id,
           payload: payloadFinal,
-          criadoEm: new Date().toISOString(),
+          criadoEm: repetir
+            ? (tentativaRef.current as TentativaBaixaPagar).criadoEm
+            : new Date().toISOString(),
         };
+        if (!persistirTentativaAntesEnvio(tentativa)) {
+          throw new ErroBaixaPagarLocal(MSG_JOURNAL_INDISPONIVEL);
+        }
+        tentativaRef.current = tentativa;
       }
+
 
       const chamar = async (signal: AbortSignal | undefined) => {
         let req = (supabase as any).rpc(rpcName as any, {
@@ -285,11 +315,15 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (r?.ignorado) return;
       invalidarTudo();
       if (!receber && !r?.reenvio) {
-        // Pagamento confirmado: a tentativa deixa de estar incerta.
+        // Resultado definitivamente confirmado: só aqui o journal é removido.
+        // Falha de limpeza NÃO transforma o pagamento confirmado em falha e
+        // também não libera novo envio — o bloqueio em memória é desfeito
+        // apenas porque o pagamento foi confirmado pelo servidor.
         limparTentativaIncerta(user?.id, installment?.id);
         tentativaRef.current = null;
         setExigeConferencia(false);
       }
+
       if (r?.comprovantePendente) {
         setPendente({ paymentId: r.paymentId });
         toast.error(receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE);
@@ -320,18 +354,22 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
       // Classificação única ponta a ponta: incerto trava novo envio até conferência.
       const c = classificarErroBaixaPagar(e);
+      const falhaJournal =
+        c.mensagem === MSG_JOURNAL_INDISPONIVEL || c.mensagem === MSG_JOURNAL_CORROMPIDO;
       if (c.exigeConferencia) {
         setExigeConferencia(true);
         // Preserva chave + payload da tentativa para repetição idempotente após
         // fechar/reabrir ou remontar (nada de arquivo, token ou credencial).
         if (tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
-      } else if (!pendente && !exigeConferencia) {
+      } else if (!pendente && !exigeConferencia && !falhaJournal) {
         // Recusa comprovada antes de qualquer tentativa incerta: nada a preservar.
+        // Falha/corrupção do journal nunca apaga o registro local.
         limparTentativaIncerta(user?.id, installment?.id);
         tentativaRef.current = null;
       }
       toast.error(c.mensagem);
     },
+
   });
 
   const acumP = acumuladosParcelaPagar(installment);
@@ -396,6 +434,12 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         <DialogHeader>
           <DialogTitle>Registrar {receber ? "Recebimento" : "Pagamento"}</DialogTitle>
         </DialogHeader>
+
+        {journalFalha && !pendente && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
+            {MSG_JOURNAL_CORROMPIDO}
+          </div>
+        )}
 
         {exigeConferencia && !pendente && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2" role="alert">
@@ -533,7 +577,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             // Reenvio só exige arquivo (baixa já persistida, zero RPC de baixa).
             // Resultado incerto trava novo envio até conferência explícita.
             // Nova baixa: settings carregadas obrigatórias.
-            disabled={gravando || (pendente ? !file : exigeConferencia || settingsBloqueado)}
+            disabled={gravando || (pendente ? !file : journalFalha || exigeConferencia || settingsBloqueado)}
           >
             {pendente ? "Reenviar comprovante" : "Confirmar"}
           </Button>

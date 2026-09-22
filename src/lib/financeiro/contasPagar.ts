@@ -433,6 +433,14 @@ function storage(): Storage | null {
   }
 }
 
+/** Mensagem segura quando o registro local da tentativa não pode ser garantido. */
+export const MSG_JOURNAL_INDISPONIVEL =
+  "Não foi possível guardar o registro local desta tentativa neste navegador. Nenhum pagamento foi enviado. Tente novamente ou use outro navegador.";
+
+/** Mensagem segura quando existe um registro local ilegível/corrompido. */
+export const MSG_JOURNAL_CORROMPIDO =
+  "Existe um registro local desta baixa que não pôde ser lido. Nenhum novo pagamento será enviado: confira a conta antes de continuar.";
+
 /** Grava o mínimo necessário para repetir EXATAMENTE a mesma tentativa. */
 export function salvarTentativaIncerta(t: TentativaBaixaPagar): void {
   const s = storage();
@@ -444,44 +452,108 @@ export function salvarTentativaIncerta(t: TentativaBaixaPagar): void {
   }
 }
 
+/**
+ * Persiste a tentativa ANTES de qualquer RPC e confirma lendo de volta o
+ * conteúdo exato. Qualquer falha (storage ausente, quota, escrita ou leitura
+ * divergente) devolve `false`: o chamador NÃO pode disparar RPC nem gerar
+ * nova chave.
+ */
+export function persistirTentativaAntesEnvio(t: TentativaBaixaPagar): boolean {
+  const s = storage();
+  if (!s || !t.usuarioId || !t.parcelaId || !t.idempotencyKey) return false;
+  const chave = chaveTentativaPagar(t.usuarioId, t.parcelaId);
+  let serializado: string;
+  try {
+    serializado = JSON.stringify(t);
+  } catch {
+    return false;
+  }
+  try {
+    s.setItem(chave, serializado);
+  } catch {
+    return false;
+  }
+  try {
+    const devolta = s.getItem(chave);
+    return devolta === serializado;
+  } catch {
+    return false;
+  }
+}
+
+export type LeituraJournal =
+  | { estado: "ausente" }
+  | { estado: "ok"; tentativa: TentativaBaixaPagar }
+  | { estado: "falha" };
+
+/**
+ * Lê o journal diferenciando ausência legítima (`ausente`) de falha de leitura
+ * ou registro corrompido (`falha`). Registro corrompido nunca é apagado aqui.
+ */
+export function lerJournalTentativa(
+  usuarioId: string | null | undefined,
+  parcelaId: string | null | undefined,
+): LeituraJournal {
+  if (!usuarioId || !parcelaId) return { estado: "ausente" };
+  const s = storage();
+  if (!s) return { estado: "falha" };
+  let bruto: string | null;
+  try {
+    bruto = s.getItem(chaveTentativaPagar(usuarioId, parcelaId));
+  } catch {
+    return { estado: "falha" };
+  }
+  if (bruto === null || bruto === undefined) return { estado: "ausente" };
+  let t: TentativaBaixaPagar | null = null;
+  try {
+    t = JSON.parse(bruto) as TentativaBaixaPagar;
+  } catch {
+    return { estado: "falha" };
+  }
+  if (
+    !t ||
+    typeof t.idempotencyKey !== "string" ||
+    !t.idempotencyKey ||
+    t.usuarioId !== usuarioId ||
+    t.parcelaId !== parcelaId ||
+    !t.payload ||
+    typeof t.payload !== "object"
+  ) {
+    return { estado: "falha" };
+  }
+  return { estado: "ok", tentativa: t };
+}
+
 /** Lê a tentativa incerta do próprio usuário para esta parcela. */
 export function lerTentativaIncerta(
   usuarioId: string | null | undefined,
   parcelaId: string | null | undefined,
 ): TentativaBaixaPagar | null {
-  const s = storage();
-  if (!s || !usuarioId || !parcelaId) return null;
-  try {
-    const bruto = s.getItem(chaveTentativaPagar(usuarioId, parcelaId));
-    if (!bruto) return null;
-    const t = JSON.parse(bruto) as TentativaBaixaPagar;
-    if (
-      !t ||
-      typeof t.idempotencyKey !== "string" ||
-      !t.idempotencyKey ||
-      t.usuarioId !== usuarioId ||
-      t.parcelaId !== parcelaId ||
-      !t.payload ||
-      typeof t.payload !== "object"
-    ) {
-      return null;
-    }
-    return t;
-  } catch {
-    return null;
-  }
+  const r = lerJournalTentativa(usuarioId, parcelaId);
+  return r.estado === "ok" ? r.tentativa : null;
 }
 
-/** Remove a tentativa após conferência explícita ou conclusão. */
+/**
+ * Remove o journal após resultado definitivamente confirmado ou recusa
+ * comprovada. Devolve `false` se a limpeza falhou — o chamador NÃO pode
+ * transformar isso em falha de pagamento nem liberar novo envio.
+ */
 export function limparTentativaIncerta(
   usuarioId: string | null | undefined,
   parcelaId: string | null | undefined,
-): void {
+): boolean {
+  if (!usuarioId || !parcelaId) return false;
   const s = storage();
-  if (!s || !usuarioId || !parcelaId) return;
+  if (!s) return false;
   try {
     s.removeItem(chaveTentativaPagar(usuarioId, parcelaId));
   } catch {
-    /* best-effort */
+    return false;
+  }
+  try {
+    return s.getItem(chaveTentativaPagar(usuarioId, parcelaId)) === null;
+  } catch {
+    return false;
   }
 }
+
