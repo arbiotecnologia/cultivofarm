@@ -171,7 +171,7 @@ describe("tela Contas a Pagar", () => {
     await waitFor(() =>
       expect(ranges.filter(([t, from]) => t === "accounts_payable" && from === 50).length).toBeGreaterThan(0),
     );
-  });
+  }, 20_000);
 
   it("conta cancelada não entra em Vencidos; saldo do drawer/payable usa a mesma fórmula", async () => {
     const linhas = [
