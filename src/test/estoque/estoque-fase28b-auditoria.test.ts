@@ -53,6 +53,9 @@ describe("FASE 28B — certificação da Fase 28A", () => {
       // Gate S0→S1 — hardening de autorização (revogações de EXECUTE + WITH CHECK
       // nas policies de UPDATE de profiles). Sem alteração de dados.
       "20260922152558_478f5ed2-5b4b-45b3-9e48-9d7131c05f49.sql",
+      // Fase S1 — núcleo de dados SaaS (tabelas saas_*/organization_subscriptions).
+      // Não altera nenhuma tabela de negócio existente.
+      "20260922154526_3c081c07-9ce8-4f78-8355-a660aef594b4.sql",
     ]);
     const foraDoPadrao = migs
       .filter((f: string) => f.slice(0, 14) > "20260905000000")
