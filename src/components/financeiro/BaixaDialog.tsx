@@ -235,17 +235,29 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             [amountKey]: Number(form.amount),
           };
 
-      // Payable: a tentativa fica registrada em memória antes do envio para que um
-      // resultado incerto possa ser repetido sem gerar nova chave.
-      if (!receber && user && installment?.id) {
-        tentativaRef.current = {
+      // Payable: a tentativa é registrada em memória E no journal local ANTES do
+      // envio, com leitura de volta conferida. Assim um refresh/remount enquanto
+      // a RPC está pendente restaura o bloqueio com a MESMA chave e payload.
+      // Falha de storage/quota/leitura => zero RPC e nenhuma chave nova.
+      if (!receber) {
+        if (!user || !installment?.id) {
+          throw new ErroBaixaPagarLocal(MSG_JOURNAL_INDISPONIVEL);
+        }
+        const tentativa: TentativaBaixaPagar = {
           idempotencyKey: String(payloadFinal.idempotency_key),
           parcelaId: String(installment.id),
           usuarioId: user.id,
           payload: payloadFinal,
-          criadoEm: new Date().toISOString(),
+          criadoEm: repetir
+            ? (tentativaRef.current as TentativaBaixaPagar).criadoEm
+            : new Date().toISOString(),
         };
+        if (!persistirTentativaAntesEnvio(tentativa)) {
+          throw new ErroBaixaPagarLocal(MSG_JOURNAL_INDISPONIVEL);
+        }
+        tentativaRef.current = tentativa;
       }
+
 
       const chamar = async (signal: AbortSignal | undefined) => {
         let req = (supabase as any).rpc(rpcName as any, {
