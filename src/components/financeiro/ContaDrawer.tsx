@@ -106,6 +106,10 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
 
         {!conta && carregandoBase && <p className="mt-4 text-sm text-muted-foreground">Carregando…</p>}
 
+        {aguardandoParcelas && (
+          <p className="mt-4 text-sm text-muted-foreground">Carregando parcelas e resumo…</p>
+        )}
+
         {conta && (
           <Tabs defaultValue="resumo" className="mt-4">
             <TabsList className="w-full justify-start flex-wrap h-auto">
