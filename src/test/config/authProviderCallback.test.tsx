@@ -167,11 +167,11 @@ describe("AuthProvider — callback de autenticação", () => {
     await new Promise((r) => setTimeout(r, 5));
     profileDelay = 0;
     profileRow = { id: "p2", user_id: "user-b", nome: "B", email: "b@x.com", ativo: true };
-    rolesRows = [{ role: "consultor" }];
+    rolesRows = [{ role: "consultor_tecnico" }];
     emit("SIGNED_IN", sessionB);
     await waitFor(() => expect(screen.getByTestId("user").textContent).toBe("user-b"));
     await new Promise((r) => setTimeout(r, 80));
-    expect(screen.getByTestId("role").textContent).toBe("consultor");
+    expect(screen.getByTestId("role").textContent).toBe("consultor_tecnico");
   });
 
   it("logout durante o carregamento limpa papéis e não é sobrescrito", async () => {
