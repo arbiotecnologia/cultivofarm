@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const { rpcMock, fromMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), fromMock: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
@@ -36,6 +36,14 @@ function chain(tabela: string) {
 }
 
 const UUID = "11111111-2222-3333-4444-555555555555";
+
+// jsdom não implementa Pointer Capture (usado pelo Radix Select).
+beforeAll(() => {
+  (Element.prototype as any).hasPointerCapture = () => false;
+  (Element.prototype as any).setPointerCapture = () => {};
+  (Element.prototype as any).releasePointerCapture = () => {};
+  (Element.prototype as any).scrollIntoView = () => {};
+});
 
 function abrir(kind: "receivable" | "payable" = "receivable") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
