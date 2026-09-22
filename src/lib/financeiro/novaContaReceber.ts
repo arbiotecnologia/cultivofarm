@@ -141,17 +141,139 @@ const MENSAGENS_REMOTAS: Record<string, string> = {
   P0002: "Registro não encontrado. Recarregue a página.",
 };
 
+/**
+ * Estado incerto: não dá para afirmar se a conta foi criada (timeout, falha de rede,
+ * erro desconhecido depois do envio, resposta inválida). Exige conferir a lista antes
+ * de repetir; NUNCA afirma rollback.
+ */
+export class ErroCriacaoIncerta extends Error {
+  readonly origem = "incerto" as const;
+  readonly exigeConferencia = true;
+  constructor() {
+    super(MSG_NOVA_CONTA_NAO_CONFIRMADA);
+    this.name = "ErroCriacaoIncerta";
+  }
+}
+
+const TOKEN_FIN_TITLE = /FIN_TITLE_[A-Z_]+/;
+
+function textoDoErro(erro: unknown): string {
+  const partes: string[] = [];
+  if (typeof erro === "string") partes.push(erro);
+  else if (erro && typeof erro === "object") {
+    const e = erro as Record<string, unknown>;
+    for (const k of ["message", "details", "hint", "code", "error_code"]) {
+      if (typeof e[k] === "string") partes.push(e[k] as string);
+    }
+  }
+  return partes.join(" ");
+}
+
+/**
+ * Token conhecido da allowlist (FIN_TITLE_* tem prioridade sobre o 23514 genérico,
+ * para mostrar o requisito específico recusado pelo servidor).
+ */
+function tokenConhecido(erro: unknown): string | null {
+  const texto = textoDoErro(erro);
+  const fin = texto.match(TOKEN_FIN_TITLE)?.[0];
+  if (fin && MENSAGENS_REMOTAS[fin]) return fin;
+  const e = (erro ?? {}) as { code?: unknown };
+  const code = typeof e.code === "string" ? e.code : "";
+  if (code && MENSAGENS_REMOTAS[code]) return code;
+  const sqlstate = texto.match(/\b(23514|42501|23503|23505|P0002)\b/)?.[0];
+  return sqlstate && MENSAGENS_REMOTAS[sqlstate] ? sqlstate : null;
+}
+
 /** Mensagem segura: local mantém o texto tipado; remoto usa allowlist, nunca texto cru. */
 export function mapearErroNovaConta(erro: unknown): string {
   if (erro instanceof ErroNovaContaLocal) return erro.message;
-  const e = (erro ?? {}) as { code?: unknown; message?: unknown };
-  const code = typeof e.code === "string" ? e.code : "";
-  if (code && MENSAGENS_REMOTAS[code]) return MENSAGENS_REMOTAS[code];
-  const msg = typeof e.message === "string" ? e.message : "";
-  const token = msg.match(/FIN_TITLE_[A-Z_]+/)?.[0];
-  if (token && MENSAGENS_REMOTAS[token]) return MENSAGENS_REMOTAS[token];
-  return MSG_NOVA_CONTA_GENERICA;
+  if (erro instanceof ErroCriacaoIncerta) return MSG_NOVA_CONTA_NAO_CONFIRMADA;
+  const token = tokenConhecido(erro);
+  return token ? MENSAGENS_REMOTAS[token] : MSG_NOVA_CONTA_GENERICA;
 }
+
+export interface ClassificacaoNovaConta {
+  mensagem: string;
+  exigeConferencia: boolean;
+}
+
+/**
+ * Classificação única do erro de criação.
+ * - Guarda local (recusa comprovada antes do envio) → preserva edição.
+ * - Erro de servidor conhecido (token FIN_TITLE ou SQLSTATE da allowlist) → recusa comprovada,
+ *   preserva edição.
+ * - Timeout, rede, desconhecido ou resposta inválida → incerto: exige conferência.
+ */
+export function classificarErroNovaConta(erro: unknown): ClassificacaoNovaConta {
+  if (erro instanceof ErroNovaContaLocal) return { mensagem: erro.message, exigeConferencia: false };
+  if (erro instanceof ErroCriacaoIncerta) {
+    return { mensagem: MSG_NOVA_CONTA_NAO_CONFIRMADA, exigeConferencia: true };
+  }
+  const token = tokenConhecido(erro);
+  if (token) return { mensagem: MENSAGENS_REMOTAS[token], exigeConferencia: false };
+  return { mensagem: MSG_NOVA_CONTA_NAO_CONFIRMADA, exigeConferencia: true };
+}
+
+/** Prazo máximo do cadastro (cobre pré-fetch/auth + RPC). */
+export const DEADLINE_NOVA_CONTA_MS = 20_000;
+
+export interface DeadlineNovaContaOpcoes {
+  timeoutMs?: number;
+  agendar?: (cb: () => void, ms: number) => unknown;
+  cancelar?: (handle: unknown) => void;
+}
+
+/**
+ * Executa a criação com prazo rígido cobrindo toda a promise (inclusive espera de
+ * sessão/pré-fetch). Aborta via AbortSignal quando o executor souber usá-lo e rejeita
+ * com ErroCriacaoIncerta. Resolução/rejeição tardias são descartadas: não viram
+ * sucesso, não disparam onSuccess e não geram unhandled rejection.
+ */
+export function executarComDeadlineNovaConta<T>(
+  executor: (signal: AbortSignal | undefined) => Promise<T>,
+  opcoes: DeadlineNovaContaOpcoes = {},
+): Promise<T> {
+  const ms = opcoes.timeoutMs ?? DEADLINE_NOVA_CONTA_MS;
+  const agendar = opcoes.agendar ?? ((cb, t) => setTimeout(cb, t));
+  const cancelar = opcoes.cancelar ?? ((h) => clearTimeout(h as any));
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+
+  return new Promise<T>((resolve, reject) => {
+    let liquidado = false;
+    let handle: unknown;
+
+    const finalizar = (fn: () => void) => {
+      if (liquidado) return;
+      liquidado = true;
+      if (handle !== undefined) cancelar(handle);
+      fn();
+    };
+
+    handle = agendar(() => {
+      finalizar(() => {
+        try {
+          controller?.abort();
+        } catch {
+          /* abort best-effort */
+        }
+        reject(new ErroCriacaoIncerta());
+      });
+    }, ms);
+
+    let promessa: Promise<T>;
+    try {
+      promessa = Promise.resolve(executor(controller?.signal));
+    } catch (e) {
+      finalizar(() => reject(e));
+      return;
+    }
+    promessa.then(
+      (v) => finalizar(() => resolve(v)),
+      (e) => finalizar(() => reject(e)),
+    );
+  });
+}
+
 
 export function validarNovaContaReceber(e: EntradaValidacaoNovaConta): string | null {
   if (!e.temSessao) return "Sessão expirada. Entre novamente para criar a conta.";
