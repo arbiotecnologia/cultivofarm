@@ -346,9 +346,9 @@ describe("ContaDrawer payable — três pontas", () => {
       accounts_payable: { data: CONTA_PAGAR, error: null },
       accounts_payable_installments: { data: [], error: null },
     });
-    await waitFor(() =>
-      expect(document.querySelector('td[colspan="10"]')).not.toBeNull(),
-    );
+    await waitFor(() => expect(screen.getByText("Sem parcelas")).toBeInTheDocument());
+    const td = screen.getByText("Sem parcelas").closest("td");
+    expect(td?.getAttribute("colspan")).toBe("10");
   });
 
   it("parcela CANCELED exibe saldo não cobrável (—) e fica fora do resumo", async () => {
