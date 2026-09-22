@@ -19,6 +19,10 @@ const agendarImediato = (cb: () => void) => {
 
 /** Cenário canônico: 100 original, pago 40, desconto 10, juros 20, multa 5 => saldo 75. */
 const PARCELA_75 = {
+  id: "inst-1",
+  installment_number: 1,
+  due_date: "2026-09-01",
+  status: "OPEN",
   original_amount: 100,
   paid_amount: 40,
   interest_amount: 20,
