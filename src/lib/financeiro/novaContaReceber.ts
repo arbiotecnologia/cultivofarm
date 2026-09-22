@@ -156,10 +156,15 @@ export function mapearErroNovaConta(erro: unknown): string {
 export function validarNovaContaReceber(e: EntradaValidacaoNovaConta): string | null {
   if (!e.temSessao) return "Sessão expirada. Entre novamente para criar a conta.";
 
+  if (!e.clientesCarregados) return "Não foi possível carregar os clientes. Tente novamente.";
+  if (!e.categoriasCarregadas) return "Não foi possível carregar as categorias. Tente novamente.";
+
+  const centro = typeof e.cost_center_id === "string" ? e.cost_center_id.trim() : "";
+  if (centro && e.centrosCarregados === false) return "Não foi possível carregar os centros de custo. Tente novamente.";
+
   const descricao = typeof e.description === "string" ? e.description.trim() : "";
   if (!descricao) return "Descrição é obrigatória.";
 
-  if (!e.clientesCarregados) return "Não foi possível carregar os clientes. Tente novamente.";
   const cliente = typeof e.customer_id === "string" ? e.customer_id.trim() : "";
   if (!cliente) return "Cliente é obrigatório.";
 
@@ -168,9 +173,7 @@ export function validarNovaContaReceber(e: EntradaValidacaoNovaConta): string | 
   if (!categoria) return "Categoria é obrigatória.";
   if (!e.categoriasAtivas.includes(categoria)) return "Categoria indisponível. Selecione outra.";
 
-  const centro = typeof e.cost_center_id === "string" ? e.cost_center_id.trim() : "";
   if (centro) {
-    if (e.centrosCarregados === false) return "Não foi possível carregar os centros de custo. Tente novamente.";
     if (e.centrosAtivos && !e.centrosAtivos.includes(centro)) return "Centro de custo indisponível. Selecione outro.";
   }
 
