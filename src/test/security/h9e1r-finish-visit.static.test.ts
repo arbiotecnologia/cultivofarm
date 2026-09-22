@@ -152,7 +152,7 @@ describe("H9-E1R — rastreabilidade no manifesto e no ledger", () => {
   const entry = manifest.entries.find((e) => e.version === VERSION)!;
 
   it("o manifesto registra a versão exatamente uma vez, no ledger 679", () => {
-    expect(manifest.ledger_versoes).toBe(679);
+    expect(manifest.ledger_versoes).toBe(683);
     expect(manifest.entries.filter((e) => e.version === VERSION)).toHaveLength(1);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
     expect(entry.name).toBe(NAME);

@@ -169,6 +169,12 @@ const MENSAGENS_ERRO_EDICAO: Record<string, string> = {
   user_edit_client_not_found:
     "Algum cliente vinculado não foi encontrado. Recarregue a lista e tente novamente.",
   user_edit_partner_unavailable: "O parceiro B2B informado não está disponível.",
+  // Papel de plataforma SaaS: reservado, fora do alcance do administrador de empresa.
+  user_edit_superadmin_forbidden:
+    "O perfil de plataforma não pode ser atribuído nem removido por um administrador de empresa.",
+  user_edit_superadmin_target:
+    "Este usuário é de plataforma e não pode ser editado por um administrador de empresa.",
+
   // Proteção do último administrador ativo (servidor, SQLSTATE PT409).
   user_last_active_admin:
     "Não é possível remover ou desativar o último administrador ativo. Mantenha outro administrador ativo antes de continuar.",

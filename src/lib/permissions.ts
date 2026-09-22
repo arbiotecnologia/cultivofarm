@@ -11,7 +11,13 @@ export type AppRole =
   | "financeiro"
   | "gestor_comercial"
   | "parceiro_b2b"
-  | "parceiro_b2b_tecnico";
+  | "parceiro_b2b_tecnico"
+  // Papel de plataforma SaaS. NÃO é administrador operacional e NÃO aparece
+  // em `ACTIVE_ROLES` nem em `ACCESS_MAP`: não recebe nenhum módulo
+  // operacional. Enquanto o painel SaaS (Fase S4) não existir, a home segura
+  // provisória é `/sem-permissao` (ver `getHomeForRole`).
+  | "superadmin";
+
 
 export type AccessLevel = "rw" | "r" | "none";
 
@@ -321,6 +327,9 @@ export function getHomeForRole(role: string | null): string {
       return "/operacao/dashboard-producao";
     case "administrativo":
       return "/solicitacoes";
+    // Papel de plataforma SaaS: sem módulo operacional até a Fase S4.
+    case "superadmin":
+      return "/sem-permissao";
     default:
       return "/";
   }
@@ -370,6 +379,7 @@ export const ROLE_LABELS: Record<string, string> = {
   gestor_comercial: "Gestor Comercial",
   parceiro_b2b: "Parceiro B2B (Gestor)",
   parceiro_b2b_tecnico: "Parceiro B2B (Técnico)",
+  superadmin: "Superadmin de Plataforma",
 };
 
 
@@ -387,6 +397,7 @@ export const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline" |
   gestor_comercial: "default",
   parceiro_b2b: "outline",
   parceiro_b2b_tecnico: "secondary",
+  superadmin: "destructive",
 };
 
 export const ACTIVE_ROLES = [

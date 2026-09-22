@@ -51,8 +51,8 @@ const sha256 = (p: string) =>
   createHash("sha256").update(readFileSync(p)).digest("hex");
 
 describe("H7P — manifesto de migrations repo-only", () => {
-  it("declara exatamente 59 entradas contra o ledger de 679 versões", () => {
-    expect(manifest.ledger_versoes).toBe(679);
+  it("declara exatamente 59 entradas contra o ledger de 683 versões", () => {
+    expect(manifest.ledger_versoes).toBe(683);
     expect(manifest.total_repo_only).toBe(59);
     expect(manifest.entries).toHaveLength(59);
   });
