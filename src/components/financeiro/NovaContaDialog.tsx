@@ -71,12 +71,14 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
   const [installments, setInstallments] = useState<{ installment_number: number; due_date: string; amount: number }[]>([]);
   const [erroParcelas, setErroParcelas] = useState<string | null>(null);
   const [exigeConferencia, setExigeConferencia] = useState(false);
+  const [tentouEnviar, setTentouEnviar] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setForm(empty);
     setErroParcelas(null);
     setExigeConferencia(false);
+    setTentouEnviar(false);
     setInstallments(
       isReceivable ? gerarParcelasReceber(0, 1, today).parcelas : generateInstallments(0, 1, today),
     );
@@ -333,7 +335,7 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
               Soma: {brl(sumInstallments)} {Math.abs(diff) > 0.01 && `(diferença ${brl(diff)})`}
             </span>
           </div>
-          {isReceivable && erroLocalReceivable && (
+          {isReceivable && tentouEnviar && erroLocalReceivable && (
             <p className="text-xs text-destructive mb-2" role="alert">{erroLocalReceivable}</p>
           )}
           {isReceivable && exigeConferencia && (
@@ -372,8 +374,8 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={enviando}>Cancelar</Button>
           <Button
-            onClick={() => save.mutate()}
-            disabled={enviando || (isReceivable ? travado || !!erroLocalReceivable : !form.description)}
+            onClick={() => { setTentouEnviar(true); save.mutate(); }}
+            disabled={enviando || travado || (!isReceivable && !form.description)}
           >
             {enviando ? "Salvando…" : "Salvar"}
           </Button>
