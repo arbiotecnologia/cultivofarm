@@ -33,7 +33,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
   const fkCol = kind === "receivable" ? "receivable_id" : "payable_id";
   const docOwner: any = kind === "receivable" ? "RECEIVABLE" : "PAYABLE";
 
-  const { data: conta } = useQuery({
+  const { data: conta, isLoading: contaLoading, isError: contaErro, refetch: refetchConta } = useQuery({
     queryKey: ["fin-conta", kind, contaId],
     enabled: !!contaId,
     queryFn: async () => {
@@ -45,7 +45,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
     },
   });
 
-  const { data: installments = [] } = useQuery({
+  const { data: installments = [], isLoading: instLoading, isError: instErro, refetch: refetchInst } = useQuery({
     queryKey: ["fin-inst", kind, contaId],
     enabled: !!contaId,
     queryFn: async () => {
