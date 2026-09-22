@@ -83,7 +83,9 @@ export default function ContasReceber() {
       fetchAllRows<any>((from, to) =>
         supabase
           .from("accounts_receivable_installments")
-          .select("id, receivable_id, original_amount, received_amount, discount_amount, due_date, status")
+          .select(
+            "id, receivable_id, original_amount, received_amount, interest_amount, penalty_amount, discount_amount, due_date, status",
+          )
           .order("id", { ascending: true })
           .range(from, to),
       ),
@@ -137,7 +139,7 @@ export default function ContasReceber() {
           .order("id", { ascending: true })
           .range(from, to),
       );
-      return indexarComprovantesReceber(docs, pagamentos, parcelas.data ?? []);
+      return indexarComprovantesReceber(docs, pagamentos, vinculos);
     },
   });
   const docsByConta = comprovantes.data ?? {};
