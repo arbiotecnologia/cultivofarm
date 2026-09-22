@@ -169,11 +169,7 @@ describe("mapearErroNovaConta e criacaoBemSucedida", () => {
   it("allowlist remota, erro local preservado, desconhecido genérico", () => {
     expect(mapearErroNovaConta({ code: "FIN_TITLE_INVALID_COUNT" })).toMatch(/1 e 36/);
     expect(mapearErroNovaConta(new Error("FIN_TITLE_INVALID_SUM detectado"))).toMatch(/soma das parcelas/i);
-    const local = new (mapearErroNovaConta as any).constructor === Object
-      ? Object
-      : class extends Error {};
     expect(mapearErroNovaConta({ message: "boom" })).toMatch(/Não foi possível criar a conta/);
-    void local;
   });
 
   it("sucesso estrito exige success e title_id UUID", () => {
