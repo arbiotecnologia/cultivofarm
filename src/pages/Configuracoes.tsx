@@ -29,6 +29,7 @@ import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
 import {
   RPC_EDITAR_USUARIO,
   construirArgsEdicao,
+  resolverPrincipalClienteId,
   edicaoBemSucedida,
   mapearErroEdicaoUsuario,
   edicaoExigeRecargaAposErro,
@@ -428,10 +429,10 @@ export default function Configuracoes() {
   }, [searchParams, allUsers, isAdmin, setSearchParams]);
 
 
-  // Estado da edição: erros por campo, resumo e marca de escrita já iniciada
+  // Estado da edição: erros por campo, resumo e trava de recarga pós conflito/incerteza
   const [editErros, setEditErros] = useState<ErrosEdicaoUsuario>({});
   const [editResumo, setEditResumo] = useState<string | null>(null);
-  const escritaIniciada = useRef(false);
+  const [exigeRecargaEdicao, setExigeRecargaEdicao] = useState(false);
 
   const saveEditUser = useMutation({
     mutationFn: async () => {
