@@ -36,6 +36,8 @@ import {
   erroLocalEdicao,
   erroAmbiguoEdicao,
   executarComDeadlineEdicao,
+  ErroStatusLocal,
+  mapearErroStatusUsuario,
 } from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 
