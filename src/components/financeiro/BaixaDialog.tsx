@@ -208,18 +208,32 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const saldoRestante = saldoFinal - valorBaixa;
 
   const settingsBloqueado = receber && !settingsQuery.isSuccess;
-  const travado = !!pendente;
+  const gravando = save.isPending;
+  // Edição travada por pendência de comprovante OU enquanto grava.
+  const travado = !!pendente || gravando;
+
+  /** Fechar nunca apaga a pendência em silêncio: exige confirmação e indica onde retomar. */
+  function tentarFechar() {
+    if (gravando) return;
+    if (pendente) {
+      const ok = window.confirm(
+        "O recebimento já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?",
+      );
+      if (!ok) return;
+    }
+    onClose();
+  }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) tentarFechar(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Registrar {receber ? "Recebimento" : "Pagamento"}</DialogTitle>
         </DialogHeader>
 
-        {travado && (
+        {pendente && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
-            {MSG_COMPROVANTE_PENDENTE}
+            {MSG_COMPROVANTE_PENDENTE} Se fechar esta janela, retome o envio pelo drawer de anexos da conta.
           </div>
         )}
         {settingsBloqueado && (
