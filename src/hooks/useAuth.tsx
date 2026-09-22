@@ -255,7 +255,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Erro ao verificar sessão inicial:", err);
-        if (mountedRef.current) setLoading(false);
+        // getSession obsoleto (efeito já descartado ou evento de auth já
+        // assumiu o controle) não pode desligar o loading do usuário atual.
+        if (mountedRef.current && !effectCancelled && !handledAuthEvent) {
+          setLoading(false);
+        }
       }
     };
 
@@ -263,13 +267,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mountedRef.current = false;
+      effectCancelled = true;
       generationRef.current += 1;
+      loadedUserIdRef.current = null;
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
       subscription.unsubscribe();
     };
+
   }, []);
 
 
