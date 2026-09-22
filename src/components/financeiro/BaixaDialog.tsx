@@ -150,7 +150,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
       });
       if (error) throw error;
-      if (!paymentId) throw new Error("Falha ao registrar pagamento.");
+      if (!paymentId) throw new ErroBaixaLocal("Falha ao registrar pagamento.");
 
       if (file) {
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
@@ -185,15 +185,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       toast.success(receber ? "Recebimento registrado" : "Pagamento registrado");
       onClose();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
-      toast.error(e?.message ? String(e.message) : "Não foi possível concluir a operação.");
+      // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
+      toast.error(mapearErroBaixaRecebimento(e));
     },
   });
 
-  const jaRecebido = acum.recebido;
-  const valorOriginal = acum.original;
+  // Payable mantém exatamente o fallback original (received_amount ?? paid_amount).
+  const jaRecebido = receber ? acum.recebido : Number(installment?.received_amount ?? installment?.paid_amount ?? 0) || 0;
+  const valorOriginal = receber ? acum.original : Number(installment?.original_amount ?? 0) || 0;
   const desc = Number(form.discount_amount) || 0;
   const juros = Number(form.interest_amount) || 0;
   const multa = Number(form.penalty_amount) || 0;
