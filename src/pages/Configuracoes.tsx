@@ -31,9 +31,10 @@ import {
   construirArgsEdicao,
   resolverPrincipalClienteId,
   edicaoBemSucedida,
-  mapearErroEdicaoUsuario,
-  edicaoExigeRecargaAposErro,
-  MSG_EDICAO_NAO_CONFIRMADA,
+  validarLimiteClienteIds,
+  classificarErroRpcEdicao,
+  erroLocalEdicao,
+  erroAmbiguoEdicao,
 } from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
