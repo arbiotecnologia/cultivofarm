@@ -88,6 +88,25 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     mutationFn: async () => {
+      const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
+
+      // Reenvio do comprovante de uma baixa JÁ persistida: nenhuma nova baixa e
+      // nenhuma RPC. Validamos apenas sessão, arquivo e identificador persistido —
+      // método pode ter ficado inativo e o saldo já pode ser zero.
+      if (pendente) {
+        if (!user) throw new ErroBaixaLocal("Sessão expirada. Entre novamente para reenviar o comprovante.");
+        if (!pendente.paymentId) throw new ErroBaixaLocal("Não foi possível identificar a baixa registrada.");
+        if (!file) throw new ErroBaixaLocal("Selecione o comprovante para reenviar.");
+        await anexarComprovanteBaixa(supabase, {
+          ownerType: ownerTypeBase,
+          paymentId: pendente.paymentId,
+          idempotencyKey: idempotencyRef.current,
+          file,
+          uploadedBy: user.id,
+        });
+        return { reenvio: true as const };
+      }
+
       if (receber) {
         const erro = validarBaixaRecebimento({
           parcela: installment,
