@@ -16,9 +16,11 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { Upload, FileText, X } from "lucide-react";
 import { hojeSaoPaulo } from "@/lib/financeiro/contasReceber";
 import {
+  ErroBaixaLocal,
   MSG_COMPROVANTE_PENDENTE,
   acumuladosParcela,
   calcularSaldoRecebivel,
+  mapearErroBaixaRecebimento,
   validarBaixaRecebimento,
 } from "@/lib/financeiro/baixaRecebimento";
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
