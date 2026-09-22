@@ -11529,6 +11529,126 @@ export type Database = {
           },
         ]
       }
+      organization_subscription_history: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          organization_id: string
+          reason: string | null
+          source: string
+          subscription_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id: string
+          reason?: string | null
+          source: string
+          subscription_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id?: string
+          reason?: string | null
+          source?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscription_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscription_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "organization_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_subscriptions: {
+        Row: {
+          billing_cycle: string | null
+          cancel_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          organization_id: string
+          plan_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["saas_subscription_status"]
+          suspended_at: string | null
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string | null
+          cancel_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          organization_id: string
+          plan_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["saas_subscription_status"]
+          suspended_at?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string | null
+          cancel_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["saas_subscription_status"]
+          suspended_at?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           ativo: boolean
@@ -16652,6 +16772,155 @@ export type Database = {
           resultado?: string
           status_estoque_no_momento?: string | null
           usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      saas_features: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          module_id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          module_id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          module_id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_features_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "saas_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_modules: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saas_plan_features: {
+        Row: {
+          config: Json | null
+          created_at: string
+          enabled: boolean
+          feature_id: string
+          limit_value: number | null
+          plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          enabled?: boolean
+          feature_id: string
+          limit_value?: number | null
+          plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          enabled?: boolean
+          feature_id?: string
+          limit_value?: number | null
+          plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_plan_features_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "saas_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          key?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -23134,6 +23403,13 @@ export type Database = {
         | "admin"
       resultado_cq: "aprovado" | "reprovado"
       risco_produtivo: "baixo" | "medio" | "alto" | "critico"
+      saas_subscription_status:
+        | "TRIAL"
+        | "ACTIVE"
+        | "PAST_DUE"
+        | "SUSPENDED"
+        | "CANCELLED"
+        | "EXPIRED"
       status_alerta: "ativo" | "monitoramento" | "encerrado"
       status_aprovacao:
         | "pendente"
@@ -23551,6 +23827,14 @@ export const Constants = {
       ],
       resultado_cq: ["aprovado", "reprovado"],
       risco_produtivo: ["baixo", "medio", "alto", "critico"],
+      saas_subscription_status: [
+        "TRIAL",
+        "ACTIVE",
+        "PAST_DUE",
+        "SUSPENDED",
+        "CANCELLED",
+        "EXPIRED",
+      ],
       status_alerta: ["ativo", "monitoramento", "encerrado"],
       status_aprovacao: [
         "pendente",
