@@ -334,10 +334,12 @@ describe("ContaDrawer payable — três pontas", () => {
   }
 
   it("Resumo mostra Carregando… (não zeros) enquanto as parcelas carregam", async () => {
-    await abrirAbaParcelas({
+    resultados = {
       accounts_payable: { data: CONTA_PAGAR, error: null },
       accounts_payable_installments: PENDENTE as any,
-    });
+    };
+    abrirDrawer();
+    // Aba Resumo é a padrão: é nela que os valores não podem aparecer como zero.
     await waitFor(() => expect(screen.getAllByText(/Carregando…/).length).toBeGreaterThan(0));
     expect(screen.queryAllByText(/R\$ 0,00/).length).toBe(0);
   });
