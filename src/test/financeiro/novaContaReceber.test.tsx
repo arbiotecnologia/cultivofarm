@@ -58,9 +58,8 @@ async function selecionar(idTrigger: string, nomeOpcao: string) {
   const trigger = document.querySelector(`#${idTrigger}`) as HTMLElement;
   expect(trigger).not.toBeNull();
   fireEvent.keyDown(trigger, { key: "Enter", code: "Enter" });
-  const opcao = await screen.findByRole("option", { name: nomeOpcao }, { timeout: 3000 });
+  const opcao = await screen.findByRole("option", { name: new RegExp(nomeOpcao) }, { timeout: 3000 });
   fireEvent.click(opcao);
-  fireEvent.keyDown(document.activeElement ?? trigger, { key: "Enter", code: "Enter" });
 }
 
 function preencherBase() {
@@ -233,6 +232,7 @@ describe("NovaContaDialog — Conta a Receber", () => {
       financial_cost_centers: { data: [], error: null },
     };
     abrir();
+    fireEvent.change(screen.getByLabelText("Descrição *"), { target: { value: "Venda" } });
     await screen.findByText(/Não foi possível carregar categorias/i);
     fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Não foi possível carregar as categorias. Tente novamente."));
