@@ -138,6 +138,72 @@ describe("FluxoCaixa — detalhamento do bucket", () => {
     expect(within(dialogo).getByText("R$ 1.000,00")).toBeInTheDocument(); // original
   });
 
+  it("detalhe a receber soma juros e multa acumulados no saldo (cenário real)", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "accounts_receivable_installments"
+        ? chain({
+            data: [
+              {
+                id: "r1", due_date: INICIO_MES, original_amount: 100, received_amount: 40,
+                discount_amount: 10, interest_amount: 20, penalty_amount: 5, status: "PARTIAL",
+                accounts_receivable: { description: "Venda", clientes: { nome: "Ana" } },
+              },
+            ],
+            error: null,
+          })
+        : chain({ data: [], error: null }),
+    );
+    abrir();
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(`ver títulos de ${ROTULO}`, "i") }));
+    const dialogo = await screen.findByRole("dialog");
+    expect(await within(dialogo).findByText("Ana")).toBeInTheDocument();
+    expect(within(dialogo).getByText("R$ 75,00")).toBeInTheDocument(); // 100+20+5-40-10
+  });
+
+  it("detalhe a pagar soma juros e multa acumulados no saldo (cenário real)", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "accounts_payable_installments"
+        ? chain({
+            data: [
+              {
+                id: "p1", due_date: INICIO_MES, original_amount: 100, paid_amount: 40,
+                discount_amount: 10, interest_amount: 20, penalty_amount: 5, status: "PARTIAL",
+                accounts_payable: { supplier_name: "Forn X", description: "Compra" },
+              },
+            ],
+            error: null,
+          })
+        : chain({ data: [], error: null }),
+    );
+    abrir();
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(`ver títulos de ${ROTULO}`, "i") }));
+    const dialogo = await screen.findByRole("dialog");
+    expect(await within(dialogo).findByText("Forn X")).toBeInTheDocument();
+    expect(within(dialogo).getByText("R$ 75,00")).toBeInTheDocument(); // 100+20+5-40-10
+  });
+
+  it("título quitado no detalhe mostra saldo zero mesmo com juros e multa", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "accounts_payable_installments"
+        ? chain({
+            data: [
+              {
+                id: "p1", due_date: INICIO_MES, original_amount: 100, paid_amount: 135,
+                discount_amount: 0, interest_amount: 20, penalty_amount: 5, status: "PAID",
+                accounts_payable: { supplier_name: "Forn X", description: "Compra" },
+              },
+            ],
+            error: null,
+          })
+        : chain({ data: [], error: null }),
+    );
+    abrir();
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(`ver títulos de ${ROTULO}`, "i") }));
+    const dialogo = await screen.findByRole("dialog");
+    expect(await within(dialogo).findByText("Forn X")).toBeInTheDocument();
+    expect(within(dialogo).getByText("R$ 0,00")).toBeInTheDocument();
+  });
+
   it("realizado lista pagamentos e distingue estornos", async () => {
     fromMock.mockImplementation((tabela: string) =>
       tabela === "receivable_payments"
@@ -225,6 +291,34 @@ describe("FluxoCaixa — saldo restante alinhado ao RPC", () => {
 
   it("estorno mantém o saldo em aberto do título não quitado", () => {
     expect(saldoRestante(100, -50, 0, "OPEN")).toBe(150);
+  });
+
+  it("soma juros e multa acumulados e desconta recebido/desconto (cenário real AR)", () => {
+    // 100 original, 40 recebido, 10 desconto, 20 juros, 5 multa => 75
+    expect(saldoRestante(100, 40, 10, "PARTIAL", 20, 5)).toBe(75);
+  });
+
+  it("soma juros e multa acumulados no a pagar (cenário real AP)", () => {
+    expect(saldoRestante(100, 40, 10, "PARTIAL", 20, 5)).toBe(75);
+  });
+
+  it("sem juros/multa informados mantém comportamento anterior", () => {
+    expect(saldoRestante(100, 40, 10, "PARTIAL")).toBe(50);
+  });
+
+  it("nunca fica negativo (clamp em zero)", () => {
+    expect(saldoRestante(100, 150, 0, "OPEN", 0, 0)).toBe(0);
+    expect(saldoRestante(100, 120, 30, "PARTIAL", 5, 5)).toBe(0);
+  });
+
+  it("quitado ou cancelado retorna zero mesmo com juros e multa", () => {
+    expect(saldoRestante(100, 40, 10, "PAID", 20, 5)).toBe(0);
+    expect(saldoRestante(100, 40, 10, "CANCELED", 20, 5)).toBe(0);
+    expect(saldoRestante(100, 0, 0, "paid")).toBe(0);
+  });
+
+  it("calcula em centavos evitando erro de ponto flutuante", () => {
+    expect(saldoRestante(0.1, 0.02, 0.01, "OPEN", 0.05, 0.02)).toBe(0.14);
   });
 });
 

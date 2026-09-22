@@ -265,18 +265,26 @@ export default function FluxoCaixa() {
 
 /**
  * Saldo a realizar de um título, alinhado ao RPC get_financial_cashflow:
- * título quitado (PAID) projeta zero — juros/multa pagos acima do original
- * não viram projeção negativa. Nos demais status vale original - abatido - desconto.
+ * título quitado (PAID) ou cancelado (CANCELED) projeta zero.
+ * Nos demais status: original + juros + multa - abatido - desconto, em centavos,
+ * com clamp em zero.
  */
 export function saldoRestante(
   original: unknown,
   abatido: unknown,
   desconto: unknown,
   status?: unknown,
+  juros: unknown = 0,
+  multa: unknown = 0,
 ) {
-  if (String(status ?? "").trim().toUpperCase() === "PAID") return 0;
-  return Number(original || 0) - Number(abatido || 0) - Number(desconto || 0);
+  const s = String(status ?? "").trim().toUpperCase();
+  if (s === "PAID" || s === "CANCELED") return 0;
+  const cent = (v: unknown) => Math.round(Number(v || 0) * 100);
+  const total =
+    cent(original) + cent(juros) + cent(multa) - cent(abatido) - cent(desconto);
+  return Math.max(0, total) / 100;
 }
+
 
 function DrillDownDialog({
   row, groupBy, viewMode, periodo, onClose,
@@ -304,7 +312,7 @@ function DrillDownDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("accounts_receivable_installments")
-        .select("id, due_date, original_amount, received_amount, discount_amount, status, accounts_receivable!inner(description, clientes(nome))")
+        .select("id, due_date, original_amount, received_amount, discount_amount, interest_amount, penalty_amount, status, accounts_receivable!inner(description, clientes(nome))")
         .gte("due_date", dateRange!.from).lte("due_date", dateRange!.to)
         .neq("status", "CANCELED").order("due_date").limit(LIMITE_DETALHE + 1);
       if (error) throw error;
@@ -318,7 +326,7 @@ function DrillDownDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("accounts_payable_installments")
-        .select("id, due_date, original_amount, paid_amount, discount_amount, status, accounts_payable!inner(supplier_name, description)")
+        .select("id, due_date, original_amount, paid_amount, discount_amount, interest_amount, penalty_amount, status, accounts_payable!inner(supplier_name, description)")
         .gte("due_date", dateRange!.from).lte("due_date", dateRange!.to)
         .neq("status", "CANCELED").order("due_date").limit(LIMITE_DETALHE + 1);
       if (error) throw error;
@@ -419,7 +427,7 @@ function DrillDownDialog({
                     <TableCell className="text-sm">{r.accounts_receivable?.description}</TableCell>
                     <TableCell className="text-right">{brl(Number(r.original_amount))}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {brl(saldoRestante(r.original_amount, r.received_amount, r.discount_amount, r.status))}
+                      {brl(saldoRestante(r.original_amount, r.received_amount, r.discount_amount, r.status, r.interest_amount, r.penalty_amount))}
                     </TableCell>
                     <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
                   </TableRow>
@@ -446,7 +454,7 @@ function DrillDownDialog({
                     <TableCell className="text-sm">{r.accounts_payable?.description}</TableCell>
                     <TableCell className="text-right">{brl(Number(r.original_amount))}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {brl(saldoRestante(r.original_amount, r.paid_amount, r.discount_amount, r.status))}
+                      {brl(saldoRestante(r.original_amount, r.paid_amount, r.discount_amount, r.status, r.interest_amount, r.penalty_amount))}
                     </TableCell>
                     <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
                   </TableRow>
