@@ -6,9 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/financeiro/StatusBadge";
 import { brl, fmtDate } from "@/lib/financial/format";
+import { resumoSaldoReceber } from "@/lib/financeiro/contasReceber";
 import { useState } from "react";
 import { BaixaDialog } from "./BaixaDialog";
 import { DocumentosPanel } from "./DocumentosPanel";
+import { DocumentosReceberTab } from "./DocumentosReceberTab";
 import { PagamentosTab } from "./PagamentosTab";
 import { FiscalTab } from "./FiscalTab";
 import { HistoricoTab } from "./HistoricoTab";
