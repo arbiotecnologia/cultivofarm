@@ -204,17 +204,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         const nextUserId = session?.user?.id ?? null;
-        if (lastUserId && nextUserId && lastUserId !== nextUserId) {
+        const identityChanged = !!(lastUserId && nextUserId && lastUserId !== nextUserId);
+        if (identityChanged) {
           clearActivePortalContext();
         }
         lastUserId = nextUserId;
 
         if (nextUserId) {
+          // Troca de identidade: perfil/papéis do usuário anterior são
+          // descartados imediatamente, sem esperar o novo carregamento.
+          if (identityChanged) clearIdentityState();
           // Eventos repetidos do mesmo usuário não recarregam nada.
           if (loadedUserIdRef.current === nextUserId) return;
           setLoading(true);
           setError(null);
           scheduleLoad(nextUserId);
+
         } else {
           generationRef.current += 1;
           if (timerRef.current) {
