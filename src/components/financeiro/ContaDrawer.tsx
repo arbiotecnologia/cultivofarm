@@ -129,19 +129,19 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                 <div><span className="text-muted-foreground">Valor total:</span> <strong>{brl(conta.total_amount)}</strong></div>
                 {isReceivable ? (
                   <>
-                    <div><span className="text-muted-foreground">Recebido:</span> {brl(resumo.recebido)}</div>
-                    <div><span className="text-muted-foreground">Juros acumulados:</span> {brl(resumo.juros)}</div>
-                    <div><span className="text-muted-foreground">Multa acumulada:</span> {brl(resumo.multa)}</div>
-                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {brl(resumo.desconto)}</div>
-                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                    <div><span className="text-muted-foreground">Recebido:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.recebido)}</div>
+                    <div><span className="text-muted-foreground">Juros acumulados:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.juros)}</div>
+                    <div><span className="text-muted-foreground">Multa acumulada:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.multa)}</div>
+                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.desconto)}</div>
+                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{aguardandoParcelas ? "Carregando…" : brl(saldoTotal)}</strong></div>
                   </>
                 ) : (
                   <>
-                    <div><span className="text-muted-foreground">Pago:</span> {brl(resumo.recebido)}</div>
-                    <div><span className="text-muted-foreground">Juros acumulados:</span> {brl(resumo.juros)}</div>
-                    <div><span className="text-muted-foreground">Multa acumulada:</span> {brl(resumo.multa)}</div>
-                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {brl(resumo.desconto)}</div>
-                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                    <div><span className="text-muted-foreground">Pago:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.recebido)}</div>
+                    <div><span className="text-muted-foreground">Juros acumulados:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.juros)}</div>
+                    <div><span className="text-muted-foreground">Multa acumulada:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.multa)}</div>
+                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {aguardandoParcelas ? "Carregando…" : brl(resumo.desconto)}</div>
+                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{aguardandoParcelas ? "Carregando…" : brl(saldoTotal)}</strong></div>
                   </>
                 )}
                 <div><span className="text-muted-foreground">1º vencimento:</span> {fmtDate(conta.first_due_date)}</div>
