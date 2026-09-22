@@ -164,6 +164,8 @@ describe("tela Contas a Pagar", () => {
     };
     renderizar(<ContasPagar />);
     await waitFor(() => expect(screen.getByText("Mostrando 50 de 120")).toBeTruthy());
+    // Página 2 vazia: evita chaves duplicadas do mock repetido.
+    resultados.accounts_payable = { data: [], error: null, count: 120 };
     const botao = screen.getByRole("button", { name: "Carregar mais" });
     fireEvent.click(botao);
     await waitFor(() =>
