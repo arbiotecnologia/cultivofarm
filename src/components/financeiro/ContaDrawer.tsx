@@ -195,7 +195,11 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
             </TabsContent>
 
             <TabsContent value="documentos" className="mt-4">
-              <DocumentosPanel ownerType={docOwner} ownerId={contaId} defaultType={kind === "receivable" ? "INVOICE" : "BOLETO"} canDelete={canDeleteDoc} />
+              {isReceivable ? (
+                <DocumentosReceberTab contaId={contaId} canDelete={canDeleteDoc} />
+              ) : (
+                <DocumentosPanel ownerType={docOwner} ownerId={contaId} defaultType="BOLETO" canDelete={canDeleteDoc} />
+              )}
             </TabsContent>
 
             {kind === "receivable" && (
