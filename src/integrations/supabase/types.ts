@@ -14103,6 +14103,53 @@ export type Database = {
           },
         ]
       }
+      payable_allocation_versions: {
+        Row: {
+          allocations: Json
+          created_at: string
+          created_by: string
+          id: string
+          payable_id: string
+          reason: string
+          request_fingerprint: string
+          request_key: string
+          total_amount: number
+          version: number
+        }
+        Insert: {
+          allocations: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          payable_id: string
+          reason: string
+          request_fingerprint: string
+          request_key: string
+          total_amount: number
+          version: number
+        }
+        Update: {
+          allocations?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          payable_id?: string
+          reason?: string
+          request_fingerprint?: string
+          request_key?: string
+          total_amount?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payable_allocation_versions_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payable_payments: {
         Row: {
           amount_paid: number
@@ -22699,6 +22746,16 @@ export type Database = {
           p_provider_template_name: string
           p_provider_template_status?: string
           p_template_id: string
+        }
+        Returns: Json
+      }
+      rpc_set_payable_allocations: {
+        Args: {
+          p_allocations: Json
+          p_expected_version: number
+          p_payable_id: string
+          p_reason: string
+          p_request_key: string
         }
         Returns: Json
       }
