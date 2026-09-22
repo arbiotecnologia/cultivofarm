@@ -191,7 +191,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                           <TableCell>{brl(r.interest_amount)}</TableCell>
                           <TableCell>{brl(r.penalty_amount)}</TableCell>
                           <TableCell>{brl(r.discount_amount)}</TableCell>
-                          <TableCell className="font-medium">{brl(saldoP)}</TableCell>
+                          <TableCell className="font-medium">{cancelada ? <span title="Não cobrável">—</span> : brl(saldoP)}</TableCell>
                           <TableCell><StatusBadge status={r.status} /></TableCell>
                           <TableCell className="text-right space-x-1">
                             {aberto && <Button size="sm" variant="outline" onClick={() => setBaixa(r)}><Wallet className="h-3 w-3 mr-1" />Baixar</Button>}
