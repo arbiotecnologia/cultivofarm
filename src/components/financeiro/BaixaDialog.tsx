@@ -121,9 +121,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         return { reenvio: true as const };
       }
 
-      if (exigeConferencia) throw new ErroBaixaLocal(
-        receber ? MSG_EDICAO_PENDENTE_RECEBER : MSG_PAGAMENTO_NAO_CONFIRMADO,
-      );
+      // Resultado incerto anterior: nenhum novo envio com nova chave até conferência.
+      if (!receber && exigeConferencia) throw new ErroBaixaLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
 
       if (receber) {
         const erro = validarBaixaRecebimento({
