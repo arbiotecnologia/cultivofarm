@@ -442,6 +442,10 @@ export default function Configuracoes() {
     mutationFn: async () => {
       // Sem usuário em edição não existe operação possível — nunca cair em onSuccess.
       if (!editUser) throw erroLocalEdicao("Nenhum usuário em edição. Reabra o cadastro.");
+      // Segundo envio antes de recarregar é bloqueado (estado da linha é incerto).
+      if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
+
+
 
       // ---- 1) VALIDAÇÃO COMPLETA ANTES DA ÚNICA ESCRITA (RPC transacional) ----
       const desiredRoles: string[] = editUser.roles ?? [];
