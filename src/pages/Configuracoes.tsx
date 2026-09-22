@@ -140,7 +140,7 @@ export default function Configuracoes() {
       const profiles = await fetchAllRows<any>((from, to) =>
         supabase
           .from("profiles")
-          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade")
+          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, updated_at, cargo, crea, especialidade")
           .order("user_id", { ascending: true })
           .range(from, to),
       );
