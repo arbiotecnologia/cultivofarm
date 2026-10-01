@@ -19,7 +19,7 @@ import { OnboardingState, useConcluirOnboarding, useSalvarOnboarding } from "@/h
 import { OnboardingDados, pendenciasOnboarding } from "@/lib/saas/orgOnboarding";
 import { validateCnpjAlpha } from "@/lib/fiscal/cnpjAlpha";
 import {
-  aplicarPlano, consultarCnpjOnboarding, DadosEmpresa, FONTE_OFICIAL, ItemPlano,
+  aplicarPlano, CampoAplicavel, consultarCnpjOnboarding, DadosEmpresa, FONTE_OFICIAL, ItemPlano,
   mensagemConsulta, planejarAplicacao,
 } from "@/lib/saas/onboardingCnpj";
 import { mensagemErroPlataforma } from "@/hooks/usePlataformaSaaS";
