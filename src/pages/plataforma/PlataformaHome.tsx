@@ -9,6 +9,7 @@
  * Não toca menus operacionais: esta rota vive fora do layout administrativo
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
+import { useState } from "react";
 import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog } from "lucide-react";
 import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import PlataformaAdmins from "./PlataformaAdmins";
@@ -87,8 +88,19 @@ function EstadoConsulta({
   return null;
 }
 
+/** Nomes humanos para origens/motivos técnicos do histórico (detalhe em expansão). */
+const ORIGEM_LABEL: Record<string, string> = {
+  superadmin_panel: "Painel da plataforma",
+  platform_rpc: "Rotina administrativa",
+  service_role: "Rotina do sistema",
+  seed: "Criação inicial",
+  manual: "Manual",
+};
+const motivoHumano = (s: string | null) => (s ? (ORIGEM_LABEL[s] ?? s.replace(/_/g, " ")) : "—");
+
 export default function PlataformaHome() {
   const { signOut } = useAuth();
+  const [aba, setAba] = useState("planos");
   const planos = usePlanosSaaS();
   const catalogo = useModulosFeaturesSaaS();
   const assinaturas = useAssinaturasSaaS();
@@ -106,9 +118,9 @@ export default function PlataformaHome() {
           <div className="flex items-center gap-2 min-w-0">
             <ShieldCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold leading-tight truncate">Plataforma Cultivo Farm</p>
+              <p className="text-sm font-semibold leading-tight truncate">Gestão da plataforma</p>
               <p className="text-[11px] leading-tight text-muted-foreground truncate">
-                Superadmin de Plataforma · visualização
+                Superadmin de Plataforma · isolado das operações das empresas
               </p>
             </div>
           </div>
@@ -122,15 +134,15 @@ export default function PlataformaHome() {
       <div className="mx-auto max-w-6xl space-y-6 p-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Painel provisório</CardTitle>
+            <CardTitle className="text-base">Gestão da plataforma</CardTitle>
             <CardDescription>
-              Esta área é somente para consulta. Ainda não é possível criar, alterar ou cancelar
-              planos e assinaturas por aqui — nenhum módulo operacional das empresas é afetado.
+              Planos, assinaturas, exceções, empresas e administradores. Toda alteração é validada no
+              servidor, exige motivo e fica registrada no histórico — e é isolada das operações das empresas.
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <Tabs defaultValue="planos">
+        <Tabs value={aba} onValueChange={setAba}>
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="planos">
               <Layers className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -255,7 +267,7 @@ export default function PlataformaHome() {
 
           {/* ADMINISTRADORES DE EMPRESA ----------------------------------- */}
           <TabsContent value="empresas">
-            <PlataformaEmpresas />
+            <PlataformaEmpresas onConvidar={() => setAba("admins")} />
           </TabsContent>
 
           <TabsContent value="admins">
@@ -345,8 +357,8 @@ export default function PlataformaHome() {
                           <TableRow key={h.id}>
                             <TableCell>{dataHora(h.created_at)}</TableCell>
                             <TableCell>{nomeOrg(h.organization_id)}</TableCell>
-                            <TableCell className="text-muted-foreground">{h.source}</TableCell>
-                            <TableCell>{h.reason ?? "—"}</TableCell>
+                            <TableCell className="text-muted-foreground">{motivoHumano(h.source)}</TableCell>
+                            <TableCell>{motivoHumano(h.reason)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

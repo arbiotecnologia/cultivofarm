@@ -75,10 +75,16 @@ export const MENSAGENS: Record<string, string> = {
 };
 export const mensagemConsulta = (c: string) => MENSAGENS[c] ?? "Não foi possível consultar agora. Tente novamente.";
 
+/** Códigos que permitem "Preencher manualmente" (fonte indisponível, nunca CNPJ inválido). */
+export const CODIGOS_FALLBACK_MANUAL = new Set([
+  "not_found", "unsupported_alpha", "timeout", "upstream_error", "network_error", "malformed", "too_large", "rate_limited",
+]);
+
 export async function consultarCnpjOnboarding(
   cnpj: string,
+  modo?: "plataforma",
 ): Promise<{ codigo: "ok"; dados: DadosEmpresa; consultado_em?: string } | { codigo: CodigoConsulta }> {
-  const { data, error } = await supabase.functions.invoke("onboarding-cnpj-lookup", { body: { cnpj } });
+  const { data, error } = await supabase.functions.invoke("onboarding-cnpj-lookup", { body: modo ? { cnpj, modo } : { cnpj } });
   if (!error && data?.codigo === "ok") return data;
   let body: { codigo?: string } | null = data ?? null;
   const ctx = (error as { context?: Response } | null)?.context;
