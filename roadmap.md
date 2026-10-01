@@ -261,3 +261,5 @@
 - [x] S2 — get_my_entitlements()/saas_has_feature() fail-closed, EXECUTE só para authenticated
 - [ ] S3 — organization_feature_overrides e integração nos guards/menus (aguarda autorização)
 - [ ] Teste autenticado ponta a ponta de get_my_entitlements() por perfil (exige login de teste)
+- [x] S3 Etapas 1–3: exceções por empresa, painel do superadmin, plano respeitado em menus/telas — docs/auditorias/fase-s3-overrides-gates-2026-10-01.md
+- [ ] S3 Etapa 4: checagem de plano nas funções de servidor (Fiscal, Comunicação) — próxima rodada

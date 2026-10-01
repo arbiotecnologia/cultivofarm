@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { SwUpdatingOverlay } from "@/pwa/SwUpdatingOverlay";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { isPathEntitled } from "@/lib/saas/featureRouteMap";
+import ForaDoPlano from "@/components/guards/ForaDoPlano";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { canAccess, getHomeForRole } from "@/lib/permissions";
 import {
@@ -213,6 +216,7 @@ const queryClient = new QueryClient({
 function RoleGuard({ children }: { children: React.ReactNode }) {
   const { role, roles } = useAuth();
   const location = useLocation();
+  const entitlements = useEntitlements();
 
   // H9-G Bloco 2E — decisão canônica considerando o contexto de portal ativo,
   // evitando que o `primaryRole` (prioridade fixa) descarte o portal escolhido.
@@ -226,6 +230,11 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 
   if (!allowed) {
     return <Navigate to={homeForActiveContext(roles, role, activeContext)} replace />;
+  }
+
+  // Fase S3 — plano contratado restringe (nunca amplia) o que o perfil permite.
+  if (!isPathEntitled(location.pathname, entitlements)) {
+    return <ForaDoPlano />;
   }
 
   return <>{children}</>;

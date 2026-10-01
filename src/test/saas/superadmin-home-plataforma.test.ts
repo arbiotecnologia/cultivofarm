@@ -75,7 +75,8 @@ describe("SUPERADMIN HOME — somente leitura", () => {
   it("a tela não executa nenhuma escrita", () => {
     for (const fonte of [page, hooks]) {
       expect.soft(fonte).not.toMatch(/\.insert\(|\.update\(|\.upsert\(|\.delete\(/);
-      expect.soft(fonte).not.toMatch(/useMutation|\.rpc\(/);
+      // S3: escrita só pelas RPCs seguras de plataforma (superadmin + motivo).
+      for (const m of fonte.match(/\.rpc\("([a-z_]+)"/g) ?? []) expect.soft(m).toMatch(/\.rpc\("platform_/);
     }
   });
 

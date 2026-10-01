@@ -1,0 +1,60 @@
+/**
+ * Fase S3 — mapa rota → funcionalidade SaaS (chave da funcionalidade no catálogo).
+ *
+ * Gate ADICIONAL aos guards de perfil: nunca libera o que o perfil não libera.
+ * Rotas sem mapeamento (dashboards gerais, cadastros, administração) não são
+ * afetadas pelo plano. A autoridade real permanece no servidor.
+ */
+const PREFIXOS: ReadonlyArray<readonly [string, string]> = [
+  ["/operacao/dashboard-producao", "ordens_producao"],
+  ["/operacao/planejamento", "ordens_producao"],
+  ["/cockpit-laboratorio", "ordens_producao"],
+  ["/ordens-servico", "ordens_producao"],
+  ["/lotes", "lotes_qualidade"],
+  ["/controle-qualidade", "lotes_qualidade"],
+  ["/envase", "envase"],
+  ["/estoque", "estoque_embalagens"],
+  ["/base-tecnica", "catalogo_precos"],
+  ["/comercial/condicoes-pagamento", "catalogo_precos"],
+  ["/comercial/pedidos-b2b", "pedidos_b2b"],
+  ["/comercial/solicitacoes-b2b", "pedidos_b2b"],
+  ["/comercial/simulador", "simulacoes"],
+  ["/visita-tecnica", "visitas_tecnicas"],
+  ["/agenda-tecnica", "visitas_tecnicas"],
+  ["/monitoramento-alertas", "recomendacoes_alertas"],
+  ["/previsao-agronomica", "recomendacoes_alertas"],
+  ["/financeiro/receber", "contas_receber"],
+  ["/financeiro/pagar", "contas_pagar"],
+  ["/financeiro/fluxo-caixa", "fluxo_caixa"],
+  ["/financeiro/notas-fiscais", "emissao_nfe_nfse"],
+  ["/fiscal", "emissao_nfe_nfse"],
+  ["/comunicacao", "envios_automaticos"],
+  ["/dashboard/executivo", "paineis_executivos"],
+  ["/executivo", "paineis_executivos"],
+  ["/bi-agronomico", "paineis_executivos"],
+  ["/bi-operacional", "paineis_executivos"],
+  ["/relatorios", "relatorios_operacionais"],
+];
+
+/** Funcionalidade exigida pela rota, ou null se a rota não depende de plano. */
+export function featureForPath(path: string): string | null {
+  const limpo = path.split("?")[0].replace(/\/+$/, "") || "/";
+  for (const [prefixo, feature] of PREFIXOS) {
+    if (limpo === prefixo || limpo.startsWith(prefixo + "/")) return feature;
+  }
+  return null;
+}
+
+export type EntitlementState =
+  | { status: "unknown" }
+  | { status: "ready"; features: ReadonlySet<string> };
+
+/**
+ * Decide se o plano permite a rota. Estado desconhecido (carregando/erro)
+ * mantém o comportamento anterior — o plano nunca amplia acesso, só restringe.
+ */
+export function isPathEntitled(path: string, state: EntitlementState): boolean {
+  const feature = featureForPath(path);
+  if (!feature || state.status !== "ready") return true;
+  return state.features.has(feature);
+}

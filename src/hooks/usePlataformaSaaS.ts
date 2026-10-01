@@ -9,7 +9,7 @@
  * Os tipos gerados ainda não incluem as tabelas `saas_*`; por isso o cliente
  * canônico é usado com cast local. NÃO criar cliente Supabase paralelo.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -160,5 +160,115 @@ export function useOrganizacoesSaaS() {
       }));
     },
     ...opcoes,
+  });
+}
+
+// ===== Fase S3 — exceções por empresa e gestão de assinatura =====
+
+export interface ExcecaoSaaS {
+  id: string;
+  organization_id: string;
+  feature_id: string;
+  mode: "GRANT" | "REVOKE";
+  limit_value: number | null;
+  starts_at: string;
+  ends_at: string | null;
+  reason: string;
+  ended_at: string | null;
+  end_reason: string | null;
+  created_at: string;
+}
+
+export function useExcecoesSaaS() {
+  return useQuery<ExcecaoSaaS[]>({
+    queryKey: ["plataforma", "organization_feature_overrides"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("organization_feature_overrides")
+        .select(
+          "id,organization_id,feature_id,mode,limit_value,starts_at,ends_at,reason,ended_at,end_reason,created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(LIMITE);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ExcecaoSaaS[];
+    },
+    ...opcoes,
+  });
+}
+
+/** Converte erros `platform_*` do servidor em mensagem segura em PT-BR. */
+export function mensagemErroPlataforma(e: unknown): string {
+  const msg = e instanceof Error ? e.message : "";
+  const m = msg.match(/platform_(?:invalid|conflict|forbidden):\s*(.+)/);
+  if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1) + ".";
+  return "Não foi possível concluir a operação. Recarregue e confira antes de tentar de novo.";
+}
+
+function useInvalidarPlataforma() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: ["plataforma"] });
+}
+
+export function useCriarExcecao() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: {
+      organizationId: string;
+      featureKey: string;
+      mode: "GRANT" | "REVOKE";
+      reason: string;
+      endsAt: string | null;
+    }) => {
+      const { data, error } = await db.rpc("platform_set_feature_override", {
+        _organization_id: v.organizationId,
+        _feature_key: v.featureKey,
+        _mode: v.mode,
+        _reason: v.reason,
+        _ends_at: v.endsAt,
+        _limit_value: null,
+      });
+      if (error) throw new Error(error.message);
+      return data as string;
+    },
+    onSettled: invalidar,
+  });
+}
+
+export function useEncerrarExcecao() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: { id: string; reason: string }) => {
+      const { error } = await db.rpc("platform_end_feature_override", {
+        _override_id: v.id,
+        _reason: v.reason,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSettled: invalidar,
+  });
+}
+
+export function useAlterarAssinatura() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: {
+      organizationId: string;
+      planKey: string;
+      status: string;
+      reason: string;
+    }) => {
+      const { error } = await db.rpc("platform_change_subscription", {
+        _organization_id: v.organizationId,
+        _plan_key: v.planKey,
+        _status: v.status,
+        _reason: v.reason,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSettled: invalidar,
   });
 }

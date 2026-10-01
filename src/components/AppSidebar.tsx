@@ -10,6 +10,8 @@ import { PortalSidebar } from "@/components/nav/PortalSidebar";
 import { desktopItemsBySection, type NavItem } from "@/config/navigation";
 import { isNavItemFeatureEnabled } from "@/lib/navigation/search";
 import type { SidebarNavGroup } from "@/components/nav/types";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 
 /**
  * Sidebar administrativa — apenas monta os grupos visíveis (permissão + flag +
@@ -18,6 +20,7 @@ import type { SidebarNavGroup } from "@/components/nav/types";
  */
 export function AppSidebar() {
   const { role, roles } = useAuth();
+  const entitlements = useEntitlements();
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
   // Auditoria de perfis: a visibilidade do menu passa a usar a MESMA fonte do

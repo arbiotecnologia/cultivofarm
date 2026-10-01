@@ -247,9 +247,11 @@ describe("FASE S1 — escopo: S2 permanece bloqueada", () => {
       }
     };
     alvos.forEach(varrer);
+    // S3 (aprovada): o mapa de rotas só cita chaves; escrita só via RPCs platform_*.
     expect(encontrados).toEqual(["src/hooks/usePlataformaSaaS.ts"]);
     const leitura = read("src/hooks/usePlataformaSaaS.ts");
-    expect(leitura).not.toMatch(/\.insert\(|\.update\(|\.upsert\(|\.delete\(|useMutation/);
+    expect(leitura).not.toMatch(/\.insert\(|\.update\(|\.upsert\(|\.delete\(/);
+    for (const m of leitura.match(/\.rpc\("([a-z_]+)"/g) ?? []) expect(m).toMatch(/\.rpc\("platform_/);
   });
 
   it("o relatório da fase existe", () => {

@@ -9,7 +9,8 @@
  * Não toca menus operacionais: esta rota vive fora do layout administrativo
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
-import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History } from "lucide-react";
+import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal } from "lucide-react";
+import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,6 +138,10 @@ export default function PlataformaHome() {
               <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
               Assinaturas
             </TabsTrigger>
+            <TabsTrigger value="excecoes">
+              <SlidersHorizontal className="mr-2 h-4 w-4" aria-hidden="true" />
+              Exceções
+            </TabsTrigger>
             <TabsTrigger value="historico">
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
@@ -234,7 +239,12 @@ export default function PlataformaHome() {
           </TabsContent>
 
           {/* ASSINATURAS -------------------------------------------------- */}
-          <TabsContent value="assinaturas">
+          <TabsContent value="excecoes">
+            <ExcecoesTab />
+          </TabsContent>
+
+          <TabsContent value="assinaturas" className="space-y-4">
+            <AlterarAssinaturaCard />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Assinaturas por empresa</CardTitle>

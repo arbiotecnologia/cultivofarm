@@ -140,6 +140,12 @@ describe("FASE 28C — risco A1 documentado e congelado", () => {
       "20260922211137_7eae146c-4343-4633-a7ea-844c9e857ee6.sql",
       // S2 — motor de entitlements (funções de leitura, fail-closed; sem DDL de tabela).
       "20261001011905_518fcc50-a55b-40be-a907-38447c996323.sql",
+      // S3 — exceções por empresa e gates de plano.
+      "20261001013422_0e30dcf6-8563-4cb0-bbdd-389e1899d912.sql",
+      "20261001013456_3d4c4558-fd64-43af-8743-fba47de11b8a.sql",
+      "20261001013533_9fc01569-9f3d-4c81-b332-d2bb54f2418b.sql",
+      "20261001013603_6140c6ad-862d-4907-b06b-6dc9b31a6205.sql",
+      "20261001013832_9be08fa9-2b7d-40aa-bc47-058f1ae37eb7.sql",
     ]);
     const foraDoPadrao = migs
       .filter((f: string) => f.slice(0, 14) > "20260905000000")
