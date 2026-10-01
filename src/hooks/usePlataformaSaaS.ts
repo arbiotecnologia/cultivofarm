@@ -144,22 +144,75 @@ export function useHistoricoAssinaturasSaaS() {
   });
 }
 
+export interface OrganizacaoSaaS {
+  id: string;
+  nome: string;
+  status: string;
+  nome_fantasia: string | null;
+  cnpj: string | null;
+  email_corporativo: string | null;
+  created_at: string;
+}
+
 export function useOrganizacoesSaaS() {
-  return useQuery<{ id: string; nome: string }[]>({
+  return useQuery<OrganizacaoSaaS[]>({
     queryKey: ["plataforma", "organizations"],
     queryFn: async () => {
       const { data, error } = await db
         .from("organizations")
-        .select("id,nome")
+        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at")
         .order("nome")
         .limit(LIMITE);
       if (error) throw new Error(error.message);
-      return ((data ?? []) as { id: string; nome: string | null }[]).map((o) => ({
-        id: o.id,
+      return ((data ?? []) as (Omit<OrganizacaoSaaS, "nome"> & { nome: string | null })[]).map((o) => ({
+        ...o,
         nome: o.nome ?? "—",
       }));
     },
     ...opcoes,
+  });
+}
+
+export function useCriarEmpresa() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: {
+      nome: string;
+      nomeFantasia: string;
+      cnpj: string;
+      email: string;
+      planKey: string;
+      rascunho: boolean;
+    }) => {
+      const { data, error } = await db.rpc("platform_create_organization", {
+        _nome: v.nome,
+        _nome_fantasia: v.nomeFantasia,
+        _cnpj: v.cnpj,
+        _email: v.email,
+        _plan_key: v.planKey,
+        _rascunho: v.rascunho,
+      });
+      if (error) throw new Error(error.message);
+      return data as string;
+    },
+    onSuccess: invalidar,
+  });
+}
+
+export function useAlterarStatusEmpresa() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: { org: string; status: string; motivo: string }) => {
+      const { error } = await db.rpc("platform_set_organization_status", {
+        _org: v.org,
+        _status: v.status,
+        _motivo: v.motivo,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: invalidar,
   });
 }
 
@@ -200,7 +253,7 @@ export function useExcecoesSaaS() {
 /** Converte erros `platform_*` do servidor em mensagem segura em PT-BR. */
 export function mensagemErroPlataforma(e: unknown): string {
   const msg = e instanceof Error ? e.message : "";
-  const m = msg.match(/platform_(?:invalid|conflict|forbidden):\s*(.+)/);
+  const m = msg.match(/(?:platform|org)_(?:invalid|conflict|forbidden|duplicate):\s*(.+)/);
   if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1) + ".";
   return "Não foi possível concluir a operação. Recarregue e confira antes de tentar de novo.";
 }
