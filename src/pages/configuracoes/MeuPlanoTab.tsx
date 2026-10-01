@@ -1,5 +1,6 @@
 /**
- * Fase S4 — aba "Meu Plano" (Configurações), para o administrador da empresa.
+ * Fase S4 — aba "Meu Plano" (Configurações), para o administrador da empresa
+ * e para o superadmin de plataforma quando vinculado a uma organização.
  *
  * SOMENTE LEITURA: mostra o plano contratado, a situação da assinatura e o
  * catálogo de módulos/funcionalidades com o que está incluído. A fonte é a
