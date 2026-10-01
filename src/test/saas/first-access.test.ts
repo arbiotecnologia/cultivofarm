@@ -84,7 +84,8 @@ describe("primeiro acesso — convite e compensação", () => {
     for (const etapa of ["auth_header", "auth_claims", "senha_fraca", "pendencia_consulta", "nao_pendente", "senha_atualizacao", "liberacao"]) {
       expect(edge).toContain(`"${etapa}"`);
     }
-    expect(troca).toContain("ref.:");
+    expect(readFileSync("src/lib/saas/firstAccess.ts", "utf-8")).toContain("ref.:");
+    expect(troca).toContain("mensagemFalhaPrimeiroAcesso");
   });
 
   it("liberação aceita o formato atual de claims do Supabase (via SQL)", () => {
