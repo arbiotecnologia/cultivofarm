@@ -14,6 +14,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { OnboardingState, useConcluirOnboarding, useSalvarOnboarding } from "@/hooks/useOrgOnboarding";
 import { OnboardingDados, pendenciasOnboarding } from "@/lib/saas/orgOnboarding";
 import { mensagemErroPlataforma } from "@/hooks/usePlataformaSaaS";
+import { supportContact } from "@/config/brand";
+
+const suporte = supportContact();
 
 const ETAPAS = ["Identificação", "Dados fiscais", "Endereço e contatos", "Responsável", "Preferências", "Plano", "Revisão"] as const;
 
@@ -92,7 +95,11 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Cadastro da empresa</h1>
           <div className="space-x-2">
-            <Button variant="ghost" size="sm" asChild><a href="mailto:suporte@cultivofarm.com.br">Suporte</a></Button>
+            {suporte ? (
+              <Button variant="ghost" size="sm" asChild><a href={suporte.href} target="_blank" rel="noreferrer">{suporte.label}</a></Button>
+            ) : (
+              <span className="text-xs text-muted-foreground">Dúvidas? Fale com quem enviou o seu convite.</span>
+            )}
             <Button variant="outline" size="sm" onClick={() => signOut()}>Sair</Button>
           </div>
         </div>
