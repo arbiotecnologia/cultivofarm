@@ -31,3 +31,11 @@ Banco: `swzpzcwiasxmjutrmvkm` (confirmado em `.env`). Nenhum dado operacional al
 
 ## Conclusão
 PASS para Etapas 1–4 (Fiscal e Comunicação).
+
+## Etapa 4b — Gates server-side Produção/Comercial/Agronômico/Financeiro (2026-10-01)
+- Função `_saas_trg_require_feature()` (SECURITY DEFINER, search_path vazio, EXECUTE revogado de PUBLIC/anon/authenticated) + trigger `trg_saas_gate` BEFORE INSERT OR UPDATE em 15 tabelas: ordens_servico, ordens_servico_onfarm (ordens_producao); lotes, controle_qualidade (lotes_qualidade); envase; estoque_embalagens; partner_orders (pedidos_b2b); partner_simulations (simulacoes); commercial_condition_item_prices (catalogo_precos); registros_consultor (visitas_tecnicas); ficha_tecnica_versoes (fichas_tecnicas); accounts_receivable, financial_receipts (contas_receber); accounts_payable, payable_payments (contas_pagar).
+- Erro: `saas_feature_not_entitled` (42501). Leituras/DELETE inalterados.
+- Bypass: contexto sem auth.uid() (service_role/jobs).
+- Evidência: 15 triggers instalados; CultivoFarm (ACTIVE Completo) possui as 11 features; 0 revogações ativas → sem mudança operacional.
+- RISCO RESIDUAL: usuários de portal sem organization_id em profiles (parceiro_b2b, cliente_produtor, aplicador) não são gateados — não há vínculo de tenant para eles. Requer modelagem de vínculo portal→organização (S5).
+- Pendentes: fluxo_caixa/relatorios (somente leitura, sem gate de escrita); sonda autenticada de negação em empresa sem plano (ambiente sem sessão minerável); linter sem alertas novos (486 pré-existentes).
