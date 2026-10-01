@@ -4,11 +4,17 @@ import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { TrocaSenhaObrigatoria } from "@/components/auth/TrocaSenhaObrigatoria";
 
 export function AppLayout() {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
+
+  // Primeiro acesso com senha provisória: bloqueia até a troca.
+  if (profile?.senha_provisoria === true) {
+    return <TrocaSenhaObrigatoria />;
+  }
 
   // Guarda inversa: produtor não pode acessar áreas internas
   if (role === "cliente_produtor") {

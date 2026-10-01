@@ -11722,6 +11722,8 @@ export type Database = {
           id: string
           nome: string
           partner_account_id: string | null
+          responsavel_definido_em: string | null
+          responsavel_user_id: string | null
           updated_at: string
         }
         Insert: {
@@ -11730,6 +11732,8 @@ export type Database = {
           id?: string
           nome: string
           partner_account_id?: string | null
+          responsavel_definido_em?: string | null
+          responsavel_user_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -11738,6 +11742,8 @@ export type Database = {
           id?: string
           nome?: string
           partner_account_id?: string | null
+          responsavel_definido_em?: string | null
+          responsavel_user_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -14446,6 +14452,56 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_org_admin_invites: {
+        Row: {
+          cpf_cnpj: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          modo_acesso: string
+          nome: string
+          organization_id: string
+          responsavel_principal: boolean
+          telefone: string | null
+          user_id: string
+        }
+        Insert: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          modo_acesso: string
+          nome: string
+          organization_id: string
+          responsavel_principal?: boolean
+          telefone?: string | null
+          user_id: string
+        }
+        Update: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          modo_acesso?: string
+          nome?: string
+          organization_id?: string
+          responsavel_principal?: boolean
+          telefone?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_org_admin_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_notificacoes: {
         Row: {
           cliente_id: string
@@ -15705,6 +15761,7 @@ export type Database = {
           nome: string
           observacoes_internas: string | null
           organization_id: string | null
+          senha_provisoria: boolean
           telefone: string | null
           updated_at: string
           user_id: string
@@ -15723,6 +15780,7 @@ export type Database = {
           nome?: string
           observacoes_internas?: string | null
           organization_id?: string | null
+          senha_provisoria?: boolean
           telefone?: string | null
           updated_at?: string
           user_id: string
@@ -15741,6 +15799,7 @@ export type Database = {
           nome?: string
           observacoes_internas?: string | null
           organization_id?: string | null
+          senha_provisoria?: boolean
           telefone?: string | null
           updated_at?: string
           user_id?: string
@@ -20735,8 +20794,26 @@ export type Database = {
         }
         Returns: string
       }
+      platform_conclude_provisional_password: {
+        Args: never
+        Returns: undefined
+      }
       platform_end_feature_override: {
         Args: { _override_id: string; _reason: string }
+        Returns: undefined
+      }
+      platform_register_org_admin: {
+        Args: {
+          p_actor_id: string
+          p_cpf_cnpj?: string
+          p_email: string
+          p_modo_acesso?: string
+          p_nome: string
+          p_organization_id: string
+          p_responsavel_principal?: boolean
+          p_telefone?: string
+          p_user_id: string
+        }
         Returns: undefined
       }
       platform_set_feature_override: {
