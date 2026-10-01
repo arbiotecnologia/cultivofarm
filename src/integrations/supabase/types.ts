@@ -14454,6 +14454,7 @@ export type Database = {
       }
       platform_org_admin_invites: {
         Row: {
+          concluido_em: string | null
           cpf_cnpj: string | null
           created_at: string
           email: string
@@ -14463,10 +14464,12 @@ export type Database = {
           nome: string
           organization_id: string
           responsavel_principal: boolean
+          status: string
           telefone: string | null
           user_id: string
         }
         Insert: {
+          concluido_em?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           email: string
@@ -14476,10 +14479,12 @@ export type Database = {
           nome: string
           organization_id: string
           responsavel_principal?: boolean
+          status?: string
           telefone?: string | null
           user_id: string
         }
         Update: {
+          concluido_em?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           email?: string
@@ -14489,6 +14494,7 @@ export type Database = {
           nome?: string
           organization_id?: string
           responsavel_principal?: boolean
+          status?: string
           telefone?: string | null
           user_id?: string
         }
@@ -20794,10 +20800,7 @@ export type Database = {
         }
         Returns: string
       }
-      platform_conclude_provisional_password: {
-        Args: never
-        Returns: undefined
-      }
+      platform_conclude_provisional_password: { Args: never; Returns: boolean }
       platform_end_feature_override: {
         Args: { _override_id: string; _reason: string }
         Returns: undefined
