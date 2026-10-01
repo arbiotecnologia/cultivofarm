@@ -64,6 +64,8 @@ describe("FASE 28B — certificação da Fase 28A", () => {
       "20260922160736_29af83f9-2f0d-4770-91d4-264de788ccc5.sql",
       // Home provisória do superadmin — apenas policy de leitura nas tabelas SaaS.
       "20260922211137_7eae146c-4343-4633-a7ea-844c9e857ee6.sql",
+      // S2 — motor de entitlements (funções de leitura, fail-closed; sem DDL de tabela).
+      "20261001011905_518fcc50-a55b-40be-a907-38447c996323.sql",
     ]);
     const foraDoPadrao = migs
       .filter((f: string) => f.slice(0, 14) > "20260905000000")
