@@ -257,3 +257,7 @@
 ## Pendências ativas
 - [x] Criar usuário mestre superadmin (cultivo@cultivofarm.com.br) — login validado ponta a ponta na prévia (redireciona para /plataforma, Plano Base visível)
 - [x] Planejar planos personalizáveis — docs/auditorias/plano-planos-personalizaveis-2026-10-01.md
+- [x] Catálogo SaaS (7 módulos, 17 features, planos Essencial/Gestão/Completo) e assinatura fundadora ACTIVE da CultivoFarm — docs/auditorias/fase-s2-catalogo-entitlements-2026-10-01.md
+- [x] S2 — get_my_entitlements()/saas_has_feature() fail-closed, EXECUTE só para authenticated
+- [ ] S3 — organization_feature_overrides e integração nos guards/menus (aguarda autorização)
+- [ ] Teste autenticado ponta a ponta de get_my_entitlements() por perfil (exige login de teste)
