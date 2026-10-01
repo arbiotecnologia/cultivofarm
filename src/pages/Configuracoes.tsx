@@ -82,12 +82,17 @@ import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
 
 export default function Configuracoes() {
   const isMobile = useIsMobile();
-  const { profile, role, user } = useAuth();
+  const { profile, role, roles, user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isAdmin = role === "administrador";
+  // Aba "Meu Plano": administradores da empresa (qualquer papel da lista) e o
+  // superadmin de plataforma QUANDO vinculado a uma organização. A checagem de
+  // vínculo é fail-closed no servidor (RPC/RLS) — aqui é apenas visibilidade.
+  const canMeuPlano =
+    (roles ?? []).includes("administrador") || (roles ?? []).includes("superadmin");
   const canFin = isAdmin || role === "gestor" || role === "financeiro";
   const tabParam = searchParams.get("tab");
   const initialTab =
@@ -95,7 +100,7 @@ export default function Configuracoes() {
       ? "usuarios"
       : tabParam === "financeiro" && canFin
         ? "financeiro"
-        : tabParam === "meu-plano" && isAdmin
+        : tabParam === "meu-plano" && canMeuPlano
           ? "meu-plano"
           : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
             ? tabParam
