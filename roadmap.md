@@ -1,9 +1,9 @@
 # Roadmap
 
-## Em andamento
-- [ ] Onboarding — consulta de CNPJ (Etapa 1 “Identificar empresa”): Edge Function `onboarding-cnpj-lookup`, reordenação das etapas, campos oficiais protegidos, fallback manual. Typecheck/testes/build pendentes na validação final.
+## Concluído
+- [x] Onboarding — consulta de CNPJ (Etapa 1 “Identificar empresa”): Edge Function `onboarding-cnpj-lookup` implantada, etapas reordenadas (1 Identificar empresa, 2 Dados da empresa, 3 Endereço e contatos, 4 Responsável, 5 Preferências, 6 Plano, 7 Revisão), campos oficiais protegidos, conflitos com escolha, fallback manual marcado como não verificado, retomada de rascunho na primeira pendência. Typecheck OK, 104 testes SaaS OK, 11 testes Deno OK, build OK, 401 sem JWT confirmado.
 
 ## Pendências (aguardam usuário/autorização)
+- [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
 - [ ] Homologação autenticada do primeiro acesso (troca de senha) — aguarda usuário de teste.
-- [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — sem salvar no rascunho real nem concluir onboarding.
 - [ ] `Password Protection Disabled` reportado pelo Supabase — decisão do usuário.
