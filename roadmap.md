@@ -253,3 +253,7 @@
 - [x] Gate fail-closed de integridade (presença, ordem, SHA-256) antes da compilação do schema; sem fallback heurístico.
 - [x] Testes (inválido rejeitado, import ausente, bundle adulterado, erro sem stack/caminho), typecheck e build.
 - [x] Prova remota concluída: `xsd-selftest` no Supabase canônico retornou HTTP 200 (`loadedFiles:5`, v13, verify_jwt=true); pós-check DB zerado, produção bloqueada (19/09/2026 14:11 UTC).
+
+## Pendências ativas
+- [ ] Criar usuário mestre superadmin (cultivo@cultivofarm.com.br) — migration corrigindo coluna gerada `confirmed_at`
+- [ ] Planejar planos personalizáveis (overrides por organização — insumo para fase S3)
