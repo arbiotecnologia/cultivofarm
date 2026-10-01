@@ -89,9 +89,16 @@ export function pendenciasOnboarding(d: OnboardingDados): string[] {
   return p;
 }
 
-/** Remove campos que o cliente nunca pode definir (servidor também descarta). */
+/** Mantém apenas chaves da whitelist (o servidor rejeita qualquer outra). */
 export function sanitizarPayloadOnboarding(d: Record<string, unknown>): Record<string, unknown> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { organization_id, status, id, cnpj_normalizado, ...resto } = d;
-  return resto;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(d)) {
+    if (k === "confirmado") {
+      if (typeof v === "boolean") out[k] = v;
+      continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(ONBOARDING_CAMPOS, k) || typeof v !== "string") continue;
+    out[k] = v.trim().slice(0, ONBOARDING_CAMPOS[k]);
+  }
+  return out;
 }
