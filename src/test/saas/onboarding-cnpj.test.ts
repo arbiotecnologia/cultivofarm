@@ -19,7 +19,7 @@ const dados: DadosEmpresa = {
 
 describe("planejarAplicacao", () => {
   it("aplica apenas campos vazios como 'vazio' e preserva preenchidos", () => {
-    const atual = { ...base, cidade: "São Paulo" };
+    const atual = { ...base, cidade: "Campinas" };
     const plano = planejarAplicacao(atual, dados);
     const cidades = plano.filter((p) => p.campo === "cidade");
     expect(cidades).toHaveLength(1);
