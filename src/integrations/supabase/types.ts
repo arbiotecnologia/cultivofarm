@@ -11529,6 +11529,72 @@ export type Database = {
           },
         ]
       }
+      organization_feature_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_reason: string | null
+          ended_at: string | null
+          ended_by: string | null
+          ends_at: string | null
+          feature_id: string
+          id: string
+          limit_value: number | null
+          mode: string
+          organization_id: string
+          reason: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          ended_by?: string | null
+          ends_at?: string | null
+          feature_id: string
+          id?: string
+          limit_value?: number | null
+          mode: string
+          organization_id: string
+          reason: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          ended_by?: string | null
+          ends_at?: string | null
+          feature_id?: string
+          id?: string
+          limit_value?: number | null
+          mode?: string
+          organization_id?: string
+          reason?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_feature_overrides_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "saas_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_feature_overrides_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_subscription_history: {
         Row: {
           actor_user_id: string | null
@@ -20655,6 +20721,30 @@ export type Database = {
       partner_reset_prices_to_default: {
         Args: { p_partner_id: string }
         Returns: number
+      }
+      platform_change_subscription: {
+        Args: {
+          _organization_id: string
+          _plan_key: string
+          _reason: string
+          _status: string
+        }
+        Returns: string
+      }
+      platform_end_feature_override: {
+        Args: { _override_id: string; _reason: string }
+        Returns: undefined
+      }
+      platform_set_feature_override: {
+        Args: {
+          _ends_at?: string
+          _feature_key: string
+          _limit_value?: number
+          _mode: string
+          _organization_id: string
+          _reason: string
+        }
+        Returns: string
       }
       pode_acessar_recomendacao: {
         Args: { _recomendacao_id: string; _user_id: string }
