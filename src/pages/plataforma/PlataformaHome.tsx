@@ -250,6 +250,12 @@ export default function PlataformaHome() {
             <ExcecoesTab />
           </TabsContent>
 
+          {/* ADMINISTRADORES DE EMPRESA ----------------------------------- */}
+          <TabsContent value="admins">
+            <PlataformaAdmins />
+          </TabsContent>
+
+
           <TabsContent value="assinaturas" className="space-y-4">
             <AlterarAssinaturaCard />
             <Card>
