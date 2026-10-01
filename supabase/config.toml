@@ -52,6 +52,11 @@ verify_jwt = true
 [functions.platform-invite-org-admin]
 verify_jwt = true
 
+# Primeiro acesso: autenticação customizada em código (getClaims) — sem
+# verificação de JWT legado no gateway.
+[functions.platform-complete-first-access]
+verify_jwt = false
+
 [functions.admin-update-user-password]
 verify_jwt = true
 

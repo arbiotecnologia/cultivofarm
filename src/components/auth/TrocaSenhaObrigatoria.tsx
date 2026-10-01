@@ -49,11 +49,19 @@ export function TrocaSenhaObrigatoria() {
         body: { nova_senha: senha },
       });
       if (error) {
-        setErro(
-          error.message?.includes("liberação falhou")
-            ? "A senha foi alterada, mas a liberação falhou. Tente entrar novamente com a nova senha."
-            : "Não foi possível salvar a nova senha. Tente novamente.",
-        );
+        // Resposta sanitizada do servidor: { error, etapa, codigo } — sem segredos.
+        let detalhe: { error?: string; etapa?: string; codigo?: string | null } | null = null;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === "function") detalhe = await ctx.json();
+        } catch {
+          detalhe = null;
+        }
+        const ref = detalhe?.etapa
+          ? ` (ref.: ${detalhe.etapa}${detalhe.codigo ? `/${detalhe.codigo}` : ""})`
+          : "";
+        setErro((detalhe?.error ?? "Não foi possível salvar a nova senha. Tente novamente.") + ref);
         return;
       }
       toast.success("Senha definida. Bem-vindo!");
