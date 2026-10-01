@@ -19110,6 +19110,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _saas_user_has_feature: {
+        Args: { _feature_key: string; _uid: string }
+        Returns: boolean
+      }
       _validate_planning_integrity: {
         Args: { p_partner_order_id: string }
         Returns: undefined
