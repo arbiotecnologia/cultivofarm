@@ -656,6 +656,13 @@ export default function Configuracoes() {
           </TabsContent>
         )}
 
+        {/* Meu Plano (Fase S4): somente leitura, administrador da empresa */}
+        {isAdmin && (
+          <TabsContent value="meu-plano">
+            <MeuPlanoTab />
+          </TabsContent>
+        )}
+
         {/* Profile Tab */}
         <TabsContent value="perfil">
           <Card>
