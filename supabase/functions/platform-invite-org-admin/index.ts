@@ -92,12 +92,17 @@ Deno.serve(async (req) => {
       return json({ error: "Modo de acesso inválido." }, 400);
     }
 
+    // Redirect somente para origens conhecidas (evita open redirect).
     const origin = req.headers.get("origin") ?? "";
-    const redirectTo = /^https?:\/\//.test(origin) ? `${origin}/auth` : undefined;
+    const origemPermitida = /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/.test(origin) ||
+      /^https:\/\/([a-z0-9-]+\.)*cultivofarm\.com\.br$/.test(origin) ||
+      /^http:\/\/localhost(:\d+)?$/.test(origin);
+    const redirectTo = origemPermitida ? `${origin}/auth` : undefined;
 
     let userId: string | null = null;
     let actionLink: string | null = null;
     let senha: string | null = null;
+    let criamosUsuario = false;
 
     if (modo === "link") {
       const { data, error } = await adminClient.auth.admin.generateLink({
@@ -109,9 +114,18 @@ Deno.serve(async (req) => {
         },
       });
       if (error || !data?.user) {
-        return json({ error: error?.message ?? "Não foi possível gerar o convite." }, 400);
+        const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
+        return json(
+          {
+            error: jaExiste
+              ? "Já existe um acesso com este e-mail."
+              : "Não foi possível gerar o convite.",
+          },
+          400,
+        );
       }
       userId = data.user.id;
+      criamosUsuario = true;
       actionLink = data.properties?.action_link ?? null;
     } else {
       senha = senhaTemporaria();
@@ -122,9 +136,18 @@ Deno.serve(async (req) => {
         user_metadata: { nome, convidado_por_plataforma: true },
       });
       if (error || !data?.user) {
-        return json({ error: error?.message ?? "Não foi possível criar o acesso." }, 400);
+        const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
+        return json(
+          {
+            error: jaExiste
+              ? "Já existe um acesso com este e-mail."
+              : "Não foi possível criar o acesso.",
+          },
+          400,
+        );
       }
       userId = data.user.id;
+      criamosUsuario = true;
     }
 
     const { error: rpcError } = await adminClient.rpc("platform_register_org_admin", {
@@ -140,13 +163,17 @@ Deno.serve(async (req) => {
     });
 
     if (rpcError) {
+      // Não deixar conta órfã: desfaz o acesso recém-criado.
+      if (criamosUsuario && userId) {
+        await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
+      }
       const m = rpcError.message ?? "";
       const amigavel = m.includes("platform_forbidden")
         ? "Permissão insuficiente para concluir o convite."
         : m.includes("platform_invalid")
           ? "Dados do administrador inválidos."
           : "Não foi possível concluir o cadastro do administrador.";
-      return json({ error: amigavel, user_id: userId, parcial: true }, 400);
+      return json({ error: amigavel }, 400);
     }
 
     return json({
@@ -155,7 +182,8 @@ Deno.serve(async (req) => {
       action_link: actionLink,
       senha_temporaria: senha,
     });
-  } catch (err) {
-    return json({ error: (err as Error).message }, 500);
+  } catch (_err) {
+    return json({ error: "Falha inesperada ao criar o acesso." }, 500);
   }
 });
+
