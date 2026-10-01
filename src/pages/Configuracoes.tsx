@@ -75,7 +75,8 @@ import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
 import { isComunicacaoModuleEnabled } from "@/features/comunicacao/flags";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, CreditCard } from "lucide-react";
+import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
 
 
 
@@ -94,9 +95,11 @@ export default function Configuracoes() {
       ? "usuarios"
       : tabParam === "financeiro" && canFin
         ? "financeiro"
-        : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
-          ? tabParam
-          : "perfil";
+        : tabParam === "meu-plano" && isAdmin
+          ? "meu-plano"
+          : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
+            ? tabParam
+            : "perfil";
 
 
   // Profile edit state
@@ -606,6 +609,11 @@ export default function Configuracoes() {
             </TabsTrigger>
           )}
           {isAdmin && (
+            <TabsTrigger value="meu-plano" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />Meu Plano
+            </TabsTrigger>
+          )}
+          {isAdmin && (
             <TabsTrigger value="usuarios" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />Usuários
             </TabsTrigger>
@@ -645,6 +653,13 @@ export default function Configuracoes() {
         {canFin && (
           <TabsContent value="financeiro">
             <ConfiguracoesFinanceiras />
+          </TabsContent>
+        )}
+
+        {/* Meu Plano (Fase S4): somente leitura, administrador da empresa */}
+        {isAdmin && (
+          <TabsContent value="meu-plano">
+            <MeuPlanoTab />
           </TabsContent>
         )}
 
