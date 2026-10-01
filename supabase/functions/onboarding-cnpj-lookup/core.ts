@@ -117,13 +117,14 @@ export async function consultar(
 ): Promise<Resultado> {
   const cnpj = normalizar(entrada);
   if (!cnpjValido(cnpj)) return { codigo: "invalid_cnpj" };
-  if (/[A-Z]/.test(cnpj)) return { codigo: "unsupported_alpha" };
+  if (/[^0-9]/.test(cnpj)) return { codigo: "unsupported_alpha" };
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetchFn(urlConsulta(cnpj), {
       signal: ctrl.signal, redirect: "error", headers: { accept: "application/json" },
     });
+    if (ctrl.signal.aborted) return { codigo: "timeout" };
     if (res.status === 404) return { codigo: "not_found" };
     if (res.status === 429) return { codigo: "rate_limited" };
     if (!res.ok) return { codigo: "upstream_error" };
