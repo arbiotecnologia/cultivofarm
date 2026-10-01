@@ -14,6 +14,8 @@ interface Profile {
   email: string | null;
   ativo?: boolean;
   cliente_id?: string | null;
+  /** Acesso criado pela plataforma com senha/convite provisório — exige troca no 1º acesso. */
+  senha_provisoria?: boolean;
 }
 
 interface AuthContextType {
