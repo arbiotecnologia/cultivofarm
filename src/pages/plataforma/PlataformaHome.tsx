@@ -149,6 +149,7 @@ export default function PlataformaHome() {
             </TabsTrigger>
             <TabsTrigger value="historico">
 
+
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
             </TabsTrigger>
