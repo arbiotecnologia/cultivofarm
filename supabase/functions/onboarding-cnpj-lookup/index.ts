@@ -36,16 +36,26 @@ Deno.serve(async (req) => {
     const uid = claims?.claims?.sub;
     if (ce || !uid) return json({ codigo: "bad_jwt" }, 401);
 
-    const { data: st, error: se } = await sb.rpc("org_onboarding_state");
-    if (se) return json({ codigo: "estado" }, 403);
-    const s = (st ?? {}) as { required?: boolean; is_admin?: boolean; organization_id?: string; status?: string };
-    if (!s.required || !s.is_admin || !s.organization_id || !["aguardando_ativacao", "onboarding", "rascunho"].includes(s.status ?? "")) {
-      return json({ codigo: "forbidden" }, 403);
-    }
-    if (!limiteUsuario(uid) || !limiteOrg(s.organization_id)) return json({ codigo: "rate_limited_local" }, 429);
-
     let body: unknown;
     try { body = await req.json(); } catch { return json({ codigo: "invalid_cnpj" }, 400); }
+    const modo = (body as { modo?: unknown })?.modo;
+
+    if (modo === "plataforma") {
+      // Superadmin de Plataforma: papel verificado no servidor com o JWT do
+      // próprio usuário (nunca user_metadata nem dado do cliente).
+      const { data: ok, error: pe } = await sb.rpc("is_platform_superadmin", { _user_id: uid });
+      if (pe || ok !== true) return json({ codigo: "forbidden" }, 403);
+      if (!limiteUsuario(uid) || !limiteOrg("plataforma")) return json({ codigo: "rate_limited_local" }, 429);
+    } else {
+      const { data: st, error: se } = await sb.rpc("org_onboarding_state");
+      if (se) return json({ codigo: "estado" }, 403);
+      const s = (st ?? {}) as { required?: boolean; is_admin?: boolean; organization_id?: string; status?: string };
+      if (!s.required || !s.is_admin || !s.organization_id || !["aguardando_ativacao", "onboarding", "rascunho"].includes(s.status ?? "")) {
+        return json({ codigo: "forbidden" }, 403);
+      }
+      if (!limiteUsuario(uid) || !limiteOrg(s.organization_id)) return json({ codigo: "rate_limited_local" }, 429);
+    }
+
     const r = await consultar((body as { cnpj?: unknown })?.cnpj);
     console.log(JSON.stringify({ fn: "onboarding-cnpj-lookup", codigo: r.codigo }));
     return json({ ...r, fonte: "Receita Federal via BrasilAPI", consultado_em: new Date().toISOString() }, STATUS_HTTP[r.codigo]);
