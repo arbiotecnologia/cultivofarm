@@ -609,6 +609,11 @@ export default function Configuracoes() {
             </TabsTrigger>
           )}
           {isAdmin && (
+            <TabsTrigger value="meu-plano" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />Meu Plano
+            </TabsTrigger>
+          )}
+          {isAdmin && (
             <TabsTrigger value="usuarios" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />Usuários
             </TabsTrigger>
