@@ -3,9 +3,13 @@
  *
  * Exibida quando o perfil está marcado com `senha_provisoria` (acesso criado
  * pelo superadmin via convite ou senha temporária). Bloqueia a navegação até
- * que o próprio usuário defina a senha definitiva. A baixa da marca é feita
- * pela RPC `platform_conclude_provisional_password`, que só altera o registro
- * do próprio usuário autenticado.
+ * que o próprio usuário defina a senha definitiva.
+ *
+ * A definição da senha passa exclusivamente pela Edge Function
+ * `platform-complete-first-access`, autenticada pelo JWT do próprio usuário:
+ * o servidor confirma o estado de primeiro acesso, valida a complexidade,
+ * atualiza a senha pela Admin API e só então limpa a marca, em operação
+ * transacional. O cliente não pode limpar a marca nem chamando RPC diretamente.
  */
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
@@ -17,6 +21,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
+/** Mesma política validada no servidor: 8–128 caracteres, letra e dígito. */
+export function senhaForte(s: string): boolean {
+  return s.length >= 8 && s.length <= 128 && /[A-Za-z]/.test(s) && /\d/.test(s);
+}
+
 export function TrocaSenhaObrigatoria() {
   const { refresh, signOut } = useAuth();
   const [senha, setSenha] = useState("");
@@ -26,8 +35,8 @@ export function TrocaSenhaObrigatoria() {
 
   const salvar = async () => {
     setErro(null);
-    if (senha.length < 8) {
-      setErro("A senha precisa ter pelo menos 8 caracteres.");
+    if (!senhaForte(senha)) {
+      setErro("A senha precisa ter de 8 a 128 caracteres, com letras e números.");
       return;
     }
     if (senha !== confirma) {
@@ -36,17 +45,15 @@ export function TrocaSenhaObrigatoria() {
     }
     setSalvando(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: senha });
+      const { error } = await supabase.functions.invoke("platform-complete-first-access", {
+        body: { nova_senha: senha },
+      });
       if (error) {
-        setErro("Não foi possível salvar a nova senha. Tente novamente.");
-        return;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: rpcError } = await (supabase as any).rpc(
-        "platform_conclude_provisional_password",
-      );
-      if (rpcError) {
-        setErro("A senha foi alterada, mas a liberação falhou. Recarregue a página.");
+        setErro(
+          error.message?.includes("liberação falhou")
+            ? "A senha foi alterada, mas a liberação falhou. Tente entrar novamente com a nova senha."
+            : "Não foi possível salvar a nova senha. Tente novamente.",
+        );
         return;
       }
       toast.success("Senha definida. Bem-vindo!");
@@ -77,7 +84,7 @@ export function TrocaSenhaObrigatoria() {
               autoComplete="new-password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              placeholder="Mínimo de 8 caracteres"
+              placeholder="Mínimo de 8 caracteres, com letras e números"
             />
           </div>
           <div className="space-y-2">
