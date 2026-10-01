@@ -20881,6 +20881,10 @@ export type Database = {
         Returns: string
       }
       platform_conclude_provisional_password: { Args: never; Returns: boolean }
+      platform_conclude_provisional_password_server: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       platform_create_organization: {
         Args: {
           _cnpj: string
@@ -20895,6 +20899,10 @@ export type Database = {
       platform_end_feature_override: {
         Args: { _override_id: string; _reason: string }
         Returns: undefined
+      }
+      platform_first_access_pending: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       platform_register_org_admin: {
         Args: {
