@@ -20314,6 +20314,15 @@ export type Database = {
         Returns: Json
       }
       get_my_available_portal_contexts: { Args: never; Returns: Json }
+      get_my_entitlements: {
+        Args: never
+        Returns: {
+          config: Json
+          feature_key: string
+          limit_value: number
+          module_key: string
+        }[]
+      }
       get_partner_catalog_secure: {
         Args: { p_partner_id: string }
         Returns: {
@@ -23133,6 +23142,7 @@ export type Database = {
         Args: { p_embalagem_id: string; p_etiqueta_id: string }
         Returns: Json
       }
+      saas_has_feature: { Args: { _feature_key: string }; Returns: boolean }
       save_client_portal_branding: {
         Args: {
           p_cliente_id: string
