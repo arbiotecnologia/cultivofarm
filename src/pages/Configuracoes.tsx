@@ -613,7 +613,7 @@ export default function Configuracoes() {
               <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual
             </TabsTrigger>
           )}
-          {isAdmin && (
+          {canMeuPlano && (
             <TabsTrigger value="meu-plano" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
               <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />Meu Plano
             </TabsTrigger>
@@ -661,8 +661,9 @@ export default function Configuracoes() {
           </TabsContent>
         )}
 
-        {/* Meu Plano (Fase S4): somente leitura, administrador da empresa */}
-        {isAdmin && (
+        {/* Meu Plano (Fase S4): somente leitura — administrador da empresa ou
+            superadmin vinculado a uma organização (vínculo validado no servidor) */}
+        {canMeuPlano && (
           <TabsContent value="meu-plano">
             <MeuPlanoTab />
           </TabsContent>
