@@ -3,6 +3,14 @@
  * org_status_transition_ok / platform_create_organization / org_onboarding_complete).
  * Usado apenas para UX e testes; o servidor sempre revalida.
  */
+import { unmaskCnpjAlpha, validateCnpjAlpha } from "@/lib/fiscal/cnpjAlpha";
+
+/** Whitelist de chaves aceitas pelo servidor (platform_private.onboarding_validar). */
+export const ONBOARDING_CAMPOS: Record<string, number> = {
+  razao_social: 200, nome_fantasia: 200, cnpj: 18, inscricao_estadual: 20, regime_tributario: 40,
+  cep: 9, logradouro: 200, numero: 20, bairro: 120, cidade: 120, uf: 2, telefone: 20,
+  email_contato: 255, responsavel_nome: 160, responsavel_cargo: 120, fuso_horario: 64, idioma: 10,
+};
 export type OrgStatus = "rascunho" | "aguardando_ativacao" | "onboarding" | "ativa" | "suspensa" | "cancelada";
 
 export const ORG_STATUS_LABEL: Record<OrgStatus, string> = {
@@ -27,22 +35,15 @@ export function transicaoPermitida(de: OrgStatus, para: OrgStatus): boolean {
   return TRANSICOES[de]?.includes(para) ?? false;
 }
 
+/** Mesmo critério do servidor (platform_private.cnpj_normalizar): mantém letras (CNPJ alfanumérico). */
 export function normalizarCnpj(v: string | null | undefined): string | null {
-  const d = (v ?? "").replace(/\D/g, "");
+  const d = unmaskCnpjAlpha(v);
   return d.length ? d : null;
 }
 
+/** Valida dígitos verificadores (numérico e alfanumérico RFB), igual ao servidor. */
 export function cnpjValido(v: string | null | undefined): boolean {
-  const d = normalizarCnpj(v);
-  if (!d || d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
-  const calc = (base: string, pesos: number[]) => {
-    const s = base.split("").reduce((a, c, i) => a + Number(c) * pesos[i], 0);
-    const r = s % 11;
-    return r < 2 ? 0 : 11 - r;
-  };
-  const d1 = calc(d.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-  const d2 = calc(d.slice(0, 12) + d1, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-  return d.endsWith(`${d1}${d2}`);
+  return validateCnpjAlpha(v);
 }
 
 /** Organizações com onboarding pendente bloqueiam os módulos operacionais. */
