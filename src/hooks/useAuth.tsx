@@ -16,6 +16,7 @@ interface Profile {
   cliente_id?: string | null;
   /** Acesso criado pela plataforma com senha/convite provisório — exige troca no 1º acesso. */
   senha_provisoria?: boolean;
+  organization_id?: string | null;
 }
 
 interface AuthContextType {
