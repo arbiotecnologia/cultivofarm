@@ -1,70 +1,36 @@
-# Fase 0 — Auditoria pré-homologação de segurança e isolamento multiempresa (somente leitura)
+# Fase S3 — Exceções por empresa e bloqueio por plano
 
-Nesta rodada nada é alterado: sem código, sem banco, sem migrations, sem policies, sem Edge Functions, sem usuários, secrets, Storage ou publicação. A entrega é um relatório de evidências do estado atual.
+## Objetivo
+Permitir liberar ou retirar funcionalidades de uma empresa específica (com prazo e motivo) e passar a respeitar o plano contratado nos menus, nas telas e no servidor. Para a CultivoFarm (Completo, fundadora) nada muda.
 
-## Sondagens já feitas (estado atual, medido agora)
+## Etapa 1 — Exceções por empresa (servidor)
+- Nova tabela de exceções por empresa: funcionalidade, liberar/retirar, limite opcional, início, fim, motivo, autor.
+- Histórico só de inclusão, sem apagar nem editar.
+- Somente o superadmin consegue criar ou encerrar exceções, por uma função segura com motivo obrigatório.
+- A verificação de acesso passa a considerar: exceção vigente > plano > bloqueio.
+- Corrige também a checagem de empresa ativa, que faltava na verificação atual.
 
-No Supabase canônico `swzpzcwiasxmjutrmvkm`, schema `public`:
+## Etapa 2 — Painel do superadmin
+- Na página Plataforma: aba "Exceções" para ver, criar e encerrar exceções por empresa.
+- Ação de trocar plano/status da assinatura, sempre com motivo e registrada no histórico.
 
-- 230 tabelas; 0 sem RLS habilitada; 6 com RLS habilitada e nenhuma policy (bloqueio total via Data API — precisam ser nomeadas e classificadas).
-- 0 tabelas com grant para `anon`.
-- 678 funções SECURITY DEFINER; 0 sem `search_path` fixo.
-- 24 views.
-- Apenas 2 colunas chamadas `organization_id` em todo o schema — ou seja, o isolamento multiempresa hoje não é colunar/global; precisa ser mapeado caminho a caminho (cliente, parceiro, empresa fiscal).
-- 38 Edge Functions no repositório; `src/config/permissions.ts`, `portalMenus.ts`, `navigation.ts` e guardas de rota existem e serão comparados ao backend.
-- Plano H15 (isolamento fiscal por empresa) existe em `.lovable/plan/h15-...` e será confrontado com o schema atual.
+## Etapa 3 — Respeitar o plano no aplicativo
+- Carregar uma vez, após o login, o que a empresa pode usar.
+- Menus escondem itens não contratados; ao abrir uma tela não contratada, aparece aviso "Não incluído no seu plano".
+- Perfis continuam valendo: o plano limita o que a empresa contratou, o perfil limita o que cada pessoa faz.
+- Em caso de falha ao carregar o plano, nada é liberado além do que já era (sem abrir acesso).
 
-Nada além disso está afirmado ainda; todo o resto do relatório será baseado em consultas e leituras feitas durante a execução.
+## Etapa 4 — Bloqueio no servidor (gradual)
+- Começar pelos módulos mais sensíveis (Fiscal e Comunicação), adicionando a checagem do plano nas funções de servidor desses módulos.
+- Demais módulos em rodadas seguintes, um por vez, com testes de regressão.
 
-## Como a auditoria será executada
+## Validação
+- Testes: exceção liberando/retirando, prazo vencido, empresa inativa, sem assinatura, usuário comum tentando criar exceção, CultivoFarm com acesso idêntico ao atual.
+- Verificação de tipos, geração do aplicativo, suíte completa e alertas de segurança do banco.
+- Relatório em `docs/auditorias/fase-s3-overrides-gates-2026-10-01.md` com PASS/FAIL.
 
-Todas as etapas são leitura: consultas de catálogo (`pg_policies`, `pg_proc`, `information_schema`, `storage.buckets`), linter/advisors do Supabase e leitura de arquivos do repositório. Nenhuma sonda que grave dados, nenhum usuário de teste. Cenários que exigem sessão real de cada perfil serão marcados como "pendente de teste autenticado na Fase de homologação".
-
-### Etapa A — Ambiente e identidade
-Confirmar ref canônico em client, guards, `config.toml` e Edges; conferir divergências de `.env` gerenciado; nenhum segredo exibido.
-
-### Etapa B — Tenants, perfis e vínculos
-Inventariar `organizations`, `user_roles`, `partner_users`, `partner_user_clients`, `partner_technician_clients`, vínculos produtor↔cliente e técnicos. Contagens e estrutura, sem PII desnecessária.
-
-### Etapa C — RLS, policies e grants
-Para as 230 tabelas: RLS/FORCE RLS, policies por comando, roles alvo, predicados sem filtro de tenant, grants por role, tabelas sem policy efetiva.
-
-### Etapa D — Isolamento multiempresa
-Classificar cada tabela sensível pelo caminho de tenant real (direto, indireto via cliente/parceiro/OS, ou inexistente). Procurar policies com `TO authenticated` sem predicado de escopo, colunas de tenant atualizáveis pelo cliente, FKs cross-tenant e registros órfãos.
-
-### Etapa E — Autorização de perfis
-Matriz perfil × portal × rota × tabela/RPC: comparar `permissions.ts`, menus e guardas com o que o banco realmente permite. Cobre todos os 13 papéis do enum `app_role`.
-
-### Etapa F — Funções e RPCs
-Das 678 SECURITY DEFINER: owner, EXECUTE grants (incluindo `PUBLIC`/`anon`), uso de `auth.uid()`, parâmetros de identidade/organização manipuláveis, potencial de escalonamento.
-
-### Etapa G — Edge Functions
-`verify_jwt` por função, uso de service_role, validação de papel/tenant no servidor, CORS, webhooks, idempotência e endpoints que confiam em IDs vindos do cliente.
-
-### Etapa H — Storage
-Buckets públicos/privados, policies de `storage.objects`, isolamento por pasta, IDOR/enumeração.
-
-### Etapa I — Auth e ciclo de vida do usuário
-Provisionamento, edição de perfil/papel, senha, desativação, risco de autoelevação (inclui `create-user`, `admin-update-user-password`, `admin_edit_user_profile_v1`).
-
-### Etapa J — Views e integridade
-`security_invoker`/`security_barrier` nas 24 views; FKs, uniqueness por tenant, índices, cascatas, soft delete.
-
-### Etapa K — Fiscal/financeiro + H15
-Isolamento em `company_fiscal_settings`, `fiscal_invoices`, certificados, séries, AR/AP, documentos e pagamentos; o que do H15 já está no schema e o que segue pendente.
-
-### Etapa L — Advisors e linter
-Executar o linter do Supabase e consolidar alertas atuais.
-
-## Entrega
-
-Um documento em `docs/auditorias/fase0-seguranca-isolamento-2026-09-22.md` com as seções pedidas: (A) resumo executivo, (B) matriz empresa/perfil/portal/backend, (C) inventário RLS/policies/grants, (D) inventário SECURITY DEFINER/Edge/Storage, (E) vulnerabilidades priorizadas, (F) comparação com auditorias e planos existentes, (G) plano de correção em fases independentes e reversíveis, (H) critérios de aceite e testes por fase, (I) GO/NO-GO técnico para iniciar homologação.
-
-Cada achado levará: classificação (CRÍTICO/ALTO/MÉDIO/BAIXO/INFORMATIVO), evidência concreta, cenário de exploração, correção recomendada, risco de regressão, dependências e se é bloqueador.
-
-Escrever esse arquivo de relatório é a única gravação da rodada. Se preferir receber tudo apenas no chat, sem criar o arquivo, é só dizer.
-
-## Premissas
-
-- Volume alto (230 tabelas, 678 funções, 38 Edges): o relatório priorizará tabelas e caminhos sensíveis, com inventários completos em forma agregada e detalhamento nos pontos de risco.
-- Nenhuma afirmação de "seguro" sem evidência coletada nesta rodada.
+## Detalhes técnicos
+- Tabela `organization_feature_overrides` (FK RESTRICT, RLS, sem escrita direta de cliente, leitura só superadmin) e RPCs `platform_set_feature_override` / `platform_end_feature_override` / `platform_change_subscription` com guarda `is_platform_superadmin(auth.uid())`, EXECUTE revogado de PUBLIC/anon.
+- `get_my_entitlements()` reescrita via nova migration incluindo `organizations.ativo` e overrides vigentes.
+- Frontend: `EntitlementsProvider` + `useFeature(key)`; mapa rota/menu → feature key; gate somente adicional aos guards de perfil existentes.
+- Etapa 3 altera menus e rotas: requer sua autorização explícita (aprovar este plano conta como autorização).
