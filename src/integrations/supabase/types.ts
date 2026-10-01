@@ -11595,6 +11595,44 @@ export type Database = {
           },
         ]
       }
+      organization_status_audit: {
+        Row: {
+          ator_id: string | null
+          created_at: string
+          id: string
+          motivo: string | null
+          organization_id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          ator_id?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          organization_id: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          ator_id?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          organization_id?: string
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_status_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_subscription_history: {
         Row: {
           actor_user_id: string | null
@@ -11717,33 +11755,63 @@ export type Database = {
       }
       organizations: {
         Row: {
+          ativada_em: string | null
           ativo: boolean
+          cnpj: string | null
+          cnpj_normalizado: string | null
           created_at: string
+          email_corporativo: string | null
+          fuso_horario: string | null
           id: string
           nome: string
+          nome_fantasia: string | null
+          onboarding_concluido_em: string | null
+          onboarding_dados: Json
           partner_account_id: string | null
+          razao_social: string | null
           responsavel_definido_em: string | null
           responsavel_user_id: string | null
+          status: string
           updated_at: string
         }
         Insert: {
+          ativada_em?: string | null
           ativo?: boolean
+          cnpj?: string | null
+          cnpj_normalizado?: string | null
           created_at?: string
+          email_corporativo?: string | null
+          fuso_horario?: string | null
           id?: string
           nome: string
+          nome_fantasia?: string | null
+          onboarding_concluido_em?: string | null
+          onboarding_dados?: Json
           partner_account_id?: string | null
+          razao_social?: string | null
           responsavel_definido_em?: string | null
           responsavel_user_id?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
+          ativada_em?: string | null
           ativo?: boolean
+          cnpj?: string | null
+          cnpj_normalizado?: string | null
           created_at?: string
+          email_corporativo?: string | null
+          fuso_horario?: string | null
           id?: string
           nome?: string
+          nome_fantasia?: string | null
+          onboarding_concluido_em?: string | null
+          onboarding_dados?: Json
           partner_account_id?: string | null
+          razao_social?: string | null
           responsavel_definido_em?: string | null
           responsavel_user_id?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -19162,6 +19230,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      _org_admin_org: { Args: never; Returns: string }
+      _org_set_status: {
+        Args: { _motivo: string; _org: string; _para: string }
+        Returns: undefined
+      }
       _portal_cliente_user_has_link: {
         Args: { p_cliente: string; p_user: string }
         Returns: boolean
@@ -20769,6 +20842,13 @@ export type Database = {
       lote_volume_envasado: { Args: { _lote_id: string }; Returns: number }
       mask_sensitive_jsonb: { Args: { v: Json }; Returns: Json }
       normalizar_alvo: { Args: { p_nome: string }; Returns: string }
+      org_onboarding_complete: { Args: never; Returns: Json }
+      org_onboarding_save: { Args: { _dados: Json }; Returns: undefined }
+      org_onboarding_state: { Args: never; Returns: Json }
+      org_status_transition_ok: {
+        Args: { _de: string; _para: string }
+        Returns: boolean
+      }
       partner_apply_default_discount: {
         Args: { p_partner_id: string }
         Returns: number
@@ -20801,6 +20881,17 @@ export type Database = {
         Returns: string
       }
       platform_conclude_provisional_password: { Args: never; Returns: boolean }
+      platform_create_organization: {
+        Args: {
+          _cnpj: string
+          _email: string
+          _nome: string
+          _nome_fantasia: string
+          _plan_key: string
+          _rascunho?: boolean
+        }
+        Returns: string
+      }
       platform_end_feature_override: {
         Args: { _override_id: string; _reason: string }
         Returns: undefined
@@ -20829,6 +20920,10 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_set_organization_status: {
+        Args: { _motivo: string; _org: string; _status: string }
+        Returns: undefined
       }
       pode_acessar_recomendacao: {
         Args: { _recomendacao_id: string; _user_id: string }

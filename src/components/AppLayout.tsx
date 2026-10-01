@@ -5,11 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { TrocaSenhaObrigatoria } from "@/components/auth/TrocaSenhaObrigatoria";
+import { OnboardingEmpresa } from "@/components/onboarding/OnboardingEmpresa";
+import { useOnboardingState } from "@/hooks/useOrgOnboarding";
 
 export function AppLayout() {
   const { role, profile } = useAuth();
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
+  const onboarding = useOnboardingState(!!profile?.organization_id && profile?.senha_provisoria !== true);
 
   // Primeiro acesso com senha provisória: bloqueia até a troca.
   if (profile?.senha_provisoria === true) {
@@ -19,6 +22,11 @@ export function AppLayout() {
   // Guarda inversa: produtor não pode acessar áreas internas
   if (role === "cliente_produtor") {
     return <Navigate to="/portal" replace />;
+  }
+
+  // Empresa com cadastro pendente: só onboarding, sair e suporte.
+  if (onboarding.data?.required) {
+    return <OnboardingEmpresa state={onboarding.data} />;
   }
 
   return (
