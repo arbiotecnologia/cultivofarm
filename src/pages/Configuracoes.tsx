@@ -82,12 +82,17 @@ import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
 
 export default function Configuracoes() {
   const isMobile = useIsMobile();
-  const { profile, role, user } = useAuth();
+  const { profile, role, roles, user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isAdmin = role === "administrador";
+  // Aba "Meu Plano": administradores da empresa (qualquer papel da lista) e o
+  // superadmin de plataforma QUANDO vinculado a uma organização. A checagem de
+  // vínculo é fail-closed no servidor (RPC/RLS) — aqui é apenas visibilidade.
+  const canMeuPlano =
+    (roles ?? []).includes("administrador") || (roles ?? []).includes("superadmin");
   const canFin = isAdmin || role === "gestor" || role === "financeiro";
   const tabParam = searchParams.get("tab");
   const initialTab =
@@ -95,7 +100,7 @@ export default function Configuracoes() {
       ? "usuarios"
       : tabParam === "financeiro" && canFin
         ? "financeiro"
-        : tabParam === "meu-plano" && isAdmin
+        : tabParam === "meu-plano" && canMeuPlano
           ? "meu-plano"
           : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
             ? tabParam
@@ -608,7 +613,7 @@ export default function Configuracoes() {
               <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual
             </TabsTrigger>
           )}
-          {isAdmin && (
+          {canMeuPlano && (
             <TabsTrigger value="meu-plano" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
               <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />Meu Plano
             </TabsTrigger>
@@ -656,8 +661,9 @@ export default function Configuracoes() {
           </TabsContent>
         )}
 
-        {/* Meu Plano (Fase S4): somente leitura, administrador da empresa */}
-        {isAdmin && (
+        {/* Meu Plano (Fase S4): somente leitura — administrador da empresa ou
+            superadmin vinculado a uma organização (vínculo validado no servidor) */}
+        {canMeuPlano && (
           <TabsContent value="meu-plano">
             <MeuPlanoTab />
           </TabsContent>
