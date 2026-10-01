@@ -20,11 +20,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-/** Mesma política validada no servidor: 8–128 caracteres, letra e dígito. */
-export function senhaForte(s: string): boolean {
-  return s.length >= 8 && s.length <= 128 && /[A-Za-z]/.test(s) && /\d/.test(s);
-}
+import {
+  FIRST_ACCESS_CLIENT_VERSION,
+  lerFalhaPrimeiroAcesso,
+  mensagemFalhaPrimeiroAcesso,
+  senhaForte,
+} from "@/lib/saas/firstAccess";
 
 export function TrocaSenhaObrigatoria() {
   const { refresh, signOut } = useAuth();
@@ -65,7 +66,7 @@ export function TrocaSenhaObrigatoria() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md" data-first-access-version={FIRST_ACCESS_CLIENT_VERSION}>
         <CardHeader>
           <div className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" aria-hidden="true" />
