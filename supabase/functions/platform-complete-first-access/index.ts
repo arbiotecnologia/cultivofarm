@@ -1,8 +1,8 @@
 // Conclusão do primeiro acesso (troca obrigatória de senha temporária).
 //
 // Segurança:
-// - Autenticado pelo JWT do próprio usuário (getClaims); nada de confiar em
-//   user_metadata nem em estado do cliente.
+// - Autenticado pelo JWT do próprio usuário (getClaims); nada do cliente é
+//   usado como fonte de autorização (nem metadados da sessão).
 // - O estado de primeiro acesso vive apenas no servidor
 //   (profiles.senha_provisoria + platform_private.provisional_password_state,
 //   verificados via RPC exclusiva de service_role).
