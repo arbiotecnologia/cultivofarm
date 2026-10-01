@@ -113,7 +113,7 @@ describe("H7P — manifesto de migrations repo-only", () => {
     // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
     // Fase S3 (SaaS) — 5 migrations aplicadas no canônico em 2026-10-01, fora do ledger H7/H9.
     const S3_APLICADAS = [
-      "20261001013422", "20261001013456", "20261001013533", "20261001013603", "20261001013832",
+      "20261001013422", "20261001013456", "20261001013533", "20261001013603", "20261001013832", "20261001015249",
     ];
     const known = manifest.ledger_versoes + manifest.total_repo_only + S3_APLICADAS.length;
     expect(repoVersions.length).toBeLessThanOrEqual(known);

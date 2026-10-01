@@ -262,4 +262,6 @@
 - [ ] S3 — organization_feature_overrides e integração nos guards/menus (aguarda autorização)
 - [ ] Teste autenticado ponta a ponta de get_my_entitlements() por perfil (exige login de teste)
 - [x] S3 Etapas 1–3: exceções por empresa, painel do superadmin, plano respeitado em menus/telas — docs/auditorias/fase-s3-overrides-gates-2026-10-01.md
-- [ ] S3 Etapa 4: checagem de plano nas funções de servidor (Fiscal, Comunicação) — próxima rodada
+- [x] S3 Etapa 4: checagem de plano no servidor (Fiscal, Comunicação)
+- [ ] Limites de uso por plano — aguardando definição dos limites pelo usuário
+- [ ] Plano no servidor dos demais módulos — próximas rodadas
