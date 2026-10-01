@@ -67,8 +67,28 @@ describe("primeiro acesso — convite e compensação", () => {
   });
 
   it("nenhum segredo em logs", () => {
-    expect(edge).not.toMatch(/console\.(log|error|warn)/);
+    // Único log permitido na Edge Function: diagnóstico com etapa/código.
+    const logs = edge.match(/console\.(log|error|warn)\([^;]*;/g) ?? [];
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toContain("etapa, codigo, msg");
+    expect(logs.join()).not.toMatch(/novaSenha|nova_senha|token|authHeader|password/);
     expect(convite).not.toMatch(/console\.(log|error|warn)/);
     expect(troca).not.toMatch(/console\.(log|error|warn)/);
+  });
+
+  it("diag nunca recebe a senha nem o token", () => {
+    expect(edge).not.toMatch(/diag\([^)]*(novaSenha|token|authHeader)/);
+  });
+
+  it("respostas de erro sanitizadas trazem etapa e código", () => {
+    for (const etapa of ["auth_header", "auth_claims", "senha_fraca", "pendencia_consulta", "nao_pendente", "senha_atualizacao", "liberacao"]) {
+      expect(edge).toContain(`"${etapa}"`);
+    }
+    expect(troca).toContain("ref.:");
+  });
+
+  it("liberação aceita o formato atual de claims do Supabase (via SQL)", () => {
+    // Coberto pela migration: request.jwt.claims ->> 'role'.
+    expect(edge).toContain("platform_conclude_provisional_password_server");
   });
 });
