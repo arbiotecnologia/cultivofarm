@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { senhaForte } from "@/components/auth/TrocaSenhaObrigatoria";
+import { senhaForte, lerFalhaPrimeiroAcesso, mensagemFalhaPrimeiroAcesso } from "@/lib/saas/firstAccess";
 
 const troca = readFileSync("src/components/auth/TrocaSenhaObrigatoria.tsx", "utf-8");
 const edge = readFileSync("supabase/functions/platform-complete-first-access/index.ts", "utf-8");
@@ -84,11 +84,35 @@ describe("primeiro acesso — convite e compensação", () => {
     for (const etapa of ["auth_header", "auth_claims", "senha_fraca", "pendencia_consulta", "nao_pendente", "senha_atualizacao", "liberacao"]) {
       expect(edge).toContain(`"${etapa}"`);
     }
-    expect(troca).toContain("ref.:");
+    expect(readFileSync("src/lib/saas/firstAccess.ts", "utf-8")).toContain("ref.:");
+    expect(troca).toContain("mensagemFalhaPrimeiroAcesso");
   });
 
   it("liberação aceita o formato atual de claims do Supabase (via SQL)", () => {
     // Coberto pela migration: request.jwt.claims ->> 'role'.
     expect(edge).toContain("platform_conclude_provisional_password_server");
+  });
+});
+
+describe("primeiro acesso — leitura do erro sanitizado no cliente", () => {
+  const resp = (status: number, body: unknown) =>
+    ({ context: new Response(JSON.stringify(body), { status }) });
+
+  it("mostra mensagem e ref.: etapa/código do servidor", async () => {
+    const d = await lerFalhaPrimeiroAcesso(resp(500, { error: "Falhou X", etapa: "liberacao", codigo: "42501" }));
+    expect(mensagemFalhaPrimeiroAcesso(d, 500)).toBe("Falhou X (ref.: liberacao/42501)");
+  });
+
+  it("corpo já consumido ou inválido cai em ref.: http/status", async () => {
+    const r = resp(502, "x");
+    await r.context.text();
+    const d = await lerFalhaPrimeiroAcesso(r);
+    expect(mensagemFalhaPrimeiroAcesso(d, 502)).toContain("ref.: http/502");
+    expect(await lerFalhaPrimeiroAcesso({})).toBeNull();
+  });
+
+  it("liberação emite ticket transacional exigido pelo guard (migration)", () => {
+    // Regressão de 2026-10-01: liberacao/42501 profile_sensitive_fields_forbidden.
+    expect(edge).toContain('"liberacao"');
   });
 });

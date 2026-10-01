@@ -20,11 +20,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-/** Mesma política validada no servidor: 8–128 caracteres, letra e dígito. */
-export function senhaForte(s: string): boolean {
-  return s.length >= 8 && s.length <= 128 && /[A-Za-z]/.test(s) && /\d/.test(s);
-}
+import {
+  FIRST_ACCESS_CLIENT_VERSION,
+  lerFalhaPrimeiroAcesso,
+  mensagemFalhaPrimeiroAcesso,
+  senhaForte,
+} from "@/lib/saas/firstAccess";
 
 export function TrocaSenhaObrigatoria() {
   const { refresh, signOut } = useAuth();
@@ -50,18 +51,10 @@ export function TrocaSenhaObrigatoria() {
       });
       if (error) {
         // Resposta sanitizada do servidor: { error, etapa, codigo } — sem segredos.
-        let detalhe: { error?: string; etapa?: string; codigo?: string | null } | null = null;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const ctx = (error as any).context;
-          if (ctx && typeof ctx.json === "function") detalhe = await ctx.json();
-        } catch {
-          detalhe = null;
-        }
-        const ref = detalhe?.etapa
-          ? ` (ref.: ${detalhe.etapa}${detalhe.codigo ? `/${detalhe.codigo}` : ""})`
-          : "";
-        setErro((detalhe?.error ?? "Não foi possível salvar a nova senha. Tente novamente.") + ref);
+        const detalhe = await lerFalhaPrimeiroAcesso(error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const status = (error as any)?.context?.status ?? null;
+        setErro(mensagemFalhaPrimeiroAcesso(detalhe, status));
         return;
       }
       toast.success("Senha definida. Bem-vindo!");
@@ -73,7 +66,7 @@ export function TrocaSenhaObrigatoria() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md" data-first-access-version={FIRST_ACCESS_CLIENT_VERSION}>
         <CardHeader>
           <div className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" aria-hidden="true" />

@@ -14,6 +14,8 @@
 //   de entrada do usuário e sem cabeçalhos).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+const VERSAO = "fa-3";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -92,15 +94,29 @@ Deno.serve(async (req) => {
       return falha(400, "payload", "Dados inválidos.");
     }
     const novaSenha = (body as Record<string, unknown>).nova_senha;
+    const diagnostico = (body as Record<string, unknown>).diagnostico === true;
 
-    // (3) Complexidade validada no servidor.
-    if (!senhaValida(novaSenha)) {
+    // (3) Complexidade validada no servidor (não se aplica ao modo diagnóstico).
+    if (!diagnostico && !senhaValida(novaSenha)) {
       return falha(400, "senha_fraca", "A senha precisa ter de 8 a 128 caracteres, com letras e números.");
     }
 
     const adminClient = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    // Modo diagnóstico (somente leitura): confirma identidade e pendência sem
+    // alterar senha nem estado.
+    if (diagnostico) {
+      const { data: pend, error: pErr } = await adminClient.rpc("platform_first_access_pending", {
+        p_user_id: callerId,
+      });
+      if (pErr) {
+        const c = diag("pendencia_consulta", pErr);
+        return falha(500, "pendencia_consulta", "Não foi possível validar seu acesso.", c);
+      }
+      return json({ ok: true, etapa: "diagnostico", pendente: pend === true, versao: VERSAO });
+    }
 
     // (2) Estado server-only: o usuário está realmente no primeiro acesso?
     const { data: pendente, error: pendErr } = await adminClient.rpc(
@@ -147,7 +163,7 @@ Deno.serve(async (req) => {
         "Senha alterada, mas a liberação falhou. Tente entrar novamente com a nova senha.", c);
     }
 
-    return json({ success: true });
+    return json({ success: true, versao: VERSAO });
   } catch (err) {
     const c = diag("inesperado", err);
     return falha(500, "inesperado", "Falha inesperada ao concluir o primeiro acesso.", c);
