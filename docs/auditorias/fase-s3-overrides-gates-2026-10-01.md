@@ -18,10 +18,16 @@ Banco: `swzpzcwiasxmjutrmvkm` (confirmado em `.env`). Nenhum dado operacional al
 - Vitest: 5.231 testes passando, 4 ignorados; typecheck e build OK.
 - Testes de escopo S1/home atualizados: escrita permitida somente via RPCs `platform_*`.
 
+## Etapa 4 — servidor (migration `20261001015249`)
+- `_saas_user_has_feature(uid, key)` interno (EXECUTE revogado de PUBLIC/anon/authenticated; sem alerta novo).
+- `fn_fiscal_can_operate` exige `emissao_nfe_nfse`; `_comunicacao_require_admin` exige `envios_automaticos` (service_role preservado).
+- Sonda revertida: fiscal com plano=true, sem=false; comunicação com plano=liberada, sem=`saas_feature_nao_contratada`; helper inacessível a authenticated.
+- Vitest 5.231 passando, typecheck e build OK.
+
 ## Pendências
-- Etapa 4 (checagem de plano dentro das funções de servidor de Fiscal e Comunicação) — próxima rodada.
-- Teste ponta a ponta autenticado do painel de exceções na prévia.
-- Limites (`limit_value`) ainda não aplicados em uso.
+- Teste ponta a ponta autenticado do painel na prévia: indisponível neste projeto (Supabase externo, sem sessão de teste) — conferir manualmente.
+- Limites (`limit_value`) ainda não aplicados em uso — depende de definir quais limites existem.
+- Demais módulos no servidor (Produção, Comercial, Agronômico, Financeiro) — rodadas seguintes, um por vez.
 
 ## Conclusão
-PASS para Etapas 1–3. Etapa 4 aberta.
+PASS para Etapas 1–4 (Fiscal e Comunicação).
