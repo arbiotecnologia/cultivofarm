@@ -50,18 +50,10 @@ export function TrocaSenhaObrigatoria() {
       });
       if (error) {
         // Resposta sanitizada do servidor: { error, etapa, codigo } — sem segredos.
-        let detalhe: { error?: string; etapa?: string; codigo?: string | null } | null = null;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const ctx = (error as any).context;
-          if (ctx && typeof ctx.json === "function") detalhe = await ctx.json();
-        } catch {
-          detalhe = null;
-        }
-        const ref = detalhe?.etapa
-          ? ` (ref.: ${detalhe.etapa}${detalhe.codigo ? `/${detalhe.codigo}` : ""})`
-          : "";
-        setErro((detalhe?.error ?? "Não foi possível salvar a nova senha. Tente novamente.") + ref);
+        const detalhe = await lerFalhaPrimeiroAcesso(error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const status = (error as any)?.context?.status ?? null;
+        setErro(mensagemFalhaPrimeiroAcesso(detalhe, status));
         return;
       }
       toast.success("Senha definida. Bem-vindo!");
