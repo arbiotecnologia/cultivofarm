@@ -164,7 +164,7 @@ describe("H9-D-L7 — forward e rollback", () => {
     expect(manifest.ledger_versoes).toBe(684);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
     expect(manifest.total_applied_forwards).toBe(19);
-    expect(h7p.ledger_versoes).toBe(689); // +5 migrations S3
+    expect(h7p.ledger_versoes).toBe(684);
     expect(h7p.total_repo_only).toBe(59);
   });
 

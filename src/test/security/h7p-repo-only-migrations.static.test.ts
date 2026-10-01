@@ -52,7 +52,7 @@ const sha256 = (p: string) =>
 
 describe("H7P — manifesto de migrations repo-only", () => {
   it("declara exatamente 59 entradas contra o ledger de 683 versões", () => {
-    expect(manifest.ledger_versoes).toBe(689); // +5 migrations S3 aplicadas no canônico
+    expect(manifest.ledger_versoes).toBe(684); aplicadas no canônico
     expect(manifest.total_repo_only).toBe(59);
     expect(manifest.entries).toHaveLength(59);
   });
@@ -111,7 +111,11 @@ describe("H7P — manifesto de migrations repo-only", () => {
     // H9-D-L1..L4 e respectivas retificações — versionadas fora de
     // supabase/migrations) + 59 reconciliadas. Qualquer arquivo novo posterior
     // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
-    const known = manifest.ledger_versoes + manifest.total_repo_only;
+    // Fase S3 (SaaS) — 5 migrations aplicadas no canônico em 2026-10-01, fora do ledger H7/H9.
+    const S3_APLICADAS = [
+      "20261001013422", "20261001013456", "20261001013533", "20261001013603", "20261001013832",
+    ];
+    const known = manifest.ledger_versoes + manifest.total_repo_only + S3_APLICADAS.length;
     expect(repoVersions.length).toBeLessThanOrEqual(known);
   });
 
