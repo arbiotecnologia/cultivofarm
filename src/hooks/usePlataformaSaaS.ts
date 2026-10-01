@@ -272,3 +272,88 @@ export function useAlterarAssinatura() {
     onSettled: invalidar,
   });
 }
+
+// ===== Convite de administrador de empresa (provisionamento) =====
+
+export interface ConviteAdminEmpresa {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  email: string;
+  nome: string;
+  cpf_cnpj: string | null;
+  telefone: string | null;
+  modo_acesso: "link" | "senha_temporaria";
+  responsavel_principal: boolean;
+  created_at: string;
+}
+
+export function useConvitesAdminEmpresa() {
+  return useQuery<ConviteAdminEmpresa[]>({
+    queryKey: ["plataforma", "platform_org_admin_invites"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("platform_org_admin_invites")
+        .select(
+          "id,organization_id,user_id,email,nome,cpf_cnpj,telefone,modo_acesso,responsavel_principal,created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(LIMITE);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ConviteAdminEmpresa[];
+    },
+    ...opcoes,
+  });
+}
+
+export interface ResultadoConvite {
+  user_id: string;
+  action_link: string | null;
+  senha_temporaria: string | null;
+}
+
+export function useConvidarAdminEmpresa() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation<
+    ResultadoConvite,
+    Error,
+    {
+      organizationId: string;
+      nome: string;
+      email: string;
+      cpf: string;
+      telefone: string;
+      modo: "link" | "senha_temporaria";
+      responsavelPrincipal: boolean;
+    }
+  >({
+    retry: false,
+    mutationFn: async (v) => {
+      const { data, error } = await supabase.functions.invoke("platform-invite-org-admin", {
+        body: {
+          organization_id: v.organizationId,
+          nome: v.nome,
+          email: v.email,
+          cpf: v.cpf || null,
+          telefone: v.telefone || null,
+          modo_acesso: v.modo,
+          responsavel_principal: v.responsavelPrincipal,
+        },
+      });
+      const payload = (data ?? {}) as Record<string, unknown>;
+      if (error || payload.error) {
+        throw new Error(
+          typeof payload.error === "string"
+            ? payload.error
+            : "Não foi possível criar o acesso do administrador.",
+        );
+      }
+      return {
+        user_id: String(payload.user_id ?? ""),
+        action_link: (payload.action_link as string | null) ?? null,
+        senha_temporaria: (payload.senha_temporaria as string | null) ?? null,
+      };
+    },
+    onSettled: invalidar,
+  });
+}
