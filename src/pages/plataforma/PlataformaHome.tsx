@@ -12,6 +12,7 @@
 import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog } from "lucide-react";
 import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import PlataformaAdmins from "./PlataformaAdmins";
+import PlataformaEmpresas from "./PlataformaEmpresas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -143,13 +144,15 @@ export default function PlataformaHome() {
               <SlidersHorizontal className="mr-2 h-4 w-4" aria-hidden="true" />
               Exceções
             </TabsTrigger>
+            <TabsTrigger value="empresas">
+              <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
+              Nova Empresa
+            </TabsTrigger>
             <TabsTrigger value="admins">
               <UserCog className="mr-2 h-4 w-4" aria-hidden="true" />
               Administradores
             </TabsTrigger>
             <TabsTrigger value="historico">
-
-
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
             </TabsTrigger>
@@ -251,6 +254,10 @@ export default function PlataformaHome() {
           </TabsContent>
 
           {/* ADMINISTRADORES DE EMPRESA ----------------------------------- */}
+          <TabsContent value="empresas">
+            <PlataformaEmpresas />
+          </TabsContent>
+
           <TabsContent value="admins">
             <PlataformaAdmins />
           </TabsContent>
