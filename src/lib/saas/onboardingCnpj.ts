@@ -27,7 +27,7 @@ export const ROTULOS: Record<CampoAplicavel, string> = {
 
 export interface ItemPlano { campo: CampoAplicavel; atual: string; novo: string; tipo: "vazio" | "conflito" }
 
-const norm = (s: string) => s.replace(/[\s.\-/()]/g, "").toUpperCase();
+const norm = (s: string) => s.normalize("NFD").replace(/[\s.\-/()]/g, "").replace(/\p{Diacritic}/gu, "").toUpperCase();
 
 export function planejarAplicacao(atual: OnboardingDados, dados: DadosEmpresa): ItemPlano[] {
   const out: ItemPlano[] = [];
