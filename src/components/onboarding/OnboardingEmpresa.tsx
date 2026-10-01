@@ -65,7 +65,7 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
   const [codigoErro, setCodigoErro] = useState<string | null>(null);
   const [empresa, setEmpresa] = useState<DadosEmpresa | null>(null); // original da consulta (memória)
   const [plano, setPlano] = useState<ItemPlano[]>([]);
-  const [usarApi, setUsarApi] = useState<Set<string>>(new Set());
+  const [usarApi, setUsarApi] = useState<Set<CampoAplicavel>>(new Set());
   const [origem, setOrigem] = useState<Record<string, "manual" | "consulta">>({});
 
   useEffect(() => {
