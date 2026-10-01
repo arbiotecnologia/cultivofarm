@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,7 +81,10 @@ export function AlterarAssinaturaCard() {
             {STATUS.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input placeholder="Motivo (obrigatório)" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+        <div className="space-y-1">
+          <Label htmlFor="assin-motivo">Motivo da alteração *</Label>
+          <Input id="assin-motivo" placeholder="Ex.: renovação contratual" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+        </div>
         <div className="sm:col-span-2">
           <Button disabled={!org || !plano || !motivoOk(motivo) || alterar.isPending} onClick={enviar}>
             {alterar.isPending ? "Salvando…" : "Salvar alteração"}
@@ -167,7 +171,10 @@ export function ExcecoesTab() {
             </SelectContent>
           </Select>
           <Input type="date" aria-label="Válida até (opcional)" value={ate} onChange={(e) => setAte(e.target.value)} />
-          <Input className="sm:col-span-2" placeholder="Motivo (obrigatório)" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="exce-motivo">Motivo da exceção *</Label>
+            <Input id="exce-motivo" placeholder="Ex.: liberação acordada até a renovação" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          </div>
           <div className="sm:col-span-2">
             <Button disabled={!org || !feature || !motivoOk(motivo) || criar.isPending} onClick={enviar}>
               {criar.isPending ? "Salvando…" : "Criar exceção"}
