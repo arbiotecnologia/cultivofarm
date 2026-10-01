@@ -47,3 +47,36 @@ describe("onboarding de empresa", () => {
     expect(r).not.toHaveProperty("id");
   });
 });
+
+import { readFileSync } from "node:fs";
+import { cnpjValido as cv, sanitizarPayloadOnboarding as san } from "@/lib/saas/orgOnboarding";
+
+describe("hardening onboarding (aplicação)", () => {
+  it("descarta chaves fora da whitelist e trunca oversize", () => {
+    const r = san({ razao_social: "a".repeat(500), hack: "x", __proto__x: 1, uf: { a: 1 } as unknown as string });
+    expect(Object.keys(r)).toEqual(["razao_social"]);
+    expect((r.razao_social as string).length).toBe(200);
+  });
+  it("CNPJ com DV inválido é rejeitado; alfanumérico válido aceito", () => {
+    expect(cv("11.222.333/0001-82")).toBe(false);
+    expect(cv("12.ABC.345/01DE-35")).toBe(true);
+  });
+  it("primeiro acesso: troca de senha antes do onboarding, onboarding antes dos módulos", () => {
+    const src = readFileSync("src/components/AppLayout.tsx", "utf8");
+    const iSenha = src.indexOf("<TrocaSenhaObrigatoria");
+    const iOnb = src.indexOf("<OnboardingEmpresa");
+    const iMod = src.indexOf("<Outlet");
+    expect(iSenha).toBeGreaterThan(0);
+    expect(iSenha).toBeLessThan(iOnb);
+    expect(iOnb).toBeLessThan(iMod);
+  });
+  it("nenhum contato de suporte inventado no código", () => {
+    const src = readFileSync("src/components/onboarding/OnboardingEmpresa.tsx", "utf8");
+    expect(src).not.toMatch(/suporte@cultivofarm/);
+    expect(src).toMatch(/supportContact/);
+  });
+  it("estado do onboarding não usa user_metadata", () => {
+    const hook = readFileSync("src/hooks/useOrgOnboarding.ts", "utf8");
+    expect(hook).not.toMatch(/user_metadata/);
+  });
+});
