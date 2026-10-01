@@ -255,5 +255,5 @@
 - [x] Prova remota concluída: `xsd-selftest` no Supabase canônico retornou HTTP 200 (`loadedFiles:5`, v13, verify_jwt=true); pós-check DB zerado, produção bloqueada (19/09/2026 14:11 UTC).
 
 ## Pendências ativas
-- [ ] Criar usuário mestre superadmin (cultivo@cultivofarm.com.br) — migration corrigindo coluna gerada `confirmed_at`
-- [ ] Planejar planos personalizáveis (overrides por organização — insumo para fase S3)
+- [x] Criar usuário mestre superadmin (cultivo@cultivofarm.com.br) — login validado ponta a ponta na prévia (redireciona para /plataforma, Plano Base visível)
+- [x] Planejar planos personalizáveis — docs/auditorias/plano-planos-personalizaveis-2026-10-01.md
