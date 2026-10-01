@@ -40,15 +40,15 @@ describe("planejarAplicacao", () => {
 
 describe("aplicarPlano", () => {
   it("aplica vazios e só os conflitos escolhidos", () => {
-    const atual = { ...base, cidade: "São Paulo", logradouro: "Rua manual" };
+    const atual = { ...base, cidade: "são paulo", logradouro: "Rua manual" };
     const plano = planejarAplicacao(atual, dados);
     const soVazios = aplicarPlano(atual, plano, new Set());
     expect(soVazios.cep).toBe("05434-090");
-    expect(soVazios.cidade).toBe("São Paulo");
     expect(soVazios.logradouro).toBe("Rua manual");
-    const comEscolhas = aplicarPlano(atual, plano, new Set(["cidade", "logradouro"]));
-    expect(comEscolhas.cidade).toBe("SAO PAULO");
+    const comEscolhas = aplicarPlano(atual, plano, new Set(["logradouro"]));
     expect(comEscolhas.logradouro).toBe("Rua Fradique Coutinho");
+    // cidade equivalente não gera conflito nem é alterada
+    expect(comEscolhas.cidade).toBe("são paulo");
   });
 
   it("nunca altera o CNPJ já digitado", () => {
