@@ -1,5 +1,5 @@
 /**
- * Fase S3 — mapa rota → funcionalidade SaaS (chave em `saas_features.key`).
+ * Fase S3 — mapa rota → funcionalidade SaaS (chave da funcionalidade no catálogo).
  *
  * Gate ADICIONAL aos guards de perfil: nunca libera o que o perfil não libera.
  * Rotas sem mapeamento (dashboards gerais, cadastros, administração) não são
