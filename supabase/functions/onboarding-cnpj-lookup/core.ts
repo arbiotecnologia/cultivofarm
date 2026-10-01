@@ -116,8 +116,8 @@ export async function consultar(
   timeoutMs = TIMEOUT_MS,
 ): Promise<Resultado> {
   const cnpj = normalizar(entrada);
+  if (/^[0-9A-Z]{14}$/.test(cnpj) && /[A-Z]/.test(cnpj)) return { codigo: "unsupported_alpha" };
   if (!cnpjValido(cnpj)) return { codigo: "invalid_cnpj" };
-  if (/[^0-9]/.test(cnpj)) return { codigo: "unsupported_alpha" };
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
