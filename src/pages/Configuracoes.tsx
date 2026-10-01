@@ -75,7 +75,8 @@ import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
 import { isComunicacaoModuleEnabled } from "@/features/comunicacao/flags";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, CreditCard } from "lucide-react";
+import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
 
 
 
@@ -94,9 +95,11 @@ export default function Configuracoes() {
       ? "usuarios"
       : tabParam === "financeiro" && canFin
         ? "financeiro"
-        : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
-          ? tabParam
-          : "perfil";
+        : tabParam === "meu-plano" && isAdmin
+          ? "meu-plano"
+          : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
+            ? tabParam
+            : "perfil";
 
 
   // Profile edit state
