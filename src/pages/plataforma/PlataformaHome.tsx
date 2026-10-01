@@ -143,7 +143,12 @@ export default function PlataformaHome() {
               <SlidersHorizontal className="mr-2 h-4 w-4" aria-hidden="true" />
               Exceções
             </TabsTrigger>
+            <TabsTrigger value="admins">
+              <UserCog className="mr-2 h-4 w-4" aria-hidden="true" />
+              Administradores
+            </TabsTrigger>
             <TabsTrigger value="historico">
+
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
             </TabsTrigger>
