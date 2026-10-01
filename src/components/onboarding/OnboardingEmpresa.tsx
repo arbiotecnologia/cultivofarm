@@ -62,6 +62,7 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
   // Consulta
   const [carregando, setCarregando] = useState(false);
   const [erroConsulta, setErroConsulta] = useState<string | null>(null);
+  const [codigoErro, setCodigoErro] = useState<string | null>(null);
   const [empresa, setEmpresa] = useState<DadosEmpresa | null>(null); // original da consulta (memória)
   const [plano, setPlano] = useState<ItemPlano[]>([]);
   const [usarApi, setUsarApi] = useState<Set<string>>(new Set());
@@ -113,11 +114,11 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
 
   const consultar = async () => {
     setErroConsulta(null);
-    if (!validateCnpjAlpha(d.cnpj)) { setErroConsulta(mensagemConsulta("invalid_cnpj")); return; }
+    if (!validateCnpjAlpha(d.cnpj)) { setCodigoErro("invalid_cnpj"); setErroConsulta(mensagemConsulta("invalid_cnpj")); return; }
     setCarregando(true);
     try {
       const r = await consultarCnpjOnboarding(d.cnpj ?? "");
-      if (r.codigo !== "ok" || !("dados" in r)) { setErroConsulta(mensagemConsulta(r.codigo)); return; }
+      if (r.codigo !== "ok" || !("dados" in r)) { setCodigoErro(r.codigo); setErroConsulta(mensagemConsulta(r.codigo)); return; }
       const p = planejarAplicacao(d, r.dados);
       const novo = aplicarPlano(d, p, new Set()); // aplica apenas campos vazios agora
       const orig: Record<string, "manual" | "consulta"> = { ...origem };
@@ -158,12 +159,14 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
     setEmpresa(null);
     setPlano([]);
     setErroConsulta(null);
+    setCodigoErro(null);
   };
 
   const preencherManualmente = () => {
     setEmpresa(null);
     setPlano([]);
     setErroConsulta(null);
+    setCodigoErro(null);
     setEtapa(1);
   };
 
@@ -236,7 +239,7 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
                   ) : (
                     <Button variant="outline" onClick={trocarCnpj}>Consultar outro CNPJ</Button>
                   )}
-                  {erroConsulta && CODIGOS_FALLBACK.has(erroConsultaCodigo(erroConsulta)) && (
+                  {erroConsulta && codigoErro && CODIGOS_FALLBACK.has(codigoErro) && (
                     <Button variant="secondary" onClick={preencherManualmente}>Preencher manualmente</Button>
                   )}
                 </div>
@@ -401,18 +404,4 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
       </div>
     </div>
   );
-}
-
-// Mapeia o rótulo amigável de volta ao código para decidir o fallback manual.
-function erroConsultaCodigo(msg: string): string {
-  const mapa: [RegExp, string][] = [
-    [/não encontrado/i, "not_found"],
-    [/Limite de consultas/i, "rate_limited"],
-    [/demorou demais|indisponível|inesperada|Falha de rede/i, "upstream_error"],
-    [/inválido/i, "invalid_cnpj"],
-    [/alfanumérico/i, "unsupported_alpha"],
-    [/Sessão|administrador/i, "forbidden"],
-  ];
-  for (const [re, cod] of mapa) if (re.test(msg)) return cod;
-  return "upstream_error";
 }
