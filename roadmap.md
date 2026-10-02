@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton/ACLs endurecidos, isolamento global restrito a Superadmin de Plataforma e teste SMTP fail-closed/sanitizado; prontidão atual permanece falsa. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF, sessão manual superadmin controlada e novo comando explícito. Sem publicação ou D52.
+- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: retomada interrompida no pré-check sem mutação. SMTP está configurado e flags global/e-mail estão ON, porém a allowlist contém 3 endereços (deve conter somente o controlado), in-app está ON (deve ficar OFF) e a sessão superadmin não foi disponibilizada às ferramentas. Sem envio, publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
@@ -20,9 +20,8 @@
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, o Superadmin de Plataforma configura na aba Comunicação de `/plataforma`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
-- [ ] D51.2: responsável entrar manualmente como superadmin controlado em `/auth` na prévia. Projeto externo não gerenciado não permite `lovable auth-session`; não compartilhar senha no chat e não substituir sessão por `service_role`.
-- [ ] D51.2: habilitar Entrega global + E-mail somente após novo comando explícito para a janela E2E; manter WhatsApp, in-app e webhook OFF.
+- [ ] D51.2: Superadmin deve substituir a allowlist pela entrada única `teste@refilinformatica.com.br` e desligar in-app; preservar test mode ON, entrega global/e-mail ON durante a janela e WhatsApp/webhook OFF.
+- [ ] D51.2: responsável permanecer autenticado como superadmin controlado na prévia e enviar novo comando de retomada. A sessão não foi disponibilizada nesta tentativa; não compartilhar senha e não substituir sessão por `service_role`.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).

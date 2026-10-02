@@ -574,3 +574,37 @@ O pós-deploy reconfirmou o mesmo estado fail-closed e zero lease ativo. Nenhuma
 **P1 corrigido no código e nas duas Edge Functions do canônico. D51.2-F concluído no escopo autorizado.** O frontend foi apenas preparado na prévia/código e não publicado em produção.
 
 O Gate D51.2 permanece **NO-GO para E01–E21 e para encerramento**: ainda faltam comprovação de sender/domínio, configuração manual de SMTP/Vault pelo Superadmin em `/plataforma` com flags inicialmente OFF, sessão manual superadmin controlada e novo comando explícito. E15A continua apenas planejado e parcial. Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida. Nenhum SMTP foi configurado, nenhum e-mail foi enviado, nenhum usuário/tenant foi criado e D52 não foi iniciado.
+
+## 22. Retomada D51.2 — pré-check da janela E2E
+
+Data/hora da parada: `2026-10-02T02:52:39Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
+Commit candidato: `c8b2e65bfc16100f8c20b5bbf343c408536878a5`
+
+### 22.1 Resultado somente leitura
+
+| Pré-check | Resultado |
+|---|---|
+| Binding canônico | PASS |
+| Commit candidato registrado | PASS |
+| SMTP completo e flags global/e-mail ON | PASS — somente presença/booleanos, sem valores expostos |
+| Test mode ON | PASS |
+| Allowlist exclusivamente controlada | **FAIL — contém 3 endereços; esperado exatamente 1** |
+| WhatsApp OFF | PASS |
+| In-app OFF | **FAIL — estava ON** |
+| Webhook WhatsApp OFF | PASS |
+| Lease de envio anterior ativo | PASS — zero |
+| Sessão real superadmin disponível às ferramentas | **FAIL — chamada autenticada não recebeu sessão e retornou HTTP 401** |
+| Conflitos D51.2 preexistentes | PASS — zero Auth user controlado, zero convite controlado e zero organização D51.2 |
+| Forward-fix `raw_app_meta_data` | PASS |
+| Leaked Password Protection | EXCEÇÃO ACEITA — warning ainda presente e não mascarado |
+
+Baseline sanitizado preservado: 6 Auth users, 6 profiles, 2 organizações, 2 assinaturas, 1 convite histórico, 1 configuração fiscal e 0 pedidos B2B.
+
+### 22.2 Parada e ação necessária
+
+Conforme a regra principal, a execução parou **antes de qualquer mutação e antes de E01**. Não houve criação de tenant, usuário ou convite; nenhum e-mail foi enviado; E01–E21 continuam `NOT RUN`.
+
+Para uma nova retomada, o Superadmin de Plataforma deve, pela aba Comunicação de `/plataforma`, substituir a allowlist para conter somente `teste@refilinformatica.com.br` e desligar notificações in-app, preservando WhatsApp e webhook OFF. Depois, deve permanecer autenticado na prévia e iniciar uma nova mensagem de retomada para que a sessão possa ser validada sem senha, token ou `service_role`.
+
+**Decisão: NO-GO.** Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida. D52 não foi iniciado.
