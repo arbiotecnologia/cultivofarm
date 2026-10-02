@@ -500,3 +500,77 @@ Teste adicionado: `src/test/comunicacao/d51-2-e-smtp-ux-security.test.ts`.
 **D51.2-E concluído no escopo autorizado.** O SMTP permanece não configurado e não pronto; nenhum e-mail foi enviado, nenhuma credencial foi gravada, nenhum usuário/tenant foi criado, E01–E21 permanecem NOT RUN e não houve publicação ou avanço D52.
 
 Próximos passos manuais permanecem: comprovar sender/domínio, configurar SMTP e allowlist exclusiva pela UI segura com flags inicialmente OFF, obter sessão manual superadmin e aguardar comando explícito para a janela E2E. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
+
+## 21. D51.2-F — isolamento SaaS da configuração global SMTP
+
+Data: 2026-10-02  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
+Commit candidato verificado antes do deploy: `ccea57fac61f7b7e4966890dc3d88e733ddecab4`
+
+### 21.1 Risco comprovado e classificação
+
+`public.communication_provider_settings` é um singleton global (`id=1`) e não possui vínculo com organização. Antes da correção, `communication-provider-settings` e `test-communication-email` autorizavam o papel operacional `administrador`; como esse papel não identifica um administrador da plataforma, qualquer administrador tenant autenticado poderia alcançar leitura/alteração da configuração global e o teste SMTP. O risco foi classificado como **P1 de isolamento SaaS**.
+
+A autorização não dependia de `user_metadata`, mas usava a categoria de papel errada para um recurso global. A RPC técnica de persistência permanece concedida somente a `postgres`/`service_role`; não há grant direto para `anon` ou `authenticated`, e workers continuam usando a fronteira técnica existente.
+
+### 21.2 Correção aplicada
+
+- ambas as Edge Functions agora validam o JWT e consultam `is_platform_superadmin(sub)` no servidor;
+- retorno falso ou erro da verificação falha fechado com `403`; ausência ou JWT inválido retorna `401`, sempre com códigos sanitizados;
+- papel tenant, `user_metadata` e estado informado pelo frontend não participam da autorização;
+- readiness, test mode, allowlist, rate limit e bloqueio antes do socket foram preservados;
+- `ComunicacaoConfigTab` continua sendo o componente único, removido de `/configuracoes` e reutilizado na aba **Comunicação** de `/plataforma`;
+- `/plataforma` permanece protegida por `PlataformaGuard`, que exige `superadmin`, sem conceder papel operacional `administrador` ao superadmin;
+- não foi criada rota, tabela, provider ou tela paralela.
+
+Arquivos funcionais alterados:
+
+- `supabase/functions/communication-provider-settings/index.ts`;
+- `supabase/functions/test-communication-email/index.ts`;
+- `src/pages/configuracoes/ComunicacaoConfigTab.tsx`;
+- `src/pages/Configuracoes.tsx`;
+- `src/pages/plataforma/PlataformaHome.tsx`.
+
+Contratos adicionados/ajustados:
+
+- `src/test/comunicacao/d51-2-f-saas-isolation.test.ts`;
+- `src/test/comunicacao/d51-2-e-smtp-ux-security.test.ts`;
+- `src/test/comunicacao/d51-2-d-acl-readiness.test.ts`.
+
+### 21.3 Preflight, deploy restrito e verificações negativas
+
+Imediatamente antes do deploy, o estado sanitizado do canônico confirmou: singleton único; entrega global OFF; entrega por e-mail OFF; test mode ON; allowlist vazia; host, porta, usuário, remetente e senha ausentes; zero lease de e-mail ativo. Portanto, nenhum envio acidental era possível.
+
+Foram implantadas **somente** `communication-provider-settings` e `test-communication-email`, incluindo seus imports compartilhados. Nenhum frontend ou outra função foi publicado. Depois do deploy:
+
+| Chamada negativa | Resultado |
+|---|---|
+| Provider settings sem JWT | HTTP 401, `unauthorized` sanitizado |
+| Provider settings com JWT inválido | HTTP 401, `invalid_token` sanitizado |
+| Teste SMTP sem JWT | HTTP 401, `unauthorized` sanitizado |
+| Teste SMTP com JWT inválido | HTTP 401, `invalid_token` sanitizado |
+
+O pós-deploy reconfirmou o mesmo estado fail-closed e zero lease ativo. Nenhuma chamada usou destinatário, nenhum socket SMTP foi aberto e nenhuma mutação operacional foi realizada. O caso tenant admin autenticado → 403 foi comprovado por contrato/mock estrutural; não foi executado contra produção por ausência deliberada de sessão tenant nesta fase.
+
+### 21.4 Validações
+
+| Verificação | Resultado |
+|---|---|
+| Tenant admin bloqueado antes de leitura/mutação/socket | PASS — contratos focados |
+| Superadmin autorizado estruturalmente sem papel operacional | PASS — contratos focados |
+| Anônimo/JWT inválido | PASS — contratos + HTTP 401 pós-deploy |
+| Workers/RPC `service_role` preservados | PASS — ACL/contratos |
+| UI tenant sem provider global | PASS |
+| Mesmo componente reutilizado em `/plataforma` | PASS |
+| Testes focados | PASS — 5 arquivos, 63 testes |
+| Typecheck | PASS |
+| Suíte global | PASS — 347 arquivos aprovados, 1 ignorado; 5.307 testes aprovados, 4 ignorados |
+| Build | PASS |
+| `git diff --check` | PASS |
+| Linter Supabase | Sem delta — 492 achados históricos, incluindo Leaked Password Protection |
+
+### 21.5 Estado e decisão
+
+**P1 corrigido no código e nas duas Edge Functions do canônico. D51.2-F concluído no escopo autorizado.** O frontend foi apenas preparado na prévia/código e não publicado em produção.
+
+O Gate D51.2 permanece **NO-GO para E01–E21 e para encerramento**: ainda faltam comprovação de sender/domínio, configuração manual de SMTP/Vault pelo Superadmin em `/plataforma` com flags inicialmente OFF, sessão manual superadmin controlada e novo comando explícito. E15A continua apenas planejado e parcial. Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida. Nenhum SMTP foi configurado, nenhum e-mail foi enviado, nenhum usuário/tenant foi criado e D52 não foi iniciado.
