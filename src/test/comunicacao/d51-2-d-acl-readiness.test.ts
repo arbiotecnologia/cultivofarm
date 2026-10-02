@@ -8,9 +8,11 @@ import {
 const migrationPath =
   "supabase/migrations/20261002021548_3e72386c-e049-42b4-8022-39f99b4d4cab.sql";
 const functionPath = "supabase/functions/communication-provider-settings/index.ts";
+const readinessPath = "supabase/functions/_shared/comunicacao/smtp-readiness.ts";
 
 const sql = readFileSync(migrationPath, "utf8");
 const source = readFileSync(functionPath, "utf8");
+const readinessSource = readFileSync(readinessPath, "utf8");
 
 describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
   it("revoga acesso direto público/anon/authenticated e preserva service_role", () => {
@@ -44,7 +46,8 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
       "smtp_password_configured",
       "smtp_from_configured",
       "ready_for_controlled_test",
-    ]) expect(source).toContain(field);
+    ]) expect(readinessSource).toContain(field);
+    expect(source).toContain("smtp_readiness: buildSmtpReadiness(");
   });
 
   it("só fica pronto com flags, test mode, allowlist e SMTP completos", () => {
