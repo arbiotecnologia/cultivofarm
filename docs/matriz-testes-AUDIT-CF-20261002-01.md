@@ -7,6 +7,22 @@
 - `NO-GO`: gate bloqueado por pré-condição ou divergência.
 - `NOT RUN`: não executado; nunca equivale a PASS.
 - As escritas da campanha limitaram-se à abertura e à contenção posterior da janela SMTP, sempre pelas mesmas duas flags e pelo mecanismo auditável autorizado.
+- A campanha funcional está **PAUSADA por P0 PWA**; E02 e Fases 2–15 não avançam durante a correção e validação do cliente legado.
+
+## P0 PWA — migração definitiva
+
+| Caso | Cenário | Resultado | Evidência |
+|---|---|---|---|
+| PWA-001 | Detecção de bundle novo por HTML `no-store` | EM EXECUÇÃO | deve abrir aviso sem navegação |
+| PWA-002 | Adiar, badge, mesma versão e formulário preenchido | EM EXECUÇÃO | deve preservar uso e evitar spam |
+| PWA-003 | Atualizar agora | EM EXECUÇÃO | exatamente uma navegação após clique explícito |
+| PWA-004 | `visibilitychange`/`online` | EM EXECUÇÃO | somente detectar; zero navegação |
+| PWA-005 | Migração `/sw.js` e caches legados | EM EXECUÇÃO | unregister/limpeza seletiva; zero navegação |
+| PWA-006 | Push standalone | EM EXECUÇÃO | `/push-sw.js` sem Workbox/app-shell |
+| PWA-007 | Stale chunk e `?sw=off` | EM EXECUÇÃO | somente ações explícitas; sem loop |
+| PWA-008 | Busca estática e artefatos | EM EXECUÇÃO | nenhum overlay/evento legado executável |
+| PWA-009 | Desktop/mobile/acessibilidade | EM EXECUÇÃO | aviso não bloqueante e controles acessíveis |
+| PWA-010 | Smoke oficial limpo e com legado simulado | NOT RUN | executar somente após validações verdes e publicação frontend |
 
 ## Fase 0
 

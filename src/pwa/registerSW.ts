@@ -119,8 +119,9 @@ async function removeCaches(includePushRelated = false): Promise<void> {
   }
 }
 
-async function unregisterWorkers(removePushWorker: boolean): Promise<void> {
-  if (!("serviceWorker" in navigator)) return;
+async function unregisterWorkers(removePushWorker: boolean): Promise<boolean> {
+  if (!("serviceWorker" in navigator)) return false;
+  let removedLegacy = false;
   try {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.allSettled(registrations.map(async (registration) => {
@@ -128,16 +129,24 @@ async function unregisterWorkers(removePushWorker: boolean): Promise<void> {
         .map((worker) => worker?.scriptURL ?? "");
       const isLegacy = urls.some((url) => url.endsWith(LEGACY_SW_SUFFIX));
       const isPush = urls.some((url) => url.endsWith(PUSH_SW_URL));
+      if (isLegacy) removedLegacy = true;
       if (isLegacy || (removePushWorker && isPush)) await registration.unregister();
     }));
   } catch {
     // Cleanup is best-effort and must never navigate or reload.
   }
+  return removedLegacy;
 }
 
 export async function migrateLegacyAppShell(): Promise<void> {
-  await unregisterWorkers(false);
-  await removeCaches(false);
+  const removedLegacy = await unregisterWorkers(false);
+  let migrated = false;
+  try {
+    migrated = window.localStorage.getItem(LEGACY_MIGRATION_KEY) === "1";
+  } catch {
+    // Without storage, safe cleanup remains idempotent.
+  }
+  if (removedLegacy || !migrated) await removeCaches(false);
   try {
     window.localStorage.setItem(LEGACY_MIGRATION_KEY, "1");
   } catch {
@@ -153,6 +162,14 @@ export async function disableServiceWorkers(): Promise<void> {
   } catch {
     // Storage is optional.
   }
+}
+
+export function resetVersionManagementForTests(): void {
+  activeCleanup?.();
+  activeCleanup = null;
+  loadedBuildToken = null;
+  navigationAttempted = false;
+  snapshot = { status: "hidden", version: null, staleBuild: false };
 }
 
 async function registerStablePushWorker(): Promise<void> {

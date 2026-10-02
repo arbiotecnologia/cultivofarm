@@ -3,6 +3,7 @@
 ## Estado executivo
 
 - Projeto canônico: `swzpzcwiasxmjutrmvkm`.
+- Campanha funcional: **PAUSADA por P0 PWA**. Uma instalação legada voltou a exibir tela bloqueante e promessa de recarga automática; E02 e as fases seguintes não podem avançar até validação e smoke da migração definitiva.
 - Fase 0: **PASS com riscos P2/P3 registrados**.
 - Fase 1 / E01: **PASS**; E02: **FAIL no SMTP**, sem retry autorizado até corrigir a observabilidade do erro desconhecido.
 - O antigo NO-GO baseado na impossibilidade de prefixar a razão social foi reclassificado: a razão oficial deve permanecer íntegra; a identificação segura da fixture será feita em `nome_fantasia`.
@@ -47,7 +48,7 @@ As contagens de migrations, triggers e policies são históricas e podem incluir
 | Cadastros/catálogo | rotas e hooks de catálogo | tabelas/RPCs de catálogo | guardas de rota, RLS e RPCs | logs técnicos de catálogo |
 | Comercial/financeiro/fiscal | páginas e hooks dos módulos | RPCs transacionais e tabelas de domínio | RLS e funções server-side | históricos e logs por domínio |
 | Entregas/campo/documentos | páginas de entrega e visitas | RPCs, storage privado e validação pública limitada | vínculo de usuário/tenant; paths permitidos | eventos, comprovantes e trilhas |
-| PWA | registro e notificador manual | service worker | consentimento explícito | versão/timestamp técnico local |
+| PWA | detector por HTML e notificador manual | manifesto estático; push worker separado; `/sw.js` somente para migração legada | consentimento explícito | token do bundle/timestamp técnico local |
 
 ### Baseline técnico
 

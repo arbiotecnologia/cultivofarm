@@ -10,6 +10,7 @@ import {
   migrateLegacyAppShell,
   recoverFromStaleBuild,
   reopenPendingUpdate,
+  resetVersionManagementForTests,
   retryCurrentBuild,
   startVersionManagement,
 } from "./registerSW";
@@ -42,6 +43,7 @@ function mockWorkerEnvironment() {
 
 describe("gerenciamento manual de versão sem app-shell service worker", () => {
   beforeEach(() => {
+    resetVersionManagementForTests();
     document.head.querySelectorAll('script[type="module"]').forEach((node) => node.remove());
     installLoadedScript();
     window.localStorage.clear();
