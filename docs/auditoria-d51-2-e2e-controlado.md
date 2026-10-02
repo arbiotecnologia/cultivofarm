@@ -230,3 +230,103 @@ Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, 
 ### Decisão D51.2-A
 
 **GO técnico para configurar/homologar o SMTP existente; NO-GO para envio real, encerramento do D51 ou D52.**
+
+## 17. D51.2-B — alinhamento do runtime e pré-condições manuais (sem envio)
+
+Data: 2026-10-02  
+Commit candidato confirmado: `8d7fb7e1dfe0902a9938773e4f6ef5525db569e7`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 17.1 Migration e objetos no runtime
+
+A versão `20261002015343` consta uma vez no ledger remoto. O runtime contém, em `public.platform_org_admin_invites`, as dez colunas `email_*` previstas, os três constraints validados e o índice parcial `platform_org_admin_invites_email_delivery_idx`.
+
+As RPCs remotas possuem as assinaturas esperadas:
+
+- `platform_claim_org_admin_email_delivery(uuid, integer)`;
+- `platform_accept_org_admin_email_delivery(uuid, uuid)`;
+- `platform_fail_org_admin_email_delivery(uuid, uuid, text, integer)`.
+
+As três são `SECURITY DEFINER`, têm `search_path` vazio e ACL efetiva apenas para `postgres` e `service_role`. Não há grant para `PUBLIC`, `anon` ou `authenticated`.
+
+### 17.2 Estado fail-closed antes da implantação
+
+Antes de implantar a função foram confirmados, somente por leitura:
+
+- zero linhas em `communication_provider_settings`;
+- entrega global efetiva desligada;
+- entrega de e-mail efetiva desligada;
+- test mode efetivo ligado por default fail-closed;
+- allowlist efetiva vazia;
+- host, porta, usuário, remetente e senha SMTP ausentes;
+- zero leases de envio de convite ativos;
+- zero registros com prefixo `TESTE D51.2`/`HOMOLOGAÇÃO D51.2`.
+
+Logo, nenhum e-mail poderia ser disparado acidentalmente pelo fluxo de convite. Nenhuma configuração foi criada ou alterada.
+
+### 17.3 Edge Function implantada e chamadas negativas
+
+O runtime não expôs conteúdo/fingerprint remoto comparável e não havia histórico de invocação que permitisse provar equivalência com o repositório. Os fingerprints SHA-256 locais foram coletados sem conteúdo sensível; o arquivo principal tinha fingerprint `2c542a9e…1932b`.
+
+Como todos os bloqueios de entrega foram comprovados antes, foi implantada **somente** `platform-invite-org-admin`, incluindo no bundle apenas suas dependências compartilhadas. O frontend e as demais funções não foram implantados. A implantação bem-sucedida passou a ser a evidência de alinhamento do código atual com o runtime.
+
+Após a implantação:
+
+- requisição sem `Authorization`: HTTP `401`, `UNAUTHORIZED_NO_AUTH_HEADER`;
+- requisição com JWT deliberadamente inválido: HTTP `401`, `UNAUTHORIZED_INVALID_JWT_FORMAT`.
+
+Os dois casos falharam no gateway antes de qualquer lógica de negócio. Não foi enviado destinatário, não houve mutação e nenhum segredo apareceu na resposta.
+
+### 17.4 Interface existente e bloqueio do singleton ausente
+
+A interface oficial já existe em **`/configuracoes?tab=comunicacao`**, aba **Comunicação**, visível para papel operacional `administrador` quando o módulo Comunicação está habilitado. Ela chama `communication-provider-settings`, exige JWT e papel `administrador`, aplica rate limit e grava tudo por uma RPC transacional server-side.
+
+Campos necessários para homologação SMTP:
+
+| Grupo | Campo/ação | Estado exigido no D51.2 |
+|---|---|---|
+| SMTP | host | Valor fornecido pelo provedor; não definido nesta auditoria. |
+| SMTP | port | Valor fornecido pelo provedor; faixa 1–65535. |
+| SMTP | username | Login fornecido pelo provedor. |
+| SMTP | password/API key | Segredo fornecido pelo provedor. |
+| SMTP | from/sender | E-mail remetente previamente autorizado/verificado no provedor. |
+| TLS | secure | Não há campo separado: porta `465` ativa TLS implícito no adapter; demais portas usam o modo não implícito do cliente SMTP. Confirmar a modalidade exigida pelo provedor. |
+| Homologação | test mode | Manter **ON**. |
+| Homologação | allowed emails | Substituir a lista por exclusivamente `teste@refilinformatica.com.br`. |
+| Entrega | Entrega global | Ativar somente na janela E2E, depois das demais validações. |
+| Entrega | Entrega por e-mail (SMTP) | Ativar somente na janela E2E, depois das demais validações. |
+| Demais canais | WhatsApp, in-app e webhook | Manter desligados. |
+
+A senha não vai para segredo de Edge Function: a interface a grava no **Supabase Vault canônico**, sob nome lógico rotativo iniciado por `comm_smtp_password_`; `communication_provider_settings.secret_smtp_password` armazena somente o UUID da referência. O valor nunca retorna ao frontend.
+
+Entretanto, a interface está atualmente **bloqueada**: o singleton esperado `communication_provider_settings.id = 1` não existe. A RPC falha fechada com `settings_row_missing` e não cria a linha implicitamente. Antes de qualquer configuração manual é obrigatório restaurar esse singleton por migration versionada, idempotente e auditada, preservando defaults desligados. Não usar edição manual ad hoc nem escrever diretamente no Vault.
+
+### 17.5 Sender/domínio
+
+Não há sender SMTP configurado e não existe evidência de domínio remetente verificado no mecanismo externo do projeto. Também não há domínio configurado na infraestrutura Lovable Emails. Isso não deve ser confundido com o SMTP próprio do módulo Comunicação nem com o mailer do Supabase Auth.
+
+Para retomar, o responsável deve obter do provedor SMTP os valores reais e comprovar a autorização do endereço/domínio remetente no próprio provedor, sem enviar valores secretos por chat. A senha/API key deve ser digitada apenas na tela segura após o reparo do singleton.
+
+### 17.6 Sessão superadmin controlada
+
+O banco possui uma identidade com papel `superadmin`, mas nenhum identificador pessoal foi coletado ou registrado. O ambiente foi identificado como Supabase externo não gerenciado (`external_unmanaged`), portanto o mecanismo automatizado `lovable auth-session` não consegue cunhar/injetar uma sessão do Supabase deste app. Uma sessão Lovable da prévia também não substitui a sessão Auth do Cultivo Farm.
+
+O caminho oficial disponível é o responsável autenticar manualmente a conta controlada na tela **`/auth`** da prévia, sem compartilhar senha no chat. A aplicação usa `signInWithPassword` e direciona o papel `superadmin` para **`/plataforma`**, onde o gate server-side continua obrigatório. `service_role` não será usado como identidade E2E.
+
+Limitação operacional: a automação desta sessão não está disponível neste ambiente externo não gerenciado. A futura execução autenticada deve ocorrer com o responsável já conectado na prévia e com um mecanismo de observação aprovado, ou ser classificada como manual; nenhuma credencial deve ser fornecida ao agente.
+
+### 17.7 Warning e decisão
+
+O linter continua com 492 achados históricos, incluindo exatamente um `Leaked Password Protection Disabled`. O warning permanece **ADIADO / RISCO ACEITO TEMPORARIAMENTE**, aberto, não resolvido e não homologado.
+
+Nenhum e-mail foi enviado, nenhum usuário/tenant foi criado, E01–E21 não foram executados, nenhum frontend foi publicado e D52 não foi iniciado.
+
+**NO-GO para configurar SMTP e NO-GO para retomar o D51.2 neste estado.** Pré-condições restantes, em ordem:
+
+1. aprovar e aplicar reparo versionado/idempotente do singleton `communication_provider_settings.id = 1`, com defaults fail-closed;
+2. comprovar sender/domínio no provedor SMTP externo;
+3. entrar como `administrador` operacional em `/configuracoes?tab=comunicacao` e configurar host, porta, usuário, remetente e senha pelo Vault, mantendo todas as flags OFF;
+4. manter test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`;
+5. disponibilizar sessão manual controlada do `superadmin` em `/auth`, sem senha no chat;
+6. receber comando explícito para a janela E2E e só então habilitar Entrega global + E-mail;
+7. manter E15 pendente/adaptado sem inventar segundo destinatário.
