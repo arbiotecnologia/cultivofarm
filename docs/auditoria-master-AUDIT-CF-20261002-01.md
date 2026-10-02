@@ -3,12 +3,20 @@
 ## Estado executivo
 
 - Projeto canônico: `swzpzcwiasxmjutrmvkm`.
-- Campanha funcional: **PAUSADA por P0 PWA**. Uma instalação legada voltou a exibir tela bloqueante e promessa de recarga automática; E02 e as fases seguintes não podem avançar até validação e smoke da migração definitiva.
+- P0 PWA: **PASS após migração definitiva**. A campanha pode ser retomada exclusivamente no ponto E02 SMTP, que mantém seus próprios bloqueios de confirmação e autorização.
 - Fase 0: **PASS com riscos P2/P3 registrados**.
 - Fase 1 / E01: **PASS**; E02: **FAIL no SMTP**, sem retry autorizado até corrigir a observabilidade do erro desconhecido.
 - O antigo NO-GO baseado na impossibilidade de prefixar a razão social foi reclassificado: a razão oficial deve permanecer íntegra; a identificação segura da fixture será feita em `nome_fantasia`.
 - Após o E01 humano, a auditoria abriu somente a janela SMTP global/e-mail pelo mecanismo auditável; nenhum convite, usuário ou envio foi criado.
 - Leaked Password Protection: risco temporariamente aceito, aberto e não homologado.
+
+### P0 PWA — migração definitiva
+
+A evidência real confirmou que um cliente antigo ainda podia exibir uma tela bloqueante e prometer recarga automática. O app-shell Workbox foi removido como mecanismo de versão. O manifesto de instalação permanece estático; `/push-sw.js` é um worker standalone, sem Workbox, precache, claim de clientes ou controle de atualização; `/sw.js` foi substituído por um worker transitório de migração que remove apenas `html-nav`, `static-assets` e caches Workbox/precache identificáveis, e então se desregistra sem navegar ou recarregar clientes.
+
+A aplicação nova também procura e desregistra `/sw.js` no startup, faz a mesma limpeza seletiva e registra somente o push estável. `?sw=off` remove os workers e caches pertinentes sem recarga. A versão publicada passou a ser detectada pelo token do módulo principal no HTML solicitado com `cache: no-store`, no máximo a cada 60 minutos e nos eventos de retorno à aba/online. Detecção apenas abre o aviso; **Adiar** preserva o uso e mantém o badge; somente **Atualizar agora** executa uma navegação explícita, única e protegida contra loop. Falha de chunk também apenas oferece ações manuais.
+
+Validação final: **23/23 testes PWA focados**, typecheck, build e **5.372 testes globais PASS / 4 skipped**. Scanner: **10 Info e zero Critical/Error/Warning**. O pacote gerado contém manifesto, `push-sw.js` e o `/sw.js` de limpeza, sem Workbox gerado e sem os textos/eventos legados. Após publicação somente do frontend, o domínio oficial passou em contexto limpo e com `/sw.js` legado simulado: módulo atual carregado, apenas `/push-sw.js` registrado ao final, zero overlay bloqueante, zero texto legado, zero erro de página e nenhuma mudança de URL. **P0 encerrado; campanha liberada apenas para retomar no E02 SMTP.**
 
 ## Regras e escopo
 
