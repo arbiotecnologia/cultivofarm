@@ -10,10 +10,11 @@
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
 import { useState } from "react";
-import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog } from "lucide-react";
+import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare } from "lucide-react";
 import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import PlataformaAdmins from "./PlataformaAdmins";
 import PlataformaEmpresas from "./PlataformaEmpresas";
+import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,6 +165,10 @@ export default function PlataformaHome() {
               <UserCog className="mr-2 h-4 w-4" aria-hidden="true" />
               Administradores
             </TabsTrigger>
+            <TabsTrigger value="comunicacao">
+              <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+              Comunicação
+            </TabsTrigger>
             <TabsTrigger value="historico">
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
@@ -272,6 +277,10 @@ export default function PlataformaHome() {
 
           <TabsContent value="admins">
             <PlataformaAdmins />
+          </TabsContent>
+
+          <TabsContent value="comunicacao">
+            <ComunicacaoConfigTab />
           </TabsContent>
 
 

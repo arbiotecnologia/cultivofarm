@@ -73,9 +73,7 @@ import { History, Wallet } from "lucide-react";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
-import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
-import { isComunicacaoModuleEnabled } from "@/features/comunicacao/flags";
-import { MessageSquare, CreditCard } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
 
 
@@ -102,7 +100,7 @@ export default function Configuracoes() {
         ? "financeiro"
         : tabParam === "meu-plano" && canMeuPlano
           ? "meu-plano"
-          : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
+          : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
             ? tabParam
             : "perfil";
 
@@ -638,18 +636,7 @@ export default function Configuracoes() {
               <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />Financeiro
             </TabsTrigger>
           )}
-          {isAdmin && isComunicacaoModuleEnabled() && (
-            <TabsTrigger value="comunicacao" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
-              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />Comunicação
-            </TabsTrigger>
-          )}
         </TabsList>
-
-        {isAdmin && isComunicacaoModuleEnabled() && (
-          <TabsContent value="comunicacao">
-            <ComunicacaoConfigTab />
-          </TabsContent>
-        )}
 
         <TabsContent value="sla-b2b">
           <SlaB2BTab podeEditar={isAdmin || role === "gestor"} />

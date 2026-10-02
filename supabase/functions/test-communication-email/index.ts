@@ -1,6 +1,6 @@
 // Edge Function: test-communication-email
 // Teste SMTP controlado usando configuração server-side e o adapter compartilhado.
-// Restrito a administradores e bloqueado antes do socket quando o preflight falha.
+// Restrito ao Superadmin de Plataforma e bloqueado antes do socket quando o preflight falha.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
@@ -39,9 +39,11 @@ Deno.serve(async (req) => {
   const { data: userData, error: uErr } = await sb.auth.getUser(token);
   if (uErr || !userData?.user) return json(origin, 401, { ok: false, error: "invalid_token" });
   const uid = userData.user.id;
-  const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", uid);
-  const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "administrador");
-  if (!isAdmin) return json(origin, 403, { ok: false, error: "forbidden" });
+  const { data: isSuperadmin, error: authorizationError } = await sb.rpc("is_platform_superadmin", {
+    _user_id: uid,
+  });
+  if (authorizationError) return json(origin, 500, { ok: false, error: "authorization_check_failed" });
+  if (isSuperadmin !== true) return json(origin, 403, { ok: false, error: "forbidden" });
 
   const { data: rateAllowed, error: rateError } = await sb.rpc("rpc_service_check_rate_limit", {
     p_user: uid,

@@ -1,12 +1,13 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton/ACLs endurecidos, checklist visível e teste SMTP fail-closed/sanitizado; prontidão atual permanece falsa. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
+- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton/ACLs endurecidos, isolamento global restrito a Superadmin de Plataforma e teste SMTP fail-closed/sanitizado; prontidão atual permanece falsa. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF, sessão manual superadmin controlada e novo comando explícito. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
 
 ## Concluído
+- [x] Gate D51.2-F — P1 de isolamento SaaS corrigido: provider settings e teste SMTP globais agora exigem `is_platform_superadmin` no servidor; UI tenant removida e o mesmo componente reutilizado em `/plataforma`, sem papel operacional. Duas Edge Functions implantadas após preflight fail-closed; chamadas negativas retornaram 401, 63 testes focados e suíte global com 5.307 testes verdes; nenhum envio/configuração/E2E.
 - [x] Gate D51.2-E — checklist de prontidão SMTP exibido na tela; teste fixado ao único destinatário autorizado, bloqueado por readiness, test mode, allowlist e flags antes do socket; respostas/logs brutos removidos. Typecheck, 57 testes focados, suíte global (5.300 aprovados) e build verdes; nenhum envio/configuração/E2E.
 - [x] Gate D51.2-D — ACL direta de `PUBLIC`/`anon`/`authenticated` revogada, acesso técnico preservado e preflight SMTP booleano implantado sem envio. E15A preparado como teste parcial A→B com uma identidade; caminho autenticado ainda NOT RUN.
 - [x] Gate D51.2-C — singleton SMTP restaurado no canônico por migration idempotente; entrega global/e-mail/WhatsApp/in-app/webhook OFF, test mode ON, allowlists vazias e SMTP/segredos ausentes. Ledger e linha única verificados; nenhum envio, Vault, usuário, tenant ou E2E.
@@ -19,7 +20,7 @@
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, um `administrador` operacional configura em `/configuracoes?tab=comunicacao`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
+- [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, o Superadmin de Plataforma configura na aba Comunicação de `/plataforma`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
 - [ ] D51.2: responsável entrar manualmente como superadmin controlado em `/auth` na prévia. Projeto externo não gerenciado não permite `lovable auth-session`; não compartilhar senha no chat e não substituir sessão por `service_role`.
 - [ ] D51.2: habilitar Entrega global + E-mail somente após novo comando explícito para a janela E2E; manter WhatsApp, in-app e webhook OFF.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.

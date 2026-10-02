@@ -73,7 +73,7 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
   });
 
   it("mantém autorização administrativa antes da leitura e não abre conexão SMTP", () => {
-    const authorization = source.indexOf("await authorizeAdmin(req, origin)");
+    const authorization = source.indexOf("await authorizePlatformSuperadmin(req, origin)");
     const publicViewCall = source.indexOf("await loadPublicView(sb)");
     expect(authorization).toBeGreaterThan(-1);
     expect(publicViewCall).toBeGreaterThan(authorization);
