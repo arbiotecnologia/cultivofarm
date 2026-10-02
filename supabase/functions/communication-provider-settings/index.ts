@@ -21,6 +21,7 @@ const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 const RATE_LIMIT_MAX = 30;      // requests
 const RATE_LIMIT_WINDOW = 60;   // seconds
+const CONTROLLED_TEST_EMAIL = "teste@refilinformatica.com.br";
 
 function jsonWith(origin: string | null, status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -68,11 +69,29 @@ async function loadPublicView(sb: Sb) {
   const { data, error } = await sb
     .from("communication_provider_settings").select("*").eq("id", 1).maybeSingle();
   if (error) throw new Error("db_error");
+  const singletonExists = data !== null;
   const row = (data ?? {}) as Record<string, unknown>;
   const arr = (k: string): string[] => Array.isArray(row[k]) ? (row[k] as string[]) : [];
   const bool = (k: string) => row[k] === true;
   const str  = (k: string) => (typeof row[k] === "string" ? (row[k] as string) : null);
   const num  = (k: string) => (typeof row[k] === "number" ? (row[k] as number) : null);
+  const smtpHostConfigured = Boolean(str("smtp_host")?.trim());
+  const smtpPortConfigured = num("smtp_port") !== null;
+  const smtpUserConfigured = Boolean(str("smtp_user")?.trim());
+  const smtpPasswordConfigured = Boolean(row["secret_smtp_password"]);
+  const smtpFromConfigured = Boolean(str("smtp_from")?.trim());
+  const testEmailAllowlisted = arr("allowed_emails")
+    .some((email) => email.trim().toLowerCase() === CONTROLLED_TEST_EMAIL);
+  const readyForControlledTest = singletonExists
+    && bool("delivery_enabled")
+    && bool("email_delivery_enabled")
+    && bool("test_mode_enabled")
+    && testEmailAllowlisted
+    && smtpHostConfigured
+    && smtpPortConfigured
+    && smtpUserConfigured
+    && smtpPasswordConfigured
+    && smtpFromConfigured;
   return {
     ok: true,
     test_mode_enabled: bool("test_mode_enabled"),
@@ -92,6 +111,20 @@ async function loadPublicView(sb: Sb) {
       host: str("smtp_host"), port: num("smtp_port"),
       user: str("smtp_user"), from: str("smtp_from"),
       password_configured: bool("secret_smtp_password"),
+    },
+    smtp_readiness: {
+      singleton_exists: singletonExists,
+      delivery_enabled: bool("delivery_enabled"),
+      email_delivery_enabled: bool("email_delivery_enabled"),
+      test_mode_enabled: bool("test_mode_enabled"),
+      allowed_email_count: arr("allowed_emails").length,
+      test_email_allowlisted: testEmailAllowlisted,
+      smtp_host_configured: smtpHostConfigured,
+      smtp_port_configured: smtpPortConfigured,
+      smtp_user_configured: smtpUserConfigured,
+      smtp_password_configured: smtpPasswordConfigured,
+      smtp_from_configured: smtpFromConfigured,
+      ready_for_controlled_test: readyForControlledTest,
     },
     whatsapp: {
       phone_number_id: str("whatsapp_phone_number_id"),
