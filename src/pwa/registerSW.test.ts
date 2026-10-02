@@ -1,3 +1,4 @@
+import { waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyPendingUpdate,
@@ -68,9 +69,7 @@ describe("atualização PWA manual", () => {
     window.addEventListener(PWA_UPDATE_AVAILABLE_EVENT, available);
 
     const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    await flush();
-
-    expect(getPwaUpdateSnapshot().status).toBe("prompt");
+    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
     expect(available).toHaveBeenCalledTimes(1);
     expect(worker.postMessage).not.toHaveBeenCalled();
     cleanup();
@@ -83,7 +82,7 @@ describe("atualização PWA manual", () => {
     worker.state = "installed";
     registration.waiting = worker;
     const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    await flush();
+    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
 
     dismissPendingUpdate();
     expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
@@ -100,14 +99,14 @@ describe("atualização PWA manual", () => {
     worker.state = "installed";
     firstRegistration.waiting = worker;
     const firstCleanup = watchForUpdates(firstRegistration as unknown as ServiceWorkerRegistration, vi.fn());
-    await flush();
+    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
     dismissPendingUpdate();
     firstCleanup();
 
     const secondRegistration = new RegistrationMock();
     secondRegistration.waiting = worker;
     const secondCleanup = watchForUpdates(secondRegistration as unknown as ServiceWorkerRegistration, vi.fn());
-    await flush();
+    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("deferred_badge"));
     expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
     secondCleanup();
   });
@@ -118,7 +117,7 @@ describe("atualização PWA manual", () => {
     first.state = "installed";
     registration.waiting = first;
     const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    await flush();
+    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
     dismissPendingUpdate();
 
     vi.mocked(fetch).mockResolvedValueOnce({ text: () => Promise.resolve("worker-v2") } as Response);
@@ -128,7 +127,7 @@ describe("atualização PWA manual", () => {
     registration.dispatchEvent(new Event("updatefound"));
     second.state = "installed";
     second.dispatchEvent(new Event("statechange"));
-    await flush();
+    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
     expect(getPwaUpdateSnapshot().status).toBe("prompt");
     cleanup();
   });
