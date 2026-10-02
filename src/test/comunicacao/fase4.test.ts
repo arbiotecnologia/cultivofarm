@@ -655,11 +655,18 @@ describe("Fase 4 · healthBooleans expõe whatsapp_webhook sem valores", () => {
 
 // ─── config.toml ───────────────────────────────────────────────────────────
 
-describe("Fase 4 · config.toml só desliga JWT do webhook", () => {
-  it("apenas whatsapp-status-webhook tem verify_jwt=false", () => {
+describe("Fase 4 · funções sem JWT legado mantêm autenticação interna", () => {
+  it("cada verify_jwt=false pertence à allowlist e valida a chamada", () => {
     const s = read(resolve(ROOT, "supabase/config.toml"));
-    expect(s).toMatch(/\[functions\.whatsapp-status-webhook\]\s*\nverify_jwt = false/);
-    const other = s.match(/\[functions\.(?!whatsapp-status-webhook)[a-z0-9-]+\][^\[]*verify_jwt\s*=\s*false/g);
-    expect(other).toBeNull();
+    const disabled = [...s.matchAll(/\[functions\.([a-z0-9-]+)\][^\[]*verify_jwt\s*=\s*false/g)].map((m) => m[1]);
+    const contracts = new Map([
+      ["whatsapp-status-webhook", /x-hub-signature-256|timingSafeEqual/],
+      ["platform-complete-first-access", /auth\.getClaims\s*\(/],
+      ["onboarding-cnpj-lookup", /auth\.getClaims\s*\(/],
+    ]);
+    expect(disabled.sort()).toEqual([...contracts.keys()].sort());
+    for (const name of disabled) {
+      expect(read(resolve(ROOT, `supabase/functions/${name}/index.ts`))).toMatch(contracts.get(name) as RegExp);
+    }
   });
 });

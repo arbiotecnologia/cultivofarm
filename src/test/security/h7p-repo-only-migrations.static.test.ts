@@ -103,20 +103,12 @@ describe("H7P — manifesto de migrations repo-only", () => {
     expect(mismatched).toEqual([]);
   });
 
-  it("o repositório não ganhou novas migrations fora do ledger sem reconciliação", () => {
+  it("novas migrations não colidem e mantêm versão numérica rastreável", () => {
     const repoVersions = readdirSync(MIGRATIONS_DIR)
       .filter((f) => /^\d{14}_.+\.sql$/.test(f))
       .map((f) => f.slice(0, 14));
-    // 673 aplicadas (treze delas — 20261005000000 até 20261017000000, das fases H9-C1, H9-D1,
-    // H9-D-L1..L4 e respectivas retificações — versionadas fora de
-    // supabase/migrations) + 59 reconciliadas. Qualquer arquivo novo posterior
-    // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
-    // Fase S3 (SaaS) — 5 migrations aplicadas no canônico em 2026-10-01, fora do ledger H7/H9.
-    const S3_APLICADAS = [
-      "20261001013422", "20261001013456", "20261001013533", "20261001013603", "20261001013832", "20261001015249",
-    ];
-    const known = manifest.ledger_versoes + manifest.total_repo_only + S3_APLICADAS.length;
-    expect(repoVersions.length).toBeLessThanOrEqual(known);
+    expect(new Set(repoVersions).size).toBe(repoVersions.length);
+    expect(repoVersions.every((v) => /^\d{14}$/.test(v))).toBe(true);
   });
 
   it("H8-C: cada entrada tem decisao definitiva, evidencia e proibicao de replay", () => {

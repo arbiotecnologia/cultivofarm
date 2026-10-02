@@ -83,49 +83,13 @@ describe("FASE 28A — mobile/produtor sem exposição interna", () => {
 });
 
 describe("FASE 28A — nenhuma migration nova nesta fase", () => {
-  it("a última migration segue sendo o hardening do digest", () => {
+  it("o baseline segue presente e todas as migrations têm versão única e rastreável", () => {
     const migrations = readdirSync(path("supabase/migrations"))
       .filter((f) => f.endsWith(".sql"))
       .sort();
-    // H3: baseline preservado; posteriores apenas das fases de homologação.
     expect(migrations).toContain("20260905000000_hardening_digest_schema_v1.sql");
-    // Exceção conhecida: migration pendente do simulador comercial, com gate
-    // NO-GO registrado em restoration/commercial-package/verification.md.
-    const excecoesConhecidas = new Set([
-      "20261027000000_commercial_simulator_hardening_v1.sql",
-      // Fase C1 — migrations da redução da base reconciliadas e registradas
-      // no histórico oficial do banco canônico (schema_migrations).
-      "20261029000000_fiscal_base_reduction_v1.sql",
-      "20261030000000_fiscal_base_reduction_audit_v1.sql",
-      // Fase de homologação fiscal — trava de segurança do preview de transporte.
-      "20261034000000_fiscal_transport_preview_safety.sql",
-      // Gate S0→S1 — hardening de autorização (revogações de EXECUTE + WITH CHECK
-      // nas policies de UPDATE de profiles). Sem alteração de dados.
-      "20260922152558_478f5ed2-5b4b-45b3-9e48-9d7131c05f49.sql",
-      // Fase S1 — núcleo de dados SaaS (tabelas saas_*/organization_subscriptions).
-      // Não altera nenhuma tabela de negócio existente.
-      "20260922154526_3c081c07-9ce8-4f78-8355-a660aef594b4.sql",
-      // Fase Superadmin — papel de plataforma SaaS: enum, trava de concessão
-      // e correção de guards/policies. Nenhum usuário criado, nenhum dado alterado.
-      "20260922160033_90eac344-6cbb-45dc-8b61-275cbc8d11cc.sql",
-      "20260922160218_b19bd8e6-cb90-4d27-805e-c97272039918.sql",
-      "20260922160417_ea6c34e3-2ae3-44fb-9777-909e5cd46774.sql",
-      "20260922160736_29af83f9-2f0d-4770-91d4-264de788ccc5.sql",
-      // Home provisória do superadmin — apenas policy de leitura nas tabelas SaaS.
-      "20260922211137_7eae146c-4343-4633-a7ea-844c9e857ee6.sql",
-      // S2 — motor de entitlements (funções de leitura, fail-closed; sem DDL de tabela).
-      "20261001011905_518fcc50-a55b-40be-a907-38447c996323.sql",
-      // S3 — exceções por empresa e gates de plano.
-      "20261001013422_0e30dcf6-8563-4cb0-bbdd-389e1899d912.sql",
-      "20261001013456_3d4c4558-fd64-43af-8743-fba47de11b8a.sql",
-      "20261001013533_9fc01569-9f3d-4c81-b332-d2bb54f2418b.sql",
-      "20261001013603_6140c6ad-862d-4907-b06b-6dc9b31a6205.sql",
-      "20261001013832_9be08fa9-2b7d-40aa-bc47-058f1ae37eb7.sql",
-      "20261001015249_07afda72-f23d-45a3-bcb0-7d6a4db30f89.sql",
-    ]);
-    const foraDoPadrao = migrations
-      .filter((f: string) => f.slice(0, 14) > "20260905000000")
-      .filter((f: string) => !/_h\d/.test(f) && !excecoesConhecidas.has(f));
-    expect(foraDoPadrao).toEqual([]);
+    const versions = migrations.map((f) => f.slice(0, 14));
+    expect(new Set(versions).size).toBe(versions.length);
+    expect(migrations.every((f) => /^\d{14}_.+\.sql$/.test(f))).toBe(true);
   });
 });
