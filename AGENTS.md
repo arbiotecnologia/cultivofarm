@@ -11,7 +11,7 @@
 
 - Controlled SMTP tests reuse the shared communication adapter and require Platform Superadmin authorization, rate limiting, full readiness, test mode, and the fixed gate recipient before any socket; responses expose only allowlisted codes — prevents tenant privilege bypass and diagnostic leakage.
 
-- PWA updates are consent-driven in `src/pwa/registerSW.ts`: detection never activates or reloads; only an explicit user action may apply a waiting worker and perform one guarded reload — preserves in-progress work and offline support.
+- Frontend version detection is independent of service workers: compare the loaded bundle token with no-store HTML, and navigate only after an explicit user click; `/sw.js` exists solely as a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — prevents stale workers from controlling app updates.
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
 

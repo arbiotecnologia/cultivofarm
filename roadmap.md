@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Em andamento
+- [ ] **P0 PWA — cliente legado voltou a interferir:** campanha AUDIT-CF pausada. Remover app-shell Workbox, migrar `/sw.js` sem recarga, separar push e detectar versão pelo HTML publicado. Publicar somente após testes completos, scanner e smoke limpo/legado PASS. E02 e Fases 2–15 permanecem bloqueados.
 - [ ] **Campanha AUDIT-CF-20261002-01 — E02 FAIL / RETRY BLOCKED:** forward-fix de SMTP ambíguo e bloqueio fail-closed das portas 25/587 estão no código. A porta efetiva é 465, apenas estruturalmente aceita; conectividade não foi testada e a causa original continua ambígua. A janela SMTP está OFF/OFF; o job legado exige confirmação humana explícita e nova autorização antes de reabertura/retry. Fases 2–15 permanecem bloqueadas.
 
 ## Próximo / autorizado a preparar execução
