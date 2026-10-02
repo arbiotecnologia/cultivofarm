@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Em andamento
+- [ ] **Campanha AUDIT-CF-20261002-01 — Fase 0:** concluir inventário, mapa frontend→backend→RLS→auditoria, baselines técnico/segurança/desempenho, documentos mestres e classificação P0–P3. Avançar automaticamente à Fase 1 somente sem P0/P1 bloqueante.
+- [ ] **Campanha AUDIT-CF-20261002-01 — Fase 1:** auditar canonicamente o E01 manual já confirmado, incluindo prefixo obrigatório, contagens, assinatura, auditoria, ausência de E02/Auth e estado SMTP/leases; qualquer divergência implica NO-GO sem correção automática do dado.
 - [ ] D51.2 — **novo E01 manual autorizado; E02 bloqueado:** proteção preventiva publicada e contenção REFIL auditada como PASS. Executar somente E01 com CNPJ `36.736.180/0001-11`, e-mail corporativo `renato@refilinformatica.com.br`, responsável futuro `teste@refilinformatica.com.br`, confirmação manual dos 14 dígitos e parada obrigatória em **Empresa criada — pronta para auditoria**.
 
 ## Próximo / autorizado a preparar execução
