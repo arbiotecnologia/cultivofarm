@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] **Gate de republicação do incidente P0:** correção PWA validada. Os seis `Critical/Error` históricos de RLS (`codigo_sequencias`, `configuracoes_sistema`, `financial_settings`, `monitoramento_avisos`, `objetivos_visita_sugestoes`, `sla_configuracoes`) receberam hardening mínimo no canônico; novo scanner ficou em 0 Critical/Error. Aguardar regressões finais e decisão objetiva antes de publicar. D51.2 permanece suspenso.
+- [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.317 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes. A publicação não foi executada. D51.2 permanece suspenso até republicação e verificação live.
 - [ ] Gate D51.2 — **SUSPENSO pelo P0 pós-publicação**. Janela SMTP fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução
@@ -19,6 +19,7 @@
 
 ## Exceções/Riscos aceitos
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
+- [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
 - [ ] D51.2: executar retomada manual assistida na UI como Superadmin. Em `/plataforma` → **Comunicação**, conferir os controles e habilitar global/e-mail somente na janela autorizada; depois iniciar E01 em **Nova Empresa** e E02 em **Administradores**, usando apenas dados `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` e `teste@refilinformatica.com.br`. Não compartilhar credenciais e não substituir a sessão por `service_role`.

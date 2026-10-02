@@ -9,6 +9,10 @@ const denyCounter = readFileSync(
   "supabase/migrations/20261002031922_7290e0ed-50e8-498d-9d07-026b960ae4a7.sql",
   "utf8",
 );
+const warningHardening = readFileSync(
+  "supabase/migrations/20261002032503_87416ece-fc76-44d3-a72b-22f5c4849ea5.sql",
+  "utf8",
+);
 
 describe("D51.2 — bloqueios críticos de RLS para publicação", () => {
   it("remove as seis policies de leitura irrestrita", () => {
@@ -67,6 +71,30 @@ describe("D51.2 — bloqueios críticos de RLS para publicação", () => {
       expect(hardening).toContain(`'${role}'::public.app_role`);
     }
     expect(hardening).not.toMatch(
+      /CREATE POLICY[\s\S]{0,180}(?:USING|WITH CHECK) \(true\)/,
+    );
+  });
+
+  it("elimina os três warnings exploráveis sem abrir acesso cliente", () => {
+    expect(warningHardening).toContain(
+      "public.can_view_catalog_internal((SELECT auth.uid()))",
+    );
+    expect(warningHardening).toContain(
+      "public.can_manage_catalog_tecnico((SELECT auth.uid()))",
+    );
+    expect(warningHardening).toMatch(
+      /fiscal_environment_marker[\s\S]*AS RESTRICTIVE[\s\S]*USING \(false\)[\s\S]*WITH CHECK \(false\)/,
+    );
+    for (const table of [
+      "etiqueta_templates",
+      "fiscal_environment_marker",
+      "formulacoes",
+    ]) {
+      expect(warningHardening).toContain(
+        `REVOKE ALL ON TABLE public.${table} FROM PUBLIC, anon, authenticated;`,
+      );
+    }
+    expect(warningHardening).not.toMatch(
       /CREATE POLICY[\s\S]{0,180}(?:USING|WITH CHECK) \(true\)/,
     );
   });
