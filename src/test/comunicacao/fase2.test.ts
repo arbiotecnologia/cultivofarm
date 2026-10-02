@@ -162,7 +162,7 @@ const baseEnv = (over: Partial<WorkerEnv> = {}): WorkerEnv => ({
   WHATSAPP_ENABLED: true,
   INAPP_ENABLED: true,
   SMTP_HOST: "smtp.example.com",
-  SMTP_PORT: "587",
+  SMTP_PORT: "465",
   SMTP_USER: "u",
   SMTP_PASSWORD: "p",
   SMTP_FROM: "no-reply@example.com",
