@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.317 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes. A publicação não foi executada. D51.2 permanece suspenso até republicação e verificação live.
+- [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.318 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes. A publicação não foi executada. D51.2 permanece suspenso até republicação e verificação live.
 - [ ] Gate D51.2 — **SUSPENSO pelo P0 pós-publicação**. Janela SMTP fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução
