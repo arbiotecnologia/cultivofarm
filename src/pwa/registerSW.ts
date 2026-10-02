@@ -1,18 +1,25 @@
 // Single guarded registration wrapper for the app-shell service worker.
-// Aligned with the Lovable PWA skill: never registers in dev/preview/iframe,
-// supports ?sw=off kill-switch, unregisters stale /sw.js in refused contexts,
-// and forces a safe, single reload when a new SW takes control.
+// Normal updates are always consent-driven: detection never activates a worker
+// and never reloads the page. Only applyPendingUpdate may do either.
 
 const SW_URL = "/sw.js";
-export const PWA_UPDATING_START = "pwa:updating-start";
-export const PWA_UPDATING_END = "pwa:updating-end";
+export const PWA_UPDATE_STATE_EVENT = "pwa:update-state";
+export const PWA_UPDATE_AVAILABLE_EVENT = "pwa:update-available";
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
-const RELOAD_FALLBACK_MS = 8000;
-const UPDATE_SAFETY_TIMEOUT_MS = 12000;
-const ACTIVATED_GRACE_MS = 1500;
-const RECENT_RELOAD_KEY = "pwa:last-controller-reload";
+const APPLY_TIMEOUT_MS = 15000;
+const RECENT_RELOAD_KEY = "pwa:last-explicit-reload";
+const DEFERRED_UPDATE_KEY = "pwa:deferred-update";
 const RELOAD_LOOP_GUARD_MS = 15000;
 const STALE_RUNTIME_CACHES = new Set(["html-nav", "static-assets"]);
+
+export type PwaUpdateStatus = "hidden" | "prompt" | "deferred_badge" | "applying" | "error";
+
+export interface PwaUpdateSnapshot {
+  status: PwaUpdateStatus;
+  version: string | null;
+  staleBuild: boolean;
+  message?: string;
+}
 
 function isRefusedHost(hostname: string): boolean {
   if (hostname.startsWith("id-preview--") || hostname.startsWith("preview--")) return true;
@@ -56,67 +63,122 @@ async function unregisterMatching(): Promise<void> {
   }
 }
 
-let reloadingOnControllerChange = false;
 let activeCleanup: (() => void) | null = null;
-let updateInProgress = false;
-const updateTimers = new Set<number>();
+let pendingWorker: ServiceWorker | null = null;
+let pendingRegistration: ServiceWorkerRegistration | null = null;
+let explicitApplyIntent = false;
+let reloadAttempted = false;
+let applyTimer: number | null = null;
+let snapshot: PwaUpdateSnapshot = { status: "hidden", version: null, staleBuild: false };
 
-function clearUpdateTimers(): void {
-  updateTimers.forEach((timer) => window.clearTimeout(timer));
-  updateTimers.clear();
+function emitSnapshot(next: PwaUpdateSnapshot): void {
+  snapshot = next;
+  window.dispatchEvent(new CustomEvent(PWA_UPDATE_STATE_EVENT, { detail: next }));
 }
 
-function scheduleUpdateTimer(callback: () => void, delay: number): number {
-  const timer = window.setTimeout(() => {
-    updateTimers.delete(timer);
-    callback();
-  }, delay);
-  updateTimers.add(timer);
-  return timer;
+export function getPwaUpdateSnapshot(): PwaUpdateSnapshot {
+  return snapshot;
 }
 
-function beginUpdate(): void {
-  if (updateInProgress) return;
-  updateInProgress = true;
-  window.dispatchEvent(new CustomEvent(PWA_UPDATING_START));
-  scheduleUpdateTimer(() => finishUpdate("safety-timeout"), UPDATE_SAFETY_TIMEOUT_MS);
-}
-
-export function finishUpdate(reason = "completed"): void {
-  clearUpdateTimers();
-  reloadingOnControllerChange = false;
-  if (!updateInProgress) return;
-  updateInProgress = false;
-  window.dispatchEvent(new CustomEvent(PWA_UPDATING_END, { detail: { reason } }));
-}
-
-export function isServiceWorkerUpdateInProgress(): boolean {
-  return updateInProgress;
-}
-
-export function triggerSafeReload(reload: () => void = () => window.location.reload()): boolean {
-  if (reloadingOnControllerChange) {
-    finishUpdate("reload-in-progress");
-    return false;
+function readDeferredVersion(): string | null {
+  try {
+    const raw = window.localStorage.getItem(DEFERRED_UPDATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return typeof parsed.version === "string" ? parsed.version : null;
+  } catch {
+    return null;
   }
+}
 
+function clearDeferredUpdate(): void {
+  try {
+    window.localStorage.removeItem(DEFERRED_UPDATE_KEY);
+  } catch {
+    /* storage is optional */
+  }
+}
+
+function stopApplyTimer(): void {
+  if (applyTimer !== null) window.clearTimeout(applyTimer);
+  applyTimer = null;
+}
+
+function clearPendingUpdate(): void {
+  stopApplyTimer();
+  pendingWorker = null;
+  pendingRegistration = null;
+  explicitApplyIntent = false;
+  clearDeferredUpdate();
+  emitSnapshot({ status: "hidden", version: null, staleBuild: false });
+}
+
+async function resolveWorkerVersion(worker: ServiceWorker): Promise<string> {
+  try {
+    const response = await fetch(worker.scriptURL, { cache: "no-store" });
+    const source = await response.text();
+    const bytes = new TextEncoder().encode(source);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return worker.scriptURL;
+  }
+}
+
+async function announcePendingUpdate(
+  worker: ServiceWorker,
+  registration: ServiceWorkerRegistration,
+): Promise<void> {
+  if (worker.state === "redundant") return;
+  pendingWorker = worker;
+  pendingRegistration = registration;
+  const version = await resolveWorkerVersion(worker);
+  if (pendingWorker !== worker || worker.state === "redundant") return;
+  const status: PwaUpdateStatus = readDeferredVersion() === version ? "deferred_badge" : "prompt";
+  const next = { status, version, staleBuild: false } satisfies PwaUpdateSnapshot;
+  emitSnapshot(next);
+  window.dispatchEvent(new CustomEvent(PWA_UPDATE_AVAILABLE_EVENT, { detail: next }));
+}
+
+export function dismissPendingUpdate(): void {
+  if (!snapshot.version || !pendingWorker) return;
+  try {
+    window.localStorage.setItem(DEFERRED_UPDATE_KEY, JSON.stringify({
+      version: snapshot.version,
+      deferredAt: new Date().toISOString(),
+    }));
+  } catch {
+    /* the badge remains available for this session */
+  }
+  emitSnapshot({ ...snapshot, status: "deferred_badge" });
+}
+
+export function reopenPendingUpdate(): void {
+  if (!pendingWorker && !snapshot.staleBuild) return;
+  emitSnapshot({ ...snapshot, status: "prompt" });
+}
+
+function triggerExplicitReload(reload: () => void): boolean {
+  if (!explicitApplyIntent || reloadAttempted) return false;
   try {
     const lastReload = Number(window.sessionStorage.getItem(RECENT_RELOAD_KEY) ?? "0");
     if (Date.now() - lastReload < RELOAD_LOOP_GUARD_MS) {
-      finishUpdate("reload-guard");
+      explicitApplyIntent = false;
+      emitSnapshot({ ...snapshot, status: "error", message: "A atualização ficou pendente. Você pode continuar usando a aplicação." });
       return false;
     }
     window.sessionStorage.setItem(RECENT_RELOAD_KEY, String(Date.now()));
   } catch {
-    // The in-memory guard still prevents duplicate reloads when storage is unavailable.
+    // The in-memory flag still guarantees a single attempt in this page.
   }
-
-  reloadingOnControllerChange = true;
+  reloadAttempted = true;
   try {
+    clearDeferredUpdate();
     reload();
     return true;
   } catch {
-    finishUpdate("reload-failed");
+    explicitApplyIntent = false;
+    emitSnapshot({ ...snapshot, status: "error", message: "Não foi possível concluir a atualização. Você pode continuar usando a aplicação." });
     return false;
   }
 }
@@ -131,39 +193,74 @@ export function isStaleBuildError(error: unknown): boolean {
 
 /**
  * Remove somente caches de runtime que podem manter HTML/assets de outro
- * deploy. O precache versionado do Workbox e os dados da aplicação são
- * preservados; a trava de reload evita ciclos quando a rede está indisponível.
+ * deploy. A função apenas sinaliza a necessidade; limpeza e recarga exigem
+ * uma ação explícita posterior do usuário.
  */
 export async function recoverFromStaleBuild(
-  reload: () => void = () => window.location.reload(),
 ): Promise<void> {
-  beginUpdate();
-
-  if ("caches" in window) {
-    try {
-      const cacheNames = await window.caches.keys();
-      await Promise.all(
-        cacheNames
-          .filter((cacheName) => STALE_RUNTIME_CACHES.has(cacheName))
-          .map((cacheName) => window.caches.delete(cacheName)),
-      );
-    } catch {
-      // A recarga consistente continua mesmo se o navegador negar CacheStorage.
-    }
-  }
-
-  triggerSafeReload(reload);
+  emitSnapshot({
+    status: "error",
+    version: snapshot.version,
+    staleBuild: true,
+    message: "Há uma atualização necessária para continuar.",
+  });
 }
 
-function activateUpdate(worker?: ServiceWorker | null): void {
-  beginUpdate();
-  if (worker && worker.state !== "activated") {
-    try {
-      worker.postMessage({ type: "SKIP_WAITING" });
-    } catch {
-      finishUpdate("activation-failed");
-    }
+async function clearSafeRuntimeCaches(): Promise<void> {
+  if (!("caches" in window)) return;
+  try {
+    const cacheNames = await window.caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter((cacheName) => STALE_RUNTIME_CACHES.has(cacheName))
+        .map((cacheName) => window.caches.delete(cacheName)),
+    );
+  } catch {
+    /* manual retry remains available */
   }
+}
+
+export async function applyPendingUpdate(
+  reload: () => void = () => window.location.reload(),
+): Promise<boolean> {
+  if (snapshot.status === "applying") return false;
+  explicitApplyIntent = true;
+  reloadAttempted = false;
+  emitSnapshot({ ...snapshot, status: "applying", message: undefined });
+
+  if (snapshot.staleBuild && !pendingWorker) {
+    await clearSafeRuntimeCaches();
+    return triggerExplicitReload(reload);
+  }
+
+  const worker = pendingRegistration?.waiting ?? pendingWorker;
+  if (!worker || worker.state === "redundant") {
+    explicitApplyIntent = false;
+    clearPendingUpdate();
+    return false;
+  }
+
+  applyTimer = window.setTimeout(() => {
+    applyTimer = null;
+    explicitApplyIntent = false;
+    emitSnapshot({ ...snapshot, status: "error", message: "A atualização ficou pendente. Você pode continuar usando a aplicação." });
+  }, APPLY_TIMEOUT_MS);
+
+  try {
+    worker.postMessage({ type: "SKIP_WAITING" });
+    return true;
+  } catch {
+    stopApplyTimer();
+    explicitApplyIntent = false;
+    emitSnapshot({ ...snapshot, status: "error", message: "Não foi possível iniciar a atualização. Você pode continuar usando a aplicação." });
+    return false;
+  }
+}
+
+export function retryCurrentBuild(reload: () => void = () => window.location.reload()): boolean {
+  explicitApplyIntent = true;
+  reloadAttempted = false;
+  return triggerExplicitReload(reload);
 }
 
 export function watchForUpdates(
@@ -172,28 +269,19 @@ export function watchForUpdates(
 ): () => void {
   let installingWorker: ServiceWorker | null = null;
 
-  const scheduleFallback = () => {
-    scheduleUpdateTimer(() => triggerSafeReload(reload), RELOAD_FALLBACK_MS);
-  };
-
   if (registration.waiting && navigator.serviceWorker.controller) {
-    activateUpdate(registration.waiting);
-    scheduleFallback();
+    void announcePendingUpdate(registration.waiting, registration);
   }
 
   const onInstallingStateChange = () => {
     const state = installingWorker?.state;
     if (state === "installed" && navigator.serviceWorker.controller) {
-      activateUpdate(registration.waiting ?? installingWorker);
-      scheduleFallback();
+      const worker = registration.waiting ?? installingWorker;
+      if (worker) void announcePendingUpdate(worker, registration);
       return;
     }
     if (state === "redundant") {
-      finishUpdate("worker-redundant");
-      return;
-    }
-    if (state === "activated" && updateInProgress) {
-      scheduleUpdateTimer(() => finishUpdate("activated-without-controllerchange"), ACTIVATED_GRACE_MS);
+      if (pendingWorker === installingWorker) clearPendingUpdate();
     }
   };
 
@@ -206,8 +294,9 @@ export function watchForUpdates(
   };
 
   const onControllerChange = () => {
-    clearUpdateTimers();
-    triggerSafeReload(reload);
+    stopApplyTimer();
+    if (explicitApplyIntent) triggerExplicitReload(reload);
+    else clearPendingUpdate();
   };
 
   registration.addEventListener("updatefound", onUpdateFound);
@@ -217,7 +306,6 @@ export function watchForUpdates(
     installingWorker?.removeEventListener("statechange", onInstallingStateChange);
     registration.removeEventListener("updatefound", onUpdateFound);
     navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
-    finishUpdate("watch-cleanup");
   };
 }
 
@@ -239,7 +327,13 @@ export function registerAppServiceWorker(): () => void {
 
   const requestUpdate = () => {
     if (document.visibilityState === "visible" && navigator.onLine) {
-      void registration?.update().catch(() => {});
+      void registration?.update().then(() => {
+        if (registration?.waiting && navigator.serviceWorker.controller) {
+          void announcePendingUpdate(registration.waiting, registration);
+        } else if (pendingWorker && pendingWorker.state === "redundant") {
+          clearPendingUpdate();
+        }
+      }).catch(() => {});
     }
   };
   const onVisible = () => requestUpdate();
@@ -273,7 +367,7 @@ export function registerAppServiceWorker(): () => void {
     window.removeEventListener("pagehide", cleanup);
     if (intervalId !== undefined) window.clearInterval(intervalId);
     stopWatching();
-    finishUpdate("page-cleanup");
+    stopApplyTimer();
     if (activeCleanup === cleanup) activeCleanup = null;
   };
 
