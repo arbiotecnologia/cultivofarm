@@ -1110,3 +1110,36 @@ Risco: o link recebido não é correlacionável ao canônico e pode pertencer a 
 - regressões focadas de binding, PWA, D51 e primeiro acesso: PASS — 4 arquivos, 45 testes;
 - build vigente observado pelo ambiente: PASS;
 - nenhum E2E mutante, envio, abertura de link ou consulta a dado de projeto alternativo foi realizado.
+
+## 32. Contenção após divergência E01/E02/E03
+
+Data/hora UTC da contenção: `2026-10-02T04:43:28.506892Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+Após confirmar que a janela permanecia aberta, o mecanismo técnico auditável existente `rpc_service_apply_provider_settings` foi usado com payload restrito e sem operação de segredo. A auditoria canônica registrou `action=apply`, ator presente e exatamente os campos:
+
+- `delivery_enabled`: `true` → `false`;
+- `email_delivery_enabled`: `true` → `false`.
+
+Nenhum outro campo foi enviado à RPC. A leitura posterior confirmou:
+
+| Controle | Estado pós-contenção |
+|---|---|
+| Entrega global | **OFF** |
+| Entrega por e-mail | **OFF** |
+| Modo de teste | **ON** |
+| Allowlist | exatamente um endereço, o destinatário controlado aprovado |
+| SMTP host/port/user/password-ref/from | todos presentes, verificados somente por booleanos |
+| WhatsApp | **OFF** |
+| In-app | **OFF** |
+| Webhook | **OFF** |
+| Leases de provisionamento ativos | **0** |
+| Leases de e-mail ativos | **0** |
+| Jobs em `sending` | **0** |
+| Organizações `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` | **0** |
+| Jobs para o destinatário controlado | **0** |
+| Operações de segredo/Vault na contenção | **0** |
+
+A primeira tentativa técnica falhou fechada antes de qualquer escrita porque o binding do sandbox não estava disponível ao processo local. A restauração do binding confirmou a instância canônica, mas o processo ainda não recebeu as variáveis; por isso a execução foi feita diretamente no canônico pelo mecanismo server-side existente. Não houve envio, reenvio, criação de empresa, convite, usuário ou alteração de credenciais/Vault.
+
+**Decisão:** janela SMTP canônica fechada e estado fail-closed restaurado. E01/E02/E03 permanecem FAIL/não comprováveis, E04 permanece NO-GO, D51.2 continua bloqueado e D52 não foi iniciado.
