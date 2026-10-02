@@ -1512,3 +1512,66 @@ Verificação integralmente somente leitura no domínio oficial e no Supabase ca
 6. o job real AR BIOTECNOLOGIA permaneceu intocado: `falhou`, tentativa 1, `finalize_failed`, e-mail `pending`, zero tentativa SMTP, sem usuário e sem leases.
 
 **Decisão: PASS.** O checkpoint está publicado e E01 manual está liberado exclusivamente com o CNPJ `36.736.180/0001-11` e o e-mail corporativo `renato@refilinformatica.com.br`. Após clicar **Criar empresa**, o responsável deve parar ao visualizar **Empresa criada — pronta para auditoria** e não clicar **Enviar convite**. SMTP permanece fechado; E02 e D52 continuam bloqueados.
+
+## 41. Diagnóstico read-only do E01 com dados divergentes
+
+Data: 2026-10-02
+
+### 41.1 Evidência canônica
+
+Às `2026-10-02 14:30:51.272028Z`, uma identidade com papel `superadmin` criou uma única organização `4e537fd6…8f9f` com os valores efetivamente recebidos pela RPC. O `ator_id` da auditoria e o `created_by` da assinatura são iguais; os registros não permitem comprovar que era a mesma aba ou sessão de navegador usada no pré-check:
+
+- razão social/nome: `REFIL INFORMATICA LTDA`;
+- nome fantasia: `Refil Informática`;
+- CNPJ normalizado: `09.255.249/0001-12`;
+- e-mail corporativo: `refilinformatica@gmail.com`;
+- situação: `aguardando_ativacao`, ativa;
+- uma assinatura `Completo`, status `TRIAL`;
+- um evento de auditoria `NULL → aguardando_ativacao`, motivo `criação pela plataforma`.
+
+O CNPJ autorizado `36.736.180/0001-11` e o e-mail corporativo autorizado `renato@refilinformatica.com.br` não aparecem em nenhuma organização. Para a organização REFIL e para `teste@refilinformatica.com.br`, permanecem zero jobs, Auth users, profiles e papéis. Portanto, o checkpoint funcionou: E02 não ocorreu.
+
+### 41.2 Origem dos valores
+
+Busca literal no repositório atual, em todos os commits Git e em todos os chunks JavaScript/CSS publicados encontrou **zero ocorrência** de `09255249000112`, `09.255.249/0001-12`, `REFIL INFORMATICA LTDA` ou `refilinformatica@gmail.com`. Não há default REFIL, fixture, seed ou valor oculto no frontend.
+
+O fluxo `OrganizationOnboardingFlow` inicia CNPJ, razão, fantasia e e-mail vazios; não usa `localStorage`, `sessionStorage`, rascunho persistido nem cache React Query para esses campos. A consulta CNPJ chama diretamente `onboarding-cnpj-lookup` a cada busca. No servidor, o CNPJ é normalizado, validado e usado na URL da BrasilAPI; a resposta é rejeitada se o CNPJ retornado divergir do consultado. O rate limiter mantém apenas timestamps por usuário/escopo e não armazena resultados.
+
+A consulta direta à mesma fonte confirmou:
+
+- `36.736.180/0001-11` → `FSF AGROSERVICE PRODUTOS AGRICOLAS E SERVICOS LTDA`, sem e-mail retornado;
+- `09.255.249/0001-12` → `REFIL INFORMATICA LTDA`, sem e-mail retornado.
+
+Assim, não existe caminho demonstrado em que consultar `36.736.180/0001-11` retorne REFIL. A correspondência exata entre o CNPJ criado e a razão REFIL comprova que o estado enviado ao criar estava associado ao CNPJ `09.255.249/0001-12`. Como a fonte não devolve e-mail para esse CNPJ, `refilinformatica@gmail.com` entrou separadamente no campo editável, por digitação ou autofill. O plano `Completo` também não é o plano padrão (`Base`), mostrando outra seleção presente no formulário.
+
+Os campos não declaram `autocomplete`, portanto autofill do navegador é tecnicamente possível. Também é possível uma aba já aberta conservar estado React em memória até recarga. Não há telemetria do navegador, corpo da requisição, log de lookup ou log PostgREST/Auth/Edge retido no intervalo `14:30:45Z–14:31:00Z`; logo não é possível distinguir factualmente digitação, autofill ou estado de aba antiga.
+
+### 41.3 Classificação
+
+- **A — hardcoded/default:** descartada;
+- **B — estado persistido/localStorage:** descartada;
+- **C — cache de lookup:** descartada;
+- **D — browser autofill:** possível somente para campos editáveis, não comprovada;
+- **E — aba antiga/estado em memória:** possível, não comprovada;
+- **F — entrada manual equivocada:** possível, não comprovada;
+- **G — outro motivo comprovado:** o servidor recebeu e persistiu um payload coerente com `09.255.249/0001-12`, não com o cenário autorizado; a origem humana/browser anterior ao clique não ficou registrada.
+
+### 41.4 Logs e linha do tempo
+
+O checkpoint foi commitado às `13:01:22Z`, verificado no pacote publicado antes de E01 e continua presente no bundle atual. A criação ocorreu às `14:30:51Z`. Consultas aos logs Postgres/PostgREST/Auth/Edge no intervalo exato não retornaram eventos, e a função de lookup não reteve entrada nem resultado correspondente. O corpo da chamada `platform_create_organization` não está disponível; não foi reconstruído ou inventado.
+
+### 41.5 Estado seguro e prevenção proposta
+
+SMTP continua global/e-mail **OFF/OFF**, Test Mode **ON**, allowlist exclusiva e demais canais OFF. O job real AR BIOTECNOLOGIA permanece `falhou`, tentativa 1, sem usuário/leases e sem tentativa SMTP.
+
+A organização REFIL possui exatamente uma assinatura e uma auditoria, sem E02. Recomenda-se, em rodada separada e autorizada, cancelar ou inativar auditavelmente a organização e a assinatura, sem apagar o histórico.
+
+Prevenção mínima proposta, ainda não implementada:
+
+1. exibir CNPJ, razão social e e-mail corporativo em confirmação final explícita junto da ação **Criar empresa**;
+2. guardar em memória um snapshot/token da última consulta e impedir criação se o CNPJ da revisão divergir do CNPJ consultado;
+3. invalidar esse snapshot sempre que o CNPJ mudar ou uma nova consulta começar;
+4. desabilitar autofill nos campos de CNPJ e e-mail corporativo onde aplicável;
+5. registrar observabilidade sanitizada com hash/correlação do CNPJ consultado e criado, sem registrar dados pessoais ou corpo bruto.
+
+**Decisão: E01 FAIL / E02 NO-GO.** Nenhuma alteração de dados, status, SMTP, usuário ou job foi executada nesta auditoria. D52 permanece bloqueado.
