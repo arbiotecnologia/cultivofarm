@@ -1,6 +1,6 @@
 // Edge Function: communication-provider-settings
 // - CORS restrito a origens confiáveis (helper compartilhado).
-// - JWT + role administrador (fail-closed).
+// - JWT + Superadmin de Plataforma via is_platform_superadmin (fail-closed).
 // - Rate limit persistente por (user_id, action) via RPC de serviço.
 // - Toda mutação passa por UMA chamada a rpc_service_apply_provider_settings;
 //   qualquer falha aborta a transação inteira.
@@ -32,7 +32,7 @@ function jsonWith(origin: string | null, status: number, body: unknown): Respons
 
 type Sb = ReturnType<typeof createClient>;
 
-async function authorizeAdmin(req: Request, origin: string | null):
+async function authorizePlatformSuperadmin(req: Request, origin: string | null):
   Promise<{ ok: true; sb: Sb; userId: string } | { ok: false; res: Response }>
 {
   if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -49,9 +49,15 @@ async function authorizeAdmin(req: Request, origin: string | null):
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data?.user) return { ok: false, res: jsonWith(origin, 401, { ok: false, error: "invalid_token" }) };
   const uid = data.user.id;
-  const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", uid);
-  const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "administrador");
-  if (!isAdmin) return { ok: false, res: jsonWith(origin, 403, { ok: false, error: "forbidden" }) };
+  const { data: isSuperadmin, error: authorizationError } = await sb.rpc("is_platform_superadmin", {
+    _user_id: uid,
+  });
+  if (authorizationError) {
+    return { ok: false, res: jsonWith(origin, 500, { ok: false, error: "authorization_check_failed" }) };
+  }
+  if (isSuperadmin !== true) {
+    return { ok: false, res: jsonWith(origin, 403, { ok: false, error: "forbidden" }) };
+  }
   return { ok: true, sb, userId: uid };
 }
 
@@ -122,7 +128,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const az = await authorizeAdmin(req, origin);
+    const az = await authorizePlatformSuperadmin(req, origin);
     if (!az.ok) return az.res;
     const { sb, userId } = az;
 

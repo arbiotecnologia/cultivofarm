@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2-F — corrigir P1 de isolamento SaaS: configuração global e teste SMTP exclusivos do Superadmin de Plataforma; mover a UI global para `/plataforma`, validar e implantar somente as duas Edge Functions após preflight fail-closed.
+- [ ] Gate D51.2-F — P1 comprovado: qualquer administrador tenant alcançava configuração/teste SMTP globais. Correção em validação: endpoints exclusivos do Superadmin de Plataforma e UI global movida para `/plataforma`; deploy restrito aguarda testes e preflight final.
 - [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton/ACLs endurecidos, checklist visível e teste SMTP fail-closed/sanitizado; prontidão atual permanece falsa. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
@@ -20,7 +20,7 @@
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, um `administrador` operacional configura em `/configuracoes?tab=comunicacao`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
+- [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, o Superadmin de Plataforma configura na aba Comunicação de `/plataforma`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
 - [ ] D51.2: responsável entrar manualmente como superadmin controlado em `/auth` na prévia. Projeto externo não gerenciado não permite `lovable auth-session`; não compartilhar senha no chat e não substituir sessão por `service_role`.
 - [ ] D51.2: habilitar Entrega global + E-mail somente após novo comando explícito para a janela E2E; manter WhatsApp, in-app e webhook OFF.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.

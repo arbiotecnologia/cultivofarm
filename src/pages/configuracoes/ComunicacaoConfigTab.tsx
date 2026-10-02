@@ -27,7 +27,6 @@ import {
   type SmtpFieldErrors,
   type WhatsappFieldErrors,
 } from "./comunicacaoValidation";
-import { useAuth } from "@/hooks/useAuth";
 
 type ProviderView = {
   ok: boolean;
@@ -65,7 +64,8 @@ type ProviderView = {
 
 const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "Sessão expirada ou sem permissão.",
-  forbidden: "Apenas administradores podem alterar essa configuração.",
+  forbidden: "Apenas o Superadmin de Plataforma pode alterar essa configuração.",
+  authorization_check_failed: "Não foi possível validar a permissão de plataforma.",
   rate_limited: "Muitas tentativas em pouco tempo. Aguarde alguns segundos e tente novamente.",
   invalid_payload: "Dados inválidos — revise os campos destacados.",
   invalid_json: "Payload inválido.",
@@ -220,8 +220,6 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 export default function ComunicacaoConfigTab() {
-  const { roles } = useAuth();
-  const isAdmin = roles.includes("administrador");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ProviderView | null>(null);
@@ -770,7 +768,7 @@ export default function ComunicacaoConfigTab() {
             <Save className="h-4 w-4 mr-1" />Salvar provedor de e-mail
           </Button>
 
-          {isAdmin && view.smtp.password_configured && (
+          {view.smtp.password_configured && (
             <>
               <Separator />
               <div className="space-y-2">

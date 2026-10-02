@@ -66,8 +66,9 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
       .toBe("smtp_test_failed");
   });
 
-  it("valida admin, rate limit, test mode e allowlist no servidor", () => {
-    expect(edge).toContain('r.role === "administrador"');
+  it("valida superadmin de plataforma, rate limit, test mode e allowlist no servidor", () => {
+    expect(edge).toContain('sb.rpc("is_platform_superadmin"');
+    expect(edge).not.toContain('r.role === "administrador"');
     expect(edge).toContain('p_action: "test_smtp"');
     expect(edge).toContain("loadRuntimeConfig(sb, readWorkerEnv)");
     expect(edge).toContain("evaluateControlledSmtpTest(env, to)");
