@@ -14528,6 +14528,16 @@ export type Database = {
           cpf_cnpj: string | null
           created_at: string
           email: string
+          email_accepted_at: string | null
+          email_attempt_count: number
+          email_delivery_status: string
+          email_failed_at: string | null
+          email_idempotency_key: string
+          email_last_attempt_at: string | null
+          email_last_error_code: string | null
+          email_lease_expires_at: string | null
+          email_lease_token: string | null
+          email_next_attempt_at: string
           id: string
           invited_by: string
           last_error_code: string | null
@@ -14550,6 +14560,16 @@ export type Database = {
           cpf_cnpj?: string | null
           created_at?: string
           email: string
+          email_accepted_at?: string | null
+          email_attempt_count?: number
+          email_delivery_status?: string
+          email_failed_at?: string | null
+          email_idempotency_key?: string
+          email_last_attempt_at?: string | null
+          email_last_error_code?: string | null
+          email_lease_expires_at?: string | null
+          email_lease_token?: string | null
+          email_next_attempt_at?: string
           id?: string
           invited_by: string
           last_error_code?: string | null
@@ -14572,6 +14592,16 @@ export type Database = {
           cpf_cnpj?: string | null
           created_at?: string
           email?: string
+          email_accepted_at?: string | null
+          email_attempt_count?: number
+          email_delivery_status?: string
+          email_failed_at?: string | null
+          email_idempotency_key?: string
+          email_last_attempt_at?: string | null
+          email_last_error_code?: string | null
+          email_lease_expires_at?: string | null
+          email_lease_token?: string | null
+          email_next_attempt_at?: string
           id?: string
           invited_by?: string
           last_error_code?: string | null
@@ -20896,6 +20926,10 @@ export type Database = {
         Args: { p_partner_id: string }
         Returns: number
       }
+      platform_accept_org_admin_email_delivery: {
+        Args: { p_job_id: string; p_lease_token: string }
+        Returns: Json
+      }
       platform_change_subscription: {
         Args: {
           _organization_id: string
@@ -20904,6 +20938,10 @@ export type Database = {
           _status: string
         }
         Returns: string
+      }
+      platform_claim_org_admin_email_delivery: {
+        Args: { p_cooldown_seconds?: number; p_job_id: string }
+        Returns: Json
       }
       platform_claim_org_admin_provisioning:
         | {
@@ -20950,6 +20988,15 @@ export type Database = {
       platform_end_feature_override: {
         Args: { _override_id: string; _reason: string }
         Returns: undefined
+      }
+      platform_fail_org_admin_email_delivery: {
+        Args: {
+          p_error_code: string
+          p_job_id: string
+          p_lease_token: string
+          p_retry_seconds?: number
+        }
+        Returns: Json
       }
       platform_fail_org_admin_provisioning: {
         Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
