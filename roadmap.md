@@ -1,10 +1,11 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — janela SMTP fechada após o pré-check: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. A sessão real do Superadmin não é acessível às ferramentas do projeto externo não gerenciado. E01–E21 seguem NOT RUN/PARCIAL, sem PASS E2E; NO-GO para encerrar D51 ou avançar D52.
+- [ ] **Incidente P0 pós-publicação — recuperação em andamento:** produção exibiu erro de `useAuth` incompatível com o código/histórico atuais. Diagnóstico apontou sessão com bundle/cache antigo durante atualização PWA; correção adiciona recuperação de chunk obsoleto, limpeza restrita de caches de runtime e recarga única. D51.2 permanece suspenso até publicação e verificação da correção.
+- [ ] Gate D51.2 — **SUSPENSO pelo P0 pós-publicação**. Janela SMTP fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
+- [ ] Gate D51.2 — retomar somente após produção carregar normalmente e nova autorização explícita; demais condições do plano permanecem inalteradas.
 
 ## Concluído
 - [x] Gate D51.2-F — P1 de isolamento SaaS corrigido: provider settings e teste SMTP globais agora exigem `is_platform_superadmin` no servidor; UI tenant removida e o mesmo componente reutilizado em `/plataforma`, sem papel operacional. Duas Edge Functions implantadas após preflight fail-closed; chamadas negativas retornaram 401, 63 testes focados e suíte global com 5.307 testes verdes; nenhum envio/configuração/E2E.

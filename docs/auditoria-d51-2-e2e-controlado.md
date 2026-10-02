@@ -1,5 +1,7 @@
 # Auditoria D51.2 — E2E controlado
 
+> **D51.2 SUSPENSO:** incidente P0 pós-publicação em 2026-10-02. Nenhum cenário E01–E21 pode ser retomado até a correção ser publicada e a produção voltar a carregar normalmente.
+
 Data da tentativa: 2026-10-02  
 Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
 Commit candidato confirmado no início do gate: `3e8fdae27bbbc3cab2d49fadb014725728665bf0`

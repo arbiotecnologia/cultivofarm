@@ -1,12 +1,21 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { registerAppServiceWorker } from "./pwa/registerSW";
+import {
+  isStaleBuildError,
+  recoverFromStaleBuild,
+  registerAppServiceWorker,
+} from "./pwa/registerSW";
 import {
   CANONICAL_SUPABASE_URL,
   validateSupabaseBinding,
 } from "./integrations/supabase/bindingGuard";
 
 const rootElement = document.getElementById("root");
+
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  void recoverFromStaleBuild();
+});
 
 registerAppServiceWorker();
 
@@ -29,6 +38,19 @@ const renderBlockedConnection = () => {
   );
 };
 
+const renderLoadFailure = () => {
+  root.render(
+    <main className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <section role="alert" className="max-w-lg text-center">
+        <h1 className="text-xl font-semibold">Não foi possível carregar a aplicação</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Atualize a página. Se o problema continuar, contate o suporte.
+        </p>
+      </section>
+    </main>,
+  );
+};
+
 if (!validateSupabaseBinding(CANONICAL_SUPABASE_URL).ok) {
   renderBlockedConnection();
 } else {
@@ -36,5 +58,11 @@ if (!validateSupabaseBinding(CANONICAL_SUPABASE_URL).ok) {
     .then(({ default: App }) => {
       root.render(<App />);
     })
-    .catch(() => renderBlockedConnection());
+    .catch((error: unknown) => {
+      if (isStaleBuildError(error)) {
+        void recoverFromStaleBuild();
+        return;
+      }
+      renderLoadFailure();
+    });
 }

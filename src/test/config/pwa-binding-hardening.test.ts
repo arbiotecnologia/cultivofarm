@@ -32,6 +32,8 @@ describe("P0-03A — atualização obrigatória", () => {
   const vite = read("vite.config.ts");
   const register = read("src/pwa/registerSW.ts");
   const app = read("src/App.tsx");
+  const main = read("src/main.tsx");
+  const boundary = read("src/components/ErrorBoundary.tsx");
 
   it("ativa tomada automática de controle e limpeza de caches antigos", () => {
     expect(vite).toMatch(/clientsClaim:\s*true/);
@@ -63,5 +65,22 @@ describe("P0-03A — atualização obrigatória", () => {
     expect(register).toContain("window.self !== window.top");
     expect(register).toContain('get("sw") === "off"');
     expect(register).toContain('hostname.startsWith("id-preview--")');
+  });
+
+  it("recarrega uma única versão quando o Vite detecta chunk obsoleto", () => {
+    expect(main).toContain('addEventListener("vite:preloadError"');
+    expect(main).toContain("recoverFromStaleBuild");
+    expect(main).not.toMatch(/vite:preloadError[\s\S]{0,300}window\.location\.reload/);
+    expect(register).toContain("isStaleBuildError");
+    expect(register).toContain("Failed to fetch dynamically imported module");
+    expect(register).toContain('new Set(["html-nav", "static-assets"])');
+    expect(register).toContain("window.caches.delete");
+    expect(boundary).toContain("recoverFromStaleBuild");
+  });
+
+  it("não classifica falha de chunk como bloqueio do Supabase", () => {
+    expect(main).toContain("renderLoadFailure");
+    expect(main).toMatch(/if \(isStaleBuildError\(error\)\)/);
+    expect(main).not.toMatch(/\.catch\(\(\) => renderBlockedConnection\(\)\)/);
   });
 });
