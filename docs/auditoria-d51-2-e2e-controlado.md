@@ -1215,3 +1215,48 @@ A ausência de evento, job, tentativa e chamada canônica é compatível com a c
 O próximo passo documental/técnico é rastrear por que a UI indicou sucesso sem persistência canônica e sem envio real, usando apenas histórico de publicação, runtime e feedback visual já disponíveis. Não existe e-mail ou link do qual coletar metadados.
 
 Até nova correlação, não repetir E01/E02. A janela SMTP canônica foi reconfirmada global/e-mail OFF, com modo de teste ON. E01/E02 permanecem FAIL/não comprovados; E03 é FAIL confirmado — nenhum e-mail recebido e nenhuma tentativa canônica correlacionável; E04 é NOT APPLICABLE/NO-GO porque não existe link recebido. D52 permanece NO-GO. Nenhum código, banco, SMTP ou dado operacional foi alterado nesta reinvestigação.
+
+## 34. Correlação da captura “Administradores provisionados”
+
+Data/hora UTC da leitura: `2026-10-02T05:13Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 34.1 Conclusão factual
+
+A captura **não corresponde ao job histórico** citado nas leituras anteriores. O baseline lido às `04:37Z` continha duas organizações e um único job histórico, ambos com registros mais recentes em `2026-10-01`. A ação mostrada na captura ocorreu depois dessa auditoria e deixou novos registros no canônico:
+
+| Objeto | Evidência sanitizada |
+|---|---|
+| Organização | `007bb519…0048`; `AR BIOTECNOLOGIA LTDA`; criada em `2026-10-02T05:10:25.377524Z`; status `aguardando_ativacao`; ativa; sem responsável definido |
+| Assinatura | criada na mesma transação; plano `completo`; status `TRIAL` |
+| Auditoria da organização | evento “criação pela plataforma” no mesmo timestamp, com ator mascarado `b2c9bb8c…4b2e` |
+| Job da captura | `1d14f78b…c558`; criado em `2026-10-02T05:11:27.798905Z`; atualizado em `2026-10-02T05:11:31.135974Z` |
+| Identidade informada | Renato Cunha; `arbiotecnologia@gmail.com`; modo `link`; responsável principal `true` |
+| Provisionamento | status `falhou`; `attempt_count=1`; erro sanitizado `finalize_failed`; sem lease ativo; sem `user_id`; sem `auth_created_at`; sem conclusão |
+| Entrega de e-mail | status `pending`; `email_attempt_count=0`; nenhum timestamp de tentativa, aceite ou falha; sem lease de e-mail |
+| Auth/perfil/papel | zero Auth users para o endereço; zero profiles e zero user_roles; nenhuma identidade Auth criada na janela `05:10Z–05:13Z` permaneceu no canônico |
+
+O horário exibido `02/10/2026, 02:11:31` é exatamente o `updated_at` do job convertido pela UI para `America/Sao_Paulo` (`05:11:31Z` → `02:11:31`). Essa correlação, junto de empresa, nome, e-mail, modo e status, identifica inequivocamente a linha da captura.
+
+### 34.2 O que a interface executou
+
+A lista “Administradores provisionados” lê globalmente os 200 jobs mais recentes, sem filtrar pela empresa selecionada no formulário. Entretanto, neste caso ela não estava apenas apontando para o registro histórico: o job da captura foi criado naquele momento e não existia antes de `05:11:27Z`.
+
+O botão **Gerar acesso** invoca `platform-invite-org-admin`. A evidência persistida prova uma execução real do claim para `arbiotecnologia@gmail.com`: criação do job, `attempt_count=1` e posterior marcação `falhou`. O badge “Falhou — pode retentar” é gerado exclusivamente por `status='falhou'`; a coluna “Quando” usa `updated_at`, com fallback para `created_at`.
+
+O fluxo falhou na finalização Auth↔banco (`last_error_code=finalize_failed`) antes de alcançar a entrega SMTP. A função remove a conta Auth recém-criada quando essa finalização falha, o que é consistente com `user_id` nulo no job e zero Auth users, profiles e papéis remanescentes. Os dados disponíveis não preservam o erro interno original da RPC; portanto a causa técnica específica de `finalize_failed` não pode ser afirmada nesta rodada somente leitura.
+
+### 34.3 Reclassificação E01–E04
+
+- **E01: executado, porém fora do cenário controlado — FAIL de conformidade.** Uma nova empresa foi criada no canônico: `AR BIOTECNOLOGIA LTDA`. Não é uma empresa com prefixo `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` e não usa o endereço controlado aprovado.
+- **E02: executado, porém não criou o convite controlado — FAIL.** Foi criado um job novo para `arbiotecnologia@gmail.com`, não para `teste@refilinformatica.com.br`; ele terminou em `falhou` sem usuário, profile ou papel. Continuam existindo zero jobs para o destinatário controlado.
+- **E03: FAIL confirmado.** O job novo tem `email_attempt_count=0` e permaneceu `pending`; nenhuma etapa SMTP foi reclamada. Nenhum e-mail foi recebido.
+- **E04: NOT APPLICABLE / NO-GO.** Não há Auth user nem link recebido.
+
+A divergência anterior fica explicada pela linha do tempo e pela identificação do registro: a auditoria de `04:37Z` estava correta para aquele instante; a empresa e o job da captura foram criados depois, às `05:10Z–05:11Z`, e não eram o job legado. A ação também não correspondeu ao cenário D51.2 aprovado porque usou empresa e destinatário reais diferentes dos controles autorizados.
+
+### 34.4 Contenção e decisão
+
+O SMTP canônico permanece fail-closed: entrega global **OFF**, e-mail **OFF**, modo de teste **ON**, allowlist com um único endereço — o destinatário controlado aprovado — e os demais canais **OFF**. Existem zero leases de provisionamento e zero leases de e-mail ativos. Nenhuma escrita, reprocessamento, reenvio, alteração de status, criação de usuário ou envio foi realizado nesta auditoria.
+
+**Decisão:** a captura não é o job legado. E01 criou uma nova empresa real no canônico; E02 criou um job novo, não controlado e incompleto; nenhum convite controlado foi criado. O job falho deve permanecer bloqueado e não pode ser usado em homologação futura, pois envolve empresa/endereço não aprovados e não possui vínculo Auth concluído. Qualquer decisão posterior sobre correção, arquivamento ou retomada exige revisão específica e nova autorização. Não repetir E01/E02 e não avançar D52.
