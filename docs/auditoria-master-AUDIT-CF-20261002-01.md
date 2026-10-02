@@ -22,6 +22,8 @@ A causa complementar foi confirmada no detector: ele comparava somente o hash do
 
 O detector prioriza o build ID tanto na página carregada quanto no HTML consultado com `no-store`; páginas antigas continuam usando o hash do módulo principal. Uma sessão antiga por hash reconhece HTML novo com meta e oferece o aviso. Diferenças somente mudam o estado para aviso ou badge: **Adiar**, `visibilitychange` e `online` não navegam; **Atualizar agora** permanece o único caminho de navegação e continua limitado a uma tentativa explícita.
 
+Validação pré-publicação: **32/32 testes focados PASS**, incluindo meta igual/diferente, mudança apenas de módulo interno, HTML e sessão legados, Adiar, navegação explícita única, eventos de detecção, limpeza legada, push e diagnóstico SMTP em `/plataforma`; typecheck e build PASS; suíte global **5.379 PASS/4 skipped**; scanner **10 Info e zero Critical/Error/Warning**. Nenhuma conexão ou mensagem SMTP foi executada.
+
 ### P0 PWA — migração definitiva
 
 A evidência real confirmou que um cliente antigo ainda podia exibir uma tela bloqueante e prometer recarga automática. O app-shell Workbox foi removido como mecanismo de versão. O manifesto de instalação permanece estático; `/push-sw.js` é um worker standalone, sem Workbox, precache, claim de clientes ou controle de atualização; `/sw.js` foi substituído por um worker transitório de migração que remove apenas `html-nav`, `static-assets` e caches Workbox/precache identificáveis, e então se desregistra sem navegar ou recarregar clientes.
@@ -68,7 +70,7 @@ As contagens de migrations, triggers e policies são históricas e podem incluir
 | Cadastros/catálogo | rotas e hooks de catálogo | tabelas/RPCs de catálogo | guardas de rota, RLS e RPCs | logs técnicos de catálogo |
 | Comercial/financeiro/fiscal | páginas e hooks dos módulos | RPCs transacionais e tabelas de domínio | RLS e funções server-side | históricos e logs por domínio |
 | Entregas/campo/documentos | páginas de entrega e visitas | RPCs, storage privado e validação pública limitada | vínculo de usuário/tenant; paths permitidos | eventos, comprovantes e trilhas |
-| PWA | detector por HTML e notificador manual | manifesto estático; push worker separado; `/sw.js` somente para migração legada | consentimento explícito | token do bundle/timestamp técnico local |
+| PWA | detector por HTML e notificador manual | manifesto estático; push worker separado; `/sw.js` somente para migração legada | consentimento explícito | build ID explícito/fallback legado e timestamp técnico local |
 
 ### Baseline técnico
 
