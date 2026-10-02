@@ -2,12 +2,7 @@
 // Protegida por JWT + has_role('administrador'). Usa service role apenas
 // para leitura (nenhum INSERT/UPDATE/DELETE é feito por esta função).
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 type Target = { table: string; column: string };
 
@@ -37,12 +32,19 @@ const TARGETS: Target[] = [
 ];
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  if (origin && !isTrustedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   const json = (status: number, body: unknown) =>
     new Response(JSON.stringify(body), {
       status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeadersFor(origin), "Content-Type": "application/json" },
     });
 
   try {
@@ -65,7 +67,7 @@ Deno.serve(async (req) => {
       _user_id: userId,
       _role: "administrador",
     });
-    if (rpcErr) return json(500, { error: "role_check_failed", detail: rpcErr.message });
+    if (rpcErr) return json(500, { error: "role_check_failed" });
     if (!isAdmin) return json(403, { error: "forbidden" });
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -175,6 +177,7 @@ Deno.serve(async (req) => {
       sample_ids_orfaos_global: [...globalOrphanIds].slice(0, 50),
     });
   } catch (e) {
-    return json(500, { error: "internal_error", detail: e instanceof Error ? e.message : String(e) });
+    console.error("admin_audit_failed", e instanceof Error ? e.name : "unknown");
+    return json(500, { error: "internal_error" });
   }
 });

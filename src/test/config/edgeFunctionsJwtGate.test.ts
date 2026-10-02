@@ -23,6 +23,8 @@ const MUST_REQUIRE_JWT = [
   "fiscal-xml-engine",
   "create-user",
   "platform-invite-org-admin",
+  "admin-wipe-produtos-catalog",
+  "admin-audit-produtos-orfaos",
   "admin-update-user-password",
   "list-portal-users",
   "enviar-pdf-aplicacao",

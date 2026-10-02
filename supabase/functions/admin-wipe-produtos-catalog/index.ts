@@ -4,12 +4,7 @@
 // NÃO executa nenhuma alteração de schema. Apenas DELETE de dados.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 // Ordem de deleção (filhos → pais). Cada item vira `DELETE FROM <t>` sem where
 // pois o wipe é total (usuário autorizou "Wipe total: apagar produtos e cascatear em lotes/ordens/aplicações/fiscais").
@@ -55,12 +50,19 @@ const WIPE_ORDER: string[] = [
 ];
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  if (origin && !isTrustedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
-      return json({ error: "Unauthorized" }, 401);
+      return json(origin, { error: "Unauthorized" }, 401);
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -74,7 +76,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claims?.claims?.sub) {
-      return json({ error: "Unauthorized" }, 401);
+      return json(origin, { error: "Unauthorized" }, 401);
     }
     const userId = claims.claims.sub as string;
 
@@ -87,8 +89,8 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .eq("role", "administrador")
       .maybeSingle();
-    if (roleErr) return json({ error: "role_check_failed", detail: roleErr.message }, 500);
-    if (!roleRow) return json({ error: "forbidden", detail: "administrador required" }, 403);
+    if (roleErr) return json(origin, { error: "role_check_failed" }, 500);
+    if (!roleRow) return json(origin, { error: "forbidden" }, 403);
 
     // 1) Preservar histórico do consultor: apenas anular referência a produto
     const nullified: Record<string, number> = {};
@@ -97,7 +99,7 @@ Deno.serve(async (req) => {
         .from("registros_consultor_recomendacoes")
         .update({ produto_biologico_sugerido_id: null } as any, { count: "exact" })
         .not("produto_biologico_sugerido_id", "is", null);
-      if (error) return json({ error: "nullify_failed", table: "registros_consultor_recomendacoes", detail: error.message }, 500);
+      if (error) return json(origin, { error: "nullify_failed", table: "registros_consultor_recomendacoes" }, 500);
       nullified["registros_consultor_recomendacoes.produto_biologico_sugerido_id"] = count ?? 0;
     }
 
@@ -110,7 +112,8 @@ Deno.serve(async (req) => {
         .not("id", "is", null); // no-op filter para permitir DELETE sem WHERE via PostgREST
       if (error) {
         return json(
-          { error: "delete_failed", table, deleted, nullified, detail: error.message },
+          origin,
+          { error: "delete_failed", table, deleted, nullified },
           500,
         );
       }
@@ -118,15 +121,16 @@ Deno.serve(async (req) => {
     }
 
     const totalDeleted = Object.values(deleted).reduce((a, b) => a + b, 0);
-    return json({ ok: true, deleted, nullified, totalDeleted });
+    return json(origin, { ok: true, deleted, nullified, totalDeleted });
   } catch (e) {
-    return json({ error: "internal", detail: (e as Error).message }, 500);
+    console.error("admin_wipe_failed", e instanceof Error ? e.name : "unknown");
+    return json(origin, { error: "internal" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
+function json(origin: string | null, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeadersFor(origin), "Content-Type": "application/json" },
   });
 }
