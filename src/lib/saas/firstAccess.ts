@@ -6,6 +6,8 @@ export function senhaForte(s: string): boolean {
   return s.length >= 8 && s.length <= 128 && /[A-Za-z]/.test(s) && /\d/.test(s);
 }
 
+export const REGRA_SENHA = "Use de 8 a 128 caracteres, com pelo menos uma letra e um número.";
+
 export interface FalhaPrimeiroAcesso {
   error?: string;
   etapa?: string;

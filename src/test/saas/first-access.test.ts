@@ -84,7 +84,8 @@ describe("primeiro acesso — convite e compensação", () => {
     // Único log permitido na Edge Function: diagnóstico com etapa/código.
     const logs = edge.match(/console\.(log|error|warn)\([^;]*;/g) ?? [];
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toContain("etapa, codigo, msg");
+    expect(logs[0]).toContain("etapa, codigo");
+    expect(logs[0]).not.toContain("msg");
     expect(logs.join()).not.toMatch(/novaSenha|nova_senha|token|authHeader|password/);
     expect(convite).not.toMatch(/console\.(log|error|warn)/);
     expect(troca).not.toMatch(/console\.(log|error|warn)/);
