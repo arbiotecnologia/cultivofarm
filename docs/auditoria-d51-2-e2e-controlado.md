@@ -1434,3 +1434,47 @@ Reutilizar AR BIOTECNOLOGIA ou seu job foi expressamente proibido e não é opç
 ### 37.4 Decisão
 
 Conforme a regra principal, o pré-check terminou em **NO-GO antes de qualquer mutação**. A janela SMTP não foi aberta e E01/E02 não foram executados. Não houve criação, convite, usuário, envio, retry, alteração do job real ou cleanup. D51.2 permanece aberto e D52 bloqueado.
+
+## 38. Fase 6 — repetição com novo CNPJ autorizado
+
+Data/hora UTC: `2026-10-02T12:16:56Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
+CNPJ autorizado: `36.736.180/0001-11` (`36736180000111`)
+
+### 38.1 Pré-check somente leitura
+
+O novo documento passou na validação de dígitos verificadores usada pelo frontend e pelo núcleo da consulta integrada (DVs calculados `11`). A BrasilAPI, provedor já integrado ao fluxo, respondeu `200` e informou situação cadastral **ATIVA**, razão social `FSF AGROSERVICE PRODUTOS AGRICOLAS E SERVICOS LTDA` e nome fantasia `FSF AGROSERVICE E COMERCIO`. O retorno não contém e-mail corporativo.
+
+Contagens no canônico para o documento normalizado:
+
+| Vínculo | Contagem |
+|---|---:|
+| `organizations` | 0 |
+| `company_fiscal_settings` | 0 |
+| `clientes` | 0 |
+| `customer_fiscal_profiles` | 0 |
+| `partner_accounts` | 0 |
+| `profiles` | 0 |
+| `fiscal_invoices` | 0 |
+| `platform_org_admin_invites` | 0 |
+
+O índice UNIQUE parcial `uq_organizations_cnpj_normalizado` e a guarda server-side de `platform_create_organization` continuam presentes. A RPC valida o CNPJ, rejeita duplicidade, exige Superadmin autenticado e cria, numa única transação, organização, assinatura `TRIAL` e auditoria de criação. O plano padrão ativo é `base` (`Plano Base`).
+
+### 38.2 Estado D51.2 e implantação
+
+- zero organizações com prefixo `HOMOLOGAÇÃO D51.2`;
+- zero jobs, Auth users e profiles para `teste@refilinformatica.com.br`;
+- SMTP global **OFF** e e-mail **OFF**;
+- Test Mode **ON**, allowlist exclusiva `teste@refilinformatica.com.br`;
+- configuração SMTP completa confirmada somente por booleanos;
+- WhatsApp, in-app e webhook **OFF**;
+- zero leases ativos;
+- migration `20261002052628` presente; finalizer `SECURITY DEFINER`, `search_path=''`, `EXECUTE` apenas para `service_role`;
+- bundle publicado `App-y87BJCpA.js` contém a RPC e o fluxo Empresa → Responsável → Revisão → Criar empresa e enviar convite;
+- job real AR BIOTECNOLOGIA permaneceu em `falhou`, tentativa 1, `finalize_failed`, e-mail pendente, zero tentativa SMTP, sem usuário e sem leases.
+
+### 38.3 Decisão e E01
+
+O CNPJ está livre, válido e sem vínculo conflitante. Contudo, a execução controlada não dispõe de sessão real de Superadmin (`external_unmanaged`) e o lookup oficial não fornece o e-mail corporativo obrigatório para `platform_create_organization`. Não foi inventado um endereço nem usado `service_role` como sessão de usuário.
+
+Por segurança, a janela SMTP **não foi aberta** e E01 ficou **NOT RUN/BLOQUEADO**, não FAIL funcional. Não houve mutação, criação, convite ou envio. O ponto exato de retomada é: fornecer o e-mail corporativo autorizado da empresa e executar o fluxo publicado com sessão real de Superadmin; então abrir somente as duas flags auditáveis e executar um único E01. E02 continua proibido até nova auditoria pós-E01. D52 permanece bloqueado.
