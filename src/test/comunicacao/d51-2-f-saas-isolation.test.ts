@@ -33,7 +33,7 @@ describe("D51.2-F — isolamento SaaS da configuração global", () => {
 
     const testAuthorization = testEdge.indexOf("isSuperadmin !== true");
     expect(testAuthorization).toBeGreaterThan(-1);
-    expect(testAuthorization).toBeLessThan(testEdge.indexOf('p_action: "test_smtp"'));
+    expect(testAuthorization).toBeLessThan(testEdge.indexOf('mode === "connection" ? "test_smtp_connection" : "test_smtp"'));
     expect(testAuthorization).toBeLessThan(testEdge.indexOf("await sendEmail("));
   });
 
@@ -49,7 +49,7 @@ describe("D51.2-F — isolamento SaaS da configuração global", () => {
   it("prossegue estruturalmente somente quando is_platform_superadmin retorna true", () => {
     for (const [source, nextStep] of [
       [settingsEdge, "const action = req.method"],
-      [testEdge, 'p_action: "test_smtp"'],
+      [testEdge, 'mode === "connection" ? "test_smtp_connection" : "test_smtp"'],
     ] as const) {
       const roleCheck = source.indexOf("isSuperadmin !== true");
       expect(roleCheck).toBeGreaterThan(-1);
