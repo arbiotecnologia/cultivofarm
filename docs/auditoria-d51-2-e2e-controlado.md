@@ -1519,7 +1519,7 @@ Data: 2026-10-02
 
 ### 41.1 Evidência canônica
 
-Às `2026-10-02 14:30:51.272028Z`, a mesma identidade que possui papel `superadmin` criou uma única organização `4e537fd6…8f9f` com os valores efetivamente recebidos pela RPC:
+Às `2026-10-02 14:30:51.272028Z`, uma identidade com papel `superadmin` criou uma única organização `4e537fd6…8f9f` com os valores efetivamente recebidos pela RPC. O `ator_id` da auditoria e o `created_by` da assinatura são iguais; os registros não permitem comprovar que era a mesma aba ou sessão de navegador usada no pré-check:
 
 - razão social/nome: `REFIL INFORMATICA LTDA`;
 - nome fantasia: `Refil Informática`;
