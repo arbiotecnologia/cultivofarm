@@ -3,6 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+const PUSH_WORKER_URL = "/push-sw.js";
+
+async function getPushRegistration(): Promise<ServiceWorkerRegistration> {
+  const existing = await navigator.serviceWorker.getRegistration("/");
+  const activeUrl = existing?.active?.scriptURL ?? existing?.waiting?.scriptURL ?? existing?.installing?.scriptURL ?? "";
+  if (existing && activeUrl.endsWith(PUSH_WORKER_URL)) return existing;
+  return navigator.serviceWorker.register(PUSH_WORKER_URL, { scope: "/" });
+}
 
 export function usePushSubscription() {
   const [isSupported, setIsSupported] = useState(false);
@@ -16,7 +24,7 @@ export function usePushSubscription() {
       setIsSupported(supported);
       if (supported) {
         setPermission(Notification.permission);
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await getPushRegistration();
         const sub = await registration.pushManager.getSubscription();
         setSubscription(sub);
       }
@@ -44,7 +52,7 @@ export function usePushSubscription() {
         return;
       }
 
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getPushRegistration();
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),

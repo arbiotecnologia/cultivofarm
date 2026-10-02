@@ -65,7 +65,7 @@ export function PwaUpdateNotifier() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {update.message ?? (applying
-              ? "Preparando a nova versão…"
+              ? "Abrindo a nova versão…"
               : "Há uma atualização do Cultivo Farm pronta para instalar.")}
           </p>
         </div>

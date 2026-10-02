@@ -7,6 +7,23 @@
 - `NO-GO`: gate bloqueado por pré-condição ou divergência.
 - `NOT RUN`: não executado; nunca equivale a PASS.
 - As escritas da campanha limitaram-se à abertura e à contenção posterior da janela SMTP, sempre pelas mesmas duas flags e pelo mecanismo auditável autorizado.
+- O P0 PWA foi encerrado após validação e smoke; a campanha pode retomar somente no E02 SMTP, respeitando os bloqueios já registrados.
+
+## P0 PWA — migração definitiva
+
+| Caso | Cenário | Resultado | Evidência |
+|---|---|---|---|
+| PWA-001 | Detecção de bundle novo por HTML `no-store` | PASS | abre aviso e não navega |
+| PWA-002 | Adiar, badge, mesma versão e formulário preenchido | PASS | uso e conteúdo preservados; sem repetição do aviso |
+| PWA-003 | Atualizar agora | PASS | exatamente uma navegação após clique explícito, com trava anti-loop |
+| PWA-004 | `visibilitychange`/`online` | PASS | somente detectam; zero navegação automática |
+| PWA-005 | Migração `/sw.js` e caches legados | PASS | unregister e limpeza seletiva; zero navegação |
+| PWA-006 | Push standalone | PASS | `/push-sw.js` direto, sem Workbox/app-shell ou lifecycle de versão |
+| PWA-007 | Stale chunk e `?sw=off` | PASS | somente ações explícitas; limpeza sem loop |
+| PWA-008 | Busca estática e artefatos | PASS | pacote sem overlay, textos/eventos legados e sem Workbox gerado |
+| PWA-009 | Desktop/mobile/acessibilidade | PASS | aviso não bloqueante, controles acessíveis e sem sobreposição bloqueante |
+| PWA-010 | Smoke oficial limpo e com legado simulado | PASS | URL estável, zero overlay/texto legado/erro; apenas push worker ao final |
+| PWA-011 | Testes focados/typecheck/build/suíte/scanner | PASS | 23 focados; 5.372 globais/4 skipped; scanner 10 Info, zero Critical/Error/Warning |
 
 ## Fase 0
 

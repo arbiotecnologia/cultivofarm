@@ -1,12 +1,6 @@
-/* global self, clients */
-// Push handler imported by the Workbox-generated app SW (workbox.importScripts).
-// Lives alongside /sw.js in the same registration/scope.
-
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
+/* global self */
+// Stable standalone push worker. It does not cache the app shell, claim clients,
+// activate itself early, navigate clients, or control frontend version updates.
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
