@@ -1,28 +1,29 @@
-# Plano D51.2-E — Prontidão SMTP e diagnóstico seguro
+# Plano D51.2-F — Isolamento SaaS da configuração global SMTP
 
-## Escopo
+## Diagnóstico confirmado
 
-Ajustar somente a tela existente de Comunicação e o teste SMTP existente, sem configurar SMTP, enviar mensagens, criar dados, publicar ou iniciar E2E/D52.
+- `communication_provider_settings` é um singleton global sem escopo de organização.
+- As duas Edge Functions autorizam hoje qualquer papel operacional `administrador`, inclusive administrador de tenant, usando consulta server-side a `user_roles`.
+- Isso permite leitura/alteração e teste do provedor global por um papel de empresa; o risco será tratado como P1 antes de qualquer configuração SMTP.
 
 ## Implementação
 
-1. **Prontidão na tela**
-   - Exibir o card “Prontidão SMTP para homologação” usando exclusivamente `smtp_readiness` já retornado pelo servidor.
-   - Mostrar os dez itens solicitados, o resultado “Não pronto”/“Pronto para teste controlado” e o aviso de envio bloqueado enquanto as flags estiverem desligadas.
-   - Não expor segredo, referência Vault, token ou credencial.
+1. **Fronteira server-side**
+   - Substituir a autorização por papel `administrador` nas funções `communication-provider-settings` e `test-communication-email` pela RPC canônica `is_platform_superadmin(JWT sub)`.
+   - Manter validação de JWT, CORS, rate limit, readiness, test mode e allowlist; retornar apenas erros 401/403 sanitizados.
+   - Preservar o acesso técnico `service_role` das RPCs/workers, sem concedê-lo ao cliente e sem atribuir papel operacional ao superadmin.
 
-2. **Teste SMTP bloqueado e controlado**
-   - Pré-preencher e fixar o destinatário deste gate em `teste@refilinformatica.com.br`.
-   - Desabilitar o botão sempre que `ready_for_controlled_test` for falso, além dos estados já existentes de sessão/validação.
-   - Manter o salvamento das credenciais independente das flags; nenhuma flag será ativada automaticamente.
+2. **UI única no painel correto**
+   - Reutilizar `ComunicacaoConfigTab` no painel `/plataforma`, em uma aba “Comunicação”.
+   - Remover somente a aba global de provedores de `/configuracoes`; as demais configurações da empresa permanecem intactas.
+   - Ajustar textos de permissão para “Superadmin de Plataforma”, sem confiar no papel do frontend como fronteira de segurança.
 
-3. **Sanitização ponta a ponta**
-   - Remover da interface logs e mensagens com corpo bruto, `detail`, host, porta ou exceção.
-   - Restringir a UI a códigos de erro allowlisted e mensagens genéricas.
-   - Endurecer `test-communication-email` para exigir administrador, test mode, allowlist e preflight completo antes de importar/abrir o adaptador SMTP.
-   - Retornar somente códigos e metadados sanitizados, sem host, porta, remetente, destinatário, detalhe bruto ou segredo.
+3. **Testes e runtime seguro**
+   - Adicionar contratos/testes para tenant admin 403 antes do adapter, superadmin autorizado estruturalmente, anon/JWT inválido 401, ausência de papel operacional, workers preservados e posicionamento correto da UI.
+   - Rodar typecheck, testes focados, suíte global, build e linter delta.
+   - Antes do deploy, reconfirmar no canônico flags OFF, readiness falsa e zero lease ativo; então implantar somente as duas Edge Functions.
+   - Fazer apenas chamadas negativas pós-deploy, sem destinatário real, configuração ou envio.
 
-4. **Validação e governança**
-   - Adicionar testes para checklist, bloqueio do botão, destinatário controlado, ausência de diagnóstico bruto e rejeição server-side antes do socket.
-   - Rodar typecheck, testes focados, suíte global e verificar o build automático.
-   - Atualizar o relatório D51.2 e o roadmap, mantendo envio/E2E/D52 bloqueados.
+4. **Governança**
+   - Atualizar relatório, roadmap e regra arquitetural em `AGENTS.md` com o P1 comprovado/corrigido, evidências, runtime e bloqueios restantes.
+   - Manter D51.2 em NO-GO; não executar E01–E21, publicar frontend ou avançar D52.
