@@ -40,7 +40,7 @@ import OrganizationOnboardingFlow, { nomeFantasiaHomologacao } from "@/pages/pla
 async function chegarNaRevisao() {
   fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
   fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
-  await screen.findByDisplayValue("HOMOLOGAÇÃO D51.2 EMPRESA CONTROLADA");
+  await screen.findByDisplayValue("EMPRESA OFICIAL CONTROLADA LTDA");
   fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
   fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
   fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
@@ -63,8 +63,8 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
       consultado_em: "2026-10-02T14:00:00.000Z",
       dados: {
         cnpj: "36.736.180/0001-11",
-        razao_social: "HOMOLOGAÇÃO D51.2 EMPRESA CONTROLADA",
-        nome_fantasia: "HOMOLOGAÇÃO D51.2",
+        razao_social: "EMPRESA OFICIAL CONTROLADA LTDA",
+        nome_fantasia: "EMPRESA CONTROLADA",
         email_contato: "",
         situacao_cadastral: "ATIVA",
       },
@@ -90,10 +90,10 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
 
-    expect(await screen.findByLabelText("Razão social *")).toHaveValue("HOMOLOGAÇÃO D51.2 EMPRESA CONTROLADA");
+    expect(await screen.findByLabelText("Razão social *")).toHaveValue("EMPRESA OFICIAL CONTROLADA LTDA");
     expect(screen.getByLabelText("Razão social *")).toHaveAttribute("readonly");
     expect(screen.getByLabelText("Nome fantasia")).toHaveValue(
-      "HOMOLOGAÇÃO AUDIT-CF-20261002-01 - HOMOLOGAÇÃO D51.2",
+      "HOMOLOGAÇÃO AUDIT-CF-20261002-01 - EMPRESA CONTROLADA",
     );
     expect(nomeFantasiaHomologacao("A".repeat(300))).toHaveLength(200);
   });

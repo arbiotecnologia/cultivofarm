@@ -33,9 +33,9 @@
 
 | Caso | Cenário | Resultado | Evidência |
 |---|---|---|---|
-| F1-001 | Fluxo permite prefixo na razão social oficial | FAIL | razão social da API fica read-only e é enviada como nome |
-| F1-002 | Localizar organização por CNPJ autorizado | FAIL | contagem 0 |
-| F1-003 | Localizar organização por prefixo em nome/razão/fantasia | FAIL | contagem 0 |
+| F1-001 | Razão social/CNPJ oficiais preservados e marcador seguro em nome fantasia | PASS | razão read-only; marcador automático limitado a 200 caracteres; teste focado |
+| F1-002 | Localizar organização por CNPJ autorizado | NOT RUN | E01 ainda não executado |
+| F1-003 | Localizar organização pelo marcador em nome fantasia | NOT RUN | E01 ainda não executado |
 | F1-004 | Exatamente uma subscription do E01 | NO-GO | organização inexistente |
 | F1-005 | Exatamente uma auditoria de organização | NO-GO | organização inexistente |
 | F1-006 | Zero convite/job do alvo e destinatário | PASS | contagem 0 |
@@ -52,7 +52,9 @@
 | F1-017 | Negativa provider settings com JWT inválido | PASS | HTTP 401 |
 | F1-018 | Negativa teste de e-mail com JWT inválido | PASS | HTTP 401; nenhum envio |
 | F1-019 | Testes Deno das três funções | NOT RUN | runner informou ausência de módulos de teste |
+| F1-020 | Criar conta Superadmin temporária por mecanismo oficial | BLOCKED | Auth Admin existente confirma e-mail, mas bloqueia `superadmin`; RPC/trigger preservam a reserva; Supabase externo sem sessão automatizada |
+| F1-021 | Marcador preserva razão oficial e respeita limite | PASS | 12/12 testes focados do checkpoint e identificação |
 
 ## Gate
 
-Fase 0: **PASS**. Fase 1: **NO-GO**. Fases 2–15: **NOT RUN**, bloqueadas sem E01 comprovado.
+Fase 0: **PASS**. Fase 1: **BLOCKED somente no clique humano autenticado de E01**; o NO-GO por prefixo foi reclassificado e resolvido por `nome_fantasia`. Fases 2–15: **NOT RUN**, bloqueadas sem E01 comprovado.
