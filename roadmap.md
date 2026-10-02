@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Em andamento
+- [ ] **Campanha AUDIT-CF-20261002-01 — resolver Gate da Fase 1:** preservar razão social/CNPJ oficiais, identificar a fixture por marcador seguro existente, avaliar criação oficial de Superadmin temporário, executar E01 controlado e somente após PASS avançar ao E02 e às provas automatizáveis.
 - [ ] **Campanha AUDIT-CF-20261002-01 — Fase 1 NO-GO:** auditoria canônica encontrou zero organização pelo CNPJ autorizado e zero ocorrência do prefixo em nome/razão/fantasia; logo não há assinatura ou auditoria E01 a homologar. SMTP permanece OFF/OFF, zero leases, E02 não executado e Fases 2–15 bloqueadas. O fluxo oficial fixa a razão social consultada e não permite prefixá-la; é necessária reconciliação humana do requisito de identificação antes de novo E01.
 - [ ] D51.2 — **E01 não comprovado; E02 bloqueado:** não renomear, recriar ou abrir SMTP automaticamente. Preservar REFIL contida e job AR BIO intocado.
 
