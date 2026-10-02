@@ -11,3 +11,5 @@
 - PWA updates are consent-driven in `src/pwa/registerSW.ts`: detection never activates or reloads; only an explicit user action may apply a waiting worker and perform one guarded reload — preserves in-progress work and offline support.
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
+
+- Platform subscription changes stay in `platform_change_subscription` as SECURITY INVOKER with symmetric Superadmin read/write RLS, explicit enum conversion and row locking — preserves least privilege, auditability and concurrency safety.
