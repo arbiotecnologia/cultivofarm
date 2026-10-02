@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — configuração SMTP agora verde: test mode ON, allowlist exclusiva controlada, global/e-mail ON, WhatsApp/in-app/webhook OFF, SMTP completo, zero lease e zero conflito D51.2. Sessão real do Superadmin ainda indisponível às ferramentas (HTTP 401). Cobertura segura sem sessão concluída: 50 testes focados, suíte global com 5.307 testes aprovados e chamadas negativas fail-closed. E01–E21 seguem NOT RUN/PARCIAL, sem PASS E2E; NO-GO para encerrar D51 ou avançar D52.
+- [ ] Gate D51.2 — janela SMTP fechada após o pré-check: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. A sessão real do Superadmin não é acessível às ferramentas do projeto externo não gerenciado. E01–E21 seguem NOT RUN/PARCIAL, sem PASS E2E; NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
@@ -20,8 +20,7 @@
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: responsável permanecer autenticado como Superadmin controlado na prévia e iniciar nova retomada. A sessão continuou indisponível nesta tentativa; não compartilhar senha e não substituir sessão por `service_role`. Se persistir, executar E01 em diante por interação manual assistida no navegador.
-- [ ] D51.2: decidir se a janela SMTP permanece aberta para retomada imediata; caso contrário, desligar entrega global/e-mail na aba Comunicação de `/plataforma`. Nenhum envio ocorreu nesta tentativa.
+- [ ] D51.2: executar retomada manual assistida na UI como Superadmin. Em `/plataforma` → **Comunicação**, conferir os controles e habilitar global/e-mail somente na janela autorizada; depois iniciar E01 em **Nova Empresa** e E02 em **Administradores**, usando apenas dados `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` e `teste@refilinformatica.com.br`. Não compartilhar credenciais e não substituir a sessão por `service_role`.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
