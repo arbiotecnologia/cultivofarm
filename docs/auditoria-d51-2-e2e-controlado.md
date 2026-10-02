@@ -1630,3 +1630,18 @@ Não foi usado `localStorage`, `sessionStorage` ou React Query para armazenar o 
 - job AR BIOTECNOLOGIA: `falhou`, tentativa 1, `finalize_failed`, e-mail `pending`, zero tentativa SMTP, sem usuário ou lease.
 
 **Decisão:** proteção aprovada, publicada e comprovada. A contenção reversível está definida, mas **NOT RUN** porque esta execução não recebeu sessão real Superadmin do Supabase externo; nenhuma escrita alternativa foi feita. **NO-GO para repetir E01** até aplicar e auditar REFIL como `rascunho` e sua assinatura como `SUSPENDED`. E02 e D52 permanecem bloqueados.
+
+## 43. Verificação pós-deploy — proteção E01
+
+Data: 2026-10-02
+
+Smoke integralmente somente leitura, sem autenticação, banco, SMTP, publicação ou execução de E01/E02:
+
+1. o domínio oficial `https://app.cultivofarm.com.br` foi carregado em contexto limpo, com service worker bloqueado e cache-busting no HTML e nos pacotes;
+2. o HTML referenciou `index-CJm5d-jL.js`, e a varredura dos oito pacotes alcançáveis encontrou no pacote `App-Hejg0VR9.js` os quatro marcadores esperados: **Confirme o CNPJ**, **Empresa que será criada**, **Empresa criada — pronta para auditoria** e **Enviar convite**;
+3. a ação antiga única **Criar empresa e enviar convite** não foi encontrada em nenhum dos pacotes verificados;
+4. `/`, `/auth` e `/plataforma` responderam HTTP 200. Em sessão anônima, `/` e `/plataforma` redirecionaram corretamente para `/auth`;
+5. não houve falha de navegação, pacote ou página. As quatro respostas 401 observadas vieram exclusivamente da consulta protegida `configuracoes_sistema` sem sessão e constituem negativas esperadas, não erro de runtime do fluxo;
+6. nenhuma nova publicação foi solicitada e nenhuma autenticação ou operação funcional foi executada.
+
+**Decisão: PASS.** A proteção E01 do candidato informado como `db2a68671924d87c34156e659ed4a7a9ed67f957` está publicada e comprovada pelos marcadores funcionais no domínio oficial. Ela está pronta para um novo E01, porém a execução continua bloqueada até a contenção auditável da organização REFIL. E02 e D52 permanecem bloqueados.
