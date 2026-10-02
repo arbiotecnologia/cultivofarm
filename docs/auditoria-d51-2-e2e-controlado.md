@@ -1032,3 +1032,81 @@ Nenhum link, token, OTP, senha, cookie, cabeçalho de autorização ou metadado 
 - **GO/NO-GO para E04:** **NO-GO**.
 
 Há inconsistência entre a ação/recebimento relatados e o estado canônico. O link recebido **não deve ser aberto** até identificar em qual ambiente a ação foi efetivamente persistida e correlacionar, sem expor o link, a organização, o job e o Auth user esperados. D51.2 permanece aberto e bloqueado neste ponto; D52 não foi iniciado.
+
+## 31. Investigação da divergência de ambiente/persistência após E01/E02
+
+Data/hora UTC da investigação: `2026-10-02T04:41:01Z`  
+Commit candidato inspecionado: `ba5ad0a773824699485d2b7e736bd71ae29e9a3d`  
+Supabase canônico exclusivo consultado: `swzpzcwiasxmjutrmvkm`
+
+### 31.1 Bundle publicado e binding
+
+O HTML atual de `https://app.cultivofarm.com.br` referencia `index-DhfJkLjP.js`; esse carregador referencia o chunk dinâmico `App-D9d5jviP.js`. Os artefatos foram coletados sem sessão e tiveram os seguintes fingerprints SHA-256:
+
+- HTML: `cf74e8e…a72e`;
+- carregador: `291a5613…076`;
+- aplicação: `f72356ff…6dd`;
+- service worker: `3250a5a7…192`.
+
+O conjunto completo de JavaScript servido contém uma única URL/ref Supabase: `https://swzpzcwiasxmjutrmvkm.supabase.co`. Não contém `ikaauvsflpmamgxmkhoq`, `navfzbwgwzruipouyfnk`, `yzszlzjpovmcteuxjznj` ou outro host `*.supabase.co`.
+
+O chunk live contém nominalmente `platform_create_organization`, `platform-invite-org-admin`, a mensagem de sucesso da empresa e a confirmação de aceite do convite pelo servidor de e-mail. Esses contratos coincidem com `src/hooks/usePlataformaSaaS.ts`, `PlataformaEmpresas.tsx` e `PlataformaAdmins.tsx`. `client.ts` usa URL canônica literal; `bindingGuard` recusa qualquer host diferente antes da montagem da aplicação; `previewAuthStorage` altera apenas o armazenamento de sessão em preview enquadrado e não escolhe backend; `.env` não é lido pelo cliente canônico e não existe fallback de URL.
+
+O histórico reforça a exclusão: o fluxo de convite foi introduzido em 1º de outubro de 2026, quando `client.ts` já apontava para `swzpzcwiasxmjutrmvkm`. Os commits antigos que apontavam para `ikaauvsflpmamgxmkhoq` são de agosto e não continham `platform-invite-org-admin`, `platform_create_organization` nem a UI “Gerar acesso”. Portanto não foi encontrada versão histórica deste repositório que combine a tela/feedback atuais com um backend antigo.
+
+### 31.2 Persistência obrigatória dos fluxos
+
+**Nova Empresa:** a UI chama diretamente a RPC `platform_create_organization` e só mostra “Empresa criada” após `mutateAsync` retornar sem erro. A RPC remota e a migration versionada inserem, na mesma transação, `organizations`, `organization_subscriptions` e `organization_status_audit`. Não existe `onMutate`, inserção otimista no cache, armazenamento local ou caminho de “solicitação” que simule conclusão.
+
+**Administradores:** a UI live chama exclusivamente `platform-invite-org-admin`. A função primeiro persiste/reclama `platform_org_admin_invites`, depois cria ou retoma o Auth user, finaliza `profiles`/papel e somente então tenta o SMTP. A interface só mostra aceite de e-mail após resposta `email_status=accepted`. Não existe fallback para `create-user`, `generateLink` no navegador, Lovable Email, SMTP local ou outra Edge Function.
+
+Assim, no fluxo live atual, é impossível obter simultaneamente os dois feedbacks positivos sem deixar ao menos a organização e o job no canônico. Uma transação abortada também não explica a observação: nesse caso a UI mostraria erro e o convite não teria uma organização selecionável recém-criada.
+
+### 31.3 Evidência de runtime canônico
+
+Leituras posteriores reconfirmaram o baseline e a ausência de efeitos:
+
+- `organizations`: 2; último `created_at` em `2026-10-01T12:33:23.890564Z`;
+- `platform_org_admin_invites`: 1; último `created_at` em `2026-10-01T12:41:42.746726Z`;
+- `profiles`: 6; último `created_at` em `2026-10-01T12:41:42.409516Z`;
+- `organization_status_audit` desde `04:20Z`: zero;
+- outbox, eventos e recibos de comunicação desde `04:20Z`: zero;
+- logs recentes de `platform-invite-org-admin`: zero;
+- logs recentes de `test-communication-email`: zero;
+- rate limit de Comunicação na janela: somente `get` e `mutate` de configuração, sem ação de teste SMTP.
+
+Houve uma única auditoria `apply` de provider settings às `04:31:55.246155Z`, coerente com acesso/configuração da aba Comunicação, não com criação de empresa, convite ou envio. Isso também exclui o botão de teste SMTP canônico como origem da mensagem relatada.
+
+### 31.4 Service worker e hipótese de cache
+
+O HTML e `/sw.js` atuais são entregues com `no-cache`; os chunks com hash são imutáveis. O SW atual contém precache versionado, `cleanupOutdatedCaches`, `clientsClaim`, `skipWaiting` e os caches `html-nav`/`static-assets`; o carregador possui recuperação para chunk obsoleto. Uma aba já aberta pode manter JavaScript em memória até recarregar, mas:
+
+1. a combinação histórica “UI atual de E01/E02 + backend antigo” não existe no histórico auditado;
+2. a Comunicação autenticada comprovada na mesma janela produziu auditoria no canônico;
+3. não houve nenhuma requisição/efeito de E01/E02 no canônico.
+
+Logo, cache antigo isoladamente não explica os fatos observados. Continua possível que E01/E02 tenham sido realizados em outra aba, domínio, instalação PWA ou projeto visualmente semelhante, mas o ref exato dessa execução não pode ser inferido com segurança a partir do canônico ou do bundle live atual.
+
+### 31.5 Classificação, risco e decisão
+
+**Classificação: D — ação manual ocorreu em outro contexto de ambiente/aplicação, comprovado por exclusão dos caminhos A, B e C no estado auditável.** O backend alternativo exato e o emissor da mensagem permanecem **não identificados**; não há autorização/evidência suficiente para consultar projetos antigos nem para extrair token/link do e-mail.
+
+- A) frontend live apontando para backend errado: **refutado** pelo bundle publicado e binding fail-closed;
+- B) fluxo E01/E02 não persiste como esperado: **refutado** pelos contratos transacionais e ausência de sucesso otimista;
+- C) bundle/cache antigo: **não sustentado** — não existe versão histórica com o fluxo atual e ref antigo;
+- D) outro ambiente/contexto: **confirmado por exclusão**, com destino exato ainda não atribuível;
+- E) outro motivo: nenhuma evidência encontrada.
+
+Risco: o link recebido não é correlacionável ao canônico e pode pertencer a outro projeto/ambiente. Ele permanece **não confiável e não deve ser aberto, copiado ou inspecionado**. E01/E02/E03 continuam FAIL/não comprováveis e E04 permanece NO-GO.
+
+**Não repetir E01/E02.** Para decidir uma nova execução, o responsável deve primeiro, sem abrir o link, conferir no navegador onde realizou a ação o domínio completo visível e recarregar a página antes de qualquer operação. Uma repetição só poderá ser autorizada em nova rodada com captura prévia do domínio oficial, hash `App-D9d5jviP.js`, Network mostrando exclusivamente `swzpzcwiasxmjutrmvkm.supabase.co` e confirmação pós-E01 no canônico antes de E02. Nenhum dado, SMTP, usuário ou tenant foi alterado nesta investigação; D52 permanece bloqueado.
+
+### 31.6 Testes somente leitura
+
+- binding canônico único no bundle live: PASS;
+- fluxos live atuais presentes no chunk publicado: PASS;
+- ausência de fallback paralelo/cliente Supabase alternativo: PASS;
+- sucesso de UI somente após confirmação server-side: PASS por inspeção e contratos;
+- regressões focadas de binding, PWA, D51 e primeiro acesso: PASS — 4 arquivos, 45 testes;
+- build vigente observado pelo ambiente: PASS;
+- nenhum E2E mutante, envio, abertura de link ou consulta a dado de projeto alternativo foi realizado.

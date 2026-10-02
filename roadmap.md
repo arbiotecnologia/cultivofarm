@@ -1,12 +1,13 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **BLOQUEADO APÓS AUDITORIA E01/E02/E03**. Embora o responsável tenha confirmado empresa, convite e recebimento da mensagem, o Supabase canônico apresentou zero organização D51.2, zero convite/job, zero Auth user e zero profile controlado. E01 FAIL, E02 FAIL, E03 não comprovável e NO-GO para abrir o link/E04. Investigar a divergência de ambiente/persistência sem expor o link e sem criar novos registros. D52 continua bloqueado.
+- [ ] Gate D51.2 — **BLOQUEADO APÓS INVESTIGAÇÃO E01/E02/E03**. O bundle publicado usa exclusivamente o canônico e os fluxos atuais persistem obrigatoriamente antes do sucesso; o canônico não recebeu organização, job, Auth user, profile, auditoria ou chamada da função. Classificação D: ação ocorreu em outro contexto de ambiente/aplicação, por exclusão, mas o destino exato não foi identificado. E01/E02/E03 seguem FAIL/não comprováveis, E04 NO-GO e D52 bloqueado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — identificar em qual ambiente a ação manual foi persistida e correlacionar a organização, o job e o Auth user com o canônico. Não abrir o link recebido, não reenviar e não repetir E01/E02 enquanto a divergência permanecer.
+- [ ] Gate D51.2 — antes de qualquer nova execução, confirmar manualmente o domínio oficial, recarregar a página e registrar o hash live `App-D9d5jviP.js`; observar na rede somente `swzpzcwiasxmjutrmvkm.supabase.co`. Uma repetição exige nova autorização e confirmação canônica imediatamente após E01, antes de E02. Não abrir, copiar ou inspecionar o link recebido.
 
 ## Concluído
+- [x] **Investigação da divergência E01/E02:** bundle live `index-DhfJkLjP.js`/`App-D9d5jviP.js` contém somente o ref canônico e chama os fluxos atuais; não há sucesso otimista, fallback paralelo ou versão histórica que combine essa UI com backend antigo. Logs/tabelas canônicos e Comunicação ficaram sem efeitos de criação/envio. Cache isolado não explica o caso; classificado como ação em outro contexto, sem identificação segura do destino.
 - [x] **Incidente D51.2 — CORS da aba Comunicação — ENCERRADO:** causa confirmada por preflight 403 no domínio customizado contra 204 no domínio Lovable. Allowlist estrita de `https://app.cultivofarm.com.br` e `verify_jwt=true` explícito aplicados; somente `communication-provider-settings` e `test-communication-email` implantadas. Pós-deploy: preflights aprovados 204 com origem exata, origem maliciosa 403 e chamada sem JWT 401 legível. O responsável confirmou que a aba abriu normalmente no ambiente publicado com sessão real de Superadmin e que `communication-provider-settings` carregou corretamente na UI autenticada.
 - [x] **Pós-republicação do incidente P0:** produção normalizada em contexto limpo. `/`, `/auth`, `/plataforma`, `/dashboard` e `/configuracoes` passaram; rotas protegidas redirecionaram para `/auth`, sem erro de provider/renderização, chunk obsoleto, 404 de JS/CSS, loop ou falha de SW. Service worker ativo e recuperação de stale chunk confirmada no bundle publicado. Nenhuma autenticação ou mutação.
 - [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.318 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes.
@@ -24,7 +25,7 @@
 - [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: esclarecer a divergência entre a confirmação manual e o estado do Supabase canônico; não abrir nem compartilhar o link recebido e não repetir criação/convite até nova auditoria controlada.
+- [ ] D51.2: identificar externamente o contexto da ação anterior apenas pelo domínio/instalação usada, sem abrir nem compartilhar o link. Não repetir criação/convite sem nova autorização, prova prévia do bundle/domínio canônico e confirmação de persistência após E01 antes de E02.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
