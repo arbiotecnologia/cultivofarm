@@ -44,6 +44,20 @@ type ProviderView = {
     whatsapp_webhook_enabled: boolean;
   };
   smtp: { host: string | null; port: number | null; user: string | null; from: string | null; password_configured: boolean };
+  smtp_readiness: {
+    singleton_exists: boolean;
+    delivery_enabled: boolean;
+    email_delivery_enabled: boolean;
+    test_mode_enabled: boolean;
+    allowed_email_count: number;
+    test_email_allowlisted: boolean;
+    smtp_host_configured: boolean;
+    smtp_port_configured: boolean;
+    smtp_user_configured: boolean;
+    smtp_password_configured: boolean;
+    smtp_from_configured: boolean;
+    ready_for_controlled_test: boolean;
+  };
   whatsapp: { phone_number_id: string | null; api_version: string | null; access_token_configured: boolean; allowed_api_versions: string[] };
   webhook: { app_secret_configured: boolean; verify_token_configured: boolean; url: string };
   updated_at: string | null;

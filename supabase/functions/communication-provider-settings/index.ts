@@ -15,6 +15,7 @@ import {
   sanitizeRpcError,
   type PutPayload,
 } from "../_shared/comunicacao/provider-settings-shaping.ts";
+import { buildSmtpReadiness } from "../_shared/comunicacao/smtp-readiness.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -68,6 +69,7 @@ async function loadPublicView(sb: Sb) {
   const { data, error } = await sb
     .from("communication_provider_settings").select("*").eq("id", 1).maybeSingle();
   if (error) throw new Error("db_error");
+  const singletonExists = data !== null;
   const row = (data ?? {}) as Record<string, unknown>;
   const arr = (k: string): string[] => Array.isArray(row[k]) ? (row[k] as string[]) : [];
   const bool = (k: string) => row[k] === true;
@@ -93,6 +95,7 @@ async function loadPublicView(sb: Sb) {
       user: str("smtp_user"), from: str("smtp_from"),
       password_configured: bool("secret_smtp_password"),
     },
+    smtp_readiness: buildSmtpReadiness(singletonExists ? row : null),
     whatsapp: {
       phone_number_id: str("whatsapp_phone_number_id"),
       api_version: str("whatsapp_api_version"),
