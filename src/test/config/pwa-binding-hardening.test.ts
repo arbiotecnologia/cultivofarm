@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-  CANONICAL_SUPABASE_HOST,
-  validateSupabaseBinding,
-} from "@/integrations/supabase/bindingGuard";
+import { CANONICAL_SUPABASE_HOST, validateSupabaseBinding } from "@/integrations/supabase/bindingGuard";
 
 const ROOT = resolve(__dirname, "../../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
@@ -14,11 +11,7 @@ describe("P0-03A — binding fail-closed", () => {
     expect(validateSupabaseBinding(`https://${CANONICAL_SUPABASE_HOST}`)).toEqual({ ok: true });
   });
 
-  it.each([
-    "yzszlzjpovmcteuxjznj",
-    "ikaauvsflpmamgxmkhoq",
-    "navfzbwgwzruipouyfnk",
-  ])("rejeita o ref legado %s", (ref) => {
+  it.each(["yzszlzjpovmcteuxjznj", "ikaauvsflpmamgxmkhoq", "navfzbwgwzruipouyfnk"])("rejeita o ref legado %s", (ref) => {
     expect(validateSupabaseBinding(`https://${ref}.supabase.co`).ok).toBe(false);
   });
 
@@ -28,72 +21,52 @@ describe("P0-03A — binding fail-closed", () => {
   });
 });
 
-describe("P0 PWA — atualização manual", () => {
+describe("P0 PWA — versão independente de service worker", () => {
   const vite = read("vite.config.ts");
   const register = read("src/pwa/registerSW.ts");
+  const legacyWorker = read("public/sw.js");
+  const pushWorker = read("public/push-sw.js");
   const app = read("src/App.tsx");
   const main = read("src/main.tsx");
-  const boundary = read("src/components/ErrorBoundary.tsx");
 
-  it("usa estratégia prompt sem ativação automática e mantém limpeza de caches", () => {
-    expect(vite).toMatch(/clientsClaim:\s*false/);
-    expect(vite).not.toMatch(/clientsClaim:\s*true/);
-    expect(vite).toMatch(/registerType:\s*"prompt"/);
-    expect(vite).toMatch(/skipWaiting:\s*false/);
-    expect(vite).toMatch(/cleanupOutdatedCaches:\s*true/);
-    expect(vite).toContain('handler: "NetworkFirst"');
+  it("remove Workbox/VitePWA e preserva manifesto estático", () => {
+    expect(vite).not.toMatch(/VitePWA|generateSW|registerType|workbox|clientsClaim|skipWaiting/);
+    expect(read("package.json")).not.toContain("vite-plugin-pwa");
+    expect(existsSync(resolve(ROOT, "public/manifest.webmanifest"))).toBe(true);
+    expect(read("index.html")).toContain('/manifest.webmanifest');
   });
 
-  it("oferece notificador manual e remove o overlay antigo", () => {
+  it("detecta versão pelo HTML sem listeners de ciclo do worker", () => {
+    expect(register).toContain('cache: "no-store"');
+    expect(register).toContain("UPDATE_INTERVAL_MS = 60 * 60 * 1000");
+    expect(register).toContain('addEventListener("visibilitychange"');
+    expect(register).toContain('addEventListener("online"');
+    expect(register).not.toMatch(/controllerchange|updatefound|SKIP_WAITING/);
+  });
+
+  it("mantém notificador não bloqueante e navegação somente em ação explícita", () => {
     expect(app).toContain("PwaUpdateNotifier");
-    expect(app).not.toContain("SwUpdatingOverlay");
-    expect(() => read("src/pwa/SwUpdatingOverlay.tsx")).toThrow();
-    expect(register).toContain("pwa:update-available");
     expect(register).toContain("applyPendingUpdate");
     expect(register).toContain("dismissPendingUpdate");
+    expect(register).toContain("RECENT_NAVIGATION_KEY");
+    expect(register).not.toContain("location.reload");
+    expect(main).not.toMatch(/vite:preloadError[\s\S]{0,300}(reload|replace)/);
   });
 
-  it("mantém trava de recarga explícita e limpeza de observadores", () => {
-    expect(register).toContain("explicitApplyIntent");
-    expect(register).toContain("RECENT_RELOAD_KEY");
-    expect(register).toContain("RELOAD_LOOP_GUARD_MS");
-    expect(register).toContain("controllerchange");
-    expect(register).toContain("removeEventListener");
-    expect(register).toContain("clearInterval");
-    expect(register).toContain("visibilitychange");
-    expect(register).toContain('addEventListener("online"');
-    expect(register).toContain("PWA_UPDATE_STATE_EVENT");
-    expect(register).toContain("APPLY_TIMEOUT_MS");
+  it("worker legado só limpa caches e se desregistra, sem navegar clientes", () => {
+    expect(legacyWorker).toContain("registration.unregister");
+    expect(legacyWorker).not.toMatch(/clients\.claim|client\.navigate|openWindow|location\.reload/);
+    expect(register).toContain("migrateLegacyAppShell");
   });
 
-  it("não ativa nem recarrega ao detectar update", () => {
-    expect(register).not.toMatch(/onUpdateFound[\s\S]{0,500}postMessage/);
-    expect(register).toMatch(/state === "installed"[\s\S]{0,250}announcePendingUpdate/);
-    expect(register).toMatch(/state === "redundant"[\s\S]{0,200}clearPendingUpdate/);
-    expect(register).toMatch(/if \(explicitApplyIntent\) triggerExplicitReload/);
+  it("push é standalone e não controla versão nem cacheia app-shell", () => {
+    expect(register).toContain('register(PUSH_SW_URL');
+    expect(pushWorker).toContain('addEventListener("push"');
+    expect(pushWorker).not.toMatch(/importScripts|workbox|SKIP_WAITING|skipWaiting|clients\.claim|caches\./);
   });
 
-  it("preserva os bloqueios de preview, iframe e kill-switch", () => {
-    expect(register).toContain("!import.meta.env.PROD");
-    expect(register).toContain("window.self !== window.top");
-    expect(register).toContain('get("sw") === "off"');
-    expect(register).toContain('hostname.startsWith("id-preview--")');
-  });
-
-  it("recarrega uma única versão quando o Vite detecta chunk obsoleto", () => {
-    expect(main).toContain('addEventListener("vite:preloadError"');
-    expect(main).toContain("recoverFromStaleBuild");
-    expect(main).not.toMatch(/vite:preloadError[\s\S]{0,300}window\.location\.reload/);
-    expect(register).toContain("isStaleBuildError");
-    expect(register).toContain("Failed to fetch dynamically imported module");
-    expect(register).toContain('new Set(["html-nav", "static-assets"])');
-    expect(register).toContain("window.caches.delete");
-    expect(boundary).toContain("recoverFromStaleBuild");
-  });
-
-  it("não classifica falha de chunk como bloqueio do Supabase", () => {
-    expect(main).toContain("renderLoadFailure");
-    expect(main).toMatch(/if \(isStaleBuildError\(error\)\)/);
-    expect(main).not.toMatch(/\.catch\(\(\) => renderBlockedConnection\(\)\)/);
+  it("remove todos os textos e eventos bloqueantes antigos do runtime atual", () => {
+    const runtime = [register, read("src/pwa/PwaUpdateNotifier.tsx"), main, pushWorker].join("\n");
+    expect(runtime).not.toMatch(/Atualizando aplicação|recarregada automaticamente|pwa:updating-start|SwUpdatingOverlay|controllerchange|updatefound|autoUpdate/);
   });
 });

@@ -1,43 +1,52 @@
-import { waitFor } from "@testing-library/react";
+import { fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyPendingUpdate,
+  checkForPublishedVersion,
+  disableServiceWorkers,
   dismissPendingUpdate,
+  extractBuildToken,
   getPwaUpdateSnapshot,
-  PWA_UPDATE_AVAILABLE_EVENT,
+  migrateLegacyAppShell,
   recoverFromStaleBuild,
   reopenPendingUpdate,
   retryCurrentBuild,
-  watchForUpdates,
+  startVersionManagement,
 } from "./registerSW";
 
-class WorkerMock extends EventTarget {
-  state: ServiceWorkerState = "installing";
-  scriptURL = "https://app.cultivofarm.com.br/sw.js";
-  postMessage = vi.fn();
+const loadedHtml = '<script type="module" src="/assets/index-loaded123.js"></script>';
+const newHtml = '<script type="module" src="/assets/index-new456.js"></script>';
+
+function installLoadedScript(): void {
+  const script = document.createElement("script");
+  script.type = "module";
+  script.src = "/assets/index-loaded123.js";
+  document.head.appendChild(script);
 }
 
-class RegistrationMock extends EventTarget {
-  installing: WorkerMock | null = null;
-  waiting: WorkerMock | null = null;
+function mockWorkerEnvironment() {
+  const legacy = { active: { scriptURL: "https://app.cultivofarm.com.br/sw.js" }, unregister: vi.fn().mockResolvedValue(true) };
+  const push = { active: { scriptURL: "https://app.cultivofarm.com.br/push-sw.js" }, unregister: vi.fn().mockResolvedValue(true) };
+  const register = vi.fn().mockResolvedValue(push);
+  Object.defineProperty(navigator, "serviceWorker", {
+    configurable: true,
+    value: { getRegistrations: vi.fn().mockResolvedValue([legacy, push]), register },
+  });
+  const cacheDelete = vi.fn().mockResolvedValue(true);
+  Object.defineProperty(window, "caches", {
+    configurable: true,
+    value: { keys: vi.fn().mockResolvedValue(["html-nav", "static-assets", "workbox-precache-v2-https://app.cultivofarm.com.br/", "unrelated"]), delete: cacheDelete },
+  });
+  return { legacy, push, register, cacheDelete };
 }
 
-const serviceWorkerEvents = new EventTarget();
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-describe("atualização PWA manual", () => {
+describe("gerenciamento manual de versão sem app-shell service worker", () => {
   beforeEach(() => {
+    document.head.querySelectorAll('script[type="module"]').forEach((node) => node.remove());
+    installLoadedScript();
     window.localStorage.clear();
     window.sessionStorage.clear();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ text: () => Promise.resolve("worker-v1") }));
-    Object.defineProperty(navigator, "serviceWorker", {
-      configurable: true,
-      value: {
-        controller: {},
-        addEventListener: serviceWorkerEvents.addEventListener.bind(serviceWorkerEvents),
-        removeEventListener: serviceWorkerEvents.removeEventListener.bind(serviceWorkerEvents),
-      },
-    });
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
   });
 
   afterEach(() => {
@@ -45,147 +54,74 @@ describe("atualização PWA manual", () => {
     vi.unstubAllGlobals();
   });
 
-  it("updatefound/installing não ativa worker nem recarrega", () => {
-    const registration = new RegistrationMock();
-    const worker = new WorkerMock();
-    registration.installing = worker;
-    const reload = vi.fn();
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, reload);
-
-    registration.dispatchEvent(new Event("updatefound"));
-
-    expect(worker.postMessage).not.toHaveBeenCalled();
-    expect(reload).not.toHaveBeenCalled();
-    expect(getPwaUpdateSnapshot().status).toBe("hidden");
-    cleanup();
+  it("extrai somente o token do módulo local", () => {
+    expect(extractBuildToken(loadedHtml)).toBe("index-loaded123");
+    expect(extractBuildToken('<script type="module" src="https://example.com/assets/bad.js"></script>')).toBeNull();
   });
 
-  it("worker waiting mostra prompt sem SKIP_WAITING", async () => {
-    const registration = new RegistrationMock();
-    const worker = new WorkerMock();
-    worker.state = "installed";
-    registration.waiting = worker;
-    const available = vi.fn();
-    window.addEventListener(PWA_UPDATE_AVAILABLE_EVENT, available);
-
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
-    expect(available).toHaveBeenCalledTimes(1);
-    expect(worker.postMessage).not.toHaveBeenCalled();
-    cleanup();
-    window.removeEventListener(PWA_UPDATE_AVAILABLE_EVENT, available);
+  it("nova versão mostra prompt sem navegar", async () => {
+    const navigate = vi.fn();
+    const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) });
+    expect(await checkForPublishedVersion(fetchHtml)).toBe(true);
+    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "index-new456" });
+    expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("Adiar persiste apenas versão e timestamp e reabrir restaura opções", async () => {
-    const registration = new RegistrationMock();
-    const worker = new WorkerMock();
-    worker.state = "installed";
-    registration.waiting = worker;
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
-
+  it("Adiar mantém badge e a mesma versão não volta a abrir prompt", async () => {
+    const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) });
+    await checkForPublishedVersion(fetchHtml);
     dismissPendingUpdate();
     expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
     expect(window.localStorage.getItem("pwa:deferred-update")).toMatch(/version.*deferredAt/);
+    await checkForPublishedVersion(fetchHtml);
+    expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
     reopenPendingUpdate();
     expect(getPwaUpdateSnapshot().status).toBe("prompt");
-    dismissPendingUpdate();
+  });
+
+  it("Atualizar agora navega exatamente uma vez após clique explícito", async () => {
+    const navigate = vi.fn();
+    await checkForPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }));
+    expect(await applyPendingUpdate(navigate)).toBe(true);
+    expect(await applyPendingUpdate(navigate)).toBe(false);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate.mock.calls[0][0]).toContain("app_version=index-new456");
+  });
+
+  it("visibilitychange e online somente detectam", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }));
+    const workers = mockWorkerEnvironment();
+    const cleanup = startVersionManagement();
+    fireEvent(document, new Event("visibilitychange"));
+    fireEvent(window, new Event("online"));
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(workers.register).not.toHaveBeenCalledWith("/sw.js", expect.anything());
     cleanup();
   });
 
-  it("a mesma versão adiada reabre como badge, sem spam do prompt", async () => {
-    const firstRegistration = new RegistrationMock();
-    const worker = new WorkerMock();
-    worker.state = "installed";
-    firstRegistration.waiting = worker;
-    const firstCleanup = watchForUpdates(firstRegistration as unknown as ServiceWorkerRegistration, vi.fn());
-    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
-    dismissPendingUpdate();
-    firstCleanup();
-
-    const secondRegistration = new RegistrationMock();
-    secondRegistration.waiting = worker;
-    const secondCleanup = watchForUpdates(secondRegistration as unknown as ServiceWorkerRegistration, vi.fn());
-    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("deferred_badge"));
-    expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
-    secondCleanup();
+  it("worker legado e caches do app-shell são removidos sem navegação", async () => {
+    const workers = mockWorkerEnvironment();
+    await migrateLegacyAppShell();
+    expect(workers.legacy.unregister).toHaveBeenCalledTimes(1);
+    expect(workers.push.unregister).not.toHaveBeenCalled();
+    expect(workers.cacheDelete).toHaveBeenCalledTimes(3);
   });
 
-  it("nova versão diferente volta a mostrar prompt", async () => {
-    const registration = new RegistrationMock();
-    const first = new WorkerMock();
-    first.state = "installed";
-    registration.waiting = first;
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
-    dismissPendingUpdate();
-
-    vi.mocked(fetch).mockResolvedValueOnce({ text: () => Promise.resolve("worker-v2") } as Response);
-    const second = new WorkerMock();
-    registration.installing = second;
-    registration.waiting = second;
-    registration.dispatchEvent(new Event("updatefound"));
-    second.state = "installed";
-    second.dispatchEvent(new Event("statechange"));
-    await waitFor(() => expect(getPwaUpdateSnapshot().status).toBe("prompt"));
-    expect(getPwaUpdateSnapshot().status).toBe("prompt");
-    cleanup();
+  it("?sw=off remove workers pertinentes e caches sem loop", async () => {
+    const workers = mockWorkerEnvironment();
+    await disableServiceWorkers();
+    expect(workers.legacy.unregister).toHaveBeenCalledTimes(1);
+    expect(workers.push.unregister).toHaveBeenCalledTimes(1);
+    expect(workers.cacheDelete).toHaveBeenCalledTimes(3);
   });
 
-  it("Atualizar agora envia SKIP_WAITING e controllerchange recarrega uma vez", async () => {
-    const registration = new RegistrationMock();
-    const worker = new WorkerMock();
-    worker.state = "installed";
-    registration.waiting = worker;
-    const reload = vi.fn();
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, reload);
-    await flush();
-
-    await applyPendingUpdate(reload);
-    expect(worker.postMessage).toHaveBeenCalledTimes(1);
-    expect(worker.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
-    expect(reload).not.toHaveBeenCalled();
-    serviceWorkerEvents.dispatchEvent(new Event("controllerchange"));
-    serviceWorkerEvents.dispatchEvent(new Event("controllerchange"));
-    expect(reload).toHaveBeenCalledTimes(1);
-    cleanup();
-  });
-
-  it("controllerchange sem intenção explícita não recarrega", () => {
-    const registration = new RegistrationMock();
-    const reload = vi.fn();
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, reload);
-    serviceWorkerEvents.dispatchEvent(new Event("controllerchange"));
-    expect(reload).not.toHaveBeenCalled();
-    cleanup();
-  });
-
-  it("worker redundant remove o badge e o estado persistido", async () => {
-    const registration = new RegistrationMock();
-    const worker = new WorkerMock();
-    registration.installing = worker;
-    registration.waiting = worker;
-    const cleanup = watchForUpdates(registration as unknown as ServiceWorkerRegistration, vi.fn());
-    registration.dispatchEvent(new Event("updatefound"));
-    worker.state = "installed";
-    worker.dispatchEvent(new Event("statechange"));
-    await flush();
-    dismissPendingUpdate();
-    worker.state = "redundant";
-    worker.dispatchEvent(new Event("statechange"));
-    expect(getPwaUpdateSnapshot().status).toBe("hidden");
-    expect(window.localStorage.getItem("pwa:deferred-update")).toBeNull();
-    cleanup();
-  });
-
-  it("stale chunk exige ação e respeita a trava anti-loop", async () => {
-    const reload = vi.fn();
+  it("stale chunk apenas avisa; ações explícitas navegam uma vez", async () => {
+    const navigate = vi.fn();
     await recoverFromStaleBuild();
     expect(getPwaUpdateSnapshot()).toMatchObject({ status: "error", staleBuild: true });
-    expect(reload).not.toHaveBeenCalled();
-    expect(retryCurrentBuild(reload)).toBe(true);
-    expect(reload).toHaveBeenCalledTimes(1);
-    expect(retryCurrentBuild(reload)).toBe(false);
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(retryCurrentBuild(navigate)).toBe(true);
+    expect(retryCurrentBuild(navigate)).toBe(false);
+    expect(navigate).toHaveBeenCalledTimes(1);
   });
 });
