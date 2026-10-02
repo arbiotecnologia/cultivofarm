@@ -45,7 +45,11 @@
 | F1-010 | Zero leases ativos | PASS | contagem 0 |
 | F1-011 | Job AR BIO preservado | PASS | falhou; tentativa 1; e-mail 0; sem usuário/lease |
 | F1-012 | Janela SMTP para E02 | PASS | RPC auditável; somente global/e-mail ON; readiness=true; auditoria 14; nenhum envio |
-| F1-012A | Clique E02 / envio | BLOCKED | exige sessão Superadmin humana; clicar uma vez em “Enviar convite” |
+| F1-012A | Clique E02 / envio | FAIL | chamada humana em `2026-10-02T20:43Z`; Edge v18 retornou 503 após finalizer; SMTP ficou `failed/email_unknown_error` |
+| F1-012B | Persistência pós-clique | PASS parcial | 1 job `22c70f4f…fbc1`; 1 Auth `cbdc4ef3…d212`; 1 profile no tenant correto; 1 papel administrador; zero superadmin; nenhuma duplicação |
+| F1-012C | Estágio exato da falha | PASS diagnóstico | Auth create, generate link, finalizer, runtime config e claim SMTP retornaram 200; falha registrada no adapter SMTP antes do aceite local |
+| F1-012D | Aceite do provedor/entrega | INCONCLUSIVO | SMTP direto, zero outbox/receipt/provider id; `email_unknown_error` não prova se o remoto aceitou antes de a conexão falhar |
+| F1-012E | Segurança do retry real | BLOCKED | cooldown/leases estão limpos, mas novo envio pode duplicar mensagem; requer forward-fix de observabilidade/estado ambíguo antes do retry |
 | F1-013 | Primeiro acesso/recovery | NOT RUN | depende de E02 verde e ação humana |
 | F1-014 | Retry/cooldown/lease/fencing/provider failure | PASS contratual | testes isolados com mocks e contratos server-side; nenhum job real usado |
 | F1-014A | Concorrência/takeover/hard-crash E2E com ROLLBACK | NOT RUN | sem conexão transacional PG; não simulado como PASS |
@@ -66,4 +70,4 @@
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. Fase 1: **BLOCKED somente no clique humano autenticado “Enviar convite”**; janela SMTP pronta e auditada, sem envio. Fases 2–15: **NOT RUN** até D51.2 suficientemente verde.
+Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. **RETRY BLOCKED** por possível aceite remoto sem confirmação observável. Fases 2–15: **NOT RUN** até forward-fix e nova autorização.

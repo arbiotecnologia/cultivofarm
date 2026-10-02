@@ -4,7 +4,7 @@
 
 - Projeto canônico: `swzpzcwiasxmjutrmvkm`.
 - Fase 0: **PASS com riscos P2/P3 registrados**.
-- Fase 1 / E01: **PASS**; E02 está bloqueado somente no clique humano autenticado **Enviar convite**.
+- Fase 1 / E01: **PASS**; E02: **FAIL no SMTP**, sem retry autorizado até corrigir a observabilidade do erro desconhecido.
 - O antigo NO-GO baseado na impossibilidade de prefixar a razão social foi reclassificado: a razão oficial deve permanecer íntegra; a identificação segura da fixture será feita em `nome_fantasia`.
 - Após o E01 humano, a auditoria abriu somente a janela SMTP global/e-mail pelo mecanismo auditável; nenhum convite, usuário ou envio foi criado.
 - Leaked Password Protection: risco temporariamente aceito, aberto e não homologado.
@@ -122,9 +122,13 @@ REFIL permanece em `rascunho`, ativa, com assinatura Completo `SUSPENDED` desde 
 
 ### Decisão
 
-**E01 PASS. Fase 1 bloqueada somente no clique humano autenticado “Enviar convite”.** Não existe endpoint oficial que preserve a identidade do Superadmin real sem sua sessão; `service_role` não será usado como substituto. O responsável deve clicar **uma única vez** em **Enviar convite** e parar, sem abrir link. Fase 2 permanece bloqueada até a auditoria pós-E02 e os gates humanos posteriores.
+**E01 PASS; E02 FAIL confirmado.** A chamada humana alcançou a versão implantada 18 da função `platform-invite-org-admin` às `2026-10-02T20:43:10Z–20:43:18Z` e terminou HTTP 503. O pipeline criou exatamente um job `22c70f4f…fbc1`, criou uma conta Auth `cbdc4ef3…d212`, gerou o link internamente, concluiu o finalizer e vinculou exatamente um profile ao tenant correto e exatamente um papel `administrador`, sem `superadmin`. O forward-fix está ativo no banco: a RPC vigente aceita profile com `organization_id IS NULL` ou do mesmo tenant, valida `raw_app_meta_data.provisioning_request_id`, usa a assinatura `(uuid, uuid, uuid)`, `SECURITY DEFINER` e `search_path` vazio.
 
-Os subcenários executáveis sem ação humana disponível foram concluídos. E02, recebimento, link usado/expirado ponta a ponta, primeiro acesso e recovery permanecem `NOT RUN`; os harnesses transacionais autenticados também permanecem `NOT RUN`, sem promoção indevida a PASS.
+O estágio que falhou foi o envio SMTP. O job ficou `status=pendente`, `attempt_count=1`, `email_delivery_status=failed`, `email_attempt_count=1`, `email_last_error_code=email_unknown_error`, sem lease ativo, sem aceite local e com cooldown até `2026-10-02T20:48:18.441905Z`. A sequência observada foi: claim 200 → criação Auth 200 → geração de link 200 → finalizer 200 → carga da configuração 200 → claim de e-mail 200 → gravação da falha de e-mail 200 → Edge Function 503. Não houve outbox/receipt nem identificador de mensagem do provedor; o envio usa SMTP direto. Portanto não há prova de aceite pelo provedor nem de entrega na caixa postal.
+
+Classificação factual: **G/outro com ambiguidade de transporte**, não uma falha do finalizer. O adapter converte qualquer exceção SMTP não reconhecida em `email_unknown_error`; sem erro bruto retido de forma segura, não é possível distinguir falha anterior ao aceite remoto de desconexão posterior ao aceite. Assim, uma nova tentativa pode enviar um segundo e-mail. **RETRY BLOCKED** até um forward-fix mínimo registrar fase/categoria sanitizada do SMTP e tratar resultado desconhecido pós-envio como ambíguo, com testes de falha antes/depois do aceite e preservação do cooldown/fencing. Nenhum retry, reenvio, link aberto ou alteração de dados foi feito nesta rodada.
+
+Os subcenários executáveis sem ação humana disponível foram concluídos. E02 falhou no transporte SMTP; recebimento, link usado/expirado ponta a ponta, primeiro acesso e recovery permanecem `NOT RUN`; os harnesses transacionais autenticados também permanecem `NOT RUN`, sem promoção indevida a PASS.
 
 Baselines anteriores permanecem registrados: **5.372 testes globais PASS e 4 skipped**, typecheck/build PASS e scanner com 10 Info/zero Critical/Error/Warning. Nesta rodada, **228/228 testes focados PASS**; a consulta canônica final confirmou 1 organização, 1 assinatura, 1 auditoria, zero convites/Auth users/profiles/roles/tentativas/leases e job AR BIO preservado.
 
@@ -132,4 +136,4 @@ Baselines anteriores permanecem registrados: **5.372 testes globais PASS e 4 ski
 
 - Dados: o E01 persistente foi criado pelo responsável e permanece como evidência. A janela SMTP pode ser revertida pelo mesmo RPC auditável alterando somente `delivery_enabled` e `email_delivery_enabled` para `false`.
 - Hardening das Edge Functions: rollback por reversão dos arquivos e dos blocos de configuração; forward-fix preferencial, caso surja incompatibilidade, mantendo CORS fail-closed, JWT obrigatório e respostas sanitizadas.
-- E01: PASS, sem mudança de esquema. O próximo bloqueio é exclusivamente o clique humano **Enviar convite**.
+- E01: PASS, sem mudança de esquema. E02 permanece bloqueado antes de qualquer retry até correção da classificação/observabilidade SMTP desconhecida.
