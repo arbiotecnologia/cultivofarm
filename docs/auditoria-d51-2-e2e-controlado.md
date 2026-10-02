@@ -1,5 +1,7 @@
 # Auditoria D51.2 — E2E controlado
 
+> **D51.2 SUSPENSO:** incidente P0 pós-publicação em 2026-10-02. Nenhum cenário E01–E21 pode ser retomado até a correção ser publicada e a produção voltar a carregar normalmente.
+
 Data da tentativa: 2026-10-02  
 Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
 Commit candidato confirmado no início do gate: `3e8fdae27bbbc3cab2d49fadb014725728665bf0`
@@ -734,3 +736,42 @@ Passos exatos para iniciar a retomada pela UI:
 10. Quando o e-mail chegar, parar antes de abrir o link e solicitar a continuação assistida. Não colar o link no chat.
 
 Qualquer conflito, destinatário divergente, erro de autorização, duplicidade ou suspeita de impacto real exige parada imediata e fechamento das duas flags. A decisão permanece **NO-GO**; E01–E21 não foram executados nesta etapa e D52 não foi iniciado.
+
+## 25. Incidente P0 pós-publicação — inconsistência de versão do frontend
+
+Data/hora UTC: `2026-10-02`  
+Commit candidato diagnosticado: `d6a0eda69cb76251d8fac20aae9fbb9b758daa1a`
+
+### 25.1 Sintoma e diagnóstico
+
+O ambiente publicado exibiu `useAuth deve ser usado dentro de um AuthProvider`. A busca exata no repositório e em todo o histórico Git não encontrou essa mensagem. Existe uma única definição de `useAuth`/`AuthProvider`, em `src/hooks/useAuth.tsx`; o hook atual usa contexto com valor default e não pode emitir essa exceção. Todas as rotas permanecem sob o `AuthProvider` em `src/App.tsx`.
+
+Em sessão limpa, `https://cultivofarm.lovable.app`, `https://app.cultivofarm.com.br`, `/auth` e `/plataforma` carregaram sem erro de provider; usuário não autenticado foi corretamente direcionado a `/auth`. Os assets servidos pelos dois endereços eram idênticos, a mensagem não existia em nenhum módulo JavaScript do precache e o service worker publicado tinha `cleanupOutdatedCaches`, `clientsClaim` e `skipWaiting`.
+
+A causa provável é uma aba/sessão com bundle antigo durante troca de versão PWA. O projeto não tratava `vite:preloadError`; além disso, os caches de runtime `html-nav` e `static-assets` não são removidos por `cleanupOutdatedCaches`, que cobre os precaches Workbox. Assim, uma navegação ou import dinâmico durante deploy podia combinar o shell em memória com recursos de outra versão. O `catch` do import inicial também classificava qualquer falha de carregamento como conexão Supabase bloqueada.
+
+### 25.2 Correção mínima
+
+- recuperação centralizada para falhas de chunk obsoleto, com recarga única protegida contra loop;
+- limpeza restrita aos caches de runtime do shell (`html-nav` e `static-assets`), preservando precache, fontes, dados e suporte offline;
+- tratamento global de `vite:preloadError` antes do import da aplicação;
+- `ErrorBoundary` aciona a mesma recuperação para erros de chunk ocorridos após a montagem;
+- falha genérica do import inicial deixou de ser apresentada como bloqueio do Supabase;
+- regressões estáticas garantem uma única definição do hook, todas as rotas sob o provider canônico e imports de produção direcionados ao mesmo hook.
+
+Arquivos funcionais alterados: `src/pwa/registerSW.ts`, `src/main.tsx` e `src/components/ErrorBoundary.tsx`. Nenhuma rota, permissão, dependência, configuração Supabase/SMTP ou dado foi alterado.
+
+### 25.3 Estado do gate
+
+Validações da correção:
+
+- regressões focadas: 3 arquivos e 31 testes aprovados;
+- suíte global: 348 arquivos aprovados, 1 ignorado; 5.312 testes aprovados, 4 ignorados;
+- typecheck: PASS;
+- build automático: PASS;
+- prévia em `/`, `/auth` e `/plataforma`: sem exceção de provider, sem erro de página e sem resposta HTTP com falha;
+- produção em sessão limpa antes da correção: os mesmos três caminhos carregaram sem a exceção, reforçando que o incidente depende de estado antigo do navegador.
+
+A publicação automática foi interrompida antes do deploy porque o scanner de segurança vigente possui achados críticos preexistentes de RLS fora do escopo deste incidente. A regra de não publicar com P0/P1 aberto foi preservada; nenhum banco, SMTP, usuário ou tenant foi tocado.
+
+O D51.2 está **SUSPENSO** e E01–E21 não podem ser retomados até a correção ser publicada com autorização diante dos achados existentes e a produção ser verificada em sessão limpa e em atualização. D52 permanece bloqueado. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.

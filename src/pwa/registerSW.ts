@@ -9,6 +9,7 @@ const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 const RELOAD_FALLBACK_MS = 8000;
 const RECENT_RELOAD_KEY = "pwa:last-controller-reload";
 const RELOAD_LOOP_GUARD_MS = 15000;
+const STALE_RUNTIME_CACHES = new Set(["html-nav", "static-assets"]);
 
 function isRefusedHost(hostname: string): boolean {
   if (hostname.startsWith("id-preview--") || hostname.startsWith("preview--")) return true;
@@ -73,6 +74,39 @@ export function triggerSafeReload(): void {
 
   reloadingOnControllerChange = true;
   window.location.reload();
+}
+
+export function isStaleBuildError(error: unknown): boolean {
+  const message = error instanceof Error
+    ? `${error.name}: ${error.message}`
+    : String(error ?? "");
+
+  return /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk [^ ]+ failed|error loading dynamically imported module/i.test(message);
+}
+
+/**
+ * Remove somente caches de runtime que podem manter HTML/assets de outro
+ * deploy. O precache versionado do Workbox e os dados da aplicação são
+ * preservados; a trava de reload evita ciclos quando a rede está indisponível.
+ */
+export async function recoverFromStaleBuild(): Promise<void> {
+  updateInProgress = true;
+  window.dispatchEvent(new CustomEvent(UPDATING_EVENT));
+
+  if ("caches" in window) {
+    try {
+      const cacheNames = await window.caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter((cacheName) => STALE_RUNTIME_CACHES.has(cacheName))
+          .map((cacheName) => window.caches.delete(cacheName)),
+      );
+    } catch {
+      // A recarga consistente continua mesmo se o navegador negar CacheStorage.
+    }
+  }
+
+  triggerSafeReload();
 }
 
 function activateUpdate(worker?: ServiceWorker | null): void {

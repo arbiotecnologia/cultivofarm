@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ErrorRecovery } from "./ErrorRecovery";
+import { isStaleBuildError, recoverFromStaleBuild } from "@/pwa/registerSW";
 
 interface Props {
   children?: ReactNode;
@@ -21,6 +22,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    if (isStaleBuildError(error)) {
+      void recoverFromStaleBuild();
+    }
   }
 
   public render() {

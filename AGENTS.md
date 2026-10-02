@@ -7,3 +7,5 @@
 - Global communication provider settings are accessible only to Platform Superadmins through server-side `is_platform_superadmin`; tenant admins have no UI or endpoint access, while workers retain service-role-only RPC access — preserves SaaS isolation and secret boundaries.
 
 - Controlled SMTP tests reuse the shared communication adapter and require Platform Superadmin authorization, rate limiting, full readiness, test mode, and the fixed gate recipient before any socket; responses expose only allowlisted codes — prevents tenant privilege bypass and diagnostic leakage.
+
+- PWA version recovery is centralized in `src/pwa/registerSW.ts`: stale Vite chunks clear only app-shell runtime caches and trigger one guarded reload — prevents mixed deployments without removing offline support.
