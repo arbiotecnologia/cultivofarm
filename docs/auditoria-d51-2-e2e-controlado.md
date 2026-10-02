@@ -1731,3 +1731,42 @@ O deploy direto do commit `8e1fc08ba5669ffc32535cd3519895db03fc05d5` foi confirm
 As validações do candidato permaneceram verdes: 31 testes PWA focados, 5.359 testes globais, typecheck, build e scanner sem bloqueios.
 
 **Decisão final: PASS — incidente P0 PWA RESOLVIDO.** O modelo manual por consentimento está publicado e ativo no domínio oficial. Nenhuma nova publicação foi realizada nesta rodada documental. D51.2, E01/E02, organização REFIL, job AR BIOTECNOLOGIA e D52 permanecem inalterados e bloqueados conforme o estado anterior.
+
+## 46. Falha ao suspender assinatura REFIL — diagnóstico e correção
+
+Data: 2026-10-02  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 46.1 Diagnóstico somente leitura
+
+O runtime confirmou `platform_change_subscription(uuid,text,text,text)` como `SECURITY INVOKER`, `search_path=''`, execução apenas por `authenticated`/`service_role`, validação server-side de Superadmin, motivo mínimo, plano ativo e status permitido. `TRIAL→SUSPENDED` não era proibido.
+
+A causa comprovada foi a assimetria de RLS introduzida quando a RPC passou de `SECURITY DEFINER` para `SECURITY INVOKER`: havia políticas de criação e alteração para `is_platform_superadmin`, mas a leitura de `organization_subscriptions` continuava limitada ao papel operacional `administrador`. Assim, o Superadmin passava na guarda da RPC, porém o `SELECT ... FOR UPDATE` não via a assinatura TRIAL existente. A função caía no ramo de criação de assinatura e encontrava as proteções de consistência/unicidade. Isso também impedia o lock de serializar corretamente a linha corrente.
+
+O payload do frontend estava correto: `_organization_id`, `_plan_key='completo'`, `_status='SUSPENDED'` e `_reason`. O plano `completo` está ativo. Os logs do intervalo `18:35Z–18:45Z` não retiveram evento/SQLSTATE, portanto nenhum código específico foi inventado. A mensagem da tela era a sanitização genérica esperada.
+
+Estado observado antes da correção: REFIL `4e537fd6…8f9f` já estava em `rascunho`; sua assinatura `e5bccb8f…42ba` permanecia `Completo/TRIAL`, sem `suspended_at`, com somente o histórico original de criação. Essa mudança anterior da organização não foi atribuída a esta rodada.
+
+### 46.2 Correção mínima aplicada
+
+- migration `20261002184357`: preservou a RPC SECURITY INVOKER e seu contrato; adicionou conversão explícita de `_status` para `public.saas_subscription_status`, timestamps coerentes ao suspender/cancelar/reverter, motivo, lock e ACL restrita;
+- migration `20261002184434`: adicionou leitura RLS exclusivamente para Superadmin em `organization_subscriptions` e `organization_subscription_history`, sem abrir acesso a tenant admin, anônimo ou público;
+- nenhuma tabela, rota, fluxo paralelo ou privilégio amplo foi criado;
+- nenhuma mutação real foi executada na REFIL, SMTP, E01/E02 ou job AR BIOTECNOLOGIA.
+
+### 46.3 Validação
+
+Prova transacional isolada com rollback confirmou:
+
+1. `TRIAL→SUSPENDED`, preenchendo `suspended_at`;
+2. reversão `SUSPENDED→TRIAL`, limpando `suspended_at`;
+3. exatamente uma linha nova de histórico na suspensão;
+4. motivo curto negado;
+5. plano inexistente negado;
+6. tenant admin negado com `42501`;
+7. `FOR UPDATE` e índice único corrente preservados para concorrência;
+8. políticas e ACL sem acesso público/anônimo.
+
+Foi adicionado harness transacional reutilizável e teste estático contra regressão. Os 492 alertas gerais informados pelo linter são preexistentes — incluindo Leaked Password Protection, que permanece risco temporariamente aceito — e não foram ampliados pelas migrations desta correção.
+
+**Decisão:** a próxima tentativa manual pode ser feita com segurança pela sessão real Superadmin, selecionando REFIL, plano **Completo**, situação **Suspensa** e motivo explícito. Após o clique, parar e auditar somente leitura: assinatura `SUSPENDED`, `suspended_at` preenchido e exatamente uma nova entrada de histórico com o motivo. Não repetir a alteração da organização, que já está em `rascunho`; não executar E01/E02 e não avançar D52.
