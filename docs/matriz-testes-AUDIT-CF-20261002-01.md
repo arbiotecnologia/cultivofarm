@@ -96,6 +96,7 @@
 | F1-051 | Alternativa quando não houver porta permitida | DOCUMENTADO | integração HTTP oficial pelo adapter existente; nenhum provedor/API/credencial presumido |
 | F1-052 | Regressão completa do complemento | PASS | 5.380 testes globais/4 skipped; 60 focados; typecheck/build; scanner 10 Info e zero Critical/Error/Warning |
 | F1-053 | Testes Deno específicos do complemento | NOT RUN | runner informou ausência de módulos de teste nas duas funções; não promovido a PASS |
+| F1-054 | Deploy e smoke do complemento | PASS | três funções implantadas; negativas JWT inválido 401; bundle oficial `App-Bdw25M7-.js` contém os marcadores novos |
 
 ## Gate
 
