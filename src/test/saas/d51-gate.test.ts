@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const migration = [
   "supabase/migrations/20261002001921_8739ba87-e301-4e68-82b2-d253bbac84dd.sql",
   "supabase/migrations/20261002002408_e3ea8343-b974-4f3a-86bb-914f9196e6e1.sql",
+  "supabase/migrations/20261002015343_ace68cd9-1438-46d2-a1dc-e6155763c467.sql",
 ].map((path) => readFileSync(path, "utf8")).join("\n");
 const recovery = readFileSync("src/pages/ResetPassword.tsx", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
@@ -27,6 +28,15 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
     expect(edge).toContain('if (userId && modo === "link")');
     expect(edge).toContain('else if (userId)');
     expect(edge).not.toContain("listUsers");
+  });
+
+  it("envio do convite tem lease/fencing, cooldown e grants somente server-side", () => {
+    expect(migration).toContain("platform_claim_org_admin_email_delivery");
+    expect(migration).toContain("email_delivery_status='sending'");
+    expect(migration).toContain("email_lease_token IS DISTINCT FROM p_lease_token");
+    expect(migration).toContain("platform_email_cooldown");
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.platform_claim_org_admin_email_delivery[\s\S]*FROM PUBLIC, anon, authenticated/);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.platform_claim_org_admin_email_delivery[\s\S]*TO service_role/);
   });
 
   it("remove execução do caminho legado MD5", () => {
