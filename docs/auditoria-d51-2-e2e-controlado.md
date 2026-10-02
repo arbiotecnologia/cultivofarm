@@ -1673,3 +1673,15 @@ O ciclo anterior disparava `pwa:updating-start` no mero `updatefound`, antes de 
 - scanner: **zero Critical/Error/Warning**, dez achados informativos históricos; Leaked Password Protection permanece risco aceito.
 
 Nenhum banco, Supabase, SMTP, organização, usuário, E01/E02 ou job foi tocado. D52 permanece bloqueado. Durante a propagação, o contorno emergencial preservado é `https://app.cultivofarm.com.br/?sw=off`, que desregistra o app-shell service worker daquele navegador.
+
+### 44.4 Publicação e smoke do domínio oficial
+
+Foi solicitada uma única publicação frontend para `https://app.cultivofarm.com.br`. No smoke posterior com navegador limpo:
+
+- `/auth` respondeu HTTP 200 e o app-shell service worker `/sw.js` estava registrado;
+- o pacote publicado ainda não continha `pwa:updating-end` nem `overlay-safety-timeout`, marcadores da correção;
+- o overlay não apareceu espontaneamente na abertura, mas, ao simular somente o evento público de início, permaneceu visível e manteve o `body` bloqueado após 15,5 segundos, comprovando que o domínio ainda servia a implementação anterior;
+- `/?sw=off` respondeu HTTP 200 e deixou zero registros de app-shell service worker no navegador de teste, confirmando o contorno emergencial;
+- as respostas 401 observadas foram apenas consultas protegidas esperadas em sessão anônima.
+
+**Decisão pós-publicação: FAIL por ausência de propagação no domínio customizado.** A correção está verde no candidato local, mas não pode ser declarada ativa no domínio oficial. Conforme a regra de parada, nenhuma nova publicação foi solicitada em loop. Aguardar a propagação e repetir somente o smoke antes de encerrar o P0. E01/E02 e D52 permanecem bloqueados.
