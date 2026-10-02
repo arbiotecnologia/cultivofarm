@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Em andamento
+- [ ] Gate D51.2-F — corrigir P1 de isolamento SaaS: configuração global e teste SMTP exclusivos do Superadmin de Plataforma; mover a UI global para `/plataforma`, validar e implantar somente as duas Edge Functions após preflight fail-closed.
 - [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton/ACLs endurecidos, checklist visível e teste SMTP fail-closed/sanitizado; prontidão atual permanece falsa. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
