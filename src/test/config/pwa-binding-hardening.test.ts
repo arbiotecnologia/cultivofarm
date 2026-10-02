@@ -36,7 +36,8 @@ describe("P0 PWA — atualização manual", () => {
   const boundary = read("src/components/ErrorBoundary.tsx");
 
   it("usa estratégia prompt sem ativação automática e mantém limpeza de caches", () => {
-    expect(vite).toMatch(/clientsClaim:\s*true/);
+    expect(vite).toMatch(/clientsClaim:\s*false/);
+    expect(vite).not.toMatch(/clientsClaim:\s*true/);
     expect(vite).toMatch(/registerType:\s*"prompt"/);
     expect(vite).toMatch(/skipWaiting:\s*false/);
     expect(vite).toMatch(/cleanupOutdatedCaches:\s*true/);
