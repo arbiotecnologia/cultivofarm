@@ -1,23 +1,24 @@
-# P0 PWA — atualização exclusivamente manual
+# Diagnóstico SMTP em duas etapas — AUDIT-CF-20261002-01
 
 ## Objetivo
-Eliminar o app-shell Workbox e qualquer caminho de atualização ou recarga automática, mantendo instalação por manifesto e push em worker estável separado.
+Adicionar à aba Comunicação um diagnóstico seguro em duas etapas: primeiro validar conexão, TLS, protocolo e autenticação sem enviar mensagem; depois manter o envio real controlado, fixo ao destinatário autorizado e bloqueado enquanto a prontidão estiver incompleta.
 
 ## Implementação
-1. Remover `vite-plugin-pwa` da configuração e dependências; manter manifesto e ícones estáticos.
-2. Publicar um `/sw.js` de migração por um ciclo para desregistrar o worker legado e apagar apenas caches identificáveis do app-shell, sem navegar ou recarregar clientes.
-3. Tornar `/push-sw.js` independente de Workbox e registrá-lo diretamente, sem precache de HTML/assets ou controle de atualização da aplicação.
-4. Substituir o detector baseado em `waiting`, `updatefound` e `controllerchange` por comparação `no-store` do token do bundle carregado versus o HTML publicado, no intervalo de 60 minutos e em `visibilitychange`/`online`.
-5. Preservar o aviso não bloqueante, Adiar e o botão persistente; somente “Atualizar agora” fará uma navegação única, explícita e protegida contra loop.
-6. Manter falhas de chunk sem recarga automática, com ações manuais, e fazer `?sw=off` limpar workers/caches pertinentes sem reload.
-7. Remover textos, eventos e caminhos executáveis legados; atualizar a decisão técnica e pausar a campanha nos documentos.
+1. Criar um helper SMTP compartilhado e testável para o probe sem `MAIL FROM`, `RCPT TO` ou `DATA`, com limites de leitura, timeout por etapa e absoluto, fechamento garantido e resultados estritamente allowlisted.
+2. Estender `test-communication-email` com `mode: connection | send` (default `send`): autenticação Superadmin comum, rate limits separados, probe permitido com entrega OFF/OFF e envio preservando todos os gates atuais.
+3. Para porta 465, usar TLS implícito; para outras portas permitidas, exigir STARTTLS antes de autenticar. Bloquear 25/587 e nunca transmitir credenciais em texto claro.
+4. Reutilizar a auditoria existente de Comunicação. Uma migration idempotente ampliará a tabela existente com metadados sanitizados do diagnóstico e criará uma RPC service-role-only para registrar ator, ação, resultado, código, estágio e latência, sem segredos, host, destinatário ou resposta SMTP bruta.
+5. Atualizar a aba Comunicação com os passos Conexão e Envio controlado, resultado e latência seguros, motivos de bloqueio, proteção contra clique duplo e confirmação explícita antes do envio real. Conexão PASS não abrirá flags nem enviará e-mail.
+6. Preservar o destinatário fixo e distinguir “aceito pelo servidor SMTP” de entrega na caixa postal. Resultado ambíguo continuará explícito e sem retry automático.
 
-## Validação e publicação
-- Cobrir detecção, adiamento, clique único, eventos passivos, migração legada, caches, `?sw=off`, stale chunk, formulário, acessibilidade e push.
-- Executar testes PWA focados, typecheck, build, suíte global e scanner; inspecionar artefatos gerados.
-- Publicar somente o frontend se tudo passar e fazer smoke limpo e com worker legado simulado no domínio oficial.
-- Se não houver propagação, registrar e parar sem repetir publicação.
+## Validação
+- Testes unitários do protocolo: TLS 465, AUTH PLAIN/LOGIN, STARTTLS, timeouts, respostas inválidas, AUTH 535, limites de leitura, fechamento do socket e bloqueio 25/587 antes do socket.
+- Testes da função: 401/403, conexão com OFF/OFF, envio bloqueado sem readiness, sanitização, rate limit separado e ausência de job/outbox/tentativa no modo conexão.
+- Testes de interface: estados, confirmação, clique duplo, bloqueios, mobile e acessibilidade.
+- Executar Deno check, testes focados, typecheck, build, suíte global e scanner.
 
-## Limites
-- Nenhuma alteração em Supabase, SMTP, E01/E02, convite, REFIL ou AR BIO.
-- A campanha AUDIT-CF permanece pausada até este P0 ficar PASS; depois retoma no ponto E02 SMTP.
+## Implantação e parada segura
+- Validar explicitamente o projeto canônico `swzpzcwiasxmjutrmvkm` antes de qualquer migration/deploy.
+- Aplicar somente a migration auditável necessária, implantar `test-communication-email` com os helpers compartilhados e publicar o frontend; `communication-provider-settings` só será implantada se seu contrato mudar.
+- Fazer smoke sem abrir flags, sem probe real e sem envio. Depois parar e orientar o Superadmin a executar apenas **Testar conexão do provedor**.
+- Não reenviar convite, não alterar E01/E02, REFIL ou AR BIO e não avançar a Fase 2.
