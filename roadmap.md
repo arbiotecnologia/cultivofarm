@@ -1,11 +1,11 @@
 # Roadmap
 
 ## Em andamento
-- [ ] D51.2 — **E01 FAIL / E02 bloqueado:** o checkpoint funcionou e impediu o convite, mas a criação recebeu CNPJ `09.255.249/0001-12`, razão social REFIL INFORMATICA LTDA e e-mail `refilinformatica@gmail.com`, diferentes do cenário autorizado. A origem foi delimitada ao estado/payload do formulário; não há hardcode, persistência ou cache de lookup que transforme o CNPJ autorizado nesses dados. Entrada manual, autofill e aba antiga permanecem hipóteses não distinguíveis sem evidência do navegador.
-- [ ] Gate D51.2 — aguarda autorização para proteção preventiva do E01 e tratamento auditável futuro da organização REFIL criada acidentalmente. SMTP global/e-mail OFF/OFF, E02 e D52 bloqueados; job real AR BIOTECNOLOGIA permanece bloqueado e intocado.
+- [ ] D51.2 — **E01 FAIL / E02 bloqueado:** proteção preventiva em implantação. O fluxo passa a vincular a revisão ao snapshot oficial do CNPJ, exigir redigitação dos 14 dígitos e usar exatamente os dados revisados na criação. A contenção da REFIL depende de sessão real Superadmin no mecanismo oficial; não será substituída por `service_role`.
+- [ ] Gate D51.2 — após publicação e smoke, conter REFIL por `platform_set_organization_status(..., 'cancelada', motivo)` e a assinatura TRIAL por `platform_change_subscription(..., 'CANCELLED', motivo)`, preservando as duas trilhas de auditoria. SMTP OFF/OFF, E02 e D52 bloqueados; job real AR BIOTECNOLOGIA permanece bloqueado e intocado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — propor confirmação final explícita de CNPJ/razão/e-mail, vínculo da revisão ao último snapshot consultado e mitigação de autofill; não implementar sem autorização. Tratar REFIL por cancelamento/inativação auditável, preservando histórico, somente em rodada autorizada.
+- [ ] Gate D51.2 — concluir validações/publicação da proteção, executar contenção somente pela sessão Superadmin oficial e repetir o pré-check canônico. Não executar E01/E02 nesta rodada.
 
 ## Concluído
 - [x] **Pré-condições do checkpoint E01:** CNPJ controlado `36.736.180/0001-11`, e-mail corporativo `renato@refilinformatica.com.br` e destinatário exclusivo `teste@refilinformatica.com.br` autorizados; Superadmin confirmado no publicado. Nenhuma criação ou envio faz parte da rodada de ajuste.

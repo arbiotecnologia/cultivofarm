@@ -34,6 +34,11 @@ describe("D51.2 — fluxo único Empresa → Responsável → Revisão → Convi
     expect(flow).toContain("processando = criar.isPending || convidar.isPending");
     expect(flow).toContain("operacaoEmCurso.current");
     expect(flow).toContain("disabled={processando || Boolean(organizationId)}");
+    expect(flow).toContain("Empresa que será criada");
+    expect(flow).toContain("Responsável que receberá acesso");
+    expect(flow).toContain("Confirme o CNPJ");
+    expect(flow).toContain('autoComplete="off"');
+    expect(flow).not.toMatch(/localStorage|sessionStorage/);
   });
 
   it("retry do convite reutiliza o organizationId e não recria a empresa", () => {
