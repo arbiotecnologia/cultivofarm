@@ -997,3 +997,38 @@ Uma prova browser sem sessão, executada a partir de `https://app.cultivofarm.co
 **INCIDENTE CORS ENCERRADO.** Após a correção, o responsável confirmou no ambiente publicado, com sessão real de Superadmin, que a página `/plataforma` e a aba **Comunicação** abriram normalmente. A função `communication-provider-settings` carregou corretamente na UI autenticada, completando a prova positiva que permanecia pendente.
 
 Esta confirmação foi exclusivamente observacional: não houve alteração de código, banco, SMTP, allowlist, usuário ou tenant; nenhum e-mail foi enviado. O Gate D51.2 permanece aberto e em andamento, com próximo passo em E01/E02 manual controlado. D52 não foi iniciado.
+
+## 30. Auditoria E01/E02/E03 após ação manual
+
+Data/hora da leitura UTC: `2026-10-02T04:37:00Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 30.1 Resultado canônico
+
+A confirmação manual informou empresa criada, convite gerado e mensagem recebida pelo endereço controlado, sem abertura do link. Entretanto, as leituras somente leitura do Supabase canônico não encontraram os registros correspondentes:
+
+| Controle obrigatório | Resultado canônico |
+|---|---|
+| Organizações com prefixo `HOMOLOGAÇÃO D51.2`/`TESTE D51.2` | **0**; esperado 1 |
+| Organizações criadas desde `2026-10-02T04:00:00Z` | **0** |
+| Convites/jobs para o endereço controlado | **0**; esperado 1 |
+| Auth users para o endereço controlado | **0**; esperado 1 |
+| Profiles para o endereço controlado | **0**; esperado 1 |
+| Profiles criados desde `2026-10-02T04:00:00Z` | **0** |
+| Eventos Lovable Email visíveis para o endereço controlado | **0**; não cobre o SMTP externo do módulo Comunicação |
+| Logs recentes de `platform-invite-org-admin` | nenhum evento encontrado |
+
+As contagens totais permaneceram no baseline anterior: 2 organizações, 1 job histórico e 6 Auth users. Os registros mais recentes continuam datados de `2026-10-01`, anteriores à ação manual informada. Portanto não existe no canônico um objeto do gate do qual seja possível mascarar ID, comprovar plano/assinatura, status, tentativas, lease, vínculo por `raw_app_meta_data.provisioning_request_id`, perfil, papéis, responsável principal ou sequência de auditoria.
+
+Os logs Auth fornecidos mostram duas leituras `GET /user` com HTTP 200 entre `04:31:06Z` e `04:31:53Z`, e os logs de `communication-provider-settings` mostram inicializações na mesma janela. Essas evidências sustentam a sessão positiva e o carregamento da aba Comunicação, mas não comprovam criação de empresa, convite ou envio pelo fluxo `platform-invite-org-admin`.
+
+Nenhum link, token, OTP, senha, cookie, cabeçalho de autorização ou metadado sensível foi lido ou registrado. Nenhuma escrita foi executada.
+
+### 30.2 Classificação e decisão
+
+- **E01: FAIL** — organização do gate ausente no Supabase canônico.
+- **E02: FAIL** — convite/job, Auth user, profile e papel esperados ausentes no Supabase canônico.
+- **E03: FAIL / NÃO COMPROVÁVEL** — o recebimento foi confirmado manualmente, porém não existe job canônico nem tentativa/aceite SMTP correlacionável; não é possível provar destinatário único ou ausência de retry.
+- **GO/NO-GO para E04:** **NO-GO**.
+
+Há inconsistência entre a ação/recebimento relatados e o estado canônico. O link recebido **não deve ser aberto** até identificar em qual ambiente a ação foi efetivamente persistida e correlacionar, sem expor o link, a organização, o job e o Auth user esperados. D51.2 permanece aberto e bloqueado neste ponto; D52 não foi iniciado.
