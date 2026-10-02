@@ -10,6 +10,12 @@
 - Após o E01 humano, a auditoria abriu somente a janela SMTP global/e-mail pelo mecanismo auditável; nenhum convite, usuário ou envio foi criado.
 - Leaked Password Protection: risco temporariamente aceito, aberto e não homologado.
 
+### Correção de visibilidade do diagnóstico SMTP em `/plataforma`
+
+A investigação confirmou que `/plataforma` já renderizava o componente global único `ComunicacaoConfigTab`; não havia segunda implementação nem necessidade de nova tela. O pacote oficial também continha os textos das duas etapas. A causa foi uma condição visual no próprio componente: todo o diagnóstico era renderizado somente quando `smtp.password_configured` era verdadeiro. Isso permitia que a aba carregasse normalmente, mas ocultasse tanto **Testar conexão do provedor** quanto **Enviar teste** conforme a resposta sanitizada recebida pela sessão.
+
+O bloco foi movido para uma seção própria, sempre visível na aba Comunicação. O passo de conexão permanece independente das flags global/e-mail e só habilita quando a configuração técnica sanitizada está completa; o envio continua bloqueado pela prontidão integral e exibe o motivo. Nenhuma chamada SMTP, envio, mutação de dados ou alteração de permissões foi incluída. A ausência de aviso de versão é compatível com uma página que já carregou o mesmo token principal publicado; além disso, um bundle anterior ao detector não teria código capaz de avisar sobre sua própria substituição. O harness vigente comprova que uma versão atual detecta um token futuro via HTML `no-store`, mostra o aviso e não navega sem clique explícito.
+
 ### P0 PWA — migração definitiva
 
 A evidência real confirmou que um cliente antigo ainda podia exibir uma tela bloqueante e prometer recarga automática. O app-shell Workbox foi removido como mecanismo de versão. O manifesto de instalação permanece estático; `/push-sw.js` é um worker standalone, sem Workbox, precache, claim de clientes ou controle de atualização; `/sw.js` foi substituído por um worker transitório de migração que remove apenas `html-nav`, `static-assets` e caches Workbox/precache identificáveis, e então se desregistra sem navegar ou recarregar clientes.

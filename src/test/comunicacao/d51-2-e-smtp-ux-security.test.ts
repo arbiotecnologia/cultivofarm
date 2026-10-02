@@ -7,6 +7,7 @@ import {
 } from "../../../supabase/functions/_shared/comunicacao/controlled-smtp-test";
 
 const ui = readFileSync("src/pages/configuracoes/ComunicacaoConfigTab.tsx", "utf8");
+const platformHome = readFileSync("src/pages/plataforma/PlataformaHome.tsx", "utf8");
 const edge = readFileSync("supabase/functions/test-communication-email/index.ts", "utf8");
 
 const readyEnv: WorkerEnv = {
@@ -86,10 +87,25 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   it("separa conexão sem envio do envio real confirmado", () => {
     expect(ui).toContain('{ mode: "connection" }');
     expect(ui).toContain("Testar conexão do provedor");
-    expect(ui).toContain("Não envia e-mail e funciona com as entregas desativadas.");
+    expect(ui).toContain("Não envia e-mail e funciona com as entregas global e de e-mail desativadas.");
     expect(ui).toContain("Confirmar envio real de teste?");
     expect(ui).toContain('{ mode: "send", to');
     expect(ui).toContain("O sucesso confirma apenas o aceite pelo servidor SMTP, não a entrega na caixa postal.");
+  });
+
+  it("exibe as duas etapas na aba real de plataforma sem depender das flags de entrega", () => {
+    expect(platformHome).toContain('import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab"');
+    expect(platformHome).toContain('<TabsContent value="comunicacao">');
+    expect(platformHome).toContain("<ComunicacaoConfigTab />");
+    expect(ui).toContain("Diagnóstico do provedor de e-mail");
+    expect(ui).toContain("Testar conexão do provedor");
+    expect(ui).toContain("Enviar teste");
+    expect(ui).not.toMatch(/view\.smtp\.password_configured\s*&&\s*\([\s\S]{0,300}Diagnóstico do provedor de e-mail/);
+    expect(ui).toContain("!connectionConfigReady");
+    expect(ui).toContain("!view.smtp_readiness.ready_for_controlled_test");
+    expect(ui).toContain("funciona com as entregas global e de e-mail desativadas");
+    expect(ui).toContain("Envio bloqueado até que toda a prontidão SMTP");
+    expect(ui).toContain("flex flex-col gap-3 rounded-md border p-3 sm:flex-row");
   });
 
   it("preserva proteção contra clique duplo nos dois diagnósticos", () => {
