@@ -36,6 +36,12 @@ export function evaluateControlledSmtpTest(
 
 const ALLOWED_RESULT_CODES = new Set([
   "sent",
+  "smtp_send_accepted",
+  "email_send_ambiguous",
+  "email_smtp_4xx",
+  "email_smtp_5xx",
+  "email_connect_timeout",
+  "email_connect_network",
   "email_send_timeout",
   "email_config_invalid",
   "smtp_port_blocked_by_edge_runtime",
