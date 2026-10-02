@@ -13,15 +13,26 @@ import {
   useCriarEmpresa,
   useOrganizacoesSaaS,
   usePlanosSaaS,
+  ErroConvitePlataforma,
   type ResultadoConvite,
 } from "@/hooks/usePlataformaSaaS";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cnpjValido, normalizarCnpj } from "@/lib/saas/orgOnboarding";
 import { CODIGOS_FALLBACK_MANUAL, FONTE_OFICIAL, consultarCnpjOnboarding, mensagemConsulta, type DadosEmpresa } from "@/lib/saas/onboardingCnpj";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 type Origem = { tipo: "api"; dados: DadosEmpresa } | { tipo: "manual"; motivo: string } | null;
 type Etapa = 1 | 2 | 3;
-type Progresso = "preparando" | "criando_empresa" | "empresa_pronta" | "criando_acesso" | "enviando_convite" | "convite_enviado" | "falhou";
+type Progresso = "preparando" | "criando_empresa" | "empresa_pronta" | "criando_acesso" | "enviando_convite" | "convite_enviado" | "falhou" | "ambiguo";
 interface ConsultaSnapshot {
   normalized_cnpj: string;
   razao_social: string;
@@ -46,6 +57,7 @@ const PROGRESSO_LABEL: Record<Progresso, string> = {
   enviando_convite: "Enviando convite",
   convite_enviado: "Convite enviado",
   falhou: "Falhou — tentar novamente",
+  ambiguo: "Envio não confirmado",
 };
 
 const mascaraCpf = (value: string) => value.replace(/\D/g, "").slice(0, 11)
@@ -88,6 +100,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoConvite | null>(null);
   const [progresso, setProgresso] = useState<Progresso>("preparando");
+  const [confirmacaoReenvioAberta, setConfirmacaoReenvioAberta] = useState(false);
   const operacaoEmCurso = useRef(false);
 
   const cnpjNorm = normalizarCnpj(cnpjBusca);
@@ -204,7 +217,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
     }
   };
 
-  const enviarConvite = async () => {
+  const enviarConvite = async (confirmAmbiguousEmailRetry = false) => {
     if (!organizationId || !responsavelValido || resultado || processando || operacaoEmCurso.current) return;
     operacaoEmCurso.current = true;
     try {
@@ -218,13 +231,20 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
         telefone: telefone.replace(/\D/g, ""),
         modo: "link",
         responsavelPrincipal,
+        confirmAmbiguousEmailRetry,
       });
       setResultado(invite);
       setProgresso("convite_enviado");
       toast.success("Convite enviado.");
     } catch (error) {
-      setProgresso("falhou");
-      toast.error("Empresa criada; convite pendente ou falhou.");
+      const ambiguo = error instanceof ErroConvitePlataforma && [
+        "email_ambiguous_confirmation_required",
+        "email_unknown_error",
+        "email_send_ambiguous",
+        "email_accept_persistence_failed",
+      ].includes(error.code);
+      setProgresso(ambiguo ? "ambiguo" : "falhou");
+      toast.error(ambiguo ? "Verifique a caixa de entrada antes de reenviar." : "Empresa criada; convite pendente ou falhou.");
     } finally {
       operacaoEmCurso.current = false;
     }
@@ -309,15 +329,30 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
               {progresso === "criando_acesso" && <p className="text-muted-foreground">Enviando convite</p>}
               {progresso === "empresa_pronta" && <p className="text-muted-foreground">Confira a criação no ambiente canônico antes de enviar o convite.</p>}
               {progresso === "falhou" && organizationId && <p className="text-muted-foreground">Empresa criada; convite pendente ou falhou. A nova tentativa não criará outra empresa.</p>}
+              {progresso === "ambiguo" && organizationId && <p className="text-muted-foreground">Não foi possível confirmar se o servidor de e-mail recebeu o convite. Verifique a caixa de entrada antes de reenviar.</p>}
             </div>
             {resultado && organizationId ? (
               <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onShowOrganization(organizationId)}>Ver empresa</Button><Button onClick={() => onOpenAdmins(organizationId)}>Ver administradores</Button><Button variant="ghost" onClick={reiniciar}>Cadastrar outra empresa</Button></div>
             ) : (
-               <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={voltarParaResponsavel}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button>{organizationId ? <Button data-testid="send-invite" disabled={!responsavelValido || processando} onClick={() => void enviarConvite()}>{processando ? PROGRESSO_LABEL[progresso] : progresso === "falhou" ? "Tentar convite novamente" : "Enviar convite"}</Button> : <Button data-testid="create-organization" disabled={!empresaValida || !responsavelValido || !confirmacaoOk || !revisaoIntegra || processando} onClick={() => void criarEmpresa()}>{criar.isPending ? "Criando empresa" : "Criar empresa"}</Button>}</div>
+               <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={voltarParaResponsavel}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button>{organizationId ? <Button data-testid="send-invite" disabled={!responsavelValido || processando} onClick={() => progresso === "ambiguo" ? setConfirmacaoReenvioAberta(true) : void enviarConvite()}>{processando ? PROGRESSO_LABEL[progresso] : progresso === "ambiguo" ? "Não recebi — reenviar convite" : progresso === "falhou" ? "Tentar convite novamente" : "Enviar convite"}</Button> : <Button data-testid="create-organization" disabled={!empresaValida || !responsavelValido || !confirmacaoOk || !revisaoIntegra || processando} onClick={() => void criarEmpresa()}>{criar.isPending ? "Criando empresa" : "Criar empresa"}</Button>}</div>
             )}
           </CardContent>
         </Card>
       )}
+      <AlertDialog open={confirmacaoReenvioAberta} onOpenChange={setConfirmacaoReenvioAberta}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar reenvio do convite</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirme que verificou a caixa de entrada e não recebeu o convite. O reenvio pode gerar uma segunda mensagem se a entrega anterior tiver ocorrido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void enviarConvite(true)}>Confirmar e reenviar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

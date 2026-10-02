@@ -5,6 +5,7 @@ const migration = [
   "supabase/migrations/20261002001921_8739ba87-e301-4e68-82b2-d253bbac84dd.sql",
   "supabase/migrations/20261002002408_e3ea8343-b974-4f3a-86bb-914f9196e6e1.sql",
   "supabase/migrations/20261002015343_ace68cd9-1438-46d2-a1dc-e6155763c467.sql",
+  "supabase/migrations/20261002205411_56ad85cd-0235-4f93-9314-9b2a1b8931f9.sql",
 ].map((path) => readFileSync(path, "utf8")).join("\n");
 const recovery = readFileSync("src/pages/ResetPassword.tsx", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
@@ -37,6 +38,14 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
     expect(migration).toContain("platform_email_cooldown");
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.platform_claim_org_admin_email_delivery[\s\S]*FROM PUBLIC, anon, authenticated/);
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.platform_claim_org_admin_email_delivery[\s\S]*TO service_role/);
+  });
+
+  it("bloqueia retry ambíguo sem confirmação e audita confirmação explícita", () => {
+    expect(migration).toContain("email_ambiguous_confirmation_required");
+    expect(migration).toContain("p_confirm_ambiguous_email_retry");
+    expect(migration).toContain("invite.email_ambiguous_retry_confirmed");
+    expect(migration).toContain("email_delivery_status='ambiguous'");
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.platform_mark_org_admin_email_ambiguous[\s\S]*TO service_role/);
   });
 
   it("remove execução do caminho legado MD5", () => {

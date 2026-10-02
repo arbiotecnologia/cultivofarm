@@ -341,6 +341,8 @@ export interface ConviteAdminEmpresa {
   status: "processando" | "falhou" | "pendente" | "ativo";
   attempt_count: number;
   last_error_code: string | null;
+  email_delivery_status: string;
+  email_last_error_code: string | null;
   updated_at: string;
   created_at: string;
 }
@@ -352,7 +354,7 @@ export function useConvitesAdminEmpresa() {
       const { data, error } = await db
         .from("platform_org_admin_invites")
         .select(
-          "id,organization_id,user_id,email,nome,cpf_cnpj,telefone,modo_acesso,responsavel_principal,status,attempt_count,last_error_code,updated_at,created_at",
+          "id,organization_id,user_id,email,nome,cpf_cnpj,telefone,modo_acesso,responsavel_principal,status,attempt_count,last_error_code,email_delivery_status,email_last_error_code,updated_at,created_at",
         )
         .order("created_at", { ascending: false })
         .limit(LIMITE);
@@ -369,6 +371,28 @@ export interface ResultadoConvite {
   email_status: "accepted" | "not_required";
 }
 
+export class ErroConvitePlataforma extends Error {
+  constructor(public readonly code: string, message: string) {
+    super(message);
+    this.name = "ErroConvitePlataforma";
+  }
+}
+
+async function lerErroFuncao(error: unknown): Promise<{ code: string; message: string }> {
+  const fallback = { code: "invite_failed", message: "Não foi possível criar o acesso do administrador." };
+  const context = (error as { context?: unknown } | null)?.context;
+  if (!(context instanceof Response)) return fallback;
+  try {
+    const payload = await context.clone().json() as Record<string, unknown>;
+    return {
+      code: typeof payload.code === "string" ? payload.code : fallback.code,
+      message: typeof payload.error === "string" ? payload.error : fallback.message,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 export function useConvidarAdminEmpresa() {
   const invalidar = useInvalidarPlataforma();
   return useMutation<
@@ -382,6 +406,7 @@ export function useConvidarAdminEmpresa() {
       telefone: string;
       modo: "link" | "senha_temporaria";
       responsavelPrincipal: boolean;
+      confirmAmbiguousEmailRetry?: boolean;
     }
   >({
     retry: false,
@@ -395,15 +420,15 @@ export function useConvidarAdminEmpresa() {
           telefone: v.telefone || null,
           modo_acesso: v.modo,
           responsavel_principal: v.responsavelPrincipal,
+          confirm_ambiguous_email_retry: v.confirmAmbiguousEmailRetry === true,
         },
       });
       const payload = (data ?? {}) as Record<string, unknown>;
       if (error || payload.error) {
-        throw new Error(
-          typeof payload.error === "string"
-            ? payload.error
-            : "Não foi possível criar o acesso do administrador.",
-        );
+        const parsed = typeof payload.error === "string"
+          ? { code: typeof payload.code === "string" ? payload.code : "invite_failed", message: payload.error }
+          : await lerErroFuncao(error);
+        throw new ErroConvitePlataforma(parsed.code, parsed.message);
       }
       return {
         user_id: String(payload.user_id ?? ""),

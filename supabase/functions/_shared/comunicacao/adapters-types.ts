@@ -10,12 +10,18 @@ export type AdapterOutcome =
   | "invalid_recipient"        // → cancel
   | "deferred"                 // → defer explícito (ex.: config SMTP inválida)
   | "transient_error"          // → fail_v2 (retry)
-  | "permanent_error";         // → fail_v2 (dead_letter imediato)
+  | "permanent_error"          // → fail_v2 (dead_letter imediato)
+  | "ambiguous";               // → efeito externo incerto; exige confirmação humana
+
+export type AdapterCertainty = "definitive" | "ambiguous";
+export type EmailAdapterStage = "preflight" | "config" | "connect" | "send" | "response";
 
 export interface AdapterResult {
   outcome: AdapterOutcome;
   code: string;
   message: string;
+  certainty?: AdapterCertainty;
+  stage?: EmailAdapterStage;
   provider_message_id?: string | null;
 }
 
@@ -303,16 +309,25 @@ export function computeBackoffSeconds(
  *  - timeout/abort e falhas de rede/DNS/reset/refused → transient_error.
  *  - qualquer outro → transient_error (fail-safe: prefere retentar).
  */
-export type EmailErrorClass = "transient_error" | "permanent_error";
-export function classifyEmailError(message: string): { outcome: EmailErrorClass; code: string } {
+export type EmailErrorClass = "transient_error" | "permanent_error" | "ambiguous";
+export function classifyEmailError(
+  message: string,
+  stage: "connect" | "send" = "send",
+): { outcome: EmailErrorClass; code: string; certainty: AdapterCertainty; stage: EmailAdapterStage } {
   const msg = String(message ?? "").slice(0, 500);
-  if (/timeout|abort/i.test(msg)) return { outcome: "transient_error", code: "email_timeout" };
-  if (/ECONN|EHOST|dns|network|reset|refused/i.test(msg)) {
-    return { outcome: "transient_error", code: "email_network_error" };
+  if (stage === "connect") {
+    if (/timeout|abort|ETIMEDOUT/i.test(msg)) {
+      return { outcome: "transient_error", code: "email_connect_timeout", certainty: "definitive", stage };
+    }
+    return { outcome: "transient_error", code: "email_connect_network", certainty: "definitive", stage };
   }
-  if (/\b5\d\d\b/.test(msg)) return { outcome: "permanent_error", code: "email_smtp_5xx" };
-  if (/\b4\d\d\b/.test(msg)) return { outcome: "transient_error", code: "email_smtp_4xx" };
-  return { outcome: "transient_error", code: "email_unknown_error" };
+  if (/\b5\d\d\b/.test(msg)) {
+    return { outcome: "permanent_error", code: "email_smtp_5xx", certainty: "definitive", stage: "response" };
+  }
+  if (/\b4\d\d\b/.test(msg)) {
+    return { outcome: "transient_error", code: "email_smtp_4xx", certainty: "definitive", stage: "response" };
+  }
+  return { outcome: "ambiguous", code: "email_send_ambiguous", certainty: "ambiguous", stage };
 }
 
 

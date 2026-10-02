@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -76,8 +77,20 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
   const [modo, setModo] = useState<"link" | "senha_temporaria">("link");
   const [responsavel, setResponsavel] = useState(true);
   const [resultado, setResultado] = useState<ResultadoConvite | null>(null);
+  const [retryAmbiguo, setRetryAmbiguo] = useState(false);
+  const [confirmacaoAberta, setConfirmacaoAberta] = useState(false);
 
   const nomeOrg = (id: string) => orgs.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
+  const envioAmbiguo = (c: (typeof convites.data extends Array<infer T> ? T : never)) =>
+    c.email_delivery_status === "ambiguous" || [
+      "email_unknown_error",
+      "email_send_ambiguous",
+      "email_accept_persistence_failed",
+      "email_timeout",
+      "email_network_error",
+      "email_send_crash",
+      "email_delivery_setup_failed",
+    ].includes(c.email_last_error_code ?? "");
 
   useEffect(() => {
     if (organizationIdInicial) setOrg(organizationIdInicial);
@@ -88,7 +101,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
     (cpf.replace(/\D/g, "").length === 0 || cpf.replace(/\D/g, "").length === 11) &&
     (telefone.replace(/\D/g, "").length === 0 || telefone.replace(/\D/g, "").length >= 10);
 
-  const enviar = () => {
+  const enviar = (confirmAmbiguousEmailRetry = false) => {
     setResultado(null);
     convidar.mutate(
       {
@@ -99,6 +112,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
         telefone: telefone.replace(/\D/g, ""),
         modo,
         responsavelPrincipal: responsavel,
+        confirmAmbiguousEmailRetry,
       },
       {
         onSuccess: (r) => {
@@ -207,7 +221,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
             </span>
           </label>
 
-          <Button disabled={!valido || convidar.isPending} onClick={enviar}>
+          <Button disabled={!valido || convidar.isPending} onClick={() => retryAmbiguo ? setConfirmacaoAberta(true) : enviar()}>
             <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
             {convidar.isPending ? "Criando acesso…" : "Gerar acesso"}
           </Button>
@@ -291,10 +305,10 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell>
                         {c.modo_acesso === "link" ? "Link de convite" : "Senha temporária"}
                       </TableCell>
-                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
+                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
-                        {c.status === "falhou" ? (
+                        {c.status === "falhou" || envioAmbiguo(c) ? (
                           <Button
                             size="sm"
                             variant="outline"
@@ -304,6 +318,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                               setCpf(c.cpf_cnpj ? mascaraCpf(c.cpf_cnpj) : "");
                               setTelefone(c.telefone ? mascaraTelefone(c.telefone) : "");
                               setModo(c.modo_acesso); setResponsavel(c.responsavel_principal);
+                              setRetryAmbiguo(envioAmbiguo(c));
                               document.getElementById("admin-nome")?.scrollIntoView({ behavior: "smooth" });
                             }}
                           >Preparar nova tentativa</Button>
@@ -317,6 +332,18 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
           )}
         </CardContent>
       </Card>
+      <AlertDialog open={confirmacaoAberta} onOpenChange={setConfirmacaoAberta}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar reenvio do convite</AlertDialogTitle>
+            <AlertDialogDescription>Confirme que verificou a caixa de entrada e não recebeu o convite. O reenvio pode gerar uma segunda mensagem se a entrega anterior tiver ocorrido.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => enviar(true)}>Confirmar e reenviar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -20939,14 +20939,38 @@ export type Database = {
         }
         Returns: string
       }
-      platform_claim_org_admin_email_delivery: {
-        Args: { p_cooldown_seconds?: number; p_job_id: string }
-        Returns: Json
-      }
+      platform_claim_org_admin_email_delivery:
+        | {
+            Args: {
+              p_actor_id: string
+              p_confirm_ambiguous_email_retry?: boolean
+              p_cooldown_seconds?: number
+              p_job_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: { p_cooldown_seconds?: number; p_job_id: string }
+            Returns: Json
+          }
       platform_claim_org_admin_provisioning:
         | {
             Args: {
               p_actor_id: string
+              p_cpf_cnpj?: string
+              p_email: string
+              p_modo_acesso?: string
+              p_nome: string
+              p_organization_id: string
+              p_responsavel_principal?: boolean
+              p_telefone?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_actor_id: string
+              p_confirm_ambiguous_email_retry?: boolean
               p_cpf_cnpj?: string
               p_email: string
               p_modo_acesso?: string
@@ -21013,6 +21037,10 @@ export type Database = {
       platform_first_access_pending: {
         Args: { p_user_id: string }
         Returns: boolean
+      }
+      platform_mark_org_admin_email_ambiguous: {
+        Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
+        Returns: Json
       }
       platform_register_org_admin: {
         Args: {

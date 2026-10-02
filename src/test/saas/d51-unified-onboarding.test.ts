@@ -21,6 +21,8 @@ describe("D51.2 — fluxo único Empresa → Responsável → Revisão → Convi
     expect(flow).toContain("Empresa criada — pronta para auditoria");
     expect(flow).toContain("Enviar convite");
     expect(flow).toContain("Tentar convite novamente");
+    expect(flow).toContain("Não recebi — reenviar convite");
+    expect(flow).toContain("Confirmar e reenviar");
     expect(flow).not.toContain("criarEConvidar");
     expect(flow).not.toContain("Criar empresa e enviar convite");
     expect(hook).toMatch(/useCriarEmpresa[\s\S]*retry: false/);

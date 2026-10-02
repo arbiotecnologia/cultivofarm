@@ -68,6 +68,9 @@ function mockSmtp(behavior: "ok" | "smtp5xx" | "smtp4xx" | "conn" | "timeout"): 
   } as unknown as { factory: NonNullable<Parameters<typeof sendEmail>[4]>["smtpClientFactory"]; sends: Array<Record<string, unknown>>; closed: number };
 }
 
+const failingFactory = (message: string): NonNullable<Parameters<typeof sendEmail>[4]>["smtpClientFactory"] =>
+  async () => { throw new Error(message); };
+
 // ---------------- Helpers puros ----------------
 
 describe("gate3 helpers: hasHeaderInjection", () => {
@@ -114,8 +117,8 @@ describe("gate3 helpers: computeBackoffSeconds (jitter ±20%)", () => {
 });
 
 describe("gate3 helpers: classifyEmailError", () => {
-  it("timeout → transient", () => {
-    expect(classifyEmailError("email_send_timeout").outcome).toBe("transient_error");
+  it("timeout durante send → ambíguo", () => {
+    expect(classifyEmailError("email_send_timeout").outcome).toBe("ambiguous");
   });
   it("5xx → permanent (RFC 5321 Permanent Negative Completion)", () => {
     expect(classifyEmailError("SMTP responded 550").outcome).toBe("permanent_error");
@@ -128,11 +131,14 @@ describe("gate3 helpers: classifyEmailError", () => {
       expect(r.code).toBe("email_smtp_4xx");
     }
   });
-  it("network → transient", () => {
-    expect(classifyEmailError("ECONNREFUSED").outcome).toBe("transient_error");
+  it("network durante send → ambíguo", () => {
+    expect(classifyEmailError("ECONNRESET").outcome).toBe("ambiguous");
   });
-  it("unknown → transient (fail-safe)", () => {
-    expect(classifyEmailError("weird error").outcome).toBe("transient_error");
+  it("unknown durante send → ambíguo (fail-safe)", () => {
+    expect(classifyEmailError("weird error").outcome).toBe("ambiguous");
+  });
+  it("falha de conexão anterior ao send → definitiva", () => {
+    expect(classifyEmailError("ECONNREFUSED", "connect")).toMatchObject({ outcome: "transient_error", code: "email_connect_network", certainty: "definitive" });
   });
 });
 
@@ -161,18 +167,23 @@ describe("gate3 email-adapter: caminhos com SMTP mock", () => {
     expect(r.code).toBe("email_smtp_4xx");
   });
 
-  it("erro de rede → transient_error (email_network_error)", async () => {
-    const m = mockSmtp("conn");
-    const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory });
-    expect(r.outcome).toBe("transient_error");
-    expect(r.code).toBe("email_network_error");
+  it("falha da factory/conexão → definitiva e sem send", async () => {
+    const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: failingFactory("ECONNREFUSED") });
+    expect(r).toMatchObject({ outcome: "transient_error", code: "email_connect_network", certainty: "definitive", stage: "connect" });
   });
 
-  it("timeout real → transient_error (email_timeout)", async () => {
+  it("erro de rede durante send → ambiguous", async () => {
+    const m = mockSmtp("conn");
+    const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory });
+    expect(r.outcome).toBe("ambiguous");
+    expect(r.code).toBe("email_send_ambiguous");
+  });
+
+  it("timeout real durante send → ambiguous", async () => {
     const m = mockSmtp("timeout");
     const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory, timeoutMs: 5 });
-    expect(r.outcome).toBe("transient_error");
-    expect(r.code).toBe("email_timeout");
+    expect(r.outcome).toBe("ambiguous");
+    expect(r.code).toBe("email_send_ambiguous");
   });
 
   it("delivery flag OFF → provider_not_configured (não envia)", async () => {
