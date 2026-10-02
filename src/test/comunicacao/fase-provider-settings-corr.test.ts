@@ -412,6 +412,15 @@ describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
     expect(disabled.sort()).toEqual([...customAuth.keys()].sort());
   });
 
+  it("config.toml exige JWT explicitamente nas duas funções administrativas de Comunicação", () => {
+    const src = read(configToml);
+    for (const name of ["communication-provider-settings", "test-communication-email"]) {
+      const block = src.match(new RegExp(String.raw`\[functions\.${name}\]([\s\S]*?)(?=\n\[functions\.|$)`));
+      expect(block, `${name} deve ter bloco explícito`).not.toBeNull();
+      expect(block?.[1], `${name} deve exigir JWT no gateway`).toMatch(/verify_jwt\s*=\s*true/);
+    }
+  });
+
   it("worker/webhook importam e chamam loadRuntimeConfig (health migrou para RPC admin no Gate 6)", () => {
     for (const p of [workerIdx, webhookIdx]) {
       const src = read(p);
