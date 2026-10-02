@@ -14522,49 +14522,70 @@ export type Database = {
       }
       platform_org_admin_invites: {
         Row: {
+          attempt_count: number
+          auth_created_at: string | null
           concluido_em: string | null
           cpf_cnpj: string | null
           created_at: string
           email: string
           id: string
           invited_by: string
+          last_error_code: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
           modo_acesso: string
           nome: string
           organization_id: string
+          request_id: string
           responsavel_principal: boolean
           status: string
           telefone: string | null
-          user_id: string
+          updated_at: string
+          user_id: string | null
         }
         Insert: {
+          attempt_count?: number
+          auth_created_at?: string | null
           concluido_em?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           email: string
           id?: string
           invited_by: string
+          last_error_code?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
           modo_acesso: string
           nome: string
           organization_id: string
+          request_id: string
           responsavel_principal?: boolean
           status?: string
           telefone?: string | null
-          user_id: string
+          updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          attempt_count?: number
+          auth_created_at?: string | null
           concluido_em?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           email?: string
           id?: string
           invited_by?: string
+          last_error_code?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
           modo_acesso?: string
           nome?: string
           organization_id?: string
+          request_id?: string
           responsavel_principal?: boolean
           status?: string
           telefone?: string | null
-          user_id?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -20880,6 +20901,18 @@ export type Database = {
         }
         Returns: string
       }
+      platform_claim_org_admin_provisioning: {
+        Args: {
+          p_cpf_cnpj?: string
+          p_email: string
+          p_modo_acesso?: string
+          p_nome: string
+          p_organization_id: string
+          p_responsavel_principal?: boolean
+          p_telefone?: string
+        }
+        Returns: Json
+      }
       platform_conclude_provisional_password: { Args: never; Returns: boolean }
       platform_conclude_provisional_password_server: {
         Args: { p_user_id: string }
@@ -20899,6 +20932,14 @@ export type Database = {
       platform_end_feature_override: {
         Args: { _override_id: string; _reason: string }
         Returns: undefined
+      }
+      platform_fail_org_admin_provisioning: {
+        Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
+        Returns: boolean
+      }
+      platform_finalize_org_admin_provisioning: {
+        Args: { p_job_id: string; p_lease_token: string; p_user_id: string }
+        Returns: Json
       }
       platform_first_access_pending: {
         Args: { p_user_id: string }
