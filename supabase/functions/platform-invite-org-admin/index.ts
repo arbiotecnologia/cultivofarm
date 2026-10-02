@@ -101,9 +101,10 @@ Deno.serve(async (req) => {
       /^http:\/\/localhost(:\d+)?$/.test(origin);
     const redirectTo = origemPermitida ? `${origin}/auth` : undefined;
 
-    const { data: claimed, error: claimError } = await anonClient.rpc(
+    const { data: claimed, error: claimError } = await adminClient.rpc(
       "platform_claim_org_admin_provisioning",
       {
+        p_actor_id: callerId,
         p_organization_id: organizationId,
         p_email: email,
         p_nome: nome,
