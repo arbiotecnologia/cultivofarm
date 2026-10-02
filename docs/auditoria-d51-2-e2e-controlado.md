@@ -775,3 +775,67 @@ Validações da correção:
 A publicação automática foi interrompida antes do deploy porque o scanner de segurança vigente possui achados críticos preexistentes de RLS fora do escopo deste incidente. A regra de não publicar com P0/P1 aberto foi preservada; nenhum banco, SMTP, usuário ou tenant foi tocado.
 
 O D51.2 está **SUSPENSO** e E01–E21 não podem ser retomados até a correção ser publicada com autorização diante dos achados existentes e a produção ser verificada em sessão limpa e em atualização. D52 permanece bloqueado. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
+
+## 26. Incidente P0 — bloqueio de publicação pelo scanner RLS
+
+Data/hora UTC: `2026-10-02T03:17:29Z` a `2026-10-02T03:19:53Z`  
+Commit candidato auditado: `320ecaace0d7919f369c060e9c5d1c821c8c80c0`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 26.1 Inventário nominal e classificação
+
+O mesmo scanner que bloqueou a publicação encontrou seis `ERROR`, todos `RLS_EXPOSURE` do `lov_pgscan`. Nenhum foi introduzido pela correção PWA: as policies existem em migrations de março a junho de 2026, e os achados persistidos foram registrados em 8 ou 19 de setembro de 2026.
+
+| Objeto | Policy original | Severidade | Impacto e fluxo dependente | Classificação |
+|---|---|---:|---|---|
+| `public.codigo_sequencias` | `codigo_sequencias leitura autenticada` | Critical/Error | Expunha o estado do contador atômico de códigos de produtos e microrganismos; o fluxo legítimo usa trigger e `proximo_codigo`, não leitura cliente | P0/P1 real, histórico |
+| `public.configuracoes_sistema` | `Anyone can read config` | Critical/Error | Qualquer conta autenticada lia toda a configuração global de marca; login, PDFs, aparência e portais consomem o singleton | P0/P1 real, histórico |
+| `public.financial_settings` | `fs_read_all_auth` | Critical/Error | Qualquer conta autenticada lia regras globais de comprovantes; baixas e configurações financeiras dependem do singleton | P0/P1 real, histórico |
+| `public.monitoramento_avisos` | `Visualização para usuários autenticados` | Critical/Error | Permitiria leitura horizontal de avisos associados a visitas técnicas | P0/P1 real, histórico |
+| `public.objetivos_visita_sugestoes` | `Authenticated can read objetivos sugestoes` | Critical/Error | Expunha catálogo interno de sugestões a qualquer conta; criação e configuração de visita dependem dele | P0/P1 real, histórico |
+| `public.sla_configuracoes` | `Authenticated can read sla` | Critical/Error | Expunha configuração operacional global de prazos a qualquer conta autenticada | P0/P1 real, histórico |
+
+O scan inicial tinha ainda três `WARN` (`etiqueta_templates`, `fiscal_environment_marker` e escrita ampla em `formulacoes`) e onze `INFO`. Embora não fossem o bloqueio crítico inicial, a triagem confirmou exploração real: leitura de configuração operacional/fiscal e escrita global de formulações por qualquer conta. Eles receberam hardening direcionado, sem correção em massa. Leaked Password Protection continua entre os `INFO`, sob a exceção formal já registrada. Não foi alegado falso positivo para nenhum dos seis `ERROR`.
+
+### 26.2 Correção mínima aplicada
+
+Migrations versionadas e aplicadas no canônico:
+
+- `20261002031850_0968ac43-e9f3-4497-b7de-94c897702102.sql`;
+- `20261002031922_7290e0ed-50e8-498d-9d07-026b960ae4a7.sql`;
+- `20261002032503_87416ece-fc76-44d3-a72b-22f5c4849ea5.sql`.
+
+As migrations não alteram registros. Elas removem as seis policies tautológicas, revogam grants diretos excedentes de `PUBLIC`/`anon`/`authenticated` e recompõem apenas os privilégios necessários:
+
+- contador de códigos: cliente sem acesso direto; `service_role` preservado para execução server-side/trigger;
+- configuração do sistema: leitura apenas por perfil ativo e alteração administrativa preexistente;
+- configuração financeira: leitura e alteração somente por `is_financial_staff`;
+- avisos: leitura herdando `can_view_technical_visit` da visita vinculada e nenhuma escrita cliente;
+- objetivos de visita: leitura por administrador, gestor, consultor técnico e técnico agrônomo; gestão preexistente por administrador/gestor;
+- SLA: leitura pelos papéis operacionais internos necessários; gestão preexistente por administrador.
+- templates de etiqueta: leitura pela equipe interna do catálogo e gestão por administrador/gestor;
+- marcador fiscal: sem acesso direto do navegador, preservando leitura técnica server-side;
+- formulações: leitura pela equipe interna do catálogo e escrita somente pelos gestores técnicos canônicos.
+
+Nenhuma autorização usa `user_metadata`, `raw_user_meta_data` ou tenant informado pelo frontend. As funções auxiliares consultadas usam identidade server-side, e nenhum `service_role` foi exposto ao cliente.
+
+**Forward-fix:** as migrations removem nominalmente cada policy anterior antes da recriação determinística; correções futuras devem vir em nova migration, sem restaurar predicados tautológicos.  
+**Rollback:** somente mediante incidente funcional comprovado, restaurar temporariamente o predicado anterior do objeto afetado em migration nova; não reverter dados nem as outras cinco fronteiras. A preferência é forward-fix do papel/predicado ausente, jamais restaurar acesso amplo em lote.
+
+### 26.3 Evidências posteriores
+
+- scanner profundo intermediário: **0 Critical/Error**, 3 Warn e 11 Info;
+- scanner profundo final após a classificação e correção direcionada dos warnings: **0 Critical/Error/Warning** e 10 Info;
+- as seis policies críticas desapareceram do resultado e foram marcadas como corrigidas;
+- consulta de catálogo confirmou RLS ativa e predicados restritivos nos seis objetos;
+- ACL final: `anon` sem grant nos seis; `authenticated` sem acesso ao contador, somente leitura nos avisos, leitura/alteração nos singletons conforme policies, e operações necessárias em objetivos/SLA sempre condicionadas por RLS;
+- contagens permaneceram: contador 1; os outros cinco objetos 0; nenhuma linha foi inserida, atualizada ou removida;
+- o linter geral ainda reporta dívida histórica ampla: 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo, 472 executáveis por autenticado e Leaked Password Protection desativada. Esses itens não foram promovidos pelo scanner profundo a `Critical/Error` neste gate e exigem auditoria separada, não correção indiscriminada.
+
+Chamadas anônimas REST aos nove objetos corrigidos retornaram HTTP 401. A prova autenticada e cross-tenant dinâmica não foi executada porque este Supabase externo não fornece às ferramentas identidades controladas; a prova estrutural confirma que a única policy vinculada a tenant neste conjunto (`monitoramento_avisos`) reutiliza a autorização canônica da visita. Não foi usada `service_role` como identidade de usuário.
+
+### 26.4 Gate de publicação
+
+**Decisão objetiva: APTO PARA REPUBLICAÇÃO.** O scanner final não contém Critical, Error ou Warning; suíte global com 349 arquivos e 5.318 testes aprovados (1 arquivo/4 testes ignorados), typecheck e build passaram. O smoke signed-out abriu `/auth` sem erro de página e confirmou redirecionamento seguro de `/`, `/plataforma`, `/dashboard` e `/configuracoes`; a UI autenticada não foi testada por indisponibilidade de sessão controlada, sem substituição por `service_role`.
+
+A publicação não foi executada automaticamente. Após autorização/republicação, ainda é obrigatório verificar a URL live em sessão limpa e durante atualização PWA antes de retirar a suspensão do D51.2. SMTP permaneceu intocado, D51.2 continua suspenso e D52 permanece bloqueado. Os 10 `INFO` do scanner final incluem catálogos intencionalmente globais, quatro trilhas de auditoria com inserção autenticada, bucket público de logos e Leaked Password Protection; este último permanece risco aceito, aberto e não resolvido. O linter geral mantém dívida histórica ampla já registrada, que não deve ser tratada por alteração indiscriminada neste incidente.
