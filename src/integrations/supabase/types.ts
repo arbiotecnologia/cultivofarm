@@ -3680,7 +3680,11 @@ export type Database = {
           changed_fields: string[]
           created_at: string
           id: number
+          latency_ms: number | null
+          outcome: string | null
+          safe_code: string | null
           secret_field: string | null
+          stage: string | null
         }
         Insert: {
           action: string
@@ -3688,7 +3692,11 @@ export type Database = {
           changed_fields?: string[]
           created_at?: string
           id?: number
+          latency_ms?: number | null
+          outcome?: string | null
+          safe_code?: string | null
           secret_field?: string | null
+          stage?: string | null
         }
         Update: {
           action?: string
@@ -3696,7 +3704,11 @@ export type Database = {
           changed_fields?: string[]
           created_at?: string
           id?: number
+          latency_ms?: number | null
+          outcome?: string | null
+          safe_code?: string | null
           secret_field?: string | null
+          stage?: string | null
         }
         Relationships: []
       }
@@ -23429,6 +23441,17 @@ export type Database = {
         Returns: undefined
       }
       rpc_service_load_provider_runtime_config: { Args: never; Returns: Json }
+      rpc_service_record_smtp_diagnostic: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_latency_ms?: number
+          p_outcome: string
+          p_safe_code: string
+          p_stage: string
+        }
+        Returns: number
+      }
       rpc_service_set_provider_secret: {
         Args: { p_actor: string; p_slot: string; p_value: string }
         Returns: undefined

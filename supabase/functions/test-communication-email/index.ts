@@ -11,6 +11,8 @@ import {
   evaluateControlledSmtpTest,
   sanitizeSmtpTestResult,
 } from "../_shared/comunicacao/controlled-smtp-test.ts";
+import { getSmtpConfigError } from "../_shared/comunicacao/adapters-types.ts";
+import { probeSmtpProviderInDeno } from "../_shared/comunicacao/smtp-provider-probe-deno.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -20,6 +22,35 @@ function json(origin: string | null, status: number, body: unknown) {
     status,
     headers: { ...corsHeadersFor(origin), "Content-Type": "application/json" },
   });
+}
+
+type DiagnosticMode = "connection" | "send";
+
+async function auditDiagnostic(
+  sb: ReturnType<typeof createClient<any>>,
+  actor: string,
+  action: "smtp_connection_test" | "smtp_send_test",
+  outcome: "success" | "failure" | "ambiguous" | "blocked",
+  safeCode: string,
+  stage: string,
+  latencyMs: number | null,
+) {
+  await sb.rpc("rpc_service_record_smtp_diagnostic", {
+    p_actor: actor,
+    p_action: action,
+    p_outcome: outcome,
+    p_safe_code: safeCode,
+    p_stage: stage,
+    p_latency_ms: latencyMs,
+  });
+}
+
+function actorRef(userId: string): string {
+  return userId.length >= 8 ? `${userId.slice(0, 4)}…${userId.slice(-4)}` : "masked";
+}
+
+function safeLog(event: string, actor: string, code: string, stage: string, latencyMs: number | null) {
+  console.info(JSON.stringify({ event, actor_id: actorRef(actor), safe_code: code, stage, latency_ms: latencyMs }));
 }
 
 Deno.serve(async (req) => {
@@ -45,23 +76,45 @@ Deno.serve(async (req) => {
   if (authorizationError) return json(origin, 500, { ok: false, error: "authorization_check_failed" });
   if (isSuperadmin !== true) return json(origin, 403, { ok: false, error: "forbidden" });
 
+  let body: { mode?: DiagnosticMode; to?: string; subject?: string; message?: string } = {};
+  try { body = await req.json(); } catch { return json(origin, 400, { ok: false, error: "invalid_json" }); }
+  const mode: DiagnosticMode = body.mode ?? "send";
+  if (mode !== "connection" && mode !== "send") return json(origin, 400, { ok: false, error: "invalid_mode" });
+
   const { data: rateAllowed, error: rateError } = await sb.rpc("rpc_service_check_rate_limit", {
     p_user: uid,
-    p_action: "test_smtp",
-    p_max: 3,
+    p_action: mode === "connection" ? "test_smtp_connection" : "test_smtp",
+    p_max: mode === "connection" ? 5 : 3,
     p_window_seconds: 300,
   });
   if (rateError || rateAllowed !== true) return json(origin, 429, { ok: false, error: "rate_limited" });
 
-  let body: { to?: string; subject?: string; message?: string } = {};
-  try { body = await req.json(); } catch { return json(origin, 400, { ok: false, error: "invalid_json" }); }
+  const env = await loadRuntimeConfig(sb, readWorkerEnv);
+  if (mode === "connection") {
+    const configError = getSmtpConfigError(env);
+    if (configError) {
+      const code = configError === "email_config_invalid" ? "smtp_config_invalid" : configError;
+      await auditDiagnostic(sb, uid, "smtp_connection_test", "blocked", code, "connect", 0);
+      safeLog("smtp_connection_test", uid, code, "connect", 0);
+      return json(origin, 400, { ok: false, code, stage: "connect", tls: false, authenticated: false, latency_ms: 0 });
+    }
+    const result = await probeSmtpProviderInDeno(env);
+    await auditDiagnostic(sb, uid, "smtp_connection_test", result.ok ? "success" : "failure", result.code, result.stage, result.latency_ms);
+    safeLog("smtp_connection_test", uid, result.code, result.stage, result.latency_ms);
+    return json(origin, result.ok ? 200 : 502, result);
+  }
+
   const to = String(body.to ?? "").trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
     return json(origin, 400, { ok: false, error: "invalid_recipient" });
   }
-  const env = await loadRuntimeConfig(sb, readWorkerEnv);
   const gate = evaluateControlledSmtpTest(env, to);
-  if (!gate.allowed) return json(origin, 403, { ok: false, error: gate.code });
+  if (!gate.allowed) {
+    const code = gate.code;
+    const auditCode = code === "smtp_port_blocked_by_edge_runtime" ? code : "smtp_not_ready";
+    await auditDiagnostic(sb, uid, "smtp_send_test", "blocked", auditCode, "preflight", null);
+    return json(origin, 403, { ok: false, error: code });
+  }
 
   const subject = String(body.subject ?? "Teste SMTP Cultivo Farm").slice(0, 200);
   const message = String(body.message ?? "Teste controlado da configuração SMTP.").slice(0, 4000);
@@ -72,6 +125,12 @@ Deno.serve(async (req) => {
     { assunto: subject, corpo: message },
   );
   const code = sanitizeSmtpTestResult(result);
-  if (result.outcome === "sent") return json(origin, 200, { ok: true, code });
-  return json(origin, 502, { ok: false, error: code });
+  const responseCode = result.outcome === "sent" ? "smtp_send_accepted" : code;
+  const outcome = result.outcome === "sent" ? "success" : result.certainty === "ambiguous" ? "ambiguous" : "failure";
+  const auditCode = result.outcome === "sent" ? "smtp_send_accepted" : result.certainty === "ambiguous" ? "smtp_send_ambiguous" : "smtp_send_failed";
+  const auditStage = ["connect", "send", "response", "preflight", "config"].includes(result.stage ?? "") ? result.stage ?? "send" : "send";
+  await auditDiagnostic(sb, uid, "smtp_send_test", outcome, auditCode, auditStage, null);
+  safeLog("smtp_send_test", uid, responseCode, result.stage ?? "send", null);
+  if (result.outcome === "sent") return json(origin, 200, { ok: true, code: responseCode, accepted: true });
+  return json(origin, 502, { ok: false, error: responseCode, ambiguous: result.certainty === "ambiguous", stage: result.stage ?? "send" });
 });

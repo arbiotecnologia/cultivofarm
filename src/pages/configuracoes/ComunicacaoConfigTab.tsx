@@ -10,11 +10,15 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  CheckCircle2, Copy, Eye, EyeOff, Info, Mail, MessageCircle, Save, ShieldAlert,
+  CheckCircle2, CircleX, Copy, Eye, EyeOff, Info, Mail, MessageCircle, PlugZap, Save, ShieldAlert,
   ShieldCheck, Trash2, Webhook,
 } from "lucide-react";
 import {
@@ -101,6 +105,21 @@ const ERROR_MESSAGES: Record<string, string> = {
   smtp_not_ready: "O SMTP ainda não atende a todos os itens de prontidão.",
   smtp_port_blocked_by_edge_runtime: "Porta SMTP incompatível com o runtime. Use uma porta permitida suportada pelo provedor ou uma integração HTTP.",
   smtp_test_failed: "O provedor não aceitou o teste. Revise a configuração e tente novamente.",
+  invalid_mode: "Modo de diagnóstico inválido.",
+  smtp_connection_ok: "Conexão segura e autenticação confirmadas.",
+  smtp_connect_timeout: "O provedor não respondeu dentro do tempo seguro.",
+  smtp_connect_failed: "Não foi possível conectar ao provedor.",
+  smtp_tls_failed: "Não foi possível estabelecer a conexão criptografada.",
+  smtp_greeting_failed: "O servidor não apresentou uma resposta SMTP válida.",
+  smtp_ehlo_failed: "O servidor não concluiu a negociação SMTP.",
+  smtp_starttls_unavailable: "O servidor não oferece criptografia STARTTLS nesta porta.",
+  smtp_starttls_failed: "A negociação STARTTLS falhou.",
+  smtp_auth_unsupported: "O provedor não anunciou um método de autenticação compatível.",
+  smtp_auth_failed: "O provedor recusou a autenticação.",
+  smtp_protocol_error: "O servidor retornou uma resposta SMTP incompatível.",
+  smtp_config_invalid: "A configuração SMTP está incompleta ou inválida.",
+  smtp_send_accepted: "O servidor SMTP aceitou o envio.",
+  email_send_ambiguous: "Não foi possível confirmar se o servidor SMTP aceitou o envio.",
   email_send_timeout: "O provedor não respondeu dentro do tempo seguro.",
   unknown_error: "Erro inesperado. Tente novamente.",
 };
@@ -228,6 +247,11 @@ export default function ComunicacaoConfigTab() {
   const [testEmailTo] = useState(CONTROLLED_TEST_EMAIL);
   const [testEmailError, setTestEmailError] = useState<string | undefined>(undefined);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<{
+    ok: boolean; code: string; stage: string; tls: boolean; authenticated: boolean; latency_ms: number;
+  } | null>(null);
 
   const testEmailSchema = z
     .string()
@@ -361,7 +385,54 @@ export default function ComunicacaoConfigTab() {
     );
   }
 
+  async function callSmtpDiagnostic(payload: Record<string, unknown>) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error("unauthorized");
+    const url = `${SUPABASE_URL}/functions/v1/test-communication-email`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+    const parsed = await resp.json().catch(() => ({})) as Record<string, unknown>;
+    return { resp, parsed };
+  }
+
+  async function handleTestConnection() {
+    if (testingConnection || testingEmail) return;
+    setTestingConnection(true);
+    setConnectionResult(null);
+    try {
+      const { resp, parsed } = await callSmtpDiagnostic({ mode: "connection" });
+      const result = {
+        ok: resp.ok && parsed.ok === true,
+        code: typeof parsed.code === "string" ? parsed.code : "smtp_test_failed",
+        stage: typeof parsed.stage === "string" ? parsed.stage : "connect",
+        tls: parsed.tls === true,
+        authenticated: parsed.authenticated === true,
+        latency_ms: typeof parsed.latency_ms === "number" ? parsed.latency_ms : 0,
+      };
+      setConnectionResult(result);
+      if (result.ok) {
+        toast.success("Conexão do provedor confirmada", { description: `${friendlyError(result.code)} Latência: ${result.latency_ms} ms.` });
+      } else {
+        toast.error("Conexão não confirmada", { description: friendlyError(result.code, resp.status) });
+      }
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "smtp_test_failed";
+      toast.error("Diagnóstico não concluído", { description: friendlyError(code) });
+    } finally {
+      setTestingConnection(false);
+    }
+  }
+
   async function handleTestEmail() {
+    if (testingEmail || testingConnection) return;
     const err = validateTestEmail(testEmailTo);
     if (err) {
       setTestEmailError(err);
@@ -372,27 +443,11 @@ export default function ComunicacaoConfigTab() {
     const to = testEmailTo.trim().toLowerCase();
     setTestingEmail(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        toast.error("Sessão expirada", { description: "Faça login novamente como administrador." });
-        return;
-      }
-      const url = `${SUPABASE_URL}/functions/v1/test-communication-email`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ to, subject: "Teste SMTP Cultivo Farm", message: "E-mail de teste enviado pela aba Comunicação." }),
-      });
-      const parsed = await resp.json().catch(() => ({})) as Record<string, unknown>;
+      const { resp, parsed } = await callSmtpDiagnostic({ mode: "send", to, subject: "Teste SMTP Cultivo Farm", message: "E-mail de teste enviado pela aba Comunicação." });
 
       if (resp.ok && parsed.ok) {
-        toast.success("E-mail de teste enviado", {
-          description: "O provedor aceitou o teste controlado. Verifique a caixa de entrada e o spam.",
+        toast.success("Teste aceito pelo servidor SMTP", {
+          description: "O aceite do servidor não comprova a entrega na caixa postal. Verifique a caixa de entrada e o spam.",
         });
       } else {
         const errorCode = typeof parsed.error === "string" && ERROR_MESSAGES[parsed.error]
@@ -780,12 +835,38 @@ export default function ComunicacaoConfigTab() {
             <>
               <Separator />
               <div className="space-y-2">
-                <Label htmlFor="smtp-test-to" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />Enviar e-mail de teste
-                </Label>
+                <Label className="flex items-center gap-2"><PlugZap className="h-4 w-4" />Diagnóstico do provedor de e-mail</Label>
                 <FieldHint>
-                  Disponível somente quando todo o checklist estiver aprovado. O destinatário deste gate é fixo e validado novamente no servidor.
+                  Primeiro valide conexão segura e autenticação sem enviar mensagem. O envio controlado permanece separado e exige confirmação.
                 </FieldHint>
+                <div className="flex flex-col gap-3 rounded-md border p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium">1. Conexão e autenticação</p>
+                      <p className="text-xs text-muted-foreground">Não envia e-mail e funciona com as entregas desativadas.</p>
+                    </div>
+                    <Button variant="outline" disabled={testingConnection || testingEmail} onClick={handleTestConnection}>
+                      <PlugZap className="h-4 w-4 mr-1" />
+                      {testingConnection ? "Testando conexão..." : "Testar conexão do provedor"}
+                    </Button>
+                  </div>
+                  {connectionResult && (
+                    <div role="status" className="flex items-start gap-2 text-sm">
+                      {connectionResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" /> : <CircleX className="mt-0.5 h-4 w-4 text-destructive" />}
+                      <div>
+                        <p className="font-medium">{friendlyError(connectionResult.code)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Etapa: {connectionResult.stage} · TLS: {connectionResult.tls ? "confirmado" : "não confirmado"} · Autenticação: {connectionResult.authenticated ? "confirmada" : "não confirmada"} · {connectionResult.latency_ms} ms
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2 rounded-md border p-3">
+                  <div>
+                    <p className="text-sm font-medium">2. Envio controlado</p>
+                    <p className="text-xs text-muted-foreground">Disponível somente com o checklist completo. O destinatário é fixo e validado no servidor.</p>
+                  </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     id="smtp-test-to"
@@ -799,19 +880,35 @@ export default function ComunicacaoConfigTab() {
                   />
                   <Button
                     variant="outline"
-                    disabled={testingEmail || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
-                    onClick={handleTestEmail}
+                    disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
+                    onClick={() => setConfirmSendOpen(true)}
                   >
                     <Mail className="h-4 w-4 mr-1" />
                     {testingEmail ? "Enviando..." : "Enviar teste"}
                   </Button>
                 </div>
                 <FieldError msg={testEmailError} />
+                </div>
               </div>
             </>
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmSendOpen} onOpenChange={setConfirmSendOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar envio real de teste?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Uma mensagem será enviada exclusivamente ao destinatário controlado. O sucesso confirma apenas o aceite pelo servidor SMTP, não a entrega na caixa postal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleTestEmail()}>Confirmar envio</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* WhatsApp */}
       <Card>

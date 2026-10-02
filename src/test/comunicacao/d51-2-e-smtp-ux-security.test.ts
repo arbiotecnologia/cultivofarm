@@ -78,8 +78,22 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   it("valida superadmin de plataforma, rate limit, test mode e allowlist no servidor", () => {
     expect(edge).toContain('sb.rpc("is_platform_superadmin"');
     expect(edge).not.toContain('r.role === "administrador"');
-    expect(edge).toContain('p_action: "test_smtp"');
+    expect(edge).toContain('mode === "connection" ? "test_smtp_connection" : "test_smtp"');
     expect(edge).toContain("loadRuntimeConfig(sb, readWorkerEnv)");
     expect(edge).toContain("evaluateControlledSmtpTest(env, to)");
+  });
+
+  it("separa conexão sem envio do envio real confirmado", () => {
+    expect(ui).toContain('{ mode: "connection" }');
+    expect(ui).toContain("Testar conexão do provedor");
+    expect(ui).toContain("Não envia e-mail e funciona com as entregas desativadas.");
+    expect(ui).toContain("Confirmar envio real de teste?");
+    expect(ui).toContain('{ mode: "send", to');
+    expect(ui).toContain("O sucesso confirma apenas o aceite pelo servidor SMTP, não a entrega na caixa postal.");
+  });
+
+  it("preserva proteção contra clique duplo nos dois diagnósticos", () => {
+    expect(ui).toContain("if (testingConnection || testingEmail) return;");
+    expect(ui).toContain("testingEmail || testingConnection");
   });
 });
