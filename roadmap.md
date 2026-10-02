@@ -1,10 +1,10 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **SUSPENSO; não retomado automaticamente**. O incidente P0 foi normalizado em produção, mas a janela SMTP continua fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
+- [ ] Gate D51.2 — **RETOMADO ATÉ A INTERAÇÃO MANUAL E01/E02**. Pré-check canônico verde; janela SMTP aberta por RPC auditável alterando somente entrega global/e-mail para ON. Test mode ON, allowlist exclusiva controlada, SMTP/Vault preservados, demais canais OFF e zero lease. Sessão Superadmin do navegador publicado continua inacessível às ferramentas; nenhuma empresa, conta, convite ou mensagem foi criada/enviada nesta execução. NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — retomar somente após produção carregar normalmente e nova autorização explícita; demais condições do plano permanecem inalteradas.
+- [ ] Gate D51.2 — responsável deve executar E01/E02 manualmente no ambiente publicado, parar antes de abrir o link recebido e solicitar continuação assistida. Se a ação não for imediata, fechar entrega global/e-mail.
 
 ## Concluído
 - [x] **Pós-republicação do incidente P0:** produção normalizada em contexto limpo. `/`, `/auth`, `/plataforma`, `/dashboard` e `/configuracoes` passaram; rotas protegidas redirecionaram para `/auth`, sem erro de provider/renderização, chunk obsoleto, 404 de JS/CSS, loop ou falha de SW. Service worker ativo e recuperação de stale chunk confirmada no bundle publicado. Nenhuma autenticação ou mutação.
@@ -23,7 +23,7 @@
 - [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: executar retomada manual assistida na UI como Superadmin. Em `/plataforma` → **Comunicação**, conferir os controles e habilitar global/e-mail somente na janela autorizada; depois iniciar E01 em **Nova Empresa** e E02 em **Administradores**, usando apenas dados `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` e `teste@refilinformatica.com.br`. Não compartilhar credenciais e não substituir a sessão por `service_role`.
+- [ ] D51.2: com Superadmin autenticado no ambiente publicado, confirmar em `/plataforma` → **Comunicação** o estado “Pronto para teste controlado”; executar E01 em **Nova Empresa** e E02 em **Administradores**, usando apenas dados `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` e `teste@refilinformatica.com.br`. Parar antes de abrir o link recebido; não compartilhar credenciais, link, token ou OTP.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
