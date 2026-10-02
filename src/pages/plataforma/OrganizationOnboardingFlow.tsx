@@ -19,14 +19,6 @@ import { cnpjValido, normalizarCnpj } from "@/lib/saas/orgOnboarding";
 import { CODIGOS_FALLBACK_MANUAL, FONTE_OFICIAL, consultarCnpjOnboarding, mensagemConsulta, type DadosEmpresa } from "@/lib/saas/onboardingCnpj";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const CAMPANHA_AUDITORIA = "HOMOLOGAÇÃO AUDIT-CF-20261002-01";
-const MAX_NOME_FANTASIA = 200;
-
-export function nomeFantasiaHomologacao(nomeFantasiaOficial: string | null | undefined): string {
-  const oficial = (nomeFantasiaOficial ?? "").trim();
-  return `${CAMPANHA_AUDITORIA}${oficial ? ` - ${oficial}` : ""}`.slice(0, MAX_NOME_FANTASIA);
-}
-
 type Origem = { tipo: "api"; dados: DadosEmpresa } | { tipo: "manual"; motivo: string } | null;
 type Etapa = 1 | 2 | 3;
 type Progresso = "preparando" | "criando_empresa" | "empresa_pronta" | "criando_acesso" | "enviando_convite" | "convite_enviado" | "falhou";
@@ -147,7 +139,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
         }));
         setOrigem({ tipo: "api", dados: response.dados });
         setNome(response.dados.razao_social ?? "");
-        setFantasia(nomeFantasiaHomologacao(response.dados.nome_fantasia));
+        setFantasia(response.dados.nome_fantasia ?? "");
         if (response.dados.email_contato) setEmailEmpresa(response.dados.email_contato);
       } else {
         setErroBusca({
@@ -262,7 +254,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
             {origem && <div className="grid gap-4 sm:grid-cols-2">
               <p className="text-xs text-muted-foreground sm:col-span-2">{dados ? FONTE_OFICIAL : "Cadastro manual: a empresa será criada como rascunho para revisão."}</p>
               <div className="space-y-1"><Label htmlFor="emp-nome">Razão social *</Label><Input id="emp-nome" value={nome} maxLength={200} readOnly={Boolean(dados)} className={dados ? "bg-muted" : undefined} onChange={(event) => setNome(event.target.value)} /></div>
-              <div className="space-y-1"><Label htmlFor="emp-fantasia">Nome fantasia</Label><Input id="emp-fantasia" value={fantasia} maxLength={MAX_NOME_FANTASIA} onChange={(event) => setFantasia(event.target.value)} /><p className="text-xs text-muted-foreground">A identificação de homologação deve permanecer neste campo.</p></div>
+              <div className="space-y-1"><Label htmlFor="emp-fantasia">Nome fantasia</Label><Input id="emp-fantasia" value={fantasia} maxLength={200} onChange={(event) => setFantasia(event.target.value)} /></div>
               <div className="space-y-1"><Label htmlFor="emp-email">E-mail corporativo da empresa *</Label><Input id="emp-email" type="email" value={emailEmpresa} maxLength={255} autoComplete="off" onChange={(event) => setEmailEmpresa(event.target.value)} /><p className="text-xs text-muted-foreground">Contato institucional; não será usado como login do responsável.</p></div>
               <div className="space-y-1"><Label htmlFor="emp-plano">Plano *</Label><Select value={plano} onValueChange={setPlano}><SelectTrigger id="emp-plano"><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{(planos.data ?? []).filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select><p className="text-xs text-muted-foreground">A assinatura começa em período de teste.</p></div>
               {naoAtiva && <div role="alert" className="flex gap-2 rounded-md border border-destructive/40 p-3 text-sm sm:col-span-2"><ShieldAlert className="h-4 w-4 shrink-0 text-destructive" /><div className="space-y-2"><p>Situação cadastral diferente de ATIVA. A empresa será criada como rascunho.</p><div className="flex items-center gap-2"><Checkbox id="emp-revisao" checked={revisaoSituacao} onCheckedChange={(value) => setRevisaoSituacao(value === true)} /><Label htmlFor="emp-revisao" className="font-normal">Revisei a situação cadastral</Label></div></div></div>}
