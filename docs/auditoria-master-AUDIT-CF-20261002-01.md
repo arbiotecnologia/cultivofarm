@@ -126,7 +126,7 @@ REFIL permanece em `rascunho`, ativa, com assinatura Completo `SUSPENDED` desde 
 
 Os subcenários executáveis sem ação humana disponível foram concluídos. E02, recebimento, link usado/expirado ponta a ponta, primeiro acesso e recovery permanecem `NOT RUN`; os harnesses transacionais autenticados também permanecem `NOT RUN`, sem promoção indevida a PASS.
 
-Revalidação desta rodada: **11/11 testes focados PASS**, **5.372 testes globais PASS e 4 skipped**, typecheck PASS, build da prévia PASS e scanner com 10 Info/zero Critical/Error/Warning. Consulta canônica final confirmou zero organizações, assinaturas, auditorias, convites, Auth users, profiles e roles da campanha; zero leases; job AR BIO preservado.
+Baselines anteriores permanecem registrados: **5.372 testes globais PASS e 4 skipped**, typecheck/build PASS e scanner com 10 Info/zero Critical/Error/Warning. Nesta rodada, **228/228 testes focados PASS**; a consulta canônica final confirmou 1 organização, 1 assinatura, 1 auditoria, zero convites/Auth users/profiles/roles/tentativas/leases e job AR BIO preservado.
 
 ## Rollback e forward-fix
 

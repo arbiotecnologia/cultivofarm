@@ -51,6 +51,8 @@
 | F1-014A | Concorrência/takeover/hard-crash E2E com ROLLBACK | NOT RUN | sem conexão transacional PG; não simulado como PASS |
 | F1-014B | Cross-tenant autenticado completo | NOT RUN | requer identidades controladas em transação; prova estática/ACL passou |
 | F1-014C | Link usado/expirado ponta a ponta | NOT RUN | depende de E02 e identidade controlada; contrato de primeiro acesso passou |
+| F1-014D | First-use fiscal/configurações gerais | PASS contratual | núcleo SaaS, plano/features e defaults cobertos nos testes focados; uso persistente aguarda E02/primeiro acesso |
+| F1-014E | Idempotência/duplicidade/double-click/retry de criação | PASS contratual | guards server-side e fluxo sem retry automático; clique concorrente bloqueado; não repetiu E01 persistente |
 | F1-015 | Cleanup | NOT RUN | campanha em andamento; preservar E01 e trilha |
 | F1-016 | Negativa convite sem JWT/JWT inválido | PASS | 401/401; nenhuma mutação |
 | F1-017 | Negativa provider settings sem JWT/JWT inválido | PASS | 401/401 |
