@@ -538,6 +538,12 @@ export default function ComunicacaoConfigTab() {
 
   const emailsList = emailsText.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
   const phonesList = phonesText.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+  const connectionConfigReady = view.smtp_readiness.singleton_exists &&
+    view.smtp_readiness.smtp_host_configured &&
+    view.smtp_readiness.smtp_port_configured &&
+    view.smtp_readiness.smtp_port_runtime_compatible &&
+    view.smtp_readiness.smtp_user_configured &&
+    view.smtp_readiness.smtp_password_configured;
 
   return (
     <div className="space-y-4">
@@ -627,6 +633,79 @@ export default function ComunicacaoConfigTab() {
             <Badge variant={view.smtp_readiness.ready_for_controlled_test ? "default" : "outline"}>
               {view.smtp_readiness.ready_for_controlled_test ? "Pronto para teste controlado" : "Não pronto"}
             </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><PlugZap className="h-4 w-4" />Diagnóstico do provedor de e-mail</CardTitle>
+          <CardDescription>
+            Primeiro valide a conexão segura e a autenticação sem enviar mensagem. O envio controlado permanece separado e exige confirmação.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">1. Conexão e autenticação</p>
+              <p className="text-xs text-muted-foreground">Não envia e-mail e funciona com as entregas global e de e-mail desativadas.</p>
+              {!connectionConfigReady && (
+                <p className="mt-1 text-xs text-muted-foreground" role="status">
+                  Complete a configuração segura do provedor para liberar este diagnóstico.
+                </p>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              disabled={testingConnection || testingEmail || !connectionConfigReady}
+              onClick={handleTestConnection}
+            >
+              <PlugZap className="h-4 w-4 mr-1" />
+              {testingConnection ? "Testando conexão..." : "Testar conexão do provedor"}
+            </Button>
+          </div>
+          {connectionResult && (
+            <div role="status" className="flex items-start gap-2 text-sm">
+              {connectionResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" /> : <CircleX className="mt-0.5 h-4 w-4 text-destructive" />}
+              <div>
+                <p className="font-medium">{friendlyError(connectionResult.code)}</p>
+                <p className="text-xs text-muted-foreground">
+                  Etapa: {connectionResult.stage} · TLS: {connectionResult.tls ? "confirmado" : "não confirmado"} · Autenticação: {connectionResult.authenticated ? "confirmada" : "não confirmada"} · {connectionResult.latency_ms} ms
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="space-y-2 rounded-md border p-3">
+            <div>
+              <p className="text-sm font-medium">2. Envio controlado</p>
+              <p className="text-xs text-muted-foreground">Disponível somente com o checklist completo. O destinatário é fixo e validado no servidor.</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id="smtp-test-to"
+                type="email"
+                value={testEmailTo}
+                readOnly
+                autoComplete="off"
+                maxLength={254}
+                aria-invalid={!!testEmailError}
+                aria-describedby={testEmailError ? "smtp-test-to-error" : undefined}
+              />
+              <Button
+                variant="outline"
+                disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
+                onClick={() => setConfirmSendOpen(true)}
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                {testingEmail ? "Enviando..." : "Enviar teste"}
+              </Button>
+            </div>
+            <FieldError msg={testEmailError} />
+            {!view.smtp_readiness.ready_for_controlled_test && (
+              <p className="text-xs text-muted-foreground" role="status">
+                Envio bloqueado até que toda a prontidão SMTP, incluindo as flags de entrega, esteja ativa.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -831,67 +910,6 @@ export default function ComunicacaoConfigTab() {
             <Save className="h-4 w-4 mr-1" />Salvar provedor de e-mail
           </Button>
 
-          {view.smtp.password_configured && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2"><PlugZap className="h-4 w-4" />Diagnóstico do provedor de e-mail</Label>
-                <FieldHint>
-                  Primeiro valide conexão segura e autenticação sem enviar mensagem. O envio controlado permanece separado e exige confirmação.
-                </FieldHint>
-                <div className="flex flex-col gap-3 rounded-md border p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium">1. Conexão e autenticação</p>
-                      <p className="text-xs text-muted-foreground">Não envia e-mail e funciona com as entregas desativadas.</p>
-                    </div>
-                    <Button variant="outline" disabled={testingConnection || testingEmail} onClick={handleTestConnection}>
-                      <PlugZap className="h-4 w-4 mr-1" />
-                      {testingConnection ? "Testando conexão..." : "Testar conexão do provedor"}
-                    </Button>
-                  </div>
-                  {connectionResult && (
-                    <div role="status" className="flex items-start gap-2 text-sm">
-                      {connectionResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" /> : <CircleX className="mt-0.5 h-4 w-4 text-destructive" />}
-                      <div>
-                        <p className="font-medium">{friendlyError(connectionResult.code)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Etapa: {connectionResult.stage} · TLS: {connectionResult.tls ? "confirmado" : "não confirmado"} · Autenticação: {connectionResult.authenticated ? "confirmada" : "não confirmada"} · {connectionResult.latency_ms} ms
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2 rounded-md border p-3">
-                  <div>
-                    <p className="text-sm font-medium">2. Envio controlado</p>
-                    <p className="text-xs text-muted-foreground">Disponível somente com o checklist completo. O destinatário é fixo e validado no servidor.</p>
-                  </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    id="smtp-test-to"
-                    type="email"
-                    value={testEmailTo}
-                    readOnly
-                    autoComplete="off"
-                    maxLength={254}
-                    aria-invalid={!!testEmailError}
-                    aria-describedby={testEmailError ? "smtp-test-to-error" : undefined}
-                  />
-                  <Button
-                    variant="outline"
-                    disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
-                    onClick={() => setConfirmSendOpen(true)}
-                  >
-                    <Mail className="h-4 w-4 mr-1" />
-                    {testingEmail ? "Enviando..." : "Enviar teste"}
-                  </Button>
-                </div>
-                <FieldError msg={testEmailError} />
-                </div>
-              </div>
-            </>
-          )}
         </CardContent>
       </Card>
 

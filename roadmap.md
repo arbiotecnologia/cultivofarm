@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Em andamento
+- [x] **Correção de visibilidade do diagnóstico SMTP em `/plataforma`:** a aba real já reutilizava `ComunicacaoConfigTab`, mas o bloco completo ficava oculto pela condição visual `smtp.password_configured`. O diagnóstico agora é uma seção própria sempre visível; conexão depende apenas da configuração técnica e funciona com entrega OFF/OFF, enquanto envio permanece bloqueado pela prontidão completa. Publicação e smoke oficial sem clique devem comprovar os dois passos.
 - [x] **Diagnóstico SMTP em duas etapas:** probe seguro sem envio e teste real confirmado foram separados, auditados com metadados sanitizados, validados e publicados. Smoke oficial confirmou o botão **Testar conexão do provedor**; nenhum probe ou envio real foi executado. Próxima ação exclusivamente humana: Superadmin clicar primeiro nesse botão.
 - [ ] **Campanha AUDIT-CF-20261002-01 — E02 FAIL / RETRY BLOCKED:** forward-fix de SMTP ambíguo e bloqueio fail-closed das portas 25/587 estão no código. A porta efetiva é 465, apenas estruturalmente aceita; conectividade não foi testada e a causa original continua ambígua. A janela SMTP está OFF/OFF; o job legado exige confirmação humana explícita e nova autorização antes de reabertura/retry. Fases 2–15 permanecem bloqueadas.
 

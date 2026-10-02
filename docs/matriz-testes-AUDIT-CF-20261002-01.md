@@ -25,6 +25,16 @@
 | PWA-010 | Smoke oficial limpo e com legado simulado | PASS | URL estável, zero overlay/texto legado/erro; apenas push worker ao final |
 | PWA-011 | Testes focados/typecheck/build/suíte/scanner | PASS | 23 focados; 5.372 globais/4 skipped; scanner 10 Info, zero Critical/Error/Warning |
 
+## Diagnóstico SMTP — integração da tela de plataforma
+
+| Caso | Cenário | Resultado | Evidência |
+|---|---|---|---|
+| SMTP-UI-001 | Componente real da aba Comunicação em `/plataforma` | PASS | `PlataformaHome` importa e renderiza a instância única de `ComunicacaoConfigTab` |
+| SMTP-UI-002 | Visibilidade das duas etapas | PASS | diagnóstico não depende mais de `smtp.password_configured`; os dois passos permanecem visíveis |
+| SMTP-UI-003 | Conexão com entrega global/e-mail OFF | PASS contratual | habilitação usa somente a configuração técnica sanitizada; flags de entrega não integram o gate visual de conexão |
+| SMTP-UI-004 | Envio com entrega OFF | PASS contratual | botão permanece desabilitado por `ready_for_controlled_test` e mostra motivo |
+| SMTP-UI-005 | Detector de publicação futura | PASS por harness | token futuro abre aviso sem navegação ou recarga automática |
+
 ## Fase 0
 
 | Caso | Cenário | Resultado | Evidência |
