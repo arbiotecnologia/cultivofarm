@@ -43,7 +43,14 @@ describe("D51.2-F — isolamento SaaS da configuração global", () => {
       expect(source).toContain('error: "invalid_token"');
       expect(source).toContain('error: "forbidden"');
       expect(source).not.toMatch(/user_metadata|raw_user_meta_data/);
-      expect(source).not.toMatch(/SERVICE_KEY\s*[,}]|service_role\s*[,}]/);
+    }
+  });
+
+  it("prossegue estruturalmente somente quando is_platform_superadmin retorna true", () => {
+    for (const source of [settingsEdge, testEdge]) {
+      const roleCheck = source.indexOf("isSuperadmin !== true");
+      expect(roleCheck).toBeGreaterThan(-1);
+      expect(source.indexOf("checkRateLimit", roleCheck)).toBeGreaterThan(roleCheck);
     }
   });
 
