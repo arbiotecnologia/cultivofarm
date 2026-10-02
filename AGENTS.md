@@ -8,6 +8,6 @@
 
 - Controlled SMTP tests reuse the shared communication adapter and require Platform Superadmin authorization, rate limiting, full readiness, test mode, and the fixed gate recipient before any socket; responses expose only allowlisted codes — prevents tenant privilege bypass and diagnostic leakage.
 
-- PWA update and stale-build recovery are centralized in `src/pwa/registerSW.ts` with explicit idempotent start/end events, bounded blocking time, scoped cache cleanup, and one guarded reload — prevents mixed deployments and permanent overlays without removing offline support.
+- PWA updates are consent-driven in `src/pwa/registerSW.ts`: detection never activates or reloads; only an explicit user action may apply a waiting worker and perform one guarded reload — preserves in-progress work and offline support.
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.

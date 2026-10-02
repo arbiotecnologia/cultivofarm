@@ -1685,3 +1685,32 @@ Foi solicitada uma única publicação frontend para `https://app.cultivofarm.co
 - as respostas 401 observadas foram apenas consultas protegidas esperadas em sessão anônima.
 
 **Decisão pós-publicação: FAIL por ausência de propagação no domínio customizado.** A correção está verde no candidato local, mas não pode ser declarada ativa no domínio oficial. Conforme a regra de parada, nenhuma nova publicação foi solicitada em loop. Aguardar a propagação e repetir somente o smoke antes de encerrar o P0. E01/E02 e D52 permanecem bloqueados.
+## 45. P0 PWA — modelo final de atualização manual
+
+A estratégia automática foi substituída pelo consentimento explícito do usuário:
+
+- detectar ou baixar um worker novo não ativa, não bloqueia e não recarrega a página;
+- um aviso discreto apresenta **Nova versão disponível**, **Atualizar agora** e **Adiar**;
+- **Adiar** mantém o worker em espera e mostra imediatamente um botão flutuante persistente, acessível e ajustado à safe-area;
+- somente identificador técnico e horário do adiamento são guardados; nenhum dado de negócio ou PII é persistido;
+- a mesma versão adiada reaparece apenas como badge; outra versão pode abrir novo aviso;
+- somente **Atualizar agora** envia `SKIP_WAITING`; apenas o `controllerchange` ligado a essa intenção pode recarregar, uma única vez e sob trava anti-loop;
+- `controllerchange` sem clique não recarrega;
+- falha ou timeout retorna a um aviso discreto e permite continuar usando a aplicação;
+- chunk incompatível não inicia recarga automática: exibe **Há uma atualização necessária para continuar.**, com **Atualizar agora** e **Tentar novamente**;
+- `?sw=off`, bloqueios de dev/preview/iframe, limpeza de caches antigos e navegação `NetworkFirst` foram preservados.
+
+Validação anterior à publicação: 31 testes focados PASS, suíte global com 5.359 testes aprovados e 4 ignorados, typecheck PASS e build PASS. Nenhum banco, Supabase, SMTP, organização, usuário, E01/E02 ou job foi tocado. D52 permanece bloqueado.
+
+### 45.1 Publicação e smoke
+
+O scanner terminou com dez achados informativos e zero Critical/Error/Warning. Uma única publicação frontend foi solicitada. No smoke posterior do domínio oficial:
+
+- `/auth` respondeu HTTP 200, sem overlay visível na abertura;
+- `/sw.js` estava ativo e sem worker waiting naquele navegador limpo;
+- os bundles ainda continham `pwa:updating-start` e a mensagem automática antiga;
+- nenhum bundle continha os marcadores **Nova versão disponível**, **Há uma atualização do Cultivo Farm pronta para instalar.**, **Continuar depois** ou `pwa:update-available`;
+- os 401 observados foram negativas esperadas em sessão anônima;
+- `/?sw=off` respondeu HTTP 200 e reduziu os registros de service worker a zero.
+
+**Decisão: FAIL de propagação no domínio customizado.** O candidato está validado, mas o comportamento manual ainda não pode ser declarado ativo em produção. Nenhuma segunda publicação foi solicitada. Aguardar propagação e repetir somente o smoke. O contorno emergencial permanece `https://app.cultivofarm.com.br/?sw=off`.

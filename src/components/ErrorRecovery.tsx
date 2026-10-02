@@ -5,6 +5,8 @@ interface ErrorRecoveryProps {
   title?: string;
   message?: string;
   onRetry?: () => void;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
   onSignOut?: () => void;
 }
 
@@ -12,6 +14,8 @@ export function ErrorRecovery({
   title = "Ops! Algo deu errado", 
   message = "Não foi possível carregar os dados do painel. Isso pode ser devido a uma falha de conexão ou falta de permissões.",
   onRetry,
+  primaryActionLabel,
+  onPrimaryAction,
   onSignOut
 }: ErrorRecoveryProps) {
   return (
@@ -31,10 +35,16 @@ export function ErrorRecovery({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-center pt-4">
-          {onRetry && (
-            <Button onClick={onRetry} className="flex items-center gap-2">
+          {onPrimaryAction && (
+            <Button onClick={onPrimaryAction} className="flex items-center gap-2">
               <RefreshCcw size={16} />
-              Tentar Novamente
+              {primaryActionLabel ?? "Atualizar agora"}
+            </Button>
+          )}
+          {onRetry && (
+            <Button variant={onPrimaryAction ? "outline" : "default"} onClick={onRetry} className="flex items-center gap-2">
+              <RefreshCcw size={16} />
+              Tentar novamente
             </Button>
           )}
           {onSignOut && (

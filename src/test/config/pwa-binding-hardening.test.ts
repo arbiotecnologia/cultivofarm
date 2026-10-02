@@ -28,29 +28,32 @@ describe("P0-03A — binding fail-closed", () => {
   });
 });
 
-describe("P0-03A — atualização obrigatória", () => {
+describe("P0 PWA — atualização manual", () => {
   const vite = read("vite.config.ts");
   const register = read("src/pwa/registerSW.ts");
   const app = read("src/App.tsx");
   const main = read("src/main.tsx");
   const boundary = read("src/components/ErrorBoundary.tsx");
 
-  it("ativa tomada automática de controle e limpeza de caches antigos", () => {
+  it("usa estratégia prompt sem ativação automática e mantém limpeza de caches", () => {
     expect(vite).toMatch(/clientsClaim:\s*true/);
-    expect(vite).toMatch(/skipWaiting:\s*true/);
+    expect(vite).toMatch(/registerType:\s*"prompt"/);
+    expect(vite).toMatch(/skipWaiting:\s*false/);
     expect(vite).toMatch(/cleanupOutdatedCaches:\s*true/);
     expect(vite).toContain('handler: "NetworkFirst"');
   });
 
-  it("não oferece adiamento da atualização", () => {
-    expect(app).not.toContain("SwUpdatePrompt");
-    expect(() => read("src/pwa/SwUpdatePrompt.tsx")).toThrow();
-    expect(register).not.toContain("Depois");
-    expect(register).not.toContain("pwa:update-available");
+  it("oferece notificador manual e remove o overlay antigo", () => {
+    expect(app).toContain("PwaUpdateNotifier");
+    expect(app).not.toContain("SwUpdatingOverlay");
+    expect(() => read("src/pwa/SwUpdatingOverlay.tsx")).toThrow();
+    expect(register).toContain("pwa:update-available");
+    expect(register).toContain("applyPendingUpdate");
+    expect(register).toContain("dismissPendingUpdate");
   });
 
-  it("mantém trava de recarga, fallback e limpeza de observadores", () => {
-    expect(register).toContain("reloadingOnControllerChange");
+  it("mantém trava de recarga explícita e limpeza de observadores", () => {
+    expect(register).toContain("explicitApplyIntent");
     expect(register).toContain("RECENT_RELOAD_KEY");
     expect(register).toContain("RELOAD_LOOP_GUARD_MS");
     expect(register).toContain("controllerchange");
@@ -58,15 +61,15 @@ describe("P0-03A — atualização obrigatória", () => {
     expect(register).toContain("clearInterval");
     expect(register).toContain("visibilitychange");
     expect(register).toContain('addEventListener("online"');
-    expect(register).toContain("PWA_UPDATING_END");
-    expect(register).toContain("finishUpdate");
-    expect(register).toContain("UPDATE_SAFETY_TIMEOUT_MS");
+    expect(register).toContain("PWA_UPDATE_STATE_EVENT");
+    expect(register).toContain("APPLY_TIMEOUT_MS");
   });
 
-  it("não bloqueia a tela no mero updatefound", () => {
-    expect(register).not.toMatch(/onUpdateFound[\s\S]{0,500}PWA_UPDATING_START/);
-    expect(register).toMatch(/state === "installed"[\s\S]{0,200}activateUpdate/);
-    expect(register).toMatch(/state === "redundant"[\s\S]{0,200}finishUpdate/);
+  it("não ativa nem recarrega ao detectar update", () => {
+    expect(register).not.toMatch(/onUpdateFound[\s\S]{0,500}postMessage/);
+    expect(register).toMatch(/state === "installed"[\s\S]{0,250}announcePendingUpdate/);
+    expect(register).toMatch(/state === "redundant"[\s\S]{0,200}clearPendingUpdate/);
+    expect(register).toMatch(/if \(explicitApplyIntent\) triggerExplicitReload/);
   });
 
   it("preserva os bloqueios de preview, iframe e kill-switch", () => {
