@@ -946,3 +946,52 @@ Provas executadas sem identidade simulada e sem mutação operacional:
 ### 28.5 Decisão
 
 **NO-GO para encerrar D51 ou iniciar D52.** O ambiente está pronto para E01/E02 manual controlado, mas nenhum cenário dependente de empresa/convite/e-mail real foi promovido a PASS. Leaked Password Protection permanece aberta sob a exceção formal.
+
+## 29. Incidente CORS da aba Comunicação no ambiente publicado
+
+Data/hora UTC: `2026-10-02T04:25Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 29.1 Causa confirmada
+
+Antes da correção, o preflight `OPTIONS` de `communication-provider-settings` com origem `https://app.cultivofarm.com.br` retornou HTTP 403 sem `Access-Control-Allow-Origin`; o controle `https://cultivofarm.lovable.app` retornou HTTP 204 com a origem exata. Os logs Edge recentes registraram a mesma combinação 403/204. A UI publicada era redirecionada ao domínio customizado, mas esse host não constava na allowlist estática do helper compartilhado.
+
+O secret opcional `COMMUNICATION_ADMIN_ORIGINS` não estava configurado entre os nomes disponíveis. Nenhum valor secreto foi consultado ou exposto. As duas funções estavam implantadas; os logs confirmaram execuções recentes de `communication-provider-settings`, enquanto `test-communication-email` não apresentou evento de execução anterior relevante.
+
+**Classificação:** CORS confirmado como causa do erro de transporte da aba Comunicação.
+
+### 29.2 Correção mínima
+
+Arquivos alterados:
+
+- `supabase/functions/_shared/comunicacao/cors.ts`: adicionada somente a origem exata `https://app.cultivofarm.com.br`; nenhum wildcard de domínio Cultivo Farm foi liberado;
+- `supabase/config.toml`: `verify_jwt=true` declarado explicitamente para `communication-provider-settings` e `test-communication-email`;
+- `src/test/comunicacao/fase-provider-settings-corr.test.ts`: regressões de origem canônica, origem Lovable, origem maliciosa, preflight 204 exato, ausência de wildcard no helper e manifesto JWT;
+- este relatório e `roadmap.md`.
+
+O helper permanece aceitando previews Lovable, localhost e extras explícitos via `COMMUNICATION_ADMIN_ORIGINS`. A busca de consumidores confirmou que apenas `communication-provider-settings` e `test-communication-email` importam esse helper. `platform-invite-org-admin` possui fronteira CORS própria e não foi alterada nem implantada neste incidente. JWT e `is_platform_superadmin` permaneceram inalterados nas duas funções administrativas.
+
+### 29.3 Testes e deploy
+
+- suíte focada oficial: 3 arquivos, 46 testes aprovados;
+- typecheck: aprovado;
+- build: aprovado, sem publicação de frontend;
+- implantadas somente `communication-provider-settings` e `test-communication-email`, com as dependências compartilhadas empacotadas;
+- nenhum e-mail, alteração SMTP, usuário, tenant ou dado operacional.
+
+Validação remota pós-deploy, nas duas funções:
+
+| Prova | Resultado |
+|---|---|
+| `OPTIONS` de `https://app.cultivofarm.com.br` | HTTP 204; `Access-Control-Allow-Origin` igual à origem exata |
+| `OPTIONS` de `https://cultivofarm.lovable.app` | HTTP 204; origem exata preservada |
+| `OPTIONS` de origem maliciosa semelhante | HTTP 403; sem `Access-Control-Allow-Origin` |
+| requisição sem JWT no domínio customizado | HTTP 401 legível pelo navegador; nenhuma execução funcional |
+
+O gateway Supabase, por executar `verify_jwt=true` antes do código da função, devolve seu próprio `Access-Control-Allow-Origin: *` apenas na resposta negativa 401 sem credencial. O código implantado nunca produz wildcard: preflights aprovados refletem exclusivamente a origem validada e respostas da função usam o mesmo helper. Essa resposta do gateway não expõe conteúdo protegido e confirma o bloqueio antes da função.
+
+Uma prova browser sem sessão, executada a partir de `https://app.cultivofarm.com.br/auth`, leu normalmente o JSON sanitizado 401 e não registrou erro de página. Não foi simulada autenticação.
+
+### 29.4 Decisão
+
+**ABA COMUNICAÇÃO APTA PARA RETOMADA AUTENTICADA.** O bloqueio de transporte/CORS foi removido no runtime canônico. A leitura positiva como Superadmin ainda depende da sessão real do responsável e não foi declarada PASS sem essa prova. D51.2 permanece NO-GO para encerramento e D52 não foi iniciado.

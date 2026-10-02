@@ -52,6 +52,14 @@ verify_jwt = true
 [functions.platform-invite-org-admin]
 verify_jwt = true
 
+# Configuração global de Comunicação: JWT obrigatório no gateway e autorização
+# de Superadmin validada novamente dentro de cada função.
+[functions.communication-provider-settings]
+verify_jwt = true
+
+[functions.test-communication-email]
+verify_jwt = true
+
 # Primeiro acesso: autenticação customizada em código (getClaims) — sem
 # verificação de JWT legado no gateway.
 [functions.platform-complete-first-access]
