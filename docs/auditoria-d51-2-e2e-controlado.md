@@ -1260,3 +1260,53 @@ A divergência anterior fica explicada pela linha do tempo e pela identificaçã
 O SMTP canônico permanece fail-closed: entrega global **OFF**, e-mail **OFF**, modo de teste **ON**, allowlist com um único endereço — o destinatário controlado aprovado — e os demais canais **OFF**. Existem zero leases de provisionamento e zero leases de e-mail ativos. Nenhuma escrita, reprocessamento, reenvio, alteração de status, criação de usuário ou envio foi realizado nesta auditoria.
 
 **Decisão:** a captura não é o job legado. E01 criou uma nova empresa real no canônico; E02 criou um job novo, não controlado e incompleto; nenhum convite controlado foi criado. O job falho deve permanecer bloqueado e não pode ser usado em homologação futura, pois envolve empresa/endereço não aprovados e não possui vínculo Auth concluído. Qualquer decisão posterior sobre correção, arquivamento ou retomada exige revisão específica e nova autorização. Não repetir E01/E02 e não avançar D52.
+
+## 35. Diagnóstico read-only de `finalize_failed`
+
+Data/hora UTC da auditoria: `2026-10-02T05:17Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 35.1 Causa raiz comprovada
+
+**Classificação C/F — colisão entre perfil automático e validação da RPC de finalização.**
+
+A criação do Auth user dispara `auth.users.on_auth_user_created`, que executa `public.handle_new_user()` e insere imediatamente um `public.profiles` com `user_id`, nome e e-mail, deixando `organization_id=NULL`. Na sequência, `platform_finalize_org_admin_provisioning` rejeita qualquer perfil cujo `organization_id IS DISTINCT FROM` a organização do job. Em PostgreSQL, `NULL IS DISTINCT FROM <uuid>` é verdadeiro. Portanto, o perfil recém-criado pelo trigger é classificado incorretamente como vínculo de outro tenant antes que o `UPSERT` posterior possa atribuir a organização.
+
+Sequência comprovada pelo contrato vigente:
+
+1. a Edge Function reclama o job e recebe `job_id`, `request_id` e lease;
+2. cria o Auth user com `app_metadata.provisioning_request_id=request_id`;
+3. o trigger `on_auth_user_created` cria automaticamente o profile com `organization_id=NULL`;
+4. a Edge Function chama `platform_finalize_org_admin_provisioning(p_job_id, p_lease_token, p_user_id)`;
+5. a guarda de vínculo incompatível encontra o profile com organização nula e levanta `platform_conflict: conta possui vínculos incompatíveis` (`SQLSTATE 23505`);
+6. a Edge Function remove o Auth user recém-criado; o `ON DELETE CASCADE` remove o profile automático;
+7. a Edge Function marca o job como `falhou`, persistindo apenas o código genérico `finalize_failed`.
+
+Isso explica conjuntamente `attempt_count=1`, `user_id` e `auth_created_at` nulos, ausência final de Auth user/profile/papel, `email_attempt_count=0` e os 3,34 segundos entre criação e atualização do job. A compensação ocorreu antes da etapa SMTP.
+
+### 35.2 Contrato implantado e exclusões
+
+- A função implantada e o código atual são idênticos no bloco de criação/finalização/compensação.
+- A assinatura chamada pela Edge Function coincide com a RPC canônica: três UUIDs nomeados `p_job_id`, `p_lease_token` e `p_user_id`.
+- `platform_finalize_org_admin_provisioning` é `SECURITY DEFINER`, usa `search_path=''`, valida internamente `service_role` e só concede execução a `service_role`; `anon` e `authenticated` não executam.
+- O forward-fix de metadata está aplicado no ledger e no runtime: criação grava `app_metadata`; lookup e finalize leem `auth.users.raw_app_meta_data`. A versão antiga que lia `raw_user_meta_data` não é a definição ativa.
+- Não há evidência de mismatch de assinatura, grant, lease expirada, `provisioning_request_id`, responsável principal ou FK como causa deste caso. O intervalo completo durou segundos, muito abaixo da lease de dois minutos.
+- A RPC toca `platform_org_admin_invites`, `auth.users` (leitura), `profiles`, `user_roles`, `platform_private.provisional_password_state` e, quando responsável principal, `organizations`. Constraints e grants necessários estão presentes.
+
+Os logs consultáveis de Edge, Auth e Postgres não retiveram eventos do intervalo `05:11:27Z–05:11:32Z`; o log da função mostra apenas boots próximos. Não foi recuperado um evento histórico com SQLSTATE. Ainda assim, a causa é determinística pelo encadeamento das definições canônicas, e o estado residual confirma a compensação. A deficiência de observabilidade é adicional: a Edge Function substitui qualquer erro real da RPC pela string fixa `finalize_failed`, apagando a classificação específica do banco.
+
+### 35.3 Retry e tratamento do job
+
+**Um retry no estado atual repetiria a mesma falha.** Como não restou Auth user, o fluxo criaria outro usuário; o trigger criaria novamente um profile sem organização; a mesma guarda voltaria a rejeitá-lo; e a compensação apagaria novamente a identidade. Não reprocessar.
+
+O job é **tecnicamente recuperável após correção**, pois está em `falhou`, sem lease e sem identidade parcial, e preserva a intenção original. Porém, ele contém empresa e endereço reais não aprovados para o cenário controlado. Portanto, deve permanecer bloqueado e ser cancelado/arquivado por mecanismo auditável em fase posterior autorizada; não deve ser reutilizado como homologação D51.2.
+
+### 35.4 Plano de correção por fase — não aplicado
+
+1. **Fase 1 — migration da RPC:** permitir adoção somente do profile automático do mesmo `user_id` quando `organization_id IS NULL`; continuar rejeitando organização diferente; no `UPSERT`, aceitar `NULL` ou a mesma organização e preencher explicitamente `organization_id=excluded.organization_id`. Preservar assinatura, `SECURITY DEFINER`, `search_path=''`, ACL exclusiva de `service_role`, lease/fencing e validação de `raw_app_meta_data`.
+2. **Fase 2 — observabilidade sanitizada:** fazer a Edge Function persistir um código allowlisted por classe (`stale_lease`, `identity_conflict`, `profile_tenant_conflict`, `authorization_failed`, `database_constraint`) sem mensagem SQL, e registrar apenas etapa/código/SQLSTATE permitido; manter ausência de PII, token, senha e action link.
+3. **Fase 3 — testes sem produção:** cobrir em banco isolado/transação revertida o profile automático com organização nula, conflito cross-tenant, metadata divergente, lease expirada, responsável principal e compensação; adicionar mock da Edge Function para verificar argumentos, classificação e deleção apenas de usuário criado pela execução corrente.
+4. **Fase 4 — implantação controlada:** aplicar primeiro a migration e depois somente `platform-invite-org-admin`; executar negativas sem JWT/JWT inválido e inspeção read-only de grants/definições. Não abrir SMTP nem reprocessar este job.
+5. **Fase 5 — destinação do incidente:** após autorização específica, cancelar/arquivar auditavelmente o job real. Uma homologação futura deve começar com nova organização e destinatário controlados, nunca reutilizando este registro.
+
+Rollback técnico: restaurar a definição anterior da RPC e a versão anterior da Edge Function somente se nenhuma execução tiver sido concluída pela correção. Depois de qualquer provisionamento concluído, preferir forward-fix, preservando profile, papel, vínculo da organização e trilha de auditoria. Nenhuma correção, escrita, retry, envio ou alteração de status foi feita nesta rodada. SMTP permaneceu global/e-mail OFF/OFF e D52 permaneceu bloqueado.
