@@ -132,16 +132,18 @@ Deno.serve(async (req) => {
     // Fail-closed antes de qualquer claim/mutação: o Supabase Edge Runtime
     // bloqueia saída SMTP nas portas 25 e 587.
     const runtimeEnv = await loadRuntimeConfig(adminClient, readWorkerEnv);
-    if (!runtimeEnv.DELIVERY_ENABLED || !runtimeEnv.EMAIL_ENABLED) {
-      return respond({ error: "A entrega por e-mail está desativada.", code: "email_disabled" }, 503);
-    }
-    const smtpConfigError = getSmtpConfigError(runtimeEnv);
-    if (smtpConfigError) {
-      return respond({ error: "A configuração de e-mail não está pronta para este ambiente.", code: smtpConfigError }, 503);
-    }
-    const recipientGate = isRecipientAllowedInTestMode(runtimeEnv, "email", email);
-    if (!recipientGate.allowed) {
-      return respond({ error: "Destinatário não autorizado para o modo de teste.", code: recipientGate.reason ?? "test_mode_not_allowlisted" }, 403);
+    if (modo === "link") {
+      if (!runtimeEnv.DELIVERY_ENABLED || !runtimeEnv.EMAIL_ENABLED) {
+        return respond({ error: "A entrega por e-mail está desativada.", code: "email_disabled" }, 503);
+      }
+      const smtpConfigError = getSmtpConfigError(runtimeEnv);
+      if (smtpConfigError) {
+        return respond({ error: "A configuração de e-mail não está pronta para este ambiente.", code: smtpConfigError }, 503);
+      }
+      const recipientGate = isRecipientAllowedInTestMode(runtimeEnv, "email", email);
+      if (!recipientGate.allowed) {
+        return respond({ error: "Destinatário não autorizado para o modo de teste.", code: recipientGate.reason ?? "test_mode_not_allowlisted" }, 403);
+      }
     }
 
     const { data: claimed, error: claimError } = await adminClient.rpc(

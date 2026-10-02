@@ -53,8 +53,18 @@ export function buildSmtpReadiness(row: SettingsRow | null): SmtpReadiness {
   return {
     ...readiness,
     blocking_code: smtpPortConfigured && !smtpPortRuntimeCompatible ? "smtp_port_blocked_by_edge_runtime" : null,
-    ready_for_controlled_test: Object.values(readiness).every((item) =>
-      typeof item === "number" ? item > 0 : item === true
-    ),
+    ready_for_controlled_test:
+      readiness.singleton_exists &&
+      readiness.delivery_enabled &&
+      readiness.email_delivery_enabled &&
+      readiness.test_mode_enabled &&
+      readiness.allowed_email_count > 0 &&
+      readiness.test_email_allowlisted &&
+      readiness.smtp_host_configured &&
+      readiness.smtp_port_configured &&
+      readiness.smtp_port_runtime_compatible &&
+      readiness.smtp_user_configured &&
+      readiness.smtp_password_configured &&
+      readiness.smtp_from_configured,
   };
 }
