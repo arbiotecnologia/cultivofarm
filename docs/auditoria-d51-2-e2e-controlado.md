@@ -1575,3 +1575,58 @@ Prevenção mínima proposta, ainda não implementada:
 5. registrar observabilidade sanitizada com hash/correlação do CNPJ consultado e criado, sem registrar dados pessoais ou corpo bruto.
 
 **Decisão: E01 FAIL / E02 NO-GO.** Nenhuma alteração de dados, status, SMTP, usuário ou job foi executada nesta auditoria. D52 permanece bloqueado.
+
+## 42. Prevenção de E01 divergente e análise de contenção
+
+Data: 2026-10-02  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 42.1 Mecanismos oficiais existentes
+
+A leitura do runtime e das migrations confirmou:
+
+- `platform_set_organization_status` exige sessão autenticada e `is_platform_superadmin(auth.uid())`, motivo mínimo, lock da organização, validação de transição e auditoria em `organization_status_audit`;
+- a organização REFIL está em `aguardando_ativacao`. Desse estado, o servidor permite `onboarding`, `rascunho` ou `cancelada`;
+- `cancelada` é terminal: não existe transição oficial de retorno. `suspensa` é reversível para `ativa`, mas não pode ser alcançada diretamente a partir de `aguardando_ativacao`;
+- `platform_change_subscription` exige Superadmin e motivo, aceita `TRIAL`, `ACTIVE`, `PAST_DUE`, `SUSPENDED`, `CANCELLED` ou `EXPIRED` e registra a alteração automaticamente em `organization_subscription_history`;
+- não existe acoplamento automático entre situação da organização e assinatura. Uma contenção coerente exige duas RPCs oficiais;
+- a automação está em ambiente Supabase externo sem sessão injetável do Superadmin. `service_role` não foi usado como ator.
+
+Conclusão: não existe hoje uma operação oficial que deixe a REFIL simultaneamente inativa e reversível a partir de `aguardando_ativacao`. O cancelamento seria seguro e auditável, porém irreversível. Como a autorização exigiu reversibilidade, a Fase 5 parou sem escrita. O passo manual pendente é uma decisão explícita entre cancelar terminalmente organização e assinatura pelas telas/RPCs oficiais, ou autorizar uma evolução separada do ciclo de status para suportar inativação reversível.
+
+### 42.2 Proteções implementadas no frontend
+
+O fluxo existente recebeu, sem nova rota, tabela ou persistência de PII:
+
+1. snapshot em memória da resposta oficial com CNPJ normalizado, razão social, nome fantasia e horário da consulta;
+2. rejeição imediata quando a resposta oficial traz CNPJ diferente do consultado;
+3. invalidação do snapshot e da confirmação ao iniciar nova consulta, alterar o CNPJ ou reiniciar;
+4. revisão separada em **Empresa que será criada** e **Responsável que receberá acesso**, exibindo CNPJ, razão social, nome fantasia, e-mail corporativo, plano/trial e identidade futura;
+5. campo **Confirme o CNPJ**, limitado aos 14 dígitos, que precisa coincidir com o snapshot/revisão para habilitar **Criar empresa**;
+6. revalidação imediatamente antes da RPC: CNPJ, razão oficial, e-mail corporativo, plano e demais valores precisam continuar idênticos ao snapshot de revisão;
+7. mutation construída exclusivamente a partir do objeto imutável revisado, e não dos campos editáveis correntes;
+8. `autocomplete="off"` em CNPJ, e-mail corporativo e e-mail do responsável;
+9. preservação da trava de duplo clique, do checkpoint E01→E02 e do bloqueio de retorno/edição após `organizationId`.
+
+Não foi usado `localStorage`, `sessionStorage` ou React Query para armazenar o formulário ou o snapshot.
+
+### 42.3 Testes, scanner e publicação
+
+- testes focados: **15/15 PASS** na primeira rodada e cobertura adicional da razão oficial divergente;
+- suíte global: **352 arquivos aprovados, 1 ignorado; 5.345 testes aprovados, 4 ignorados**;
+- typecheck: **PASS**;
+- build automático: **PASS**;
+- scanner: **zero Critical/Error/Warning**, dez achados informativos históricos; Leaked Password Protection continua como risco aceito, não resolvido;
+- publicação apenas do frontend: solicitada para o commit `2c24fb31bd662bf663155184510aadc9c88cd1bf`;
+- smoke imediato: `/`, `/auth` e `/plataforma` responderam 200, rota protegida redirecionou para `/auth` e não houve erro de runtime; entretanto, o bundle `index-CJm5d-jL.js` ainda não continha **Confirme o CNPJ** nem **Empresa que será criada**. Portanto a propagação não foi comprovada e o novo E01 permanece bloqueado.
+
+### 42.4 Estado canônico preservado
+
+- REFIL permanece `aguardando_ativacao`, ativa, com uma assinatura Completo/TRIAL, zero jobs e zero profiles; nenhuma contenção foi executada;
+- CNPJ correto `36.736.180/0001-11`: zero organizações;
+- zero organizações `HOMOLOGAÇÃO D51.2`;
+- zero jobs/profiles para `teste@refilinformatica.com.br` e zero leases de e-mail ativos;
+- Comunicação: global OFF, e-mail OFF, Test Mode ON, allowlist exclusiva, demais canais OFF;
+- job AR BIOTECNOLOGIA: `falhou`, tentativa 1, `finalize_failed`, e-mail `pending`, zero tentativa SMTP, sem usuário ou lease.
+
+**Decisão:** proteção aprovada tecnicamente, mas **NO-GO para repetir E01** até o bundle novo ser confirmado no domínio oficial e a contenção receber uma decisão compatível com a exigência de reversibilidade. E02 e D52 permanecem bloqueados.

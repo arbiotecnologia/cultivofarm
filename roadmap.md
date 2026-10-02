@@ -1,11 +1,11 @@
 # Roadmap
 
 ## Em andamento
-- [ ] D51.2 — **E01 FAIL / E02 bloqueado:** o checkpoint funcionou e impediu o convite, mas a criação recebeu CNPJ `09.255.249/0001-12`, razão social REFIL INFORMATICA LTDA e e-mail `refilinformatica@gmail.com`, diferentes do cenário autorizado. A origem foi delimitada ao estado/payload do formulário; não há hardcode, persistência ou cache de lookup que transforme o CNPJ autorizado nesses dados. Entrada manual, autofill e aba antiga permanecem hipóteses não distinguíveis sem evidência do navegador.
-- [ ] Gate D51.2 — aguarda autorização para proteção preventiva do E01 e tratamento auditável futuro da organização REFIL criada acidentalmente. SMTP global/e-mail OFF/OFF, E02 e D52 bloqueados; job real AR BIOTECNOLOGIA permanece bloqueado e intocado.
+- [ ] D51.2 — **E01 FAIL / E02 bloqueado:** proteção preventiva implementada no frontend e validada por 5.345 testes, typecheck/build e scanner sem P0/P1. A publicação foi solicitada, mas o smoke imediato do domínio oficial ainda encontrou o pacote anterior; aguarda propagação antes de liberar novo E01.
+- [ ] Gate D51.2 — contenção automática da REFIL interrompida sem escrita: partindo de `aguardando_ativacao`, a única inativação oficial é `cancelada`, que é terminal e não reversível; `suspensa` não é transição permitida. Além disso, a automação não dispõe da sessão real Superadmin do Supabase externo. Exige decisão manual explícita entre cancelamento terminal ou evolução prévia do mecanismo. SMTP OFF/OFF, E02 e D52 bloqueados; job real AR BIOTECNOLOGIA permanece intocado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — propor confirmação final explícita de CNPJ/razão/e-mail, vínculo da revisão ao último snapshot consultado e mitigação de autofill; não implementar sem autorização. Tratar REFIL por cancelamento/inativação auditável, preservando histórico, somente em rodada autorizada.
+- [ ] Gate D51.2 — confirmar propagação do frontend e decidir a contenção da REFIL: cancelar terminalmente organização + assinatura pelas RPCs oficiais com sessão Superadmin, ou autorizar uma evolução separada para inativação reversível. Depois, repetir o pré-check canônico. Não executar E01/E02 nesta rodada.
 
 ## Concluído
 - [x] **Pré-condições do checkpoint E01:** CNPJ controlado `36.736.180/0001-11`, e-mail corporativo `renato@refilinformatica.com.br` e destinatário exclusivo `teste@refilinformatica.com.br` autorizados; Superadmin confirmado no publicado. Nenhuma criação ou envio faz parte da rodada de ajuste.

@@ -5,6 +5,7 @@ import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 const mocks = vi.hoisted(() => ({
   criar: vi.fn(),
   convidar: vi.fn(),
+  consultar: vi.fn(),
 }));
 
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
@@ -19,15 +20,7 @@ vi.mock("@/lib/saas/onboardingCnpj", () => ({
   CODIGOS_FALLBACK_MANUAL: new Set<string>(),
   FONTE_OFICIAL: "Consulta oficial",
   mensagemConsulta: () => "Consulta indisponível",
-  consultarCnpjOnboarding: vi.fn().mockResolvedValue({
-    codigo: "ok",
-    dados: {
-      razao_social: "HOMOLOGAÇÃO D51.2 EMPRESA CONTROLADA",
-      nome_fantasia: "HOMOLOGAÇÃO D51.2",
-      email_contato: "",
-      situacao_cadastral: "ATIVA",
-    },
-  }),
+  consultarCnpjOnboarding: mocks.consultar,
 }));
 
 vi.mock("@/components/ui/select", () => ({
@@ -54,6 +47,7 @@ async function chegarNaRevisao() {
   fireEvent.change(screen.getByLabelText("Nome completo *"), { target: { value: "Responsável Controlado" } });
   fireEvent.change(screen.getByLabelText("E-mail de acesso e convite *"), { target: { value: "teste@refilinformatica.com.br" } });
   fireEvent.click(screen.getByRole("button", { name: /Revisar/ }));
+  fireEvent.change(screen.getByLabelText("Confirme o CNPJ *"), { target: { value: "36736180000111" } });
   expect(screen.getByRole("button", { name: "Criar empresa" })).toBeEnabled();
 }
 
@@ -64,6 +58,17 @@ function renderFlow() {
 describe("D51.2 — checkpoint explícito E01 → E02", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.consultar.mockResolvedValue({
+      codigo: "ok",
+      consultado_em: "2026-10-02T14:00:00.000Z",
+      dados: {
+        cnpj: "36.736.180/0001-11",
+        razao_social: "HOMOLOGAÇÃO D51.2 EMPRESA CONTROLADA",
+        nome_fantasia: "HOMOLOGAÇÃO D51.2",
+        email_contato: "",
+        situacao_cadastral: "ATIVA",
+      },
+    });
     mocks.criar.mockResolvedValue("org-controlada");
     mocks.convidar.mockResolvedValue({ user_id: "user-controlado", senha_temporaria: null, email_status: "accepted" });
   });
@@ -78,6 +83,70 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     expect(mocks.convidar).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Enviar convite" })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Voltar e editar/ })).toBeDisabled();
+  });
+
+  it("mantém a criação desabilitada quando o CNPJ confirmado é diferente", async () => {
+    renderFlow();
+    await chegarNaRevisao();
+    fireEvent.change(screen.getByLabelText("Confirme o CNPJ *"), { target: { value: "36736180000112" } });
+    expect(screen.getByRole("button", { name: "Criar empresa" })).toBeDisabled();
+    expect(mocks.criar).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia resposta oficial com CNPJ diferente do consultado", async () => {
+    mocks.consultar.mockResolvedValueOnce({ codigo: "ok", dados: { cnpj: "09.255.249/0001-12", razao_social: "REFIL", nome_fantasia: "", email_contato: "", situacao_cadastral: "ATIVA" } });
+    renderFlow();
+    fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("A consulta retornou outro CNPJ");
+    expect(screen.queryByRole("button", { name: /Continuar/ })).toBeDisabled();
+  });
+
+  it("bloqueia criação se a razão oficial divergir do snapshot", async () => {
+    renderFlow();
+    fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
+    const razao = await screen.findByLabelText("Razão social *");
+    fireEvent.change(razao, { target: { value: "RAZÃO ALTERADA" } });
+    fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
+    fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.change(screen.getByLabelText("Nome completo *"), { target: { value: "Responsável Controlado" } });
+    fireEvent.change(screen.getByLabelText("E-mail de acesso e convite *"), { target: { value: "teste@refilinformatica.com.br" } });
+    fireEvent.click(screen.getByRole("button", { name: /Revisar/ }));
+    fireEvent.change(screen.getByLabelText("Confirme o CNPJ *"), { target: { value: "36736180000111" } });
+    expect(screen.getByRole("button", { name: "Criar empresa" })).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Os dados não conferem");
+  });
+
+  it("envia exatamente o e-mail corporativo exibido na revisão", async () => {
+    renderFlow();
+    await chegarNaRevisao();
+    expect(screen.getByText("renato@refilinformatica.com.br")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Criar empresa" }));
+    await waitFor(() => expect(mocks.criar).toHaveBeenCalledWith(expect.objectContaining({ email: "renato@refilinformatica.com.br" })));
+  });
+
+  it("invalida snapshot e confirmação ao consultar outro CNPJ", async () => {
+    renderFlow();
+    await chegarNaRevisao();
+    fireEvent.click(screen.getByRole("button", { name: /Voltar e editar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Voltar/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Consultar outro CNPJ" }));
+    expect(screen.getByLabelText("CNPJ *")).toHaveValue("");
+    expect(screen.queryByLabelText("Confirme o CNPJ *")).not.toBeInTheDocument();
+  });
+
+  it("declara mitigação de autofill nos três campos sensíveis", async () => {
+    renderFlow();
+    expect(screen.getByLabelText("CNPJ *")).toHaveAttribute("autocomplete", "off");
+    fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
+    expect(await screen.findByLabelText("E-mail corporativo da empresa *")).toHaveAttribute("autocomplete", "off");
+    fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
+    fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByLabelText("E-mail de acesso e convite *")).toHaveAttribute("autocomplete", "off");
   });
 
   it("só envia convite após a segunda ação explícita", async () => {
