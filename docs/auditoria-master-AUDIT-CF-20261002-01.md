@@ -33,6 +33,7 @@ Todo dado persistente da campanha deve conter `HOMOLOGAÇÃO AUDIT-CF-20261002-0
 | Policies declaradas nas migrations | 1.021 | baseline histórico |
 | Storage | 7 buckets: 6 privados e `logos` público | revisar por domínio |
 | Cron | 5 jobs ativos: views materializadas, monitoramentos, alertas operacionais e SLA | baseline |
+| Integrações identificadas | SMTP, WhatsApp/Meta, SEFAZ, consulta CNPJ, clima e calendário | baseline; entregas externas continuam fail-closed |
 
 As contagens de migrations, triggers e policies são históricas e podem incluir substituições; não equivalem ao total de objetos ativos.
 
@@ -51,11 +52,15 @@ As contagens de migrations, triggers e policies são históricas e podem incluir
 ### Baseline técnico
 
 - Suíte global oficial: **356 arquivos PASS, 1 skipped; 5.371 testes PASS, 4 skipped**.
-- Testes focados do hardening administrativo: **59 PASS**.
+- Testes focados de segurança e D51.2: **70 PASS**.
 - Typecheck: **PASS**.
+- Build de produção: **PASS**; 4.669 módulos transformados e PWA gerada. O bundle principal de 5,60 MB gerou alerta de tamanho, classificado P2 de performance.
+- ESLint: **FAIL de baseline histórico**, com 3.505 erros e 126 avisos em 543 arquivos, predominantemente `no-explicit-any`; não houve evidência de regressão introduzida pelo hardening focado.
 - Scanner profundo: **10 Info, zero Critical/Error/Warning**.
+- Linter Supabase: 492 alertas — 17 RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo, 472 por autenticado e Leaked Password Protection desativada. São alertas contextuais que exigem classificação individual, não autorização para alteração em massa.
+- Dependency scan: **inconclusivo**; o scanner não decodificou a origem URL do pacote `xlsx` no `bun.lock`.
+- Slow queries: topo de 17.768 ms corresponde a harness histórico de concorrência; a seguinte, de 1.815 ms, também é auditoria com fixtures. Não foi comprovado gargalo funcional de produção nesse recorte.
 - O comando genérico `bun test` não é o runner do projeto e tentou carregar specs Playwright fora do ambiente correto; o script oficial `bun run test` passou integralmente.
-- Scan de dependências permanece limitado pelo parser do lockfile no pacote `xlsx`; não foi feito bypass nem alteração de lockfile.
 - Consultas lentas continham principalmente harnesses e auditorias; nenhuma regressão de produção foi comprovada por esse recorte.
 
 ### Achados e classificação
@@ -69,6 +74,9 @@ As contagens de migrations, triggers e policies são históricas e podem incluir
 | CF0-05 | P2 operacional | Dezoito Edge Functions não têm bloco `verify_jwt` explícito; incluem workers, cron, harnesses e geração de artefatos. | Não habilitar em massa: classificar invocador e contrato antes de alterar. |
 | CF0-06 | P3/aceito | Leaked Password Protection desativada. | Risco temporariamente aceito, não resolvido nem homologado. |
 | CF0-07 | P3 | Scanner informa leituras globais autenticadas de catálogos e inserções autenticadas em logs. | Dez achados Info; validar intenção e integridade nas fases correspondentes. |
+| CF0-08 | P2 qualidade | ESLint possui 3.505 erros históricos e 126 avisos; typecheck, build e suíte global permanecem verdes. | Tratar incrementalmente por domínio; não realizar refatoração massiva nesta campanha sem isolar regressões. |
+| CF0-09 | P2 performance | Bundle principal minificado mede aproximadamente 5,60 MB; Vite também detecta imports estáticos e dinâmicos sobrepostos. | Medir carregamento real e dividir por domínio na Fase 13/14. |
+| CF0-10 | P3 cobertura | Não existem módulos Deno de teste para as três Edge Functions D51.2 selecionadas. | Negativas implantadas retornaram 401; adicionar testes Deno quando houver alteração funcional nessas funções. |
 
 Não restou P0/P1 bloqueante após o hardening local e os testes, permitindo iniciar a Fase 1. As duas Edge Functions endurecidas só devem ser implantadas pelo fluxo controlado; nenhuma função ou dado foi acionado nesta auditoria read-only.
 
@@ -93,12 +101,15 @@ O fluxo consulta o CNPJ, fixa um snapshot da razão social oficial e envia essa 
 | Test Mode | **ON** |
 | Allowlist | 1 endereço; destinatário controlado presente |
 | Outros canais | WhatsApp, webhook e in-app OFF |
+| Negativas sem JWT válido | **3/3 PASS**; convite, settings e teste de e-mail retornaram 401 |
 
 O job real AR BIO permanece intocado: status `falhou`, uma tentativa, `email_delivery_status=pending`, zero tentativa de e-mail, sem usuário e sem lease. Nenhum destinatário não autorizado foi usado.
 
 ### Decisão
 
 **Fase 1 NO-GO.** O E01 manual informado não produziu registro localizável no canônico pelo CNPJ ou prefixo exigidos. Não é permitido marcar E01 como PASS, renomear dados, criar substituto automaticamente, abrir SMTP ou executar E02. A progressão para as Fases 2–15 está bloqueada.
+
+Os subcenários executáveis sem ação humana foram concluídos: contratos estáticos de checkpoint/retry, CORS/JWT, negativas implantadas, ausência de objetos controlados, SMTP fail-closed e leases. Criação E01, abertura SMTP, E02, recebimento, primeiro acesso e recovery exigem antes um E01 canônico válido e permanecem `NOT RUN`.
 
 ## Rollback e forward-fix
 
