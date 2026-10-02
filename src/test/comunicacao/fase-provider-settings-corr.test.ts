@@ -359,19 +359,27 @@ describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
     }
   });
 
-  it("config.toml: SOMENTE whatsapp-status-webhook desliga verify_jwt", () => {
+  it("config.toml: verify_jwt=false exige autenticação interna explicitamente auditada", () => {
     const src = read(configToml);
     const blocks = src.split(/\[functions\./).slice(1);
-    let webhookOff = false;
+    const customAuth = new Map([
+      ["whatsapp-status-webhook", /x-hub-signature-256|timingSafeEqual/],
+      ["platform-complete-first-access", /auth\.getClaims\s*\(/],
+      ["onboarding-cnpj-lookup", /auth\.getClaims\s*\(/],
+    ]);
+    const disabled: string[] = [];
     for (const b of blocks) {
       const name = b.split("]")[0].trim();
       const disables = /verify_jwt\s*=\s*false/.test(b);
       if (disables) {
-        expect(name, `verify_jwt=false só permitido em whatsapp-status-webhook, encontrado em ${name}`).toBe("whatsapp-status-webhook");
-        webhookOff = true;
+        disabled.push(name);
+        const authContract = customAuth.get(name);
+        expect(authContract, `${name} precisa estar na allowlist auditada`).toBeDefined();
+        const functionSource = read(`supabase/functions/${name}/index.ts`);
+        expect(functionSource, `${name} precisa validar a autenticação internamente`).toMatch(authContract as RegExp);
       }
     }
-    expect(webhookOff).toBe(true);
+    expect(disabled.sort()).toEqual([...customAuth.keys()].sort());
   });
 
   it("worker/webhook importam e chamam loadRuntimeConfig (health migrou para RPC admin no Gate 6)", () => {

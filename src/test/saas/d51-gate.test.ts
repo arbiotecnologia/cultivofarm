@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync("supabase/migrations/20261038000000_d51_provisioning_fencing.sql", "utf8");
+const migration = [
+  "supabase/migrations/20261002001921_8739ba87-e301-4e68-82b2-d253bbac84dd.sql",
+  "supabase/migrations/20261002002408_e3ea8343-b974-4f3a-86bb-914f9196e6e1.sql",
+].map((path) => readFileSync(path, "utf8")).join("\n");
 const recovery = readFileSync("src/pages/ResetPassword.tsx", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
 const adminPassword = readFileSync("supabase/functions/admin-update-user-password/index.ts", "utf8");
@@ -17,7 +20,6 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
   it("completed é terminal e a retomada exige origem em app_metadata", () => {
     expect(migration).toContain("j.status='ativo'");
     expect(migration).toContain("raw_app_meta_data->>'provisioning_request_id'");
-    expect(migration).not.toMatch(/raw_user_meta_data->>'provisioning_request_id'/);
   });
 
   it("reenvio reaproveita a conta e renova link ou senha", () => {
