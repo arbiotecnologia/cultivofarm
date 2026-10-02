@@ -13,17 +13,13 @@ import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { deliverInviteEmail, type InviteEmailClaim } from "../_shared/comunicacao/invite-email-delivery.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
+import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeadersFor(origin), "Content-Type": "application/json" },
   });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -45,11 +41,17 @@ function soDigitos(v: unknown): string | null {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const requestOrigin = req.headers.get("Origin");
+  if (requestOrigin && !isTrustedOrigin(requestOrigin)) {
+    return respond({ error: "Origem não autorizada." }, 403);
+  }
+
+  const respond = (body: unknown, status = 200) => json(body, status, requestOrigin);
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Não autorizado" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Não autorizado" }, 401);
 
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
     );
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) return json({ error: "Sessão inválida" }, 401);
+    if (claimsError || !claimsData?.claims) return respond({ error: "Sessão inválida" }, 401);
     const callerId = claimsData.claims.sub as string;
 
     const adminClient = createClient(
@@ -70,13 +72,13 @@ Deno.serve(async (req) => {
     const { data: isSuper, error: superErr } = await adminClient.rpc("is_platform_superadmin", {
       _user_id: callerId,
     });
-    if (superErr) return json({ error: "Não foi possível validar sua permissão." }, 500);
+    if (superErr) return respond({ error: "Não foi possível validar sua permissão." }, 500);
     if (isSuper !== true) {
-      return json({ error: "Apenas o superadmin de plataforma pode convidar administradores." }, 403);
+      return respond({ error: "Apenas o superadmin de plataforma pode convidar administradores." }, 403);
     }
 
     const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") return json({ error: "Dados inválidos." }, 400);
+    if (!body || typeof body !== "object") return respond({ error: "Dados inválidos." }, 400);
 
     const organizationId = String((body as Record<string, unknown>).organization_id ?? "");
     const nome = String((body as Record<string, unknown>).nome ?? "").trim();
@@ -87,15 +89,15 @@ Deno.serve(async (req) => {
     const responsavelPrincipal =
       (body as Record<string, unknown>).responsavel_principal !== false;
 
-    if (!UUID_RE.test(organizationId)) return json({ error: "Selecione a empresa." }, 400);
-    if (nome.length < 3 || nome.length > 200) return json({ error: "Informe o nome completo." }, 400);
-    if (!EMAIL_RE.test(email)) return json({ error: "Informe um e-mail válido." }, 400);
-    if (cpf && cpf.length !== 11) return json({ error: "CPF deve ter 11 dígitos." }, 400);
+    if (!UUID_RE.test(organizationId)) return respond({ error: "Selecione a empresa." }, 400);
+    if (nome.length < 3 || nome.length > 200) return respond({ error: "Informe o nome completo." }, 400);
+    if (!EMAIL_RE.test(email)) return respond({ error: "Informe um e-mail válido." }, 400);
+    if (cpf && cpf.length !== 11) return respond({ error: "CPF deve ter 11 dígitos." }, 400);
     if (telefone && (telefone.length < 10 || telefone.length > 11)) {
-      return json({ error: "Telefone deve ter 10 ou 11 dígitos." }, 400);
+      return respond({ error: "Telefone deve ter 10 ou 11 dígitos." }, 400);
     }
     if (modo !== "link" && modo !== "senha_temporaria") {
-      return json({ error: "Modo de acesso inválido." }, 400);
+      return respond({ error: "Modo de acesso inválido." }, 400);
     }
 
     // Redirect somente para origens conhecidas (evita open redirect).
@@ -105,7 +107,7 @@ Deno.serve(async (req) => {
       /^http:\/\/localhost(:\d+)?$/.test(origin);
     const redirectTo = origemPermitida ? `${origin}/reset-password` : undefined;
     if (modo === "link" && !redirectTo) {
-      return json({ error: "Origem não autorizada para o convite.", code: "redirect_not_allowed" }, 400);
+      return respond({ error: "Origem não autorizada para o convite.", code: "redirect_not_allowed" }, 400);
     }
 
     const { data: claimed, error: claimError } = await adminClient.rpc(
@@ -123,11 +125,11 @@ Deno.serve(async (req) => {
     );
     if (claimError || !claimed) {
       const code = claimError?.code === "55P03" ? "provisioning_busy" : "claim_failed";
-      return json({ error: code === "provisioning_busy" ? "Provisionamento já está em andamento." : "Não foi possível reservar o provisionamento.", code }, code === "provisioning_busy" ? 409 : 400);
+      return respond({ error: code === "provisioning_busy" ? "Provisionamento já está em andamento." : "Não foi possível reservar o provisionamento.", code }, code === "provisioning_busy" ? 409 : 400);
     }
     const job = claimed as Record<string, unknown>;
     if (job.completed === true) {
-      return json({ success: true, user_id: String(job.user_id ?? ""), senha_temporaria: null, email_status: "not_required", status: "ativo", idempotent: true });
+      return respond({ success: true, user_id: String(job.user_id ?? ""), senha_temporaria: null, email_status: "not_required", status: "ativo", idempotent: true });
     }
     const jobId = String(job.job_id ?? "");
     const requestId = String(job.request_id ?? "");
@@ -148,7 +150,7 @@ Deno.serve(async (req) => {
       await adminClient.rpc("platform_fail_org_admin_provisioning", {
         p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "resume_lookup_failed",
       });
-      return json({ error: "Não foi possível retomar o provisionamento.", code: "resume_lookup_failed" }, 500);
+      return respond({ error: "Não foi possível retomar o provisionamento.", code: "resume_lookup_failed" }, 500);
     }
     if (typeof resumableId === "string" && UUID_RE.test(resumableId)) userId = resumableId;
 
@@ -162,7 +164,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
         });
-        return json({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+        return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
       }
       actionLink = link.properties.action_link;
     } else if (userId) {
@@ -175,7 +177,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "temporary_password_failed",
         });
-        return json({ error: "Não foi possível renovar a senha temporária.", code: "temporary_password_failed" }, 500);
+        return respond({ error: "Não foi possível renovar a senha temporária.", code: "temporary_password_failed" }, 500);
       }
     }
 
@@ -195,7 +197,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: jaExiste ? "auth_conflict" : "auth_create_failed",
         });
-        return json(
+        return respond(
           {
             error: jaExiste
               ? "Já existe um acesso com este e-mail."
@@ -214,7 +216,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
         });
-        return json({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+        return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
       }
       actionLink = link.properties.action_link;
     } else if (!userId) {
@@ -231,7 +233,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: jaExiste ? "auth_conflict" : "auth_create_failed",
         });
-        return json(
+        return respond(
           {
             error: jaExiste
               ? "Já existe um acesso com este e-mail."
@@ -244,7 +246,7 @@ Deno.serve(async (req) => {
       criamosUsuario = true;
     }
 
-    if (!userId) return json({ error: "Não foi possível identificar o acesso.", code: "auth_missing" }, 500);
+    if (!userId) return respond({ error: "Não foi possível identificar o acesso.", code: "auth_missing" }, 500);
 
     const { error: rpcError } = await adminClient.rpc("platform_finalize_org_admin_provisioning", {
       p_job_id: jobId,
@@ -257,21 +259,17 @@ Deno.serve(async (req) => {
       if (criamosUsuario && userId) {
         await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
       }
+      const code = classifyFinalizeError(rpcError);
       await adminClient.rpc("platform_fail_org_admin_provisioning", {
-        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "finalize_failed",
+        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: code,
       });
-      const m = rpcError.message ?? "";
-      const amigavel = m.includes("platform_forbidden")
-        ? "Permissão insuficiente para concluir o convite."
-        : m.includes("platform_invalid")
-          ? "Dados do administrador inválidos."
-          : "Não foi possível concluir o cadastro do administrador.";
-      return json({ error: amigavel, code: "finalize_failed" }, 400);
+      const response = finalizeErrorResponse(code);
+      return respond({ error: response.message, code }, response.status);
     }
 
     if (modo === "link") {
       if (!actionLink) {
-        return json({ error: "Convite sem link válido.", code: "link_missing" }, 500);
+        return respond({ error: "Convite sem link válido.", code: "link_missing" }, 500);
       }
       const env = await loadRuntimeConfig(adminClient, readWorkerEnv);
       const delivery = await deliverInviteEmail(jobId, actionLink, env, {
@@ -318,7 +316,7 @@ Deno.serve(async (req) => {
 
       if (delivery.status !== "accepted") {
         const ambiguous = delivery.status === "ambiguous";
-        return json({
+        return respond({
           error: ambiguous
             ? "O provedor pode ter aceitado o convite, mas a confirmação local falhou. Aguarde antes de reenviar."
             : "O acesso foi preparado, mas o e-mail não foi enviado. Tente novamente após configurar o SMTP.",
@@ -327,7 +325,7 @@ Deno.serve(async (req) => {
         }, 503);
       }
 
-      return json({
+      return respond({
         success: true,
         user_id: userId,
         senha_temporaria: null,
@@ -337,7 +335,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({
+    return respond({
       success: true,
       user_id: userId,
       senha_temporaria: senha,
@@ -346,7 +344,7 @@ Deno.serve(async (req) => {
       idempotent: !criamosUsuario,
     });
   } catch (_err) {
-    return json({ error: "Falha inesperada ao criar o acesso." }, 500);
+    return respond({ error: "Falha inesperada ao criar o acesso." }, 500);
   }
 });
 

@@ -1314,3 +1314,79 @@ Rollback técnico: restaurar a definição anterior da RPC e a versão anterior 
 ### 35.5 Prompt proposto para a próxima fase
 
 > **D51.2 — Fase 1: corrigir colisão do profile automático na finalização.** Alterar somente `platform_finalize_org_admin_provisioning` por migration idempotente no Supabase canônico `swzpzcwiasxmjutrmvkm`. Permitir que o profile automático do mesmo `user_id`, ainda com `organization_id=NULL`, seja adotado pela organização do job; manter bloqueio absoluto para organização diferente e papéis incompatíveis. Atualizar o `UPSERT` para preencher `organization_id`, preservando assinatura, `SECURITY DEFINER`, `search_path=''`, grants exclusivos de `service_role`, validação de `raw_app_meta_data.provisioning_request_id`, lease/fencing, ticket de organização e compensação. Adicionar testes transacionais/mock para profile nulo, conflito cross-tenant, metadata divergente, lease expirada e responsável principal. Não reprocessar jobs, não criar usuário, não enviar e-mail, não abrir SMTP, não alterar o job real, não publicar e não avançar D52. Entregar migration proposta, testes, riscos e rollback/forward-fix; parar antes de implantar se qualquer pré-condição divergir.
+
+## 36. Fases 1–5 executadas e pré-check da Fase 6
+
+Data/hora UTC: `2026-10-02T05:39Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 36.1 Fluxo anterior versus fluxo refinado
+
+Antes, **Nova Empresa** criava apenas a organização e exigia mudança para **Administradores**, nova seleção da mesma empresa e repetição dos dados do responsável. A ação corrente e a lista histórica ficavam misturadas; e-mail corporativo e e-mail de acesso não eram diferenciados; telefone e CPF normalmente vazios ocupavam a tabela principal.
+
+O fluxo existente em `/plataforma` passou a ser uma jornada única, sem rota, módulo ou tabela paralela:
+
+1. **Empresa:** CNPJ consultado pelo mecanismo já existente, razão social/nome fantasia, e-mail corporativo, plano e trial;
+2. **Responsável:** nome, e-mail de login/convite, telefone e CPF opcionais, Responsável Principal e Link de convite como padrão;
+3. **Revisão:** resumo não editável e ação única **Criar empresa e enviar convite**;
+4. criação da empresa e convite continuam operações server-side separadas, mas são orquestradas pela UI;
+5. se a empresa for criada e o convite falhar, o `organizationId` é preservado e **Tentar convite novamente** executa somente o convite;
+6. sucesso oferece **Ver empresa** e **Ver administradores**; o segundo entrega o contexto da organização à aba histórica, sem nova seleção;
+7. **Administradores** continua autônoma para acompanhamento e administrador adicional; a tabela principal agora usa Empresa, Responsável, E-mail, Forma de acesso, Status, Última atualização e Ação.
+
+Estados humanos consolidados: **Preparando → Empresa criada → Criando acesso → Enviando convite → Convite enviado → Falhou — tentar novamente**. O botão fica bloqueado durante ambas as mutations e os hooks permanecem com `retry:false`.
+
+### 36.2 Forward-fix e observabilidade
+
+A migration versionada `20261002052628_99b10aea-64fa-4968-a315-285560c83671.sql` substituiu apenas `platform_finalize_org_admin_provisioning(uuid,uuid,uuid)`:
+
+- perfil do mesmo `user_id` com `organization_id=NULL` pode ser adotado;
+- perfil já ligado à organização do job é aceito idempotentemente;
+- organização divergente continua bloqueada por `platform_profile_tenant_conflict`;
+- o UPSERT preenche `organization_id` explicitamente e preserva nome/e-mail já não vazios;
+- papel diferente de `administrador`, metadata divergente e lease vencida continuam bloqueados;
+- responsável principal, ticket de escrita, `raw_app_meta_data.provisioning_request_id`, fencing e compensação foram preservados.
+
+Validação pós-migration no canônico: `SECURITY DEFINER=true`, `search_path=''`, execução permitida a `service_role` e negada a `anon`/`authenticated`; guardas de profile nulo, mesma organização, cross-tenant e app metadata presentes. RLS permanece habilitada em `organizations`, `organization_subscriptions`, `platform_org_admin_invites`, `profiles` e `user_roles`.
+
+A Edge Function passou a classificar a etapa de finalização somente nos códigos allowlisted `profile_tenant_conflict`, `auth_metadata_mismatch`, `stale_lease`, `authorization_failed`, `database_constraint` e `finalize_internal_error`. Mensagens SQL, token, senha, destinatário e action link não são persistidos nem retornados. A compensação Auth continua restrita ao usuário criado pela execução corrente. SMTP continua **at-least-once** com lease/cooldown local; não há alegação de exactly-once do provedor.
+
+Também foi removido o CORS curinga dessa função, reutilizando a allowlist compartilhada. Após implantação isolada de `platform-invite-org-admin`, o preflight do domínio oficial retornou `204` com origem exata e a origem maliciosa retornou `403`; JWT inválido foi recusado pelo gateway com `401`.
+
+### 36.3 Arquivos alterados
+
+- `supabase/migrations/20261002052628_99b10aea-64fa-4968-a315-285560c83671.sql`;
+- `supabase/functions/platform-invite-org-admin/index.ts`;
+- `supabase/functions/_shared/platform-invite-errors.ts`;
+- `supabase/tests/org-onboarding/d51_finalize_forward_fix.sql`;
+- `src/pages/plataforma/OrganizationOnboardingFlow.tsx`;
+- `src/pages/plataforma/PlataformaEmpresas.tsx`;
+- `src/pages/plataforma/PlataformaAdmins.tsx`;
+- `src/pages/plataforma/PlataformaHome.tsx`;
+- `src/test/saas/d51-finalize-forward-fix.test.ts`;
+- `src/test/saas/d51-unified-onboarding.test.ts`.
+
+### 36.4 Testes, scanner e implantação
+
+- typecheck: **PASS**;
+- build de produção/PWA: **PASS**, incluindo geração de `sw.js`;
+- testes focados finais: **43/43 PASS**;
+- suíte global: **5.333 PASS**, 4 skipped, sem falha;
+- harness SQL transacional adicionado para contrato, ACL, metadata e isolamento; não executado contra dados produtivos;
+- runner Deno: nenhum módulo de teste foi encontrado para essa função; cobertura do helper e entrega foi executada pelo Vitest;
+- scanner profundo: **0 Critical, 0 Error, 0 Warning; 10 Info**;
+- linter geral: 492 avisos históricos já registrados, incluindo Leaked Password Protection desativada; nenhum delta P0/P1 causado pelo fix;
+- migration aplicada no canônico; somente `platform-invite-org-admin` implantada; frontend republicado em `https://app.cultivofarm.com.br`;
+- smoke HTTP: `/`, `/auth`, `/plataforma`, chunk principal e `/sw.js` retornaram `200`.
+
+Rollback: antes de qualquer provisionamento concluído, é possível restaurar a definição anterior da RPC e a versão anterior da Edge/UI. Depois de conclusão, usar forward-fix e preservar profile, papel, organização e auditoria; não apagar histórico. A migration não altera dados existentes.
+
+### 36.5 Preservação do incidente e pré-check Fase 6
+
+O job real `1d14f78b…c558` permaneceu exatamente em `falhou`, `attempt_count=1`, `last_error_code=finalize_failed`, `email_delivery_status=pending`, `email_attempt_count=0`, sem `user_id` e sem leases. Ele não foi reprocessado, reenviado, cancelado ou alterado. Há zero organizações e zero jobs com prefixo D51.2 ou destinatário `teste@refilinformatica.com.br`; leases ativos de provisionamento/e-mail são zero.
+
+SMTP canônico permaneceu fechado: entrega global **OFF**, e-mail **OFF**, Test Mode **ON**, allowlist exatamente `teste@refilinformatica.com.br`, configuração SMTP presente somente por booleanos e WhatsApp/in-app/webhook **OFF**. Nenhum segredo foi lido ou exposto.
+
+A busca em código, migrations, testes, scripts e documentação **não encontrou mecanismo oficial ou fixture de CNPJ de teste para `platform_create_organization`**. O fluxo exige CNPJ válido no frontend e no servidor; os artefatos de homologação encontrados pertencem a outros módulos e não autorizam seu uso neste cadastro. Conforme a regra expressa da Fase 6, a execução parou antes de abrir SMTP ou criar empresa.
+
+**Decisão:** Fases 1–5 concluídas e implantadas; Fase 6 **NO-GO por uma única pendência: ausência de CNPJ oficial de teste suportado pelo fluxo**. Não houve E2E, tentativa SMTP ou cleanup operacional novo. D51.2 permanece aberto e D52 bloqueado. Para retomar, o responsável deve fornecer ou aprovar um mecanismo oficial de CNPJ sintético/teste compatível com a validação existente; não usar CNPJ real nem burlar a validação de produção.

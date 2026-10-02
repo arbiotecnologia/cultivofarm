@@ -102,6 +102,7 @@ const motivoHumano = (s: string | null) => (s ? (ORIGEM_LABEL[s] ?? s.replace(/_
 export default function PlataformaHome() {
   const { signOut } = useAuth();
   const [aba, setAba] = useState("planos");
+  const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
   const planos = usePlanosSaaS();
   const catalogo = useModulosFeaturesSaaS();
   const assinaturas = useAssinaturasSaaS();
@@ -272,11 +273,16 @@ export default function PlataformaHome() {
 
           {/* ADMINISTRADORES DE EMPRESA ----------------------------------- */}
           <TabsContent value="empresas">
-            <PlataformaEmpresas onConvidar={() => setAba("admins")} />
+            <PlataformaEmpresas
+              onAbrirAdministradores={(organizationId) => {
+                setOrganizacaoEmContexto(organizationId);
+                setAba("admins");
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="admins">
-            <PlataformaAdmins />
+            <PlataformaAdmins organizationIdInicial={organizacaoEmContexto} />
           </TabsContent>
 
           <TabsContent value="comunicacao">

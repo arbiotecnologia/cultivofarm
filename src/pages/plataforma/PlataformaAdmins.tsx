@@ -6,7 +6,7 @@
  * valida o papel de plataforma. Aqui não há atribuição de papéis pelo cliente
  * e o superadmin NÃO vira administrador operacional.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,12 +40,6 @@ const mascaraTelefone = (v: string) => {
   return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
 };
 
-const cpfMascarado = (v: string | null) => {
-  if (!v) return "—";
-  const d = v.replace(/\D/g, "");
-  return d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : "—";
-};
-
 const dataHora = (valor: string) => {
   const d = new Date(valor);
   return Number.isNaN(d.getTime())
@@ -54,9 +48,9 @@ const dataHora = (valor: string) => {
 };
 
 const STATUS_PROVISIONAMENTO = {
-  processando: "Processando",
-  falhou: "Falhou — pode retentar",
-  pendente: "Primeiro acesso pendente",
+  processando: "Criando acesso",
+  falhou: "Falhou — tentar novamente",
+  pendente: "Convite enviado",
   ativo: "Ativo",
 } as const;
 
@@ -69,12 +63,12 @@ async function copiar(texto: string, rotulo: string) {
   }
 }
 
-export default function PlataformaAdmins() {
+export default function PlataformaAdmins({ organizationIdInicial = null }: { organizationIdInicial?: string | null }) {
   const orgs = useOrganizacoesSaaS();
   const convites = useConvitesAdminEmpresa();
   const convidar = useConvidarAdminEmpresa();
 
-  const [org, setOrg] = useState("");
+  const [org, setOrg] = useState(organizationIdInicial ?? "");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
@@ -84,6 +78,10 @@ export default function PlataformaAdmins() {
   const [resultado, setResultado] = useState<ResultadoConvite | null>(null);
 
   const nomeOrg = (id: string) => orgs.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
+
+  useEffect(() => {
+    if (organizationIdInicial) setOrg(organizationIdInicial);
+  }, [organizationIdInicial]);
 
   const valido =
     !!org && nome.trim().length >= 3 && EMAIL_RE.test(email.trim()) &&
@@ -111,7 +109,7 @@ export default function PlataformaAdmins() {
           setTelefone("");
           toast.success(r.email_status === "accepted" ? "Convite aceito pelo servidor de e-mail." : "Acesso do administrador criado.");
         },
-        onError: (e) => toast.error(e.message),
+        onError: () => toast.error("Não foi possível concluir o convite. Confira o status antes de tentar novamente."),
       },
     );
   };
@@ -153,7 +151,7 @@ export default function PlataformaAdmins() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="admin-email">E-mail corporativo</Label>
+              <Label htmlFor="admin-email">E-mail de acesso e convite</Label>
               <Input
                 id="admin-email"
                 type="email"
@@ -269,13 +267,12 @@ export default function PlataformaAdmins() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Empresa</TableHead>
-                    <TableHead>Nome</TableHead>
+                    <TableHead>Responsável</TableHead>
                     <TableHead>E-mail</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Acesso</TableHead>
+                    <TableHead>Forma de acesso</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Quando</TableHead>
+                    <TableHead>Última atualização</TableHead>
+                    <TableHead>Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -291,13 +288,27 @@ export default function PlataformaAdmins() {
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{c.email}</TableCell>
-                      <TableCell>{c.telefone ?? "—"}</TableCell>
-                      <TableCell>{cpfMascarado(c.cpf_cnpj)}</TableCell>
                       <TableCell>
                         {c.modo_acesso === "link" ? "Link de convite" : "Senha temporária"}
                       </TableCell>
                       <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
+                      <TableCell>
+                        {c.status === "falhou" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={convidar.isPending}
+                            onClick={() => {
+                              setOrg(c.organization_id); setNome(c.nome); setEmail(c.email);
+                              setCpf(c.cpf_cnpj ? mascaraCpf(c.cpf_cnpj) : "");
+                              setTelefone(c.telefone ? mascaraTelefone(c.telefone) : "");
+                              setModo(c.modo_acesso); setResponsavel(c.responsavel_principal);
+                              document.getElementById("admin-nome")?.scrollIntoView({ behavior: "smooth" });
+                            }}
+                          >Preparar nova tentativa</Button>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
