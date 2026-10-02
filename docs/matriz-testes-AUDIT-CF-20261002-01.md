@@ -29,6 +29,7 @@
 | PWA-014 | Compatibilidade de sessão/HTML legado | PASS | fallback por hash e transição hash→meta cobertos |
 | PWA-015 | Eventos, Adiar e Atualizar agora | PASS | detecção e badge sem navegação; uma navegação apenas após clique |
 | PWA-016 | Regressão P0.1 completa | PASS pré-publicação | 32 focados; typecheck/build; 5.379 globais/4 skipped; scanner 10 Info e zero P0/P1 |
+| PWA-017 | Publicação única e smoke oficial P0.1 | PASS | HTML com `cultivo-build-id`; detector `no-store`; pacote `/plataforma` com botão SMTP; URL estável, zero overlay/erro e nenhum clique SMTP |
 
 ## Diagnóstico SMTP — integração da tela de plataforma
 
