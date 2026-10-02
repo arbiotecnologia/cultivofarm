@@ -18,7 +18,6 @@ import {
   getSmtpConfigError,
   hasHeaderInjection,
   isRecipientAllowedInTestMode,
-  isSmtpConfigValid,
   MAX_EMAIL_ADDRESS_LEN,
   MAX_EMAIL_BODY_BYTES,
   MAX_EMAIL_SUBJECT_LEN,
