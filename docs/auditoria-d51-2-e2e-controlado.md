@@ -1005,7 +1005,7 @@ Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
 
 ### 30.1 Resultado canônico
 
-A confirmação manual informou empresa criada, convite gerado e mensagem recebida pelo endereço controlado, sem abertura do link. Entretanto, as leituras somente leitura do Supabase canônico não encontraram os registros correspondentes:
+A confirmação manual informou feedback visual de empresa criada e convite gerado. O responsável corrigiu posteriormente a evidência: **nenhum e-mail foi recebido** pelo endereço controlado e **nenhum link foi recebido ou aberto**. As leituras somente leitura do Supabase canônico também não encontraram os registros correspondentes:
 
 | Controle obrigatório | Resultado canônico |
 |---|---|
@@ -1026,12 +1026,12 @@ Nenhum link, token, OTP, senha, cookie, cabeçalho de autorização ou metadado 
 
 ### 30.2 Classificação e decisão
 
-- **E01: FAIL** — organização do gate ausente no Supabase canônico.
-- **E02: FAIL** — convite/job, Auth user, profile e papel esperados ausentes no Supabase canônico.
-- **E03: FAIL / NÃO COMPROVÁVEL** — o recebimento foi confirmado manualmente, porém não existe job canônico nem tentativa/aceite SMTP correlacionável; não é possível provar destinatário único ou ausência de retry.
-- **GO/NO-GO para E04:** **NO-GO**.
+- **E01: FAIL / NÃO COMPROVADO** — organização do gate ausente no Supabase canônico.
+- **E02: FAIL / NÃO COMPROVADO** — convite/job, Auth user, profile e papel esperados ausentes no Supabase canônico.
+- **E03: FAIL CONFIRMADO** — nenhum e-mail foi recebido e não existe tentativa/aceite SMTP canônico correlacionável.
+- **E04: NOT APPLICABLE / NO-GO** — nenhum link foi recebido; não existe primeiro acesso a executar.
 
-Há inconsistência entre a ação/recebimento relatados e o estado canônico. O link recebido **não deve ser aberto** até identificar em qual ambiente a ação foi efetivamente persistida e correlacionar, sem expor o link, a organização, o job e o Auth user esperados. D51.2 permanece aberto e bloqueado neste ponto; D52 não foi iniciado.
+Há inconsistência entre os feedbacks visuais relatados e o estado canônico: não houve persistência nem envio real correlacionável. Não existe link a abrir. D51.2 permanece aberto e bloqueado neste ponto; D52 não foi iniciado.
 
 ## 31. Investigação da divergência de ambiente/persistência após E01/E02
 
@@ -1075,7 +1075,7 @@ Leituras posteriores reconfirmaram o baseline e a ausência de efeitos:
 - logs recentes de `test-communication-email`: zero;
 - rate limit de Comunicação na janela: somente `get` e `mutate` de configuração, sem ação de teste SMTP.
 
-Houve uma única auditoria `apply` de provider settings às `04:31:55.246155Z`, coerente com acesso/configuração da aba Comunicação, não com criação de empresa, convite ou envio. Isso também exclui o botão de teste SMTP canônico como origem da mensagem relatada.
+Houve uma única auditoria `apply` de provider settings às `04:31:55.246155Z`, coerente com acesso/configuração da aba Comunicação, não com criação de empresa, convite ou envio. Não houve chamada ao botão de teste SMTP canônico.
 
 ### 31.4 Service worker e hipótese de cache
 
@@ -1089,17 +1089,17 @@ Logo, cache antigo isoladamente não explica os fatos observados. Continua poss�
 
 ### 31.5 Classificação, risco e decisão
 
-**Classificação: D — ação manual ocorreu em outro contexto de ambiente/aplicação, comprovado por exclusão dos caminhos A, B e C no estado auditável.** O backend alternativo exato e o emissor da mensagem permanecem **não identificados**; não há autorização/evidência suficiente para consultar projetos antigos nem para extrair token/link do e-mail.
+A classificação preliminar “D — outro ambiente/contexto” foi posteriormente refutada pela confirmação do domínio oficial e não deve ser tratada como causa. O estado factual é **inconclusivo**: o bundle atual e os contratos atuais não explicam feedback visual de sucesso sem qualquer persistência canônica, enquanto o runtime exato carregado na aba no instante da ação não está preservado.
 
-- A) frontend live apontando para backend errado: **refutado** pelo bundle publicado e binding fail-closed;
-- B) fluxo E01/E02 não persiste como esperado: **refutado** pelos contratos transacionais e ausência de sucesso otimista;
-- C) bundle/cache antigo: **não sustentado** — não existe versão histórica com o fluxo atual e ref antigo;
-- D) outro ambiente/contexto: **confirmado por exclusão**, com destino exato ainda não atribuível;
-- E) outro motivo: nenhuma evidência encontrada.
+- A) frontend live atual apontando para backend errado: **refutado** pelo bundle publicado e binding fail-closed;
+- B) fluxo atual sem persistência obrigatória: **refutado** pelos contratos transacionais e ausência de sucesso otimista;
+- C) bundle/cache antigo: **possível, não comprovado**;
+- D) outro domínio: **refutado** pela confirmação do responsável;
+- E) versão intermediária ou outro estado no mesmo domínio: **possível, não comprovado**.
 
-Risco: o link recebido não é correlacionável ao canônico e pode pertencer a outro projeto/ambiente. Ele permanece **não confiável e não deve ser aberto, copiado ou inspecionado**. E01/E02/E03 continuam FAIL/não comprováveis e E04 permanece NO-GO.
+Não houve e-mail nem link recebido. E01 e E02 permanecem FAIL/não comprovados; E03 é FAIL confirmado; E04 é NOT APPLICABLE/NO-GO.
 
-**Não repetir E01/E02.** Para decidir uma nova execução, o responsável deve primeiro, sem abrir o link, conferir no navegador onde realizou a ação o domínio completo visível e recarregar a página antes de qualquer operação. Uma repetição só poderá ser autorizada em nova rodada com captura prévia do domínio oficial, hash `App-D9d5jviP.js`, Network mostrando exclusivamente `swzpzcwiasxmjutrmvkm.supabase.co` e confirmação pós-E01 no canônico antes de E02. Nenhum dado, SMTP, usuário ou tenant foi alterado nesta investigação; D52 permanece bloqueado.
+**Não repetir E01/E02.** O próximo passo é rastrear, sem nova ação mutante, por que a UI indicou sucesso sem persistência canônica e sem envio real. Nenhum dado, SMTP, usuário ou tenant foi alterado nesta investigação; D52 permanece bloqueado.
 
 ### 31.6 Testes somente leitura
 
@@ -1142,12 +1142,12 @@ Nenhum outro campo foi enviado à RPC. A leitura posterior confirmou:
 
 A primeira tentativa técnica falhou fechada antes de qualquer escrita porque o binding do sandbox não estava disponível ao processo local. A restauração do binding confirmou a instância canônica, mas o processo ainda não recebeu as variáveis; por isso a execução foi feita diretamente no canônico pelo mecanismo server-side existente. Não houve envio, reenvio, criação de empresa, convite, usuário ou alteração de credenciais/Vault.
 
-**Decisão:** janela SMTP canônica fechada e estado fail-closed restaurado. E01/E02/E03 permanecem FAIL/não comprováveis, E04 permanece NO-GO, D51.2 continua bloqueado e D52 não foi iniciado.
+**Decisão:** janela SMTP canônica fechada e estado fail-closed restaurado. E01/E02 permanecem FAIL/não comprovados; E03 é FAIL confirmado por ausência de e-mail e de tentativa canônica; E04 é NOT APPLICABLE/NO-GO porque não existe link recebido. D51.2 continua bloqueado e D52 não foi iniciado.
 
 ## 33. Reinvestigação após confirmação do domínio oficial
 
 Data/hora UTC: `2026-10-02T04:51:36Z`  
-Nova evidência do responsável: E01/E02 foram executados em `https://app.cultivofarm.com.br`. O link recebido permaneceu fechado.
+Nova evidência do responsável: E01/E02 foram executados em `https://app.cultivofarm.com.br`. Posteriormente, o responsável corrigiu o relato: **nenhum e-mail e nenhum link foram recebidos**.
 
 ### 33.1 Reclassificação obrigatória
 
@@ -1178,7 +1178,7 @@ O histórico Git entre 1º e 2 de outubro foi reconstruído:
 
 Não foi encontrado commit em que “Empresa criada” apareça antes da confirmação de `platform_create_organization`. Também não foi encontrado commit que envie e-mail e conclua o convite sem persistir em `platform_org_admin_invites`. A string literal “Convite gerado” não existe nas versões auditadas; as mensagens encontradas foram “Acesso do administrador criado” e, depois, “Convite aceito pelo servidor de e-mail”.
 
-A versão anterior ao SMTP automático podia gerar e exibir/copiar um link, mas não possuía envio SMTP no fluxo. A versão posterior que afirma aceite SMTP já cria/reclama o job antes do efeito externo. Portanto **nenhuma versão conhecida do repositório explica simultaneamente**: toast de empresa, feedback positivo de convite/e-mail recebido e zero organização/job/Auth user no canônico.
+A versão anterior ao SMTP automático podia gerar e exibir/copiar um link, mas não possuía envio SMTP no fluxo. A versão posterior que afirma aceite SMTP já cria/reclama o job antes do efeito externo. Portanto **nenhuma versão conhecida do repositório explica simultaneamente**: feedback visual de empresa e convite, ausência de e-mail/link e zero organização/job/Auth user no canônico.
 
 Não existe no repositório um ledger confiável que associe cada publicação do domínio a um commit e horário. Os timestamps Git delimitam quando o código passou a existir, mas não provam qual commit estava servido ou já carregado na aba durante a ação.
 
@@ -1199,21 +1199,19 @@ Logo, domínio oficial e barra de endereço correta **não provam** que a aba ex
 
 Assim, cache React Query, estado local ou double-click não explicam os sucessos relatados sem requisição correspondente.
 
-### 33.5 E-mail sem abertura do link
+### 33.5 E-mail e link não recebidos
 
 Na janela aproximada `04:20Z–04:40Z`, as consultas aos logs canônicos de Edge, gateway, Auth e Postgres não localizaram chamadas a `platform-invite-org-admin`, `create-user`, `test-communication-email`, Auth invite/generateLink ou às RPCs E01/E02. O canônico também não possui outbox, evento, recibo, rate-limit de teste, job ou Auth user correlacionável.
 
-A infraestrutura gerenciada de e-mail do projeto não possui domínio configurado e não registrou evento para o destinatário controlado na janela; portanto Lovable Email não explica o recebimento. `create-user` não envia e-mail. O caminho histórico de `generateLink` apenas devolvia o link à UI e não contém chamada explícita de envio. Os workers legados de alertas usam outros dados/assuntos e não são chamados pela UI Plataforma.
-
-O SMTP externo do módulo Comunicação não oferece nesta auditoria log de provedor independente. Sem job/tentativa no canônico, o e-mail recebido permanece **não atribuível** ao fluxo canônico.
+A ausência de evento, job, tentativa e chamada canônica é compatível com a confirmação factual de que nenhum e-mail foi recebido. Não existe mensagem, link ou metadado de entrega a correlacionar. Hipóteses sobre Lovable Email, `create-user`, SMTP externo ou outro emissor deixam de ser necessárias para explicar o caso e ficam removidas da análise causal.
 
 ### 33.6 Decisão e informação mínima restante
 
 **Causa comprovada:** nenhuma.  
-**Causa mais provável, com confiança baixa a moderada:** C/E — aba no domínio oficial executando estado antigo/intermediário em memória, ou uma publicação intermediária não preservada no histórico acessível. A ausência total de requests canônicos na janela sustenta essa classe, mas não distingue suas variantes nem explica de forma verificável o emissor do e-mail.
+**Causa mais provável, com confiança baixa a moderada:** C/E — aba no domínio oficial executando estado antigo/intermediário em memória, ou uma publicação intermediária não preservada no histórico acessível. A ausência total de requests canônicos na janela sustenta essa classe, mas não distingue suas variantes.
 
-**Hipóteses refutadas:** outro domínio; binding errado no bundle corrente; sucesso otimista/cache persistido; fluxo corrente sem persistência; Lovable Email; `create-user`; teste SMTP canônico.
+**Hipóteses refutadas:** outro domínio; binding errado no bundle corrente; sucesso otimista/cache persistido; fluxo corrente sem persistência.
 
-Para avançar a atribuição sem abrir o link, a informação mínima segura é o **remetente visível, assunto e data/hora com fuso** da mensagem, além de eventual identificador não sensível do cabeçalho (`Message-ID` com domínio preservado e parte local mascarada). Não enviar link, token, OTP, cabeçalhos de autenticação ou corpo que contenha URL.
+O próximo passo documental/técnico é rastrear por que a UI indicou sucesso sem persistência canônica e sem envio real, usando apenas histórico de publicação, runtime e feedback visual já disponíveis. Não existe e-mail ou link do qual coletar metadados.
 
-Até nova correlação, não repetir E01/E02, não reenviar e não abrir o link. A janela SMTP canônica foi reconfirmada global/e-mail OFF, com modo de teste ON. E01/E02/E03 permanecem FAIL/não comprováveis; E04 e D52 permanecem NO-GO. Nenhum código, banco, SMTP ou dado operacional foi alterado nesta reinvestigação.
+Até nova correlação, não repetir E01/E02. A janela SMTP canônica foi reconfirmada global/e-mail OFF, com modo de teste ON. E01/E02 permanecem FAIL/não comprovados; E03 é FAIL confirmado — nenhum e-mail recebido e nenhuma tentativa canônica correlacionável; E04 é NOT APPLICABLE/NO-GO porque não existe link recebido. D52 permanece NO-GO. Nenhum código, banco, SMTP ou dado operacional foi alterado nesta reinvestigação.
