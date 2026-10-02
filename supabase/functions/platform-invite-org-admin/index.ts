@@ -145,6 +145,33 @@ Deno.serve(async (req) => {
     }
     if (typeof resumableId === "string" && UUID_RE.test(resumableId)) userId = resumableId;
 
+    // Reenvio/retomada nunca cria outra conta: renova somente a credencial
+    // da conta cuja origem server-only corresponde à intenção persistida.
+    if (userId && modo === "link") {
+      const { data: link, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "recovery", email, options: redirectTo ? { redirectTo } : undefined,
+      });
+      if (linkError || !link?.properties?.action_link) {
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
+        });
+        return json({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+      }
+      actionLink = link.properties.action_link;
+    } else if (userId) {
+      senha = senhaTemporaria();
+      const { error: resetError } = await adminClient.auth.admin.updateUserById(userId, {
+        password: senha,
+      });
+      if (resetError) {
+        senha = null;
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "temporary_password_failed",
+        });
+        return json({ error: "Não foi possível renovar a senha temporária.", code: "temporary_password_failed" }, 500);
+      }
+    }
+
     if (!userId && modo === "link") {
       // Cria primeiro com app_metadata server-only; generateLink(recovery) apenas
       // produz o link e não duplica a conta nem envia e-mail.

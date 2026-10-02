@@ -20,6 +20,13 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
     expect(migration).not.toMatch(/raw_user_meta_data->>'provisioning_request_id'/);
   });
 
+  it("reenvio reaproveita a conta e renova link ou senha", () => {
+    const edge = readFileSync("supabase/functions/platform-invite-org-admin/index.ts", "utf8");
+    expect(edge).toContain('if (userId && modo === "link")');
+    expect(edge).toContain('else if (userId)');
+    expect(edge).not.toContain("listUsers");
+  });
+
   it("remove execução do caminho legado MD5", () => {
     expect(migration).toContain("REVOKE ALL ON FUNCTION platform_private.conclude_provisional_password()");
   });
