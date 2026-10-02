@@ -994,4 +994,6 @@ Uma prova browser sem sessão, executada a partir de `https://app.cultivofarm.co
 
 ### 29.4 Decisão
 
-**ABA COMUNICAÇÃO APTA PARA RETOMADA AUTENTICADA.** O bloqueio de transporte/CORS foi removido no runtime canônico. A leitura positiva como Superadmin ainda depende da sessão real do responsável e não foi declarada PASS sem essa prova. D51.2 permanece NO-GO para encerramento e D52 não foi iniciado.
+**INCIDENTE CORS ENCERRADO.** Após a correção, o responsável confirmou no ambiente publicado, com sessão real de Superadmin, que a página `/plataforma` e a aba **Comunicação** abriram normalmente. A função `communication-provider-settings` carregou corretamente na UI autenticada, completando a prova positiva que permanecia pendente.
+
+Esta confirmação foi exclusivamente observacional: não houve alteração de código, banco, SMTP, allowlist, usuário ou tenant; nenhum e-mail foi enviado. O Gate D51.2 permanece aberto e em andamento, com próximo passo em E01/E02 manual controlado. D52 não foi iniciado.
