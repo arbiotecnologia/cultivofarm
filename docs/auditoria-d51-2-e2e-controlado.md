@@ -608,3 +608,78 @@ Conforme a regra principal, a execução parou **antes de qualquer mutação e a
 Para uma nova retomada, o Superadmin de Plataforma deve, pela aba Comunicação de `/plataforma`, substituir a allowlist para conter somente `teste@refilinformatica.com.br` e desligar notificações in-app, preservando WhatsApp e webhook OFF. Depois, deve permanecer autenticado na prévia e iniciar uma nova mensagem de retomada para que a sessão possa ser validada sem senha, token ou `service_role`.
 
 **Decisão: NO-GO.** Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida. D52 não foi iniciado.
+
+## 23. Retomada D51.2 após correção da configuração
+
+Data/hora UTC do fechamento desta tentativa: `2026-10-02T03:00:07Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
+Commit candidato: `a324f0f447fc3848c13404d114ab1198205aa8b7`
+
+### 23.1 Novo pré-check somente leitura
+
+| Pré-check | Resultado |
+|---|---|
+| Binding canônico | PASS — ref canônico confirmado |
+| Test mode | PASS — ON |
+| Allowlist | PASS — exatamente 1 entrada, correspondente ao endereço controlado autorizado |
+| Entrega global | PASS — ON |
+| Entrega por e-mail | PASS — ON |
+| WhatsApp | PASS — OFF |
+| In-app | PASS — OFF |
+| Webhook | PASS — OFF |
+| SMTP | PASS — host, porta, usuário, referência de senha e remetente presentes; valores não coletados no relatório |
+| Leases ativos | PASS — zero |
+| Conflito Auth do endereço controlado | PASS — zero |
+| Conflito de convite do endereço controlado | PASS — zero |
+| Organização/convite com marca D51.2 | PASS — zero |
+| Sessão real do Superadmin nas ferramentas | **FAIL — indisponível; endpoint administrativo respondeu HTTP 401** |
+| Leaked Password Protection | EXCEÇÃO ACEITA — warning permanece presente, aberto e não mascarado |
+
+O linter permaneceu com 492 achados históricos, incluindo o warning de Leaked Password Protection. Nenhuma configuração, credencial ou dado foi alterado neste pré-check.
+
+### 23.2 Cobertura segura sem sessão de navegador
+
+Como a configuração ficou verde, mas a sessão real continuou indisponível, foram executadas somente provas sem identidade simulada e sem mutação:
+
+- `communication-provider-settings`, `test-communication-email` e `platform-invite-org-admin` rejeitaram JWT inválido com HTTP 401 e resposta sanitizada;
+- contratos focados D51.2: 7 arquivos, 50 testes aprovados;
+- suíte global: 347 arquivos aprovados, 1 ignorado; 5.307 testes aprovados, 4 ignorados;
+- typecheck: PASS;
+- build observado do candidato: PASS;
+- testes Deno direcionados: `NOT RUN` técnico — as três funções não possuem módulos Deno de teste; o runner retornou `No test modules found`, sem chamada de runtime e sem mutação;
+- estado remoto posterior: zero jobs `sending`, zero jobs `accepted` e zero lease ativo;
+- grants das RPCs de envio permanecem restritos a papéis técnicos. As garantias de lease, fencing, cooldown, retomada por `raw_app_meta_data`, ausência de `action_link` na resposta e sanitização foram confirmadas por contratos/mocks, não como E2E remoto.
+
+### 23.3 Matriz E01–E21 nesta retomada
+
+| Cenário | Estado | Evidência/limite |
+|---|---|---|
+| E01 criação de empresa | NOT RUN | Exige sessão real de Superadmin; nenhuma organização criada. |
+| E02 convite do administrador | NOT RUN | Exige sessão real; nenhum convite ou Auth user criado. |
+| E03 entrega SMTP | NOT RUN | Nenhum e-mail enviado sem o fluxo autenticado. |
+| E04 primeiro acesso | NOT RUN | Depende de E02/E03 e interação manual segura. |
+| E05 definição/troca de senha | PARCIAL | Política e fluxo server-side aprovados por contratos; nenhum acesso real executado. |
+| E06 recovery | PARCIAL | Rota, evento de recovery e remoção de token da URL aprovados por contratos; nenhum e-mail/link real usado. |
+| E07 reenvio | PARCIAL | Reuso da conta e ausência de `listUsers` aprovados por contrato; nenhuma retomada remota executada. |
+| E08 link usado/vencido | NOT RUN | Exige link real e interação manual; nenhum token foi gerado ou exposto. |
+| E09 concorrência | PARCIAL | Serialização por e-mail e lock aprovados por contrato; sem concorrência remota em fixture. |
+| E10 lease maior que duração | PARCIAL | Validade do lease aprovada por contrato; sem relógio/fixture remota. |
+| E11 takeover/fencing | PARCIAL | Token distinto e rejeição de lease obsoleto aprovados por contrato; sem takeover remoto. |
+| E12 hard crash Auth↔Postgres | PARCIAL | Retomada por marcador imutável e compensações aprovadas por contrato/mock; sem Auth user real. |
+| E13 retomada sem duplicar usuário | PARCIAL | Reuso da conta e proibição de busca ampla aprovados por contrato; contagem preexistente permaneceu zero. |
+| E14 reenvio simultâneo | PARCIAL | Claim server-side, fencing e cooldown aprovados por contrato; sem duas chamadas mutantes remotas. |
+| E15 isolamento tenant A/B | NOT RUN | E15A também exige Admin A autenticado e Tenant B controlado; nenhuma segunda identidade foi inventada. |
+| E16 superadmin sem papel operacional | PARCIAL | Guards e autorização server-side aprovados por contratos; sessão real indisponível. |
+| E17 plano sem fiscal cria cadastro geral | NOT RUN | Exige criação controlada autenticada. |
+| E18 plano sem fiscal não cria emissor | NOT RUN | Exige E17. |
+| E19 plano com fiscal cria identidade fiscal | NOT RUN | Exige dados sintéticos válidos e fluxo autenticado. |
+| E20 terminal/idempotente | PARCIAL | Estado terminal e retorno idempotente aprovados por contrato; nenhuma execução remota concluída. |
+| E21 auditoria completa | PARCIAL | Pré/pós-contagens, chamadas negativas e logs sanitizados coletados; falta trilha de uma execução E2E real. |
+
+Nenhum cenário foi promovido a `PASS E2E` com base apenas em contrato, mock ou inspeção. Não houve fault injection mutante no canônico, pois isso exigiria criar fixtures remotas e exercer RPCs técnicas sem uma identidade E2E real; `service_role` não foi usado para fingir Superadmin.
+
+### 23.4 Estado, cleanup e decisão
+
+Não houve mutação, portanto não existiam tenant, usuário, convite, sessão ou dado fiscal D51.2 para limpar. As flags global/e-mail permanecem ON porque a janela autorizada não chegou a realizar envio; isso requer decisão manual do responsável: manter a janela aberta para a próxima retomada imediata ou desligá-las na aba Comunicação de `/plataforma`.
+
+**Decisão: NO-GO para encerrar o D51 e considerar D52.** A configuração SMTP está pronta, mas E01–E04, E08, E15A e os cenários fiscal/plano continuam sem prova E2E por ausência da sessão real nas ferramentas. Para avançar, o responsável deve manter o Superadmin autenticado na prévia e iniciar nova retomada; se a ferramenta continuar sem receber a sessão, será necessária execução manual assistida no navegador, sem compartilhar senha, link, token ou OTP. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
