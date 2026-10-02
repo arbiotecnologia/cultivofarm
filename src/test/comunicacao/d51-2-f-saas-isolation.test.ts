@@ -43,7 +43,7 @@ describe("D51.2-F — isolamento SaaS da configuração global", () => {
       expect(source).toContain('error: "invalid_token"');
       expect(source).toContain('error: "forbidden"');
       expect(source).not.toMatch(/user_metadata|raw_user_meta_data/);
-      expect(source).not.toMatch(/Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)[\s\S]*json\(/);
+      expect(source).not.toMatch(/SERVICE_KEY\s*[,}]|service_role\s*[,}]/);
     }
   });
 
