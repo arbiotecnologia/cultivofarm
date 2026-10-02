@@ -10,7 +10,8 @@ ALTER TABLE public.platform_org_admin_invites
   ADD COLUMN IF NOT EXISTS auth_created_at timestamptz,
   ADD COLUMN IF NOT EXISTS last_error_code text;
 UPDATE public.platform_org_admin_invites SET request_id=coalesce(request_id,gen_random_uuid()),updated_at=coalesce(concluido_em,created_at,now()) WHERE request_id IS NULL;
-ALTER TABLE public.platform_org_admin_invites ALTER COLUMN request_id SET NOT NULL;
+ALTER TABLE public.platform_org_admin_invites ALTER COLUMN request_id SET NOT NULL,
+  ALTER COLUMN request_id SET DEFAULT gen_random_uuid();
 CREATE UNIQUE INDEX IF NOT EXISTS platform_org_admin_invites_request_uidx ON public.platform_org_admin_invites(request_id);
 CREATE INDEX IF NOT EXISTS platform_org_admin_invites_lease_idx ON public.platform_org_admin_invites(status,lease_expires_at) WHERE status IN ('pendente','processando','falhou');
 ALTER TABLE public.platform_org_admin_invites DROP CONSTRAINT IF EXISTS platform_org_admin_invites_status_chk;

@@ -19021,6 +19021,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_can_update_user_password_server: {
+        Args: { p_actor_id: string; p_target_id: string }
+        Returns: boolean
+      }
       _assert_visita_editavel: {
         Args: { p_registro_id: string }
         Returns: {
