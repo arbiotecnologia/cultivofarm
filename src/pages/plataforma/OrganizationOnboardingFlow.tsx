@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Building2, Check, ChevronLeft, ChevronRight, Mail, RotateCcw, Search, ShieldAlert, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,14 @@ import { CODIGOS_FALLBACK_MANUAL, FONTE_OFICIAL, consultarCnpjOnboarding, mensag
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 type Origem = { tipo: "api"; dados: DadosEmpresa } | { tipo: "manual"; motivo: string } | null;
 type Etapa = 1 | 2 | 3;
-type Progresso = "preparando" | "empresa_criada" | "criando_acesso" | "convite_enviado" | "falhou";
+type Progresso = "preparando" | "criando_empresa" | "empresa_pronta" | "criando_acesso" | "enviando_convite" | "convite_enviado" | "falhou";
 
 const PROGRESSO_LABEL: Record<Progresso, string> = {
   preparando: "Preparando",
-  empresa_criada: "Empresa criada",
+  criando_empresa: "Criando empresa",
+  empresa_pronta: "Empresa criada — pronta para auditoria",
   criando_acesso: "Criando acesso",
+  enviando_convite: "Enviando convite",
   convite_enviado: "Convite enviado",
   falhou: "Falhou — tentar novamente",
 };
@@ -68,6 +70,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoConvite | null>(null);
   const [progresso, setProgresso] = useState<Progresso>("preparando");
+  const operacaoEmCurso = useRef(false);
 
   const cnpjNorm = normalizarCnpj(cnpjBusca);
   const cnpjOk = cnpjValido(cnpjBusca);
@@ -81,7 +84,6 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   const empresaValida = Boolean(origem && nome.trim().length >= 2 && EMAIL_RE.test(emailEmpresa.trim()) && plano && cnpjOk && !existente && (!naoAtiva || revisaoSituacao));
   const responsavelValido = responsavelNome.trim().length >= 3 && EMAIL_RE.test(responsavelEmail.trim()) &&
     [0, 11].includes(cpf.replace(/\D/g, "").length) && [0, 10, 11].includes(telefone.replace(/\D/g, "").length);
-  const podeExecutar = responsavelValido && (Boolean(organizationId) || empresaValida);
   const processando = criar.isPending || convidar.isPending;
   const planoNome = planos.data?.find((item) => item.key === plano)?.name ?? "—";
 
@@ -112,22 +114,34 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
     setCpf(""); setTelefone(""); setResponsavelPrincipal(true); setOrganizationId(null); setResultado(null); setProgresso("preparando");
   };
 
-  const criarEConvidar = async () => {
-    if (!podeExecutar || processando || resultado) return;
-    let targetOrganizationId = organizationId;
+  const criarEmpresa = async () => {
+    if (!empresaValida || !responsavelValido || organizationId || processando || operacaoEmCurso.current) return;
+    operacaoEmCurso.current = true;
     try {
-      if (!targetOrganizationId) {
-        setProgresso("preparando");
-        targetOrganizationId = await criar.mutateAsync({
-          nome: nome.trim(), nomeFantasia: fantasia.trim(), cnpj: cnpjNorm,
-          email: emailEmpresa.trim(), planKey: plano, rascunho,
-        });
-        setOrganizationId(targetOrganizationId);
-        setProgresso("empresa_criada");
-      }
+      setProgresso("criando_empresa");
+      const createdOrganizationId = await criar.mutateAsync({
+        nome: nome.trim(), nomeFantasia: fantasia.trim(), cnpj: cnpjNorm,
+        email: emailEmpresa.trim(), planKey: plano, rascunho,
+      });
+      setOrganizationId(createdOrganizationId);
+      setProgresso("empresa_pronta");
+      toast.success("Empresa criada — pronta para auditoria.");
+    } catch (error) {
+      setProgresso("preparando");
+      toast.error(mensagemErroPlataforma(error));
+    } finally {
+      operacaoEmCurso.current = false;
+    }
+  };
+
+  const enviarConvite = async () => {
+    if (!organizationId || !responsavelValido || resultado || processando || operacaoEmCurso.current) return;
+    operacaoEmCurso.current = true;
+    try {
       setProgresso("criando_acesso");
+      setProgresso("enviando_convite");
       const invite = await convidar.mutateAsync({
-        organizationId: targetOrganizationId,
+        organizationId,
         nome: responsavelNome.trim(),
         email: responsavelEmail.trim().toLowerCase(),
         cpf: cpf.replace(/\D/g, ""),
@@ -137,10 +151,12 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
       });
       setResultado(invite);
       setProgresso("convite_enviado");
-      toast.success("Empresa criada e convite enviado.");
+      toast.success("Convite enviado.");
     } catch (error) {
       setProgresso("falhou");
-      toast.error(organizationId || targetOrganizationId ? "Empresa criada; convite pendente ou falhou." : mensagemErroPlataforma(error));
+      toast.error("Empresa criada; convite pendente ou falhou.");
+    } finally {
+      operacaoEmCurso.current = false;
     }
   };
 
@@ -208,12 +224,13 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
             <div aria-live="polite" className={`rounded-md border p-3 text-sm ${progresso === "falhou" ? "border-destructive/40" : "bg-muted/40"}`}>
               <p className="font-medium">{PROGRESSO_LABEL[progresso]}</p>
               {progresso === "criando_acesso" && <p className="text-muted-foreground">Enviando convite</p>}
+              {progresso === "empresa_pronta" && <p className="text-muted-foreground">Confira a criação no ambiente canônico antes de enviar o convite.</p>}
               {progresso === "falhou" && organizationId && <p className="text-muted-foreground">Empresa criada; convite pendente ou falhou. A nova tentativa não criará outra empresa.</p>}
             </div>
             {resultado && organizationId ? (
               <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onShowOrganization(organizationId)}>Ver empresa</Button><Button onClick={() => onOpenAdmins(organizationId)}>Ver administradores</Button><Button variant="ghost" onClick={reiniciar}>Cadastrar outra empresa</Button></div>
             ) : (
-              <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={() => setEtapa(2)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button><Button data-testid="create-and-invite" disabled={!podeExecutar || processando} onClick={() => void criarEConvidar()}>{processando ? PROGRESSO_LABEL[progresso] : organizationId ? "Tentar convite novamente" : "Criar empresa e enviar convite"}</Button></div>
+               <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={() => setEtapa(2)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button>{organizationId ? <Button data-testid="send-invite" disabled={!responsavelValido || processando} onClick={() => void enviarConvite()}>{processando ? PROGRESSO_LABEL[progresso] : progresso === "falhou" ? "Tentar convite novamente" : "Enviar convite"}</Button> : <Button data-testid="create-organization" disabled={!empresaValida || !responsavelValido || processando} onClick={() => void criarEmpresa()}>{criar.isPending ? "Criando empresa" : "Criar empresa"}</Button>}</div>
             )}
           </CardContent>
         </Card>

@@ -8,12 +8,21 @@ const home = readFileSync("src/pages/plataforma/PlataformaHome.tsx", "utf8");
 const hook = readFileSync("src/hooks/usePlataformaSaaS.ts", "utf8");
 
 describe("D51.2 — fluxo único Empresa → Responsável → Revisão → Convite", () => {
-  it("orquestra operações server-side separadas sem repetir a empresa", () => {
+  it("mantém checkpoint explícito entre criação e convite", () => {
+    expect(flow).toContain("const criarEmpresa = async");
+    expect(flow).toContain("const enviarConvite = async");
     expect(flow).toContain("await criar.mutateAsync");
     expect(flow).toContain("await convidar.mutateAsync");
     expect(flow.indexOf("await criar.mutateAsync")).toBeLessThan(flow.indexOf("await convidar.mutateAsync"));
-    expect(flow).toContain("if (!targetOrganizationId)");
+    expect(flow).toContain('setProgresso("empresa_pronta")');
+    expect(flow).toContain('data-testid="create-organization"');
+    expect(flow).toContain('data-testid="send-invite"');
+    expect(flow).toContain("Criar empresa");
+    expect(flow).toContain("Empresa criada — pronta para auditoria");
+    expect(flow).toContain("Enviar convite");
     expect(flow).toContain("Tentar convite novamente");
+    expect(flow).not.toContain("criarEConvidar");
+    expect(flow).not.toContain("Criar empresa e enviar convite");
     expect(hook).toMatch(/useCriarEmpresa[\s\S]*retry: false/);
     expect(hook).toMatch(/useConvidarAdminEmpresa[\s\S]*retry: false/);
   });
@@ -23,7 +32,18 @@ describe("D51.2 — fluxo único Empresa → Responsável → Revisão → Convi
     expect(flow).toContain("E-mail de acesso e convite");
     expect(flow).toContain('modo: "link"');
     expect(flow).toContain("processando = criar.isPending || convidar.isPending");
-    expect(flow).toContain("disabled={!podeExecutar || processando}");
+    expect(flow).toContain("operacaoEmCurso.current");
+    expect(flow).toContain("disabled={processando || Boolean(organizationId)}");
+  });
+
+  it("retry do convite reutiliza o organizationId e não recria a empresa", () => {
+    const createBody = flow.slice(flow.indexOf("const criarEmpresa"), flow.indexOf("const enviarConvite"));
+    const inviteBody = flow.slice(flow.indexOf("const enviarConvite"), flow.indexOf("return ("));
+    expect(createBody).toContain("criar.mutateAsync");
+    expect(createBody).not.toContain("convidar.mutateAsync");
+    expect(inviteBody).toContain("convidar.mutateAsync");
+    expect(inviteBody).not.toContain("criar.mutateAsync");
+    expect(inviteBody).toContain("organizationId,");
   });
 
   it("mantém a aba histórica opcional e entrega contexto sem nova rota", () => {
