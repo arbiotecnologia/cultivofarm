@@ -4,9 +4,12 @@
 // and forces a safe, single reload when a new SW takes control.
 
 const SW_URL = "/sw.js";
-const UPDATING_EVENT = "pwa:updating-start";
+export const PWA_UPDATING_START = "pwa:updating-start";
+export const PWA_UPDATING_END = "pwa:updating-end";
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 const RELOAD_FALLBACK_MS = 8000;
+const UPDATE_SAFETY_TIMEOUT_MS = 12000;
+const ACTIVATED_GRACE_MS = 1500;
 const RECENT_RELOAD_KEY = "pwa:last-controller-reload";
 const RELOAD_LOOP_GUARD_MS = 15000;
 const STALE_RUNTIME_CACHES = new Set(["html-nav", "static-assets"]);
@@ -56,24 +59,66 @@ async function unregisterMatching(): Promise<void> {
 let reloadingOnControllerChange = false;
 let activeCleanup: (() => void) | null = null;
 let updateInProgress = false;
+const updateTimers = new Set<number>();
+
+function clearUpdateTimers(): void {
+  updateTimers.forEach((timer) => window.clearTimeout(timer));
+  updateTimers.clear();
+}
+
+function scheduleUpdateTimer(callback: () => void, delay: number): number {
+  const timer = window.setTimeout(() => {
+    updateTimers.delete(timer);
+    callback();
+  }, delay);
+  updateTimers.add(timer);
+  return timer;
+}
+
+function beginUpdate(): void {
+  if (updateInProgress) return;
+  updateInProgress = true;
+  window.dispatchEvent(new CustomEvent(PWA_UPDATING_START));
+  scheduleUpdateTimer(() => finishUpdate("safety-timeout"), UPDATE_SAFETY_TIMEOUT_MS);
+}
+
+export function finishUpdate(reason = "completed"): void {
+  clearUpdateTimers();
+  reloadingOnControllerChange = false;
+  if (!updateInProgress) return;
+  updateInProgress = false;
+  window.dispatchEvent(new CustomEvent(PWA_UPDATING_END, { detail: { reason } }));
+}
 
 export function isServiceWorkerUpdateInProgress(): boolean {
   return updateInProgress;
 }
 
-export function triggerSafeReload(): void {
-  if (reloadingOnControllerChange) return;
+export function triggerSafeReload(reload: () => void = () => window.location.reload()): boolean {
+  if (reloadingOnControllerChange) {
+    finishUpdate("reload-in-progress");
+    return false;
+  }
 
   try {
     const lastReload = Number(window.sessionStorage.getItem(RECENT_RELOAD_KEY) ?? "0");
-    if (Date.now() - lastReload < RELOAD_LOOP_GUARD_MS) return;
+    if (Date.now() - lastReload < RELOAD_LOOP_GUARD_MS) {
+      finishUpdate("reload-guard");
+      return false;
+    }
     window.sessionStorage.setItem(RECENT_RELOAD_KEY, String(Date.now()));
   } catch {
     // The in-memory guard still prevents duplicate reloads when storage is unavailable.
   }
 
   reloadingOnControllerChange = true;
-  window.location.reload();
+  try {
+    reload();
+    return true;
+  } catch {
+    finishUpdate("reload-failed");
+    return false;
+  }
 }
 
 export function isStaleBuildError(error: unknown): boolean {
@@ -89,9 +134,10 @@ export function isStaleBuildError(error: unknown): boolean {
  * deploy. O precache versionado do Workbox e os dados da aplicação são
  * preservados; a trava de reload evita ciclos quando a rede está indisponível.
  */
-export async function recoverFromStaleBuild(): Promise<void> {
-  updateInProgress = true;
-  window.dispatchEvent(new CustomEvent(UPDATING_EVENT));
+export async function recoverFromStaleBuild(
+  reload: () => void = () => window.location.reload(),
+): Promise<void> {
+  beginUpdate();
 
   if ("caches" in window) {
     try {
@@ -106,24 +152,28 @@ export async function recoverFromStaleBuild(): Promise<void> {
     }
   }
 
-  triggerSafeReload();
+  triggerSafeReload(reload);
 }
 
 function activateUpdate(worker?: ServiceWorker | null): void {
-  updateInProgress = true;
-  window.dispatchEvent(new CustomEvent(UPDATING_EVENT));
+  beginUpdate();
   if (worker && worker.state !== "activated") {
-    worker.postMessage({ type: "SKIP_WAITING" });
+    try {
+      worker.postMessage({ type: "SKIP_WAITING" });
+    } catch {
+      finishUpdate("activation-failed");
+    }
   }
 }
 
-function watchForUpdates(registration: ServiceWorkerRegistration): () => void {
-  let fallbackTimer: number | undefined;
+export function watchForUpdates(
+  registration: ServiceWorkerRegistration,
+  reload: () => void = () => window.location.reload(),
+): () => void {
   let installingWorker: ServiceWorker | null = null;
 
   const scheduleFallback = () => {
-    if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
-    fallbackTimer = window.setTimeout(triggerSafeReload, RELOAD_FALLBACK_MS);
+    scheduleUpdateTimer(() => triggerSafeReload(reload), RELOAD_FALLBACK_MS);
   };
 
   if (registration.waiting && navigator.serviceWorker.controller) {
@@ -132,9 +182,18 @@ function watchForUpdates(registration: ServiceWorkerRegistration): () => void {
   }
 
   const onInstallingStateChange = () => {
-    if (installingWorker?.state === "installed" && navigator.serviceWorker.controller) {
+    const state = installingWorker?.state;
+    if (state === "installed" && navigator.serviceWorker.controller) {
       activateUpdate(registration.waiting ?? installingWorker);
       scheduleFallback();
+      return;
+    }
+    if (state === "redundant") {
+      finishUpdate("worker-redundant");
+      return;
+    }
+    if (state === "activated" && updateInProgress) {
+      scheduleUpdateTimer(() => finishUpdate("activated-without-controllerchange"), ACTIVATED_GRACE_MS);
     }
   };
 
@@ -143,26 +202,22 @@ function watchForUpdates(registration: ServiceWorkerRegistration): () => void {
     const installing = registration.installing;
     if (!installing) return;
     installingWorker = installing;
-    if (navigator.serviceWorker.controller) {
-      updateInProgress = true;
-      window.dispatchEvent(new CustomEvent(UPDATING_EVENT));
-    }
     installing.addEventListener("statechange", onInstallingStateChange);
   };
 
   const onControllerChange = () => {
-    if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
-    triggerSafeReload();
+    clearUpdateTimers();
+    triggerSafeReload(reload);
   };
 
   registration.addEventListener("updatefound", onUpdateFound);
   navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
   return () => {
-    if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
     installingWorker?.removeEventListener("statechange", onInstallingStateChange);
     registration.removeEventListener("updatefound", onUpdateFound);
     navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    finishUpdate("watch-cleanup");
   };
 }
 
@@ -218,6 +273,7 @@ export function registerAppServiceWorker(): () => void {
     window.removeEventListener("pagehide", cleanup);
     if (intervalId !== undefined) window.clearInterval(intervalId);
     stopWatching();
+    finishUpdate("page-cleanup");
     if (activeCleanup === cleanup) activeCleanup = null;
   };
 

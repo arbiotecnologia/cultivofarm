@@ -1,23 +1,38 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { isServiceWorkerUpdateInProgress } from "./registerSW";
+import {
+  finishUpdate,
+  isServiceWorkerUpdateInProgress,
+  PWA_UPDATING_END,
+  PWA_UPDATING_START,
+} from "./registerSW";
 
-export const SW_UPDATING_EVENT = "pwa:updating-start";
+const VISUAL_SAFETY_TIMEOUT_MS = 15000;
 
 export function SwUpdatingOverlay() {
   const [visible, setVisible] = useState(isServiceWorkerUpdateInProgress);
 
   useEffect(() => {
-    const handler = () => setVisible(true);
-    window.addEventListener(SW_UPDATING_EVENT, handler);
-    return () => window.removeEventListener(SW_UPDATING_EVENT, handler);
+    const show = () => setVisible(true);
+    const hide = () => setVisible(false);
+    window.addEventListener(PWA_UPDATING_START, show);
+    window.addEventListener(PWA_UPDATING_END, hide);
+    return () => {
+      window.removeEventListener(PWA_UPDATING_START, show);
+      window.removeEventListener(PWA_UPDATING_END, hide);
+    };
   }, []);
 
   useEffect(() => {
     if (!visible) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const safetyTimer = window.setTimeout(() => {
+      setVisible(false);
+      finishUpdate("overlay-safety-timeout");
+    }, VISUAL_SAFETY_TIMEOUT_MS);
     return () => {
+      window.clearTimeout(safetyTimer);
       document.body.style.overflow = prev;
     };
   }, [visible]);

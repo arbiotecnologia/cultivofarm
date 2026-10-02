@@ -58,6 +58,15 @@ describe("P0-03A — atualização obrigatória", () => {
     expect(register).toContain("clearInterval");
     expect(register).toContain("visibilitychange");
     expect(register).toContain('addEventListener("online"');
+    expect(register).toContain("PWA_UPDATING_END");
+    expect(register).toContain("finishUpdate");
+    expect(register).toContain("UPDATE_SAFETY_TIMEOUT_MS");
+  });
+
+  it("não bloqueia a tela no mero updatefound", () => {
+    expect(register).not.toMatch(/onUpdateFound[\s\S]{0,500}PWA_UPDATING_START/);
+    expect(register).toMatch(/state === "installed"[\s\S]{0,200}activateUpdate/);
+    expect(register).toMatch(/state === "redundant"[\s\S]{0,200}finishUpdate/);
   });
 
   it("preserva os bloqueios de preview, iframe e kill-switch", () => {
