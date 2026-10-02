@@ -1,13 +1,14 @@
 # Roadmap
 
 ## Em andamento
-- [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.318 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes. A publicação não foi executada. D51.2 permanece suspenso até republicação e verificação live.
-- [ ] Gate D51.2 — **SUSPENSO pelo P0 pós-publicação**. Janela SMTP fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
+- [ ] Gate D51.2 — **SUSPENSO; não retomado automaticamente**. O incidente P0 foi normalizado em produção, mas a janela SMTP continua fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — retomar somente após produção carregar normalmente e nova autorização explícita; demais condições do plano permanecem inalteradas.
 
 ## Concluído
+- [x] **Pós-republicação do incidente P0:** produção normalizada em contexto limpo. `/`, `/auth`, `/plataforma`, `/dashboard` e `/configuracoes` passaram; rotas protegidas redirecionaram para `/auth`, sem erro de provider/renderização, chunk obsoleto, 404 de JS/CSS, loop ou falha de SW. Service worker ativo e recuperação de stale chunk confirmada no bundle publicado. Nenhuma autenticação ou mutação.
+- [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.318 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes.
 - [x] Gate D51.2-F — P1 de isolamento SaaS corrigido: provider settings e teste SMTP globais agora exigem `is_platform_superadmin` no servidor; UI tenant removida e o mesmo componente reutilizado em `/plataforma`, sem papel operacional. Duas Edge Functions implantadas após preflight fail-closed; chamadas negativas retornaram 401, 63 testes focados e suíte global com 5.307 testes verdes; nenhum envio/configuração/E2E.
 - [x] Gate D51.2-E — checklist de prontidão SMTP exibido na tela; teste fixado ao único destinatário autorizado, bloqueado por readiness, test mode, allowlist e flags antes do socket; respostas/logs brutos removidos. Typecheck, 57 testes focados, suíte global (5.300 aprovados) e build verdes; nenhum envio/configuração/E2E.
 - [x] Gate D51.2-D — ACL direta de `PUBLIC`/`anon`/`authenticated` revogada, acesso técnico preservado e preflight SMTP booleano implantado sem envio. E15A preparado como teste parcial A→B com uma identidade; caminho autenticado ainda NOT RUN.
