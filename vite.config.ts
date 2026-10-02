@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/functions\//],
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
+        clientsClaim: false,
         skipWaiting: false,
         runtimeCaching: [
           {
