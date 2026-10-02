@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Building2, Check, ChevronLeft, ChevronRight, Mail, RotateCcw, Search, ShieldAlert, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -82,6 +81,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   const empresaValida = Boolean(origem && nome.trim().length >= 2 && EMAIL_RE.test(emailEmpresa.trim()) && plano && cnpjOk && !existente && (!naoAtiva || revisaoSituacao));
   const responsavelValido = responsavelNome.trim().length >= 3 && EMAIL_RE.test(responsavelEmail.trim()) &&
     [0, 11].includes(cpf.replace(/\D/g, "").length) && [0, 10, 11].includes(telefone.replace(/\D/g, "").length);
+  const podeExecutar = responsavelValido && (Boolean(organizationId) || empresaValida);
   const processando = criar.isPending || convidar.isPending;
   const planoNome = planos.data?.find((item) => item.key === plano)?.name ?? "—";
 
@@ -113,7 +113,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   };
 
   const criarEConvidar = async () => {
-    if (!empresaValida || !responsavelValido || processando || resultado) return;
+    if (!podeExecutar || processando || resultado) return;
     let targetOrganizationId = organizationId;
     try {
       if (!targetOrganizationId) {
@@ -213,7 +213,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
             {resultado && organizationId ? (
               <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onShowOrganization(organizationId)}>Ver empresa</Button><Button onClick={() => onOpenAdmins(organizationId)}>Ver administradores</Button><Button variant="ghost" onClick={reiniciar}>Cadastrar outra empresa</Button></div>
             ) : (
-              <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={() => setEtapa(2)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button><Button data-testid="create-and-invite" disabled={!empresaValida || !responsavelValido || processando} onClick={() => void criarEConvidar()}>{processando ? PROGRESSO_LABEL[progresso] : organizationId ? "Tentar convite novamente" : "Criar empresa e enviar convite"}</Button></div>
+              <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={() => setEtapa(2)}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button><Button data-testid="create-and-invite" disabled={!podeExecutar || processando} onClick={() => void criarEConvidar()}>{processando ? PROGRESSO_LABEL[progresso] : organizationId ? "Tentar convite novamente" : "Criar empresa e enviar convite"}</Button></div>
             )}
           </CardContent>
         </Card>
