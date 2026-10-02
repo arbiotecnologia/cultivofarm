@@ -1714,3 +1714,20 @@ O scanner terminou com dez achados informativos e zero Critical/Error/Warning. U
 - `/?sw=off` respondeu HTTP 200 e reduziu os registros de service worker a zero.
 
 **Decisão: FAIL de propagação no domínio customizado.** O candidato está validado, mas o comportamento manual ainda não pode ser declarado ativo em produção. Nenhuma segunda publicação foi solicitada. Aguardar propagação e repetir somente o smoke. O contorno emergencial permanece `https://app.cultivofarm.com.br/?sw=off`.
+
+### 45.2 Encerramento final pós-propagação
+
+O deploy direto do commit `8e1fc08ba5669ffc32535cd3519895db03fc05d5` foi confirmado no domínio oficial com cache-busting. O comportamento final publicado é:
+
+- aviso discreto com **Nova versão disponível**, **Há uma atualização do Cultivo Farm pronta para instalar.**, **Atualizar agora** e **Adiar**;
+- após **Adiar**, o badge/botão flutuante persistente permanece disponível e reabre as opções, incluindo **Continuar depois**;
+- atualização normal não ativa worker nem recarrega a página automaticamente;
+- `/sw.js` não contém `clientsClaim()`, `self.clients.claim()` ou `skipWaiting()` automático;
+- o worker mantém somente o handler manual `SKIP_WAITING`, acionado pelo consentimento explícito em **Atualizar agora**;
+- `/auth` e `/plataforma` responderam sem erro de runtime;
+- `?sw=off` removeu o service worker no navegador de teste;
+- os marcadores antigos **Atualizando aplicação…**, **Aguarde, a página será recarregada automaticamente.** e `pwa:updating-start` não estavam presentes.
+
+As validações do candidato permaneceram verdes: 31 testes PWA focados, 5.359 testes globais, typecheck, build e scanner sem bloqueios.
+
+**Decisão final: PASS — incidente P0 PWA RESOLVIDO.** O modelo manual por consentimento está publicado e ativo no domínio oficial. Nenhuma nova publicação foi realizada nesta rodada documental. D51.2, E01/E02, organização REFIL, job AR BIOTECNOLOGIA e D52 permanecem inalterados e bloqueados conforme o estado anterior.
