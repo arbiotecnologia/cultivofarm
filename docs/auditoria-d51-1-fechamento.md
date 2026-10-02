@@ -6,15 +6,15 @@ Escopo encerrado sem E2E real, e-mail, criação de usuário, pedido, publicaç�
 
 ## 1. Decisão
 
-**BLOQUEADO para o Gate E2E controlado somente pela proteção contra senhas vazadas.**
+**APTO CONDICIONALMENTE PARA O GATE E2E CONTROLADO, sob exceção formal de segurança.**
 
-O código, o build e as suítes estão verdes, e o P0 encontrado no provisionamento foi corrigido. Resta um requisito externo/manual:
+O código, o build e as suítes estão verdes, e o P0 encontrado no provisionamento foi corrigido. Por decisão explícita do responsável, a proteção contra senhas vazadas deixou de ser bloqueio absoluto para o Gate D51.2, mas permanece um risco de segurança aberto:
 
-1. a proteção contra senhas vazadas continua desativada e o ambiente disponível não expôs mecanismo oficial seguro para habilitá-la; requer ação no Dashboard.
+1. **status: ADIADO / RISCO ACEITO TEMPORARIAMENTE** — a proteção contra senhas vazadas continua desativada, não está resolvida e não foi homologada como controle de senha; o ambiente disponível não expôs mecanismo oficial seguro para habilitá-la e a ativação futura requer ação no Dashboard.
 
 O mecanismo de migration executou sete diagnósticos `select 1`, registrando migrations no-op no ledger. A revisão de reconciliação confirmou equivalência integral 1:1 com o repositório. Elas não alteram dados ou schema e ficam formalmente aceitas e preservadas como dívida histórica rastreável, não como P0/P1 aberto.
 
-Não há P0/P1 funcional D51/SaaS conhecido além desses bloqueios operacionais de fechamento. A homologação real de Auth/SMTP continua proibida até nova revisão.
+Não há outro P0/P1 funcional D51/SaaS conhecido. Esta exceção não significa que o sistema esteja 100% seguro: deve permanecer visível no roadmap até a habilitação futura e ser reavaliada antes de produção comercial ou ampliação de usuários. A homologação real de Auth/SMTP continua proibida até comando específico para o Gate D51.2.
 
 ## 2. Diagnóstico inicial e diferenças do D51
 
@@ -132,9 +132,11 @@ Não foram usados ou registrados senha, token, OTP ou link completo. Não houve 
 
 ## 8. Proteção contra senhas vazadas
 
-Permanece **desativada**. O ambiente não disponibilizou API/CLI oficial autenticada para alterar a configuração com segurança. Não foi feito contorno por SQL ou alteração de política incompatível.
+Permanece **desativada, não resolvida e não homologada como controle de senha**. Status de governança: **ADIADO / RISCO ACEITO TEMPORARIAMENTE**, por decisão explícita do responsável. O ambiente não disponibilizou API/CLI oficial autenticada para alterar a configuração com segurança. Não foi feito contorno por SQL ou alteração de política incompatível.
 
-Passo manual obrigatório: no Dashboard do projeto canônico, abrir **Authentication → Settings → Password Security**, habilitar **Leaked password protection** e salvar. Depois, reexecutar o linter e confirmar que o aviso desapareceu, preservando as regras atuais de senha.
+A exceção permite somente avançar condicionalmente ao Gate E2E controlado; não autoriza afirmar que o sistema esteja 100% seguro. O warning deve ser registrado antes e depois do D51.2, sem ser mascarado. A pendência deve permanecer no roadmap e ser reavaliada antes da produção comercial ou da ampliação de usuários.
+
+Ação futura: no Dashboard do projeto canônico, abrir **Authentication → Settings → Password Security**, habilitar **Leaked password protection** e salvar. Depois, reexecutar o linter e confirmar que o aviso desapareceu, preservando as regras atuais de senha.
 
 ## 9. Arquivos alterados
 
@@ -171,13 +173,13 @@ Não foi criado usuário, convite, organização, pedido ou outro dado funcional
 
 Riscos restantes:
 
-1. leaked password protection precisa ser habilitada manualmente;
+1. leaked password protection está **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, permanece desativada, não resolvida e não homologada como controle de senha; deve ser habilitada manualmente e reavaliada antes de produção comercial ou ampliação de usuários;
 2. sete migrations no-op permanecem como dívida histórica aceita e rastreável, com correspondência 1:1 entre ledger e repositório;
 3. os 492 advisors globais exigem programa separado; os dois endpoints públicos foram classificados, e nenhum P0/P1 SaaS adicional foi comprovado;
 4. concorrência real, crash Auth↔Postgres, reenvio simultâneo, recovery e tenant A/B ainda dependem do Gate E2E controlado e não foram simulados com contas reais.
 
 ## 12. Próxima decisão
 
-Após habilitar leaked password protection, reexecutar o linter. A reconciliação dos no-ops está concluída e não resta outro P0/P1 D51/SaaS conhecido. Só então o D51.1 poderá ser reclassificado como **APTO PARA GATE E2E CONTROLADO**.
+O D51.1 está **APTO CONDICIONALMENTE PARA O GATE E2E CONTROLADO**, sob a exceção formal e temporária da proteção contra senhas vazadas. A reconciliação dos no-ops está concluída e não resta outro P0/P1 D51/SaaS conhecido.
 
-Até lá: não criar conta descartável, não enviar e-mail, não processar pedido, não publicar e não avançar para D52.
+O D51.2 continua dependendo de comando explícito. Até esse comando: não executar E2E, não criar usuário, não enviar e-mail, não processar pedido, não publicar e não avançar para D52. Se surgir qualquer outro P0/P1 de autenticação ou senha, a exceção não se aplica e o gate deve parar imediatamente.
