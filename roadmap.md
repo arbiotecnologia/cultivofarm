@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] **Diagnóstico SMTP em duas etapas:** implementar probe seguro sem envio, preservar envio controlado, auditar resultados sanitizados, validar, implantar e publicar sem abrir flags nem executar probe real.
+- [x] **Diagnóstico SMTP em duas etapas:** probe seguro sem envio e teste real confirmado foram separados, auditados com metadados sanitizados, validados e publicados. Smoke oficial confirmou o botão **Testar conexão do provedor**; nenhum probe ou envio real foi executado. Próxima ação exclusivamente humana: Superadmin clicar primeiro nesse botão.
 - [ ] **Campanha AUDIT-CF-20261002-01 — E02 FAIL / RETRY BLOCKED:** forward-fix de SMTP ambíguo e bloqueio fail-closed das portas 25/587 estão no código. A porta efetiva é 465, apenas estruturalmente aceita; conectividade não foi testada e a causa original continua ambígua. A janela SMTP está OFF/OFF; o job legado exige confirmação humana explícita e nova autorização antes de reabertura/retry. Fases 2–15 permanecem bloqueadas.
 
 ## Próximo / autorizado a preparar execução
