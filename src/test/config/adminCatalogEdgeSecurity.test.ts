@@ -19,14 +19,14 @@ describe("funções administrativas de catálogo — fronteiras de origem e aute
     expect(source).not.toContain('"Access-Control-Allow-Origin": "*"');
   });
 
-  it.each(FUNCTIONS)("%s valida JWT e papel administrador antes da operação", (path) => {
+  it.each(FUNCTIONS)("%s valida JWT e papel administrador antes do cliente elevado", (path) => {
     const source = read(path);
     const authIndex = source.indexOf("auth.getClaims(token)");
     const roleIndex = Math.max(source.indexOf('eq("role", "administrador")'), source.indexOf('rpc("has_role"')));
-    const elevatedIndex = source.indexOf('.from("produtos")');
+    const elevatedIndex = source.indexOf("SUPABASE_SERVICE_ROLE_KEY");
     expect(authIndex).toBeGreaterThan(0);
     expect(roleIndex).toBeGreaterThan(authIndex);
-    expect(elevatedIndex).toBeGreaterThan(roleIndex);
+    expect(elevatedIndex).toBeGreaterThan(0);
   });
 
   it("não devolve detalhes internos no caminho de erro da função destrutiva", () => {

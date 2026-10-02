@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       if (error) {
         return json(
           origin,
-          { error: "delete_failed", table, deleted, nullified, detail: error.message },
+          { error: "delete_failed", table, deleted, nullified },
           500,
         );
       }
