@@ -9,6 +9,10 @@
 // - Nenhum segredo é devolvido além da senha temporária solicitada pelo
 //   próprio superadmin no momento da criação.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
+import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
+import { deliverInviteEmail, type InviteEmailClaim } from "../_shared/comunicacao/invite-email-delivery.ts";
+import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,7 +103,10 @@ Deno.serve(async (req) => {
     const origemPermitida = /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/.test(origin) ||
       /^https:\/\/([a-z0-9-]+\.)*cultivofarm\.com\.br$/.test(origin) ||
       /^http:\/\/localhost(:\d+)?$/.test(origin);
-    const redirectTo = origemPermitida ? `${origin}/auth` : undefined;
+    const redirectTo = origemPermitida ? `${origin}/reset-password` : undefined;
+    if (modo === "link" && !redirectTo) {
+      return json({ error: "Origem não autorizada para o convite.", code: "redirect_not_allowed" }, 400);
+    }
 
     const { data: claimed, error: claimError } = await adminClient.rpc(
       "platform_claim_org_admin_provisioning",
@@ -120,7 +127,7 @@ Deno.serve(async (req) => {
     }
     const job = claimed as Record<string, unknown>;
     if (job.completed === true) {
-      return json({ success: true, user_id: String(job.user_id ?? ""), action_link: null, senha_temporaria: null, status: "ativo", idempotent: true });
+      return json({ success: true, user_id: String(job.user_id ?? ""), senha_temporaria: null, email_status: "not_required", status: "ativo", idempotent: true });
     }
     const jobId = String(job.job_id ?? "");
     const requestId = String(job.request_id ?? "");
@@ -262,11 +269,79 @@ Deno.serve(async (req) => {
       return json({ error: amigavel, code: "finalize_failed" }, 400);
     }
 
+    if (modo === "link") {
+      if (!actionLink) {
+        return json({ error: "Convite sem link válido.", code: "link_missing" }, 500);
+      }
+      const env = await loadRuntimeConfig(adminClient, readWorkerEnv);
+      const delivery = await deliverInviteEmail(jobId, actionLink, env, {
+        claim: async (id) => {
+          const { data, error } = await adminClient.rpc("platform_claim_org_admin_email_delivery", {
+            p_job_id: id,
+            p_cooldown_seconds: 300,
+          });
+          if (error || !data) throw new Error("email_claim_failed");
+          return data as InviteEmailClaim;
+        },
+        send: async ({ env: runtime, recipientEmail, recipientName, actionLink: link }) =>
+          sendEmail(
+            runtime,
+            { ok: true, canal: "email", address: recipientEmail },
+            {
+              canal: "email",
+              assunto: "Defina seu acesso ao Cultivo Farm",
+              corpo: "Olá, {{nome}}. Use o link abaixo para definir sua senha: {{link}}",
+              variaveis: ["nome", "link"],
+            },
+            {
+              assunto: "Defina seu acesso ao Cultivo Farm",
+              corpo: `Olá, ${recipientName}.\n\nUse este link para definir sua senha:\n${link}\n\nSe você não esperava este convite, ignore esta mensagem.`,
+            },
+          ),
+        accept: async (id, token) => {
+          const { error } = await adminClient.rpc("platform_accept_org_admin_email_delivery", {
+            p_job_id: id,
+            p_lease_token: token,
+          });
+          if (error) throw new Error("email_accept_persistence_failed");
+        },
+        fail: async (id, token, code) => {
+          const { error } = await adminClient.rpc("platform_fail_org_admin_email_delivery", {
+            p_job_id: id,
+            p_lease_token: token,
+            p_error_code: code,
+            p_retry_seconds: 300,
+          });
+          if (error) throw new Error("email_failure_persistence_failed");
+        },
+      }).catch(() => ({ status: "failed" as const, code: "email_delivery_setup_failed" }));
+
+      if (delivery.status !== "accepted") {
+        const ambiguous = delivery.status === "ambiguous";
+        return json({
+          error: ambiguous
+            ? "O provedor pode ter aceitado o convite, mas a confirmação local falhou. Aguarde antes de reenviar."
+            : "O acesso foi preparado, mas o e-mail não foi enviado. Tente novamente após configurar o SMTP.",
+          code: delivery.code,
+          email_status: delivery.status,
+        }, 503);
+      }
+
+      return json({
+        success: true,
+        user_id: userId,
+        senha_temporaria: null,
+        email_status: "accepted",
+        status: "pendente",
+        idempotent: !criamosUsuario,
+      });
+    }
+
     return json({
       success: true,
       user_id: userId,
-      action_link: actionLink,
       senha_temporaria: senha,
+      email_status: "not_required",
       status: "pendente",
       idempotent: !criamosUsuario,
     });

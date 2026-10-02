@@ -109,7 +109,7 @@ export default function PlataformaAdmins() {
           setEmail("");
           setCpf("");
           setTelefone("");
-          toast.success("Acesso do administrador criado.");
+          toast.success(r.email_status === "accepted" ? "Convite aceito pelo servidor de e-mail." : "Acesso do administrador criado.");
         },
         onError: (e) => toast.error(e.message),
       },
@@ -216,20 +216,11 @@ export default function PlataformaAdmins() {
 
           {resultado && (
             <div className="rounded-md border bg-muted/40 p-3 space-y-3">
-              <p className="text-sm font-medium">Acesso criado. Envie ao responsável:</p>
-              {resultado.action_link && (
-                <div className="space-y-1">
-                  <p className="break-all text-xs text-muted-foreground">{resultado.action_link}</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copiar(resultado.action_link!, "Link")}
-                  >
-                    <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
-                    Copiar link de convite
-                  </Button>
-                </div>
-              )}
+              <p className="text-sm font-medium">
+                {resultado.email_status === "accepted"
+                  ? "Convite entregue ao servidor de e-mail."
+                  : "Acesso criado. Envie a senha ao responsável por um canal seguro:"}
+              </p>
               {resultado.senha_temporaria && (
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">
