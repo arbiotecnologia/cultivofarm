@@ -1390,3 +1390,47 @@ SMTP canônico permaneceu fechado: entrega global **OFF**, e-mail **OFF**, Test 
 A busca em código, migrations, testes, scripts e documentação **não encontrou mecanismo oficial ou fixture de CNPJ de teste para `platform_create_organization`**. O fluxo exige CNPJ válido no frontend e no servidor; os artefatos de homologação encontrados pertencem a outros módulos e não autorizam seu uso neste cadastro. Conforme a regra expressa da Fase 6, a execução parou antes de abrir SMTP ou criar empresa.
 
 **Decisão:** Fases 1–5 concluídas e implantadas; Fase 6 **NO-GO por uma única pendência: ausência de CNPJ oficial de teste suportado pelo fluxo**. Não houve E2E, tentativa SMTP ou cleanup operacional novo. D51.2 permanece aberto e D52 bloqueado. Para retomar, o responsável deve fornecer ou aprovar um mecanismo oficial de CNPJ sintético/teste compatível com a validação existente; não usar CNPJ real nem burlar a validação de produção.
+
+## 37. Fase 6 — pré-check do CNPJ controlado autorizado
+
+Data/hora UTC: `2026-10-02T11:58:27Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 37.1 Resultado de existência e correlação
+
+O CNPJ autorizado, normalizado como `41775946000107`, **já existe no canônico**:
+
+- exatamente **1 organização** usa `organizations.cnpj_normalizado=41775946000107`;
+- organização: **AR BIOTECNOLOGIA LTDA**, ID mascarado `007bb519…0048`, status `aguardando_ativacao`;
+- a organização possui exatamente **1 assinatura TRIAL** e **1 auditoria** com motivo `criação pela plataforma`;
+- existe ainda **1 configuração fiscal** com o mesmo CNPJ, vinculada à organização **CultivoFarm**, ID mascarado `8eae2bc1…93ca`;
+- não foram encontrados registros com esse documento em `clientes`, `customer_fiscal_profiles`, `fiscal_invoices`, `partner_accounts`, `profiles.cpf_cnpj` ou `platform_org_admin_invites.cpf_cnpj`.
+
+Assim, a nova autorização factual confirma que o CNPJ informado é precisamente o CNPJ da organização real AR BIOTECNOLOGIA anteriormente criada e também aparece em configuração fiscal de outra organização. Ele não pode identificar uma nova empresa de homologação.
+
+### 37.2 Duplicidade e comportamento server-side
+
+`organizations` possui índice UNIQUE parcial `uq_organizations_cnpj_normalizado` sobre `cnpj_normalizado` não nulo. Além disso, `platform_create_organization` normaliza e valida o documento no servidor e, antes da escrita, consulta `organizations.cnpj_normalizado`; em coincidência, encerra com `platform_duplicate: CNPJ já cadastrado` (`SQLSTATE 23505`).
+
+Portanto, a RPC **não permitiria** criar uma segunda organização com esse CNPJ. O frontend unificado também detecta a organização existente e bloqueia a ação antes da RPC. O parâmetro de rascunho não contorna a unicidade e não existe modo de homologação, sandbox lógico ou clonagem não identificadora aplicável a essa RPC. As opções seguras, sem alterar regras de produção, são:
+
+1. autorizar outro CNPJ controlado que seja válido e inexistente no canônico; ou
+2. definir futuramente um mecanismo oficial de identificador sintético em ambiente isolado, submetido a revisão e autorização próprias.
+
+Reutilizar AR BIOTECNOLOGIA ou seu job foi expressamente proibido e não é opção para este E2E.
+
+### 37.3 Estado do gate e implantação
+
+- zero organizações com prefixo `HOMOLOGAÇÃO D51.2`;
+- zero jobs para `teste@refilinformatica.com.br`;
+- SMTP global **OFF** e e-mail **OFF**;
+- Test Mode **ON** e allowlist exclusiva `teste@refilinformatica.com.br`;
+- WhatsApp, in-app e webhook **OFF**;
+- zero leases de provisionamento e zero leases de e-mail;
+- migration `20261002052628` presente no ledger; finalizer `SECURITY DEFINER`, `search_path=''`, execução somente por `service_role`;
+- fluxo unificado confirmado no bundle publicado `App-y87BJCpA.js` pelos marcadores Empresa → Responsável → Revisão e ação única;
+- job real mascarado `1d14f78b…c558` permaneceu em `falhou`, tentativa 1, `finalize_failed`, e-mail `pending`, zero tentativa SMTP, sem usuário e sem leases.
+
+### 37.4 Decisão
+
+Conforme a regra principal, o pré-check terminou em **NO-GO antes de qualquer mutação**. A janela SMTP não foi aberta e E01/E02 não foram executados. Não houve criação, convite, usuário, envio, retry, alteração do job real ou cleanup. D51.2 permanece aberto e D52 bloqueado.
