@@ -341,6 +341,8 @@ export interface ConviteAdminEmpresa {
   status: "processando" | "falhou" | "pendente" | "ativo";
   attempt_count: number;
   last_error_code: string | null;
+  email_delivery_status: string;
+  email_last_error_code: string | null;
   updated_at: string;
   created_at: string;
 }
@@ -352,7 +354,7 @@ export function useConvitesAdminEmpresa() {
       const { data, error } = await db
         .from("platform_org_admin_invites")
         .select(
-          "id,organization_id,user_id,email,nome,cpf_cnpj,telefone,modo_acesso,responsavel_principal,status,attempt_count,last_error_code,updated_at,created_at",
+          "id,organization_id,user_id,email,nome,cpf_cnpj,telefone,modo_acesso,responsavel_principal,status,attempt_count,last_error_code,email_delivery_status,email_last_error_code,updated_at,created_at",
         )
         .order("created_at", { ascending: false })
         .limit(LIMITE);

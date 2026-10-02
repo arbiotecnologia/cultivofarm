@@ -16,6 +16,7 @@ const deps = (over: Partial<InviteEmailDeliveryDeps> = {}): InviteEmailDeliveryD
   send: vi.fn(async (): Promise<AdapterResult> => ({ outcome: "sent", code: "sent", message: "ok" })),
   accept: vi.fn(async () => undefined),
   fail: vi.fn(async () => undefined),
+  ambiguous: vi.fn(async () => undefined),
   ...over,
 });
 
@@ -35,10 +36,17 @@ describe("D51.2-A — envio de convite com SMTP mockado", () => {
     expect(d.accept).not.toHaveBeenCalled();
   });
 
-  it("crash antes do envio é registrado como falha retomável", async () => {
+  it("exceção durante o envio é registrada como ambígua", async () => {
     const d = deps({ send: vi.fn(async () => { throw new Error("crash"); }) });
-    await expect(deliverInviteEmail("job", "https://app/reset#token", env, d)).resolves.toEqual({ status: "failed", code: "email_send_crash" });
-    expect(d.fail).toHaveBeenCalledWith("job", "lease", "email_send_crash");
+    await expect(deliverInviteEmail("job", "https://app/reset#token", env, d)).resolves.toEqual({ status: "ambiguous", code: "email_send_ambiguous" });
+    expect(d.ambiguous).toHaveBeenCalledWith("job", "lease", "email_send_ambiguous");
+  });
+
+  it("propaga classificação ambígua allowlisted do adapter", async () => {
+    const d = deps({ send: vi.fn(async (): Promise<AdapterResult> => ({ outcome: "ambiguous", code: "email_send_ambiguous", message: "safe", certainty: "ambiguous", stage: "send" })) });
+    await expect(deliverInviteEmail("job", "https://app/reset#token", env, d)).resolves.toEqual({ status: "ambiguous", code: "email_send_ambiguous" });
+    expect(d.ambiguous).toHaveBeenCalledOnce();
+    expect(d.fail).not.toHaveBeenCalled();
   });
 
   it("crash após aceite SMTP e antes da persistência fica ambíguo", async () => {

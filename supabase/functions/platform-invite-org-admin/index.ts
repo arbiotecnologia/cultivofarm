@@ -24,6 +24,21 @@ const json = (body: unknown, status = 200, origin: string | null = null) =>
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const AMBIGUOUS_CODES = new Set([
+  "email_unknown_error",
+  "email_send_ambiguous",
+  "email_accept_persistence_failed",
+  "email_timeout",
+  "email_network_error",
+  "email_send_crash",
+  "email_delivery_setup_failed",
+]);
+
+async function maskedId(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).slice(0, 6).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
 
 function senhaTemporaria(): string {
   const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -48,6 +63,7 @@ Deno.serve(async (req) => {
   }
 
   const respond = (body: unknown, status = 200) => json(body, status, requestOrigin);
+  const correlationId = crypto.randomUUID();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -88,6 +104,8 @@ Deno.serve(async (req) => {
     const modo = String((body as Record<string, unknown>).modo_acesso ?? "link");
     const responsavelPrincipal =
       (body as Record<string, unknown>).responsavel_principal !== false;
+    const confirmAmbiguousEmailRetry =
+      (body as Record<string, unknown>).confirm_ambiguous_email_retry === true;
 
     if (!UUID_RE.test(organizationId)) return respond({ error: "Selecione a empresa." }, 400);
     if (nome.length < 3 || nome.length > 200) return respond({ error: "Informe o nome completo." }, 400);
@@ -121,11 +139,18 @@ Deno.serve(async (req) => {
         p_telefone: telefone,
         p_modo_acesso: modo,
         p_responsavel_principal: responsavelPrincipal,
+        p_confirm_ambiguous_email_retry: confirmAmbiguousEmailRetry,
       },
     );
     if (claimError || !claimed) {
-      const code = claimError?.code === "55P03" ? "provisioning_busy" : "claim_failed";
-      return respond({ error: code === "provisioning_busy" ? "Provisionamento já está em andamento." : "Não foi possível reservar o provisionamento.", code }, code === "provisioning_busy" ? 409 : 400);
+      const ambiguousConfirmationRequired = claimError?.message?.includes("email_ambiguous_confirmation_required") === true;
+      const code = ambiguousConfirmationRequired
+        ? "email_ambiguous_confirmation_required"
+        : claimError?.code === "55P03" ? "provisioning_busy" : "claim_failed";
+      const message = ambiguousConfirmationRequired
+        ? "Não foi possível confirmar a entrega anterior. Verifique a caixa de entrada antes de reenviar."
+        : code === "provisioning_busy" ? "Provisionamento já está em andamento." : "Não foi possível reservar o provisionamento.";
+      return respond({ error: message, code }, code === "claim_failed" ? 400 : 409);
     }
     const job = claimed as Record<string, unknown>;
     if (job.completed === true) {
@@ -272,17 +297,24 @@ Deno.serve(async (req) => {
         return respond({ error: "Convite sem link válido.", code: "link_missing" }, 500);
       }
       const env = await loadRuntimeConfig(adminClient, readWorkerEnv);
+      const jobHash = await maskedId(jobId);
+      const logDelivery = (event: string, stage: string, safeCode: string, certainty: "definitive" | "ambiguous") => {
+        console.info(JSON.stringify({ event, stage, safe_code: safeCode, certainty, job_ref: jobHash, correlation_id: correlationId }));
+      };
       const delivery = await deliverInviteEmail(jobId, actionLink, env, {
         claim: async (id) => {
           const { data, error } = await adminClient.rpc("platform_claim_org_admin_email_delivery", {
             p_job_id: id,
+            p_actor_id: callerId,
+            p_confirm_ambiguous_email_retry: confirmAmbiguousEmailRetry,
             p_cooldown_seconds: 300,
           });
           if (error || !data) throw new Error("email_claim_failed");
+          logDelivery("invite_email_claimed", "preflight", "email_claimed", "definitive");
           return data as InviteEmailClaim;
         },
-        send: async ({ env: runtime, recipientEmail, recipientName, actionLink: link }) =>
-          sendEmail(
+        send: async ({ env: runtime, recipientEmail, recipientName, actionLink: link }) => {
+          const result = await sendEmail(
             runtime,
             { ok: true, canal: "email", address: recipientEmail },
             {
@@ -295,13 +327,17 @@ Deno.serve(async (req) => {
               assunto: "Defina seu acesso ao Cultivo Farm",
               corpo: `Olá, ${recipientName}.\n\nUse este link para definir sua senha:\n${link}\n\nSe você não esperava este convite, ignore esta mensagem.`,
             },
-          ),
+          );
+          logDelivery("invite_email_transport_result", result.stage ?? "send", result.code, result.certainty ?? "definitive");
+          return result;
+        },
         accept: async (id, token) => {
           const { error } = await adminClient.rpc("platform_accept_org_admin_email_delivery", {
             p_job_id: id,
             p_lease_token: token,
           });
           if (error) throw new Error("email_accept_persistence_failed");
+          logDelivery("invite_email_accepted", "response", "accepted", "definitive");
         },
         fail: async (id, token, code) => {
           const { error } = await adminClient.rpc("platform_fail_org_admin_email_delivery", {
@@ -312,7 +348,17 @@ Deno.serve(async (req) => {
           });
           if (error) throw new Error("email_failure_persistence_failed");
         },
-      }).catch(() => ({ status: "failed" as const, code: "email_delivery_setup_failed" }));
+        ambiguous: async (id, token, code) => {
+          const safeCode = AMBIGUOUS_CODES.has(code) ? code : "email_send_ambiguous";
+          const { error } = await adminClient.rpc("platform_mark_org_admin_email_ambiguous", {
+            p_job_id: id,
+            p_lease_token: token,
+            p_error_code: safeCode,
+          });
+          if (error) throw new Error("email_ambiguity_persistence_failed");
+          logDelivery("invite_email_ambiguous", "response", safeCode, "ambiguous");
+        },
+      }).catch(() => ({ status: "failed" as const, code: "email_claim_failed" }));
 
       if (delivery.status !== "accepted") {
         const ambiguous = delivery.status === "ambiguous";
@@ -322,7 +368,7 @@ Deno.serve(async (req) => {
             : "O acesso foi preparado, mas o e-mail não foi enviado. Tente novamente após configurar o SMTP.",
           code: delivery.code,
           email_status: delivery.status,
-        }, 503);
+        }, ambiguous ? 409 : 503);
       }
 
       return respond({

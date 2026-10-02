@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
+  ErroConvitePlataforma: class ErroConvitePlataforma extends Error {
+    constructor(public code: string, message: string) { super(message); }
+  },
   mensagemErroPlataforma: () => "Não foi possível concluir a operação.",
   useOrganizacoesSaaS: () => ({ data: [], isLoading: false }),
   usePlanosSaaS: () => ({ data: [{ id: "base", key: "base", name: "Plano Base", active: true }] }),
@@ -173,6 +176,24 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     await screen.findByText("Convite enviado");
     expect(mocks.criar).toHaveBeenCalledTimes(1);
     expect(mocks.convidar).toHaveBeenCalledTimes(2);
+  });
+
+  it("exige confirmação explícita antes do retry ambíguo", async () => {
+    const { ErroConvitePlataforma } = await import("@/hooks/usePlataformaSaaS");
+    mocks.convidar.mockRejectedValueOnce(new ErroConvitePlataforma("email_ambiguous_confirmation_required", "Verifique a caixa de entrada"));
+    renderFlow();
+    await chegarNaRevisao();
+    fireEvent.click(screen.getByRole("button", { name: "Criar empresa" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Enviar convite" }));
+    expect(await screen.findByText("Envio não confirmado")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Não recebi — reenviar convite" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("O reenvio pode gerar uma segunda mensagem");
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(mocks.convidar).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Não recebi — reenviar convite" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e reenviar" }));
+    await waitFor(() => expect(mocks.convidar).toHaveBeenCalledTimes(2));
+    expect(mocks.convidar).toHaveBeenLastCalledWith(expect.objectContaining({ confirmAmbiguousEmailRetry: true }));
   });
 
   it("bloqueia duplo clique síncrono na criação", async () => {
