@@ -1,11 +1,11 @@
 # Roadmap
 
 ## Em andamento
-- [ ] D51.2 — **checkpoint E01 → E02 em implantação:** o fluxo preserva Empresa → Responsável → Revisão, mas agora cria a empresa em ação isolada, bloqueia edição após o `organizationId` e exige ação explícita posterior para enviar o convite. CNPJ e e-mails controlados estão autorizados; SMTP segue OFF/OFF. Após publicação, parar pronto para E01 manual, sem executar criação.
-- [ ] Gate D51.2 — aberto somente para homologação controlada futura. SMTP global/e-mail OFF/OFF, Test Mode ON, allowlist exclusiva e demais canais OFF; zero objetos D51.2 e zero leases. Job real AR BIOTECNOLOGIA continua bloqueado e intocado. D52 bloqueado.
+- [ ] D51.2 — **checkpoint publicado — E01 manual liberado:** o domínio oficial serve a revisão com ações separadas **Criar empresa** e **Enviar convite** e confirmação **Empresa criada — pronta para auditoria**. O responsável deve executar somente E01 e parar nessa confirmação. E02 e D52 continuam bloqueados.
+- [ ] Gate D51.2 — liberado exclusivamente para E01 manual com CNPJ `36.736.180/0001-11` e e-mail corporativo `renato@refilinformatica.com.br`. SMTP global/e-mail OFF/OFF, Test Mode ON, allowlist exclusiva, zero objetos controlados e zero leases; job real AR BIOTECNOLOGIA permanece bloqueado e intocado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — após o frontend com checkpoint estar publicado, executar manualmente uma única criação com sessão real de Superadmin e auditar organização/assinatura/auditoria antes de qualquer E02. Não abrir SMTP para E01.
+- [ ] Gate D51.2 — executar manualmente uma única criação com sessão real de Superadmin e parar em **Empresa criada — pronta para auditoria**; auditar organização/assinatura/auditoria antes de qualquer E02. Não abrir SMTP para E01.
 
 ## Concluído
 - [x] **Pré-condições do checkpoint E01:** CNPJ controlado `36.736.180/0001-11`, e-mail corporativo `renato@refilinformatica.com.br` e destinatário exclusivo `teste@refilinformatica.com.br` autorizados; Superadmin confirmado no publicado. Nenhuma criação ou envio faz parte da rodada de ajuste.
