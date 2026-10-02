@@ -1,12 +1,13 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **BLOQUEADO E CONTIDO; DIVERGÊNCIA DA UI AINDA INCONCLUSIVA**. E01 FAIL/não comprovado; E02 FAIL/não comprovado; E03 FAIL confirmado — nenhum e-mail recebido e nenhuma tentativa canônica correlacionável; E04 NOT APPLICABLE/NO-GO porque não existe link recebido. O canônico não recebeu organização, job, Auth user ou profile. SMTP global/e-mail permanece OFF/OFF; D52 bloqueado.
+- [ ] Gate D51.2 — **BLOQUEADO E CONTIDO; DIVERGÊNCIA E01/E02 EXPLICADA**. A captura é de um job novo, não do job legado: uma empresa real foi criada no canônico às `05:10Z` e um job para endereço não aprovado foi criado às `05:11Z`, após a auditoria anterior. E01 FAIL de conformidade; E02 FAIL, sem convite controlado e sem Auth user/profile/papel; E03 FAIL confirmado, com zero tentativa SMTP; E04 NOT APPLICABLE/NO-GO. SMTP global/e-mail OFF/OFF; D52 bloqueado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — rastrear por que a UI indicou sucesso sem persistência canônica e sem envio real, usando somente evidências existentes de publicação/runtime e feedback visual. Não repetir E01/E02 e não reabrir SMTP.
+- [ ] Gate D51.2 — diagnosticar em rodada separada e somente após autorização a causa técnica específica de `finalize_failed`; manter o job `1d14f78b…c558` bloqueado, sem reprocessar, reenviar ou alterar status. Não repetir E01/E02 e não reabrir SMTP.
 
 ## Concluído
+- [x] **Correlação factual da captura D51.2:** `AR BIOTECNOLOGIA LTDA` (`007bb519…0048`) e o job `1d14f78b…c558` foram criados no canônico às `05:10Z–05:11Z`, depois da leitura anterior de `04:37Z`; portanto não são o job histórico. O job foi reclamado uma vez, falhou em `finalize_failed`, ficou sem Auth/profile/papel e não alcançou SMTP (`email_attempt_count=0`). A divergência temporal/visual foi encerrada; a causa interna da falha de finalização continua não preservada.
 - [x] **Contenção pós-divergência E01/E02/E03:** mecanismo auditável alterou somente entrega global/e-mail para OFF. Modo de teste ON, allowlist exclusiva, SMTP presente por booleanos, demais canais OFF, zero leases, zero jobs/orgs D51.2 e zero operação de segredo confirmados no canônico.
 - [x] **Correção factual E01/E02/E03:** domínio oficial confirmado; nenhum e-mail ou link recebido. Bundle atual canônico, zero sucesso otimista, zero request/efeito canônico e SMTP OFF/OFF. Causa do feedback visual sem persistência permanece inconclusiva; C/E continuam possíveis, não comprovadas.
 - [x] **Incidente D51.2 — CORS da aba Comunicação — ENCERRADO:** causa confirmada por preflight 403 no domínio customizado contra 204 no domínio Lovable. Allowlist estrita de `https://app.cultivofarm.com.br` e `verify_jwt=true` explícito aplicados; somente `communication-provider-settings` e `test-communication-email` implantadas. Pós-deploy: preflights aprovados 204 com origem exata, origem maliciosa 403 e chamada sem JWT 401 legível. O responsável confirmou que a aba abriu normalmente no ambiente publicado com sessão real de Superadmin e que `communication-provider-settings` carregou corretamente na UI autenticada.
@@ -26,7 +27,7 @@
 - [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: investigar somente por evidências existentes por que a UI indicou sucesso sem persistência e sem envio; não repetir criação/convite e não reabrir SMTP.
+- [ ] D51.2: revisar separadamente o `finalize_failed` do job novo e decidir seu tratamento; não usar esse job real em homologação, não reprocessar criação/convite e não reabrir SMTP sem nova autorização.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
