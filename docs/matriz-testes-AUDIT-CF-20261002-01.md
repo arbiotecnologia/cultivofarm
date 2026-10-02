@@ -17,13 +17,17 @@
 | F0-003 | Tabelas públicas sem RLS | PASS | contagem 0 |
 | F0-004 | Scanner profundo | PASS com riscos | 10 Info; 0 Critical/Error/Warning |
 | F0-005 | Hardening das duas funções administrativas | PASS | CORS fail-closed, JWT explícito e erros sanitizados |
-| F0-006 | Testes focados de segurança | PASS | 59/59 |
+| F0-006 | Testes focados de segurança e D51.2 | PASS | 70/70 |
 | F0-007 | Typecheck | PASS | saída sem erro |
 | F0-008 | Suíte global oficial | PASS | 5.371 PASS, 4 skipped |
-| F0-009 | Scan de dependências | NOT RUN completo | parser do lockfile falhou em `xlsx`; limitação registrada |
+| F0-009 | Scan de dependências | INCONCLUSIVO | parser do lockfile falhou em `xlsx`; limitação registrada |
 | F0-010 | Cross-tenant autenticado por perfis | NOT RUN | reservado às fases de domínio com fixtures em ROLLBACK |
 | F0-011 | Concorrência/idempotência por domínio | NOT RUN | reservado às fases 1–14 |
 | F0-012 | Desktop/mobile/a11y funcional | NOT RUN | reservado à Fase 13 |
+| F0-013 | Build de produção/PWA | PASS com alerta | 4.669 módulos; bundle principal ~5,60 MB |
+| F0-014 | ESLint global | FAIL histórico/P2 | 3.505 erros e 126 avisos em 543 arquivos |
+| F0-015 | Linter Supabase | PASS como baseline | 492 alertas classificados; sem correção em massa |
+| F0-016 | Slow queries | PASS como baseline | maiores custos em harnesses/auditorias, sem gargalo produtivo comprovado |
 
 ## Fase 1 — D51.2
 
@@ -44,6 +48,10 @@
 | F1-013 | Primeiro acesso/recovery | NOT RUN | depende de E02 verde e ação humana |
 | F1-014 | Retry/cooldown/lease/fencing | NOT RUN | não executar contra job real; fixture futura controlada |
 | F1-015 | Cleanup | NOT RUN | nenhum dado da campanha foi criado nesta rodada |
+| F1-016 | Negativa convite com JWT inválido | PASS | HTTP 401; nenhuma mutação |
+| F1-017 | Negativa provider settings com JWT inválido | PASS | HTTP 401 |
+| F1-018 | Negativa teste de e-mail com JWT inválido | PASS | HTTP 401; nenhum envio |
+| F1-019 | Testes Deno das três funções | NOT RUN | runner informou ausência de módulos de teste |
 
 ## Gate
 
