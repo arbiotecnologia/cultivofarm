@@ -1497,3 +1497,18 @@ O frontend foi ajustado sem alterar backend, RPC, migration, rota, tabela, SMTP 
 Estados humanos: **Preparando → Criando empresa → Empresa criada — pronta para auditoria → Criando acesso → Enviando convite → Convite enviado → Falhou — tentar novamente**. Uma trava síncrona adicional protege as duas ações contra duplo clique antes da atualização visual do estado.
 
 Nesta rodada não houve E01, E02, criação real, convite, usuário, e-mail, alteração SMTP ou acesso ao job real AR BIOTECNOLOGIA. O próximo ponto autorizado é exclusivamente E01 manual; E02 permanece bloqueado até a auditoria pós-E01 e D52 continua bloqueado.
+
+## 40. Verificação pós-Update — checkpoint publicado e E01 manual liberado
+
+Data: 2026-10-02
+
+Verificação integralmente somente leitura no domínio oficial e no Supabase canônico `swzpzcwiasxmjutrmvkm`:
+
+1. HTML, service worker e todos os chunks JavaScript atuais foram baixados com cache-busting. O deployment exposto foi identificado por `x-deployment-id` e o chunk de aplicação `App-DdDbgc5U.js` contém **Criar empresa**, **Empresa criada — pronta para auditoria** e **Enviar convite**;
+2. a frase anterior **Criar empresa e enviar convite** não existe nos chunks publicados. Portanto, ela não é mais a ação operacional do checkpoint;
+3. `/`, `/auth` e `/plataforma` responderam HTTP 200. Em sessão anônima, `/` e `/plataforma` redirecionaram corretamente para `/auth`, sem erro de página ou runtime. As respostas 401 observadas foram apenas negativas esperadas da sessão não autenticada;
+4. o domínio está ativo, primário, publicado e com cache do HTML desabilitado. O pacote publicado contém o comportamento do checkpoint do commit `b29a84a3bcb6527a1e0a09bc35086449118bd671`; como o servidor não expõe hash Git, a equivalência foi confirmada pelos marcadores funcionais e pela ausência da ação antiga;
+5. o pré-check canônico confirmou: CNPJ `36.736.180/0001-11` livre; zero organização **HOMOLOGAÇÃO D51.2**; zero job, Auth user ou profile para `teste@refilinformatica.com.br`; zero leases ativos; entrega global OFF e e-mail OFF; Test Mode ON; allowlist contendo exclusivamente `teste@refilinformatica.com.br`; WhatsApp, in-app e webhook OFF;
+6. o job real AR BIOTECNOLOGIA permaneceu intocado: `falhou`, tentativa 1, `finalize_failed`, e-mail `pending`, zero tentativa SMTP, sem usuário e sem leases.
+
+**Decisão: PASS.** O checkpoint está publicado e E01 manual está liberado exclusivamente com o CNPJ `36.736.180/0001-11` e o e-mail corporativo `renato@refilinformatica.com.br`. Após clicar **Criar empresa**, o responsável deve parar ao visualizar **Empresa criada — pronta para auditoria** e não clicar **Enviar convite**. SMTP permanece fechado; E02 e D52 continuam bloqueados.
