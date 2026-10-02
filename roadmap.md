@@ -18,6 +18,7 @@
 
 ## Pendências (aguardam usuário/autorização)
 - [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, um `administrador` operacional configura em `/configuracoes?tab=comunicacao`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
+- [ ] Hardening posterior ao D51.2-C: revisar e revogar ACLs históricas excedentes de `anon`/`authenticated` em `communication_provider_settings`; RLS sem policies já bloqueia acesso efetivo e a migration do singleton não ampliou permissões.
 - [ ] D51.2: responsável entrar manualmente como superadmin controlado em `/auth` na prévia. Projeto externo não gerenciado não permite `lovable auth-session`; não compartilhar senha no chat e não substituir sessão por `service_role`.
 - [ ] D51.2: habilitar Entrega global + E-mail somente após novo comando explícito para a janela E2E; manter WhatsApp, in-app e webhook OFF.
 - [ ] D51.2/E15: aprovar adaptação sem segunda identidade ou fornecer segundo endereço controlado; nunca inventar destinatário.

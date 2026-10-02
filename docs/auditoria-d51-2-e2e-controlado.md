@@ -365,6 +365,18 @@ As quatro RPCs de configuração continuam `SECURITY DEFINER`, com `search_path 
 
 ### 18.4 Testes e decisão
 
-Foi adicionado contrato automatizado para provar bootstrap fail-closed, idempotência por conflito, ausência de sobrescrita e ausência de Vault/permissões na migration. Os resultados finais desta fase são registrados após a execução da suíte.
+Foi adicionado contrato automatizado para provar bootstrap fail-closed, idempotência por conflito, ausência de sobrescrita e ausência de Vault/permissões na migration.
+
+| Verificação | Resultado |
+|---|---|
+| Contrato D51.2-C | PASS — 3/3 |
+| Suíte focada de provider settings | PASS — 35/35 em 2 arquivos |
+| Typecheck | PASS |
+| Suíte global | PASS — 344 arquivos aprovados, 1 ignorado; 5.290 testes aprovados, 4 ignorados |
+| Linter Supabase | Sem delta — 492 achados históricos |
+| Security scan | Sem achado relacionado ao singleton; achados históricos fora do escopo preservados |
+| Build automático | PASS após a migration; revalidação final registrada pelo ambiente após os ajustes de teste/documentação |
+
+Duas inferências de literal em mocks SMTP preexistentes foram explicitamente tipadas como `AdapterResult`; isso não altera o runtime e fecha o contrato do typecheck.
 
 **D51.2-C concluído quanto ao reparo do singleton.** A configuração SMTP manual está desbloqueada, mas envio e E2E continuam em **NO-GO** até comprovar sender/domínio, configurar credenciais pela interface segura com flags OFF e obter sessão manual superadmin. Nenhum e-mail, usuário, tenant ou pedido foi criado; E01–E21 não foram executados, o frontend não foi publicado e D52 não foi iniciado.
