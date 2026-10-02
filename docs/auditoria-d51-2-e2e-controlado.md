@@ -1,6 +1,6 @@
 # Auditoria D51.2 — E2E controlado
 
-> **D51.2 SUSPENSO:** incidente P0 pós-publicação em 2026-10-02. Nenhum cenário E01–E21 pode ser retomado até a correção ser publicada e a produção voltar a carregar normalmente.
+> **D51.2 RETOMADO:** incidente P0 pós-publicação encerrado. O gate avançou até a interação manual real E01/E02; não houve criação de empresa, usuário, convite ou envio nesta execução assistida.
 
 Data da tentativa: 2026-10-02  
 Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
@@ -870,3 +870,79 @@ O console registrou somente HTTP 401 na leitura anônima de `configuracoes_siste
 ### 27.3 Decisão
 
 **PRODUÇÃO NORMALIZADA; INCIDENTE P0 ENCERRADO.** A correção publicada está presente e a navegação anônima funciona normalmente. Esta verificação não autenticou usuário, não usou `service_role` e não alterou código, banco, SMTP ou dados. D51.2 permanece suspenso nesta etapa e só poderá ser retomado por autorização explícita; D52 não foi iniciado.
+
+## 28. Retomada D51.2 após produção normalizada
+
+Data/hora UTC: `2026-10-02T04:14:39Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
+Commit candidato local: `9dd003c7853ca5b208600e13ecbac3e163a1226e`
+
+### 28.1 Pré-check somente leitura
+
+| Controle | Resultado |
+|---|---|
+| Projeto canônico | PASS — consultas executadas exclusivamente no ref canônico |
+| Produção corrigida | PASS — os commits PWA `320ecaac…` e RLS `ce7e9f54…` são ancestrais do candidato; a verificação live anterior confirmou os assets corrigidos |
+| Singleton | PASS — uma linha, exclusivamente `id=1` |
+| SMTP | PASS — host, porta, usuário, referência Vault e remetente presentes; valores não coletados |
+| Test mode | PASS — ON |
+| Allowlist | PASS — exatamente uma entrada, correspondente ao endereço controlado autorizado |
+| Entrega antes da abertura | PASS — global OFF e e-mail OFF |
+| Outros canais | PASS — WhatsApp, in-app e webhook OFF |
+| Leases | PASS — zero lease de provisionamento/e-mail e zero job `sending` |
+| Conflitos D51.2 | PASS — zero Auth user controlado, convite controlado ou organização prefixada |
+| Forward-fix | PASS — duas funções remotas contêm o vínculo por `raw_app_meta_data.provisioning_request_id` |
+| Superadmin | PASS estrutural — uma identidade Superadmin e zero papel operacional acumulado |
+| Leaked Password Protection | EXCEÇÃO ACEITA — warning presente, aberto e não mascarado |
+
+O linter geral continua registrando 492 itens históricos, incluindo exatamente um `Leaked Password Protection Disabled`; a exceção permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**. O scanner profundo persistido consultado nesta rodada estava desatualizado em relação ao scan final já documentado e não foi usado para reabrir o incidente encerrado.
+
+### 28.2 Janela SMTP controlada
+
+Às `2026-10-02T04:13:57.410527Z`, a RPC técnica existente `rpc_service_apply_provider_settings` alterou somente `delivery_enabled` e `email_delivery_enabled` para `true`, com payload sem operação de segredo. A auditoria registrou `action=apply`, exatamente esses dois campos e ator com papel Superadmin.
+
+Verificação posterior:
+
+- `ready_for_controlled_test=true`;
+- test mode ON e allowlist exclusiva preservados;
+- host/porta/usuário/referência Vault/remetente preservados por presença;
+- WhatsApp, in-app e webhook OFF;
+- zero lease e zero job `sending`;
+- nenhum e-mail enviado pela abertura.
+
+A janela permanece aberta para o próximo passo manual imediato, protegida por test mode e destinatário único. Qualquer atraso, conflito ou risco exige desligar imediatamente as duas flags.
+
+### 28.3 Sessão publicada e provas server-side
+
+O navegador automatizado abriu `https://cultivofarm.lovable.app/plataforma`, foi direcionado ao domínio canônico e terminou em `/auth`, com formulário de login visível e zero erro de página. `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`; portanto a sessão real do responsável não é transferida às ferramentas e não pode ser substituída por `service_role`.
+
+Provas executadas sem identidade simulada e sem mutação operacional:
+
+- `communication-provider-settings`: sem JWT e JWT inválido → HTTP 401 sanitizado;
+- `platform-invite-org-admin`: sem JWT e JWT inválido → HTTP 401 no gateway;
+- `test-communication-email`: sem JWT e JWT inválido → HTTP 401 sanitizado;
+- tabela global e RPCs de provider/invite: `anon=false`, `authenticated=false`, `service_role=true` nas fronteiras técnicas verificadas;
+- busca em `src/`/`public/`: zero chave `service_role` no cliente;
+- 9 arquivos focados, 74 testes aprovados: intenção persistida, serialização, lease/fencing/cooldown, retomada sem `listUsers`, hard-crash antes do envio, resultado ambíguo após aceite SMTP, destinatário vindo do claim, open redirect, link não devolvido, recovery/primeiro acesso e isolamento da configuração global;
+- E15A permanece apenas estrutural/parcial; não houve Tenant B nem sessão Admin A;
+- E17–E19 permanecem contratuais/NOT RUN: nenhuma organização, assinatura ou identidade fiscal foi criada.
+
+### 28.4 Matriz e ponto de parada
+
+| Cenários | Estado nesta retomada |
+|---|---|
+| E01–E04 | NOT RUN — parada imediatamente antes de criar a empresa |
+| E05–E07 | PARCIAL — contratos de senha, recovery e reenvio aprovados; sem conta/link real |
+| E08 | NOT RUN — nenhum link real criado ou aberto |
+| E09–E14 | PARCIAL — contratos/harness focados aprovados; sem fixture mutante no canônico |
+| E15 | PARCIAL estrutural — A→B ainda não exercitado; segunda identidade não inventada |
+| E16 | PARCIAL — zero papel operacional acumulado e autorização server-side comprovada; sem sessão positiva |
+| E17–E19 | NOT RUN — nenhum fluxo real de plano/fiscal executado |
+| E20 | PARCIAL — terminalidade/idempotência por contrato; sem job real concluído |
+| E21 | PARCIAL — preflight, auditoria da janela, negativas e contagens coletados; falta trilha E2E |
+
+**Ponto exato de interação manual:** autenticar o Superadmin no ambiente publicado e, em `/plataforma`, abrir **Nova Empresa**, antes de qualquer seleção de **Criar empresa**. E01/E02 não foram iniciados por estas ferramentas.
+
+### 28.5 Decisão
+
+**NO-GO para encerrar D51 ou iniciar D52.** O ambiente está pronto para E01/E02 manual controlado, mas nenhum cenário dependente de empresa/convite/e-mail real foi promovido a PASS. Leaked Password Protection permanece aberta sob a exceção formal.
