@@ -683,3 +683,54 @@ Nenhum cenário foi promovido a `PASS E2E` com base apenas em contrato, mock ou 
 Não houve mutação, portanto não existiam tenant, usuário, convite, sessão ou dado fiscal D51.2 para limpar. As flags global/e-mail permanecem ON porque a janela autorizada não chegou a realizar envio; isso requer decisão manual do responsável: manter a janela aberta para a próxima retomada imediata ou desligá-las na aba Comunicação de `/plataforma`.
 
 **Decisão: NO-GO para encerrar o D51 e considerar D52.** A configuração SMTP está pronta, mas E01–E04, E08, E15A e os cenários fiscal/plano continuam sem prova E2E por ausência da sessão real nas ferramentas. Para avançar, o responsável deve manter o Superadmin autenticado na prévia e iniciar nova retomada; se a ferramenta continuar sem receber a sessão, será necessária execução manual assistida no navegador, sem compartilhar senha, link, token ou OTP. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
+
+## 24. Fechamento da janela SMTP após o pré-check
+
+Data/hora UTC: `2026-10-02T03:02:35Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`  
+Commit candidato observado antes da atualização documental: `b63c008c68f3513fde453c0615392d2777b94f17`
+
+### 24.1 Alteração controlada
+
+A janela foi fechada pelo mecanismo server-side existente `rpc_service_apply_provider_settings`, com alteração exclusiva de:
+
+- `delivery_enabled`: `true` → `false`;
+- `email_delivery_enabled`: `true` → `false`.
+
+A RPC retornou sucesso e registrou somente esses dois campos na auditoria, sem operação de segredo. Não houve envio de e-mail, criação de usuário, convite ou tenant.
+
+### 24.2 Verificação posterior sanitizada
+
+| Controle | Estado final |
+|---|---|
+| Entrega global | OFF |
+| Entrega por e-mail | OFF |
+| Test mode | ON |
+| Allowlist | 1 entrada, exatamente o destinatário controlado autorizado |
+| SMTP | host, porta, usuário, referência de senha e remetente presentes; valores não expostos |
+| WhatsApp | OFF |
+| In-app | OFF |
+| Webhook WhatsApp | OFF |
+| Lease de e-mail ativo | zero |
+| Vault | referência preservada; nenhum segredo removido ou alterado |
+
+A configuração SMTP permanece preservada, porém fail-closed: não está pronta para envio enquanto as duas flags de entrega estiverem OFF.
+
+### 24.3 Retomada manual assistida — E01/E02
+
+O Supabase é externo não gerenciado; a sessão real aberta pelo Superadmin no navegador não é disponibilizada às ferramentas. Não usar `service_role`, senha compartilhada ou identidade simulada para substituir essa sessão.
+
+Passos exatos para iniciar a retomada pela UI:
+
+1. Na prévia, entrar normalmente como Superadmin e abrir `/plataforma`.
+2. Abrir a aba **Comunicação** e confirmar: Test mode ON; 1 e-mail permitido; SMTP com todos os itens configurados; WhatsApp, In-app e Webhook OFF.
+3. Somente imediatamente antes da janela autorizada, ligar **Entrega global** e **E-mail**, salvar e confirmar “Pronto para teste controlado”. Não alterar a allowlist nem o Vault.
+4. Abrir **Nova Empresa**. Informar o CNPJ sintético/controlado aprovado para o gate e selecionar **Buscar empresa**. Não usar CNPJ de cliente, produtor ou parceiro real.
+5. Prosseguir somente se não houver conflito. Garantir que razão social e nome fantasia tenham prefixo `TESTE D51.2` ou `HOMOLOGAÇÃO D51.2`, informar o e-mail corporativo controlado quando aplicável, escolher o plano previsto no cenário e selecionar **Criar empresa**. Registrar horário UTC e o identificador mascarado. Isso inicia/conclui E01.
+6. Abrir **Administradores**, selecionar exclusivamente a empresa recém-criada e preencher nome com prefixo `TESTE D51.2` ou `HOMOLOGAÇÃO D51.2`.
+7. Informar exclusivamente `teste@refilinformatica.com.br`; deixar CPF e telefone vazios se não houver valores sintéticos previamente aprovados; escolher **Link de convite (ele cria a senha)** e manter **Responsável Principal** conforme o plano do gate.
+8. Antes de selecionar **Gerar acesso**, confirmar novamente destinatário, empresa e modo link. A seleção de **Gerar acesso** inicia E02 e pode também disparar E03; fazer isso somente durante a janela de envio autorizada.
+9. Se a UI informar aceite pelo servidor de e-mail, registrar apenas horário, estado e identificadores mascarados. Não copiar nem compartilhar link, token, OTP, cookie ou senha.
+10. Quando o e-mail chegar, parar antes de abrir o link e solicitar a continuação assistida. Não colar o link no chat.
+
+Qualquer conflito, destinatário divergente, erro de autorização, duplicidade ou suspeita de impacto real exige parada imediata e fechamento das duas flags. A decisão permanece **NO-GO**; E01–E21 não foram executados nesta etapa e D52 não foi iniciado.
