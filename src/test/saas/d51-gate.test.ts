@@ -10,7 +10,7 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
   it("serializa por e-mail e exige lease vigente para concluir", () => {
     expect(migration).toContain("pg_advisory_xact_lock");
     expect(migration).toContain("lease_token IS DISTINCT FROM p_lease_token");
-    expect(migration).toContain("lease_expires_at <= clock_timestamp()");
+    expect(migration).toMatch(/lease_expires_at\s*<=\s*clock_timestamp\(\)/);
     expect(migration).toContain("platform_stale_lease");
   });
 

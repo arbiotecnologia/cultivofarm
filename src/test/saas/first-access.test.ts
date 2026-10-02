@@ -78,7 +78,7 @@ describe("primeiro acesso — convite e compensação", () => {
   it("link é gerado sem envio de e-mail e sem generateLink invite", () => {
     expect(convite).toContain('type: "recovery"');
     expect(convite).not.toContain('type: "invite"');
-    expect(convite.match(/generateLink/g)?.length).toBe(2);
+    expect(convite.match(/auth\.admin\.generateLink/g)?.length).toBe(2);
   });
 
   it("nenhum segredo em logs", () => {
