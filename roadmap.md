@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] **Incidente P0 pós-publicação — recuperação em andamento:** produção exibiu erro de `useAuth` incompatível com o código/histórico atuais. Diagnóstico apontou sessão com bundle/cache antigo durante atualização PWA; correção adiciona recuperação de chunk obsoleto, limpeza restrita de caches de runtime e recarga única. D51.2 permanece suspenso até publicação e verificação da correção.
+- [ ] **Incidente P0 pós-publicação — corrigido e validado localmente, aguardando autorização de publicação:** produção exibiu erro de `useAuth` incompatível com o código/histórico atuais. Diagnóstico apontou sessão com bundle/cache antigo durante atualização PWA; correção adiciona recuperação de chunk obsoleto, limpeza restrita de caches de runtime e recarga única. Regressões, suíte global, typecheck, build e prévia estão verdes. Publicação interrompida devido a achados críticos preexistentes de RLS no scanner; D51.2 permanece suspenso.
 - [ ] Gate D51.2 — **SUSPENSO pelo P0 pós-publicação**. Janela SMTP fechada: entrega global/e-mail OFF; test mode ON; allowlist exclusiva controlada, configuração SMTP/Vault preservada, WhatsApp/in-app/webhook OFF e zero lease ativo. E01–E21 seguem NOT RUN/PARCIAL; NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução

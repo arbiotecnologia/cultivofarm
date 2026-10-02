@@ -763,4 +763,15 @@ Arquivos funcionais alterados: `src/pwa/registerSW.ts`, `src/main.tsx` e `src/co
 
 ### 25.3 Estado do gate
 
-O D51.2 está **SUSPENSO** e E01–E21 não podem ser retomados até a correção ser publicada e a produção ser verificada em sessão limpa e em atualização. D52 permanece bloqueado. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
+Validações da correção:
+
+- regressões focadas: 3 arquivos e 31 testes aprovados;
+- suíte global: 348 arquivos aprovados, 1 ignorado; 5.312 testes aprovados, 4 ignorados;
+- typecheck: PASS;
+- build automático: PASS;
+- prévia em `/`, `/auth` e `/plataforma`: sem exceção de provider, sem erro de página e sem resposta HTTP com falha;
+- produção em sessão limpa antes da correção: os mesmos três caminhos carregaram sem a exceção, reforçando que o incidente depende de estado antigo do navegador.
+
+A publicação automática foi interrompida antes do deploy porque o scanner de segurança vigente possui achados críticos preexistentes de RLS fora do escopo deste incidente. A regra de não publicar com P0/P1 aberto foi preservada; nenhum banco, SMTP, usuário ou tenant foi tocado.
+
+O D51.2 está **SUSPENSO** e E01–E21 não podem ser retomados até a correção ser publicada com autorização diante dos achados existentes e a produção ser verificada em sessão limpa e em atualização. D52 permanece bloqueado. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
