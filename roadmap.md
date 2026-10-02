@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Em andamento
+- [ ] D51.2 — executar sequencialmente as Fases 1–5 aprovadas: forward-fix da finalização, fluxo único Empresa → Responsável → Revisão → Convite, observabilidade sanitizada, testes completos e implantação controlada. Preservar integralmente o job real da AR BIOTECNOLOGIA, sem reprocessamento.
+- [ ] D51.2 — após a Fase 5, executar pré-check da Fase 6; prosseguir ao E2E somente se existir mecanismo oficial de CNPJ de teste. Sem fixture oficial, parar antes de criar nova empresa e registrar essa única pendência. Destinatário exclusivo: `teste@refilinformatica.com.br`.
 - [ ] Gate D51.2 — **BLOQUEADO E CONTIDO; DIVERGÊNCIA E01/E02 EXPLICADA**. A captura é de um job novo, não do job legado: uma empresa real foi criada no canônico às `05:10Z` e um job para endereço não aprovado foi criado às `05:11Z`, após a auditoria anterior. E01 FAIL de conformidade; E02 FAIL, sem convite controlado e sem Auth user/profile/papel; E03 FAIL confirmado, com zero tentativa SMTP; E04 NOT APPLICABLE/NO-GO. SMTP global/e-mail OFF/OFF; D52 bloqueado.
 
 ## Próximo / autorizado a preparar execução
