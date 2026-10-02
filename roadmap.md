@@ -1,13 +1,14 @@
 # Roadmap
 
 ## Em andamento
-- [ ] **Campanha AUDIT-CF-20261002-01 — Fase 1 bloqueada somente no clique humano “Enviar convite”:** E01 PASS; janela SMTP global/e-mail ON aberta por RPC auditável, Test Mode ON, allowlist exclusiva e readiness=true. Zero convite, Auth, profile, papel, tentativa de e-mail e lease. Fases 2–15 permanecem bloqueadas.
-- [ ] D51.2 — **E02 humano pendente:** usar a sessão Superadmin real para clicar uma única vez em **Enviar convite**; não usar `service_role`, não abrir link e parar para auditoria pós-E02.
+- [ ] **Campanha AUDIT-CF-20261002-01 — E02 FAIL / RETRY BLOCKED:** E01 permanece PASS; o clique humano criou job/Auth/profile/papel corretamente, mas o SMTP falhou como `email_unknown_error`. Como o transporte direto não prova se houve aceite remoto, não repetir o envio antes do forward-fix. Fases 2–15 permanecem bloqueadas.
+- [ ] D51.2 — **Forward-fix antes de retry:** registrar estágio/categoria SMTP sanitizada e tratar erro desconhecido potencialmente pós-aceite como ambíguo, preservando cooldown, lease/fencing e sem expor link/segredo; depois testar e autorizar separadamente uma nova tentativa.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — clicar uma única vez em **Enviar convite** e parar; depois auditar job, Auth/profile/papel, tenant, tentativa SMTP e ausência de superadmin antes de qualquer primeiro acesso.
+- [ ] Gate D51.2 — corrigir e validar a observabilidade/ambiguidade SMTP; não clicar em **Tentar convite novamente** até autorização posterior.
 
 ## Concluído
+- [x] **Diagnóstico read-only pós-E02:** organização e assinatura permanecem únicas e TRIAL. Job `22c70f4f…fbc1` está `pendente`, tentativa de provisionamento 1, entrega `failed`, tentativa SMTP 1 e erro `email_unknown_error`, sem leases. Auth `cbdc4ef3…d212`, profile no tenant e papel administrador existem; superadmin ausente. Finalizer/forward-fix vigentes e compatíveis; falha ocorreu no adapter SMTP após claim. Zero outbox/receipt/provider id impede provar aceite remoto ou entrega. REFIL e job AR BIO preservados; nenhuma mutação ou retry nesta rodada.
 - [x] **AUDIT-CF pós-E01 — PASS:** exatamente uma organização `8f57c7dd…4626` para o CNPJ autorizado, nome fantasia marcado, e-mail corporativo correto, `aguardando_ativacao` e ativa; uma assinatura Completo/TRIAL e uma auditoria de criação por Superadmin. Zero E02/Auth/profile/papel/e-mail/lease; REFIL e AR BIO preservados.
 - [x] **Provas automáticas pré-E02:** 228/228 testes focados PASS e 6/6 negativas HTTP 401. Contratos de checkpoint/duplo clique/retry, idempotência, ACL, plano/features, lease/fencing/cooldown, falhas, redirect e primeiro acesso verdes. Harnesses autenticados que exigem conexão transacional continuam NOT RUN, sem simulação.
 - [x] **Preparação E02:** janela SMTP aberta via RPC auditável às `2026-10-02T20:28:25.664298Z`, alterando somente `delivery_enabled` e `email_delivery_enabled`; readiness=true, Test Mode ON, allowlist exclusiva, demais canais OFF e zero leases/envios.
