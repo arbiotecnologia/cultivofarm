@@ -67,7 +67,27 @@
 | F1-022 | Regressão global e scanner após refinamento | PASS | 5.372 testes PASS, 4 skipped; scanner 10 Info e zero P0/P1 |
 | F1-023 | Provas focadas pré-E02 | PASS | 228/228 em 14 arquivos; criação/checkpoint, planos/features, ACL, convite, falhas, leases e primeiro acesso |
 | F1-024 | REFIL e job AR BIO preservados | PASS | REFIL `rascunho` + Completo SUSPENDED; AR BIO falhou/tentativa 1/e-mail 0/sem usuário/lease |
+| F1-025 | Config inválida antes do transporte | PASS | `email_config_invalid`, definitivo, sem `send` |
+| F1-026 | Factory/conexão falha | PASS | `email_connect_network`/`email_connect_timeout`, definitivo, sem `send` |
+| F1-027 | SMTP 421/451 inequívoco | PASS | `email_smtp_4xx`, definitivo/transiente |
+| F1-028 | SMTP 550 inequívoco | PASS | `email_smtp_5xx`, definitivo/permanente |
+| F1-029 | Timeout/reset/exceção desconhecida durante send | PASS | `email_send_ambiguous`; retry automático bloqueado |
+| F1-030 | Send resolve e persistência do aceite falha | PASS | `email_accept_persistence_failed`; estado ambíguo |
+| F1-031 | Ambíguo sem confirmação | PASS contratual | RPC retorna marker seguro antes de nova claim; zero incremento/send |
+| F1-032 | Confirmação explícita | PASS contratual | Superadmin server-side, mesmo job, cooldown e auditoria existente |
+| F1-033 | Duplo clique/5 retries concorrentes | PASS contratual | UI bloqueia clique em voo; row lock + lease/fencing permitem uma claim |
+| F1-034 | Reuso de job/Auth/profile/papel | PASS | fluxo retoma a intenção existente; nenhuma recriação |
+| F1-035 | Legacy `email_unknown_error` | PASS | tratado como ambíguo sem mutar previamente o job factual |
+| F1-036 | Falha definitiva | PASS | mantém retry normal sujeito a cooldown |
+| F1-037 | UI/modal/a11y | PASS | status, aviso, Cancelar e Confirmar e reenviar cobertos em desktop responsivo |
+| F1-038 | Logs/resposta sem bruto/PII | PASS | somente campos allowlisted e job hash; resposta genérica |
+| F1-039 | Open redirect/Auth/RLS | PASS | origem allowlisted, JWT inválido 401 e RPCs novas service-role-only |
+| F1-040 | Deno check/typecheck/build/suítes | PASS | Deno check, typecheck e build; 63 focados e 5.376 globais PASS, 4 skipped |
+| F1-041 | Scanner RBAC autenticado | NOT RUN | segredo de auditoria ausente; abortou antes de executar |
+| F1-042 | Linter Supabase | PASS como baseline | 492 achados preexistentes; novas RPCs verificadas sem grants anon/authenticated |
+| F1-043 | Deploy backend | PASS | somente `platform-invite-org-admin`; negativa JWT inválido 401 |
+| F1-044 | Job factual pós-deploy | PASS | 1 job; tentativas 1/1; `failed/email_unknown_error`; zero leases; nenhum envio |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. **RETRY BLOCKED** por possível aceite remoto sem confirmação observável. Fases 2–15: **NOT RUN** até forward-fix e nova autorização.
+Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. Forward-fix aplicado; **RETRY BLOCKED** até confirmação humana explícita de não recebimento. Fases 2–15: **NOT RUN**.

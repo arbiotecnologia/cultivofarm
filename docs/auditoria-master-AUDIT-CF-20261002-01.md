@@ -137,3 +137,15 @@ Baselines anteriores permanecem registrados: **5.372 testes globais PASS e 4 ski
 - Dados: o E01 persistente foi criado pelo responsável e permanece como evidência. A janela SMTP pode ser revertida pelo mesmo RPC auditável alterando somente `delivery_enabled` e `email_delivery_enabled` para `false`.
 - Hardening das Edge Functions: rollback por reversão dos arquivos e dos blocos de configuração; forward-fix preferencial, caso surja incompatibilidade, mantendo CORS fail-closed, JWT obrigatório e respostas sanitizadas.
 - E01: PASS, sem mudança de esquema. E02 permanece bloqueado antes de qualquer retry até correção da classificação/observabilidade SMTP desconhecida.
+
+## Forward-fix E02 — transporte SMTP ambíguo
+
+O forward-fix foi aplicado sem reprocessar o job da campanha. O adapter agora distingue preflight/configuração/conexão/envio/resposta e só considera retry comum quando existe falha definitiva. Timeout, reset ou exceção desconhecida durante `send`, além de falha ao persistir o aceite depois de `send` resolvido, resultam em estado `ambiguous` e código allowlisted. Logs estruturados contêm apenas evento, estágio, código seguro, certeza, referência hash do job e correlation id; e-mail, link, host, usuário, senha, token e corpo não são registrados ou devolvidos.
+
+O bloqueio de retry é server-side e retrocompatível: `email_unknown_error` e os códigos legados sem prova de rejeição SMTP exigem `confirm_ambiguous_email_retry=true`. A confirmação depende de Superadmin validado no servidor, mantém o mesmo job/Auth/profile/papel, respeita cooldown e lease/fencing e cria auditoria em `comunicacao_audit_log`; não há promessa de exactly-once. A UI apresenta **Envio não confirmado**, exige verificação da caixa de entrada e um segundo clique explícito em **Confirmar e reenviar**.
+
+Evidências: migration `20261002205411_56ad85cd-0235-4f93-9314-9b2a1b8931f9`, função `platform-invite-org-admin` implantada, Deno check PASS, typecheck PASS, build PASS, 63 testes focados PASS e suíte global 5.376 PASS/4 skipped. Negativa com JWT inválido retornou 401. O linter manteve a baseline de 492 achados preexistentes, incluindo Leaked Password Protection desativada; as três RPCs alteradas estão com `search_path` vazio, `SECURITY DEFINER`, sem EXECUTE para anon/authenticated e com EXECUTE apenas para `service_role` nas assinaturas novas.
+
+Após o deploy, o job da campanha permaneceu único e intocado: provisionamento 1, SMTP 1, `failed/email_unknown_error`, sem lease de provisionamento ou e-mail. A janela segue ON/ON, Test Mode ON, allowlist com exatamente um endereço e demais canais OFF. Não houve reenvio, novo job, novo Auth user ou alteração em REFIL/AR BIO.
+
+**Decisão:** E02 continua **FAIL** e o retry continua **BLOCKED** até o responsável confirmar explicitamente o não recebimento. O forward-fix está implantado no backend; a publicação frontend e seu smoke no domínio oficial são registrados separadamente. Fase 2 e D52 não avançam.

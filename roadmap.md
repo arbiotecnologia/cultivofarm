@@ -1,13 +1,13 @@
 # Roadmap
 
 ## Em andamento
-- [ ] **Campanha AUDIT-CF-20261002-01 — E02 FAIL / RETRY BLOCKED:** E01 permanece PASS; o clique humano criou job/Auth/profile/papel corretamente, mas o SMTP falhou como `email_unknown_error`. Como o transporte direto não prova se houve aceite remoto, não repetir o envio antes do forward-fix. Fases 2–15 permanecem bloqueadas.
-- [ ] D51.2 — **Forward-fix antes de retry:** registrar estágio/categoria SMTP sanitizada e tratar erro desconhecido potencialmente pós-aceite como ambíguo, preservando cooldown, lease/fencing e sem expor link/segredo; depois testar e autorizar separadamente uma nova tentativa.
+- [ ] **Campanha AUDIT-CF-20261002-01 — E02 FAIL / RETRY BLOCKED:** forward-fix de SMTP ambíguo aplicado no backend e UI. O job legado `email_unknown_error` exige confirmação humana explícita de não recebimento; nenhum retry foi executado. Fases 2–15 permanecem bloqueadas.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — corrigir e validar a observabilidade/ambiguidade SMTP; não clicar em **Tentar convite novamente** até autorização posterior.
+- [ ] Gate D51.2 — aguardar confirmação do responsável de que verificou a caixa e não recebeu; somente depois autorizar separadamente **Não recebi — reenviar convite**. Não clicar antes dessa autorização.
 
 ## Concluído
+- [x] **Forward-fix E02 SMTP ambíguo:** adapter classifica estágio/certeza com códigos allowlisted; falhas sem resposta inequívoca e falha pós-aceite local ficam ambíguas. RPCs service-role-only bloqueiam legado `email_unknown_error` sem confirmação, auditam confirmação Superadmin e preservam cooldown/lease/fencing/mesmo job. UI exige modal e segundo clique. Edge Function implantada; Deno check, typecheck, build, 63 testes focados e 5.376 globais passaram. Job factual permaneceu 1/1, sem leases ou reenvio; frontend publicado/smoke registrado separadamente.
 - [x] **Diagnóstico read-only pós-E02:** organização e assinatura permanecem únicas e TRIAL. Job `22c70f4f…fbc1` está `pendente`, tentativa de provisionamento 1, entrega `failed`, tentativa SMTP 1 e erro `email_unknown_error`, sem leases. Auth `cbdc4ef3…d212`, profile no tenant e papel administrador existem; superadmin ausente. Finalizer/forward-fix vigentes e compatíveis; falha ocorreu no adapter SMTP após claim. Zero outbox/receipt/provider id impede provar aceite remoto ou entrega. REFIL e job AR BIO preservados; nenhuma mutação ou retry nesta rodada.
 - [x] **AUDIT-CF pós-E01 — PASS:** exatamente uma organização `8f57c7dd…4626` para o CNPJ autorizado, nome fantasia marcado, e-mail corporativo correto, `aguardando_ativacao` e ativa; uma assinatura Completo/TRIAL e uma auditoria de criação por Superadmin. Zero E02/Auth/profile/papel/e-mail/lease; REFIL e AR BIO preservados.
 - [x] **Provas automáticas pré-E02:** 228/228 testes focados PASS e 6/6 negativas HTTP 401. Contratos de checkpoint/duplo clique/retry, idempotência, ACL, plano/features, lease/fencing/cooldown, falhas, redirect e primeiro acesso verdes. Harnesses autenticados que exigem conexão transacional continuam NOT RUN, sem simulação.
