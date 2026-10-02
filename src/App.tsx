@@ -18,6 +18,7 @@ import {
 
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
+import ResetPassword from "@/pages/ResetPassword";
 import Index from "@/pages/Index";
 import DashboardUnificado from "@/pages/dashboard/DashboardUnificado";
 import { PreservedNavigate } from "@/components/PreservedNavigate";
@@ -399,6 +400,7 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/auth" element={<AuthRoute />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/selecionar-portal" element={<AuthenticatedShell><SelecionarPortal /></AuthenticatedShell>} />
               <Route path="/acesso-pendente" element={<AuthenticatedShell><AcessoPendente /></AuthenticatedShell>} />
               <Route path="/sem-permissao" element={<AuthenticatedShell><SemPermissao /></AuthenticatedShell>} />
