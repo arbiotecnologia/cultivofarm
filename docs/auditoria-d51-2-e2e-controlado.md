@@ -1478,3 +1478,22 @@ O índice UNIQUE parcial `uq_organizations_cnpj_normalizado` e a guarda server-s
 O CNPJ está livre, válido e sem vínculo conflitante. Contudo, a execução controlada não dispõe de sessão real de Superadmin (`external_unmanaged`) e o lookup oficial não fornece o e-mail corporativo obrigatório para `platform_create_organization`. Não foi inventado um endereço nem usado `service_role` como sessão de usuário.
 
 Por segurança, a janela SMTP **não foi aberta** e E01 ficou **NOT RUN/BLOQUEADO**, não FAIL funcional. Não houve mutação, criação, convite ou envio. O ponto exato de retomada é: fornecer o e-mail corporativo autorizado da empresa e executar o fluxo publicado com sessão real de Superadmin; então abrir somente as duas flags auditáveis e executar um único E01. E02 continua proibido até nova auditoria pós-E01. D52 permanece bloqueado.
+
+## 39. Ajuste final — checkpoint explícito E01 → E02
+
+Data: 2026-10-02
+
+O e-mail corporativo `renato@refilinformatica.com.br` foi autorizado e o responsável confirmou sessão Superadmin no ambiente publicado. A revisão do bundle vigente confirmou que a ação **Criar empresa e enviar convite** ainda executava criação e convite em sequência, impedindo a auditoria obrigatória de organização, assinatura e evento antes de E02.
+
+O frontend foi ajustado sem alterar backend, RPC, migration, rota, tabela, SMTP ou flags:
+
+1. **Criar empresa** chama exclusivamente `platform_create_organization`;
+2. no sucesso, preserva o `organizationId` e exibe **Empresa criada — pronta para auditoria**;
+3. os campos e a navegação de volta ficam bloqueados após a criação, mantendo o resumo imutável;
+4. **Enviar convite** surge como segunda ação explícita e usa somente o `organizationId` já persistido;
+5. falha/retry do convite nunca chama novamente a criação;
+6. o handoff **Ver empresa / Ver administradores** continua recebendo a organização criada.
+
+Estados humanos: **Preparando → Criando empresa → Empresa criada — pronta para auditoria → Criando acesso → Enviando convite → Convite enviado → Falhou — tentar novamente**. Uma trava síncrona adicional protege as duas ações contra duplo clique antes da atualização visual do estado.
+
+Nesta rodada não houve E01, E02, criação real, convite, usuário, e-mail, alteração SMTP ou acesso ao job real AR BIOTECNOLOGIA. O próximo ponto autorizado é exclusivamente E01 manual; E02 permanece bloqueado até a auditoria pós-E01 e D52 continua bloqueado.
