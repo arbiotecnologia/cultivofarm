@@ -129,7 +129,6 @@ async function announcePendingUpdate(
   worker: ServiceWorker,
   registration: ServiceWorkerRegistration,
 ): Promise<void> {
-  if (worker.state === "redundant") return;
   pendingWorker = worker;
   pendingRegistration = registration;
   const version = await resolveWorkerVersion(worker);
