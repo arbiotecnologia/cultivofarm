@@ -14,17 +14,12 @@ import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { deliverInviteEmail, type InviteEmailClaim } from "../_shared/comunicacao/invite-email-delivery.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeadersFor(origin), "Content-Type": "application/json" },
   });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,11 +41,17 @@ function soDigitos(v: unknown): string | null {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const requestOrigin = req.headers.get("Origin");
+  if (requestOrigin && !isTrustedOrigin(requestOrigin)) {
+    return json({ error: "Origem não autorizada." }, 403);
+  }
+
+  const respond = (body: unknown, status = 200) => json(body, status, requestOrigin);
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Não autorizado" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Não autorizado" }, 401);
 
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
     );
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) return json({ error: "Sessão inválida" }, 401);
+    if (claimsError || !claimsData?.claims) return respond({ error: "Sessão inválida" }, 401);
     const callerId = claimsData.claims.sub as string;
 
     const adminClient = createClient(
@@ -71,13 +72,13 @@ Deno.serve(async (req) => {
     const { data: isSuper, error: superErr } = await adminClient.rpc("is_platform_superadmin", {
       _user_id: callerId,
     });
-    if (superErr) return json({ error: "Não foi possível validar sua permissão." }, 500);
+    if (superErr) return respond({ error: "Não foi possível validar sua permissão." }, 500);
     if (isSuper !== true) {
-      return json({ error: "Apenas o superadmin de plataforma pode convidar administradores." }, 403);
+      return respond({ error: "Apenas o superadmin de plataforma pode convidar administradores." }, 403);
     }
 
     const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") return json({ error: "Dados inválidos." }, 400);
+    if (!body || typeof body !== "object") return respond({ error: "Dados inválidos." }, 400);
 
     const organizationId = String((body as Record<string, unknown>).organization_id ?? "");
     const nome = String((body as Record<string, unknown>).nome ?? "").trim();
