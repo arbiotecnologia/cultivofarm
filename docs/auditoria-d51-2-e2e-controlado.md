@@ -1770,3 +1770,45 @@ Prova transacional isolada com rollback confirmou:
 Foi adicionado harness transacional reutilizável e teste estático contra regressão. Os 492 alertas gerais informados pelo linter são preexistentes — incluindo Leaked Password Protection, que permanece risco temporariamente aceito — e não foram ampliados pelas migrations desta correção.
 
 **Decisão:** a próxima tentativa manual pode ser feita com segurança pela sessão real Superadmin, selecionando REFIL, plano **Completo**, situação **Suspensa** e motivo explícito. Após o clique, parar e auditar somente leitura: assinatura `SUSPENDED`, `suspended_at` preenchido e exatamente uma nova entrada de histórico com o motivo. Não repetir a alteração da organização, que já está em `rascunho`; não executar E01/E02 e não avançar D52.
+
+## 47. Auditoria pós-contenção REFIL
+
+Data/hora UTC da leitura: `2026-10-02T19:06:25.625663Z`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 47.1 Organização e assinatura
+
+- existe exatamente uma organização REFIL para o CNPJ `09.255.249/0001-12`, ID mascarado `4e537fd6…8f9f`;
+- organização ativa, status `rascunho`, criada em `2026-10-02T14:30:51.272028Z` e atualizada em `2026-10-02T18:38:10.075519Z`;
+- existe exatamente uma assinatura corrente, ID mascarado `e5bccb8f…42ba`, plano `completo`/**Completo**;
+- assinatura `SUSPENDED`, com `suspended_at=2026-10-02T18:57:42.689286Z`, `cancelled_at=NULL` e `updated_at` igual ao instante da suspensão;
+- nenhuma segunda assinatura foi criada.
+
+### 47.2 Trilhas de auditoria
+
+O histórico da assinatura contém duas linhas totais: a criação original `NULL→TRIAL` e exatamente uma nova entrada RPC `TRIAL→SUSPENDED`, às `2026-10-02T18:57:42.689286Z`. A entrada nova contém integralmente o motivo **“D51.2 — cadastro criado acidentalmente durante homologação; sem convite, usuário ou envio.”**, ator presente e com papel `superadmin`. Não há duplicidade de suspensão.
+
+O histórico da organização contém a criação e a mudança auditável `aguardando_ativacao→rascunho`, às `2026-10-02T18:38:10.075519Z`, com o mesmo motivo. Não houve nova alteração de organização durante ou depois da suspensão da assinatura.
+
+### 47.3 Ausências e isolamento
+
+- REFIL: zero convites/jobs, profiles e papéis;
+- `teste@refilinformatica.com.br`: zero job, Auth user, profile, papel e tentativa de e-mail;
+- Comunicação: entrega global OFF, e-mail OFF, Test Mode ON, allowlist com exatamente o endereço controlado e WhatsApp/in-app/webhook OFF;
+- zero leases ativos de provisionamento, e-mail ou outbox; zero outbox/recibo criado desde a tentativa manual;
+- job AR BIOTECNOLOGIA `1d14f78b…c558`: permanece `falhou`, `attempt_count=1`, `user_id=NULL`, `email_attempt_count=0`, `finalize_failed` e sem leases;
+- CNPJ `36.736.180/0001-11`: zero organizações; zero organização **HOMOLOGAÇÃO D51.2** e zero job/Auth/profile para o destinatário controlado.
+
+### 47.4 Decisão
+
+**Contenção REFIL: PASS. GO restrito para repetir somente E01 manual.** Não abrir SMTP, não executar E02 e não avançar D52.
+
+Instrução mínima para o responsável:
+
+1. usar CNPJ `36.736.180/0001-11`;
+2. usar e-mail corporativo `renato@refilinformatica.com.br`;
+3. informar como responsável futuro `teste@refilinformatica.com.br`;
+4. confirmar o CNPJ digitando os 14 dígitos;
+5. criar somente a empresa e parar em **Empresa criada — pronta para auditoria**.
+
+Nenhuma escrita foi executada nesta auditoria.
