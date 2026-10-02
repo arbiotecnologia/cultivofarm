@@ -68,6 +68,9 @@ function mockSmtp(behavior: "ok" | "smtp5xx" | "smtp4xx" | "conn" | "timeout"): 
   } as unknown as { factory: NonNullable<Parameters<typeof sendEmail>[4]>["smtpClientFactory"]; sends: Array<Record<string, unknown>>; closed: number };
 }
 
+const failingFactory = (message: string): NonNullable<Parameters<typeof sendEmail>[4]>["smtpClientFactory"] =>
+  async () => { throw new Error(message); };
+
 // ---------------- Helpers puros ----------------
 
 describe("gate3 helpers: hasHeaderInjection", () => {
@@ -162,6 +165,11 @@ describe("gate3 email-adapter: caminhos com SMTP mock", () => {
     const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory });
     expect(r.outcome).toBe("transient_error");
     expect(r.code).toBe("email_smtp_4xx");
+  });
+
+  it("falha da factory/conexão → definitiva e sem send", async () => {
+    const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: failingFactory("ECONNREFUSED") });
+    expect(r).toMatchObject({ outcome: "transient_error", code: "email_connect_network", certainty: "definitive", stage: "connect" });
   });
 
   it("erro de rede durante send → ambiguous", async () => {

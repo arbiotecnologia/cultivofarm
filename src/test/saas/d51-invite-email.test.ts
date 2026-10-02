@@ -30,9 +30,9 @@ describe("D51.2-A — envio de convite com SMTP mockado", () => {
   });
 
   it("falha do provider deixa o job retomável", async () => {
-    const d = deps({ send: vi.fn(async (): Promise<AdapterResult> => ({ outcome: "transient_error", code: "email_network_error", message: "network" })) });
-    await expect(deliverInviteEmail("job", "https://app/reset#token", env, d)).resolves.toEqual({ status: "failed", code: "email_network_error" });
-    expect(d.fail).toHaveBeenCalledWith("job", "lease", "email_network_error");
+    const d = deps({ send: vi.fn(async (): Promise<AdapterResult> => ({ outcome: "transient_error", code: "email_connect_network", message: "safe", certainty: "definitive", stage: "connect" })) });
+    await expect(deliverInviteEmail("job", "https://app/reset#token", env, d)).resolves.toEqual({ status: "failed", code: "email_connect_network" });
+    expect(d.fail).toHaveBeenCalledWith("job", "lease", "email_connect_network");
     expect(d.accept).not.toHaveBeenCalled();
   });
 

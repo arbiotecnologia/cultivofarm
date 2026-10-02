@@ -5,7 +5,7 @@ const migration = [
   "supabase/migrations/20261002001921_8739ba87-e301-4e68-82b2-d253bbac84dd.sql",
   "supabase/migrations/20261002002408_e3ea8343-b974-4f3a-86bb-914f9196e6e1.sql",
   "supabase/migrations/20261002015343_ace68cd9-1438-46d2-a1dc-e6155763c467.sql",
-  "supabase/migrations/20261002210000_d51_e02_ambiguous_email_retry.sql",
+  "supabase/migrations/20261002205411_56ad85cd-0235-4f93-9314-9b2a1b8931f9.sql",
 ].map((path) => readFileSync(path, "utf8")).join("\n");
 const recovery = readFileSync("src/pages/ResetPassword.tsx", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
