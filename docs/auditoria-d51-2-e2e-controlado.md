@@ -1592,7 +1592,7 @@ A leitura do runtime e das migrations confirmou:
 - não existe acoplamento automático entre situação da organização e assinatura. Uma contenção coerente exige duas RPCs oficiais;
 - a automação está em ambiente Supabase externo sem sessão injetável do Superadmin. `service_role` não foi usado como ator.
 
-Conclusão: não existe hoje uma operação oficial que deixe a REFIL simultaneamente inativa e reversível a partir de `aguardando_ativacao`. O cancelamento seria seguro e auditável, porém irreversível. Como a autorização exigiu reversibilidade, a Fase 5 parou sem escrita. O passo manual pendente é uma decisão explícita entre cancelar terminalmente organização e assinatura pelas telas/RPCs oficiais, ou autorizar uma evolução separada do ciclo de status para suportar inativação reversível.
+Conclusão refinada: existe contenção oficial e reversível sem cancelamento terminal: mover a organização de `aguardando_ativacao` para `rascunho` e a assinatura de `TRIAL` para `SUSPENDED`, sempre pelas duas RPCs auditáveis. A assinatura suspensa deixa de gerar direitos, embora `organizations.ativo` permaneça verdadeiro no estado `rascunho`; portanto isso é contenção de acesso, não inativação booleana da linha. O cancelamento de ambos seria inativação plena, mas terminal e incompatível com a exigência de reversibilidade. A execução automática não dispõe da sessão real Superadmin do Supabase externo e não usou `service_role` como ator; por isso a Fase 5 permaneceu sem escrita.
 
 ### 42.2 Proteções implementadas no frontend
 
@@ -1612,13 +1612,13 @@ Não foi usado `localStorage`, `sessionStorage` ou React Query para armazenar o 
 
 ### 42.3 Testes, scanner e publicação
 
-- testes focados: **15/15 PASS** na primeira rodada e cobertura adicional da razão oficial divergente;
+- testes focados finais: **16/16 PASS**, incluindo CNPJ divergente, snapshot/razão oficial divergentes, e-mail corporativo revisado, reset, ausência de convite automático, checkpoint e retry exclusivo do convite;
 - suíte global: **352 arquivos aprovados, 1 ignorado; 5.345 testes aprovados, 4 ignorados**;
 - typecheck: **PASS**;
 - build automático: **PASS**;
 - scanner: **zero Critical/Error/Warning**, dez achados informativos históricos; Leaked Password Protection continua como risco aceito, não resolvido;
-- publicação apenas do frontend: solicitada para o commit `2c24fb31bd662bf663155184510aadc9c88cd1bf`;
-- smoke imediato: `/`, `/auth` e `/plataforma` responderam 200, rota protegida redirecionou para `/auth` e não houve erro de runtime; entretanto, o bundle `index-CJm5d-jL.js` ainda não continha **Confirme o CNPJ** nem **Empresa que será criada**. Portanto a propagação não foi comprovada e o novo E01 permanece bloqueado.
+- publicação apenas do frontend: solicitada novamente a partir do HEAD `db2a68671924d87c34156e659ed4a7a9ed67f957`;
+- smoke final do domínio oficial: `/`, `/auth` e `/plataforma` responderam 200. O carregador `index-CJm5d-jL.js` resolveu oito pacotes e o chunk `App-Hejg0VR9.js` contém **Confirme o CNPJ** e **Empresa que será criada**. A propagação da prevenção está comprovada.
 
 ### 42.4 Estado canônico preservado
 
@@ -1629,4 +1629,4 @@ Não foi usado `localStorage`, `sessionStorage` ou React Query para armazenar o 
 - Comunicação: global OFF, e-mail OFF, Test Mode ON, allowlist exclusiva, demais canais OFF;
 - job AR BIOTECNOLOGIA: `falhou`, tentativa 1, `finalize_failed`, e-mail `pending`, zero tentativa SMTP, sem usuário ou lease.
 
-**Decisão:** proteção aprovada tecnicamente, mas **NO-GO para repetir E01** até o bundle novo ser confirmado no domínio oficial e a contenção receber uma decisão compatível com a exigência de reversibilidade. E02 e D52 permanecem bloqueados.
+**Decisão:** proteção aprovada, publicada e comprovada. A contenção reversível está definida, mas **NOT RUN** porque esta execução não recebeu sessão real Superadmin do Supabase externo; nenhuma escrita alternativa foi feita. **NO-GO para repetir E01** até aplicar e auditar REFIL como `rascunho` e sua assinatura como `SUSPENDED`. E02 e D52 permanecem bloqueados.
