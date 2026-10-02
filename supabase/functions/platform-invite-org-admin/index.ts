@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handlePreflight(req);
   const requestOrigin = req.headers.get("Origin");
   if (requestOrigin && !isTrustedOrigin(requestOrigin)) {
-    return respond({ error: "Origem não autorizada." }, 403);
+    return json({ error: "Origem não autorizada." }, 403, requestOrigin);
   }
 
   const respond = (body: unknown, status = 200) => json(body, status, requestOrigin);

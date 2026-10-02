@@ -237,7 +237,12 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
       setProgresso("convite_enviado");
       toast.success("Convite enviado.");
     } catch (error) {
-      const ambiguo = error instanceof ErroConvitePlataforma && error.code === "email_ambiguous_confirmation_required";
+      const ambiguo = error instanceof ErroConvitePlataforma && [
+        "email_ambiguous_confirmation_required",
+        "email_unknown_error",
+        "email_send_ambiguous",
+        "email_accept_persistence_failed",
+      ].includes(error.code);
       setProgresso(ambiguo ? "ambiguo" : "falhou");
       toast.error(ambiguo ? "Verifique a caixa de entrada antes de reenviar." : "Empresa criada; convite pendente ou falhou.");
     } finally {
