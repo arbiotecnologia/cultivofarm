@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **NO-GO no pré-gate**, sem mutações: P1 confirmado porque o convite gera link para cópia, mas não envia SMTP; sessão superadmin controlada também indisponível. Aguardar correção/revisão e novo comando. Sem publicação ou D52.
+- [ ] Gate D51.2-A — correção segura do caminho SMTP aprovada e em execução: reutilizar Comunicação existente, permanecer fail-closed sem SMTP configurado, testar sem envio real, atualizar relatório/roadmap/AGENTS e parar sem publicação ou D52.
+- [ ] Gate D51.2 — **NO-GO no pré-gate**, sem mutações: P1 confirmado porque o convite gera link para cópia, mas não envia SMTP; sessão superadmin controlada também indisponível. Aguardar conclusão do D51.2-A e novo comando. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
