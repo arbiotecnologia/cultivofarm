@@ -380,3 +380,69 @@ Foi adicionado contrato automatizado para provar bootstrap fail-closed, idempot�
 Duas inferências de literal em mocks SMTP preexistentes foram explicitamente tipadas como `AdapterResult`; isso não altera o runtime e fecha o contrato do typecheck.
 
 **D51.2-C concluído quanto ao reparo do singleton.** A configuração SMTP manual está desbloqueada, mas envio e E2E continuam em **NO-GO** até comprovar sender/domínio, configurar credenciais pela interface segura com flags OFF e obter sessão manual superadmin. Nenhum e-mail, usuário, tenant ou pedido foi criado; E01–E21 não foram executados, o frontend não foi publicado e D52 não foi iniciado.
+
+## 19. D51.2-D — hardening ACL e preflight SMTP sem envio
+
+Data: 2026-10-02  
+Migration aplicada: `20261002021548_3e72386c-e049-42b4-8022-39f99b4d4cab.sql`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 19.1 ACL antes/depois
+
+O preflight remoto confirmou owner `postgres`, RLS ativo, zero policies e ausência de sequência associada: `id` é `smallint DEFAULT 1`. Antes do reparo, `anon` e `authenticated` possuíam ACL histórica completa na tabela, embora a ausência de policies já impedisse acesso efetivo pela Data API. A UI não dependia dessas ACLs: `/configuracoes?tab=comunicacao` usa exclusivamente `supabase.functions.invoke("communication-provider-settings")`; a Edge Function valida JWT e papel `administrador`, usa `service_role` no servidor para leitura e chama RPC server-only para mutação.
+
+A migration idempotente revogou todos os privilégios diretos de `PUBLIC`, `anon` e `authenticated`, preservou owner e `service_role`, e incluiu pós-condição fail-fast. Um bloco condicional também revoga uma eventual sequência legada, sem criar objeto. Estado após aplicação:
+
+- ACL da tabela: somente `postgres` e `service_role`;
+- `anon` e `authenticated`: `SELECT/INSERT/UPDATE/DELETE = false`;
+- `service_role`: leitura e escrita preservadas;
+- RLS continua ativa, sem policies;
+- RPCs de configuração/runtime continuam `SECURITY DEFINER`, com `search_path` explícito e execução somente por `postgres`/`service_role`;
+- ledger: versão `20261002021548` presente exatamente uma vez.
+
+### 19.2 Preflight SMTP sanitizado
+
+O GET administrativo existente de `communication-provider-settings` passou a incluir `smtp_readiness`, calculado no servidor sem abrir socket SMTP e sem enviar mensagem. A resposta contém somente:
+
+- `singleton_exists`;
+- flags `delivery_enabled`, `email_delivery_enabled` e `test_mode_enabled`;
+- `allowed_email_count` e `test_email_allowlisted`, este último calculado exclusivamente para `teste@refilinformatica.com.br`;
+- booleanos de presença de host, porta, usuário, referência de senha e remetente;
+- `ready_for_controlled_test`.
+
+`ready_for_controlled_test` somente é verdadeiro quando o singleton existe, entrega global/e-mail estão ligadas, test mode está ligado, o único destinatário controlado esperado consta da allowlist e todos os cinco itens SMTP estão configurados. O preflight não retorna senha, referência Vault, token ou allowlist em texto claro. Host/usuário/remetente antigos continuam no payload administrativo já existente, sem ampliação; a nova seção é somente booleana. A autorização administrativa e o rate limit ocorrem antes da leitura.
+
+No estado pós-D51.2-D, o singleton continua fail-closed: entrega global/e-mail OFF, test mode ON, allowlist vazia e SMTP ausente. Portanto a prontidão esperada é **false**. O endpoint implantado respondeu HTTP 401 a JWT inválido; nenhum estado foi alterado. O teste Deno específico retornou `No test modules found`; a cobertura aplicável foi feita por cinco testes Vitest do helper puro e dos contratos estáticos.
+
+### 19.3 E15A com identidade única — somente preparação
+
+A adaptação é tecnicamente válida como prova **parcial e unidirecional**: criar futuramente Tenant B sem administrador/e-mail e, com a única sessão controlada do Admin A, tentar ler e mutar recursos conhecidos de B. Isso prova A → B sem inventar segundo destinatário, mas não prova B → A nem isolamento entre duas sessões administrativas; portanto deve ser registrada como **E15A parcial**, nunca como E15 completo.
+
+Ordem preparada para futura execução autenticada, não executada nesta fase:
+
+1. provisionar Tenant A e Admin A pelos fluxos D51.2 autorizados;
+2. criar Tenant B de homologação sem convite, usuário ou segundo administrador;
+3. registrar IDs mascarados de B por canal técnico de auditoria, sem expô-los ao Admin A pela aplicação;
+4. com sessão real do Admin A, consultar `organizations` filtrando pelo ID de B e esperar zero linha/erro seguro;
+5. tentar uma mutação suportada em recurso de B e esperar zero linha/negação de autorização;
+6. confirmar no banco que nenhum vínculo, perfil, papel, tenant ou recurso B mudou;
+7. repetir controles positivos apenas em A, preservar auditoria e executar cleanup suportado.
+
+Não usar SQL privilegiado nem `service_role` como identidade do teste. Não usar RPC que possa inicializar configuração fiscal ou produzir efeito colateral antes de revisar nominalmente sua autorização. Sem uma sessão autenticada e sem executar essas ações, **E15A: NOT RUN / caminho autenticado não verificado**.
+
+### 19.4 Validações e decisão
+
+| Verificação | Resultado |
+|---|---|
+| Migration ACL idempotente e pós-condição | PASS |
+| ACL remota `anon`/`authenticated` direta | PASS — nenhum privilégio |
+| `service_role` e RPCs preservados | PASS — catálogo remoto + contratos |
+| Preflight sanitizado/sem envio | PASS — 5/5 testes focados |
+| Suíte focada provider/ACL | PASS — 40/40 |
+| Typecheck | PASS |
+| Suíte global | PASS — 345 arquivos aprovados, 1 ignorado; 5.295 testes aprovados, 4 ignorados |
+| Chamada negativa da Edge Function | PASS — HTTP 401 com JWT inválido |
+| Linter Supabase | Sem delta — 492 achados históricos |
+| Estado de envio/lease | PASS — zero `sending`/`accepted` e zero lease ativo |
+
+**D51.2-D concluído no escopo autorizado.** Continuam pendentes: comprovação de sender/domínio, configuração manual de SMTP/Vault com flags inicialmente OFF, allowlist exclusiva, sessão manual superadmin e comando explícito para E01–E21. Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta. Nenhum e-mail, credencial, usuário, tenant ou pedido foi criado/configurado; nenhum E2E foi executado, não houve publicação de frontend e D52 não foi iniciado.

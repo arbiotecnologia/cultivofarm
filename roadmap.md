@@ -1,12 +1,13 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton `communication_provider_settings.id = 1` restaurado com defaults fail-closed. A configuração manual pela tela está desbloqueada; ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
+- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton e ACLs endurecidos; preflight SMTP sanitizado disponível e atualmente não pronto. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
 
 ## Concluído
+- [x] Gate D51.2-D — ACL direta de `PUBLIC`/`anon`/`authenticated` revogada, acesso técnico preservado e preflight SMTP booleano implantado sem envio. E15A preparado como teste parcial A→B com uma identidade; caminho autenticado ainda NOT RUN.
 - [x] Gate D51.2-C — singleton SMTP restaurado no canônico por migration idempotente; entrega global/e-mail/WhatsApp/in-app/webhook OFF, test mode ON, allowlists vazias e SMTP/segredos ausentes. Ledger e linha única verificados; nenhum envio, Vault, usuário, tenant ou E2E.
 - [x] Gate D51.2-B — migration/objetos/grants confirmados no canônico; flags SMTP OFF, configuração ausente e zero lease ativo comprovados; somente `platform-invite-org-admin` implantada; chamadas sem JWT/JWT inválido retornaram 401 sem mutação. Interface e pré-condições manuais documentadas; nenhum envio/configuração/E2E realizado.
 - [x] Gate D51.2-A — P1 de código corrigido reutilizando o SMTP do módulo Comunicação; estado auditável, lease/fencing, cooldown, retomada e resposta sem action link. Testes mockados, typecheck, suíte global e Deno verdes; nenhum e-mail/usuário/tenant criado. Envio real permanece bloqueado por configuração externa.
@@ -18,10 +19,9 @@
 
 ## Pendências (aguardam usuário/autorização)
 - [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, um `administrador` operacional configura em `/configuracoes?tab=comunicacao`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
-- [ ] Hardening posterior ao D51.2-C: revisar e revogar ACLs históricas excedentes de `anon`/`authenticated` em `communication_provider_settings`; RLS sem policies já bloqueia acesso efetivo e a migration do singleton não ampliou permissões.
 - [ ] D51.2: responsável entrar manualmente como superadmin controlado em `/auth` na prévia. Projeto externo não gerenciado não permite `lovable auth-session`; não compartilhar senha no chat e não substituir sessão por `service_role`.
 - [ ] D51.2: habilitar Entrega global + E-mail somente após novo comando explícito para a janela E2E; manter WhatsApp, in-app e webhook OFF.
-- [ ] D51.2/E15: aprovar adaptação sem segunda identidade ou fornecer segundo endereço controlado; nunca inventar destinatário.
+- [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
 - [ ] Homologação autenticada do primeiro acesso (troca de senha) — aguarda usuário de teste.
