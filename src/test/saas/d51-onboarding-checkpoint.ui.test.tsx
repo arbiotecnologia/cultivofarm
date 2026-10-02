@@ -35,7 +35,7 @@ vi.mock("@/components/ui/select", () => ({
   SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => <option value={value}>{children}</option>,
 }));
 
-import OrganizationOnboardingFlow from "@/pages/plataforma/OrganizationOnboardingFlow";
+import OrganizationOnboardingFlow, { nomeFantasiaHomologacao } from "@/pages/plataforma/OrganizationOnboardingFlow";
 
 async function chegarNaRevisao() {
   fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
@@ -83,6 +83,19 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     expect(mocks.convidar).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Enviar convite" })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Voltar e editar/ })).toBeDisabled();
+  });
+
+  it("preserva a razão social oficial e marca o nome fantasia dentro do limite", async () => {
+    renderFlow();
+    fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
+
+    expect(await screen.findByLabelText("Razão social *")).toHaveValue("HOMOLOGAÇÃO D51.2 EMPRESA CONTROLADA");
+    expect(screen.getByLabelText("Razão social *")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Nome fantasia")).toHaveValue(
+      "HOMOLOGAÇÃO AUDIT-CF-20261002-01 - HOMOLOGAÇÃO D51.2",
+    );
+    expect(nomeFantasiaHomologacao("A".repeat(300))).toHaveLength(200);
   });
 
   it("mantém a criação desabilitada quando o CNPJ confirmado é diferente", async () => {
