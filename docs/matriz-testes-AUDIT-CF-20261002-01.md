@@ -94,6 +94,8 @@
 | F1-049 | Porta 465 | PASS estrutural | configuração completa aceita estruturalmente; conectividade e suporte do provedor não afirmados nem testados |
 | F1-050 | Teste/convite em porta bloqueada | PASS contratual | bloqueio fail-closed antes de factory SMTP e antes do claim de provisionamento; zero envio/incremento |
 | F1-051 | Alternativa quando não houver porta permitida | DOCUMENTADO | integração HTTP oficial pelo adapter existente; nenhum provedor/API/credencial presumido |
+| F1-052 | Regressão completa do complemento | PASS | 5.380 testes globais/4 skipped; 60 focados; typecheck/build; scanner 10 Info e zero Critical/Error/Warning |
+| F1-053 | Testes Deno específicos do complemento | NOT RUN | runner informou ausência de módulos de teste nas duas funções; não promovido a PASS |
 
 ## Gate
 
