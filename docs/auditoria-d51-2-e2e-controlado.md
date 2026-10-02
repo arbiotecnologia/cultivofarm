@@ -1645,3 +1645,43 @@ Smoke integralmente somente leitura, sem autenticação, banco, SMTP, publicaç�
 6. nenhuma nova publicação foi solicitada e nenhuma autenticação ou operação funcional foi executada.
 
 **Decisão: PASS.** A proteção E01 do candidato informado como `db2a68671924d87c34156e659ed4a7a9ed67f957` está publicada e comprovada pelos marcadores funcionais no domínio oficial. Ela está pronta para um novo E01, porém a execução continua bloqueada até a contenção auditável da organização REFIL. E02 e D52 permanecem bloqueados.
+
+## 44. Incidente P0 frontend — overlay de atualização PWA
+
+Data: 2026-10-02
+
+### 44.1 Causa confirmada
+
+O ciclo anterior disparava `pwa:updating-start` no mero `updatefound`, antes de o novo worker alcançar `installed`/`waiting`. O estado global `updateInProgress` não possuía evento de encerramento e permanecia verdadeiro quando a instalação ficava `redundant`, quando a ativação estagnava ou quando a trava de recarga de 15 segundos impedia a recarga. O fallback de oito segundos reutilizava a mesma recarga protegida e, quando bloqueado, também não encerrava o overlay.
+
+### 44.2 Correção frontend
+
+- eventos explícitos e idempotentes de início e fim centralizados em `registerSW.ts`;
+- overlay iniciado somente para worker instalado/aguardando com controlador atual ou recuperação real de pacote obsoleto;
+- encerramento central em worker redundante, ativação sem `controllerchange`, recarga bloqueada/falha, cleanup e timeout absoluto de 12 segundos;
+- `controllerchange` limpa timers antes da tentativa única de recarga;
+- recuperação de pacote obsoleto limpa somente caches runtime do app e encerra o estado se a recarga não puder ocorrer;
+- timeout visual independente de 15 segundos remove o backdrop e restaura o uso da página mesmo diante de falha inesperada;
+- `?sw=off`, recusa em preview/dev/iframe e `skipWaiting`/`clientsClaim` foram preservados.
+
+### 44.3 Evidências antes da publicação
+
+- testes focados PWA/reset/binding: **26/26 PASS**;
+- suíte global: **354 arquivos aprovados, 1 ignorado; 5.354 testes aprovados, 4 ignorados**;
+- typecheck: **PASS**;
+- build automático: **PASS**;
+- scanner: **zero Critical/Error/Warning**, dez achados informativos históricos; Leaked Password Protection permanece risco aceito.
+
+Nenhum banco, Supabase, SMTP, organização, usuário, E01/E02 ou job foi tocado. D52 permanece bloqueado. Durante a propagação, o contorno emergencial preservado é `https://app.cultivofarm.com.br/?sw=off`, que desregistra o app-shell service worker daquele navegador.
+
+### 44.4 Publicação e smoke do domínio oficial
+
+Foi solicitada uma única publicação frontend para `https://app.cultivofarm.com.br`. No smoke posterior com navegador limpo:
+
+- `/auth` respondeu HTTP 200 e o app-shell service worker `/sw.js` estava registrado;
+- o pacote publicado ainda não continha `pwa:updating-end` nem `overlay-safety-timeout`, marcadores da correção;
+- o overlay não apareceu espontaneamente na abertura, mas, ao simular somente o evento público de início, permaneceu visível e manteve o `body` bloqueado após 15,5 segundos, comprovando que o domínio ainda servia a implementação anterior;
+- `/?sw=off` respondeu HTTP 200 e deixou zero registros de app-shell service worker no navegador de teste, confirmando o contorno emergencial;
+- as respostas 401 observadas foram apenas consultas protegidas esperadas em sessão anônima.
+
+**Decisão pós-publicação: FAIL por ausência de propagação no domínio customizado.** A correção está verde no candidato local, mas não pode ser declarada ativa no domínio oficial. Conforme a regra de parada, nenhuma nova publicação foi solicitada em loop. Aguardar a propagação e repetir somente o smoke antes de encerrar o P0. E01/E02 e D52 permanecem bloqueados.
