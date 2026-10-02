@@ -6,12 +6,13 @@ Escopo encerrado sem E2E real, e-mail, criação de usuário, pedido, publicaç�
 
 ## 1. Decisão
 
-**BLOQUEADO para o Gate E2E controlado.**
+**BLOQUEADO para o Gate E2E controlado somente pela proteção contra senhas vazadas.**
 
-O código, o build e as suítes estão verdes, e o P0 encontrado no provisionamento foi corrigido. Porém, dois requisitos objetivos do D51.1 permanecem incompletos:
+O código, o build e as suítes estão verdes, e o P0 encontrado no provisionamento foi corrigido. Resta um requisito externo/manual:
 
-1. a proteção contra senhas vazadas continua desativada e o ambiente disponível não expôs mecanismo oficial seguro para habilitá-la; requer ação no Dashboard;
-2. o mecanismo de migration executou seis diagnósticos `select 1`, registrando migrations no-op no ledger. Eles não alteram dados ou schema, mas são dívida de rastreabilidade e não devem ser mascarados nem removidos manualmente do ledger.
+1. a proteção contra senhas vazadas continua desativada e o ambiente disponível não expôs mecanismo oficial seguro para habilitá-la; requer ação no Dashboard.
+
+O mecanismo de migration executou sete diagnósticos `select 1`, registrando migrations no-op no ledger. A revisão de reconciliação confirmou equivalência integral 1:1 com o repositório. Elas não alteram dados ou schema e ficam formalmente aceitas e preservadas como dívida histórica rastreável, não como P0/P1 aberto.
 
 Não há P0/P1 funcional D51/SaaS conhecido além desses bloqueios operacionais de fechamento. A homologação real de Auth/SMTP continua proibida até nova revisão.
 
@@ -46,16 +47,21 @@ As RPCs internas `platform_claim_org_admin_provisioning`, `platform_find_org_adm
 
 ### Entradas no-op registradas
 
-Durante a tentativa de inspeção/reconciliação pelo mecanismo disponível, foram executados e registrados seis arquivos contendo somente `select 1`:
+Durante a tentativa de inspeção/reconciliação pelo mecanismo disponível, foram executados e registrados sete arquivos contendo somente `select 1`:
 
 - `20261002004011_d60b62cb-875d-457f-8ad2-385fb3e39425.sql`;
 - `20261002004039_61d58032-a1ef-4719-a466-6a95e76019f1.sql`;
 - `20261002004819_410b2ad1-3b28-49de-99df-4896344381ed.sql`;
 - `20261002004944_42af9cd4-02b4-42fc-b95a-51239aa19877.sql`;
 - `20261002005018_332c6bb8-fb9d-4c1a-b296-c5b40f885507.sql`;
-- `20261002005053_8949b0cd-981a-4e91-b08a-331b4c141ed3.sql`.
+- `20261002005053_8949b0cd-981a-4e91-b08a-331b4c141ed3.sql`;
+- `20261002005119_c837b479-a25b-4c71-b06b-210b1e8b0991.sql`.
 
-Essas entradas não modificaram schema ou dados. Foram preservadas localmente para que repositório e ledger permaneçam convergentes. Não houve inserção manual em `supabase_migrations.schema_migrations` e não houve `migration repair`, porque o CLI oficial não possuía `SUPABASE_ACCESS_TOKEN` no ambiente (`npx supabase migration list --linked`: exit 1, `Access token not provided`).
+Consulta somente leitura ao ledger canônico confirmou a versão `20261002005119`, com o nome `c837b479-a25b-4c71-b06b-210b1e8b0991`, além das outras seis versões listadas. Quantidade real: **7 no ledger e 7 no repositório**. A inspeção byte a byte normalizada confirmou que cada arquivo contém exclusivamente `select 1`, sem DDL ou DML.
+
+Essas entradas não modificaram schema ou dados. Foram preservadas localmente para que repositório e ledger permaneçam convergentes. Não houve inserção manual em `supabase_migrations.schema_migrations`, remoção de linha, reaplicação SQL ou `migration repair`.
+
+**Decisão formal de tratamento:** os sete no-ops são aceitos como dívida histórica rastreável e permanecem preservados 1:1 no repositório e no ledger. Qualquer divergência futura de versão, nome, quantidade ou conteúdo volta a ser bloqueio P1 até reconciliação oficial.
 
 ## 4. P0 corrigido
 
@@ -142,7 +148,7 @@ Passo manual obrigatório: no Dashboard do projeto canônico, abrir **Authentica
 - `src/test/saas/d51-gate.test.ts`;
 - `src/test/security/h7p-repo-only-migrations.static.test.ts`;
 - `supabase/migrations/20261002003844_e58b7b7b-97f0-4dda-9e48-a6257d7c614c.sql`;
-- os seis arquivos no-op listados na seção de ledger;
+- os sete arquivos no-op listados na seção de ledger;
 - removidos os dois arquivos locais inválidos `20261038...`.
 
 Nenhum arquivo de aplicação foi publicado e nenhuma Edge Function foi implantada nesta rodada de fechamento.
@@ -166,12 +172,12 @@ Não foi criado usuário, convite, organização, pedido ou outro dado funcional
 Riscos restantes:
 
 1. leaked password protection precisa ser habilitada manualmente;
-2. seis migrations no-op permanecem como dívida de ledger, embora inofensivas ao runtime;
+2. sete migrations no-op permanecem como dívida histórica aceita e rastreável, com correspondência 1:1 entre ledger e repositório;
 3. os 492 advisors globais exigem programa separado; os dois endpoints públicos foram classificados, e nenhum P0/P1 SaaS adicional foi comprovado;
 4. concorrência real, crash Auth↔Postgres, reenvio simultâneo, recovery e tenant A/B ainda dependem do Gate E2E controlado e não foram simulados com contas reais.
 
 ## 12. Próxima decisão
 
-Após habilitar leaked password protection e aceitar/documentar formalmente as entradas no-op do ledger, reexecutar linter e revisão de ledger. Só então o D51.1 poderá ser reclassificado como **APTO PARA GATE E2E CONTROLADO**.
+Após habilitar leaked password protection, reexecutar o linter. A reconciliação dos no-ops está concluída e não resta outro P0/P1 D51/SaaS conhecido. Só então o D51.1 poderá ser reclassificado como **APTO PARA GATE E2E CONTROLADO**.
 
 Até lá: não criar conta descartável, não enviar e-mail, não processar pedido, não publicar e não avançar para D52.
