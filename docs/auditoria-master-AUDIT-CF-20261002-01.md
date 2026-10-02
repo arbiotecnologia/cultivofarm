@@ -84,7 +84,7 @@ Não restou P0/P1 bloqueante após o hardening local e os testes, permitindo ini
 
 ### Regra de identificação refinada
 
-O fluxo consulta o CNPJ, fixa um snapshot da razão social oficial e envia essa razão como `_nome` para `platform_create_organization`. A razão social permanece somente leitura. A identificação da campanha foi movida para o `nome_fantasia` editável, sem coluna ou tabela nova. O frontend agora preenche o marcador seguro automaticamente e mantém o checkpoint E01→E02.
+O fluxo consulta o CNPJ, fixa um snapshot da razão social oficial e envia essa razão como `_nome` para `platform_create_organization`. A razão social permanece somente leitura. A identificação da campanha foi movida para o `nome_fantasia` editável, sem coluna ou tabela nova. Para não contaminar cadastros normais com uma identidade de auditoria, o marcador será preenchido no E01 humano; o checkpoint E01→E02 permanece intacto.
 
 ### Conta temporária de auditoria
 
