@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- [ ] **P0 PWA — fluxo manual aprovado:** substituir atualização automática/overlay por aviso não bloqueante, ações “Atualizar agora”/“Adiar” e badge persistente para a versão adiada. Reload somente após clique explícito, com anti-loop; preservar `?sw=off`. Validar, publicar frontend uma vez e fazer smoke oficial sem tocar em dados ou operações D51.2.
+- [ ] **P0 PWA — fluxo manual pronto para publicação:** aviso não bloqueante, ações “Atualizar agora”/“Adiar” e badge persistente implementados; reload somente após clique explícito e `controllerchange`, com anti-loop. 31 testes focados, typecheck, build e suíte global com 5.359 testes passaram; `?sw=off` preservado. Aguardando scanner, publicação frontend única e smoke oficial.
 - [ ] D51.2 — **E01 FAIL / E02 bloqueado:** proteção preventiva publicada e confirmada no domínio oficial por smoke anônimo com cache-busting. O pacote `App-Hejg0VR9.js` contém **Confirme o CNPJ**, **Empresa que será criada**, **Empresa criada — pronta para auditoria** e **Enviar convite**, sem a ação antiga **Criar empresa e enviar convite**. A proteção está pronta para novo E01, que permanece bloqueado até concluir a contenção da REFIL.
 - [ ] Gate D51.2 — contenção da REFIL interrompida sem escrita por falta de sessão real Superadmin acessível à execução. O caminho oficial reversível disponível é organização `aguardando_ativacao` → `rascunho` e assinatura `TRIAL` → `SUSPENDED`, ambas pelas RPCs auditáveis; ele bloqueia direitos pela assinatura, mas mantém `organizations.ativo=true`. Cancelamento deixaria ambos inativos, porém seria terminal e viola a exigência de reversibilidade. SMTP OFF/OFF, E02 e D52 bloqueados; job real AR BIOTECNOLOGIA permanece intocado.
 
