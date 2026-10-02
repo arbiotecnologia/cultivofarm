@@ -1,29 +1,22 @@
-# Plano D51.2-F — Isolamento SaaS da configuração global SMTP
+# Plano — correção CORS da Comunicação no ambiente publicado
 
 ## Diagnóstico confirmado
+- Reproduzir e registrar o preflight no Supabase canônico: o domínio `app.cultivofarm.com.br` retorna 403 sem `Access-Control-Allow-Origin`, enquanto `cultivofarm.lovable.app` retorna 204 com a origem exata.
+- Registrar que `COMMUNICATION_ADMIN_ORIGINS` não está configurada, sem consultar ou expor valores secretos.
+- Correlacionar os logs recentes e as versões implantadas das duas Edge Functions afetadas.
 
-- `communication_provider_settings` é um singleton global sem escopo de organização.
-- As duas Edge Functions autorizam hoje qualquer papel operacional `administrador`, inclusive administrador de tenant, usando consulta server-side a `user_roles`.
-- Isso permite leitura/alteração e teste do provedor global por um papel de empresa; o risco será tratado como P1 antes de qualquer configuração SMTP.
+## Implementação mínima
+- Incluir apenas `https://app.cultivofarm.com.br` na allowlist estática do helper CORS compartilhado; não liberar wildcard de `cultivofarm.com.br`.
+- Preservar previews Lovable, localhost e origens extras configuráveis.
+- Declarar `verify_jwt = true` explicitamente para `communication-provider-settings` e `test-communication-email`.
+- Manter inalteradas autorização Superadmin, SMTP, destinatários, usuários, tenants e regras funcionais do D51.2.
 
-## Implementação
+## Validação e deploy
+- Ajustar testes para origens canônicas permitidas, origem maliciosa negada, preflight 204 com origem exata, ausência de wildcard e GET sem JWT em 401.
+- Executar testes focados, typecheck e build.
+- Implantar somente `communication-provider-settings` e `test-communication-email`, incluindo dependências compartilhadas empacotadas automaticamente.
+- Repetir preflight e GET sem JWT no runtime canônico; confirmar correção de transporte sem enviar e-mail.
 
-1. **Fronteira server-side**
-   - Substituir a autorização por papel `administrador` nas funções `communication-provider-settings` e `test-communication-email` pela RPC canônica `is_platform_superadmin(JWT sub)`.
-   - Manter validação de JWT, CORS, rate limit, readiness, test mode e allowlist; retornar apenas erros 401/403 sanitizados.
-   - Preservar o acesso técnico `service_role` das RPCs/workers, sem concedê-lo ao cliente e sem atribuir papel operacional ao superadmin.
-
-2. **UI única no painel correto**
-   - Reutilizar `ComunicacaoConfigTab` no painel `/plataforma`, em uma aba “Comunicação”.
-   - Remover somente a aba global de provedores de `/configuracoes`; as demais configurações da empresa permanecem intactas.
-   - Ajustar textos de permissão para “Superadmin de Plataforma”, sem confiar no papel do frontend como fronteira de segurança.
-
-3. **Testes e runtime seguro**
-   - Adicionar contratos/testes para tenant admin 403 antes do adapter, superadmin autorizado estruturalmente, anon/JWT inválido 401, ausência de papel operacional, workers preservados e posicionamento correto da UI.
-   - Rodar typecheck, testes focados, suíte global, build e linter delta.
-   - Antes do deploy, reconfirmar no canônico flags OFF, readiness falsa e zero lease ativo; então implantar somente as duas Edge Functions.
-   - Fazer apenas chamadas negativas pós-deploy, sem destinatário real, configuração ou envio.
-
-4. **Governança**
-   - Atualizar relatório, roadmap e regra arquitetural em `AGENTS.md` com o P1 comprovado/corrigido, evidências, runtime e bloqueios restantes.
-   - Manter D51.2 em NO-GO; não executar E01–E21, publicar frontend ou avançar D52.
+## Documentação e decisão
+- Atualizar o relatório D51.2 e o roadmap com causa, arquivos, funções implantadas, testes e decisão sobre retomada da aba Comunicação.
+- Manter D52 bloqueado e não avançar o E2E automaticamente.
