@@ -358,7 +358,15 @@ Deno.serve(async (req) => {
           if (error) throw new Error("email_ambiguity_persistence_failed");
           logDelivery("invite_email_ambiguous", "response", safeCode, "ambiguous");
         },
-      }).catch(() => ({ status: "failed" as const, code: "email_claim_failed" }));
+      }).catch((error: unknown) => {
+        const code = error instanceof Error && error.message === "email_ambiguity_persistence_failed"
+          ? "email_accept_persistence_failed"
+          : "email_claim_failed";
+        return {
+          status: code === "email_accept_persistence_failed" ? "ambiguous" as const : "failed" as const,
+          code,
+        };
+      });
 
       if (delivery.status !== "accepted") {
         const ambiguous = delivery.status === "ambiguous";

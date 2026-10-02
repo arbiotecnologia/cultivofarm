@@ -10,8 +10,9 @@
 
 import type { WorkerEnv } from "./adapters-types.ts";
 
-// @ts-ignore -- SupabaseClient injetado pelo chamador.
-type SbLike = { rpc: (name: string, args?: unknown) => Promise<{ data: unknown; error: unknown }> };
+type SbLike = {
+  rpc: (name: string, args?: unknown) => PromiseLike<{ data: unknown; error: unknown }>;
+};
 
 export type RuntimeSource = "db" | "env" | "fail_closed";
 

@@ -60,7 +60,13 @@ export async function sendEmail(
   // Homologação — test mode gate ANTES de qualquer chamada externa.
   const gate = isRecipientAllowedInTestMode(env, "email", resolved.address);
   if (!gate.allowed) {
-    return { outcome: "deferred", code: gate.reason, message: "test mode block" };
+    return {
+      outcome: "deferred",
+      code: gate.reason ?? "test_mode_not_allowlisted",
+      message: "Entrega bloqueada pelo modo de teste.",
+      certainty: "definitive",
+      stage: "preflight",
+    };
   }
   const subject = (rendered.assunto ?? snapshot.assunto ?? "").trim();
   if (!subject) {
