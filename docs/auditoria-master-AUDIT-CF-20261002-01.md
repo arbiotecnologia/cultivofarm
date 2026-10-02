@@ -4,9 +4,9 @@
 
 - Projeto canônico: `swzpzcwiasxmjutrmvkm`.
 - Fase 0: **PASS com riscos P2/P3 registrados**.
-- Fase 1 / E01: **BLOCKED por autenticação humana**, ainda não executado.
+- Fase 1 / E01: **PASS**; E02 está bloqueado somente no clique humano autenticado **Enviar convite**.
 - O antigo NO-GO baseado na impossibilidade de prefixar a razão social foi reclassificado: a razão oficial deve permanecer íntegra; a identificação segura da fixture será feita em `nome_fantasia`.
-- Nenhuma mutação de dados, abertura SMTP, envio, E02 ou cleanup foi executado nesta rodada.
+- Após o E01 humano, a auditoria abriu somente a janela SMTP global/e-mail pelo mecanismo auditável; nenhum convite, usuário ou envio foi criado.
 - Leaked Password Protection: risco temporariamente aceito, aberto e não homologado.
 
 ## Regras e escopo
@@ -90,35 +90,46 @@ O fluxo consulta o CNPJ, fixa um snapshot da razão social oficial e envia essa 
 
 Foi localizado o mecanismo oficial Auth Admin já existente em `create-user`, com `email_confirm=true`, mas ele bloqueia explicitamente o papel `superadmin`. A RPC de provisionamento também não pode receber esse papel, e o trigger `guard_superadmin_role_assignment` reserva sua atribuição ao mecanismo interno. Não existe endpoint/RPC oficial dedicado para criar uma conta Superadmin temporária. Como o Supabase é externo/não gerenciado, não há sessão oficial injetável pelo navegador automatizado. Nenhuma conta sintética, senha, perfil ou papel foi criado; não houve bypass por SQL/Auth e não existe cleanup de credencial a executar.
 
-### Resultado canônico read-only
+### Resultado canônico pós-E01
 
 | Verificação | Resultado |
 |---|---|
-| Organização pelo CNPJ autorizado ou prefixo | **0** |
-| Organização criada desde o início desta rodada | **0** |
-| Assinatura do alvo | **0** |
-| Auditoria de status do alvo | **0** |
+| Organização pelo CNPJ autorizado | **1** — `8f57c7dd…4626`, FSF AGROSERVICE PRODUTOS AGRICOLAS E SERVICOS LTDA, `aguardando_ativacao`, ativa, criada/atualizada em `2026-10-02T20:10:49.499027Z` |
+| Marcador em `nome_fantasia` | **1** — contém `HOMOLOGAÇÃO AUDIT-CF-20261002-01`; nenhuma outra organização usa o marcador |
+| CNPJ/e-mail corporativo | **PASS** — `36.736.180/0001-11` normalizado e `renato@refilinformatica.com.br` |
+| Assinatura do alvo | **1** — plano `completo`/Completo, `TRIAL`, início/criação em `2026-10-02T20:10:49.499027Z`; sem segunda assinatura |
+| Auditoria de status do alvo | **1** — `NULL→aguardando_ativacao`, motivo `criação pela plataforma`, ator com papel Superadmin, `2026-10-02T20:10:49.499027Z` |
 | Convite/job do alvo ou destinatário controlado | **0** |
 | Auth user/profile/papel vinculado ao alvo | **0** |
 | Leases ativos globais de convite/e-mail | **0** |
-| SMTP global/e-mail | **OFF/OFF** |
+| Tentativas de e-mail do destinatário | **0** |
+| SMTP global/e-mail antes da preparação | **OFF/OFF** |
+| SMTP global/e-mail após preparação auditável | **ON/ON**, readiness controlado `true` |
 | Test Mode | **ON** |
-| Allowlist | 1 endereço; destinatário controlado presente |
+| Allowlist | exatamente 1 endereço: `teste@refilinformatica.com.br` |
 | Outros canais | WhatsApp, webhook e in-app OFF |
-| Negativas sem JWT válido | **3/3 PASS**; convite, settings e teste de e-mail retornaram 401 |
+| Negativas sem JWT/JWT inválido | **6/6 PASS**; convite, settings e teste de e-mail retornaram 401 em ambos os casos |
 
-O job real AR BIO permanece intocado: status `falhou`, uma tentativa, `email_delivery_status=pending`, zero tentativa de e-mail, sem usuário e sem lease. Nenhum destinatário não autorizado foi usado.
+REFIL permanece em `rascunho`, ativa, com assinatura Completo `SUSPENDED` desde `2026-10-02T18:57:42.689286Z`. O job real AR BIO permanece intocado: `1d14f78b…c558`, status `falhou`, uma tentativa, `email_delivery_status=pending`, zero tentativa de e-mail, sem usuário e sem lease. Nenhum destinatário não autorizado foi usado.
+
+### Provas automatizáveis anteriores ao E02
+
+- **228/228 testes focados PASS** em 14 arquivos: checkpoint e bloqueio de duplo clique, retry sem recriar empresa, idempotência/duplicidade por contratos server-side, ACL de RPCs de plataforma, isolamento e features do plano, lease/fencing/cooldown, retomada, falha/crash do provider, redirect allowlist, primeiro acesso e configuração de Comunicação.
+- As três negativas implantadas, sem autenticação e com JWT inválido, retornaram 401; não houve mutação.
+- Harnesses SQL que exigem identidades reais ou execução transacional com `ROLLBACK` ficaram **NOT RUN** porque esta sessão não possui conexão transacional `PG*`; consultas oficiais são somente leitura. Não foram simulados como PASS: cross-tenant autenticado completo, takeover concorrente real, link usado/expirado e hard-crash Auth↔Postgres ponta a ponta.
+- A abertura SMTP foi feita por `rpc_service_apply_provider_settings`, com ator Superadmin do E01 e precondições fail-closed. A auditoria `id=14`, em `2026-10-02T20:28:25.664298Z`, registra somente `delivery_enabled` e `email_delivery_enabled`; segredos e demais campos não foram alterados.
+- Pós-abertura: readiness `true`, Test Mode ON, allowlist exclusiva, demais canais OFF, zero leases, zero convite/job/Auth/profile/papel e zero tentativa de e-mail do destinatário.
 
 ### Decisão
 
-**Fase 1 BLOCKED no clique autenticado de E01.** O falso bloqueio de identificação foi removido; a ausência de um mecanismo oficial para criar/conceder Superadmin temporário impede o browser E2E automatizado sem reduzir a segurança. O fluxo está preparado para a sessão humana executar somente **Criar empresa** e parar em **Empresa criada — pronta para auditoria**. SMTP e E02 continuam bloqueados até a auditoria canônica comprovar exatamente uma organização, uma assinatura TRIAL, uma auditoria e zero objetos do destinatário.
+**E01 PASS. Fase 1 bloqueada somente no clique humano autenticado “Enviar convite”.** Não existe endpoint oficial que preserve a identidade do Superadmin real sem sua sessão; `service_role` não será usado como substituto. O responsável deve clicar **uma única vez** em **Enviar convite** e parar, sem abrir link. Fase 2 permanece bloqueada até a auditoria pós-E02 e os gates humanos posteriores.
 
-Os subcenários executáveis sem ação humana foram concluídos: contratos estáticos de checkpoint/retry, CORS/JWT, negativas implantadas, ausência de objetos controlados, SMTP fail-closed e leases. Criação E01, abertura SMTP, E02, recebimento, primeiro acesso e recovery exigem antes um E01 canônico válido e permanecem `NOT RUN`.
+Os subcenários executáveis sem ação humana disponível foram concluídos. E02, recebimento, link usado/expirado ponta a ponta, primeiro acesso e recovery permanecem `NOT RUN`; os harnesses transacionais autenticados também permanecem `NOT RUN`, sem promoção indevida a PASS.
 
-Revalidação desta rodada: **11/11 testes focados PASS**, **5.372 testes globais PASS e 4 skipped**, typecheck PASS, build da prévia PASS e scanner com 10 Info/zero Critical/Error/Warning. Consulta canônica final confirmou zero organizações, assinaturas, auditorias, convites, Auth users, profiles e roles da campanha; zero leases; job AR BIO preservado.
+Baselines anteriores permanecem registrados: **5.372 testes globais PASS e 4 skipped**, typecheck/build PASS e scanner com 10 Info/zero Critical/Error/Warning. Nesta rodada, **228/228 testes focados PASS**; a consulta canônica final confirmou 1 organização, 1 assinatura, 1 auditoria, zero convites/Auth users/profiles/roles/tentativas/leases e job AR BIO preservado.
 
 ## Rollback e forward-fix
 
-- Dados: não aplicável; nenhuma mutação foi feita.
+- Dados: o E01 persistente foi criado pelo responsável e permanece como evidência. A janela SMTP pode ser revertida pelo mesmo RPC auditável alterando somente `delivery_enabled` e `email_delivery_enabled` para `false`.
 - Hardening das Edge Functions: rollback por reversão dos arquivos e dos blocos de configuração; forward-fix preferencial, caso surja incompatibilidade, mantendo CORS fail-closed, JWT obrigatório e respostas sanitizadas.
-- E01: o marcador usa `nome_fantasia`; não há mudança de esquema. A execução requer apenas sessão humana Superadmin e deve parar no checkpoint anterior ao convite.
+- E01: PASS, sem mudança de esquema. O próximo bloqueio é exclusivamente o clique humano **Enviar convite**.
