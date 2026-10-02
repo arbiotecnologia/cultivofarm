@@ -148,4 +148,4 @@ Evidências: migration `20261002205411_56ad85cd-0235-4f93-9314-9b2a1b8931f9`, fu
 
 Após o deploy, o job da campanha permaneceu único e intocado: provisionamento 1, SMTP 1, `failed/email_unknown_error`, sem lease de provisionamento ou e-mail. A janela segue ON/ON, Test Mode ON, allowlist com exatamente um endereço e demais canais OFF. Não houve reenvio, novo job, novo Auth user ou alteração em REFIL/AR BIO.
 
-**Decisão:** E02 continua **FAIL** e o retry continua **BLOCKED** até o responsável confirmar explicitamente o não recebimento. O forward-fix está implantado no backend; a publicação frontend e seu smoke no domínio oficial são registrados separadamente. Fase 2 e D52 não avançam.
+**Decisão:** E02 continua **FAIL** e o retry continua **BLOCKED** até o responsável confirmar explicitamente o não recebimento. O forward-fix está implantado no backend. A publicação frontend foi solicitada, mas o smoke do domínio Lovable e do domínio oficial ainda encontrou o bundle anterior `index-B6zZZyrG.js`, sem os marcadores novos; portanto a UI publicada permanece **FAIL por propagação/publicação não comprovada**. Fase 2 e D52 não avançam.

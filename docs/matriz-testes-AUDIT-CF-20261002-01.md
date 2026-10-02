@@ -87,6 +87,7 @@
 | F1-042 | Linter Supabase | PASS como baseline | 492 achados preexistentes; novas RPCs verificadas sem grants anon/authenticated |
 | F1-043 | Deploy backend | PASS | somente `platform-invite-org-admin`; negativa JWT inválido 401 |
 | F1-044 | Job factual pós-deploy | PASS | 1 job; tentativas 1/1; `failed/email_unknown_error`; zero leases; nenhum envio |
+| F1-045 | Publicação frontend e smoke oficial | FAIL | Publish solicitado; Lovable e domínio oficial ainda servem `index-B6zZZyrG.js` sem os marcadores do modal ambíguo |
 
 ## Gate
 
