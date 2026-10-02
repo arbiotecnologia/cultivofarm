@@ -31,7 +31,7 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
     for (const label of [
       "Singleton presente", "Host configurado", "Porta configurada", "Usuário configurado",
       "Senha configurada", "Remetente configurado", "Test mode ativo",
-      "teste@refilinformatica.com.br} na allowlist", "Entrega global ativa", "Entrega por e-mail ativa",
+      "CONTROLLED_TEST_EMAIL} na allowlist", "Entrega global ativa", "Entrega por e-mail ativa",
     ]) expect(ui).toContain(label);
     expect(ui).toContain("Pronto para teste controlado");
     expect(ui).toContain("Não pronto");

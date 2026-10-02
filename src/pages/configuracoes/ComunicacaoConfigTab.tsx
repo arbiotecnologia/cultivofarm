@@ -150,22 +150,13 @@ async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<Prov
     const ctx = (error as unknown as { context?: { body?: unknown; status?: number } })?.context;
     const status = ctx?.status;
     let code = error.message;
-    let rawBody: string | undefined;
     if (typeof ctx?.body === "string") {
-      rawBody = ctx.body;
       try { const j = JSON.parse(ctx.body); if (j?.error) code = j.error; } catch { /* keep */ }
     } else if (ctx?.body && typeof ctx.body === "object" && "error" in (ctx.body as object)) {
       code = String((ctx.body as { error: unknown }).error);
-      rawBody = JSON.stringify(ctx.body);
     }
-    // Log diagnóstico visível apenas no DevTools do usuário — sem PII / sem segredos.
-    // eslint-disable-next-line no-console
-    console.error("[comunicacao-config] falha ao chamar edge function", {
-      method, status, code, rawBody, name: error.name,
-    });
     const err = new Error(code);
-    (err as Error & { status?: number; rawBody?: string }).status = status;
-    (err as Error & { status?: number; rawBody?: string }).rawBody = rawBody;
+    (err as Error & { status?: number }).status = status;
     throw err;
   }
   if (!data?.ok) throw new Error((data as { error?: string } | null)?.error ?? "unknown_error");
