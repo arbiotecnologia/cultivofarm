@@ -27,8 +27,28 @@ export type InviteEmailDeliveryDeps = {
   ambiguous: (jobId: string, leaseToken: string, code: string) => Promise<void>;
 };
 
-const safeCode = (value: string) =>
-  (value || "email_failed").replace(/[^a-zA-Z0-9_:-]/g, "").slice(0, 80) || "email_failed";
+const SAFE_EMAIL_CODES = new Set([
+  "email_disabled",
+  "email_config_invalid",
+  "invalid_address",
+  "test_mode_allowlist_empty",
+  "test_mode_not_allowlisted",
+  "email_missing_subject",
+  "email_subject_too_long",
+  "email_header_injection_subject",
+  "email_header_injection_from",
+  "email_header_injection_to",
+  "email_address_too_long",
+  "email_body_too_large",
+  "email_connect_timeout",
+  "email_connect_network",
+  "email_smtp_4xx",
+  "email_smtp_5xx",
+  "email_send_ambiguous",
+  "email_accept_persistence_failed",
+]);
+
+const safeCode = (value: string) => SAFE_EMAIL_CODES.has(value) ? value : "email_send_ambiguous";
 
 /**
  * Orquestra o efeito externo sem expor destinatário, link ou credenciais.

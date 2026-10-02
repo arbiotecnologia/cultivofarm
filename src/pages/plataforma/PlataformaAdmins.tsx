@@ -81,6 +81,16 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
   const [confirmacaoAberta, setConfirmacaoAberta] = useState(false);
 
   const nomeOrg = (id: string) => orgs.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
+  const envioAmbiguo = (c: (typeof convites.data extends Array<infer T> ? T : never)) =>
+    c.email_delivery_status === "ambiguous" || [
+      "email_unknown_error",
+      "email_send_ambiguous",
+      "email_accept_persistence_failed",
+      "email_timeout",
+      "email_network_error",
+      "email_send_crash",
+      "email_delivery_setup_failed",
+    ].includes(c.email_last_error_code ?? "");
 
   useEffect(() => {
     if (organizationIdInicial) setOrg(organizationIdInicial);
@@ -295,10 +305,10 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell>
                         {c.modo_acesso === "link" ? "Link de convite" : "Senha temporária"}
                       </TableCell>
-                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{c.email_delivery_status === "ambiguous" || c.email_last_error_code === "email_unknown_error" ? "Envio não confirmado" : STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
+                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
-                        {c.status === "falhou" ? (
+                        {c.status === "falhou" || envioAmbiguo(c) ? (
                           <Button
                             size="sm"
                             variant="outline"
@@ -308,7 +318,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                               setCpf(c.cpf_cnpj ? mascaraCpf(c.cpf_cnpj) : "");
                               setTelefone(c.telefone ? mascaraTelefone(c.telefone) : "");
                               setModo(c.modo_acesso); setResponsavel(c.responsavel_principal);
-                              setRetryAmbiguo(c.email_delivery_status === "ambiguous" || c.email_last_error_code === "email_unknown_error");
+                              setRetryAmbiguo(envioAmbiguo(c));
                               document.getElementById("admin-nome")?.scrollIntoView({ behavior: "smooth" });
                             }}
                           >Preparar nova tentativa</Button>
