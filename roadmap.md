@@ -1,10 +1,10 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **EM ANDAMENTO, PRÓXIMO PASSO E01/E02 MANUAL CONTROLADO**. Pré-check canônico verde; janela SMTP aberta por RPC auditável alterando somente entrega global/e-mail para ON. Test mode ON, allowlist exclusiva controlada, SMTP/Vault preservados, demais canais OFF e zero lease. A aba Comunicação carregou corretamente no ambiente publicado com sessão real de Superadmin; nenhuma empresa, conta, convite ou mensagem foi criada/enviada nesta rodada. NO-GO para encerrar D51 ou avançar D52.
+- [ ] Gate D51.2 — **BLOQUEADO APÓS AUDITORIA E01/E02/E03**. Embora o responsável tenha confirmado empresa, convite e recebimento da mensagem, o Supabase canônico apresentou zero organização D51.2, zero convite/job, zero Auth user e zero profile controlado. E01 FAIL, E02 FAIL, E03 não comprovável e NO-GO para abrir o link/E04. Investigar a divergência de ambiente/persistência sem expor o link e sem criar novos registros. D52 continua bloqueado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — responsável deve executar E01/E02 manualmente no ambiente publicado, parar antes de abrir o link recebido e solicitar continuação assistida. Se a ação não for imediata, fechar entrega global/e-mail.
+- [ ] Gate D51.2 — identificar em qual ambiente a ação manual foi persistida e correlacionar a organização, o job e o Auth user com o canônico. Não abrir o link recebido, não reenviar e não repetir E01/E02 enquanto a divergência permanecer.
 
 ## Concluído
 - [x] **Incidente D51.2 — CORS da aba Comunicação — ENCERRADO:** causa confirmada por preflight 403 no domínio customizado contra 204 no domínio Lovable. Allowlist estrita de `https://app.cultivofarm.com.br` e `verify_jwt=true` explícito aplicados; somente `communication-provider-settings` e `test-communication-email` implantadas. Pós-deploy: preflights aprovados 204 com origem exata, origem maliciosa 403 e chamada sem JWT 401 legível. O responsável confirmou que a aba abriu normalmente no ambiente publicado com sessão real de Superadmin e que `communication-provider-settings` carregou corretamente na UI autenticada.
@@ -24,7 +24,7 @@
 - [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: com Superadmin autenticado no ambiente publicado, confirmar em `/plataforma` → **Comunicação** o estado “Pronto para teste controlado”; executar E01 em **Nova Empresa** e E02 em **Administradores**, usando apenas dados `TESTE D51.2`/`HOMOLOGAÇÃO D51.2` e `teste@refilinformatica.com.br`. Parar antes de abrir o link recebido; não compartilhar credenciais, link, token ou OTP.
+- [ ] D51.2: esclarecer a divergência entre a confirmação manual e o estado do Supabase canônico; não abrir nem compartilhar o link recebido e não repetir criação/convite até nova auditoria controlada.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
