@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Em andamento
+- [ ] Gate D51.2-E — adicionar checklist de prontidão SMTP na tela existente e sanitizar ponta a ponta o teste SMTP, sem envio, credenciais, usuários/tenants, publicação ou E2E.
 - [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton e ACLs endurecidos; preflight SMTP sanitizado disponível e atualmente não pronto. Ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
