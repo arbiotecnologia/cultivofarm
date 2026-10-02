@@ -4,9 +4,10 @@
 - [ ] Gate D51.2 — **BLOQUEADO E CONTIDO; DIVERGÊNCIA E01/E02 EXPLICADA**. A captura é de um job novo, não do job legado: uma empresa real foi criada no canônico às `05:10Z` e um job para endereço não aprovado foi criado às `05:11Z`, após a auditoria anterior. E01 FAIL de conformidade; E02 FAIL, sem convite controlado e sem Auth user/profile/papel; E03 FAIL confirmado, com zero tentativa SMTP; E04 NOT APPLICABLE/NO-GO. SMTP global/e-mail OFF/OFF; D52 bloqueado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — diagnosticar em rodada separada e somente após autorização a causa técnica específica de `finalize_failed`; manter o job `1d14f78b…c558` bloqueado, sem reprocessar, reenviar ou alterar status. Não repetir E01/E02 e não reabrir SMTP.
+- [ ] Gate D51.2 — corrigir em fases, somente após autorização, a colisão entre o profile automático com `organization_id=NULL` e a guarda de tenant da RPC de finalização; incluir observabilidade sanitizada e testes isolados. Manter o job `1d14f78b…c558` bloqueado, sem reprocessar, reenviar ou alterar status. Não repetir E01/E02 e não reabrir SMTP.
 
 ## Concluído
+- [x] **Diagnóstico read-only de `finalize_failed`:** causa raiz comprovada na interação `handle_new_user` → `platform_finalize_org_admin_provisioning`: o trigger cria profile com organização nula e a guarda `IS DISTINCT FROM` o rejeita como vínculo incompatível antes do UPSERT. A compensação remove Auth/profile e grava apenas o erro genérico. Contrato, assinatura, grants e `raw_app_meta_data` atuais estão alinhados; logs do intervalo não foram retidos. Retry agora repetiria deterministicamente a falha. O job é tecnicamente recuperável após fix, mas deve ser cancelado/arquivado por envolver dados reais fora da homologação.
 - [x] **Correlação factual da captura D51.2:** `AR BIOTECNOLOGIA LTDA` (`007bb519…0048`) e o job `1d14f78b…c558` foram criados no canônico às `05:10Z–05:11Z`, depois da leitura anterior de `04:37Z`; portanto não são o job histórico. O job foi reclamado uma vez, falhou em `finalize_failed`, ficou sem Auth/profile/papel e não alcançou SMTP (`email_attempt_count=0`). A divergência temporal/visual foi encerrada; a causa interna da falha de finalização continua não preservada.
 - [x] **Contenção pós-divergência E01/E02/E03:** mecanismo auditável alterou somente entrega global/e-mail para OFF. Modo de teste ON, allowlist exclusiva, SMTP presente por booleanos, demais canais OFF, zero leases, zero jobs/orgs D51.2 e zero operação de segredo confirmados no canônico.
 - [x] **Correção factual E01/E02/E03:** domínio oficial confirmado; nenhum e-mail ou link recebido. Bundle atual canônico, zero sucesso otimista, zero request/efeito canônico e SMTP OFF/OFF. Causa do feedback visual sem persistência permanece inconclusiva; C/E continuam possíveis, não comprovadas.
@@ -27,7 +28,7 @@
 - [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: revisar separadamente o `finalize_failed` do job novo e decidir seu tratamento; não usar esse job real em homologação, não reprocessar criação/convite e não reabrir SMTP sem nova autorização.
+- [ ] D51.2: autorizar separadamente a correção da RPC/observabilidade/testes e, depois, o cancelamento ou arquivamento auditável do job real; não usar esse job em homologação, não reprocessar criação/convite e não reabrir SMTP.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
