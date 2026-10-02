@@ -146,6 +146,12 @@ O bloqueio de retry é server-side e retrocompatível: `email_unknown_error` e o
 
 Evidências: migration `20261002205411_56ad85cd-0235-4f93-9314-9b2a1b8931f9`, função `platform-invite-org-admin` implantada, Deno check PASS, typecheck PASS, build PASS, 63 testes focados PASS e suíte global 5.376 PASS/4 skipped. Negativa com JWT inválido retornou 401. O linter manteve a baseline de 492 achados preexistentes, incluindo Leaked Password Protection desativada; as três RPCs alteradas estão com `search_path` vazio, `SECURITY DEFINER`, sem EXECUTE para anon/authenticated e com EXECUTE apenas para `service_role` nas assinaturas novas.
 
-Após o deploy, o job da campanha permaneceu único e intocado: provisionamento 1, SMTP 1, `failed/email_unknown_error`, sem lease de provisionamento ou e-mail. A janela segue ON/ON, Test Mode ON, allowlist com exatamente um endereço e demais canais OFF. Não houve reenvio, novo job, novo Auth user ou alteração em REFIL/AR BIO.
+Após o deploy, o job da campanha permaneceu único e intocado: provisionamento 1, SMTP 1, `failed/email_unknown_error`, sem lease de provisionamento ou e-mail. Não houve reenvio, novo job, novo Auth user ou alteração em REFIL/AR BIO.
 
 **Decisão:** E02 continua **FAIL** e o retry continua **BLOCKED** até o responsável confirmar explicitamente o não recebimento. O forward-fix está implantado no backend. A publicação frontend foi solicitada, mas o smoke do domínio Lovable e do domínio oficial ainda encontrou o bundle anterior `index-B6zZZyrG.js`, sem os marcadores novos; portanto a UI publicada permanece **FAIL por propagação/publicação não comprovada**. Fase 2 e D52 não avançam.
+
+## Contenção imediata pós-forward-fix
+
+Em `2026-10-02T21:05:41.611689Z`, a janela SMTP foi fechada pelo mecanismo existente `rpc_service_apply_provider_settings`, com ator Superadmin validado e auditoria `id=15`. A operação alterou exclusivamente `delivery_enabled` e `email_delivery_enabled` para `false`; o registro auditável contém somente esses dois campos.
+
+Pós-condições confirmadas: global/e-mail **OFF/OFF**, Test Mode **ON**, allowlist com exatamente `teste@refilinformatica.com.br`, WhatsApp/in-app/webhook **OFF** e presença da configuração SMTP/Vault preservada sem exposição de valores. O job da campanha permaneceu único em `failed/email_unknown_error`, com tentativas 1/1 e sem leases; o job AR BIO permaneceu com tentativa de provisionamento 1 e zero tentativa de e-mail. Nenhum envio, retry ou reprocessamento ocorreu.

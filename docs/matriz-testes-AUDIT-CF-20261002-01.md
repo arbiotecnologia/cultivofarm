@@ -6,7 +6,7 @@
 - `FAIL`: comportamento executado e divergente.
 - `NO-GO`: gate bloqueado por pré-condição ou divergência.
 - `NOT RUN`: não executado; nunca equivale a PASS.
-- As auditorias canônicas foram somente leitura; a única escrita desta rodada abriu a janela SMTP pelas duas flags auditáveis autorizadas.
+- As escritas da campanha limitaram-se à abertura e à contenção posterior da janela SMTP, sempre pelas mesmas duas flags e pelo mecanismo auditável autorizado.
 
 ## Fase 0
 
@@ -88,7 +88,8 @@
 | F1-043 | Deploy backend | PASS | somente `platform-invite-org-admin`; negativa JWT inválido 401 |
 | F1-044 | Job factual pós-deploy | PASS | 1 job; tentativas 1/1; `failed/email_unknown_error`; zero leases; nenhum envio |
 | F1-045 | Publicação frontend e smoke oficial | FAIL | Publish solicitado; Lovable e domínio oficial ainda servem `index-B6zZZyrG.js` sem os marcadores do modal ambíguo |
+| F1-046 | Contenção imediata pós-forward-fix | PASS | auditoria 15; somente global/e-mail OFF; Test Mode ON, allowlist exclusiva, SMTP/Vault e demais canais preservados; jobs sem alteração ou lease |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. Forward-fix aplicado; **RETRY BLOCKED** até confirmação humana explícita de não recebimento. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. Forward-fix aplicado; janela SMTP novamente **OFF/OFF** e **RETRY BLOCKED** até confirmação humana explícita de não recebimento. Fases 2–15: **NOT RUN**.
