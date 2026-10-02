@@ -1,12 +1,13 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **NO-GO para configurar ou enviar**: runtime D51.2-A alinhado no canônico, mas o singleton `communication_provider_settings.id = 1` está ausente. É obrigatório reparo versionado/idempotente com defaults fail-closed antes de usar a tela SMTP. Também faltam sender/domínio comprovado e sessão manual superadmin controlada. Sem E01–E21, publicação ou D52.
+- [ ] Gate D51.2 — **NO-GO para enviar ou executar E01–E21**: singleton `communication_provider_settings.id = 1` restaurado com defaults fail-closed. A configuração manual pela tela está desbloqueada; ainda faltam sender/domínio comprovado, credenciais SMTP configuradas com flags OFF e sessão manual superadmin controlada. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
 
 ## Concluído
+- [x] Gate D51.2-C — singleton SMTP restaurado no canônico por migration idempotente; entrega global/e-mail/WhatsApp/in-app/webhook OFF, test mode ON, allowlists vazias e SMTP/segredos ausentes. Ledger e linha única verificados; nenhum envio, Vault, usuário, tenant ou E2E.
 - [x] Gate D51.2-B — migration/objetos/grants confirmados no canônico; flags SMTP OFF, configuração ausente e zero lease ativo comprovados; somente `platform-invite-org-admin` implantada; chamadas sem JWT/JWT inválido retornaram 401 sem mutação. Interface e pré-condições manuais documentadas; nenhum envio/configuração/E2E realizado.
 - [x] Gate D51.2-A — P1 de código corrigido reutilizando o SMTP do módulo Comunicação; estado auditável, lease/fencing, cooldown, retomada e resposta sem action link. Testes mockados, typecheck, suíte global e Deno verdes; nenhum e-mail/usuário/tenant criado. Envio real permanece bloqueado por configuração externa.
 - [x] Gate D51.1 — certificação técnica verde, P0 de origem Auth corrigido e sete no-ops reconciliados 1:1 como dívida histórica aceita; apto condicionalmente ao Gate E2E controlado sob exceção formal de Leaked Password Protection, que permanece não resolvida.
@@ -16,7 +17,6 @@
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: autorizar reparo versionado/idempotente do singleton ausente `communication_provider_settings.id = 1`, preservando defaults de entrega OFF e test mode ON.
 - [ ] D51.2: comprovar sender/domínio no provedor SMTP; depois, um `administrador` operacional configura em `/configuracoes?tab=comunicacao`, com segredo somente no Vault, test mode ON e allowlist exclusiva `teste@refilinformatica.com.br`.
 - [ ] D51.2: responsável entrar manualmente como superadmin controlado em `/auth` na prévia. Projeto externo não gerenciado não permite `lovable auth-session`; não compartilhar senha no chat e não substituir sessão por `service_role`.
 - [ ] D51.2: habilitar Entrega global + E-mail somente após novo comando explícito para a janela E2E; manter WhatsApp, in-app e webhook OFF.
