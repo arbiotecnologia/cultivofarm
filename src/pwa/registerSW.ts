@@ -141,21 +141,23 @@ async function announcePendingUpdate(
 }
 
 export function dismissPendingUpdate(): void {
-  if (!snapshot.version || !pendingWorker) return;
-  try {
-    window.localStorage.setItem(DEFERRED_UPDATE_KEY, JSON.stringify({
-      version: snapshot.version,
-      deferredAt: new Date().toISOString(),
-    }));
-  } catch {
-    /* the badge remains available for this session */
+  if (!snapshot.staleBuild) {
+    if (!snapshot.version || !pendingWorker) return;
+    try {
+      window.localStorage.setItem(DEFERRED_UPDATE_KEY, JSON.stringify({
+        version: snapshot.version,
+        deferredAt: new Date().toISOString(),
+      }));
+    } catch {
+      /* the badge remains available for this session */
+    }
   }
   emitSnapshot({ ...snapshot, status: "deferred_badge" });
 }
 
 export function reopenPendingUpdate(): void {
   if (!pendingWorker && !snapshot.staleBuild) return;
-  emitSnapshot({ ...snapshot, status: "prompt" });
+  emitSnapshot({ ...snapshot, status: snapshot.staleBuild ? "error" : "prompt" });
 }
 
 function triggerExplicitReload(reload: () => void): boolean {
@@ -204,6 +206,10 @@ export async function recoverFromStaleBuild(
     staleBuild: true,
     message: "Há uma atualização necessária para continuar.",
   });
+}
+
+export function requestStaleBuildRecovery(): Promise<void> {
+  return recoverFromStaleBuild();
 }
 
 async function clearSafeRuntimeCaches(): Promise<void> {

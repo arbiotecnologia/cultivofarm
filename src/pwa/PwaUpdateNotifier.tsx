@@ -83,7 +83,6 @@ export function PwaUpdateNotifier() {
             variant="outline"
             size="sm"
             onClick={dismissPendingUpdate}
-            disabled={update.staleBuild}
           >
             {error ? "Continuar depois" : "Adiar"}
           </Button>

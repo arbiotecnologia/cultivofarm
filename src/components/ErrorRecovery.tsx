@@ -44,7 +44,7 @@ export function ErrorRecovery({
           {onRetry && (
             <Button variant={onPrimaryAction ? "outline" : "default"} onClick={onRetry} className="flex items-center gap-2">
               <RefreshCcw size={16} />
-              Tentar Novamente
+              Tentar novamente
             </Button>
           )}
           {onSignOut && (
