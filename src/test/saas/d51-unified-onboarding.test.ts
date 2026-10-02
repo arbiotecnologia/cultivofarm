@@ -38,6 +38,7 @@ describe("D51.2 — fluxo único Empresa → Responsável → Revisão → Convi
     expect(flow).toContain("Responsável que receberá acesso");
     expect(flow).toContain("Confirme o CNPJ");
     expect(flow).toContain('autoComplete="off"');
+    expect(flow).toContain("disabled={Boolean(origem) || buscando}");
     expect(flow).not.toMatch(/localStorage|sessionStorage/);
   });
 

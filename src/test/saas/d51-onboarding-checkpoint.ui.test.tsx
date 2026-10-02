@@ -102,6 +102,23 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     expect(screen.queryByRole("button", { name: /Continuar/ })).toBeDisabled();
   });
 
+  it("bloqueia criação se a razão oficial divergir do snapshot", async () => {
+    renderFlow();
+    fireEvent.change(screen.getByLabelText("CNPJ *"), { target: { value: "36.736.180/0001-11" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
+    const razao = await screen.findByLabelText("Razão social *");
+    fireEvent.change(razao, { target: { value: "RAZÃO ALTERADA" } });
+    fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
+    fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.change(screen.getByLabelText("Nome completo *"), { target: { value: "Responsável Controlado" } });
+    fireEvent.change(screen.getByLabelText("E-mail de acesso e convite *"), { target: { value: "teste@refilinformatica.com.br" } });
+    fireEvent.click(screen.getByRole("button", { name: /Revisar/ }));
+    fireEvent.change(screen.getByLabelText("Confirme o CNPJ *"), { target: { value: "36736180000111" } });
+    expect(screen.getByRole("button", { name: "Criar empresa" })).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Os dados não conferem");
+  });
+
   it("envia exatamente o e-mail corporativo exibido na revisão", async () => {
     renderFlow();
     await chegarNaRevisao();
