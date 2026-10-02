@@ -18,12 +18,12 @@ ALTER TABLE public.platform_org_admin_invites DROP CONSTRAINT IF EXISTS platform
 ALTER TABLE public.platform_org_admin_invites ADD CONSTRAINT platform_org_admin_invites_status_chk CHECK(status IN ('pendente','processando','falhou','ativo')) NOT VALID;
 ALTER TABLE public.platform_org_admin_invites VALIDATE CONSTRAINT platform_org_admin_invites_status_chk;
 
-CREATE OR REPLACE FUNCTION public.platform_claim_org_admin_provisioning(p_actor_id uuid,p_organization_id uuid,p_email text,p_nome text,p_cpf_cnpj text DEFAULT NULL,p_telefone text DEFAULT NULL,p_modo_acesso text DEFAULT 'link',p_responsavel_principal boolean DEFAULT true)
+CREATE OR REPLACE FUNCTION public.platform_claim_org_admin_provisioning(p_organization_id uuid,p_email text,p_nome text,p_cpf_cnpj text DEFAULT NULL,p_telefone text DEFAULT NULL,p_modo_acesso text DEFAULT 'link',p_responsavel_principal boolean DEFAULT true)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
 DECLARE v_role text; v_email text:=lower(btrim(coalesce(p_email,''))); v_cpf text:=nullif(regexp_replace(coalesce(p_cpf_cnpj,''),'\D','','g'),''); v_tel text:=nullif(regexp_replace(coalesce(p_telefone,''),'\D','','g'),''); j public.platform_org_admin_invites%ROWTYPE; token uuid:=gen_random_uuid();
 BEGIN
  v_role:=coalesce(nullif(current_setting('request.jwt.claim.role',true),''),nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'role','');
- IF v_role<>'service_role' OR p_actor_id IS NULL OR NOT public.is_platform_superadmin(p_actor_id) THEN RAISE EXCEPTION 'platform_forbidden' USING ERRCODE='42501'; END IF;
+ IF v_role<>'service_role' THEN RAISE EXCEPTION 'platform_forbidden' USING ERRCODE='42501'; END IF;
  IF p_organization_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.organizations o WHERE o.id=p_organization_id AND o.ativo IS TRUE) THEN RAISE EXCEPTION 'platform_invalid: empresa'; END IF;
  IF v_email !~ '^[^\s@]+@[^\s@]+\.[^\s@]+$' OR length(v_email)>255 OR length(btrim(coalesce(p_nome,''))) NOT BETWEEN 3 AND 200 THEN RAISE EXCEPTION 'platform_invalid: identidade'; END IF;
  IF v_cpf IS NOT NULL AND length(v_cpf)<>11 THEN RAISE EXCEPTION 'platform_invalid: cpf'; END IF;
@@ -39,12 +39,12 @@ BEGIN
   UPDATE public.platform_org_admin_invites SET status='processando',lease_token=token,lease_expires_at=clock_timestamp()+interval '2 minutes',attempt_count=attempt_count+1,last_error_code=NULL,updated_at=now() WHERE id=j.id RETURNING * INTO j;
  ELSE
   INSERT INTO public.platform_org_admin_invites(organization_id,user_id,email,nome,cpf_cnpj,telefone,modo_acesso,responsavel_principal,invited_by,status,request_id,attempt_count,lease_token,lease_expires_at,updated_at)
-  VALUES(p_organization_id,NULL,v_email,btrim(p_nome),v_cpf,v_tel,p_modo_acesso,p_responsavel_principal,p_actor_id,'processando',gen_random_uuid(),1,token,clock_timestamp()+interval '2 minutes',now()) RETURNING * INTO j;
+  VALUES(p_organization_id,NULL,v_email,btrim(p_nome),v_cpf,v_tel,p_modo_acesso,p_responsavel_principal,NULL,'processando',gen_random_uuid(),1,token,clock_timestamp()+interval '2 minutes',now()) RETURNING * INTO j;
  END IF;
  RETURN jsonb_build_object('job_id',j.id,'request_id',j.request_id,'status',j.status,'lease_token',token,'lease_expires_at',j.lease_expires_at,'user_id',j.user_id,'completed',false);
 END $fn$;
-REVOKE ALL ON FUNCTION public.platform_claim_org_admin_provisioning(uuid,uuid,text,text,text,text,text,boolean) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.platform_claim_org_admin_provisioning(uuid,uuid,text,text,text,text,text,boolean) TO service_role;
+REVOKE ALL ON FUNCTION public.platform_claim_org_admin_provisioning(uuid,text,text,text,text,text,boolean) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.platform_claim_org_admin_provisioning(uuid,text,text,text,text,text,boolean) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.platform_find_org_admin_provisioning_auth_user(p_job_id uuid,p_lease_token uuid)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $fn$
