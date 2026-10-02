@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- Nenhuma execução operacional autorizada nesta rodada.
+- [ ] Gate D51.2 — E2E controlado autorizado e em execução somente no Supabase canônico, com `teste@refilinformatica.com.br` como único destinatário. Parar em P0/P1; sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
