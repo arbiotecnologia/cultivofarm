@@ -1701,3 +1701,16 @@ A estratégia automática foi substituída pelo consentimento explícito do usu�
 - `?sw=off`, bloqueios de dev/preview/iframe, limpeza de caches antigos e navegação `NetworkFirst` foram preservados.
 
 Validação anterior à publicação: 31 testes focados PASS, suíte global com 5.359 testes aprovados e 4 ignorados, typecheck PASS e build PASS. Nenhum banco, Supabase, SMTP, organização, usuário, E01/E02 ou job foi tocado. D52 permanece bloqueado.
+
+### 45.1 Publicação e smoke
+
+O scanner terminou com dez achados informativos e zero Critical/Error/Warning. Uma única publicação frontend foi solicitada. No smoke posterior do domínio oficial:
+
+- `/auth` respondeu HTTP 200, sem overlay visível na abertura;
+- `/sw.js` estava ativo e sem worker waiting naquele navegador limpo;
+- os bundles ainda continham `pwa:updating-start` e a mensagem automática antiga;
+- nenhum bundle continha os marcadores **Nova versão disponível**, **Há uma atualização do Cultivo Farm pronta para instalar.**, **Continuar depois** ou `pwa:update-available`;
+- os 401 observados foram negativas esperadas em sessão anônima;
+- `/?sw=off` respondeu HTTP 200 e reduziu os registros de service worker a zero.
+
+**Decisão: FAIL de propagação no domínio customizado.** O candidato está validado, mas o comportamento manual ainda não pode ser declarado ativo em produção. Nenhuma segunda publicação foi solicitada. Aguardar propagação e repetir somente o smoke. O contorno emergencial permanece `https://app.cultivofarm.com.br/?sw=off`.
