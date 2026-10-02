@@ -24,6 +24,10 @@
 | PWA-009 | Desktop/mobile/acessibilidade | PASS | aviso não bloqueante, controles acessíveis e sem sobreposição bloqueante |
 | PWA-010 | Smoke oficial limpo e com legado simulado | PASS | URL estável, zero overlay/texto legado/erro; apenas push worker ao final |
 | PWA-011 | Testes focados/typecheck/build/suíte/scanner | PASS | 23 focados; 5.372 globais/4 skipped; scanner 10 Info, zero Critical/Error/Warning |
+| PWA-012 | Build ID explícito igual/diferente | PENDENTE | meta de produção e comparação por HTML `no-store` |
+| PWA-013 | Publicação altera apenas módulo interno | PENDENTE | mesmo entry, build ID novo deve abrir aviso sem navegar |
+| PWA-014 | Compatibilidade de sessão/HTML legado | PENDENTE | fallback por hash e transição hash→meta |
+| PWA-015 | Eventos, Adiar e Atualizar agora | PENDENTE | detecção sem navegação; uma navegação apenas após clique |
 
 ## Diagnóstico SMTP — integração da tela de plataforma
 

@@ -5,6 +5,7 @@ const RECENT_NAVIGATION_KEY = "pwa:last-explicit-navigation";
 const DEFERRED_UPDATE_KEY = "pwa:deferred-update";
 const LEGACY_MIGRATION_KEY = "pwa:legacy-app-shell-migrated";
 const NAVIGATION_LOOP_GUARD_MS = 15_000;
+const BUILD_ID_META_SELECTOR = 'meta[name="cultivo-build-id"]';
 
 export const PWA_UPDATE_STATE_EVENT = "pwa:update-state";
 
@@ -51,6 +52,8 @@ function isPreviewOrDevelopment(): boolean {
 
 export function extractBuildToken(html: string, baseUrl = window.location.origin): string | null {
   const parsed = new DOMParser().parseFromString(html, "text/html");
+  const buildId = parsed.querySelector<HTMLMetaElement>(BUILD_ID_META_SELECTOR)?.content.trim();
+  if (buildId) return buildId;
   const scripts = Array.from(parsed.querySelectorAll<HTMLScriptElement>('script[type="module"][src]'));
   for (const script of scripts) {
     try {
@@ -66,6 +69,8 @@ export function extractBuildToken(html: string, baseUrl = window.location.origin
 }
 
 function getLoadedBuildToken(): string | null {
+  const buildId = document.querySelector<HTMLMetaElement>(BUILD_ID_META_SELECTOR)?.content.trim();
+  if (buildId) return buildId;
   const scripts = Array.from(document.querySelectorAll<HTMLScriptElement>('script[type="module"][src]'));
   for (const script of scripts) {
     try {
