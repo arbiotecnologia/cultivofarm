@@ -1,14 +1,14 @@
 # Roadmap
 
 ## Em andamento
-- [ ] Gate D51.2 — **BLOQUEADO E CONTIDO; DIVERGÊNCIA AINDA EM INVESTIGAÇÃO**. O responsável confirmou o domínio oficial, refutando “outro domínio” como conclusão. Bundle atual e fluxos atuais estão canônicos, sem sucesso otimista; nenhuma versão conhecida explica os feedbacks positivos, e não houve request ou persistência canônica na janela. C/E (aba antiga/estado intermediário no mesmo domínio) permanecem plausíveis, não comprovadas. SMTP global/e-mail OFF; E01/E02/E03 FAIL/não comprováveis, E04 NO-GO e D52 bloqueado.
+- [ ] Gate D51.2 — **BLOQUEADO E CONTIDO; DIVERGÊNCIA DA UI AINDA INCONCLUSIVA**. E01 FAIL/não comprovado; E02 FAIL/não comprovado; E03 FAIL confirmado — nenhum e-mail recebido e nenhuma tentativa canônica correlacionável; E04 NOT APPLICABLE/NO-GO porque não existe link recebido. O canônico não recebeu organização, job, Auth user ou profile. SMTP global/e-mail permanece OFF/OFF; D52 bloqueado.
 
 ## Próximo / autorizado a preparar execução
-- [ ] Gate D51.2 — correlacionar o e-mail recebido somente por metadados não sensíveis: remetente visível, assunto, data/hora com fuso e, se disponível, domínio do `Message-ID` com parte local mascarada. Não abrir/copiar o link, não reenviar e não repetir E01/E02.
+- [ ] Gate D51.2 — rastrear por que a UI indicou sucesso sem persistência canônica e sem envio real, usando somente evidências existentes de publicação/runtime e feedback visual. Não repetir E01/E02 e não reabrir SMTP.
 
 ## Concluído
 - [x] **Contenção pós-divergência E01/E02/E03:** mecanismo auditável alterou somente entrega global/e-mail para OFF. Modo de teste ON, allowlist exclusiva, SMTP presente por booleanos, demais canais OFF, zero leases, zero jobs/orgs D51.2 e zero operação de segredo confirmados no canônico.
-- [x] **Reinvestigação da divergência E01/E02:** domínio oficial confirmado e “outro domínio” refutado. Linha temporal dos fluxos, PWA, feedbacks e canais de e-mail auditada; bundle atual canônico, zero sucesso otimista e zero request/efeito canônico na janela. Causa não fechada; C/E permanecem hipóteses plausíveis com baixa a moderada confiança.
+- [x] **Correção factual E01/E02/E03:** domínio oficial confirmado; nenhum e-mail ou link recebido. Bundle atual canônico, zero sucesso otimista, zero request/efeito canônico e SMTP OFF/OFF. Causa do feedback visual sem persistência permanece inconclusiva; C/E continuam possíveis, não comprovadas.
 - [x] **Incidente D51.2 — CORS da aba Comunicação — ENCERRADO:** causa confirmada por preflight 403 no domínio customizado contra 204 no domínio Lovable. Allowlist estrita de `https://app.cultivofarm.com.br` e `verify_jwt=true` explícito aplicados; somente `communication-provider-settings` e `test-communication-email` implantadas. Pós-deploy: preflights aprovados 204 com origem exata, origem maliciosa 403 e chamada sem JWT 401 legível. O responsável confirmou que a aba abriu normalmente no ambiente publicado com sessão real de Superadmin e que `communication-provider-settings` carregou corretamente na UI autenticada.
 - [x] **Pós-republicação do incidente P0:** produção normalizada em contexto limpo. `/`, `/auth`, `/plataforma`, `/dashboard` e `/configuracoes` passaram; rotas protegidas redirecionaram para `/auth`, sem erro de provider/renderização, chunk obsoleto, 404 de JS/CSS, loop ou falha de SW. Service worker ativo e recuperação de stale chunk confirmada no bundle publicado. Nenhuma autenticação ou mutação.
 - [x] **Gate de republicação do incidente P0 — APTO PARA REPUBLICAÇÃO:** correção PWA validada. Os seis `Critical/Error` históricos de RLS receberam hardening mínimo; os três warnings exploráveis remanescentes (`etiqueta_templates`, `fiscal_environment_marker`, `formulacoes`) também foram fechados por menor privilégio. Scanner final: 0 Critical/Error/Warning e 10 Info; 5.318 testes, typecheck, build, chamadas anônimas negativas e smoke signed-out verdes.
@@ -26,7 +26,7 @@
 - [ ] **Dívida histórica de banco fora do bloqueio atual:** o linter geral ainda enumera 17 objetos com RLS sem policy, 2 funções `SECURITY DEFINER` executáveis por anônimo e 472 por autenticado. O scanner profundo final não os classificou como Critical/Error/Warning neste gate; exigem auditoria dedicada antes de qualquer correção em massa.
 
 ## Pendências (aguardam usuário/autorização)
-- [ ] D51.2: obter somente remetente visível, assunto e data/hora com fuso do e-mail; opcionalmente domínio do `Message-ID` com parte local mascarada. Não compartilhar link/token/OTP, não repetir criação/convite e não reabrir SMTP.
+- [ ] D51.2: investigar somente por evidências existentes por que a UI indicou sucesso sem persistência e sem envio; não repetir criação/convite e não reabrir SMTP.
 - [ ] D51.2/E15A: executar futuramente prova parcial Admin A → Tenant B sem segundo administrador; não declarar E15 completo sem prova B → A/segunda sessão controlada.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
