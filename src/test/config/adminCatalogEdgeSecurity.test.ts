@@ -22,7 +22,10 @@ describe("funções administrativas de catálogo — fronteiras de origem e aute
   it.each(FUNCTIONS)("%s valida JWT e papel administrador antes do cliente elevado", (path) => {
     const source = read(path);
     const authIndex = source.indexOf("auth.getClaims(token)");
-    const roleIndex = Math.max(source.indexOf('eq("role", "administrador")'), source.indexOf('rpc("has_role"')));
+    const roleIndex = Math.max(
+      source.indexOf('eq("role", "administrador")'),
+      source.indexOf('rpc("has_role"'),
+    );
     const elevatedIndex = source.indexOf("SUPABASE_SERVICE_ROLE_KEY");
     expect(authIndex).toBeGreaterThan(0);
     expect(roleIndex).toBeGreaterThan(authIndex);
