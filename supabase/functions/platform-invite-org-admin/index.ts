@@ -157,6 +157,9 @@ Deno.serve(async (req) => {
       });
       if (createError || !created?.user) {
         const jaExiste = (createError?.message ?? "").toLowerCase().includes("already");
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: jaExiste ? "auth_conflict" : "auth_create_failed",
+        });
         return json(
           {
             error: jaExiste
@@ -190,6 +193,9 @@ Deno.serve(async (req) => {
       });
       if (error || !data?.user) {
         const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: jaExiste ? "auth_conflict" : "auth_create_failed",
+        });
         return json(
           {
             error: jaExiste

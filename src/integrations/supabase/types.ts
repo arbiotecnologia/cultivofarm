@@ -20941,6 +20941,10 @@ export type Database = {
         Args: { p_job_id: string; p_lease_token: string; p_user_id: string }
         Returns: Json
       }
+      platform_find_org_admin_provisioning_auth_user: {
+        Args: { p_job_id: string; p_lease_token: string }
+        Returns: string | null
+      }
       platform_first_access_pending: {
         Args: { p_user_id: string }
         Returns: boolean
