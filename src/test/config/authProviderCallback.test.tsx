@@ -215,6 +215,14 @@ describe("AuthProvider — callback de autenticação", () => {
     await waitFor(() => expect(signOutSpy).toHaveBeenCalled());
   });
 
+  it("sessão Auth órfã sem perfil é encerrada", async () => {
+    profileRow = null;
+    renderProvider();
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("error").textContent).toContain("perfil não foi encontrado"));
+    await waitFor(() => expect(signOutSpy).toHaveBeenCalled());
+  });
+
   it("falha de carregamento limpa papéis antigos e encerra o loading", async () => {
     profileError = { message: "boom" };
     renderProvider();

@@ -53,6 +53,13 @@ const dataHora = (valor: string) => {
     : d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 };
 
+const STATUS_PROVISIONAMENTO = {
+  processando: "Processando",
+  falhou: "Falhou — pode retentar",
+  pendente: "Primeiro acesso pendente",
+  ativo: "Ativo",
+} as const;
+
 async function copiar(texto: string, rotulo: string) {
   try {
     await navigator.clipboard.writeText(texto);
@@ -276,6 +283,7 @@ export default function PlataformaAdmins() {
                     <TableHead>Telefone</TableHead>
                     <TableHead>CPF</TableHead>
                     <TableHead>Acesso</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Quando</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -297,7 +305,8 @@ export default function PlataformaAdmins() {
                       <TableCell>
                         {c.modo_acesso === "link" ? "Link de convite" : "Senha temporária"}
                       </TableCell>
-                      <TableCell>{dataHora(c.created_at)}</TableCell>
+                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
+                      <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

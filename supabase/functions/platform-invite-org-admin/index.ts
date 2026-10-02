@@ -130,27 +130,33 @@ Deno.serve(async (req) => {
     let senha: string | null = null;
     let criamosUsuario = false;
 
-    // Retomada Auth↔DB: uma conta só pode ser reutilizada quando carrega o
-    // marcador opaco da intenção persistida. E-mail isolado nunca autoriza adoção.
-    const { data: listed } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const resumable = listed?.users.find((u) =>
-      u.email?.toLowerCase() === email &&
-      (u.app_metadata?.provisioning_request_id === requestId ||
-        u.user_metadata?.provisioning_request_id === requestId)
+    // Retomada Auth↔DB: busca server-only exige o marcador imutável da intenção
+    // em app_metadata. E-mail isolado e user_metadata nunca autorizam adoção.
+    const { data: resumableId, error: resumeError } = await adminClient.rpc(
+      "platform_find_org_admin_provisioning_auth_user",
+      { p_job_id: jobId, p_lease_token: leaseToken },
     );
-    if (resumable) userId = resumable.id;
+    if (resumeError) {
+      await adminClient.rpc("platform_fail_org_admin_provisioning", {
+        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "resume_lookup_failed",
+      });
+      return json({ error: "Não foi possível retomar o provisionamento.", code: "resume_lookup_failed" }, 500);
+    }
+    if (typeof resumableId === "string" && UUID_RE.test(resumableId)) userId = resumableId;
 
     if (!userId && modo === "link") {
-      const { data, error } = await adminClient.auth.admin.generateLink({
-        type: "invite",
+      // Cria primeiro com app_metadata server-only; generateLink(recovery) apenas
+      // produz o link e não duplica a conta nem envia e-mail.
+      const bootstrapPassword = senhaTemporaria();
+      const { data: created, error: createError } = await adminClient.auth.admin.createUser({
         email,
-        options: {
-          data: { nome, convidado_por_plataforma: true, provisioning_request_id: requestId },
-          ...(redirectTo ? { redirectTo } : {}),
-        },
+        password: bootstrapPassword,
+        email_confirm: true,
+        user_metadata: { nome, convidado_por_plataforma: true },
+        app_metadata: { provisioning_request_id: requestId },
       });
-      if (error || !data?.user) {
-        const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
+      if (createError || !created?.user) {
+        const jaExiste = (createError?.message ?? "").toLowerCase().includes("already");
         return json(
           {
             error: jaExiste
@@ -160,16 +166,27 @@ Deno.serve(async (req) => {
           400,
         );
       }
-      userId = data.user.id;
+      userId = created.user.id;
       criamosUsuario = true;
-      actionLink = data.properties?.action_link ?? null;
+      const { data: link, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "recovery", email, options: redirectTo ? { redirectTo } : undefined,
+      });
+      if (linkError || !link?.properties?.action_link) {
+        await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
+        });
+        return json({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+      }
+      actionLink = link.properties.action_link;
     } else if (!userId) {
       senha = senhaTemporaria();
       const { data, error } = await adminClient.auth.admin.createUser({
         email,
         password: senha,
         email_confirm: true,
-        user_metadata: { nome, convidado_por_plataforma: true, provisioning_request_id: requestId },
+        user_metadata: { nome, convidado_por_plataforma: true },
+        app_metadata: { provisioning_request_id: requestId },
       });
       if (error || !data?.user) {
         const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
@@ -187,18 +204,6 @@ Deno.serve(async (req) => {
     }
 
     if (!userId) return json({ error: "Não foi possível identificar o acesso.", code: "auth_missing" }, 500);
-
-    // O marcador definitivo fica em app_metadata, gravável apenas pela Admin API.
-    const { error: markerError } = await adminClient.auth.admin.updateUserById(userId, {
-      app_metadata: { provisioning_request_id: requestId },
-    });
-    if (markerError) {
-      await adminClient.rpc("platform_fail_org_admin_provisioning", {
-        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "auth_marker_failed",
-      });
-      if (criamosUsuario) await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
-      return json({ error: "Não foi possível preparar o acesso.", code: "auth_marker_failed" }, 500);
-    }
 
     const { error: rpcError } = await adminClient.rpc("platform_finalize_org_admin_provisioning", {
       p_job_id: jobId,

@@ -66,6 +66,20 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(convite).toContain("deleteUser(userId)");
   });
 
+  it("persiste intenção, usa lease/fencing e retoma sem confiar em e-mail ou user_metadata", () => {
+    expect(convite).toContain("platform_claim_org_admin_provisioning");
+    expect(convite).toContain("platform_find_org_admin_provisioning_auth_user");
+    expect(convite).toContain("platform_finalize_org_admin_provisioning");
+    expect(convite).toContain("p_lease_token");
+    expect(convite).not.toContain("listUsers");
+    expect(convite).not.toMatch(/user_metadata\?\.provisioning_request_id/);
+  });
+
+  it("link é gerado sem envio de e-mail e sem generateLink invite", () => {
+    expect(convite).toContain('type: "recovery"');
+    expect(convite).not.toContain('type: "invite"');
+  });
+
   it("nenhum segredo em logs", () => {
     // Único log permitido na Edge Function: diagnóstico com etapa/código.
     const logs = edge.match(/console\.(log|error|warn)\([^;]*;/g) ?? [];
