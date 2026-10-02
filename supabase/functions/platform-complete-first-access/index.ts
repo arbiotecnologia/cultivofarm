@@ -10,8 +10,7 @@
 //   falhar o estado permanece bloqueado — a marca de primeiro acesso é
 //   limpa por função server-side transacional.
 // - Nenhuma senha, hash, token ou link é registrado em logs ou auditoria.
-//   Diagnóstico: apenas etapa + código/status técnico do erro (sem mensagens
-//   de entrada do usuário e sem cabeçalhos).
+//   Diagnóstico: apenas etapa + código/status técnico do erro.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const VERSAO = "fa-3";
@@ -47,8 +46,7 @@ const falha = (status: number, etapa: Etapa, error: string, codigo?: string | nu
 function diag(etapa: Etapa, e: unknown) {
   const o = (e ?? {}) as Record<string, unknown>;
   const codigo = o.code ?? o.status ?? o.name ?? null;
-  const msg = typeof o.message === "string" ? o.message.slice(0, 160) : null;
-  console.error(JSON.stringify({ fn: "platform-complete-first-access", etapa, codigo, msg }));
+  console.error(JSON.stringify({ fn: "platform-complete-first-access", etapa, codigo }));
   return codigo as string | number | null;
 }
 

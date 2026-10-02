@@ -3,6 +3,7 @@
 // Segurança:
 // - JWT obrigatório e validado em código (config.toml: verify_jwt = true).
 // - Somente `superadmin` (verificado no servidor via is_platform_superadmin).
+// - A intenção é persistida antes do Auth e retomada com lease/fencing.
 // - O papel `superadmin` NUNCA é concedido aqui; o usuário criado recebe
 //   exclusivamente `administrador` da empresa indicada.
 // - Nenhum segredo é devolvido além da senha temporária solicitada pelo
@@ -59,6 +60,7 @@ Deno.serve(async (req) => {
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
     const { data: isSuper, error: superErr } = await adminClient.rpc("is_platform_superadmin", {
@@ -99,22 +101,93 @@ Deno.serve(async (req) => {
       /^http:\/\/localhost(:\d+)?$/.test(origin);
     const redirectTo = origemPermitida ? `${origin}/auth` : undefined;
 
+    const { data: claimed, error: claimError } = await adminClient.rpc(
+      "platform_claim_org_admin_provisioning",
+      {
+        p_actor_id: callerId,
+        p_organization_id: organizationId,
+        p_email: email,
+        p_nome: nome,
+        p_cpf_cnpj: cpf,
+        p_telefone: telefone,
+        p_modo_acesso: modo,
+        p_responsavel_principal: responsavelPrincipal,
+      },
+    );
+    if (claimError || !claimed) {
+      const code = claimError?.code === "55P03" ? "provisioning_busy" : "claim_failed";
+      return json({ error: code === "provisioning_busy" ? "Provisionamento já está em andamento." : "Não foi possível reservar o provisionamento.", code }, code === "provisioning_busy" ? 409 : 400);
+    }
+    const job = claimed as Record<string, unknown>;
+    if (job.completed === true) {
+      return json({ success: true, user_id: String(job.user_id ?? ""), action_link: null, senha_temporaria: null, status: "ativo", idempotent: true });
+    }
+    const jobId = String(job.job_id ?? "");
+    const requestId = String(job.request_id ?? "");
+    const leaseToken = String(job.lease_token ?? "");
+
     let userId: string | null = null;
     let actionLink: string | null = null;
     let senha: string | null = null;
     let criamosUsuario = false;
 
-    if (modo === "link") {
-      const { data, error } = await adminClient.auth.admin.generateLink({
-        type: "invite",
-        email,
-        options: {
-          data: { nome, convidado_por_plataforma: true },
-          ...(redirectTo ? { redirectTo } : {}),
-        },
+    // Retomada Auth↔DB: busca server-only exige o marcador imutável da intenção
+    // em app_metadata. E-mail isolado e user_metadata nunca autorizam adoção.
+    const { data: resumableId, error: resumeError } = await adminClient.rpc(
+      "platform_find_org_admin_provisioning_auth_user",
+      { p_job_id: jobId, p_lease_token: leaseToken },
+    );
+    if (resumeError) {
+      await adminClient.rpc("platform_fail_org_admin_provisioning", {
+        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "resume_lookup_failed",
       });
-      if (error || !data?.user) {
-        const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
+      return json({ error: "Não foi possível retomar o provisionamento.", code: "resume_lookup_failed" }, 500);
+    }
+    if (typeof resumableId === "string" && UUID_RE.test(resumableId)) userId = resumableId;
+
+    // Reenvio/retomada nunca cria outra conta: renova somente a credencial
+    // da conta cuja origem server-only corresponde à intenção persistida.
+    if (userId && modo === "link") {
+      const { data: link, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "recovery", email, options: redirectTo ? { redirectTo } : undefined,
+      });
+      if (linkError || !link?.properties?.action_link) {
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
+        });
+        return json({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+      }
+      actionLink = link.properties.action_link;
+    } else if (userId) {
+      senha = senhaTemporaria();
+      const { error: resetError } = await adminClient.auth.admin.updateUserById(userId, {
+        password: senha,
+      });
+      if (resetError) {
+        senha = null;
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "temporary_password_failed",
+        });
+        return json({ error: "Não foi possível renovar a senha temporária.", code: "temporary_password_failed" }, 500);
+      }
+    }
+
+    if (!userId && modo === "link") {
+      // Cria primeiro com app_metadata server-only; generateLink(recovery) apenas
+      // produz o link e não duplica a conta nem envia e-mail.
+      const bootstrapPassword = senhaTemporaria();
+      const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        password: bootstrapPassword,
+        email_confirm: true,
+        user_metadata: { nome, convidado_por_plataforma: true },
+        app_metadata: { provisioning_request_id: requestId },
+      });
+      if (createError || !created?.user) {
+        const jaExiste = (createError?.message ?? "").toLowerCase().includes("already");
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: jaExiste ? "auth_conflict" : "auth_create_failed",
+        });
         return json(
           {
             error: jaExiste
@@ -124,19 +197,33 @@ Deno.serve(async (req) => {
           400,
         );
       }
-      userId = data.user.id;
+      userId = created.user.id;
       criamosUsuario = true;
-      actionLink = data.properties?.action_link ?? null;
-    } else {
+      const { data: link, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "recovery", email, options: redirectTo ? { redirectTo } : undefined,
+      });
+      if (linkError || !link?.properties?.action_link) {
+        await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
+        });
+        return json({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+      }
+      actionLink = link.properties.action_link;
+    } else if (!userId) {
       senha = senhaTemporaria();
       const { data, error } = await adminClient.auth.admin.createUser({
         email,
         password: senha,
         email_confirm: true,
         user_metadata: { nome, convidado_por_plataforma: true },
+        app_metadata: { provisioning_request_id: requestId },
       });
       if (error || !data?.user) {
         const jaExiste = (error?.message ?? "").toLowerCase().includes("already");
+        await adminClient.rpc("platform_fail_org_admin_provisioning", {
+          p_job_id: jobId, p_lease_token: leaseToken, p_error_code: jaExiste ? "auth_conflict" : "auth_create_failed",
+        });
         return json(
           {
             error: jaExiste
@@ -150,16 +237,12 @@ Deno.serve(async (req) => {
       criamosUsuario = true;
     }
 
-    const { error: rpcError } = await adminClient.rpc("platform_register_org_admin", {
-      p_actor_id: callerId,
+    if (!userId) return json({ error: "Não foi possível identificar o acesso.", code: "auth_missing" }, 500);
+
+    const { error: rpcError } = await adminClient.rpc("platform_finalize_org_admin_provisioning", {
+      p_job_id: jobId,
+      p_lease_token: leaseToken,
       p_user_id: userId,
-      p_organization_id: organizationId,
-      p_email: email,
-      p_nome: nome,
-      p_cpf_cnpj: cpf,
-      p_telefone: telefone,
-      p_modo_acesso: modo,
-      p_responsavel_principal: responsavelPrincipal,
     });
 
     if (rpcError) {
@@ -167,13 +250,16 @@ Deno.serve(async (req) => {
       if (criamosUsuario && userId) {
         await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
       }
+      await adminClient.rpc("platform_fail_org_admin_provisioning", {
+        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "finalize_failed",
+      });
       const m = rpcError.message ?? "";
       const amigavel = m.includes("platform_forbidden")
         ? "Permissão insuficiente para concluir o convite."
         : m.includes("platform_invalid")
           ? "Dados do administrador inválidos."
           : "Não foi possível concluir o cadastro do administrador.";
-      return json({ error: amigavel }, 400);
+      return json({ error: amigavel, code: "finalize_failed" }, 400);
     }
 
     return json({
@@ -181,6 +267,8 @@ Deno.serve(async (req) => {
       user_id: userId,
       action_link: actionLink,
       senha_temporaria: senha,
+      status: "pendente",
+      idempotent: !criamosUsuario,
     });
   } catch (_err) {
     return json({ error: "Falha inesperada ao criar o acesso." }, 500);

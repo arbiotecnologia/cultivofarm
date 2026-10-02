@@ -22,6 +22,7 @@ const MUST_REQUIRE_JWT = [
   "fiscal-sefaz-transport",
   "fiscal-xml-engine",
   "create-user",
+  "platform-invite-org-admin",
   "admin-update-user-password",
   "list-portal-users",
   "enviar-pdf-aplicacao",

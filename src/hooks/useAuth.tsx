@@ -97,11 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = profileData as Profile | null;
       
       if (!profile) {
-        console.error("Profile not found for user:", userId);
         loadedUserIdRef.current = null;
         clearIdentityState();
         setError("Seu perfil não foi encontrado. Por favor, entre em contato com o suporte.");
         setLoading(false);
+        await supabase.auth.signOut();
         return;
       }
 

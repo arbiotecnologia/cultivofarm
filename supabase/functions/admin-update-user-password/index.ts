@@ -68,12 +68,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: canUpdate, error: scopeError } = await adminClient.rpc(
+      "admin_can_update_user_password_server",
+      { p_actor_id: callerId, p_target_id: user_id },
+    );
+    if (scopeError || canUpdate !== true) {
+      return new Response(JSON.stringify({ error: "Usuário fora do escopo permitido" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { error: updateError } = await adminClient.auth.admin.updateUserById(user_id, {
       password: new_password,
     });
 
     if (updateError) {
-      return new Response(JSON.stringify({ error: updateError.message }), {
+      return new Response(JSON.stringify({ error: "Não foi possível atualizar a senha" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -86,7 +97,7 @@ Deno.serve(async (req) => {
     });
 
     if (auditError) {
-      console.error("Erro ao registrar auditoria:", auditError);
+      console.error("admin_password_audit_failed", { code: auditError.code });
       // Não bloqueia a resposta de sucesso se a senha foi alterada, mas loga o erro
     }
 
@@ -94,9 +105,8 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("Erro na função admin-update-user-password:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+  } catch {
+    return new Response(JSON.stringify({ error: "Falha ao atualizar a senha" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
