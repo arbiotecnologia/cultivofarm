@@ -1,6 +1,11 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ErrorRecovery } from "./ErrorRecovery";
-import { isStaleBuildError, recoverFromStaleBuild } from "@/pwa/registerSW";
+import {
+  applyPendingUpdate,
+  isStaleBuildError,
+  recoverFromStaleBuild,
+  retryCurrentBuild,
+} from "@/pwa/registerSW";
 
 interface Props {
   children?: ReactNode;
@@ -9,15 +14,17 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+  staleBuild: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false
+    hasError: false,
+    staleBuild: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, staleBuild: isStaleBuildError(error) };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -29,13 +36,23 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      if (this.state.staleBuild) {
+        return (
+          <ErrorRecovery
+            title="Há uma atualização necessária para continuar."
+            message="Atualize quando estiver pronto. Se não funcionar, tente novamente ou use ?sw=off para recuperação."
+            primaryActionLabel="Atualizar agora"
+            onPrimaryAction={() => void applyPendingUpdate()}
+            onRetry={() => retryCurrentBuild()}
+          />
+        );
+      }
       return (
         <ErrorRecovery 
           title="Erro de Renderização"
           message={this.state.error?.message || "Ocorreu um erro inesperado ao exibir esta parte da aplicação. Tente recarregar a página."}
           onRetry={() => {
-            this.setState({ hasError: false });
-            window.location.reload();
+            this.setState({ hasError: false, staleBuild: false });
           }}
         />
       );
