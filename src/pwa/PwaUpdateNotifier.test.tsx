@@ -28,8 +28,11 @@ describe("PwaUpdateNotifier", () => {
 
   it("badge acessível reabre opções e Continuar depois retorna ao badge", () => {
     render(<PwaUpdateNotifier />);
-    act(() => { void requestStaleBuildRecovery(); });
-    emit({ status: "deferred_badge", version: "v1", staleBuild: false });
+    act(() => {
+      window.localStorage.setItem("pwa:deferred-update", JSON.stringify({ version: "v1", deferredAt: new Date().toISOString() }));
+    });
+    emit({ status: "prompt", version: "v1", staleBuild: false });
+    fireEvent.click(screen.getByRole("button", { name: "Adiar" }));
     fireEvent.click(screen.getByRole("button", { name: "Nova versão disponível. Clique para atualizar." }));
     expect(screen.getByRole("button", { name: "Atualizar agora" })).toBeInTheDocument();
     emit({ status: "error", version: "v1", staleBuild: false, message: "Falhou" });
@@ -41,7 +44,7 @@ describe("PwaUpdateNotifier", () => {
     render(<PwaUpdateNotifier />);
     act(() => { void requestStaleBuildRecovery(); });
     emit({ status: "applying", version: "v1", staleBuild: false });
-    expect(screen.getByText("Preparando a nova versão…")).toBeInTheDocument();
+    expect(screen.getByText("Abrindo a nova versão…")).toBeInTheDocument();
     expect(screen.queryByText("Aguarde, a página será recarregada automaticamente.")).not.toBeInTheDocument();
     expect(document.querySelector(".fixed.inset-0")).toBeNull();
   });
