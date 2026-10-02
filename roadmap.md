@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Em andamento
-- Nenhuma execução operacional autorizada nesta rodada.
+- [ ] Gate D51.2 — **NO-GO no pré-gate**, sem mutações: P1 confirmado porque o convite gera link para cópia, mas não envia SMTP; sessão superadmin controlada também indisponível. Aguardar correção/revisão e novo comando. Sem publicação ou D52.
 
 ## Próximo / autorizado a preparar execução
 - [ ] Gate D51.2 — E2E controlado conforme `docs/plano-d51-2-e2e-controlado.md`; e-mail controlado autorizado: `teste@refilinformatica.com.br`; Leaked Password Protection adiada como risco aceito; execução E2E ainda aguarda comando explícito. Não enviar e-mail, criar usuário, processar pedido, publicar ou avançar D52 antes desse comando.
@@ -14,6 +14,8 @@
 - [ ] **Leaked Password Protection — ADIADO / RISCO ACEITO TEMPORARIAMENTE:** continua desativada, não resolvida e não homologada como controle de senha. Responsável pela decisão: responsável do projeto Cultivo Farm. Manter visível até habilitação futura e reavaliar antes de produção comercial ou ampliação de usuários.
 
 ## Pendências (aguardam usuário/autorização)
+- [ ] D51.2: definir caminho SMTP de autenticação que envie somente para `teste@refilinformatica.com.br`, sem expor link, e disponibilizar sessão controlada do superadmin na prévia.
+- [ ] D51.2/E15: aprovar adaptação sem segunda identidade ou fornecer segundo endereço controlado; nunca inventar destinatário.
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
 - [ ] Homologação autenticada do primeiro acesso (troca de senha) — aguarda usuário de teste.
