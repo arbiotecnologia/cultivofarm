@@ -839,3 +839,34 @@ Chamadas anônimas REST aos nove objetos corrigidos retornaram HTTP 401. A prova
 **Decisão objetiva: APTO PARA REPUBLICAÇÃO.** O scanner final não contém Critical, Error ou Warning; suíte global com 349 arquivos e 5.318 testes aprovados (1 arquivo/4 testes ignorados), typecheck e build passaram. O smoke signed-out abriu `/auth` sem erro de página e confirmou redirecionamento seguro de `/`, `/plataforma`, `/dashboard` e `/configuracoes`; a UI autenticada não foi testada por indisponibilidade de sessão controlada, sem substituição por `service_role`.
 
 A publicação não foi executada automaticamente. Após autorização/republicação, ainda é obrigatório verificar a URL live em sessão limpa e durante atualização PWA antes de retirar a suspensão do D51.2. SMTP permaneceu intocado, D51.2 continua suspenso e D52 permanece bloqueado. Os 10 `INFO` do scanner final incluem catálogos intencionalmente globais, quatro trilhas de auditoria com inserção autenticada, bucket público de logos e Leaked Password Protection; este último permanece risco aceito, aberto e não resolvido. O linter geral mantém dívida histórica ampla já registrada, que não deve ser tratada por alteração indiscriminada neste incidente.
+
+## 27. Pós-republicação — verificação live somente leitura
+
+Data/hora UTC: `2026-10-02T04:11:15Z`  
+Origem solicitada: `https://cultivofarm.lovable.app`  
+Destino canônico servido após redirecionamento: `https://app.cultivofarm.com.br`
+
+### 27.1 Resultado por rota
+
+| Rota | Resultado | Evidência |
+|---|---|---|
+| `/` | PASS | HTTP 200; direcionamento concluído em `/auth`; tela de login íntegra. |
+| `/auth` | PASS | HTTP 200; tela de login íntegra. |
+| `/plataforma` | PASS | Sem sessão, redirecionamento seguro para `/auth`. |
+| `/dashboard` | PASS | Sem sessão, redirecionamento seguro para `/auth`. |
+| `/configuracoes` | PASS | Sem sessão, redirecionamento seguro para `/auth`. |
+
+Em todas as rotas, ficaram ausentes `useAuth deve ser usado dentro de um AuthProvider`, `Erro de Renderização` e `Não foi possível carregar a aplicação`. Não houve exceção de página, `ChunkLoadError`, `vite:preloadError`, falha de requisição, loop de recarga ou resposta 404 de JavaScript/CSS com hash. Os assets publicados observados (`index-DhfJkLjP.js` e `index-RYk3Js3c.css`) responderam HTTP 200.
+
+O console registrou somente HTTP 401 na leitura anônima de `configuracoes_sistema`; isso corresponde ao bloqueio RLS esperado para uma sessão sem login e não impediu a renderização. Nenhum segredo, token ou dado foi coletado.
+
+### 27.2 PWA e service worker
+
+- service worker ativo, controlando o escopo `https://app.cultivofarm.com.br/`, sem worker aguardando ou instalando;
+- `/sw.js` respondeu HTTP 200 e contém tomada imediata de controle, ativação imediata, limpeza de caches antigos e import do worker de push;
+- bundle principal publicado contém o listener `vite:preloadError`, reconhecimento de falha de import dinâmico e limpeza restrita dos caches `html-nav`/`static-assets`;
+- nenhuma falha do service worker ou mistura de chunks foi observada.
+
+### 27.3 Decisão
+
+**PRODUÇÃO NORMALIZADA; INCIDENTE P0 ENCERRADO.** A correção publicada está presente e a navegação anônima funciona normalmente. Esta verificação não autenticou usuário, não usou `service_role` e não alterou código, banco, SMTP ou dados. D51.2 permanece suspenso nesta etapa e só poderá ser retomado por autorização explícita; D52 não foi iniciado.
