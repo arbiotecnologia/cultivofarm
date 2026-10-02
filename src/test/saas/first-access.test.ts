@@ -61,7 +61,7 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(edge).not.toContain("user_metadata");
   });
 
-  it("falha parcial remove apenas o usuário recém-criado", () => {
+  it("falha anterior ao envio remove apenas o usuário recém-criado", () => {
     expect(convite).toContain("criamosUsuario");
     expect(convite).toContain("deleteUser(userId)");
   });
@@ -75,10 +75,13 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(convite).not.toMatch(/user_metadata\?\.provisioning_request_id/);
   });
 
-  it("link é gerado sem envio de e-mail e sem generateLink invite", () => {
+  it("link de recovery segue para a rota correta e nunca volta na resposta", () => {
     expect(convite).toContain('type: "recovery"');
     expect(convite).not.toContain('type: "invite"');
     expect(convite.match(/auth\.admin\.generateLink/g)?.length).toBe(2);
+    expect(convite).toContain("/reset-password");
+    expect(convite).not.toMatch(/action_link:\s*actionLink/);
+    expect(convite).toContain("deliverInviteEmail");
   });
 
   it("nenhum segredo em logs", () => {

@@ -365,8 +365,8 @@ export function useConvitesAdminEmpresa() {
 
 export interface ResultadoConvite {
   user_id: string;
-  action_link: string | null;
   senha_temporaria: string | null;
+  email_status: "accepted" | "not_required";
 }
 
 export function useConvidarAdminEmpresa() {
@@ -407,8 +407,8 @@ export function useConvidarAdminEmpresa() {
       }
       return {
         user_id: String(payload.user_id ?? ""),
-        action_link: (payload.action_link as string | null) ?? null,
         senha_temporaria: (payload.senha_temporaria as string | null) ?? null,
+        email_status: payload.email_status === "accepted" ? "accepted" : "not_required",
       };
     },
     onSettled: invalidar,

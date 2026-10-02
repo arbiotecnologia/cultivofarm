@@ -150,3 +150,83 @@ Não houve dado do gate para inativar ou remover. A contenção consistiu em nã
 **NO-GO para encerrar D51 e NO-GO para considerar D52.**
 
 O D51.2 foi iniciado apenas até o pré-gate e corretamente interrompido. Uma nova execução exige correção/revisão do caminho SMTP e sessão superadmin controlada. Não publicar e não avançar para D52.
+
+## 16. D51.2-A — correção segura do caminho SMTP (sem envio real)
+
+Data: 2026-10-02  
+Commit candidato no início desta fase: `2218d95ff39c515e4f9565fa223e0059ce9d30a0`
+
+### Diagnóstico da infraestrutura
+
+- O Supabase canônico permanece `swzpzcwiasxmjutrmvkm`.
+- O módulo Comunicação já possuía SMTP via `denomailer`, configuração server-side por `communication_provider_settings`/Vault com fallback de ambiente, flags de entrega, test mode com allowlist e adapter mockável.
+- A fila geral já possui idempotency key, lease, tentativas, backoff e estados terminais. Os alertas legados síncronos não foram reutilizados porque não oferecem as mesmas garantias.
+- Não foi encontrada configuração SMTP ativa: zero registros de provider e zero configuração com entrega/e-mail habilitados. Também não há domínio Lovable Email configurado.
+- O mailer do Supabase Auth é uma infraestrutura distinta. `generateLink` somente cria o link; ele não comprova envio SMTP.
+- Nenhum remetente ou domínio foi inventado. Nenhuma flag de entrega foi ativada.
+
+### Arquitetura implementada
+
+O fluxo existente `platform-invite-org-admin` agora:
+
+1. persiste/reclama a intenção de provisionamento e retoma a mesma conta Auth por `raw_app_meta_data.provisioning_request_id`;
+2. gera link de recovery apenas com redirect permitido para `/reset-password`;
+3. conclui o vínculo Auth↔Postgres preservando o fencing existente;
+4. reclama uma lease exclusiva de envio no mesmo job persistido;
+5. carrega a configuração do módulo Comunicação e chama seu adapter SMTP;
+6. confirma `accepted` ou registra `failed` com código sanitizado e cooldown;
+7. nunca devolve `action_link`, token ou senha do modo link à interface.
+
+A migration `20261002015343_ace68cd9-1438-46d2-a1dc-e6155763c467.sql` adicionou ao job os estados `pending/sending/accepted/failed`, tentativas, idempotency key, lease/token, cooldown, timestamps e erro sanitizado. As RPCs de claim/accept/fail validam `service_role` em código e têm EXECUTE revogado de `PUBLIC`, `anon` e `authenticated`.
+
+Arquivos funcionais alterados:
+
+- `supabase/functions/platform-invite-org-admin/index.ts`
+- `supabase/functions/_shared/comunicacao/invite-email-delivery.ts`
+- `src/hooks/usePlataformaSaaS.ts`
+- `src/pages/plataforma/PlataformaAdmins.tsx`
+- `supabase/migrations/20261002015343_ace68cd9-1438-46d2-a1dc-e6155763c467.sql`
+
+### Semântica de idempotência e entrega
+
+O contrato é **at-least-once com deduplicação local, lease, fencing e cooldown**, não exactly-once. SMTP/denomailer não fornece uma idempotency key reconhecida pelo provedor nem message id confiável. Se o SMTP aceitar a mensagem e a persistência de `accepted` falhar, o resultado fica explicitamente `ambiguous`; a conta não é removida, o link não é exposto e o operador deve aguardar o lease/cooldown antes de retomar. Essa janela pode produzir um reenvio limitado.
+
+### Testes sem envio
+
+| Verificação | Resultado |
+|---|---|
+| Typecheck | PASS |
+| Testes focados D51.2-A | PASS — 4 arquivos, 60 testes |
+| SMTP mock: sucesso/aceite | PASS |
+| Provider falha → retomável | PASS |
+| Crash antes do send | PASS |
+| Crash após aceite e antes da persistência | PASS — estado ambíguo explícito |
+| Destinatário derivado do claim server-side | PASS |
+| Redirect/open redirect | PASS estrutural — origem inválida falha antes do claim; rota `/reset-password` confirmada |
+| Resposta/UI sem action link | PASS |
+| Grants RPC | PASS — somente `service_role`; `anon=false`, `authenticated=false` |
+| Service role no cliente | PASS — nenhuma ocorrência funcional |
+| Suíte global | PASS — 343 arquivos aprovados, 1 ignorado; 5.287 testes aprovados, 4 ignorados |
+| Deno | PASS — 11/11 |
+| Build automático | PASS após as alterações funcionais; typecheck final separado também PASS |
+
+Nenhum e-mail, usuário, tenant ou pedido foi criado/processado nesta fase. As leituras finais mostraram um job histórico e zero leases de envio ativos.
+
+### P1 e pré-condições para retomar D51.2
+
+**P1 de código corrigido:** o modo link deixou de depender de cópia manual e possui caminho SMTP auditável, concorrente e fail-closed.
+
+**Envio real ainda bloqueado**, até cumprir conjuntamente:
+
+1. configurar no servidor o SMTP existente (host, porta, usuário, senha e remetente de domínio autorizado);
+2. manter test mode ativo e allowlist contendo exclusivamente `teste@refilinformatica.com.br`;
+3. habilitar deliberadamente as flags de entrega somente na janela controlada;
+4. validar sender/domínio sem enviar para outro destinatário;
+5. disponibilizar sessão controlada de superadmin e emitir novo comando explícito de E2E;
+6. adaptar E15 sem segunda identidade ou fornecer segundo endereço previamente aprovado.
+
+Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta, não resolvida e não homologada. Os 492 achados históricos do linter permanecem, incluindo esse warning; esta migration não acrescentou novos achados.
+
+### Decisão D51.2-A
+
+**GO técnico para configurar/homologar o SMTP existente; NO-GO para envio real, encerramento do D51 ou D52.**
