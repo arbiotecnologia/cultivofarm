@@ -53,7 +53,8 @@
 | F1-018 | Negativa teste de e-mail com JWT inválido | PASS | HTTP 401; nenhum envio |
 | F1-019 | Testes Deno das três funções | NOT RUN | runner informou ausência de módulos de teste |
 | F1-020 | Criar conta Superadmin temporária por mecanismo oficial | BLOCKED | Auth Admin existente confirma e-mail, mas bloqueia `superadmin`; RPC/trigger preservam a reserva; Supabase externo sem sessão automatizada |
-| F1-021 | Fluxo preserva razão oficial e permite marcador no limite existente | PASS | testes focados do checkpoint e identificação |
+| F1-021 | Fluxo preserva razão oficial e permite marcador no limite existente | PASS | 11/11 testes focados; typecheck e build verdes |
+| F1-022 | Regressão global e scanner após refinamento | PASS | 5.372 testes PASS, 4 skipped; scanner 10 Info e zero P0/P1 |
 
 ## Gate
 

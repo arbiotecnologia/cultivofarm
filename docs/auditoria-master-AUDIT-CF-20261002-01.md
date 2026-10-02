@@ -115,6 +115,8 @@ O job real AR BIO permanece intocado: status `falhou`, uma tentativa, `email_del
 
 Os subcenários executáveis sem ação humana foram concluídos: contratos estáticos de checkpoint/retry, CORS/JWT, negativas implantadas, ausência de objetos controlados, SMTP fail-closed e leases. Criação E01, abertura SMTP, E02, recebimento, primeiro acesso e recovery exigem antes um E01 canônico válido e permanecem `NOT RUN`.
 
+Revalidação desta rodada: **11/11 testes focados PASS**, **5.372 testes globais PASS e 4 skipped**, typecheck PASS, build da prévia PASS e scanner com 10 Info/zero Critical/Error/Warning. Consulta canônica final confirmou zero organizações, assinaturas, auditorias, convites, Auth users, profiles e roles da campanha; zero leases; job AR BIO preservado.
+
 ## Rollback e forward-fix
 
 - Dados: não aplicável; nenhuma mutação foi feita.
