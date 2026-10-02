@@ -1,9 +1,9 @@
-import type { AdapterResult, WorkerEnv } from "./adapters-types.ts";
+import { getSmtpConfigError, type AdapterResult, type WorkerEnv } from "./adapters-types.ts";
 import { CONTROLLED_TEST_EMAIL } from "./smtp-readiness.ts";
 
 export type ControlledSmtpTestGate =
   | { allowed: true; recipient: string }
-  | { allowed: false; code: "smtp_not_ready" | "recipient_not_allowed" };
+  | { allowed: false; code: "smtp_not_ready" | "smtp_port_blocked_by_edge_runtime" | "recipient_not_allowed" };
 
 export function evaluateControlledSmtpTest(
   env: WorkerEnv,
@@ -17,21 +17,17 @@ export function evaluateControlledSmtpTest(
   const allowlisted = (env.TEST_ALLOWED_EMAILS ?? []).some(
     (email) => email.trim().toLowerCase() === CONTROLLED_TEST_EMAIL,
   );
-  const port = Number(env.SMTP_PORT ?? 0);
-  const smtpConfigured = Boolean(
-    env.SMTP_HOST?.trim() &&
-    Number.isInteger(port) && port >= 1 && port <= 65535 &&
-    env.SMTP_USER?.trim() &&
-    env.SMTP_PASSWORD &&
-    env.SMTP_FROM?.trim(),
-  );
+  const smtpConfigError = getSmtpConfigError(env);
+  if (smtpConfigError === "smtp_port_blocked_by_edge_runtime") {
+    return { allowed: false, code: smtpConfigError };
+  }
 
   if (
     !env.DELIVERY_ENABLED ||
     !env.EMAIL_ENABLED ||
     env.TEST_MODE_ENABLED !== true ||
     !allowlisted ||
-    !smtpConfigured
+    smtpConfigError !== null
   ) {
     return { allowed: false, code: "smtp_not_ready" };
   }
@@ -42,6 +38,7 @@ const ALLOWED_RESULT_CODES = new Set([
   "sent",
   "email_send_timeout",
   "email_config_invalid",
+  "smtp_port_blocked_by_edge_runtime",
   "email_disabled",
   "test_mode_allowlist_empty",
   "test_mode_not_allowlisted",

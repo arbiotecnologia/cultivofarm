@@ -30,6 +30,7 @@ export type InviteEmailDeliveryDeps = {
 const SAFE_EMAIL_CODES = new Set([
   "email_disabled",
   "email_config_invalid",
+  "smtp_port_blocked_by_edge_runtime",
   "invalid_address",
   "test_mode_allowlist_empty",
   "test_mode_not_allowlisted",

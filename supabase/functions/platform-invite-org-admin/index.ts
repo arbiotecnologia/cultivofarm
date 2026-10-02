@@ -13,6 +13,7 @@ import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { deliverInviteEmail, type InviteEmailClaim } from "../_shared/comunicacao/invite-email-delivery.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
+import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/comunicacao/adapters-types.ts";
 import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
@@ -126,6 +127,21 @@ Deno.serve(async (req) => {
     const redirectTo = origemPermitida ? `${origin}/reset-password` : undefined;
     if (modo === "link" && !redirectTo) {
       return respond({ error: "Origem não autorizada para o convite.", code: "redirect_not_allowed" }, 400);
+    }
+
+    // Fail-closed antes de qualquer claim/mutação: o Supabase Edge Runtime
+    // bloqueia saída SMTP nas portas 25 e 587.
+    const runtimeEnv = await loadRuntimeConfig(adminClient, readWorkerEnv);
+    if (!runtimeEnv.DELIVERY_ENABLED || !runtimeEnv.EMAIL_ENABLED) {
+      return respond({ error: "A entrega por e-mail está desativada.", code: "email_disabled" }, 503);
+    }
+    const smtpConfigError = getSmtpConfigError(runtimeEnv);
+    if (smtpConfigError) {
+      return respond({ error: "A configuração de e-mail não está pronta para este ambiente.", code: smtpConfigError }, 503);
+    }
+    const recipientGate = isRecipientAllowedInTestMode(runtimeEnv, "email", email);
+    if (!recipientGate.allowed) {
+      return respond({ error: "Destinatário não autorizado para o modo de teste.", code: recipientGate.reason ?? "test_mode_not_allowlisted" }, 403);
     }
 
     const { data: claimed, error: claimError } = await adminClient.rpc(
@@ -296,12 +312,11 @@ Deno.serve(async (req) => {
       if (!actionLink) {
         return respond({ error: "Convite sem link válido.", code: "link_missing" }, 500);
       }
-      const env = await loadRuntimeConfig(adminClient, readWorkerEnv);
       const jobHash = await maskedId(jobId);
       const logDelivery = (event: string, stage: string, safeCode: string, certainty: "definitive" | "ambiguous") => {
         console.info(JSON.stringify({ event, stage, safe_code: safeCode, certainty, job_ref: jobHash, correlation_id: correlationId }));
       };
-      const delivery = await deliverInviteEmail(jobId, actionLink, env, {
+      const delivery = await deliverInviteEmail(jobId, actionLink, runtimeEnv, {
         claim: async (id) => {
           const { data, error } = await adminClient.rpc("platform_claim_org_admin_email_delivery", {
             p_job_id: id,
