@@ -34,8 +34,7 @@ describe("D51 — senha e isolamento", () => {
   });
 
   it("troca administrativa exige mesma organização e bloqueia superadmin", () => {
-    expect(adminPassword).toContain("callerProfile.organization_id !== targetProfile.organization_id");
-    expect(adminPassword).toContain("targetIsSuper === true");
+    expect(adminPassword).toContain("admin_can_update_user_password_server");
     expect(adminPassword).not.toContain("updateError.message");
   });
 });

@@ -68,13 +68,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const [{ data: callerProfile }, { data: targetProfile }, { data: targetIsSuper }] = await Promise.all([
-      adminClient.from("profiles").select("organization_id").eq("user_id", callerId).maybeSingle(),
-      adminClient.from("profiles").select("organization_id").eq("user_id", user_id).maybeSingle(),
-      adminClient.rpc("is_platform_superadmin", { _user_id: user_id }),
-    ]);
-    if (!callerProfile?.organization_id || !targetProfile?.organization_id ||
-        callerProfile.organization_id !== targetProfile.organization_id || targetIsSuper === true) {
+    const { data: canUpdate, error: scopeError } = await adminClient.rpc(
+      "admin_can_update_user_password_server",
+      { p_actor_id: callerId, p_target_id: user_id },
+    );
+    if (scopeError || canUpdate !== true) {
       return new Response(JSON.stringify({ error: "Usuário fora do escopo permitido" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
