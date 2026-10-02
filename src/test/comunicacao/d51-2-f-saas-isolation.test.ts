@@ -47,10 +47,13 @@ describe("D51.2-F — isolamento SaaS da configuração global", () => {
   });
 
   it("prossegue estruturalmente somente quando is_platform_superadmin retorna true", () => {
-    for (const source of [settingsEdge, testEdge]) {
+    for (const [source, nextStep] of [
+      [settingsEdge, "const action = req.method"],
+      [testEdge, 'p_action: "test_smtp"'],
+    ] as const) {
       const roleCheck = source.indexOf("isSuperadmin !== true");
       expect(roleCheck).toBeGreaterThan(-1);
-      expect(source.indexOf("checkRateLimit", roleCheck)).toBeGreaterThan(roleCheck);
+      expect(source.indexOf(nextStep, roleCheck)).toBeGreaterThan(roleCheck);
     }
   });
 
