@@ -446,3 +446,57 @@ Não usar SQL privilegiado nem `service_role` como identidade do teste. Não usa
 | Estado de envio/lease | PASS — zero `sending`/`accepted` e zero lease ativo |
 
 **D51.2-D concluído no escopo autorizado.** Continuam pendentes: comprovação de sender/domínio, configuração manual de SMTP/Vault com flags inicialmente OFF, allowlist exclusiva, sessão manual superadmin e comando explícito para E01–E21. Leaked Password Protection permanece **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta. Nenhum e-mail, credencial, usuário, tenant ou pedido foi criado/configurado; nenhum E2E foi executado, não houve publicação de frontend e D52 não foi iniciado.
+
+## 20. D51.2-E — UX de prontidão e sanitização do teste SMTP
+
+Data: 2026-10-02  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 20.1 Diagnóstico e correção
+
+O `smtp_readiness` já era retornado pela função administrativa, mas não era exibido na aba Comunicação. O teste SMTP também possuía um desvio de segurança: apesar de validar JWT e papel `administrador`, aceitava qualquer e-mail sintaticamente válido, ignorava test mode/allowlist/flags, abria o SMTP por implementação própria e devolvia ao navegador host, porta, remetente, destinatário, exceção e mensagens brutas do provedor. A UI registrava esse corpo bruto no console e o mostrava parcialmente em toasts.
+
+A tela `/configuracoes?tab=comunicacao` agora exibe o card **Prontidão SMTP para homologação**, derivado somente dos booleanos server-side existentes. O checklist cobre singleton, host, porta, usuário, senha, remetente, test mode, allowlist controlada, entrega global e entrega por e-mail, com resultado final **Não pronto** ou **Pronto para teste controlado**. Enquanto qualquer flag de entrega estiver desligada, a tela informa **Configuração preservada; envio bloqueado**. Salvar credenciais continua sem ativar flags.
+
+O destinatário do teste foi fixado na interface e novamente no servidor como exclusivamente `teste@refilinformatica.com.br`. O botão permanece desabilitado quando `ready_for_controlled_test` é falso. A Edge Function agora:
+
+1. restringe CORS às origens administrativas já aprovadas;
+2. valida JWT e papel `administrador`;
+3. aplica rate limit server-side de três tentativas por cinco minutos;
+4. carrega a configuração efetiva fail-closed;
+5. exige entrega global/e-mail ON, test mode ON, destinatário controlado na allowlist e configuração SMTP completa;
+6. bloqueia destinatário diferente ou preflight incompleto **antes** de chamar o adapter/importar o cliente SMTP;
+7. reutiliza o adapter SMTP compartilhado;
+8. retorna somente `ok` e código allowlisted, sem host, porta, remetente, destinatário, detalhe bruto, exceção, token ou segredo.
+
+A UI deixou de registrar `rawBody`, resposta integral ou exceções no console e passou a mostrar somente mensagens correspondentes a códigos sanitizados. Nenhuma chamada do teste SMTP foi feita nesta etapa.
+
+Arquivos funcionais alterados:
+
+- `src/pages/configuracoes/ComunicacaoConfigTab.tsx`;
+- `supabase/functions/test-communication-email/index.ts`;
+- `supabase/functions/_shared/comunicacao/controlled-smtp-test.ts`.
+
+Teste adicionado: `src/test/comunicacao/d51-2-e-smtp-ux-security.test.ts`.
+
+### 20.2 Validações
+
+| Verificação | Resultado |
+|---|---|
+| Checklist e estados finais derivados de `smtp_readiness` | PASS |
+| Botão bloqueado quando readiness é falso | PASS |
+| Destinatário fixo/controlado na UI e no servidor | PASS |
+| Destinatário externo bloqueado antes do adapter/socket | PASS |
+| Preflight incompleto bloqueado antes do adapter/socket | PASS |
+| Resposta e console sem corpo bruto/host/porta/detalhe/segredo | PASS |
+| Autorização administrativa + rate limit | PASS |
+| Testes focados | PASS — 4 arquivos, 57 testes |
+| Typecheck | PASS |
+| Suíte global | PASS — 346 arquivos aprovados, 1 ignorado; 5.300 testes aprovados, 4 ignorados |
+| Build automático | PASS |
+
+### 20.3 Estado e decisão
+
+**D51.2-E concluído no escopo autorizado.** O SMTP permanece não configurado e não pronto; nenhum e-mail foi enviado, nenhuma credencial foi gravada, nenhum usuário/tenant foi criado, E01–E21 permanecem NOT RUN e não houve publicação ou avanço D52.
+
+Próximos passos manuais permanecem: comprovar sender/domínio, configurar SMTP e allowlist exclusiva pela UI segura com flags inicialmente OFF, obter sessão manual superadmin e aguardar comando explícito para a janela E2E. Leaked Password Protection continua **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.

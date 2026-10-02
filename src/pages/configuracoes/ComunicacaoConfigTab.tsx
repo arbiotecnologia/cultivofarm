@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Copy, Eye, EyeOff, Info, Mail, MessageCircle, Save, ShieldAlert,
+  CheckCircle2, Copy, Eye, EyeOff, Info, Mail, MessageCircle, Save, ShieldAlert,
   ShieldCheck, Trash2, Webhook,
 } from "lucide-react";
 import {
@@ -95,6 +95,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   empty_payload: "Nada para salvar.",
   origin_not_allowed: "Origem não autorizada.",
   not_configured: "Serviço não configurado no ambiente.",
+  recipient_not_allowed: "Destinatário não autorizado para este teste controlado.",
+  smtp_not_ready: "O SMTP ainda não atende a todos os itens de prontidão.",
+  smtp_test_failed: "O provedor não aceitou o teste. Revise a configuração e tente novamente.",
+  email_send_timeout: "O provedor não respondeu dentro do tempo seguro.",
   unknown_error: "Erro inesperado. Tente novamente.",
 };
 
@@ -102,8 +106,10 @@ function friendlyError(code: string, status?: number): string {
   const base = ERROR_MESSAGES[code];
   if (base) return base;
   const prefix = status ? `HTTP ${status} · ` : "";
-  return `${prefix}${code || "erro desconhecido"} — verifique o console do navegador para detalhes.`;
+  return `${prefix}${code || "erro desconhecido"}.`;
 }
+
+const CONTROLLED_TEST_EMAIL = "teste@refilinformatica.com.br";
 
 const FLAG_LABELS: Record<string, { title: string; help: string }> = {
   delivery_enabled: {
@@ -144,22 +150,13 @@ async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<Prov
     const ctx = (error as unknown as { context?: { body?: unknown; status?: number } })?.context;
     const status = ctx?.status;
     let code = error.message;
-    let rawBody: string | undefined;
     if (typeof ctx?.body === "string") {
-      rawBody = ctx.body;
       try { const j = JSON.parse(ctx.body); if (j?.error) code = j.error; } catch { /* keep */ }
     } else if (ctx?.body && typeof ctx.body === "object" && "error" in (ctx.body as object)) {
       code = String((ctx.body as { error: unknown }).error);
-      rawBody = JSON.stringify(ctx.body);
     }
-    // Log diagnóstico visível apenas no DevTools do usuário — sem PII / sem segredos.
-    // eslint-disable-next-line no-console
-    console.error("[comunicacao-config] falha ao chamar edge function", {
-      method, status, code, rawBody, name: error.name,
-    });
     const err = new Error(code);
-    (err as Error & { status?: number; rawBody?: string }).status = status;
-    (err as Error & { status?: number; rawBody?: string }).rawBody = rawBody;
+    (err as Error & { status?: number }).status = status;
     throw err;
   }
   if (!data?.ok) throw new Error((data as { error?: string } | null)?.error ?? "unknown_error");
@@ -228,7 +225,7 @@ export default function ComunicacaoConfigTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ProviderView | null>(null);
-  const [testEmailTo, setTestEmailTo] = useState("");
+  const [testEmailTo] = useState(CONTROLLED_TEST_EMAIL);
   const [testEmailError, setTestEmailError] = useState<string | undefined>(undefined);
   const [testingEmail, setTestingEmail] = useState(false);
 
@@ -391,79 +388,20 @@ export default function ComunicacaoConfigTab() {
         },
         body: JSON.stringify({ to, subject: "Teste SMTP Cultivo Farm", message: "E-mail de teste enviado pela aba Comunicação." }),
       });
-      const raw = await resp.text();
-      let parsed: Record<string, unknown> = {};
-      try { parsed = raw ? JSON.parse(raw) : {}; } catch { /* ignore */ }
-      const diagnostic = {
-        status: resp.status,
-        statusText: resp.statusText,
-        ok: resp.ok,
-        error: parsed.error ?? null,
-        detail: parsed.detail ?? null,
-        host: parsed.host ?? null,
-        port: parsed.port ?? null,
-        elapsed_ms: parsed.elapsed_ms ?? null,
-        missing: parsed.missing ?? null,
-        rawBody: raw,
-      };
-      // Sempre logar o diagnóstico completo no console para inspeção.
-      // eslint-disable-next-line no-console
-      console.groupCollapsed(`[test-email] resposta HTTP ${resp.status}`);
-      // eslint-disable-next-line no-console
-      console.log("diagnóstico:", diagnostic);
-      // eslint-disable-next-line no-console
-      console.log("rawBody:", raw);
-      // eslint-disable-next-line no-console
-      console.groupEnd();
+      const parsed = await resp.json().catch(() => ({})) as Record<string, unknown>;
 
       if (resp.ok && parsed.ok) {
         toast.success("E-mail de teste enviado", {
-          description: `Entregue via ${parsed.host}:${parsed.port} em ${parsed.elapsed_ms}ms. Verifique caixa de entrada e spam.`,
+          description: "O provedor aceitou o teste controlado. Verifique a caixa de entrada e o spam.",
         });
       } else {
-        const errorCode = String(parsed.error ?? "erro_desconhecido");
-        const hint = typeof parsed.hint === "string" ? parsed.hint : "";
-        const detailStr = typeof parsed.detail === "string" && parsed.detail.length > 0
-          ? parsed.detail
-          : (raw && raw !== JSON.stringify(parsed) ? raw : "");
-        const missingStr = parsed.missing && typeof parsed.missing === "object"
-          ? " · faltando: " + Object.entries(parsed.missing as Record<string, boolean>)
-              .filter(([, v]) => v).map(([k]) => k).join(", ")
-          : "";
-        const hostInfo = parsed.host ? ` · ${parsed.host}:${parsed.port}` : "";
-        const elapsedInfo = parsed.elapsed_ms ? ` · ${parsed.elapsed_ms}ms` : "";
-        const humanTitle: Record<string, string> = {
-          timeout: "Tempo esgotado ao conectar no SMTP",
-          tls_hostname_mismatch: "Certificado TLS não cobre o hostname",
-          tls_cert_untrusted: "Certificado TLS não confiável",
-          tls_handshake_failed: "Falha no handshake TLS",
-          smtp_auth_failed: "Credenciais SMTP rejeitadas",
-          smtp_auth_required: "Servidor exige autenticação",
-          smtp_sender_rejected: "Remetente rejeitado pelo servidor",
-          smtp_message_rejected: "Mensagem rejeitada (spam/bloqueio)",
-          connection_refused: "Conexão recusada pelo servidor",
-          connection_reset: "Conexão encerrada pelo servidor",
-          dns_resolution_failed: "Hostname SMTP não resolvido",
-          network_unreachable: "Rota de rede indisponível",
-          smtp_incomplete: "Configuração SMTP incompleta",
-          smtp_send_failed: "Falha ao enviar via SMTP",
-        };
-        const title = humanTitle[errorCode] ?? `Falha no envio (${errorCode})`;
-        const description = [
-          hint,
-          detailStr ? `Detalhe do servidor: ${detailStr}` : "",
-          `HTTP ${resp.status}${hostInfo}${elapsedInfo}${missingStr}`,
-        ].filter(Boolean).join("\n");
-        toast.error(title, {
-          description,
-          duration: 20000,
-        });
+        const errorCode = typeof parsed.error === "string" && ERROR_MESSAGES[parsed.error]
+          ? parsed.error
+          : "smtp_test_failed";
+        toast.error("Teste SMTP não concluído", { description: friendlyError(errorCode, resp.status) });
       }
-    } catch (e) {
-      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-      // eslint-disable-next-line no-console
-      console.error("[test-email] erro de rede", e);
-      toast.error("Erro de rede ao testar SMTP", { description: msg, duration: 15000 });
+    } catch {
+      toast.error("Erro de rede ao testar SMTP", { description: "Não foi possível concluir a chamada segura." });
     } finally {
       setTestingEmail(false);
     }
@@ -589,6 +527,45 @@ export default function ComunicacaoConfigTab() {
           <div className="flex items-center justify-between md:justify-start md:gap-2">
             <span>Webhook WhatsApp:</span>
             <Badge variant={view.flags.whatsapp_webhook_enabled ? "default" : "outline"}>{view.flags.whatsapp_webhook_enabled ? "ON" : "OFF"}</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Prontidão SMTP para homologação</CardTitle>
+          <CardDescription>Validação somente-leitura para o teste controlado. Nenhuma credencial ou referência secreta é exibida.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            {[
+              ["Singleton presente", view.smtp_readiness.singleton_exists],
+              ["Host configurado", view.smtp_readiness.smtp_host_configured],
+              ["Porta configurada", view.smtp_readiness.smtp_port_configured],
+              ["Usuário configurado", view.smtp_readiness.smtp_user_configured],
+              ["Senha configurada", view.smtp_readiness.smtp_password_configured],
+              ["Remetente configurado", view.smtp_readiness.smtp_from_configured],
+              ["Test mode ativo", view.smtp_readiness.test_mode_enabled],
+              [`${CONTROLLED_TEST_EMAIL} na allowlist`, view.smtp_readiness.test_email_allowlisted],
+              ["Entrega global ativa", view.smtp_readiness.delivery_enabled],
+              ["Entrega por e-mail ativa", view.smtp_readiness.email_delivery_enabled],
+            ].map(([label, ready]) => (
+              <div key={String(label)} className="flex items-center gap-2 rounded-md border p-2">
+                <CheckCircle2 className={`h-4 w-4 shrink-0 ${ready ? "text-success" : "text-muted-foreground"}`} aria-hidden="true" />
+                <span className={ready ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+                <Badge variant={ready ? "default" : "outline"} className="ml-auto">{ready ? "OK" : "Pendente"}</Badge>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between border-t pt-4">
+            <span className="text-sm text-muted-foreground">
+              {!view.smtp_readiness.delivery_enabled || !view.smtp_readiness.email_delivery_enabled
+                ? "Configuração preservada; envio bloqueado."
+                : "As flags de entrega foram habilitadas deliberadamente."}
+            </span>
+            <Badge variant={view.smtp_readiness.ready_for_controlled_test ? "default" : "outline"}>
+              {view.smtp_readiness.ready_for_controlled_test ? "Pronto para teste controlado" : "Não pronto"}
+            </Badge>
           </div>
         </CardContent>
       </Card>
@@ -801,24 +778,14 @@ export default function ComunicacaoConfigTab() {
                   <Mail className="h-4 w-4" />Enviar e-mail de teste
                 </Label>
                 <FieldHint>
-                  Ignora a fila e as flags de entrega. Usa as credenciais SMTP salvas para enviar um e-mail sintético diretamente do servidor. Restrito a administradores.
+                  Disponível somente quando todo o checklist estiver aprovado. O destinatário deste gate é fixo e validado novamente no servidor.
                 </FieldHint>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     id="smtp-test-to"
                     type="email"
                     value={testEmailTo}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setTestEmailTo(v);
-                      if (testEmailError) setTestEmailError(undefined);
-                    }}
-                    onBlur={() => {
-                      if (testEmailTo.trim().length > 0) {
-                        setTestEmailError(validateTestEmail(testEmailTo));
-                      }
-                    }}
-                    placeholder="destinatario@exemplo.com"
+                    readOnly
                     autoComplete="off"
                     maxLength={254}
                     aria-invalid={!!testEmailError}
@@ -826,7 +793,7 @@ export default function ComunicacaoConfigTab() {
                   />
                   <Button
                     variant="outline"
-                    disabled={testingEmail || !testEmailValid}
+                    disabled={testingEmail || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
                     onClick={handleTestEmail}
                   >
                     <Mail className="h-4 w-4 mr-1" />
