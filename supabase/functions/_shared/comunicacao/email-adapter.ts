@@ -47,12 +47,12 @@ export async function sendEmail(
   deps: AdapterDeps = {},
 ): Promise<AdapterResult> {
   if (!env.DELIVERY_ENABLED || !env.EMAIL_ENABLED) {
-    return { outcome: "provider_not_configured", code: "email_disabled", message: "flag OFF" };
+    return { outcome: "provider_not_configured", code: "email_disabled", message: "Entrega indisponível.", certainty: "definitive", stage: "preflight" };
   }
   if (!isSmtpConfigValid(env)) {
     // Config inválida (porta fora de faixa, envs faltando) → defer.
     // Não perdemos mensagens só porque o operador esqueceu de configurar.
-    return { outcome: "deferred", code: "email_config_invalid", message: "SMTP inválido" };
+    return { outcome: "deferred", code: "email_config_invalid", message: "Configuração de e-mail inválida.", certainty: "definitive", stage: "config" };
   }
   if (!resolved.ok || resolved.canal !== "email" || !resolved.address) {
     return { outcome: "invalid_recipient", code: "invalid_address", message: "sem endereço" };
@@ -91,6 +91,7 @@ export async function sendEmail(
   const port = Number(env.SMTP_PORT ?? 587);
 
   let client: SmtpLikeClient | null = null;
+  let stage: "connect" | "send" = "connect";
   try {
     client = await factory({
       hostname: env.SMTP_HOST!,
@@ -99,6 +100,7 @@ export async function sendEmail(
       auth: { username: env.SMTP_USER!, password: env.SMTP_PASSWORD! },
     });
 
+    stage = "send";
     const htmlBody = `<pre style="font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(rendered.corpo)}</pre>`;
 
     // Timeout real: race entre send() e um timer que rejeita explicitamente.
@@ -121,11 +123,11 @@ export async function sendEmail(
       if (timeoutId !== null) clearTimeout(timeoutId);
     }
 
-    return { outcome: "sent", code: "sent", message: "ok", provider_message_id: null };
+    return { outcome: "sent", code: "sent", message: "Aceito pelo transporte SMTP.", certainty: "definitive", stage: "response", provider_message_id: null };
   } catch (e) {
     const msg = String((e as Error)?.message ?? e).slice(0, 500);
-    const cls = classifyEmailError(msg);
-    return { outcome: cls.outcome, code: cls.code, message: msg };
+    const cls = classifyEmailError(msg, stage);
+    return { ...cls, message: "Falha no transporte de e-mail." };
   } finally {
     if (client) {
       try { await client.close(); } catch { /* ignore */ }

@@ -11,7 +11,7 @@ export type InviteEmailClaim = {
 export type InviteEmailDeliveryResult =
   | { status: "accepted"; code: "accepted" }
   | { status: "failed"; code: string }
-  | { status: "ambiguous"; code: "email_accept_persistence_failed" };
+  | { status: "ambiguous"; code: string };
 
 export type InviteEmailDeliveryDeps = {
   claim: (jobId: string) => Promise<InviteEmailClaim>;
@@ -24,6 +24,7 @@ export type InviteEmailDeliveryDeps = {
   }) => Promise<AdapterResult>;
   accept: (jobId: string, leaseToken: string) => Promise<void>;
   fail: (jobId: string, leaseToken: string, code: string) => Promise<void>;
+  ambiguous: (jobId: string, leaseToken: string, code: string) => Promise<void>;
 };
 
 const safeCode = (value: string) =>
@@ -53,8 +54,15 @@ export async function deliverInviteEmail(
       idempotencyKey: claim.idempotency_key,
     });
   } catch {
-    await deps.fail(jobId, claim.lease_token, "email_send_crash");
-    return { status: "failed", code: "email_send_crash" };
+    const code = "email_send_ambiguous";
+    await deps.ambiguous(jobId, claim.lease_token, code);
+    return { status: "ambiguous", code };
+  }
+
+  if (result.certainty === "ambiguous" || result.outcome === "ambiguous") {
+    const code = safeCode(result.code || "email_send_ambiguous");
+    await deps.ambiguous(jobId, claim.lease_token, code);
+    return { status: "ambiguous", code };
   }
 
   if (result.outcome !== "sent") {
@@ -67,6 +75,7 @@ export async function deliverInviteEmail(
     await deps.accept(jobId, claim.lease_token);
     return { status: "accepted", code: "accepted" };
   } catch {
+    await deps.ambiguous(jobId, claim.lease_token, "email_accept_persistence_failed").catch(() => undefined);
     return { status: "ambiguous", code: "email_accept_persistence_failed" };
   }
 }
