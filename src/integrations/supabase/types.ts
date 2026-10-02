@@ -14558,7 +14558,7 @@ export type Database = {
           modo_acesso: string
           nome: string
           organization_id: string
-          request_id: string
+          request_id?: string
           responsavel_principal?: boolean
           status?: string
           telefone?: string | null
@@ -19021,10 +19021,6 @@ export type Database = {
       }
     }
     Functions: {
-      admin_can_update_user_password_server: {
-        Args: { p_actor_id: string; p_target_id: string }
-        Returns: boolean
-      }
       _assert_visita_editavel: {
         Args: { p_registro_id: string }
         Returns: {
@@ -19368,6 +19364,10 @@ export type Database = {
       add_b2b_payment_terms_note_secure: {
         Args: { p_note: string; p_partner_order_id: string }
         Returns: Json
+      }
+      admin_can_update_user_password_server: {
+        Args: { p_actor_id: string; p_target_id: string }
+        Returns: boolean
       }
       admin_edit_user_profile_v1: {
         Args: {
@@ -20905,18 +20905,32 @@ export type Database = {
         }
         Returns: string
       }
-      platform_claim_org_admin_provisioning: {
-        Args: {
-          p_cpf_cnpj?: string
-          p_email: string
-          p_modo_acesso?: string
-          p_nome: string
-          p_organization_id: string
-          p_responsavel_principal?: boolean
-          p_telefone?: string
-        }
-        Returns: Json
-      }
+      platform_claim_org_admin_provisioning:
+        | {
+            Args: {
+              p_actor_id: string
+              p_cpf_cnpj?: string
+              p_email: string
+              p_modo_acesso?: string
+              p_nome: string
+              p_organization_id: string
+              p_responsavel_principal?: boolean
+              p_telefone?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_cpf_cnpj?: string
+              p_email: string
+              p_modo_acesso?: string
+              p_nome: string
+              p_organization_id: string
+              p_responsavel_principal?: boolean
+              p_telefone?: string
+            }
+            Returns: Json
+          }
       platform_conclude_provisional_password: { Args: never; Returns: boolean }
       platform_conclude_provisional_password_server: {
         Args: { p_user_id: string }
@@ -20947,7 +20961,7 @@ export type Database = {
       }
       platform_find_org_admin_provisioning_auth_user: {
         Args: { p_job_id: string; p_lease_token: string }
-        Returns: string | null
+        Returns: string
       }
       platform_first_access_pending: {
         Args: { p_user_id: string }
