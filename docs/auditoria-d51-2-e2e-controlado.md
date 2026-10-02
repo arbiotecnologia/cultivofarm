@@ -1143,3 +1143,77 @@ Nenhum outro campo foi enviado à RPC. A leitura posterior confirmou:
 A primeira tentativa técnica falhou fechada antes de qualquer escrita porque o binding do sandbox não estava disponível ao processo local. A restauração do binding confirmou a instância canônica, mas o processo ainda não recebeu as variáveis; por isso a execução foi feita diretamente no canônico pelo mecanismo server-side existente. Não houve envio, reenvio, criação de empresa, convite, usuário ou alteração de credenciais/Vault.
 
 **Decisão:** janela SMTP canônica fechada e estado fail-closed restaurado. E01/E02/E03 permanecem FAIL/não comprováveis, E04 permanece NO-GO, D51.2 continua bloqueado e D52 não foi iniciado.
+
+## 33. Reinvestigação após confirmação do domínio oficial
+
+Data/hora UTC: `2026-10-02T04:51:36Z`  
+Nova evidência do responsável: E01/E02 foram executados em `https://app.cultivofarm.com.br`. O link recebido permaneceu fechado.
+
+### 33.1 Reclassificação obrigatória
+
+A conclusão anterior “D — outro ambiente/contexto” fica **revogada como causa definitiva**. O domínio oficial foi confirmado pelo responsável. Isso não comprova qual JavaScript, service worker ou contrato de backend estava ativo na aba naquele instante, mas refuta a hipótese específica de ação em outro domínio.
+
+Estado atualizado das hipóteses:
+
+- **A — binding atual errado:** refutada para o bundle atualmente publicado, que contém exclusivamente `swzpzcwiasxmjutrmvkm`;
+- **B — fluxo atual não persiste:** refutada; os dois sucessos atuais dependem de confirmação server-side e não usam escrita otimista;
+- **C — aba antiga/JavaScript em memória/service worker:** reaberta e **plausível**, mas não comprovada;
+- **D — outro domínio:** **refutada pela confirmação do responsável**;
+- **E — versão publicada intermediária ou outro mecanismo no mesmo domínio:** reaberta e **plausível**, mas não comprovada.
+
+### 33.2 Linha temporal dos fluxos
+
+O histórico Git entre 1º e 2 de outubro foi reconstruído:
+
+| UTC | Commit | Mudança relevante |
+|---|---|---|
+| `2026-10-01T02:56:03Z` | `8312cc8e…` | primeira `platform-invite-org-admin`: gera link Auth e depois registra o administrador pelo servidor; não usa SMTP do módulo Comunicação |
+| `2026-10-01T02:58:21Z` | `54263fc1…` | primeira UI Administradores; sucesso “Acesso do administrador criado” e exibição/cópia do link |
+| `2026-10-01T03:28:46Z` | `11a0b4f6…` | hook passa a chamar `platform_create_organization` |
+| `2026-10-01T03:30:15Z` | `05d94578…` | primeira UI Nova Empresa; toast somente depois do `await` da RPC |
+| `2026-10-02T00:20:44Z` | `814f82c7…` | intenção, lease/fencing e finalização do provisionamento |
+| `2026-10-02T00:21:37Z` | `8dbc6663…` | link passa a usar conta Auth + recovery; ainda sem envio SMTP automático |
+| `2026-10-02T01:54:53Z` | `5abbc6b2…` | SMTP automático integrado; `action_link` deixa a resposta e surge “Convite aceito pelo servidor de e-mail” |
+| `2026-10-02T03:16:22Z` | `320ecaac…` | recuperação de bundle/chunk obsoleto do PWA |
+
+Não foi encontrado commit em que “Empresa criada” apareça antes da confirmação de `platform_create_organization`. Também não foi encontrado commit que envie e-mail e conclua o convite sem persistir em `platform_org_admin_invites`. A string literal “Convite gerado” não existe nas versões auditadas; as mensagens encontradas foram “Acesso do administrador criado” e, depois, “Convite aceito pelo servidor de e-mail”.
+
+A versão anterior ao SMTP automático podia gerar e exibir/copiar um link, mas não possuía envio SMTP no fluxo. A versão posterior que afirma aceite SMTP já cria/reclama o job antes do efeito externo. Portanto **nenhuma versão conhecida do repositório explica simultaneamente**: toast de empresa, feedback positivo de convite/e-mail recebido e zero organização/job/Auth user no canônico.
+
+Não existe no repositório um ledger confiável que associe cada publicação do domínio a um commit e horário. Os timestamps Git delimitam quando o código passou a existir, mas não provam qual commit estava servido ou já carregado na aba durante a ação.
+
+### 33.3 Aba antiga e service worker no mesmo domínio
+
+Antes de `320ecaac…`, a aplicação não tratava `vite:preloadError`/`ChunkLoadError` nem limpava os caches runtime antes de uma recarga única. Uma aba aberta podia manter JavaScript e chunks já carregados em memória, além da sessão, após uma publicação. O service worker usava atualização imediata, mas isso não encerra o contexto JavaScript de uma aba até recarga/navegação efetiva.
+
+Logo, domínio oficial e barra de endereço correta **não provam** que a aba executava o bundle corrente. Entretanto, o histórico conhecido não contém uma versão antiga que combine os dois feedbacks observados com outro binding: quando Nova Empresa e Administradores passaram a coexistir, o cliente já usava o canônico. C permanece possível como estado misto/intermediário não preservado nos artefatos disponíveis, não como causa demonstrada.
+
+### 33.4 Feedback visual e persistência local
+
+- Nova Empresa executa `await criar.mutateAsync(...)` antes de toast, badge e limpeza do formulário;
+- Administradores dispara o toast somente no callback `onSuccess` da chamada Edge;
+- nenhum dos dois usa `onMutate`, `setQueryData`, entidade otimista ou cache React Query persistido;
+- `localStorage`/`sessionStorage` não guardam organização, convite ou resultado dessas mutations;
+- os botões são bloqueados por `isPending`; double-click não produz sucesso antecipado;
+- remount pode perder estado visual local, mas não pode fabricar resposta positiva do servidor.
+
+Assim, cache React Query, estado local ou double-click não explicam os sucessos relatados sem requisição correspondente.
+
+### 33.5 E-mail sem abertura do link
+
+Na janela aproximada `04:20Z–04:40Z`, as consultas aos logs canônicos de Edge, gateway, Auth e Postgres não localizaram chamadas a `platform-invite-org-admin`, `create-user`, `test-communication-email`, Auth invite/generateLink ou às RPCs E01/E02. O canônico também não possui outbox, evento, recibo, rate-limit de teste, job ou Auth user correlacionável.
+
+A infraestrutura gerenciada de e-mail do projeto não possui domínio configurado e não registrou evento para o destinatário controlado na janela; portanto Lovable Email não explica o recebimento. `create-user` não envia e-mail. O caminho histórico de `generateLink` apenas devolvia o link à UI e não contém chamada explícita de envio. Os workers legados de alertas usam outros dados/assuntos e não são chamados pela UI Plataforma.
+
+O SMTP externo do módulo Comunicação não oferece nesta auditoria log de provedor independente. Sem job/tentativa no canônico, o e-mail recebido permanece **não atribuível** ao fluxo canônico.
+
+### 33.6 Decisão e informação mínima restante
+
+**Causa comprovada:** nenhuma.  
+**Causa mais provável, com confiança baixa a moderada:** C/E — aba no domínio oficial executando estado antigo/intermediário em memória, ou uma publicação intermediária não preservada no histórico acessível. A ausência total de requests canônicos na janela sustenta essa classe, mas não distingue suas variantes nem explica de forma verificável o emissor do e-mail.
+
+**Hipóteses refutadas:** outro domínio; binding errado no bundle corrente; sucesso otimista/cache persistido; fluxo corrente sem persistência; Lovable Email; `create-user`; teste SMTP canônico.
+
+Para avançar a atribuição sem abrir o link, a informação mínima segura é o **remetente visível, assunto e data/hora com fuso** da mensagem, além de eventual identificador não sensível do cabeçalho (`Message-ID` com domínio preservado e parte local mascarada). Não enviar link, token, OTP, cabeçalhos de autenticação ou corpo que contenha URL.
+
+Até nova correlação, não repetir E01/E02, não reenviar e não abrir o link. A janela SMTP canônica foi reconfirmada global/e-mail OFF, com modo de teste ON. E01/E02/E03 permanecem FAIL/não comprováveis; E04 e D52 permanecem NO-GO. Nenhum código, banco, SMTP ou dado operacional foi alterado nesta reinvestigação.
