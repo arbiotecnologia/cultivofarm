@@ -2,11 +2,13 @@
 // Aceita:
 //   - http://localhost:*, http://127.0.0.1:*
 //   - https://*.lovable.app, https://*.lovableproject.com (previews)
+//   - https://app.cultivofarm.com.br (produção canônica)
 //   - Cada origem listada em COMMUNICATION_ADMIN_ORIGINS (CSV) — lida lazy.
 // NUNCA retorna Access-Control-Allow-Origin: *. Origens desconhecidas =>
 // resposta sem CORS (o navegador bloqueia leitura pelo script chamador).
 
 const HOST_PATTERNS: RegExp[] = [
+  /^https:\/\/app\.cultivofarm\.com\.br$/i,
   /^https:\/\/[a-z0-9-]+\.lovable\.app$/i,
   /^https:\/\/[a-z0-9-]+\.lovableproject\.com$/i,
   /^https:\/\/[a-z0-9-]+--[a-z0-9-]+\.lovable\.app$/i,

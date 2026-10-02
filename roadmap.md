@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Em andamento
+- [ ] Incidente D51.2 — CORS da aba Comunicação: causa confirmada no domínio customizado (preflight 403 sem ACAO; controle Lovable 204). Correção mínima em validação para allowlist canônica estrita e `verify_jwt=true` explícito nas duas funções; sem alteração de SMTP ou dados.
 - [ ] Gate D51.2 — **RETOMADO ATÉ A INTERAÇÃO MANUAL E01/E02**. Pré-check canônico verde; janela SMTP aberta por RPC auditável alterando somente entrega global/e-mail para ON. Test mode ON, allowlist exclusiva controlada, SMTP/Vault preservados, demais canais OFF e zero lease. Sessão Superadmin do navegador publicado continua inacessível às ferramentas; nenhuma empresa, conta, convite ou mensagem foi criada/enviada nesta execução. NO-GO para encerrar D51 ou avançar D52.
 
 ## Próximo / autorizado a preparar execução

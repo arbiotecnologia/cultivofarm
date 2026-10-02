@@ -16,6 +16,8 @@ import {
   type RuntimeConfig,
 } from "../../../supabase/functions/_shared/comunicacao/runtime-config";
 import {
+  corsHeadersFor,
+  handlePreflight,
   isTrustedOriginPure,
   CORS_HOST_PATTERNS,
 } from "../../../supabase/functions/_shared/comunicacao/cors";
@@ -195,8 +197,9 @@ describe("F-CORR (2) fromDbPayload — mapeamento e ausência de vazamento", () 
 
 // ---------- (3) CORS ----------
 describe("F-CORR (3) CORS — origens confiáveis vs. arbitrárias", () => {
-  it("aceita preview lovable, localhost/127.0.0.1 e extras", () => {
+  it("aceita produção canônica, preview lovable, localhost/127.0.0.1 e extras", () => {
     for (const ok of [
+      "https://app.cultivofarm.com.br",
       "https://preview.lovable.app",
       "https://abcdef.lovable.app",
       "https://a1b2c3--proj.lovable.app",
@@ -214,6 +217,9 @@ describe("F-CORR (3) CORS — origens confiáveis vs. arbitrárias", () => {
     for (const bad of [
       null, "", "*",
       "http://evil.com", "https://evil.com",
+      "https://evil.cultivofarm.com.br",
+      "https://app.cultivofarm.com.br.evil.com",
+      "http://app.cultivofarm.com.br",
       "https://lovable.app.evil.com", "https://x.lovable.evil.com",
       "ftp://localhost", "file:///etc/passwd",
       "https://lovableproject.com", // sem subdomínio
@@ -224,6 +230,30 @@ describe("F-CORR (3) CORS — origens confiáveis vs. arbitrárias", () => {
 
   it("nenhum padrão CORS aceita curinga *", () => {
     for (const re of CORS_HOST_PATTERNS) expect(re.test("*")).toBe(false);
+    expect(corsHeadersFor("https://app.cultivofarm.com.br")["Access-Control-Allow-Origin"]).toBe(
+      "https://app.cultivofarm.com.br",
+    );
+    expect(Object.values(corsHeadersFor("https://app.cultivofarm.com.br"))).not.toContain("*");
+  });
+
+  it("preflight aprovado retorna 204 e reflete somente a origem exata", () => {
+    const approved = handlePreflight(new Request("https://edge.example/functions/v1/settings", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://app.cultivofarm.com.br",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization,apikey,content-type,x-client-info",
+      },
+    }));
+    expect(approved.status).toBe(204);
+    expect(approved.headers.get("Access-Control-Allow-Origin")).toBe("https://app.cultivofarm.com.br");
+
+    const denied = handlePreflight(new Request("https://edge.example/functions/v1/settings", {
+      method: "OPTIONS",
+      headers: { Origin: "https://app.cultivofarm.com.br.evil.com" },
+    }));
+    expect(denied.status).toBe(403);
+    expect(denied.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
 });
 
