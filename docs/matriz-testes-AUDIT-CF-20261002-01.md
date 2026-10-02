@@ -33,18 +33,18 @@
 
 | Caso | Cenário | Resultado | Evidência |
 |---|---|---|---|
-| F1-001 | Fluxo permite prefixo na razão social oficial | FAIL | razão social da API fica read-only e é enviada como nome |
-| F1-002 | Localizar organização por CNPJ autorizado | FAIL | contagem 0 |
-| F1-003 | Localizar organização por prefixo em nome/razão/fantasia | FAIL | contagem 0 |
-| F1-004 | Exatamente uma subscription do E01 | NO-GO | organização inexistente |
-| F1-005 | Exatamente uma auditoria de organização | NO-GO | organização inexistente |
+| F1-001 | Razão social/CNPJ oficiais preservados e marcador seguro possível em nome fantasia | PASS | razão read-only; nome fantasia editável e limitado a 200 caracteres; teste focado |
+| F1-002 | Localizar organização por CNPJ autorizado | NOT RUN | E01 ainda não executado |
+| F1-003 | Localizar organização pelo marcador em nome fantasia | NOT RUN | E01 ainda não executado |
+| F1-004 | Exatamente uma subscription do E01 | NOT RUN | organização ainda não criada |
+| F1-005 | Exatamente uma auditoria de organização | NOT RUN | organização ainda não criada |
 | F1-006 | Zero convite/job do alvo e destinatário | PASS | contagem 0 |
 | F1-007 | Zero Auth user/profile/papel do alvo | PASS | contagens 0 |
 | F1-008 | SMTP fechado | PASS | global OFF; e-mail OFF |
 | F1-009 | Test mode e allowlist controlada | PASS | ON; um endereço, controlado presente |
 | F1-010 | Zero leases ativos | PASS | contagem 0 |
 | F1-011 | Job AR BIO preservado | PASS | falhou; tentativa 1; e-mail 0; sem usuário/lease |
-| F1-012 | E02/SMTP/envio | NOT RUN | bloqueado pelo FAIL de E01 |
+| F1-012 | E02/SMTP/envio | NOT RUN | bloqueado até E01 PASS |
 | F1-013 | Primeiro acesso/recovery | NOT RUN | depende de E02 verde e ação humana |
 | F1-014 | Retry/cooldown/lease/fencing | NOT RUN | não executar contra job real; fixture futura controlada |
 | F1-015 | Cleanup | NOT RUN | nenhum dado da campanha foi criado nesta rodada |
@@ -52,7 +52,10 @@
 | F1-017 | Negativa provider settings com JWT inválido | PASS | HTTP 401 |
 | F1-018 | Negativa teste de e-mail com JWT inválido | PASS | HTTP 401; nenhum envio |
 | F1-019 | Testes Deno das três funções | NOT RUN | runner informou ausência de módulos de teste |
+| F1-020 | Criar conta Superadmin temporária por mecanismo oficial | BLOCKED | Auth Admin existente confirma e-mail, mas bloqueia `superadmin`; RPC/trigger preservam a reserva; Supabase externo sem sessão automatizada |
+| F1-021 | Fluxo preserva razão oficial e permite marcador no limite existente | PASS | 11/11 testes focados; typecheck e build verdes |
+| F1-022 | Regressão global e scanner após refinamento | PASS | 5.372 testes PASS, 4 skipped; scanner 10 Info e zero P0/P1 |
 
 ## Gate
 
-Fase 0: **PASS**. Fase 1: **NO-GO**. Fases 2–15: **NOT RUN**, bloqueadas sem E01 comprovado.
+Fase 0: **PASS**. Fase 1: **BLOCKED somente no clique humano autenticado de E01**; o NO-GO por prefixo foi reclassificado e resolvido por `nome_fantasia`. Fases 2–15: **NOT RUN**, bloqueadas sem E01 comprovado.

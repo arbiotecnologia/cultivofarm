@@ -4,14 +4,14 @@
 
 - Projeto canônico: `swzpzcwiasxmjutrmvkm`.
 - Fase 0: **PASS com riscos P2/P3 registrados**.
-- Fase 1 / auditoria pós-E01: **NO-GO**.
-- Motivo do NO-GO: não existe organização para o CNPJ autorizado nem para o prefixo da campanha; portanto E01 não foi comprovado e E02 permanece bloqueado.
+- Fase 1 / E01: **BLOCKED por autenticação humana**, ainda não executado.
+- O antigo NO-GO baseado na impossibilidade de prefixar a razão social foi reclassificado: a razão oficial deve permanecer íntegra; a identificação segura da fixture será feita em `nome_fantasia`.
 - Nenhuma mutação de dados, abertura SMTP, envio, E02 ou cleanup foi executado nesta rodada.
 - Leaked Password Protection: risco temporariamente aceito, aberto e não homologado.
 
 ## Regras e escopo
 
-Todo dado persistente da campanha deve conter `HOMOLOGAÇÃO AUDIT-CF-20261002-01` ou motivo equivalente. O único CNPJ autorizado é `36.736.180/0001-11`; o contato corporativo é `renato@refilinformatica.com.br`; o único destinatário de convite autorizado é `teste@refilinformatica.com.br`. Tokens, links de ação e segredos não integram as evidências.
+Todo dado persistente da campanha deve conter `HOMOLOGAÇÃO AUDIT-CF-20261002-01` ou motivo equivalente em campo seguro já existente. Para E01, `razao_social` e CNPJ permanecem oficiais e somente leitura; `nome_fantasia` recebe `HOMOLOGAÇÃO AUDIT-CF-20261002-01 - <nome fantasia oficial>`, truncado com segurança em 200 caracteres. O único CNPJ autorizado é `36.736.180/0001-11`; o contato corporativo é `renato@refilinformatica.com.br`; o único destinatário de convite autorizado é `teste@refilinformatica.com.br`. Tokens, links de ação e segredos não integram as evidências.
 
 ## Fase 0 — inventário e baseline
 
@@ -82,9 +82,13 @@ Não restou P0/P1 bloqueante após o hardening local e os testes, permitindo ini
 
 ## Fase 1 — auditoria canônica pós-E01
 
-### Capacidade do fluxo publicado
+### Regra de identificação refinada
 
-O fluxo consulta o CNPJ, fixa um snapshot da razão social oficial e envia essa razão como `_nome` para `platform_create_organization`. Quando a consulta oficial responde, a razão social fica somente leitura. Logo, o fluxo não permite prefixar a razão social com a identidade da campanha. O nome fantasia continua editável, mas a auditoria canônica não encontrou o prefixo em nome, razão social ou fantasia.
+O fluxo consulta o CNPJ, fixa um snapshot da razão social oficial e envia essa razão como `_nome` para `platform_create_organization`. A razão social permanece somente leitura. A identificação da campanha foi movida para o `nome_fantasia` editável, sem coluna ou tabela nova. Para não contaminar cadastros normais com uma identidade de auditoria, o marcador será preenchido no E01 humano; o checkpoint E01→E02 permanece intacto.
+
+### Conta temporária de auditoria
+
+Foi localizado o mecanismo oficial Auth Admin já existente em `create-user`, com `email_confirm=true`, mas ele bloqueia explicitamente o papel `superadmin`. A RPC de provisionamento também não pode receber esse papel, e o trigger `guard_superadmin_role_assignment` reserva sua atribuição ao mecanismo interno. Não existe endpoint/RPC oficial dedicado para criar uma conta Superadmin temporária. Como o Supabase é externo/não gerenciado, não há sessão oficial injetável pelo navegador automatizado. Nenhuma conta sintética, senha, perfil ou papel foi criado; não houve bypass por SQL/Auth e não existe cleanup de credencial a executar.
 
 ### Resultado canônico read-only
 
@@ -107,12 +111,14 @@ O job real AR BIO permanece intocado: status `falhou`, uma tentativa, `email_del
 
 ### Decisão
 
-**Fase 1 NO-GO.** O E01 manual informado não produziu registro localizável no canônico pelo CNPJ ou prefixo exigidos. Não é permitido marcar E01 como PASS, renomear dados, criar substituto automaticamente, abrir SMTP ou executar E02. A progressão para as Fases 2–15 está bloqueada.
+**Fase 1 BLOCKED no clique autenticado de E01.** O falso bloqueio de identificação foi removido; a ausência de um mecanismo oficial para criar/conceder Superadmin temporário impede o browser E2E automatizado sem reduzir a segurança. O fluxo está preparado para a sessão humana executar somente **Criar empresa** e parar em **Empresa criada — pronta para auditoria**. SMTP e E02 continuam bloqueados até a auditoria canônica comprovar exatamente uma organização, uma assinatura TRIAL, uma auditoria e zero objetos do destinatário.
 
 Os subcenários executáveis sem ação humana foram concluídos: contratos estáticos de checkpoint/retry, CORS/JWT, negativas implantadas, ausência de objetos controlados, SMTP fail-closed e leases. Criação E01, abertura SMTP, E02, recebimento, primeiro acesso e recovery exigem antes um E01 canônico válido e permanecem `NOT RUN`.
+
+Revalidação desta rodada: **11/11 testes focados PASS**, **5.372 testes globais PASS e 4 skipped**, typecheck PASS, build da prévia PASS e scanner com 10 Info/zero Critical/Error/Warning. Consulta canônica final confirmou zero organizações, assinaturas, auditorias, convites, Auth users, profiles e roles da campanha; zero leases; job AR BIO preservado.
 
 ## Rollback e forward-fix
 
 - Dados: não aplicável; nenhuma mutação foi feita.
 - Hardening das Edge Functions: rollback por reversão dos arquivos e dos blocos de configuração; forward-fix preferencial, caso surja incompatibilidade, mantendo CORS fail-closed, JWT obrigatório e respostas sanitizadas.
-- E01: nenhuma correção automática. Requer nova execução humana controlada somente depois de reconciliar como o identificador obrigatório será persistido sem adulterar a razão social oficial.
+- E01: o marcador usa `nome_fantasia`; não há mudança de esquema. A execução requer apenas sessão humana Superadmin e deve parar no checkpoint anterior ao convite.
