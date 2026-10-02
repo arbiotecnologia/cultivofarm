@@ -15,13 +15,21 @@ import {
   startVersionManagement,
 } from "./registerSW";
 
-const loadedHtml = '<script type="module" src="/assets/index-loaded123.js"></script>';
-const newHtml = '<script type="module" src="/assets/index-new456.js"></script>';
+const legacyLoadedHtml = '<script type="module" src="/assets/index-loaded123.js"></script>';
+const legacyNewHtml = '<script type="module" src="/assets/index-new456.js"></script>';
+const currentHtml = '<meta name="cultivo-build-id" content="build-current"><script type="module" src="/assets/index-shared.js"></script>';
+const newHtml = '<meta name="cultivo-build-id" content="build-new"><script type="module" src="/assets/index-shared.js"></script>';
 
-function installLoadedScript(): void {
+function installLoadedDocument(buildId?: string): void {
+  if (buildId) {
+    const meta = document.createElement("meta");
+    meta.name = "cultivo-build-id";
+    meta.content = buildId;
+    document.head.appendChild(meta);
+  }
   const script = document.createElement("script");
   script.type = "module";
-  script.src = "/assets/index-loaded123.js";
+  script.src = buildId ? "/assets/index-shared.js" : "/assets/index-loaded123.js";
   document.head.appendChild(script);
 }
 
@@ -44,8 +52,9 @@ function mockWorkerEnvironment() {
 describe("gerenciamento manual de versão sem app-shell service worker", () => {
   beforeEach(() => {
     resetVersionManagementForTests();
+    document.head.querySelectorAll('meta[name="cultivo-build-id"]').forEach((node) => node.remove());
     document.head.querySelectorAll('script[type="module"]').forEach((node) => node.remove());
-    installLoadedScript();
+    installLoadedDocument("build-current");
     window.localStorage.clear();
     window.sessionStorage.clear();
     Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
@@ -56,17 +65,49 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     vi.unstubAllGlobals();
   });
 
-  it("extrai somente o token do módulo local", () => {
-    expect(extractBuildToken(loadedHtml)).toBe("index-loaded123");
+  it("prioriza o build ID explícito e mantém fallback para HTML antigo", () => {
+    expect(extractBuildToken(currentHtml)).toBe("build-current");
+    expect(extractBuildToken(legacyLoadedHtml)).toBe("index-loaded123");
     expect(extractBuildToken('<script type="module" src="https://example.com/assets/bad.js"></script>')).toBeNull();
   });
 
-  it("nova versão mostra prompt sem navegar", async () => {
+  it("build ID atual igual ao publicado não mostra prompt", async () => {
+    const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(currentHtml) });
+    expect(await checkForPublishedVersion(fetchHtml)).toBe(false);
+    expect(getPwaUpdateSnapshot().status).toBe("hidden");
+  });
+
+  it("build ID diferente mostra prompt sem navegar", async () => {
     const navigate = vi.fn();
     const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) });
     expect(await checkForPublishedVersion(fetchHtml)).toBe(true);
-    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "index-new456" });
+    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "build-new" });
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("detecta publicação que mantém o entry e altera somente chunk interno", async () => {
+    expect(currentHtml).toContain('/assets/index-shared.js');
+    expect(newHtml).toContain('/assets/index-shared.js');
+    expect(await checkForPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }))).toBe(true);
+    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "build-new" });
+  });
+
+  it("sessão antiga por hash detecta HTML novo com build ID", async () => {
+    resetVersionManagementForTests();
+    document.head.querySelectorAll('meta[name="cultivo-build-id"]').forEach((node) => node.remove());
+    document.head.querySelectorAll('script[type="module"]').forEach((node) => node.remove());
+    installLoadedDocument();
+    expect(await checkForPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }))).toBe(true);
+    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "build-new" });
+  });
+
+  it("HTML antigo sem meta continua comparando hashes do entry", async () => {
+    resetVersionManagementForTests();
+    document.head.querySelectorAll('meta[name="cultivo-build-id"]').forEach((node) => node.remove());
+    document.head.querySelectorAll('script[type="module"]').forEach((node) => node.remove());
+    installLoadedDocument();
+    expect(await checkForPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(legacyNewHtml) }))).toBe(true);
+    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "index-new456" });
   });
 
   it("Adiar mantém badge e a mesma versão não volta a abrir prompt", async () => {
@@ -87,7 +128,7 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     expect(await applyPendingUpdate(navigate)).toBe(true);
     expect(await applyPendingUpdate(navigate)).toBe(false);
     expect(navigate).toHaveBeenCalledTimes(1);
-    expect(navigate.mock.calls[0][0]).toContain("app_version=index-new456");
+    expect(navigate.mock.calls[0][0]).toContain("app_version=build-new");
   });
 
   it("visibilitychange e online somente detectam", async () => {

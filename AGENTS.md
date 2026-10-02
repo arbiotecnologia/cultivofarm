@@ -12,7 +12,7 @@
 - Controlled SMTP tests reuse the shared communication adapter and require Platform Superadmin authorization, rate limiting, full readiness, test mode, and the fixed gate recipient before any socket; responses expose only allowlisted codes — prevents tenant privilege bypass and diagnostic leakage.
 - SMTP provider diagnostics use the existing test function: connection mode authenticates over TLS without SMTP envelope/data and works with delivery OFF; send mode remains fixed-recipient and fully gated — separates transport readiness from real delivery.
 
-- Frontend version detection is independent of service workers: compare the loaded bundle token with no-store HTML, and navigate only after an explicit user click; `/sw.js` exists solely as a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — prevents stale workers from controlling app updates.
+- Frontend version detection is independent of service workers: compare the explicit per-production-build HTML meta ID, with entry-script hash fallback for legacy pages, and navigate only after an explicit user click; `/sw.js` exists solely as a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — detects every publication without automatic reloads.
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
 
