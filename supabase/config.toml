@@ -68,6 +68,14 @@ verify_jwt = false
 [functions.admin-update-user-password]
 verify_jwt = true
 
+# Administração destrutiva/auditoria de catálogo: JWT obrigatório no gateway,
+# além da validação de papel dentro das funções.
+[functions.admin-wipe-produtos-catalog]
+verify_jwt = true
+
+[functions.admin-audit-produtos-orfaos]
+verify_jwt = true
+
 [functions.list-portal-users]
 verify_jwt = true
 
