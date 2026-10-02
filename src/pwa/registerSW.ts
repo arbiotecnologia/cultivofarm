@@ -1,16 +1,12 @@
-// Single guarded registration wrapper for the app-shell service worker.
-// Normal updates are always consent-driven: detection never activates a worker
-// and never reloads the page. Only applyPendingUpdate may do either.
-
-const SW_URL = "/sw.js";
-export const PWA_UPDATE_STATE_EVENT = "pwa:update-state";
-export const PWA_UPDATE_AVAILABLE_EVENT = "pwa:update-available";
+const LEGACY_SW_SUFFIX = "/sw.js";
+const PUSH_SW_URL = "/push-sw.js";
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
-const APPLY_TIMEOUT_MS = 15000;
-const RECENT_RELOAD_KEY = "pwa:last-explicit-reload";
+const RECENT_NAVIGATION_KEY = "pwa:last-explicit-navigation";
 const DEFERRED_UPDATE_KEY = "pwa:deferred-update";
-const RELOAD_LOOP_GUARD_MS = 15000;
-const STALE_RUNTIME_CACHES = new Set(["html-nav", "static-assets"]);
+const LEGACY_MIGRATION_KEY = "pwa:legacy-app-shell-migrated";
+const NAVIGATION_LOOP_GUARD_MS = 15_000;
+
+export const PWA_UPDATE_STATE_EVENT = "pwa:update-state";
 
 export type PwaUpdateStatus = "hidden" | "prompt" | "deferred_badge" | "applying" | "error";
 
@@ -21,55 +17,10 @@ export interface PwaUpdateSnapshot {
   message?: string;
 }
 
-function isRefusedHost(hostname: string): boolean {
-  if (hostname.startsWith("id-preview--") || hostname.startsWith("preview--")) return true;
-  if (hostname === "lovableproject.com" || hostname.endsWith(".lovableproject.com")) return true;
-  if (hostname === "lovableproject-dev.com" || hostname.endsWith(".lovableproject-dev.com")) return true;
-  if (hostname === "beta.lovable.dev" || hostname.endsWith(".beta.lovable.dev")) return true;
-  return false;
-}
-
-function shouldRefuse(): boolean {
-  if (!import.meta.env.PROD) return true;
-  if (typeof window === "undefined") return true;
-  try {
-    if (window.self !== window.top) return true;
-  } catch {
-    return true;
-  }
-  if (isRefusedHost(window.location.hostname)) return true;
-  if (new URLSearchParams(window.location.search).get("sw") === "off") return true;
-  return false;
-}
-
-async function unregisterMatching(): Promise<void> {
-  if (!("serviceWorker" in navigator)) return;
-  try {
-    const regs = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(
-      regs.map(async (r) => {
-        const scriptUrl = r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || "";
-        if (scriptUrl.endsWith(SW_URL)) {
-          try {
-            await r.unregister();
-          } catch {
-            /* noop */
-          }
-        }
-      })
-    );
-  } catch {
-    /* noop */
-  }
-}
-
-let activeCleanup: (() => void) | null = null;
-let pendingWorker: ServiceWorker | null = null;
-let pendingRegistration: ServiceWorkerRegistration | null = null;
-let explicitApplyIntent = false;
-let reloadAttempted = false;
-let applyTimer: number | null = null;
 let snapshot: PwaUpdateSnapshot = { status: "hidden", version: null, staleBuild: false };
+let activeCleanup: (() => void) | null = null;
+let loadedBuildToken: string | null = null;
+let navigationAttempted = false;
 
 function emitSnapshot(next: PwaUpdateSnapshot): void {
   snapshot = next;
@@ -78,6 +29,54 @@ function emitSnapshot(next: PwaUpdateSnapshot): void {
 
 export function getPwaUpdateSnapshot(): PwaUpdateSnapshot {
   return snapshot;
+}
+
+function isPreviewOrDevelopment(): boolean {
+  if (!import.meta.env.PROD) return true;
+  try {
+    if (window.self !== window.top) return true;
+  } catch {
+    return true;
+  }
+  const hostname = window.location.hostname;
+  return hostname.startsWith("id-preview--") ||
+    hostname.startsWith("preview--") ||
+    hostname === "lovableproject.com" ||
+    hostname.endsWith(".lovableproject.com") ||
+    hostname === "lovableproject-dev.com" ||
+    hostname.endsWith(".lovableproject-dev.com") ||
+    hostname === "beta.lovable.dev" ||
+    hostname.endsWith(".beta.lovable.dev");
+}
+
+export function extractBuildToken(html: string, baseUrl = window.location.origin): string | null {
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const scripts = Array.from(parsed.querySelectorAll<HTMLScriptElement>('script[type="module"][src]'));
+  for (const script of scripts) {
+    try {
+      const url = new URL(script.src, baseUrl);
+      if (url.origin !== new URL(baseUrl).origin) continue;
+      const match = url.pathname.match(/\/assets\/([^/]+)\.js$/);
+      if (match?.[1]) return match[1];
+    } catch {
+      // Ignore malformed or third-party script URLs.
+    }
+  }
+  return null;
+}
+
+function getLoadedBuildToken(): string | null {
+  const scripts = Array.from(document.querySelectorAll<HTMLScriptElement>('script[type="module"][src]'));
+  for (const script of scripts) {
+    try {
+      const url = new URL(script.src, window.location.origin);
+      const match = url.pathname.match(/\/assets\/([^/]+)\.js$/);
+      if (url.origin === window.location.origin && match?.[1]) return match[1];
+    } catch {
+      // Continue looking for the local entry module.
+    }
+  }
+  return null;
 }
 
 function readDeferredVersion(): string | null {
@@ -91,119 +90,171 @@ function readDeferredVersion(): string | null {
   }
 }
 
-function clearDeferredUpdate(): void {
+function clearDeferredVersion(): void {
   try {
     window.localStorage.removeItem(DEFERRED_UPDATE_KEY);
   } catch {
-    /* storage is optional */
+    // Storage is optional.
   }
 }
 
-function stopApplyTimer(): void {
-  if (applyTimer !== null) window.clearTimeout(applyTimer);
-  applyTimer = null;
+function isLegacyAppShellCache(name: string): boolean {
+  return name === "html-nav" ||
+    name === "static-assets" ||
+    /^(?:workbox-)?precache(?:-v\d+)?-/i.test(name) ||
+    /^workbox-runtime-/i.test(name);
 }
 
-function clearPendingUpdate(): void {
-  stopApplyTimer();
-  pendingWorker = null;
-  pendingRegistration = null;
-  explicitApplyIntent = false;
-  clearDeferredUpdate();
-  emitSnapshot({ status: "hidden", version: null, staleBuild: false });
-}
-
-async function resolveWorkerVersion(worker: ServiceWorker): Promise<string> {
+async function removeCaches(includePushRelated = false): Promise<void> {
+  if (!("caches" in window)) return;
   try {
-    const response = await fetch(worker.scriptURL, { cache: "no-store" });
-    const source = await response.text();
-    const bytes = new TextEncoder().encode(source);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    return Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    const names = await window.caches.keys();
+    await Promise.allSettled(
+      names
+        .filter((name) => isLegacyAppShellCache(name) || (includePushRelated && /^cultivofarm-push-/i.test(name)))
+        .map((name) => window.caches.delete(name)),
+    );
   } catch {
-    return worker.scriptURL;
+    // Cleanup is best-effort and must never block the app.
   }
 }
 
-async function announcePendingUpdate(
-  worker: ServiceWorker,
-  registration: ServiceWorkerRegistration,
-): Promise<void> {
-  pendingWorker = worker;
-  pendingRegistration = registration;
-  const version = await resolveWorkerVersion(worker);
-  if (pendingWorker !== worker || worker.state === "redundant") return;
-  const status: PwaUpdateStatus = readDeferredVersion() === version ? "deferred_badge" : "prompt";
-  const next = { status, version, staleBuild: false } satisfies PwaUpdateSnapshot;
-  emitSnapshot(next);
-  window.dispatchEvent(new CustomEvent(PWA_UPDATE_AVAILABLE_EVENT, { detail: next }));
+async function unregisterWorkers(removePushWorker: boolean): Promise<void> {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.allSettled(registrations.map(async (registration) => {
+      const urls = [registration.active, registration.installing, registration.waiting]
+        .map((worker) => worker?.scriptURL ?? "");
+      const isLegacy = urls.some((url) => url.endsWith(LEGACY_SW_SUFFIX));
+      const isPush = urls.some((url) => url.endsWith(PUSH_SW_URL));
+      if (isLegacy || (removePushWorker && isPush)) await registration.unregister();
+    }));
+  } catch {
+    // Cleanup is best-effort and must never navigate or reload.
+  }
+}
+
+export async function migrateLegacyAppShell(): Promise<void> {
+  await unregisterWorkers(false);
+  await removeCaches(false);
+  try {
+    window.localStorage.setItem(LEGACY_MIGRATION_KEY, "1");
+  } catch {
+    // The marker is only an optimization.
+  }
+}
+
+export async function disableServiceWorkers(): Promise<void> {
+  await unregisterWorkers(true);
+  await removeCaches(true);
+  try {
+    window.localStorage.setItem(LEGACY_MIGRATION_KEY, "1");
+  } catch {
+    // Storage is optional.
+  }
+}
+
+async function registerStablePushWorker(): Promise<void> {
+  if (!("serviceWorker" in navigator) || isPreviewOrDevelopment()) return;
+  try {
+    await navigator.serviceWorker.register(PUSH_SW_URL, { scope: "/" });
+  } catch {
+    // Push remains unavailable without affecting the application.
+  }
+}
+
+export async function checkForPublishedVersion(
+  fetchHtml: typeof fetch = fetch,
+): Promise<boolean> {
+  if (!loadedBuildToken) loadedBuildToken = getLoadedBuildToken();
+  if (!loadedBuildToken || !navigator.onLine) return false;
+
+  try {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    const response = await fetchHtml(url.toString(), {
+      cache: "no-store",
+      headers: { Accept: "text/html" },
+    });
+    if (!response.ok) return false;
+    const publishedToken = extractBuildToken(await response.text(), url.origin);
+    if (!publishedToken || publishedToken === loadedBuildToken) return false;
+
+    const status: PwaUpdateStatus = readDeferredVersion() === publishedToken ? "deferred_badge" : "prompt";
+    emitSnapshot({ status, version: publishedToken, staleBuild: false });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function dismissPendingUpdate(): void {
-  if (!snapshot.staleBuild) {
-    if (!snapshot.version || !pendingWorker) return;
+  if (snapshot.version) {
     try {
       window.localStorage.setItem(DEFERRED_UPDATE_KEY, JSON.stringify({
         version: snapshot.version,
         deferredAt: new Date().toISOString(),
       }));
     } catch {
-      /* the badge remains available for this session */
+      // The badge still remains for this session.
     }
   }
   emitSnapshot({ ...snapshot, status: "deferred_badge" });
 }
 
 export function reopenPendingUpdate(): void {
-  if (!pendingWorker && !snapshot.staleBuild) return;
+  if (snapshot.status !== "deferred_badge") return;
   emitSnapshot({ ...snapshot, status: snapshot.staleBuild ? "error" : "prompt" });
 }
 
-function triggerExplicitReload(reload: () => void): boolean {
-  if (!explicitApplyIntent || reloadAttempted) return false;
+function explicitNavigation(navigate: (url: string) => void): boolean {
+  if (navigationAttempted) return false;
   try {
-    const lastReload = Number(window.sessionStorage.getItem(RECENT_RELOAD_KEY) ?? "0");
-    if (Date.now() - lastReload < RELOAD_LOOP_GUARD_MS) {
-      explicitApplyIntent = false;
+    const last = Number(window.sessionStorage.getItem(RECENT_NAVIGATION_KEY) ?? "0");
+    if (Date.now() - last < NAVIGATION_LOOP_GUARD_MS) {
       emitSnapshot({ ...snapshot, status: "error", message: "A atualização ficou pendente. Você pode continuar usando a aplicação." });
       return false;
     }
-    window.sessionStorage.setItem(RECENT_RELOAD_KEY, String(Date.now()));
+    window.sessionStorage.setItem(RECENT_NAVIGATION_KEY, String(Date.now()));
   } catch {
-    // The in-memory flag still guarantees a single attempt in this page.
+    // The in-memory guard still limits this document to one navigation.
   }
-  reloadAttempted = true;
-  try {
-    clearDeferredUpdate();
-    reload();
-    return true;
-  } catch {
-    explicitApplyIntent = false;
-    emitSnapshot({ ...snapshot, status: "error", message: "Não foi possível concluir a atualização. Você pode continuar usando a aplicação." });
-    return false;
-  }
+  navigationAttempted = true;
+  clearDeferredVersion();
+  const url = new URL(window.location.href);
+  url.searchParams.set("app_version", snapshot.version ?? String(Date.now()));
+  navigate(url.toString());
+  return true;
+}
+
+export async function applyPendingUpdate(
+  navigate: (url: string) => void = (url) => window.location.replace(url),
+): Promise<boolean> {
+  if (snapshot.status === "applying") return false;
+  emitSnapshot({ ...snapshot, status: "applying", message: undefined });
+  await removeCaches(false);
+  return explicitNavigation(navigate);
+}
+
+export function retryCurrentBuild(
+  navigate: (url: string) => void = (url) => window.location.replace(url),
+): boolean {
+  return explicitNavigation(navigate);
 }
 
 export function isStaleBuildError(error: unknown): boolean {
-  const message = error instanceof Error
-    ? `${error.name}: ${error.message}`
-    : String(error ?? "");
-
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error ?? "");
   return /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk [^ ]+ failed|error loading dynamically imported module/i.test(message);
 }
 
-/**
- * Remove somente caches de runtime que podem manter HTML/assets de outro
- * deploy. A função apenas sinaliza a necessidade; limpeza e recarga exigem
- * uma ação explícita posterior do usuário.
- */
-export async function recoverFromStaleBuild(
-): Promise<void> {
+export async function recoverFromStaleBuild(): Promise<void> {
   emitSnapshot({
     status: "error",
     version: snapshot.version,
     staleBuild: true,
-    message: "Há uma atualização necessária para continuar.",
+    message: "A versão carregada não está mais disponível. Escolha quando deseja atualizar ou tentar novamente.",
   });
 }
 
@@ -211,172 +262,43 @@ export function requestStaleBuildRecovery(): Promise<void> {
   return recoverFromStaleBuild();
 }
 
-async function clearSafeRuntimeCaches(): Promise<void> {
-  if (!("caches" in window)) return;
-  try {
-    const cacheNames = await window.caches.keys();
-    await Promise.all(
-      cacheNames
-        .filter((cacheName) => STALE_RUNTIME_CACHES.has(cacheName))
-        .map((cacheName) => window.caches.delete(cacheName)),
-    );
-  } catch {
-    /* manual retry remains available */
-  }
-}
-
-export async function applyPendingUpdate(
-  reload: () => void = () => window.location.reload(),
-): Promise<boolean> {
-  if (snapshot.status === "applying") return false;
-  explicitApplyIntent = true;
-  reloadAttempted = false;
-  emitSnapshot({ ...snapshot, status: "applying", message: undefined });
-
-  if (snapshot.staleBuild && !pendingWorker) {
-    await clearSafeRuntimeCaches();
-    return triggerExplicitReload(reload);
-  }
-
-  const worker = pendingRegistration?.waiting ?? pendingWorker;
-  if (!worker || worker.state === "redundant") {
-    explicitApplyIntent = false;
-    clearPendingUpdate();
-    return false;
-  }
-
-  applyTimer = window.setTimeout(() => {
-    applyTimer = null;
-    explicitApplyIntent = false;
-    emitSnapshot({ ...snapshot, status: "error", message: "A atualização ficou pendente. Você pode continuar usando a aplicação." });
-  }, APPLY_TIMEOUT_MS);
-
-  try {
-    worker.postMessage({ type: "SKIP_WAITING" });
-    return true;
-  } catch {
-    stopApplyTimer();
-    explicitApplyIntent = false;
-    emitSnapshot({ ...snapshot, status: "error", message: "Não foi possível iniciar a atualização. Você pode continuar usando a aplicação." });
-    return false;
-  }
-}
-
-export function retryCurrentBuild(reload: () => void = () => window.location.reload()): boolean {
-  explicitApplyIntent = true;
-  reloadAttempted = false;
-  return triggerExplicitReload(reload);
-}
-
-export function watchForUpdates(
-  registration: ServiceWorkerRegistration,
-  reload: () => void = () => window.location.reload(),
-): () => void {
-  let installingWorker: ServiceWorker | null = null;
-
-  if (registration.waiting && navigator.serviceWorker.controller) {
-    void announcePendingUpdate(registration.waiting, registration);
-  }
-
-  const onInstallingStateChange = () => {
-    const state = installingWorker?.state;
-    if (state === "installed" && navigator.serviceWorker.controller) {
-      const worker = registration.waiting ?? installingWorker;
-      if (worker) void announcePendingUpdate(worker, registration);
-      return;
-    }
-    if (state === "redundant") {
-      if (pendingWorker === installingWorker) clearPendingUpdate();
-    }
-  };
-
-  const onUpdateFound = () => {
-    installingWorker?.removeEventListener("statechange", onInstallingStateChange);
-    const installing = registration.installing;
-    if (!installing) return;
-    installingWorker = installing;
-    installing.addEventListener("statechange", onInstallingStateChange);
-  };
-
-  const onControllerChange = () => {
-    stopApplyTimer();
-    if (explicitApplyIntent) triggerExplicitReload(reload);
-    else clearPendingUpdate();
-  };
-
-  registration.addEventListener("updatefound", onUpdateFound);
-  navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-
-  return () => {
-    installingWorker?.removeEventListener("statechange", onInstallingStateChange);
-    registration.removeEventListener("updatefound", onUpdateFound);
-    navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
-  };
-}
-
-export function registerAppServiceWorker(): () => void {
+export function startVersionManagement(): () => void {
   activeCleanup?.();
   activeCleanup = null;
-
-  if (!("serviceWorker" in navigator)) return () => {};
-
-  if (shouldRefuse()) {
-    void unregisterMatching();
-    return () => {};
-  }
+  if (typeof window === "undefined") return () => {};
 
   let disposed = false;
-  let stopWatching = () => {};
   let intervalId: number | undefined;
-  let registration: ServiceWorkerRegistration | null = null;
+  const swOff = new URLSearchParams(window.location.search).get("sw") === "off";
 
-  const requestUpdate = () => {
-    if (document.visibilityState === "visible" && navigator.onLine) {
-      void registration?.update().then(() => {
-        if (registration?.waiting && navigator.serviceWorker.controller) {
-          void announcePendingUpdate(registration.waiting, registration);
-        } else if (pendingWorker && pendingWorker.state === "redundant") {
-          clearPendingUpdate();
-        }
-      }).catch(() => {});
+  const detect = () => {
+    if (!disposed && document.visibilityState === "visible" && navigator.onLine) {
+      void checkForPublishedVersion();
     }
   };
-  const onVisible = () => requestUpdate();
-  const onOnline = () => requestUpdate();
+  const onVisibilityChange = () => detect();
+  const onOnline = () => detect();
 
-  const onLoad = () => {
-    navigator.serviceWorker
-      .register(SW_URL, { scope: "/" })
-      .then((registered) => {
-        if (disposed) return;
-        registration = registered;
-        stopWatching = watchForUpdates(registered);
-        requestUpdate();
-        document.addEventListener("visibilitychange", onVisible);
-        window.addEventListener("online", onOnline);
-        intervalId = window.setInterval(requestUpdate, UPDATE_INTERVAL_MS);
-      })
-      .catch((err) => {
-        console.warn("[pwa] sw registration failed", err);
-      });
-  };
+  void (async () => {
+    if (swOff) await disableServiceWorkers();
+    else {
+      await migrateLegacyAppShell();
+      await registerStablePushWorker();
+    }
+    if (!disposed) detect();
+  })();
 
-  if (document.readyState === "complete") onLoad();
-  else window.addEventListener("load", onLoad, { once: true });
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("online", onOnline);
+  intervalId = window.setInterval(detect, UPDATE_INTERVAL_MS);
 
   const cleanup = () => {
     disposed = true;
-    window.removeEventListener("load", onLoad);
-    document.removeEventListener("visibilitychange", onVisible);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
     window.removeEventListener("online", onOnline);
-    window.removeEventListener("pagehide", cleanup);
     if (intervalId !== undefined) window.clearInterval(intervalId);
-    stopWatching();
-    stopApplyTimer();
     if (activeCleanup === cleanup) activeCleanup = null;
   };
-
   activeCleanup = cleanup;
-  window.addEventListener("pagehide", cleanup, { once: true });
   return cleanup;
 }

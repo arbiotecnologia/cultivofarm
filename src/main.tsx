@@ -4,7 +4,7 @@ import {
   isStaleBuildError,
   applyPendingUpdate,
   recoverFromStaleBuild,
-  registerAppServiceWorker,
+  startVersionManagement,
   retryCurrentBuild,
 } from "./pwa/registerSW";
 import {
@@ -19,7 +19,7 @@ window.addEventListener("vite:preloadError", (event) => {
   void recoverFromStaleBuild();
 });
 
-registerAppServiceWorker();
+startVersionManagement();
 
 if (!rootElement) {
   throw new Error("Elemento principal da aplicação não encontrado.");
