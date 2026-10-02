@@ -1244,7 +1244,7 @@ A lista “Administradores provisionados” lê globalmente os 200 jobs mais rec
 
 O botão **Gerar acesso** invoca `platform-invite-org-admin`. A evidência persistida prova uma execução real do claim para `arbiotecnologia@gmail.com`: criação do job, `attempt_count=1` e posterior marcação `falhou`. O badge “Falhou — pode retentar” é gerado exclusivamente por `status='falhou'`; a coluna “Quando” usa `updated_at`, com fallback para `created_at`.
 
-O fluxo falhou na finalização Auth↔banco (`last_error_code=finalize_failed`) antes de alcançar a entrega SMTP. A função remove a conta Auth recém-criada quando essa finalização falha, o que é consistente com `user_id` nulo no job e zero Auth users, profiles e papéis remanescentes. Os dados disponíveis não preservam o erro interno original da RPC; portanto a causa técnica específica de `finalize_failed` não pode ser afirmada nesta rodada somente leitura.
+O fluxo falhou na finalização Auth↔banco (`last_error_code=finalize_failed`) antes de alcançar a entrega SMTP. A função remove a conta Auth recém-criada quando essa finalização falha, o que é consistente com `user_id` nulo no job e zero Auth users, profiles e papéis remanescentes. O erro interno original da RPC não foi preservado nessa coleta; a causa técnica foi fechada posteriormente pela auditoria estática e canônica da seção 35.
 
 ### 34.3 Reclassificação E01–E04
 
@@ -1310,3 +1310,7 @@ O job é **tecnicamente recuperável após correção**, pois está em `falhou`,
 5. **Fase 5 — destinação do incidente:** após autorização específica, cancelar/arquivar auditavelmente o job real. Uma homologação futura deve começar com nova organização e destinatário controlados, nunca reutilizando este registro.
 
 Rollback técnico: restaurar a definição anterior da RPC e a versão anterior da Edge Function somente se nenhuma execução tiver sido concluída pela correção. Depois de qualquer provisionamento concluído, preferir forward-fix, preservando profile, papel, vínculo da organização e trilha de auditoria. Nenhuma correção, escrita, retry, envio ou alteração de status foi feita nesta rodada. SMTP permaneceu global/e-mail OFF/OFF e D52 permaneceu bloqueado.
+
+### 35.5 Prompt proposto para a próxima fase
+
+> **D51.2 — Fase 1: corrigir colisão do profile automático na finalização.** Alterar somente `platform_finalize_org_admin_provisioning` por migration idempotente no Supabase canônico `swzpzcwiasxmjutrmvkm`. Permitir que o profile automático do mesmo `user_id`, ainda com `organization_id=NULL`, seja adotado pela organização do job; manter bloqueio absoluto para organização diferente e papéis incompatíveis. Atualizar o `UPSERT` para preencher `organization_id`, preservando assinatura, `SECURITY DEFINER`, `search_path=''`, grants exclusivos de `service_role`, validação de `raw_app_meta_data.provisioning_request_id`, lease/fencing, ticket de organização e compensação. Adicionar testes transacionais/mock para profile nulo, conflito cross-tenant, metadata divergente, lease expirada e responsável principal. Não reprocessar jobs, não criar usuário, não enviar e-mail, não abrir SMTP, não alterar o job real, não publicar e não avançar D52. Entregar migration proposta, testes, riscos e rollback/forward-fix; parar antes de implantar se qualquer pré-condição divergir.
