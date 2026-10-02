@@ -13,6 +13,7 @@ import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { deliverInviteEmail, type InviteEmailClaim } from "../_shared/comunicacao/invite-email-delivery.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
+import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -257,16 +258,12 @@ Deno.serve(async (req) => {
       if (criamosUsuario && userId) {
         await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
       }
+      const code = classifyFinalizeError(rpcError);
       await adminClient.rpc("platform_fail_org_admin_provisioning", {
-        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "finalize_failed",
+        p_job_id: jobId, p_lease_token: leaseToken, p_error_code: code,
       });
-      const m = rpcError.message ?? "";
-      const amigavel = m.includes("platform_forbidden")
-        ? "Permissão insuficiente para concluir o convite."
-        : m.includes("platform_invalid")
-          ? "Dados do administrador inválidos."
-          : "Não foi possível concluir o cadastro do administrador.";
-      return json({ error: amigavel, code: "finalize_failed" }, 400);
+      const response = finalizeErrorResponse(code);
+      return json({ error: response.message, code }, response.status);
     }
 
     if (modo === "link") {
