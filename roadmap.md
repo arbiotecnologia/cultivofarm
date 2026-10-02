@@ -17,4 +17,3 @@
 - [ ] Futuramente habilitar `Leaked password protection` no Dashboard canônico e reexecutar o linter; não marcar como resolvida antes da confirmação.
 - [ ] Teste funcional na prévia com CNPJ público 19.131.243/0001-97 — exige sessão autenticada do administrador em onboarding (não salvar no rascunho real nem concluir).
 - [ ] Homologação autenticada do primeiro acesso (troca de senha) — aguarda usuário de teste.
-- [ ] `Password Protection Disabled` reportado pelo Supabase — decisão do usuário.
