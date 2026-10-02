@@ -31,6 +31,12 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
     expect(edge).not.toContain("listUsers");
   });
 
+  it("bloqueia configuração SMTP incompatível antes do claim de provisionamento", () => {
+    const edge = readFileSync("supabase/functions/platform-invite-org-admin/index.ts", "utf8");
+    expect(edge).toContain("getSmtpConfigError(runtimeEnv)");
+    expect(edge.indexOf("getSmtpConfigError(runtimeEnv)")).toBeLessThan(edge.indexOf('"platform_claim_org_admin_provisioning"'));
+  });
+
   it("envio do convite tem lease/fencing, cooldown e grants somente server-side", () => {
     expect(migration).toContain("platform_claim_org_admin_email_delivery");
     expect(migration).toContain("email_delivery_status='sending'");

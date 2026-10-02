@@ -15,6 +15,7 @@ import {
   MAX_EMAIL_BODY_BYTES,
   MAX_EMAIL_SUBJECT_LEN,
   utf8ByteLength,
+  isSmtpConfigValid,
 } from "../../../supabase/functions/_shared/comunicacao/adapters-types.ts";
 import type {
   AdapterSnapshot,
@@ -29,7 +30,7 @@ const baseEnv = (over: Partial<WorkerEnv> = {}): WorkerEnv => ({
   WHATSAPP_ENABLED: false,
   INAPP_ENABLED: false,
   SMTP_HOST: "smtp.example.com",
-  SMTP_PORT: "587",
+  SMTP_PORT: "465",
   SMTP_USER: "u",
   SMTP_PASSWORD: "p",
   SMTP_FROM: "no-reply@example.com",
@@ -146,6 +147,21 @@ describe("gate3 helpers: classifyEmailError", () => {
 // ---------------- Email adapter com mocks ----------------
 
 describe("gate3 email-adapter: caminhos com SMTP mock", () => {
+  it("bloqueia portas 25 e 587 antes de criar cliente ou enviar", async () => {
+    for (const port of ["25", "587"]) {
+      let factoryCalls = 0;
+      const factory = async () => { factoryCalls += 1; throw new Error("não deve conectar"); };
+      const r = await sendEmail(baseEnv({ SMTP_PORT: port }), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: factory });
+      expect(r).toMatchObject({ outcome: "deferred", code: "smtp_port_blocked_by_edge_runtime", stage: "config" });
+      expect(factoryCalls).toBe(0);
+      expect(isSmtpConfigValid(baseEnv({ SMTP_PORT: port }))).toBe(false);
+    }
+  });
+
+  it("aceita porta 465 apenas como configuração estrutural", () => {
+    expect(isSmtpConfigValid(baseEnv({ SMTP_PORT: "465" }))).toBe(true);
+  });
+
   it("envio bem-sucedido → sent + client.close chamado", async () => {
     const m = mockSmtp("ok");
     const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory });

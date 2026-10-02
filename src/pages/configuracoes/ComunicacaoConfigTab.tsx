@@ -52,10 +52,12 @@ type ProviderView = {
     test_email_allowlisted: boolean;
     smtp_host_configured: boolean;
     smtp_port_configured: boolean;
+    smtp_port_runtime_compatible: boolean;
     smtp_user_configured: boolean;
     smtp_password_configured: boolean;
     smtp_from_configured: boolean;
     ready_for_controlled_test: boolean;
+    blocking_code: "smtp_port_blocked_by_edge_runtime" | null;
   };
   whatsapp: { phone_number_id: string | null; api_version: string | null; access_token_configured: boolean; allowed_api_versions: string[] };
   webhook: { app_secret_configured: boolean; verify_token_configured: boolean; url: string };
@@ -97,6 +99,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Serviço não configurado no ambiente.",
   recipient_not_allowed: "Destinatário não autorizado para este teste controlado.",
   smtp_not_ready: "O SMTP ainda não atende a todos os itens de prontidão.",
+  smtp_port_blocked_by_edge_runtime: "Porta SMTP incompatível com o runtime. Use uma porta permitida suportada pelo provedor ou uma integração HTTP.",
   smtp_test_failed: "O provedor não aceitou o teste. Revise a configuração e tente novamente.",
   email_send_timeout: "O provedor não respondeu dentro do tempo seguro.",
   unknown_error: "Erro inesperado. Tente novamente.",
@@ -135,7 +138,6 @@ const FLAG_LABELS: Record<string, { title: string; help: string }> = {
 };
 
 const SMTP_PRESETS: Array<{ label: string; port: string; hint: string }> = [
-  { label: "587 · STARTTLS (recomendado)", port: "587", hint: "Padrão da maioria dos provedores modernos (SendGrid, SES, Mailgun, Gmail)." },
   { label: "465 · SSL/TLS implícito", port: "465", hint: "Utilizado por alguns provedores legados." },
   { label: "2525 · Alternativa", port: "2525", hint: "Fallback quando 587 é bloqueado pelo hosting." },
 ];
@@ -540,6 +542,7 @@ export default function ComunicacaoConfigTab() {
               ["Singleton presente", view.smtp_readiness.singleton_exists],
               ["Host configurado", view.smtp_readiness.smtp_host_configured],
               ["Porta configurada", view.smtp_readiness.smtp_port_configured],
+              ["Porta compatível com o runtime", view.smtp_readiness.smtp_port_runtime_compatible],
               ["Usuário configurado", view.smtp_readiness.smtp_user_configured],
               ["Senha configurada", view.smtp_readiness.smtp_password_configured],
               ["Remetente configurado", view.smtp_readiness.smtp_from_configured],
@@ -555,6 +558,11 @@ export default function ComunicacaoConfigTab() {
               </div>
             ))}
           </div>
+          {view.smtp_readiness.blocking_code === "smtp_port_blocked_by_edge_runtime" && (
+            <p className="text-sm text-destructive" role="alert">
+              Porta SMTP incompatível com o runtime. Use uma porta permitida suportada pelo provedor ou uma integração HTTP.
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between border-t pt-4">
             <span className="text-sm text-muted-foreground">
               {!view.smtp_readiness.delivery_enabled || !view.smtp_readiness.email_delivery_enabled

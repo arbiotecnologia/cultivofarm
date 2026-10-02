@@ -1,4 +1,5 @@
 export const CONTROLLED_TEST_EMAIL = "teste@refilinformatica.com.br";
+export const EDGE_RUNTIME_BLOCKED_SMTP_PORTS = new Set([25, 587]);
 
 type SettingsRow = Record<string, unknown>;
 
@@ -11,6 +12,8 @@ export type SmtpReadiness = {
   test_email_allowlisted: boolean;
   smtp_host_configured: boolean;
   smtp_port_configured: boolean;
+  smtp_port_runtime_compatible: boolean;
+  blocking_code: "smtp_port_blocked_by_edge_runtime" | null;
   smtp_user_configured: boolean;
   smtp_password_configured: boolean;
   smtp_from_configured: boolean;
@@ -27,6 +30,9 @@ export function buildSmtpReadiness(row: SettingsRow | null): SmtpReadiness {
     typeof value[key] === "string" && (value[key] as string).trim().length > 0;
   const enabled = (key: string) => value[key] === true;
   const allowedEmails = strings("allowed_emails");
+  const smtpPort = typeof value["smtp_port"] === "number" ? value["smtp_port"] as number : null;
+  const smtpPortConfigured = smtpPort !== null && Number.isInteger(smtpPort) && smtpPort >= 1 && smtpPort <= 65535;
+  const smtpPortRuntimeCompatible = smtpPortConfigured && !EDGE_RUNTIME_BLOCKED_SMTP_PORTS.has(smtpPort);
   const testEmailAllowlisted = allowedEmails.some(
     (email) => email.trim().toLowerCase() === CONTROLLED_TEST_EMAIL,
   );
@@ -38,15 +44,27 @@ export function buildSmtpReadiness(row: SettingsRow | null): SmtpReadiness {
     allowed_email_count: allowedEmails.length,
     test_email_allowlisted: testEmailAllowlisted,
     smtp_host_configured: configuredString("smtp_host"),
-    smtp_port_configured: typeof value["smtp_port"] === "number",
+    smtp_port_configured: smtpPortConfigured,
+    smtp_port_runtime_compatible: smtpPortRuntimeCompatible,
     smtp_user_configured: configuredString("smtp_user"),
     smtp_password_configured: Boolean(value["secret_smtp_password"]),
     smtp_from_configured: configuredString("smtp_from"),
   };
   return {
     ...readiness,
-    ready_for_controlled_test: Object.values(readiness).every((item) =>
-      typeof item === "number" ? item > 0 : item === true
-    ),
+    blocking_code: smtpPortConfigured && !smtpPortRuntimeCompatible ? "smtp_port_blocked_by_edge_runtime" : null,
+    ready_for_controlled_test:
+      readiness.singleton_exists &&
+      readiness.delivery_enabled &&
+      readiness.email_delivery_enabled &&
+      readiness.test_mode_enabled &&
+      readiness.allowed_email_count > 0 &&
+      readiness.test_email_allowlisted &&
+      readiness.smtp_host_configured &&
+      readiness.smtp_port_configured &&
+      readiness.smtp_port_runtime_compatible &&
+      readiness.smtp_user_configured &&
+      readiness.smtp_password_configured &&
+      readiness.smtp_from_configured,
   };
 }

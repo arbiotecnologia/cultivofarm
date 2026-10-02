@@ -22,7 +22,7 @@ const baseEnv: WorkerEnv = {
   WHATSAPP_ENABLED: true,
   INAPP_ENABLED: false,
   SMTP_HOST: "smtp.example.com",
-  SMTP_PORT: "587",
+  SMTP_PORT: "465",
   SMTP_USER: "user",
   SMTP_PASSWORD: "pw",
   SMTP_FROM: "no-reply@example.com",

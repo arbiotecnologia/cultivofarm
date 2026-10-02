@@ -43,7 +43,7 @@ const envSendable = (): WorkerEnv => ({
   DELIVERY_ENABLED: true, EMAIL_ENABLED: true, WHATSAPP_ENABLED: true,
   INAPP_ENABLED: true, WHATSAPP_WEBHOOK_ENABLED: true,
   TEST_MODE_ENABLED: false, TEST_ALLOWED_EMAILS: ["a@b.c"], TEST_ALLOWED_PHONES: ["+5511999999999"],
-  SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "u",
+  SMTP_HOST: "smtp.example.com", SMTP_PORT: "465", SMTP_USER: "u",
   SMTP_PASSWORD: "SECRET_SMTP_XXXXXXXXXX", SMTP_FROM: "no@ex.co",
   WHATSAPP_ACCESS_TOKEN: "SECRET_WA_XXXXXXXXXX", WHATSAPP_PHONE_NUMBER_ID: "111222",
   WHATSAPP_API_VERSION: "v25.0",
@@ -64,7 +64,7 @@ const dbPayloadFull = () => ({
   test_mode_enabled: false,
   allowed_emails: ["a@b.c", "d@e.f"],
   allowed_phones: ["+5511911112222"],
-  smtp_host: "smtp.host", smtp_port: 587, smtp_user: "user", smtp_from: "from@ex.co",
+  smtp_host: "smtp.host", smtp_port: 465, smtp_user: "user", smtp_from: "from@ex.co",
   smtp_password: dbSecret,
   whatsapp_phone_number_id: "12345",
   whatsapp_api_version: "v25.0",
@@ -156,7 +156,7 @@ describe("F-CORR (2) fromDbPayload — mapeamento e ausência de vazamento", () 
     expect(cfg.WHATSAPP_WEBHOOK_ENABLED).toBe(true);
     expect(cfg.TEST_ALLOWED_EMAILS).toEqual(["a@b.c", "d@e.f"]);
     expect(cfg.TEST_ALLOWED_PHONES).toEqual(["+5511911112222"]);
-    expect(cfg.SMTP_PORT).toBe("587");
+    expect(cfg.SMTP_PORT).toBe("465");
     expect(cfg.WHATSAPP_API_VERSION).toBe("v25.0");
   });
 

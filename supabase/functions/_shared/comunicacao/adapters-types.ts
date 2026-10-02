@@ -131,12 +131,22 @@ export function isWhatsappConfigValid(env: WorkerEnv): boolean {
   return (WHATSAPP_API_VERSION_ALLOWLIST as readonly string[]).includes(v);
 }
 
-/** Validação forte de config SMTP (porta 1-65535, host+user+password+from). */
-export function isSmtpConfigValid(env: WorkerEnv): boolean {
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD || !env.SMTP_FROM) return false;
+export type SmtpConfigError = "email_config_invalid" | "smtp_port_blocked_by_edge_runtime";
+
+/**
+ * Validação SMTP para Supabase Edge Runtime. As portas 25 e 587 são
+ * bloqueadas pelo ambiente e devem falhar antes de claim ou abertura de socket.
+ */
+export function getSmtpConfigError(env: WorkerEnv): SmtpConfigError | null {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD || !env.SMTP_FROM) return "email_config_invalid";
   const port = Number(env.SMTP_PORT ?? "");
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return false;
-  return true;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return "email_config_invalid";
+  if (port === 25 || port === 587) return "smtp_port_blocked_by_edge_runtime";
+  return null;
+}
+
+export function isSmtpConfigValid(env: WorkerEnv): boolean {
+  return getSmtpConfigError(env) === null;
 }
 
 /** Escape mínimo de HTML para conteúdo texto enviado como html. */

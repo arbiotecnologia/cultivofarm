@@ -19,7 +19,7 @@ const readyEnv: WorkerEnv = {
   TEST_ALLOWED_EMAILS: ["teste@refilinformatica.com.br"],
   TEST_ALLOWED_PHONES: [],
   SMTP_HOST: "smtp.example.test",
-  SMTP_PORT: "587",
+  SMTP_PORT: "465",
   SMTP_USER: "user",
   SMTP_PASSWORD: "secret-value",
   SMTP_FROM: "from@example.test",
@@ -55,7 +55,16 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
       allowed: true,
       recipient: "teste@refilinformatica.com.br",
     });
+    for (const port of ["25", "587"]) {
+      expect(evaluateControlledSmtpTest({ ...readyEnv, SMTP_PORT: port }, "teste@refilinformatica.com.br"))
+        .toEqual({ allowed: false, code: "smtp_port_blocked_by_edge_runtime" });
+    }
     expect(edge.indexOf("evaluateControlledSmtpTest(env, to)")).toBeLessThan(edge.indexOf("await sendEmail("));
+  });
+
+  it("mostra orientação genérica de incompatibilidade sem credenciais", () => {
+    expect(ui).toContain("Porta SMTP incompatível com o runtime");
+    expect(ui).toContain("integração HTTP");
   });
 
   it("não devolve nem registra diagnóstico bruto, host, porta ou credenciais", () => {

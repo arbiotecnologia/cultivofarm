@@ -89,7 +89,15 @@
 | F1-044 | Job factual pós-deploy | PASS | 1 job; tentativas 1/1; `failed/email_unknown_error`; zero leases; nenhum envio |
 | F1-045 | Publicação frontend e smoke oficial | FAIL | Publish solicitado; Lovable e domínio oficial ainda servem `index-B6zZZyrG.js` sem os marcadores do modal ambíguo |
 | F1-046 | Contenção imediata pós-forward-fix | PASS | auditoria 15; somente global/e-mail OFF; Test Mode ON, allowlist exclusiva, SMTP/Vault e demais canais preservados; jobs sem alteração ou lease |
+| F1-047 | Porta efetiva da configuração/runtime | PASS read-only | porta 465 em ambos; sem leitura/exposição de host, usuário, senha ou remetente |
+| F1-048 | Portas 25 e 587 no Supabase Edge Runtime | PASS contratual | readiness false e código `smtp_port_blocked_by_edge_runtime` antes de claim/socket |
+| F1-049 | Porta 465 | PASS estrutural | configuração completa aceita estruturalmente; conectividade e suporte do provedor não afirmados nem testados |
+| F1-050 | Teste/convite em porta bloqueada | PASS contratual | bloqueio fail-closed antes de factory SMTP e antes do claim de provisionamento; zero envio/incremento |
+| F1-051 | Alternativa quando não houver porta permitida | DOCUMENTADO | integração HTTP oficial pelo adapter existente; nenhum provedor/API/credencial presumido |
+| F1-052 | Regressão completa do complemento | PASS | 5.380 testes globais/4 skipped; 60 focados; typecheck/build; scanner 10 Info e zero Critical/Error/Warning |
+| F1-053 | Testes Deno específicos do complemento | NOT RUN | runner informou ausência de módulos de teste nas duas funções; não promovido a PASS |
+| F1-054 | Deploy e smoke do complemento | PASS | três funções implantadas; negativas JWT inválido 401; bundle oficial `App-Bdw25M7-.js` contém os marcadores novos |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. Forward-fix aplicado; janela SMTP novamente **OFF/OFF** e **RETRY BLOCKED** até confirmação humana explícita de não recebimento. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. A porta efetiva é 465, portanto a restrição 25/587 não é causa comprovada do E02; o erro legado continua ambíguo. Forward-fix aplicado no código; janela SMTP **OFF/OFF** e **RETRY BLOCKED** até confirmação humana explícita de não recebimento. Fases 2–15: **NOT RUN**.

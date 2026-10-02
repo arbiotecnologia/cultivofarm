@@ -15,9 +15,9 @@ import type {
 import {
   classifyEmailError,
   escapeHtml,
+  getSmtpConfigError,
   hasHeaderInjection,
   isRecipientAllowedInTestMode,
-  isSmtpConfigValid,
   MAX_EMAIL_ADDRESS_LEN,
   MAX_EMAIL_BODY_BYTES,
   MAX_EMAIL_SUBJECT_LEN,
@@ -49,10 +49,11 @@ export async function sendEmail(
   if (!env.DELIVERY_ENABLED || !env.EMAIL_ENABLED) {
     return { outcome: "provider_not_configured", code: "email_disabled", message: "Entrega indisponível.", certainty: "definitive", stage: "preflight" };
   }
-  if (!isSmtpConfigValid(env)) {
-    // Config inválida (porta fora de faixa, envs faltando) → defer.
+  const smtpConfigError = getSmtpConfigError(env);
+  if (smtpConfigError) {
+    // Config inválida ou incompatível com Edge Runtime → defer antes do socket.
     // Não perdemos mensagens só porque o operador esqueceu de configurar.
-    return { outcome: "deferred", code: "email_config_invalid", message: "Configuração de e-mail inválida.", certainty: "definitive", stage: "config" };
+    return { outcome: "deferred", code: smtpConfigError, message: "Configuração de e-mail indisponível neste runtime.", certainty: "definitive", stage: "config" };
   }
   if (!resolved.ok || resolved.canal !== "email" || !resolved.address) {
     return { outcome: "invalid_recipient", code: "invalid_address", message: "sem endereço" };

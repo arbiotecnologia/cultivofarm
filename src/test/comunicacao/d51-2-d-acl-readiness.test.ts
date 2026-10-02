@@ -42,6 +42,8 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
       "test_email_allowlisted",
       "smtp_host_configured",
       "smtp_port_configured",
+      "smtp_port_runtime_compatible",
+      "blocking_code",
       "smtp_user_configured",
       "smtp_password_configured",
       "smtp_from_configured",
@@ -57,12 +59,19 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
       test_mode_enabled: true,
       allowed_emails: [" TESTE@REFILINFORMATICA.COM.BR "],
       smtp_host: "smtp.example.test",
-      smtp_port: 587,
+      smtp_port: 465,
       smtp_user: "user",
       smtp_from: "from@example.test",
       secret_smtp_password: "00000000-0000-0000-0000-000000000001",
     };
     expect(buildSmtpReadiness(allConfigured).ready_for_controlled_test).toBe(true);
+    for (const port of [25, 587]) {
+      expect(buildSmtpReadiness({ ...allConfigured, smtp_port: port })).toMatchObject({
+        smtp_port_runtime_compatible: false,
+        blocking_code: "smtp_port_blocked_by_edge_runtime",
+        ready_for_controlled_test: false,
+      });
+    }
     expect(buildSmtpReadiness({ ...allConfigured, test_mode_enabled: false }).ready_for_controlled_test).toBe(false);
     expect(buildSmtpReadiness({ ...allConfigured, allowed_emails: [] }).ready_for_controlled_test).toBe(false);
     expect(buildSmtpReadiness({ ...allConfigured, secret_smtp_password: null }).ready_for_controlled_test).toBe(false);
