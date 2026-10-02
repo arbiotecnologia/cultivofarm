@@ -330,3 +330,53 @@ Nenhum e-mail foi enviado, nenhum usuário/tenant foi criado, E01–E21 não for
 5. disponibilizar sessão manual controlada do `superadmin` em `/auth`, sem senha no chat;
 6. receber comando explícito para a janela E2E e só então habilitar Entrega global + E-mail;
 7. manter E15 pendente/adaptado sem inventar segundo destinatário.
+
+## 18. D51.2-C — reparo do singleton SMTP com defaults fail-closed
+
+Data: 2026-10-02  
+Migration aplicada: `20261002020825_6f7efb7f-fd4c-4bc1-8dcc-ccec421cd9ed.sql`  
+Supabase canônico exclusivo: `swzpzcwiasxmjutrmvkm`
+
+### 18.1 Preflight e desenho
+
+Antes da escrita, o schema remoto confirmou `id smallint` com `CHECK (id = 1)` e chave primária, cinco flags de entrega com default `false`, `test_mode_enabled` com default `true`, allowlists vazias por default, SMTP e referências de segredo anuláveis. A tabela estava vazia, com RLS ativo, sem policies e sem triggers.
+
+A migration insere explicitamente somente `id = 1`, com todas as flags de entrega desligadas, modo de teste ligado, allowlists vazias, SMTP/WhatsApp/segredos nulos e autoria nula. `ON CONFLICT (id) DO NOTHING` torna a execução idempotente e preserva integralmente uma linha que apareça entre preflight e aplicação. Não há `UPDATE`, acesso ao Vault, alteração de função, policy ou grant.
+
+### 18.2 Aplicação e estado remoto
+
+- Ledger: versão `20261002020825` presente exatamente uma vez.
+- Tabela: exatamente uma linha total e exatamente uma linha com `id = 1`.
+- Entrega global, e-mail, WhatsApp, in-app e webhook: **OFF**.
+- Test mode: **ON**.
+- Allowlist de e-mails e telefones: vazias.
+- Host, porta, usuário, remetente e referência de senha SMTP: ausentes.
+- Campos e referências secretas de WhatsApp: ausentes.
+- `updated_by`: nulo.
+- Vault: não acessado.
+
+A configuração manual pela interface `/configuracoes?tab=comunicacao` deixa de estar bloqueada por `settings_row_missing`. Nenhum host, porta, usuário, senha, remetente ou destinatário autorizado foi configurado nesta fase.
+
+### 18.3 RLS, grants, RPCs e advisors
+
+RLS permanece ativo e não existem policies na tabela; portanto `anon` e `authenticated` não obtêm acesso direto efetivo. A migration não alterou ACLs. A auditoria encontrou ACLs históricas amplas para essas roles apesar do bloqueio por RLS; isso é divergência de hardening preexistente, não introduzida no D51.2-C, e deve ser tratada separadamente para não exceder a autorização de restaurar apenas o singleton.
+
+As quatro RPCs de configuração continuam `SECURITY DEFINER`, com `search_path = public, vault` e ACL somente para `postgres`/`service_role`. O linter permaneceu em 492 achados históricos: 17 infos de RLS sem policy, 2 warnings de função `SECURITY DEFINER` pública, 472 warnings para autenticados e 1 warning de Leaked Password Protection. Delta do D51.2-C: **zero novo achado**. Leaked Password Protection segue **ADIADA / RISCO ACEITO TEMPORARIAMENTE**, aberta e não resolvida.
+
+### 18.4 Testes e decisão
+
+Foi adicionado contrato automatizado para provar bootstrap fail-closed, idempotência por conflito, ausência de sobrescrita e ausência de Vault/permissões na migration.
+
+| Verificação | Resultado |
+|---|---|
+| Contrato D51.2-C | PASS — 3/3 |
+| Suíte focada de provider settings | PASS — 35/35 em 2 arquivos |
+| Typecheck | PASS |
+| Suíte global | PASS — 344 arquivos aprovados, 1 ignorado; 5.290 testes aprovados, 4 ignorados |
+| Linter Supabase | Sem delta — 492 achados históricos |
+| Security scan | Sem achado relacionado ao singleton; achados históricos fora do escopo preservados |
+| Build automático | PASS após a migration; revalidação final registrada pelo ambiente após os ajustes de teste/documentação |
+
+Duas inferências de literal em mocks SMTP preexistentes foram explicitamente tipadas como `AdapterResult`; isso não altera o runtime e fecha o contrato do typecheck.
+
+**D51.2-C concluído quanto ao reparo do singleton.** A configuração SMTP manual está desbloqueada, mas envio e E2E continuam em **NO-GO** até comprovar sender/domínio, configurar credenciais pela interface segura com flags OFF e obter sessão manual superadmin. Nenhum e-mail, usuário, tenant ou pedido foi criado; E01–E21 não foram executados, o frontend não foi publicado e D52 não foi iniciado.
