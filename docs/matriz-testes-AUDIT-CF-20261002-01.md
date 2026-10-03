@@ -98,7 +98,7 @@
 | SMTPI-010 | Configuração ativa sanitizada | PASS read-only | porta 465; família KingHost; rota ativa categorizada como SMTPi/internacional; host/usuário/remetente/referência Vault presentes; global/e-mail OFF/OFF; Test Mode ON; allowlist exclusiva |
 | SMTPI-011 | Última conexão normal | PASS canônico | `2026-10-03T16:59:02.720538Z`; `success/smtp_connection_ok/quit`; 117 ms; contrato retorna TLS e `authenticated=true` após greeting/EHLO/AUTH |
 | SMTPI-012 | Segredo resolvido | PASS funcional | leitura direta do Vault não foi usada; o runtime DB resolveu a credencial, pois AUTH terminou com sucesso e o probe alcançou `quit` |
-| SMTPI-013 | Ausência de envio pós-conexão | PASS read-only | zero `smtp_send_test`, aceite, receipt, outbox enviada e incremento/retry do convite após o PASS |
+| SMTPI-013 | Ausência de envio pós-conexão | PASS read-only | zero `smtp_send_test`, zero novo `email_accepted_at`, zero receipt/outbox enviada e zero incremento/retry do convite após o PASS |
 | SMTPI-014 | Integridade E02 | PASS read-only | um job, um Auth user, um profile no tenant e um papel administrador; zero superadmin; tentativas 1/1, erro legado preservado e leases limpos |
 | SMTPI-015 | Gate de envio controlado | GO condicionado | conexão PASS; exige habilitar auditavelmente somente global/e-mail e então um clique explícito para enviar exclusivamente a `teste@refilinformatica.com.br`; flags não alteradas nesta auditoria |
 
