@@ -65,12 +65,19 @@
 | SMTP-TLS-013 | Probe real e envio | NOT RUN | nenhum socket ou mensagem nesta rodada; próximo clique é exclusivamente humano |
 | SMTP-FINAL-001 | Build oficial versus HEAD | PASS com ressalva | `build-mushy2d3` = fallback temporal `2026-10-03T14:37:55.959Z`, posterior ao HEAD `2c7fecc3…` de `14:37:03Z`; sem SHA de deploy, equivalência criptográfica não é afirmada |
 | SMTP-FINAL-002 | Gate no bundle oficial | PASS | `App-BwrXF4VX.js` exige host, porta compatível, usuário, senha e remetente; contém os novos safe codes |
-| SMTP-FINAL-003 | Paridade dos indicadores de senha | FAIL apresentação | `smtp.password_configured` compara UUID com `true` e retorna falso; readiness usa presença do UUID e retorna verdadeiro |
+| SMTP-FINAL-003 | Paridade dos indicadores de senha | PASS corrigido | os dois status usam presença da mesma referência; UUID presente=true e null/string vazia=false, sem resolver ou retornar segredo |
 | SMTP-FINAL-004 | Configuração sanitizada canônica | PASS read-only | porta 465; host/usuário/remetente/referência Vault presentes; segredo resolvido no runtime; fonte DB; flags OFF/OFF; Test Mode ON |
 | SMTP-FINAL-005 | Última tentativa classificada | FAIL controlado | `2026-10-03T16:20:46.740215Z`; `connect/smtp_tcp_refused`; 14 ms; antes de greeting/EHLO/AUTH |
 | SMTP-FINAL-006 | Ausência de envio posterior | PASS read-only | zero `smtp_send_test`, tentativa/aceite de convite, outbox criada/enviada e alteração de configuração após a captura |
 | SMTP-FINAL-007 | Compatibilidade do provedor | PASS documental | KingHost suporta SSL/TLS na porta 465; documentação exige SMTPi para origem externa ao Brasil; nenhuma configuração alterada |
 | SMTP-FINAL-008 | Novo probe, envio ou correção operacional | NOT RUN | proibidos nesta rodada; somente leitura e documentação factual |
+| SMTP-SECRET-001 | Referência UUID presente | PASS | indicador sanitizado retorna somente `true` |
+| SMTP-SECRET-002 | Referência nula/vazia | PASS | indicador sanitizado retorna `false` |
+| SMTP-SECRET-003 | Flags booleanas | PASS regressão | continuam usando igualdade booleana estrita, sem reutilizar helper de segredo |
+| SMTP-SECRET-004 | Ausência de vazamento | PASS | shape público contém somente indicadores; nenhum valor de referência/segredo é retornado |
+| SMTP-SECRET-005 | WhatsApp e webhook | PASS regressão | access token, app secret e verify token usam a mesma regra de presença |
+| SMTP-SECRET-006 | Validação e scanner | PASS | 41 Vitest, 3 Deno, typecheck e build verdes; scanner 10 Info/zero P0/P1 |
+| SMTP-SECRET-007 | Deploy e smoke GET | PASS limitado | somente `communication-provider-settings` implantada; GET sem sessão=401; autenticado NOT RUN por indisponibilidade de sessão Superadmin, sem bypass `service_role` |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 

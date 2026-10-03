@@ -4,6 +4,7 @@ import {
   buildSmtpReadiness,
   CONTROLLED_TEST_EMAIL,
 } from "../../../supabase/functions/_shared/comunicacao/smtp-readiness";
+import { isSecretReferenceConfigured } from "../../../supabase/functions/communication-provider-settings/secret-status";
 
 const migrationPath =
   "supabase/migrations/20261002021548_3e72386c-e049-42b4-8022-39f99b4d4cab.sql";
@@ -50,6 +51,48 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
       "ready_for_controlled_test",
     ]) expect(readinessSource).toContain(field);
     expect(source).toContain("smtp_readiness: buildSmtpReadiness(");
+  });
+
+  it("deriva status de segredo somente pela presença da referência", () => {
+    const secretReference = "00000000-0000-0000-0000-000000000001";
+    const row = {
+      secret_smtp_password: secretReference,
+      secret_whatsapp_access_token: secretReference,
+      secret_whatsapp_app_secret: secretReference,
+      secret_whatsapp_verify_token: secretReference,
+      delivery_enabled: true,
+      email_delivery_enabled: false,
+    };
+
+    for (const key of [
+      "secret_smtp_password",
+      "secret_whatsapp_access_token",
+      "secret_whatsapp_app_secret",
+      "secret_whatsapp_verify_token",
+    ]) {
+      expect(isSecretReferenceConfigured(row, key)).toBe(true);
+      expect(isSecretReferenceConfigured({ ...row, [key]: null }, key)).toBe(false);
+      expect(isSecretReferenceConfigured({ ...row, [key]: "  " }, key)).toBe(false);
+    }
+
+    expect(row.delivery_enabled === true).toBe(true);
+    expect(row.email_delivery_enabled === true).toBe(false);
+  });
+
+  it("mantém paridade SMTP e usa presença nos quatro indicadores sanitizados", () => {
+    const secretReference = "00000000-0000-0000-0000-000000000001";
+    const row = { secret_smtp_password: secretReference };
+    expect(isSecretReferenceConfigured(row, "secret_smtp_password")).toBe(
+      buildSmtpReadiness(row).smtp_password_configured,
+    );
+    expect(isSecretReferenceConfigured({ secret_smtp_password: null }, "secret_smtp_password")).toBe(
+      buildSmtpReadiness({ secret_smtp_password: null }).smtp_password_configured,
+    );
+    expect(source).toContain('password_configured: secretConfigured("secret_smtp_password")');
+    expect(source).toContain('access_token_configured: secretConfigured("secret_whatsapp_access_token")');
+    expect(source).toContain('app_secret_configured: secretConfigured("secret_whatsapp_app_secret")');
+    expect(source).toContain('verify_token_configured: secretConfigured("secret_whatsapp_verify_token")');
+    expect(source).toContain('const bool = (k: string) => row[k] === true');
   });
 
   it("só fica pronto com flags, test mode, allowlist e SMTP completos", () => {

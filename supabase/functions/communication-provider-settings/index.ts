@@ -16,6 +16,7 @@ import {
   type PutPayload,
 } from "../_shared/comunicacao/provider-settings-shaping.ts";
 import { buildSmtpReadiness } from "../_shared/comunicacao/smtp-readiness.ts";
+import { isSecretReferenceConfigured } from "./secret-status.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -79,6 +80,7 @@ async function loadPublicView(sb: Sb) {
   const row = (data ?? {}) as Record<string, unknown>;
   const arr = (k: string): string[] => Array.isArray(row[k]) ? (row[k] as string[]) : [];
   const bool = (k: string) => row[k] === true;
+  const secretConfigured = (k: string) => isSecretReferenceConfigured(row, k);
   const str  = (k: string) => (typeof row[k] === "string" ? (row[k] as string) : null);
   const num  = (k: string) => (typeof row[k] === "number" ? (row[k] as number) : null);
   return {
@@ -99,18 +101,18 @@ async function loadPublicView(sb: Sb) {
     smtp: {
       host: str("smtp_host"), port: num("smtp_port"),
       user: str("smtp_user"), from: str("smtp_from"),
-      password_configured: bool("secret_smtp_password"),
+      password_configured: secretConfigured("secret_smtp_password"),
     },
     smtp_readiness: buildSmtpReadiness(singletonExists ? row : null),
     whatsapp: {
       phone_number_id: str("whatsapp_phone_number_id"),
       api_version: str("whatsapp_api_version"),
-      access_token_configured: bool("secret_whatsapp_access_token"),
+      access_token_configured: secretConfigured("secret_whatsapp_access_token"),
       allowed_api_versions: ["v24.0", "v25.0"],
     },
     webhook: {
-      app_secret_configured: bool("secret_whatsapp_app_secret"),
-      verify_token_configured: bool("secret_whatsapp_verify_token"),
+      app_secret_configured: secretConfigured("secret_whatsapp_app_secret"),
+      verify_token_configured: secretConfigured("secret_whatsapp_verify_token"),
       url: `${SUPABASE_URL}/functions/v1/whatsapp-status-webhook`,
     },
     updated_at: str("updated_at"),
