@@ -95,6 +95,12 @@
 | SMTPI-007 | Validação completa | PASS | Deno check, 10 Deno, 54 focados, typecheck, build, 5.394 globais/4 skipped; scanner 10 Info/zero P0/P1 |
 | SMTPI-008 | Deploy e smoke passivo | PASS | duas Edge Functions implantadas; negativas JWT=401; frontend publicado e domínio HTTP 200, sem clique candidato/aplicação |
 | SMTPI-009 | Probe real, envio e alteração do host | NOT RUN | dependem de clique humano; nenhuma operação SMTP ou mudança operacional executada nesta rodada |
+| SMTPI-010 | Configuração ativa sanitizada | PASS read-only | porta 465; família KingHost; rota ativa categorizada como SMTPi/internacional; host/usuário/remetente/referência Vault presentes; global/e-mail OFF/OFF; Test Mode ON; allowlist exclusiva |
+| SMTPI-011 | Última conexão normal | PASS canônico | `2026-10-03T16:59:02.720538Z`; `success/smtp_connection_ok/quit`; 117 ms; contrato retorna TLS e `authenticated=true` após greeting/EHLO/AUTH |
+| SMTPI-012 | Segredo resolvido | PASS funcional | leitura direta do Vault não foi usada; o runtime DB resolveu a credencial, pois AUTH terminou com sucesso e o probe alcançou `quit` |
+| SMTPI-013 | Ausência de envio pós-conexão | PASS read-only | zero `smtp_send_test`, aceite, receipt, outbox enviada e incremento/retry do convite após o PASS |
+| SMTPI-014 | Integridade E02 | PASS read-only | um job, um Auth user, um profile no tenant e um papel administrador; zero superadmin; tentativas 1/1, erro legado preservado e leases limpos |
+| SMTPI-015 | Gate de envio controlado | GO condicionado | conexão PASS; exige habilitar auditavelmente somente global/e-mail e então um clique explícito para enviar exclusivamente a `teste@refilinformatica.com.br`; flags não alteradas nesta auditoria |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 
@@ -218,4 +224,4 @@
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. E02: **FAIL no SMTP (`email_unknown_error`)** após Auth/profile/papel concluídos. A porta efetiva é 465, portanto a restrição 25/587 não é causa comprovada do E02; o erro legado continua ambíguo. Forward-fix aplicado no código; janela SMTP **OFF/OFF** e **RETRY BLOCKED** até confirmação humana explícita de não recebimento. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS**. E02 permanece **FAIL histórico (`email_unknown_error`)** após Auth/profile/papel concluídos, sem retry autorizado. Janela SMTP **OFF/OFF**. Há **GO condicionado** apenas para um único envio controlado novo a `teste@refilinformatica.com.br`, após abertura auditável das duas flags e clique humano explícito. Fases 2–15: **NOT RUN**.
