@@ -80,7 +80,7 @@ describe("P0 PWA — versão independente de service worker", () => {
     expect(manualControl).toContain('inspectPublishedVersion(fetch, "manual")');
   });
 
-  it("P0.3 I–L: controle reutilizável fica nos cabeçalhos, sem posição flutuante", () => {
+  it("P0.3/P0.3.1 I–L: controle reutilizável fica nos cabeçalhos somente como ícone", () => {
     expect(topbar).toContain("PwaManualCheckButton");
     expect(platform).toContain("PwaManualCheckButton");
     expect(adminLayout).toContain("PortalTopBar");
@@ -91,7 +91,9 @@ describe("P0 PWA — versão independente de service worker", () => {
     expect(partnerLayout).not.toContain("PwaManualCheckButton");
     expect(mobileLayout).not.toContain("PwaManualCheckButton");
     expect(manualControl).not.toMatch(/fixed|bottom-|safe-area-inset-bottom/);
-    expect(manualControl).toContain("hidden sm:inline");
+    expect(manualControl).toContain('className="h-9 w-9 shrink-0 cursor-pointer px-0"');
+    expect(manualControl).not.toContain("hidden sm:inline");
+    expect(manualControl).toContain('aria-label="Verificar se há nova versão do Cultivo Farm"');
     expect(manualControl).toContain("TooltipContent");
   });
 
