@@ -246,8 +246,6 @@
 | F1-053 | Testes Deno específicos do complemento | NOT RUN | runner informou ausência de módulos de teste nas duas funções; não promovido a PASS |
 | F1-054 | Deploy e smoke do complemento | PASS | três funções implantadas; negativas JWT inválido 401; bundle oficial `App-Bdw25M7-.js` contém os marcadores novos |
 
-## Gate
-
 | SMTP-NATIVE-001 | Novo envio controlado após forward-fix | PASS | exatamente 1 novo send; `id=28`, `2026-10-03T19:15:10.908320Z`, `success/smtp_send_accepted/response`, latência nula |
 | SMTP-NATIVE-002 | Ambiguidade e duplo clique | PASS | zero resultado ambiguous; total histórico 2 e somente 1 após a falha `id=26` |
 | SMTP-NATIVE-003 | Configuração preservada | PASS read-only | KingHost SMTPi, porta 465, OFF/OFF, Test Mode ON, allowlist exclusiva; configuração anterior ao PASS `id=27` |
