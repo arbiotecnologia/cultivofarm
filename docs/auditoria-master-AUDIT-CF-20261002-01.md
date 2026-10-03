@@ -246,14 +246,15 @@ Planejar um contrato `EmailProviderAdapter` com:
 
 ### SMTP2GO por API HTTP
 
-- envio por `POST` ao endpoint oficial `/v3/email/send`, com `X-Smtp2go-Api-Key` somente no servidor;
-- base/região exclusivamente da allowlist oficial, HTTPS obrigatório, sem redirect para origem não allowlisted;
-- remetente precisa estar autorizado no provider;
-- teste sem envio deve usar endpoint oficial de permissões/validação da chave, se o contrato oficial confirmar que não cria mensagem; na ausência dessa garantia, conexão permanece `NOT SUPPORTED` e não se simula PASS;
+- envio por `POST /v3/email/send`, com `X-Smtp2go-Api-Key` somente no servidor;
+- allowlist oficial inicial de bases: `https://api.smtp2go.com/v3`, `https://us-api.smtp2go.com/v3`, `https://eu-api.smtp2go.com/v3` e `https://au-api.smtp2go.com/v3`; HTTPS obrigatório, sem redirect para origem não allowlisted;
+- remetente precisa estar verificado/autorizado no provider; tentativa com sender não verificado é rejeitada;
+- teste sem envio usa `POST /v3/api_keys/permissions`: a documentação o declara disponível a todas as API keys e ele retorna endpoints permitidos, sem criar mensagem. Seu uso como health check é uma inferência arquitetural segura, não um endpoint oficialmente nomeado “validate key”; a permissão `/email/send` deve estar presente para PASS;
 - resposta pública limitada a `ok`, `code`, `stage`, `tls`, `authenticated`, `latency_ms`;
 - códigos allowlisted: `smtp2go_connection_ok`, `smtp2go_auth_failed`, `smtp2go_permission_denied`, `smtp2go_rate_limited`, `smtp2go_unavailable`, `smtp2go_network_error`, `smtp2go_config_invalid`;
-- no envio, HTTP 200 é insuficiente: validar o envelope de resposta e qualquer `failures`, `failed` e `results` definido pelo contrato oficial. Só então marcar aceite do provider; nunca declarar entrega na caixa postal;
-- persistir identificador do provider somente após validação de formato/tamanho e se útil à reconciliação, sem corpo/headers;
+- no envio, HTTP 200 é insuficiente: validar `data.failed`, `data.failures`, `data.succeeded` e `data.email_id`/`schedule_id` conforme o contrato oficial. Só então marcar aceite do provider; nunca declarar entrega na caixa postal;
+- manter `fastaccept=false` na primeira versão: a documentação informa que `failed`/`failures`/`succeeded` podem não existir com `fastaccept=true`, o que enfraquece a certeza necessária ao gate;
+- persistir `email_id` (ou `schedule_id`, se agendamento vier a ser autorizado) somente após validação de formato/tamanho e se útil à reconciliação; `request_id` pode servir à correlação operacional sanitizada, sem corpo/headers;
 - idempotência local antes da chamada, timeout e retry controlado. Resultado sem rejeição inequívoca continua ambíguo e bloqueia retry automático; não há promessa de exactly-once.
 
 ### Troca manual segura e UX
@@ -272,6 +273,9 @@ Ativação exige configuração completa, teste PASS recente (TTL inicial recome
 - Risco de falsa saúde: teste antigo aplicado a configuração nova. Mitigação: vincular PASS ao provider e hash/snapshot sanitizado da configuração.
 - Risco de duplicação: timeout/5xx/resposta inválida após aceite. Mitigação: estado ambíguo, confirmação humana e ausência de failover/retry automático.
 - Risco de endpoint malicioso/SSRF: base livre. Mitigação: allowlist fechada de origins oficiais e redirects desabilitados ou revalidados.
+- Rate limiting: preservar limite local separado e tratar HTTP 429 com backoff; o SMTP2GO também pode limitar por API key, conta/plano e IP, sem taxa global fixa documentada para todos os endpoints.
+
+**Fontes oficiais consultadas (2026-10-03):** [Send Standard Email](https://developers.smtp2go.com/reference/send-standard-email), [General API Resources](https://developers.smtp2go.com/reference/general-api-resources), [Authentication](https://developers.smtp2go.com/reference/authentication), [View API Key Permissions](https://developers.smtp2go.com/reference/view-api-key-permissions), [Response Codes](https://developers.smtp2go.com/docs/response-codes), [Rate Limiting](https://developers.smtp2go.com/docs/rate-limiting) e [Getting Started / Verified Senders](https://developers.smtp2go.com/docs/getting-started). Não houve chamada autenticada ao SMTP2GO.
 
 ### Ordem segura de implementação futura
 

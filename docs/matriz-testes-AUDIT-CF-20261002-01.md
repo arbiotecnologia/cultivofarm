@@ -58,13 +58,13 @@
 | MP-001 | `custom_smtp` continua no adapter SMTP | PLANEJADO | dispatcher seleciona SMTP por default e regressão preserva resultados/gates |
 | MP-002 | `smtp2go_api` nunca abre socket SMTP | PLANEJADO | mocks provam apenas HTTPS para origin allowlisted |
 | MP-003 | API key ausente | PLANEJADO | readiness false e zero chamada externa |
-| MP-004 | Connection test válido | PLANEJADO | endpoint oficial sem envio retorna PASS sanitizado |
+| MP-004 | Connection test válido | PLANEJADO | `/v3/api_keys/permissions` autentica e inclui `/email/send`; PASS sanitizado, sem mensagem |
 | MP-005 | Autenticação inválida | PLANEJADO | `smtp2go_auth_failed`, sem body/header bruto |
 | MP-006 | Permissão insuficiente | PLANEJADO | `smtp2go_permission_denied` |
 | MP-007 | Rate limit do provider/local | PLANEJADO | `smtp2go_rate_limited`, retry sujeito à política |
 | MP-008 | Timeout/rede | PLANEJADO | `smtp2go_network_error`, sem dado sensível |
 | MP-009 | Provider 5xx | PLANEJADO | `smtp2go_unavailable`; efeito classificado antes de retry |
-| MP-010 | HTTP 200 com falha no payload | PLANEJADO | FAIL; HTTP isolado nunca significa aceite |
+| MP-010 | HTTP 200 com falha no payload | PLANEJADO | FAIL por `data.failed/failures`; HTTP isolado nunca significa aceite; `fastaccept=false` |
 | MP-011 | Envio aceito | PLANEJADO | estado “aceito pelo provider”, nunca “entregue na caixa” |
 | MP-012 | Troca com motivo/auditoria | PLANEJADO | lock, Superadmin, teste recente, old/new e motivo únicos |
 | MP-013 | Tenant admin | PLANEJADO | 403 e nenhuma configuração global exposta |
