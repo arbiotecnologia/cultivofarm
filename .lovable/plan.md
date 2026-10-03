@@ -1,16 +1,23 @@
-# P0.2 — controle manual de atualização pós-login
+# Plano — teste SMTPi seguro da KingHost
 
 ## Implementação
-- Estender o detector com um resultado seguro e detalhado, preservando a API atual e impedindo qualquer navegação durante verificações.
-- Criar um único controle global dentro da autenticação: botão discreto para usuários conectados, mensagens por resultado e ocultação quando o aviso de atualização estiver ativo.
-- Fazer uma verificação silenciosa por sessão após o login e usar um único agendamento global de 10 minutos, mantendo retorno à aba e reconexão apenas como detecção.
-- Preservar o aviso atual, o adiamento persistente, a recuperação de versão antiga e a navegação única somente após clique em **Atualizar agora**.
+- Adicionar uma rota candidata estritamente allowlisted no diagnóstico de conexão: somente `kinghost_smtpi`, apenas para hosts domésticos KingHost reconhecidos e porta 465.
+- Clonar a configuração efetiva somente em memória, trocar apenas o host pelo par SMTPi correspondente e executar o probe existente sem envelope ou envio.
+- Retornar apenas resultado sanitizado e a rota lógica; registrar auditoria específica sem host, usuário, senha ou mensagem bruta.
+- Expor no status sanitizado apenas a elegibilidade da rota KingHost, sem revelar o host atual.
 
-## Testes e validação
-- Cobrir autenticação, estados atual/offline/erro/update, clique duplo, login silencioso, aviso pendente, adiamento, navegação explícita única, cadência, posição móvel e acessibilidade.
-- Rodar testes PWA focados, typecheck, build, suíte global e scanner.
-- Fazer smoke passivo no domínio oficial após publicar, sem clicar em **Atualizar agora** e sem inventar validação autenticada quando não houver sessão disponível.
+## Interface
+- No card SMTP existente, mostrar o teste SMTPi somente quando a configuração for elegível e a tentativa atual tiver falhado por recusa TCP.
+- Após PASS na sessão atual, habilitar confirmação explícita para aplicar a rota SMTPi.
+- Aplicar pelo endpoint existente enviando somente o novo host; preservar senha, porta, usuário, remetente e flags.
+- Limpar o resultado candidato após salvar e exigir novo clique no teste normal.
 
-## Entrega
-- Atualizar auditoria master, matriz e roadmap somente com fatos comprovados.
-- Publicar apenas o frontend; não tocar Supabase, SMTP, campanhas ou dados.
+## Banco e segurança
+- Criar migration mínima para aceitar `smtp_connection_candidate_test` na RPC de auditoria, mantendo `service_role` exclusivo, validação de Superadmin e RLS atuais.
+- Não alterar configuração durante o teste, não aceitar host arbitrário e não executar qualquer probe ou envio nesta implementação.
+
+## Validação e entrega
+- Cobrir mapeamento KingHost/Uni5, não aplicabilidade, não persistência, ausência de envio e vazamentos, preservação de credenciais/flags, autorização, clique duplo, aplicação seletiva e acessibilidade móvel.
+- Rodar checks/testes Deno, testes focados, typecheck, build, suíte global e scanner.
+- Implantar somente as funções alteradas, publicar o frontend e fazer smoke passivo sem clicar em teste/aplicar.
+- Atualizar auditoria, matriz e roadmap apenas com resultados observados; manter SMTP2GO planejado e M1 não iniciado.
