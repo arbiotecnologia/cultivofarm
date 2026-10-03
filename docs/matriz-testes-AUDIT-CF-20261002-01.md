@@ -273,7 +273,13 @@
 | AUTH-REDIRECT-013 | Constraints e alvo da revogação | PASS | exatamente 1 Auth e 1 job coincidentes; FK de refresh token para sessão possui `ON DELETE CASCADE`; deleção explícita ocorreu antes da sessão, sem tocar users/identities/MFA |
 | AUTH-REDIRECT-014 | Integridade após revogação | PASS | 1 Auth, 1 profile esperado, 1 administrador, zero superadmin, 1 job `pendente/accepted` 2/2 sem leases, 1 organização e 1 assinatura; flags OFF/OFF, Test Mode ON e allowlist exclusiva |
 | E02-RETRY-008 | Fechamento da janela | PASS / superado | global/e-mail OFF/OFF, Test Mode ON e allowlist exclusiva; o link anterior permanece proibido pelo P0 Auth redirect |
+| D51-UI-001 | Pendente + link + accepted | PASS | ação persistente `Reenviar convite` visível diretamente na linha |
+| D51-UI-002 | Ativo ou senha temporária | PASS | ação de reenvio ausente |
+| D51-UI-003 | Falha normal e ambiguidade | PASS | tentativa normal preservada; ambíguo mantém confirmação especial e flag verdadeira |
+| D51-UI-004 | Mesmo registro e backend | PASS | payload reutiliza organização/e-mail/nome e demais dados da linha; flag ambígua falsa no reenvio normal; mesmo hook/Edge |
+| D51-UI-005 | Concorrência e atualização | PASS | trava síncrona impede duplo clique; sucesso solicita refetch da lista |
+| D51-UI-006 | Validação e publicação | PASS | 11 focados, 5.409 globais/4 skipped, typecheck/build e scanner 10 Info/zero P0/P1; publicação única e smoke passivo HTTP 200 no build `build-musuh9jx`, sem envio |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. `SESSION REVOCATION = PASS`: sessões e refresh tokens 1/1→0/0, integridade preservada e flags OFF/OFF. Novo retry E02: **GO controlado / NOT RUN**. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. `SESSION REVOCATION = PASS`: sessões e refresh tokens 1/1→0/0, integridade preservada e flags OFF/OFF. `D51.2 UX REENVIO PERSISTENTE = PASS`: botão publicado e smoke passivo concluído sem envio. Novo retry E02: **GO controlado / NOT RUN**. Fases 2–15: **NOT RUN**.

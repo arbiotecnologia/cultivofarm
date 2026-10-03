@@ -442,3 +442,11 @@ Por autorização explícita, o fallback SQL executou uma transação única: re
 Pós-verificação: `auth.sessions=0` e `auth.refresh_tokens=0` para o alvo; permanecem 1 Auth user, 1 profile na organização do job, 1 papel `administrador`, zero `superadmin`, 1 job E02 `pendente/accepted` com tentativas 2/2 e leases limpos, 1 organização e 1 assinatura. Comunicação permaneceu `delivery_enabled=false`, `email_delivery_enabled=false`, Test Mode ON e allowlist exatamente `teste@refilinformatica.com.br`. Nenhum outro usuário, identidade, MFA, senha, metadata, convite, e-mail ou flag foi alterado.
 
 **Decisão:** `SESSION REVOCATION = PASS`. O gate para um novo retry E02 controlado está liberado, mas nenhum convite foi gerado ou enviado nesta rodada. O link anterior permanece comprometido e proibido; manter OFF/OFF até a janela humana autorizada.
+
+## D51.2 — reenvio persistente em Administradores — 2026-10-03 20:30 UTC
+
+A lista **Administradores provisionados** passou a oferecer reenvio direto e persistente para registros `link/pendente` com `user_id`, inclusive após recarregar a página. O diálogo informa que será criado um novo link sem nova conta; o payload reaproveita organização, nome, e-mail, CPF, telefone, modo e responsável do mesmo registro e envia `confirmAmbiguousEmailRetry=false` no caso normal. Convites ambíguos preservam a confirmação especial e `confirmAmbiguousEmailRetry=true`; registros ativos e de senha temporária não oferecem reenvio. A trava síncrona e o estado da linha impedem duplo clique, e o sucesso atualiza a listagem.
+
+Validação: 11 testes focados e suíte global com 5.409 testes PASS/4 skipped; typecheck e build PASS. Scanner completo: 10 Info e zero P0/P1. Frontend publicado uma única vez; smoke passivo em `https://app.cultivofarm.com.br` confirmou HTTP 200, build `build-musuh9jx` e os marcadores do novo fluxo no módulo público, sem autenticação, clique ou requisição operacional. Nenhum banco, schema, flag, Auth user, profile, role, job ou convite foi alterado ou enviado.
+
+**Decisão:** `D51.2 UX REENVIO PERSISTENTE = PASS`. O botão está publicado e pronto para uso humano controlado pelo Superadmin; o envio não foi executado nesta rodada.

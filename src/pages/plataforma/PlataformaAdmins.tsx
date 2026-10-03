@@ -6,7 +6,7 @@
  * valida o papel de plataforma. Aqui não há atribuição de papéis pelo cliente
  * e o superadmin NÃO vira administrador operacional.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import {
   useConvidarAdminEmpresa,
   useConvitesAdminEmpresa,
   useOrganizacoesSaaS,
+  type ConviteAdminEmpresa,
   type ResultadoConvite,
 } from "@/hooks/usePlataformaSaaS";
 
@@ -77,8 +78,10 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
   const [modo, setModo] = useState<"link" | "senha_temporaria">("link");
   const [responsavel, setResponsavel] = useState(true);
   const [resultado, setResultado] = useState<ResultadoConvite | null>(null);
-  const [retryAmbiguo, setRetryAmbiguo] = useState(false);
   const [confirmacaoAberta, setConfirmacaoAberta] = useState(false);
+  const [conviteParaReenvio, setConviteParaReenvio] = useState<ConviteAdminEmpresa | null>(null);
+  const [reenvioEmCursoId, setReenvioEmCursoId] = useState<string | null>(null);
+  const reenvioEmCurso = useRef(false);
 
   const nomeOrg = (id: string) => orgs.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
   const envioAmbiguo = (c: (typeof convites.data extends Array<infer T> ? T : never)) =>
@@ -124,6 +127,46 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
           toast.success(r.email_status === "accepted" ? "Convite aceito pelo servidor de e-mail." : "Acesso do administrador criado.");
         },
         onError: () => toast.error("Não foi possível concluir o convite. Confira o status antes de tentar novamente."),
+      },
+    );
+  };
+
+  const abrirConfirmacaoReenvio = (convite: ConviteAdminEmpresa) => {
+    if (reenvioEmCurso.current) return;
+    setConviteParaReenvio(convite);
+    setConfirmacaoAberta(true);
+  };
+
+  const reenviarConvite = () => {
+    const convite = conviteParaReenvio;
+    if (!convite || reenvioEmCurso.current) return;
+
+    const confirmAmbiguousEmailRetry = envioAmbiguo(convite);
+    reenvioEmCurso.current = true;
+    setReenvioEmCursoId(convite.id);
+    convidar.mutate(
+      {
+        organizationId: convite.organization_id,
+        nome: convite.nome,
+        email: convite.email,
+        cpf: convite.cpf_cnpj ?? "",
+        telefone: convite.telefone ?? "",
+        modo: convite.modo_acesso,
+        responsavelPrincipal: convite.responsavel_principal,
+        confirmAmbiguousEmailRetry,
+      },
+      {
+        onSuccess: () => {
+          setConfirmacaoAberta(false);
+          setConviteParaReenvio(null);
+          toast.success("Novo convite aceito pelo servidor de e-mail.");
+          void convites.refetch();
+        },
+        onError: () => toast.error("Não foi possível concluir o convite. Confira o status antes de tentar novamente."),
+        onSettled: () => {
+          reenvioEmCurso.current = false;
+          setReenvioEmCursoId(null);
+        },
       },
     );
   };
@@ -221,7 +264,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
             </span>
           </label>
 
-          <Button disabled={!valido || convidar.isPending} onClick={() => retryAmbiguo ? setConfirmacaoAberta(true) : enviar()}>
+          <Button disabled={!valido || convidar.isPending} onClick={() => enviar()}>
             <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
             {convidar.isPending ? "Criando acesso…" : "Gerar acesso"}
           </Button>
@@ -308,20 +351,21 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
-                        {c.status === "falhou" || envioAmbiguo(c) ? (
+                        {c.modo_acesso === "link" && c.user_id && c.status !== "ativo" && (c.status === "falhou" || c.status === "pendente" || envioAmbiguo(c)) ? (
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={convidar.isPending}
-                            onClick={() => {
-                              setOrg(c.organization_id); setNome(c.nome); setEmail(c.email);
-                              setCpf(c.cpf_cnpj ? mascaraCpf(c.cpf_cnpj) : "");
-                              setTelefone(c.telefone ? mascaraTelefone(c.telefone) : "");
-                              setModo(c.modo_acesso); setResponsavel(c.responsavel_principal);
-                              setRetryAmbiguo(envioAmbiguo(c));
-                              document.getElementById("admin-nome")?.scrollIntoView({ behavior: "smooth" });
-                            }}
-                          >Preparar nova tentativa</Button>
+                            disabled={reenvioEmCursoId === c.id}
+                            onClick={() => abrirConfirmacaoReenvio(c)}
+                          >
+                            {reenvioEmCursoId === c.id
+                              ? "Reenviando…"
+                              : envioAmbiguo(c)
+                                ? "Não recebi — reenviar convite"
+                                : c.status === "falhou"
+                                  ? "Tentar convite novamente"
+                                  : "Reenviar convite"}
+                          </Button>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
                     </TableRow>
@@ -332,15 +376,25 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
           )}
         </CardContent>
       </Card>
-      <AlertDialog open={confirmacaoAberta} onOpenChange={setConfirmacaoAberta}>
+      <AlertDialog open={confirmacaoAberta} onOpenChange={(aberta) => {
+        if (reenvioEmCurso.current) return;
+        setConfirmacaoAberta(aberta);
+        if (!aberta) setConviteParaReenvio(null);
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar reenvio do convite</AlertDialogTitle>
-            <AlertDialogDescription>Confirme que verificou a caixa de entrada e não recebeu o convite. O reenvio pode gerar uma segunda mensagem se a entrega anterior tiver ocorrido.</AlertDialogDescription>
+            <AlertDialogTitle>{conviteParaReenvio && envioAmbiguo(conviteParaReenvio) ? "Confirmar reenvio do convite" : "Reenviar convite de acesso?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conviteParaReenvio && envioAmbiguo(conviteParaReenvio)
+                ? "Confirme que verificou a caixa de entrada e não recebeu o convite. O reenvio pode gerar uma segunda mensagem se a entrega anterior tiver ocorrido."
+                : "Será gerado um novo link de acesso para este administrador. Use somente o convite mais recente. Nenhuma nova conta será criada."}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => enviar(true)}>Confirmar e reenviar</AlertDialogAction>
+            <AlertDialogCancel disabled={reenvioEmCursoId !== null}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={reenvioEmCursoId !== null} onClick={reenviarConvite}>
+              {conviteParaReenvio && envioAmbiguo(conviteParaReenvio) ? "Confirmar e reenviar" : "Reenviar convite"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
