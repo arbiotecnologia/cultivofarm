@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
-import { PwaManualCheckButton } from "@/pwa/PwaManualCheckButton";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PortalSidebar } from "@/components/nav/PortalSidebar";
 import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
@@ -108,12 +107,9 @@ export default function PortalLayout() {
             <p className="text-sm text-muted-foreground">
               Sua conta não está vinculada a nenhum cliente. Contate o administrador para concluir a configuração do acesso.
             </p>
-            <div className="flex items-center gap-2">
-              <PwaManualCheckButton />
-              <Button variant="outline" onClick={async () => { await signOut(); navigate("/auth"); }}>
-                <LogOut className="h-4 w-4 mr-2" /> Sair
-              </Button>
-            </div>
+            <Button variant="outline" onClick={async () => { await signOut(); navigate("/auth"); }}>
+              <LogOut className="h-4 w-4 mr-2" /> Sair
+            </Button>
           </div>
         </div>
       </div>
