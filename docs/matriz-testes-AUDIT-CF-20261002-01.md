@@ -48,6 +48,8 @@
 | SMTP-DIAG-003 | Localização da falha | PASS diagnóstico | rejeição em `Deno.connectTls`, antes de greeting/EHLO/AUTH; timeout de 5 s incompatível com latência de 13 ms |
 | SMTP-DIAG-004 | Causa fina rede/DNS/TCP/certificado | INCONCLUSIVO | helper atual agrupa essas exceções em `smtp_tls_failed`; requer categorização interna allowlisted |
 | SMTP-DIAG-005 | Novo probe ou envio nesta rodada | NOT RUN | proibido pelo escopo; nenhum botão acionado |
+| SMTP-UI-009 | Testes/layout/regressão | PASS | 54 focados, 4 Deno, typecheck, build, 5.379 globais/4 skipped e scanner sem P0/P1 |
+| SMTP-UI-010 | Smoke `/plataforma` sem sessão | PASS limitado | redirecionou a `/auth`, sem erro e sem chamada SMTP; DOM autenticado não disponível no Supabase externo |
 
 ## Fase 0
 

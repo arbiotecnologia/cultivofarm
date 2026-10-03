@@ -556,7 +556,8 @@ export default function ComunicacaoConfigTab() {
     view.smtp_readiness.smtp_port_configured &&
     view.smtp_readiness.smtp_port_runtime_compatible &&
     view.smtp_readiness.smtp_user_configured &&
-    view.smtp_readiness.smtp_password_configured;
+    view.smtp_readiness.smtp_password_configured &&
+    view.smtp_readiness.smtp_from_configured;
   const controlledSendBlockReason = !view.smtp_readiness.smtp_port_runtime_compatible
     ? "A porta configurada não é compatível com o ambiente de execução."
     : !connectionConfigReady || !view.smtp_readiness.smtp_from_configured
@@ -880,6 +881,7 @@ export default function ComunicacaoConfigTab() {
                 variant="outline"
                 disabled={testingConnection || testingEmail || !connectionConfigReady}
                 onClick={handleTestConnection}
+                aria-busy={testingConnection}
               >
                 <PlugZap className="mr-1 h-4 w-4" />
                 {testingConnection ? "Testando conexão..." : "Testar conexão"}
@@ -922,6 +924,7 @@ export default function ComunicacaoConfigTab() {
                 variant="outline"
                 disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
                 onClick={() => setConfirmSendOpen(true)}
+                aria-busy={testingEmail}
               >
                 <Mail className="mr-1 h-4 w-4" />
                 {testingEmail ? "Enviando..." : "Enviar e-mail de teste"}
