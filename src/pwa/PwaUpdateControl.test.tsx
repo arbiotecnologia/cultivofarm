@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PwaUpdateControl } from "./PwaUpdateControl";
+import { PwaUpdateControl, resetPwaUpdateControlForTests } from "./PwaUpdateControl";
 
 const mocks = vi.hoisted(() => ({
   user: null as { id: string } | null,
@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: mocks.user }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: mocks.user, session: mocks.user ? { expires_at: 123 } : null }) }));
 vi.mock("@/components/ui/sonner", () => ({ toast: { success: mocks.success, error: mocks.error } }));
 vi.mock("./registerSW", () => ({
   PWA_UPDATE_STATE_EVENT: "pwa:update-state",
@@ -20,6 +20,7 @@ vi.mock("./registerSW", () => ({
 
 describe("PwaUpdateControl", () => {
   beforeEach(() => {
+    resetPwaUpdateControlForTests();
     mocks.user = null;
     mocks.snapshot = { status: "hidden", version: null, staleBuild: false };
     mocks.inspect.mockReset().mockResolvedValue({ status: "current" });

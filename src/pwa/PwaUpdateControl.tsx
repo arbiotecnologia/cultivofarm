@@ -10,12 +10,17 @@ import {
   type PwaUpdateSnapshot,
 } from "./registerSW";
 
+const checkedSessionKeys = new Set<string>();
+
+export function resetPwaUpdateControlForTests(): void {
+  checkedSessionKeys.clear();
+}
+
 export function PwaUpdateControl() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [update, setUpdate] = useState<PwaUpdateSnapshot>(getPwaUpdateSnapshot);
   const [checking, setChecking] = useState(false);
   const checkingRef = useRef(false);
-  const checkedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const onStateChange = (event: Event) => {
@@ -27,14 +32,12 @@ export function PwaUpdateControl() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      checkedUserIdRef.current = null;
-      return;
-    }
-    if (checkedUserIdRef.current === user.id) return;
-    checkedUserIdRef.current = user.id;
+    if (!user) return;
+    const sessionKey = `${user.id}:${session?.expires_at ?? "active"}`;
+    if (checkedSessionKeys.has(sessionKey)) return;
+    checkedSessionKeys.add(sessionKey);
     void inspectPublishedVersion();
-  }, [user]);
+  }, [session?.expires_at, user]);
 
   const checkManually = async () => {
     if (checkingRef.current) return;
