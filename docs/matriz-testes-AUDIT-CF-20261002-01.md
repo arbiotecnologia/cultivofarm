@@ -44,6 +44,9 @@
 | PWA-029 | P0.3 M–P — cadência e navegação | PASS pré-publicação | observador pós-login único; scheduler único 10 min; visibility/online só detectam; stale-chunk e atualização navegam apenas por clique |
 | PWA-030 | Regressão final P0.3 | PASS | 43 focados/A–P, typecheck e build PASS; scanner 10 Info/zero P0/P1; global 5.402 PASS/4 skipped, sem falhas |
 | PWA-031 | Publicação única e smoke oficial P0.3 | PASS passivo | HTTP 200; build `build-musp27xr`; zero erro de página/requisição; módulo oficial contém controle manual, prompt e Adiar, sem badge ou textos de recarga automática; nenhum clique executado |
+| PWA-032 | P0.3.1 — botão manual somente com ícone | PASS | 44 testes focados; `RefreshCw` e `Loader2`; zero texto visual persistente; tooltip e `aria-label` preservados; inspeção manual inalterada |
+| PWA-033 | P0.3.1 — typecheck, build e scanner | PASS | typecheck/build verdes; scanner 10 Info e zero P0/P1; nenhuma área SMTP/Supabase alterada |
+| PWA-034 | P0.3.1 — publicação única e smoke oficial | PASS passivo | HTTP 200; build `build-musqd5o5`; módulo oficial contém controle `h-9 w-9`, tooltip e rótulo acessível, sem texto desktop, recarga automática ou badge; nenhum clique executado |
 
 ## Diagnóstico SMTP — integração da tela de plataforma
 
