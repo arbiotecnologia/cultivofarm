@@ -1,14 +1,17 @@
-# P0.3.1 — Botão manual de atualização somente com ícone
+# Certificação pós-correção Auth sem envio
 
-## Implementação
-- Remover o texto visual persistente do botão e manter apenas `RefreshCw`, alternando para `Loader2` durante a verificação.
-- Preservar o rótulo acessível, o tooltip, o tamanho compacto e toda a lógica P0.3 existente.
-- Ajustar somente os testes e registros de auditoria/roadmap ligados a esse refinamento visual.
+## Escopo
+- Confirmar, somente por leitura, flags, allowlist e unicidade do E02 no projeto canônico.
+- Verificar se existem sessões ativas do usuário controlado sem ler ou expor tokens.
+- Comprovar o redirect pelo código implantado e pela rota publicada; gerar no máximo um link recovery sem envio apenas se a inspeção puder ocorrer integralmente em memória e sem revelar o link.
+- Atualizar auditoria, matriz e roadmap apenas com fatos comprovados.
 
-## Validação e publicação
-- Executar testes PWA focados, typecheck, build e scanner.
-- Publicar o frontend uma única vez.
-- Fazer smoke passivo oficial, sem clicar no controle e sem qualquer recarga automática.
+## Segurança e parada
+- Não abrir flags, enviar e-mail, abrir link, recriar registros ou modificar o job.
+- Nunca imprimir, persistir ou registrar action link, token, query, hash ou fragmento.
+- Se Auth URL Configuration ou `auth.sessions` não forem legíveis, registrar a limitação e decidir NO-GO quando a evidência exigida não puder ser substituída com segurança.
 
-## Restrições
-- Não alterar detecção, prompt, scheduler, storage, SMTP, Supabase, E02, REFIL ou AR BIO.
+## Validação
+- Conferir o ref canônico `swzpzcwiasxmjutrmvkm` antes das consultas.
+- Confirmar a rota `/reset-password`, política fixa de redirect e ausência de composição pelo `Origin`.
+- Executar verificações documentais e `git diff --check`; nenhum teste de entrega SMTP será executado.
