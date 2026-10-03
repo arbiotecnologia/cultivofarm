@@ -87,7 +87,7 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   it("separa conexão sem envio do envio real confirmado", () => {
     expect(ui).toContain('{ mode: "connection" }');
     expect(ui).toContain("Testar conexão do provedor");
-    expect(ui).toContain("Não envia e-mail e funciona com as entregas global e de e-mail desativadas.");
+    expect(ui).toContain("Verifica rede, TLS, protocolo SMTP e autenticação. Nenhum e-mail é enviado.");
     expect(ui).toContain("Confirmar envio real de teste?");
     expect(ui).toContain('{ mode: "send", to');
     expect(ui).toContain("O sucesso confirma apenas o aceite pelo servidor SMTP, não a entrega na caixa postal.");
@@ -97,15 +97,23 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
     expect(platformHome).toContain('import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab"');
     expect(platformHome).toContain('<TabsContent value="comunicacao">');
     expect(platformHome).toContain("<ComunicacaoConfigTab />");
-    expect(ui).toContain("Diagnóstico do provedor de e-mail");
     expect(ui).toContain("Testar conexão do provedor");
-    expect(ui).toContain("Enviar teste");
-    expect(ui).not.toMatch(/view\.smtp\.password_configured\s*&&\s*\([\s\S]{0,300}Diagnóstico do provedor de e-mail/);
+    expect(ui).toContain("Enviar e-mail de teste");
+    expect(ui).not.toContain("Diagnóstico do provedor de e-mail");
     expect(ui).toContain("!connectionConfigReady");
     expect(ui).toContain("!view.smtp_readiness.ready_for_controlled_test");
-    expect(ui).toContain("funciona com as entregas global e de e-mail desativadas");
-    expect(ui).toContain("Envio bloqueado até que toda a prontidão SMTP");
-    expect(ui).toContain("flex flex-col gap-3 rounded-md border p-3 sm:flex-row");
+    expect(ui).toContain("As entregas global e por e-mail permanecem desativadas.");
+    expect(ui).toContain("Envio bloqueado:");
+    const smtpCardStart = ui.indexOf("Provedor de e-mail (SMTP)");
+    const smtpCardEnd = ui.indexOf("{/* WhatsApp */}");
+    const smtpCard = ui.slice(smtpCardStart, smtpCardEnd);
+    expect(smtpCard).toContain("Salvar provedor de e-mail");
+    expect(smtpCard).toContain("Testar conexão do provedor");
+    expect(smtpCard).toContain("Enviar e-mail de teste");
+    expect(smtpCard.indexOf("Salvar provedor de e-mail")).toBeLessThan(smtpCard.indexOf("Testar conexão do provedor"));
+    expect(smtpCard.indexOf("Testar conexão do provedor")).toBeLessThan(smtpCard.indexOf("Enviar e-mail de teste"));
+    expect(ui).toContain('aria-live="polite"');
+    expect(ui).toContain("grid-cols-1 gap-3 md:grid-cols");
   });
 
   it("preserva proteção contra clique duplo nos dois diagnósticos", () => {
