@@ -9,7 +9,7 @@
 
 - Global communication provider settings are accessible only to Platform Superadmins through server-side `is_platform_superadmin`; tenant admins have no UI or endpoint access, while workers retain service-role-only RPC access — preserves SaaS isolation and secret boundaries.
 
-- Controlled SMTP tests reuse the shared communication adapter and require Platform Superadmin authorization, rate limiting, full readiness, test mode, and the fixed gate recipient before any socket; responses expose only allowlisted codes — prevents tenant privilege bypass and diagnostic leakage.
+- Controlled SMTP test sends reuse the shared adapter but bypass only operational delivery flags after a recent equivalent connection PASS, requiring Platform Superadmin, Test Mode, exclusive fixed allowlist, explicit confirmation, rate limiting and sanitized audit — validates transport without releasing operational flows.
 - SMTP provider diagnostics use the existing test function: connection mode authenticates over TLS without SMTP envelope/data and works with delivery OFF; send mode remains fixed-recipient and fully gated — separates transport readiness from real delivery.
 - Native SMTP connection failures are normalized server-side to an allowlisted DNS/TCP/TLS code; raw runtime errors never reach logs, audit rows, or clients — improves diagnosis without leaking infrastructure details.
 - KingHost SMTPi diagnostics use only a server-side allowlisted in-memory route; persistence requires a separate explicit Superadmin action that changes only the SMTP host — prevents arbitrary host probing and silent configuration changes.

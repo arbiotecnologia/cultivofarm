@@ -8,25 +8,24 @@ export type ControlledSmtpTestGate =
 export function evaluateControlledSmtpTest(
   env: WorkerEnv,
   recipient: string,
+  connectionPassRecent = false,
 ): ControlledSmtpTestGate {
   const normalizedRecipient = recipient.trim().toLowerCase();
   if (normalizedRecipient !== CONTROLLED_TEST_EMAIL) {
     return { allowed: false, code: "recipient_not_allowed" };
   }
 
-  const allowlisted = (env.TEST_ALLOWED_EMAILS ?? []).some(
-    (email) => email.trim().toLowerCase() === CONTROLLED_TEST_EMAIL,
-  );
+  const normalizedAllowlist = (env.TEST_ALLOWED_EMAILS ?? []).map((email) => email.trim().toLowerCase());
+  const allowlistedExclusively = normalizedAllowlist.length === 1 && normalizedAllowlist[0] === CONTROLLED_TEST_EMAIL;
   const smtpConfigError = getSmtpConfigError(env);
   if (smtpConfigError === "smtp_port_blocked_by_edge_runtime") {
     return { allowed: false, code: smtpConfigError };
   }
 
   if (
-    !env.DELIVERY_ENABLED ||
-    !env.EMAIL_ENABLED ||
     env.TEST_MODE_ENABLED !== true ||
-    !allowlisted ||
+    !allowlistedExclusively ||
+    !connectionPassRecent ||
     smtpConfigError !== null
   ) {
     return { allowed: false, code: "smtp_not_ready" };
