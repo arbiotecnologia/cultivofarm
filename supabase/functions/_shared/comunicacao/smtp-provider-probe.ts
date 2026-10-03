@@ -47,7 +47,7 @@ export interface SmtpProbeDeps {
 
 const MAX_RESPONSE_BYTES = 16 * 1024;
 const MAX_RESPONSE_LINES = 64;
-const DEFAULT_STEP_TIMEOUT_MS = 5_000;
+export const DEFAULT_SMTP_STEP_TIMEOUT_MS = 5_000;
 const DEFAULT_ABSOLUTE_TIMEOUT_MS = 20_000;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -102,7 +102,7 @@ async function withTimeout<T>(
   }
 }
 
-async function writeCommand(connection: ProbeConnection, command: string, timeoutMs: number, stage: SmtpProbeStage) {
+export async function writeSmtpCommand(connection: ProbeConnection, command: string, timeoutMs: number, stage: SmtpProbeStage) {
   try {
     await withTimeout(connection.write(encoder.encode(`${command}\r\n`)), timeoutMs, stage);
   } catch (error) {
@@ -110,7 +110,7 @@ async function writeCommand(connection: ProbeConnection, command: string, timeou
   }
 }
 
-async function readResponse(
+export async function readSmtpResponse(
   connection: ProbeConnection,
   timeoutMs: number,
   stage: SmtpProbeStage,
@@ -165,7 +165,7 @@ function base64(value: string): string {
   return btoa(binary);
 }
 
-async function authenticate(
+export async function authenticateSmtpSession(
   connection: ProbeConnection,
   mechanisms: Set<string>,
   user: string,
@@ -173,21 +173,75 @@ async function authenticate(
   timeoutMs: number,
 ) {
   if (mechanisms.has("PLAIN")) {
-    await writeCommand(connection, `AUTH PLAIN ${base64(`\0${user}\0${password}`)}`, timeoutMs, "auth");
-    const response = await readResponse(connection, timeoutMs, "auth");
+    await writeSmtpCommand(connection, `AUTH PLAIN ${base64(`\0${user}\0${password}`)}`, timeoutMs, "auth");
+    const response = await readSmtpResponse(connection, timeoutMs, "auth");
     if (response.status !== 235) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
     return;
   }
   if (mechanisms.has("LOGIN")) {
-    await writeCommand(connection, "AUTH LOGIN", timeoutMs, "auth");
-    if ((await readResponse(connection, timeoutMs, "auth")).status !== 334) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
-    await writeCommand(connection, base64(user), timeoutMs, "auth");
-    if ((await readResponse(connection, timeoutMs, "auth")).status !== 334) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
-    await writeCommand(connection, base64(password), timeoutMs, "auth");
-    if ((await readResponse(connection, timeoutMs, "auth")).status !== 235) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
+    await writeSmtpCommand(connection, "AUTH LOGIN", timeoutMs, "auth");
+    if ((await readSmtpResponse(connection, timeoutMs, "auth")).status !== 334) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
+    await writeSmtpCommand(connection, base64(user), timeoutMs, "auth");
+    if ((await readSmtpResponse(connection, timeoutMs, "auth")).status !== 334) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
+    await writeSmtpCommand(connection, base64(password), timeoutMs, "auth");
+    if ((await readSmtpResponse(connection, timeoutMs, "auth")).status !== 235) throw createSmtpProbeFailure("smtp_auth_failed", "auth");
     return;
   }
   throw createSmtpProbeFailure("smtp_auth_unsupported", "auth");
+}
+
+export interface AuthenticatedSmtpSession {
+  connection: ProbeConnection;
+  tls: boolean;
+}
+
+export async function openAuthenticatedSmtpSession(
+  env: WorkerEnv,
+  deps: SmtpProbeDeps,
+  onStage?: (stage: SmtpProbeStage) => void,
+  onConnection?: (connection: ProbeConnection) => void,
+): Promise<AuthenticatedSmtpSession> {
+  const configError = getSmtpConfigError(env);
+  if (configError) throw createSmtpProbeFailure(configError === "email_config_invalid" ? "smtp_config_invalid" : configError, "connect");
+  const hostname = env.SMTP_HOST ?? "";
+  const port = Number(env.SMTP_PORT);
+  const timeoutMs = deps.stepTimeoutMs ?? DEFAULT_SMTP_STEP_TIMEOUT_MS;
+  let connection: ProbeConnection;
+  let tls = port === 465;
+  onStage?.("connect");
+  connection = tls
+    ? await withTimeout(deps.connectTls(hostname, port), timeoutMs, "connect")
+    : await withTimeout(deps.connect(hostname, port), timeoutMs, "connect");
+  onConnection?.(connection);
+  try {
+    onStage?.("greeting");
+    if ((await readSmtpResponse(connection, timeoutMs, "greeting")).status !== 220) throw createSmtpProbeFailure("smtp_greeting_failed", "greeting");
+    onStage?.("ehlo");
+    await writeSmtpCommand(connection, "EHLO cultivofarm.local", timeoutMs, "ehlo");
+    let ehlo = await readSmtpResponse(connection, timeoutMs, "ehlo");
+    if (ehlo.status !== 250) throw createSmtpProbeFailure("smtp_ehlo_failed", "ehlo");
+    let caps = capabilities(ehlo.lines);
+    if (!tls) {
+      onStage?.("starttls");
+      if (!hasCapability(caps, "STARTTLS")) throw createSmtpProbeFailure("smtp_starttls_unavailable", "starttls");
+      await writeSmtpCommand(connection, "STARTTLS", timeoutMs, "starttls");
+      if ((await readSmtpResponse(connection, timeoutMs, "starttls")).status !== 220) throw createSmtpProbeFailure("smtp_starttls_failed", "starttls");
+      connection = await withTimeout(deps.startTls(connection, hostname), timeoutMs, "starttls");
+      onConnection?.(connection);
+      tls = true;
+      onStage?.("ehlo");
+      await writeSmtpCommand(connection, "EHLO cultivofarm.local", timeoutMs, "ehlo");
+      ehlo = await readSmtpResponse(connection, timeoutMs, "ehlo");
+      if (ehlo.status !== 250) throw createSmtpProbeFailure("smtp_ehlo_failed", "ehlo");
+      caps = capabilities(ehlo.lines);
+    }
+    onStage?.("auth");
+    await authenticateSmtpSession(connection, authMechanisms(caps), env.SMTP_USER ?? "", env.SMTP_PASSWORD ?? "", timeoutMs);
+    return { connection, tls };
+  } catch (error) {
+    try { connection.close(); } catch { /* fechamento best-effort */ }
+    throw error;
+  }
 }
 
 export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Promise<SmtpProbeResult> {
@@ -207,7 +261,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
 
   const hostname = env.SMTP_HOST ?? "";
   const port = Number(env.SMTP_PORT);
-  const stepTimeout = deps.stepTimeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
+  const stepTimeout = deps.stepTimeoutMs ?? DEFAULT_SMTP_STEP_TIMEOUT_MS;
   const absoluteTimeout = deps.absoluteTimeoutMs ?? DEFAULT_ABSOLUTE_TIMEOUT_MS;
   let connection: ProbeConnection | null = null;
   let tls = port === 465;
@@ -216,49 +270,21 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
   const run = async (): Promise<SmtpProbeResult> => {
     try {
       try {
-        connection = tls
-          ? await withTimeout(deps.connectTls(hostname, port), stepTimeout, "connect")
-          : await withTimeout(deps.connect(hostname, port), stepTimeout, "connect");
+        const session = await openAuthenticatedSmtpSession(
+          env,
+          deps,
+          (nextStage) => { stage = nextStage; },
+          (openedConnection) => { connection = openedConnection; },
+        );
+        connection = session.connection;
+        tls = session.tls;
       } catch (error) {
         throw classifyError(error, "connect");
       }
 
-      stage = "greeting";
-      if ((await readResponse(connection, stepTimeout, stage)).status !== 220) {
-        throw createSmtpProbeFailure("smtp_greeting_failed", stage);
-      }
-
-      stage = "ehlo";
-      await writeCommand(connection, "EHLO cultivofarm.local", stepTimeout, stage);
-      let ehlo = await readResponse(connection, stepTimeout, stage);
-      if (ehlo.status !== 250) throw createSmtpProbeFailure("smtp_ehlo_failed", stage);
-      let caps = capabilities(ehlo.lines);
-
-      if (!tls) {
-        stage = "starttls";
-        if (!hasCapability(caps, "STARTTLS")) throw createSmtpProbeFailure("smtp_starttls_unavailable", stage);
-        await writeCommand(connection, "STARTTLS", stepTimeout, stage);
-        if ((await readResponse(connection, stepTimeout, stage)).status !== 220) {
-          throw createSmtpProbeFailure("smtp_starttls_failed", stage);
-        }
-        try {
-          connection = await withTimeout(deps.startTls(connection, hostname), stepTimeout, stage);
-          tls = true;
-        } catch (error) {
-          throw classifyError(error, "starttls");
-        }
-        stage = "ehlo";
-        await writeCommand(connection, "EHLO cultivofarm.local", stepTimeout, stage);
-        ehlo = await readResponse(connection, stepTimeout, stage);
-        if (ehlo.status !== 250) throw createSmtpProbeFailure("smtp_ehlo_failed", stage);
-        caps = capabilities(ehlo.lines);
-      }
-
-      stage = "auth";
-      await authenticate(connection, authMechanisms(caps), env.SMTP_USER ?? "", env.SMTP_PASSWORD ?? "", stepTimeout);
       stage = "quit";
-      await writeCommand(connection, "QUIT", stepTimeout, stage);
-      await readResponse(connection, stepTimeout, stage).catch(() => ({ status: 0, lines: [] }));
+      await writeSmtpCommand(connection, "QUIT", stepTimeout, stage);
+      await readSmtpResponse(connection, stepTimeout, stage).catch(() => ({ status: 0, lines: [] }));
       return { ok: true, code: "smtp_connection_ok", stage, tls, authenticated: true, latency_ms: safeLatency(startedAt, now) };
     } catch (error) {
       const failure = classifyError(error, stage);

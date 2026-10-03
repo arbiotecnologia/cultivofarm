@@ -2,6 +2,7 @@ import {
   createSmtpProbeFailure,
   probeSmtpProvider,
   type ProbeConnection,
+  type SmtpProbeDeps,
   type SmtpProbeCode,
   type SmtpProbeResult,
   type SmtpProbeStage,
@@ -43,7 +44,11 @@ function normalizeNativeFailure(error: unknown, operation: NativeOperation, stag
 }
 
 export function probeSmtpProviderInDeno(env: WorkerEnv): Promise<SmtpProbeResult> {
-  return probeSmtpProvider(env, {
+  return probeSmtpProvider(env, createDenoSmtpDeps());
+}
+
+export function createDenoSmtpDeps(): SmtpProbeDeps {
+  return {
     connect: async (hostname, port) => {
       try { return await Deno.connect({ hostname, port, transport: "tcp" }) as DenoSocket; }
       catch (error) { return normalizeNativeFailure(error, "connect", "connect"); }
@@ -56,5 +61,5 @@ export function probeSmtpProviderInDeno(env: WorkerEnv): Promise<SmtpProbeResult
       try { return await Deno.startTls(connection as Deno.TcpConn, { hostname }) as DenoSocket; }
       catch (error) { return normalizeNativeFailure(error, "startTls", "starttls"); }
     },
-  });
+  };
 }
