@@ -43,7 +43,7 @@
 | PWA-028 | P0.3 I–L — controle nos cabeçalhos | PASS pré-publicação | componente reutilizável no topbar compartilhado e Superadmin; administrativo, produtor, parceiro e mobile usam o mesmo topbar; duplicidade do fallback produtor removida; texto desktop e tooltip mobile |
 | PWA-029 | P0.3 M–P — cadência e navegação | PASS pré-publicação | observador pós-login único; scheduler único 10 min; visibility/online só detectam; stale-chunk e atualização navegam apenas por clique |
 | PWA-030 | Regressão final P0.3 | PASS | 43 focados/A–P, typecheck e build PASS; scanner 10 Info/zero P0/P1; global 5.402 PASS/4 skipped, sem falhas |
-| PWA-031 | Publicação única e smoke oficial P0.3 | Pendente após os gates | smoke será exclusivamente passivo; nenhum clique em atualização será executado |
+| PWA-031 | Publicação única e smoke oficial P0.3 | PASS passivo | HTTP 200; build `build-musp27xr`; zero erro de página/requisição; módulo oficial contém controle manual, prompt e Adiar, sem badge ou textos de recarga automática; nenhum clique executado |
 
 ## Diagnóstico SMTP — integração da tela de plataforma
 
