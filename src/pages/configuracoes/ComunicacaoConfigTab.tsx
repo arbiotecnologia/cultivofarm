@@ -131,6 +131,19 @@ function friendlyError(code: string, status?: number): string {
   return `${prefix}${code || "erro desconhecido"}.`;
 }
 
+const SMTP_STAGE_LABELS: Record<string, string> = {
+  connect: "Conexão segura",
+  greeting: "Saudação do servidor",
+  ehlo: "Negociação SMTP",
+  starttls: "Ativação do TLS",
+  auth: "Autenticação",
+  quit: "Encerramento",
+};
+
+function friendlyStage(stage: string): string {
+  return SMTP_STAGE_LABELS[stage] ?? "Conexão SMTP";
+}
+
 const CONTROLLED_TEST_EMAIL = "teste@refilinformatica.com.br";
 
 const FLAG_LABELS: Record<string, { title: string; help: string }> = {
@@ -543,7 +556,19 @@ export default function ComunicacaoConfigTab() {
     view.smtp_readiness.smtp_port_configured &&
     view.smtp_readiness.smtp_port_runtime_compatible &&
     view.smtp_readiness.smtp_user_configured &&
-    view.smtp_readiness.smtp_password_configured;
+    view.smtp_readiness.smtp_password_configured &&
+    view.smtp_readiness.smtp_from_configured;
+  const controlledSendBlockReason = !view.smtp_readiness.smtp_port_runtime_compatible
+    ? "A porta configurada não é compatível com o ambiente de execução."
+    : !connectionConfigReady || !view.smtp_readiness.smtp_from_configured
+      ? "Complete a configuração técnica do provedor."
+      : !view.smtp_readiness.test_mode_enabled
+        ? "Ative o modo de homologação."
+        : !view.smtp_readiness.test_email_allowlisted
+          ? "Inclua o destinatário controlado na lista permitida."
+          : !view.smtp_readiness.delivery_enabled || !view.smtp_readiness.email_delivery_enabled
+            ? "As entregas global e por e-mail permanecem desativadas."
+            : "A prontidão completa ainda não foi confirmada.";
 
   return (
     <div className="space-y-4">
@@ -633,79 +658,6 @@ export default function ComunicacaoConfigTab() {
             <Badge variant={view.smtp_readiness.ready_for_controlled_test ? "default" : "outline"}>
               {view.smtp_readiness.ready_for_controlled_test ? "Pronto para teste controlado" : "Não pronto"}
             </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><PlugZap className="h-4 w-4" />Diagnóstico do provedor de e-mail</CardTitle>
-          <CardDescription>
-            Primeiro valide a conexão segura e a autenticação sem enviar mensagem. O envio controlado permanece separado e exige confirmação.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium">1. Conexão e autenticação</p>
-              <p className="text-xs text-muted-foreground">Não envia e-mail e funciona com as entregas global e de e-mail desativadas.</p>
-              {!connectionConfigReady && (
-                <p className="mt-1 text-xs text-muted-foreground" role="status">
-                  Complete a configuração segura do provedor para liberar este diagnóstico.
-                </p>
-              )}
-            </div>
-            <Button
-              variant="outline"
-              disabled={testingConnection || testingEmail || !connectionConfigReady}
-              onClick={handleTestConnection}
-            >
-              <PlugZap className="h-4 w-4 mr-1" />
-              {testingConnection ? "Testando conexão..." : "Testar conexão do provedor"}
-            </Button>
-          </div>
-          {connectionResult && (
-            <div role="status" className="flex items-start gap-2 text-sm">
-              {connectionResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" /> : <CircleX className="mt-0.5 h-4 w-4 text-destructive" />}
-              <div>
-                <p className="font-medium">{friendlyError(connectionResult.code)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Etapa: {connectionResult.stage} · TLS: {connectionResult.tls ? "confirmado" : "não confirmado"} · Autenticação: {connectionResult.authenticated ? "confirmada" : "não confirmada"} · {connectionResult.latency_ms} ms
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="space-y-2 rounded-md border p-3">
-            <div>
-              <p className="text-sm font-medium">2. Envio controlado</p>
-              <p className="text-xs text-muted-foreground">Disponível somente com o checklist completo. O destinatário é fixo e validado no servidor.</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="smtp-test-to"
-                type="email"
-                value={testEmailTo}
-                readOnly
-                autoComplete="off"
-                maxLength={254}
-                aria-invalid={!!testEmailError}
-                aria-describedby={testEmailError ? "smtp-test-to-error" : undefined}
-              />
-              <Button
-                variant="outline"
-                disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
-                onClick={() => setConfirmSendOpen(true)}
-              >
-                <Mail className="h-4 w-4 mr-1" />
-                {testingEmail ? "Enviando..." : "Enviar teste"}
-              </Button>
-            </div>
-            <FieldError msg={testEmailError} />
-            {!view.smtp_readiness.ready_for_controlled_test && (
-              <p className="text-xs text-muted-foreground" role="status">
-                Envio bloqueado até que toda a prontidão SMTP, incluindo as flags de entrega, esteja ativa.
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -909,6 +861,82 @@ export default function ComunicacaoConfigTab() {
           <Button disabled={saving} onClick={handleSaveSmtp}>
             <Save className="h-4 w-4 mr-1" />Salvar provedor de e-mail
           </Button>
+
+          <Separator />
+
+          <section className="space-y-3" aria-labelledby="smtp-connection-title">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <div>
+                <h3 id="smtp-connection-title" className="text-sm font-semibold">Testar conexão do provedor</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Verifica rede, TLS, protocolo SMTP e autenticação. Nenhum e-mail é enviado.
+                </p>
+                {!connectionConfigReady && (
+                  <p className="mt-1 text-xs text-muted-foreground" role="status">
+                    Complete a configuração segura do provedor para liberar este diagnóstico.
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                disabled={testingConnection || testingEmail || !connectionConfigReady}
+                onClick={handleTestConnection}
+                aria-busy={testingConnection}
+              >
+                <PlugZap className="mr-1 h-4 w-4" />
+                {testingConnection ? "Testando conexão..." : "Testar conexão"}
+              </Button>
+            </div>
+            {connectionResult && (
+              <div aria-live="polite" role="status" className="flex items-start gap-2 rounded-md border p-3 text-sm">
+                {connectionResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" /> : <CircleX className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+                <div className="min-w-0">
+                  <p className="font-medium">{connectionResult.ok ? "Conectado e autenticado" : "Falhou"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {friendlyStage(connectionResult.stage)} · {friendlyError(connectionResult.code)} · {connectionResult.latency_ms} ms
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <Separator />
+
+          <section className="space-y-3" aria-labelledby="smtp-send-test-title">
+            <div>
+              <h3 id="smtp-send-test-title" className="text-sm font-semibold">Enviar e-mail de teste</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Este é um envio real para o destinatário fixo abaixo e exige confirmação explícita. O sucesso significa que o servidor SMTP aceitou a mensagem, não que ela chegou à caixa postal.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
+              <Input
+                id="smtp-test-to"
+                type="email"
+                value={testEmailTo}
+                readOnly
+                autoComplete="off"
+                maxLength={254}
+                aria-invalid={!!testEmailError}
+                aria-describedby={testEmailError ? "smtp-test-to-error" : undefined}
+              />
+              <Button
+                variant="outline"
+                disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
+                onClick={() => setConfirmSendOpen(true)}
+                aria-busy={testingEmail}
+              >
+                <Mail className="mr-1 h-4 w-4" />
+                {testingEmail ? "Enviando..." : "Enviar e-mail de teste"}
+              </Button>
+            </div>
+            <FieldError msg={testEmailError} />
+            {!view.smtp_readiness.ready_for_controlled_test && (
+              <p className="text-xs text-muted-foreground" role="status">
+                Envio bloqueado: {controlledSendBlockReason}
+              </p>
+            )}
+          </section>
 
         </CardContent>
       </Card>

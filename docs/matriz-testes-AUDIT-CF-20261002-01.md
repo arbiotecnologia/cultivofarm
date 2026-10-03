@@ -40,6 +40,16 @@
 | SMTP-UI-003 | Conexão com entrega global/e-mail OFF | PASS contratual | habilitação usa somente a configuração técnica sanitizada; flags de entrega não integram o gate visual de conexão |
 | SMTP-UI-004 | Envio com entrega OFF | PASS contratual | botão permanece desabilitado por `ready_for_controlled_test` e mostra motivo |
 | SMTP-UI-005 | Detector de publicação futura | PASS por harness | token futuro abre aviso sem navegação ou recarga automática |
+| SMTP-UI-006 | Diagnóstico dentro do card SMTP | PASS | configuração, salvar, conexão e envio controlado aparecem em sequência no mesmo card; card redundante removido |
+| SMTP-UI-007 | Resultado compacto e acessível | PASS | status amigável, etapa, código e latência em região `aria-live`; sem host, usuário ou segredo |
+| SMTP-UI-008 | Responsividade | PASS contratual | grid no desktop e coluna única no mobile; ações não alteram dimensões do bloco |
+| SMTP-DIAG-001 | Última tentativa real de conexão | FAIL controlado | 2026-10-03T13:44:53Z; HTTP 502; `connect/smtp_tls_failed`; 13 ms; TLS/auth false |
+| SMTP-DIAG-002 | Configuração runtime sanitizada | PASS read-only | porta 465, senha presente por booleano, estrutura completa e entrega OFF/OFF; nenhum valor sensível exposto |
+| SMTP-DIAG-003 | Localização da falha | PASS diagnóstico | rejeição em `Deno.connectTls`, antes de greeting/EHLO/AUTH; timeout de 5 s incompatível com latência de 13 ms |
+| SMTP-DIAG-004 | Causa fina rede/DNS/TCP/certificado | INCONCLUSIVO | helper atual agrupa essas exceções em `smtp_tls_failed`; requer categorização interna allowlisted |
+| SMTP-DIAG-005 | Novo probe ou envio nesta rodada | NOT RUN | proibido pelo escopo; nenhum botão acionado |
+| SMTP-UI-009 | Testes/layout/regressão | PASS | 54 focados, 4 Deno, typecheck, build, 5.379 globais/4 skipped e scanner sem P0/P1 |
+| SMTP-UI-010 | Smoke `/plataforma` sem sessão | PASS limitado | redirecionou a `/auth`, sem erro e sem chamada SMTP; DOM autenticado não disponível no Supabase externo |
 
 ## Fase 0
 
