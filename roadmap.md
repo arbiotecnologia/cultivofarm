@@ -9,6 +9,9 @@
 - [ ] **Forward-fix do diagnóstico TLS:** categorizar internamente, sem texto bruto, falhas DNS/TCP/TLS de `Deno.connectTls`; cobrir mocks de recusa, DNS, certificado, timeout, SNI e fechamento. Só depois autorizar um probe real controlado sem mensagem. Envio de teste e retry de convite continuam bloqueados.
 
 ## Próximo / autorizado a preparar execução
+- [x] **Planejamento multi-provedor consolidado — sem implementação:** singleton global mantido como modelo recomendado; `custom_smtp` continua default e SMTP2GO será adapter HTTP selecionado por dispatcher server-side. Campos globais permanecem únicos, configurações/segredos ficam preservados por provider e a troca será manual, auditável, com motivo e teste recente, sem ligar flags. Migração, segurança, 22 cenários de teste, rollback e fases M1–M8 documentados; nenhuma mutação, conexão ou envio nesta rodada.
+- [ ] **M1 — base multi-provedor (aguarda autorização específica):** migration aditiva/idempotente, contrato e dispatcher com provider ativo ainda `custom_smtp`; não iniciar automaticamente.
+
 - [ ] Gate D51.2 — aguardar confirmação do responsável de que verificou a caixa e não recebeu; somente depois autorizar separadamente **Não recebi — reenviar convite**. Não clicar antes dessa autorização.
 
 ## Concluído
