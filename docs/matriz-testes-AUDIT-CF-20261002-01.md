@@ -46,7 +46,7 @@
 | SMTP-UI-001 | Componente real da aba Comunicação em `/plataforma` | PASS | `PlataformaHome` importa e renderiza a instância única de `ComunicacaoConfigTab` |
 | SMTP-UI-002 | Visibilidade das duas etapas | PASS | diagnóstico não depende mais de `smtp.password_configured`; os dois passos permanecem visíveis |
 | SMTP-UI-003 | Conexão com entrega global/e-mail OFF | PASS contratual | habilitação usa somente a configuração técnica sanitizada; flags de entrega não integram o gate visual de conexão |
-| SMTP-UI-004 | Envio com entrega OFF | PASS contratual | botão permanece desabilitado por `ready_for_controlled_test` e mostra motivo |
+| SMTP-UI-004 | Envio com entrega OFF | SUPERADO | o gate diagnóstico independente permite somente o teste controlado após PASS recente; envio operacional continua bloqueado |
 | SMTP-UI-005 | Detector de publicação futura | PASS por harness | token futuro abre aviso sem navegação ou recarga automática |
 | SMTP-UI-006 | Diagnóstico dentro do card SMTP | PASS | configuração, salvar, conexão e envio controlado aparecem em sequência no mesmo card; card redundante removido |
 | SMTP-UI-007 | Resultado compacto e acessível | PASS | status amigável, etapa, código e latência em região `aria-live`; sem host, usuário ou segredo |
@@ -108,8 +108,8 @@
 | SMTP-SEND-005 | Confirmação e destinatário | PASS estrutural | confirmação literal obrigatória; endereço divergente e campos extras rejeitados; destinatário fixado no servidor |
 | SMTP-SEND-006 | Conteúdo e resultado | PASS estrutural | assunto/corpo fixos; aceite não alega entrega; ambiguidade bloqueia repetição cega |
 | SMTP-SEND-007 | ACL, limite e sanitização | PASS estrutural | Superadmin server-side; 3/5 min; auditoria allowlisted; sem host, usuário, senha ou resposta bruta |
-| SMTP-SEND-008 | Validação sem envio | PASS | Deno check, 54 testes focados, typecheck, 5.394 globais/4 skipped e scanner 10 Info/zero P0/P1 |
-| SMTP-SEND-009 | Deploy/smoke passivo | PASS limitado | duas Edge Functions implantadas e frontend agendado; nenhum probe, envio ou alteração operacional |
+| SMTP-SEND-008 | Validação sem envio | PASS | Deno check, 70 testes focados, typecheck, build, 5.395 globais/4 skipped e scanner 10 Info/zero P0/P1 |
+| SMTP-SEND-009 | Deploy/smoke passivo | PASS | duas Edge Functions implantadas; HTTP 200 e marcadores do fluxo confirmados no módulo oficial publicado; nenhum probe, envio ou alteração operacional |
 | SMTP-SEND-010 | Envio real controlado | NOT RUN | aguarda PASS recente e um único clique humano em `Enviar e-mail de teste` |
 
 ## Planejamento multi-provedor de e-mail — sem implementação

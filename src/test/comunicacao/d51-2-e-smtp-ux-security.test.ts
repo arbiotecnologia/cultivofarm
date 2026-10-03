@@ -124,6 +124,18 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   it("preserva proteção contra clique duplo nos dois diagnósticos", () => {
     expect(ui).toContain("if (testingConnection || testingSmtpi || testingEmail) return;");
     expect(ui).toContain("testingEmail || testingConnection || testingSmtpi");
+    expect(ui).toContain("const testingEmailRef = useRef(false)");
+    expect(ui).toContain("if (testingEmailRef.current || testingEmail || testingConnection || testingSmtpi) return;");
+    expect(ui).toContain("testingEmailRef.current = true");
+    expect(ui).toContain("testingEmailRef.current = false");
+  });
+
+  it("distingue aceite, falha definitiva e resultado ambíguo sem alegar entrega", () => {
+    expect(edge).toContain('result.certainty === "ambiguous" ? 409 : 502');
+    expect(edge).toContain('result.outcome === "sent" ? "success" : result.certainty === "ambiguous" ? "ambiguous" : "failure"');
+    expect(ui).toContain("O servidor SMTP recusou definitivamente o teste.");
+    expect(ui).toContain("Não foi possível confirmar se o servidor SMTP aceitou o envio.");
+    expect(ui).toContain("não que ela chegou à caixa postal");
   });
 
   it("oferece SMTPi somente após recusa TCP e sem persistir durante o teste", () => {
