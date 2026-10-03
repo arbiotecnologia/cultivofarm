@@ -38,10 +38,9 @@ export function PwaManualCheckButton() {
           onClick={() => void checkManually()}
           disabled={checking}
           aria-label="Verificar se há nova versão do Cultivo Farm"
-          className="h-9 w-9 shrink-0 px-0 sm:w-auto sm:px-3"
+          className="h-9 w-9 shrink-0 cursor-pointer px-0"
         >
           {checking ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
-          <span className="hidden sm:inline">{checking ? "Verificando…" : "Verificar atualização"}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">Verificar atualização</TooltipContent>
