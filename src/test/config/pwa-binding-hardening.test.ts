@@ -38,7 +38,7 @@ describe("P0 PWA — versão independente de service worker", () => {
 
   it("detecta versão pelo HTML sem listeners de ciclo do worker", () => {
     expect(register).toContain('cache: "no-store"');
-    expect(register).toContain("UPDATE_INTERVAL_MS = 60 * 60 * 1000");
+    expect(register).toContain("UPDATE_INTERVAL_MS = 10 * 60 * 1000");
     expect(register).toContain('addEventListener("visibilitychange"');
     expect(register).toContain('addEventListener("online"');
     expect(register).not.toMatch(/controllerchange|updatefound|SKIP_WAITING/);
@@ -46,6 +46,8 @@ describe("P0 PWA — versão independente de service worker", () => {
 
   it("mantém notificador não bloqueante e navegação somente em ação explícita", () => {
     expect(app).toContain("PwaUpdateNotifier");
+    expect(app).toContain("PwaUpdateControl");
+    expect(app.indexOf("<PwaUpdateControl />")).toBeGreaterThan(app.indexOf("<AuthProvider>"));
     expect(register).toContain("applyPendingUpdate");
     expect(register).toContain("dismissPendingUpdate");
     expect(register).toContain("RECENT_NAVIGATION_KEY");
