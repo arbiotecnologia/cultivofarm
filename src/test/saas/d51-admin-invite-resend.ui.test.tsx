@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 
 const mocks = vi.hoisted(() => ({
@@ -53,9 +53,10 @@ describe("D51.2 — reenvio persistente na lista de administradores", () => {
     renderWithProviders(<PlataformaAdmins />);
 
     fireEvent.click(screen.getByRole("button", { name: "Reenviar convite" }));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Reenviar convite de acesso?");
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Nenhuma nova conta será criada.");
-    fireEvent.click(screen.getByRole("button", { name: "Reenviar convite" }));
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toHaveTextContent("Reenviar convite de acesso?");
+    expect(dialog).toHaveTextContent("Nenhuma nova conta será criada.");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Reenviar convite" }));
 
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
     expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({
@@ -96,7 +97,7 @@ describe("D51.2 — reenvio persistente na lista de administradores", () => {
     mocks.mutate.mockImplementation(() => undefined);
     renderWithProviders(<PlataformaAdmins />);
     fireEvent.click(screen.getByRole("button", { name: "Reenviar convite" }));
-    const confirmar = screen.getByRole("button", { name: "Reenviar convite" });
+    const confirmar = within(screen.getByRole("alertdialog")).getByRole("button", { name: "Reenviar convite" });
     fireEvent.click(confirmar);
     fireEvent.click(confirmar);
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
