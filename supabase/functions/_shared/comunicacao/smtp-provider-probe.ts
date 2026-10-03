@@ -76,17 +76,27 @@ function safeLatency(startedAt: number, now: () => number): number {
   return Math.max(0, Math.min(300_000, Math.round(now() - startedAt)));
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, stage: SmtpProbeStage): Promise<T> {
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  stage: SmtpProbeStage | (() => SmtpProbeStage),
+  onTimeout?: () => void,
+): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       promise,
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(createSmtpProbeFailure("smtp_connect_timeout", stage)), timeoutMs);
+        timer = setTimeout(() => {
+          try { onTimeout?.(); } catch { /* encerramento best-effort */ }
+          const currentStage = typeof stage === "function" ? stage() : stage;
+          reject(createSmtpProbeFailure("smtp_connect_timeout", currentStage));
+        }, timeoutMs);
       }),
     ]);
   } catch (error) {
-    throw classifyError(error, stage);
+    const currentStage = typeof stage === "function" ? stage() : stage;
+    throw classifyError(error, currentStage);
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
@@ -259,7 +269,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
   };
 
   try {
-    return await withTimeout(run(), absoluteTimeout, stage);
+    return await withTimeout(run(), absoluteTimeout, () => stage, () => connection?.close());
   } catch (error) {
     const failure = classifyError(error, stage);
     return {

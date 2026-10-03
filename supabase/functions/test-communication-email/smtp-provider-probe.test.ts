@@ -93,3 +93,37 @@ Deno.test("probe preserva falha segura normalizada por connectTls", async () => 
   assertEquals(result.stage, "connect");
   assertEquals(JSON.stringify(result).includes("SECRET"), false);
 });
+
+Deno.test("timeout absoluto preserva etapa atual e fecha o socket", async () => {
+  let reads = 0;
+  let rejectPendingRead: ((reason?: unknown) => void) | undefined;
+  const connection: ProbeConnection & { closed: boolean } = {
+    closed: false,
+    async read(buffer) {
+      reads += 1;
+      const response = reads === 1
+        ? "220 ready\r\n"
+        : reads === 2
+        ? "250-server\r\n250 AUTH PLAIN\r\n"
+        : await new Promise<string>((_, reject) => { rejectPendingRead = reject; });
+      const bytes = new TextEncoder().encode(response);
+      buffer.set(bytes);
+      return bytes.length;
+    },
+    async write(buffer) { return buffer.length; },
+    close() {
+      this.closed = true;
+      rejectPendingRead?.(createSmtpProbeFailure("smtp_protocol_error", "auth"));
+    },
+  };
+  const result = await probeSmtpProvider(env(), {
+    connect: async () => connection,
+    connectTls: async () => connection,
+    startTls: async () => connection,
+    stepTimeoutMs: 1_000,
+    absoluteTimeoutMs: 10,
+  });
+  assertEquals(result.code, "smtp_connect_timeout");
+  assertEquals(result.stage, "auth");
+  assertEquals(connection.closed, true);
+});
