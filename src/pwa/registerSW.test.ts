@@ -77,11 +77,11 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     expect(getPwaUpdateSnapshot().status).toBe("hidden");
   });
 
-  it("retorna resultado detalhado atual sem remover atualização já pendente", async () => {
+  it("ao carregar a versão publicada limpa informação de atualização anterior", async () => {
     await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }));
     const result = await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(currentHtml) }));
     expect(result).toEqual({ status: "current", currentVersion: "build-current", publishedVersion: "build-current" });
-    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "build-new" });
+    expect(getPwaUpdateSnapshot()).toEqual({ status: "hidden", version: null, staleBuild: false });
   });
 
   it("distingue offline e erro sem navegar", async () => {
