@@ -318,3 +318,13 @@ Ativação exige configuração completa, teste PASS recente (TTL inicial recome
 Cada marco para no primeiro P0/P1, vazamento, destino não autorizado, ambiguidade não tratada ou necessidade humana. M1/M2 só avançam se `custom_smtp` mantiver contratos, gates e histórico. M3/M4 não fazem rede real. M5 não envia mensagem. M6 não significa entrega, apenas aceite remoto comprovado. M7 não pode ligar flags. M8 exige prova de que não resta chamada direta ao SMTP fora do adapter, nenhuma referência órfã a emissor e que convite/recovery/PDFs/alertas/notificações compartilham dispatcher, idempotência e estados ambíguos.
 
 Rollback por fase: reverter UI/dispatcher para `custom_smtp`; manter colunas e referências de segredo intactas; selecionar manualmente o provider anterior por RPC auditada; jamais apagar configuração durante rollback. Forward-fix é preferível a down migration destrutiva.
+
+## Forward-fix SMTPi KingHost — 2026-10-03
+
+- Implementada rota candidata estritamente server-side para `smtp.kinghost.net → smtpi.kinghost.net` e `smtp.uni5.net → smtpi.uni5.net`, somente na porta 465. O cliente envia apenas `kinghost_smtpi`; host arbitrário é rejeitado.
+- O probe usa clone efêmero da configuração atual e o adapter de conexão existente, sem `MAIL FROM`, `RCPT TO` ou `DATA`, sem persistir o candidato e sem retornar host, usuário ou segredo.
+- Auditoria usa a ação allowlisted `smtp_connection_candidate_test`, com resultado, safe code, etapa e latência sanitizados. A RPC mantém `SECURITY DEFINER`, `search_path` fixo e execução exclusiva por `service_role`.
+- A UI mostra **Testar SMTPi** somente para configuração KingHost doméstica aplicável cuja última tentativa normal foi `smtp_tcp_refused`. Apenas um PASS na sessão revela **Usar SMTPi como servidor**; a confirmação aplica payload contendo exclusivamente `smtp.host`, preservando porta, usuário, remetente, senha e flags, e invalida o resultado anterior.
+- Validação: Deno check verde nas duas funções; 10 testes Deno, 54 testes focados, typecheck, build e suíte global com 5.394 PASS/4 skipped; scanner com 10 informativos e zero P0/P1. As duas Edge Functions foram implantadas e o frontend foi publicado.
+- Smoke foi passivo: domínio oficial HTTP 200 e chamadas com JWT inválido retornaram 401 antes de runtime/rate limit/socket. Não houve probe real, envio, alteração de host, abertura de flags ou retry E02.
+- Rollback/forward-fix: remover o bloco candidato e a action adicional não exige tocar configuração ou segredo; caso o host seja aplicado futuramente por clique e precise ser revertido, usar o mesmo endpoint autenticado para restaurar explicitamente o host anterior, sem alterar os demais campos. SMTP2GO permanece planejado e M1 não foi iniciado.
