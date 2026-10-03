@@ -68,6 +68,12 @@ type ProviderView = {
     smtp_user_configured: boolean;
     smtp_password_configured: boolean;
     smtp_from_configured: boolean;
+    connection_ready: boolean;
+    connection_pass_recent: boolean;
+    connection_pass_at: string | null;
+    controlled_test_send_ready: boolean;
+    operational_email_ready: boolean;
+    controlled_test_send_blocking_code: string | null;
     ready_for_controlled_test: boolean;
     blocking_code: "smtp_port_blocked_by_edge_runtime" | null;
   };
@@ -132,6 +138,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   smtp_protocol_error: "O servidor retornou uma resposta SMTP incompatível.",
   smtp_config_invalid: "A configuração SMTP está incompleta ou inválida.",
   smtp_send_accepted: "O servidor SMTP aceitou o envio.",
+  controlled_test_confirmation_required: "Confirme explicitamente o envio controlado.",
+  controlled_test_retry_blocked_ambiguous: "O resultado anterior ficou ambíguo. Um novo envio está bloqueado até revisão humana.",
   candidate_not_applicable: "A rota SMTP Internacional não se aplica à configuração atual.",
   email_send_ambiguous: "Não foi possível confirmar se o servidor SMTP aceitou o envio.",
   email_send_timeout: "O provedor não respondeu dentro do tempo seguro.",
@@ -460,6 +468,7 @@ export default function ComunicacaoConfigTab() {
       setConnectionResult(result);
       if (result.ok) {
         toast.success("Conexão do provedor confirmada", { description: `${friendlyError(result.code)} Latência: ${result.latency_ms} ms.` });
+        await reload();
       } else {
         toast.error("Conexão não confirmada", { description: friendlyError(result.code, resp.status) });
       }
@@ -536,11 +545,11 @@ export default function ComunicacaoConfigTab() {
     const to = testEmailTo.trim().toLowerCase();
     setTestingEmail(true);
     try {
-      const { resp, parsed } = await callSmtpDiagnostic({ mode: "send", to, subject: "Teste SMTP Cultivo Farm", message: "E-mail de teste enviado pela aba Comunicação." });
+      const { resp, parsed } = await callSmtpDiagnostic({ mode: "send", to, confirm_controlled_send: true });
 
       if (resp.ok && parsed.ok) {
         toast.success("Teste aceito pelo servidor SMTP", {
-          description: "O aceite do servidor não comprova a entrega na caixa postal. Verifique a caixa de entrada e o spam.",
+          description: "Servidor SMTP aceitou a mensagem. Verifique a caixa de entrada e spam.",
         });
       } else {
         const errorCode = typeof parsed.error === "string" && ERROR_MESSAGES[parsed.error]
@@ -644,11 +653,13 @@ export default function ComunicacaoConfigTab() {
       ? "Complete a configuração técnica do provedor."
       : !view.smtp_readiness.test_mode_enabled
         ? "Ative o modo de homologação."
-        : !view.smtp_readiness.test_email_allowlisted
-          ? "Inclua o destinatário controlado na lista permitida."
-          : !view.smtp_readiness.delivery_enabled || !view.smtp_readiness.email_delivery_enabled
-            ? "As entregas global e por e-mail permanecem desativadas."
-            : "A prontidão completa ainda não foi confirmada.";
+          : !view.smtp_readiness.test_email_allowlisted || view.smtp_readiness.allowed_email_count !== 1
+            ? "Mantenha exclusivamente o destinatário controlado na lista permitida."
+            : view.smtp_readiness.controlled_test_send_blocking_code === "smtp_configuration_changed"
+              ? "A configuração mudou depois do último teste. Teste a conexão novamente."
+              : view.smtp_readiness.controlled_test_send_blocking_code === "smtp_connection_stale"
+                ? "A confirmação de conexão expirou. Teste a conexão novamente."
+                : "Confirme uma conexão recente antes do envio.";
   const showSmtpiCandidate = view.smtp.kinghost_smtpi_candidate_available &&
     (connectionResult?.code ?? view.smtp.last_connection_code) === "smtp_tcp_refused";
 
@@ -716,8 +727,7 @@ export default function ComunicacaoConfigTab() {
               ["Remetente configurado", view.smtp_readiness.smtp_from_configured],
               ["Test mode ativo", view.smtp_readiness.test_mode_enabled],
               [`${CONTROLLED_TEST_EMAIL} na allowlist`, view.smtp_readiness.test_email_allowlisted],
-              ["Entrega global ativa", view.smtp_readiness.delivery_enabled],
-              ["Entrega por e-mail ativa", view.smtp_readiness.email_delivery_enabled],
+              ["Conexão confirmada nos últimos 30 minutos", view.smtp_readiness.connection_pass_recent],
             ].map(([label, ready]) => (
               <div key={String(label)} className="flex items-center gap-2 rounded-md border p-2">
                 <CheckCircle2 className={`h-4 w-4 shrink-0 ${ready ? "text-success" : "text-muted-foreground"}`} aria-hidden="true" />
@@ -733,12 +743,12 @@ export default function ComunicacaoConfigTab() {
           )}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between border-t pt-4">
             <span className="text-sm text-muted-foreground">
-              {!view.smtp_readiness.delivery_enabled || !view.smtp_readiness.email_delivery_enabled
-                ? "Configuração preservada; envio bloqueado."
-                : "As flags de entrega foram habilitadas deliberadamente."}
+              {view.smtp_readiness.controlled_test_send_ready
+                ? "Teste diagnóstico liberado; envios operacionais permanecem separados."
+                : "Configuração preservada; teste diagnóstico bloqueado."}
             </span>
-            <Badge variant={view.smtp_readiness.ready_for_controlled_test ? "default" : "outline"}>
-              {view.smtp_readiness.ready_for_controlled_test ? "Pronto para teste controlado" : "Não pronto"}
+            <Badge variant={view.smtp_readiness.controlled_test_send_ready ? "default" : "outline"}>
+              {view.smtp_readiness.controlled_test_send_ready ? "Pronto para teste controlado" : "Não pronto"}
             </Badge>
           </div>
         </CardContent>
@@ -1031,6 +1041,9 @@ export default function ComunicacaoConfigTab() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Este é um envio real para o destinatário fixo abaixo e exige confirmação explícita. O sucesso significa que o servidor SMTP aceitou a mensagem, não que ela chegou à caixa postal.
               </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Este teste ignora somente as flags operacionais de entrega. O envio é restrito ao endereço de homologação e não libera e-mails do sistema.
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
               <Input
@@ -1045,7 +1058,7 @@ export default function ComunicacaoConfigTab() {
               />
               <Button
                 variant="outline"
-                disabled={testingEmail || testingConnection || testingSmtpi || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
+                disabled={testingEmail || testingConnection || testingSmtpi || !testEmailValid || !view.smtp_readiness.controlled_test_send_ready}
                 onClick={() => setConfirmSendOpen(true)}
                 aria-busy={testingEmail}
               >
@@ -1054,7 +1067,7 @@ export default function ComunicacaoConfigTab() {
               </Button>
             </div>
             <FieldError msg={testEmailError} />
-            {!view.smtp_readiness.ready_for_controlled_test && (
+            {!view.smtp_readiness.controlled_test_send_ready && (
               <p className="text-xs text-muted-foreground" role="status">
                 Envio bloqueado: {controlledSendBlockReason}
               </p>
@@ -1074,7 +1087,9 @@ export default function ComunicacaoConfigTab() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void handleTestEmail()}>Confirmar envio</AlertDialogAction>
+            <AlertDialogAction disabled={testingEmail} onClick={() => void handleTestEmail()}>
+              Enviar uma vez para {CONTROLLED_TEST_EMAIL}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

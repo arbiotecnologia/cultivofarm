@@ -48,6 +48,10 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
       "smtp_user_configured",
       "smtp_password_configured",
       "smtp_from_configured",
+      "connection_ready",
+      "connection_pass_recent",
+      "controlled_test_send_ready",
+      "operational_email_ready",
       "ready_for_controlled_test",
     ]) expect(readinessSource).toContain(field);
     expect(source).toContain("smtp_readiness: buildSmtpReadiness(");
@@ -95,7 +99,7 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
     expect(source).toContain('const bool = (k: string) => row[k] === true');
   });
 
-  it("só fica pronto com flags, test mode, allowlist e SMTP completos", () => {
+  it("separa conexão, teste controlado e prontidão operacional", () => {
     const allConfigured = {
       delivery_enabled: true,
       email_delivery_enabled: true,
@@ -107,17 +111,48 @@ describe("D51.2-D — ACL e preflight SMTP sem envio", () => {
       smtp_from: "from@example.test",
       secret_smtp_password: "00000000-0000-0000-0000-000000000001",
     };
-    expect(buildSmtpReadiness(allConfigured).ready_for_controlled_test).toBe(true);
+    const passAt = "2026-10-03T16:59:02.720Z";
+    const currentNow = Date.parse("2026-10-03T17:10:00.000Z");
+    const pass = {
+      action: "smtp_connection_test",
+      outcome: "success",
+      safe_code: "smtp_connection_ok",
+      stage: "quit",
+      created_at: passAt,
+    };
+    const configuredAfterPass = { ...allConfigured, updated_at: "2026-10-03T16:58:41.000Z" };
+    expect(buildSmtpReadiness(configuredAfterPass, pass, currentNow)).toMatchObject({
+      connection_ready: true,
+      connection_pass_recent: true,
+      controlled_test_send_ready: true,
+      operational_email_ready: true,
+      ready_for_controlled_test: true,
+    });
+    expect(buildSmtpReadiness({ ...configuredAfterPass, delivery_enabled: false, email_delivery_enabled: false }, pass, currentNow)).toMatchObject({
+      controlled_test_send_ready: true,
+      operational_email_ready: false,
+    });
+    expect(buildSmtpReadiness(configuredAfterPass, pass, Date.parse("2026-10-03T17:30:00.000Z"))).toMatchObject({
+      connection_pass_recent: false,
+      controlled_test_send_ready: false,
+      controlled_test_send_blocking_code: "smtp_connection_stale",
+    });
+    expect(buildSmtpReadiness({ ...configuredAfterPass, updated_at: "2026-10-03T17:00:00.000Z" }, pass, currentNow)).toMatchObject({
+      connection_pass_recent: false,
+      controlled_test_send_ready: false,
+      controlled_test_send_blocking_code: "smtp_configuration_changed",
+    });
     for (const port of [25, 587]) {
-      expect(buildSmtpReadiness({ ...allConfigured, smtp_port: port })).toMatchObject({
+      expect(buildSmtpReadiness({ ...configuredAfterPass, smtp_port: port }, pass, currentNow)).toMatchObject({
         smtp_port_runtime_compatible: false,
         blocking_code: "smtp_port_blocked_by_edge_runtime",
         ready_for_controlled_test: false,
       });
     }
-    expect(buildSmtpReadiness({ ...allConfigured, test_mode_enabled: false }).ready_for_controlled_test).toBe(false);
-    expect(buildSmtpReadiness({ ...allConfigured, allowed_emails: [] }).ready_for_controlled_test).toBe(false);
-    expect(buildSmtpReadiness({ ...allConfigured, secret_smtp_password: null }).ready_for_controlled_test).toBe(false);
+    expect(buildSmtpReadiness({ ...configuredAfterPass, test_mode_enabled: false }, pass, currentNow).ready_for_controlled_test).toBe(false);
+    expect(buildSmtpReadiness({ ...configuredAfterPass, allowed_emails: [] }, pass, currentNow).ready_for_controlled_test).toBe(false);
+    expect(buildSmtpReadiness({ ...configuredAfterPass, allowed_emails: [CONTROLLED_TEST_EMAIL, "other@example.test"] }, pass, currentNow).ready_for_controlled_test).toBe(false);
+    expect(buildSmtpReadiness({ ...configuredAfterPass, secret_smtp_password: null }, pass, currentNow).ready_for_controlled_test).toBe(false);
     expect(buildSmtpReadiness(null)).toMatchObject({
       singleton_exists: false,
       ready_for_controlled_test: false,

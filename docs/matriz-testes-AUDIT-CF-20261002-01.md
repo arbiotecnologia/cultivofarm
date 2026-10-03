@@ -100,7 +100,17 @@
 | SMTPI-012 | Segredo resolvido | PASS funcional | leitura direta do Vault não foi usada; o runtime DB resolveu a credencial, pois AUTH terminou com sucesso e o probe alcançou `quit` |
 | SMTPI-013 | Ausência de envio pós-conexão | PASS read-only | zero `smtp_send_test`, zero novo `email_accepted_at`, zero receipt/outbox enviada e zero incremento/retry do convite após o PASS |
 | SMTPI-014 | Integridade E02 | PASS read-only | um job, um Auth user, um profile no tenant e um papel administrador; zero superadmin; tentativas 1/1, erro legado preservado e leases limpos |
-| SMTPI-015 | Gate de envio controlado | GO condicionado | conexão PASS; exige habilitar auditavelmente somente global/e-mail e então um clique explícito para enviar exclusivamente a `teste@refilinformatica.com.br`; flags não alteradas nesta auditoria |
+| SMTPI-015 | Gate de envio controlado | SUPERADO | condição antiga substituída pelo gate diagnóstico independente abaixo; flags operacionais permanecem OFF/OFF |
+| SMTP-SEND-001 | OFF/OFF + PASS recente + Test Mode + allowlist exclusiva | PASS mock | teste diagnóstico liberado sem persistir flags; fluxos operacionais continuam bloqueados pelo adapter normal |
+| SMTP-SEND-002 | PASS expirado após 30 minutos | PASS mock | `smtp_connection_stale`, zero chamada ao adapter |
+| SMTP-SEND-003 | Configuração alterada após PASS | PASS mock | `smtp_configuration_changed`, zero chamada ao adapter |
+| SMTP-SEND-004 | Test Mode/allowlist inválidos | PASS mock | falha fechada; allowlist deve conter exclusivamente o destinatário controlado |
+| SMTP-SEND-005 | Confirmação e destinatário | PASS estrutural | confirmação literal obrigatória; endereço divergente e campos extras rejeitados; destinatário fixado no servidor |
+| SMTP-SEND-006 | Conteúdo e resultado | PASS estrutural | assunto/corpo fixos; aceite não alega entrega; ambiguidade bloqueia repetição cega |
+| SMTP-SEND-007 | ACL, limite e sanitização | PASS estrutural | Superadmin server-side; 3/5 min; auditoria allowlisted; sem host, usuário, senha ou resposta bruta |
+| SMTP-SEND-008 | Validação sem envio | PASS | Deno check, 54 testes focados, typecheck, 5.394 globais/4 skipped e scanner 10 Info/zero P0/P1 |
+| SMTP-SEND-009 | Deploy/smoke passivo | PASS limitado | duas Edge Functions implantadas e frontend agendado; nenhum probe, envio ou alteração operacional |
+| SMTP-SEND-010 | Envio real controlado | NOT RUN | aguarda PASS recente e um único clique humano em `Enviar e-mail de teste` |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 

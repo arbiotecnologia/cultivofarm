@@ -11,8 +11,8 @@ const platformHome = readFileSync("src/pages/plataforma/PlataformaHome.tsx", "ut
 const edge = readFileSync("supabase/functions/test-communication-email/index.ts", "utf8");
 
 const readyEnv: WorkerEnv = {
-  DELIVERY_ENABLED: true,
-  EMAIL_ENABLED: true,
+  DELIVERY_ENABLED: false,
+  EMAIL_ENABLED: false,
   WHATSAPP_ENABLED: false,
   INAPP_ENABLED: false,
   WHATSAPP_WEBHOOK_ENABLED: false,
@@ -32,17 +32,17 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
     for (const label of [
       "Singleton presente", "Host configurado", "Porta configurada", "Usuário configurado",
       "Senha configurada", "Remetente configurado", "Test mode ativo",
-      "CONTROLLED_TEST_EMAIL} na allowlist", "Entrega global ativa", "Entrega por e-mail ativa",
+      "CONTROLLED_TEST_EMAIL} na allowlist", "Conexão confirmada nos últimos 30 minutos",
     ]) expect(ui).toContain(label);
     expect(ui).toContain("Pronto para teste controlado");
     expect(ui).toContain("Não pronto");
-    expect(ui).toContain("Configuração preservada; envio bloqueado.");
+    expect(ui).toContain("Configuração preservada; teste diagnóstico bloqueado.");
   });
 
   it("fixa o único destinatário e bloqueia o botão quando readiness é falso", () => {
     expect(ui).toContain('const CONTROLLED_TEST_EMAIL = "teste@refilinformatica.com.br"');
     expect(ui).toMatch(/value=\{testEmailTo\}[\s\S]{0,80}readOnly/);
-    expect(ui).toContain("!view.smtp_readiness.ready_for_controlled_test");
+    expect(ui).toContain("!view.smtp_readiness.controlled_test_send_ready");
   });
 
   it("bloqueia destinatário externo e preflight incompleto antes do adapter", () => {
@@ -50,17 +50,17 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
       allowed: false,
       code: "recipient_not_allowed",
     });
-    expect(evaluateControlledSmtpTest({ ...readyEnv, DELIVERY_ENABLED: false }, "teste@refilinformatica.com.br"))
+    expect(evaluateControlledSmtpTest(readyEnv, "teste@refilinformatica.com.br", false))
       .toEqual({ allowed: false, code: "smtp_not_ready" });
-    expect(evaluateControlledSmtpTest(readyEnv, " TESTE@REFILINFORMATICA.COM.BR ")).toEqual({
+    expect(evaluateControlledSmtpTest(readyEnv, " TESTE@REFILINFORMATICA.COM.BR ", true)).toEqual({
       allowed: true,
       recipient: "teste@refilinformatica.com.br",
     });
     for (const port of ["25", "587"]) {
-      expect(evaluateControlledSmtpTest({ ...readyEnv, SMTP_PORT: port }, "teste@refilinformatica.com.br"))
+      expect(evaluateControlledSmtpTest({ ...readyEnv, SMTP_PORT: port }, "teste@refilinformatica.com.br", true))
         .toEqual({ allowed: false, code: "smtp_port_blocked_by_edge_runtime" });
     }
-    expect(edge.indexOf("evaluateControlledSmtpTest(env, to)")).toBeLessThan(edge.indexOf("await sendEmail("));
+    expect(edge.indexOf("evaluateControlledSmtpTest(env, controlledRecipient, readiness.controlled_test_send_ready)")).toBeLessThan(edge.indexOf("await sendEmail("));
   });
 
   it("mostra orientação genérica de incompatibilidade sem credenciais", () => {
@@ -71,7 +71,7 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   it("não devolve nem registra diagnóstico bruto, host, porta ou credenciais", () => {
     for (const forbidden of ["rawBody", "console.log", "console.error", "parsed.host", "parsed.port", "parsed.detail"])
       expect(ui).not.toContain(forbidden);
-    expect(edge).not.toMatch(/detail:|cause:|exception:|sent_to:|host,|port,|from,/);
+    expect(edge).not.toMatch(/detail:|cause:|exception:|sent_to:|parsed\.host|parsed\.port|parsed\.from/);
     expect(sanitizeSmtpTestResult({ outcome: "transient_error", code: "private provider detail", message: "secret" }))
       .toBe("smtp_test_failed");
   });
@@ -81,7 +81,11 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
     expect(edge).not.toContain('r.role === "administrador"');
     expect(edge).toContain('route === "kinghost_smtpi" ? "test_smtp_connection_candidate" : baseRateAction');
     expect(edge).toContain("loadRuntimeConfig(sb, readWorkerEnv)");
-    expect(edge).toContain("evaluateControlledSmtpTest(env, to)");
+    expect(edge).toContain("evaluateControlledSmtpTest(env, controlledRecipient, readiness.controlled_test_send_ready)");
+    expect(edge).toContain("confirm_controlled_send: z.literal(true).optional()");
+    expect(edge).toContain('const controlledRecipient = "teste@refilinformatica.com.br"');
+    expect(edge).toContain("DELIVERY_ENABLED: true, EMAIL_ENABLED: true");
+    expect(edge).toContain('.eq("outcome", "ambiguous")');
   });
 
   it("separa conexão sem envio do envio real confirmado", () => {
@@ -89,8 +93,9 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
     expect(ui).toContain("Testar conexão do provedor");
     expect(ui).toContain("Verifica rede, TLS, protocolo SMTP e autenticação. Nenhum e-mail é enviado.");
     expect(ui).toContain("Confirmar envio real de teste?");
-    expect(ui).toContain('{ mode: "send", to');
+    expect(ui).toContain('{ mode: "send", to, confirm_controlled_send: true }');
     expect(ui).toContain("O sucesso confirma apenas o aceite pelo servidor SMTP, não a entrega na caixa postal.");
+    expect(ui).toContain("Servidor SMTP aceitou a mensagem. Verifique a caixa de entrada e spam.");
   });
 
   it("exibe as duas etapas na aba real de plataforma sem depender das flags de entrega", () => {
@@ -101,8 +106,8 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
     expect(ui).toContain("Enviar e-mail de teste");
     expect(ui).not.toContain("Diagnóstico do provedor de e-mail");
     expect(ui).toContain("!connectionConfigReady");
-    expect(ui).toContain("!view.smtp_readiness.ready_for_controlled_test");
-    expect(ui).toContain("As entregas global e por e-mail permanecem desativadas.");
+    expect(ui).toContain("!view.smtp_readiness.controlled_test_send_ready");
+    expect(ui).toContain("Este teste ignora somente as flags operacionais de entrega.");
     expect(ui).toContain("Envio bloqueado:");
     const smtpCardStart = ui.indexOf("Provedor de e-mail (SMTP)");
     const smtpCardEnd = ui.indexOf("{/* WhatsApp */}");

@@ -91,6 +91,16 @@ async function loadPublicView(sb: Sb) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const { data: latestSuccessfulConnection } = await sb
+    .from("communication_provider_settings_audit")
+    .select("action,outcome,safe_code,stage,created_at")
+    .in("action", ["smtp_connection_test", "smtp_connection_candidate_test"])
+    .eq("outcome", "success")
+    .eq("safe_code", "smtp_connection_ok")
+    .eq("stage", "quit")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   const arr = (k: string): string[] => Array.isArray(row[k]) ? (row[k] as string[]) : [];
   const bool = (k: string) => row[k] === true;
   const secretConfigured = (k: string) => isSecretReferenceConfigured(row, k);
@@ -121,7 +131,7 @@ async function loadPublicView(sb: Sb) {
         num("smtp_port") == null ? undefined : String(num("smtp_port")),
       ),
     },
-    smtp_readiness: buildSmtpReadiness(singletonExists ? row : null),
+    smtp_readiness: buildSmtpReadiness(singletonExists ? row : null, latestSuccessfulConnection),
     whatsapp: {
       phone_number_id: str("whatsapp_phone_number_id"),
       api_version: str("whatsapp_api_version"),
