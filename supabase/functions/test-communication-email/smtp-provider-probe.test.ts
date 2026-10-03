@@ -1,5 +1,6 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { probeSmtpProvider, type ProbeConnection } from "../_shared/comunicacao/smtp-provider-probe.ts";
+import { createSmtpProbeFailure, probeSmtpProvider, type ProbeConnection } from "../_shared/comunicacao/smtp-provider-probe.ts";
+import { classifyNativeSmtpConnectionError } from "../_shared/comunicacao/smtp-provider-probe-deno.ts";
 import type { WorkerEnv } from "../_shared/comunicacao/adapters-types.ts";
 
 const env = (port = "465"): WorkerEnv => ({
@@ -60,4 +61,35 @@ Deno.test("probe exige STARTTLS antes de autenticar em porta permitida não impl
   assertEquals(result.ok, true); assertEquals(upgraded, true);
   assertEquals(plain.writes.some((value) => value.startsWith("AUTH")), false);
   assertEquals(secure.writes.some((value) => value.startsWith("AUTH")), true); assertEquals(secure.closed, true);
+});
+
+Deno.test("classifica falhas nativas de conexão sem propagar mensagem bruta", () => {
+  const cases: Array<[Error, "connect" | "connectTls", string]> = [
+    [Object.assign(new Error("lookup failed"), { name: "DnsError" }), "connectTls", "smtp_dns_failed"],
+    [Object.assign(new Error("socket unavailable"), { name: "ConnectionRefused" }), "connectTls", "smtp_tcp_refused"],
+    [Object.assign(new Error("route unavailable"), { name: "NetworkUnreachable" }), "connectTls", "smtp_tcp_unreachable"],
+    [Object.assign(new Error("operation delayed"), { name: "TimedOut" }), "connectTls", "smtp_connect_timeout"],
+    [new Error("invalid peer certificate: unknown issuer PRIVATE-DATA"), "connectTls", "smtp_tls_certificate_failed"],
+    [new Error("TLS handshake unexpected EOF PRIVATE-DATA"), "connectTls", "smtp_tls_handshake_failed"],
+    [new Error("PRIVATE-DATA"), "connectTls", "smtp_tls_failed"],
+  ];
+  for (const [error, operation, expected] of cases) {
+    const code = classifyNativeSmtpConnectionError(error, operation);
+    assertEquals(code, expected);
+    assertEquals(code.includes("PRIVATE-DATA"), false);
+  }
+});
+
+Deno.test("probe preserva falha segura normalizada por connectTls", async () => {
+  const result = await probeSmtpProvider(env(), {
+    connect: async () => { throw new Error("not used"); },
+    connectTls: async () => {
+      const code = classifyNativeSmtpConnectionError(new Error("certificate verify failed SECRET"), "connectTls");
+      throw createSmtpProbeFailure(code, "connect");
+    },
+    startTls: async () => { throw new Error("not used"); },
+  });
+  assertEquals(result.code, "smtp_tls_certificate_failed");
+  assertEquals(result.stage, "connect");
+  assertEquals(JSON.stringify(result).includes("SECRET"), false);
 });

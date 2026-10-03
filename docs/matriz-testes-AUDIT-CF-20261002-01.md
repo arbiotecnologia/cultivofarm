@@ -50,6 +50,19 @@
 | SMTP-DIAG-005 | Novo probe ou envio nesta rodada | NOT RUN | proibido pelo escopo; nenhum botão acionado |
 | SMTP-UI-009 | Testes/layout/regressão | PASS | 54 focados, 4 Deno, typecheck, build, 5.379 globais/4 skipped e scanner sem P0/P1 |
 | SMTP-UI-010 | Smoke `/plataforma` sem sessão | PASS limitado | redirecionou a `/auth`, sem erro e sem chamada SMTP; DOM autenticado não disponível no Supabase externo |
+| SMTP-TLS-001 | DNS nativo | PASS mock | normalizado para `smtp_dns_failed` |
+| SMTP-TLS-002 | Conexão recusada | PASS mock | normalizado para `smtp_tcp_refused` |
+| SMTP-TLS-003 | Rede/host inalcançável | PASS mock | normalizado para `smtp_tcp_unreachable` |
+| SMTP-TLS-004 | Timeout | PASS mock | normalizado para `smtp_connect_timeout`; timeout do probe não foi duplicado |
+| SMTP-TLS-005 | Certificado inválido | PASS mock | normalizado para `smtp_tls_certificate_failed` |
+| SMTP-TLS-006 | Handshake/protocolo TLS | PASS mock | normalizado para `smtp_tls_handshake_failed` |
+| SMTP-TLS-007 | TLS desconhecido | PASS mock | fallback `smtp_tls_failed` |
+| SMTP-TLS-008 | Sanitização | PASS contratual | mensagem nativa descartada; resposta/log/auditoria recebem somente código allowlisted |
+| SMTP-TLS-009 | 465 e SNI | PASS regressão | `connectTls({ hostname, port })`; hostname preservado |
+| SMTP-TLS-010 | Fechamento e SMTP | PASS regressão | `finally` fecha socket; greeting/EHLO/AUTH e ausência de envelope preservados |
+| SMTP-TLS-011 | Portas 25/587 | PASS regressão | bloqueio anterior ao socket preservado |
+| SMTP-TLS-012 | Gates OFF/OFF | PASS regressão | connection continua independente das flags; send continua bloqueado |
+| SMTP-TLS-013 | Probe real e envio | NOT RUN | nenhum socket ou mensagem nesta rodada; próximo clique é exclusivamente humano |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 
