@@ -63,6 +63,14 @@
 | SMTP-TLS-011 | Portas 25/587 | PASS regressão | bloqueio anterior ao socket preservado |
 | SMTP-TLS-012 | Gates OFF/OFF | PASS regressão | connection continua independente das flags; send continua bloqueado |
 | SMTP-TLS-013 | Probe real e envio | NOT RUN | nenhum socket ou mensagem nesta rodada; próximo clique é exclusivamente humano |
+| SMTP-FINAL-001 | Build oficial versus HEAD | PASS com ressalva | `build-mushy2d3` = fallback temporal `2026-10-03T14:37:55.959Z`, posterior ao HEAD `2c7fecc3…` de `14:37:03Z`; sem SHA de deploy, equivalência criptográfica não é afirmada |
+| SMTP-FINAL-002 | Gate no bundle oficial | PASS | `App-BwrXF4VX.js` exige host, porta compatível, usuário, senha e remetente; contém os novos safe codes |
+| SMTP-FINAL-003 | Paridade dos indicadores de senha | FAIL apresentação | `smtp.password_configured` compara UUID com `true` e retorna falso; readiness usa presença do UUID e retorna verdadeiro |
+| SMTP-FINAL-004 | Configuração sanitizada canônica | PASS read-only | porta 465; host/usuário/remetente/referência Vault presentes; segredo resolvido no runtime; fonte DB; flags OFF/OFF; Test Mode ON |
+| SMTP-FINAL-005 | Última tentativa classificada | FAIL controlado | `2026-10-03T16:20:46.740215Z`; `connect/smtp_tcp_refused`; 14 ms; antes de greeting/EHLO/AUTH |
+| SMTP-FINAL-006 | Ausência de envio posterior | PASS read-only | zero `smtp_send_test`, tentativa/aceite de convite, outbox criada/enviada e alteração de configuração após a captura |
+| SMTP-FINAL-007 | Compatibilidade do provedor | PASS documental | KingHost suporta SSL/TLS na porta 465; documentação exige SMTPi para origem externa ao Brasil; nenhuma configuração alterada |
+| SMTP-FINAL-008 | Novo probe, envio ou correção operacional | NOT RUN | proibidos nesta rodada; somente leitura e documentação factual |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 
