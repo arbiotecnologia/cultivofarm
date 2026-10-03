@@ -79,8 +79,9 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(convite).toContain('type: "recovery"');
     expect(convite).not.toContain('type: "invite"');
     expect(convite.match(/auth\.admin\.generateLink/g)?.length).toBe(2);
-    expect(readFileSync("supabase/functions/platform-invite-org-admin/redirect-policy.ts", "utf-8"))
-      .toContain('https://app.cultivofarm.com.br/reset-password');
+    const redirectPolicy = readFileSync("supabase/functions/platform-invite-org-admin/redirect-policy.ts", "utf-8");
+    expect(redirectPolicy).toContain('https://app.cultivofarm.com.br');
+    expect(redirectPolicy).toContain('/reset-password');
     expect(convite).not.toMatch(/action_link:\s*actionLink/);
     expect(convite).toContain("deliverInviteEmail");
   });

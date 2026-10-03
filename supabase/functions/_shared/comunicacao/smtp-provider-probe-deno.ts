@@ -12,6 +12,12 @@ import type { WorkerEnv } from "./adapters-types.ts";
 type DenoSocket = ProbeConnection;
 type NativeOperation = "connect" | "connectTls" | "startTls";
 
+declare const Deno: {
+  connect(options: { hostname: string; port: number; transport: "tcp" }): Promise<DenoSocket>;
+  connectTls(options: { hostname: string; port: number }): Promise<DenoSocket>;
+  startTls(connection: unknown, options: { hostname: string }): Promise<DenoSocket>;
+};
+
 const DNS_NAMES = new Set(["NotFound", "DnsError"]);
 const REFUSED_NAMES = new Set(["ConnectionRefused"]);
 const UNREACHABLE_NAMES = new Set(["NetworkUnreachable", "HostUnreachable", "AddrNotAvailable"]);
@@ -58,7 +64,7 @@ export function createDenoSmtpDeps(): SmtpProbeDeps {
       catch (error) { return normalizeNativeFailure(error, "connectTls", "connect"); }
     },
     startTls: async (connection, hostname) => {
-      try { return await Deno.startTls(connection as Deno.TcpConn, { hostname }) as DenoSocket; }
+      try { return await Deno.startTls(connection, { hostname }); }
       catch (error) { return normalizeNativeFailure(error, "startTls", "starttls"); }
     },
   };
