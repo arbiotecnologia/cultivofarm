@@ -46,7 +46,7 @@
 | SMTP-UI-001 | Componente real da aba Comunicação em `/plataforma` | PASS | `PlataformaHome` importa e renderiza a instância única de `ComunicacaoConfigTab` |
 | SMTP-UI-002 | Visibilidade das duas etapas | PASS | diagnóstico não depende mais de `smtp.password_configured`; os dois passos permanecem visíveis |
 | SMTP-UI-003 | Conexão com entrega global/e-mail OFF | PASS contratual | habilitação usa somente a configuração técnica sanitizada; flags de entrega não integram o gate visual de conexão |
-| SMTP-UI-004 | Envio com entrega OFF | PASS contratual | botão permanece desabilitado por `ready_for_controlled_test` e mostra motivo |
+| SMTP-UI-004 | Envio com entrega OFF | SUPERADO | o gate diagnóstico independente permite somente o teste controlado após PASS recente; envio operacional continua bloqueado |
 | SMTP-UI-005 | Detector de publicação futura | PASS por harness | token futuro abre aviso sem navegação ou recarga automática |
 | SMTP-UI-006 | Diagnóstico dentro do card SMTP | PASS | configuração, salvar, conexão e envio controlado aparecem em sequência no mesmo card; card redundante removido |
 | SMTP-UI-007 | Resultado compacto e acessível | PASS | status amigável, etapa, código e latência em região `aria-live`; sem host, usuário ou segredo |

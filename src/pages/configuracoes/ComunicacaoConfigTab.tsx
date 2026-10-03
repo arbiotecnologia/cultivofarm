@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -142,7 +142,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   controlled_test_retry_blocked_ambiguous: "O resultado anterior ficou ambíguo. Um novo envio está bloqueado até revisão humana.",
   candidate_not_applicable: "A rota SMTP Internacional não se aplica à configuração atual.",
   email_send_ambiguous: "Não foi possível confirmar se o servidor SMTP aceitou o envio.",
+  email_smtp_4xx: "O servidor SMTP recusou temporariamente o teste.",
+  email_smtp_5xx: "O servidor SMTP recusou definitivamente o teste.",
+  email_connect_timeout: "A conexão expirou antes de o servidor SMTP responder.",
+  email_connect_network: "Não foi possível alcançar o servidor SMTP.",
   email_send_timeout: "O provedor não respondeu dentro do tempo seguro.",
+  email_config_invalid: "A configuração SMTP está incompleta ou inválida.",
   unknown_error: "Erro inesperado. Tente novamente.",
 };
 
@@ -290,6 +295,7 @@ export default function ComunicacaoConfigTab() {
   const [testEmailTo] = useState(CONTROLLED_TEST_EMAIL);
   const [testEmailError, setTestEmailError] = useState<string | undefined>(undefined);
   const [testingEmail, setTestingEmail] = useState(false);
+  const testingEmailRef = useRef(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testingSmtpi, setTestingSmtpi] = useState(false);
   const [confirmSmtpiOpen, setConfirmSmtpiOpen] = useState(false);
@@ -534,7 +540,7 @@ export default function ComunicacaoConfigTab() {
   }
 
   async function handleTestEmail() {
-    if (testingEmail || testingConnection || testingSmtpi) return;
+    if (testingEmailRef.current || testingEmail || testingConnection || testingSmtpi) return;
     const err = validateTestEmail(testEmailTo);
     if (err) {
       setTestEmailError(err);
@@ -543,6 +549,7 @@ export default function ComunicacaoConfigTab() {
     }
     setTestEmailError(undefined);
     const to = testEmailTo.trim().toLowerCase();
+    testingEmailRef.current = true;
     setTestingEmail(true);
     try {
       const { resp, parsed } = await callSmtpDiagnostic({ mode: "send", to, confirm_controlled_send: true });
@@ -560,6 +567,7 @@ export default function ComunicacaoConfigTab() {
     } catch {
       toast.error("Erro de rede ao testar SMTP", { description: "Não foi possível concluir a chamada segura." });
     } finally {
+      testingEmailRef.current = false;
       setTestingEmail(false);
     }
   }

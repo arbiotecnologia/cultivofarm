@@ -218,5 +218,10 @@ Deno.serve(async (req) => {
   await auditDiagnostic(sb, uid, "smtp_send_test", outcome, auditCode, auditStage, null);
   safeLog("smtp_send_test", uid, responseCode, result.stage ?? "send", null);
   if (result.outcome === "sent") return json(origin, 200, { ok: true, code: responseCode, accepted: true });
-  return json(origin, 502, { ok: false, error: responseCode, ambiguous: result.certainty === "ambiguous", stage: result.stage ?? "send" });
+  return json(origin, result.certainty === "ambiguous" ? 409 : 502, {
+    ok: false,
+    error: responseCode,
+    ambiguous: result.certainty === "ambiguous",
+    stage: result.stage ?? "send",
+  });
 });
