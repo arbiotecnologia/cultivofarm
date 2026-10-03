@@ -1,6 +1,6 @@
 const LEGACY_SW_SUFFIX = "/sw.js";
 const PUSH_SW_URL = "/push-sw.js";
-const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
+const UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 const RECENT_NAVIGATION_KEY = "pwa:last-explicit-navigation";
 const DEFERRED_UPDATE_KEY = "pwa:deferred-update";
 const LEGACY_MIGRATION_KEY = "pwa:legacy-app-shell-migrated";
@@ -16,6 +16,14 @@ export interface PwaUpdateSnapshot {
   version: string | null;
   staleBuild: boolean;
   message?: string;
+}
+
+export type PublishedVersionStatus = "update_available" | "current" | "offline" | "error";
+
+export interface PublishedVersionInspection {
+  status: PublishedVersionStatus;
+  currentVersion?: string;
+  publishedVersion?: string;
 }
 
 let snapshot: PwaUpdateSnapshot = { status: "hidden", version: null, staleBuild: false };
@@ -186,11 +194,13 @@ async function registerStablePushWorker(): Promise<void> {
   }
 }
 
-export async function checkForPublishedVersion(
+export async function inspectPublishedVersion(
   fetchHtml: typeof fetch = fetch,
-): Promise<boolean> {
+): Promise<PublishedVersionInspection> {
   if (!loadedBuildToken) loadedBuildToken = getLoadedBuildToken();
-  if (!loadedBuildToken || !navigator.onLine) return false;
+  const currentVersion = loadedBuildToken ?? undefined;
+  if (!navigator.onLine) return { status: "offline", currentVersion };
+  if (!loadedBuildToken) return { status: "error" };
 
   try {
     const url = new URL(window.location.href);
@@ -200,16 +210,25 @@ export async function checkForPublishedVersion(
       cache: "no-store",
       headers: { Accept: "text/html" },
     });
-    if (!response.ok) return false;
+    if (!response.ok) return { status: "error", currentVersion };
     const publishedToken = extractBuildToken(await response.text(), url.origin);
-    if (!publishedToken || publishedToken === loadedBuildToken) return false;
+    if (!publishedToken) return { status: "error", currentVersion };
+    if (publishedToken === loadedBuildToken) {
+      return { status: "current", currentVersion, publishedVersion: publishedToken };
+    }
 
     const status: PwaUpdateStatus = readDeferredVersion() === publishedToken ? "deferred_badge" : "prompt";
     emitSnapshot({ status, version: publishedToken, staleBuild: false });
-    return true;
+    return { status: "update_available", currentVersion, publishedVersion: publishedToken };
   } catch {
-    return false;
+    return { status: navigator.onLine ? "error" : "offline", currentVersion };
   }
+}
+
+export async function checkForPublishedVersion(
+  fetchHtml: typeof fetch = fetch,
+): Promise<boolean> {
+  return (await inspectPublishedVersion(fetchHtml)).status === "update_available";
 }
 
 export function dismissPendingUpdate(): void {
