@@ -104,11 +104,11 @@
 | SMTPI-007 | Validação completa | PASS | Deno check, 10 Deno, 54 focados, typecheck, build, 5.394 globais/4 skipped; scanner 10 Info/zero P0/P1 |
 | SMTPI-008 | Deploy e smoke passivo | PASS | duas Edge Functions implantadas; negativas JWT=401; frontend publicado e domínio HTTP 200, sem clique candidato/aplicação |
 | SMTPI-009 | Probe real, envio e alteração do host | NOT RUN | dependem de clique humano; nenhuma operação SMTP ou mudança operacional executada nesta rodada |
-| SMTPI-010 | Configuração ativa sanitizada | PASS read-only | porta 465; família KingHost; rota ativa categorizada como SMTPi/internacional; host/usuário/remetente/referência Vault presentes; global/e-mail OFF/OFF; Test Mode ON; allowlist exclusiva |
-| SMTPI-011 | Última conexão normal | PASS canônico | `2026-10-03T16:59:02.720538Z`; `success/smtp_connection_ok/quit`; 117 ms; contrato retorna TLS e `authenticated=true` após greeting/EHLO/AUTH |
-| SMTPI-012 | Segredo resolvido | PASS funcional | leitura direta do Vault não foi usada; o runtime DB resolveu a credencial, pois AUTH terminou com sucesso e o probe alcançou `quit` |
-| SMTPI-013 | Ausência de envio pós-conexão | PASS read-only | zero `smtp_send_test`, zero novo `email_accepted_at`, zero receipt/outbox enviada e zero incremento/retry do convite após o PASS |
-| SMTPI-014 | Integridade E02 | PASS read-only | um job, um Auth user, um profile no tenant e um papel administrador; zero superadmin; tentativas 1/1, erro legado preservado e leases limpos |
+| SMTPI-010 | Configuração ativa sanitizada | PASS read-only | corte `2026-10-03T18:32:05.401961Z`: porta 465; família KingHost; rota SMTPi/internacional ativa; host/usuário/remetente/referência Vault presentes; global/e-mail OFF/OFF; Test Mode ON; allowlist exatamente `teste@refilinformatica.com.br` |
+| SMTPI-011 | Última conexão normal | PASS canônico | auditoria `id=25`, `2026-10-03T18:32:05.401961Z`; `success/smtp_connection_ok/quit`; 105 ms; contrato concluiu TLS/greeting/EHLO/AUTH sem envelope ou mensagem |
+| SMTPI-012 | Segredo resolvido | PASS funcional | runtime com fonte DB completou AUTH e alcançou `quit`; valor e referência não foram expostos |
+| SMTPI-013 | Ausência de envio pós-conexão | PASS read-only | zero `smtp_send_test`, tentativa/aceite novo do convite, receipt, outbox criada/tentada/enviada e retry/reenvio após o PASS |
+| SMTPI-014 | Integridade E02 | PASS read-only | um job, um Auth user, um profile no tenant e um papel administrador; zero superadmin; tentativas 1/1, `failed/email_unknown_error`, aceite nulo, leases limpos e nenhuma alteração após o PASS |
 | SMTPI-015 | Gate de envio controlado | SUPERADO | condição antiga substituída pelo gate diagnóstico independente abaixo; flags operacionais permanecem OFF/OFF |
 | SMTP-SEND-001 | OFF/OFF + PASS recente + Test Mode + allowlist exclusiva | PASS mock | teste diagnóstico liberado sem persistir flags; fluxos operacionais continuam bloqueados pelo adapter normal |
 | SMTP-SEND-002 | PASS expirado após 30 minutos | PASS mock | `smtp_connection_stale`, zero chamada ao adapter |
@@ -119,7 +119,7 @@
 | SMTP-SEND-007 | ACL, limite e sanitização | PASS estrutural | Superadmin server-side; 3/5 min; auditoria allowlisted; sem host, usuário, senha ou resposta bruta |
 | SMTP-SEND-008 | Validação sem envio | PASS | Deno check, 70 testes focados, typecheck, build, 5.395 globais/4 skipped e scanner 10 Info/zero P0/P1 |
 | SMTP-SEND-009 | Deploy/smoke passivo | PASS | duas Edge Functions implantadas; HTTP 200 e marcadores do fluxo confirmados no módulo oficial publicado; nenhum probe, envio ou alteração operacional |
-| SMTP-SEND-010 | Envio real controlado | NOT RUN | aguarda PASS recente e um único clique humano em `Enviar e-mail de teste` |
+| SMTP-SEND-010 | Envio real controlado | GO condicionado / NOT RUN | PASS recente às `18:32:05Z`; autorizado somente um clique humano para `teste@refilinformatica.com.br`, com configuração inalterada e TTL de 30 min; flags operacionais permanecem OFF/OFF; nenhum envio ocorreu nesta auditoria |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 
@@ -243,4 +243,4 @@
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS**. E02 permanece **FAIL histórico (`email_unknown_error`)** após Auth/profile/papel concluídos, sem retry autorizado. Janela SMTP **OFF/OFF**. Há **GO condicionado** apenas para um único envio controlado novo a `teste@refilinformatica.com.br`, após abertura auditável das duas flags e clique humano explícito. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** em `2026-10-03T18:32:05.401961Z`. E02 permanece **FAIL histórico (`email_unknown_error`)** após Auth/profile/papel concluídos, sem retry autorizado. Janela SMTP **OFF/OFF**. Há **GO condicionado** apenas para um único envio diagnóstico controlado novo a `teste@refilinformatica.com.br`, pelo fluxo independente já implantado, sem abrir flags e mediante clique humano dentro do TTL de 30 minutos. Fases 2–15: **NOT RUN**.
