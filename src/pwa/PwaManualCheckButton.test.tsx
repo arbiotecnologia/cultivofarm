@@ -61,11 +61,27 @@ describe("PwaManualCheckButton", () => {
     expect(mocks.error).not.toHaveBeenCalled();
   });
 
-  it("usa texto no desktop, ícone em telas estreitas, tooltip e aria-label", () => {
+  it("usa somente ícone compacto com tooltip e aria-label em desktop e mobile", async () => {
     mocks.user = { id: "usuario-1" };
     renderButton();
     const button = screen.getByRole("button", { name: "Verificar se há nova versão do Cultivo Farm" });
-    expect(button.querySelector("span")?.className).toContain("hidden sm:inline");
+    expect(button.querySelector("svg")).toBeInTheDocument();
+    expect(button.querySelector("span")).not.toBeInTheDocument();
+    expect(button).not.toHaveTextContent("Verificar atualização");
+    expect(button.className).toContain("h-9");
+    expect(button.className).toContain("w-9");
     expect(button.className).not.toContain("fixed");
+    fireEvent.focus(button);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Verificar atualização");
+  });
+
+  it("troca RefreshCw por Loader2 animado durante a inspeção", async () => {
+    mocks.user = { id: "usuario-1" };
+    mocks.inspect.mockImplementation(() => new Promise(() => undefined));
+    renderButton();
+    const button = screen.getByRole("button", { name: "Verificar se há nova versão do Cultivo Farm" });
+    fireEvent.click(button);
+    await waitFor(() => expect(button.querySelector("svg")).toHaveClass("animate-spin"));
+    expect(mocks.inspect).toHaveBeenCalledWith(fetch, "manual");
   });
 });
