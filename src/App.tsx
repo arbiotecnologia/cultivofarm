@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-route
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaUpdateNotifier } from "@/pwa/PwaUpdateNotifier";
+import { PwaUpdateControl } from "@/pwa/PwaUpdateControl";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useEntitlements } from "@/hooks/useEntitlements";
@@ -395,9 +396,10 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <PwaUpdateNotifier />
         <BrowserRouter>
           <AuthProvider>
+            <PwaUpdateNotifier />
+            <PwaUpdateControl />
             <Routes>
               <Route path="/auth" element={<AuthRoute />} />
               <Route path="/reset-password" element={<ResetPassword />} />

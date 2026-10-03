@@ -7,6 +7,7 @@ import {
   dismissPendingUpdate,
   extractBuildToken,
   getPwaUpdateSnapshot,
+  inspectPublishedVersion,
   migrateLegacyAppShell,
   recoverFromStaleBuild,
   reopenPendingUpdate,
@@ -77,6 +78,20 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     expect(getPwaUpdateSnapshot().status).toBe("hidden");
   });
 
+  it("retorna resultado detalhado atual sem remover atualização já pendente", async () => {
+    await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }));
+    const result = await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(currentHtml) }));
+    expect(result).toEqual({ status: "current", currentVersion: "build-current", publishedVersion: "build-current" });
+    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "build-new" });
+  });
+
+  it("distingue offline e erro sem navegar", async () => {
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
+    expect(await inspectPublishedVersion()).toMatchObject({ status: "offline", currentVersion: "build-current" });
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
+    expect(await inspectPublishedVersion(vi.fn().mockRejectedValue(new Error("falha")))).toMatchObject({ status: "error" });
+  });
+
   it("build ID diferente mostra prompt sem navegar", async () => {
     const navigate = vi.fn();
     const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) });
@@ -140,6 +155,18 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(workers.register).not.toHaveBeenCalledWith("/sw.js", expect.anything());
     cleanup();
+  });
+
+  it("usa um único agendamento global de dez minutos sem navegar", async () => {
+    vi.useFakeTimers();
+    const setIntervalSpy = vi.spyOn(window, "setInterval");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(currentHtml) }));
+    mockWorkerEnvironment();
+    const cleanup = startVersionManagement();
+    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 10 * 60 * 1000);
+    cleanup();
+    vi.useRealTimers();
   });
 
   it("worker legado e caches do app-shell são removidos sem navegação", async () => {

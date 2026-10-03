@@ -30,6 +30,13 @@
 | PWA-015 | Eventos, Adiar e Atualizar agora | PASS | detecção e badge sem navegação; uma navegação apenas após clique |
 | PWA-016 | Regressão P0.1 completa | PASS pré-publicação | 32 focados; typecheck/build; 5.379 globais/4 skipped; scanner 10 Info e zero P0/P1 |
 | PWA-017 | Publicação única e smoke oficial P0.1 | PASS | HTML com `cultivo-build-id`; detector `no-store`; pacote `/plataforma` com botão SMTP; URL estável, zero overlay/erro e nenhum clique SMTP |
+| PWA-018 | Controle manual autenticado e acessível | PASS pré-publicação | botão global único, ausente sem login, `aria-label` e posição móvel com safe-area |
+| PWA-019 | Resultado detalhado manual | PASS pré-publicação | current/offline/error mostram mensagem; update transfere o fluxo ao notificador sem toast redundante ou navegação |
+| PWA-020 | Login silencioso e clique duplo | PASS pré-publicação | uma inspeção por sessão, sem toast de versão atual; clique concorrente gera uma única inspeção |
+| PWA-021 | Atualização pendente, adiamento e aplicação | PASS pré-publicação | controle genérico oculto; badge persistente; navegação única somente após Atualizar agora |
+| PWA-022 | Scheduler e eventos | PASS pré-publicação | scheduler global único de 10 minutos; intervalo, visibility e online apenas detectam |
+| PWA-023 | Regressão P0.2 completa | PASS pré-publicação | 39 focados; typecheck/build; 5.390 globais/4 skipped; scanner 10 Info e zero P0/P1 |
+| PWA-024 | Publicação frontend e smoke oficial P0.2 | PASS passivo | HTTP 200; build `build-musmjimn`; pacote contém botão, `aria-label` e mensagens; sem clique em Atualizar agora; visual autenticado não executado sem sessão |
 
 ## Diagnóstico SMTP — integração da tela de plataforma
 

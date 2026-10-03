@@ -13,7 +13,7 @@
 - SMTP provider diagnostics use the existing test function: connection mode authenticates over TLS without SMTP envelope/data and works with delivery OFF; send mode remains fixed-recipient and fully gated — separates transport readiness from real delivery.
 - Native SMTP connection failures are normalized server-side to an allowlisted DNS/TCP/TLS code; raw runtime errors never reach logs, audit rows, or clients — improves diagnosis without leaking infrastructure details.
 
-- Frontend version detection is independent of service workers: compare the explicit per-production-build HTML meta ID, with entry-script hash fallback for legacy pages, and navigate only after an explicit user click; `/sw.js` exists solely as a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — detects every publication without automatic reloads.
+- Frontend version detection is independent of service workers: compare the explicit per-production-build HTML meta ID, with entry-script hash fallback for legacy pages, expose one global authenticated manual control inside AuthProvider, and navigate only after an explicit user click; `/sw.js` exists solely as a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — detects every publication without automatic reloads.
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
 
