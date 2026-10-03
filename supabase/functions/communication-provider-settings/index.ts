@@ -17,7 +17,6 @@ import {
 } from "../_shared/comunicacao/provider-settings-shaping.ts";
 import { buildSmtpReadiness } from "../_shared/comunicacao/smtp-readiness.ts";
 import { isSecretReferenceConfigured } from "./secret-status.ts";
-import { isKinghostSmtpiCandidateAvailable } from "../_shared/comunicacao/smtp-candidate-route.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -33,6 +32,12 @@ function jsonWith(origin: string | null, status: number, body: unknown): Respons
 }
 
 type Sb = ReturnType<typeof createClient<any>>;
+
+function isKinghostSmtpiCandidateAvailable(host: string | undefined, port: string | undefined): boolean {
+  if (Number(port) !== 465) return false;
+  const normalized = (host ?? "").trim().toLowerCase().replace(/\.$/, "");
+  return normalized === "smtp.kinghost.net" || normalized === "smtp.uni5.net";
+}
 
 async function authorizePlatformSuperadmin(req: Request, origin: string | null):
   Promise<{ ok: true; sb: Sb; userId: string } | { ok: false; res: Response }>

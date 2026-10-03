@@ -13,10 +13,7 @@ import {
 } from "../_shared/comunicacao/controlled-smtp-test.ts";
 import { getSmtpConfigError } from "../_shared/comunicacao/adapters-types.ts";
 import { probeSmtpProviderInDeno } from "../_shared/comunicacao/smtp-provider-probe-deno.ts";
-import {
-  buildSmtpCandidateRuntime,
-  type SmtpProviderRoute,
-} from "../_shared/comunicacao/smtp-candidate-route.ts";
+import type { WorkerEnv } from "../_shared/comunicacao/adapters-types.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -29,6 +26,22 @@ function json(origin: string | null, status: number, body: unknown) {
 }
 
 type DiagnosticMode = "connection" | "send";
+type SmtpProviderRoute = "current" | "kinghost_smtpi";
+
+function buildSmtpCandidateRuntime(
+  env: WorkerEnv,
+  route: SmtpProviderRoute,
+): { ok: true; env: WorkerEnv } | { ok: false; code: "candidate_not_applicable" } {
+  if (route === "current") return { ok: true, env: { ...env } };
+  if (Number(env.SMTP_PORT) !== 465) return { ok: false, code: "candidate_not_applicable" };
+  const host = (env.SMTP_HOST ?? "").trim().toLowerCase().replace(/\.$/, "");
+  const candidateHost = host === "smtp.kinghost.net"
+    ? "smtpi.kinghost.net"
+    : host === "smtp.uni5.net" ? "smtpi.uni5.net" : null;
+  return candidateHost
+    ? { ok: true, env: { ...env, SMTP_HOST: candidateHost } }
+    : { ok: false, code: "candidate_not_applicable" };
+}
 
 async function auditDiagnostic(
   sb: ReturnType<typeof createClient<any>>,
