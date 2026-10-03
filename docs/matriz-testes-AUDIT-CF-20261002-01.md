@@ -108,7 +108,7 @@
 | SMTP-SEND-005 | Confirmação e destinatário | PASS estrutural | confirmação literal obrigatória; endereço divergente e campos extras rejeitados; destinatário fixado no servidor |
 | SMTP-SEND-006 | Conteúdo e resultado | PASS estrutural | assunto/corpo fixos; aceite não alega entrega; ambiguidade bloqueia repetição cega |
 | SMTP-SEND-007 | ACL, limite e sanitização | PASS estrutural | Superadmin server-side; 3/5 min; auditoria allowlisted; sem host, usuário, senha ou resposta bruta |
-| SMTP-SEND-008 | Validação sem envio | PASS | Deno check, 54 testes focados, typecheck, 5.394 globais/4 skipped e scanner 10 Info/zero P0/P1 |
+| SMTP-SEND-008 | Validação sem envio | PASS | Deno check, 70 testes focados, typecheck, build, 5.395 globais/4 skipped e scanner 10 Info/zero P0/P1 |
 | SMTP-SEND-009 | Deploy/smoke passivo | PASS limitado | duas Edge Functions implantadas e frontend agendado; nenhum probe, envio ou alteração operacional |
 | SMTP-SEND-010 | Envio real controlado | NOT RUN | aguarda PASS recente e um único clique humano em `Enviar e-mail de teste` |
 
