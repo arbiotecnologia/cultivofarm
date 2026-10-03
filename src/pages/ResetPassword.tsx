@@ -12,6 +12,10 @@ function limparCredenciaisDaUrl() {
   window.history.replaceState({}, document.title, "/reset-password");
 }
 
+function temFragmentoSensivelDeRecovery(hash: string) {
+  return hash.includes("access_token=") || hash.includes("refresh_token=") || hash.includes("type=recovery");
+}
+
 export default function ResetPassword() {
   const [recovery, setRecovery] = useState(false);
   const [done, setDone] = useState(false);
@@ -22,6 +26,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     let mounted = true;
+    const fragmentoSensivel = temFragmentoSensivelDeRecovery(window.location.hash);
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" && mounted) {
         setRecovery(true);
@@ -29,8 +34,14 @@ export default function ResetPassword() {
       }
     });
     void supabase.auth.getSession().then(({ data }) => {
-      if (mounted && data.session && window.location.hash.includes("type=recovery")) {
+      if (!mounted) return;
+      if (data.session && fragmentoSensivel) {
         setRecovery(true);
+      }
+      // getSession aguarda a inicialização do supabase-js e o consumo seguro do
+      // implicit flow. Depois disso, nenhum fragmento sensível permanece visível,
+      // inclusive quando o link estiver expirado ou já tiver sido usado.
+      if (fragmentoSensivel) {
         limparCredenciaisDaUrl();
       }
     });

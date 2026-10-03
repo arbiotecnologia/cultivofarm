@@ -71,7 +71,7 @@ function quotedPrintable(value: string): string {
 }
 
 export function buildNativeMimeMessage(opts: Parameters<SmtpLikeClient["send"]>[0]): string {
-  const boundary = `cultivofarm-${crypto.randomUUID().replaceAll("-", "")}`;
+  const boundary = `cultivofarm-${crypto.randomUUID().replace(/-/g, "")}`;
   const plain = quotedPrintable(opts.content);
   const html = quotedPrintable(opts.html ?? `<pre>${opts.content}</pre>`);
   return [

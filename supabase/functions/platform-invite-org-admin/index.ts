@@ -16,6 +16,7 @@ import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/comunicacao/adapters-types.ts";
 import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+import { getPlatformInviteRedirectUrl } from "./redirect-policy.ts";
 
 const json = (body: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(body), {
@@ -119,15 +120,9 @@ Deno.serve(async (req) => {
       return respond({ error: "Modo de acesso inválido." }, 400);
     }
 
-    // Redirect somente para origens conhecidas (evita open redirect).
-    const origin = req.headers.get("origin") ?? "";
-    const origemPermitida = /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/.test(origin) ||
-      /^https:\/\/([a-z0-9-]+\.)*cultivofarm\.com\.br$/.test(origin) ||
-      /^http:\/\/localhost(:\d+)?$/.test(origin);
-    const redirectTo = origemPermitida ? `${origin}/reset-password` : undefined;
-    if (modo === "link" && !redirectTo) {
-      return respond({ error: "Origem não autorizada para o convite.", code: "redirect_not_allowed" }, 400);
-    }
+    // O Origin continua validado no início da requisição para impedir chamadas
+    // indevidas, mas nunca define o destino de um convite operacional.
+    const redirectTo = getPlatformInviteRedirectUrl();
 
     // Fail-closed antes de qualquer claim/mutação: o Supabase Edge Runtime
     // bloqueia saída SMTP nas portas 25 e 587.
@@ -201,7 +196,7 @@ Deno.serve(async (req) => {
     // da conta cuja origem server-only corresponde à intenção persistida.
     if (userId && modo === "link") {
       const { data: link, error: linkError } = await adminClient.auth.admin.generateLink({
-        type: "recovery", email, options: redirectTo ? { redirectTo } : undefined,
+        type: "recovery", email, options: { redirectTo },
       });
       if (linkError || !link?.properties?.action_link) {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
@@ -252,7 +247,7 @@ Deno.serve(async (req) => {
       userId = created.user.id;
       criamosUsuario = true;
       const { data: link, error: linkError } = await adminClient.auth.admin.generateLink({
-        type: "recovery", email, options: redirectTo ? { redirectTo } : undefined,
+        type: "recovery", email, options: { redirectTo },
       });
       if (linkError || !link?.properties?.action_link) {
         await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);

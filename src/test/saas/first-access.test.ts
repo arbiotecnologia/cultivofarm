@@ -50,9 +50,9 @@ describe("primeiro acesso — fluxo server-side", () => {
 
 describe("primeiro acesso — convite e compensação", () => {
   it("redirectTo fica restrito à allowlist de origens", () => {
-    expect(convite).toContain("lovable\\.app");
-    expect(convite).toContain("cultivofarm\\.com\\.br");
-    expect(convite).toContain("origemPermitida");
+    expect(convite).toContain("isTrustedOrigin(requestOrigin)");
+    expect(convite).toContain("getPlatformInviteRedirectUrl");
+    expect(convite).not.toContain("`${origin}/reset-password`");
   });
 
   it("não confia em user_metadata para estado de primeiro acesso", () => {
@@ -79,7 +79,9 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(convite).toContain('type: "recovery"');
     expect(convite).not.toContain('type: "invite"');
     expect(convite.match(/auth\.admin\.generateLink/g)?.length).toBe(2);
-    expect(convite).toContain("/reset-password");
+    const redirectPolicy = readFileSync("supabase/functions/platform-invite-org-admin/redirect-policy.ts", "utf-8");
+    expect(redirectPolicy).toContain('https://app.cultivofarm.com.br');
+    expect(redirectPolicy).toContain('/reset-password');
     expect(convite).not.toMatch(/action_link:\s*actionLink/);
     expect(convite).toContain("deliverInviteEmail");
   });

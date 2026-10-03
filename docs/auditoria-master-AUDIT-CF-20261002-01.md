@@ -406,3 +406,17 @@ Integridade preservada: um Auth user, um profile ativo no tenant esperado, nenhu
 A janela foi aberta auditavelmente por duas ações `apply`, alterando apenas `delivery_enabled` às `2026-10-03T19:24:34.078534Z` e `email_delivery_enabled` às `2026-10-03T19:24:44.457533Z`. No corte desta auditoria ambas continuam **ON**; Test Mode permanece **ON**, allowlist contém exclusivamente `teste@refilinformatica.com.br`, porta 465 e rota KingHost SMTPi preservadas.
 
 **Decisão:** `E02 EMAIL = PASS`, sem duplicidade, ambiguidade ou lease residual. O gate técnico de primeiro acesso está liberado, mas a execução humana está em **NO-GO operacional temporário** enquanto global/e-mail permanecerem ON/ON. Próximo passo obrigatório: o Superadmin fechar auditavelmente apenas essas duas flags para OFF/OFF; somente depois abrir o convite já recebido, definir a senha e efetuar login. Não gerar nem reenviar convite. SMTP2GO permanece planejado e M1 não iniciado.
+
+## P0 Auth redirect localhost — 2026-10-03 19:37 UTC
+
+O responsável declarou que o convite recebido abriu `http://localhost:3000/` com credenciais Auth no fragmento e conexão recusada. O valor sensível não foi reproduzido, armazenado ou incluído nesta auditoria. O link/sessão anterior passa a ser tratado como comprometido e não reutilizável para homologação.
+
+A contenção read-only no projeto canônico `swzpzcwiasxmjutrmvkm` confirmou `delivery_enabled=false`, `email_delivery_enabled=false`, Test Mode ON e allowlist contendo exclusivamente o destinatário controlado. Nenhum novo convite, envio ou alteração de configuração foi executado.
+
+A causa no código foi confirmada: `platform-invite-org-admin` validava o `Origin`, mas também o usava para compor `redirectTo`. A correção mínima mantém a rejeição de origem não confiável e fixa server-side o destino operacional em `https://app.cultivofarm.com.br/reset-password`; localhost e preview não conseguem mais alterar o destino. `ResetPassword` continua aguardando o consumo do implicit flow por `onAuthStateChange/getSession` e agora remove o fragmento sensível também quando o link está expirado ou usado, sem logs ou analytics.
+
+As ferramentas disponíveis não leem nem alteram Auth > URL Configuration deste Supabase externo. Portanto, Site URL e Redirect URLs permanecem **não comprovados** e nenhuma hipótese foi registrada como fato. A revogação oficial de todas as sessões do usuário controlado também não está disponível sem uma sessão/token desse usuário ou operação administrativa oficial exposta; o usuário, profile, role e job foram preservados.
+
+Validações da correção: 47 testes focados, 17 testes Deno, suíte global com 5.403 PASS/4 skipped, typecheck e build verdes, scanner com 10 Info e zero P0/P1. A Edge Function corrigida foi implantada e o frontend publicado. Smoke passivo confirmou `/reset-password` HTTP 200 e negativa 401 sem JWT; Playwright com credenciais fictícias confirmou remoção do fragmento e mensagem segura de link inválido. Nenhum convite, e-mail, probe ou sessão real foi criado durante a validação.
+
+**Decisão:** `NO-GO` para novo convite e primeiro acesso. Antes de qualquer reenvio, um responsável deve corrigir e comprovar no Dashboard o Site URL e a Redirect URL exata, e revogar globalmente as sessões do usuário controlado por mecanismo oficial do Auth.
