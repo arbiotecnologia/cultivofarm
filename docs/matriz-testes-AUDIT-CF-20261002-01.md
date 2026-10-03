@@ -246,6 +246,12 @@
 | F1-053 | Testes Deno específicos do complemento | NOT RUN | runner informou ausência de módulos de teste nas duas funções; não promovido a PASS |
 | F1-054 | Deploy e smoke do complemento | PASS | três funções implantadas; negativas JWT inválido 401; bundle oficial `App-Bdw25M7-.js` contém os marcadores novos |
 
+| SMTP-NATIVE-001 | Novo envio controlado após forward-fix | PASS | exatamente 1 novo send; `id=28`, `2026-10-03T19:15:10.908320Z`, `success/smtp_send_accepted/response`, latência nula |
+| SMTP-NATIVE-002 | Ambiguidade e duplo clique | PASS | zero resultado ambiguous; total histórico 2 e somente 1 após a falha `id=26` |
+| SMTP-NATIVE-003 | Configuração preservada | PASS read-only | KingHost SMTPi, porta 465, OFF/OFF, Test Mode ON, allowlist exclusiva; configuração anterior ao PASS `id=27` |
+| SMTP-NATIVE-004 | Ausência de efeitos colaterais | PASS read-only | zero Auth/profile/invite novo, outbox tentada/enviada e lease ativo após o PASS |
+| SMTP-NATIVE-005 | Integridade E02 | PASS read-only | 1 job; mesmo Auth/profile/tenant; 1 administrador, zero superadmin; estado histórico failed/1/email_unknown_error, sem aceite/lease |
+
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** em `2026-10-03T18:32:05.401961Z`. E02 permanece **FAIL histórico (`email_unknown_error`)** após Auth/profile/papel concluídos, sem retry autorizado. Janela SMTP **OFF/OFF**. Há **GO condicionado** apenas para um único envio diagnóstico controlado novo a `teste@refilinformatica.com.br`, pelo fluxo independente já implantado, sem abrir flags e mediante clique humano dentro do TTL de 30 minutos. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). E02 mantém **FAIL histórico (`email_unknown_error`)**, mas D51.2 está liberado para retry controlado exclusivo do job existente. O retry exige janela global/e-mail ON auditável, Test Mode ON e allowlist exclusiva; depois do convite enviado/recebido, fechar OFF/OFF. Fases 2–15: **NOT RUN**.
