@@ -251,7 +251,15 @@
 | SMTP-NATIVE-003 | Configuração preservada | PASS read-only | KingHost SMTPi, porta 465, OFF/OFF, Test Mode ON, allowlist exclusiva; configuração anterior ao PASS `id=27` |
 | SMTP-NATIVE-004 | Ausência de efeitos colaterais | PASS read-only | zero Auth/profile/invite novo, outbox tentada/enviada e lease ativo após o PASS |
 | SMTP-NATIVE-005 | Integridade E02 | PASS read-only | 1 job; mesmo Auth/profile/tenant; 1 administrador, zero superadmin; estado histórico failed/1/email_unknown_error, sem aceite/lease |
+| E02-RETRY-001 | Retry único do job histórico | PASS | mesmo job/organização/usuário; contadores 1/1→2/2; zero segundo job ou destinatário |
+| E02-RETRY-002 | Aceite do convite | PASS | `accepted`; tentativa `2026-10-03T19:26:20.621676Z`; aceite `2026-10-03T19:26:21.561898Z`; erro atual nulo |
+| E02-RETRY-003 | Lease e concorrência | PASS com observação | leases geral/e-mail limpos e uma sequência claim→sent→accepted; `email_next_attempt_at` residual apesar de accepted |
+| E02-RETRY-004 | Auth/profile/role | PASS | 1 Auth confirmado, 1 profile ativo no tenant, `senha_provisoria=true`, 1 administrador, zero superadmin e zero vínculo em outro tenant |
+| E02-RETRY-005 | Empresa e assinatura | PASS | 1 organização da campanha e 1 assinatura TRIAL; zero nova organização/assinatura/profile no intervalo |
+| E02-RETRY-006 | Transporte e logs | PASS | convite usou `sendEmail` com cliente SMTP nativo; logs somente com eventos/safe codes/job mascarado; responsável declarou recebimento |
+| E02-RETRY-007 | Efeitos laterais | PASS | zero outbox operacional nova/tentada/enviada e somente o destinatário controlado teve job tentado |
+| E02-RETRY-008 | Fechamento da janela | NO-GO | global/e-mail ainda ON/ON; Test Mode ON e allowlist exclusiva; fechar OFF/OFF antes de abrir o link |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). E02 mantém **FAIL histórico (`email_unknown_error`)**, mas D51.2 está liberado para retry controlado exclusivo do job existente. O retry exige janela global/e-mail ON auditável, Test Mode ON e allowlist exclusiva; depois do convite enviado/recebido, fechar OFF/OFF. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. Primeiro acesso: **NO-GO temporário**, exclusivamente porque global/e-mail ainda estão ON/ON; fechar OFF/OFF antes de abrir o link. Fases 2–15: **NOT RUN**.
