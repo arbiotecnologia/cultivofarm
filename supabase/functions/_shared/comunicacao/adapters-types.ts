@@ -64,7 +64,7 @@ export interface AdapterDeps {
   fetch?: typeof fetch;
   now?: () => number;
   timeoutMs?: number;
-  // Cliente SMTP injetável para testes (denomailer é resolvido em runtime Deno).
+  // Cliente SMTP injetável para testes; o padrão produtivo usa o transporte nativo Deno.
   smtpClientFactory?: (config: {
     hostname: string;
     port: number;

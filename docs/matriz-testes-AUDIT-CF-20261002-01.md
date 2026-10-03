@@ -214,6 +214,9 @@
 | F1-026 | Factory/conexão falha | PASS | `email_connect_network`/`email_connect_timeout`, definitivo, sem `send` |
 | F1-026A | Falha real do envio controlado após PASS nativo | FAIL operacional / PASS diagnóstico | única tentativa `id=26`, `failure/smtp_send_failed/connect`, latência auditada nula; Edge HTTP 502 em 3060 ms e log `email_connect_network/connect`; falha na fábrica/conexão Denomailer antes de `client.send` |
 | F1-026B | Paridade de transporte entre probe e envio | FAIL | probe usa `Deno.connectTls` e passou; envio usa `denomailer@1.6.0`/`SMTPClient` e falhou em `connect`; unificação recomendada, não implementada |
+| F1-026C | Forward-fix transporte nativo compartilhado | PASS sem rede | `sendEmail` mantém contrato/injeção e fábrica padrão usa o mesmo núcleo TLS/EHLO/STARTTLS/AUTH do probe; 15/15 Deno e 47/47 focados PASS |
+| F1-026D | Envelope e MIME nativos | PASS sem rede | MAIL 250, RCPT 250/251, DATA 354, final 250, multipart UTF-8 quoted-printable, CRLF e dot-stuffing cobertos por socket simulado |
+| F1-026E | Certeza após DATA | PASS sem rede | 4xx/5xx inequívoco definitivo; reset/timeout/resposta final perdida após corpo classificado ambíguo; socket fechado |
 | F1-027 | SMTP 421/451 inequívoco | PASS | `email_smtp_4xx`, definitivo/transiente |
 | F1-028 | SMTP 550 inequívoco | PASS | `email_smtp_5xx`, definitivo/permanente |
 | F1-029 | Timeout/reset/exceção desconhecida durante send | PASS | `email_send_ambiguous`; retry automático bloqueado |

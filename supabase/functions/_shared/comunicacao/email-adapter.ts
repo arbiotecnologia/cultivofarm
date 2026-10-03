@@ -1,4 +1,4 @@
-// Adapter de e-mail (SMTP via denomailer). Desligado por padrão.
+// Adapter de e-mail (SMTP nativo Deno). Desligado por padrão.
 // - Config inválida (porta fora de faixa, envs faltando) → deferred, não cancel.
 // - Timeout real via Promise.race + client.close() no finally.
 // - HTML é escapado; ausência de HTML explícito envia texto puro.
@@ -23,6 +23,7 @@ import {
   MAX_EMAIL_SUBJECT_LEN,
   utf8ByteLength,
 } from "./adapters-types.ts";
+import { createNativeSmtpClient, NativeSmtpAdapterFailure } from "./native-smtp-client.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 20_000;
 
@@ -30,13 +31,7 @@ async function defaultSmtpClientFactory(cfg: {
   hostname: string; port: number; tls: boolean;
   auth: { username: string; password: string };
 }): Promise<SmtpLikeClient> {
-  // Especificador dinâmico via variável — evita resolução estática por
-  // ferramentas Node (URL válido apenas em runtime Deno).
-  const denomailerSpec = "https://deno.land/x/denomailer@1.6.0/mod.ts";
-  // @ts-ignore -- resolvido em runtime Deno
-  const mod = await import(denomailerSpec);
-  const client = new mod.SMTPClient({ connection: cfg });
-  return client as SmtpLikeClient;
+  return createNativeSmtpClient(cfg);
 }
 
 export async function sendEmail(
@@ -132,6 +127,9 @@ export async function sendEmail(
 
     return { outcome: "sent", code: "sent", message: "Aceito pelo transporte SMTP.", certainty: "definitive", stage: "response", provider_message_id: null };
   } catch (e) {
+    if (e instanceof NativeSmtpAdapterFailure) {
+      return { outcome: e.outcome, code: e.code, message: "Falha no transporte de e-mail.", certainty: e.certainty, stage: e.stage };
+    }
     const msg = String((e as Error)?.message ?? e).slice(0, 500);
     const cls = classifyEmailError(msg, stage);
     return { ...cls, message: "Falha no transporte de e-mail." };
