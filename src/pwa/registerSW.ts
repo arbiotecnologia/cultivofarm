@@ -9,7 +9,8 @@ const BUILD_ID_META_SELECTOR = 'meta[name="cultivo-build-id"]';
 
 export const PWA_UPDATE_STATE_EVENT = "pwa:update-state";
 
-export type PwaUpdateStatus = "hidden" | "prompt" | "deferred_badge" | "applying" | "error";
+export type PwaUpdateStatus = "hidden" | "prompt" | "applying" | "error";
+export type VersionInspectionOrigin = "automatic" | "login" | "manual";
 
 export interface PwaUpdateSnapshot {
   status: PwaUpdateStatus;
@@ -196,6 +197,7 @@ async function registerStablePushWorker(): Promise<void> {
 
 export async function inspectPublishedVersion(
   fetchHtml: typeof fetch = fetch,
+  origin: VersionInspectionOrigin = "automatic",
 ): Promise<PublishedVersionInspection> {
   if (!loadedBuildToken) loadedBuildToken = getLoadedBuildToken();
   const currentVersion = loadedBuildToken ?? undefined;
@@ -214,10 +216,15 @@ export async function inspectPublishedVersion(
     const publishedToken = extractBuildToken(await response.text(), url.origin);
     if (!publishedToken) return { status: "error", currentVersion };
     if (publishedToken === loadedBuildToken) {
+      clearDeferredVersion();
+      if (snapshot.status !== "hidden") {
+        emitSnapshot({ status: "hidden", version: null, staleBuild: false });
+      }
       return { status: "current", currentVersion, publishedVersion: publishedToken };
     }
 
-    const status: PwaUpdateStatus = readDeferredVersion() === publishedToken ? "deferred_badge" : "prompt";
+    const deferredInThisBrowser = readDeferredVersion() === publishedToken;
+    const status: PwaUpdateStatus = deferredInThisBrowser && origin === "automatic" ? "hidden" : "prompt";
     emitSnapshot({ status, version: publishedToken, staleBuild: false });
     return { status: "update_available", currentVersion, publishedVersion: publishedToken };
   } catch {
@@ -234,20 +241,12 @@ export async function checkForPublishedVersion(
 export function dismissPendingUpdate(): void {
   if (snapshot.version) {
     try {
-      window.localStorage.setItem(DEFERRED_UPDATE_KEY, JSON.stringify({
-        version: snapshot.version,
-        deferredAt: new Date().toISOString(),
-      }));
+      window.localStorage.setItem(DEFERRED_UPDATE_KEY, JSON.stringify({ version: snapshot.version }));
     } catch {
-      // The badge still remains for this session.
+      // Storage is optional; the current document still hides the prompt.
     }
   }
-  emitSnapshot({ ...snapshot, status: "deferred_badge" });
-}
-
-export function reopenPendingUpdate(): void {
-  if (snapshot.status !== "deferred_badge") return;
-  emitSnapshot({ ...snapshot, status: snapshot.staleBuild ? "error" : "prompt" });
+  emitSnapshot({ ...snapshot, status: "hidden" });
 }
 
 function explicitNavigation(navigate: (url: string) => void): boolean {

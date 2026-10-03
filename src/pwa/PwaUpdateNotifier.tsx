@@ -6,7 +6,6 @@ import {
   dismissPendingUpdate,
   getPwaUpdateSnapshot,
   PWA_UPDATE_STATE_EVENT,
-  reopenPendingUpdate,
   retryCurrentBuild,
   type PwaUpdateSnapshot,
 } from "./registerSW";
@@ -24,22 +23,6 @@ export function PwaUpdateNotifier() {
   }, []);
 
   if (update.status === "hidden") return null;
-
-  if (update.status === "deferred_badge") {
-    return (
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={reopenPendingUpdate}
-        aria-label="Nova versão disponível. Clique para atualizar."
-        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-3 z-40 h-10 max-w-[calc(100vw-1.5rem)] gap-2 border border-border bg-card px-3 text-card-foreground shadow-lg sm:bottom-5 sm:right-5"
-      >
-        <RefreshCw aria-hidden="true" className="h-4 w-4 text-primary" />
-        <span className="truncate text-xs font-semibold">Nova versão disponível</span>
-        <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-primary" />
-      </Button>
-    );
-  }
 
   const applying = update.status === "applying";
   const error = update.status === "error";

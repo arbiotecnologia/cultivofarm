@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { PwaManualCheckButton } from "@/pwa/PwaManualCheckButton";
 import {
   useAssinaturasSaaS,
   useHistoricoAssinaturasSaaS,
@@ -126,10 +127,13 @@ export default function PlataformaHome() {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sair da conta">
-            <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-1">
+            <PwaManualCheckButton />
+            <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sair da conta">
+              <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 

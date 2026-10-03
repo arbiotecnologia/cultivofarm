@@ -10,6 +10,7 @@ import type { ComponentType, ReactNode, SVGProps } from "react";
 import { cn } from "@/lib/utils";
 import { CentralNotificacoesHeader } from "@/components/notificacoes/CentralNotificacoesHeader";
 import { UserMenu } from "@/components/UserMenu";
+import { PwaManualCheckButton } from "@/pwa/PwaManualCheckButton";
 
 interface PortalTopBarProps {
   /** Nome do portal exibido à esquerda. */
@@ -79,6 +80,7 @@ export function PortalTopBar({
       <div className="flex items-center gap-1 sm:gap-3 min-w-0">
         {contextSlot}
         {showNotifications && <CentralNotificacoesHeader />}
+        <PwaManualCheckButton />
         <UserMenu settingsTo={settingsTo} onSwitchPortal={onSwitchPortal} />
       </div>
     </header>
