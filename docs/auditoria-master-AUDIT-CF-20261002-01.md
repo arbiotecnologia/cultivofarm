@@ -420,3 +420,15 @@ As ferramentas disponíveis não leem nem alteram Auth > URL Configuration deste
 Validações da correção: 47 testes focados, 17 testes Deno, suíte global com 5.403 PASS/4 skipped, typecheck e build verdes, scanner com 10 Info e zero P0/P1. A Edge Function corrigida foi implantada e o frontend publicado. Smoke passivo confirmou `/reset-password` HTTP 200 e negativa 401 sem JWT; Playwright com credenciais fictícias confirmou remoção do fragmento e mensagem segura de link inválido. Nenhum convite, e-mail, probe ou sessão real foi criado durante a validação.
 
 **Decisão:** `NO-GO` para novo convite e primeiro acesso. Antes de qualquer reenvio, um responsável deve corrigir e comprovar no Dashboard o Site URL e a Redirect URL exata, e revogar globalmente as sessões do usuário controlado por mecanismo oficial do Auth.
+
+## Certificação pós-correção Auth sem envio — 2026-10-03 20:10 UTC
+
+O responsável declarou que corrigiu o Site URL, adicionou a Redirect URL exata e revogou as sessões do usuário controlado. As ferramentas disponíveis continuam sem leitura direta de Auth URL Configuration, portanto os dois primeiros fatos permanecem como confirmação humana, sem inferência adicional.
+
+A leitura canônica confirmou `delivery_enabled=false`, `email_delivery_enabled=false`, Test Mode ON e allowlist exatamente `teste@refilinformatica.com.br`. O E02 permanece íntegro: exatamente 1 job, 1 Auth user, 1 profile no tenant esperado, 1 papel `administrador`, zero `superadmin` e zero profile em outro tenant. O job segue `pendente/accepted`, com tentativas 2/2 e todos os leases limpos.
+
+`auth.sessions` foi legível sem acessar material sensível e contém **1 sessão** vinculada ao `user_id` do E02, criada e atualizada em `2026-10-03T19:33:50.469291Z`, com `not_after` nulo e sem refresh posterior registrado. Nenhum token, refresh token, segredo, IP ou user agent foi consultado ou exposto. Como a linha continua sem expiração, a exigência de zero sessões válidas/ativas falhou e a revogação declarada não pôde ser certificada.
+
+O código atual da Edge usa `getPlatformInviteRedirectUrl()` com destino fixo `https://app.cultivofarm.com.br/reset-password`; `Origin` permanece somente como gate e não compõe `redirectTo`. Os 2 testes Deno da política passaram. A rota oficial `https://app.cultivofarm.com.br/reset-password` respondeu HTTP 200 com build `build-musstglq`. A tentativa de gerar uma prova recovery sem envio via Auth Admin foi recusada pelo ambiente antes da chamada por proteção contra minting com service role; nenhum link foi gerado, persistido, impresso ou aberto.
+
+**Decisão:** `AUTH REDIRECT = NO-GO`. O redirect no código e a rota publicada estão comprovados, mas a sessão residual impede liberar novo retry E02. Manter OFF/OFF, Test Mode ON e allowlist exclusiva; não abrir o link antigo nem gerar novo convite até `auth.sessions` comprovar zero sessões válidas/ativas. Nenhum e-mail, flag, job, Auth user, profile ou role foi alterado nesta certificação.
