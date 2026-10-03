@@ -21,23 +21,20 @@ describe("PwaUpdateNotifier", () => {
     expect(screen.getByText("Nova versão disponível")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Atualizar agora" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Adiar" }));
-    expect(screen.getByRole("button", { name: "Nova versão disponível. Clique para atualizar." })).toBeInTheDocument();
+    expect(screen.queryByText("Nova versão disponível")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Campo preservado")).toHaveValue("não perder");
     expect(document.body.style.overflow).toBe("");
   });
 
-  it("badge acessível reabre opções e Continuar depois retorna ao badge", () => {
+  it("não renderiza badge depois de adiar", () => {
     render(<PwaUpdateNotifier />);
     act(() => {
       window.localStorage.setItem("pwa:deferred-update", JSON.stringify({ version: "v1", deferredAt: new Date().toISOString() }));
     });
     emit({ status: "prompt", version: "v1", staleBuild: false });
     fireEvent.click(screen.getByRole("button", { name: "Adiar" }));
-    fireEvent.click(screen.getByRole("button", { name: "Nova versão disponível. Clique para atualizar." }));
-    expect(screen.getByRole("button", { name: "Atualizar agora" })).toBeInTheDocument();
-    emit({ status: "error", version: "v1", staleBuild: false, message: "Falhou" });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar depois" }));
-    expect(screen.getByRole("button", { name: "Nova versão disponível. Clique para atualizar." })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Atualizar agora" })).not.toBeInTheDocument();
+    expect(document.querySelector(".fixed.bottom-\\[calc\\(5\\.5rem")).toBeNull();
   });
 
   it("estado applying usa progresso local sem overlay", () => {
@@ -49,12 +46,12 @@ describe("PwaUpdateNotifier", () => {
     expect(document.querySelector(".fixed.inset-0")).toBeNull();
   });
 
-  it("usa posição responsiva com safe-area", () => {
+  it("mantém o aviso responsivo com safe-area", () => {
     render(<PwaUpdateNotifier />);
     act(() => { void requestStaleBuildRecovery(); });
-    emit({ status: "deferred_badge", version: "v1", staleBuild: false });
-    const badge = screen.getByRole("button", { name: "Nova versão disponível. Clique para atualizar." });
-    expect(badge.className).toContain("safe-area-inset-bottom");
-    expect(badge.className).toContain("sm:bottom-5");
+    emit({ status: "prompt", version: "v1", staleBuild: false });
+    const alert = screen.getByRole("status", { name: "Atualização do Cultivo Farm" });
+    expect(alert.className).toContain("safe-area-inset-bottom");
+    expect(alert.className).toContain("sm:bottom-5");
   });
 });
