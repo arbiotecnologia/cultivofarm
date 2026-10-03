@@ -264,14 +264,16 @@
 | AUTH-REDIRECT-004 | Origin localhost/preview altera destino | PASS mock | ambos preservam o destino canônico; origem não confiável continua 403 |
 | AUTH-REDIRECT-005 | Fragmento após consumo Auth | PASS | Playwright com valores fictícios terminou em `/reset-password` sem fragmento e exibiu link inválido; zero logs/analytics de token |
 | AUTH-REDIRECT-006 | Site URL e Redirect URLs no Auth | PASS declarado / não verificável diretamente | responsável confirmou Site URL corrigido e Redirect URL exata adicionada; ferramenta disponível não lê URL Configuration do Supabase externo |
-| AUTH-REDIRECT-007 | Revogação global da sessão comprometida | FAIL read-only | `auth.sessions` está legível e contém 1 sessão do user_id E02, criada em `2026-10-03T19:33:50.469291Z`, com `not_after` nulo; nenhum token foi lido |
-| AUTH-REDIRECT-008 | Novo convite controlado | NOT RUN / NO-GO | bloqueado até Auth config comprovada, deploy verde e revogação oficial concluída |
+| AUTH-REDIRECT-007 | Revogação global da sessão comprometida | PASS | autorização explícita; mecanismo oficial por user_id indisponível; fallback transacional removeu 1 refresh token e 1 sessão somente do usuário `cbdc4ef3-****-****-****-d212`; pós-contagens 0/0 |
+| AUTH-REDIRECT-008 | Novo convite controlado | NOT RUN / GO | gate liberado após revogação e preservação de integridade; nenhum convite foi gerado ou enviado nesta rodada |
 | AUTH-REDIRECT-009 | Validações e publicação | PASS | 47 testes focados, 17 Deno, suíte global 5.403 PASS/4 skipped, typecheck/build e scanner com 10 Info/zero P0/P1; frontend publicado e Edge implantada |
 | AUTH-REDIRECT-010 | Prova recovery sem e-mail | BLOCKED seguro | tentativa via Admin Auth foi recusada pelo ambiente antes da chamada; nenhum action link/token foi gerado, persistido, impresso ou aberto |
 | AUTH-REDIRECT-011 | Código e rota oficiais | PASS | Edge usa redirect server-side fixo e não compõe por Origin; 2/2 testes Deno; `/reset-password` respondeu 200 no build `build-musstglq` |
 | AUTH-REDIRECT-012 | Isolamento E02 pós-correção | PASS read-only | 1 job, 1 Auth, 1 profile no tenant, 1 administrador, zero superadmin/outro tenant; estado `accepted`, contadores 2/2 e leases limpos |
+| AUTH-REDIRECT-013 | Constraints e alvo da revogação | PASS | exatamente 1 Auth e 1 job coincidentes; FK de refresh token para sessão possui `ON DELETE CASCADE`; deleção explícita ocorreu antes da sessão, sem tocar users/identities/MFA |
+| AUTH-REDIRECT-014 | Integridade após revogação | PASS | 1 Auth, 1 profile esperado, 1 administrador, zero superadmin, 1 job `pendente/accepted` 2/2 sem leases, 1 organização e 1 assinatura; flags OFF/OFF, Test Mode ON e allowlist exclusiva |
 | E02-RETRY-008 | Fechamento da janela | PASS / superado | global/e-mail OFF/OFF, Test Mode ON e allowlist exclusiva; o link anterior permanece proibido pelo P0 Auth redirect |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. `AUTH REDIRECT = NO-GO`: flags estão OFF/OFF e código/rota canônicos passaram, porém `auth.sessions` ainda contém uma sessão sem expiração para o usuário E02. Nenhum novo convite foi gerado. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. `SESSION REVOCATION = PASS`: sessões e refresh tokens 1/1→0/0, integridade preservada e flags OFF/OFF. Novo retry E02: **GO controlado / NOT RUN**. Fases 2–15: **NOT RUN**.
