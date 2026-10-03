@@ -28,6 +28,11 @@ describe("P0 PWA — versão independente de service worker", () => {
   const pushWorker = read("public/push-sw.js");
   const app = read("src/App.tsx");
   const main = read("src/main.tsx");
+  const notifier = read("src/pwa/PwaUpdateNotifier.tsx");
+  const loginControl = read("src/pwa/PwaUpdateControl.tsx");
+  const manualControl = read("src/pwa/PwaManualCheckButton.tsx");
+  const topbar = read("src/components/portal/PortalTopBar.tsx");
+  const platform = read("src/pages/plataforma/PlataformaHome.tsx");
 
   it("remove Workbox/VitePWA e preserva manifesto estático", () => {
     expect(vite).not.toMatch(/VitePWA|generateSW|registerType|workbox|clientsClaim|skipWaiting/);
@@ -53,6 +58,39 @@ describe("P0 PWA — versão independente de service worker", () => {
     expect(register).toContain("RECENT_NAVIGATION_KEY");
     expect(register).not.toContain("location.reload");
     expect(main).not.toMatch(/vite:preloadError[\s\S]{0,300}(reload|replace)/);
+  });
+
+  it("P0.3 A–D: aviso tem ações explícitas, Adiar oculta e não existe badge flutuante", () => {
+    expect(notifier).toContain("Nova versão disponível");
+    expect(notifier).toContain("Atualizar agora");
+    expect(notifier).toContain("Adiar");
+    expect(register).not.toContain("deferred_badge");
+    expect(register).not.toContain("reopenPendingUpdate");
+  });
+
+  it("P0.3 E–H: origem distingue automático, login e manual com token persistido", () => {
+    expect(register).toContain('"automatic" | "login" | "manual"');
+    expect(register).toContain('origin === "automatic"');
+    expect(register).toContain("JSON.stringify({ version: snapshot.version })");
+    expect(loginControl).toContain('inspectPublishedVersion(fetch, "login")');
+    expect(manualControl).toContain('inspectPublishedVersion(fetch, "manual")');
+  });
+
+  it("P0.3 I–L: controle reutilizável fica nos cabeçalhos, sem posição flutuante", () => {
+    expect(topbar).toContain("PwaManualCheckButton");
+    expect(platform).toContain("PwaManualCheckButton");
+    expect(manualControl).not.toMatch(/fixed|bottom-|safe-area-inset-bottom/);
+    expect(manualControl).toContain("hidden sm:inline");
+    expect(manualControl).toContain("TooltipContent");
+  });
+
+  it("P0.3 M–P: scheduler único, eventos apenas detectam e stale-chunk segue manual", () => {
+    expect(register).toContain("UPDATE_INTERVAL_MS = 10 * 60 * 1000");
+    expect(register.match(/window\.setInterval\(/g)).toHaveLength(1);
+    expect(register).toContain("const onVisibilityChange = () => detect()");
+    expect(register).toContain("const onOnline = () => detect()");
+    expect(register).toContain("requestStaleBuildRecovery");
+    expect(register).not.toContain("location.reload");
   });
 
   it("worker legado só limpa caches e se desregistra, sem navegar clientes", () => {

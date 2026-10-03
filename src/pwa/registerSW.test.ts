@@ -10,7 +10,6 @@ import {
   inspectPublishedVersion,
   migrateLegacyAppShell,
   recoverFromStaleBuild,
-  reopenPendingUpdate,
   resetVersionManagementForTests,
   retryCurrentBuild,
   startVersionManagement,
@@ -78,11 +77,11 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     expect(getPwaUpdateSnapshot().status).toBe("hidden");
   });
 
-  it("retorna resultado detalhado atual sem remover atualização já pendente", async () => {
+  it("ao carregar a versão publicada limpa informação de atualização anterior", async () => {
     await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }));
     const result = await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(currentHtml) }));
     expect(result).toEqual({ status: "current", currentVersion: "build-current", publishedVersion: "build-current" });
-    expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "build-new" });
+    expect(getPwaUpdateSnapshot()).toEqual({ status: "hidden", version: null, staleBuild: false });
   });
 
   it("distingue offline e erro sem navegar", async () => {
@@ -125,16 +124,34 @@ describe("gerenciamento manual de versão sem app-shell service worker", () => {
     expect(getPwaUpdateSnapshot()).toMatchObject({ status: "prompt", version: "index-new456" });
   });
 
-  it("Adiar mantém badge e a mesma versão não volta a abrir prompt", async () => {
+  it("Adiar fecha o aviso e check automático da mesma versão fica silencioso", async () => {
     const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) });
     await checkForPublishedVersion(fetchHtml);
     dismissPendingUpdate();
-    expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
-    expect(window.localStorage.getItem("pwa:deferred-update")).toMatch(/version.*deferredAt/);
+    expect(getPwaUpdateSnapshot().status).toBe("hidden");
+    expect(window.localStorage.getItem("pwa:deferred-update")).toBe(JSON.stringify({ version: "build-new" }));
     await checkForPublishedVersion(fetchHtml);
-    expect(getPwaUpdateSnapshot().status).toBe("deferred_badge");
-    reopenPendingUpdate();
+    expect(getPwaUpdateSnapshot().status).toBe("hidden");
+  });
+
+  it("login e verificação manual reapresentam uma versão adiada", async () => {
+    const fetchHtml = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) });
+    await inspectPublishedVersion(fetchHtml, "automatic");
+    dismissPendingUpdate();
+    await inspectPublishedVersion(fetchHtml, "login");
     expect(getPwaUpdateSnapshot().status).toBe("prompt");
+    dismissPendingUpdate();
+    await inspectPublishedVersion(fetchHtml, "manual");
+    expect(getPwaUpdateSnapshot().status).toBe("prompt");
+  });
+
+  it("versão atual limpa a deferência e qualquer informação pendente", async () => {
+    window.localStorage.setItem("pwa:deferred-update", JSON.stringify({ version: "build-new" }));
+    await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(newHtml) }), "manual");
+    expect(getPwaUpdateSnapshot().status).toBe("prompt");
+    await inspectPublishedVersion(vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(currentHtml) }), "automatic");
+    expect(getPwaUpdateSnapshot()).toEqual({ status: "hidden", version: null, staleBuild: false });
+    expect(window.localStorage.getItem("pwa:deferred-update")).toBeNull();
   });
 
   it("Atualizar agora navega exatamente uma vez após clique explícito", async () => {

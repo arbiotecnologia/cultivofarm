@@ -38,6 +38,11 @@
 | PWA-023 | Regressão P0.2 completa | PASS pré-publicação | 39 focados; typecheck/build; 5.390 globais/4 skipped; scanner 10 Info e zero P0/P1 |
 | PWA-024 | Publicação frontend e smoke oficial P0.2 | PASS passivo | HTTP 200; build `build-musmjimn`; pacote contém botão, `aria-label` e mensagens; sem clique em Atualizar agora; visual autenticado não executado sem sessão |
 | PWA-025 | Reauditoria final P0.2 | PASS técnico / visual autenticado pendente | 39 focados, typecheck, build, 5.390 globais/4 skipped, scanner 10 Info/zero P0/P1 e smoke oficial passivo; autenticação externa sem sessão automatizada |
+| PWA-026 | P0.3 A–D — aviso, Adiar e ausência de badge | PASS pré-publicação | aviso não bloqueante; ações explícitas; Adiar produz estado oculto e persiste somente token |
+| PWA-027 | P0.3 E–H — origem da inspeção | PASS pré-publicação | automático silencia versão adiada; login/manual reapresentam; versão carregada limpa deferência |
+| PWA-028 | P0.3 I–L — controle nos cabeçalhos | PASS pré-publicação | componente reutilizável no topbar compartilhado, Superadmin e fallback produtor; sem posição flutuante; texto desktop e tooltip mobile |
+| PWA-029 | P0.3 M–P — cadência e navegação | PASS pré-publicação | observador pós-login único; scheduler único 10 min; visibility/online só detectam; stale-chunk e atualização navegam apenas por clique |
+| PWA-030 | Regressão P0.3 | PASS com ressalva de duração global | 43 focados/A–P, typecheck e build PASS; scanner 10 Info/zero P0/P1; global 5.394 PASS/4 skipped/4 timeouts, com os quatro arquivos repetidos isoladamente em 47/47 PASS |
 
 ## Diagnóstico SMTP — integração da tela de plataforma
 
