@@ -17,6 +17,7 @@ import {
 } from "../_shared/comunicacao/provider-settings-shaping.ts";
 import { buildSmtpReadiness } from "../_shared/comunicacao/smtp-readiness.ts";
 import { isSecretReferenceConfigured } from "./secret-status.ts";
+import { isKinghostSmtpiCandidateAvailable } from "../_shared/comunicacao/smtp-candidate-route.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -31,7 +32,7 @@ function jsonWith(origin: string | null, status: number, body: unknown): Respons
   });
 }
 
-type Sb = ReturnType<typeof createClient>;
+type Sb = ReturnType<typeof createClient<any>>;
 
 async function authorizePlatformSuperadmin(req: Request, origin: string | null):
   Promise<{ ok: true; sb: Sb; userId: string } | { ok: false; res: Response }>
@@ -78,6 +79,13 @@ async function loadPublicView(sb: Sb) {
   if (error) throw new Error("db_error");
   const singletonExists = data !== null;
   const row = (data ?? {}) as Record<string, unknown>;
+  const { data: latestConnection } = await sb
+    .from("communication_provider_settings_audit")
+    .select("safe_code")
+    .eq("action", "smtp_connection_test")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   const arr = (k: string): string[] => Array.isArray(row[k]) ? (row[k] as string[]) : [];
   const bool = (k: string) => row[k] === true;
   const secretConfigured = (k: string) => isSecretReferenceConfigured(row, k);
@@ -102,6 +110,11 @@ async function loadPublicView(sb: Sb) {
       host: str("smtp_host"), port: num("smtp_port"),
       user: str("smtp_user"), from: str("smtp_from"),
       password_configured: secretConfigured("secret_smtp_password"),
+      last_connection_code: typeof latestConnection?.safe_code === "string" ? latestConnection.safe_code : null,
+      kinghost_smtpi_candidate_available: isKinghostSmtpiCandidateAvailable(
+        str("smtp_host") ?? undefined,
+        num("smtp_port") == null ? undefined : String(num("smtp_port")),
+      ),
     },
     smtp_readiness: buildSmtpReadiness(singletonExists ? row : null),
     whatsapp: {
@@ -148,7 +161,7 @@ Deno.serve(async (req: Request) => {
 
       let shaped: ReturnType<typeof buildAtomicPayload>;
       if (body && (body as { action?: unknown }).action === "clear_secret") {
-        shaped = buildClearSecretPayload(body as Parameters<typeof buildClearSecretPayload>[0]);
+        shaped = buildClearSecretPayload(body as unknown as Parameters<typeof buildClearSecretPayload>[0]);
       } else {
         shaped = buildAtomicPayload(body as PutPayload);
       }

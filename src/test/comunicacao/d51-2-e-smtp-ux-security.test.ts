@@ -79,7 +79,7 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   it("valida superadmin de plataforma, rate limit, test mode e allowlist no servidor", () => {
     expect(edge).toContain('sb.rpc("is_platform_superadmin"');
     expect(edge).not.toContain('r.role === "administrador"');
-    expect(edge).toContain('mode === "connection" ? "test_smtp_connection" : "test_smtp"');
+    expect(edge).toContain('route === "kinghost_smtpi" ? "test_smtp_connection_candidate" : baseRateAction');
     expect(edge).toContain("loadRuntimeConfig(sb, readWorkerEnv)");
     expect(edge).toContain("evaluateControlledSmtpTest(env, to)");
   });
@@ -117,7 +117,32 @@ describe("D51.2-E — UX e segurança do teste SMTP", () => {
   });
 
   it("preserva proteção contra clique duplo nos dois diagnósticos", () => {
-    expect(ui).toContain("if (testingConnection || testingEmail) return;");
-    expect(ui).toContain("testingEmail || testingConnection");
+    expect(ui).toContain("if (testingConnection || testingSmtpi || testingEmail) return;");
+    expect(ui).toContain("testingEmail || testingConnection || testingSmtpi");
+  });
+
+  it("oferece SMTPi somente após recusa TCP e sem persistir durante o teste", () => {
+    expect(ui).toContain('(connectionResult?.code ?? view.smtp.last_connection_code) === "smtp_tcp_refused"');
+    expect(ui).toContain('candidate_provider_route: "kinghost_smtpi"');
+    expect(ui).toContain("Nenhum e-mail será enviado e a configuração atual não será alterada.");
+    expect(ui).toContain("Testar SMTPi");
+    expect(edge).toContain("buildSmtpCandidateRuntime(env, route)");
+    expect(edge).toContain("probeSmtpProviderInDeno(candidate.env)");
+    expect(edge).not.toContain("smtp_host:");
+  });
+
+  it("habilita aplicação somente após PASS e altera apenas o host", () => {
+    expect(ui).toContain("smtpiResult?.ok");
+    expect(ui).toContain("Usar SMTPi como servidor");
+    expect(ui).toContain("{ smtp: { host: candidateHost } }");
+    expect(ui).toContain("Porta, usuário, remetente e senha serão preservados.");
+    expect(ui).toContain("setConnectionResult(null)");
+    expect(ui).toContain("setSmtpiResult(null)");
+  });
+
+  it("mantém auditoria candidata sanitizada e separada", () => {
+    expect(edge).toContain('"smtp_connection_candidate_test"');
+    expect(edge).toContain('route === "kinghost_smtpi"');
+    expect(edge).not.toMatch(/safeLog\([^\n]*SMTP_HOST|safeLog\([^\n]*SMTP_USER|safeLog\([^\n]*SMTP_PASSWORD/);
   });
 });

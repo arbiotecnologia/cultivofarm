@@ -46,7 +46,15 @@ type ProviderView = {
     inapp_delivery_enabled: boolean;
     whatsapp_webhook_enabled: boolean;
   };
-  smtp: { host: string | null; port: number | null; user: string | null; from: string | null; password_configured: boolean };
+  smtp: {
+    host: string | null;
+    port: number | null;
+    user: string | null;
+    from: string | null;
+    password_configured: boolean;
+    kinghost_smtpi_candidate_available: boolean;
+    last_connection_code: string | null;
+  };
   smtp_readiness: {
     singleton_exists: boolean;
     delivery_enabled: boolean;
@@ -124,6 +132,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   smtp_protocol_error: "O servidor retornou uma resposta SMTP incompatível.",
   smtp_config_invalid: "A configuração SMTP está incompleta ou inválida.",
   smtp_send_accepted: "O servidor SMTP aceitou o envio.",
+  candidate_not_applicable: "A rota SMTP Internacional não se aplica à configuração atual.",
   email_send_ambiguous: "Não foi possível confirmar se o servidor SMTP aceitou o envio.",
   email_send_timeout: "O provedor não respondeu dentro do tempo seguro.",
   unknown_error: "Erro inesperado. Tente novamente.",
@@ -150,6 +159,14 @@ function friendlyStage(stage: string): string {
 }
 
 const CONTROLLED_TEST_EMAIL = "teste@refilinformatica.com.br";
+
+function kinghostSmtpiHost(host: string | null, port: number | null): string | null {
+  if (port !== 465) return null;
+  const normalized = (host ?? "").trim().toLowerCase().replace(/\.$/, "");
+  if (normalized === "smtp.kinghost.net") return "smtpi.kinghost.net";
+  if (normalized === "smtp.uni5.net") return "smtpi.uni5.net";
+  return null;
+}
 
 const FLAG_LABELS: Record<string, { title: string; help: string }> = {
   delivery_enabled: {
@@ -266,9 +283,14 @@ export default function ComunicacaoConfigTab() {
   const [testEmailError, setTestEmailError] = useState<string | undefined>(undefined);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [testingSmtpi, setTestingSmtpi] = useState(false);
+  const [confirmSmtpiOpen, setConfirmSmtpiOpen] = useState(false);
   const [confirmSendOpen, setConfirmSendOpen] = useState(false);
   const [connectionResult, setConnectionResult] = useState<{
     ok: boolean; code: string; stage: string; tls: boolean; authenticated: boolean; latency_ms: number;
+  } | null>(null);
+  const [smtpiResult, setSmtpiResult] = useState<{
+    ok: boolean; code: string; stage: string; tls: boolean; authenticated: boolean; latency_ms: number; route: "kinghost_smtpi";
   } | null>(null);
 
   const testEmailSchema = z
@@ -422,7 +444,7 @@ export default function ComunicacaoConfigTab() {
   }
 
   async function handleTestConnection() {
-    if (testingConnection || testingEmail) return;
+    if (testingConnection || testingSmtpi || testingEmail) return;
     setTestingConnection(true);
     setConnectionResult(null);
     try {
@@ -449,8 +471,61 @@ export default function ComunicacaoConfigTab() {
     }
   }
 
+  async function handleTestSmtpi() {
+    if (testingConnection || testingSmtpi || testingEmail) return;
+    setTestingSmtpi(true);
+    setSmtpiResult(null);
+    try {
+      const { resp, parsed } = await callSmtpDiagnostic({
+        mode: "connection",
+        candidate_provider_route: "kinghost_smtpi",
+      });
+      const result = {
+        ok: resp.ok && parsed.ok === true,
+        code: typeof parsed.code === "string" ? parsed.code : "smtp_test_failed",
+        stage: typeof parsed.stage === "string" ? parsed.stage : "connect",
+        tls: parsed.tls === true,
+        authenticated: parsed.authenticated === true,
+        latency_ms: typeof parsed.latency_ms === "number" ? parsed.latency_ms : 0,
+        route: "kinghost_smtpi" as const,
+      };
+      setSmtpiResult(result);
+      if (result.ok) {
+        toast.success("SMTPi conectado e autenticado", { description: `Latência: ${result.latency_ms} ms.` });
+      } else {
+        toast.error("Conexão SMTPi não confirmada", { description: friendlyError(result.code, resp.status) });
+      }
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "smtp_test_failed";
+      toast.error("Diagnóstico SMTPi não concluído", { description: friendlyError(code) });
+    } finally {
+      setTestingSmtpi(false);
+    }
+  }
+
+  async function handleApplySmtpi() {
+    if (!smtpiResult?.ok || saving) return;
+    const candidateHost = kinghostSmtpiHost(view?.smtp.host ?? null, view?.smtp.port ?? null);
+    if (!candidateHost) {
+      toast.error("Não foi possível aplicar o SMTPi", { description: friendlyError("candidate_not_applicable") });
+      setConfirmSmtpiOpen(false);
+      return;
+    }
+    const applied = await save(
+      { smtp: { host: candidateHost } },
+      "Servidor SMTPi aplicado",
+      "Somente o servidor foi alterado. Porta, usuário, remetente, senha e flags foram preservados.",
+    );
+    setConfirmSmtpiOpen(false);
+    if (applied) {
+      setSmtpHost(candidateHost);
+      setConnectionResult(null);
+      setSmtpiResult(null);
+    }
+  }
+
   async function handleTestEmail() {
-    if (testingEmail || testingConnection) return;
+    if (testingEmail || testingConnection || testingSmtpi) return;
     const err = validateTestEmail(testEmailTo);
     if (err) {
       setTestEmailError(err);
@@ -574,6 +649,8 @@ export default function ComunicacaoConfigTab() {
           : !view.smtp_readiness.delivery_enabled || !view.smtp_readiness.email_delivery_enabled
             ? "As entregas global e por e-mail permanecem desativadas."
             : "A prontidão completa ainda não foi confirmada.";
+  const showSmtpiCandidate = view.smtp.kinghost_smtpi_candidate_available &&
+    (connectionResult?.code ?? view.smtp.last_connection_code) === "smtp_tcp_refused";
 
   return (
     <div className="space-y-4">
@@ -884,7 +961,7 @@ export default function ComunicacaoConfigTab() {
               </div>
               <Button
                 variant="outline"
-                disabled={testingConnection || testingEmail || !connectionConfigReady}
+                disabled={testingConnection || testingSmtpi || testingEmail || !connectionConfigReady}
                 onClick={handleTestConnection}
                 aria-busy={testingConnection}
               >
@@ -901,6 +978,47 @@ export default function ComunicacaoConfigTab() {
                     {friendlyStage(connectionResult.stage)} · {friendlyError(connectionResult.code)} · {connectionResult.latency_ms} ms
                   </p>
                 </div>
+              </div>
+            )}
+            {showSmtpiCandidate && (
+              <div className="space-y-3 rounded-md border p-3" aria-labelledby="smtp-smtpi-title">
+                <div>
+                  <h4 id="smtp-smtpi-title" className="text-sm font-semibold">Rota internacional KingHost</h4>
+                  <p className="mt-1 text-sm">
+                    Servidor atual recusou a conexão da nuvem. Teste o SMTP Internacional da KingHost sem alterar a configuração.
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Nenhum e-mail será enviado e a configuração atual não será alterada.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={testingSmtpi || testingConnection || testingEmail}
+                    onClick={handleTestSmtpi}
+                    aria-busy={testingSmtpi}
+                  >
+                    <PlugZap className="mr-1 h-4 w-4" />
+                    {testingSmtpi ? "Testando SMTPi..." : "Testar SMTPi"}
+                  </Button>
+                  {smtpiResult?.ok && (
+                    <Button type="button" disabled={saving} onClick={() => setConfirmSmtpiOpen(true)}>
+                      <Save className="mr-1 h-4 w-4" />Usar SMTPi como servidor
+                    </Button>
+                  )}
+                </div>
+                {smtpiResult && (
+                  <div aria-live="polite" role="status" className="flex items-start gap-2 rounded-md border p-3 text-sm">
+                    {smtpiResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" /> : <CircleX className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+                    <div className="min-w-0">
+                      <p className="font-medium">{smtpiResult.ok ? "SMTPi conectado e autenticado" : "Falhou"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {friendlyStage(smtpiResult.stage)} · {friendlyError(smtpiResult.code)} · {smtpiResult.latency_ms} ms
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -927,7 +1045,7 @@ export default function ComunicacaoConfigTab() {
               />
               <Button
                 variant="outline"
-                disabled={testingEmail || testingConnection || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
+                disabled={testingEmail || testingConnection || testingSmtpi || !testEmailValid || !view.smtp_readiness.ready_for_controlled_test}
                 onClick={() => setConfirmSendOpen(true)}
                 aria-busy={testingEmail}
               >
@@ -957,6 +1075,21 @@ export default function ComunicacaoConfigTab() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => void handleTestEmail()}>Confirmar envio</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmSmtpiOpen} onOpenChange={setConfirmSmtpiOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usar SMTPi como servidor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação altera somente o servidor SMTP para a rota internacional da KingHost. Porta, usuário, remetente e senha serão preservados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleApplySmtpi()}>Confirmar alteração do servidor</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
