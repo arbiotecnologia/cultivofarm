@@ -33,6 +33,10 @@ describe("P0 PWA — versão independente de service worker", () => {
   const manualControl = read("src/pwa/PwaManualCheckButton.tsx");
   const topbar = read("src/components/portal/PortalTopBar.tsx");
   const platform = read("src/pages/plataforma/PlataformaHome.tsx");
+  const adminLayout = read("src/components/AppLayout.tsx");
+  const producerLayout = read("src/pages/portal/PortalLayout.tsx");
+  const partnerLayout = read("src/pages/portal-parceiro/PortalParceiroLayout.tsx");
+  const mobileLayout = read("src/pages/app/MobileLayout.tsx");
 
   it("remove Workbox/VitePWA e preserva manifesto estático", () => {
     expect(vite).not.toMatch(/VitePWA|generateSW|registerType|workbox|clientsClaim|skipWaiting/);
@@ -79,6 +83,13 @@ describe("P0 PWA — versão independente de service worker", () => {
   it("P0.3 I–L: controle reutilizável fica nos cabeçalhos, sem posição flutuante", () => {
     expect(topbar).toContain("PwaManualCheckButton");
     expect(platform).toContain("PwaManualCheckButton");
+    expect(adminLayout).toContain("PortalTopBar");
+    expect(producerLayout).toContain("PortalTopBar");
+    expect(partnerLayout).toContain("PortalTopBar");
+    expect(mobileLayout).toContain("PortalTopBar");
+    expect(producerLayout).not.toContain("PwaManualCheckButton");
+    expect(partnerLayout).not.toContain("PwaManualCheckButton");
+    expect(mobileLayout).not.toContain("PwaManualCheckButton");
     expect(manualControl).not.toMatch(/fixed|bottom-|safe-area-inset-bottom/);
     expect(manualControl).toContain("hidden sm:inline");
     expect(manualControl).toContain("TooltipContent");
