@@ -212,6 +212,8 @@
 | F1-024 | REFIL e job AR BIO preservados | PASS | REFIL `rascunho` + Completo SUSPENDED; AR BIO falhou/tentativa 1/e-mail 0/sem usuário/lease |
 | F1-025 | Config inválida antes do transporte | PASS | `email_config_invalid`, definitivo, sem `send` |
 | F1-026 | Factory/conexão falha | PASS | `email_connect_network`/`email_connect_timeout`, definitivo, sem `send` |
+| F1-026A | Falha real do envio controlado após PASS nativo | FAIL operacional / PASS diagnóstico | única tentativa `id=26`, `failure/smtp_send_failed/connect`, latência auditada nula; Edge HTTP 502 em 3060 ms e log `email_connect_network/connect`; falha na fábrica/conexão Denomailer antes de `client.send` |
+| F1-026B | Paridade de transporte entre probe e envio | FAIL | probe usa `Deno.connectTls` e passou; envio usa `denomailer@1.6.0`/`SMTPClient` e falhou em `connect`; unificação recomendada, não implementada |
 | F1-027 | SMTP 421/451 inequívoco | PASS | `email_smtp_4xx`, definitivo/transiente |
 | F1-028 | SMTP 550 inequívoco | PASS | `email_smtp_5xx`, definitivo/permanente |
 | F1-029 | Timeout/reset/exceção desconhecida durante send | PASS | `email_send_ambiguous`; retry automático bloqueado |
