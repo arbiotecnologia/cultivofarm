@@ -214,8 +214,10 @@ O singleton `public.communication_provider_settings (id=1)` é suficiente para a
 - **Carga runtime:** `rpc_service_load_provider_runtime_config` resolve referências Vault apenas para `service_role`; `runtime-config.ts` aplica precedência DB→env→fail-closed e mantém segredos somente em memória.
 - **Configuração administrativa:** `communication-provider-settings` exige JWT e Superadmin server-side, aplica rate limit, modela payload allowlisted e grava atomicamente por `rpc_service_apply_provider_settings`; GET devolve somente configuração não secreta, máscaras e booleanos de presença.
 - **Auditoria:** `communication_provider_settings_audit` registra ator, ação, campos alterados e slot lógico de segredo, nunca valor. Diagnósticos reutilizam a mesma tabela com outcome/código/estágio/latência sanitizados.
-- **Consumo atual:** outbox, teste controlado e convite chamam diretamente `sendEmail`; `invite-email-delivery` envolve o efeito externo com intenção, lease/fencing, persistência de aceite e estado ambíguo. O ponto comum de transporte existe, mas ainda é um adapter SMTP concreto, não um dispatcher por provider.
-- **Recovery:** o link de recovery do convite é gerado server-side e entregue pelo mesmo caminho do convite; não existe envio paralelo autorizado. Qualquer outro recovery gerenciado diretamente pelo Auth precisa ser inventariado antes de M8 e não deve ser alegado como migrado sem prova.
+- **Consumo canônico atual:** outbox, teste controlado e convite chamam diretamente `sendEmail`; `invite-email-delivery` envolve o efeito externo com intenção, lease/fencing, persistência de aceite e estado ambíguo. O ponto comum de transporte existe, mas ainda é um adapter SMTP concreto, não um dispatcher por provider.
+- **Exceções legadas encontradas:** `enviar-alertas-notificacoes` e `enviar-alertas-resumo` instanciam cliente SMTP próprio e leem `SMTP_*` do ambiente, sem singleton/Vault/runtime-config. A atividade produtiva dessas funções não foi comprovada nesta rodada; ainda assim, são desvio arquitetural e devem ser migradas ou formalmente desativadas antes de afirmar dispatcher único.
+- **Referências sem implementação local:** `enviar-pdf-aplicacao` e `enviar-pdf-visita` invocam `send-transactional-email`, função ausente no repositório auditado. Não se afirma que o envio esteja operacional; M8 deve reconciliar esse contrato sem criar uma terceira via.
+- **Recovery:** o link de recovery do convite é gerado server-side e entregue pelo mesmo caminho do convite. Qualquer recovery gerenciado diretamente pelo Auth precisa ser inventariado antes de M8 e não deve ser alegado como migrado sem prova.
 
 ### Extensão recomendada do singleton
 
@@ -270,6 +272,7 @@ Ativação exige configuração completa, teste PASS recente (TTL inicial recome
 - CORS permanece restrito às origens confiáveis; `verify_jwt=true`; rate limits distintos para configuração, connection test e send test.
 - A RPC de mutação continua service-role-only, com payload/slots allowlisted, lock e auditoria atômica.
 - Risco principal: quebra de consumidores por seleção parcial. Mitigação: M1 introduz tipos/default sem alterar dispatch; M2 move SMTP atual e exige regressão integral antes de M3.
+- Risco de bypass do provider ativo: dois emissores legados usam SMTP por ambiente e dois fluxos de PDF apontam para função ausente. Mitigação: inventário de acionamento e convergência ao dispatcher em M8, antes da homologação multi-provedor; nenhum secret legado deve ser copiado ao browser ou ao banco.
 - Risco de falsa saúde: teste antigo aplicado a configuração nova. Mitigação: vincular PASS ao provider e hash/snapshot sanitizado da configuração.
 - Risco de duplicação: timeout/5xx/resposta inválida após aceite. Mitigação: estado ambíguo, confirmação humana e ausência de failover/retry automático.
 - Risco de endpoint malicioso/SSRF: base livre. Mitigação: allowlist fechada de origins oficiais e redirects desabilitados ou revalidados.
@@ -286,10 +289,10 @@ Ativação exige configuração completa, teste PASS recente (TTL inicial recome
 5. **M5:** um teste real connection-only SMTP2GO, por Superadmin, sem mensagem e com flags OFF/OFF.
 6. **M6:** um envio real controlado somente para `teste@refilinformatica.com.br`, com readiness integral e autorização separada.
 7. **M7:** troca/failover exclusivamente manual e auditável; nenhum failover automático.
-8. **M8:** regressão de convite, recovery e Comunicação pelo dispatcher único, documentação e decisão de homologação.
+8. **M8:** migrar ou desativar formalmente os dois emissores SMTP legados; reconciliar `send-transactional-email`; provar convite, recovery, PDFs, alertas e Comunicação pelo dispatcher único; documentar e decidir homologação.
 
 ### Critérios de aceite e rollback
 
-Cada marco para no primeiro P0/P1, vazamento, destino não autorizado, ambiguidade não tratada ou necessidade humana. M1/M2 só avançam se `custom_smtp` mantiver contratos, gates e histórico. M3/M4 não fazem rede real. M5 não envia mensagem. M6 não significa entrega, apenas aceite remoto comprovado. M7 não pode ligar flags. M8 exige prova de que não resta chamada direta ao SMTP fora do adapter e que convite/recovery/notificações compartilham dispatcher, idempotência e estados ambíguos.
+Cada marco para no primeiro P0/P1, vazamento, destino não autorizado, ambiguidade não tratada ou necessidade humana. M1/M2 só avançam se `custom_smtp` mantiver contratos, gates e histórico. M3/M4 não fazem rede real. M5 não envia mensagem. M6 não significa entrega, apenas aceite remoto comprovado. M7 não pode ligar flags. M8 exige prova de que não resta chamada direta ao SMTP fora do adapter, nenhuma referência órfã a emissor e que convite/recovery/PDFs/alertas/notificações compartilham dispatcher, idempotência e estados ambíguos.
 
 Rollback por fase: reverter UI/dispatcher para `custom_smtp`; manter colunas e referências de segredo intactas; selecionar manualmente o provider anterior por RPC auditada; jamais apagar configuração durante rollback. Forward-fix é preferível a down migration destrutiva.

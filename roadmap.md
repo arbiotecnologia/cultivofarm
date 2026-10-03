@@ -10,7 +10,7 @@
 
 ## Próximo / autorizado a preparar execução
 - [x] **Planejamento multi-provedor consolidado — sem implementação:** singleton global mantido como modelo recomendado; `custom_smtp` continua default e SMTP2GO será adapter HTTP selecionado por dispatcher server-side. Campos globais permanecem únicos, configurações/segredos ficam preservados por provider e a troca será manual, auditável, com motivo e teste recente, sem ligar flags. Migração, segurança, 22 cenários de teste, rollback e fases M1–M8 documentados; nenhuma mutação, conexão ou envio nesta rodada.
-- [ ] **M1 — base multi-provedor (aguarda autorização específica):** migration aditiva/idempotente, contrato e dispatcher com provider ativo ainda `custom_smtp`; não iniciar automaticamente.
+- [ ] **M1 — base multi-provedor (aguarda autorização específica):** migration aditiva/idempotente, contrato e dispatcher com provider ativo ainda `custom_smtp`; não iniciar automaticamente. Antes da homologação, M8 deve convergir ou desativar formalmente dois emissores SMTP legados e reconciliar dois fluxos de PDF que apontam para `send-transactional-email` ausente no repositório.
 
 - [ ] Gate D51.2 — aguardar confirmação do responsável de que verificou a caixa e não recebeu; somente depois autorizar separadamente **Não recebi — reenviar convite**. Não clicar antes dessa autorização.
 

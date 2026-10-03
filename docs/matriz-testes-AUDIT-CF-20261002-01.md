@@ -77,6 +77,9 @@
 | MP-020 | Rollback manual | PLANEJADO | volta ao provider anterior sem apagar configurações/segredos |
 | MP-021 | Failover automático | FORA DE ESCOPO | não implementar na primeira versão por risco de duplicação ambígua |
 | MP-022 | Rodada atual sem mutação | PASS | somente documentação; zero banco, secret, flag, chamada externa ou envio |
+| MP-023 | Emissores SMTP legados | ACHADO/BLOQUEIO M8 | duas funções leem `SMTP_*` e criam cliente próprio; atividade produtiva não comprovada |
+| MP-024 | Referência `send-transactional-email` | ACHADO/BLOQUEIO M8 | dois fluxos de PDF invocam função ausente no repositório; não declarar envio operacional |
+| MP-025 | Dispatcher verdadeiramente único | PLANEJADO | zero SMTP direto fora de adapters e zero referência órfã antes da homologação |
 
 ## Fase 0
 
