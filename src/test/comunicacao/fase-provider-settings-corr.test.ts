@@ -267,6 +267,18 @@ describe("F-CORR (4) provider-settings — shaping/validações", () => {
     expect(r.updates.smtp_host).toBe("h");
   });
 
+  it("aplicação de rota SMTPi altera somente host e preserva senha e flags", () => {
+    const r = buildAtomicPayload({ smtp: { host: "smtpi.kinghost.net" } });
+    if ("error" in r) throw new Error(r.error);
+    expect(r.updates).toEqual({ smtp_host: "smtpi.kinghost.net" });
+    expect(r.secret_ops).toEqual([]);
+    expect(r.updates).not.toHaveProperty("smtp_port");
+    expect(r.updates).not.toHaveProperty("smtp_user");
+    expect(r.updates).not.toHaveProperty("smtp_from");
+    expect(r.updates).not.toHaveProperty("delivery_enabled");
+    expect(r.updates).not.toHaveProperty("email_delivery_enabled");
+  });
+
   it("senha SMTP preenchida gera set write-only", () => {
     const r = buildAtomicPayload({ smtp: { password: "NOVA_SENHA_ABC123" } });
     if ("error" in r) throw new Error(r.error);

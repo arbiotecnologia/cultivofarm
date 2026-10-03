@@ -86,6 +86,15 @@
 | SMTP-SECRET-005 | WhatsApp e webhook | PASS regressão | access token, app secret e verify token usam a mesma regra de presença |
 | SMTP-SECRET-006 | Validação e scanner | PASS | 41 Vitest, 3 Deno, typecheck e build verdes; scanner 10 Info/zero P0/P1 |
 | SMTP-SECRET-007 | Deploy e smoke GET | PASS limitado | somente `communication-provider-settings` implantada; GET sem sessão=401; autenticado NOT RUN por indisponibilidade de sessão Superadmin, sem bypass `service_role` |
+| SMTPI-001 | KingHost doméstico → SMTPi | PASS mock | `smtp.kinghost.net` mapeia somente em memória para `smtpi.kinghost.net`, porta 465 |
+| SMTPI-002 | Uni5 doméstico → SMTPi | PASS mock | `smtp.uni5.net` mapeia somente em memória para `smtpi.uni5.net`, porta 465 |
+| SMTPI-003 | Host/porta não aplicável | PASS | falha fechada com `candidate_not_applicable`; cliente não fornece host arbitrário |
+| SMTPI-004 | Probe candidato sem envio/persistência | PASS | clone preserva credenciais, porta e flags; mocks confirmam zero envelope SMTP e resposta sem host/segredo |
+| SMTPI-005 | Auditoria candidata | PASS | ação específica `smtp_connection_candidate_test`, safe codes allowlisted e RPC exclusiva de `service_role` |
+| SMTPI-006 | UI e aplicação explícita | PASS estrutural | bloco aparece após `smtp_tcp_refused`; PASS na sessão habilita confirmação; payload de aplicação contém somente `smtp.host` |
+| SMTPI-007 | Validação completa | PASS | Deno check, 10 Deno, 54 focados, typecheck, build, 5.394 globais/4 skipped; scanner 10 Info/zero P0/P1 |
+| SMTPI-008 | Deploy e smoke passivo | PASS | duas Edge Functions implantadas; negativas JWT=401; frontend publicado e domínio HTTP 200, sem clique candidato/aplicação |
+| SMTPI-009 | Probe real, envio e alteração do host | NOT RUN | dependem de clique humano; nenhuma operação SMTP ou mudança operacional executada nesta rodada |
 
 ## Planejamento multi-provedor de e-mail — sem implementação
 

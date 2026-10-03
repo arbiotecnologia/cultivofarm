@@ -2,6 +2,10 @@ import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.
 import { createSmtpProbeFailure, probeSmtpProvider, type ProbeConnection } from "../_shared/comunicacao/smtp-provider-probe.ts";
 import { classifyNativeSmtpConnectionError } from "../_shared/comunicacao/smtp-provider-probe-deno.ts";
 import type { WorkerEnv } from "../_shared/comunicacao/adapters-types.ts";
+import {
+  buildSmtpCandidateRuntime,
+  getKinghostSmtpiCandidate,
+} from "../_shared/comunicacao/smtp-candidate-route.ts";
 
 const env = (port = "465"): WorkerEnv => ({
   DELIVERY_ENABLED: false, EMAIL_ENABLED: false, WHATSAPP_ENABLED: false, INAPP_ENABLED: false,
@@ -126,4 +130,46 @@ Deno.test("timeout absoluto preserva etapa atual e fecha o socket", async () => 
   assertEquals(result.code, "smtp_connect_timeout");
   assertEquals(result.stage, "auth");
   assertEquals(connection.closed, true);
+});
+
+Deno.test("rota candidata KingHost troca somente o host em memória e preserva credenciais, porta e flags", () => {
+  const current = { ...env(), SMTP_HOST: " SMTP.KINGHOST.NET. " };
+  const candidate = buildSmtpCandidateRuntime(current, "kinghost_smtpi");
+  assertEquals(candidate.ok, true);
+  if (!candidate.ok) return;
+  assertEquals(candidate.env.SMTP_HOST, "smtpi.kinghost.net");
+  assertEquals(candidate.env.SMTP_PORT, current.SMTP_PORT);
+  assertEquals(candidate.env.SMTP_USER, current.SMTP_USER);
+  assertEquals(candidate.env.SMTP_PASSWORD, current.SMTP_PASSWORD);
+  assertEquals(candidate.env.SMTP_FROM, current.SMTP_FROM);
+  assertEquals(candidate.env.DELIVERY_ENABLED, false);
+  assertEquals(candidate.env.EMAIL_ENABLED, false);
+  assertEquals(current.SMTP_HOST, " SMTP.KINGHOST.NET. ");
+});
+
+Deno.test("rota candidata Uni5 é estrita e rejeita host ou porta não aplicável", () => {
+  assertEquals(getKinghostSmtpiCandidate("smtp.uni5.net", "465"), "smtpi.uni5.net");
+  assertEquals(getKinghostSmtpiCandidate("smtp.kinghost.net", "587"), null);
+  assertEquals(buildSmtpCandidateRuntime({ ...env(), SMTP_HOST: "smtp.example.test" }, "kinghost_smtpi"), {
+    ok: false,
+    code: "candidate_not_applicable",
+  });
+});
+
+Deno.test("probe candidato 465 autentica sem enviar e sem incluir segredo no resultado", async () => {
+  const current = { ...env(), SMTP_HOST: "smtp.kinghost.net" };
+  const candidate = buildSmtpCandidateRuntime(current, "kinghost_smtpi");
+  if (!candidate.ok) throw new Error("candidate_not_applicable");
+  const connection = new ScriptedConnection(["220 ready\r\n", "250-server\r\n250 AUTH PLAIN\r\n", "235 authenticated\r\n", "221 bye\r\n"]);
+  let observedHost = "";
+  const result = await probeSmtpProvider(candidate.env, {
+    connect: async () => connection,
+    connectTls: async (hostname) => { observedHost = hostname; return connection; },
+    startTls: async () => connection,
+  });
+  assertEquals(observedHost, "smtpi.kinghost.net");
+  assertEquals(result.ok, true);
+  assertEquals(/MAIL FROM|RCPT TO|DATA/i.test(connection.writes.join("")), false);
+  assertEquals(JSON.stringify(result).includes("secret-value"), false);
+  assertEquals(JSON.stringify(result).includes("smtpi.kinghost.net"), false);
 });

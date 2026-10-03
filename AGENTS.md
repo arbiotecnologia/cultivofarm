@@ -12,6 +12,7 @@
 - Controlled SMTP tests reuse the shared communication adapter and require Platform Superadmin authorization, rate limiting, full readiness, test mode, and the fixed gate recipient before any socket; responses expose only allowlisted codes — prevents tenant privilege bypass and diagnostic leakage.
 - SMTP provider diagnostics use the existing test function: connection mode authenticates over TLS without SMTP envelope/data and works with delivery OFF; send mode remains fixed-recipient and fully gated — separates transport readiness from real delivery.
 - Native SMTP connection failures are normalized server-side to an allowlisted DNS/TCP/TLS code; raw runtime errors never reach logs, audit rows, or clients — improves diagnosis without leaking infrastructure details.
+- KingHost SMTPi diagnostics use only a server-side allowlisted in-memory route; persistence requires a separate explicit Superadmin action that changes only the SMTP host — prevents arbitrary host probing and silent configuration changes.
 
 - Frontend version detection is independent of service workers: compare the explicit per-production-build HTML meta ID, with entry-script hash fallback for legacy pages, expose one global authenticated manual control inside AuthProvider, and navigate only after an explicit user click; `/sw.js` exists solely as a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — detects every publication without automatic reloads.
 

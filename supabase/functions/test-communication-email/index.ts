@@ -13,6 +13,7 @@ import {
 } from "../_shared/comunicacao/controlled-smtp-test.ts";
 import { getSmtpConfigError } from "../_shared/comunicacao/adapters-types.ts";
 import { probeSmtpProviderInDeno } from "../_shared/comunicacao/smtp-provider-probe-deno.ts";
+import type { WorkerEnv } from "../_shared/comunicacao/adapters-types.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -25,11 +26,27 @@ function json(origin: string | null, status: number, body: unknown) {
 }
 
 type DiagnosticMode = "connection" | "send";
+type SmtpProviderRoute = "current" | "kinghost_smtpi";
+
+function buildSmtpCandidateRuntime(
+  env: WorkerEnv,
+  route: SmtpProviderRoute,
+): { ok: true; env: WorkerEnv } | { ok: false; code: "candidate_not_applicable" } {
+  if (route === "current") return { ok: true, env: { ...env } };
+  if (Number(env.SMTP_PORT) !== 465) return { ok: false, code: "candidate_not_applicable" };
+  const host = (env.SMTP_HOST ?? "").trim().toLowerCase().replace(/\.$/, "");
+  const candidateHost = host === "smtp.kinghost.net"
+    ? "smtpi.kinghost.net"
+    : host === "smtp.uni5.net" ? "smtpi.uni5.net" : null;
+  return candidateHost
+    ? { ok: true, env: { ...env, SMTP_HOST: candidateHost } }
+    : { ok: false, code: "candidate_not_applicable" };
+}
 
 async function auditDiagnostic(
   sb: ReturnType<typeof createClient<any>>,
   actor: string,
-  action: "smtp_connection_test" | "smtp_send_test",
+  action: "smtp_connection_test" | "smtp_connection_candidate_test" | "smtp_send_test",
   outcome: "success" | "failure" | "ambiguous" | "blocked",
   safeCode: string,
   stage: string,
@@ -76,14 +93,24 @@ Deno.serve(async (req) => {
   if (authorizationError) return json(origin, 500, { ok: false, error: "authorization_check_failed" });
   if (isSuperadmin !== true) return json(origin, 403, { ok: false, error: "forbidden" });
 
-  let body: { mode?: DiagnosticMode; to?: string; subject?: string; message?: string } = {};
+  let body: { mode?: DiagnosticMode; candidate_provider_route?: unknown; to?: string; subject?: string; message?: string } = {};
   try { body = await req.json(); } catch { return json(origin, 400, { ok: false, error: "invalid_json" }); }
   const mode: DiagnosticMode = body.mode ?? "send";
   if (mode !== "connection" && mode !== "send") return json(origin, 400, { ok: false, error: "invalid_mode" });
+  const requestedRoute = body.candidate_provider_route ?? "current";
+  if (requestedRoute !== "current" && requestedRoute !== "kinghost_smtpi") {
+    return json(origin, 400, { ok: false, error: "candidate_not_applicable" });
+  }
+  if (mode !== "connection" && requestedRoute !== "current") {
+    return json(origin, 400, { ok: false, error: "candidate_not_applicable" });
+  }
+  const route = requestedRoute as SmtpProviderRoute;
 
+  const baseRateAction = mode === "connection" ? "test_smtp_connection" : "test_smtp";
+  const rateAction = route === "kinghost_smtpi" ? "test_smtp_connection_candidate" : baseRateAction;
   const { data: rateAllowed, error: rateError } = await sb.rpc("rpc_service_check_rate_limit", {
     p_user: uid,
-    p_action: mode === "connection" ? "test_smtp_connection" : "test_smtp",
+    p_action: rateAction,
     p_max: mode === "connection" ? 5 : 3,
     p_window_seconds: 300,
   });
@@ -91,17 +118,27 @@ Deno.serve(async (req) => {
 
   const env = await loadRuntimeConfig(sb, readWorkerEnv);
   if (mode === "connection") {
-    const configError = getSmtpConfigError(env);
+    const candidate = buildSmtpCandidateRuntime(env, route);
+    const auditAction = route === "kinghost_smtpi" ? "smtp_connection_candidate_test" : "smtp_connection_test";
+    if (!candidate.ok) {
+      await auditDiagnostic(sb, uid, auditAction, "blocked", candidate.code, "connect", 0);
+      safeLog(auditAction, uid, candidate.code, "connect", 0);
+      return json(origin, 400, {
+        ok: false, code: candidate.code, stage: "connect", tls: false,
+        authenticated: false, latency_ms: 0, route,
+      });
+    }
+    const configError = getSmtpConfigError(candidate.env);
     if (configError) {
       const code = configError === "email_config_invalid" ? "smtp_config_invalid" : configError;
-      await auditDiagnostic(sb, uid, "smtp_connection_test", "blocked", code, "connect", 0);
-      safeLog("smtp_connection_test", uid, code, "connect", 0);
-      return json(origin, 400, { ok: false, code, stage: "connect", tls: false, authenticated: false, latency_ms: 0 });
+      await auditDiagnostic(sb, uid, auditAction, "blocked", code, "connect", 0);
+      safeLog(auditAction, uid, code, "connect", 0);
+      return json(origin, 400, { ok: false, code, stage: "connect", tls: false, authenticated: false, latency_ms: 0, route });
     }
-    const result = await probeSmtpProviderInDeno(env);
-    await auditDiagnostic(sb, uid, "smtp_connection_test", result.ok ? "success" : "failure", result.code, result.stage, result.latency_ms);
-    safeLog("smtp_connection_test", uid, result.code, result.stage, result.latency_ms);
-    return json(origin, result.ok ? 200 : 502, result);
+    const result = await probeSmtpProviderInDeno(candidate.env);
+    await auditDiagnostic(sb, uid, auditAction, result.ok ? "success" : "failure", result.code, result.stage, result.latency_ms);
+    safeLog(auditAction, uid, result.code, result.stage, result.latency_ms);
+    return json(origin, result.ok ? 200 : 502, { ...result, route });
   }
 
   const to = String(body.to ?? "").trim().toLowerCase();
