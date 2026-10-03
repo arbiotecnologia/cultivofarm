@@ -200,3 +200,99 @@ A configuração canônica e o carregador efetivo usam a porta **465**. Essa con
 O forward-fix passou a considerar as portas 25 e 587 incompatíveis com o Supabase Edge Runtime. A prontidão fica falsa com o código seguro `smtp_port_blocked_by_edge_runtime`; teste controlado e convite por link encerram antes de claim, socket ou incremento de tentativa. A porta 465 é aceita somente em nível estrutural. A tela apresenta orientação genérica para usar uma porta permitida suportada pelo provedor ou, se não houver, adotar futuramente uma API HTTP oficial por meio do adapter desacoplado existente, sem presumir provedor ou credenciais.
 
 Validação: **60/60 testes focados** e **5.380 globais PASS/4 skipped**, typecheck e build PASS; scanner com 10 Info e zero Critical/Error/Warning. O runner Deno informou que não existem módulos de teste específicos nessas duas funções, registrado como NOT RUN. As três funções que consomem/exibem a prontidão foram implantadas; negativas com JWT inválido retornaram 401. O domínio oficial serviu o bundle `App-Bdw25M7-.js` com os novos marcadores. A janela continua OFF/OFF, o job factual permanece 1/1 sem lease e nenhum envio/retry ocorreu. Deploy e publicação não autorizam reabertura ou reprocessamento.
+## Arquitetura multi-provedor de e-mail — planejamento (sem implementação)
+
+### Decisão arquitetural
+
+O singleton `public.communication_provider_settings (id=1)` é suficiente para a primeira versão. A plataforma possui exatamente um provedor de e-mail ativo por vez, enquanto Test Mode, allowlist e flags de entrega são globais. Uma tabela própria só passa a ser necessária se surgir requisito de múltiplas credenciais por provider/região/tenant, rotação simultânea, roteamento ponderado ou failover automático. Nada disso integra o escopo inicial; normalizar agora aumentaria superfície RLS, migração e risco operacional sem benefício.
+
+### Mapa atual e separação de responsabilidades
+
+- **Configuração global:** `test_mode_enabled`, `allowed_emails`, `allowed_phones`, `delivery_enabled`, `email_delivery_enabled`, flags WhatsApp/in-app/webhook, `updated_at` e `updated_by`.
+- **SMTP personalizado:** `smtp_host`, `smtp_port`, `smtp_user`, `smtp_from` e a referência Vault `secret_smtp_password`.
+- **Outros canais:** campos e referências Vault do WhatsApp permanecem ortogonais ao provedor de e-mail.
+- **Carga runtime:** `rpc_service_load_provider_runtime_config` resolve referências Vault apenas para `service_role`; `runtime-config.ts` aplica precedência DB→env→fail-closed e mantém segredos somente em memória.
+- **Configuração administrativa:** `communication-provider-settings` exige JWT e Superadmin server-side, aplica rate limit, modela payload allowlisted e grava atomicamente por `rpc_service_apply_provider_settings`; GET devolve somente configuração não secreta, máscaras e booleanos de presença.
+- **Auditoria:** `communication_provider_settings_audit` registra ator, ação, campos alterados e slot lógico de segredo, nunca valor. Diagnósticos reutilizam a mesma tabela com outcome/código/estágio/latência sanitizados.
+- **Consumo canônico atual:** outbox, teste controlado e convite chamam diretamente `sendEmail`; `invite-email-delivery` envolve o efeito externo com intenção, lease/fencing, persistência de aceite e estado ambíguo. O ponto comum de transporte existe, mas ainda é um adapter SMTP concreto, não um dispatcher por provider.
+- **Exceções legadas encontradas:** `enviar-alertas-notificacoes` e `enviar-alertas-resumo` instanciam cliente SMTP próprio e leem `SMTP_*` do ambiente, sem singleton/Vault/runtime-config. A atividade produtiva dessas funções não foi comprovada nesta rodada; ainda assim, são desvio arquitetural e devem ser migradas ou formalmente desativadas antes de afirmar dispatcher único.
+- **Referências sem implementação local:** `enviar-pdf-aplicacao` e `enviar-pdf-visita` invocam `send-transactional-email`, função ausente no repositório auditado. Não se afirma que o envio esteja operacional; M8 deve reconciliar esse contrato sem criar uma terceira via.
+- **Recovery:** o link de recovery do convite é gerado server-side e entregue pelo mesmo caminho do convite. Qualquer recovery gerenciado diretamente pelo Auth precisa ser inventariado antes de M8 e não deve ser alegado como migrado sem prova.
+
+### Extensão recomendada do singleton
+
+Migration futura aditiva, versionada, idempotente e reversível:
+
+- `active_email_provider text NOT NULL DEFAULT 'custom_smtp'`, validado por allowlist imutável `custom_smtp|smtp2go_api` no RPC/trigger de validação;
+- preservar integralmente todos os `smtp_*` e `secret_smtp_password`;
+- `smtp2go_api_base text NULL`, aceitando somente endpoints oficiais explicitamente allowlisted; preferir valor canônico server-side e persistir apenas quando região/base configurável for realmente necessária;
+- `smtp2go_sender_email text NULL` e `smtp2go_sender_name text NULL`; não reutilizar `smtp_from`, pois endereço/nome da API têm semântica própria e a preservação independente simplifica rollback;
+- `secret_smtp2go_api_key uuid NULL`, referência ao Vault no mesmo mecanismo atômico existente;
+- metadados sanitizados de último teste por provider: provider, timestamp, resultado/código seguro e, se necessário ao gate de ativação, identidade/hash da configuração testada. Não guardar resposta bruta;
+- a visão administrativa sanitizada expõe `smtp2go_api_key_configured` e readiness/status por provider, nunca chave ou cabeçalhos.
+
+O default `custom_smtp` preserva comportamento. Novas colunas nullable não alteram a configuração existente. Rollback funcional troca apenas `active_email_provider` para o anterior; rollback de schema deve ocorrer somente após remover referências e nunca apagar configurações/segredos. A migration não deve tocar flags, E01/E02 ou jobs.
+
+### Contrato único e dispatcher
+
+Planejar um contrato `EmailProviderAdapter` com:
+
+- `providerKey`;
+- `capabilities` (connection test, provider id, idempotency remota conhecida, regiões suportadas);
+- `validateConfig(runtime): ProviderReadiness`;
+- `testConnection(runtime, deps): Promise<ConnectionResult>`;
+- `sendEmail(runtime, message, context, deps): Promise<AdapterResult>`;
+- `normalizeError(error, stage): AdapterResult`.
+
+`CustomSmtpAdapter` encapsula o comportamento atual sem mudança funcional. `Smtp2GoApiAdapter` usa somente HTTPS. Um `dispatchEmailProvider(runtime)` seleciona estritamente pela allowlist; provider ausente/desconhecido falha fechado. Outbox, convite e `test-communication-email` chamam somente o dispatcher. Gates globais de entrega, Test Mode, allowlist, limites de conteúdo/header injection e política de ambiguidade ficam antes/depois do provider, em camada comum, para evitar divergência entre implementações.
+
+### SMTP2GO por API HTTP
+
+- envio por `POST /v3/email/send`, com `X-Smtp2go-Api-Key` somente no servidor;
+- allowlist oficial inicial de bases: `https://api.smtp2go.com/v3`, `https://us-api.smtp2go.com/v3`, `https://eu-api.smtp2go.com/v3` e `https://au-api.smtp2go.com/v3`; HTTPS obrigatório, sem redirect para origem não allowlisted;
+- remetente precisa estar verificado/autorizado no provider; tentativa com sender não verificado é rejeitada;
+- teste sem envio usa `POST /v3/api_keys/permissions`: a documentação o declara disponível a todas as API keys e ele retorna endpoints permitidos, sem criar mensagem. Seu uso como health check é uma inferência arquitetural segura, não um endpoint oficialmente nomeado “validate key”; a permissão `/email/send` deve estar presente para PASS;
+- resposta pública limitada a `ok`, `code`, `stage`, `tls`, `authenticated`, `latency_ms`;
+- códigos allowlisted: `smtp2go_connection_ok`, `smtp2go_auth_failed`, `smtp2go_permission_denied`, `smtp2go_rate_limited`, `smtp2go_unavailable`, `smtp2go_network_error`, `smtp2go_config_invalid`;
+- no envio, HTTP 200 é insuficiente: validar `data.failed`, `data.failures`, `data.succeeded` e `data.email_id`/`schedule_id` conforme o contrato oficial. Só então marcar aceite do provider; nunca declarar entrega na caixa postal;
+- manter `fastaccept=false` na primeira versão: a documentação informa que `failed`/`failures`/`succeeded` podem não existir com `fastaccept=true`, o que enfraquece a certeza necessária ao gate;
+- persistir `email_id` (ou `schedule_id`, se agendamento vier a ser autorizado) somente após validação de formato/tamanho e se útil à reconciliação; `request_id` pode servir à correlação operacional sanitizada, sem corpo/headers;
+- idempotência local antes da chamada, timeout e retry controlado. Resultado sem rejeição inequívoca continua ambíguo e bloqueia retry automático; não há promessa de exactly-once.
+
+### Troca manual segura e UX
+
+No card único **Provedor de e-mail**, exibir seletor **SMTP personalizado | SMTP2GO**, apenas os campos do selecionado e status independente **Configurado / Testado / Ativo / Erro**. A configuração do provider inativo permanece preservada. **Testar conexão** e **Enviar e-mail de teste** usam o provider selecionado, sem duplicar estado, hook ou Edge Function. Test Mode, allowlist e flags continuam únicos.
+
+Ativação exige configuração completa, teste PASS recente (TTL inicial recomendado: 30 minutos), correspondência entre o snapshot/hash testado e a configuração atual, confirmação explícita e motivo obrigatório. A RPC deve bloquear troca concorrente com lock do singleton, auditar `old_provider/new_provider`, motivo, ator e timestamp, e não habilitar `delivery_enabled` nem `email_delivery_enabled`. Troca e alteração da configuração invalidam o teste anterior. Rollback é a mesma operação manual auditada para o provider anterior, desde que ele continue configurado e tenha teste recente válido. Não implementar failover automático: um resultado ambíguo no provider anterior pode duplicar a mensagem.
+
+### Segurança e riscos
+
+- Somente Superadmin validado por `is_platform_superadmin` configura, testa ou troca; tenant admin recebe 403 e não vê configuração global.
+- Vault continua sendo o único repositório da API key; browser, respostas, logs e auditoria recebem apenas booleano de presença/códigos seguros.
+- CORS permanece restrito às origens confiáveis; `verify_jwt=true`; rate limits distintos para configuração, connection test e send test.
+- A RPC de mutação continua service-role-only, com payload/slots allowlisted, lock e auditoria atômica.
+- Risco principal: quebra de consumidores por seleção parcial. Mitigação: M1 introduz tipos/default sem alterar dispatch; M2 move SMTP atual e exige regressão integral antes de M3.
+- Risco de bypass do provider ativo: dois emissores legados usam SMTP por ambiente e dois fluxos de PDF apontam para função ausente. Mitigação: inventário de acionamento e convergência ao dispatcher em M8, antes da homologação multi-provedor; nenhum secret legado deve ser copiado ao browser ou ao banco.
+- Risco de falsa saúde: teste antigo aplicado a configuração nova. Mitigação: vincular PASS ao provider e hash/snapshot sanitizado da configuração.
+- Risco de duplicação: timeout/5xx/resposta inválida após aceite. Mitigação: estado ambíguo, confirmação humana e ausência de failover/retry automático.
+- Risco de endpoint malicioso/SSRF: base livre. Mitigação: allowlist fechada de origins oficiais e redirects desabilitados ou revalidados.
+- Rate limiting: preservar limite local separado e tratar HTTP 429 com backoff; o SMTP2GO também pode limitar por API key, conta/plano e IP, sem taxa global fixa documentada para todos os endpoints.
+
+**Fontes oficiais consultadas (2026-10-03):** [Send Standard Email](https://developers.smtp2go.com/reference/send-standard-email), [General API Resources](https://developers.smtp2go.com/reference/general-api-resources), [Authentication](https://developers.smtp2go.com/reference/authentication), [View API Key Permissions](https://developers.smtp2go.com/reference/view-api-key-permissions), [Response Codes](https://developers.smtp2go.com/docs/response-codes), [Rate Limiting](https://developers.smtp2go.com/docs/rate-limiting) e [Getting Started / Verified Senders](https://developers.smtp2go.com/docs/getting-started). Não houve chamada autenticada ao SMTP2GO.
+
+### Ordem segura de implementação futura
+
+1. **M1:** migration aditiva + tipos/contrato/dispatcher com default `custom_smtp`, sem trocar provider ativo.
+2. **M2:** `CustomSmtpAdapter` por trás do dispatcher; regressão byte/semântica dos resultados e consumidores.
+3. **M3:** `Smtp2GoApiAdapter`, normalização e connection test somente com mocks/fixtures oficiais.
+4. **M4:** UI do seletor/configuração/status, confirmação/motivo e preservação das duas configs.
+5. **M5:** um teste real connection-only SMTP2GO, por Superadmin, sem mensagem e com flags OFF/OFF.
+6. **M6:** um envio real controlado somente para `teste@refilinformatica.com.br`, com readiness integral e autorização separada.
+7. **M7:** troca/failover exclusivamente manual e auditável; nenhum failover automático.
+8. **M8:** migrar ou desativar formalmente os dois emissores SMTP legados; reconciliar `send-transactional-email`; provar convite, recovery, PDFs, alertas e Comunicação pelo dispatcher único; documentar e decidir homologação.
+
+### Critérios de aceite e rollback
+
+Cada marco para no primeiro P0/P1, vazamento, destino não autorizado, ambiguidade não tratada ou necessidade humana. M1/M2 só avançam se `custom_smtp` mantiver contratos, gates e histórico. M3/M4 não fazem rede real. M5 não envia mensagem. M6 não significa entrega, apenas aceite remoto comprovado. M7 não pode ligar flags. M8 exige prova de que não resta chamada direta ao SMTP fora do adapter, nenhuma referência órfã a emissor e que convite/recovery/PDFs/alertas/notificações compartilham dispatcher, idempotência e estados ambíguos.
+
+Rollback por fase: reverter UI/dispatcher para `custom_smtp`; manter colunas e referências de segredo intactas; selecionar manualmente o provider anterior por RPC auditada; jamais apagar configuração durante rollback. Forward-fix é preferível a down migration destrutiva.

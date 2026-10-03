@@ -51,6 +51,36 @@
 | SMTP-UI-009 | Testes/layout/regressão | PASS | 54 focados, 4 Deno, typecheck, build, 5.379 globais/4 skipped e scanner sem P0/P1 |
 | SMTP-UI-010 | Smoke `/plataforma` sem sessão | PASS limitado | redirecionou a `/auth`, sem erro e sem chamada SMTP; DOM autenticado não disponível no Supabase externo |
 
+## Planejamento multi-provedor de e-mail — sem implementação
+
+| Caso | Cenário futuro obrigatório | Resultado desta rodada | Critério de aceite futuro |
+|---|---|---|---|
+| MP-001 | `custom_smtp` continua no adapter SMTP | PLANEJADO | dispatcher seleciona SMTP por default e regressão preserva resultados/gates |
+| MP-002 | `smtp2go_api` nunca abre socket SMTP | PLANEJADO | mocks provam apenas HTTPS para origin allowlisted |
+| MP-003 | API key ausente | PLANEJADO | readiness false e zero chamada externa |
+| MP-004 | Connection test válido | PLANEJADO | `/v3/api_keys/permissions` autentica e inclui `/email/send`; PASS sanitizado, sem mensagem |
+| MP-005 | Autenticação inválida | PLANEJADO | `smtp2go_auth_failed`, sem body/header bruto |
+| MP-006 | Permissão insuficiente | PLANEJADO | `smtp2go_permission_denied` |
+| MP-007 | Rate limit do provider/local | PLANEJADO | `smtp2go_rate_limited`, retry sujeito à política |
+| MP-008 | Timeout/rede | PLANEJADO | `smtp2go_network_error`, sem dado sensível |
+| MP-009 | Provider 5xx | PLANEJADO | `smtp2go_unavailable`; efeito classificado antes de retry |
+| MP-010 | HTTP 200 com falha no payload | PLANEJADO | FAIL por `data.failed/failures`; HTTP isolado nunca significa aceite; `fastaccept=false` |
+| MP-011 | Envio aceito | PLANEJADO | estado “aceito pelo provider”, nunca “entregue na caixa” |
+| MP-012 | Troca com motivo/auditoria | PLANEJADO | lock, Superadmin, teste recente, old/new e motivo únicos |
+| MP-013 | Tenant admin | PLANEJADO | 403 e nenhuma configuração global exposta |
+| MP-014 | Alternância entre providers | PLANEJADO | configurações dos dois preservadas |
+| MP-015 | Duplo clique/concorrência | PLANEJADO | uma troca/claim efetiva; demais falham ou observam estado final |
+| MP-016 | Retry/idempotência | PLANEJADO | intenção local antes da chamada; ambíguo bloqueia automático; sem exactly-once |
+| MP-017 | Convite/recovery/notificações | PLANEJADO | todos chamam dispatcher; nenhuma chamada direta fora dos adapters |
+| MP-018 | Test Mode/allowlist/flags globais | PLANEJADO | gates comuns antes de qualquer provider |
+| MP-019 | Troca não abre janela | PLANEJADO | `delivery_enabled` e `email_delivery_enabled` permanecem inalterados |
+| MP-020 | Rollback manual | PLANEJADO | volta ao provider anterior sem apagar configurações/segredos |
+| MP-021 | Failover automático | FORA DE ESCOPO | não implementar na primeira versão por risco de duplicação ambígua |
+| MP-022 | Rodada atual sem mutação | PASS | somente documentação; zero banco, secret, flag, chamada externa ou envio |
+| MP-023 | Emissores SMTP legados | ACHADO/BLOQUEIO M8 | duas funções leem `SMTP_*` e criam cliente próprio; atividade produtiva não comprovada |
+| MP-024 | Referência `send-transactional-email` | ACHADO/BLOQUEIO M8 | dois fluxos de PDF invocam função ausente no repositório; não declarar envio operacional |
+| MP-025 | Dispatcher verdadeiramente único | PLANEJADO | zero SMTP direto fora de adapters e zero referência órfã antes da homologação |
+
 ## Fase 0
 
 | Caso | Cenário | Resultado | Evidência |
