@@ -258,6 +258,14 @@
 | E02-RETRY-005 | Empresa e assinatura | PASS | 1 organização da campanha e 1 assinatura TRIAL; zero nova organização/assinatura/profile no intervalo |
 | E02-RETRY-006 | Transporte e logs | PASS | convite usou `sendEmail` com cliente SMTP nativo; logs somente com eventos/safe codes/job mascarado; responsável declarou recebimento |
 | E02-RETRY-007 | Efeitos laterais | PASS | zero outbox operacional nova/tentada/enviada e somente o destinatário controlado teve job tentado |
+| AUTH-REDIRECT-001 | Link anterior abriu localhost com fragmento sensível | FAIL / incidente real | evidência declarada pelo responsável; token não registrado; link marcado comprometido |
+| AUTH-REDIRECT-002 | Contenção de comunicação | PASS read-only | global/e-mail OFF/OFF, Test Mode ON e allowlist exclusiva; zero novo convite/envio |
+| AUTH-REDIRECT-003 | Redirect canônico no servidor | PASS pré-deploy | destino fixo `https://app.cultivofarm.com.br/reset-password`; Origin continua gate e não compõe link |
+| AUTH-REDIRECT-004 | Origin localhost/preview altera destino | PASS mock | ambos preservam o destino canônico; origem não confiável continua 403 |
+| AUTH-REDIRECT-005 | Fragmento após consumo Auth | PASS pré-deploy | limpeza após `PASSWORD_RECOVERY/getSession`, inclusive link inválido; zero logs/analytics de token |
+| AUTH-REDIRECT-006 | Site URL e Redirect URLs no Auth | BLOCKED | ferramenta disponível não lê/altera URL Configuration do Supabase externo; exige comprovação manual |
+| AUTH-REDIRECT-007 | Revogação global da sessão comprometida | BLOCKED | sem mecanismo oficial disponível no acesso atual; usuário não foi apagado nem alterado por SQL |
+| AUTH-REDIRECT-008 | Novo convite controlado | NOT RUN / NO-GO | bloqueado até Auth config comprovada, deploy verde e revogação oficial concluída |
 | E02-RETRY-008 | Fechamento da janela | NO-GO | global/e-mail ainda ON/ON; Test Mode ON e allowlist exclusiva; fechar OFF/OFF antes de abrir o link |
 
 ## Gate

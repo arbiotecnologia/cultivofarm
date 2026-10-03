@@ -64,6 +64,9 @@ describe("D51 — senha e isolamento", () => {
     expect(app).toContain('path="/reset-password"');
     expect(recovery).toContain('event === "PASSWORD_RECOVERY"');
     expect(recovery).toContain("window.history.replaceState");
+    expect(recovery).toContain('hash.includes("access_token=")');
+    expect(recovery).toContain('hash.includes("refresh_token=")');
+    expect(recovery.indexOf("supabase.auth.getSession()")).toBeLessThan(recovery.indexOf("if (fragmentoSensivel)"));
     expect(recovery).not.toMatch(/console\.(log|warn|error)/);
   });
 
