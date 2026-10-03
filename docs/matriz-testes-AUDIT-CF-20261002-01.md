@@ -260,14 +260,15 @@
 | E02-RETRY-007 | Efeitos laterais | PASS | zero outbox operacional nova/tentada/enviada e somente o destinatário controlado teve job tentado |
 | AUTH-REDIRECT-001 | Link anterior abriu localhost com fragmento sensível | FAIL / incidente real | evidência declarada pelo responsável; token não registrado; link marcado comprometido |
 | AUTH-REDIRECT-002 | Contenção de comunicação | PASS read-only | global/e-mail OFF/OFF, Test Mode ON e allowlist exclusiva; zero novo convite/envio |
-| AUTH-REDIRECT-003 | Redirect canônico no servidor | PASS pré-deploy | destino fixo `https://app.cultivofarm.com.br/reset-password`; Origin continua gate e não compõe link |
+| AUTH-REDIRECT-003 | Redirect canônico no servidor | PASS implantado | destino fixo `https://app.cultivofarm.com.br/reset-password`; Origin continua gate e não compõe link; Edge implantada |
 | AUTH-REDIRECT-004 | Origin localhost/preview altera destino | PASS mock | ambos preservam o destino canônico; origem não confiável continua 403 |
-| AUTH-REDIRECT-005 | Fragmento após consumo Auth | PASS pré-deploy | limpeza após `PASSWORD_RECOVERY/getSession`, inclusive link inválido; zero logs/analytics de token |
+| AUTH-REDIRECT-005 | Fragmento após consumo Auth | PASS | Playwright com valores fictícios terminou em `/reset-password` sem fragmento e exibiu link inválido; zero logs/analytics de token |
 | AUTH-REDIRECT-006 | Site URL e Redirect URLs no Auth | BLOCKED | ferramenta disponível não lê/altera URL Configuration do Supabase externo; exige comprovação manual |
 | AUTH-REDIRECT-007 | Revogação global da sessão comprometida | BLOCKED | sem mecanismo oficial disponível no acesso atual; usuário não foi apagado nem alterado por SQL |
 | AUTH-REDIRECT-008 | Novo convite controlado | NOT RUN / NO-GO | bloqueado até Auth config comprovada, deploy verde e revogação oficial concluída |
-| E02-RETRY-008 | Fechamento da janela | NO-GO | global/e-mail ainda ON/ON; Test Mode ON e allowlist exclusiva; fechar OFF/OFF antes de abrir o link |
+| AUTH-REDIRECT-009 | Validações e publicação | PASS | 47 testes focados, 17 Deno, suíte global 5.403 PASS/4 skipped, typecheck/build e scanner com 10 Info/zero P0/P1; frontend publicado e Edge implantada |
+| E02-RETRY-008 | Fechamento da janela | PASS / superado | global/e-mail OFF/OFF, Test Mode ON e allowlist exclusiva; o link anterior permanece proibido pelo P0 Auth redirect |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. Primeiro acesso: **NO-GO temporário**, exclusivamente porque global/e-mail ainda estão ON/ON; fechar OFF/OFF antes de abrir o link. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. Primeiro acesso: **NO-GO** pelo P0 Auth redirect; global/e-mail já estão OFF/OFF, mas o link anterior está comprometido. Exigir Auth URL Configuration comprovada e revogação global da sessão antes de novo convite. Fases 2–15: **NOT RUN**.

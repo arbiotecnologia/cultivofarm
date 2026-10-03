@@ -417,4 +417,6 @@ A causa no código foi confirmada: `platform-invite-org-admin` validava o `Origi
 
 As ferramentas disponíveis não leem nem alteram Auth > URL Configuration deste Supabase externo. Portanto, Site URL e Redirect URLs permanecem **não comprovados** e nenhuma hipótese foi registrada como fato. A revogação oficial de todas as sessões do usuário controlado também não está disponível sem uma sessão/token desse usuário ou operação administrativa oficial exposta; o usuário, profile, role e job foram preservados.
 
+Validações da correção: 47 testes focados, 17 testes Deno, suíte global com 5.403 PASS/4 skipped, typecheck e build verdes, scanner com 10 Info e zero P0/P1. A Edge Function corrigida foi implantada e o frontend publicado. Smoke passivo confirmou `/reset-password` HTTP 200 e negativa 401 sem JWT; Playwright com credenciais fictícias confirmou remoção do fragmento e mensagem segura de link inválido. Nenhum convite, e-mail, probe ou sessão real foi criado durante a validação.
+
 **Decisão:** `NO-GO` para novo convite e primeiro acesso. Antes de qualquer reenvio, um responsável deve corrigir e comprovar no Dashboard o Site URL e a Redirect URL exata, e revogar globalmente as sessões do usuário controlado por mecanismo oficial do Auth.
