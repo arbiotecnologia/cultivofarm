@@ -51,7 +51,10 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 ## Validação e riscos
 
 - 92 testes focados: PASS.
+- Suíte global: **5.433 PASS / 4 skipped**.
 - Typecheck: PASS.
+- Build da prévia: PASS.
+- Scanner de segurança: 10 achados informativos, zero P0/P1 detectado automaticamente; os P0 tenant acima vieram da auditoria manual de fluxo e autorização.
 - Supabase linter: baseline de 492 achados, sem novos achados finais.
 - Edges `create-user` e `admin-update-user-password`: implantadas.
 - Testes Deno: inexistentes nessas funções; contratos cobertos por Vitest estático.
