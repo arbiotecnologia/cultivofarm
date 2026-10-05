@@ -12,5 +12,5 @@
 - [x] Edges financeiras/fiscal/auditoria implantadas; 66 testes focados, build, scanner e linter validados
 - [x] Catálogo e configuração global — mutações de produtos, microrganismos, visual e financeiro restritas a Platform Superadmin
 - [x] Produção/Parceiros — OnFarm, contas de parceiros e planejamento protegidos por cadeia determinística até a organização; legado ambíguo bloqueado
-- [ ] Matriz A/B autenticada — bloqueada: Supabase externo `external_unmanaged` não emite sessão controlada ao Lovable
-- [ ] Homologação horizontal final — NO-GO até a matriz A/B autenticada; relatórios sem ownership completo ficam fechados
+- [x] Matriz A/B transacional canônica — dois administradores de organizações distintas, claims locais e `SET LOCAL ROLE authenticated`; zero mutação persistida
+- [x] Homologação horizontal de segurança — PASS com Financeiro/Storage e legado sem ownership mantidos FAIL-CLOSED
