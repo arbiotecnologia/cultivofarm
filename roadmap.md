@@ -6,7 +6,7 @@
 - [x] Núcleo A+B+C — versões imutáveis, estados, trial, mutações específicas, locks e histórico
 - [x] Fase 3 — registrar pagamento externo BLOCKED/NO-GO, sem fluxo paralelo
 - [x] Trial — backfill determinístico do fim quando `started_at` é inequívoco; legado segue sem versão comercial
-- [ ] Entitlements e UI — fora da retomada A+B+C por instrução explícita
+- [x] Entitlements e UI — versão imutável + exceções vigentes, estados bloqueados fail-closed e telas alinhadas às RPCs específicas; prova comercial positiva segue BLOCKED sem versão real
 - [x] Fase 8 — matriz negativa validada; prova positiva BLOCKED sem contrato real, sem criar fixtures comerciais falsas
 - [x] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
 - [x] Fase 10 — consolidar relatório, rollback/forward-fix e decisão GO/NO-GO

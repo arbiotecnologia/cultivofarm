@@ -23,7 +23,8 @@
 - Ações de estado são específicas, idempotentes por correlação, serializadas por lock e auditadas; não existe seletor arbitrário de status.
 - A expiração diária alcança somente trials versionados com data vencida, usa lock e gera correlação única por alteração.
 - Extensão de trial é uma exceção explícita e auditada, limitada a 14 dias por ação; não há renovação silenciosa.
-- Entitlements e telas ficaram fora desta execução e foram restaurados ao comportamento anterior.
+- Entitlements passaram a derivar exclusivamente da versão imutável vinculada à assinatura e das exceções explícitas vigentes; legado sem versão e estados não liberados permanecem fail-closed.
+- As telas de Plataforma usam ações específicas, exibem versões/snapshots/histórico e bloqueiam mudanças comerciais sem versão vigente; “Meu Plano” sinaliza regularização pendente sem oferecer mutação tenant.
 
 ## Segurança
 
@@ -31,6 +32,7 @@
 - Identificadores enviados pelo navegador selecionam o alvo, mas nunca concedem autorização.
 - Histórico é append-only e registra ator, origem, motivo, ação, estados, planos, versão, snapshots e correlação.
 - Nenhuma chave, token, preço ou identidade de homologação aparece neste relatório.
+- Erros ou carregamento de entitlements não liberam rotas contratáveis; menu, rota e triggers server-side usam a mesma decisão restritiva.
 
 ## Pagamento
 
@@ -43,6 +45,7 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - IDs de organização ou versão enviados pelo navegador não concedem autorização.
 - Não foram criadas organizações, versões, preços ou limites fictícios para produzir um falso PASS funcional.
 - A prova positiva de criação, upgrade, downgrade e reativação ficou **BLOCKED**: não existe versão comercial real publicada e as cinco assinaturas vivas são legadas sem snapshots confiáveis.
+- Limites numéricos só são exibidos quando presentes no snapshot/override. Como não existe métrica contratual confiável publicada, consumo/excedente quantitativo continua **BLOCKED/NO-GO**, sem números inferidos.
 - A prova A/B D51.6 continua válida para isolamento tenant; não foi reaberta nem reutilizada para declarar sucesso comercial.
 
 ## Validações
@@ -53,9 +56,11 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - A suíte global anterior permanece como referência; esta retomada ficou restrita aos testes focados do núcleo.
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
+- Estado final de entitlements/UI: zero versões comerciais e cinco assinaturas legadas; a prova negativa é real e fail-closed. Nenhuma publicação, transição, exceção ou dado comercial foi criado para fabricar PASS.
 
 ## Rollback e forward-fix
 
 - Rollback seguro imediato: desabilitar o job e revogar as RPCs específicas, preservando tabelas, snapshots e histórico.
 - Não remover colunas, versões ou eventos após uso; correções devem ser migrations aditivas.
 - Forward-fix: cadastrar versões comerciais reais por Superadmin e regularizar cada assinatura legada explicitamente, sem inferir valores.
+- Forward-fix de limites: definir métricas contratuais e medidores server-side por funcionalidade antes de habilitar bloqueios quantitativos ou mostrar consumo/excedente.

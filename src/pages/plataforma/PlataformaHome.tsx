@@ -1,10 +1,5 @@
 /**
- * Home provisória do Superadmin de Plataforma (pré-Fase S4).
- *
- * SOMENTE LEITURA: catálogo de planos/módulos/funcionalidades, assinaturas por
- * organização e histórico de assinaturas. Nenhuma ação de escrita existe nesta
- * tela — as tabelas SaaS não possuem policy de INSERT/UPDATE/DELETE, e a
- * leitura depende da policy `saas_platform_read` no servidor.
+ * Gestão SaaS do Superadmin de Plataforma.
  *
  * Não toca menus operacionais: esta rota vive fora do layout administrativo
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
@@ -28,6 +23,7 @@ import {
   useModulosFeaturesSaaS,
   useOrganizacoesSaaS,
   usePlanosSaaS,
+  useVersoesPlanosSaaS,
 } from "@/hooks/usePlataformaSaaS";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -99,12 +95,15 @@ const ORIGEM_LABEL: Record<string, string> = {
   manual: "Manual",
 };
 const motivoHumano = (s: string | null) => (s ? (ORIGEM_LABEL[s] ?? s.replace(/_/g, " ")) : "—");
+const CICLO_LABEL: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual", custom: "Personalizado" };
+const moeda = (valor: number, currency: string) => new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(valor);
 
 export default function PlataformaHome() {
   const { signOut } = useAuth();
   const [aba, setAba] = useState("planos");
   const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
   const planos = usePlanosSaaS();
+  const versoes = useVersoesPlanosSaaS();
   const catalogo = useModulosFeaturesSaaS();
   const assinaturas = useAssinaturasSaaS();
   const historico = useHistoricoAssinaturasSaaS();
@@ -235,6 +234,17 @@ export default function PlataformaHome() {
 
             <Card>
               <CardHeader>
+                <CardTitle className="text-base">Versões comerciais publicadas</CardTitle>
+                <CardDescription>Preços, ciclos, limites e funcionalidades ficam imutáveis após a publicação.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EstadoConsulta carregando={versoes.isLoading} erro={versoes.isError} vazio={!!versoes.data && versoes.data.length === 0} mensagemVazio="Nenhuma versão comercial publicada. Novos trials e mudanças de plano permanecem bloqueados." onTentarNovamente={() => versoes.refetch()} />
+                {versoes.data && versoes.data.length > 0 && <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Plano</TableHead><TableHead>Versão</TableHead><TableHead>Preço</TableHead><TableHead>Ciclo</TableHead><TableHead>Vigência</TableHead></TableRow></TableHeader><TableBody>{versoes.data.map((v) => <TableRow key={v.id}><TableCell className="font-medium">{v.name_snapshot}</TableCell><TableCell>v{v.version_number}</TableCell><TableCell>{moeda(v.price_amount, v.currency)}</TableCell><TableCell>{CICLO_LABEL[v.billing_cycle] ?? v.billing_cycle}</TableCell><TableCell>{dataCurta(v.effective_from)}{v.effective_to ? ` a ${dataCurta(v.effective_to)}` : " em diante"}</TableCell></TableRow>)}</TableBody></Table></div>}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-base">Módulos e funcionalidades</CardTitle>
                 <CardDescription>
                   Itens que futuramente poderão ser incluídos nos planos.
@@ -317,6 +327,7 @@ export default function PlataformaHome() {
                           <TableHead>Empresa</TableHead>
                           <TableHead>Plano</TableHead>
                           <TableHead>Situação</TableHead>
+                          <TableHead>Versão</TableHead>
                           <TableHead>Início</TableHead>
                           <TableHead>Vigência até</TableHead>
                         </TableRow>
@@ -331,8 +342,9 @@ export default function PlataformaHome() {
                                 {STATUS_LABEL[a.status] ?? a.status}
                               </Badge>
                             </TableCell>
+                            <TableCell>{a.plan_version_id ? "Vinculada" : <Badge variant="outline">Regularização pendente</Badge>}</TableCell>
                             <TableCell>{dataCurta(a.started_at)}</TableCell>
-                            <TableCell>{dataCurta(a.current_period_end)}</TableCell>
+                            <TableCell>{dataCurta(a.status === "TRIAL" ? a.trial_ends_at : a.current_period_end)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -368,6 +380,8 @@ export default function PlataformaHome() {
                           <TableHead>Quando</TableHead>
                           <TableHead>Empresa</TableHead>
                           <TableHead>Origem</TableHead>
+                          <TableHead>Ação</TableHead>
+                          <TableHead>Transição</TableHead>
                           <TableHead>Motivo</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -377,6 +391,8 @@ export default function PlataformaHome() {
                             <TableCell>{dataHora(h.created_at)}</TableCell>
                             <TableCell>{nomeOrg(h.organization_id)}</TableCell>
                             <TableCell className="text-muted-foreground">{motivoHumano(h.source)}</TableCell>
+                            <TableCell>{motivoHumano(h.action)}</TableCell>
+                            <TableCell>{h.previous_status || h.new_status ? `${h.previous_status ? STATUS_LABEL[h.previous_status] ?? h.previous_status : "—"} → ${h.new_status ? STATUS_LABEL[h.new_status] ?? h.new_status : "—"}` : "—"}</TableCell>
                             <TableCell>{motivoHumano(h.reason)}</TableCell>
                           </TableRow>
                         ))}
