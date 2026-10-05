@@ -3,10 +3,10 @@
 ## D51.6 — Fechamento funcional multi-tenant
 
 - [x] Gate 1 — classificar `consultor-arquivos` como mídia técnica sensível e recriar o bucket privado
-- [ ] Gate 1 — aplicar paths por organização, policies Storage e validar acesso cruzado
-- [ ] Gate 2 — executar matriz A/B com duas sessões Auth reais e cleanup integral
-- [ ] Gate 3 — validar estado vivo, testes, linter/scanner, smoke A/B e consolidar evidências
-- [ ] Decisão final — homologação de segurança e funcionalidade
+- [x] Gate 1 — aplicar paths por organização, policies Storage e validar acesso cruzado
+- [x] Gate 2 — executar matriz A/B com duas sessões Auth reais e cleanup integral
+- [x] Gate 3 — validar estado vivo, testes, linter/scanner, smoke A/B e consolidar evidências
+- [x] Decisão final — homologação de segurança PASS e homologação funcional PASS
 
 - [x] Fase 1 — Financeiro e Storage: tenant explícito; relatórios inseguros bloqueados
 - [x] Fase 2 — Catálogo destrutivo: somente Superadmin e sem fallback no navegador
