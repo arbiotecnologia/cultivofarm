@@ -135,7 +135,7 @@ export default function Configuracoes() {
   const [pagina, setPagina] = useState(1);
 
   const {
-    data: allUsers = [],
+    data: allUsers = { items: [] as any[], total: 0 },
     isLoading: usersLoading,
     isError: usersError,
     isFetching: usersFetching,
@@ -358,14 +358,14 @@ export default function Configuracoes() {
     const uid = searchParams.get("user_id");
     if (!uid || !isAdmin) return;
     if (deepLinkConsumido.current === uid) return;
-    if (allUsers.length === 0) return;
+    if (usersPage.length === 0) return;
     deepLinkConsumido.current = uid;
-    const found = allUsers.find((u: any) => u.user_id === uid);
+    const found = usersPage.find((u: any) => u.user_id === uid);
     if (found) { setEditUser(found); setEditOpen(true); }
     const sp = new URLSearchParams(searchParams);
     sp.delete("user_id");
     setSearchParams(sp, { replace: true });
-  }, [searchParams, allUsers, isAdmin, setSearchParams]);
+  }, [searchParams, usersPage, isAdmin, setSearchParams]);
 
 
   // Estado da edição: erros por campo, resumo e trava de recarga pós conflito/incerteza

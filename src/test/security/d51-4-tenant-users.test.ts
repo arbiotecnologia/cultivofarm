@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const page = readFileSync("src/pages/Configuracoes.tsx", "utf8");
 const edge = readFileSync("supabase/functions/create-user/index.ts", "utf8");
+const passwordEdge = readFileSync("supabase/functions/admin-update-user-password/index.ts", "utf8");
 const auth = readFileSync("src/hooks/useAuth.tsx", "utf8");
 const migration = readFileSync("supabase/migrations/20261005192534_d3208b29-c579-4309-ac0f-29841ef48126.sql", "utf8");
 
@@ -37,5 +38,11 @@ describe("D51.4 Gate 1 — isolamento de usuários", () => {
 
   it("troca de identidade limpa todo o cache antes de carregar o próximo tenant", () => {
     expect(auth).toMatch(/if \(identityChanged\) \{[\s\S]*?queryClient\.clear\(\);/);
+  });
+
+  it("valida redefinição de senha no contexto autenticado do ator", () => {
+    expect(passwordEdge).toContain("const scopedClient = createClient");
+    expect(passwordEdge).toContain("Authorization: authHeader");
+    expect(passwordEdge).toContain('scopedClient.rpc(\n      "admin_can_update_user_password_server"');
   });
 });
