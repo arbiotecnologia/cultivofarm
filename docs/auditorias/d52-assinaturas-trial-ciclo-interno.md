@@ -3,14 +3,16 @@
 ## Decisão
 
 - **Segurança e isolamento:** PASS estrutural.
-- **Ciclo interno SaaS:** PASS estrutural / NO-GO funcional para ativação comercial.
+- **Núcleo A+B+C:** PASS estrutural.
+- **Ativação comercial:** NO-GO funcional até publicação explícita de versão real.
 - **Pagamento externo:** BLOCKED / NO-GO. Não existe gateway homologado e nenhum fluxo, webhook ou confirmação simulada foi criado.
 
 ## Estado encontrado
 
 - Cinco assinaturas foram preservadas: três `TRIAL`, uma `ACTIVE` e uma `SUSPENDED`.
 - As cinco são legadas, sem versão comercial, preço, ciclo e vigência confiáveis.
-- Nenhuma delas foi preenchida, recalculada ou migrada por inferência.
+- Nenhuma recebeu versão, preço, moeda, ciclo ou vigência comercial por inferência.
+- Os três trials tinham `started_at` inequívoco; somente `trial_ends_at` recebeu backfill determinístico de `started_at + 14 dias`.
 - O catálogo tinha 54 vínculos de funcionalidades, todos sem limite numérico definido.
 
 ## Implementação
@@ -18,10 +20,10 @@
 - Versões imutáveis de plano guardam nome, preço, moeda, ciclo, limites, funcionalidades e vigência.
 - Assinaturas novas guardam snapshots comerciais e iniciam trial imutável de 14 dias.
 - Assinaturas legadas permanecem identificadas e fail-closed até regularização comercial explícita.
-- Ações de estado são específicas, idempotentes por correlação e auditadas; não existe seletor arbitrário de status.
-- A expiração diária alcança somente trials versionados com data vencida; legado sem data é ignorado.
-- Entitlements existem apenas para assinatura versionada em `TRIAL` vigente ou `ACTIVE`; `PAST_DUE`, `SUSPENDED`, `CANCELLED` e `EXPIRED` não liberam módulos.
-- Limites quantitativos não foram inventados: sem métrica e valor comercial definidos, a criação adicional deve permanecer bloqueada no fluxo correspondente.
+- Ações de estado são específicas, idempotentes por correlação, serializadas por lock e auditadas; não existe seletor arbitrário de status.
+- A expiração diária alcança somente trials versionados com data vencida, usa lock e gera correlação única por alteração.
+- Extensão de trial é uma exceção explícita e auditada, limitada a 14 dias por ação; não há renovação silenciosa.
+- Entitlements e telas ficaram fora desta execução e foram restaurados ao comportamento anterior.
 
 ## Segurança
 
@@ -45,15 +47,15 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 
 ## Validações
 
-- Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados.
-- Job `saas-expire-due-trials`: ativo diariamente às 02:15 UTC; trials legados sem versão/data não são tocados.
-- 15 testes D52 focados passaram; typecheck, scanner de segredos, ESLint dos arquivos alterados e compilação automática passaram.
-- Suíte global: 5.472 testes passaram e quatro foram ignorados após correção das fixtures de Storage.
+- Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados e três datas finais de trial derivadas somente do início registrado.
+- Job `saas-expire-due-trials`: ativo diariamente às 02:15 UTC; trials legados continuam fora da expiração automática por não terem versão comercial.
+- Testes focados de estados, trial, autorização e idempotência passaram; typecheck, scanner, linter e compilação automática foram executados nesta retomada.
+- A suíte global anterior permanece como referência; esta retomada ficou restrita aos testes focados do núcleo.
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 
 ## Rollback e forward-fix
 
-- Rollback seguro imediato: desabilitar as ações de interface e o job de expiração, preservando tabelas, snapshots e histórico.
+- Rollback seguro imediato: desabilitar o job e revogar as RPCs específicas, preservando tabelas, snapshots e histórico.
 - Não remover colunas, versões ou eventos após uso; correções devem ser migrations aditivas.
 - Forward-fix: cadastrar versões comerciais reais por Superadmin e regularizar cada assinatura legada explicitamente, sem inferir valores.

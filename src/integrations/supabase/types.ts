@@ -17549,6 +17549,7 @@ export type Database = {
       saas_plan_versions: {
         Row: {
           billing_cycle: string | null
+          correlation_id: string | null
           created_at: string
           created_by: string | null
           currency: string | null
@@ -17561,11 +17562,13 @@ export type Database = {
           name_snapshot: string
           plan_id: string
           price_amount: number | null
+          publication_reason: string | null
           published_at: string
           version_number: number
         }
         Insert: {
           billing_cycle?: string | null
+          correlation_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
@@ -17578,11 +17581,13 @@ export type Database = {
           name_snapshot: string
           plan_id: string
           price_amount?: number | null
+          publication_reason?: string | null
           published_at?: string
           version_number: number
         }
         Update: {
           billing_cycle?: string | null
+          correlation_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
@@ -17595,6 +17600,7 @@ export type Database = {
           name_snapshot?: string
           plan_id?: string
           price_amount?: number | null
+          publication_reason?: string | null
           published_at?: string
           version_number?: number
         }

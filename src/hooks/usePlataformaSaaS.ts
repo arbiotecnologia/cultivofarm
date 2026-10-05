@@ -32,7 +32,6 @@ export interface AssinaturaSaaS {
   id: string;
   organization_id: string;
   plan_id: string;
-  plan_version_id: string | null;
   status: string;
   billing_cycle: string | null;
   started_at: string | null;
@@ -41,23 +40,7 @@ export interface AssinaturaSaaS {
   current_period_end: string | null;
   cancelled_at: string | null;
   suspended_at: string | null;
-  price_snapshot: number | null;
-  currency_snapshot: string | null;
-  billing_cycle_snapshot: string | null;
-  state_changed_at: string | null;
   created_at: string;
-}
-
-export interface VersaoPlanoSaaS {
-  id: string;
-  plan_id: string;
-  version_number: number;
-  name_snapshot: string;
-  price_amount: number | null;
-  currency: string | null;
-  billing_cycle: string | null;
-  effective_from: string;
-  effective_to: string | null;
 }
 
 export interface HistoricoSaaS {
@@ -133,30 +116,13 @@ export function useAssinaturasSaaS() {
       const { data, error } = await db
         .from("organization_subscriptions")
         .select(
-          "id,organization_id,plan_id,plan_version_id,status,billing_cycle,started_at,trial_ends_at," +
-            "current_period_start,current_period_end,cancelled_at,suspended_at,price_snapshot," +
-            "currency_snapshot,billing_cycle_snapshot,state_changed_at,created_at",
+          "id,organization_id,plan_id,status,billing_cycle,started_at,trial_ends_at," +
+            "current_period_start,current_period_end,cancelled_at,suspended_at,created_at",
         )
         .order("created_at", { ascending: false })
         .limit(LIMITE);
       if (error) throw new Error(error.message);
       return (data ?? []) as AssinaturaSaaS[];
-    },
-    ...opcoes,
-  });
-}
-
-export function useVersoesPlanosSaaS() {
-  return useQuery<VersaoPlanoSaaS[]>({
-    queryKey: ["plataforma", "saas_plan_versions"],
-    queryFn: async () => {
-      const { data, error } = await db
-        .from("saas_plan_versions")
-        .select("id,plan_id,version_number,name_snapshot,price_amount,currency,billing_cycle,effective_from,effective_to")
-        .order("effective_from", { ascending: false })
-        .limit(LIMITE);
-      if (error) throw new Error(error.message);
-      return (data ?? []) as VersaoPlanoSaaS[];
     },
     ...opcoes,
   });
@@ -338,24 +304,21 @@ export function useEncerrarExcecao() {
   });
 }
 
-export type AcaoAssinatura = "change_plan" | "mark_past_due" | "suspend" | "reactivate_manual" | "cancel" | "expire_trial";
-
-export function useTransicionarAssinatura() {
+export function useAlterarAssinatura() {
   const invalidar = useInvalidarPlataforma();
   return useMutation({
     retry: false,
     mutationFn: async (v: {
       organizationId: string;
-      action: AcaoAssinatura;
-      planVersionId?: string | null;
+      planKey: string;
+      status: string;
       reason: string;
     }) => {
-      const { error } = await db.rpc("platform_transition_subscription", {
+      const { error } = await db.rpc("platform_change_subscription", {
         _organization_id: v.organizationId,
-        _action: v.action,
+        _plan_key: v.planKey,
+        _status: v.status,
         _reason: v.reason,
-        _correlation_id: crypto.randomUUID(),
-        _plan_version_id: v.planVersionId ?? null,
       });
       if (error) throw new Error(error.message);
     },

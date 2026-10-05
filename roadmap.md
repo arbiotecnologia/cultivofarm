@@ -3,9 +3,10 @@
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
 
 - [x] Fase 0 — auditar estado vivo de planos, assinaturas, cobrança, interfaces e jobs
-- [x] Fases 1–2 — endurecer estados, transições, histórico e autorização server-side
+- [x] Núcleo A+B+C — versões imutáveis, estados, trial, mutações específicas, locks e histórico
 - [x] Fase 3 — registrar pagamento externo BLOCKED/NO-GO, sem fluxo paralelo
-- [x] Fases 4–7 — validar limites, trial, inadimplência, suspensão, reativação e auditoria imutável
+- [x] Trial — backfill determinístico do fim quando `started_at` é inequívoco; legado segue sem versão comercial
+- [ ] Entitlements e UI — fora da retomada A+B+C por instrução explícita
 - [x] Fase 8 — matriz negativa validada; prova positiva BLOCKED sem contrato real, sem criar fixtures comerciais falsas
 - [x] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
 - [x] Fase 10 — consolidar relatório, rollback/forward-fix e decisão GO/NO-GO
