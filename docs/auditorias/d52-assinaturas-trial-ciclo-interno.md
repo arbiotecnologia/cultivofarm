@@ -26,6 +26,7 @@
 - Entitlements passaram a derivar exclusivamente da versão imutável vinculada à assinatura e das exceções explícitas vigentes; legado sem versão e estados não liberados permanecem fail-closed.
 - O estado de acesso diferencia `legacy_unversioned`, ausência de assinatura, status bloqueado, erro/carregamento e bypass administrativo explícito de Platform Superadmin; somente rotas mapeadas por plano são restringidas.
 - As telas de Plataforma usam ações específicas, exibem versões/snapshots/histórico e bloqueiam mudanças comerciais sem versão vigente; “Meu Plano” sinaliza regularização pendente sem oferecer mutação tenant.
+- A rota de Comunicação foi alinhada ao mesmo gate adicional de plano usado pelas demais rotas mapeadas, preservando seu guard de papel e sua proteção server-side existentes.
 
 ## Segurança
 

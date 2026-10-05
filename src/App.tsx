@@ -620,7 +620,7 @@ const App = () => (
                 <Route path="/fiscal/reconciliacao" element={<RoleGuard><FiscalReconciliacao /></RoleGuard>} />
                  <Route path="/fiscal/prontidao" element={<RoleGuard><FiscalProntidao /></RoleGuard>} />
                  <Route path="/comunicacao" element={
-                   <ComunicacaoRouteGuard><ComunicacaoAdminPage /></ComunicacaoRouteGuard>
+                   <RoleGuard><ComunicacaoRouteGuard><ComunicacaoAdminPage /></ComunicacaoRouteGuard></RoleGuard>
                  } />
                  <Route path="/notificacoes" element={<CentralNotificacoes />} />
 
