@@ -78,7 +78,7 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 
 - **Financeiro/Storage: FAIL-CLOSED/PASS no escopo operacional seguro.** Recibos validam pagamento, parcela, título e cliente pela organização derivada da sessão. Buckets financeiros e de clientes são privados; novos caminhos incluem a organização e as policies validam o recurso-pai. Relatórios, fluxo, DRE e registro de exportação continuam bloqueados para `authenticated`, pois ainda não há vínculo determinístico completo para todas as fontes. Artefatos legados sem tenant permanecem preservados e inacessíveis.
 - **Catálogo global: PASS de autorização.** Wipe e auditoria de órfãos agora exigem `is_platform_superadmin` server-side; o wipe também exige frase de confirmação. O fallback destrutivo do navegador foi removido. Nenhuma limpeza foi executada.
-- **Portal: PASS estrutural.** `list-portal-users` deriva o tenant pela sessão, valida o cliente nesse tenant antes de usar service role, filtra profiles pela mesma organização, usa CORS allowlist e não devolve erro bruto.
+- **Portal: PASS estrutural / prova A/B de dados NOT RUN.** `list-portal-users` valida JWT, deriva o tenant pela sessão e confirma o cliente nesse tenant antes de criar o cliente service role. Perfis são filtrados pela mesma organização; somente depois os papéis dos `user_id` validados são consultados. O frontend invalida respostas assíncronas de uma identidade anterior e o logout remove cache React Query e o cliente ativo local. CORS usa allowlist e erros externos são sanitizados.
 - **Produção: FAIL-CLOSED.** Ordens, programação, lotes, envase e CQ mantêm ownership explícito. `aplicacoes` e `entregas` têm `organization_id`, índice, trigger e policy restritiva. `ordens_servico_onfarm` e `production_planning` passaram a exigir a cadeia determinística cliente/parceiro → organização; linhas sem vínculo não foram preenchidas e ficam bloqueadas.
 - **Fiscal: PASS estrutural/FAIL-CLOSED para legado.** Eventos derivam a organização da sessão, validam nota e configuração da mesma empresa e selecionam certificado somente dentro da configuração vinculada à nota. Legado sem vínculo comprovado permanece bloqueado.
 - **RBAC horizontal: PASS estrutural no escopo alcançado.** Policies antigas baseadas somente em papel continuam existindo para compatibilidade, mas são intersectadas por policy `RESTRICTIVE`, eliminando o efeito global para usuários autenticados.
@@ -93,6 +93,15 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 - Três Edge Functions foram implantadas: catálogo destrutivo, auditoria do catálogo e usuários do portal.
 - Fechamento: **66 PASS** focados na rodada de implementação, mais **22 PASS** de recertificação, e suíte global **5.436 PASS / 4 skipped**; typecheck e build automático **PASS**. Scanner: **10 Info, zero P0/P1**. Supabase linter: **479 achados preexistentes**, sem novo achado atribuído às migrations finais. Quatro Edges corrigidas foram implantadas. As quatro Edges D51.5 não possuem módulos Deno próprios; a tentativa focada foi registrada como **NOT RUN — no test modules found**, sem ser convertida em PASS.
 - Publicação frontend foi solicitada uma vez. Smoke passivo oficial: HTTP 200, rota `/auth` renderizada, zero erro de página; duas respostas 401 esperadas sem sessão. Nenhuma autenticação, deleção, emissão fiscal ou mutação destrutiva foi executada.
+
+### Fechamento P0-C — Portal
+
+- Estado vivo confirmou FKs de `clientes.organization_id`, `profiles.organization_id`, `profiles.user_id`, `user_clientes(cliente_id)` e `user_roles(user_id)`, além da policy restritiva tenant em `clientes` e do helper server-side que deriva a organização pelo usuário autenticado ativo.
+- A função implantada nega JWT inválido com 401, ignora `organization_id` enviado pelo navegador e só usa privilégio técnico após validar o cliente com a sessão do ator.
+- A suíte focada passou com **77/77**; a suíte global passou com **5.447 PASS / 4 skipped**; typecheck e build automático passaram. Scanner: **10 Info e zero P0/P1**. Linter permaneceu no baseline de **479** achados preexistentes.
+- Não há módulo Deno próprio para esta função; a tentativa focada retornou `No test modules found`. A prova A/B transacional dedicada não pôde executar porque o estado vivo não possui dois tenants ativos com administradores e clientes adequados, e nenhuma fixture foi inventada. A matriz transversal anterior continua válida para RLS de perfis, mas não substitui a prova funcional completa da Edge.
+
+**P0-C = PASS estrutural / NO-GO de homologação A/B funcional**, sem IDOR conhecido no fluxo corrigido e sem consulta real cross-tenant executada.
 
 ### Matriz A/B e decisão
 

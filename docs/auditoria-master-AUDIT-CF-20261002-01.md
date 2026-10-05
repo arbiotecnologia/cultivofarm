@@ -173,6 +173,10 @@ Não restou P0/P1 bloqueante após o hardening local e os testes, permitindo ini
 
 O catálogo foi confirmado como global: `produtos` não possui vínculo de organização, enquanto ordens, lotes, estoque, entregas e demais referências operacionais permanecem fora do escopo destrutivo. Auditoria e wipe exigem Platform Superadmin validado no servidor. O wipe passou a uma única RPC transacional e idempotente, restrita ao `service_role`, com confirmação explícita, motivo obrigatório, correlação e trilha de contagens antes/depois. Chaves estrangeiras para histórico operacional fazem a operação falhar por inteiro, sem cascata de dados tenant. Atalhos destrutivos no navegador foram removidos; nenhuma limpeza real foi executada. **P0-B = PASS.**
 
+### Fechamento D51.5 P0-C — Portal
+
+`list-portal-users` foi endurecida para validar JWT, ator ativo, organização derivada server-side e papel permitido antes do cliente; o cliente é validado por RLS no tenant antes da instanciação de service role. Vínculos corrompidos para outro tenant são descartados pelo filtro de perfis e os papéis são consultados somente para usuários já validados. O frontend descarta resposta assíncrona antiga na troca de cliente/identidade e limpa contexto local no logout. A Edge foi implantada; smoke com JWT inválido retornou 401 sem consultar cliente real. Testes focados **77/77**, global **5.447 PASS / 4 skipped**, typecheck/build PASS, scanner com 10 Info e zero P0/P1 e linter no baseline 479. A prova A/B dedicada ficou **NOT RUN** por ausência, no estado vivo, de dois tenants com administrador e cliente; nenhuma fixture foi inventada. **P0-C = PASS estrutural / NO-GO de homologação A/B funcional.**
+
 ## Fase 1 — auditoria canônica pós-E01
 
 ### Regra de identificação refinada

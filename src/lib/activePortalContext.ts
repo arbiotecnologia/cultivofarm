@@ -10,6 +10,7 @@
 export type ActivePortalContext = "b2b" | "technical" | "producer" | "admin";
 
 const STORAGE_KEY = "active_portal_context";
+const PORTAL_CLIENT_STORAGE_KEY = "portal_active_cliente_id";
 
 export function setActivePortalContext(ctx: ActivePortalContext): void {
   try {
@@ -34,6 +35,7 @@ export function getActivePortalContext(): ActivePortalContext | null {
 export function clearActivePortalContext(): void {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PORTAL_CLIENT_STORAGE_KEY);
   } catch {
     /* ignore */
   }

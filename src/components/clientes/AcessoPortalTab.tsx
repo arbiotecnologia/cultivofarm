@@ -8,6 +8,7 @@ import { ExternalLink, Info, Loader2 } from "lucide-react";
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { useNavigate } from "react-router-dom";
 import { ROLE_LABELS, ROLE_VARIANTS } from "@/lib/permissions";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   clienteId: string;
@@ -28,22 +29,35 @@ export function AcessoPortalTab({ clienteId }: Props) {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<PortalUser[]>([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const load = async () => {
-    if (!clienteId) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("list-portal-users", { body: { cliente_id: clienteId } });
-      if (error) throw error;
-      setUsers(data?.users ?? []);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao listar usuários do portal");
-    } finally {
+  useEffect(() => {
+    let current = true;
+    setUsers([]);
+    if (!clienteId || !user?.id) {
       setLoading(false);
+      return () => { current = false; };
     }
-  };
 
-  useEffect(() => { load(); }, [clienteId]);
+    setLoading(true);
+    void supabase.functions
+      .invoke("list-portal-users", { body: { cliente_id: clienteId } })
+      .then(({ data, error }) => {
+        if (!current) return;
+        if (error) throw error;
+        setUsers(data?.users ?? []);
+      })
+      .catch((error: unknown) => {
+        if (!current) return;
+        const message = error instanceof Error ? error.message : "Erro ao listar usuários do portal";
+        toast.error(message);
+      })
+      .finally(() => {
+        if (current) setLoading(false);
+      });
+
+    return () => { current = false; };
+  }, [clienteId, user?.id]);
 
   if (!clienteId) {
     return <p className="text-sm text-muted-foreground">Salve o cliente primeiro para visualizar quem tem acesso.</p>;

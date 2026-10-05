@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 Deno.serve(async (req) => {
@@ -30,6 +30,11 @@ Deno.serve(async (req) => {
       });
     }
     const callerId = claimsData.claims.sub;
+    if (typeof callerId !== "string") {
+      return new Response(JSON.stringify({ error: "Token inválido" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: actorOrg, error: actorOrgError } = await anonClient.rpc(
       "h15_actor_organization",
@@ -40,15 +45,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const roles = ["administrador", "gestor", "administrativo"];
     let allowed = false;
     for (const r of roles) {
-      const { data } = await admin.rpc("has_role", { _user_id: callerId, _role: r });
+      const { data } = await anonClient.rpc("has_role", { _user_id: callerId, _role: r });
       if (data) { allowed = true; break; }
     }
     if (!allowed) {
@@ -57,17 +57,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { cliente_id } = await req.json();
-    if (!cliente_id) {
+    const body = await req.json().catch(() => null) as Record<string, unknown> | null;
+    const clienteId = body?.cliente_id;
+    if (typeof clienteId !== "string" || !isUuid(clienteId)) {
       return new Response(JSON.stringify({ error: "cliente_id é obrigatório" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: cliente, error: clienteError } = await admin
+    // A consulta autenticada aplica também a policy tenant de clientes.
+    // O acesso privilegiado só passa a existir depois desta fronteira.
+    const { data: cliente, error: clienteError } = await anonClient
       .from("clientes")
       .select("id")
-      .eq("id", cliente_id)
+      .eq("id", clienteId)
       .eq("organization_id", actorOrg)
       .maybeSingle();
     if (clienteError) throw clienteError;
@@ -77,11 +80,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+
     // Busca vínculos somente após validar o cliente no tenant do ator.
     const { data: vinculos, error: vErr } = await admin
       .from("user_clientes")
       .select("user_id, principal")
-      .eq("cliente_id", cliente_id);
+      .eq("cliente_id", clienteId);
     if (vErr) throw vErr;
 
     const userIds = (vinculos ?? []).map((v: any) => v.user_id);
@@ -95,10 +104,20 @@ Deno.serve(async (req) => {
       (vinculos ?? []).map((v: any) => [v.user_id, !!v.principal])
     );
 
-    const [{ data: profiles }, { data: rolesRows }] = await Promise.all([
-      admin.from("profiles").select("id, user_id, nome, email, telefone, ativo, created_at").eq("organization_id", actorOrg).in("user_id", userIds),
-      admin.from("user_roles").select("user_id, role").in("user_id", userIds),
-    ]);
+    const { data: profiles, error: profilesError } = await admin
+      .from("profiles")
+      .select("id, user_id, nome, email, ativo")
+      .eq("organization_id", actorOrg)
+      .in("user_id", userIds);
+    if (profilesError) throw profilesError;
+
+    // Vínculo corrompido para usuário de outro tenant é descartado antes de
+    // qualquer leitura de papel ou metadado Auth.
+    const validatedUserIds = (profiles ?? []).map((profile: { user_id: string }) => profile.user_id);
+    const { data: rolesRows, error: rolesError } = validatedUserIds.length > 0
+      ? await admin.from("user_roles").select("user_id, role").in("user_id", validatedUserIds)
+      : { data: [], error: null };
+    if (rolesError) throw rolesError;
 
     const rolesByUser = new Map<string, string[]>();
     for (const r of rolesRows ?? []) {
@@ -134,3 +153,7 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
