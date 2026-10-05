@@ -9,6 +9,16 @@
 - As escritas da campanha limitaram-se à abertura e à contenção posterior da janela SMTP, sempre pelas mesmas duas flags e pelo mecanismo auditável autorizado.
 - O P0 PWA foi encerrado após validação e smoke; a campanha pode retomar somente no E02 SMTP, respeitando os bloqueios já registrados.
 
+## D51.3.1 — rótulo Administrador da empresa
+
+| Caso | Cenário | Resultado | Evidência |
+|---|---|---|---|
+| UX-ADMIN-001 | Rótulo central do papel `administrador` | PASS | `ROLE_LABELS.administrador` exibe **Administrador da empresa** |
+| UX-ADMIN-002 | Chave persistida e lista de papéis | PASS | `administrador` permanece em `ACTIVE_ROLES`; o texto novo não é usado como valor interno |
+| UX-ADMIN-003 | Autorização e home | PASS | acesso a `/dashboard/geral` e `getHomeForRole("administrador")` permanecem inalterados |
+| UX-ADMIN-004 | Distinção de plataforma | PASS | **Superadmin de Plataforma** e home `/plataforma` preservados |
+| UX-ADMIN-005 | Perfil, usuários, filtros e Comunicação | PASS | superfícies usam o mapa central; seletor mantém `value="administrador"` com novo texto visível |
+
 ## P0 PWA — migração definitiva
 
 | Caso | Cenário | Resultado | Evidência |
