@@ -34,7 +34,7 @@ interface Props {
 }
 
 export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", canDelete = false, compact, onChanged }: Props) {
-  const { user, role } = useAuth();
+  const { user, role, profile } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState(defaultType);
@@ -57,8 +57,8 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
 
   const upload = useMutation({
     mutationFn: async (file: File) => {
-      if (!user || !ownerId) throw new Error("Sessão inválida");
-      const path = `${ownerType}/${ownerId}/${Date.now()}-${file.name}`;
+      if (!user || !ownerId || !profile?.organization_id) throw new Error("Contexto da empresa inválido");
+      const path = `${profile.organization_id}/${ownerType}/${ownerId}/${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("financial-docs").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
       const { error: insErr } = await supabase.from("financial_documents").insert({

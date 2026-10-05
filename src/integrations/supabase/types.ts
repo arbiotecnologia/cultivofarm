@@ -1634,6 +1634,7 @@ export type Database = {
           observacoes: string | null
           ordem_servico_id: string | null
           ordem_servico_onfarm_id: string | null
+          organization_id: string | null
           parent_id: string | null
           pressao_bar: number | null
           produto_usado_id: string | null
@@ -1672,6 +1673,7 @@ export type Database = {
           observacoes?: string | null
           ordem_servico_id?: string | null
           ordem_servico_onfarm_id?: string | null
+          organization_id?: string | null
           parent_id?: string | null
           pressao_bar?: number | null
           produto_usado_id?: string | null
@@ -1710,6 +1712,7 @@ export type Database = {
           observacoes?: string | null
           ordem_servico_id?: string | null
           ordem_servico_onfarm_id?: string | null
+          organization_id?: string | null
           parent_id?: string | null
           pressao_bar?: number | null
           produto_usado_id?: string | null
@@ -1751,6 +1754,13 @@ export type Database = {
             columns: ["ordem_servico_onfarm_id"]
             isOneToOne: false
             referencedRelation: "ordens_servico_onfarm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -5661,6 +5671,7 @@ export type Database = {
           observacoes_confirmacao: string | null
           ordem_servico_id: string | null
           ordem_servico_onfarm_id: string | null
+          organization_id: string | null
           os_faturamento_base_id: string | null
           partner_order_id: string | null
           produto_id: string | null
@@ -5740,6 +5751,7 @@ export type Database = {
           observacoes_confirmacao?: string | null
           ordem_servico_id?: string | null
           ordem_servico_onfarm_id?: string | null
+          organization_id?: string | null
           os_faturamento_base_id?: string | null
           partner_order_id?: string | null
           produto_id?: string | null
@@ -5819,6 +5831,7 @@ export type Database = {
           observacoes_confirmacao?: string | null
           ordem_servico_id?: string | null
           ordem_servico_onfarm_id?: string | null
+          organization_id?: string | null
           os_faturamento_base_id?: string | null
           partner_order_id?: string | null
           produto_id?: string | null
@@ -5916,6 +5929,13 @@ export type Database = {
             columns: ["ordem_servico_onfarm_id"]
             isOneToOne: false
             referencedRelation: "ordens_servico_onfarm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -19792,6 +19812,10 @@ export type Database = {
       }
       check_partner_order_sla: { Args: never; Returns: undefined }
       check_talhao_dependencies: { Args: { _talhao_id: string }; Returns: Json }
+      cliente_storage_object_permitted: {
+        Args: { _name: string }
+        Returns: boolean
+      }
       convert_partner_simulation_to_order_secure: {
         Args: {
           p_confirm_price_change?: boolean
@@ -19833,6 +19857,10 @@ export type Database = {
           is_new: boolean
           registro_id: string
         }[]
+      }
+      financial_storage_object_permitted: {
+        Args: { _bucket: string; _name: string }
+        Returns: boolean
       }
       finish_technical_visit_secure: {
         Args: {

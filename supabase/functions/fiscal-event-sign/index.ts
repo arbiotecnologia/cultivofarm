@@ -69,13 +69,7 @@ function fromBinaryColumn(value: string): Uint8Array {
 }
 
 // deno-lint-ignore no-explicit-any
-async function loadSigningMaterial(admin: any): Promise<{ certPem: string; keyPem: string }> {
-  const certRow = await admin
-    .from("v_fiscal_certificate_readiness")
-    .select("certificate_id, status, environment")
-    .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
-    .order("valid_until", { ascending: false }).limit(1).maybeSingle();
-  const certificateId = certRow.data?.certificate_id as string | undefined;
+async function loadSigningMaterial(admin: any, certificateId: string): Promise<{ certPem: string; keyPem: string }> {
   if (!certificateId) throw new FiscalEventXmlError("CERTIFICATE_REQUIRED");
 
   const masterKey = decodeMasterKey();
@@ -138,6 +132,11 @@ Deno.serve(async (req) => {
   if (canOperate.error || canOperate.data !== true) {
     return json({ error: "permission_denied" }, 403, headers);
   }
+  const actorOrganization = await authed.rpc("h15_actor_organization");
+  const organizationId = String(actorOrganization.data ?? "");
+  if (actorOrganization.error || !UUID_RE.test(organizationId)) {
+    return json({ error: "tenant_context_required" }, 403, headers);
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -158,7 +157,25 @@ Deno.serve(async (req) => {
     const adminSelfTest = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     let selfTestMaterial: { certPem: string; keyPem: string } | null = null;
     try {
-      selfTestMaterial = await loadSigningMaterial(adminSelfTest);
+      const company = await authed.from("company_fiscal_settings")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (company.error || !company.data?.id) throw new FiscalEventXmlError("CERTIFICATE_REQUIRED");
+      const certificates = await adminSelfTest.from("fiscal_certificates")
+        .select("id")
+        .eq("company_settings_id", company.data.id)
+        .eq("environment", "HOMOLOGATION")
+        .eq("status", "AVAILABLE")
+        .eq("is_active", true)
+        .is("revoked_at", null)
+        .or(`valid_until.is.null,valid_until.gt.${new Date().toISOString()}`)
+        .limit(2);
+      if (certificates.error || certificates.data?.length !== 1) {
+        throw new FiscalEventXmlError(certificates.data?.length ? "FISCAL_CERTIFICATE_AMBIGUOUS" : "CERTIFICATE_REQUIRED");
+      }
+      selfTestMaterial = await loadSigningMaterial(adminSelfTest, certificates.data[0].id);
       const report = runSigningSelfTest(selfTestMaterial);
       return json({
         action: "self_test",
@@ -209,6 +226,10 @@ Deno.serve(async (req) => {
   }
   const ev = prepared.data as Record<string, unknown>;
   const eventId = String(ev.eventId);
+  const companySettingsId = String(ev.companySettingsId ?? "");
+  if (!UUID_RE.test(companySettingsId)) {
+    return json({ error: "event_prepare_blocked", code: "FISCAL_COMPANY_BINDING_REQUIRED" }, 409, headers);
+  }
 
   // Já assinado? Não reassina (idempotência estável).
   const current = await admin
@@ -226,7 +247,12 @@ Deno.serve(async (req) => {
   const settings = await admin
     .from("company_fiscal_settings")
     .select("cnpj, nfe_environment_code")
+    .eq("id", companySettingsId)
+    .eq("organization_id", organizationId)
     .eq("is_active", true).maybeSingle();
+  if (settings.error || !settings.data) {
+    return json({ error: "company_settings_not_found" }, 404, headers);
+  }
   const cnpj = String(settings.data?.cnpj ?? "").replace(/\D/g, "");
   if (String(settings.data?.nfe_environment_code ?? "") !== TPAMB) {
     return json({ error: "environment_blocked", code: "FISCAL_PRODUCTION_ENDPOINT_BLOCKED" }, 403, headers);
@@ -246,7 +272,19 @@ Deno.serve(async (req) => {
       dhEvento: new Date().toISOString().replace(/\.\d{3}Z$/, "-03:00"),
     });
 
-    material = await loadSigningMaterial(admin);
+    const certificates = await admin.from("fiscal_certificates")
+      .select("id")
+      .eq("company_settings_id", companySettingsId)
+      .eq("environment", "HOMOLOGATION")
+      .eq("status", "AVAILABLE")
+      .eq("is_active", true)
+      .is("revoked_at", null)
+      .or(`valid_until.is.null,valid_until.gt.${new Date().toISOString()}`)
+      .limit(2);
+    if (certificates.error || certificates.data?.length !== 1) {
+      throw new FiscalEventXmlError(certificates.data?.length ? "FISCAL_CERTIFICATE_AMBIGUOUS" : "CERTIFICATE_REQUIRED");
+    }
+    material = await loadSigningMaterial(admin, certificates.data[0].id);
     const signedXml = signEventoXml({
       xml: built.xml, infEventoId: built.infEventoId, material,
     });

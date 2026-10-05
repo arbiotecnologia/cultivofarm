@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       .from("produtos")
       .select("id, codigo, nome, ativo")
       .order("codigo");
-    if (prodErr) return json(500, { error: "produtos_read_failed", detail: prodErr.message });
+    if (prodErr) return json(500, { error: "produtos_read_failed" });
 
     const validIds = new Set((produtos ?? []).map((p: { id: string }) => p.id));
 
@@ -89,7 +89,6 @@ Deno.serve(async (req) => {
       total_referencias: number;
       orfaos: number;
       distinct_ids_orfaos: number;
-      sample_ids: string[];
       error?: string;
     }> = [];
     const globalOrphanIds = new Set<string>();
@@ -157,8 +156,7 @@ Deno.serve(async (req) => {
         total_referencias: total,
         orfaos: orfaosRows,
         distinct_ids_orfaos: orphanSet.size,
-        sample_ids: [...orphanSet].slice(0, 10),
-        ...(err ? { error: err } : {}),
+        ...(err ? { error: "source_read_failed" } : {}),
       });
     }
 
@@ -166,14 +164,12 @@ Deno.serve(async (req) => {
 
     return json(200, {
       generated_at: new Date().toISOString(),
-      catalogo_v13: produtos,
       total_produtos: produtos?.length ?? 0,
       resumo: {
         distinct_ids_orfaos_global: globalOrphanIds.size,
         tabelas_com_orfaos: results.filter((r) => r.orfaos > 0).length,
       },
       por_tabela: results,
-      sample_ids_orfaos_global: [...globalOrphanIds].slice(0, 50),
     });
   } catch (e) {
     console.error("admin_audit_failed", e instanceof Error ? e.name : "unknown");

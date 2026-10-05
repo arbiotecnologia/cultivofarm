@@ -8,4 +8,7 @@
 - [x] Fase 6 — Policies/RPCs baseadas só em papel: RLS restritiva transversal
 - [x] Fase 7 — Configuração global legada: mantida global sem dados tenant
 - [x] Validações, deploy, smoke passivo e relatório final
+- [x] Fechamento P0/P1 vivo — recibos/Storage, catálogo, Portal, produção e Fiscal contidos
+- [x] Edges financeiras/fiscal/auditoria implantadas; 66 testes focados, build, scanner e linter validados
 - [ ] Matriz A/B autenticada — bloqueada pela ausência de sessões automatizadas no Supabase externo
+- [ ] Homologação horizontal final — bloqueada até a matriz A/B autenticada; relatórios sem ownership completo ficam fechados

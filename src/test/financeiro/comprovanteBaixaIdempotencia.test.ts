@@ -56,6 +56,7 @@ const base = {
   idempotencyKey: "idem-abc",
   file,
   uploadedBy: "user-1",
+  organizationId: "org-1",
 };
 
 describe("H6c-004 — comprovante de baixa idempotente", () => {
@@ -63,7 +64,7 @@ describe("H6c-004 — comprovante de baixa idempotente", () => {
     const p1 = comprovanteStoragePath({ ...base, fileName: file.name });
     const p2 = comprovanteStoragePath({ ...base, fileName: file.name });
     expect(p1).toBe(p2);
-    expect(p1).toBe("PAYMENT_RECEIVABLE/pay-1/idem-abc-Comprovante-Pix-18-08.pdf");
+    expect(p1).toBe("org-1/PAYMENT_RECEIVABLE/pay-1/idem-abc-Comprovante-Pix-18-08.pdf");
     expect(sanitizeFileName("nota fiscal ção.pdf")).toBe("nota-fiscal-cao.pdf");
   });
 

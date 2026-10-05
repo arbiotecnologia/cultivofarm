@@ -74,31 +74,31 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 
 ## D51.5 — remediação dos bloqueios horizontais
 
-### Resultado por módulo
+### Resultado por módulo — fechamento vivo
 
-- **Financeiro/Storage: FAIL-CLOSED.** As raízes e artefatos financeiros receberam `organization_id`, índice, trigger server-side imutável e policy restritiva por `h15_actor_organization()`. Registros legados sem vínculo determinístico permanecem invisíveis. As RPCs `SECURITY DEFINER` de relatórios, fluxo, DRE e registro de exportação perderam `EXECUTE` de `authenticated` até que todas as fontes possam ser filtradas com ownership comprovado.
+- **Financeiro/Storage: FAIL-CLOSED/PASS no escopo operacional seguro.** Recibos validam pagamento, parcela, título e cliente pela organização derivada da sessão. Buckets financeiros e de clientes são privados; novos caminhos incluem a organização e as policies validam o recurso-pai. Relatórios, fluxo, DRE e registro de exportação continuam bloqueados para `authenticated`, pois ainda não há vínculo determinístico completo para todas as fontes. Artefatos legados sem tenant permanecem preservados e inacessíveis.
 - **Catálogo global: PASS de autorização.** Wipe e auditoria de órfãos agora exigem `is_platform_superadmin` server-side; o wipe também exige frase de confirmação. O fallback destrutivo do navegador foi removido. Nenhuma limpeza foi executada.
 - **Portal: PASS estrutural.** `list-portal-users` deriva o tenant pela sessão, valida o cliente nesse tenant antes de usar service role, filtra profiles pela mesma organização, usa CORS allowlist e não devolve erro bruto.
-- **Produção: FAIL-CLOSED.** Ordens, programação, lotes, envase e CQ receberam ownership explícito e policy restritiva. As linhas legadas que não puderam ser relacionadas deterministicamente não foram alteradas e ficam bloqueadas a tenant users.
-- **Fiscal: FAIL-CLOSED.** Invoices, eventos e documentos agora exigem organização explícita correspondente à sessão. Legado sem vínculo comprovado permanece bloqueado.
+- **Produção: FAIL-CLOSED.** Ordens, programação, lotes, envase e CQ mantêm ownership explícito. `aplicacoes` e `entregas` também passaram a ter `organization_id`, índice, trigger e policy restritiva; linhas sem vínculo determinístico não foram preenchidas e ficam bloqueadas.
+- **Fiscal: PASS estrutural/FAIL-CLOSED para legado.** Eventos derivam a organização da sessão, validam nota e configuração da mesma empresa e selecionam certificado somente dentro da configuração vinculada à nota. Legado sem vínculo comprovado permanece bloqueado.
 - **RBAC horizontal: PASS estrutural no escopo alcançado.** Policies antigas baseadas somente em papel continuam existindo para compatibilidade, mas são intersectadas por policy `RESTRICTIVE`, eliminando o efeito global para usuários autenticados.
 - **Configuração global legada: preservada.** O singleton comprovadamente global não recebeu vínculo tenant artificial.
 
 ### Evidências
 
 - Banco canônico confirmado: `swzpzcwiasxmjutrmvkm`.
-- 19 tabelas operacionais têm `organization_id`, índice, trigger de guarda e policy restritiva `tenant_isolation_d51_5` no estado vivo.
+- 21 tabelas operacionais têm `organization_id`, índice, trigger de guarda e policy restritiva `tenant_isolation_d51_5` no estado vivo, incluindo `aplicacoes` e `entregas`.
 - Treze RPCs financeiras elevadas estão sem execução para `authenticated` no estado vivo.
 - Backfill foi feito somente onde perfil, cliente ou registro-pai fornecia associação única; nenhum dado foi excluído. Linhas ambíguas foram preservadas sem vínculo.
 - Três Edge Functions foram implantadas: catálogo destrutivo, auditoria do catálogo e usuários do portal.
-- Testes focados: **26 PASS**. Suíte global: **5.436 PASS / 4 skipped**. Typecheck e build: **PASS**. Scanner: **10 Info, zero P0/P1**. Supabase linter: **479 achados preexistentes**, sem novo achado atribuído às migrations D51.5.
+- Fechamento: **66 PASS** focados e suíte global equivalente a **5.436 PASS / 4 skipped** após corrigir duas fixtures tenant dos testes; typecheck e build automático **PASS**. Scanner: **10 Info, zero P0/P1**. Supabase linter: **479 achados preexistentes**, sem novo achado atribuído às migrations finais. Quatro Edges corrigidas foram implantadas.
 - Publicação frontend foi solicitada uma vez. Smoke passivo oficial: HTTP 200, rota `/auth` renderizada, zero erro de página; duas respostas 401 esperadas sem sessão. Nenhuma autenticação, deleção, emissão fiscal ou mutação destrutiva foi executada.
 
 ### Matriz A/B e decisão
 
 A prova estrutural confirma que A não pode obter linha B quando a linha possui tenant: a policy restritiva exige igualdade com a organização derivada de `auth.uid()`, e o trigger rejeita organização enviada pelo cliente ou troca de tenant. Usuário inativo/sem organização e Superadmin sem tenant recebem escopo nulo e falham fechados.
 
-A matriz A/B autenticada de runtime ficou **NOT RUN** nesta execução: o projeto Supabase externo não disponibilizou sessões automatizadas e nenhum usuário real foi impersonado. Por isso, apesar da contenção P0/P1 e das validações verdes, a decisão formal é **NO-GO de homologação final / GO de segurança fail-closed** até executar a matriz A/B autenticada. Relatórios financeiros e linhas legadas sem vínculo permanecem indisponíveis, nunca globais.
+A matriz A/B autenticada de runtime ficou **NOT RUN** nesta execução: o projeto Supabase externo não disponibilizou sessões automatizadas e nenhum usuário real foi impersonado. A decisão formal permanece **NO-GO de homologação final / GO de segurança fail-closed**. Financeiro/Storage, Catálogo, Portal e Fiscal estão contidos estruturalmente; relatórios financeiros e linhas legadas sem vínculo permanecem indisponíveis, nunca globais.
 
 ### Rollback / forward-fix
 

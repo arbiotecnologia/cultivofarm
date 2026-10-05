@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileIcon, Upload, Trash2, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const TIPOS: { value: string; label: string }[] = [
   { value: "cnh", label: "CNH" },
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export function ClienteDocumentosTab({ clienteId }: Props) {
+  const { profile } = useAuth();
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tipo, setTipo] = useState<string>("");
@@ -79,8 +81,9 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
 
     setUploading(true);
     try {
+      if (!profile?.organization_id) throw new Error("Contexto da empresa inválido");
       const ext = file.name.split(".").pop() || "bin";
-      const path = `clientes/${clienteId}/${tipo}/${Date.now()}-${Math.random()
+      const path = `${profile.organization_id}/clientes/${clienteId}/${tipo}/${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 8)}.${ext}`;
       
