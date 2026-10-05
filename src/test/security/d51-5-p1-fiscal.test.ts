@@ -17,6 +17,8 @@ describe("D51.5 P1 — isolamento fiscal antes do service role", () => {
     const eventBranch = sefaz.slice(sefaz.indexOf("const eventId ="));
     expect(authorizeBranch.indexOf('h15_service_actor_run_access')).toBeLessThan(authorizeBranch.indexOf('.from("fiscal_xml_runs")'));
     expect(eventBranch.indexOf('h15_service_actor_event_access')).toBeLessThan(eventBranch.indexOf('.from("v_fiscal_sefaz_event_state")'));
+    expect(sefaz).toContain('["status", "receipt", "consult"].includes(action)');
+    expect(sefaz).toContain('{ error: "invoice_id_required" }');
   });
 
   it("protege geração e URL assinada de XML por ownership server-side", () => {

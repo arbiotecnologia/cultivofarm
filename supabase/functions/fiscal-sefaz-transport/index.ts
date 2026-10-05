@@ -360,6 +360,20 @@ Deno.serve(async (req) => {
   if (invoiceId && !UUID_RE.test(invoiceId)) return json({ error: "invoice_id_invalid" }, 400, headers);
   if (xmlRunId && !UUID_RE.test(xmlRunId)) return json({ error: "run_id_invalid" }, 400, headers);
 
+  // Status, recibo e consulta também usam o certificado do emitente. Exigem uma
+  // invoice do tenant para impedir consulta externa ou uso de certificado sem
+  // um recurso fiscal previamente autorizado para o ator.
+  if (["status", "receipt", "consult"].includes(action)) {
+    if (!invoiceId) return json({ error: "invoice_id_required" }, 400, headers);
+    const invoiceAllowed = await admin.rpc("h15_service_actor_invoice_access", {
+      p_actor: actor,
+      p_invoice: invoiceId,
+    });
+    if (invoiceAllowed.error || invoiceAllowed.data !== true) {
+      return json({ error: "permission_denied" }, 403, headers);
+    }
+  }
+
   // 1. Resolve serviço + endpoint (allowlist dura de homologação MG).
   let service: SefazService;
   switch (action) {
