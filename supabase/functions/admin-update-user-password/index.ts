@@ -68,7 +68,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: canUpdate, error: scopeError } = await adminClient.rpc(
+    const scopedClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: canUpdate, error: scopeError } = await scopedClient.rpc(
       "admin_can_update_user_password_server",
       { p_actor_id: callerId, p_target_id: user_id },
     );

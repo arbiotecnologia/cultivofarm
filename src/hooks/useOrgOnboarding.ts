@@ -57,6 +57,9 @@ export function useConcluirOnboarding() {
       if (error) throw new Error(error.message);
       return data as { status: string; idempotent: boolean };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["org_onboarding_state"] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["org_onboarding_state"] });
+      await qc.invalidateQueries({ queryKey: ["organization-profile"] });
+    },
   });
 }

@@ -23656,6 +23656,20 @@ export type Database = {
           is_new: boolean
         }[]
       }
+      tenant_admin_list_users: {
+        Args: {
+          p_active?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_role?: Database["public"]["Enums"]["app_role"]
+          p_search?: string
+        }
+        Returns: Json
+      }
+      tenant_admin_set_user_active: {
+        Args: { p_active: boolean; p_user_id: string }
+        Returns: Json
+      }
       unassign_b2b_user_client_secure: {
         Args: { p_cliente_id: string; p_reason?: string; p_user_id: string }
         Returns: boolean

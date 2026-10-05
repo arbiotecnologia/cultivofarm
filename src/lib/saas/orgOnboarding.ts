@@ -4,6 +4,38 @@
  * Usado apenas para UX e testes; o servidor sempre revalida.
  */
 import { unmaskCnpjAlpha, validateCnpjAlpha } from "@/lib/fiscal/cnpjAlpha";
+import { normalizePhoneBR } from "@/lib/masks";
+
+export const FUSOS_BRASIL = [
+  { value: "America/Sao_Paulo", label: "Brasília / Sudeste e Sul (UTC−03)" },
+  { value: "America/Manaus", label: "Manaus / Amazonas (UTC−04)" },
+  { value: "America/Cuiaba", label: "Cuiabá / Mato Grosso (UTC−04)" },
+  { value: "America/Campo_Grande", label: "Campo Grande / Mato Grosso do Sul (UTC−04)" },
+  { value: "America/Rio_Branco", label: "Rio Branco / Acre (UTC−05)" },
+  { value: "America/Noronha", label: "Fernando de Noronha (UTC−02)" },
+] as const;
+
+export const REGIMES_TRIBUTARIOS = [
+  { value: "simples_nacional", label: "Simples Nacional" },
+  { value: "mei", label: "MEI" },
+  { value: "lucro_presumido", label: "Lucro Presumido" },
+  { value: "lucro_real", label: "Lucro Real" },
+  { value: "imune_isenta", label: "Imune / Isenta" },
+  { value: "outros", label: "Outros" },
+] as const;
+
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const normalizarEmailEmpresa = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
+export const emailEmpresaValido = (value: string | null | undefined) => {
+  const normalized = normalizarEmailEmpresa(value);
+  return normalized === "" || EMAIL_PATTERN.test(normalized);
+};
+export const fusoHorarioValido = (value: string | null | undefined) => {
+  if (!value) return false;
+  try { new Intl.DateTimeFormat("pt-BR", { timeZone: value }).format(); return true; } catch { return false; }
+};
+export const regimeTributarioValido = (value: string | null | undefined) =>
+  REGIMES_TRIBUTARIOS.some((option) => option.value === value);
 
 /** Whitelist de chaves aceitas pelo servidor (platform_private.onboarding_validar). */
 export const ONBOARDING_CAMPOS: Record<string, number> = {
@@ -83,8 +115,11 @@ export function pendenciasOnboarding(d: OnboardingDados): string[] {
   if (!t(d.cidade)) p.push("Cidade");
   if (!/^[A-Za-z]{2}$/.test(t(d.uf))) p.push("UF");
   if (!t(d.telefone)) p.push("Telefone");
+  else if (!normalizePhoneBR(d.telefone)) p.push("Telefone válido");
+  if (!emailEmpresaValido(d.email_contato)) p.push("E-mail válido");
   if (!t(d.responsavel_nome)) p.push("Responsável");
-  if (!t(d.fuso_horario)) p.push("Fuso horário");
+  if (!fusoHorarioValido(d.fuso_horario)) p.push("Fuso horário");
+  if (t(d.regime_tributario) && !regimeTributarioValido(d.regime_tributario)) p.push("Regime tributário");
   if (d.confirmado !== true) p.push("Confirmação");
   return p;
 }
@@ -98,7 +133,10 @@ export function sanitizarPayloadOnboarding(d: Record<string, unknown>): Record<s
       continue;
     }
     if (!Object.prototype.hasOwnProperty.call(ONBOARDING_CAMPOS, k) || typeof v !== "string") continue;
-    out[k] = v.trim().slice(0, ONBOARDING_CAMPOS[k]);
+    let normalized = v.trim().slice(0, ONBOARDING_CAMPOS[k]);
+    if (k === "telefone") normalized = normalizePhoneBR(normalized) ?? normalized;
+    if (k === "email_contato") normalized = normalizarEmailEmpresa(normalized);
+    out[k] = normalized;
   }
   return out;
 }

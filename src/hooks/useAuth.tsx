@@ -212,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const identityChanged = !!(lastUserId && nextUserId && lastUserId !== nextUserId);
         if (identityChanged) {
           clearActivePortalContext();
+          queryClient.clear();
         }
         lastUserId = nextUserId;
 

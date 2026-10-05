@@ -5,8 +5,6 @@ import {
   mapearErroCriacaoUsuario,
   lerCorpoErroFuncao,
   criacaoBemSucedida,
-  filtrarUsuariosPorBusca,
-  paginar,
   ERRO_GENERICO_CRIACAO,
   REGRA_SENHA,
   senhaValida,
@@ -14,7 +12,6 @@ import {
   primeiroCampoInvalidoEdicao,
   bloqueioAutoDesativacao,
   bloqueioAutoRemocaoAdmin,
-  exigirUmaLinha,
   type ErrosEdicaoUsuario,
 
 
@@ -25,11 +22,9 @@ import {
   type ErrosNovoUsuario,
   type CampoNovoUsuario,
 } from "@/lib/configuracoes/usuariosValidation";
-import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
 import {
   RPC_EDITAR_USUARIO,
   construirArgsEdicao,
-  resolverPrincipalClienteId,
   edicaoBemSucedida,
   validarLimiteClienteIds,
   classificarErroRpcEdicao,
@@ -59,7 +54,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatTelefone, formatCpfCnpj, unmask, unmaskCpfCnpj, validatePhoneBR } from "@/lib/masks";
-import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer, Download } from "lucide-react";
+import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Timer, Download } from "lucide-react";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -67,7 +62,6 @@ import { PageHeader, ResponsiveTable, MobileCard } from "@/components/Responsive
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ROLE_LABELS, ROLE_VARIANTS, ACTIVE_ROLES } from "@/lib/permissions";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
-import { ClientesVinculadosField, type ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
 import { Link } from "react-router-dom";
 import { History, Wallet } from "lucide-react";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
@@ -75,6 +69,8 @@ import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import { CreditCard } from "lucide-react";
 import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
+import { useOnboardingState } from "@/hooks/useOrgOnboarding";
+import { FUSOS_BRASIL, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 
 
 
@@ -92,6 +88,7 @@ export default function Configuracoes() {
   const canMeuPlano =
     (roles ?? []).includes("administrador") || (roles ?? []).includes("superadmin");
   const canFin = isAdmin || role === "gestor" || role === "financeiro";
+  const organizationProfile = useOnboardingState(isAdmin && !!profile?.organization_id);
   const tabParam = searchParams.get("tab");
   const initialTab =
     tabParam === "usuarios" && isAdmin
@@ -100,7 +97,7 @@ export default function Configuracoes() {
         ? "financeiro"
         : tabParam === "meu-plano" && canMeuPlano
           ? "meu-plano"
-          : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
+          : tabParam && ["perfil", "empresa", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
             ? tabParam
             : "perfil";
 
@@ -132,132 +129,45 @@ export default function Configuracoes() {
     },
   });
 
-  // Admin: list all users
+  // Admin da empresa: listagem paginada e filtrada no servidor pelo tenant da sessão.
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [pagina, setPagina] = useState(1);
 
   const {
-    data: allUsers = [],
+    data: allUsers = { items: [] as any[], total: 0 },
     isLoading: usersLoading,
     isError: usersError,
     isFetching: usersFetching,
     refetch: refetchUsers,
   } = useQuery({
-    queryKey: ["admin-users"],
+    queryKey: ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina],
     enabled: isAdmin,
     queryFn: async () => {
-      // Leitura paginada real: sem truncar silenciosamente e com ordem estável por PK.
-      const profiles = await fetchAllRows<any>((from, to) =>
-        supabase
-          .from("profiles")
-          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, updated_at, cargo, crea, especialidade")
-          .order("user_id", { ascending: true })
-          .range(from, to),
-      );
-      // Falhas em papéis/vínculos NÃO podem ser tratadas como "sem dados".
-      const roles = await fetchAllRows<any>((from, to) =>
-        (supabase as any).from("user_roles").select("user_id, role").order("id", { ascending: true }).range(from, to),
-      );
-      const vinc = await fetchAllRows<any>((from, to) =>
-        (supabase as any)
-          .from("user_clientes")
-          .select("user_id, cliente_id, principal")
-          .order("id", { ascending: true })
-          .range(from, to),
-      );
-      const rolesByUser = new Map<string, string[]>();
-      for (const r of roles) {
-        const arr = rolesByUser.get(r.user_id) ?? [];
-        arr.push(r.role);
-        rolesByUser.set(r.user_id, arr);
-      }
-      const vincByUser = new Map<string, ClienteVinculo[]>();
-      for (const v of vinc) {
-        const arr = vincByUser.get(v.user_id) ?? [];
-        arr.push({ cliente_id: v.cliente_id, principal: !!v.principal } as ClienteVinculo);
-        vincByUser.set(v.user_id, arr);
-      }
-      return profiles
-        .map((p: any) => ({
-          ...p,
-          roles: rolesByUser.get(p.user_id) ?? [],
-          vinculos: vincByUser.get(p.user_id) ?? [],
-        }))
-        .sort((a: any, b: any) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")));
+      // O contrato server-side retorna user_id e updated_at para edição otimista.
+      const { data, error } = await (supabase as any).rpc("tenant_admin_list_users", {
+        p_search: debouncedSearchTerm.trim() || null,
+        p_role: filterRole === "all" ? null : filterRole,
+        p_active: filterStatus === "all" ? null : filterStatus === "ativo",
+        p_offset: (pagina - 1) * USUARIOS_POR_PAGINA,
+        p_limit: USUARIOS_POR_PAGINA,
+      });
+      if (error) throw error;
+      return { items: data?.items ?? [], total: Number(data?.total ?? 0) };
     },
   });
 
-  const { data: clientes = [] } = useQuery({
-    queryKey: ["clientes-lista"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const data = await fetchAllRows<any>((from, to) =>
-        supabase.from("clientes").select("id, nome, cpf_cnpj").order("id", { ascending: true }).range(from, to),
-      );
-      return [...data].sort((a, b) => String(a.nome ?? "").localeCompare(String(b.nome ?? ""))) as {
-        id: string;
-        nome: string;
-        cpf_cnpj: string | null;
-      }[];
-    },
-  });
+  const usersPage = allUsers.items ?? [];
 
-  // Parceiros B2B (para vínculo quando papel parceiro_b2b* é selecionado)
-  const { data: partners = [] } = useQuery({
-    queryKey: ["partner-accounts-lista"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const data = await fetchAllRows<any>((from, to) =>
-        (supabase as any)
-          .from("partner_accounts")
-          .select("id, codigo, razao_social, nome_fantasia, ativo")
-          .eq("ativo", true)
-          .order("id", { ascending: true })
-          .range(from, to),
-      );
-      return [...data].sort((a, b) =>
-        String(a.razao_social ?? "").localeCompare(String(b.razao_social ?? "")),
-      ) as { id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }[];
-    },
-  });
-
-  // Vínculo atual dos usuários com parceiros
-  const { data: partnerLinks = [] } = useQuery({
-    queryKey: ["partner-users-links"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const data = await fetchAllRows<any>((from, to) =>
-        (supabase as any)
-          .from("partner_users")
-          .select("id, user_id, partner_id, papel")
-          .order("id", { ascending: true })
-          .range(from, to),
-      );
-      return data as { id: string; user_id: string; partner_id: string; papel: string }[];
-    },
-  });
-
-
-  const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
-  const partnerLinkByUser = (uid: string) => partnerLinks.find(l => l.user_id === uid) || null;
-
-  // Helpers de papéis
-  const PARTNER_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"] as const;
-  const hasPartnerRole = (roles: string[]) => roles.some(r => (PARTNER_ROLES as readonly string[]).includes(r));
-  const partnerPapelFromRoles = (roles: string[]): "gestor" | "tecnico" =>
-    roles.includes("parceiro_b2b_tecnico") ? "tecnico" : "gestor";
+  const TENANT_MANAGEABLE_ROLES = ACTIVE_ROLES.filter((candidate) =>
+    !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
+  );
   function toggleRole(roles: string[], r: string, on: boolean): string[] {
     let next = new Set(roles);
     if (on) {
       next.add(r);
-      // cliente_produtor é exclusivo
-      if (r === "cliente_produtor") next = new Set(["cliente_produtor"]);
-      else next.delete("cliente_produtor");
-      // gestor/técnico do parceiro são mutuamente exclusivos entre si
-      if (r === "parceiro_b2b") next.delete("parceiro_b2b_tecnico");
-      if (r === "parceiro_b2b_tecnico") next.delete("parceiro_b2b");
     } else {
       next.delete(r);
     }
@@ -266,19 +176,19 @@ export default function Configuracoes() {
 
 
   const filteredUsers = useMemo(() => {
-    const porFiltros = allUsers.filter((u: any) => {
-      if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
-      if (filterStatus === "ativo" && u.ativo === false) return false;
-      if (filterStatus === "inativo" && u.ativo !== false) return false;
-      return true;
-    });
-    return filtrarUsuariosPorBusca(porFiltros as any[], debouncedSearchTerm) as any[];
-  }, [allUsers, filterRole, filterStatus, debouncedSearchTerm]);
+    return usersPage;
+  }, [usersPage]);
 
   // Paginação client-side sobre o conjunto JÁ filtrado (nada é truncado silenciosamente)
-  const [pagina, setPagina] = useState(1);
   useEffect(() => { setPagina(1); }, [filterRole, filterStatus, debouncedSearchTerm]);
-  const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
+  const paginacao = useMemo(() => ({
+    total: allUsers.total ?? 0,
+    totalPaginas: Math.max(1, Math.ceil((allUsers.total ?? 0) / USUARIOS_POR_PAGINA)),
+    paginaAtual: pagina,
+    itens: filteredUsers,
+    inicio: (allUsers.total ?? 0) === 0 ? 0 : (pagina - 1) * USUARIOS_POR_PAGINA + 1,
+    fim: Math.min(pagina * USUARIOS_POR_PAGINA, allUsers.total ?? 0),
+  }), [allUsers.total, filteredUsers, pagina]);
   const usuariosPagina = paginacao.itens;
 
   // Toggle ativo — proteção de UX: ninguém desativa a própria conta
@@ -286,17 +196,12 @@ export default function Configuracoes() {
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
       if (bloqueio) throw new ErroStatusLocal(bloqueio);
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({ ativo } as any)
-        .eq("user_id", userId)
-        .select("user_id");
+      const { data, error } = await (supabase as any).rpc("tenant_admin_set_user_active", {
+        p_user_id: userId,
+        p_active: ativo,
+      });
       if (error) throw error;
-      try {
-        exigirUmaLinha(data, "status do usuário");
-      } catch (e) {
-        throw new ErroStatusLocal((e as Error).message);
-      }
+      if (data?.success !== true || data?.user_id !== userId) throw new ErroStatusLocal("Não foi possível confirmar a atualização do status.");
     },
 
     onSuccess: () => {
@@ -317,7 +222,6 @@ export default function Configuracoes() {
     telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
   };
   const [newUser, setNewUser] = useState(initialNewUser);
-  const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
 
   const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
   const [createResumo, setCreateResumo] = useState<string | null>(null);
@@ -330,7 +234,6 @@ export default function Configuracoes() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
         nome: newUser.nome.trim(),
@@ -338,12 +241,12 @@ export default function Configuracoes() {
         // compat com fluxo legado que espera `role` string
         role: newUser.roles[0],
         roles: newUser.roles,
-        partner_id: newUser.partner_id || null,
-        partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
+        partner_id: null,
+        partner_papel: null,
         telefone: (() => { const c = validatePhoneBR(newUser.telefone, { fieldLabel: "Telefone" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
         cpf_cnpj: unmaskCpfCnpj(newUser.cpf_cnpj),
-        cliente_ids: newUserVinculos.map(v => v.cliente_id),
-        principal_cliente_id: principal,
+        cliente_ids: [],
+        principal_cliente_id: null,
       };
       const { data, error } = await supabase.functions.invoke("create-user", { body: payload });
       if (error) {
@@ -361,7 +264,6 @@ export default function Configuracoes() {
       toast({ title: "Usuário criado com sucesso" });
       setCreateOpen(false);
       setNewUser(initialNewUser);
-      setNewUserVinculos([]);
       setCreateErros({});
       setCreateResumo(null);
     },
@@ -380,7 +282,7 @@ export default function Configuracoes() {
       password: newUser.password,
       roles: newUser.roles,
       partner_id: newUser.partner_id,
-      cliente_ids: newUserVinculos.map(v => v.cliente_id),
+      cliente_ids: [],
     });
     setCreateErros(erros);
     const primeiro = primeiroCampoInvalido(erros);
@@ -396,7 +298,6 @@ export default function Configuracoes() {
   // Edit user dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
-  const [editVinculos, setEditVinculos] = useState<ClienteVinculo[]>([]);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -407,7 +308,6 @@ export default function Configuracoes() {
       setConfirmPassword("");
       setShowPassword(false);
       setEditUser(null);
-      setEditVinculos([]);
       setEditErros({});
       setEditResumo(null);
       setExigeRecargaEdicao(false);
@@ -419,14 +319,8 @@ export default function Configuracoes() {
   // Usamos editUser?.user_id para evitar resetar o estado quando outros campos (nome, email) mudam
   useEffect(() => {
     if (editOpen && editUser?.user_id) {
-      setEditVinculos(editUser.vinculos || []);
-      // Popula partner_id a partir do vínculo atual (fase multiportal)
-      const link = partnerLinkByUser(editUser.user_id);
-      if (link && !editUser.partner_id) {
-        setEditUser((prev: any) => (prev ? { ...prev, partner_id: link.partner_id } : prev));
-      }
     }
-  }, [editOpen, editUser?.user_id, partnerLinks]);
+  }, [editOpen, editUser?.user_id]);
 
   // Deep-link: ?tab=usuarios&user_id=... — o parâmetro é CONSUMIDO ao abrir,
   // para que fechar o diálogo não o reabra.
@@ -435,14 +329,14 @@ export default function Configuracoes() {
     const uid = searchParams.get("user_id");
     if (!uid || !isAdmin) return;
     if (deepLinkConsumido.current === uid) return;
-    if (allUsers.length === 0) return;
+    if (usersPage.length === 0) return;
     deepLinkConsumido.current = uid;
-    const found = allUsers.find((u: any) => u.user_id === uid);
+    const found = usersPage.find((u: any) => u.user_id === uid);
     if (found) { setEditUser(found); setEditOpen(true); }
     const sp = new URLSearchParams(searchParams);
     sp.delete("user_id");
     setSearchParams(sp, { replace: true });
-  }, [searchParams, allUsers, isAdmin, setSearchParams]);
+  }, [searchParams, usersPage, isAdmin, setSearchParams]);
 
 
   // Estado da edição: erros por campo, resumo e trava de recarga pós conflito/incerteza
@@ -469,7 +363,7 @@ export default function Configuracoes() {
           telefone: editUser.telefone ?? "",
           roles: desiredRoles,
           partner_id: editUser.partner_id ?? "",
-          cliente_ids: editVinculos.map((v) => v.cliente_id),
+          cliente_ids: [],
         },
         (v) => validatePhoneBR(v as any, { fieldLabel: "Telefone" }),
       );
@@ -478,10 +372,10 @@ export default function Configuracoes() {
       if (primeiro) throw erroLocalEdicao(erros[primeiro]!);
 
       // Limite de vínculos: rejeitado localmente, nunca truncado silenciosamente.
-      const excesso = validarLimiteClienteIds(editVinculos.map((v) => v.cliente_id));
+      const excesso = validarLimiteClienteIds([]);
       if (excesso) throw erroLocalEdicao(excesso);
 
-      const originalUser = allUsers.find((u) => u.user_id === editUser.user_id);
+      const originalUser = usersPage.find((u: any) => u.user_id === editUser.user_id);
       const originalRoles: string[] = originalUser?.roles ?? [];
       const isSelf = editUser.user_id === user?.id;
       const bloqueioAdmin = bloqueioAutoRemocaoAdmin(isSelf, originalRoles, desiredRoles);
@@ -503,10 +397,10 @@ export default function Configuracoes() {
           especialidade: editUser.especialidade,
         },
         roles: desiredRoles,
-        clienteIds: editVinculos.map((v) => v.cliente_id),
-        principalClienteId: resolverPrincipalClienteId(editVinculos),
+        clienteIds: [],
+        principalClienteId: null,
         // partner_id somente quando há papel B2B; caso contrário null (servidor deriva o papel)
-        partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
+        partnerId: null,
       });
 
       // Prazo rígido (~20s) cobrindo toda a espera, inclusive sessão/pré-fetch.
@@ -604,8 +498,13 @@ export default function Configuracoes() {
       <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg flex overflow-x-auto justify-start sm:justify-center gap-1 mb-4">
           <TabsTrigger value="perfil" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
-            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />Perfil
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />Meu perfil pessoal
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="empresa" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />Perfil da empresa
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger value="aparencia" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
               <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual
@@ -696,6 +595,45 @@ export default function Configuracoes() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="empresa">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Perfil da empresa</CardTitle>
+                <CardDescription>Dados institucionais registrados no cadastro da empresa.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {organizationProfile.isLoading ? (
+                  <p className="text-sm text-muted-foreground">Carregando dados da empresa…</p>
+                ) : organizationProfile.isError ? (
+                  <p className="text-sm text-destructive">Não foi possível carregar os dados da empresa.</p>
+                ) : (
+                  <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                    {[
+                      ["Razão social", organizationProfile.data?.razao_social],
+                      ["Nome fantasia", organizationProfile.data?.nome_fantasia],
+                      ["CNPJ", organizationProfile.data?.cnpj],
+                      ["E-mail corporativo", organizationProfile.data?.email_corporativo ?? organizationProfile.data?.dados?.email_contato],
+                      ["Telefone", formatTelefone(organizationProfile.data?.dados?.telefone)],
+                      ["Endereço", [organizationProfile.data?.dados?.logradouro, organizationProfile.data?.dados?.numero, organizationProfile.data?.dados?.bairro].filter(Boolean).join(", ")],
+                      ["Cidade / UF", [organizationProfile.data?.dados?.cidade, organizationProfile.data?.dados?.uf].filter(Boolean).join(" / ")],
+                      ["CEP", organizationProfile.data?.dados?.cep],
+                      ["Fuso horário", FUSOS_BRASIL.find((item) => item.value === (organizationProfile.data?.fuso_horario ?? organizationProfile.data?.dados?.fuso_horario))?.label ?? organizationProfile.data?.fuso_horario ?? organizationProfile.data?.dados?.fuso_horario],
+                      ["Idioma", organizationProfile.data?.dados?.idioma],
+                      ["Regime tributário", REGIMES_TRIBUTARIOS.find((item) => item.value === organizationProfile.data?.dados?.regime_tributario)?.label ?? organizationProfile.data?.dados?.regime_tributario],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="text-sm font-medium">{value || "—"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* Aparência Tab */}
         {isAdmin && (
@@ -809,7 +747,7 @@ export default function Configuracoes() {
                               className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto"
                               {...erroProps("roles")}
                             >
-                              {ACTIVE_ROLES.map(r => {
+                              {TENANT_MANAGEABLE_ROLES.map(r => {
                                 const checked = newUser.roles.includes(r);
                                 return (
                                   <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -826,25 +764,6 @@ export default function Configuracoes() {
                             </div>
                             {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
-                          {hasPartnerRole(newUser.roles) && (
-                            <div>
-                              <Label>Parceiro B2B vinculado *</Label>
-                              <Select value={newUser.partner_id} onValueChange={v => setNewUser({ ...newUser, partner_id: v })}>
-                                <SelectTrigger ref={registrarCampo("partner_id")} {...erroProps("partner_id")}><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
-                                <SelectContent>
-                                  {partners.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>
-                                      {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Papel no parceiro: <b>{partnerPapelFromRoles(newUser.roles) === "tecnico" ? "Técnico" : "Gestor"}</b>
-                              </p>
-                              {createErros.partner_id && <p id="erro-partner_id" className="text-xs text-destructive mt-1">{createErros.partner_id}</p>}
-                            </div>
-                          )}
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
                            <div><Label>Cargo</Label><Input value={newUser.cargo} onChange={e => setNewUser({ ...newUser, cargo: e.target.value })} /></div>
                            <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div>
@@ -854,18 +773,6 @@ export default function Configuracoes() {
                               <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
                             </>
                           )}
-                          <div ref={registrarCampo("cliente_ids")} tabIndex={-1} {...erroProps("cliente_ids")}>
-                            <ClientesVinculadosField
-                              clientes={clientes}
-                              value={newUserVinculos}
-                              onChange={setNewUserVinculos}
-                              required={newUser.roles.includes('cliente_produtor')}
-                              helperText={newUser.roles.includes('cliente_produtor')
-                                ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
-                                : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
-                            />
-                            {createErros.cliente_ids && <p id="erro-cliente_ids" className="text-xs text-destructive mt-1">{createErros.cliente_ids}</p>}
-                          </div>
 
                           <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
@@ -951,17 +858,6 @@ export default function Configuracoes() {
                           { label: "Identificação", value: formatCpfCnpj(u.cpf_cnpj) || "—" },
                           { label: "Telefone", value: formatTelefone(u.telefone) || "—" },
                           { label: "Cargo", value: u.cargo || "—" },
-                          { label: "Vínculos", value: (
-                            <div className="flex flex-wrap gap-1">
-                              {u.vinculos?.map((v: ClienteVinculo) => (
-                                <Badge key={v.cliente_id} variant={v.principal ? "default" : "outline"} className="text-[10px]">
-                                  {v.principal && <Star className="h-2 w-2 mr-1 fill-current" />}
-                                  {clienteNomeById(v.cliente_id)}
-                                </Badge>
-                              ))}
-                              {(!u.vinculos || u.vinculos.length === 0) && "—"}
-                            </div>
-                          )},
                         ]}
                         actions={
                           <div className="flex w-full gap-2 items-center justify-end" onClick={stopRowClick}>
@@ -981,14 +877,13 @@ export default function Configuracoes() {
                         <TableHead>Email</TableHead>
                         <TableHead>Perfil</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Vínculos</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {usuariosPagina.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : usuariosPagina.map((u: any) => (
                         <TableRow
@@ -1015,17 +910,6 @@ export default function Configuracoes() {
 
                               />
                               <span className="text-xs text-muted-foreground">{u.ativo === false ? "Inativo" : "Ativo"}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-[200px]">
-                              {u.vinculos?.map((v: ClienteVinculo) => (
-                                <Badge key={v.cliente_id} variant={v.principal ? "default" : "outline"} className="text-[10px]">
-                                  {v.principal && <Star className="h-2 w-2 mr-1 fill-current" />}
-                                  {clienteNomeById(v.cliente_id)}
-                                </Badge>
-                              ))}
-                              {(!u.vinculos || u.vinculos.length === 0) && <span className="text-muted-foreground text-xs">—</span>}
                             </div>
                           </TableCell>
                           <TableCell onClick={stopRowClick}>
@@ -1084,7 +968,7 @@ export default function Configuracoes() {
                     <div>
                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
                       <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
-                        {ACTIVE_ROLES.map(r => {
+                      {TENANT_MANAGEABLE_ROLES.map(r => {
                           const currentRoles: string[] = editUser.roles ?? [];
                           const checked = currentRoles.includes(r);
                           return (
@@ -1102,31 +986,7 @@ export default function Configuracoes() {
                           );
                         })}
                       </div>
-                      {(editUser.roles ?? []).includes("cliente_produtor") && (editUser.roles ?? []).length > 1 && (
-                        <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
-                      )}
                     </div>
-                    {hasPartnerRole(editUser.roles ?? []) && (
-                      <div>
-                        <Label>Parceiro B2B vinculado *</Label>
-                        <Select
-                          value={editUser.partner_id || ""}
-                          onValueChange={v => setEditUser({ ...editUser, partner_id: v })}
-                        >
-                          <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
-                          <SelectContent>
-                            {partners.map(p => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Papel no parceiro: <b>{partnerPapelFromRoles(editUser.roles ?? []) === "tecnico" ? "Técnico" : "Gestor"}</b>
-                        </p>
-                      </div>
-                    )}
                     <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
                     <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
                     <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
@@ -1137,15 +997,6 @@ export default function Configuracoes() {
                         <div><Label>Especialidade</Label><Input value={editUser.especialidade || ""} onChange={e => setEditUser({ ...editUser, especialidade: e.target.value })} /></div>
                       </>
                     )}
-                    <ClientesVinculadosField
-                      clientes={clientes}
-                      value={editVinculos}
-                      onChange={setEditVinculos}
-                      required={editUser.roles?.includes('cliente_produtor')}
-                      helperText={editUser.roles?.includes('cliente_produtor')
-                        ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
-                        : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
-                    />
                     {editResumo && (
                       <p role="alert" className="text-xs text-destructive border border-destructive/40 rounded-md p-2">
                         {editResumo}

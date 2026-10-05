@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   cnpjValido,
+  emailEmpresaValido,
+  FUSOS_BRASIL,
+  fusoHorarioValido,
   normalizarCnpj,
   onboardingBloqueia,
   pendenciasOnboarding,
+  REGIMES_TRIBUTARIOS,
+  regimeTributarioValido,
   sanitizarPayloadOnboarding,
   transicaoPermitida,
 } from "@/lib/saas/orgOnboarding";
@@ -39,6 +44,20 @@ describe("onboarding de empresa", () => {
     expect(pendenciasOnboarding(completo)).toEqual([]);
     expect(pendenciasOnboarding({ ...completo, confirmado: false })).toContain("Confirmação");
     expect(pendenciasOnboarding({ ...completo, uf: "São Paulo" })).toContain("UF");
+  });
+  it("normaliza contato, valida telefone e rejeita e-mail inválido", () => {
+    const r = sanitizarPayloadOnboarding({ telefone: "(11) 98765-4321", email_contato: " CONTATO@EMPRESA.COM.BR " });
+    expect(r.telefone).toBe("11987654321");
+    expect(r.email_contato).toBe("contato@empresa.com.br");
+    expect(emailEmpresaValido("invalido")).toBe(false);
+    expect(pendenciasOnboarding({ ...completo, telefone: "119" })).toContain("Telefone válido");
+  });
+  it("usa fusos IANA e regimes tributários canônicos", () => {
+    expect(FUSOS_BRASIL.map((item) => item.value)).toContain("America/Campo_Grande");
+    expect(fusoHorarioValido("America/Sao_Paulo")).toBe(true);
+    expect(fusoHorarioValido("GMT-3")).toBe(false);
+    expect(REGIMES_TRIBUTARIOS.map((item) => item.value)).toContain("simples_nacional");
+    expect(regimeTributarioValido("texto livre")).toBe(false);
   });
   it("descarta troca de organization_id/status pelo cliente", () => {
     const r = sanitizarPayloadOnboarding({ ...completo, organization_id: "x", status: "ativa", id: "y" });
