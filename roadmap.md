@@ -1,5 +1,13 @@
 # D51.5 — Remediação horizontal multi-tenant
 
+## D51.6 — Fechamento funcional multi-tenant
+
+- [x] Gate 1 — classificar `consultor-arquivos` como mídia técnica sensível e recriar o bucket privado
+- [ ] Gate 1 — aplicar paths por organização, policies Storage e validar acesso cruzado
+- [ ] Gate 2 — executar matriz A/B com duas sessões Auth reais e cleanup integral
+- [ ] Gate 3 — validar estado vivo, testes, linter/scanner, smoke A/B e consolidar evidências
+- [ ] Decisão final — homologação de segurança e funcionalidade
+
 - [x] Fase 1 — Financeiro e Storage: tenant explícito; relatórios inseguros bloqueados
 - [x] Fase 2 — Catálogo destrutivo: somente Superadmin e sem fallback no navegador
 - [x] Fase 3 — Portal: cliente validado no tenant antes da leitura privilegiada

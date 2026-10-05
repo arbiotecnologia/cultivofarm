@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { savePendingRegistro, savePendingFoto } from "@/lib/offlineDb";
@@ -297,7 +298,7 @@ export default function MobileRegistrarOcorrencia() {
           const file = fotos[i];
           const ext = file.name.split(".").pop() || "jpg";
           // Path determinístico usando client_uuid para evitar arquivos órfãos em retries
-          const path = `${registroId}/foto/${clientUuid}_${i}.${ext}`;
+          const path = await buildTenantStoragePath(`${registroId}/foto/${clientUuid}_${i}.${ext}`);
 
           const { error: uploadError } = await supabase.storage
             .from("consultor-arquivos")

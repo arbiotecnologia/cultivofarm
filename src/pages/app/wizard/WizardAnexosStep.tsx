@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
@@ -58,7 +59,7 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
     try {
       const clientUuid = crypto.randomUUID();
       const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-      const path = `anexos/${user.id}/${remoteRegistroId}/${clientUuid}.${ext}`;
+      const path = await buildTenantStoragePath(`anexos/${user.id}/${remoteRegistroId}/${clientUuid}.${ext}`);
       const { error: upErr } = await supabase.storage
         .from("consultor-arquivos")
         .upload(path, file, { contentType: file.type, upsert: false });
