@@ -5,8 +5,6 @@ import {
   mapearErroCriacaoUsuario,
   lerCorpoErroFuncao,
   criacaoBemSucedida,
-  filtrarUsuariosPorBusca,
-  paginar,
   ERRO_GENERICO_CRIACAO,
   REGRA_SENHA,
   senhaValida,
@@ -14,7 +12,6 @@ import {
   primeiroCampoInvalidoEdicao,
   bloqueioAutoDesativacao,
   bloqueioAutoRemocaoAdmin,
-  exigirUmaLinha,
   type ErrosEdicaoUsuario,
 
 
@@ -28,7 +25,6 @@ import {
 import {
   RPC_EDITAR_USUARIO,
   construirArgsEdicao,
-  resolverPrincipalClienteId,
   edicaoBemSucedida,
   validarLimiteClienteIds,
   classificarErroRpcEdicao,
@@ -136,6 +132,7 @@ export default function Configuracoes() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [pagina, setPagina] = useState(1);
 
   const {
     data: allUsers = [],
@@ -200,7 +197,6 @@ export default function Configuracoes() {
   }, [usersPage]);
 
   // Paginação client-side sobre o conjunto JÁ filtrado (nada é truncado silenciosamente)
-  const [pagina, setPagina] = useState(1);
   useEffect(() => { setPagina(1); }, [filterRole, filterStatus, debouncedSearchTerm]);
   const paginacao = useMemo(() => ({
     total: allUsers.total ?? 0,

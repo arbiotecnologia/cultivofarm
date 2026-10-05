@@ -104,6 +104,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    const TENANT_USER_ROLES = new Set([
+      "administrador", "gestor", "consultor_tecnico", "aplicador", "operador_onfarm",
+      "tecnico_agronomo", "producao", "administrativo", "financeiro", "gestor_comercial",
+    ]);
+    if (rolesArr.some((candidate) => !TENANT_USER_ROLES.has(candidate))) {
+      return new Response(JSON.stringify({ error: "tenant_role_unavailable" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (password.length < 6) {
       return new Response(JSON.stringify({ error: "A senha deve ter no mínimo 6 caracteres." }), {
         status: 400,
