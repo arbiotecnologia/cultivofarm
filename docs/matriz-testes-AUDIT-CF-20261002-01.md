@@ -321,3 +321,6 @@ Fase 0: **PASS**. E01: **PASS**. O PASS SMTPi de `2026-10-03` é histórico e n�
 | D51.3-G-002 | Teste A/B autenticado com fixtures | NOT RUN | não foram criados Auth users/fixtures permanentes; contenção foi comprovada pela definição SQL e negativas sem execução pública |
 | D51.3-H-001 | Índices | PASS | `profiles_organization_id_idx` já existe; nenhuma consulta tenant operacional foi habilitada para justificar novos índices |
 | D51.3-I-001 | Rollback/forward-fix | DOCUMENTADO | restauração só após ownership tenant; reativação indicador a indicador com vínculo, RLS, índice e teste A/B |
+| D51.3-I-002 | Qualidade global | PASS | 28 focados, 5.420 globais/4 skipped, typecheck e build verdes; scanner 10 Info/zero P0/P1 |
+| D51.3-I-003 | Linter Supabase | PASS com baseline | 492 achados preexistentes; nenhum novo achado atribuído às migrations D51.3 |
+| D51.3-I-004 | Smoke passivo recovery | PASS | `/reset-password` sem link exibe negativa segura, zero campo de senha e zero erro de página; nenhuma mutação |
