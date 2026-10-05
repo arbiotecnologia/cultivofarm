@@ -28,7 +28,6 @@ import {
   useModulosFeaturesSaaS,
   useOrganizacoesSaaS,
   usePlanosSaaS,
-  useVersoesPlanosSaaS,
 } from "@/hooks/usePlataformaSaaS";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -106,7 +105,6 @@ export default function PlataformaHome() {
   const [aba, setAba] = useState("planos");
   const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
   const planos = usePlanosSaaS();
-  const versoes = useVersoesPlanosSaaS();
   const catalogo = useModulosFeaturesSaaS();
   const assinaturas = useAssinaturasSaaS();
   const historico = useHistoricoAssinaturasSaaS();
@@ -115,7 +113,6 @@ export default function PlataformaHome() {
   const nomeOrg = (id: string) =>
     organizacoes.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
   const nomePlano = (id: string) => planos.data?.find((p) => p.id === id)?.name ?? id.slice(0, 8);
-  const versaoPlano = (id: string | null) => versoes.data?.find((v) => v.id === id);
 
   return (
     <main className="min-h-dvh bg-background">
@@ -205,7 +202,6 @@ export default function PlataformaHome() {
                         <TableRow>
                           <TableHead>Plano</TableHead>
                           <TableHead>Identificador</TableHead>
-                          <TableHead>Versão</TableHead>
                           <TableHead>Situação</TableHead>
                           <TableHead>Criado em</TableHead>
                         </TableRow>
@@ -330,14 +326,13 @@ export default function PlataformaHome() {
                           <TableRow key={a.id}>
                             <TableCell className="font-medium">{nomeOrg(a.organization_id)}</TableCell>
                             <TableCell>{nomePlano(a.plan_id)}</TableCell>
-                            <TableCell>{a.plan_version_id ? `v${versaoPlano(a.plan_version_id)?.version_number ?? "—"}` : <Badge variant="outline">Legado bloqueado</Badge>}</TableCell>
                             <TableCell>
                               <Badge variant={a.status === "ACTIVE" ? "default" : "secondary"}>
                                 {STATUS_LABEL[a.status] ?? a.status}
                               </Badge>
                             </TableCell>
                             <TableCell>{dataCurta(a.started_at)}</TableCell>
-                            <TableCell>{dataCurta(a.status === "TRIAL" ? a.trial_ends_at : a.current_period_end)}</TableCell>
+                            <TableCell>{dataCurta(a.current_period_end)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

@@ -31,15 +31,10 @@ const db = supabase as any;
 interface AssinaturaPropria {
   id: string;
   plan_id: string;
-  plan_version_id: string | null;
   status: string;
   started_at: string | null;
-  trial_ends_at: string | null;
   current_period_end: string | null;
   cancel_at: string | null;
-  price_snapshot: number | null;
-  currency_snapshot: string | null;
-  billing_cycle_snapshot: string | null;
 }
 
 interface PlanoInfo {
@@ -116,7 +111,7 @@ export function MeuPlanoTab() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organization_subscriptions")
-        .select("id, plan_id, plan_version_id, status, started_at, trial_ends_at, current_period_end, cancel_at, price_snapshot, currency_snapshot, billing_cycle_snapshot")
+        .select("id, plan_id, status, started_at, current_period_end, cancel_at")
         .eq("organization_id", orgId)
         .order("started_at", { ascending: false })
         .limit(1);
@@ -258,7 +253,7 @@ export function MeuPlanoTab() {
             }}
           />
           {assinatura.data && (
-            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <dt className="text-xs text-muted-foreground">Plano</dt>
                 <dd className="text-sm font-medium">
@@ -267,10 +262,6 @@ export function MeuPlanoTab() {
                 {plano.data?.description && (
                   <dd className="text-xs text-muted-foreground">{plano.data.description}</dd>
                 )}
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Contrato</dt>
-                <dd className="text-sm">{assinatura.data.plan_version_id ? "Versionado" : "Legado — acesso bloqueado"}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Situação</dt>
@@ -285,8 +276,8 @@ export function MeuPlanoTab() {
                 <dd className="text-sm">{dataCurta(assinatura.data.started_at)}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">{status === "TRIAL" ? "Teste até" : "Vigência até"}</dt>
-                <dd className="text-sm">{dataCurta(status === "TRIAL" ? assinatura.data.trial_ends_at : assinatura.data.current_period_end)}</dd>
+                <dt className="text-xs text-muted-foreground">Vigência até</dt>
+                <dd className="text-sm">{dataCurta(assinatura.data.current_period_end)}</dd>
               </div>
             </dl>
           )}
