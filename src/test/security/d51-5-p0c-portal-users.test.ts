@@ -6,6 +6,7 @@ const ROOT = resolve(__dirname, "../../..");
 const edge = readFileSync(resolve(ROOT, "supabase/functions/list-portal-users/index.ts"), "utf8");
 const ui = readFileSync(resolve(ROOT, "src/components/clientes/AcessoPortalTab.tsx"), "utf8");
 const auth = readFileSync(resolve(ROOT, "src/hooks/useAuth.tsx"), "utf8");
+const portalContext = readFileSync(resolve(ROOT, "src/lib/activePortalContext.ts"), "utf8");
 
 describe("D51.5 P0-C — isolamento de usuários do portal", () => {
   it("valida JWT, organização ativa e papel antes do acesso privilegiado", () => {
@@ -40,7 +41,9 @@ describe("D51.5 P0-C — isolamento de usuários do portal", () => {
   it("recarrega na troca de identidade e o Auth limpa o cache", () => {
     expect(ui).toContain("const { user } = useAuth()");
     expect(ui).toContain("[clienteId, user?.id]");
+    expect(ui).toContain("if (!current) return");
     expect(auth).toMatch(/if \(identityChanged\) \{[\s\S]*?queryClient\.clear\(\);/);
     expect(auth).toMatch(/const signOut = async \(\) => \{[\s\S]*?queryClient\.clear\(\);/);
+    expect(portalContext).toContain('localStorage.removeItem(PORTAL_CLIENT_STORAGE_KEY)');
   });
 });

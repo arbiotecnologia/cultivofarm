@@ -31,22 +31,33 @@ export function AcessoPortalTab({ clienteId }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const load = async () => {
-    if (!clienteId) return;
-    setLoading(true);
+  useEffect(() => {
+    let current = true;
     setUsers([]);
-    try {
-      const { data, error } = await supabase.functions.invoke("list-portal-users", { body: { cliente_id: clienteId } });
-      if (error) throw error;
-      setUsers(data?.users ?? []);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao listar usuários do portal");
-    } finally {
+    if (!clienteId || !user?.id) {
       setLoading(false);
+      return () => { current = false; };
     }
-  };
 
-  useEffect(() => { load(); }, [clienteId, user?.id]);
+    setLoading(true);
+    void supabase.functions
+      .invoke("list-portal-users", { body: { cliente_id: clienteId } })
+      .then(({ data, error }) => {
+        if (!current) return;
+        if (error) throw error;
+        setUsers(data?.users ?? []);
+      })
+      .catch((error: unknown) => {
+        if (!current) return;
+        const message = error instanceof Error ? error.message : "Erro ao listar usuários do portal";
+        toast.error(message);
+      })
+      .finally(() => {
+        if (current) setLoading(false);
+      });
+
+    return () => { current = false; };
+  }, [clienteId, user?.id]);
 
   if (!clienteId) {
     return <p className="text-sm text-muted-foreground">Salve o cliente primeiro para visualizar quem tem acesso.</p>;
