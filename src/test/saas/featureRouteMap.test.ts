@@ -13,8 +13,9 @@ describe("S3 — mapa rota → funcionalidade", () => {
     expect(featureForPath("/clientes")).toBeNull();
     expect(featureForPath("/")).toBeNull();
   });
-  it("estado desconhecido mantém comportamento anterior", () => {
-    expect(isPathEntitled("/fiscal/documentos", { status: "unknown" })).toBe(true);
+  it("estado desconhecido bloqueia rotas contratadas e preserva rotas livres", () => {
+    expect(isPathEntitled("/fiscal/documentos", { status: "unknown" })).toBe(false);
+    expect(isPathEntitled("/clientes", { status: "unknown" })).toBe(true);
   });
   it("bloqueia rota fora do plano e libera a contratada", () => {
     const st = { status: "ready" as const, features: new Set(["contas_receber"]) };

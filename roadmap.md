@@ -2,13 +2,13 @@
 
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
 
-- [ ] Fase 0 — auditar estado vivo de planos, assinaturas, cobrança, interfaces e jobs
-- [ ] Fases 1–2 — endurecer estados, transições, histórico e autorização server-side
-- [ ] Fase 3 — certificar integração de pagamento existente ou registrar bloqueio sem fluxo paralelo
-- [ ] Fases 4–7 — validar limites, trial, inadimplência, suspensão, reativação e auditoria imutável
-- [ ] Fase 8 — executar matriz E2E controlada e limpar integralmente as fixtures
-- [ ] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
-- [ ] Fase 10 — consolidar relatório, rollback/forward-fix e decisão GO/NO-GO
+- [x] Fase 0 — auditar estado vivo de planos, assinaturas, cobrança, interfaces e jobs
+- [x] Fases 1–2 — endurecer estados, transições, histórico e autorização server-side
+- [x] Fase 3 — registrar pagamento externo BLOCKED/NO-GO, sem fluxo paralelo
+- [x] Fases 4–7 — validar limites, trial, inadimplência, suspensão, reativação e auditoria imutável
+- [x] Fase 8 — matriz negativa validada; prova positiva BLOCKED sem contrato real, sem criar fixtures comerciais falsas
+- [x] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
+- [x] Fase 10 — consolidar relatório, rollback/forward-fix e decisão GO/NO-GO
 
 ## D51.6 — Fechamento funcional multi-tenant
 
@@ -38,3 +38,4 @@
 - [x] Gate P0-D Produção/RBAC vivo — isolamento estrutural PASS; RPCs da esteira sem tenant explícito bloqueadas; A/B autenticado sem fixtures NOT RUN; homologação funcional NO-GO
 - [x] Gate P1 Fiscal — RLS alinhada ao ACCESS_MAP; Edges e Storage validam ator/recurso antes do service role; emissão produtiva bloqueada; A/B funcional NOT RUN
 - [x] Gate P1 Sistêmico — role-only removido das superfícies alcançáveis; configuração e catálogo globais restritos a Platform Superadmin; legado sem ownership FAIL-CLOSED
+- [x] Relatório final D52 separado em Segurança, Ciclo interno SaaS e Pagamento externo.
