@@ -69,6 +69,8 @@ import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import { CreditCard } from "lucide-react";
 import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
+import { useOnboardingState } from "@/hooks/useOrgOnboarding";
+import { FUSOS_BRASIL, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 
 
 
@@ -86,6 +88,7 @@ export default function Configuracoes() {
   const canMeuPlano =
     (roles ?? []).includes("administrador") || (roles ?? []).includes("superadmin");
   const canFin = isAdmin || role === "gestor" || role === "financeiro";
+  const organizationProfile = useOnboardingState(isAdmin && !!profile?.organization_id);
   const tabParam = searchParams.get("tab");
   const initialTab =
     tabParam === "usuarios" && isAdmin
@@ -94,7 +97,7 @@ export default function Configuracoes() {
         ? "financeiro"
         : tabParam === "meu-plano" && canMeuPlano
           ? "meu-plano"
-          : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
+          : tabParam && ["perfil", "empresa", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
             ? tabParam
             : "perfil";
 
@@ -495,8 +498,13 @@ export default function Configuracoes() {
       <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg flex overflow-x-auto justify-start sm:justify-center gap-1 mb-4">
           <TabsTrigger value="perfil" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
-            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />Perfil
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />Meu perfil pessoal
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="empresa" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />Perfil da empresa
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger value="aparencia" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
               <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual
@@ -587,6 +595,45 @@ export default function Configuracoes() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="empresa">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Perfil da empresa</CardTitle>
+                <CardDescription>Dados institucionais registrados no cadastro da empresa.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {organizationProfile.isLoading ? (
+                  <p className="text-sm text-muted-foreground">Carregando dados da empresa…</p>
+                ) : organizationProfile.isError ? (
+                  <p className="text-sm text-destructive">Não foi possível carregar os dados da empresa.</p>
+                ) : (
+                  <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                    {[
+                      ["Razão social", organizationProfile.data?.razao_social],
+                      ["Nome fantasia", organizationProfile.data?.nome_fantasia],
+                      ["CNPJ", organizationProfile.data?.cnpj],
+                      ["E-mail corporativo", organizationProfile.data?.email_corporativo ?? organizationProfile.data?.dados?.email_contato],
+                      ["Telefone", formatTelefone(organizationProfile.data?.dados?.telefone)],
+                      ["Endereço", [organizationProfile.data?.dados?.logradouro, organizationProfile.data?.dados?.numero, organizationProfile.data?.dados?.bairro].filter(Boolean).join(", ")],
+                      ["Cidade / UF", [organizationProfile.data?.dados?.cidade, organizationProfile.data?.dados?.uf].filter(Boolean).join(" / ")],
+                      ["CEP", organizationProfile.data?.dados?.cep],
+                      ["Fuso horário", FUSOS_BRASIL.find((item) => item.value === (organizationProfile.data?.fuso_horario ?? organizationProfile.data?.dados?.fuso_horario))?.label ?? organizationProfile.data?.fuso_horario ?? organizationProfile.data?.dados?.fuso_horario],
+                      ["Idioma", organizationProfile.data?.dados?.idioma],
+                      ["Regime tributário", REGIMES_TRIBUTARIOS.find((item) => item.value === organizationProfile.data?.dados?.regime_tributario)?.label ?? organizationProfile.data?.dados?.regime_tributario],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="text-sm font-medium">{value || "—"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* Aparência Tab */}
         {isAdmin && (
