@@ -1120,7 +1120,7 @@ function RegrasPanel({ canMutate }: { canMutate: boolean }) {
               onChange={(e) => setForm({ ...form, perfil: e.target.value as typeof form.perfil })}
             >
               <option value="">—</option>
-              <option value="administrador">administrador</option>
+              <option value="administrador">Administrador da empresa</option>
               <option value="gestor">gestor</option>
               <option value="tecnico_agronomo">tecnico_agronomo</option>
               <option value="consultor_tecnico">consultor_tecnico</option>

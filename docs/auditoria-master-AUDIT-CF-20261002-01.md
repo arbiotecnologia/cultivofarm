@@ -10,6 +10,10 @@
 - Após o E01 humano, a auditoria abriu somente a janela SMTP global/e-mail pelo mecanismo auditável; nenhum convite, usuário ou envio foi criado.
 - Leaked Password Protection: risco temporariamente aceito, aberto e não homologado.
 
+### D51.3.1 — refinamento UX do papel Administrador
+
+O papel operacional interno permanece persistido como `administrador`, com os mesmos acessos e a mesma home. Seu rótulo centralizado passou de **Administrador** para **Administrador da empresa**, refletido em perfil, cadastro, edição, filtros e listagens de usuários. O seletor técnico de perfil no módulo Comunicação preserva `value="administrador"` e exibe o novo nome. A lista de provisionamento da plataforma também explicita que os registros são administradores da empresa. **Superadmin de Plataforma** permaneceu distinto; nenhuma rota, `ACCESS_MAP`, `getHomeForRole`, permissão, RLS ou objeto de banco foi alterado.
+
 ### Correção de visibilidade do diagnóstico SMTP em `/plataforma`
 
 A investigação confirmou que `/plataforma` já renderizava o componente global único `ComunicacaoConfigTab`; não havia segunda implementação nem necessidade de nova tela. O pacote oficial também continha os textos das duas etapas. A causa foi uma condição visual no próprio componente: todo o diagnóstico era renderizado somente quando `smtp.password_configured` era verdadeiro. Isso permitia que a aba carregasse normalmente, mas ocultasse tanto **Testar conexão do provedor** quanto **Enviar teste** conforme a resposta sanitizada recebida pela sessão.

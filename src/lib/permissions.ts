@@ -368,7 +368,7 @@ export function canWrite(role: string | null, path: string): boolean {
 }
 
 export const ROLE_LABELS: Record<string, string> = {
-  administrador: "Administrador",
+  administrador: "Administrador da empresa",
   gestor: "Gestor",
   consultor_tecnico: "Consultor Técnico",
   aplicador: "Aplicador",

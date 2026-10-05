@@ -302,7 +302,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Administradores provisionados</CardTitle>
+          <CardTitle className="text-base">Administradores da empresa provisionados</CardTitle>
           <CardDescription>Convites já enviados por empresa.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -316,7 +316,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
           )}
           {convites.data && convites.data.length === 0 && (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhum administrador provisionado ainda.
+              Nenhum administrador da empresa provisionado ainda.
             </p>
           )}
           {convites.data && convites.data.length > 0 && (
