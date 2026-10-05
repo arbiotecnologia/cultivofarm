@@ -1,3 +1,4 @@
+- [ ] **D51.4 — isolamento multi-tenant e refinamento empresarial:** Gate 1 corrigir e homologar gestão de usuários; Gate 2 refinar onboarding/perfil somente após Gate 1 PASS; Gate 3 auditar horizontalmente módulos tenant e corrigir P0/P1; concluir com testes A/B, scanner, advisors e relatório GO/NO-GO.
 # Roadmap
 
 - [x] **D51.3.1 — refinamento UX do papel Administrador:** o rótulo operacional passou a **Administrador da empresa** em perfil, gestão de usuários, filtros, Comunicação e provisionamento, mantendo a string interna `administrador`. Superadmin, autorização, rotas, `ACCESS_MAP`, `getHomeForRole`, RLS e banco permaneceram inalterados. Testes focados, typecheck/build, publicação única e smoke passivo registrados na auditoria.
