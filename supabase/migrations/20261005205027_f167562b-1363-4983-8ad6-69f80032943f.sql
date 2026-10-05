@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.d51_5_can_access_estoque_embalagem(uuid);

@@ -19858,10 +19858,6 @@ export type Database = {
           registro_id: string
         }[]
       }
-      d51_5_can_access_estoque_embalagem: {
-        Args: { _estoque_id: string }
-        Returns: boolean
-      }
       financial_storage_object_permitted: {
         Args: { _bucket: string; _name: string }
         Returns: boolean
