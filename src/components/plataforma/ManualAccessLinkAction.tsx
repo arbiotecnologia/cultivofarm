@@ -36,16 +36,18 @@ export function ManualAccessLinkAction({ target, ambiguous = false, label = "Ger
   const [confirming, setConfirming] = useState(false);
   const [manualLink, setManualLink] = useState<string | null>(null);
   const running = useRef(false);
+  const resetRef = useRef(gerar.reset);
+  resetRef.current = gerar.reset;
 
   const clearLink = useCallback(() => {
     setManualLink(null);
-    gerar.reset();
-  }, [gerar]);
+    resetRef.current();
+  }, []);
 
   useEffect(() => () => {
     setManualLink(null);
-    gerar.reset();
-  }, [gerar]);
+    resetRef.current();
+  }, []);
 
   const generate = () => {
     if (running.current) return;

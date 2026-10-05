@@ -17,6 +17,7 @@ import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/com
 import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 import { getPlatformInviteRedirectUrl } from "./redirect-policy.ts";
+import { manualLinkAuditState, manualLinkResponseHeaders, parseDeliveryMode } from "./manual-link-policy.ts";
 
 const json = (body: unknown, status = 200, origin: string | null = null, noStore = false) =>
   new Response(JSON.stringify(body), {
@@ -24,7 +25,7 @@ const json = (body: unknown, status = 200, origin: string | null = null, noStore
     headers: {
       ...corsHeadersFor(origin),
       "Content-Type": "application/json",
-      ...(noStore ? { "Cache-Control": "no-store, private" } : {}),
+      ...(noStore ? manualLinkResponseHeaders() : {}),
     },
   });
 
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
       (body as Record<string, unknown>).responsavel_principal !== false;
     const confirmAmbiguousEmailRetry =
       (body as Record<string, unknown>).confirm_ambiguous_email_retry === true;
-    const deliveryMode = String((body as Record<string, unknown>).delivery_mode ?? "email");
+    const deliveryMode = parseDeliveryMode((body as Record<string, unknown>).delivery_mode);
 
     if (!UUID_RE.test(organizationId)) return respond({ error: "Selecione a empresa." }, 400);
     if (nome.length < 3 || nome.length > 200) return respond({ error: "Informe o nome completo." }, 400);
@@ -124,7 +125,7 @@ Deno.serve(async (req) => {
     if (modo !== "link" && modo !== "senha_temporaria") {
       return respond({ error: "Modo de acesso inválido." }, 400);
     }
-    if (deliveryMode !== "email" && deliveryMode !== "manual_link") {
+    if (!deliveryMode) {
       return respond({ error: "Forma de entrega inválida." }, 400);
     }
     if (deliveryMode === "manual_link" && modo !== "link") {
@@ -195,18 +196,14 @@ Deno.serve(async (req) => {
     let criamosUsuario = false;
     const auditManualLink = async (outcome: "success" | "failure", reason?: string) => {
       if (!isManualLink) return;
-      await adminClient.from("comunicacao_audit_log").insert({
+      const { error } = await adminClient.from("comunicacao_audit_log").insert({
         acao: "manual_access_link_generated",
         entidade: "platform_org_admin_invites",
         entity_id: jobId,
         actor_id: callerId,
-        after_state: {
-          organization_id: organizationId,
-          origin: "platform_admin",
-          outcome,
-          reason: reason ?? "fallback de entrega",
-        },
+        after_state: manualLinkAuditState(organizationId, outcome, reason),
       });
+      return !error;
     };
 
     // Retomada Auth↔DB: busca server-only exige o marcador imutável da intenção
@@ -344,7 +341,10 @@ Deno.serve(async (req) => {
         return respond({ error: "Convite sem link válido.", code: "link_missing" }, 500);
       }
       if (isManualLink) {
-        await auditManualLink("success");
+        const audited = await auditManualLink("success");
+        if (!audited) {
+          return respond({ error: "Não foi possível registrar a geração do link.", code: "manual_link_audit_failed" }, 500, true);
+        }
         return respond({
           success: true,
           user_id: userId,
