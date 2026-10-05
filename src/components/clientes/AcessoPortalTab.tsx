@@ -8,6 +8,7 @@ import { ExternalLink, Info, Loader2 } from "lucide-react";
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { useNavigate } from "react-router-dom";
 import { ROLE_LABELS, ROLE_VARIANTS } from "@/lib/permissions";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   clienteId: string;
@@ -28,10 +29,12 @@ export function AcessoPortalTab({ clienteId }: Props) {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<PortalUser[]>([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const load = async () => {
     if (!clienteId) return;
     setLoading(true);
+    setUsers([]);
     try {
       const { data, error } = await supabase.functions.invoke("list-portal-users", { body: { cliente_id: clienteId } });
       if (error) throw error;
@@ -43,7 +46,7 @@ export function AcessoPortalTab({ clienteId }: Props) {
     }
   };
 
-  useEffect(() => { load(); }, [clienteId]);
+  useEffect(() => { load(); }, [clienteId, user?.id]);
 
   if (!clienteId) {
     return <p className="text-sm text-muted-foreground">Salve o cliente primeiro para visualizar quem tem acesso.</p>;
