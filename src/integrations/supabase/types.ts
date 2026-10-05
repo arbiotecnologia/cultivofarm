@@ -20995,6 +20995,21 @@ export type Database = {
           }
         | {
             Args: {
+              p_actor_id: string
+              p_confirm_ambiguous_email_retry?: boolean
+              p_cpf_cnpj?: string
+              p_delivery_mode?: string
+              p_email: string
+              p_modo_acesso?: string
+              p_nome: string
+              p_organization_id: string
+              p_responsavel_principal?: boolean
+              p_telefone?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
               p_cpf_cnpj?: string
               p_email: string
               p_modo_acesso?: string
