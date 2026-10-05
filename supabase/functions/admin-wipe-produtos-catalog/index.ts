@@ -1,6 +1,6 @@
 // Edge Function: admin-wipe-produtos-catalog (v1.1)
 // Objetivo: wipe total de `produtos` e cascata operacional/fiscal.
-// Autorização: administrador (via user_roles), JWT obrigatório.
+// Autorização: Superadmin de Plataforma, JWT e confirmação explícita obrigatórios.
 // NÃO executa nenhuma alteração de schema. Apenas DELETE de dados.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -82,15 +82,17 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE);
 
-    // Autorização — apenas administrador
-    const { data: roleRow, error: roleErr } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "administrador")
-      .maybeSingle();
+    const { data: isSuperadmin, error: roleErr } = await userClient.rpc(
+      "is_platform_superadmin",
+      { _user_id: userId },
+    );
     if (roleErr) return json(origin, { error: "role_check_failed" }, 500);
-    if (!roleRow) return json(origin, { error: "forbidden" }, 403);
+    if (!isSuperadmin) return json(origin, { error: "forbidden" }, 403);
+
+    const body = await req.json().catch(() => null) as { confirmation?: string } | null;
+    if (body?.confirmation !== "APAGAR CATALOGO GLOBAL") {
+      return json(origin, { error: "explicit_confirmation_required" }, 409);
+    }
 
     // 1) Preservar histórico do consultor: apenas anular referência a produto
     const nullified: Record<string, number> = {};

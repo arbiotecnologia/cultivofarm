@@ -1,10 +1,10 @@
 # D51.5 — Remediação horizontal multi-tenant
 
-- [ ] Fase 1 — Financeiro e Storage
-- [ ] Fase 2 — Catálogo destrutivo
-- [ ] Fase 3 — Portal
-- [ ] Fase 4 — Produção e inserts
-- [ ] Fase 5 — Fiscal
-- [ ] Fase 6 — Policies/RPCs baseadas só em papel
-- [ ] Fase 7 — Configuração global legada
-- [ ] Matriz A/B, validações, deploy, smoke e relatório final
+- [x] Fase 1 — Financeiro e Storage: tenant explícito; relatórios inseguros bloqueados
+- [x] Fase 2 — Catálogo destrutivo: somente Superadmin e sem fallback no navegador
+- [x] Fase 3 — Portal: cliente validado no tenant antes da leitura privilegiada
+- [x] Fase 4 — Produção e inserts: tenant explícito com guarda server-side
+- [x] Fase 5 — Fiscal: tenant explícito; legado sem vínculo bloqueado
+- [x] Fase 6 — Policies/RPCs baseadas só em papel: RLS restritiva transversal
+- [x] Fase 7 — Configuração global legada: mantida global sem dados tenant
+- [ ] Matriz A/B autenticada, validações, deploy, smoke e relatório final

@@ -1,13 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  if (origin && !isTrustedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403 });
+  }
+  const corsHeaders = corsHeadersFor(origin);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -30,6 +30,15 @@ Deno.serve(async (req) => {
       });
     }
     const callerId = claimsData.claims.sub;
+
+    const { data: actorOrg, error: actorOrgError } = await anonClient.rpc(
+      "h15_actor_organization",
+    );
+    if (actorOrgError || !actorOrg) {
+      return new Response(JSON.stringify({ error: "tenant_context_required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -55,7 +64,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Busca vínculos via tabela N:N
+    const { data: cliente, error: clienteError } = await admin
+      .from("clientes")
+      .select("id")
+      .eq("id", cliente_id)
+      .eq("organization_id", actorOrg)
+      .maybeSingle();
+    if (clienteError) throw clienteError;
+    if (!cliente) {
+      return new Response(JSON.stringify({ error: "cliente_not_found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Busca vínculos somente após validar o cliente no tenant do ator.
     const { data: vinculos, error: vErr } = await admin
       .from("user_clientes")
       .select("user_id, principal")
@@ -74,7 +96,7 @@ Deno.serve(async (req) => {
     );
 
     const [{ data: profiles }, { data: rolesRows }] = await Promise.all([
-      admin.from("profiles").select("id, user_id, nome, email, telefone, ativo, created_at").in("user_id", userIds),
+      admin.from("profiles").select("id, user_id, nome, email, telefone, ativo, created_at").eq("organization_id", actorOrg).in("user_id", userIds),
       admin.from("user_roles").select("user_id, role").in("user_id", userIds),
     ]);
 
@@ -106,7 +128,8 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
+    console.error("list_portal_users_failed", err instanceof Error ? err.name : "unknown");
+    return new Response(JSON.stringify({ error: "internal_error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
