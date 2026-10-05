@@ -279,7 +279,12 @@
 | D51-UI-004 | Mesmo registro e backend | PASS | payload reutiliza organização/e-mail/nome e demais dados da linha; flag ambígua falsa no reenvio normal; mesmo hook/Edge |
 | D51-UI-005 | Concorrência e atualização | PASS | trava síncrona impede duplo clique; sucesso solicita refetch da lista |
 | D51-UI-006 | Validação e publicação | PASS | 11 focados, 5.409 globais/4 skipped, typecheck/build e scanner 10 Info/zero P0/P1; publicação única e smoke passivo HTTP 200 no build `build-musuh9jx`, sem envio |
+| D51-RETRY-DIAG-001 | Estado do job após tentativa humana | PASS read-only | mesmo job mascarado; `pendente/failed`, tentativas 3/3, `email_connect_network`, leases limpos, sem conclusão |
+| D51-RETRY-DIAG-002 | Elegibilidade de `pendente+accepted` | PASS | RPCs aceitam o estado; claim ocorreu e gerou nova idempotência, descartando hipóteses de state mismatch ou RPC própria ausente |
+| D51-RETRY-DIAG-003 | Correlação Edge da tentativa mais recente | FAIL operacional | HTTP 503; claim em preflight seguido de falha definitiva `connect/email_connect_network`; nenhum aceite SMTP |
+| D51-RETRY-DIAG-004 | Payload persistente da linha | PASS estático | mesmos dados do registro, confirmação ambígua falsa, sem job_id e sem criação de job no cliente |
+| D51-RETRY-DIAG-005 | Flags após tentativa | BLOCKER | global/e-mail ON/ON, Test Mode ON e allowlist exclusiva; fechar OFF/OFF antes de qualquer diagnóstico ou retry adicional |
 
 ## Gate
 
-Fase 0: **PASS**. E01: **PASS**. SMTP CONNECTION pela rota SMTPi: **PASS** (`id=27`, `2026-10-03T19:14:49.143699Z`, 89 ms). `SMTP SEND CONTROLLED = PASS` (`id=28`, recebido na caixa controlada). `E02 EMAIL = PASS`: retry único do job histórico foi aceito e recebido, sem duplicidade ou lease. `SESSION REVOCATION = PASS`: sessões e refresh tokens 1/1→0/0, integridade preservada e flags OFF/OFF. `D51.2 UX REENVIO PERSISTENTE = PASS`: botão publicado e smoke passivo concluído sem envio. Novo retry E02: **GO controlado / NOT RUN**. Fases 2–15: **NOT RUN**.
+Fase 0: **PASS**. E01: **PASS**. O PASS SMTPi de `2026-10-03` é histórico e não certifica a conectividade atual. `SMTP SEND CONTROLLED = PASS` histórico (`id=28`, recebido na caixa controlada). `SESSION REVOCATION = PASS`. `D51.2 UX REENVIO PERSISTENTE = PASS`. A tentativa humana de `2026-10-05T15:24:52Z` reutilizou o mesmo job, mas falhou definitivamente em `connect/email_connect_network`; job 3/3, sem leases. Novo retry E02: **BLOCKED** até fechar OFF/OFF e obter novo PASS SMTPi sem envio. Fases 2–15: **NOT RUN**.
