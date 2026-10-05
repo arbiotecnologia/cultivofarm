@@ -24,3 +24,4 @@
 
 - Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
 - Dashboard summary RPCs derive organization from the active authenticated profile and fail closed for operational sources without deterministic tenant ownership — prevents cross-tenant aggregates.
+- Tenant user administration derives organization from the authenticated profile on the server; legacy links without deterministic ownership fail closed — prevents browser-supplied tenant scope and cross-tenant administration.

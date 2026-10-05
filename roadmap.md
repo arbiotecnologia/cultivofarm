@@ -1,4 +1,6 @@
-- [ ] **D51.4 — isolamento multi-tenant e refinamento empresarial:** Gate 1 corrigir e homologar gestão de usuários; Gate 2 refinar onboarding/perfil somente após Gate 1 PASS; Gate 3 auditar horizontalmente módulos tenant e corrigir P0/P1; concluir com testes A/B, scanner, advisors e relatório GO/NO-GO.
+- [x] **D51.4 Gate 1 — PASS técnico condicionado:** gestão de usuários isolada por organização derivada server-side; vínculos legados sem ownership removidos da tela; criação, edição, status, senha e deep-link falham fechados; smoke A/B autenticado ainda NOT RUN.
+- [x] **D51.4 Gate 2 — PASS técnico:** onboarding normaliza telefone/e-mail, restringe fuso IANA e regime tributário e expõe Perfil da empresa pela mesma fonte canônica.
+- [ ] **D51.4 Gate 3 — NO-GO:** P0/P1 horizontais comprovados em financeiro, Storage, wipe de catálogo e listagem de usuários do portal; exigem modelagem tenant por módulo antes da homologação multiempresa.
 # Roadmap
 
 - [x] **D51.3.1 — refinamento UX do papel Administrador:** o rótulo operacional passou a **Administrador da empresa** em perfil, gestão de usuários, filtros, Comunicação e provisionamento, mantendo a string interna `administrador`. Superadmin, autorização, rotas, `ACCESS_MAP`, `getHomeForRole`, RLS e banco permaneceram inalterados. Testes focados, typecheck/build, publicação única e smoke passivo registrados na auditoria.
