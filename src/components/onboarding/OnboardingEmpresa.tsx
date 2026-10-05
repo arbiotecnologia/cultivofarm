@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MaskedInput } from "@/components/ui/masked-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { OnboardingState, useConcluirOnboarding, useSalvarOnboarding } from "@/hooks/useOrgOnboarding";
-import { OnboardingDados, pendenciasOnboarding } from "@/lib/saas/orgOnboarding";
+import { FUSOS_BRASIL, OnboardingDados, pendenciasOnboarding, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 import { validateCnpjAlpha } from "@/lib/fiscal/cnpjAlpha";
 import {
   aplicarPlano, CampoAplicavel, consultarCnpjOnboarding, DadosEmpresa, FONTE_OFICIAL, ItemPlano,
@@ -36,15 +38,15 @@ type Campo = { k: keyof OnboardingDados; l: string; max?: number };
 const CAMPOS: Record<number, Campo[]> = {
   1: [
     { k: "razao_social", l: "Razão social *" }, { k: "nome_fantasia", l: "Nome fantasia" },
-    { k: "inscricao_estadual", l: "Inscrição estadual" }, { k: "regime_tributario", l: "Regime tributário" },
+    { k: "inscricao_estadual", l: "Inscrição estadual" },
   ],
   2: [
     { k: "cep", l: "CEP *", max: 9 }, { k: "logradouro", l: "Logradouro *" }, { k: "numero", l: "Número" },
     { k: "bairro", l: "Bairro" }, { k: "cidade", l: "Cidade *" }, { k: "uf", l: "UF *", max: 2 },
-    { k: "telefone", l: "Telefone *", max: 20 }, { k: "email_contato", l: "E-mail de contato" },
+    { k: "telefone", l: "Telefone *", max: 15 }, { k: "email_contato", l: "E-mail de contato" },
   ],
   3: [{ k: "responsavel_nome", l: "Nome do responsável *" }, { k: "responsavel_cargo", l: "Cargo" }],
-  4: [{ k: "fuso_horario", l: "Fuso horário *" }, { k: "idioma", l: "Idioma" }],
+  4: [{ k: "idioma", l: "Idioma" }],
 };
 
 /** Códigos que habilitam o fallback manual (API indisponível ou não encontrado). */
@@ -346,12 +348,37 @@ export function OnboardingEmpresa({ state }: { state: OnboardingState }) {
                       <Label htmlFor={`ob-${c.k}`}>{c.l}</Label>
                       {editadoOficial && <Badge variant="secondary">Editado pelo usuário</Badge>}
                     </div>
-                    <Input id={`ob-${c.k}`} maxLength={c.max ?? 200} value={(d[c.k] as string) ?? ""}
-                      onChange={(e) => setD((p) => ({ ...p, [c.k]: e.target.value, ...(c.k === "razao_social" ? {} : {}) }))}
-                      readOnly={travado} aria-readonly={travado} />
+                    {c.k === "telefone" ? (
+                      <MaskedInput id={`ob-${c.k}`} mask="telefone" value={(d[c.k] as string) ?? ""}
+                        onChange={(e) => setD((p) => ({ ...p, telefone: e.target.value }))} />
+                    ) : (
+                      <Input id={`ob-${c.k}`} maxLength={c.max ?? 200} value={(d[c.k] as string) ?? ""}
+                        type={c.k === "email_contato" ? "email" : "text"}
+                        autoComplete={c.k === "email_contato" ? "email" : undefined}
+                        onChange={(e) => setD((p) => ({ ...p, [c.k]: c.k === "email_contato" ? e.target.value.toLowerCase() : e.target.value }))}
+                        readOnly={travado} aria-readonly={travado} />
+                    )}
                   </div>
                 );
               })}
+              {etapa === 1 && (
+                <div className="space-y-1">
+                  <Label htmlFor="ob-regime_tributario">Regime tributário</Label>
+                  <Select value={d.regime_tributario ?? ""} onValueChange={(value) => setD((p) => ({ ...p, regime_tributario: value }))}>
+                    <SelectTrigger id="ob-regime_tributario"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>{REGIMES_TRIBUTARIOS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
+              {etapa === 4 && (
+                <div className="space-y-1">
+                  <Label htmlFor="ob-fuso_horario">Fuso horário *</Label>
+                  <Select value={d.fuso_horario ?? ""} onValueChange={(value) => setD((p) => ({ ...p, fuso_horario: value }))}>
+                    <SelectTrigger id="ob-fuso_horario"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>{FUSOS_BRASIL.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
               {etapa === 1 && !empresa && (
                 <p className="sm:col-span-2 text-xs text-muted-foreground">
                   Cadastro não verificado: os dados serão revisados pela equipe CultivoFarm antes da ativação.
