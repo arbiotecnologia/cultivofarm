@@ -134,17 +134,6 @@ export const SEED_PRODUTOS_AR_BIO_V13: SeedProdutoARBioV13[] = [
   },
 ];
 
-export interface WipeResult {
-  ok: boolean;
-  deleted?: Record<string, number>;
-  nullified?: Record<string, number>;
-  totalDeleted?: number;
-  error?: string;
-  detail?: string;
-  table?: string;
-  mode?: "edge-function" | "client-fallback";
-}
-
 export interface SeedResult {
   inseridos: number;
   atualizados: number;
@@ -179,46 +168,6 @@ const PRODUTO_REFERENCE_TARGETS: CatalogReferenceTarget[] = [
   { table: "registros_consultor_recomendacoes", column: "produto_biologico_sugerido_id" },
 ];
 
-const CLIENT_WIPE_ORDER = [
-  "fiscal_invoices",
-  "entrega_checklist",
-  "entrega_comprovantes",
-  "entrega_documentos",
-  "entrega_etiquetas",
-  "entrega_ocorrencias",
-  "controle_qualidade",
-  "envase",
-  "estoque_movimentacoes",
-  "ordens_servico_onfarm_status_history",
-  "production_order_link",
-  "aplicacoes",
-  "produto_etiquetas",
-  "estoque_embalagens",
-  "estoque_produto",
-  "entregas",
-  "lotes",
-  "programacao_producao",
-  "os_faturamento_base",
-  "ordens_servico_onfarm",
-  "ordens_servico",
-  "partner_order_items",
-  "partner_simulation_items",
-  "catalogo_volumes",
-  "commercial_campaign_products",
-  "cq_parametros_referencia",
-  "partner_product_prices",
-  "product_crop_recommendations",
-  "product_fiscal_profiles",
-  "product_target_recommendations",
-  "product_technical_profiles",
-  "formulacoes",
-  "produtos",
-] as const;
-
-const DELETE_FILTER_COLUMN: Partial<Record<(typeof CLIENT_WIPE_ORDER)[number], string>> = {
-  commercial_campaign_products: "campaign_id",
-};
-
 export interface ProdutosOrfaosAuditResult {
   generated_at: string;
   catalogo_v13: unknown[];
@@ -238,20 +187,6 @@ export interface ProdutosOrfaosAuditResult {
     error?: string;
   }>;
   sample_ids_orfaos_global: string[];
-}
-
-/**
- * Etapa 1 — invoca a edge function `admin-wipe-produtos-catalog` (service_role).
- */
-export async function wipeCatalogoProdutos(): Promise<WipeResult> {
-  const { data, error } = await supabase.functions.invoke<WipeResult>(
-    "admin-wipe-produtos-catalog",
-    { method: "POST", body: { confirmation: "APAGAR CATALOGO GLOBAL" } },
-  );
-  if (error) {
-    return { ok: false, mode: "edge-function", error: "wipe_unavailable", detail: error.message };
-  }
-  return data ? { ...data, mode: "edge-function" } : { ok: false, error: "empty_response" };
 }
 
 export async function auditProdutosOrfaos(): Promise<ProdutosOrfaosAuditResult> {
