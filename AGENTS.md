@@ -16,7 +16,7 @@
 - Shared communication email sends use the same native Deno TLS/EHLO/AUTH protocol core as the SMTP probe; `SmtpLikeClient` remains the injectable consumer contract — prevents probe/send transport divergence.
 - KingHost SMTPi diagnostics use only a server-side allowlisted in-memory route; persistence requires a separate explicit Superadmin action that changes only the SMTP host — prevents arbitrary host probing and silent configuration changes.
 
-- Frontend version detection is independent of service workers: compare the explicit per-production-build HTML meta ID, with entry-script hash fallback for legacy pages; a single state manager inside AuthProvider powers reusable authenticated header controls, and navigation occurs only after an explicit user click; `/sw.js` is only a legacy cleanup worker and push uses `/push-sw.js` without app-shell caching — detects every publication without automatic reloads.
+- Frontend version detection compares the production-build meta ID, with entry-script fallback; AuthProvider owns the controls, navigation requires a click, `/sw.js` only cleans up, and push uses `/push-sw.js` without app-shell caching.
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
 
@@ -26,4 +26,5 @@
 - Dashboard summary RPCs derive organization from the active authenticated profile and fail closed for operational sources without deterministic tenant ownership — prevents cross-tenant aggregates.
 - Tenant user administration derives organization from the authenticated profile on the server; profile identity/tenant fields are immutable to authenticated direct updates and legacy links without deterministic ownership fail closed — prevents tenant hopping and cross-tenant administration.
 - Tenant operational rows use server-guarded `organization_id` or a deterministic parent chain to `h15_actor_organization()`; legacy rows without deterministic ownership remain fail-closed — prevents horizontal data leakage.
-- Shared catalog mutation/destruction, orphan audits and global visual/financial setting changes require Platform Superadmin server-side; catalog wipe is transactional, idempotent, reasoned, audited and limited to global catalog tables, with no browser fallback — prevents tenant roles from changing cross-tenant state or deleting operational history.
+- Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
+- Fiscal Edges prove the authenticated actor's active organization and target resource before service-role, Storage, signing or transport; global fiscal profiles are Platform Superadmin-write only.
