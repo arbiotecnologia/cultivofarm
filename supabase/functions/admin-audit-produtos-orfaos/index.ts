@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
     results.sort((a, b) => b.orfaos - a.orfaos || a.tabela.localeCompare(b.tabela));
 
     return json(200, {
+      scope: "global_catalog_and_references",
       generated_at: new Date().toISOString(),
       total_produtos: produtos?.length ?? 0,
       resumo: {
