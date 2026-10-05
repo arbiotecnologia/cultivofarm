@@ -119,3 +119,14 @@ A matriz A/B foi reexecutada no banco canônico pela migration `20261005204351_3
 
 - Rollback emergencial: restaurar grants das RPCs somente depois de restaurar suas definições tenant-scoped; remover a policy restritiva isoladamente é proibido porque reabre políticas globais antigas.
 - Forward-fix: modelar as cadeias determinísticas faltantes, fazer backfill auditável por lote, adaptar RPCs financeiras para filtrar pelo tenant server-side e então reabrir cada função após teste A/B.
+
+### D51.5 P0-A — Financeiro e Storage
+
+- **Recibos: PASS.** A Edge deriva a organização da sessão, valida `receipt_id`, recibo e cliente na mesma organização, grava somente no prefixo tenant e só devolve URL após a assinatura ser criada.
+- **Documentos de clientes: PASS.** O helper de Storage foi corrigido para o caminho real `organization_id/clientes/cliente_id/...`; a tabela `cliente_documentos` recebeu policy restritiva pela organização do cliente.
+- **Integridade financeira: PASS para novas escritas.** Trigger simétrico rejeita vínculos entre organizações em títulos, parcelas, pagamentos e recibos. Nenhum backfill foi executado; legado sem vínculo continua bloqueado.
+- **Relatórios, fluxo de caixa e DRE: FAIL-CLOSED.** As RPCs elevadas sem filtro tenant completo continuam sem execução para `authenticated`; `generate-financial-report` retorna indisponibilidade segura e não produz arquivo. Não foram reabertas nesta rodada.
+- **Prova A/B: PASS transacional.** Dois administradores de organizações distintas; leituras de contas, recibos, exportações, documentos e paths forjados da empresa B foram negadas para A, sem mutação persistida.
+- **Validação:** 12 testes focados, suíte global com 5.440 PASS/4 skipped, typecheck e build PASS; scanner com 10 Info e zero P0/P1; linter no baseline de 479. Edge `generate-financial-receipt` implantada e smoke anônimo protegido, sem emissão de recibo.
+
+**Decisão P0-A:** **PASS** para recibos, tabelas e Storage; **FAIL-CLOSED** para relatórios analíticos. A funcionalidade analítica permanece indisponível até todas as fontes e joins receberem escopo tenant server-side. P0-B não foi iniciado.
