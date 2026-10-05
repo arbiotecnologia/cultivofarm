@@ -126,7 +126,7 @@ export default function Talhoes() {
         title="Talhões"
         description="Gestão de talhões e áreas de cultivo"
         action={
-          {canManage ? <Dialog open={open} onOpenChange={setOpen}>
+          canManage ? <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Novo Talhão</Button>
             </DialogTrigger>
@@ -296,7 +296,7 @@ export default function Talhoes() {
                 <Button type="submit" className="w-full h-12 sm:h-10 mt-2 font-bold" disabled={!form.fazenda_id || !form.nome}>Salvar Talhão</Button>
               </form>
             </DialogContent>
-          </Dialog> : null}
+          </Dialog> : null
         }
       />
 

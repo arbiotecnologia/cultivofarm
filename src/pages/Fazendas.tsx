@@ -262,7 +262,7 @@ export default function Fazendas() {
         title="Fazendas"
         description="Propriedades rurais e consultores responsáveis"
         action={
-          {canManage ? <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+          canManage ? <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Nova Fazenda</Button>
             </DialogTrigger>
@@ -444,7 +444,7 @@ export default function Fazendas() {
                 <Button type="submit" className="w-full h-12 sm:h-10 font-bold" disabled={!form.cliente_id || !form.nome}>{form.id ? "Atualizar Propriedade" : "Salvar Propriedade"}</Button>
               </form>
             </DialogContent>
-          </Dialog> : null}
+          </Dialog> : null
         }
       />
 
