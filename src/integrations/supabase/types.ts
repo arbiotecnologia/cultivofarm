@@ -11858,44 +11858,123 @@ export type Database = {
       }
       organization_subscription_history: {
         Row: {
+          action: string | null
           actor_user_id: string | null
+          billing_cycle_snapshot: string | null
+          correlation_id: string | null
           created_at: string
+          currency_snapshot: string | null
           id: string
+          limits_snapshot: Json | null
+          new_plan_id: string | null
+          new_plan_version_id: string | null
+          new_status:
+            | Database["public"]["Enums"]["saas_subscription_status"]
+            | null
           new_values: Json | null
           old_values: Json | null
           organization_id: string
+          payment_event_id: string | null
+          previous_plan_id: string | null
+          previous_plan_version_id: string | null
+          previous_status:
+            | Database["public"]["Enums"]["saas_subscription_status"]
+            | null
+          price_snapshot: number | null
           reason: string | null
           source: string
           subscription_id: string
         }
         Insert: {
+          action?: string | null
           actor_user_id?: string | null
+          billing_cycle_snapshot?: string | null
+          correlation_id?: string | null
           created_at?: string
+          currency_snapshot?: string | null
           id?: string
+          limits_snapshot?: Json | null
+          new_plan_id?: string | null
+          new_plan_version_id?: string | null
+          new_status?:
+            | Database["public"]["Enums"]["saas_subscription_status"]
+            | null
           new_values?: Json | null
           old_values?: Json | null
           organization_id: string
+          payment_event_id?: string | null
+          previous_plan_id?: string | null
+          previous_plan_version_id?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["saas_subscription_status"]
+            | null
+          price_snapshot?: number | null
           reason?: string | null
           source: string
           subscription_id: string
         }
         Update: {
+          action?: string | null
           actor_user_id?: string | null
+          billing_cycle_snapshot?: string | null
+          correlation_id?: string | null
           created_at?: string
+          currency_snapshot?: string | null
           id?: string
+          limits_snapshot?: Json | null
+          new_plan_id?: string | null
+          new_plan_version_id?: string | null
+          new_status?:
+            | Database["public"]["Enums"]["saas_subscription_status"]
+            | null
           new_values?: Json | null
           old_values?: Json | null
           organization_id?: string
+          payment_event_id?: string | null
+          previous_plan_id?: string | null
+          previous_plan_version_id?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["saas_subscription_status"]
+            | null
+          price_snapshot?: number | null
           reason?: string | null
           source?: string
           subscription_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "organization_subscription_history_new_plan_id_fkey"
+            columns: ["new_plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscription_history_new_plan_version_id_fkey"
+            columns: ["new_plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plan_versions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "organization_subscription_history_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscription_history_previous_plan_id_fkey"
+            columns: ["previous_plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscription_history_previous_plan_version_id_fkey"
+            columns: ["previous_plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plan_versions"
             referencedColumns: ["id"]
           },
           {
@@ -11910,16 +11989,24 @@ export type Database = {
       organization_subscriptions: {
         Row: {
           billing_cycle: string | null
+          billing_cycle_snapshot: string | null
           cancel_at: string | null
           cancelled_at: string | null
           created_at: string
           created_by: string | null
+          currency_snapshot: string | null
           current_period_end: string | null
           current_period_start: string | null
+          features_snapshot: Json | null
           id: string
+          last_correlation_id: string | null
+          limits_snapshot: Json | null
           organization_id: string
           plan_id: string
+          plan_version_id: string | null
+          price_snapshot: number | null
           started_at: string
+          state_changed_at: string | null
           status: Database["public"]["Enums"]["saas_subscription_status"]
           suspended_at: string | null
           trial_ends_at: string | null
@@ -11927,16 +12014,24 @@ export type Database = {
         }
         Insert: {
           billing_cycle?: string | null
+          billing_cycle_snapshot?: string | null
           cancel_at?: string | null
           cancelled_at?: string | null
           created_at?: string
           created_by?: string | null
+          currency_snapshot?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          features_snapshot?: Json | null
           id?: string
+          last_correlation_id?: string | null
+          limits_snapshot?: Json | null
           organization_id: string
           plan_id: string
+          plan_version_id?: string | null
+          price_snapshot?: number | null
           started_at?: string
+          state_changed_at?: string | null
           status?: Database["public"]["Enums"]["saas_subscription_status"]
           suspended_at?: string | null
           trial_ends_at?: string | null
@@ -11944,16 +12039,24 @@ export type Database = {
         }
         Update: {
           billing_cycle?: string | null
+          billing_cycle_snapshot?: string | null
           cancel_at?: string | null
           cancelled_at?: string | null
           created_at?: string
           created_by?: string | null
+          currency_snapshot?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          features_snapshot?: Json | null
           id?: string
+          last_correlation_id?: string | null
+          limits_snapshot?: Json | null
           organization_id?: string
           plan_id?: string
+          plan_version_id?: string | null
+          price_snapshot?: number | null
           started_at?: string
+          state_changed_at?: string | null
           status?: Database["public"]["Enums"]["saas_subscription_status"]
           suspended_at?: string | null
           trial_ends_at?: string | null
@@ -11972,6 +12075,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscriptions_plan_version_id_fkey"
+            columns: ["plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plan_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -17394,6 +17504,110 @@ export type Database = {
           },
         ]
       }
+      saas_plan_version_features: {
+        Row: {
+          config: Json | null
+          created_at: string
+          enabled: boolean
+          feature_id: string
+          limit_value: number | null
+          plan_version_id: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          enabled: boolean
+          feature_id: string
+          limit_value?: number | null
+          plan_version_id: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          enabled?: boolean
+          feature_id?: string
+          limit_value?: number | null
+          plan_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_plan_version_features_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "saas_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_plan_version_features_plan_version_id_fkey"
+            columns: ["plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plan_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_plan_versions: {
+        Row: {
+          billing_cycle: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          description_snapshot: string | null
+          effective_from: string
+          effective_to: string | null
+          features_snapshot: Json
+          id: string
+          limits_snapshot: Json
+          name_snapshot: string
+          plan_id: string
+          price_amount: number | null
+          published_at: string
+          version_number: number
+        }
+        Insert: {
+          billing_cycle?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description_snapshot?: string | null
+          effective_from: string
+          effective_to?: string | null
+          features_snapshot?: Json
+          id?: string
+          limits_snapshot?: Json
+          name_snapshot: string
+          plan_id: string
+          price_amount?: number | null
+          published_at?: string
+          version_number: number
+        }
+        Update: {
+          billing_cycle?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description_snapshot?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          features_snapshot?: Json
+          id?: string
+          limits_snapshot?: Json
+          name_snapshot?: string
+          plan_id?: string
+          price_amount?: number | null
+          published_at?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_plan_versions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_plans: {
         Row: {
           active: boolean
@@ -19898,6 +20112,7 @@ export type Database = {
         }[]
       }
       d51_5_p0d_ab_selftest: { Args: never; Returns: Json }
+      expire_due_trials: { Args: { _limit?: number }; Returns: number }
       financial_storage_object_permitted: {
         Args: { _bucket: string; _name: string }
         Returns: boolean
@@ -21223,15 +21438,6 @@ export type Database = {
         Args: { p_job_id: string; p_lease_token: string }
         Returns: Json
       }
-      platform_change_subscription: {
-        Args: {
-          _organization_id: string
-          _plan_key: string
-          _reason: string
-          _status: string
-        }
-        Returns: string
-      }
       platform_claim_org_admin_email_delivery:
         | {
             Args: {
@@ -21321,6 +21527,15 @@ export type Database = {
         Args: { _override_id: string; _reason: string }
         Returns: undefined
       }
+      platform_extend_trial: {
+        Args: {
+          _correlation_id: string
+          _new_trial_end: string
+          _reason: string
+          _subscription_id: string
+        }
+        Returns: string
+      }
       platform_fail_org_admin_email_delivery: {
         Args: {
           p_error_code: string
@@ -21350,6 +21565,19 @@ export type Database = {
         Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
         Returns: Json
       }
+      platform_publish_plan_version: {
+        Args: {
+          _billing_cycle: string
+          _correlation_id: string
+          _currency: string
+          _effective_from: string
+          _limits: Json
+          _plan_key: string
+          _price_amount: number
+          _reason: string
+        }
+        Returns: string
+      }
       platform_register_org_admin: {
         Args: {
           p_actor_id: string
@@ -21378,6 +21606,16 @@ export type Database = {
       platform_set_organization_status: {
         Args: { _motivo: string; _org: string; _status: string }
         Returns: undefined
+      }
+      platform_transition_subscription: {
+        Args: {
+          _action: string
+          _correlation_id: string
+          _organization_id: string
+          _plan_version_id?: string
+          _reason: string
+        }
+        Returns: string
       }
       platform_wipe_global_product_catalog: {
         Args: { p_actor_id: string; p_correlation_id: string; p_reason: string }

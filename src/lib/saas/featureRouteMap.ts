@@ -50,11 +50,12 @@ export type EntitlementState =
   | { status: "ready"; features: ReadonlySet<string> };
 
 /**
- * Decide se o plano permite a rota. Estado desconhecido (carregando/erro)
- * mantém o comportamento anterior — o plano nunca amplia acesso, só restringe.
+ * Decide se o plano permite a rota. Rotas contratadas falham fechadas enquanto
+ * a assinatura ainda não foi resolvida; rotas sem plano continuam disponíveis.
  */
 export function isPathEntitled(path: string, state: EntitlementState): boolean {
   const feature = featureForPath(path);
-  if (!feature || state.status !== "ready") return true;
+  if (!feature) return true;
+  if (state.status !== "ready") return false;
   return state.features.has(feature);
 }
