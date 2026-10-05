@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const getUser = vi.fn();
-const maybeSingle = vi.fn();
-const eq = vi.fn(() => ({ eq, maybeSingle }));
-const select = vi.fn(() => ({ eq }));
+const { getUser, maybeSingle, eq, select } = vi.hoisted(() => {
+  const getUser = vi.fn();
+  const maybeSingle = vi.fn();
+  const eq = vi.fn();
+  const select = vi.fn();
+  eq.mockImplementation(() => ({ eq, maybeSingle }));
+  select.mockImplementation(() => ({ eq }));
+  return { getUser, maybeSingle, eq, select };
+});
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {

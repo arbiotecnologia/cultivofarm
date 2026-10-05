@@ -127,7 +127,7 @@ describe("dedup: idempotência via client_uuid (erro 23505)", () => {
       data: {
         id: "existing-arq",
         arquivo_url: null,
-        arquivo_path: "remote-1/foto/uuid-foto-1.jpg",
+        arquivo_path: "11111111-1111-4111-8111-111111111111/remote-1/foto/uuid-foto-1.jpg",
         registro_consultor_id: "remote-1",
       },
       error: null,
@@ -161,7 +161,7 @@ describe("dedup: idempotência via client_uuid (erro 23505)", () => {
       data: {
         id: "existing-arq",
         arquivo_url: null,
-        arquivo_path: "remote-1/foto/uuid-foto-9.jpg",
+        arquivo_path: "11111111-1111-4111-8111-111111111111/remote-1/foto/uuid-foto-9.jpg",
         registro_consultor_id: "remote-1",
       },
       error: null,
