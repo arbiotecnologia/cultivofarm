@@ -8,7 +8,7 @@ const safeTransitions = readFileSync("supabase/migrations/20261005231703_19601a2
 const deterministicTrialBackfill = readFileSync("supabase/migrations/20261005231728_bc63c106-e15a-497e-9a12-4bb4defcbc78.sql", "utf8");
 const publishAudit = readFileSync("supabase/migrations/20261005231820_9d04f357-26ee-446b-a625-9d39157325e1.sql", "utf8");
 const concurrentTransitions = readFileSync("supabase/migrations/20261005231852_727f7eeb-4808-49a0-9825-d969007b3103.sql", "utf8");
-const trialExtension = readFileSync("supabase/migrations/20261005232010_085c482f-45f6-467b-9727-667091e54e73.sql", "utf8");
+const trialExtension = readFileSync("supabase/migrations/20261005231945_adcbc483-4e0d-416e-9f62-1ccb29c08a90.sql", "utf8");
 
 describe("D52 — ciclo interno de assinatura", () => {
   it("cria versões e snapshots sem preencher contratos legados", () => {
