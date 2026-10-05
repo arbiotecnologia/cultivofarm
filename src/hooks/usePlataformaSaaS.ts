@@ -369,6 +369,7 @@ export interface ResultadoConvite {
   user_id: string;
   senha_temporaria: string | null;
   email_status: "accepted" | "not_required";
+  manual_link?: string | null;
 }
 
 export class ErroConvitePlataforma extends Error {
@@ -407,6 +408,7 @@ export function useConvidarAdminEmpresa() {
       modo: "link" | "senha_temporaria";
       responsavelPrincipal: boolean;
       confirmAmbiguousEmailRetry?: boolean;
+      deliveryMode?: "email" | "manual_link";
     }
   >({
     retry: false,
@@ -421,6 +423,7 @@ export function useConvidarAdminEmpresa() {
           modo_acesso: v.modo,
           responsavel_principal: v.responsavelPrincipal,
           confirm_ambiguous_email_retry: v.confirmAmbiguousEmailRetry === true,
+          delivery_mode: v.deliveryMode ?? "email",
         },
       });
       const payload = (data ?? {}) as Record<string, unknown>;
@@ -434,6 +437,7 @@ export function useConvidarAdminEmpresa() {
         user_id: String(payload.user_id ?? ""),
         senha_temporaria: (payload.senha_temporaria as string | null) ?? null,
         email_status: payload.email_status === "accepted" ? "accepted" : "not_required",
+        manual_link: typeof payload.manual_link === "string" ? payload.manual_link : null,
       };
     },
     onSettled: invalidar,
