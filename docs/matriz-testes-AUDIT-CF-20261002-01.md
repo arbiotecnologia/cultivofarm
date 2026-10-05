@@ -303,3 +303,8 @@
 ## Gate
 
 Fase 0: **PASS**. E01: **PASS**. O PASS SMTPi de `2026-10-03` é histórico e não certifica a conectividade atual. `SMTP SEND CONTROLLED = PASS` histórico (`id=28`, recebido na caixa controlada). `SESSION REVOCATION = PASS`. `D51.2 UX REENVIO PERSISTENTE = PASS`. A tentativa humana de `2026-10-05T15:24:52Z` reutilizou o mesmo job, mas falhou definitivamente em `connect/email_connect_network`; job 3/3, sem leases. Novo retry E02: **BLOCKED** até fechar OFF/OFF e obter novo PASS SMTPi sem envio. Fases 2–15: **NOT RUN**.
+| D51-FIRST-ACCESS-DIAG-001 | Unicidade e vínculo do usuário controlado | PASS read-only | 1 Auth, 1 profile ativo em `8f57c7dd…4626`, 1 papel `administrador`, zero `superadmin`; job único `22c70f4f…fbc1` ativo/concluído e no mesmo tenant |
+| D51-FIRST-ACCESS-DIAG-002 | Estado atual de primeiro acesso | PASS read-only | `senha_provisoria=false`, zero estado provisório, `platform_first_access_pending=false`, zero sessões e refresh tokens |
+| D51-FIRST-ACCESS-DIAG-003 | Causa da dupla definição de senha | BUG confirmado | `/reset-password` usa `auth.updateUser` + `signOut` sem concluir a pendência; `AppLayout` força `TrocaSenhaObrigatoria`, que chama `platform-complete-first-access` e somente então limpa o estado server-side |
+| D51-FIRST-ACCESS-DIAG-004 | Papel após conclusão | PASS | papel único `administrador` é tenant-operacional; `superadmin` é distinto e ausente; destino esperado é `/dashboard/geral` |
+| D51-FIRST-ACCESS-DIAG-005 | Isolamento tenant do dashboard geral | NO-GO | `profile.organization_id` existe, mas as RPCs `SECURITY DEFINER` e `is_executivo` não usam organização/tenant; agregações e políticas administrativas são globais por papel em banco com 5 organizações |
