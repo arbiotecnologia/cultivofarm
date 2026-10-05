@@ -72,10 +72,17 @@ Deno.serve(async (req) => {
 
   // Valida existência antes de qualquer trabalho.
   const cert = await authed.from("fiscal_certificates")
-    .select("id").eq("id", certId).maybeSingle();
+    .select("id, company_settings_id").eq("id", certId).maybeSingle();
   if (cert.error || !cert.data) return json({ error: "certificate_not_found" }, 404, headers);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const companyAllowed = await admin.rpc("h15_service_actor_company_access", {
+    p_actor: userId,
+    p_company: cert.data.company_settings_id,
+  });
+  if (companyAllowed.error || companyAllowed.data !== true) {
+    return json({ error: "permission_denied" }, 403, headers);
+  }
   const { data: mat, error: materialError } = await admin.from("fiscal_certificate_material")
     .select("object_path").eq("certificate_id", certId).maybeSingle();
 

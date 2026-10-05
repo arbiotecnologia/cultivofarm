@@ -213,6 +213,13 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const companyAllowed = await admin.rpc("h15_service_actor_company_access", {
+      p_actor: userId,
+      p_company: companySettingsId,
+    });
+    if (companyAllowed.error || companyAllowed.data !== true) {
+      return json({ error: "permission_denied" }, 403, headers);
+    }
 
     // H7c: triagem ASN.1 mínima (BER/DER, incluindo comprimento indefinido `30 80`).
     // A autoridade real de formato é o forge (fromDer + pkcs12FromAsn1) logo abaixo.

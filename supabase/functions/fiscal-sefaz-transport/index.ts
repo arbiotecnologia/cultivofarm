@@ -122,10 +122,19 @@ interface MtlsMaterial {
   certificateId: string;
 }
 
-async function loadMtlsMaterial(admin: SupabaseClient, invoiceId: string | null): Promise<MtlsMaterial> {
+async function loadMtlsMaterial(
+  admin: SupabaseClient,
+  actor: string,
+  invoiceId: string | null,
+): Promise<MtlsMaterial> {
   // H12: o certificado é SEMPRE o do emitente vinculado à nota — nunca "o mais
   // recente disponível". Sem nota resolvida ou sem vínculo inequívoco: fail-closed.
   if (!invoiceId) throw new SefazSoapError("CERTIFICATE_REQUIRED");
+  const access = await admin.rpc("h15_service_actor_invoice_access", {
+    p_actor: actor,
+    p_invoice: invoiceId,
+  });
+  if (access.error || access.data !== true) throw new SefazSoapError("FISCAL_RESOURCE_FORBIDDEN");
   const bound = await admin.rpc("rpc_fiscal_certificate_for_invoice_v1", { _invoice_id: invoiceId });
   if (bound.error) throw new SefazSoapError("CERTIFICATE_REQUIRED");
   const certificateId = (bound.data as Record<string, unknown> | null)?.certificateId as
@@ -351,6 +360,20 @@ Deno.serve(async (req) => {
   if (invoiceId && !UUID_RE.test(invoiceId)) return json({ error: "invoice_id_invalid" }, 400, headers);
   if (xmlRunId && !UUID_RE.test(xmlRunId)) return json({ error: "run_id_invalid" }, 400, headers);
 
+  // Status, recibo e consulta também usam o certificado do emitente. Exigem uma
+  // invoice do tenant para impedir consulta externa ou uso de certificado sem
+  // um recurso fiscal previamente autorizado para o ator.
+  if (["status", "receipt", "consult"].includes(action)) {
+    if (!invoiceId) return json({ error: "invoice_id_required" }, 400, headers);
+    const invoiceAllowed = await admin.rpc("h15_service_actor_invoice_access", {
+      p_actor: actor,
+      p_invoice: invoiceId,
+    });
+    if (invoiceAllowed.error || invoiceAllowed.data !== true) {
+      return json({ error: "permission_denied" }, 403, headers);
+    }
+  }
+
   // 1. Resolve serviço + endpoint (allowlist dura de homologação MG).
   let service: SefazService;
   switch (action) {
@@ -385,6 +408,13 @@ Deno.serve(async (req) => {
       inner = buildConsReciNFe(TPAMB, String(body.receipt ?? ""));
     } else if (action === "authorize") {
       if (!xmlRunId) return json({ error: "run_id_required" }, 400, headers);
+      const runAllowed = await admin.rpc("h15_service_actor_run_access", {
+        p_actor: actor,
+        p_run: xmlRunId,
+      });
+      if (runAllowed.error || runAllowed.data !== true) {
+        return json({ error: "permission_denied" }, 403, headers);
+      }
       const run = await admin
         .from("fiscal_xml_runs")
         .select("id, state, signed_path, storage_bucket, fiscal_invoice_id, access_key, environment_code")
@@ -425,6 +455,13 @@ Deno.serve(async (req) => {
       const eventId = body.event_id ? String(body.event_id) : "";
       if (!UUID_RE.test(eventId)) {
         return json({ error: "event_id_required", code: "SEFAZ_EVENT_REQUIRED" }, 400, headers);
+      }
+      const eventAllowed = await admin.rpc("h15_service_actor_event_access", {
+        p_actor: actor,
+        p_event: eventId,
+      });
+      if (eventAllowed.error || eventAllowed.data !== true) {
+        return json({ error: "permission_denied" }, 403, headers);
       }
       const ev = await admin
         .from("v_fiscal_sefaz_event_state")
@@ -490,7 +527,7 @@ Deno.serve(async (req) => {
   let postAttempted = false;
   const started = Date.now();
   try {
-    material = await loadMtlsMaterial(admin, canonicalInvoiceId);
+    material = await loadMtlsMaterial(admin, actor, canonicalInvoiceId);
     const sent = await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
       _transmission_id: transmissionId, _state: "SENT", _patch: {},
     });

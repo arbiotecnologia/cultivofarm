@@ -21050,6 +21050,10 @@ export type Database = {
       h15_active_company: { Args: never; Returns: string }
       h15_actor_organization: { Args: never; Returns: string }
       h15_company_access: { Args: { p_company: string }; Returns: boolean }
+      h15_fiscal_audit_access: {
+        Args: { p_record: string; p_table: string }
+        Returns: boolean
+      }
       h15_invoice_access: { Args: { p_invoice: string }; Returns: boolean }
       h15_related_company: {
         Args: { p_id: string; p_table: string }
@@ -21058,6 +21062,23 @@ export type Database = {
       h15_require_company: { Args: { p_company: string }; Returns: undefined }
       h15_require_invoice: { Args: { p_invoice: string }; Returns: undefined }
       h15_require_staff: { Args: never; Returns: undefined }
+      h15_service_actor_company_access: {
+        Args: { p_actor: string; p_company: string }
+        Returns: boolean
+      }
+      h15_service_actor_event_access: {
+        Args: { p_actor: string; p_event: string }
+        Returns: boolean
+      }
+      h15_service_actor_invoice_access: {
+        Args: { p_actor: string; p_invoice: string }
+        Returns: boolean
+      }
+      h15_service_actor_run_access: {
+        Args: { p_actor: string; p_run: string }
+        Returns: boolean
+      }
+      h15_user_organization: { Args: { p_user: string }; Returns: string }
       has_active_user_cliente_access: {
         Args: { _cliente_id: string; _levels?: string[]; _user_id: string }
         Returns: boolean
