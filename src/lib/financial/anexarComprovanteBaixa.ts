@@ -8,9 +8,9 @@
  * lógica.
  *
  * Correção (sem fluxo paralelo): caminho determinístico por
- * `owner_type / payment_id / idempotency_key-arquivo` + verificação prévia de
+ * `organization_id / owner_type / payment_id / idempotency_key-arquivo` + verificação prévia de
  * documento equivalente. Nada é apagado; o bucket `financial-docs` e as RLS
- * permanecem inalterados.
+ * exigem o mesmo tenant do registro financeiro.
  */
 
 export type ComprovanteOwnerType = "PAYMENT_RECEIVABLE" | "PAYMENT_PAYABLE";
@@ -24,6 +24,7 @@ export interface AnexarComprovanteInput {
   idempotencyKey: string;
   file: { name: string; type?: string; size?: number };
   uploadedBy: string;
+  organizationId: string;
 }
 
 /** Normaliza o nome do arquivo para um caminho estável e seguro. */
@@ -42,8 +43,9 @@ export function comprovanteStoragePath(input: {
   paymentId: string;
   idempotencyKey: string;
   fileName: string;
+  organizationId: string;
 }): string {
-  return `${input.ownerType}/${input.paymentId}/${input.idempotencyKey}-${sanitizeFileName(input.fileName)}`;
+  return `${input.organizationId}/${input.ownerType}/${input.paymentId}/${input.idempotencyKey}-${sanitizeFileName(input.fileName)}`;
 }
 
 const isUniqueViolation = (error: unknown): boolean => {
@@ -57,13 +59,14 @@ const isUniqueViolation = (error: unknown): boolean => {
  */
 export async function anexarComprovanteBaixa(
   client: any,
-  { ownerType, paymentId, idempotencyKey, file, uploadedBy }: AnexarComprovanteInput,
+  { ownerType, paymentId, idempotencyKey, file, uploadedBy, organizationId }: AnexarComprovanteInput,
 ): Promise<ComprovanteResultado> {
   const path = comprovanteStoragePath({
     ownerType,
     paymentId,
     idempotencyKey,
     fileName: file.name,
+    organizationId,
   });
 
   // 1) documento equivalente já registrado nesta tentativa lógica?

@@ -1,12 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 interface Body {
   report_type: string;
@@ -29,7 +24,12 @@ const RPC_MAP: Record<string, string> = {
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const corsHeaders = corsHeadersFor(origin);
+  if (origin && !isTrustedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers: corsHeaders });
+  }
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -41,6 +41,11 @@ Deno.serve(async (req) => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: organizationId, error: organizationError } = await supabase.rpc("h15_actor_organization");
+    if (organizationError || !organizationId) {
+      return new Response(JSON.stringify({ error: "tenant_context_required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const body = (await req.json()) as Body;
@@ -102,7 +107,7 @@ Deno.serve(async (req) => {
       contentType = "text/csv";
     }
 
-    const path = `${userData.user.id}/${filename}`;
+    const path = `${organizationId}/${userData.user.id}/${filename}`;
     const { error: upErr } = await supabase.storage.from("financial-reports").upload(path, fileBytes, { contentType, upsert: true });
     if (upErr) throw upErr;
 
@@ -121,8 +126,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ url: signed?.signedUrl, path, row_count: rows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+  } catch {
+    return new Response(JSON.stringify({ error: "financial_report_unavailable" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -1,11 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 function numberToExtenso(n: number): string {
   // Simplified PT-BR currency in words (best-effort)
@@ -15,7 +10,12 @@ function numberToExtenso(n: number): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const corsHeaders = corsHeadersFor(origin);
+  if (origin && !isTrustedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers: corsHeaders });
+  }
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -29,13 +29,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const { data: organizationId, error: organizationError } = await supabase.rpc("h15_actor_organization");
+    if (organizationError || !organizationId) {
+      return new Response(JSON.stringify({ error: "tenant_context_required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { receipt_id } = await req.json();
-    if (!receipt_id) throw new Error("receipt_id obrigatório");
+    if (typeof receipt_id !== "string" || !/^[0-9a-f-]{36}$/i.test(receipt_id)) {
+      return new Response(JSON.stringify({ error: "receipt_id_invalid" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { data: rec, error } = await supabase
       .from("financial_receipts")
       .select("*, clientes:customer_id(nome, razao_social), payment_methods:payment_method_id(name)")
       .eq("id", receipt_id)
+      .eq("organization_id", organizationId)
       .maybeSingle();
     if (error) throw error;
     if (!rec) throw new Error("Recibo não encontrado");
@@ -85,18 +93,22 @@ Deno.serve(async (req) => {
     page.drawText(`Validação pública (em preparação): /verificar-recibo/${rec.public_verification_token}`, { x: 30, y: 62, size: 7, font, color: rgb(0.4,0.4,0.4) });
 
     const bytes = await pdf.save();
-    const path = `${rec.receipt_year}/${rec.receipt_number}.pdf`;
+    const path = `${organizationId}/${rec.receipt_year}/${rec.receipt_number}.pdf`;
     const { error: upErr } = await supabase.storage.from("financial-receipts").upload(path, bytes, { contentType: "application/pdf", upsert: true });
     if (upErr) throw upErr;
 
-    await supabase.from("financial_receipts").update({ storage_bucket: "financial-receipts", storage_path: path }).eq("id", receipt_id);
+    const { error: updateError } = await supabase.from("financial_receipts")
+      .update({ storage_bucket: "financial-receipts", storage_path: path })
+      .eq("id", receipt_id)
+      .eq("organization_id", organizationId);
+    if (updateError) throw updateError;
     const { data: signed } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);
 
     return new Response(JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+  } catch {
+    return new Response(JSON.stringify({ error: "financial_receipt_failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

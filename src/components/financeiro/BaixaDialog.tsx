@@ -53,7 +53,7 @@ type Kind = "receivable" | "payable";
 interface Props { open: boolean; onClose: () => void; kind: Kind; installment: any | null; }
 
 export function BaixaDialog({ open, onClose, kind, installment }: Props) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   // H6-002: chave de idempotencia por tentativa de baixa (evita baixa duplicada em duplo clique/retry)
@@ -160,7 +160,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (pendente) {
         const erroAnexo = (m: string) =>
           receber ? new ErroBaixaLocal(m) : new ErroAnexoPagarLocal(m);
-        if (!user) throw erroAnexo("Sessão expirada. Entre novamente para reenviar o comprovante.");
+        if (!user || !profile?.organization_id) throw erroAnexo("Contexto da empresa inválido. Entre novamente.");
         if (!pendente.paymentId) throw erroAnexo("Não foi possível identificar a baixa registrada.");
         if (!file) throw erroAnexo("Selecione o comprovante para reenviar.");
         // Toda falha aqui é falha de ANEXO de uma baixa já confirmada: nunca
@@ -172,6 +172,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             idempotencyKey: idempotencyRef.current,
             file,
             uploadedBy: user.id,
+            organizationId: profile.organization_id,
           });
         } catch {
           throw erroAnexo(
@@ -292,6 +293,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
 
       if (file) {
+        if (!profile?.organization_id) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
         try {
           await anexarComprovanteBaixa(supabase, {
@@ -300,6 +302,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             idempotencyKey: idempotencyRef.current,
             file,
             uploadedBy: user!.id,
+            organizationId: profile.organization_id,
           });
         } catch {
           // Baixa persistida, comprovante não: estado explícito de falha parcial.
