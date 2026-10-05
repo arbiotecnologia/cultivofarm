@@ -25,7 +25,6 @@ import {
   type ErrosNovoUsuario,
   type CampoNovoUsuario,
 } from "@/lib/configuracoes/usuariosValidation";
-import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
 import {
   RPC_EDITAR_USUARIO,
   construirArgsEdicao,
@@ -132,7 +131,7 @@ export default function Configuracoes() {
     },
   });
 
-  // Admin: list all users
+  // Admin da empresa: listagem paginada e filtrada no servidor pelo tenant da sessão.
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,99 +144,30 @@ export default function Configuracoes() {
     isFetching: usersFetching,
     refetch: refetchUsers,
   } = useQuery({
-    queryKey: ["admin-users"],
+    queryKey: ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina],
     enabled: isAdmin,
     queryFn: async () => {
-      // Leitura paginada real: sem truncar silenciosamente e com ordem estável por PK.
-      const profiles = await fetchAllRows<any>((from, to) =>
-        supabase
-          .from("profiles")
-          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, updated_at, cargo, crea, especialidade")
-          .order("user_id", { ascending: true })
-          .range(from, to),
-      );
-      // Falhas em papéis/vínculos NÃO podem ser tratadas como "sem dados".
-      const roles = await fetchAllRows<any>((from, to) =>
-        (supabase as any).from("user_roles").select("user_id, role").order("id", { ascending: true }).range(from, to),
-      );
-      const vinc = await fetchAllRows<any>((from, to) =>
-        (supabase as any)
-          .from("user_clientes")
-          .select("user_id, cliente_id, principal")
-          .order("id", { ascending: true })
-          .range(from, to),
-      );
-      const rolesByUser = new Map<string, string[]>();
-      for (const r of roles) {
-        const arr = rolesByUser.get(r.user_id) ?? [];
-        arr.push(r.role);
-        rolesByUser.set(r.user_id, arr);
-      }
-      const vincByUser = new Map<string, ClienteVinculo[]>();
-      for (const v of vinc) {
-        const arr = vincByUser.get(v.user_id) ?? [];
-        arr.push({ cliente_id: v.cliente_id, principal: !!v.principal } as ClienteVinculo);
-        vincByUser.set(v.user_id, arr);
-      }
-      return profiles
-        .map((p: any) => ({
-          ...p,
-          roles: rolesByUser.get(p.user_id) ?? [],
-          vinculos: vincByUser.get(p.user_id) ?? [],
-        }))
-        .sort((a: any, b: any) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")));
+      const { data, error } = await (supabase as any).rpc("tenant_admin_list_users", {
+        p_search: debouncedSearchTerm.trim() || null,
+        p_role: filterRole === "all" ? null : filterRole,
+        p_active: filterStatus === "all" ? null : filterStatus === "ativo",
+        p_offset: (pagina - 1) * USUARIOS_POR_PAGINA,
+        p_limit: USUARIOS_POR_PAGINA,
+      });
+      if (error) throw error;
+      return { items: data?.items ?? [], total: Number(data?.total ?? 0) };
     },
   });
 
-  const { data: clientes = [] } = useQuery({
-    queryKey: ["clientes-lista"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const data = await fetchAllRows<any>((from, to) =>
-        supabase.from("clientes").select("id, nome, cpf_cnpj").order("id", { ascending: true }).range(from, to),
-      );
-      return [...data].sort((a, b) => String(a.nome ?? "").localeCompare(String(b.nome ?? ""))) as {
-        id: string;
-        nome: string;
-        cpf_cnpj: string | null;
-      }[];
-    },
-  });
+  const usersPage = allUsers.items ?? [];
+
+  const clientes: Array<{ id: string; nome: string; cpf_cnpj: string | null }> = [];
 
   // Parceiros B2B (para vínculo quando papel parceiro_b2b* é selecionado)
-  const { data: partners = [] } = useQuery({
-    queryKey: ["partner-accounts-lista"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const data = await fetchAllRows<any>((from, to) =>
-        (supabase as any)
-          .from("partner_accounts")
-          .select("id, codigo, razao_social, nome_fantasia, ativo")
-          .eq("ativo", true)
-          .order("id", { ascending: true })
-          .range(from, to),
-      );
-      return [...data].sort((a, b) =>
-        String(a.razao_social ?? "").localeCompare(String(b.razao_social ?? "")),
-      ) as { id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }[];
-    },
-  });
+  const partners: Array<{ id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }> = [];
 
   // Vínculo atual dos usuários com parceiros
-  const { data: partnerLinks = [] } = useQuery({
-    queryKey: ["partner-users-links"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const data = await fetchAllRows<any>((from, to) =>
-        (supabase as any)
-          .from("partner_users")
-          .select("id, user_id, partner_id, papel")
-          .order("id", { ascending: true })
-          .range(from, to),
-      );
-      return data as { id: string; user_id: string; partner_id: string; papel: string }[];
-    },
-  });
+  const partnerLinks: Array<{ id: string; user_id: string; partner_id: string; papel: string }> = [];
 
 
   const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
@@ -266,19 +196,20 @@ export default function Configuracoes() {
 
 
   const filteredUsers = useMemo(() => {
-    const porFiltros = allUsers.filter((u: any) => {
-      if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
-      if (filterStatus === "ativo" && u.ativo === false) return false;
-      if (filterStatus === "inativo" && u.ativo !== false) return false;
-      return true;
-    });
-    return filtrarUsuariosPorBusca(porFiltros as any[], debouncedSearchTerm) as any[];
-  }, [allUsers, filterRole, filterStatus, debouncedSearchTerm]);
+    return usersPage;
+  }, [usersPage]);
 
   // Paginação client-side sobre o conjunto JÁ filtrado (nada é truncado silenciosamente)
   const [pagina, setPagina] = useState(1);
   useEffect(() => { setPagina(1); }, [filterRole, filterStatus, debouncedSearchTerm]);
-  const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
+  const paginacao = useMemo(() => ({
+    total: allUsers.total ?? 0,
+    totalPaginas: Math.max(1, Math.ceil((allUsers.total ?? 0) / USUARIOS_POR_PAGINA)),
+    paginaAtual: pagina,
+    itens: filteredUsers,
+    inicio: (allUsers.total ?? 0) === 0 ? 0 : (pagina - 1) * USUARIOS_POR_PAGINA + 1,
+    fim: Math.min(pagina * USUARIOS_POR_PAGINA, allUsers.total ?? 0),
+  }), [allUsers.total, filteredUsers, pagina]);
   const usuariosPagina = paginacao.itens;
 
   // Toggle ativo — proteção de UX: ninguém desativa a própria conta
@@ -286,17 +217,12 @@ export default function Configuracoes() {
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
       if (bloqueio) throw new ErroStatusLocal(bloqueio);
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({ ativo } as any)
-        .eq("user_id", userId)
-        .select("user_id");
+      const { data, error } = await (supabase as any).rpc("tenant_admin_set_user_active", {
+        p_user_id: userId,
+        p_active: ativo,
+      });
       if (error) throw error;
-      try {
-        exigirUmaLinha(data, "status do usuário");
-      } catch (e) {
-        throw new ErroStatusLocal((e as Error).message);
-      }
+      if (data?.success !== true || data?.user_id !== userId) throw new ErroStatusLocal("Não foi possível confirmar a atualização do status.");
     },
 
     onSuccess: () => {
@@ -481,7 +407,7 @@ export default function Configuracoes() {
       const excesso = validarLimiteClienteIds(editVinculos.map((v) => v.cliente_id));
       if (excesso) throw erroLocalEdicao(excesso);
 
-      const originalUser = allUsers.find((u) => u.user_id === editUser.user_id);
+      const originalUser = usersPage.find((u: any) => u.user_id === editUser.user_id);
       const originalRoles: string[] = originalUser?.roles ?? [];
       const isSelf = editUser.user_id === user?.id;
       const bloqueioAdmin = bloqueioAutoRemocaoAdmin(isSelf, originalRoles, desiredRoles);
@@ -503,10 +429,10 @@ export default function Configuracoes() {
           especialidade: editUser.especialidade,
         },
         roles: desiredRoles,
-        clienteIds: editVinculos.map((v) => v.cliente_id),
-        principalClienteId: resolverPrincipalClienteId(editVinculos),
+        clienteIds: [],
+        principalClienteId: null,
         // partner_id somente quando há papel B2B; caso contrário null (servidor deriva o papel)
-        partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
+        partnerId: null,
       });
 
       // Prazo rígido (~20s) cobrindo toda a espera, inclusive sessão/pré-fetch.

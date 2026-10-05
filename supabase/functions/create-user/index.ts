@@ -54,6 +54,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: actorProfile, error: actorProfileError } = await adminClient
+      .from("profiles")
+      .select("organization_id, ativo")
+      .eq("user_id", callerId)
+      .maybeSingle();
+    if (actorProfileError || actorProfile?.ativo !== true || !actorProfile?.organization_id) {
+      return new Response(JSON.stringify({ error: "tenant_scope_required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const actorOrganizationId = actorProfile.organization_id;
+
     const body = await req.json();
     const {
       email, password, nome, role,
@@ -121,6 +134,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Vínculos legados de cliente/parceiro ainda não possuem ownership de organização
+    // determinístico. O fluxo tenant falha fechado até a modelagem desses vínculos.
+    if (finalClienteIds.length > 0 || isPartner || partner_id) {
+      return new Response(JSON.stringify({ error: "tenant_link_scope_unavailable" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: userData, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -137,52 +159,38 @@ Deno.serve(async (req) => {
 
     const userId = userData.user.id;
 
+    const rollbackCreatedUser = async () => {
+      const { error } = await adminClient.auth.admin.deleteUser(userId);
+      if (error) console.error("create_user_compensation_failed", { code: error.code });
+    };
+
     const principal = principal_cliente_id && finalClienteIds.includes(principal_cliente_id)
       ? principal_cliente_id
       : finalClienteIds[0];
 
-    // Insere vínculos N:N antes de atribuir role (trigger enforce_cliente_id_for_produtor exige)
-    if (finalClienteIds.length > 0) {
-      const rows = finalClienteIds.map((cid) => ({
-        user_id: userId,
-        cliente_id: cid,
-        principal: cid === principal,
-      }));
-      const { error: vincErr } = await adminClient.from("user_clientes").insert(rows);
-      if (vincErr) {
-        return new Response(JSON.stringify({ error: "Falha ao vincular clientes: " + vincErr.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    await adminClient
+    const { data: updatedProfiles, error: profileError } = await adminClient
       .from("profiles")
       .update({
         telefone, cargo, cpf_cnpj, crea, especialidade,
         cliente_id: principal ?? null,
+        organization_id: actorOrganizationId,
       })
-      .eq("user_id", userId);
-
-    await adminClient.from("user_roles").delete().eq("user_id", userId);
-    const roleRows = rolesArr.map((r) => ({ user_id: userId, role: r }));
-    const { error: roleErr } = await adminClient.from("user_roles").insert(roleRows);
-    if (roleErr) {
-      return new Response(JSON.stringify({ error: roleErr.message }), {
+      .eq("user_id", userId)
+      .select("user_id");
+    if (profileError || updatedProfiles?.length !== 1) {
+      await rollbackCreatedUser();
+      return new Response(JSON.stringify({ error: "user_profile_provision_failed" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Vincula ao parceiro B2B quando aplicável
-    if (isPartner) {
-      const { error: puErr } = await adminClient
-        .from("partner_users")
-        .insert({ user_id: userId, partner_id, papel: finalPartnerPapel });
-      if (puErr) {
-        return new Response(JSON.stringify({ error: "Falha ao vincular ao parceiro B2B: " + puErr.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    const roleRows = rolesArr.map((r) => ({ user_id: userId, role: r }));
+    const { error: roleErr } = await adminClient.from("user_roles").insert(roleRows);
+    if (roleErr) {
+      await rollbackCreatedUser();
+      return new Response(JSON.stringify({ error: "user_role_provision_failed" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ success: true, user_id: userId }), {
