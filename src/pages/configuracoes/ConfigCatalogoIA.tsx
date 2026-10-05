@@ -21,11 +21,9 @@ const CAMPOS_MICRO = [
   "cuidados_aplicacao", "compatibilidade", "armazenamento", "observacoes_regulatorias",
 ];
 
-const ADMIN_ROLES = ["administrador", "gestor"];
-
 export default function ConfigCatalogoIA() {
-  const { role } = useAuth();
-  const isAdmin = role ? ADMIN_ROLES.includes(role) : false;
+  const { roles } = useAuth();
+  const isPlatformSuperadmin = roles.includes("superadmin");
 
   const [tipos, setTipos] = useState<{ produto: boolean; microrganismo: boolean }>({ produto: true, microrganismo: true });
   const [campos, setCampos] = useState<Set<string>>(new Set(["resumo_curto"]));
@@ -40,10 +38,10 @@ export default function ConfigCatalogoIA() {
     setPendentes(count ?? 0);
   };
 
-  useEffect(() => { if (isAdmin) carregar(); }, [isAdmin]);
+  useEffect(() => { if (isPlatformSuperadmin) carregar(); }, [isPlatformSuperadmin]);
 
-  if (!isAdmin) {
-    return <div className="p-6 text-sm text-muted-foreground">Acesso restrito a administradores e gestores.</div>;
+  if (!isPlatformSuperadmin) {
+    return <div className="p-6 text-sm text-muted-foreground">Acesso restrito ao Superadmin de Plataforma.</div>;
   }
 
   const todosCampos = Array.from(new Set([...CAMPOS_PRODUTO, ...CAMPOS_MICRO]));

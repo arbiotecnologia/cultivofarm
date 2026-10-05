@@ -27,4 +27,5 @@
 - Tenant user administration derives organization from the authenticated profile on the server; profile identity/tenant fields are immutable to authenticated direct updates and legacy links without deterministic ownership fail closed — prevents tenant hopping and cross-tenant administration.
 - Tenant operational rows use server-guarded `organization_id` or a deterministic parent chain to `h15_actor_organization()`; legacy rows without deterministic ownership remain fail-closed — prevents horizontal data leakage.
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
+- `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Fiscal Edges prove the authenticated actor's active organization and target resource before service-role, Storage, signing or transport; global fiscal profiles are Platform Superadmin-write only.
