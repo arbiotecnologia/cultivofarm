@@ -83,7 +83,8 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(redirectPolicy).toContain('https://app.cultivofarm.com.br');
     expect(redirectPolicy).toContain('/reset-password');
     expect(convite).toContain("manual_link: actionLink");
-    expect(convite).toContain('"Cache-Control": "no-store, private"');
+    const manualPolicy = readFileSync("supabase/functions/platform-invite-org-admin/manual-link-policy.ts", "utf-8");
+    expect(manualPolicy).toContain('"Cache-Control": "no-store, private"');
     expect(convite).toContain('deliveryMode === "manual_link"');
     expect(convite).toContain("deliverInviteEmail");
   });

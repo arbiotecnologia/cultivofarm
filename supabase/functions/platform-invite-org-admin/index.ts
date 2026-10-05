@@ -6,8 +6,8 @@
 // - A intenção é persistida antes do Auth e retomada com lease/fencing.
 // - O papel `superadmin` NUNCA é concedido aqui; o usuário criado recebe
 //   exclusivamente `administrador` da empresa indicada.
-// - Nenhum segredo é devolvido além da senha temporária solicitada pelo
-//   próprio superadmin no momento da criação.
+// - Senha temporária ou link manual só voltam ao Superadmin na resposta
+//   solicitada; o link manual usa no-store e nunca é persistido ou logado.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
