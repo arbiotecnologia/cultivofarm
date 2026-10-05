@@ -2099,6 +2099,45 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_platform_admin_audit: {
+        Row: {
+          actor_id: string
+          completed_at: string | null
+          correlation_id: string
+          counts_after: Json
+          counts_before: Json
+          created_at: string
+          id: string
+          operation: string
+          reason: string
+          status: string
+        }
+        Insert: {
+          actor_id: string
+          completed_at?: string | null
+          correlation_id: string
+          counts_after?: Json
+          counts_before?: Json
+          created_at?: string
+          id?: string
+          operation: string
+          reason: string
+          status: string
+        }
+        Update: {
+          actor_id?: string
+          completed_at?: string | null
+          correlation_id?: string
+          counts_after?: Json
+          counts_before?: Json
+          created_at?: string
+          id?: string
+          operation?: string
+          reason?: string
+          status?: string
+        }
+        Relationships: []
+      }
       catalog_technical_audit_logs: {
         Row: {
           acao: string
@@ -21317,6 +21356,10 @@ export type Database = {
       platform_set_organization_status: {
         Args: { _motivo: string; _org: string; _status: string }
         Returns: undefined
+      }
+      platform_wipe_global_product_catalog: {
+        Args: { p_actor_id: string; p_correlation_id: string; p_reason: string }
+        Returns: Json
       }
       pode_acessar_recomendacao: {
         Args: { _recomendacao_id: string; _user_id: string }
