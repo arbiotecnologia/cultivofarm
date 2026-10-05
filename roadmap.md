@@ -7,4 +7,5 @@
 - [x] Fase 5 — Fiscal: tenant explícito; legado sem vínculo bloqueado
 - [x] Fase 6 — Policies/RPCs baseadas só em papel: RLS restritiva transversal
 - [x] Fase 7 — Configuração global legada: mantida global sem dados tenant
-- [ ] Matriz A/B autenticada, validações, deploy, smoke e relatório final
+- [x] Validações, deploy, smoke passivo e relatório final
+- [ ] Matriz A/B autenticada — bloqueada pela ausência de sessões automatizadas no Supabase externo

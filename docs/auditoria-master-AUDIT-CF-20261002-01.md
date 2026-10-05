@@ -14,6 +14,12 @@
 
 O papel operacional interno permanece persistido como `administrador`, com os mesmos acessos e a mesma home. Seu rótulo centralizado passou de **Administrador** para **Administrador da empresa**, refletido em perfil, cadastro, edição, filtros e listagens de usuários. O seletor técnico de perfil no módulo Comunicação preserva `value="administrador"` e exibe o novo nome. A lista de provisionamento da plataforma também explicita que os registros são administradores da empresa. **Superadmin de Plataforma** permaneceu distinto; nenhuma rota, `ACCESS_MAP`, `getHomeForRole`, permissão, RLS ou objeto de banco foi alterado.
 
+### D51.5 — isolamento horizontal multi-tenant
+
+Os bloqueios P0/P1 de Financeiro, Storage, catálogo global, Portal, Produção e Fiscal foram contidos no Supabase canônico. Dezenove tabelas alcançáveis passaram a exigir `organization_id` igual ao tenant derivado de `auth.uid()` por policy restritiva e trigger; legado sem ownership determinístico permanece fail-closed. Treze RPCs financeiras elevadas foram bloqueadas para usuários autenticados até serem reescritas com escopo tenant completo. Wipe/auditoria global do catálogo agora são exclusivos de Superadmin, com confirmação explícita para wipe e sem fallback destrutivo no navegador. A Edge de usuários do portal valida o cliente no tenant antes de qualquer leitura privilegiada.
+
+Validações: **26 testes focados**, **5.436 globais PASS / 4 skipped**, typecheck/build PASS e scanner com **10 Info, zero P0/P1**; três Edges implantadas e publicação frontend solicitada uma vez. Smoke passivo HTTP 200, sem erro de página e sem ação operacional. A/B autenticado ficou **NOT RUN** por ausência de sessão automatizada no Supabase externo. Decisão: **GO de segurança fail-closed; NO-GO de homologação final** até prova A/B autenticada. Nenhum dado foi excluído e nenhuma função destrutiva foi executada.
+
 ### Correção de visibilidade do diagnóstico SMTP em `/plataforma`
 
 A investigação confirmou que `/plataforma` já renderizava o componente global único `ComunicacaoConfigTab`; não havia segunda implementação nem necessidade de nova tela. O pacote oficial também continha os textos das duas etapas. A causa foi uma condição visual no próprio componente: todo o diagnóstico era renderizado somente quando `smtp.password_configured` era verdadeiro. Isso permitia que a aba carregasse normalmente, mas ocultasse tanto **Testar conexão do provedor** quanto **Enviar teste** conforme a resposta sanitizada recebida pela sessão.
