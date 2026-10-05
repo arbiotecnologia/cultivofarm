@@ -4,6 +4,7 @@ import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn(),
+  reset: vi.fn(),
   refetch: vi.fn(),
   convites: [] as Array<Record<string, unknown>>,
   isPending: false,
@@ -17,7 +18,7 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
     isError: false,
     refetch: mocks.refetch,
   }),
-  useConvidarAdminEmpresa: () => ({ mutate: mocks.mutate, isPending: mocks.isPending }),
+  useConvidarAdminEmpresa: () => ({ mutate: mocks.mutate, reset: mocks.reset, isPending: mocks.isPending }),
 }));
 
 import PlataformaAdmins from "@/pages/plataforma/PlataformaAdmins";
@@ -101,5 +102,47 @@ describe("D51.2 — reenvio persistente na lista de administradores", () => {
     fireEvent.click(confirmar);
     fireEvent.click(confirmar);
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it("gera link manual no mesmo registro e permite copiá-lo sem expor no toast", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    mocks.mutate.mockImplementation((_payload, options) => options.onSuccess({
+      user_id: "user-1",
+      senha_temporaria: null,
+      email_status: "not_required",
+      manual_link: "https://auth.invalid/sensitive-value",
+    }));
+    renderWithProviders(<PlataformaAdmins />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Gerar link" }));
+    const confirmation = screen.getByRole("alertdialog");
+    expect(confirmation).toHaveTextContent("Gerar link de acesso?");
+    fireEvent.click(within(confirmation).getByRole("button", { name: "Gerar link" }));
+
+    expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({
+      organizationId: "org-1",
+      deliveryMode: "manual_link",
+      confirmAmbiguousEmailRetry: false,
+    }), expect.any(Object));
+    const result = await screen.findByRole("dialog");
+    expect(result).toHaveTextContent("Link de acesso gerado");
+    expect(result).not.toHaveTextContent("sensitive-value");
+    fireEvent.click(within(result).getByRole("button", { name: "Copiar link" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("https://auth.invalid/sensitive-value"));
+    expect(document.body).not.toHaveTextContent("https://auth.invalid/sensitive-value");
+  });
+
+  it("não oferece link manual para ativo ou senha temporária", () => {
+    mocks.convites = [{ ...base, status: "ativo" }, { ...base, id: "invite-2", modo_acesso: "senha_temporaria" }];
+    renderWithProviders(<PlataformaAdmins />);
+    expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
+  });
+
+  it("avisa sobre link anterior quando o envio foi ambíguo", () => {
+    mocks.convites = [{ ...base, email_delivery_status: "ambiguous" }];
+    renderWithProviders(<PlataformaAdmins />);
+    fireEvent.click(screen.getByRole("button", { name: "Gerar link" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Pode existir um link anterior ainda válido");
   });
 });

@@ -16,7 +16,7 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useOrganizacoesSaaS: () => ({ data: [], isLoading: false }),
   usePlanosSaaS: () => ({ data: [{ id: "base", key: "base", name: "Plano Base", active: true }] }),
   useCriarEmpresa: () => ({ mutateAsync: mocks.criar, isPending: false }),
-  useConvidarAdminEmpresa: () => ({ mutateAsync: mocks.convidar, isPending: false }),
+  useConvidarAdminEmpresa: () => ({ mutateAsync: mocks.convidar, mutate: mocks.convidar, reset: vi.fn(), isPending: false }),
 }));
 
 vi.mock("@/lib/saas/onboardingCnpj", () => ({
@@ -176,6 +176,16 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     await screen.findByText("Convite enviado");
     expect(mocks.criar).toHaveBeenCalledTimes(1);
     expect(mocks.convidar).toHaveBeenCalledTimes(2);
+  });
+
+  it("oferece fallback manual após falha SMTP sem recriar a empresa", async () => {
+    mocks.convidar.mockRejectedValueOnce(new Error("falha controlada"));
+    renderFlow();
+    await chegarNaRevisao();
+    fireEvent.click(screen.getByRole("button", { name: "Criar empresa" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Enviar convite" }));
+    expect(await screen.findByRole("button", { name: "Gerar link para copiar" })).toBeEnabled();
+    expect(mocks.criar).toHaveBeenCalledTimes(1);
   });
 
   it("exige confirmação explícita antes do retry ambíguo", async () => {

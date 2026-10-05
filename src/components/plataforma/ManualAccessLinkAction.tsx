@@ -41,12 +41,12 @@ export function ManualAccessLinkAction({ target, ambiguous = false, label = "Ger
 
   const clearLink = useCallback(() => {
     setManualLink(null);
-    resetRef.current();
+    resetRef.current?.();
   }, []);
 
   useEffect(() => () => {
     setManualLink(null);
-    resetRef.current();
+    resetRef.current?.();
   }, []);
 
   const generate = () => {
