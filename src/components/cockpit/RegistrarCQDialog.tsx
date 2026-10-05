@@ -58,6 +58,10 @@ export function RegistrarCQDialog({ open, onOpenChange, target }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEditRef) {
+      toast.error("Seu perfil possui acesso somente para consulta nesta etapa.");
+      return;
+    }
     if (!target) return;
     if (!target.lote_id) {
       toast.error("Gere o lote antes de registrar o CQ.");
@@ -198,7 +202,7 @@ export function RegistrarCQDialog({ open, onOpenChange, target }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" className="w-full font-bold" disabled={saving || !form.resultado}>
+          <Button type="submit" className="w-full font-bold" disabled={!canEditRef || saving || !form.resultado}>
             {saving ? "Registrando..." : "Registrar análise e avançar esteira"}
           </Button>
         </form>

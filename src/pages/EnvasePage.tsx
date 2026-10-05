@@ -31,6 +31,8 @@ import {
   PAGINA_TECNICA,
 } from "@/lib/envase/consulta";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAuth } from "@/hooks/useAuth";
+import { canWrite } from "@/lib/permissions";
 
 function CriarEmbalagensInline({ envaseId, loteId, produtoId, volumeSugerido, quantidadeSugerida }: {
   envaseId: string; loteId: string; produtoId: string | null; volumeSugerido: number; quantidadeSugerida: number;
@@ -83,6 +85,8 @@ const SELECT_ENVASE =
   "id, lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, etiqueta_id, created_at, lotes!inner(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)";
 
 export default function EnvasePage() {
+  const { role } = useAuth();
+  const canManage = canWrite(role, "/envase");
   const [searchParams] = useSearchParams();
   const [envases, setEnvases] = useState<Envase[]>([]);
   const [total, setTotal] = useState(0);
@@ -383,7 +387,7 @@ export default function EnvasePage() {
           </div>
         ) : carregandoAuxiliares ? (
           <p className="text-sm text-muted-foreground" role="status">Carregando lotes com saldo…</p>
-        ) : lotesComplementares.length > 0 && (
+        ) : canManage && lotesComplementares.length > 0 && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Envase complementar</Button>

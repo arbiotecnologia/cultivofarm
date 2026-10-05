@@ -177,6 +177,10 @@ O catálogo foi confirmado como global: `produtos` não possui vínculo de organ
 
 `list-portal-users` foi endurecida para validar JWT, ator ativo, organização derivada server-side e papel permitido antes do cliente; o cliente é validado por RLS no tenant antes da instanciação de service role. Vínculos corrompidos para outro tenant são descartados pelo filtro de perfis e os papéis são consultados somente para usuários já validados. O frontend descarta resposta assíncrona antiga na troca de cliente/identidade e limpa contexto local no logout. A Edge foi implantada; smoke com JWT inválido retornou 401 sem consultar cliente real. Testes focados **77/77**, global **5.447 PASS / 4 skipped**, typecheck/build PASS, scanner com 10 Info e zero P0/P1 e linter no baseline 479. A prova A/B dedicada ficou **NOT RUN** por ausência, no estado vivo, de dois tenants com administrador e cliente; nenhuma fixture foi inventada. **P0-C = PASS estrutural / NO-GO de homologação A/B funcional.**
 
+### D51.5 P0-D — Produção/RBAC vivo
+
+Em execução restrita a Produção e cadastros relacionados. O estado vivo confirmou isolamento restritivo por `organization_id` nas tabelas diretas, legado sem ownership mantido fail-closed e cadeia de `ordens_servico_onfarm` até cliente. Foram identificados dois pontos para correção: policies de cadastro ainda concediam escrita a `administrativo`, apesar do `ACCESS_MAP` read-only, e RPCs `SECURITY DEFINER` da esteira aceitavam IDs sem validar explicitamente a organização ativa em todos os caminhos. As telas passam a usar `canWrite` para esconder ações incompatíveis e o registro de CQ ganhou bloqueio local coerente com os papéis autorizados. Resultado final depende da migration viva, prova A/B e recertificação.
+
 ## Fase 1 — auditoria canônica pós-E01
 
 ### Regra de identificação refinada

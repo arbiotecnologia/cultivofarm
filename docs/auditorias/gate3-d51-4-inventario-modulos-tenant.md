@@ -153,3 +153,7 @@ pelo pooler a partir do sandbox). Sem isso, os itens 3–7 da seção 4 permanec
 estática**, não achados confirmados. Rodar `RBAC_AUDIT_PASSWORD=... bun run audit:rbac` e `policies-report.sql`
 a partir de um ambiente com rede liberada é o caminho mais rápido para converter esta lista em veredito P0/P1
 definitivo.
+
+## Retomada D51.5 — P0-D Produção/RBAC vivo
+
+O estado vivo confirmou `organization_id` e índice nas superfícies diretas de Produção, com `tenant_isolation_d51_5` restritiva em `clientes`, `fazendas`, `talhoes`, `ordens_servico`, `lotes`, `envase` e `controle_qualidade`; registros legados sem organização permanecem invisíveis. `ordens_servico_onfarm` continua por cadeia determinística até `clientes`. Também foram confirmados desvios de papel: `administrativo` ainda constava em policies de mutação de cadastros, e as RPCs `SECURITY DEFINER` da esteira validavam papel/origem, porém não comprovavam organização do recurso em todas as leituras por ID. O fechamento P0-D substitui essas policies, endurece as RPCs alcançáveis e alinha as ações visíveis ao `ACCESS_MAP`. Evidências A/B e decisão final ficam na auditoria mestre.

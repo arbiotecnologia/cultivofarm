@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { getClienteLabel } from "@/lib/clienteLabel";
+import { canWrite } from "@/lib/permissions";
 
 
 interface Cliente { id: string; nome: string; nome_fantasia?: string; codigo_cliente?: string; }
@@ -66,6 +67,7 @@ export default function Fazendas() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const isAdmin = role === "administrador";
+  const canManage = canWrite(role, "/fazendas");
   const [searchParams] = useSearchParams();
   const clienteFilter = searchParams.get("cliente");
   const [showInativos, setShowInativos] = useState(false);
@@ -260,7 +262,7 @@ export default function Fazendas() {
         title="Fazendas"
         description="Propriedades rurais e consultores responsáveis"
         action={
-          <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+          {canManage ? <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Nova Fazenda</Button>
             </DialogTrigger>
@@ -442,7 +444,7 @@ export default function Fazendas() {
                 <Button type="submit" className="w-full h-12 sm:h-10 font-bold" disabled={!form.cliente_id || !form.nome}>{form.id ? "Atualizar Propriedade" : "Salvar Propriedade"}</Button>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog> : null}
         }
       />
 
@@ -494,7 +496,7 @@ export default function Fazendas() {
                         </p>
                       </div>
 
-                      <DropdownMenu>
+                      {canManage ? <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-slate-400 hover:text-slate-600">
                             <MoreHorizontal className="h-5 w-5" />
@@ -512,7 +514,7 @@ export default function Fazendas() {
                             {f.ativo === false ? <><Archive className="h-4 w-4 mr-2" /> Reativar / Excluir</> : <><Trash2 className="h-4 w-4 mr-2" /> Inativar / Excluir</>}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
-                      </DropdownMenu>
+                      </DropdownMenu> : null}
                     </div>
                   </div>
 
@@ -589,7 +591,7 @@ export default function Fazendas() {
                     ) : (
                       <div className="flex-1" />
                     )}
-                    <Button 
+                    {canManage ? <Button 
                       variant="outline" 
                       className="px-4 h-9 border-slate-200 hover:bg-white text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm"
                       onClick={(e) => {
@@ -598,7 +600,7 @@ export default function Fazendas() {
                       }}
                     >
                       Editar
-                    </Button>
+                    </Button> : null}
                   </div>
                 </div>
               ))
@@ -607,7 +609,7 @@ export default function Fazendas() {
         </CardContent>
       </Card>
 
-      {delDialog && (
+      {canManage && delDialog && (
         <ExcluirInativarDialog
           open={!!delDialog}
           onOpenChange={(v) => !v && setDelDialog(null)}
