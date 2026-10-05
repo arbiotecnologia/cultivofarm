@@ -21070,6 +21070,7 @@ export type Database = {
         Returns: Json
       }
       get_my_available_portal_contexts: { Args: never; Returns: Json }
+      get_my_entitlement_context: { Args: never; Returns: string }
       get_my_entitlements: {
         Args: never
         Returns: {
