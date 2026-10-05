@@ -1,0 +1,2 @@
+revoke execute on function public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer) from public, anon, authenticated;
+comment on function public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer) is 'D51.5 P0-D: fail-closed for authenticated callers because the underlying materialized view has no tenant ownership column.';

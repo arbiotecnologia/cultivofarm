@@ -22,6 +22,7 @@ import { clienteSchema, ClienteSchema } from "@/lib/schemas/cliente";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { ClienteFormTabs } from "@/components/clientes/ClienteFormTabs";
 import { ClienteHistoricoDialog } from "@/components/clientes/ClienteHistoricoDialog";
+import { canWrite } from "@/lib/permissions";
 
 import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR, normalizePhoneBR } from "@/lib/masks";
 import { validateIE, normalizeIE } from "@/lib/fiscal/ie";
@@ -31,6 +32,7 @@ export default function ProdutoresTab() {
   const isMobile = useIsMobile();
   const { role } = useAuth();
   const isAdmin = role === "administrador";
+  const canManage = canWrite(role, "/clientes");
   const [clientes, setClientes] = useState<any[]>([]);
   const [portalAccess, setPortalAccess] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -285,7 +287,7 @@ export default function ProdutoresTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { setSelectedClienteId(null); methods.reset(defaultValues); } }}>
+        {canManage ? <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { setSelectedClienteId(null); methods.reset(defaultValues); } }}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto" onClick={() => { setSelectedClienteId(null); methods.reset(defaultValues); }}><Plus className="h-4 w-4 mr-2" />Novo Produtor</Button>
           </DialogTrigger>
@@ -328,7 +330,7 @@ export default function ProdutoresTab() {
               </form>
             </FormProvider>
           </DialogContent>
-        </Dialog>
+        </Dialog> : null}
       </div>
 
 
@@ -409,8 +411,8 @@ export default function ProdutoresTab() {
               ) : (
                 filtered.map((c) => (
                   <MobileCard
-                    onClick={() => handleEdit(c)}
-                    ariaLabel={`Editar ${c.nome_fantasia || c.nome}`}
+                    onClick={canManage ? () => handleEdit(c) : undefined}
+                    ariaLabel={canManage ? `Editar ${c.nome_fantasia || c.nome}` : `Ver ${c.nome_fantasia || c.nome}`}
                     key={c.id}
                     title={`${c.codigo_cliente ? c.codigo_cliente + " · " : ""}${c.nome_fantasia || c.nome}`}
                     subtitle={c.razao_social}
@@ -439,8 +441,8 @@ export default function ProdutoresTab() {
                     ]}
                     actions={
                       <div className="flex w-full gap-2" onClick={stopRowClick}>
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(c)}>Editar</Button>
-                        <DropdownMenu>
+                        {canManage ? <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(c)}>Editar</Button> : null}
+                        {canManage ? <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
@@ -457,7 +459,7 @@ export default function ProdutoresTab() {
                               {c.status_cliente === "inativo" ? <><Archive className="h-4 w-4 mr-2" /> Reativar / Excluir</> : <><Trash2 className="h-4 w-4 mr-2" /> Inativar / Excluir</>}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu> : null}
                       </div>
                     }
                   />
@@ -483,7 +485,7 @@ export default function ProdutoresTab() {
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum cliente encontrado</TableCell></TableRow>
                 ) : (
                   filtered.map((c) => (
-                    <TableRow key={c.id} {...rowClickProps(() => handleEdit(c))}>
+                    <TableRow key={c.id} {...(canManage ? rowClickProps(() => handleEdit(c)) : {})}>
                       <TableCell className="font-mono-data text-xs font-semibold">{c.codigo_cliente || "—"}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
@@ -524,7 +526,7 @@ export default function ProdutoresTab() {
                         </Badge>
                       </TableCell>
                       <TableCell onClick={stopRowClick}>
-                        <DropdownMenu>
+                        {canManage ? <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
@@ -543,7 +545,7 @@ export default function ProdutoresTab() {
                               {c.status_cliente === "inativo" ? <><Archive className="h-4 w-4 mr-2" /> Reativar / Excluir</> : <><Trash2 className="h-4 w-4 mr-2" /> Inativar / Excluir</>}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu> : null}
                       </TableCell>
                     </TableRow>
                   ))
@@ -564,7 +566,7 @@ export default function ProdutoresTab() {
         </>
       )}
 
-      {delDialog && (
+      {canManage && delDialog && (
         <ExcluirInativarDialog
           open={!!delDialog}
           onOpenChange={(v) => !v && setDelDialog(null)}

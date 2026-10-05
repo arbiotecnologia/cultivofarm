@@ -21,6 +21,7 @@ import { ExcluirInativarDialog } from "@/components/cadastros/ExcluirInativarDia
 import { checkTalhaoDeps } from "@/lib/cadastros";
 import { useAuth } from "@/hooks/useAuth";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
+import { canWrite } from "@/lib/permissions";
 
 interface Fazenda { id: string; nome: string; clientes?: { nome: string } | null; }
 interface Cultura { id: string; nome: string; }
@@ -43,6 +44,7 @@ export default function Talhoes() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const isAdmin = role === "administrador";
+  const canManage = canWrite(role, "/talhoes");
   const [talhoes, setTalhoes] = useState<Talhao[]>([]);
   const [fazendas, setFazendas] = useState<Fazenda[]>([]);
   const [culturas, setCulturas] = useState<Cultura[]>([]);
@@ -124,7 +126,7 @@ export default function Talhoes() {
         title="Talhões"
         description="Gestão de talhões e áreas de cultivo"
         action={
-          <Dialog open={open} onOpenChange={setOpen}>
+          canManage ? <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Novo Talhão</Button>
             </DialogTrigger>
@@ -294,7 +296,7 @@ export default function Talhoes() {
                 <Button type="submit" className="w-full h-12 sm:h-10 mt-2 font-bold" disabled={!form.fazenda_id || !form.nome}>Salvar Talhão</Button>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog> : null
         }
       />
 
@@ -396,7 +398,7 @@ export default function Talhoes() {
                             <Button variant="ghost" size="icon" onClick={() => navigate(`/talhoes/${t.id}`)} title="Ver histórico unificado">
                               <History className="h-4 w-4" />
                             </Button>
-                            <DropdownMenu>
+                            {canManage ? <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
@@ -405,7 +407,7 @@ export default function Talhoes() {
                                   {t.ativo === false ? <><Archive className="h-4 w-4 mr-2" /> Reativar / Excluir</> : <><Trash2 className="h-4 w-4 mr-2" /> Inativar / Excluir</>}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
-                            </DropdownMenu>
+                            </DropdownMenu> : null}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -418,7 +420,7 @@ export default function Talhoes() {
         </CardContent>
       </Card>
 
-      {delDialog && (
+      {canManage && delDialog && (
         <ExcluirInativarDialog
           open={!!delDialog}
           onOpenChange={(v) => !v && setDelDialog(null)}

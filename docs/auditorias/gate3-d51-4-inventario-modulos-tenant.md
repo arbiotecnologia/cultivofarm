@@ -153,3 +153,7 @@ pelo pooler a partir do sandbox). Sem isso, os itens 3–7 da seção 4 permanec
 estática**, não achados confirmados. Rodar `RBAC_AUDIT_PASSWORD=... bun run audit:rbac` e `policies-report.sql`
 a partir de um ambiente com rede liberada é o caminho mais rápido para converter esta lista em veredito P0/P1
 definitivo.
+
+## Retomada D51.5 — P0-D Produção/RBAC vivo
+
+O estado vivo confirmou `organization_id` e índice nas superfícies diretas de Produção, com `tenant_isolation_d51_5` restritiva em `clientes`, `fazendas`, `talhoes`, `ordens_servico`, `lotes`, `envase` e `controle_qualidade`; registros legados sem organização permanecem invisíveis. `ordens_servico_onfarm` continua por cadeia determinística até `clientes`. Policies de mutação de cadastros foram alinhadas ao `ACCESS_MAP`: clientes por administrador/gestor/gestor comercial e fazendas/talhões por administrador/gestor. A escrita de OS por produção foi removida. Policies históricas `true` de lote, envase e CQ foram eliminadas. Como as RPCs e a listagem materializada da esteira não comprovavam organização do recurso em todos os caminhos, a execução por usuários autenticados foi revogada, mantendo o módulo fail-closed até reescrita tenant-scoped. As telas escondem ações incompatíveis com `canWrite`. Estado final: sete guards restritivos, zero policy histórica `true`, zero grant autenticado nas cinco RPCs não comprovadas e índices de organização presentes nas sete tabelas diretas.

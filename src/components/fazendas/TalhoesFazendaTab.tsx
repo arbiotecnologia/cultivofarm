@@ -22,6 +22,7 @@ import { checkTalhaoDeps } from "@/lib/cadastros";
 import { useAuth } from "@/hooks/useAuth";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import SafrasTalhaoDialog from "@/components/talhoes/SafrasTalhaoDialog";
+import { canWrite } from "@/lib/permissions";
 
 interface SafraAtual {
   id: string;
@@ -67,6 +68,7 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
   const navigate = useNavigate();
   const { role } = useAuth();
   const isAdmin = role === "administrador";
+  const canManage = canWrite(role, "/talhoes");
 
   const [talhoes, setTalhoes] = useState<Talhao[]>([]);
   const [search, setSearch] = useState("");
@@ -186,7 +188,7 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={handleOpenChange}>
+        {canManage ? <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Novo Talhão</Button>
           </DialogTrigger>
@@ -306,7 +308,7 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog> : null}
       </div>
 
       <Card>
@@ -351,12 +353,12 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
                     ]}
                     actions={
                       <div className="w-full flex gap-2" onClick={stopRowClick}>
-                        <Button className="flex-1" size="sm" variant="outline" onClick={() => setSafrasOf({ id: t.id, nome: t.nome })}>
+                        {canManage ? <Button className="flex-1" size="sm" variant="outline" onClick={() => setSafrasOf({ id: t.id, nome: t.nome })}>
                           <Sprout className="h-4 w-4 mr-1" /> Safras
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => openEdit(t)}>
+                        </Button> : null}
+                        {canManage ? <Button size="sm" variant="outline" onClick={() => openEdit(t)}>
                           <Pencil className="h-4 w-4" />
-                        </Button>
+                        </Button> : null}
                       </div>
                     }
                   />
@@ -402,16 +404,16 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
                         </TableCell>
                         <TableCell className="text-center" onClick={stopRowClick}>
                           <div className="flex items-center justify-center gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => setSafrasOf({ id: t.id, nome: t.nome })} title="Gerenciar safras">
+                            {canManage ? <Button variant="ghost" size="icon" onClick={() => setSafrasOf({ id: t.id, nome: t.nome })} title="Gerenciar safras">
                               <Sprout className="h-4 w-4 text-emerald-600" />
-                            </Button>
+                            </Button> : null}
                             <Button variant="ghost" size="icon" onClick={() => navigate(`/talhoes/${t.id}`)} title="Histórico unificado">
                               <History className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(t)} title="Editar talhão">
+                            {canManage ? <Button variant="ghost" size="icon" onClick={() => openEdit(t)} title="Editar talhão">
                               <Pencil className="h-4 w-4" />
-                            </Button>
-                            <DropdownMenu>
+                            </Button> : null}
+                            {canManage ? <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
@@ -420,7 +422,7 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
                                   {t.ativo === false ? <><Archive className="h-4 w-4 mr-2" /> Reativar / Excluir</> : <><Trash2 className="h-4 w-4 mr-2" /> Inativar / Excluir</>}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
-                            </DropdownMenu>
+                            </DropdownMenu> : null}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -433,7 +435,7 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
         </CardContent>
       </Card>
 
-      {safrasOf && (
+      {canManage && safrasOf && (
         <SafrasTalhaoDialog
           talhaoId={safrasOf.id}
           talhaoNome={safrasOf.nome}
@@ -443,7 +445,7 @@ export default function TalhoesFazendaTab({ fazendaId }: Props) {
         />
       )}
 
-      {delDialog && (
+      {canManage && delDialog && (
         <ExcluirInativarDialog
           open={!!delDialog}
           onOpenChange={(v) => !v && setDelDialog(null)}
