@@ -130,3 +130,14 @@ A matriz A/B foi reexecutada no banco canônico pela migration `20261005204351_3
 - **Validação:** 12 testes focados, suíte global com 5.440 PASS/4 skipped, typecheck e build PASS; scanner com 10 Info e zero P0/P1; linter no baseline de 479. Edge `generate-financial-receipt` implantada e smoke anônimo protegido, sem emissão de recibo.
 
 **Decisão P0-A:** **PASS** para recibos, tabelas e Storage; **FAIL-CLOSED** para relatórios analíticos. A funcionalidade analítica permanece indisponível até todas as fontes e joins receberem escopo tenant server-side. P0-B não foi iniciado.
+
+### D51.5 P0-B — Catálogo global
+
+- **Classificação: GLOBAL.** `produtos` e suas tabelas técnicas/fiscais de catálogo não possuem `organization_id`; referências operacionais permanecem pertencentes aos respectivos tenants.
+- **Autorização: PASS.** Auditoria e wipe validam JWT e `is_platform_superadmin` no servidor; administrador de empresa recebe 403 e ausência de sessão recebe 401. Nenhum tenant informado pelo cliente participa da autorização.
+- **Wipe: PASS com preservação histórica.** A Edge não executa mais cascata pelo navegador ou por loops privilegiados. Uma RPC transacional, executável somente por `service_role`, exige confirmação, motivo de 10–500 caracteres e `correlation_id` UUID, usa lock e idempotência e limita o alvo às tabelas globais do catálogo. Referências operacionais impedem atomicamente a exclusão.
+- **Auditoria: PASS.** A trilha registra ator, horário, motivo, correlação e contagens antes/depois, sem payload sensível. A leitura é restrita a Platform Superadmin.
+- **Frontend: PASS.** Não existe chamador visual ativo dessas ações; os atalhos de limpeza client-side foram removidos e nenhuma nova ação foi exposta.
+- **Validação:** 13 testes focados e suíte global PASS; typecheck e build PASS; scanner com 10 Info e zero P0/P1. Estado vivo confirmou `SECURITY DEFINER`, `search_path` fixo e execução da RPC destrutiva apenas por `service_role`. Smoke anônimo protegido foi executado sem wipe.
+
+**Decisão P0-B:** **PASS**. Nenhuma limpeza real foi executada e o P0-C não foi iniciado.

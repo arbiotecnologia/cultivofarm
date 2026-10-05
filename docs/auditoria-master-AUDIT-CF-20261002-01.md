@@ -169,6 +169,10 @@ As contagens de migrations, triggers e policies são históricas e podem incluir
 
 Não restou P0/P1 bloqueante após o hardening local e os testes, permitindo iniciar a Fase 1. As duas Edge Functions endurecidas só devem ser implantadas pelo fluxo controlado; nenhuma função ou dado foi acionado nesta auditoria read-only.
 
+### Fechamento D51.5 P0-B — catálogo
+
+O catálogo foi confirmado como global: `produtos` não possui vínculo de organização, enquanto ordens, lotes, estoque, entregas e demais referências operacionais permanecem fora do escopo destrutivo. Auditoria e wipe exigem Platform Superadmin validado no servidor. O wipe passou a uma única RPC transacional e idempotente, restrita ao `service_role`, com confirmação explícita, motivo obrigatório, correlação e trilha de contagens antes/depois. Chaves estrangeiras para histórico operacional fazem a operação falhar por inteiro, sem cascata de dados tenant. Atalhos destrutivos no navegador foram removidos; nenhuma limpeza real foi executada. **P0-B = PASS.**
+
 ## Fase 1 — auditoria canônica pós-E01
 
 ### Regra de identificação refinada

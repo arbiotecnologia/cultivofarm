@@ -38,6 +38,22 @@ describe("funções administrativas de catálogo — fronteiras de origem e aute
     expect(edge).toContain("explicit_confirmation_required");
     expect(edge).toContain("APAGAR CATALOGO GLOBAL");
     expect(client).not.toContain("wipeCatalogoProdutosViaClient");
+    expect(client).not.toContain("export async function wipeCatalogoProdutos");
+    expect(client).not.toContain("export async function executeOrphanCleanup");
+  });
+
+  it("exige motivo e correlação e delega o wipe à RPC transacional", () => {
+    const edge = read(FUNCTIONS[0]);
+    const migration = read("supabase/migrations/20261005210938_9fe86779-c1d6-4552-978c-1c1a7db7991e.sql");
+    expect(edge).toContain("reason_required");
+    expect(edge).toContain("correlation_id_required");
+    expect(edge).toContain('rpc("platform_wipe_global_product_catalog"');
+    expect(edge).not.toContain("WIPE_ORDER");
+    expect(migration).toContain("pg_advisory_xact_lock");
+    expect(migration).toContain("catalog_platform_admin_audit");
+    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.platform_wipe_global_product_catalog(uuid, text, uuid) TO service_role");
+    expect(migration).not.toContain("'fiscal_invoices'");
+    expect(migration).not.toContain("'ordens_servico'");
   });
 
   it("não devolve detalhes internos no caminho de erro da função destrutiva", () => {
