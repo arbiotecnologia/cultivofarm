@@ -24,6 +24,7 @@ export function useEntitlements(): EntitlementState {
       return ((data ?? []) as { feature_key: string }[]).map((r) => r.feature_key);
     },
   });
-  if (!q.isSuccess) return { status: "unknown" };
+  if (q.isLoading) return { status: "loading" };
+  if (!q.isSuccess) return { status: "error" };
   return { status: "ready", features: new Set(q.data) };
 }

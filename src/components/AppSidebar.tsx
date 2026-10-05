@@ -44,6 +44,7 @@ export function AppSidebar() {
       activeContext,
     }).allowed &&
     isNavItemFeatureEnabled(item) &&
+    isPathEntitled(routePath(item.route), entitlements) &&
     allowedRolesOk(item);
 
   const groups: SidebarNavGroup[] = useMemo(() => {
@@ -57,7 +58,7 @@ export function AppSidebar() {
       }))
       .filter((g) => g.items.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, roles, activeContext]);
+  }, [role, roles, activeContext, entitlements]);
 
   const isProducao = role === "producao" || role === "operador_onfarm";
 
