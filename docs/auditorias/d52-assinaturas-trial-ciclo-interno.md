@@ -56,7 +56,7 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados e três datas finais de trial derivadas somente do início registrado.
 - Job `saas-expire-due-trials`: ativo diariamente às 02:15 UTC; trials legados continuam fora da expiração automática por não terem versão comercial.
 - Testes focados de estados, trial, autorização e idempotência passaram; typecheck, scanner, linter e compilação automática foram executados nesta retomada.
-- A suíte global anterior permanece como referência; esta retomada ficou restrita aos testes focados do núcleo.
+- A suíte global desta retomada passou com 5.481 testes e quatro ignorados; os 45 testes focados de Entitlements/UI também passaram.
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 - Estado final de entitlements/UI: zero versões comerciais e cinco assinaturas legadas; a prova negativa é real e fail-closed. Nenhuma publicação, transição, exceção ou dado comercial foi criado para fabricar PASS.
