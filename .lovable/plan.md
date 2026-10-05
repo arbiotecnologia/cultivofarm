@@ -1,19 +1,52 @@
-# D51.2 — fallback manual de link de acesso
+# D51.3 — Primeiro acesso único e isolamento tenant do Dashboard
 
-## Implementação por fases
-1. **Contrato e segurança:** estender `platform-invite-org-admin` com `delivery_mode=email|manual_link` (padrão `email`), mantendo JWT e autorização de Superadmin. O modo manual ignorará somente gates de SMTP/flags, aceitará apenas acesso por link pendente ou falho, reutilizará o mesmo job e conta, e continuará usando o redirect canônico do servidor.
-2. **Estado e auditoria:** ajustar o claim existente apenas no necessário para o modo manual não depender de cooldown/ambiguidade de e-mail, sem incrementar tentativas de e-mail nem alterar seu estado. Reutilizar a auditoria existente para sucesso/falha com metadados fixos e sem URL/token. Não criar tabela, job, usuário ou papel paralelo.
-3. **Resposta protegida:** devolver `manual_link` exclusivamente no sucesso manual, com `Cache-Control: no-store, private`; nunca devolver o link no modo e-mail nem registrá-lo em logs, banco ou telemetria.
-4. **Interface reutilizável:** criar um diálogo seguro em memória com confirmação, cópia via Clipboard e limpeza ao fechar/desmontar. Usá-lo nas ações de Administradores e no estado de empresa pronta/falha SMTP da Nova Empresa, preservando o reenvio atual e o aviso adicional para entrega ambígua.
-5. **Hook e tipos:** adicionar `deliveryMode` ao hook existente e permitir `manual_link` apenas na resposta tipada, sem persistência ou logs.
+## Objetivo
+Eliminar a dupla definição de senha no primeiro acesso e impedir vazamento cross-tenant em `/dashboard/geral`, sem criar papéis, rotas ou dashboards paralelos.
 
-## Validação e entrega
-- Cobrir autorização, elegibilidade, reutilização, bypass somente dos gates SMTP, invariância do estado de e-mail, redirect, cache, ausência do link no modo e-mail/auditoria/logs e concorrência sem duplicação.
-- Cobrir confirmação, cópia segura, limpeza de memória, ambiguidade, Nova Empresa, acessibilidade e larguras móvel/desktop.
-- Rodar testes Edge e React focados, typecheck, build, suíte global e scanner; revisar o diff contra persistência/log de credencial.
-- Implantar somente a função e dependências alteradas, publicar o frontend uma vez e executar smoke passivo sem gerar link nem enviar e-mail.
-- Atualizar auditoria master, matriz, roadmap e a regra arquitetural correspondente.
+## Fases aprovadas
 
-## Limites operacionais
-- Validar fail-closed o projeto canônico `swzpzcwiasxmjutrmvkm` antes de qualquer mudança de banco.
-- Não gerar link real, não enviar e-mail, não alterar flags e não tocar no job E02 operacional durante implementação ou smoke.
+### A — Primeiro acesso único
+- Diagnosticar server-side a pendência de primeiro acesso em `/reset-password`.
+- Se pendente, concluir senha e estado provisório exclusivamente por `platform-complete-first-access`.
+- Se não pendente, manter o recovery comum por `auth.updateUser`.
+- Falhar fechado em erro de diagnóstico e preservar `TrocaSenhaObrigatoria` como barreira legada.
+- Cobrir finalizador único, falhas, link inválido, senha e limpeza do fragmento sensível.
+
+### B — Inventário tenant do Dashboard
+- Mapear todas as RPCs, views, consultas, tabelas, políticas e vínculos realmente alcançados por `/dashboard/geral`.
+- Registrar fonte, escopo atual e correção mínima.
+
+### C — Organização server-side
+- Reutilizar ou criar um único helper privado que derive `organization_id` de `auth.uid()` e `profiles` ativo.
+- Não aceitar organização do cliente; usar `search_path` restrito e privilégios mínimos.
+
+### D — RPCs do Dashboard
+- Corrigir `rpc_executivo_resumo_geral`, `rpc_dashboard_geral_lab_resumo` e helpers relacionados.
+- Filtrar por organização server-side; fontes sem ownership determinístico devem falhar fechadas.
+- Não conceder agregado operacional global implícito ao Superadmin.
+
+### E — RLS e consultas diretas
+- Ajustar somente as tabelas realmente alcançáveis pela tela.
+- Aplicar predicados tenant em leitura e escrita; não ampliar o escopo às demais tabelas do sistema.
+
+### F — Dados legados
+- Fazer backfill somente quando houver vínculo determinístico e auditável.
+- Excluir do Dashboard registros sem vínculo seguro e documentar a pendência.
+
+### G — Testes de isolamento
+- Validar organizações A/B, tentativa de forjar organização, REST/RLS, RPCs SECURITY DEFINER, usuário sem organização, inativo e Superadmin sem vínculo operacional.
+- Usar fixtures transacionais com rollback quando tecnicamente possível, sem criar dados permanentes.
+
+### H — Performance
+- Avaliar planos e criar apenas índices necessários aos filtros tenant.
+- Manter agregações server-side e evitar consultas amplas.
+
+### I — Deploy e gate
+- Aplicar migrations versionadas no Supabase canônico `swzpzcwiasxmjutrmvkm` após validações.
+- Executar testes focados e globais, typecheck, build, scanner, advisors e smoke passivo.
+- Documentar rollback/forward-fix, atualizar auditoria, matriz e roadmap e emitir GO/NO-GO.
+
+## Restrições
+- Preservar dados e histórico; não inventar associações tenant.
+- Não criar fluxo, papel, rota ou Dashboard paralelo.
+- Não avançar a Fase 2 da campanha enquanto o isolamento não estiver PASS.
