@@ -54,7 +54,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatTelefone, formatCpfCnpj, unmask, unmaskCpfCnpj, validatePhoneBR } from "@/lib/masks";
-import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer, Download } from "lucide-react";
+import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Timer, Download } from "lucide-react";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -316,7 +316,6 @@ export default function Configuracoes() {
   // Usamos editUser?.user_id para evitar resetar o estado quando outros campos (nome, email) mudam
   useEffect(() => {
     if (editOpen && editUser?.user_id) {
-      // Popula partner_id a partir do vínculo atual (fase multiportal)
     }
   }, [editOpen, editUser?.user_id]);
 
