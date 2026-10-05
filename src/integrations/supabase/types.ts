@@ -19897,6 +19897,7 @@ export type Database = {
           registro_id: string
         }[]
       }
+      d51_5_p0d_ab_selftest: { Args: never; Returns: Json }
       financial_storage_object_permitted: {
         Args: { _bucket: string; _name: string }
         Returns: boolean
