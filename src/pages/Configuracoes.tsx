@@ -62,7 +62,7 @@ import { PageHeader, ResponsiveTable, MobileCard } from "@/components/Responsive
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ROLE_LABELS, ROLE_VARIANTS, ACTIVE_ROLES } from "@/lib/permissions";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
-import { ClientesVinculadosField, type ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
+import type { ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
 import { Link } from "react-router-dom";
 import { History, Wallet } from "lucide-react";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
@@ -161,31 +161,13 @@ export default function Configuracoes() {
 
   const clientes: Array<{ id: string; nome: string; cpf_cnpj: string | null }> = [];
 
-  // Parceiros B2B (para vínculo quando papel parceiro_b2b* é selecionado)
-  const partners: Array<{ id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }> = [];
-
-  // Vínculo atual dos usuários com parceiros
-  const partnerLinks: Array<{ id: string; user_id: string; partner_id: string; papel: string }> = [];
-
-
-  const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
-  const partnerLinkByUser = (uid: string) => partnerLinks.find(l => l.user_id === uid) || null;
-
-  // Helpers de papéis
-  const PARTNER_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"] as const;
-  const hasPartnerRole = (roles: string[]) => roles.some(r => (PARTNER_ROLES as readonly string[]).includes(r));
-  const partnerPapelFromRoles = (roles: string[]): "gestor" | "tecnico" =>
-    roles.includes("parceiro_b2b_tecnico") ? "tecnico" : "gestor";
+  const TENANT_MANAGEABLE_ROLES = ACTIVE_ROLES.filter((candidate) =>
+    !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
+  );
   function toggleRole(roles: string[], r: string, on: boolean): string[] {
     let next = new Set(roles);
     if (on) {
       next.add(r);
-      // cliente_produtor é exclusivo
-      if (r === "cliente_produtor") next = new Set(["cliente_produtor"]);
-      else next.delete("cliente_produtor");
-      // gestor/técnico do parceiro são mutuamente exclusivos entre si
-      if (r === "parceiro_b2b") next.delete("parceiro_b2b_tecnico");
-      if (r === "parceiro_b2b_tecnico") next.delete("parceiro_b2b");
     } else {
       next.delete(r);
     }
@@ -261,12 +243,12 @@ export default function Configuracoes() {
         // compat com fluxo legado que espera `role` string
         role: newUser.roles[0],
         roles: newUser.roles,
-        partner_id: newUser.partner_id || null,
-        partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
+        partner_id: null,
+        partner_papel: null,
         telefone: (() => { const c = validatePhoneBR(newUser.telefone, { fieldLabel: "Telefone" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
         cpf_cnpj: unmaskCpfCnpj(newUser.cpf_cnpj),
-        cliente_ids: newUserVinculos.map(v => v.cliente_id),
-        principal_cliente_id: principal,
+        cliente_ids: [],
+        principal_cliente_id: null,
       };
       const { data, error } = await supabase.functions.invoke("create-user", { body: payload });
       if (error) {
@@ -344,12 +326,8 @@ export default function Configuracoes() {
     if (editOpen && editUser?.user_id) {
       setEditVinculos(editUser.vinculos || []);
       // Popula partner_id a partir do vínculo atual (fase multiportal)
-      const link = partnerLinkByUser(editUser.user_id);
-      if (link && !editUser.partner_id) {
-        setEditUser((prev: any) => (prev ? { ...prev, partner_id: link.partner_id } : prev));
-      }
     }
-  }, [editOpen, editUser?.user_id, partnerLinks]);
+  }, [editOpen, editUser?.user_id]);
 
   // Deep-link: ?tab=usuarios&user_id=... — o parâmetro é CONSUMIDO ao abrir,
   // para que fechar o diálogo não o reabra.
@@ -732,7 +710,7 @@ export default function Configuracoes() {
                               className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto"
                               {...erroProps("roles")}
                             >
-                              {ACTIVE_ROLES.map(r => {
+                              {TENANT_MANAGEABLE_ROLES.map(r => {
                                 const checked = newUser.roles.includes(r);
                                 return (
                                   <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -749,25 +727,6 @@ export default function Configuracoes() {
                             </div>
                             {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
-                          {hasPartnerRole(newUser.roles) && (
-                            <div>
-                              <Label>Parceiro B2B vinculado *</Label>
-                              <Select value={newUser.partner_id} onValueChange={v => setNewUser({ ...newUser, partner_id: v })}>
-                                <SelectTrigger ref={registrarCampo("partner_id")} {...erroProps("partner_id")}><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
-                                <SelectContent>
-                                  {partners.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>
-                                      {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Papel no parceiro: <b>{partnerPapelFromRoles(newUser.roles) === "tecnico" ? "Técnico" : "Gestor"}</b>
-                              </p>
-                              {createErros.partner_id && <p id="erro-partner_id" className="text-xs text-destructive mt-1">{createErros.partner_id}</p>}
-                            </div>
-                          )}
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
                            <div><Label>Cargo</Label><Input value={newUser.cargo} onChange={e => setNewUser({ ...newUser, cargo: e.target.value })} /></div>
                            <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div>
@@ -777,18 +736,6 @@ export default function Configuracoes() {
                               <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
                             </>
                           )}
-                          <div ref={registrarCampo("cliente_ids")} tabIndex={-1} {...erroProps("cliente_ids")}>
-                            <ClientesVinculadosField
-                              clientes={clientes}
-                              value={newUserVinculos}
-                              onChange={setNewUserVinculos}
-                              required={newUser.roles.includes('cliente_produtor')}
-                              helperText={newUser.roles.includes('cliente_produtor')
-                                ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
-                                : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
-                            />
-                            {createErros.cliente_ids && <p id="erro-cliente_ids" className="text-xs text-destructive mt-1">{createErros.cliente_ids}</p>}
-                          </div>
 
                           <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
@@ -1007,7 +954,7 @@ export default function Configuracoes() {
                     <div>
                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
                       <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
-                        {ACTIVE_ROLES.map(r => {
+                      {TENANT_MANAGEABLE_ROLES.map(r => {
                           const currentRoles: string[] = editUser.roles ?? [];
                           const checked = currentRoles.includes(r);
                           return (
@@ -1025,31 +972,7 @@ export default function Configuracoes() {
                           );
                         })}
                       </div>
-                      {(editUser.roles ?? []).includes("cliente_produtor") && (editUser.roles ?? []).length > 1 && (
-                        <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
-                      )}
                     </div>
-                    {hasPartnerRole(editUser.roles ?? []) && (
-                      <div>
-                        <Label>Parceiro B2B vinculado *</Label>
-                        <Select
-                          value={editUser.partner_id || ""}
-                          onValueChange={v => setEditUser({ ...editUser, partner_id: v })}
-                        >
-                          <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
-                          <SelectContent>
-                            {partners.map(p => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Papel no parceiro: <b>{partnerPapelFromRoles(editUser.roles ?? []) === "tecnico" ? "Técnico" : "Gestor"}</b>
-                        </p>
-                      </div>
-                    )}
                     <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
                     <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
                     <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
@@ -1060,15 +983,6 @@ export default function Configuracoes() {
                         <div><Label>Especialidade</Label><Input value={editUser.especialidade || ""} onChange={e => setEditUser({ ...editUser, especialidade: e.target.value })} /></div>
                       </>
                     )}
-                    <ClientesVinculadosField
-                      clientes={clientes}
-                      value={editVinculos}
-                      onChange={setEditVinculos}
-                      required={editUser.roles?.includes('cliente_produtor')}
-                      helperText={editUser.roles?.includes('cliente_produtor')
-                        ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
-                        : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
-                    />
                     {editResumo && (
                       <p role="alert" className="text-xs text-destructive border border-destructive/40 rounded-md p-2">
                         {editResumo}
