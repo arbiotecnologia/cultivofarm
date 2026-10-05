@@ -1,6 +1,6 @@
-- [x] **D51.4 Gate 1 — PASS técnico condicionado:** gestão de usuários isolada por organização derivada server-side; vínculos legados sem ownership removidos da tela; criação, edição, status, senha e deep-link falham fechados; smoke A/B autenticado ainda NOT RUN.
-- [x] **D51.4 Gate 2 — PASS técnico:** onboarding normaliza telefone/e-mail, restringe fuso IANA e regime tributário e expõe Perfil da empresa pela mesma fonte canônica.
-- [ ] **D51.4 Gate 3 — NO-GO:** P0/P1 horizontais comprovados em financeiro, Storage, wipe de catálogo e listagem de usuários do portal; exigem modelagem tenant por módulo antes da homologação multiempresa.
+- [x] **D51.4 Gate 1 — PASS:** gestão de usuários isolada por organização derivada server-side; bypass de autoedição do tenant fechado; vínculos sem ownership bloqueados; criação, edição, status, senha e deep-link falham fechados; matriz A/B transacional passou no canônico sem criar usuários ou preservar mutações. Smoke visual autenticado ficou indisponível por Supabase externo.
+- [ ] **D51.4 Gate 2 — BLOQUEADO por escopo:** não executar onboarding antes de nova autorização do responsável.
+- [ ] **D51.4 Gate 3 — BLOQUEADO por escopo:** não executar auditoria horizontal antes de nova autorização do responsável.
 # Roadmap
 
 - [x] **D51.3.1 — refinamento UX do papel Administrador:** o rótulo operacional passou a **Administrador da empresa** em perfil, gestão de usuários, filtros, Comunicação e provisionamento, mantendo a string interna `administrador`. Superadmin, autorização, rotas, `ACCESS_MAP`, `getHomeForRole`, RLS e banco permaneceram inalterados. Testes focados, typecheck/build, publicação única e smoke passivo registrados na auditoria.
