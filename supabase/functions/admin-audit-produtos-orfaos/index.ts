@@ -1,5 +1,5 @@
 // Auditoria SOMENTE LEITURA de referências órfãs a produtos.
-// Protegida por JWT + has_role('administrador'). Usa service role apenas
+// Protegida por JWT + Superadmin de Plataforma. Usa service role apenas
 // para leitura (nenhum INSERT/UPDATE/DELETE é feito por esta função).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
@@ -63,9 +63,8 @@ Deno.serve(async (req) => {
     if (claimsErr || !claims?.claims?.sub) return json(401, { error: "Unauthorized" });
 
     const userId = claims.claims.sub as string;
-    const { data: isAdmin, error: rpcErr } = await asUser.rpc("has_role", {
+    const { data: isAdmin, error: rpcErr } = await asUser.rpc("is_platform_superadmin", {
       _user_id: userId,
-      _role: "administrador",
     });
     if (rpcErr) return json(500, { error: "role_check_failed" });
     if (!isAdmin) return json(403, { error: "forbidden" });

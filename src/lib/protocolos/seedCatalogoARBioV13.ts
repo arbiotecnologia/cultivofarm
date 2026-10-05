@@ -246,84 +246,12 @@ export interface ProdutosOrfaosAuditResult {
 export async function wipeCatalogoProdutos(): Promise<WipeResult> {
   const { data, error } = await supabase.functions.invoke<WipeResult>(
     "admin-wipe-produtos-catalog",
-    { method: "POST" },
+    { method: "POST", body: { confirmation: "APAGAR CATALOGO GLOBAL" } },
   );
   if (error) {
-    return wipeCatalogoProdutosViaClient(error.message ?? "invoke_failed");
+    return { ok: false, mode: "edge-function", error: "wipe_unavailable", detail: error.message };
   }
   return data ? { ...data, mode: "edge-function" } : { ok: false, error: "empty_response" };
-}
-
-async function wipeCatalogoProdutosViaClient(reason: string): Promise<WipeResult> {
-  const nullified: Record<string, number> = {};
-  const deleted: Record<string, number> = {};
-
-  const nullifyResult = await (supabase.from("registros_consultor_recomendacoes" as never) as any)
-    .update({ produto_biologico_sugerido_id: null }, { count: "exact" })
-    .not("produto_biologico_sugerido_id", "is", null);
-
-  if (nullifyResult.error) {
-    return {
-      ok: false,
-      mode: "client-fallback",
-      error: "nullify_failed",
-      table: "registros_consultor_recomendacoes",
-      detail: `${nullifyResult.error.message}. Edge Function indisponível: ${reason}`,
-    };
-  }
-  nullified["registros_consultor_recomendacoes.produto_biologico_sugerido_id"] = nullifyResult.count ?? 0;
-
-  for (const table of CLIENT_WIPE_ORDER) {
-    const filterColumn = DELETE_FILTER_COLUMN[table] ?? "id";
-
-    // Pré-checagem: se a tabela está vazia (ou o admin não tem SELECT nela),
-    // pulamos o DELETE. Isso evita "permission denied" desnecessário em tabelas
-    // fiscais/operacionais que só o service_role deveria tocar quando têm dados.
-    const probe = await (supabase.from(table as never) as any)
-      .select(filterColumn, { count: "exact", head: true })
-      .not(filterColumn, "is", null)
-      .limit(1);
-
-    if (probe.error) {
-      // Sem SELECT → também não teremos DELETE. Se a tabela realmente estiver
-      // vazia no ambiente, o wipe pode seguir; registramos 0 e continuamos.
-      deleted[table] = 0;
-      continue;
-    }
-
-    const rowCount = probe.count ?? 0;
-    if (rowCount === 0) {
-      deleted[table] = 0;
-      continue;
-    }
-
-    const deleteResult = await (supabase.from(table as never) as any)
-      .delete({ count: "exact" })
-      .not(filterColumn, "is", null);
-
-    if (deleteResult.error) {
-      return {
-        ok: false,
-        mode: "client-fallback",
-        error: "delete_failed",
-        table,
-        detail:
-          `${deleteResult.error.message}. Tabela tem ${rowCount} registro(s) que exigem a Edge Function ` +
-          `(service_role) para limpeza. Edge Function indisponível: ${reason}`,
-        deleted,
-        nullified,
-      };
-    }
-    deleted[table] = deleteResult.count ?? 0;
-  }
-
-  return {
-    ok: true,
-    mode: "client-fallback",
-    deleted,
-    nullified,
-    totalDeleted: Object.values(deleted).reduce((sum, count) => sum + count, 0),
-  };
 }
 
 export async function auditProdutosOrfaos(): Promise<ProdutosOrfaosAuditResult> {
@@ -335,7 +263,7 @@ export async function auditProdutosOrfaos(): Promise<ProdutosOrfaosAuditResult> 
     return data;
   }
 
-  return auditProdutosOrfaosViaClient();
+  throw new Error("catalog_audit_unavailable");
 }
 
 async function auditProdutosOrfaosViaClient(): Promise<ProdutosOrfaosAuditResult> {
