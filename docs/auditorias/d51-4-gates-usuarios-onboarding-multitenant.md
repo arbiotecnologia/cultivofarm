@@ -16,6 +16,8 @@ Migrations canônicas aplicadas no ref `swzpzcwiasxmjutrmvkm`:
 - `20261005192901_7f7ef56a-73a7-48e9-a875-c935b62eb704.sql`
 - `20261005194435_b6e4bda4-745c-4f51-a916-b76777281391.sql`
 - `20261005194512_9a63a46f-dba0-4861-bd0c-62e432e23671.sql`
+- `20261005194622_91711015-fd68-40ef-a008-24d14cb3be1c.sql`
+- `20261005194639_4395c11d-a774-4ba4-bec9-55ab15b2db25.sql`
 
 Controles aplicados: helpers tenant privados; RLS em `profiles`, `user_roles`, `user_clientes` e `partner_users`; listagem paginada `tenant_admin_list_users`; status via `tenant_admin_set_user_active`; edição transacional; redefinição de senha vinculada ao JWT real do ator. Não houve backfill, exclusão ou alteração de dados operacionais.
 

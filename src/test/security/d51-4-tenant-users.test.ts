@@ -7,7 +7,7 @@ const passwordEdge = readFileSync("supabase/functions/admin-update-user-password
 const auth = readFileSync("src/hooks/useAuth.tsx", "utf8");
 const migration = readFileSync("supabase/migrations/20261005192534_d3208b29-c579-4309-ac0f-29841ef48126.sql", "utf8");
 const selfUpdateHardening = readFileSync("supabase/migrations/20261005194435_b6e4bda4-745c-4f51-a916-b76777281391.sql", "utf8");
-const transactionalAB = readFileSync("supabase/migrations/20261005194512_9a63a46f-dba0-4861-bd0c-62e432e23671.sql", "utf8");
+const transactionalAB = readFileSync("supabase/migrations/20261005194622_91711015-fd68-40ef-a008-24d14cb3be1c.sql", "utf8");
 
 describe("D51.4 Gate 1 — isolamento de usuários", () => {
   it("lista usuários por RPC tenant paginada e chave de cache por identidade", () => {
