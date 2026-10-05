@@ -82,6 +82,7 @@ export default function Configuracoes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isAdmin = role === "administrador";
+  const isPlatformSuperadmin = (roles ?? []).includes("superadmin");
   // Aba "Meu Plano": administradores da empresa (qualquer papel da lista) e o
   // superadmin de plataforma QUANDO vinculado a uma organização. A checagem de
   // vínculo é fail-closed no servidor (RPC/RLS) — aqui é apenas visibilidade.
@@ -97,7 +98,9 @@ export default function Configuracoes() {
         ? "financeiro"
         : tabParam === "meu-plano" && canMeuPlano
           ? "meu-plano"
-          : tabParam && ["perfil", "empresa", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
+          : tabParam === "aparencia" && isPlatformSuperadmin
+            ? "aparencia"
+            : tabParam && ["perfil", "empresa", "catalogos", "sla-b2b"].includes(tabParam)
             ? tabParam
             : "perfil";
 
@@ -505,9 +508,9 @@ export default function Configuracoes() {
               <Shield className="h-3 w-3 sm:h-4 sm:w-4" />Perfil da empresa
             </TabsTrigger>
           )}
-          {isAdmin && (
+          {isPlatformSuperadmin && (
             <TabsTrigger value="aparencia" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
-              <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual
+              <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual da plataforma
             </TabsTrigger>
           )}
           {canMeuPlano && (
@@ -636,7 +639,7 @@ export default function Configuracoes() {
         )}
 
         {/* Aparência Tab */}
-        {isAdmin && (
+        {isPlatformSuperadmin && (
           <TabsContent value="aparencia">
             <AparenciaTab />
           </TabsContent>

@@ -54,7 +54,7 @@ export default function AparenciaTab() {
 
       if (logoFile) {
         const ext = logoFile.name.split(".").pop();
-        const path = `logo-${Date.now()}.${ext}`;
+        const path = `platform/logo-${Date.now()}.${ext}`;
         const { error: upErr } = await supabase.storage.from("logos").upload(path, logoFile, { upsert: true });
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from("logos").getPublicUrl(path);
@@ -73,7 +73,7 @@ export default function AparenciaTab() {
       const { error } = await supabase
         .from("configuracoes_sistema")
         .update(updateData as any)
-        .eq("id", config!.id);
+        .eq("id", config?.id ?? "");
       if (error) throw error;
     },
     onSuccess: () => {
@@ -97,8 +97,8 @@ export default function AparenciaTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5" />Aparência do Sistema</CardTitle>
-        <CardDescription>Personalize a logomarca e as cores do sistema</CardDescription>
+        <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5" />Aparência da plataforma</CardTitle>
+        <CardDescription>Identidade visual global exibida para todas as empresas</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 max-w-lg">
         {/* Logo */}
