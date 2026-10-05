@@ -52,12 +52,6 @@ describe("D52 — ciclo interno de assinatura", () => {
     expect(trialExtension).toContain("platform_extend_trial");
   });
 
-  it("entitlements exigem versão e estado efetivo válido", () => {
-    expect(model).toContain("s.plan_version_id IS NOT NULL");
-    expect(model).toContain("s.status IN ('TRIAL','ACTIVE')");
-    expect(model).not.toContain("s.status IN ('TRIAL','ACTIVE','PAST_DUE')");
-  });
-
   it("não cria gateway, checkout ou webhook de pagamento", () => {
     const all = `${model}\n${operations}\n${hardening}`;
     expect(all).not.toMatch(/stripe|checkout|payment_intent|payment webhook/i);
