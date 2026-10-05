@@ -24,7 +24,9 @@
 - A expiração diária alcança somente trials versionados com data vencida, usa lock e gera correlação única por alteração.
 - Extensão de trial é uma exceção explícita e auditada, limitada a 14 dias por ação; não há renovação silenciosa.
 - Entitlements passaram a derivar exclusivamente da versão imutável vinculada à assinatura e das exceções explícitas vigentes; legado sem versão e estados não liberados permanecem fail-closed.
+- O estado de acesso diferencia `legacy_unversioned`, ausência de assinatura, status bloqueado, erro/carregamento e bypass administrativo explícito de Platform Superadmin; somente rotas mapeadas por plano são restringidas.
 - As telas de Plataforma usam ações específicas, exibem versões/snapshots/histórico e bloqueiam mudanças comerciais sem versão vigente; “Meu Plano” sinaliza regularização pendente sem oferecer mutação tenant.
+- A rota de Comunicação foi alinhada ao mesmo gate adicional de plano usado pelas demais rotas mapeadas, preservando seu guard de papel e sua proteção server-side existentes.
 
 ## Segurança
 
@@ -40,9 +42,10 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 
 ## Homologação controlada
 
-- A matriz estrutural confirmou que usuários tenant só leem a própria assinatura e não recebem ações de mutação.
+- A matriz estrutural confirmou que usuários tenant só leem a própria assinatura e não recebem ações de mutação; a matriz de rotas documentada está em `src/lib/saas/featureRouteMap.ts` e seus testes validam prefixos, URL direta, rotas essenciais, loading/erro, legado, bloqueio e bypass administrativo.
 - Escritas de assinatura exigem Platform Superadmin, ação permitida, motivo, correlação e ticket transacional.
 - IDs de organização ou versão enviados pelo navegador não concedem autorização.
+- A função de contexto usa `auth.uid()` e execução invoker; a resolução crítica usa `SECURITY DEFINER` com `search_path` vazio e privilégios mínimos. Os modos canônicos de exceção `GRANT`/`REVOKE` foram corrigidos após auditoria do contrato vivo.
 - Não foram criadas organizações, versões, preços ou limites fictícios para produzir um falso PASS funcional.
 - A prova positiva de criação, upgrade, downgrade e reativação ficou **BLOCKED**: não existe versão comercial real publicada e as cinco assinaturas vivas são legadas sem snapshots confiáveis.
 - Limites numéricos só são exibidos quando presentes no snapshot/override. Como não existe métrica contratual confiável publicada, consumo/excedente quantitativo continua **BLOCKED/NO-GO**, sem números inferidos.
@@ -53,7 +56,7 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados e três datas finais de trial derivadas somente do início registrado.
 - Job `saas-expire-due-trials`: ativo diariamente às 02:15 UTC; trials legados continuam fora da expiração automática por não terem versão comercial.
 - Testes focados de estados, trial, autorização e idempotência passaram; typecheck, scanner, linter e compilação automática foram executados nesta retomada.
-- A suíte global anterior permanece como referência; esta retomada ficou restrita aos testes focados do núcleo.
+- A suíte global desta retomada passou com 5.481 testes e quatro ignorados; os 45 testes focados de Entitlements/UI também passaram.
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 - Estado final de entitlements/UI: zero versões comerciais e cinco assinaturas legadas; a prova negativa é real e fail-closed. Nenhuma publicação, transição, exceção ou dado comercial foi criado para fabricar PASS.

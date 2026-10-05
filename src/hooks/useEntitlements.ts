@@ -24,7 +24,22 @@ export function useEntitlements(): EntitlementState {
       return ((data ?? []) as { feature_key: string }[]).map((r) => r.feature_key);
     },
   });
-  if (q.isLoading) return { status: "loading" };
-  if (!q.isSuccess) return { status: "error" };
+  const context = useQuery<string>({
+    queryKey: ["saas", "entitlement-context", user?.id ?? null],
+    enabled: !!user && !isSuper,
+    staleTime: 5 * 60_000,
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await db.rpc("get_my_entitlement_context");
+      if (error) throw new Error("entitlement_context_indisponivel");
+      return String(data ?? "no_context");
+    },
+  });
+  if (isSuper) return { status: "platform_superadmin" };
+  if (q.isLoading || context.isLoading) return { status: "loading" };
+  if (!q.isSuccess || !context.isSuccess) return { status: "error" };
+  if (context.data === "legacy_unversioned") return { status: "legacy_unversioned" };
+  if (context.data === "no_subscription" || context.data === "no_context") return { status: "no_subscription" };
+  if (context.data === "blocked_status" || context.data === "trial_expired") return { status: "blocked" };
   return { status: "ready", features: new Set(q.data) };
 }
