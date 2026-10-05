@@ -40,6 +40,20 @@ vi.mock("@/integrations/supabase/client", () => {
     supabase: {
       from: (table: string) => {
         fromMock(table);
+        if (table === "profiles") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  maybeSingle: () => Promise.resolve({
+                    data: { organization_id: "11111111-1111-4111-8111-111111111111", ativo: true },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
         return chain();
       },
       auth: { getUser: () => Promise.resolve({ data: { user: { id: "u1" } } }) },

@@ -3,7 +3,7 @@
 ## Decisão
 
 - **Segurança e isolamento:** PASS estrutural.
-- **Ciclo interno SaaS:** PASS estrutural; homologação funcional A/B registrada separadamente.
+- **Ciclo interno SaaS:** PASS estrutural / NO-GO funcional para ativação comercial.
 - **Pagamento externo:** BLOCKED / NO-GO. Não existe gateway homologado e nenhum fluxo, webhook ou confirmação simulada foi criado.
 
 ## Estado encontrado
@@ -33,6 +33,24 @@
 ## Pagamento
 
 Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por pagamento, checkout, cobrança, webhook, conciliação e reativação financeira exigem integração real posteriormente autorizada e homologada. Falhas ambíguas nunca devem marcar uma assinatura como paga.
+
+## Homologação controlada
+
+- A matriz estrutural confirmou que usuários tenant só leem a própria assinatura e não recebem ações de mutação.
+- Escritas de assinatura exigem Platform Superadmin, ação permitida, motivo, correlação e ticket transacional.
+- IDs de organização ou versão enviados pelo navegador não concedem autorização.
+- Não foram criadas organizações, versões, preços ou limites fictícios para produzir um falso PASS funcional.
+- A prova positiva de criação, upgrade, downgrade e reativação ficou **BLOCKED**: não existe versão comercial real publicada e as cinco assinaturas vivas são legadas sem snapshots confiáveis.
+- A prova A/B D51.6 continua válida para isolamento tenant; não foi reaberta nem reutilizada para declarar sucesso comercial.
+
+## Validações
+
+- Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados.
+- Job `saas-expire-due-trials`: ativo diariamente às 02:15 UTC; trials legados sem versão/data não são tocados.
+- 15 testes D52 focados passaram; typecheck, scanner de segredos, ESLint dos arquivos alterados e compilação automática passaram.
+- Suíte global: 5.468 testes passaram e quatro foram ignorados após correção das fixtures de Storage; registrar o total final da última execução no fechamento.
+- Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
+- Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 
 ## Rollback e forward-fix
 

@@ -6,8 +6,8 @@
 - [x] Fases 1–2 — endurecer estados, transições, histórico e autorização server-side
 - [x] Fase 3 — registrar pagamento externo BLOCKED/NO-GO, sem fluxo paralelo
 - [x] Fases 4–7 — validar limites, trial, inadimplência, suspensão, reativação e auditoria imutável
-- [ ] Fase 8 — executar matriz E2E controlada e limpar integralmente as fixtures
-- [ ] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
+- [x] Fase 8 — matriz negativa validada; prova positiva BLOCKED sem contrato real, sem criar fixtures comerciais falsas
+- [x] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
 - [x] Fase 10 — consolidar relatório, rollback/forward-fix e decisão GO/NO-GO
 
 ## D51.6 — Fechamento funcional multi-tenant
