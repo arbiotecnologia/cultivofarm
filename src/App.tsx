@@ -236,7 +236,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 
   // Fase S3 — plano contratado restringe (nunca amplia) o que o perfil permite.
   if (!isPathEntitled(location.pathname, entitlements)) {
-    return <ForaDoPlano />;
+    return <ForaDoPlano status={entitlements.status} />;
   }
 
   return <>{children}</>;

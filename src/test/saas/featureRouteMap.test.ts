@@ -18,6 +18,12 @@ describe("S3 — mapa rota → funcionalidade", () => {
     expect(isPathEntitled("/fiscal/documentos", { status: "error" })).toBe(false);
     expect(isPathEntitled("/clientes", { status: "error" })).toBe(true);
   });
+  it("legado e assinatura bloqueada falham fechado; Superadmin mantém gestão", () => {
+    expect(isPathEntitled("/fiscal/documentos", { status: "legacy_unversioned" })).toBe(false);
+    expect(isPathEntitled("/fiscal/documentos", { status: "blocked" })).toBe(false);
+    expect(isPathEntitled("/fiscal/documentos", { status: "platform_superadmin" })).toBe(true);
+    expect(isPathEntitled("/configuracoes", { status: "legacy_unversioned" })).toBe(true);
+  });
   it("bloqueia rota fora do plano e libera a contratada", () => {
     const st = { status: "ready" as const, features: new Set(["contas_receber"]) };
     expect(isPathEntitled("/financeiro/receber", st)).toBe(true);

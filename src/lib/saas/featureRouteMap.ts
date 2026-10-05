@@ -47,6 +47,8 @@ export function featureForPath(path: string): string | null {
 
 export type EntitlementState =
   | { status: "loading" | "error" }
+  | { status: "legacy_unversioned" | "blocked" | "no_subscription" }
+  | { status: "platform_superadmin" }
   | { status: "ready"; features: ReadonlySet<string> };
 
 /**
@@ -56,6 +58,7 @@ export type EntitlementState =
 export function isPathEntitled(path: string, state: EntitlementState): boolean {
   const feature = featureForPath(path);
   if (!feature) return true;
+  if (state.status === "platform_superadmin") return true;
   if (state.status !== "ready") return false;
   return state.features.has(feature);
 }
