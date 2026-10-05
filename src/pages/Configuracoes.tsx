@@ -62,7 +62,6 @@ import { PageHeader, ResponsiveTable, MobileCard } from "@/components/Responsive
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ROLE_LABELS, ROLE_VARIANTS, ACTIVE_ROLES } from "@/lib/permissions";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
-import type { ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
 import { Link } from "react-router-dom";
 import { History, Wallet } from "lucide-react";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
@@ -159,8 +158,6 @@ export default function Configuracoes() {
 
   const usersPage = allUsers.items ?? [];
 
-  const clientes: Array<{ id: string; nome: string; cpf_cnpj: string | null }> = [];
-
   const TENANT_MANAGEABLE_ROLES = ACTIVE_ROLES.filter((candidate) =>
     !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
   );
@@ -222,7 +219,6 @@ export default function Configuracoes() {
     telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
   };
   const [newUser, setNewUser] = useState(initialNewUser);
-  const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
 
   const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
   const [createResumo, setCreateResumo] = useState<string | null>(null);
@@ -235,7 +231,6 @@ export default function Configuracoes() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
         nome: newUser.nome.trim(),
@@ -266,7 +261,6 @@ export default function Configuracoes() {
       toast({ title: "Usuário criado com sucesso" });
       setCreateOpen(false);
       setNewUser(initialNewUser);
-      setNewUserVinculos([]);
       setCreateErros({});
       setCreateResumo(null);
     },
@@ -285,7 +279,7 @@ export default function Configuracoes() {
       password: newUser.password,
       roles: newUser.roles,
       partner_id: newUser.partner_id,
-      cliente_ids: newUserVinculos.map(v => v.cliente_id),
+      cliente_ids: [],
     });
     setCreateErros(erros);
     const primeiro = primeiroCampoInvalido(erros);
@@ -301,7 +295,6 @@ export default function Configuracoes() {
   // Edit user dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
-  const [editVinculos, setEditVinculos] = useState<ClienteVinculo[]>([]);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -312,7 +305,6 @@ export default function Configuracoes() {
       setConfirmPassword("");
       setShowPassword(false);
       setEditUser(null);
-      setEditVinculos([]);
       setEditErros({});
       setEditResumo(null);
       setExigeRecargaEdicao(false);
@@ -324,7 +316,6 @@ export default function Configuracoes() {
   // Usamos editUser?.user_id para evitar resetar o estado quando outros campos (nome, email) mudam
   useEffect(() => {
     if (editOpen && editUser?.user_id) {
-      setEditVinculos(editUser.vinculos || []);
       // Popula partner_id a partir do vínculo atual (fase multiportal)
     }
   }, [editOpen, editUser?.user_id]);
@@ -370,7 +361,7 @@ export default function Configuracoes() {
           telefone: editUser.telefone ?? "",
           roles: desiredRoles,
           partner_id: editUser.partner_id ?? "",
-          cliente_ids: editVinculos.map((v) => v.cliente_id),
+          cliente_ids: [],
         },
         (v) => validatePhoneBR(v as any, { fieldLabel: "Telefone" }),
       );
@@ -379,7 +370,7 @@ export default function Configuracoes() {
       if (primeiro) throw erroLocalEdicao(erros[primeiro]!);
 
       // Limite de vínculos: rejeitado localmente, nunca truncado silenciosamente.
-      const excesso = validarLimiteClienteIds(editVinculos.map((v) => v.cliente_id));
+      const excesso = validarLimiteClienteIds([]);
       if (excesso) throw erroLocalEdicao(excesso);
 
       const originalUser = usersPage.find((u: any) => u.user_id === editUser.user_id);
@@ -821,17 +812,6 @@ export default function Configuracoes() {
                           { label: "Identificação", value: formatCpfCnpj(u.cpf_cnpj) || "—" },
                           { label: "Telefone", value: formatTelefone(u.telefone) || "—" },
                           { label: "Cargo", value: u.cargo || "—" },
-                          { label: "Vínculos", value: (
-                            <div className="flex flex-wrap gap-1">
-                              {u.vinculos?.map((v: ClienteVinculo) => (
-                                <Badge key={v.cliente_id} variant={v.principal ? "default" : "outline"} className="text-[10px]">
-                                  {v.principal && <Star className="h-2 w-2 mr-1 fill-current" />}
-                                  {clienteNomeById(v.cliente_id)}
-                                </Badge>
-                              ))}
-                              {(!u.vinculos || u.vinculos.length === 0) && "—"}
-                            </div>
-                          )},
                         ]}
                         actions={
                           <div className="flex w-full gap-2 items-center justify-end" onClick={stopRowClick}>
@@ -851,14 +831,13 @@ export default function Configuracoes() {
                         <TableHead>Email</TableHead>
                         <TableHead>Perfil</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Vínculos</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {usuariosPagina.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : usuariosPagina.map((u: any) => (
                         <TableRow
@@ -885,17 +864,6 @@ export default function Configuracoes() {
 
                               />
                               <span className="text-xs text-muted-foreground">{u.ativo === false ? "Inativo" : "Ativo"}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-[200px]">
-                              {u.vinculos?.map((v: ClienteVinculo) => (
-                                <Badge key={v.cliente_id} variant={v.principal ? "default" : "outline"} className="text-[10px]">
-                                  {v.principal && <Star className="h-2 w-2 mr-1 fill-current" />}
-                                  {clienteNomeById(v.cliente_id)}
-                                </Badge>
-                              ))}
-                              {(!u.vinculos || u.vinculos.length === 0) && <span className="text-muted-foreground text-xs">—</span>}
                             </div>
                           </TableCell>
                           <TableCell onClick={stopRowClick}>
