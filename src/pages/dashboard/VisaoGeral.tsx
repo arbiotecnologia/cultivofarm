@@ -32,7 +32,12 @@ export default function VisaoGeral() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("rpc_dashboard_geral_lab_resumo" as never);
       if (error) throw error;
-      const resumo = (data as { resumo?: Record<string, number> } | null)?.resumo ?? {};
+      const payload = data as {
+        resumo?: Record<string, number>;
+        dados_indisponiveis?: string[];
+      } | null;
+      const resumo = payload?.resumo ?? {};
+      const indisponiveis = new Set(payload?.dados_indisponiveis ?? []);
       return {
         os_aguardando: Number(resumo.os_aguardando ?? 0),
         lotes_producao: Number(resumo.lotes_producao ?? 0),
@@ -40,6 +45,7 @@ export default function VisaoGeral() {
         envases_pendentes: Number(resumo.envases_pendentes ?? 0),
         insumos_criticos: Number(resumo.insumos_criticos ?? 0),
         entregas_pendentes: Number(resumo.entregas_pendentes ?? 0),
+        indisponiveis,
       };
     },
     staleTime: 60_000,
@@ -63,6 +69,7 @@ export default function VisaoGeral() {
   const lab = labQ.data;
   const resumoErr = !!resumoQ.error;
   const labErr = !!labQ.error;
+  const prioridadeIndisponivel = ["solicitacoes_criticas", "visitas_atrasadas"].some((item) => indisp.has(item));
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto">
@@ -197,16 +204,19 @@ export default function VisaoGeral() {
             {resumoErr && !resumoQ.isLoading && (
               <p className="text-sm text-muted-foreground italic">Indisponível no momento.</p>
             )}
-            {!resumoQ.isLoading && !resumoErr && (resumo?.solicitacoes_criticas ?? 0) === 0 && (resumo?.visitas_atrasadas ?? 0) === 0 && (
+            {!resumoQ.isLoading && !resumoErr && prioridadeIndisponivel && (
+              <p className="text-sm text-muted-foreground italic">Indisponível no momento.</p>
+            )}
+            {!resumoQ.isLoading && !resumoErr && !prioridadeIndisponivel && (resumo?.solicitacoes_criticas ?? 0) === 0 && (resumo?.visitas_atrasadas ?? 0) === 0 && (
               <p className="text-sm text-muted-foreground italic">Sem prioridades críticas.</p>
             )}
-            {!resumoErr && (resumo?.solicitacoes_criticas ?? 0) > 0 && (
+            {!resumoErr && !indisp.has("solicitacoes_criticas") && (resumo?.solicitacoes_criticas ?? 0) > 0 && (
               <Link to="/solicitacoes?urgencia=critica" className="block border rounded p-2 hover:bg-accent">
                 <div className="text-sm font-medium">Solicitações críticas</div>
                 <div className="text-xs text-muted-foreground">{resumo?.solicitacoes_criticas} pendente(s)</div>
               </Link>
             )}
-            {!resumoErr && (resumo?.visitas_atrasadas ?? 0) > 0 && (
+            {!resumoErr && !indisp.has("visitas_atrasadas") && (resumo?.visitas_atrasadas ?? 0) > 0 && (
               <Link to="/agenda-tecnica" className="block border rounded p-2 hover:bg-accent">
                 <div className="text-sm font-medium">Visitas atrasadas</div>
                 <div className="text-xs text-muted-foreground">{resumo?.visitas_atrasadas} agendamento(s)</div>
@@ -242,12 +252,12 @@ export default function VisaoGeral() {
           </Button>
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <LabTile icon={Activity} label="OS aguardando"     value={lab?.os_aguardando}     to="/ordens-servico?status=aberta" loading={labQ.isLoading} error={labErr} />
-          <LabTile icon={Package}  label="Lotes em produção" value={lab?.lotes_producao}    to="/lotes"   loading={labQ.isLoading} error={labErr} />
-          <LabTile icon={ShieldCheck} label="CQ pendente"    value={lab?.cq_pendente}       to="/controle-qualidade"          loading={labQ.isLoading} error={labErr} />
-          <LabTile icon={Warehouse} label="Envases pendentes" value={lab?.envases_pendentes} to="/envase"                     loading={labQ.isLoading} error={labErr} />
-          <LabTile icon={Layers}   label="Insumos críticos"   value={lab?.insumos_criticos}  to="/estoque"                    loading={labQ.isLoading} error={labErr} />
-          <LabTile icon={Truck}    label="Entregas pendentes" value={lab?.entregas_pendentes} to="/entregas"                  loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={Activity} label="OS aguardando"     value={lab?.os_aguardando}     to="/ordens-servico?status=aberta" loading={labQ.isLoading} error={labErr || lab?.indisponiveis.has("os_aguardando")} />
+          <LabTile icon={Package}  label="Lotes em produção" value={lab?.lotes_producao}    to="/lotes"   loading={labQ.isLoading} error={labErr || lab?.indisponiveis.has("lotes_producao")} />
+          <LabTile icon={ShieldCheck} label="CQ pendente"    value={lab?.cq_pendente}       to="/controle-qualidade"          loading={labQ.isLoading} error={labErr || lab?.indisponiveis.has("cq_pendente")} />
+          <LabTile icon={Warehouse} label="Envases pendentes" value={lab?.envases_pendentes} to="/envase"                     loading={labQ.isLoading} error={labErr || lab?.indisponiveis.has("envases_pendentes")} />
+          <LabTile icon={Layers}   label="Insumos críticos"   value={lab?.insumos_criticos}  to="/estoque"                    loading={labQ.isLoading} error={labErr || lab?.indisponiveis.has("insumos_criticos")} />
+          <LabTile icon={Truck}    label="Entregas pendentes" value={lab?.entregas_pendentes} to="/entregas"                  loading={labQ.isLoading} error={labErr || lab?.indisponiveis.has("entregas_pendentes")} />
         </CardContent>
       </Card>
 

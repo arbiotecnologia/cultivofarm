@@ -21,3 +21,6 @@
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
 
 - Platform subscription changes stay in `platform_change_subscription` as SECURITY INVOKER with symmetric Superadmin read/write RLS, explicit enum conversion and row locking — preserves least privilege, auditability and concurrency safety.
+
+- Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
+- Dashboard summary RPCs derive organization from the active authenticated profile and fail closed for operational sources without deterministic tenant ownership — prevents cross-tenant aggregates.

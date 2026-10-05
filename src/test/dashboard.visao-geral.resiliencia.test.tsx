@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import VisaoGeral from "@/pages/dashboard/VisaoGeral";
@@ -9,11 +9,15 @@ vi.mock("@/hooks/useExecutivoResumo", () => ({
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => Promise.resolve({ count: 0, data: [] }),
-        in: () => Promise.resolve({ count: 0, data: [] }),
-      }),
+    rpc: vi.fn().mockResolvedValue({
+      data: {
+        resumo: {},
+        dados_indisponiveis: [
+          "os_aguardando", "lotes_producao", "cq_pendente",
+          "envases_pendentes", "insumos_criticos", "entregas_pendentes",
+        ],
+      },
+      error: null,
     }),
   },
 }));
@@ -80,5 +84,21 @@ describe("Fase 3.2 — resiliência da Visão Geral", () => {
     renderPage();
     expect(screen.queryByText(/Resumo executivo indisponível/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Abrir Cockpit Laboratório/i)).toBeInTheDocument();
+  });
+
+  it("fontes sem vínculo tenant aparecem indisponíveis, nunca como zero", async () => {
+    (useExecutivoResumo as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
+      data: {
+        resumo: {},
+        dados_indisponiveis: ["alertas_operacionais", "clientes_ativos", "receita_recebida", "solicitacoes_criticas", "visitas_atrasadas"],
+        saude_operacional: { score: 0, classificacao: "sem_dados", motivos: [] },
+      },
+      isLoading: false, isFetching: false, error: null, refetch: vi.fn(),
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getAllByText("Indisponível").length).toBeGreaterThanOrEqual(9);
+    });
+    expect(screen.queryByText("Sem prioridades críticas.")).not.toBeInTheDocument();
   });
 });

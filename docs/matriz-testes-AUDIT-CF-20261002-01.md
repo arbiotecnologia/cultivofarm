@@ -308,3 +308,19 @@ Fase 0: **PASS**. E01: **PASS**. O PASS SMTPi de `2026-10-03` é histórico e n�
 | D51-FIRST-ACCESS-DIAG-003 | Causa da dupla definição de senha | BUG confirmado | `/reset-password` usa `auth.updateUser` + `signOut` sem concluir a pendência; `AppLayout` força `TrocaSenhaObrigatoria`, que chama `platform-complete-first-access` e somente então limpa o estado server-side |
 | D51-FIRST-ACCESS-DIAG-004 | Papel após conclusão | PASS | papel único `administrador` é tenant-operacional; `superadmin` é distinto e ausente; destino esperado é `/dashboard/geral` |
 | D51-FIRST-ACCESS-DIAG-005 | Isolamento tenant do dashboard geral | NO-GO | `profile.organization_id` existe, mas as RPCs `SECURITY DEFINER` e `is_executivo` não usam organização/tenant; agregações e políticas administrativas são globais por papel em banco com 5 organizações |
+| D51.3-A-001 | Recovery com pendência | PASS | usa somente `platform-complete-first-access`; zero `auth.updateUser` direto e sign-out após sucesso |
+| D51.3-A-002 | Recovery comum | PASS | diagnóstico falso mantém `auth.updateUser` e não chama conclusão de primeiro acesso |
+| D51.3-A-003 | Diagnóstico/finalizador falha | PASS | alteração e sign-out bloqueados; mensagem sanitizada; fragmento continua removido |
+| D51.3-B-001 | Inventário da Visão Geral | PASS | apenas duas RPCs; nenhuma query direta da página; fontes operacionais sem FK tenant determinística |
+| D51.3-C-001 | Helper de organização | PASS | `auth.uid()`, profile ativo/org não nula, `search_path=''`; sem EXECUTE para PUBLIC/anon/authenticated |
+| D51.3-D-001 | RPCs SECURITY DEFINER | PASS contenção | exigem organização e papel server-side; não aceitam organização do cliente; fontes sem ownership retornam indisponíveis |
+| D51.3-D-002 | Superadmin sem vínculo operacional | PASS contratual | helper nega profile sem organização e RPC não concede visão global implícita |
+| D51.3-E-001 | REST das fontes legadas | DÍVIDA BLOQUEADA | não ampliado nem alegado seguro; links detalhados fora da Visão Geral exigem auditoria tenant própria |
+| D51.3-F-001 | Backfill legado | NOT RUN seguro | nenhuma associação determinística encontrada; nenhum dado foi inventado ou alterado |
+| D51.3-G-001 | Isolamento A/B das RPCs | PASS estrutural | três organizações com admins ativos; RPCs não leem fontes operacionais e filtros cliente/fazenda são negados |
+| D51.3-G-002 | Teste A/B autenticado com fixtures | NOT RUN | não foram criados Auth users/fixtures permanentes; contenção foi comprovada pela definição SQL e negativas sem execução pública |
+| D51.3-H-001 | Índices | PASS | `profiles_organization_id_idx` já existe; nenhuma consulta tenant operacional foi habilitada para justificar novos índices |
+| D51.3-I-001 | Rollback/forward-fix | DOCUMENTADO | restauração só após ownership tenant; reativação indicador a indicador com vínculo, RLS, índice e teste A/B |
+| D51.3-I-002 | Qualidade global | PASS | 28 focados, 5.420 globais/4 skipped, typecheck e build verdes; scanner 10 Info/zero P0/P1 |
+| D51.3-I-003 | Linter Supabase | PASS com baseline | 492 achados preexistentes; nenhum novo achado atribuído às migrations D51.3 |
+| D51.3-I-004 | Smoke passivo recovery | PASS | `/reset-password` sem link exibe negativa segura, zero campo de senha e zero erro de página; nenhuma mutação |
