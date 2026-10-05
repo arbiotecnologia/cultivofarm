@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { completeRecoveryPassword } from "@/lib/saas/recoveryFlow";
 
 describe("recovery de senha — finalizador único", () => {
@@ -53,8 +54,7 @@ describe("recovery de senha — finalizador único", () => {
 
 describe("recovery de senha — contrato fail-closed", () => {
   it("a tela exige diagnóstico booleano antes de habilitar a alteração", async () => {
-    const source = await import("node:fs").then(({ readFileSync }) =>
-      readFileSync("src/pages/ResetPassword.tsx", "utf-8"));
+    const source = readFileSync("src/pages/ResetPassword.tsx", "utf-8");
     expect(source).toContain('body: { diagnostico: true }');
     expect(source).toContain('typeof data?.pendente !== "boolean"');
     expect(source).toContain('if (!recoveryMode)');
@@ -62,10 +62,9 @@ describe("recovery de senha — contrato fail-closed", () => {
   });
 
   it("preserva a limpeza do fragmento após o consumo Auth sem registrar segredos", async () => {
-    const source = await import("node:fs").then(({ readFileSync }) =>
-      readFileSync("src/pages/ResetPassword.tsx", "utf-8"));
+    const source = readFileSync("src/pages/ResetPassword.tsx", "utf-8");
     expect(source).toContain("limparCredenciaisDaUrl");
-    expect(source).toContain("await supabase.auth.getSession").not;
+    expect(source).toContain("supabase.auth.getSession()");
     expect(source).not.toMatch(/console\.(log|error|warn)/);
   });
 });
