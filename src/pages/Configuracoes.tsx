@@ -665,18 +665,20 @@ export default function Configuracoes() {
                   </div>
                   <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </Link>
-                <Link
-                  to="/configuracoes/catalogo-ia"
-                  className="flex items-center justify-between border rounded-md p-3 hover:bg-accent/50 transition-colors"
-                >
-                  <div>
-                    <div className="font-medium text-sm">Atualização das fichas técnicas com IA</div>
-                    <div className="text-xs text-muted-foreground">
-                      Gera sugestões em lote para campos de produtos e microrganismos. Cada sugestão cria uma versão pendente de aprovação.
+                {isPlatformSuperadmin && (
+                  <Link
+                    to="/configuracoes/catalogo-ia"
+                    className="flex items-center justify-between border rounded-md p-3 hover:bg-accent/50 transition-colors"
+                  >
+                    <div>
+                      <div className="font-medium text-sm">Atualização global das fichas técnicas com IA</div>
+                      <div className="text-xs text-muted-foreground">
+                        Gera sugestões em lote para o catálogo global, com aprovação humana antes da substituição.
+                      </div>
                     </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </Link>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                )}
                 <Link
                   to="/configuracoes/parametros-cq"
                   className="flex items-center justify-between border rounded-md p-3 hover:bg-accent/50 transition-colors"

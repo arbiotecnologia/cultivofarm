@@ -409,6 +409,7 @@ const App = () => (
               {/* Home provisória do Superadmin de Plataforma (somente leitura, fora do ACCESS_MAP). */}
               <Route element={<PlataformaGuard />}>
                 <Route path="/plataforma" element={<PlataformaHome />} />
+                <Route path="/configuracoes/catalogo-ia" element={<ConfigCatalogoIA />} />
               </Route>
               <Route path="/validar-entrega/:token" element={<ValidarEntrega />} />
               <Route path="/rastrear-produto/:token" element={<RastrearProduto />} />
@@ -610,7 +611,6 @@ const App = () => (
                  <Route path="/executivo/socios-b2b" element={<RoleGuard><DashboardSociosB2B /></RoleGuard>} />
                 <Route path="/configuracoes" element={<RoleGuard><Configuracoes /></RoleGuard>} />
                 <Route path="/configuracoes/objetivos-visita" element={<RoleGuard><ObjetivosVisita /></RoleGuard>} />
-                <Route path="/configuracoes/catalogo-ia" element={<RoleGuard><ConfigCatalogoIA /></RoleGuard>} />
                 <Route path="/configuracoes/parametros-cq" element={<RoleGuard><ParametrosCQPage /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/empresa" element={<RoleGuard><FiscalEmpresa /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />

@@ -7,49 +7,46 @@ import {
   sanitizarDado,
   validarRequisicao,
 } from '../_shared/ficha-ia/contract.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from '../_shared/comunicacao/cors.ts';
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const TECH_ROLES = ['administrador', 'gestor', 'consultor_tecnico', 'tecnico_agronomo'];
 const AI_TIMEOUT_MS = 45_000;
 const MODELO = 'gemini-3.8-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return j({ error: 'Método não suportado' }, 405);
+  const origin = req.headers.get('Origin');
+  if (req.method === 'OPTIONS') return handlePreflight(req);
+  if (origin && !isTrustedOrigin(origin)) return j(origin, { error: 'origin_not_allowed' }, 403);
+  if (req.method !== 'POST') return j(origin, { error: 'Método não suportado' }, 405);
   try {
-    if (!GEMINI_API_KEY) return j({ error: 'Geração por IA indisponível (configuração ausente)' }, 503);
+    if (!GEMINI_API_KEY) return j(origin, { error: 'Geração por IA indisponível (configuração ausente)' }, 503);
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return j({ error: 'Não autenticado' }, 401);
+    if (!authHeader?.startsWith('Bearer ')) return j(origin, { error: 'Não autenticado' }, 401);
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { data: userRes } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    const userClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userRes } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
     const user = userRes?.user;
-    if (!user) return j({ error: 'Sessão inválida' }, 401);
+    if (!user) return j(origin, { error: 'Sessão inválida' }, 401);
 
-    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const userRoles = (roles ?? []).map((r: any) => r.role);
-    if (!userRoles.some((r: string) => TECH_ROLES.includes(r))) {
-      return j({ error: 'Sem permissão' }, 403);
-    }
+    const { data: isSuperadmin, error: roleError } = await userClient.rpc('is_platform_superadmin', { _user_id: user.id });
+    if (roleError) return j(origin, { error: 'role_check_failed' }, 500);
+    if (!isSuperadmin) return j(origin, { error: 'forbidden' }, 403);
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const rawBody = await req.text();
-    if (rawBody.length > MAX_PAYLOAD_BYTES) return j({ error: 'Requisição maior que o permitido' }, 413);
+    if (rawBody.length > MAX_PAYLOAD_BYTES) return j(origin, { error: 'Requisição maior que o permitido' }, 413);
     let parsedBody: unknown = null;
-    try { parsedBody = JSON.parse(rawBody); } catch { return j({ error: 'Requisição inválida' }, 400); }
+    try { parsedBody = JSON.parse(rawBody); } catch { return j(origin, { error: 'Requisição inválida' }, 400); }
 
     const validacao = validarRequisicao(parsedBody, rawBody.length);
-    if (!validacao.ok) return j({ error: validacao.error }, validacao.status);
+    if (!validacao.ok) return j(origin, { error: validacao.error }, validacao.status);
     const { entidade_tipo, entidade_id, campo, origem, job_id } = validacao.value;
 
     let contexto = '';
@@ -61,7 +58,7 @@ Deno.serve(async (req) => {
         .from('produtos')
         .select('id, codigo, nome, tipo, descricao, modo_acao, funcao_completa')
         .eq('id', entidade_id).maybeSingle();
-      if (!prod) return j({ error: 'Produto não encontrado' }, 404);
+      if (!prod) return j(origin, { error: 'Produto não encontrado' }, 404);
 
       const { data: prof } = await supabase
         .from('product_technical_profiles')
@@ -91,7 +88,7 @@ Deno.serve(async (req) => {
         .from('microrganismos')
         .select('id, codigo, nome, nome_cientifico, tipo, funcao_agronomica, descricao, observacoes')
         .eq('id', entidade_id).maybeSingle();
-      if (!m) return j({ error: 'Microrganismo não encontrado' }, 404);
+      if (!m) return j(origin, { error: 'Microrganismo não encontrado' }, 404);
 
       const { data: prof } = await supabase
         .from('microorganism_technical_profiles')
@@ -136,16 +133,16 @@ Deno.serve(async (req) => {
         }),
       });
     } catch {
-      return j({ error: 'A geração demorou demais. Tente novamente.' }, 504);
+      return j(origin, { error: 'A geração demorou demais. Tente novamente.' }, 504);
     } finally {
       clearTimeout(timer);
     }
 
-    if (aiRes.status === 429) return j({ error: 'Limite de uso atingido. Tente novamente em instantes.' }, 429);
+    if (aiRes.status === 429) return j(origin, { error: 'Limite de uso atingido. Tente novamente em instantes.' }, 429);
     if (aiRes.status === 401 || aiRes.status === 403) {
-      return j({ error: 'Geração por IA indisponível (credencial do provedor inválida).' }, 503);
+      return j(origin, { error: 'Geração por IA indisponível (credencial do provedor inválida).' }, 503);
     }
-    if (!aiRes.ok) return j({ error: 'Serviço de IA indisponível no momento.' }, 502);
+    if (!aiRes.ok) return j(origin, { error: 'Serviço de IA indisponível no momento.' }, 502);
 
     const aiData = await aiRes.json().catch(() => null);
     let resultado;
@@ -155,7 +152,7 @@ Deno.serve(async (req) => {
         .join('');
       resultado = parseRespostaIA(raw);
     } catch {
-      return j({ error: 'A IA retornou uma resposta inválida. Tente novamente.' }, 502);
+      return j(origin, { error: 'A IA retornou uma resposta inválida. Tente novamente.' }, 502);
     }
 
     const mudou = !conteudoAtual || conteudoAtual.trim() !== resultado.texto;
@@ -171,11 +168,11 @@ Deno.serve(async (req) => {
           observacao: resultado.justificativa,
         })
         .select('id').single();
-      if (insErr) return j({ error: 'Não foi possível registrar a versão sugerida.' }, 500);
+      if (insErr) return j(origin, { error: 'Não foi possível registrar a versão sugerida.' }, 500);
       versaoId = insRes.id;
     }
 
-    return j({
+    return j(origin, {
       texto: resultado.texto,
       justificativa: resultado.justificativa,
       versao_id: versaoId,
@@ -183,13 +180,13 @@ Deno.serve(async (req) => {
       rascunho: true,
     });
   } catch {
-    return j({ error: 'Erro inesperado ao gerar com IA.' }, 500);
+    return j(origin, { error: 'Erro inesperado ao gerar com IA.' }, 500);
   }
 });
 
-function j(b: unknown, status = 200) {
+function j(origin: string | null, b: unknown, status = 200) {
   return new Response(JSON.stringify(b), {
-    status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status, headers: { ...corsHeadersFor(origin), 'Content-Type': 'application/json' },
   });
 }
 
