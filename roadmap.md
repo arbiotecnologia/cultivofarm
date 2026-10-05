@@ -10,5 +10,6 @@
 - [x] Validações, deploy, smoke passivo e relatório final
 - [x] Fechamento P0/P1 vivo — recibos/Storage, catálogo, Portal, produção e Fiscal contidos
 - [x] Edges financeiras/fiscal/auditoria implantadas; 66 testes focados, build, scanner e linter validados
-- [ ] Matriz A/B autenticada — bloqueada pela ausência de sessões automatizadas no Supabase externo
-- [ ] Homologação horizontal final — bloqueada até a matriz A/B autenticada; relatórios sem ownership completo ficam fechados
+- [x] Catálogo e configuração global — mutações de produtos, microrganismos, visual e financeiro restritas a Platform Superadmin
+- [ ] Matriz A/B autenticada — bloqueada: Supabase externo `external_unmanaged` não emite sessão controlada ao Lovable
+- [ ] Homologação horizontal final — NO-GO até a matriz A/B autenticada; relatórios sem ownership completo ficam fechados

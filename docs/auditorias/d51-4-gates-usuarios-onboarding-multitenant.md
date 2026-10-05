@@ -98,7 +98,20 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 
 A prova estrutural confirma que A não pode obter linha B quando a linha possui tenant: a policy restritiva exige igualdade com a organização derivada de `auth.uid()`, e o trigger rejeita organização enviada pelo cliente ou troca de tenant. Usuário inativo/sem organização e Superadmin sem tenant recebem escopo nulo e falham fechados.
 
-A matriz A/B autenticada de runtime ficou **NOT RUN** nesta execução: o projeto Supabase externo não disponibilizou sessões automatizadas e nenhum usuário real foi impersonado. A decisão formal permanece **NO-GO de homologação final / GO de segurança fail-closed**. Financeiro/Storage, Catálogo, Portal e Fiscal estão contidos estruturalmente; relatórios financeiros e linhas legadas sem vínculo permanecem indisponíveis, nunca globais.
+A matriz A/B autenticada de runtime ficou **BLOCKED/NOT RUN**: o backend é Supabase externo não gerenciado pelo Lovable (`external_unmanaged`) e recusou a emissão de sessão controlada. Nenhum usuário real foi impersonado e nenhum token foi recuperado. Foram comprovados no estado vivo: 21 policies tenant restritivas, helpers server-side, ACLs das RPCs, índices por organização, planos `EXPLAIN`, rejeição 401 nas Edges protegidas sem JWT válido e quatro policies restritivas de mutação global (`produtos`, `microrganismos`, `configuracoes_sistema`, `financial_settings`). A decisão formal permanece **NO-GO de homologação final / GO de segurança fail-closed**. Financeiro/Storage, Catálogo, Portal, Produção, Fiscal, RBAC e configurações globais estão contidos; relatórios e linhas legadas sem vínculo permanecem indisponíveis, nunca globais.
+
+### Decisão final por módulo
+
+| Módulo | Decisão | Evidência/limite |
+|---|---|---|
+| Financeiro/Storage | **FAIL-CLOSED** | Tenant e recurso-pai validados; relatórios sem ownership completo seguem revogados; legado sem tenant invisível. |
+| Catálogo global | **PASS estrutural** | Mutação de produtos e microrganismos intersectada por policy restritiva de Platform Superadmin. |
+| Portal | **PASS estrutural** | Edge valida JWT, tenant e cliente antes do acesso privilegiado; JWT inválido retorna 401. |
+| Produção | **FAIL-CLOSED** | Ownership e policy restritiva; linhas sem vínculo determinístico bloqueadas. |
+| Fiscal | **PASS estrutural / FAIL-CLOSED legado** | Nota, configuração, certificado e ator vinculados ao tenant; Edge protegida retorna 401 sem JWT válido. |
+| RBAC sistêmico | **PASS estrutural** | Administração tenant limitada à própria organização e `superadmin` não atribuível. |
+| Configuração legada/global | **PASS estrutural** | Escrita global em configuração visual e financeira exige Platform Superadmin; leitura operacional preservada. |
+| Matriz A/B autenticada | **NO-GO** | Não executável sem sessão controlada no Supabase externo; homologação horizontal não pode ser certificada. |
 
 ### Rollback / forward-fix
 
