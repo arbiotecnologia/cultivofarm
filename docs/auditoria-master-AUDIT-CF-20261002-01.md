@@ -433,6 +433,18 @@ O código atual da Edge usa `getPlatformInviteRedirectUrl()` com destino fixo `h
 
 **Decisão:** `AUTH REDIRECT = NO-GO`. O redirect no código e a rota publicada estão comprovados, mas a sessão residual impede liberar novo retry E02. Manter OFF/OFF, Test Mode ON e allowlist exclusiva; não abrir o link antigo nem gerar novo convite até `auth.sessions` comprovar zero sessões válidas/ativas. Nenhum e-mail, flag, job, Auth user, profile ou role foi alterado nesta certificação.
 
+## D51.2 — fallback manual de link de acesso — 2026-10-05
+
+O fluxo existente `platform-invite-org-admin` passou a aceitar o modo allowlisted `manual_link`, mantendo JWT, validação server-side de Superadmin, identidade, tenant, intenção, lease/fencing, mesma conta e redirect fixo `https://app.cultivofarm.com.br/reset-password`. O modo manual é restrito a acesso por link pendente/falho e bloqueia acesso concluído. Ele não carrega configuração SMTP, não executa claim/envio de e-mail, não depende das flags de entrega e não altera `email_attempt_count` ou `email_delivery_status`.
+
+O link é devolvido somente na resposta manual com `Cache-Control: no-store, private`; não aparece no modo e-mail, banco, auditoria, logs, toast, URL da aplicação ou armazenamento persistente do navegador. A auditoria reutiliza `comunicacao_audit_log` com ação `manual_access_link_generated`, ator, job, organização, origem, resultado e motivo fixo, sem credencial. Falha ao gravar a auditoria impede a entrega do link ao cliente.
+
+Em **Administradores provisionados**, registros elegíveis exibem **Gerar link** ao lado do reenvio. O mesmo fallback aparece no checkpoint da Nova Empresa após empresa pronta ou falha SMTP, sem recriar empresa ou usuário. Confirmação, trava contra clique concorrente, aviso para estado ambíguo, cópia pela Clipboard API e limpeza ao fechar/desmontar mantêm a credencial somente em memória.
+
+Validação: 50 testes focados PASS, 5 testes Deno PASS, typecheck PASS, build automático PASS e suíte global com **5.414 PASS / 4 skipped**. Scanner profundo: 10 Info e zero P0/P1; linter permaneceu na baseline histórica de 492 achados, sem novo grant amplo na sobrecarga service-role-only. A auditoria RBAC autenticada ficou NOT RUN porque `RBAC_AUDIT_PASSWORD` não estava disponível e abortou antes de executar. A Edge Function foi implantada e a publicação frontend foi solicitada uma única vez. O smoke foi estritamente passivo: nenhum link real, e-mail, flag, job E02, Auth, profile ou papel foi alterado.
+
+**Decisão:** `MANUAL LINK FALLBACK = PASS TÉCNICO`; pronto para teste humano controlado por Superadmin. O fallback não substitui a trilha do convite e o link deve ser enviado somente ao destinatário correto por canal confiável.
+
 ## Revogação autorizada de todas as sessões — 2026-10-03 20:15 UTC
 
 O responsável autorizou explicitamente revogar todas as sessões somente do usuário controlado. O alvo foi resolvido no Supabase canônico por e-mail e validado em modo fail-closed: exatamente 1 `auth.users`, exatamente 1 job E02 e coincidência integral do `user_id` mascarado `cbdc4ef3-****-****-****-d212`. Antes da operação havia 1 sessão e 1 refresh token vinculados. As constraints comprovaram FK de `auth.refresh_tokens.session_id` para `auth.sessions.id` com `ON DELETE CASCADE`; não foi localizado mecanismo oficial disponível no ambiente para revogação administrativa por `user_id` sem JWT do usuário.

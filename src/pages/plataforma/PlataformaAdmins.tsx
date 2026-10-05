@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { ManualAccessLinkAction } from "@/components/plataforma/ManualAccessLinkAction";
 import {
   useConvidarAdminEmpresa,
   useConvitesAdminEmpresa,
@@ -351,21 +352,37 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
-                        {c.modo_acesso === "link" && c.user_id && c.status !== "ativo" && (c.status === "falhou" || c.status === "pendente" || envioAmbiguo(c)) ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={reenvioEmCursoId === c.id}
-                            onClick={() => abrirConfirmacaoReenvio(c)}
-                          >
-                            {reenvioEmCursoId === c.id
-                              ? "Reenviando…"
-                              : envioAmbiguo(c)
-                                ? "Não recebi — reenviar convite"
-                                : c.status === "falhou"
-                                  ? "Tentar convite novamente"
-                                  : "Reenviar convite"}
-                          </Button>
+                        {c.modo_acesso === "link" && c.status !== "ativo" && (c.status === "falhou" || c.status === "pendente" || envioAmbiguo(c)) ? (
+                          <div className="flex min-w-max flex-wrap gap-2">
+                            {c.user_id && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={reenvioEmCursoId === c.id}
+                                onClick={() => abrirConfirmacaoReenvio(c)}
+                              >
+                                {reenvioEmCursoId === c.id
+                                  ? "Reenviando…"
+                                  : envioAmbiguo(c)
+                                    ? "Não recebi — reenviar convite"
+                                    : c.status === "falhou"
+                                      ? "Tentar convite novamente"
+                                      : "Reenviar convite"}
+                              </Button>
+                            )}
+                            <ManualAccessLinkAction
+                              target={{
+                                organizationId: c.organization_id,
+                                nome: c.nome,
+                                email: c.email,
+                                cpf: c.cpf_cnpj ?? "",
+                                telefone: c.telefone ?? "",
+                                responsavelPrincipal: c.responsavel_principal,
+                              }}
+                              ambiguous={envioAmbiguo(c)}
+                              onSuccess={() => { void convites.refetch(); }}
+                            />
+                          </div>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
                     </TableRow>

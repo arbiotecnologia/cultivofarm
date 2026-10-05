@@ -6,8 +6,8 @@
 // - A intenção é persistida antes do Auth e retomada com lease/fencing.
 // - O papel `superadmin` NUNCA é concedido aqui; o usuário criado recebe
 //   exclusivamente `administrador` da empresa indicada.
-// - Nenhum segredo é devolvido além da senha temporária solicitada pelo
-//   próprio superadmin no momento da criação.
+// - Senha temporária ou link manual só voltam ao Superadmin na resposta
+//   solicitada; o link manual usa no-store e nunca é persistido ou logado.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
@@ -17,11 +17,16 @@ import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/com
 import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platform-invite-errors.ts";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 import { getPlatformInviteRedirectUrl } from "./redirect-policy.ts";
+import { manualLinkAuditState, manualLinkResponseHeaders, parseDeliveryMode } from "./manual-link-policy.ts";
 
-const json = (body: unknown, status = 200, origin: string | null = null) =>
+const json = (body: unknown, status = 200, origin: string | null = null, noStore = false) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeadersFor(origin), "Content-Type": "application/json" },
+    headers: {
+      ...corsHeadersFor(origin),
+      "Content-Type": "application/json",
+      ...(noStore ? manualLinkResponseHeaders() : {}),
+    },
   });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,7 +69,7 @@ Deno.serve(async (req) => {
     return json({ error: "Origem não autorizada." }, 403, requestOrigin);
   }
 
-  const respond = (body: unknown, status = 200) => json(body, status, requestOrigin);
+  const respond = (body: unknown, status = 200, noStore = false) => json(body, status, requestOrigin, noStore);
   const correlationId = crypto.randomUUID();
 
   try {
@@ -108,6 +113,7 @@ Deno.serve(async (req) => {
       (body as Record<string, unknown>).responsavel_principal !== false;
     const confirmAmbiguousEmailRetry =
       (body as Record<string, unknown>).confirm_ambiguous_email_retry === true;
+    const deliveryMode = parseDeliveryMode((body as Record<string, unknown>).delivery_mode);
 
     if (!UUID_RE.test(organizationId)) return respond({ error: "Selecione a empresa." }, 400);
     if (nome.length < 3 || nome.length > 200) return respond({ error: "Informe o nome completo." }, 400);
@@ -119,6 +125,13 @@ Deno.serve(async (req) => {
     if (modo !== "link" && modo !== "senha_temporaria") {
       return respond({ error: "Modo de acesso inválido." }, 400);
     }
+    if (!deliveryMode) {
+      return respond({ error: "Forma de entrega inválida." }, 400);
+    }
+    if (deliveryMode === "manual_link" && modo !== "link") {
+      return respond({ error: "O link manual exige acesso por link.", code: "manual_link_requires_link_mode" }, 400);
+    }
+    const isManualLink = deliveryMode === "manual_link";
 
     // O Origin continua validado no início da requisição para impedir chamadas
     // indevidas, mas nunca define o destino de um convite operacional.
@@ -126,8 +139,8 @@ Deno.serve(async (req) => {
 
     // Fail-closed antes de qualquer claim/mutação: o Supabase Edge Runtime
     // bloqueia saída SMTP nas portas 25 e 587.
-    const runtimeEnv = await loadRuntimeConfig(adminClient, readWorkerEnv);
-    if (modo === "link") {
+    const runtimeEnv = isManualLink ? null : await loadRuntimeConfig(adminClient, readWorkerEnv);
+    if (modo === "link" && !isManualLink && runtimeEnv) {
       if (!runtimeEnv.DELIVERY_ENABLED || !runtimeEnv.EMAIL_ENABLED) {
         return respond({ error: "A entrega por e-mail está desativada.", code: "email_disabled" }, 503);
       }
@@ -153,6 +166,7 @@ Deno.serve(async (req) => {
         p_modo_acesso: modo,
         p_responsavel_principal: responsavelPrincipal,
         p_confirm_ambiguous_email_retry: confirmAmbiguousEmailRetry,
+        p_delivery_mode: deliveryMode,
       },
     );
     if (claimError || !claimed) {
@@ -167,6 +181,9 @@ Deno.serve(async (req) => {
     }
     const job = claimed as Record<string, unknown>;
     if (job.completed === true) {
+      if (isManualLink) {
+        return respond({ error: "Este acesso já foi concluído.", code: "manual_link_access_completed" }, 409);
+      }
       return respond({ success: true, user_id: String(job.user_id ?? ""), senha_temporaria: null, email_status: "not_required", status: "ativo", idempotent: true });
     }
     const jobId = String(job.job_id ?? "");
@@ -177,6 +194,17 @@ Deno.serve(async (req) => {
     let actionLink: string | null = null;
     let senha: string | null = null;
     let criamosUsuario = false;
+    const auditManualLink = async (outcome: "success" | "failure", reason?: string) => {
+      if (!isManualLink) return;
+      const { error } = await adminClient.from("comunicacao_audit_log").insert({
+        acao: "manual_access_link_generated",
+        entidade: "platform_org_admin_invites",
+        entity_id: jobId,
+        actor_id: callerId,
+        after_state: manualLinkAuditState(organizationId, outcome, reason),
+      });
+      return !error;
+    };
 
     // Retomada Auth↔DB: busca server-only exige o marcador imutável da intenção
     // em app_metadata. E-mail isolado e user_metadata nunca autorizam adoção.
@@ -202,7 +230,8 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
         });
-        return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+        await auditManualLink("failure");
+        return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500, isManualLink);
       }
       actionLink = link.properties.action_link;
     } else if (userId) {
@@ -254,7 +283,8 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
         });
-        return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500);
+        await auditManualLink("failure");
+        return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500, isManualLink);
       }
       actionLink = link.properties.action_link;
     } else if (!userId) {
@@ -302,17 +332,34 @@ Deno.serve(async (req) => {
         p_job_id: jobId, p_lease_token: leaseToken, p_error_code: code,
       });
       const response = finalizeErrorResponse(code);
-      return respond({ error: response.message, code }, response.status);
+      await auditManualLink("failure");
+      return respond({ error: response.message, code }, response.status, isManualLink);
     }
 
     if (modo === "link") {
       if (!actionLink) {
         return respond({ error: "Convite sem link válido.", code: "link_missing" }, 500);
       }
+      if (isManualLink) {
+        const audited = await auditManualLink("success");
+        if (!audited) {
+          return respond({ error: "Não foi possível registrar a geração do link.", code: "manual_link_audit_failed" }, 500, true);
+        }
+        return respond({
+          success: true,
+          user_id: userId,
+          senha_temporaria: null,
+          email_status: "not_required",
+          status: "pendente",
+          idempotent: !criamosUsuario,
+          manual_link: actionLink,
+        }, 200, true);
+      }
       const jobHash = await maskedId(jobId);
       const logDelivery = (event: string, stage: string, safeCode: string, certainty: "definitive" | "ambiguous") => {
         console.info(JSON.stringify({ event, stage, safe_code: safeCode, certainty, job_ref: jobHash, correlation_id: correlationId }));
       };
+      if (!runtimeEnv) return respond({ error: "Configuração de e-mail indisponível.", code: "email_config_missing" }, 503);
       const delivery = await deliverInviteEmail(jobId, actionLink, runtimeEnv, {
         claim: async (id) => {
           const { data, error } = await adminClient.rpc("platform_claim_org_admin_email_delivery", {

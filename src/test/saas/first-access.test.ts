@@ -75,14 +75,17 @@ describe("primeiro acesso — convite e compensação", () => {
     expect(convite).not.toMatch(/user_metadata\?\.provisioning_request_id/);
   });
 
-  it("link de recovery segue para a rota correta e nunca volta na resposta", () => {
+  it("link de recovery segue para a rota correta e só volta no fallback manual protegido", () => {
     expect(convite).toContain('type: "recovery"');
     expect(convite).not.toContain('type: "invite"');
     expect(convite.match(/auth\.admin\.generateLink/g)?.length).toBe(2);
     const redirectPolicy = readFileSync("supabase/functions/platform-invite-org-admin/redirect-policy.ts", "utf-8");
     expect(redirectPolicy).toContain('https://app.cultivofarm.com.br');
     expect(redirectPolicy).toContain('/reset-password');
-    expect(convite).not.toMatch(/action_link:\s*actionLink/);
+    expect(convite).toContain("manual_link: actionLink");
+    const manualPolicy = readFileSync("supabase/functions/platform-invite-org-admin/manual-link-policy.ts", "utf-8");
+    expect(manualPolicy).toContain('"Cache-Control": "no-store, private"');
+    expect(convite).toContain('deliveryMode === "manual_link"');
     expect(convite).toContain("deliverInviteEmail");
   });
 

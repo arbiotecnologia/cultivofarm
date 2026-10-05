@@ -31,6 +31,14 @@ describe("D51 — provisionamento recuperável e concorrente", () => {
     expect(edge).not.toContain("listUsers");
   });
 
+  it("fallback manual reutiliza o fluxo e nunca atravessa a entrega SMTP", () => {
+    const edge = readFileSync("supabase/functions/platform-invite-org-admin/index.ts", "utf8");
+    expect(edge).toContain('deliveryMode === "manual_link"');
+    expect(edge.indexOf("if (isManualLink)")).toBeLessThan(edge.indexOf("deliverInviteEmail(jobId"));
+    expect(edge).toContain("manual_link: actionLink");
+    expect(edge).toContain("manual_access_link_generated");
+  });
+
   it("bloqueia configuração SMTP incompatível antes do claim de provisionamento", () => {
     const edge = readFileSync("supabase/functions/platform-invite-org-admin/index.ts", "utf8");
     expect(edge).toContain("getSmtpConfigError(runtimeEnv)");

@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cnpjValido, normalizarCnpj } from "@/lib/saas/orgOnboarding";
 import { CODIGOS_FALLBACK_MANUAL, FONTE_OFICIAL, consultarCnpjOnboarding, mensagemConsulta, type DadosEmpresa } from "@/lib/saas/onboardingCnpj";
+import { ManualAccessLinkAction } from "@/components/plataforma/ManualAccessLinkAction";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 type Origem = { tipo: "api"; dados: DadosEmpresa } | { tipo: "manual"; motivo: string } | null;
@@ -334,7 +335,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
             {resultado && organizationId ? (
               <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onShowOrganization(organizationId)}>Ver empresa</Button><Button onClick={() => onOpenAdmins(organizationId)}>Ver administradores</Button><Button variant="ghost" onClick={reiniciar}>Cadastrar outra empresa</Button></div>
             ) : (
-               <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={voltarParaResponsavel}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button>{organizationId ? <Button data-testid="send-invite" disabled={!responsavelValido || processando} onClick={() => progresso === "ambiguo" ? setConfirmacaoReenvioAberta(true) : void enviarConvite()}>{processando ? PROGRESSO_LABEL[progresso] : progresso === "ambiguo" ? "Não recebi — reenviar convite" : progresso === "falhou" ? "Tentar convite novamente" : "Enviar convite"}</Button> : <Button data-testid="create-organization" disabled={!empresaValida || !responsavelValido || !confirmacaoOk || !revisaoIntegra || processando} onClick={() => void criarEmpresa()}>{criar.isPending ? "Criando empresa" : "Criar empresa"}</Button>}</div>
+               <div className="flex flex-wrap justify-between gap-2"><Button variant="outline" disabled={processando || Boolean(organizationId)} onClick={voltarParaResponsavel}><ChevronLeft className="mr-2 h-4 w-4" />Voltar e editar</Button>{organizationId ? <div className="flex flex-wrap gap-2"><Button data-testid="send-invite" disabled={!responsavelValido || processando} onClick={() => progresso === "ambiguo" ? setConfirmacaoReenvioAberta(true) : void enviarConvite()}>{processando ? PROGRESSO_LABEL[progresso] : progresso === "ambiguo" ? "Não recebi — reenviar convite" : progresso === "falhou" ? "Tentar convite novamente" : "Enviar convite"}</Button>{(progresso === "falhou" || progresso === "ambiguo" || progresso === "empresa_pronta") && <ManualAccessLinkAction target={{ organizationId, nome: responsavelNome.trim(), email: responsavelEmail.trim().toLowerCase(), cpf: cpf.replace(/\D/g, ""), telefone: telefone.replace(/\D/g, ""), responsavelPrincipal }} ambiguous={progresso === "ambiguo"} label="Gerar link para copiar" onSuccess={() => { setProgresso("convite_enviado"); }} />}</div> : <Button data-testid="create-organization" disabled={!empresaValida || !responsavelValido || !confirmacaoOk || !revisaoIntegra || processando} onClick={() => void criarEmpresa()}>{criar.isPending ? "Criando empresa" : "Criar empresa"}</Button>}</div>
             )}
           </CardContent>
         </Card>

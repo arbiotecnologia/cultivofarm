@@ -284,6 +284,21 @@
 | D51-RETRY-DIAG-003 | Correlação Edge da tentativa mais recente | FAIL operacional | HTTP 503; claim em preflight seguido de falha definitiva `connect/email_connect_network`; nenhum aceite SMTP |
 | D51-RETRY-DIAG-004 | Payload persistente da linha | PASS estático | mesmos dados do registro, confirmação ambígua falsa, sem job_id e sem criação de job no cliente |
 | D51-RETRY-DIAG-005 | Flags após tentativa | BLOCKER | global/e-mail ON/ON, Test Mode ON e allowlist exclusiva; fechar OFF/OFF antes de qualquer diagnóstico ou retry adicional |
+| D51-MANUAL-001 | JWT ausente e tenant admin | PASS contratual | autenticação e `is_platform_superadmin` permanecem anteriores ao modo de entrega |
+| D51-MANUAL-002 | Modo inválido ou senha temporária | PASS | allowlist `email|manual_link`; manual exige `modo_acesso=link` |
+| D51-MANUAL-003 | Pendente/falho reutiliza job e conta | PASS | mesma RPC de claim, identidade e tenant; sem job/user/profile/role paralelo |
+| D51-MANUAL-004 | Ativo/concluído | PASS | backend retorna conflito e UI não oferece a ação |
+| D51-MANUAL-005 | Independência de SMTP | PASS | modo manual não carrega runtime, não chama claim de e-mail nem `deliverInviteEmail`/`sendEmail` |
+| D51-MANUAL-006 | Estado do e-mail preservado | PASS contratual | sobrecarga manual não acessa RPC de entrega; tentativa/status de e-mail não são alterados |
+| D51-MANUAL-007 | Redirect canônico | PASS | mesma política server-side fixa em `/reset-password`, independente de Origin |
+| D51-MANUAL-008 | Resposta e cache | PASS | `manual_link` existe só na resposta manual e usa `no-store, private`; resposta e-mail permanece sem link |
+| D51-MANUAL-009 | Auditoria sem segredo | PASS | evento no log existente contém ator/job/organização/origem/outcome/motivo, sem URL/token/hash/query/fragmento |
+| D51-MANUAL-010 | UI Administradores | PASS | confirmação, ação elegível, aviso ambíguo, trava e cópia segura cobertos |
+| D51-MANUAL-011 | UI Nova Empresa | PASS | fallback após empresa pronta/falha SMTP usa o mesmo componente/hook sem recriar empresa |
+| D51-MANUAL-012 | Memória do navegador | PASS | link não é exibido por padrão nem gravado em local/session storage ou IndexedDB; fechar/desmontar limpa o estado React |
+| D51-MANUAL-013 | Testes e qualidade | PASS | 50 focados, 5 Deno, typecheck, build automático e 5.414 globais/4 skipped |
+| D51-MANUAL-014 | Scanner e linter | PASS com baseline | scanner 10 Info/zero P0/P1; linter 492 preexistentes; auditoria RBAC autenticada NOT RUN sem credencial |
+| D51-MANUAL-015 | Deploy/publicação/smoke | PASS técnico | Edge implantada, frontend publicado uma vez e smoke passivo sem link real ou e-mail |
 
 ## Gate
 
