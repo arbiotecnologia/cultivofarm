@@ -91,7 +91,7 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 - Treze RPCs financeiras elevadas estão sem execução para `authenticated` no estado vivo.
 - Backfill foi feito somente onde perfil, cliente ou registro-pai fornecia associação única; nenhum dado foi excluído. Linhas ambíguas foram preservadas sem vínculo.
 - Três Edge Functions foram implantadas: catálogo destrutivo, auditoria do catálogo e usuários do portal.
-- Fechamento focado adicional: **66 PASS** em Financeiro/Fiscal/gates Edge; build automático **PASS**. Scanner: **10 Info, zero P0/P1**. Supabase linter: **479 achados preexistentes**, sem novo achado atribuído às migrations finais. Quatro Edges corrigidas foram implantadas.
+- Fechamento: **66 PASS** focados e suíte global equivalente a **5.436 PASS / 4 skipped** após corrigir duas fixtures tenant dos testes; typecheck e build automático **PASS**. Scanner: **10 Info, zero P0/P1**. Supabase linter: **479 achados preexistentes**, sem novo achado atribuído às migrations finais. Quatro Edges corrigidas foram implantadas.
 - Publicação frontend foi solicitada uma vez. Smoke passivo oficial: HTTP 200, rota `/auth` renderizada, zero erro de página; duas respostas 401 esperadas sem sessão. Nenhuma autenticação, deleção, emissão fiscal ou mutação destrutiva foi executada.
 
 ### Matriz A/B e decisão
