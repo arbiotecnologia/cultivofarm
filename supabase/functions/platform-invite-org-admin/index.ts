@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
         });
-        await auditManualLink("failure", "link_failed");
+        await auditManualLink("failure");
         return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500, isManualLink);
       }
       actionLink = link.properties.action_link;
@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
         await adminClient.rpc("platform_fail_org_admin_provisioning", {
           p_job_id: jobId, p_lease_token: leaseToken, p_error_code: "link_failed",
         });
-        await auditManualLink("failure", "link_failed");
+        await auditManualLink("failure");
         return respond({ error: "Não foi possível gerar o convite.", code: "link_failed" }, 500, isManualLink);
       }
       actionLink = link.properties.action_link;
@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
         p_job_id: jobId, p_lease_token: leaseToken, p_error_code: code,
       });
       const response = finalizeErrorResponse(code);
-      await auditManualLink("failure", code);
+      await auditManualLink("failure");
       return respond({ error: response.message, code }, response.status, isManualLink);
     }
 
