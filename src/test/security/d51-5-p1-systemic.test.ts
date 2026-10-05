@@ -6,6 +6,10 @@ const appearance = readFileSync("src/components/configuracoes/AparenciaTab.tsx",
 const app = readFileSync("src/App.tsx", "utf8");
 const aiRefresh = readFileSync("supabase/functions/ai-refresh-fichas/index.ts", "utf8");
 const aiField = readFileSync("supabase/functions/ai-generate-ficha-campo/index.ts", "utf8");
+const migration = readFileSync(
+  "supabase/migrations/20261005220903_6e5adb57-2142-4c4e-a9ba-98fcf039d918.sql",
+  "utf8",
+);
 
 describe("D51.5 P1 sistêmico — configuração global", () => {
   it("exibe a edição da identidade global somente ao Superadmin de Plataforma", () => {
@@ -36,5 +40,18 @@ describe("D51.5 P1 sistêmico — configuração global", () => {
       expect(source).toContain("if (!isSuperadmin) return j(origin, { error: 'forbidden' }, 403)");
       expect(source).not.toContain("'Access-Control-Allow-Origin': '*'");
     }
+  });
+
+  it("mantém superfícies sem ownership determinístico em fail-closed", () => {
+    expect(migration).toContain("REVOKE ALL ON TABLE public.bank_accounts FROM PUBLIC, anon, authenticated");
+    expect(migration).toContain('CREATE POLICY "d51_5_bank_accounts_fail_closed"');
+    expect(migration).toContain("USING (false)");
+    expect(migration).toContain("REVOKE ALL ON FUNCTION public.rpc_bi_visitas_por_cliente");
+    expect(migration).toContain("REVOKE ALL ON FUNCTION public.rpc_b2b_executive_dashboard()");
+  });
+
+  it("combina papel e organização nos logs operacionais alcançáveis", () => {
+    expect(migration).toContain('CREATE POLICY "d51_5_agenda_sync_tenant_read"');
+    expect(migration).toContain("c.organization_id = public.h15_actor_organization()");
   });
 });
