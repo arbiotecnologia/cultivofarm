@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ interface ManualAccessLinkDialogProps {
 }
 
 export function ManualAccessLinkDialog({ link, onClose }: ManualAccessLinkDialogProps) {
-  useEffect(() => onClose, [onClose]);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => () => onCloseRef.current(), []);
 
   const copyLink = async () => {
     if (!link) return;
