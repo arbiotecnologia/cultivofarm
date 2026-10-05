@@ -20835,8 +20835,16 @@ export type Database = {
       is_financial_staff: { Args: { _uid: string }; Returns: boolean }
       is_operational_staff: { Args: { _uid: string }; Returns: boolean }
       is_platform_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      is_same_tenant_user: {
+        Args: { p_target_user_id: string }
+        Returns: boolean
+      }
       is_technical_visit_editable_status: {
         Args: { p_status: string }
+        Returns: boolean
+      }
+      is_tenant_admin_for_user: {
+        Args: { p_target_user_id: string }
         Returns: boolean
       }
       is_valid_b2b_partner_user: {
@@ -23655,6 +23663,20 @@ export type Database = {
           checkin_id: string
           is_new: boolean
         }[]
+      }
+      tenant_admin_list_users: {
+        Args: {
+          p_active?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_role?: Database["public"]["Enums"]["app_role"]
+          p_search?: string
+        }
+        Returns: Json
+      }
+      tenant_admin_set_user_active: {
+        Args: { p_active: boolean; p_user_id: string }
+        Returns: Json
       }
       unassign_b2b_user_client_secure: {
         Args: { p_cliente_id: string; p_reason?: string; p_user_id: string }
