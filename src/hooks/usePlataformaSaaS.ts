@@ -1,5 +1,5 @@
 /**
- * Home provisória do Superadmin de Plataforma — leitura somente.
+ * Gestão SaaS do Superadmin de Plataforma.
  *
  * Consultas diretas às tabelas do núcleo SaaS (Fase S1). A autorização real é
  * do servidor: policy `saas_platform_read` (SELECT) via
@@ -32,8 +32,14 @@ export interface AssinaturaSaaS {
   id: string;
   organization_id: string;
   plan_id: string;
+  plan_version_id: string | null;
   status: string;
   billing_cycle: string | null;
+  billing_cycle_snapshot: string | null;
+  price_snapshot: number | null;
+  currency_snapshot: string | null;
+  limits_snapshot: Record<string, unknown> | null;
+  features_snapshot: unknown[] | null;
   started_at: string | null;
   trial_ends_at: string | null;
   current_period_start: string | null;
@@ -48,7 +54,31 @@ export interface HistoricoSaaS {
   subscription_id: string;
   organization_id: string;
   source: string;
+  action: string | null;
   reason: string | null;
+  correlation_id: string | null;
+  previous_status: string | null;
+  new_status: string | null;
+  previous_plan_version_id: string | null;
+  new_plan_version_id: string | null;
+  created_at: string;
+}
+
+export interface VersaoPlanoSaaS {
+  id: string;
+  plan_id: string;
+  version_number: number;
+  name_snapshot: string;
+  description_snapshot: string | null;
+  price_amount: number;
+  currency: string;
+  billing_cycle: string;
+  limits_snapshot: Record<string, unknown>;
+  features_snapshot: unknown[];
+  effective_from: string;
+  effective_to: string | null;
+  publication_reason: string | null;
+  correlation_id: string | null;
   created_at: string;
 }
 
@@ -86,6 +116,25 @@ export function usePlanosSaaS() {
   });
 }
 
+export function useVersoesPlanosSaaS() {
+  return useQuery<VersaoPlanoSaaS[]>({
+    queryKey: ["plataforma", "saas_plan_versions"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("saas_plan_versions")
+        .select(
+          "id,plan_id,version_number,name_snapshot,description_snapshot,price_amount,currency,billing_cycle," +
+            "limits_snapshot,features_snapshot,effective_from,effective_to,publication_reason,correlation_id,created_at",
+        )
+        .order("effective_from", { ascending: false })
+        .limit(LIMITE);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as VersaoPlanoSaaS[];
+    },
+    ...opcoes,
+  });
+}
+
 export function useModulosFeaturesSaaS() {
   return useQuery<{ modulos: ModuloSaaS[]; features: FeatureSaaS[] }>({
     queryKey: ["plataforma", "saas_modules_features"],
@@ -116,7 +165,8 @@ export function useAssinaturasSaaS() {
       const { data, error } = await db
         .from("organization_subscriptions")
         .select(
-          "id,organization_id,plan_id,status,billing_cycle,started_at,trial_ends_at," +
+          "id,organization_id,plan_id,plan_version_id,status,billing_cycle,billing_cycle_snapshot," +
+            "price_snapshot,currency_snapshot,limits_snapshot,features_snapshot,started_at,trial_ends_at," +
             "current_period_start,current_period_end,cancelled_at,suspended_at,created_at",
         )
         .order("created_at", { ascending: false })
@@ -134,7 +184,10 @@ export function useHistoricoAssinaturasSaaS() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organization_subscription_history")
-        .select("id,subscription_id,organization_id,source,reason,created_at")
+        .select(
+          "id,subscription_id,organization_id,source,action,reason,correlation_id,previous_status,new_status," +
+            "previous_plan_version_id,new_plan_version_id,created_at",
+        )
         .order("created_at", { ascending: false })
         .limit(LIMITE);
       if (error) throw new Error(error.message);
@@ -310,17 +363,48 @@ export function useAlterarAssinatura() {
     retry: false,
     mutationFn: async (v: {
       organizationId: string;
-      planKey: string;
-      status: string;
+      action: "start_trial" | "change_plan" | "mark_past_due" | "suspend" | "reactivate_manual" | "cancel" | "expire_trial";
+      planVersionId: string | null;
       reason: string;
     }) => {
-      const { error } = await db.rpc("platform_change_subscription", {
+      const { error } = await db.rpc("platform_transition_subscription", {
         _organization_id: v.organizationId,
-        _plan_key: v.planKey,
-        _status: v.status,
+        _action: v.action,
         _reason: v.reason,
+        _correlation_id: crypto.randomUUID(),
+        _plan_version_id: v.planVersionId,
       });
       if (error) throw new Error(error.message);
+    },
+    onSettled: invalidar,
+  });
+}
+
+export function usePublicarVersaoPlano() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: {
+      planKey: string;
+      priceAmount: number;
+      currency: string;
+      billingCycle: "monthly" | "quarterly" | "semiannual" | "annual" | "custom";
+      limits: Record<string, unknown>;
+      effectiveFrom: string;
+      reason: string;
+    }) => {
+      const { data, error } = await db.rpc("platform_publish_plan_version", {
+        _plan_key: v.planKey,
+        _price_amount: v.priceAmount,
+        _currency: v.currency,
+        _billing_cycle: v.billingCycle,
+        _limits: v.limits,
+        _effective_from: v.effectiveFrom,
+        _reason: v.reason,
+        _correlation_id: crypto.randomUUID(),
+      });
+      if (error) throw new Error(error.message);
+      return data as string;
     },
     onSettled: invalidar,
   });
