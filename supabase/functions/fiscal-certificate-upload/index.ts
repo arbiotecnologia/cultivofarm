@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
     // Confere existência real do company_settings antes de qualquer trabalho pesado.
     // H7e: o CNPJ do emitente NUNCA vem do cliente — sempre lido server-side aqui.
     const companyExists = await authed.from("company_fiscal_settings")
-      .select("id, cnpj, organization_id").eq("id", companySettingsId).eq("is_active", true).maybeSingle();
+      .select("id, cnpj").eq("id", companySettingsId).eq("is_active", true).maybeSingle();
     if (companyExists.error || !companyExists.data) {
       return json({ error: "company_settings_not_found" }, 404, headers);
     }
