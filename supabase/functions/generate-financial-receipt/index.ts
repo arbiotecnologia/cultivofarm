@@ -34,19 +34,32 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "tenant_context_required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { receipt_id } = await req.json();
-    if (typeof receipt_id !== "string" || !/^[0-9a-f-]{36}$/i.test(receipt_id)) {
+    const body = await req.json().catch(() => null) as { receipt_id?: unknown } | null;
+    const receiptId = body?.receipt_id;
+    if (typeof receiptId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receiptId)) {
       return new Response(JSON.stringify({ error: "receipt_id_invalid" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { data: rec, error } = await supabase
       .from("financial_receipts")
-      .select("*, clientes:customer_id(nome, razao_social), payment_methods:payment_method_id(name)")
-      .eq("id", receipt_id)
+      .select("*, payment_methods:payment_method_id(name)")
+      .eq("id", receiptId)
       .eq("organization_id", organizationId)
       .maybeSingle();
     if (error) throw error;
     if (!rec) throw new Error("Recibo não encontrado");
+
+    const { data: customer, error: customerError } = rec.customer_id
+      ? await supabase
+        .from("clientes")
+        .select("nome, razao_social")
+        .eq("id", rec.customer_id)
+        .eq("organization_id", organizationId)
+        .maybeSingle()
+      : { data: null, error: null };
+    if (customerError || (rec.customer_id && !customer)) {
+      throw new Error("Cliente do recibo fora do tenant");
+    }
 
     const pdf = await PDFDocument.create();
     const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -58,12 +71,12 @@ Deno.serve(async (req) => {
     page.drawText("RECIBO DE PAGAMENTO", { x: 30, y: 350, size: 18, font: bold });
     page.drawText(`Nº ${rec.receipt_number}`, { x: 400, y: 350, size: 14, font: bold });
 
-    const customer = (rec as any).clientes?.nome ?? (rec as any).clientes?.razao_social ?? "—";
+    const customerName = customer?.nome ?? customer?.razao_social ?? "—";
     const method = (rec as any).payment_methods?.name ?? "—";
     const amount = Number(rec.amount);
 
     const lines = [
-      `Recebemos de: ${customer}`,
+      `Recebemos de: ${customerName}`,
       `A quantia de: R$ ${amount.toFixed(2).replace(".", ",")} (${numberToExtenso(amount)})`,
       `Referente a: ${rec.description ?? "Pagamento de título financeiro"}`,
       `Forma de pagamento: ${method}`,
@@ -99,10 +112,11 @@ Deno.serve(async (req) => {
 
     const { error: updateError } = await supabase.from("financial_receipts")
       .update({ storage_bucket: "financial-receipts", storage_path: path })
-      .eq("id", receipt_id)
+      .eq("id", receiptId)
       .eq("organization_id", organizationId);
     if (updateError) throw updateError;
-    const { data: signed } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);
+    const { data: signed, error: signedError } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);
+    if (signedError || !signed?.signedUrl) throw new Error("URL do recibo indisponível");
 
     return new Response(JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
