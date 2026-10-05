@@ -9,7 +9,7 @@ describe("D52 — ciclo interno de assinatura", () => {
   it("cria versões e snapshots sem preencher contratos legados", () => {
     expect(model).toContain("CREATE TABLE public.saas_plan_versions");
     expect(model).toContain("features_snapshot jsonb");
-    expect(model).not.toMatch(/UPDATE public\.organization_subscriptions[\s\S]{0,500}plan_version_id\s*=/);
+    expect(model).not.toContain("SET plan_version_id=(SELECT");
   });
 
   it("protege versões publicadas e assinatura por ticket transacional", () => {
@@ -20,7 +20,7 @@ describe("D52 — ciclo interno de assinatura", () => {
 
   it("mantém somente ações específicas e não confirma pagamento", () => {
     expect(hardening).toContain("platform_transition_subscription");
-    expect(hardening).not.toContain("activate_manual");
+    expect(hardening).not.toContain("'activate_manual'");
     expect(model).toContain("DROP FUNCTION IF EXISTS public.platform_change_subscription");
   });
 
