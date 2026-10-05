@@ -48,7 +48,7 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados.
 - Job `saas-expire-due-trials`: ativo diariamente às 02:15 UTC; trials legados sem versão/data não são tocados.
 - 15 testes D52 focados passaram; typecheck, scanner de segredos, ESLint dos arquivos alterados e compilação automática passaram.
-- Suíte global: 5.468 testes passaram e quatro foram ignorados após correção das fixtures de Storage; registrar o total final da última execução no fechamento.
+- Suíte global: 5.472 testes passaram e quatro foram ignorados após correção das fixtures de Storage.
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 
