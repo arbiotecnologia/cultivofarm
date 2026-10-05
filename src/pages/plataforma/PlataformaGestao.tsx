@@ -1,5 +1,5 @@
 /**
- * Fase S3 — gestão de exceções por empresa e troca de plano/situação.
+ * D52 — gestão de exceções e transições específicas de assinatura.
  * Toda escrita passa por RPCs `platform_*` (superadmin, motivo obrigatório).
  */
 import { useState } from "react";
@@ -19,35 +19,44 @@ import {
   useExcecoesSaaS,
   useModulosFeaturesSaaS,
   useOrganizacoesSaaS,
-  usePlanosSaaS,
+  useVersoesPlanosSaaS,
 } from "@/hooks/usePlataformaSaaS";
 
-const STATUS = [
-  ["TRIAL", "Período de teste"],
-  ["ACTIVE", "Ativa"],
-  ["PAST_DUE", "Pagamento em atraso"],
-  ["SUSPENDED", "Suspensa"],
-  ["CANCELLED", "Cancelada"],
-  ["EXPIRED", "Expirada"],
+const ACOES = [
+  ["start_trial", "Iniciar período de teste"],
+  ["change_plan", "Alterar plano"],
+  ["mark_past_due", "Marcar pagamento em atraso"],
+  ["suspend", "Suspender"],
+  ["reactivate_manual", "Reativar manualmente"],
+  ["cancel", "Cancelar"],
+  ["expire_trial", "Expirar período de teste vencido"],
 ] as const;
+type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
 export function AlterarAssinaturaCard() {
   const orgs = useOrganizacoesSaaS();
-  const planos = usePlanosSaaS();
+  const versoes = useVersoesPlanosSaaS();
   const alterar = useAlterarAssinatura();
   const [org, setOrg] = useState("");
-  const [plano, setPlano] = useState("");
-  const [status, setStatus] = useState("ACTIVE");
+  const [versao, setVersao] = useState("");
+  const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
+  const exigeVersao = acao === "start_trial" || acao === "change_plan";
+  const agora = Date.now();
+  const versoesVigentes = (versoes.data ?? []).filter((v) => {
+    const inicio = new Date(v.effective_from).getTime();
+    const fim = v.effective_to ? new Date(v.effective_to).getTime() : null;
+    return inicio <= agora && (fim === null || fim > agora);
+  });
 
   const enviar = () =>
     alterar.mutate(
-      { organizationId: org, planKey: plano, status, reason: motivo.trim() },
+      { organizationId: org, action: acao, planVersionId: exigeVersao ? versao : null, reason: motivo.trim() },
       {
         onSuccess: () => {
-          toast.success("Assinatura atualizada e registrada no histórico.");
+          toast.success("Ação aplicada e registrada no histórico.");
           setMotivo("");
         },
         onError: (e) => toast.error(mensagemErroPlataforma(e)),
@@ -57,8 +66,8 @@ export function AlterarAssinaturaCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Alterar plano ou situação</CardTitle>
-        <CardDescription>A mudança fica registrada no histórico com o motivo.</CardDescription>
+        <CardTitle className="text-base">Ação de assinatura</CardTitle>
+        <CardDescription>Somente transições válidas são aceitas e toda ação exige motivo.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
         <Select value={org} onValueChange={setOrg}>
@@ -67,27 +76,26 @@ export function AlterarAssinaturaCard() {
             {orgs.data?.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={plano} onValueChange={setPlano}>
-          <SelectTrigger aria-label="Plano"><SelectValue placeholder="Plano" /></SelectTrigger>
+        <Select value={acao} onValueChange={(value) => { setAcao(value as AcaoAssinatura); setVersao(""); }}>
+          <SelectTrigger aria-label="Ação"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {planos.data?.filter((p) => p.active).map((p) => (
-              <SelectItem key={p.id} value={p.key}>{p.name}</SelectItem>
-            ))}
+            {ACOES.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger aria-label="Situação"><SelectValue /></SelectTrigger>
+        {exigeVersao && <Select value={versao} onValueChange={setVersao}>
+          <SelectTrigger aria-label="Versão comercial"><SelectValue placeholder="Versão comercial vigente" /></SelectTrigger>
           <SelectContent>
-            {STATUS.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
+            {versoesVigentes.map((v) => <SelectItem key={v.id} value={v.id}>{v.name_snapshot} · v{v.version_number}</SelectItem>)}
           </SelectContent>
-        </Select>
+        </Select>}
         <div className="space-y-1">
           <Label htmlFor="assin-motivo">Motivo da alteração *</Label>
           <Input id="assin-motivo" placeholder="Ex.: renovação contratual" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
         </div>
         <div className="sm:col-span-2">
-          <Button disabled={!org || !plano || !motivoOk(motivo) || alterar.isPending} onClick={enviar}>
-            {alterar.isPending ? "Salvando…" : "Salvar alteração"}
+          {exigeVersao && versoes.isSuccess && versoesVigentes.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Nenhuma versão comercial vigente. A ação permanece bloqueada.</p>}
+          <Button disabled={!org || (exigeVersao && !versao) || !motivoOk(motivo) || alterar.isPending} onClick={enviar}>
+            {alterar.isPending ? "Aplicando…" : "Confirmar ação"}
           </Button>
         </div>
       </CardContent>

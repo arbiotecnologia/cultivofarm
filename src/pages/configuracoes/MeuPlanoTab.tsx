@@ -9,12 +9,13 @@
  * Alterações de plano são feitas pelo Superadmin em /plataforma.
  */
 import { useQuery } from "@tanstack/react-query";
-import { CreditCard, RefreshCw } from "lucide-react";
+import { AlertTriangle, CreditCard, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   comporModulos,
   formatarLimite,
@@ -31,10 +32,16 @@ const db = supabase as any;
 interface AssinaturaPropria {
   id: string;
   plan_id: string;
+  plan_version_id: string | null;
   status: string;
   started_at: string | null;
+  trial_ends_at: string | null;
   current_period_end: string | null;
   cancel_at: string | null;
+  price_snapshot: number | null;
+  currency_snapshot: string | null;
+  billing_cycle_snapshot: string | null;
+  limits_snapshot: Record<string, unknown> | null;
 }
 
 interface PlanoInfo {
@@ -111,7 +118,7 @@ export function MeuPlanoTab() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organization_subscriptions")
-        .select("id, plan_id, status, started_at, current_period_end, cancel_at")
+        .select("id, plan_id, plan_version_id, status, started_at, trial_ends_at, current_period_end, cancel_at, price_snapshot, currency_snapshot, billing_cycle_snapshot, limits_snapshot")
         .eq("organization_id", orgId)
         .order("started_at", { ascending: false })
         .limit(1);
@@ -129,7 +136,7 @@ export function MeuPlanoTab() {
       const { data, error } = await db
         .from("saas_plans")
         .select("id, name, description")
-        .eq("id", assinatura.data!.plan_id)
+        .eq("id", assinatura.data?.plan_id ?? "")
         .limit(1);
       if (error) throw new Error("plano_indisponivel");
       return (data?.[0] as PlanoInfo | undefined) ?? null;
@@ -227,6 +234,9 @@ export function MeuPlanoTab() {
     : [];
   const status = assinatura.data?.status ?? null;
   const statusLabel = status ? (STATUS_ASSINATURA_LABEL[status] ?? status) : null;
+  const legado = Boolean(assinatura.data && !assinatura.data.plan_version_id);
+  const bloqueada = legado || !["ACTIVE", "TRIAL"].includes(status ?? "");
+  const fimExibido = status === "TRIAL" ? assinatura.data?.trial_ends_at ?? null : assinatura.data?.current_period_end ?? null;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -253,7 +263,7 @@ export function MeuPlanoTab() {
             }}
           />
           {assinatura.data && (
-            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div>
                 <dt className="text-xs text-muted-foreground">Plano</dt>
                 <dd className="text-sm font-medium">
@@ -276,15 +286,26 @@ export function MeuPlanoTab() {
                 <dd className="text-sm">{dataCurta(assinatura.data.started_at)}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Vigência até</dt>
-                <dd className="text-sm">{dataCurta(assinatura.data.current_period_end)}</dd>
+                <dt className="text-xs text-muted-foreground">{status === "TRIAL" ? "Teste até" : "Vigência até"}</dt>
+                <dd className="text-sm">{dataCurta(fimExibido)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Versão comercial</dt>
+                <dd className="text-sm">{legado ? "Pendente" : "Vinculada"}</dd>
               </div>
             </dl>
+          )}
+          {assinatura.data && bloqueada && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+              <AlertTitle>{legado ? "Regularização comercial pendente" : "Novas criações bloqueadas"}</AlertTitle>
+              <AlertDescription>{legado ? "Esta assinatura ainda não possui uma versão comercial validada. Os dados existentes permanecem preservados." : "A situação atual da assinatura não libera novos usos. Os dados existentes permanecem preservados."}</AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
 
-      {!carregando && !erro && modulos.length > 0 && (
+      {!carregando && !erro && !legado && modulos.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Módulos e funcionalidades</CardTitle>

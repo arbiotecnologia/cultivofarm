@@ -3,6 +3,7 @@ import {
   comporModulos,
   formatarLimite,
   STATUS_ASSINATURA_LABEL,
+  assinaturaLiberaNovosUsos,
   totalIncluidas,
   type CatalogoFeature,
   type CatalogoModulo,
@@ -73,5 +74,14 @@ describe("STATUS_ASSINATURA_LABEL", () => {
     expect(Object.keys(STATUS_ASSINATURA_LABEL).sort()).toEqual(
       ["ACTIVE", "CANCELLED", "EXPIRED", "PAST_DUE", "SUSPENDED", "TRIAL"].sort(),
     );
+  });
+});
+
+describe("assinaturaLiberaNovosUsos", () => {
+  it("libera apenas ativa ou trial versionados", () => {
+    expect(assinaturaLiberaNovosUsos("ACTIVE", true)).toBe(true);
+    expect(assinaturaLiberaNovosUsos("TRIAL", true)).toBe(true);
+    expect(assinaturaLiberaNovosUsos("PAST_DUE", true)).toBe(false);
+    expect(assinaturaLiberaNovosUsos("ACTIVE", false)).toBe(false);
   });
 });

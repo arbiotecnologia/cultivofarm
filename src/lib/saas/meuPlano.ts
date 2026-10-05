@@ -100,3 +100,7 @@ export function formatarLimite(valor: number | null): string | null {
     return null;
   return Number(valor).toLocaleString("pt-BR");
 }
+
+export function assinaturaLiberaNovosUsos(status: string, possuiVersao: boolean): boolean {
+  return possuiVersao && (status === "ACTIVE" || status === "TRIAL");
+}
