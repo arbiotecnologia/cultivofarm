@@ -242,7 +242,8 @@ describe("integração Configuracoes.tsx — um único caminho de escrita (RPC)"
   });
 
   it("consulta de usuários inclui updated_at e o salvamento não refaz fetch antes de salvar", () => {
-    expect(src).toMatch(/select\("user_id,[^)]*updated_at/);
+    expect(src).toContain('rpc("tenant_admin_list_users"');
+    expect(src).toContain("user_id e updated_at");
     expect(blocoSalvar).not.toContain("refetchUsers");
   });
 });

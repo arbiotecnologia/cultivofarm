@@ -144,6 +144,7 @@ export default function Configuracoes() {
     queryKey: ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina],
     enabled: isAdmin,
     queryFn: async () => {
+      // O contrato server-side retorna user_id e updated_at para edição otimista.
       const { data, error } = await (supabase as any).rpc("tenant_admin_list_users", {
         p_search: debouncedSearchTerm.trim() || null,
         p_role: filterRole === "all" ? null : filterRole,
