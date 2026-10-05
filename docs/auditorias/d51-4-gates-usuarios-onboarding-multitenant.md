@@ -98,7 +98,7 @@ Inventário detalhado: `docs/auditorias/gate3-d51-4-inventario-modulos-tenant.md
 
 A prova estrutural confirma que A não pode obter linha B quando a linha possui tenant: a policy restritiva exige igualdade com a organização derivada de `auth.uid()`, e o trigger rejeita organização enviada pelo cliente ou troca de tenant. Usuário inativo/sem organização e Superadmin sem tenant recebem escopo nulo e falham fechados.
 
-A matriz A/B autenticada de runtime ficou **BLOCKED/NOT RUN**: o backend é Supabase externo não gerenciado pelo Lovable (`external_unmanaged`) e recusou a emissão de sessão controlada. Nenhum usuário real foi impersonado e nenhum token foi recuperado. Foram comprovados no estado vivo: policies tenant restritivas, helpers server-side sem recursão observada, ACLs das RPCs, índices por organização, plano `EXPLAIN` com Index Scan, rejeição 401 nas Edges protegidas sem JWT válido, mutação global exclusiva de Platform Superadmin e guardas adicionais de OnFarm, parceiros e planejamento de produção. A única conta de parceiro sem vínculo determinístico foi preservada e ficou bloqueada. A decisão formal permanece **NO-GO de homologação final / GO de segurança fail-closed**. Financeiro/Storage, Catálogo, Portal, Produção, Fiscal, RBAC e configurações globais estão contidos; relatórios e linhas legadas sem vínculo permanecem indisponíveis, nunca globais.
+A matriz A/B foi reexecutada no banco canônico pela migration `20261005204351_3ab227fc-40d7-48b2-94b6-a49162216da3.sql`, usando dois administradores ativos de organizações distintas, claims locais e `SET LOCAL ROLE authenticated`. A prova confirmou A→B e B→A bloqueados em perfis, contas financeiras, notas fiscais e ordens de serviço, além de negar alteração da configuração global por administrador tenant. O bloco transacional não criou dados e não preservou mutações. Foram também revalidados no estado vivo: policies tenant restritivas, helpers server-side, ACLs das RPCs, políticas de Storage por tenant/recurso-pai, mutação global exclusiva de Platform Superadmin e guardas de OnFarm, parceiros e planejamento. Financeiro/Storage permanece **FAIL-CLOSED** para relatórios cujas fontes ainda não possuem ownership completo; linhas legadas ambíguas continuam indisponíveis, nunca globais.
 
 ### Decisão final por módulo
 
@@ -111,7 +111,9 @@ A matriz A/B autenticada de runtime ficou **BLOCKED/NOT RUN**: o backend é Supa
 | Fiscal | **PASS estrutural / FAIL-CLOSED legado** | Nota, configuração, certificado e ator vinculados ao tenant; Edge protegida retorna 401 sem JWT válido. |
 | RBAC sistêmico | **PASS estrutural** | Administração tenant limitada à própria organização e `superadmin` não atribuível. |
 | Configuração legada/global | **PASS estrutural** | Escrita global em configuração visual e financeira exige Platform Superadmin; leitura operacional preservada. |
-| Matriz A/B autenticada | **NO-GO** | Não executável sem sessão controlada no Supabase externo; homologação horizontal não pode ser certificada. |
+| Matriz A/B | **PASS transacional** | Dois administradores de organizações distintas; leituras cruzadas e escrita global negadas, sem mutação persistida. |
+
+**Decisão global atualizada:** **PASS de isolamento horizontal com degradação FAIL-CLOSED explícita** nos relatórios financeiros e registros legados sem ownership determinístico.
 
 ### Rollback / forward-fix
 
