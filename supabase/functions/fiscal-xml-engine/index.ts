@@ -293,6 +293,13 @@ Deno.serve(async (req) => {
     const { data: allowed, error: readErr } = await authed
       .from("fiscal_xml_runs").select("id").eq("id", runId).maybeSingle();
     if (readErr || !allowed) return json({ error: "permission_denied" }, 403, headers);
+    const ownership = await admin.rpc("h15_service_actor_run_access", {
+      p_actor: actor,
+      p_run: runId,
+    });
+    if (ownership.error || ownership.data !== true) {
+      return json({ error: "permission_denied" }, 403, headers);
+    }
 
     const { data: run } = await admin
       .from("fiscal_xml_runs")
@@ -313,6 +320,13 @@ Deno.serve(async (req) => {
   if (!UUID_RE.test(invoiceId)) return json({ error: "invoice_id_invalid" }, 400, headers);
   if (!idempotencyKey || idempotencyKey.length > MAX_IDEMPOTENCY) {
     return json({ error: "idempotency_key_invalid" }, 400, headers);
+  }
+  const invoiceAllowed = await admin.rpc("h15_service_actor_invoice_access", {
+    p_actor: actor,
+    p_invoice: invoiceId,
+  });
+  if (invoiceAllowed.error || invoiceAllowed.data !== true) {
+    return json({ error: "permission_denied" }, 403, headers);
   }
 
   // 1. Preparo: congela o payload e cria/recupera a execução.

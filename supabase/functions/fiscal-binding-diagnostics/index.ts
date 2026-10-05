@@ -6,9 +6,8 @@
  * segredo, service_role, PFX, senha, DSN ou allowlist em texto claro.
  *
  * Contrato:
- *   GET  -> público-mínimo: { project_ref, environment, production_emission_allowed }
- *           (project_ref já é público: faz parte da URL chamada.)
- *   POST -> exige JWT de administrador: adiciona presença booleana de segredos
+ *   GET/POST -> exige JWT de administrador da empresa ativa. POST adiciona
+ *           presença booleana de segredos
  *           e contagem de origens permitidas (nunca os valores).
  *
  * Nunca retorna: valores de secrets, chaves, senhas, caminhos de storage.
@@ -95,9 +94,7 @@ Deno.serve(async (req) => {
     binding_ok: bindingOk,
   };
 
-  if (req.method === "GET") return json(base, bindingOk ? 200 : 409, headers);
-
-  // POST: detalhes de configuração — somente administrador autenticado.
+  // Diagnóstico de binding e detalhes: somente administrador tenant ativo.
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401, headers);
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -113,6 +110,10 @@ Deno.serve(async (req) => {
     _role: "administrador",
   });
   if (roleErr || !isAdmin) return json({ error: "permission_denied" }, 403, headers);
+  const { data: actorOrg, error: orgErr } = await authed.rpc("h15_actor_organization");
+  if (orgErr || !actorOrg) return json({ error: "permission_denied" }, 403, headers);
+
+  if (req.method === "GET") return json(base, bindingOk ? 200 : 409, headers);
 
   return json(
     {

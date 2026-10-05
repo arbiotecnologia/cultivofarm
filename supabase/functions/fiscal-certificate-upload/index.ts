@@ -207,12 +207,19 @@ Deno.serve(async (req) => {
     // Confere existência real do company_settings antes de qualquer trabalho pesado.
     // H7e: o CNPJ do emitente NUNCA vem do cliente — sempre lido server-side aqui.
     const companyExists = await authed.from("company_fiscal_settings")
-      .select("id, cnpj").eq("id", companySettingsId).eq("is_active", true).maybeSingle();
+      .select("id, cnpj, organization_id").eq("id", companySettingsId).eq("is_active", true).maybeSingle();
     if (companyExists.error || !companyExists.data) {
       return json({ error: "company_settings_not_found" }, 404, headers);
     }
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const companyAllowed = await admin.rpc("h15_service_actor_company_access", {
+      p_actor: userId,
+      p_company: companySettingsId,
+    });
+    if (companyAllowed.error || companyAllowed.data !== true) {
+      return json({ error: "permission_denied" }, 403, headers);
+    }
 
     // H7c: triagem ASN.1 mínima (BER/DER, incluindo comprimento indefinido `30 80`).
     // A autoridade real de formato é o forge (fromDer + pkcs12FromAsn1) logo abaixo.
