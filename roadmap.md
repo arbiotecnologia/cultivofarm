@@ -1,5 +1,15 @@
 # D51.5 — Remediação horizontal multi-tenant
 
+## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
+
+- [ ] Fase 0 — auditar estado vivo de planos, assinaturas, cobrança, interfaces e jobs
+- [ ] Fases 1–2 — endurecer estados, transições, histórico e autorização server-side
+- [ ] Fase 3 — certificar integração de pagamento existente ou registrar bloqueio sem fluxo paralelo
+- [ ] Fases 4–7 — validar limites, trial, inadimplência, suspensão, reativação e auditoria imutável
+- [ ] Fase 8 — executar matriz E2E controlada e limpar integralmente as fixtures
+- [ ] Fase 9 — validar índices, estado vivo, linter, scanner, testes, typecheck e build
+- [ ] Fase 10 — consolidar relatório, rollback/forward-fix e decisão GO/NO-GO
+
 ## D51.6 — Fechamento funcional multi-tenant
 
 - [x] Gate 1 — classificar `consultor-arquivos` como mídia técnica sensível e recriar o bucket privado
