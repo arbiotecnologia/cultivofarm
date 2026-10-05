@@ -12,6 +12,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath, getCurrentOrganizationId, isTenantScopedStoragePath } from "@/lib/tenantStoragePath";
 
 export const MAX_UPLOAD_ATTEMPTS = 3;
 export const BUCKET = "consultor-arquivos";
@@ -106,7 +107,11 @@ export async function uploadMediaIdempotent(
     };
   }
 
-  const remotePath = input.previousRemotePath || buildRemotePath(input, registroRemoteId);
+  const organizationId = await getCurrentOrganizationId();
+  const previousPath = input.previousRemotePath;
+  const remotePath = previousPath && isTenantScopedStoragePath(previousPath, organizationId)
+    ? previousPath
+    : await buildTenantStoragePath(buildRemotePath(input, registroRemoteId));
   const tipoMidia = input.kind === "documento" ? "pdf" : input.kind;
 
   const okResult = (alreadyUploaded = false): UploadResult => ({

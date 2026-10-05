@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
 import { useAuth } from "@/hooks/useAuth";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { unmask } from "@/lib/masks";
@@ -100,7 +101,8 @@ export default function MobileSolicitar() {
 
   const uploadBlob = async (blob: Blob, ext: string, clientUuid?: string): Promise<string | null> => {
     // Path determinístico usando client_uuid para evitar arquivos órfãos em retries
-    const path = `solicitacoes/${user!.id}/${clientUuid || Date.now()}.${ext}`;
+    if (!user?.id) return null;
+    const path = await buildTenantStoragePath(`solicitacoes/${user.id}/${clientUuid || Date.now()}.${ext}`);
     const { error } = await supabase.storage.from("consultor-arquivos").upload(path, blob, { 
       contentType: blob.type,
       upsert: true

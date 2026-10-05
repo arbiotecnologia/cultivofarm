@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
 
 import { useAuth } from "@/hooks/useAuth";
 import { AudioRecorder } from "@/components/visita/AudioRecorder";
@@ -312,7 +313,7 @@ export function EvidenciasTabs({
       const clientUuid = crypto.randomUUID();
       const fileName = `audio_${Date.now()}.webm`;
       // Path determinístico para áudio: {registroId}/audio/{clientUuid}.webm
-      const path = `${registroId}/audio/${clientUuid}.webm`;
+      const path = await buildTenantStoragePath(`${registroId}/audio/${clientUuid}.webm`);
       
       const { error: upErr } = await supabase.storage
         .from("consultor-arquivos")
@@ -323,7 +324,7 @@ export function EvidenciasTabs({
       
       if (upErr) throw upErr;
       
-      const { error } = await (supabase as any).from("registros_consultor_archives").insert({
+      const { error } = await (supabase as any).from("registros_consultor_arquivos").insert({
         registro_consultor_id: registroId,
         arquivo_path: path,
         arquivo_url: null, // Legado

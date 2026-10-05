@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
@@ -166,7 +167,7 @@ export default function WizardCheckinStep({
       let fotoPath: string | null = null;
       if (foto) {
         const ext = (foto.name.split(".").pop() || "jpg").toLowerCase();
-        const path = `checkins/${user.id}/${clientUuid}.${ext}`;
+        const path = await buildTenantStoragePath(`checkins/${user.id}/${clientUuid}.${ext}`);
         const { error: upErr } = await supabase.storage
           .from("consultor-arquivos")
           .upload(path, foto, { contentType: foto.type, upsert: true });

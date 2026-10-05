@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
 import { Button } from "@/components/ui/button";
@@ -172,7 +173,7 @@ export default function MobileCheckin() {
       if (foto) {
         const ext = foto.name.split(".").pop() || "jpg";
         // Path determinístico para foto de check-in: checkins/{userId}/{clientUuid}.{ext}
-        const path = `checkins/${user.id}/${clientUuid}.${ext}`;
+        const path = await buildTenantStoragePath(`checkins/${user.id}/${clientUuid}.${ext}`);
         const { error: upErr } = await supabase.storage
           .from("consultor-arquivos")
           .upload(path, foto, { 

@@ -36,6 +36,7 @@ import {
 } from "@/lib/offlineDb";
 
 import { uploadMediaIdempotent } from "@/lib/mediaUpload";
+import { buildTenantStoragePath, getCurrentOrganizationId, isTenantScopedStoragePath } from "@/lib/tenantStoragePath";
 import { emitTechnicalVisitSynced } from "@/lib/visitaSyncEvents";
 import { toast } from "sonner";
 
@@ -386,7 +387,10 @@ export function useOfflineSync() {
 
           if (c.fotoBlob && !c.fotoUploaded) {
             const ext = c.fotoFileName?.split(".").pop()?.toLowerCase() || "jpg";
-            const path = c.fotoRemotePath || `checkins/offline/${c.id}.${ext}`;
+            const organizationId = await getCurrentOrganizationId();
+            const path = c.fotoRemotePath && isTenantScopedStoragePath(c.fotoRemotePath, organizationId)
+              ? c.fotoRemotePath
+              : await buildTenantStoragePath(`checkins/offline/${c.id}.${ext}`);
             const attempts = (c.fotoUploadAttempts || 0) + 1;
 
             if (attempts > MAX_UPLOAD_ATTEMPTS) {
