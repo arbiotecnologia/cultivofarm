@@ -187,35 +187,27 @@ export function useModulosFeaturesSaaS() {
   });
 }
 
-export interface PlanoFeatureSaaS {
-  plan_id: string;
-  feature_id: string;
-  enabled: boolean;
-}
-
 export function useCatalogoPlanosSaaS() {
   return useQuery<{
-    modules: ModuloSaaS[]; features: FeatureSaaS[]; links: PlanoFeatureSaaS[];
+    modules: ModuloSaaS[]; features: FeatureSaaS[];
     limits: LimiteSaaS[]; featureLimits: FeatureLimiteSaaS[]; dependencies: FeatureDependenciaSaaS[];
   }>({
     queryKey: ["plataforma", "saas_plan_feature_catalog"],
     queryFn: async () => {
-      const [modules, features, links, limits, featureLimits, dependencies] = await Promise.all([
+      const [modules, features, limits, featureLimits, dependencies] = await Promise.all([
         db.from("saas_modules").select("id,key,name,description,active").order("name").limit(LIMITE),
         db.from("saas_features").select("id,module_id,key,name,description,active,commercializable,created_at").order("name").limit(LIMITE),
-        db.from("saas_plan_features").select("plan_id,feature_id,enabled").limit(LIMITE),
         db.from("saas_limit_definitions").select("id,key,name,description,category,unit,value_type,application,active").order("category").order("name").limit(LIMITE),
         db.from("saas_feature_limit_definitions").select("feature_id,limit_definition_id,required").limit(LIMITE),
         db.from("saas_feature_dependencies").select("feature_id,depends_on_feature_id").limit(LIMITE),
       ]);
       if (modules.error) throw new Error(modules.error.message);
       if (features.error) throw new Error(features.error.message);
-      if (links.error) throw new Error(links.error.message);
       if (limits.error) throw new Error(limits.error.message);
       if (featureLimits.error) throw new Error(featureLimits.error.message);
       if (dependencies.error) throw new Error(dependencies.error.message);
       return {
-        modules: (modules.data ?? []) as ModuloSaaS[], features: (features.data ?? []) as FeatureSaaS[], links: (links.data ?? []) as PlanoFeatureSaaS[],
+        modules: (modules.data ?? []) as ModuloSaaS[], features: (features.data ?? []) as FeatureSaaS[],
         limits: (limits.data ?? []) as LimiteSaaS[], featureLimits: (featureLimits.data ?? []) as FeatureLimiteSaaS[],
         dependencies: (dependencies.data ?? []) as FeatureDependenciaSaaS[],
       };
