@@ -5,6 +5,11 @@ export interface StructuredLimitValue {
   value?: number;
 }
 
+export function isValidStructuredLimit(value: StructuredLimitValue): boolean {
+  if (value.state !== "limited") return value.value === undefined;
+  return typeof value.value === "number" && Number.isFinite(value.value) && value.value >= 0;
+}
+
 export function parseStructuredLimits(value: Record<string, unknown>) {
   const parsed: Record<string, StructuredLimitValue> = {};
   const legacy: Record<string, unknown> = {};
@@ -21,6 +26,5 @@ export function parseStructuredLimits(value: Record<string, unknown>) {
 }
 
 export function serializeStructuredLimits(limits: Record<string, StructuredLimitValue>) {
-  return Object.fromEntries(Object.entries(limits).filter(([, value]) =>
-    value.state !== "limited" || (typeof value.value === "number" && Number.isFinite(value.value) && value.value >= 0)));
+  return Object.fromEntries(Object.entries(limits).filter(([, value]) => isValidStructuredLimit(value)));
 }

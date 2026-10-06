@@ -10,7 +10,7 @@ import {
 const salvar = vi.fn();
 const planosData = [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }];
 const versoesData: unknown[] = [];
-const catalogoData = { features: [], links: [] };
+const catalogoData = { modules: [], features: [], links: [], limits: [], featureLimits: [], dependencies: [] };
 
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mensagemErroPlataforma: () => "Erro",
@@ -64,9 +64,8 @@ describe("editor de versão comercial", () => {
     fireEvent.click(screen.getByRole("button", { name: /Salvar rascunho/i }));
 
     expect(salvar).toHaveBeenCalledWith(expect.objectContaining({ priceAmount: "59.90", currency: "BRL" }), expect.any(Object));
-    expect(screen.getByText("Limites de uso do plano *")).toBeInTheDocument();
-    expect(screen.getByText("Defina os limites incluídos no plano, como quantidade de usuários, unidades ou recursos.")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Limites de uso do plano *"), { target: { value: "{" } });
-    expect(screen.getByText("Confira o formato dos limites de uso.")).toBeInTheDocument();
+    expect(screen.getByText("Limites de uso do plano")).toBeInTheDocument();
+    expect(screen.getByText("Defina limites incluídos no plano, como quantidade de usuários, unidades ou recursos.")).toBeInTheDocument();
+    expect(screen.getByText("Nenhuma definição real de limite foi cadastrada. Nenhum valor padrão foi inventado.")).toBeInTheDocument();
   });
 });
