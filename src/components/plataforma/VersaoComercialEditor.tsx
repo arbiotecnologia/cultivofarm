@@ -147,7 +147,7 @@ export function VersaoComercialEditor() {
         <Badge variant={draftId ? "secondary" : "outline"}>{draftId ? "Rascunho em edição" : "Novo rascunho"}</Badge>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2"><Label>Plano *</Label><Select value={planKey} onValueChange={setPlanKey}><SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{planos.data?.filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select></div>
+        <div className="space-y-2"><Label htmlFor="versao-plano">Plano *</Label><Select value={planKey} onValueChange={setPlanKey}><SelectTrigger id="versao-plano"><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{planos.data?.filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-2">
           <Label htmlFor="versao-preco">Preço *</Label>
           <Input
