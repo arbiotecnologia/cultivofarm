@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS saas_plan_version_feature_guard_trg ON public.saas_plan_version_features;
