@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { MockPaymentAdapter } from "@/lib/payments/mockAdapter";
 
 const migration = readFileSync("supabase/migrations/20261006014659_82dce7db-5ec7-420a-9c29-4631c866fa56.sql", "utf8");
-const hardening = readFileSync("supabase/migrations/20261006015334_8cf441ba-da2b-4e6c-bf19-cdaa28ad1bee.sql", "utf8");
+const hardening = readFileSync("supabase/migrations/20261006014826_8efb5553-59b0-432f-b734-decdc5c18314.sql", "utf8");
 
 describe("Pós-D52 — versões comerciais", () => {
   it("mantém rascunho fora da publicação e exige confirmação forte", () => {

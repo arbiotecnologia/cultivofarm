@@ -21,7 +21,8 @@ export type FeatureFlagName =
   | "fiscalReadinessCenterUi"
   | "fiscalEmissionEnabled"
   | "comunicacaoModule"
-  | "comunicacaoBroadcastTab";
+  | "comunicacaoBroadcastTab"
+  | "saasPaymentsOperational";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
   /** Central de Configuração Fiscal (Fase 3.15). */
@@ -54,6 +55,8 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
    * módulo estiver habilitado E esta flag específica for `true`.
    */
   comunicacaoBroadcastTab: readComunicacaoBroadcastTabEnvFlag(),
+  /** Fundação criada, porém nenhuma cobrança ou integração externa pode operar. */
+  saasPaymentsOperational: false,
 };
 
 function readComunicacaoModuleEnvFlag(): boolean {

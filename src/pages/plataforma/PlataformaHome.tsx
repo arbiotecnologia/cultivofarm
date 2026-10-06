@@ -10,6 +10,7 @@ import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import PlataformaAdmins from "./PlataformaAdmins";
 import PlataformaEmpresas from "./PlataformaEmpresas";
 import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
+import { VersaoComercialEditor } from "@/components/plataforma/VersaoComercialEditor";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,7 +97,7 @@ const ORIGEM_LABEL: Record<string, string> = {
 };
 const motivoHumano = (s: string | null) => (s ? (ORIGEM_LABEL[s] ?? s.replace(/_/g, " ")) : "—");
 const CICLO_LABEL: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual", custom: "Personalizado" };
-const moeda = (valor: number, currency: string) => new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(valor);
+const moeda = (valor: number | null, currency: string | null) => valor === null || !currency ? "Pendente" : new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(valor);
 
 export default function PlataformaHome() {
   const { signOut } = useAuth();
@@ -182,6 +183,10 @@ export default function PlataformaHome() {
           {/* PLANOS ------------------------------------------------------- */}
           <TabsContent value="planos" className="space-y-4">
             <Card>
+              <CardHeader><CardTitle className="text-base">Versão comercial</CardTitle><CardDescription>Prepare e revise os dados antes de liberar uma nova versão.</CardDescription></CardHeader>
+              <CardContent><VersaoComercialEditor /></CardContent>
+            </Card>
+            <Card>
               <CardHeader>
                 <CardTitle className="text-base">Planos comerciais</CardTitle>
                 <CardDescription>Catálogo de planos cadastrados na plataforma.</CardDescription>
@@ -234,12 +239,12 @@ export default function PlataformaHome() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Versões comerciais publicadas</CardTitle>
-                <CardDescription>Preços, ciclos, limites e funcionalidades ficam imutáveis após a publicação.</CardDescription>
+                <CardTitle className="text-base">Versões comerciais</CardTitle>
+                <CardDescription>Rascunhos permanecem inativos; versões publicadas ficam imutáveis.</CardDescription>
               </CardHeader>
               <CardContent>
-                <EstadoConsulta carregando={versoes.isLoading} erro={versoes.isError} vazio={!!versoes.data && versoes.data.length === 0} mensagemVazio="Nenhuma versão comercial publicada. Novos trials e mudanças de plano permanecem bloqueados." onTentarNovamente={() => versoes.refetch()} />
-                {versoes.data && versoes.data.length > 0 && <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Plano</TableHead><TableHead>Versão</TableHead><TableHead>Preço</TableHead><TableHead>Ciclo</TableHead><TableHead>Vigência</TableHead></TableRow></TableHeader><TableBody>{versoes.data.map((v) => <TableRow key={v.id}><TableCell className="font-medium">{v.name_snapshot}</TableCell><TableCell>v{v.version_number}</TableCell><TableCell>{moeda(v.price_amount, v.currency)}</TableCell><TableCell>{CICLO_LABEL[v.billing_cycle] ?? v.billing_cycle}</TableCell><TableCell>{dataCurta(v.effective_from)}{v.effective_to ? ` a ${dataCurta(v.effective_to)}` : " em diante"}</TableCell></TableRow>)}</TableBody></Table></div>}
+                <EstadoConsulta carregando={versoes.isLoading} erro={versoes.isError} vazio={!!versoes.data && versoes.data.length === 0} mensagemVazio="Nenhuma versão comercial. Novos períodos de teste e mudanças de plano permanecem bloqueados." onTentarNovamente={() => versoes.refetch()} />
+                {versoes.data && versoes.data.length > 0 && <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Plano</TableHead><TableHead>Versão</TableHead><TableHead>Situação</TableHead><TableHead>Preço</TableHead><TableHead>Ciclo</TableHead><TableHead>Vigência</TableHead></TableRow></TableHeader><TableBody>{versoes.data.map((v) => <TableRow key={v.id}><TableCell className="font-medium">{v.name_snapshot}</TableCell><TableCell>v{v.version_number}</TableCell><TableCell><Badge variant={v.status === "PUBLISHED" ? "default" : "outline"}>{v.status === "DRAFT" ? "Rascunho" : v.status === "ARCHIVED" ? "Arquivada" : "Publicada"}</Badge></TableCell><TableCell>{moeda(v.price_amount, v.currency)}</TableCell><TableCell>{v.billing_cycle ? CICLO_LABEL[v.billing_cycle] ?? v.billing_cycle : "Pendente"}</TableCell><TableCell>{v.effective_from ? `${dataCurta(v.effective_from)}${v.effective_to ? ` a ${dataCurta(v.effective_to)}` : " em diante"}` : "Pendente"}</TableCell></TableRow>)}</TableBody></Table></div>}
               </CardContent>
             </Card>
 
