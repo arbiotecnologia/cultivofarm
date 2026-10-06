@@ -65,7 +65,7 @@ export function VersaoComercialEditor() {
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [pendingBatch, setPendingBatch] = useState<BatchChange | null>(null);
-  const [serverComplete, setServerComplete] = useState(false);
+  const [validatedDraftId, setValidatedDraftId] = useState<string | null>(null);
   const saveKey = useRef(crypto.randomUUID());
   const publishKey = useRef(crypto.randomUUID());
 
@@ -113,11 +113,11 @@ export function VersaoComercialEditor() {
     setFeatures(availableFeatures.filter((feature) => enabledIds.has(feature.id)).map((feature) => feature.key));
     setReason("");
     setConfirmation("");
-    setServerComplete((current) => draft?.id && draft.id === draftId ? current : false);
+    setValidatedDraftId((current) => draft?.id && draft.id === current ? current : null);
   }, [availableFeatures, draft, planKey]);
 
   const markChanged = () => {
-    setServerComplete(false);
+    setValidatedDraftId(null);
     setConfirmation("");
   };
 
@@ -146,11 +146,11 @@ export function VersaoComercialEditor() {
         saveKey.current = crypto.randomUUID();
         validar.mutate(id, {
           onSuccess: (result) => {
-            setServerComplete(result.complete === true && result.valid === true);
+            setValidatedDraftId(result.complete === true && result.valid === true ? id : null);
             toast.success(result.complete ? "Rascunho salvo e validado pelo servidor." : "Rascunho salvo. Revise as pendências antes de publicar.");
           },
           onError: (error) => {
-            setServerComplete(false);
+            setValidatedDraftId(null);
             toast.error(mensagemErroPlataforma(error));
           },
         });
@@ -257,7 +257,7 @@ export function VersaoComercialEditor() {
   };
 
   const publicarRascunho = () => {
-    if (!draftId || !serverComplete || missing.length > 0 || confirmation !== "PUBLICAR") return;
+    if (!draftId || validatedDraftId !== draftId || missing.length > 0 || confirmation !== "PUBLICAR") return;
     publicar.mutate({ draftId, reason: reason.trim(), confirmation, idempotencyKey: publishKey.current }, {
       onSuccess: () => { publishKey.current = crypto.randomUUID(); toast.success("Versão comercial publicada."); setConfirmation(""); },
       onError: (error) => toast.error(mensagemErroPlataforma(error)),
@@ -322,7 +322,7 @@ export function VersaoComercialEditor() {
       <div className="border-t pt-5 space-y-3">
         <div className="flex items-start gap-2">{missing.length === 0 ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" /> : <AlertTriangle className="mt-0.5 h-4 w-4 text-muted-foreground" />}<p className="text-sm">{missing.length === 0 ? "Campos comerciais completos." : `Ainda falta: ${missing.join(", ")}.`}</p></div>
         <div className="max-w-sm space-y-2"><Label htmlFor="versao-confirmacao">Digite PUBLICAR para confirmar</Label><Input id="versao-confirmacao" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
-        <Button disabled={!draftId || !serverComplete || missing.length > 0 || confirmation !== "PUBLICAR" || validar.isPending || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : validar.isPending ? "Validando…" : "Publicar versão"}</Button>
+        <Button disabled={!draftId || validatedDraftId !== draftId || missing.length > 0 || confirmation !== "PUBLICAR" || validar.isPending || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : validar.isPending ? "Validando…" : "Publicar versão"}</Button>
       </div>
       <AlertDialog open={pendingBatch !== null} onOpenChange={(open) => { if (!open) setPendingBatch(null); }}>
         <AlertDialogContent>
