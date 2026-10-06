@@ -9,6 +9,7 @@
  * canônico é usado com cast local. NÃO criar cliente Supabase paralelo.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -425,6 +426,7 @@ function useInvalidarPlataforma() {
 
 export function useCriarExcecao() {
   const invalidar = useInvalidarPlataforma();
+  const retryRef = useRef<{ signature: string; key: string } | null>(null);
   return useMutation({
     retry: false,
     mutationFn: async (v: {
@@ -434,6 +436,10 @@ export function useCriarExcecao() {
       reason: string;
       endsAt: string | null;
     }) => {
+      const signature = JSON.stringify(v);
+      if (retryRef.current?.signature !== signature) {
+        retryRef.current = { signature, key: crypto.randomUUID() };
+      }
       const { data, error } = await db.rpc("platform_set_feature_override", {
         _organization_id: v.organizationId,
         _feature_key: v.featureKey,
@@ -441,8 +447,10 @@ export function useCriarExcecao() {
         _reason: v.reason,
         _ends_at: v.endsAt,
         _limit_value: null,
+        _idempotency_key: retryRef.current.key,
       });
       if (error) throw new Error(error.message);
+      retryRef.current = null;
       return data as string;
     },
     onSettled: invalidar,
@@ -451,14 +459,21 @@ export function useCriarExcecao() {
 
 export function useEncerrarExcecao() {
   const invalidar = useInvalidarPlataforma();
+  const retryRef = useRef<{ signature: string; key: string } | null>(null);
   return useMutation({
     retry: false,
     mutationFn: async (v: { id: string; reason: string }) => {
+      const signature = JSON.stringify(v);
+      if (retryRef.current?.signature !== signature) {
+        retryRef.current = { signature, key: crypto.randomUUID() };
+      }
       const { error } = await db.rpc("platform_end_feature_override", {
         _override_id: v.id,
         _reason: v.reason,
+        _idempotency_key: retryRef.current.key,
       });
       if (error) throw new Error(error.message);
+      retryRef.current = null;
     },
     onSettled: invalidar,
   });
