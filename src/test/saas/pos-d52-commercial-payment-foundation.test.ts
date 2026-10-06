@@ -4,6 +4,7 @@ import { MockPaymentAdapter } from "@/lib/payments/mockAdapter";
 
 const migration = readFileSync("supabase/migrations/20261006014659_82dce7db-5ec7-420a-9c29-4631c866fa56.sql", "utf8");
 const hardening = readFileSync("supabase/migrations/20261006014826_8efb5553-59b0-432f-b734-decdc5c18314.sql", "utf8");
+const eligibility = readFileSync("supabase/migrations/20261006014937_360eada3-fc19-4971-ae72-bc65fb10a1cf.sql", "utf8");
 
 describe("Pós-D52 — versões comerciais", () => {
   it("mantém rascunho fora da publicação e exige confirmação forte", () => {
@@ -16,6 +17,11 @@ describe("Pós-D52 — versões comerciais", () => {
     expect(migration).toContain("uq_saas_plan_versions_publish_key");
     expect(hardening).toContain("saas_plan_version_audit_guard");
     expect(hardening).toContain("saas_plan_version_audit_no_mutation_trg");
+  });
+  it("só vincula versão publicada e aplica o trial da versão no servidor", () => {
+    expect(eligibility).toContain("v_status IS DISTINCT FROM 'PUBLISHED'");
+    expect(eligibility).toContain("make_interval(days=>v_trial_days)");
+    expect(eligibility).toContain("BEFORE INSERT OR UPDATE OF plan_version_id,status,started_at");
   });
 });
 

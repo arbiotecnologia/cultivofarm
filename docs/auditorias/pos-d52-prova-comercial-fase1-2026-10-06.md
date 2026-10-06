@@ -61,7 +61,19 @@ Foram adicionados contratos tipados e adaptador mock sem rede, clientes/contrato
 
 ## 13. Mercado Pago x Stripe
 
-A comparação fica como ADR pendente. Devem ser confirmados em proposta/contrato para a conta brasileira: meios habilitados, recorrência, parcelamento, prazo de liquidação, taxas, estorno/disputa, webhooks, conciliação, suporte e responsabilidades fiscais. Taxas e disponibilidade não foram inferidas nem fixadas no sistema. A escolha final exige validação comercial e jurídica do proprietário.
+A comparação fica como ADR pendente. A documentação oficial consultada confirma que ambos oferecem APIs e notificações de eventos, mas a elegibilidade exata por conta, produto e contrato precisa ser homologada. Para a conta brasileira devem ser confirmados: PIX, boleto, cartão, parcelamento, recorrência, prazo de liquidação, taxas, estorno/disputa, conciliação, SLA e responsabilidades fiscais.
+
+Fontes oficiais consultadas em 2026-10-06:
+
+- Stripe Brasil — preços: <https://stripe.com/br/pricing>
+- Stripe — métodos locais: <https://stripe.com/br/pricing/local-payment-methods>
+- Stripe — tipos de eventos: <https://docs.stripe.com/api/events/types>
+- Stripe — disputas: <https://docs.stripe.com/api/disputes>
+- Mercado Pago Developers — notificações de chargeback: <https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/chargebacks/notifications>
+- Mercado Pago Developers — gestão de chargeback: <https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/chargebacks/manage>
+- Mercado Pago — custos de venda online: <https://www.mercadopago.com.br/blog/quanto-custa-vender-on-line-com-mercado-pago>
+
+Nenhuma taxa foi codificada ou tomada como premissa porque valores, liquidação e disponibilidade podem variar. A escolha final exige proposta comercial, validação jurídica/fiscal e teste em ambiente do provedor.
 
 ## 14. Critérios de aceite
 
@@ -74,7 +86,7 @@ A comparação fica como ADR pendente. Devem ser confirmados em proposta/contrat
 
 ## 15. Testes e evidências
 
-- 12 testes focados D52/fundação: PASS.
+- 13 testes focados D52/fundação: PASS.
 - Typecheck: PASS.
 - Lint focado: PASS após correção do aviso de dependências.
 - Scanner de segredos: PASS.
