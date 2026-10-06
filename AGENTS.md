@@ -5,16 +5,7 @@
 - Convites por link usam a mesma intenção/lease/fencing server-side; entrega por e-mail passa exclusivamente pelo SMTP, enquanto o fallback manual só devolve o recovery link em resposta privada no-store e o audita sem segredo — evita fluxo paralelo e persistência de credencial.
 - Convites operacionais sempre usam `https://app.cultivofarm.com.br/reset-password` definido no servidor; o `Origin` só autoriza a chamada e nunca compõe o redirect — evita fallback para localhost e open redirect.
 
-- Resultados SMTP sem resposta remota inequívoca ficam ambíguos e só podem ser reenviados após confirmação humana auditada, preservando cooldown e fencing — evita duplicação silenciosa.
-- SMTP on Supabase Edge must reject ports 25 and 587 during readiness, before any claim or socket; port 465 is only structurally valid until provider support is proven.
-
 - Global communication provider settings are accessible only to Platform Superadmins through server-side `is_platform_superadmin`; tenant admins have no UI or endpoint access, while workers retain service-role-only RPC access — preserves SaaS isolation and secret boundaries.
-
-- Controlled SMTP test sends reuse the shared adapter but bypass only operational delivery flags after a recent equivalent connection PASS, requiring Platform Superadmin, Test Mode, exclusive fixed allowlist, explicit confirmation, rate limiting and sanitized audit — validates transport without releasing operational flows.
-- SMTP provider diagnostics use the existing test function: connection mode authenticates over TLS without SMTP envelope/data and works with delivery OFF; send mode remains fixed-recipient and fully gated — separates transport readiness from real delivery.
-- Native SMTP connection failures are normalized server-side to an allowlisted DNS/TCP/TLS code; raw runtime errors never reach logs, audit rows, or clients — improves diagnosis without leaking infrastructure details.
-- Shared communication email sends use the same native Deno TLS/EHLO/AUTH protocol core as the SMTP probe; `SmtpLikeClient` remains the injectable consumer contract — prevents probe/send transport divergence.
-- KingHost SMTPi diagnostics use only a server-side allowlisted in-memory route; persistence requires a separate explicit Superadmin action that changes only the SMTP host — prevents arbitrary host probing and silent configuration changes.
 
 - Frontend version detection compares the production-build meta ID, with entry-script fallback; AuthProvider owns the controls, navigation requires a click, `/sw.js` only cleans up, and push uses `/push-sw.js` without app-shell caching.
 
@@ -29,3 +20,4 @@
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
+- Published plan versions are content-immutable; a successor is created as a new DRAFT and publishing it closes only the predecessor's `effective_to` under a `saas_plan_version_supersede` ticket — keeps price/feature snapshots and history intact.

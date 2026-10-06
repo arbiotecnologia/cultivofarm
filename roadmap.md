@@ -95,3 +95,4 @@
 - [x] Fechamento controlado limites/isolamento (sem nova migração). NÃO VERIFICADO: reexecução pós-travamento, prova comercial positiva, enforcement runtime, UI autenticada.
 
 - [ ] Prova comercial positiva A/B/C — BLOCKED: versão publicada do Plano Base só entra em vigência em 2026-10-07 03:13 UTC (00:13 de Brasília); antes disso nenhuma assinatura pode ser vinculada. Roteiro pronto com rollback: `supabase/tests/prova-comercial-positiva/01-abc-rollback.sql`. Nada gravado; enforcement de limites e gateway seguem desligados.
+- [x] Sucessão de versão publicada (v1 → v2 em rascunho, encerramento controlado da vigência) — migrations `20261006225758_e18b38b3…` e `20261006230004_972d3b64…`; relatório `docs/auditorias/sucessao-versao-comercial-2026-10-06.md`. NÃO VERIFICADO: tela com login real e concorrência real.
