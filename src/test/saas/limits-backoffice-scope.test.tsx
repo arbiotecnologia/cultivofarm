@@ -32,7 +32,7 @@ describe("Limites de uso do plano — editor", () => {
     const { container } = render(<VersaoComercialEditor />);
     fireEvent.click(screen.getByLabelText("Plano *"));
     fireEvent.click(screen.getByText("Base"));
-    if (!screen.queryByText("Ordens de produção por mês")) fireEvent.click(screen.getByText("Ordens de produção"));
+    if (!screen.queryByText("Ordens de produção por mês")) fireEvent.click(screen.getByLabelText("Selecionar módulo Produção e estoque"));
     expect(screen.getByTestId("limites-modulo-producao_estoque")).toBeTruthy();
     expect(screen.getByText("Ordens de produção por mês")).toBeTruthy();
     expect(screen.getByText(/ordens\/mês/)).toBeTruthy();
