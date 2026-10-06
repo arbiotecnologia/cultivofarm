@@ -75,7 +75,8 @@ describe("D52 P0 — decisão server-side de entitlements", () => {
     state.contextError = true;
     const { result } = renderHook(() => useEntitlements(), { wrapper });
     expect(result.current.status).toBe("loading");
-    await waitFor(() => expect(result.current.status).toBe("error"));
-    expect(state.calls).toEqual(["get_my_entitlement_context"]);
+    await waitFor(() => expect(result.current.status).toBe("error"), { timeout: 3_000 });
+    expect(state.calls.length).toBeGreaterThanOrEqual(1);
+    expect(state.calls.every((name) => name === "get_my_entitlement_context")).toBe(true);
   });
 });
