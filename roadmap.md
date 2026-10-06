@@ -2,8 +2,8 @@
 
 ## Pós-D52 — Prova comercial positiva e fundação de pagamentos
 
-- [ ] Fase 1 — auditar estado vivo comercial, segurança e publicação; registrar diagnóstico sanitizado
-- [ ] Gate A — classificar prova positiva como disponível, publicável com dados reais ou BLOCKED por dados faltantes
+- [x] Fase 1 — auditar estado vivo comercial, segurança e publicação; registrar diagnóstico sanitizado
+- [x] Gate A — BLOCKED/NO-GO: zero versões e ausência de dados comerciais reais; publicação do app não é publicação comercial
 - [ ] Fase 2 — completar fluxo seguro de publicação somente se necessário e sem inventar dados comerciais
 - [ ] Fase 3 — homologar ACTIVE/TRIAL versionado com sessão real e isolamento A/B
 - [ ] Fase 4 — preparar fundação provider-agnostic de pagamentos, mantendo cobrança real OFF/NO-GO
