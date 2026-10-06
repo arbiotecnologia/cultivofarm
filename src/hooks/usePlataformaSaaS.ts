@@ -88,6 +88,7 @@ export interface ModuloSaaS {
   id: string;
   key: string;
   name: string;
+  description: string | null;
   active: boolean;
 }
 
@@ -96,7 +97,32 @@ export interface FeatureSaaS {
   module_id: string;
   key: string;
   name: string;
+  description: string | null;
   active: boolean;
+  commercializable: boolean;
+}
+
+export interface LimiteSaaS {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  value_type: "integer" | "decimal";
+  application: string;
+  active: boolean;
+}
+
+export interface FeatureLimiteSaaS {
+  feature_id: string;
+  limit_definition_id: string;
+  required: boolean;
+}
+
+export interface FeatureDependenciaSaaS {
+  feature_id: string;
+  depends_on_feature_id: string;
 }
 
 const opcoes = { retry: false, staleTime: 30_000 } as const;
@@ -142,10 +168,10 @@ export function useModulosFeaturesSaaS() {
     queryKey: ["plataforma", "saas_modules_features"],
     queryFn: async () => {
       const [mod, feat] = await Promise.all([
-        db.from("saas_modules").select("id,key,name,active").order("key").limit(LIMITE),
+        db.from("saas_modules").select("id,key,name,description,active").order("key").limit(LIMITE),
         db
           .from("saas_features")
-          .select("id,module_id,key,name,active")
+          .select("id,module_id,key,name,description,active,commercializable")
           .order("key")
           .limit(LIMITE),
       ]);
@@ -167,16 +193,31 @@ export interface PlanoFeatureSaaS {
 }
 
 export function useCatalogoPlanosSaaS() {
-  return useQuery<{ features: FeatureSaaS[]; links: PlanoFeatureSaaS[] }>({
+  return useQuery<{
+    modules: ModuloSaaS[]; features: FeatureSaaS[]; links: PlanoFeatureSaaS[];
+    limits: LimiteSaaS[]; featureLimits: FeatureLimiteSaaS[]; dependencies: FeatureDependenciaSaaS[];
+  }>({
     queryKey: ["plataforma", "saas_plan_feature_catalog"],
     queryFn: async () => {
-      const [features, links] = await Promise.all([
-        db.from("saas_features").select("id,module_id,key,name,active").order("key").limit(LIMITE),
+      const [modules, features, links, limits, featureLimits, dependencies] = await Promise.all([
+        db.from("saas_modules").select("id,key,name,description,active").order("name").limit(LIMITE),
+        db.from("saas_features").select("id,module_id,key,name,description,active,commercializable").order("name").limit(LIMITE),
         db.from("saas_plan_features").select("plan_id,feature_id,enabled").limit(LIMITE),
+        db.from("saas_limit_definitions").select("id,key,name,description,category,unit,value_type,application,active").order("category").order("name").limit(LIMITE),
+        db.from("saas_feature_limit_definitions").select("feature_id,limit_definition_id,required").limit(LIMITE),
+        db.from("saas_feature_dependencies").select("feature_id,depends_on_feature_id").limit(LIMITE),
       ]);
+      if (modules.error) throw new Error(modules.error.message);
       if (features.error) throw new Error(features.error.message);
       if (links.error) throw new Error(links.error.message);
-      return { features: (features.data ?? []) as FeatureSaaS[], links: (links.data ?? []) as PlanoFeatureSaaS[] };
+      if (limits.error) throw new Error(limits.error.message);
+      if (featureLimits.error) throw new Error(featureLimits.error.message);
+      if (dependencies.error) throw new Error(dependencies.error.message);
+      return {
+        modules: (modules.data ?? []) as ModuloSaaS[], features: (features.data ?? []) as FeatureSaaS[], links: (links.data ?? []) as PlanoFeatureSaaS[],
+        limits: (limits.data ?? []) as LimiteSaaS[], featureLimits: (featureLimits.data ?? []) as FeatureLimiteSaaS[],
+        dependencies: (dependencies.data ?? []) as FeatureDependenciaSaaS[],
+      };
     },
     ...opcoes,
   });
