@@ -99,3 +99,13 @@ export function snapshotFromServer(
   };
   return { ...snapshot, fingerprint: commercialDraftFingerprint(snapshot) };
 }
+export const CONFIRMACAO_PUBLICAR = "PUBLICAR";
+
+/** Remove espaços acidentais; a comparação continua exata (maiúsculas). */
+export function confirmacaoPublicarNormalizada(value: string): string {
+  return value.trim();
+}
+
+export function confirmacaoPublicarValida(value: string): boolean {
+  return confirmacaoPublicarNormalizada(value) === CONFIRMACAO_PUBLICAR;
+}
