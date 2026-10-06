@@ -128,6 +128,15 @@ export function VersaoComercialEditor() {
     if (!plan || !catalogo.data) return;
     if (!draft) {
       setDraftId(null);
+      setPriceCents(null);
+      setPriceDisplay("");
+      setCurrency("BRL");
+      setCycle("");
+      setTrialDays("");
+      setEffectiveFrom("");
+      setLimits({});
+      setLegacyLimits({});
+      setFeatures([]);
       setSavedBaseline(null);
       setValidatedDraftId(null);
       setValidatedFingerprint(null);
@@ -156,6 +165,7 @@ export function VersaoComercialEditor() {
 
   const markCommercialChanged = () => {
     saveKey.current = crypto.randomUUID();
+    publishKey.current = crypto.randomUUID();
     setValidatedDraftId(null);
     setValidatedFingerprint(null);
     setConfirmation("");
@@ -287,7 +297,7 @@ export function VersaoComercialEditor() {
 
   const requestAllFeatures = (checked: boolean) => setPendingBatch({
     title: checked ? "Selecionar todas as funcionalidades?" : "Limpar todas as funcionalidades?",
-    description: checked ? "Todas as opções disponíveis para o plano serão incluídas." : "A seleção atual será removida do rascunho.",
+    description: checked ? "Todas as opções disponíveis no catálogo comercial serão incluídas." : "A seleção atual será removida do rascunho.",
     apply: () => { markCommercialChanged(); setFeatures(checked ? dependenciesFor(availableFeatures.map((feature) => feature.key)) : []); },
   });
 

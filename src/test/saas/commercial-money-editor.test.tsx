@@ -150,7 +150,7 @@ describe("editor de versão comercial", () => {
     render(<VersaoComercialEditor />);
     fireEvent.click(screen.getByLabelText("Plano *"));
     fireEvent.click(screen.getByText("Essencial"));
-    expect(screen.getByText("2 selecionadas de 2 disponíveis")).not.toBeInTheDocument();
+    expect(screen.getByText("0 selecionadas de 2 disponíveis")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Fiscal/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Módulo vazio/ })).toBeInTheDocument();
 
