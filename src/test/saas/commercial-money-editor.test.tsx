@@ -11,11 +11,21 @@ const salvar = vi.fn();
 const validar = vi.fn();
 const publicar = vi.fn();
 const refetchVersoes = vi.fn();
-const planosData = [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }];
+const planosData = [
+  { id: "plan-1", key: "essencial", name: "Essencial", active: true },
+  { id: "plan-2", key: "gestao", name: "Gestão", active: true },
+];
 const versoesData: unknown[] = [];
 const catalogoData = {
-  modules: [{ id: "module-1", key: "agronomico", name: "Agronômico", description: "Recursos agronômicos", active: true }],
-  features: [{ id: "feature-1", module_id: "module-1", key: "consultas", name: "Consultas", description: "Consulta técnica", active: true, commercializable: true, created_at: "2026-10-06T00:00:00Z" }],
+  modules: [
+    { id: "module-1", key: "agronomico", name: "Agronômico", description: "Recursos agronômicos", active: true },
+    { id: "module-2", key: "fiscal", name: "Fiscal", description: "Recursos fiscais", active: true },
+    { id: "module-3", key: "vazio", name: "Módulo vazio", description: "Sem recursos", active: true },
+  ],
+  features: [
+    { id: "feature-1", module_id: "module-1", key: "consultas", name: "Consultas", description: "Consulta técnica", active: true, commercializable: true, created_at: "2026-10-06T00:00:00Z" },
+    { id: "feature-2", module_id: "module-2", key: "documentos", name: "Documentos fiscais", description: "Documentos", active: true, commercializable: true, created_at: "2026-10-06T00:00:00Z" },
+  ],
   links: [{ plan_id: "plan-1", feature_id: "feature-1", enabled: true }],
   limits: [], featureLimits: [], dependencies: [],
 };
@@ -122,6 +132,35 @@ describe("editor de versão comercial", () => {
     fireEvent.change(screen.getByLabelText("Dias de teste *"), { target: { value: "15" } });
     fireEvent.click(screen.getByRole("button", { name: /Salvar rascunho/i }));
     expect(salvar.mock.calls[2][0].idempotencyKey).not.toBe(firstKey);
+  });
+
+  it("aceita motivo com dois caracteres e não aceita um caractere", () => {
+    render(<VersaoComercialEditor />);
+    fireEvent.click(screen.getByLabelText("Plano *"));
+    fireEvent.click(screen.getByText("Essencial"));
+
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "a" } });
+    expect(screen.getByRole("button", { name: /Salvar rascunho/i })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "á🌱" } });
+    expect(screen.getByRole("button", { name: /Salvar rascunho/i })).toBeEnabled();
+  });
+
+  it("mostra o catálogo global e módulos vazios para cada plano sem compartilhar seleção", () => {
+    render(<VersaoComercialEditor />);
+    fireEvent.click(screen.getByLabelText("Plano *"));
+    fireEvent.click(screen.getByText("Essencial"));
+    expect(screen.getByText("2 selecionadas de 2 disponíveis")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Fiscal/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Módulo vazio/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Agronômico/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Consultas/ }));
+    expect(screen.getByText("1 selecionadas de 2 disponíveis")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Plano *"));
+    fireEvent.click(screen.getByText("Gestão"));
+    expect(screen.getByText("0 selecionadas de 2 disponíveis")).toBeInTheDocument();
   });
 
   it("desabilita publicação após alteração comercial até novo save", async () => {
