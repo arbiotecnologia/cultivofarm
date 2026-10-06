@@ -52,6 +52,7 @@ export function VersaoComercialEditor() {
   const salvar = useSalvarRascunhoPlano();
   const validar = useValidarRascunhoPlano();
   const publicar = usePublicarRascunhoPlano();
+  const validarRascunho = validar.mutate;
   const [planKey, setPlanKey] = useState("");
   const [draftId, setDraftId] = useState<string | null>(null);
   const [priceCents, setPriceCents] = useState<number | null>(null);
@@ -138,7 +139,7 @@ export function VersaoComercialEditor() {
     applyServerSnapshot(snapshot);
     setValidatedDraftId(null);
     setValidatedFingerprint(null);
-    validar.mutate(draft.id, {
+    validarRascunho(draft.id, {
       onSuccess: (result) => {
         const approved = result.complete === true && result.valid === true;
         setValidatedDraftId(approved ? draft.id : null);
@@ -149,7 +150,7 @@ export function VersaoComercialEditor() {
         setValidatedFingerprint(null);
       },
     });
-  }, [catalogo.data, draft, featureKeyById, plan, validar]);
+  }, [catalogo.data, draft, featureKeyById, plan, validarRascunho]);
 
   const markCommercialChanged = () => {
     saveKey.current = crypto.randomUUID();
