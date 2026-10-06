@@ -141,7 +141,20 @@ export function VersaoComercialEditor() {
   useEffect(() => {
     if (!plan || !catalogo.data) return;
     if (!draft) {
+      const origin = ultimaVersaoPublicada(versoes.data, plan.id);
+      const signature = origin ? `published:${origin.id}` : `empty:${plan.id}`;
+      if (hydratedSnapshot.current === signature) return;
+      hydratedSnapshot.current = signature;
       setDraftId(null);
+      setValidatedDraftId(null);
+      setValidatedFingerprint(null);
+      if (origin) {
+        // Versão publicada é imutável: seus valores servem só de origem para um NOVO rascunho.
+        applyServerSnapshot(snapshotFromServer(origin, plan.key, featureKeyById));
+        setEffectiveFrom("");
+        setSavedBaseline(null);
+        return;
+      }
       setPriceCents(null);
       setPriceDisplay("");
       setCurrency("BRL");
@@ -152,8 +165,6 @@ export function VersaoComercialEditor() {
       setLegacyLimits({});
       setFeatures([]);
       setSavedBaseline(null);
-      setValidatedDraftId(null);
-      setValidatedFingerprint(null);
       return;
     }
     const signature = `${draft.id}:${draft.revision}:${draft.effective_from ?? ""}`;
@@ -212,7 +223,7 @@ export function VersaoComercialEditor() {
       return;
     }
     salvar.mutate({
-      draftId, planKey, priceAmount: priceCents === null ? null : centsToDecimal(priceCents), currency,
+      draftId: draftIdParaSalvar(draftId, versoes.data), planKey, priceAmount: priceCents === null ? null : centsToDecimal(priceCents), currency,
       billingCycle: cycle || null, trialDays: trialDays === "" ? null : Number(trialDays),
       limits: serializedLimits, effectiveFrom: datetimeLocalToIso(effectiveFrom),
       features: features.map((featureKey) => ({ feature_key: featureKey, enabled: true })), reason: normalizedReason,

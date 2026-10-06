@@ -99,6 +99,22 @@ export function snapshotFromServer(
   };
   return { ...snapshot, fingerprint: commercialDraftFingerprint(snapshot) };
 }
+interface VersionRef { id: string; plan_id: string; status: string; version_number: number }
+
+/** Somente um id de DRAFT pode ser enviado ao salvar; qualquer outro vira NULL (cria novo rascunho). */
+export function draftIdParaSalvar(draftId: string | null, versions: ReadonlyArray<VersionRef> | undefined): string | null {
+  if (!draftId) return null;
+  return versions?.some((item) => item.id === draftId && item.status === "DRAFT") ? draftId : null;
+}
+
+/** Versão publicada mais recente do plano, usada apenas como origem de um novo rascunho. */
+export function ultimaVersaoPublicada<T extends VersionRef>(versions: ReadonlyArray<T> | undefined, planId: string | undefined): T | undefined {
+  if (!planId) return undefined;
+  return [...(versions ?? [])]
+    .filter((item) => item.plan_id === planId && item.status === "PUBLISHED")
+    .sort((a, b) => b.version_number - a.version_number)[0];
+}
+
 export const CONFIRMACAO_PUBLICAR = "PUBLICAR";
 
 /** Remove espaços acidentais; a comparação continua exata (maiúsculas). */
