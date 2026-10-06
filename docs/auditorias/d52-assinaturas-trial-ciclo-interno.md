@@ -2,10 +2,9 @@
 
 ## Decisão
 
-- **Segurança e isolamento:** PASS estrutural.
-- **Homologação funcional autenticada:** B1 e B2 PASS com identidades reais; B3 permanece pendente.
-- **Núcleo A+B+C:** PASS estrutural.
-- **Ativação comercial:** NO-GO funcional até publicação explícita de versão real.
+- **Segurança e isolamento:** PASS.
+- **Entitlements/UI e ciclo interno:** PASS no escopo estrutural e funcional negativo autenticado; B1+B2+B3 passaram com identidades reais.
+- **Prova comercial positiva `ACTIVE`/`TRIAL` versionado:** BLOCKED pela ausência deliberada de versão comercial real.
 - **Pagamento externo:** BLOCKED / NO-GO. Não existe gateway homologado e nenhum fluxo, webhook ou confirmação simulada foi criado.
 
 ## Estado encontrado
@@ -66,8 +65,11 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - A evidência de B1 não depende de papel, armazenamento local, claim ou decisão do frontend: ela combina login real auditado pelo Supabase com validação server-side da mesma identidade no banco vivo, sem registrar e-mail, UUID, IP, identificador de requisição, token ou outro identificador sensível.
 - **B2 — PASS autenticado real:** um tenant real autenticou no preview, com login e chamada autenticada a `public.get_my_entitlement_context()` registrados pelo Supabase canônico. O banco vivo confirmou que a identidade não é Platform Superadmin, possui perfil ativo em organização ativa, tem assinatura legada sem `plan_version_id` e não possui assinatura versionada; a RPC respondeu HTTP 200.
 - No estado `legacy_unversioned`, o frontend não chamou `get_my_entitlements`, portanto nenhuma funcionalidade foi concedida por inferência. A primeira camada ficou efetiva no menu, onde o item fiscal não apareceu; a segunda camada foi comprovada visualmente por URL direta em `/fiscal/documentos`, que exibiu “Regularização comercial pendente” sem carregar a funcionalidade fiscal. Rotas não mapeadas permanecem fora do gate de plano por definição de `featureRouteMap`, preservando RBAC/RLS.
-- B3 permanece **UNVERIFIED**: ainda falta a matriz real de isolamento A/B com tentativa de forja de organização. A prova automatizada de que um papel local `superadmin` não concede bypass permanece válida, mas não substitui esse teste real.
-- Decisão do gate: **PASS estrutural; B1 e B2 PASS autenticado real; B3 pendente; comercial positivo BLOCKED**. Entitlements/UI não está 100% concluído enquanto faltar a matriz real de isolamento.
+- **B3 — PASS autenticado real:** Tenant A e Tenant B são administradores reais distintos, não são Platform Superadmin, pertencem a organizações diferentes e possuem assinatura real em suas respectivas organizações. O login real de Tenant B e sua chamada JWT `authenticated` a `get_my_entitlement_context()` foram registrados pelo Supabase canônico com HTTP 200 e resposta compatível com `legacy_unversioned`; `get_my_entitlements` não foi chamado.
+- A matriz A/B foi executada em transações somente leitura, com papel `authenticated` e claims das duas identidades reais. Em cada sessão, somente uma assinatura ficou visível: a da própria organização; a assinatura da outra organização retornou zero registros. A tentativa equivalente de forjar `organization_id` para a organização oposta também retornou zero registros sob RLS.
+- `public.get_my_entitlement_context()` e `platform_private.my_entitlement_context()` não aceitam `organization_id`; o contexto deriva exclusivamente de `auth.uid()` e do vínculo ativo entre perfil e organização. A forja de organização não alterou o contexto nem ampliou acesso. Nenhum dado foi persistido, pois todas as transações terminaram em `ROLLBACK`.
+- Nenhum e-mail, UUID, IP, identificador de requisição, token ou outro identificador sensível foi registrado. A prova automatizada de que um papel local `superadmin` não concede bypass permanece válida como cobertura complementar.
+- Decisão do gate: **Segurança e isolamento PASS; Entitlements/UI e ciclo interno PASS no escopo estrutural e funcional negativo autenticado; prova comercial positiva `ACTIVE`/`TRIAL` versionado BLOCKED; pagamento externo BLOCKED/NO-GO**.
 
 ## Validações
 
@@ -78,7 +80,7 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 - Estado final de entitlements/UI: zero versões comerciais e cinco assinaturas legadas; a prova negativa é real e fail-closed. Nenhuma publicação, transição, exceção ou dado comercial foi criado para fabricar PASS.
-- Gate autenticado final: B1 passou com Platform Superadmin real e B2 passou com tenant legado real, incluindo menu, URL direta e ausência de consulta indevida a entitlements; B3 permanece pendente e nenhuma conclusão sobre isolamento A/B foi inferida.
+- Gate autenticado final: B1 passou com Platform Superadmin real; B2 passou com tenant legado real, incluindo menu, URL direta e ausência de consulta indevida a entitlements; B3 passou com isolamento A/B real e forja de organização bloqueada por RLS. B1+B2+B3 estão concluídos.
 
 ## Rollback e forward-fix
 
