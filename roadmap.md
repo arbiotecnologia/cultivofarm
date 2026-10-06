@@ -82,3 +82,4 @@
 - [x] Editor: confirmação PUBLICAR ignora espaços acidentais, erro visível com código de correlação; payloads de salvar/publicar testados.
 - [ ] Equipe interna pode simular preço para qualquer parceiro (`rpc_resolve_commercial_prices`, `rpc_cc_simulate_price`) — aguarda decisão do proprietário sobre o escopo do back-office.
 - [ ] Preço positivo para parceiro coerente: não há parceiro coerente em produção (0 empresas vinculadas a parceiro).
+- Fechamento (19:36 UTC): suíte completa 5.531 PASS / 1 FAIL (`commercial-money-editor.test.tsx`, passou 9/9 isolado — instabilidade sob carga NÃO VERIFICADA); focados 1.059/1.059, typecheck, lint focado, build e scanner PASS. Técnico com vínculo coerente e preço positivo de parceiro: NÃO VERIFICADOS em execução real.
