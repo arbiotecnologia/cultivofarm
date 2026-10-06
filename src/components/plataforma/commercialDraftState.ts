@@ -1,5 +1,12 @@
 import { centsFromDecimal, centsToDecimal, type CommercialCurrency } from "./commercialMoney";
 
+export const MOTIVO_MIN_LENGTH = 2;
+
+export function motivoComercialNormalizado(value: string): string | null {
+  const normalized = value.trim();
+  return [...normalized].length >= MOTIVO_MIN_LENGTH ? normalized : null;
+}
+
 export interface CommercialDraftFingerprintInput {
   planKey: string;
   priceCents: number | null;

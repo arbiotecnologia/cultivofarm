@@ -3,6 +3,7 @@ import {
   commercialDraftFingerprint,
   datetimeLocalToIso,
   isoToDatetimeLocal,
+  motivoComercialNormalizado,
 } from "@/components/plataforma/commercialDraftState";
 
 describe("estado canônico do DRAFT comercial", () => {
@@ -23,5 +24,17 @@ describe("estado canônico do DRAFT comercial", () => {
     })).toBe(commercialDraftFingerprint({
       ...base, limits: { unidades: 2, usuarios: 3 }, featureKeys: ["agenda", "visitas"],
     }));
+  });
+
+  it.each([
+    ["", null],
+    [" ", null],
+    ["a", null],
+    ["  a  ", null],
+    ["ab", "ab"],
+    ["  ab  ", "ab"],
+    ["á🌱", "á🌱"],
+  ])("normaliza o motivo %j com mínimo de dois caracteres", (input, expected) => {
+    expect(motivoComercialNormalizado(input)).toBe(expected);
   });
 });

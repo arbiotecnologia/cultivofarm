@@ -12,6 +12,8 @@
 - [x] Editor estruturado — salvamento DRAFT, idempotência, autorização e validação server-side corrigidos e comprovados com rollback integral
 - [ ] Editor estruturado — homologar criação/publicação com dados comerciais reais aprovados, sem fixtures
 - [ ] Editor estruturado — validar manualmente no preview autenticado o ciclo pós-save corrigido; implementação, testes e estado vivo read-only concluídos sem publicar (sessão externa indisponível ao harness)
+- [x] Editor estruturado — motivo mínimo unificado em 2 caracteres e catálogo global ativo disponibilizado a todos os planos, sem alterar entitlements
+- [ ] Editor estruturado — homologar manualmente a publicação real; nesta correção a prova permanece restrita a rollback integral
 
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
 

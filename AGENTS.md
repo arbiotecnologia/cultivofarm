@@ -20,7 +20,7 @@
 
 - Platform organization creation is bound to an immutable CNPJ lookup/review snapshot plus explicit CNPJ re-entry before the RPC — prevents stale-tab or autofill data from bypassing the reviewed E01 payload.
 
-- Commercial plans use audited DRAFT RPCs, canonical snapshot fingerprints and an explicit limit catalog; action fields never dirty a validated DRAFT, published snapshots stay immutable and payments stay OFF — preserves contracts without invented semantics.
+- Commercial plans offer the global active catalog in audited DRAFTs; runtime entitlements use only linked published versions, snapshots stay immutable and payments stay OFF.
 
 - Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
 - Dashboard summary RPCs derive organization from the active authenticated profile and fail closed for operational sources without deterministic tenant ownership — prevents cross-tenant aggregates.
