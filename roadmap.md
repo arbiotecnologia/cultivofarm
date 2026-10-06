@@ -75,3 +75,10 @@
 ## Consolidação catálogo global / B2B (2026-10-06 19:07 UTC)
 - [x] Migration `20261006190720_e2db3d80-7c5c-4117-9ff4-e632456202ca` aplicada em swzpzcwiasxmjutrmvkm: resolvedores de preço B2B só service_role; mutação de produtos/microrganismos só Platform Superadmin; leitura interna do catálogo técnico exige papel + org ativa + `catalogo_precos` (bypass superadmin). Prova: anon/authenticated sem EXECUTE nos resolvedores; 0 policies de mutação não-superadmin; superadmin vê, 4 admins legados não veem, uid nulo/desconhecido negado.
 - [ ] Prova positiva de tenant com `catalogo_precos` em versão PUBLISHED — pendente (nenhuma versão real publicada).
+
+## Correção pós-revisão do catálogo B2B (2026-10-06)
+- [x] Migration `20261006191816_1f5205f4-9482-4fed-ba16-a5f7baaf0cb5.sql` aplicada em swzpzcwiasxmjutrmvkm. CORRIGE o PASS anterior da `20261006190720`, que era parcial (partner_id arbitrário, `_uid` forjável, preço-base executável por authenticated).
+- [x] Provas SQL com rollback: admin de outra empresa, parceiro incoerente, parceiro excluído/inativo, anon, inativo e `_uid` forjado negados; Superadmin permitido; catálogo técnico só com fichas aprovadas e sem preço fora de contexto de parceiro coerente.
+- [x] Editor: confirmação PUBLICAR ignora espaços acidentais, erro visível com código de correlação; payloads de salvar/publicar testados.
+- [ ] Equipe interna pode simular preço para qualquer parceiro (`rpc_resolve_commercial_prices`, `rpc_cc_simulate_price`) — aguarda decisão do proprietário sobre o escopo do back-office.
+- [ ] Preço positivo para parceiro coerente: não há parceiro coerente em produção (0 empresas vinculadas a parceiro).
