@@ -1,4 +1,4 @@
-- Plano SaaS no frontend: gate só restringe via `isPathEntitled` (src/lib/saas/featureRouteMap.ts) somado ao RoleGuard; escrita de plataforma só por RPCs `platform_*` SECURITY INVOKER — evita bypass e alertas do linter.
+- Plano SaaS no frontend: gate só restringe via `isPathEntitled` (src/lib/saas/featureRouteMap.ts) somado ao RoleGuard e, nos portais, aninhado aos guards de vínculo (só features inequívocas); escrita de plataforma só por RPCs `platform_*` SECURITY INVOKER — evita bypass e alertas do linter.
 
 - Escrita em organizations só por RPCs SECURITY DEFINER que emitem ticket em platform_private.authz_tickets (txid); triggers exigem o ticket — flags GUC não são fronteira de autorização.
 
@@ -29,4 +29,3 @@
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
-- Portais especializados aplicam o gate de plano por rota aninhada dentro dos guards de vínculo/perfil e só mapeiam features com correspondência inequívoca — entitlement nunca substitui identidade/RBAC.
