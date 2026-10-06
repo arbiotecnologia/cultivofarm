@@ -8,6 +8,8 @@ import {
 } from "@/components/plataforma/commercialMoney";
 
 const salvar = vi.fn();
+const validar = vi.fn();
+const publicar = vi.fn();
 const planosData = [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }];
 const versoesData: unknown[] = [];
 const catalogoData = { modules: [], features: [], links: [], limits: [], featureLimits: [], dependencies: [] };
@@ -18,7 +20,8 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useVersoesPlanosSaaS: () => ({ data: versoesData }),
   useCatalogoPlanosSaaS: () => ({ data: catalogoData }),
   useSalvarRascunhoPlano: () => ({ mutate: salvar, isPending: false }),
-  usePublicarRascunhoPlano: () => ({ mutate: vi.fn(), isPending: false }),
+  useValidarRascunhoPlano: () => ({ mutate: validar, isPending: false }),
+  usePublicarRascunhoPlano: () => ({ mutate: publicar, isPending: false }),
 }));
 
 describe("moeda da versão comercial", () => {
@@ -38,7 +41,11 @@ describe("moeda da versão comercial", () => {
 });
 
 describe("editor de versão comercial", () => {
-  beforeEach(() => salvar.mockClear());
+  beforeEach(() => {
+    salvar.mockReset();
+    validar.mockReset();
+    publicar.mockReset();
+  });
 
   it("exibe seletor fixo de moeda e mantém o valor ao trocar a moeda", () => {
     render(<VersaoComercialEditor />);
@@ -51,6 +58,26 @@ describe("editor de versão comercial", () => {
     fireEvent.click(screen.getByLabelText("Moeda *"));
     fireEvent.click(screen.getByText("Dólar americano (USD) — US$"));
     expect(price.value).toBe("US$ 59.90");
+  });
+
+  it("mantém a publicação bloqueada até salvar e validar o draft no servidor", () => {
+    salvar.mockImplementation((_payload, callbacks) => callbacks.onSuccess("draft-1"));
+    validar.mockImplementation((_draftId, callbacks) => callbacks.onSuccess({ complete: true, valid: true }));
+    render(<VersaoComercialEditor />);
+    fireEvent.click(screen.getByLabelText("Plano *"));
+    fireEvent.click(screen.getByText("Essencial"));
+    fireEvent.focus(screen.getByLabelText("Preço *"));
+    fireEvent.change(screen.getByLabelText("Preço *"), { target: { value: "59,90" } });
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Preço inicial" } });
+    fireEvent.change(screen.getByLabelText("Digite PUBLICAR para confirmar"), { target: { value: "PUBLICAR" } });
+
+    const publishButton = screen.getByRole("button", { name: "Publicar versão" });
+    expect(publishButton).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Salvar rascunho" }));
+
+    expect(validar).toHaveBeenCalledWith("draft-1", expect.any(Object));
+    expect(publishButton).toBeEnabled();
+    expect(publicar).not.toHaveBeenCalled();
   });
 
   it("normaliza o preço para a RPC e apresenta os textos amigáveis de limites", () => {

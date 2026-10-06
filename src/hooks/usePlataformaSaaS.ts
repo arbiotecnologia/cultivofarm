@@ -374,7 +374,43 @@ export function mensagemErroPlataforma(e: unknown): string {
   const msg = e instanceof Error ? e.message : "";
   const m = msg.match(/(?:platform|org)_(?:invalid|conflict|forbidden|duplicate):\s*(.+)/);
   if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1) + ".";
+  if (e instanceof ErroRpcPlataforma) {
+    if (e.code === "42501") return "Seu acesso não permite concluir esta operação.";
+    if (e.code === "40001" || e.code === "23505") return "O rascunho foi alterado em outra tentativa. Recarregue antes de continuar.";
+    if (e.code === "22023") return "Revise os dados comerciais e as funcionalidades selecionadas.";
+  }
   return "Não foi possível concluir a operação. Recarregue e confira antes de tentar de novo.";
+}
+
+interface PostgrestErrorLike {
+  code?: string | null;
+  message?: string | null;
+  details?: string | null;
+  hint?: string | null;
+}
+
+export class ErroRpcPlataforma extends Error {
+  readonly code: string | null;
+  readonly details: string | null;
+  readonly hint: string | null;
+
+  constructor(error: PostgrestErrorLike) {
+    super(error.message ?? "platform_rpc_error");
+    this.name = "ErroRpcPlataforma";
+    this.code = error.code ?? null;
+    this.details = error.details ?? null;
+    this.hint = error.hint ?? null;
+  }
+}
+
+function erroRpc(error: PostgrestErrorLike): ErroRpcPlataforma {
+  const diagnostic = new ErroRpcPlataforma(error);
+  console.error("Falha segura na operação de Plataforma", {
+    code: diagnostic.code,
+    details: diagnostic.details,
+    hint: diagnostic.hint,
+  });
+  return diagnostic;
 }
 
 function useInvalidarPlataforma() {
@@ -491,10 +527,29 @@ export function useSalvarRascunhoPlano() {
         _effective_from: v.effectiveFrom, _features: v.features, _reason: v.reason,
         _idempotency_key: v.idempotencyKey,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw erroRpc(error);
       return data as string;
     },
     onSettled: invalidar,
+  });
+}
+
+export interface ValidacaoRascunhoPlano {
+  complete: boolean;
+  valid: boolean;
+  missing: string[];
+  feature_count: number;
+  revision: number;
+}
+
+export function useValidarRascunhoPlano() {
+  return useMutation({
+    retry: false,
+    mutationFn: async (draftId: string) => {
+      const { data, error } = await db.rpc("platform_validate_plan_version_draft", { _draft_id: draftId });
+      if (error) throw erroRpc(error);
+      return data as ValidacaoRascunhoPlano;
+    },
   });
 }
 
@@ -506,7 +561,7 @@ export function usePublicarRascunhoPlano() {
       const { data, error } = await db.rpc("platform_publish_plan_version_draft", {
         _draft_id: v.draftId, _reason: v.reason, _idempotency_key: v.idempotencyKey, _confirmation: v.confirmation,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw erroRpc(error);
       return data as string;
     },
     onSettled: invalidar,
