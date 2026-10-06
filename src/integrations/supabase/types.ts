@@ -22155,39 +22155,22 @@ export type Database = {
         }
         Returns: undefined
       }
-      platform_save_plan_version_draft:
-        | {
-            Args: {
-              _billing_cycle: string
-              _currency: string
-              _draft_id: string
-              _effective_from: string
-              _features: Json
-              _idempotency_key: string
-              _limits: Json
-              _plan_key: string
-              _price_amount: number
-              _reason: string
-              _trial_days: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              _billing_cycle: string
-              _currency: string
-              _effective_from: string
-              _features: Json
-              _idempotency_key: string
-              _limits: Json
-              _plan_id: string
-              _price: number
-              _reason: string
-              _trial_days: number
-              _version_id: string
-            }
-            Returns: string
-          }
+      platform_save_plan_version_draft: {
+        Args: {
+          _billing_cycle: string
+          _currency: string
+          _draft_id: string
+          _effective_from: string
+          _features: Json
+          _idempotency_key: string
+          _limits: Json
+          _plan_key: string
+          _price_amount: number
+          _reason: string
+          _trial_days: number
+        }
+        Returns: string
+      }
       platform_set_feature_override: {
         Args: {
           _ends_at?: string
