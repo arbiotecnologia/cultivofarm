@@ -5,7 +5,7 @@
 -- reatribuídos apenas dentro da transação revertida.
 DO $$
 DECLARE
-  sa uuid := 'b2c9bb8c-3ac3-4d65-b977-b7c873954b2e';
+  v_sa uuid := 'b2c9bb8c-3ac3-4d65-b977-b7c873954b2e';
   ver uuid := '713b1a31-ed4c-48b6-b6e7-22ebd3ee1092';
   uA_adm uuid := 'd856140b-26c9-4d6a-a5aa-8bea47e78fff';
   uA_fin uuid := '70956249-6294-48da-a046-006b5cced0bb';
@@ -33,7 +33,7 @@ BEGIN
   UPDATE public.organizations SET partner_account_id = pA WHERE id = oA;
   UPDATE public.organizations SET partner_account_id = pC WHERE id = oC;
 
-  PERFORM set_config('request.jwt.claims', json_build_object('sub',sa,'role','authenticated')::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub',v_sa,'role','authenticated')::text, true);
   UPDATE public.profiles SET organization_id = oA, ativo = true  WHERE user_id IN (uA_adm,uA_fin,uA_gc,uA_tec);
   UPDATE public.profiles SET organization_id = oA, ativo = false WHERE user_id = uA_ina;
   UPDATE public.profiles SET organization_id = oB, ativo = true, cliente_id = NULL WHERE user_id = uB_adm;
@@ -83,7 +83,7 @@ BEGIN
   SELECT features_snapshot::text INTO snapA0 FROM public.organization_subscriptions WHERE id = sA;
 
   -- Provas por identidade
-  FOREACH u IN ARRAY ARRAY[uA_adm,uA_fin,uA_gc,uA_tec,uA_ina,uB_adm,uC_par,sa] LOOP
+  FOREACH u IN ARRAY ARRAY[uA_adm,uA_fin,uA_gc,uA_tec,uA_ina,uB_adm,uC_par,v_sa] LOOP
     PERFORM set_config('request.jwt.claims', json_build_object('sub',u,'role','authenticated')::text, true);
     EXECUTE 'set local role authenticated';
     r := CASE u WHEN uA_adm THEN 'A_admin' WHEN uA_fin THEN 'A_fin' WHEN uA_gc THEN 'A_gc' WHEN uA_tec THEN 'A_tec'
@@ -103,8 +103,8 @@ BEGIN
     BEGIN SELECT count(*) INTO n FROM public.get_partner_catalog_secure(pC); o := o || ' cat(pC)=OK:'||n;
     EXCEPTION WHEN OTHERS THEN o := o || ' cat(pC)=NEG'; END;
     BEGIN
-      SELECT count(*) FILTER (WHERE coalesce(valor_dose_brl,valor_litro_brl,valor_ha_brl,preco_tabela_dose,preco_tabela_litro,preco_tabela_ha) IS NOT NULL),
-             count(*) INTO n, n FROM public.get_partner_catalog_tecnico_secure();
+      SELECT 
+             count(*) INTO n FROM public.get_partner_catalog_tecnico_secure();
       o := o || ' tec=OK:'||n||' linhas_com_preco='||(SELECT count(*) FROM public.get_partner_catalog_tecnico_secure()
               WHERE coalesce(valor_dose_brl,valor_litro_brl,valor_ha_brl,preco_tabela_dose,preco_tabela_litro,preco_tabela_ha) IS NOT NULL);
     EXCEPTION WHEN OTHERS THEN o := o || ' tec=NEG'; END;
