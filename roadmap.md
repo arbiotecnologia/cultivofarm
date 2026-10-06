@@ -7,7 +7,7 @@
 - [x] Provar ciclo de entitlement, overrides, estados fail-closed, isolamento, RBAC e histórico
 - [x] Validar estruturalmente sidebar, URL direta e estados seguros; UI autenticada real permanece bloqueada pelo provedor externo
 - [x] Corrigir divergências comprovadas: resolvedor único, idempotência de overrides e privilégios anônimos residuais
-- [ ] Executar testes focados, typecheck, lint focado, scanner, build e confirmar restauração do estado vivo
+- [x] Executar testes focados, typecheck, lint focado, scanner, build e confirmar restauração do estado vivo
 
 ## Pós-D52 — Prova comercial positiva e fundação de pagamentos
 
