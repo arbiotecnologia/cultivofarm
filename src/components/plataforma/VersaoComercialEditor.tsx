@@ -9,6 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  centsFromDecimal,
+  centsToDecimal,
+  COMMERCIAL_CURRENCIES,
+  editableCommercialMoney,
+  formatCommercialMoney,
+  parseCommercialMoney,
+  type CommercialCurrency,
+} from "./commercialMoney";
+import {
   mensagemErroPlataforma,
   useCatalogoPlanosSaaS,
   usePlanosSaaS,
@@ -30,8 +39,10 @@ export function VersaoComercialEditor() {
   const publicar = usePublicarRascunhoPlano();
   const [planKey, setPlanKey] = useState("");
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState("");
+  const [priceCents, setPriceCents] = useState<number | null>(null);
+  const [priceDisplay, setPriceDisplay] = useState("");
+  const [priceFocused, setPriceFocused] = useState(false);
+  const [currency, setCurrency] = useState<CommercialCurrency>("BRL");
   const [cycle, setCycle] = useState("");
   const [trialDays, setTrialDays] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState("");
@@ -52,8 +63,14 @@ export function VersaoComercialEditor() {
 
   useEffect(() => {
     setDraftId(draft?.id ?? null);
-    setPrice(draft?.price_amount === null || draft?.price_amount === undefined ? "" : String(draft.price_amount));
-    setCurrency(draft?.currency ?? "");
+    const nextCurrency = COMMERCIAL_CURRENCIES.some((item) => item.value === draft?.currency)
+      ? draft?.currency as CommercialCurrency
+      : "BRL";
+    const nextPriceCents = centsFromDecimal(draft?.price_amount);
+    setPriceCents(nextPriceCents);
+    setPriceDisplay(nextPriceCents === null ? "" : formatCommercialMoney(nextPriceCents, nextCurrency));
+    setPriceFocused(false);
+    setCurrency(nextCurrency);
     setCycle(draft?.billing_cycle ?? "");
     setTrialDays(draft?.trial_days === null || draft?.trial_days === undefined ? "" : String(draft.trial_days));
     setEffectiveFrom(draft?.effective_from ? draft.effective_from.slice(0, 16) : "");
@@ -71,7 +88,7 @@ export function VersaoComercialEditor() {
   } catch { parsedLimits = null; }
 
   const missing = [
-    !price ? "preço" : null, !currency.match(/^[A-Z]{3}$/) ? "moeda" : null, !cycle ? "ciclo" : null,
+    priceCents === null || priceCents <= 0 ? "preço" : null, !cycle ? "ciclo" : null,
     !trialDays ? "período de teste" : null, !effectiveFrom ? "início da vigência" : null,
     !parsedLimits ? "limites" : null, features.length === 0 ? "funcionalidades" : null,
     reason.trim().length < 5 ? "motivo" : null,
@@ -80,7 +97,7 @@ export function VersaoComercialEditor() {
   const salvarRascunho = () => {
     if (!planKey || reason.trim().length < 5) return;
     salvar.mutate({
-      draftId, planKey, priceAmount: price === "" ? null : Number(price), currency: currency || null,
+      draftId, planKey, priceAmount: priceCents === null ? null : centsToDecimal(priceCents), currency,
       billingCycle: cycle || null, trialDays: trialDays === "" ? null : Number(trialDays),
       limits: parsedLimits ?? {}, effectiveFrom: effectiveFrom ? new Date(effectiveFrom).toISOString() : null,
       features: features.map((featureKey) => ({ feature_key: featureKey, enabled: true })), reason: reason.trim(),
@@ -89,6 +106,30 @@ export function VersaoComercialEditor() {
       onSuccess: (id) => { setDraftId(id); saveKey.current = crypto.randomUUID(); toast.success("Rascunho comercial salvo e auditado."); },
       onError: (error) => toast.error(mensagemErroPlataforma(error)),
     });
+  };
+
+  const atualizarPreco = (value: string) => {
+    const parsed = parseCommercialMoney(value);
+    if (parsed.kind === "invalid") return;
+    setPriceCents(parsed.cents);
+    setPriceDisplay(value);
+  };
+
+  const focarPreco = () => {
+    setPriceFocused(true);
+    setPriceDisplay(priceCents === null ? "" : editableCommercialMoney(priceCents, currency));
+  };
+
+  const desfocarPreco = () => {
+    setPriceFocused(false);
+    setPriceDisplay(priceCents === null ? "" : formatCommercialMoney(priceCents, currency));
+  };
+
+  const trocarMoeda = (value: CommercialCurrency) => {
+    setCurrency(value);
+    if (priceCents !== null) {
+      setPriceDisplay(priceFocused ? editableCommercialMoney(priceCents, value) : formatCommercialMoney(priceCents, value));
+    }
   };
 
   const publicarRascunho = () => {
@@ -106,13 +147,41 @@ export function VersaoComercialEditor() {
         <Badge variant={draftId ? "secondary" : "outline"}>{draftId ? "Rascunho em edição" : "Novo rascunho"}</Badge>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2"><Label>Plano *</Label><Select value={planKey} onValueChange={setPlanKey}><SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{planos.data?.filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select></div>
-        <div className="space-y-2"><Label htmlFor="versao-preco">Preço *</Label><Input id="versao-preco" type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Informe o valor contratado" /></div>
-        <div className="space-y-2"><Label htmlFor="versao-moeda">Moeda *</Label><Input id="versao-moeda" maxLength={3} value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} placeholder="Código de 3 letras" /></div>
+        <div className="space-y-2"><Label htmlFor="versao-plano">Plano *</Label><Select value={planKey} onValueChange={setPlanKey}><SelectTrigger id="versao-plano"><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{planos.data?.filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select></div>
+        <div className="space-y-2">
+          <Label htmlFor="versao-preco">Preço *</Label>
+          <Input
+            id="versao-preco"
+            inputMode="decimal"
+            autoComplete="off"
+            value={priceDisplay}
+            onChange={(event) => atualizarPreco(event.target.value)}
+            onFocus={focarPreco}
+            onBlur={desfocarPreco}
+            placeholder={formatCommercialMoney(5990, currency)}
+            aria-invalid={priceCents !== null && priceCents <= 0}
+            aria-describedby="versao-preco-ajuda"
+          />
+          <p id="versao-preco-ajuda" className="text-xs text-muted-foreground">
+            {priceCents !== null && priceCents <= 0 ? "Informe um preço maior que zero." : "Use vírgula ou ponto e até duas casas decimais."}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="versao-moeda">Moeda *</Label>
+          <Select value={currency} onValueChange={(value) => trocarMoeda(value as CommercialCurrency)}>
+            <SelectTrigger id="versao-moeda"><SelectValue /></SelectTrigger>
+            <SelectContent>{COMMERCIAL_CURRENCIES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
         <div className="space-y-2"><Label>Ciclo *</Label><Select value={cycle} onValueChange={setCycle}><SelectTrigger><SelectValue placeholder="Selecione o ciclo" /></SelectTrigger><SelectContent>{CICLOS.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-2"><Label htmlFor="versao-trial">Dias de teste *</Label><Input id="versao-trial" type="number" min="1" max="365" value={trialDays} onChange={(event) => setTrialDays(event.target.value)} placeholder="Informe o período" /></div>
         <div className="space-y-2"><Label htmlFor="versao-vigencia">Início da vigência *</Label><Input id="versao-vigencia" type="datetime-local" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} /></div>
-        <div className="space-y-2 sm:col-span-2"><Label htmlFor="versao-limites">Limites em JSON *</Label><Textarea id="versao-limites" value={limits} onChange={(event) => setLimits(event.target.value)} placeholder={'Ex.: {"usuarios": 10}'} /></div>
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="versao-limites">Limites de uso do plano *</Label>
+          <p id="versao-limites-ajuda" className="text-xs text-muted-foreground">Defina os limites incluídos no plano, como quantidade de usuários, unidades ou recursos.</p>
+          <Textarea id="versao-limites" value={limits} onChange={(event) => setLimits(event.target.value)} placeholder={'{"usuarios": 10, "unidades": 2}'} aria-invalid={limits.trim().length > 0 && !parsedLimits} aria-describedby="versao-limites-ajuda versao-limites-erro" />
+          {limits.trim().length > 0 && !parsedLimits && <p id="versao-limites-erro" className="text-xs text-destructive">Confira o formato dos limites de uso.</p>}
+        </div>
         <fieldset className="space-y-3 sm:col-span-2"><legend className="text-sm font-medium">Funcionalidades incluídas *</legend>{availableFeatures.length === 0 ? <p className="text-sm text-muted-foreground">Selecione um plano com funcionalidades cadastradas.</p> : <div className="grid gap-2 sm:grid-cols-2">{availableFeatures.map((feature) => <label key={feature.id} className="flex items-center gap-2 rounded-md border p-3 text-sm"><Checkbox checked={features.includes(feature.key)} onCheckedChange={(checked) => setFeatures((current) => checked ? [...current, feature.key] : current.filter((key) => key !== feature.key))} /><span>{feature.name}</span></label>)}</div>}</fieldset>
         <div className="space-y-2 sm:col-span-2"><Label htmlFor="versao-motivo">Motivo *</Label><Input id="versao-motivo" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Motivo comercial desta revisão" /></div>
       </div>

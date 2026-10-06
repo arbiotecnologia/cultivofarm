@@ -439,7 +439,7 @@ export function useSalvarRascunhoPlano() {
   return useMutation({
     retry: false,
     mutationFn: async (v: {
-      draftId: string | null; planKey: string; priceAmount: number | null; currency: string | null;
+      draftId: string | null; planKey: string; priceAmount: string | null; currency: string | null;
       billingCycle: string | null; trialDays: number | null; limits: Record<string, unknown>;
       effectiveFrom: string | null; features: Array<{ feature_key: string; enabled: boolean }>; reason: string; idempotencyKey: string;
     }) => {
