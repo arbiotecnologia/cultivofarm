@@ -91,6 +91,20 @@ describe("editor de versão comercial", () => {
     expect(publicar).not.toHaveBeenCalled();
   });
 
+  it("gera outra chave idempotente após alteração lógica do formulário", () => {
+    render(<VersaoComercialEditor />);
+    fireEvent.click(screen.getByLabelText("Plano *"));
+    fireEvent.click(screen.getByText("Essencial"));
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Primeira tentativa" } });
+    fireEvent.click(screen.getByRole("button", { name: /Salvar rascunho/i }));
+    const firstKey = salvar.mock.calls[0][0].idempotencyKey;
+
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Segunda tentativa" } });
+    fireEvent.click(screen.getByRole("button", { name: /Salvar rascunho/i }));
+
+    expect(salvar.mock.calls[1][0].idempotencyKey).not.toBe(firstKey);
+  });
+
   it("normaliza o preço para a RPC e apresenta os textos amigáveis de limites", () => {
     render(<VersaoComercialEditor />);
     fireEvent.click(screen.getByLabelText("Plano *"));

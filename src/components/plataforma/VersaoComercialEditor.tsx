@@ -117,6 +117,7 @@ export function VersaoComercialEditor() {
   }, [availableFeatures, draft, planKey]);
 
   const markChanged = () => {
+    saveKey.current = crypto.randomUUID();
     setValidatedDraftId(null);
     setConfirmation("");
   };

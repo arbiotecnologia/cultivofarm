@@ -372,13 +372,16 @@ export function useExcecoesSaaS() {
 /** Converte erros `platform_*` do servidor em mensagem segura em PT-BR. */
 export function mensagemErroPlataforma(e: unknown): string {
   const msg = e instanceof Error ? e.message : "";
-  const m = msg.match(/(?:platform|org)_(?:invalid|conflict|forbidden|duplicate):\s*(.+)/);
-  if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1) + ".";
   if (e instanceof ErroRpcPlataforma) {
     if (e.code === "42501") return "Seu acesso não permite concluir esta operação.";
     if (e.code === "40001" || e.code === "23505") return "O rascunho foi alterado em outra tentativa. Recarregue antes de continuar.";
     if (e.code === "22023") return "Revise os dados comerciais e as funcionalidades selecionadas.";
   }
+  if (msg.includes("platform_forbidden")) return "Seu acesso não permite concluir esta operação.";
+  if (msg.includes("platform_conflict") || msg.includes("platform_duplicate")) {
+    return "O rascunho foi alterado em outra tentativa. Recarregue antes de continuar.";
+  }
+  if (msg.includes("platform_invalid")) return "Revise os dados comerciais e as funcionalidades selecionadas.";
   return "Não foi possível concluir a operação. Recarregue e confira antes de tentar de novo.";
 }
 
@@ -403,12 +406,21 @@ export class ErroRpcPlataforma extends Error {
   }
 }
 
+function diagnosticoSeguro(value: string | null): string | null {
+  if (!value) return null;
+  return value
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, "[identificador]")
+    .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "[email]")
+    .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[token]")
+    .slice(0, 300);
+}
+
 function erroRpc(error: PostgrestErrorLike): ErroRpcPlataforma {
   const diagnostic = new ErroRpcPlataforma(error);
   console.error("Falha segura na operação de Plataforma", {
     code: diagnostic.code,
-    details: diagnostic.details,
-    hint: diagnostic.hint,
+    details: diagnosticoSeguro(diagnostic.details),
+    hint: diagnosticoSeguro(diagnostic.hint),
   });
   return diagnostic;
 }
