@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VersaoComercialEditor } from "@/components/plataforma/VersaoComercialEditor";
 import {
@@ -10,6 +10,7 @@ import {
 const salvar = vi.fn();
 const validar = vi.fn();
 const publicar = vi.fn();
+const refetchVersoes = vi.fn();
 const planosData = [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }];
 const versoesData: unknown[] = [];
 const catalogoData = {
@@ -22,7 +23,7 @@ const catalogoData = {
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mensagemErroPlataforma: () => "Erro",
   usePlanosSaaS: () => ({ data: planosData }),
-  useVersoesPlanosSaaS: () => ({ data: versoesData }),
+  useVersoesPlanosSaaS: () => ({ data: versoesData, refetch: refetchVersoes }),
   useCatalogoPlanosSaaS: () => ({ data: catalogoData }),
   useSalvarRascunhoPlano: () => ({ mutate: salvar, isPending: false }),
   useValidarRascunhoPlano: () => ({ mutate: validar, isPending: false }),
@@ -50,6 +51,7 @@ describe("editor de versão comercial", () => {
     salvar.mockReset();
     validar.mockReset();
     publicar.mockReset();
+    refetchVersoes.mockReset();
   });
 
   it("exibe seletor fixo de moeda e mantém o valor ao trocar a moeda", () => {
@@ -65,9 +67,17 @@ describe("editor de versão comercial", () => {
     expect(price.value).toBe("US$ 59.90");
   });
 
-  it("mantém a publicação bloqueada até salvar e validar o draft no servidor", () => {
+  it("salva, recarrega o baseline canônico, preserva motivo e limpa a confirmação", async () => {
     salvar.mockImplementation((_payload, callbacks) => callbacks.onSuccess("draft-1"));
     validar.mockImplementation((_draftId, callbacks) => callbacks.onSuccess({ complete: true, valid: true }));
+    refetchVersoes.mockResolvedValue({
+      data: [{
+        id: "draft-1", plan_id: "plan-1", status: "DRAFT", revision: 1,
+        price_amount: 59.9, currency: "BRL", billing_cycle: "monthly", trial_days: 14,
+        effective_from: new Date(2026, 9, 7, 9, 0).toISOString(), limits_snapshot: {},
+        features_snapshot: [{ feature_id: "feature-1", enabled: true }],
+      }],
+    });
     render(<VersaoComercialEditor />);
     fireEvent.click(screen.getByLabelText("Plano *"));
     fireEvent.click(screen.getByText("Essencial"));
@@ -86,12 +96,18 @@ describe("editor de versão comercial", () => {
     expect(publishButton).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Salvar rascunho" }));
 
-    expect(validar).toHaveBeenCalledWith("draft-1", expect.any(Object));
+    await waitFor(() => expect(validar).toHaveBeenCalledWith("draft-1", expect.any(Object)));
+    expect(screen.getByLabelText("Motivo *")).toHaveValue("Preço inicial");
+    expect(screen.getByLabelText("Digite PUBLICAR para confirmar")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Salvar rascunho" })).toBeDisabled();
+    expect(publishButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Digite PUBLICAR para confirmar"), { target: { value: "PUBLICAR" } });
     expect(publishButton).toBeEnabled();
     expect(publicar).not.toHaveBeenCalled();
   });
 
-  it("gera outra chave idempotente após alteração lógica do formulário", () => {
+  it("motivo não suja o draft e a chave muda somente após alteração comercial", () => {
     render(<VersaoComercialEditor />);
     fireEvent.click(screen.getByLabelText("Plano *"));
     fireEvent.click(screen.getByText("Essencial"));
@@ -101,8 +117,46 @@ describe("editor de versão comercial", () => {
 
     fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Segunda tentativa" } });
     fireEvent.click(screen.getByRole("button", { name: /Salvar rascunho/i }));
+    expect(salvar.mock.calls[1][0].idempotencyKey).toBe(firstKey);
 
-    expect(salvar.mock.calls[1][0].idempotencyKey).not.toBe(firstKey);
+    fireEvent.change(screen.getByLabelText("Dias de teste *"), { target: { value: "15" } });
+    fireEvent.click(screen.getByRole("button", { name: /Salvar rascunho/i }));
+    expect(salvar.mock.calls[2][0].idempotencyKey).not.toBe(firstKey);
+  });
+
+  it("desabilita publicação após alteração comercial até novo save", async () => {
+    salvar.mockImplementation((_payload, callbacks) => callbacks.onSuccess("draft-1"));
+    validar.mockImplementation((_draftId, callbacks) => callbacks.onSuccess({ complete: true, valid: true }));
+    refetchVersoes.mockResolvedValue({
+      data: [{
+        id: "draft-1", plan_id: "plan-1", status: "DRAFT", revision: 1,
+        price_amount: 59.9, currency: "BRL", billing_cycle: "monthly", trial_days: 14,
+        effective_from: new Date(2026, 9, 7, 0, 13).toISOString(), limits_snapshot: {},
+        features_snapshot: [{ feature_id: "feature-1", enabled: true }],
+      }],
+    });
+    render(<VersaoComercialEditor />);
+    fireEvent.click(screen.getByLabelText("Plano *"));
+    fireEvent.click(screen.getByText("Essencial"));
+    fireEvent.focus(screen.getByLabelText("Preço *"));
+    fireEvent.change(screen.getByLabelText("Preço *"), { target: { value: "59,90" } });
+    fireEvent.click(screen.getByText("Selecione o ciclo"));
+    fireEvent.click(screen.getByText("Mensal"));
+    fireEvent.change(screen.getByLabelText("Dias de teste *"), { target: { value: "14" } });
+    fireEvent.change(screen.getByLabelText("Início da vigência *"), { target: { value: "2026-10-07T00:13" } });
+    fireEvent.click(screen.getByRole("button", { name: /Agronômico/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Consultas/ }));
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Agrônomo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar rascunho" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Salvar rascunho" })).toBeDisabled());
+
+    fireEvent.change(screen.getByLabelText("Digite PUBLICAR para confirmar"), { target: { value: "PUBLICAR" } });
+    expect(screen.getByRole("button", { name: "Publicar versão" })).toBeEnabled();
+    expect(screen.getByLabelText("Início da vigência *")).toHaveValue("2026-10-07T00:13");
+
+    fireEvent.change(screen.getByLabelText("Dias de teste *"), { target: { value: "15" } });
+    expect(screen.getByRole("button", { name: "Publicar versão" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Salvar rascunho" })).toBeEnabled();
   });
 
   it("normaliza o preço para a RPC e apresenta os textos amigáveis de limites", () => {
