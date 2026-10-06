@@ -76,7 +76,6 @@ export function VersaoComercialEditor() {
       return feature.active && (feature.commercializable || legacyCatalogEntry) && allowed.has(feature.id);
     });
   }, [catalogo.data, plan]);
-  const modules = catalogo.data?.modules ?? [];
   const limitDefinitions = useMemo(() => {
     const selectedIds = new Set(availableFeatures.filter((feature) => features.includes(feature.key)).map((feature) => feature.id));
     const allowed = new Set((catalogo.data?.featureLimits ?? []).filter((link) => selectedIds.has(link.feature_id)).map((link) => link.limit_definition_id));
@@ -84,12 +83,12 @@ export function VersaoComercialEditor() {
   }, [availableFeatures, catalogo.data, features]);
   const configuredLimitDefinitions = limitDefinitions.filter((limit) => Object.prototype.hasOwnProperty.call(limits, limit.key));
   const addableLimitDefinitions = limitDefinitions.filter((limit) => !Object.prototype.hasOwnProperty.call(limits, limit.key));
-  const groupedFeatures = useMemo(() => modules.map((module) => ({
+  const groupedFeatures = useMemo(() => (catalogo.data?.modules ?? []).map((module) => ({
     module,
     features: availableFeatures.filter((feature) => feature.module_id === module.id)
       .filter((feature) => !featureSearch.trim() || `${feature.name} ${feature.description ?? ""}`.toLocaleLowerCase("pt-BR").includes(featureSearch.trim().toLocaleLowerCase("pt-BR")))
       .filter((feature) => !onlySelected || features.includes(feature.key)),
-  })).filter((group) => group.features.length > 0), [availableFeatures, featureSearch, features, modules, onlySelected]);
+  })).filter((group) => group.features.length > 0), [availableFeatures, catalogo.data?.modules, featureSearch, features, onlySelected]);
 
   useEffect(() => {
     setDraftId(draft?.id ?? null);
