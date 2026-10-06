@@ -32,6 +32,7 @@ const catalogoData = {
 
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mensagemErroPlataforma: () => "Erro",
+  mensagemErroComCorrelacao: () => "Erro (código: TESTE)",
   usePlanosSaaS: () => ({ data: planosData }),
   useVersoesPlanosSaaS: () => ({ data: versoesData, refetch: refetchVersoes }),
   useCatalogoPlanosSaaS: () => ({ data: catalogoData }),
