@@ -8,6 +8,7 @@ const guard = readFileSync("src/components/guards/ForaDoPlano.tsx", "utf8");
 const hooks = readFileSync("src/hooks/usePlataformaSaaS.ts", "utf8");
 const gestao = readFileSync("src/pages/plataforma/PlataformaGestao.tsx", "utf8");
 const meuPlano = readFileSync("src/pages/configuracoes/MeuPlanoTab.tsx", "utf8");
+const entitlementHook = readFileSync("src/hooks/useEntitlements.ts", "utf8");
 
 describe("D52 — entitlements e telas", () => {
   it("deriva módulos da versão imutável e bloqueia legado/status não liberados", () => {
@@ -49,5 +50,13 @@ describe("D52 — entitlements e telas", () => {
     expect(meuPlano).not.toMatch(/\.insert\(|\.update\(|\.upsert\(|\.delete\(/);
     expect(guard).toContain("Regularização comercial pendente");
     expect(app).toContain("<RoleGuard><ComunicacaoRouteGuard><ComunicacaoAdminPage /></ComunicacaoRouteGuard></RoleGuard>");
+  });
+
+  it("não concede bypass por papel local e consulta features só após contexto elegível", () => {
+    expect(entitlementHook).not.toContain('roles.includes("superadmin"');
+    expect(entitlementHook).not.toContain("isSuper");
+    expect(entitlementHook).toContain('context.data === "platform_superadmin"');
+    expect(entitlementHook).toContain('context.data === "active" || context.data === "trial_active"');
+    expect(entitlementHook).toContain("enabled: !!user && context.isSuccess && eligible");
   });
 });
