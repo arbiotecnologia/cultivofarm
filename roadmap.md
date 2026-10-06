@@ -83,3 +83,11 @@
 - [ ] Equipe interna pode simular preço para qualquer parceiro (`rpc_resolve_commercial_prices`, `rpc_cc_simulate_price`) — aguarda decisão do proprietário sobre o escopo do back-office.
 - [ ] Preço positivo para parceiro coerente: não há parceiro coerente em produção (0 empresas vinculadas a parceiro).
 - Fechamento (19:36 UTC): suíte completa 5.531 PASS / 1 FAIL (`commercial-money-editor.test.tsx`, passou 9/9 isolado — instabilidade sob carga NÃO VERIFICADA); focados 1.059/1.059, typecheck, lint focado, build e scanner PASS. Técnico com vínculo coerente e preço positivo de parceiro: NÃO VERIFICADOS em execução real.
+
+## Limites estruturados e isolamento do back-office (2026-10-06)
+- [x] Migration `20261006203913_86ba5af8-2a95-44e2-9e0b-8b1c8558183c.sql` aplicada: 6 definições de limite sem valores (required=false) e gate central de parceiro nas simulações/pedidos.
+- [x] Provas com rollback: Superadmin OK; admin com parceiro forjado/sem parceiro, parceiro incoerente, inativo, técnico, parceiro excluído e anon negados.
+- [x] Editor agrupa limites por módulo/funcionalidade, sem JSON. Suíte 5.535 PASS, typecheck, lint, build, scanner PASS.
+- [ ] Aplicação dos limites em runtime — não implementada.
+- [ ] Prova comercial positiva — bloqueada: nenhuma empresa vinculada a parceiro.
+- Relatório: `docs/auditorias/limites-e-isolamento-backoffice-2026-10-06.md`.
