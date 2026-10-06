@@ -17724,6 +17724,96 @@ export type Database = {
           },
         ]
       }
+      saas_payment_reconciliation_findings: {
+        Row: {
+          aggregate_ref: string | null
+          created_at: string
+          details: Json
+          event_id: string | null
+          id: string
+          local_status: string
+          provider_status: string
+          resolution_status: string
+          resolved_at: string | null
+          run_id: string
+        }
+        Insert: {
+          aggregate_ref?: string | null
+          created_at?: string
+          details?: Json
+          event_id?: string | null
+          id?: string
+          local_status: string
+          provider_status: string
+          resolution_status?: string
+          resolved_at?: string | null
+          run_id: string
+        }
+        Update: {
+          aggregate_ref?: string | null
+          created_at?: string
+          details?: Json
+          event_id?: string | null
+          id?: string
+          local_status?: string
+          provider_status?: string
+          resolution_status?: string
+          resolved_at?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_payment_reconciliation_findings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "saas_payment_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_payment_reconciliation_findings_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "saas_payment_reconciliation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_payment_reconciliation_runs: {
+        Row: {
+          checked_count: number
+          correlation_id: string
+          environment: string
+          finished_at: string | null
+          id: string
+          mismatch_count: number
+          provider: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          checked_count?: number
+          correlation_id: string
+          environment?: string
+          finished_at?: string | null
+          id?: string
+          mismatch_count?: number
+          provider: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          checked_count?: number
+          correlation_id?: string
+          environment?: string
+          finished_at?: string | null
+          id?: string
+          mismatch_count?: number
+          provider?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       saas_plan_features: {
         Row: {
           config: Json | null
@@ -24497,6 +24587,28 @@ export type Database = {
         Args: { p_embalagem_id: string; p_etiqueta_id: string }
         Returns: Json
       }
+      saas_claim_payment_outbox_non_operational: {
+        Args: { _limit?: number; _worker_id: string }
+        Returns: {
+          attempt_count: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          last_error_code: string | null
+          locked_at: string | null
+          payload: Json
+          status: string
+          topic: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "saas_payment_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       saas_has_feature: { Args: { _feature_key: string }; Returns: boolean }
       saas_ingest_payment_event_non_operational: {
         Args: {
@@ -24511,6 +24623,10 @@ export type Database = {
           _sequence_number: number
           _signature_status: string
         }
+        Returns: string
+      }
+      saas_record_payment_retry_non_operational: {
+        Args: { _error_code: string; _event_id: string; _next_retry_at: string }
         Returns: string
       }
       save_client_portal_branding: {
