@@ -91,3 +91,5 @@
 - [ ] Aplicação dos limites em runtime — não implementada.
 - [ ] Prova comercial positiva — bloqueada: nenhuma empresa vinculada a parceiro.
 - Relatório: `docs/auditorias/limites-e-isolamento-backoffice-2026-10-06.md`.
+
+- [x] Fechamento controlado limites/isolamento (sem nova migração). NÃO VERIFICADO: reexecução pós-travamento, prova comercial positiva, enforcement runtime, UI autenticada.
