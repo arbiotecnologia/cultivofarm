@@ -34,6 +34,17 @@ const PREFIXOS: ReadonlyArray<readonly [string, string]> = [
   ["/bi-agronomico", "paineis_executivos"],
   ["/bi-operacional", "paineis_executivos"],
   ["/relatorios", "relatorios_operacionais"],
+  // Portais especializados — somente correspondências inequívocas.
+  ["/app/visita", "visitas_tecnicas"],
+  ["/app/checkin", "visitas_tecnicas"],
+  ["/portal-parceiro/pedidos", "pedidos_b2b"],
+  ["/portal-parceiro/solicitacoes", "pedidos_b2b"],
+  ["/portal-parceiro/novo", "pedidos_b2b"],
+  ["/portal-parceiro/catalogo", "catalogo_precos"],
+  ["/portal-parceiro/simulador", "simulacoes"],
+  ["/portal-parceiro/simulacoes", "simulacoes"],
+  ["/portal-parceiro/simulacoes-equipe", "simulacoes"],
+  ["/portal-parceiro/fichas", "fichas_tecnicas"],
 ];
 
 /** Funcionalidade exigida pela rota, ou null se a rota não depende de plano. */
