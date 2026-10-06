@@ -26,11 +26,13 @@ import {
   datetimeLocalToIso,
   motivoComercialNormalizado,
   MOTIVO_MIN_LENGTH,
+  confirmacaoPublicarNormalizada,
+  confirmacaoPublicarValida,
   snapshotFromServer,
   type CommercialDraftServerSnapshot,
 } from "./commercialDraftState";
 import {
-  mensagemErroPlataforma,
+  mensagemErroComCorrelacao,
   useCatalogoPlanosSaaS,
   usePlanosSaaS,
   usePublicarRascunhoPlano,
@@ -230,11 +232,11 @@ export function VersaoComercialEditor() {
           onError: (error) => {
             setValidatedDraftId(null);
             setValidatedFingerprint(null);
-            toast.error(mensagemErroPlataforma(error));
+            toast.error(mensagemErroComCorrelacao(error));
           },
         });
       },
-      onError: (error) => toast.error(mensagemErroPlataforma(error)),
+      onError: (error) => toast.error(mensagemErroComCorrelacao(error)),
     });
   };
 
@@ -340,8 +342,8 @@ export function VersaoComercialEditor() {
       toast.error("Informe um motivo com pelo menos 2 caracteres.");
       return;
     }
-    if (!draftId || !isValidatedCurrentSnapshot || missing.length > 0 || confirmation !== "PUBLICAR" || salvar.isPending || validar.isPending || publicar.isPending) return;
-    publicar.mutate({ draftId, reason: normalizedReason, confirmation, idempotencyKey: publishKey.current }, {
+    if (!draftId || !isValidatedCurrentSnapshot || missing.length > 0 || !confirmacaoPublicarValida(confirmation) || salvar.isPending || validar.isPending || publicar.isPending) return;
+    publicar.mutate({ draftId, reason: normalizedReason, confirmation: confirmacaoPublicarNormalizada(confirmation), idempotencyKey: publishKey.current }, {
       onSuccess: async (publishedId) => {
         const refreshed = await versoes.refetch();
         const publishedVersions = refreshed.data?.filter((item) => item.id === publishedId && item.status === "PUBLISHED") ?? [];
@@ -353,7 +355,7 @@ export function VersaoComercialEditor() {
         setConfirmation("");
         toast.success("Versão comercial publicada.");
       },
-      onError: (error) => toast.error(mensagemErroPlataforma(error)),
+      onError: (error) => toast.error(mensagemErroComCorrelacao(error)),
     });
   };
 
@@ -414,8 +416,8 @@ export function VersaoComercialEditor() {
       <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!planKey || normalizedReason === null || !hasCommercialChanges || salvar.isPending || validar.isPending || publicar.isPending} onClick={salvarRascunho}><FilePenLine className="mr-2 h-4 w-4" />{salvar.isPending ? "Salvando…" : "Salvar rascunho"}</Button></div>
       <div className="border-t pt-5 space-y-3">
         <div className="flex items-start gap-2">{missing.length === 0 ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" /> : <AlertTriangle className="mt-0.5 h-4 w-4 text-muted-foreground" />}<p className="text-sm">{missing.length === 0 ? "Campos comerciais completos." : `Ainda falta: ${missing.join(", ")}.`}</p></div>
-        <div className="max-w-sm space-y-2"><Label htmlFor="versao-confirmacao">Digite PUBLICAR para confirmar</Label><Input id="versao-confirmacao" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
-        <Button disabled={!draftId || !isValidatedCurrentSnapshot || normalizedReason === null || missing.length > 0 || confirmation !== "PUBLICAR" || salvar.isPending || validar.isPending || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : validar.isPending ? "Validando…" : "Publicar versão"}</Button>
+        <div className="max-w-sm space-y-2"><Label htmlFor="versao-confirmacao">Digite PUBLICAR para confirmar</Label><Input id="versao-confirmacao" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />{confirmation.length > 0 && !confirmacaoPublicarValida(confirmation) && <p className="text-xs text-destructive">Digite exatamente PUBLICAR (em maiúsculas).</p>}{publicar.isError && <p role="alert" className="text-xs text-destructive">{mensagemErroComCorrelacao(publicar.error)}</p>}</div>
+        <Button disabled={!draftId || !isValidatedCurrentSnapshot || normalizedReason === null || missing.length > 0 || !confirmacaoPublicarValida(confirmation) || salvar.isPending || validar.isPending || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : validar.isPending ? "Validando…" : "Publicar versão"}</Button>
       </div>
       <AlertDialog open={pendingBatch !== null} onOpenChange={(open) => { if (!open) setPendingBatch(null); }}>
         <AlertDialogContent>
