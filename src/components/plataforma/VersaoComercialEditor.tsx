@@ -24,6 +24,8 @@ import {
 import {
   commercialDraftFingerprint,
   datetimeLocalToIso,
+  motivoComercialNormalizado,
+  MOTIVO_MIN_LENGTH,
   snapshotFromServer,
   type CommercialDraftServerSnapshot,
 } from "./commercialDraftState";
@@ -82,10 +84,10 @@ export function VersaoComercialEditor() {
   const draft = versoes.data?.find((item) => item.plan_id === plan?.id && item.status === "DRAFT");
   const availableFeatures = useMemo(() => {
     if (!plan) return [];
-    const allowed = new Set((catalogo.data?.links ?? []).filter((link) => link.plan_id === plan.id && link.enabled).map((link) => link.feature_id));
+    const activeModuleIds = new Set((catalogo.data?.modules ?? []).filter((module) => module.active).map((module) => module.id));
     return (catalogo.data?.features ?? []).filter((feature) => {
       const legacyCatalogEntry = Date.parse(feature.created_at) < STRUCTURED_EDITOR_RELEASE;
-      return feature.active && (feature.commercializable || legacyCatalogEntry) && allowed.has(feature.id);
+      return feature.active && activeModuleIds.has(feature.module_id) && (feature.commercializable || legacyCatalogEntry);
     });
   }, [catalogo.data, plan]);
   const limitDefinitions = useMemo(() => {
@@ -95,12 +97,12 @@ export function VersaoComercialEditor() {
   }, [availableFeatures, catalogo.data, features]);
   const configuredLimitDefinitions = limitDefinitions.filter((limit) => Object.prototype.hasOwnProperty.call(limits, limit.key));
   const addableLimitDefinitions = limitDefinitions.filter((limit) => !Object.prototype.hasOwnProperty.call(limits, limit.key));
-  const groupedFeatures = useMemo(() => (catalogo.data?.modules ?? []).map((module) => ({
+  const groupedFeatures = useMemo(() => (catalogo.data?.modules ?? []).filter((module) => module.active).map((module) => ({
     module,
     features: availableFeatures.filter((feature) => feature.module_id === module.id)
       .filter((feature) => !featureSearch.trim() || `${feature.name} ${feature.description ?? ""}`.toLocaleLowerCase("pt-BR").includes(featureSearch.trim().toLocaleLowerCase("pt-BR")))
       .filter((feature) => !onlySelected || features.includes(feature.key)),
-  })).filter((group) => group.features.length > 0), [availableFeatures, catalogo.data?.modules, featureSearch, features, onlySelected]);
+  })), [availableFeatures, catalogo.data?.modules, featureSearch, features, onlySelected]);
 
   const featureKeyById = useMemo(
     () => new Map((catalogo.data?.features ?? []).map((feature) => [feature.id, feature.key])),
@@ -167,6 +169,7 @@ export function VersaoComercialEditor() {
     limits: { ...serializedLimits, ...legacyLimits }, featureKeys: features,
   });
   const hasCommercialChanges = savedBaseline === null || currentFingerprint !== savedBaseline;
+  const normalizedReason = motivoComercialNormalizado(reason);
   const isValidatedCurrentSnapshot = Boolean(
     draftId && validatedDraftId === draftId && validatedFingerprint === currentFingerprint && !hasCommercialChanges,
   );
@@ -175,16 +178,20 @@ export function VersaoComercialEditor() {
     priceCents === null || priceCents <= 0 ? "preço" : null, !cycle ? "ciclo" : null,
     !trialDays ? "período de teste" : null, !effectiveFrom ? "início da vigência" : null,
     invalidLimited || unknownLegacyLimits ? "revisão dos limites" : null, features.length === 0 ? "funcionalidades" : null,
-    reason.trim().length === 0 ? "motivo" : null,
+    normalizedReason === null ? `motivo com pelo menos ${MOTIVO_MIN_LENGTH} caracteres` : null,
   ].filter((item): item is string => Boolean(item));
 
   const salvarRascunho = () => {
-    if (!planKey || reason.trim().length < 5) return;
+    if (!planKey) return;
+    if (normalizedReason === null) {
+      toast.error("Informe um motivo com pelo menos 2 caracteres.");
+      return;
+    }
     salvar.mutate({
       draftId, planKey, priceAmount: priceCents === null ? null : centsToDecimal(priceCents), currency,
       billingCycle: cycle || null, trialDays: trialDays === "" ? null : Number(trialDays),
       limits: serializedLimits, effectiveFrom: datetimeLocalToIso(effectiveFrom),
-      features: features.map((featureKey) => ({ feature_key: featureKey, enabled: true })), reason: reason.trim(),
+      features: features.map((featureKey) => ({ feature_key: featureKey, enabled: true })), reason: normalizedReason,
       idempotencyKey: saveKey.current,
     }, {
       onSuccess: async (id) => {
@@ -319,9 +326,23 @@ export function VersaoComercialEditor() {
   };
 
   const publicarRascunho = () => {
-    if (!draftId || !isValidatedCurrentSnapshot || missing.length > 0 || confirmation !== "PUBLICAR") return;
-    publicar.mutate({ draftId, reason: reason.trim(), confirmation, idempotencyKey: publishKey.current }, {
-      onSuccess: () => { publishKey.current = crypto.randomUUID(); toast.success("Versão comercial publicada."); setConfirmation(""); },
+    if (normalizedReason === null) {
+      toast.error("Informe um motivo com pelo menos 2 caracteres.");
+      return;
+    }
+    if (!draftId || !isValidatedCurrentSnapshot || missing.length > 0 || confirmation !== "PUBLICAR" || salvar.isPending || validar.isPending || publicar.isPending) return;
+    publicar.mutate({ draftId, reason: normalizedReason, confirmation, idempotencyKey: publishKey.current }, {
+      onSuccess: async (publishedId) => {
+        const refreshed = await versoes.refetch();
+        const publishedVersions = refreshed.data?.filter((item) => item.id === publishedId && item.status === "PUBLISHED") ?? [];
+        if (publishedVersions.length !== 1) {
+          toast.error("A publicação foi recebida, mas o estado final não pôde ser confirmado. Recarregue a página.");
+          return;
+        }
+        publishKey.current = crypto.randomUUID();
+        setConfirmation("");
+        toast.success("Versão comercial publicada.");
+      },
       onError: (error) => toast.error(mensagemErroPlataforma(error)),
     });
   };
@@ -365,10 +386,10 @@ export function VersaoComercialEditor() {
         <fieldset className="space-y-3 sm:col-span-2">
           <div className="flex flex-wrap items-end justify-between gap-3"><div><legend className="text-sm font-medium">Funcionalidades incluídas *</legend><p className="text-xs text-muted-foreground">{features.length} selecionadas de {availableFeatures.length} disponíveis</p></div><div className="flex gap-2"><Button type="button" size="sm" variant="outline" disabled={!availableFeatures.length} onClick={() => requestAllFeatures(true)}>Selecionar todas</Button><Button type="button" size="sm" variant="ghost" disabled={!features.length} onClick={() => requestAllFeatures(false)}>Limpar</Button></div></div>
           <div className="flex flex-col gap-2 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input aria-label="Buscar funcionalidades" value={featureSearch} onChange={(event) => setFeatureSearch(event.target.value)} placeholder="Buscar funcionalidades" className="pl-9" /></div><label className="flex items-center gap-2 text-sm"><Checkbox checked={onlySelected} onCheckedChange={(checked) => setOnlySelected(checked === true)} />Somente selecionadas</label></div>
-          {catalogo.isLoading ? <p className="text-sm text-muted-foreground">Carregando catálogo…</p> : availableFeatures.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma funcionalidade foi aprovada como comercializável para este plano.</p> : <Accordion type="multiple" className="border-y">{groupedFeatures.map(({ module, features: moduleFeatures }) => {
+          {catalogo.isLoading ? <p className="text-sm text-muted-foreground">Carregando catálogo…</p> : groupedFeatures.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum módulo ativo foi cadastrado.</p> : <Accordion type="multiple" className="border-y">{groupedFeatures.map(({ module, features: moduleFeatures }) => {
             const selected = moduleFeatures.filter((feature) => features.includes(feature.key)).length;
             const state = selected === 0 ? false : selected === moduleFeatures.length ? true : "indeterminate";
-            return <AccordionItem key={module.id} value={module.id}><div className="flex items-center gap-3"><Checkbox aria-label={`Selecionar módulo ${module.name}`} checked={state} onCheckedChange={(checked) => toggleModule(module.id, checked === true)} /><AccordionTrigger className="text-left"><span>{module.name}<span className="ml-2 text-xs font-normal text-muted-foreground">{selected}/{moduleFeatures.length}</span></span></AccordionTrigger></div><AccordionContent><p className="mb-3 text-xs text-muted-foreground">{module.description}</p><div className="grid gap-2 sm:grid-cols-2">{moduleFeatures.map((feature) => <label key={feature.id} className="flex items-start gap-2 rounded-md border p-3 text-sm"><Checkbox className="mt-0.5" checked={features.includes(feature.key)} onCheckedChange={(checked) => toggleFeature(feature.key, checked === true)} /><span><span className="block font-medium">{feature.name}</span>{feature.description && <span className="block text-xs text-muted-foreground">{feature.description}</span>}</span></label>)}</div></AccordionContent></AccordionItem>;
+            return <AccordionItem key={module.id} value={module.id}><div className="flex items-center gap-3"><Checkbox aria-label={`Selecionar módulo ${module.name}`} checked={state} disabled={moduleFeatures.length === 0} onCheckedChange={(checked) => toggleModule(module.id, checked === true)} /><AccordionTrigger className="text-left"><span>{module.name}<span className="ml-2 text-xs font-normal text-muted-foreground">{selected}/{moduleFeatures.length}</span></span></AccordionTrigger></div><AccordionContent><p className="mb-3 text-xs text-muted-foreground">{module.description}</p>{moduleFeatures.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma funcionalidade comercializável neste módulo.</p> : <div className="grid gap-2 sm:grid-cols-2">{moduleFeatures.map((feature) => <label key={feature.id} className="flex items-start gap-2 rounded-md border p-3 text-sm"><Checkbox className="mt-0.5" checked={features.includes(feature.key)} onCheckedChange={(checked) => toggleFeature(feature.key, checked === true)} /><span><span className="block font-medium">{feature.name}</span>{feature.description && <span className="block text-xs text-muted-foreground">{feature.description}</span>}</span></label>)}</div>}</AccordionContent></AccordionItem>;
           })}</Accordion>}
         </fieldset>
         <fieldset className="space-y-3 sm:col-span-2">
@@ -378,13 +399,13 @@ export function VersaoComercialEditor() {
           {unknownLegacyLimits && <div className="rounded-md border border-destructive p-3"><p className="text-sm font-medium">Rascunho legado requer revisão</p><p className="text-xs text-muted-foreground">Há chaves sem definição no catálogo. Elas foram preservadas e bloqueiam a publicação até serem reconhecidas.</p></div>}
           <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm font-medium">Visualização técnica</summary><pre className="mt-3 max-h-64 overflow-auto text-xs">{JSON.stringify({ ...serializedLimits, ...legacyLimits }, null, 2)}</pre></details>
         </fieldset>
-        <div className="space-y-2 sm:col-span-2"><Label htmlFor="versao-motivo">Motivo *</Label><Input id="versao-motivo" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Motivo comercial desta revisão" /></div>
+        <div className="space-y-2 sm:col-span-2"><Label htmlFor="versao-motivo">Motivo *</Label><Input id="versao-motivo" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Motivo comercial desta revisão" aria-invalid={reason.length > 0 && normalizedReason === null} /><p className="text-xs text-muted-foreground">Mínimo de {MOTIVO_MIN_LENGTH} caracteres.</p></div>
       </div>
-      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!planKey || reason.trim().length < 5 || !hasCommercialChanges || salvar.isPending} onClick={salvarRascunho}><FilePenLine className="mr-2 h-4 w-4" />{salvar.isPending ? "Salvando…" : "Salvar rascunho"}</Button></div>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!planKey || normalizedReason === null || !hasCommercialChanges || salvar.isPending || validar.isPending || publicar.isPending} onClick={salvarRascunho}><FilePenLine className="mr-2 h-4 w-4" />{salvar.isPending ? "Salvando…" : "Salvar rascunho"}</Button></div>
       <div className="border-t pt-5 space-y-3">
         <div className="flex items-start gap-2">{missing.length === 0 ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" /> : <AlertTriangle className="mt-0.5 h-4 w-4 text-muted-foreground" />}<p className="text-sm">{missing.length === 0 ? "Campos comerciais completos." : `Ainda falta: ${missing.join(", ")}.`}</p></div>
         <div className="max-w-sm space-y-2"><Label htmlFor="versao-confirmacao">Digite PUBLICAR para confirmar</Label><Input id="versao-confirmacao" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
-        <Button disabled={!draftId || !isValidatedCurrentSnapshot || missing.length > 0 || confirmation !== "PUBLICAR" || validar.isPending || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : validar.isPending ? "Validando…" : "Publicar versão"}</Button>
+        <Button disabled={!draftId || !isValidatedCurrentSnapshot || normalizedReason === null || missing.length > 0 || confirmation !== "PUBLICAR" || salvar.isPending || validar.isPending || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : validar.isPending ? "Validando…" : "Publicar versão"}</Button>
       </div>
       <AlertDialog open={pendingBatch !== null} onOpenChange={(open) => { if (!open) setPendingBatch(null); }}>
         <AlertDialogContent>

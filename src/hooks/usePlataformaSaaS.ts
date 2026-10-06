@@ -372,6 +372,7 @@ export function useExcecoesSaaS() {
 /** Converte erros `platform_*` do servidor em mensagem segura em PT-BR. */
 export function mensagemErroPlataforma(e: unknown): string {
   const msg = e instanceof Error ? e.message : "";
+  if (msg.includes("motivo deve ter pelo menos 2 caracteres")) return "Informe um motivo com pelo menos 2 caracteres.";
   if (e instanceof ErroRpcPlataforma) {
     if (e.code === "42501") return "Seu acesso não permite concluir esta operação.";
     if (e.code === "40001" || e.code === "23505") return "O rascunho foi alterado em outra tentativa. Recarregue antes de continuar.";
