@@ -8,7 +8,8 @@
 - [ ] Fase 3 — homologar ACTIVE/TRIAL versionado com sessão real e isolamento A/B
 - [x] Fase 4 — fundação provider-agnostic preparada e testada; cobrança real OFF/NO-GO
 - [x] Fase 5 — evidências técnicas fechadas; próxima fase não iniciada e PASS comercial ainda bloqueado
-- [ ] Editor estruturado — arquitetura e validação server-side implantadas; aguarda definições reais e funcionalidades comercializáveis antes da homologação da interface
+- [x] Editor estruturado — arquitetura, compatibilidade do catálogo anterior e validação server-side implantadas; catálogo de limites permanece vazio até definições reais aprovadas
+- [ ] Editor estruturado — homologar criação/publicação com dados comerciais reais aprovados, sem fixtures
 
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
 

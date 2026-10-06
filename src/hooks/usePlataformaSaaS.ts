@@ -100,6 +100,7 @@ export interface FeatureSaaS {
   description: string | null;
   active: boolean;
   commercializable: boolean;
+  created_at: string;
 }
 
 export interface LimiteSaaS {
@@ -171,7 +172,7 @@ export function useModulosFeaturesSaaS() {
         db.from("saas_modules").select("id,key,name,description,active").order("key").limit(LIMITE),
         db
           .from("saas_features")
-          .select("id,module_id,key,name,description,active,commercializable")
+          .select("id,module_id,key,name,description,active,commercializable,created_at")
           .order("key")
           .limit(LIMITE),
       ]);
@@ -201,7 +202,7 @@ export function useCatalogoPlanosSaaS() {
     queryFn: async () => {
       const [modules, features, links, limits, featureLimits, dependencies] = await Promise.all([
         db.from("saas_modules").select("id,key,name,description,active").order("name").limit(LIMITE),
-        db.from("saas_features").select("id,module_id,key,name,description,active,commercializable").order("name").limit(LIMITE),
+        db.from("saas_features").select("id,module_id,key,name,description,active,commercializable,created_at").order("name").limit(LIMITE),
         db.from("saas_plan_features").select("plan_id,feature_id,enabled").limit(LIMITE),
         db.from("saas_limit_definitions").select("id,key,name,description,category,unit,value_type,application,active").order("category").order("name").limit(LIMITE),
         db.from("saas_feature_limit_definitions").select("feature_id,limit_definition_id,required").limit(LIMITE),
