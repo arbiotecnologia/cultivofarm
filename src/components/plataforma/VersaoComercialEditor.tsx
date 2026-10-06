@@ -8,7 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { parseStructuredLimits, serializeStructuredLimits, type LimitState, type StructuredLimitValue } from "./commercialLimits";
+import { isValidStructuredLimit, parseStructuredLimits, serializeStructuredLimits, type LimitState, type StructuredLimitValue } from "./commercialLimits";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   centsFromDecimal,
   centsToDecimal,
@@ -31,6 +35,9 @@ const CICLOS = [
   ["monthly", "Mensal"], ["quarterly", "Trimestral"], ["semiannual", "Semestral"],
   ["annual", "Anual"], ["custom", "Personalizado"],
 ] as const;
+
+const STRUCTURED_EDITOR_RELEASE = Date.parse("2026-10-06T02:42:42Z");
+type BatchChange = { title: string; description: string; apply: () => void };
 
 export function VersaoComercialEditor() {
   const planos = usePlanosSaaS();
@@ -55,6 +62,7 @@ export function VersaoComercialEditor() {
   const [onlySelected, setOnlySelected] = useState(false);
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [pendingBatch, setPendingBatch] = useState<BatchChange | null>(null);
   const saveKey = useRef(crypto.randomUUID());
   const publishKey = useRef(crypto.randomUUID());
 
@@ -63,7 +71,10 @@ export function VersaoComercialEditor() {
   const availableFeatures = useMemo(() => {
     if (!plan) return [];
     const allowed = new Set((catalogo.data?.links ?? []).filter((link) => link.plan_id === plan.id && link.enabled).map((link) => link.feature_id));
-    return (catalogo.data?.features ?? []).filter((feature) => feature.active && feature.commercializable && allowed.has(feature.id));
+    return (catalogo.data?.features ?? []).filter((feature) => {
+      const legacyCatalogEntry = Date.parse(feature.created_at) < STRUCTURED_EDITOR_RELEASE;
+      return feature.active && (feature.commercializable || legacyCatalogEntry) && allowed.has(feature.id);
+    });
   }, [catalogo.data, plan]);
   const modules = catalogo.data?.modules ?? [];
   const limitDefinitions = useMemo(() => {
@@ -71,6 +82,8 @@ export function VersaoComercialEditor() {
     const allowed = new Set((catalogo.data?.featureLimits ?? []).filter((link) => selectedIds.has(link.feature_id)).map((link) => link.limit_definition_id));
     return (catalogo.data?.limits ?? []).filter((limit) => limit.active && allowed.has(limit.id));
   }, [availableFeatures, catalogo.data, features]);
+  const configuredLimitDefinitions = limitDefinitions.filter((limit) => Object.prototype.hasOwnProperty.call(limits, limit.key));
+  const addableLimitDefinitions = limitDefinitions.filter((limit) => !Object.prototype.hasOwnProperty.call(limits, limit.key));
   const groupedFeatures = useMemo(() => modules.map((module) => ({
     module,
     features: availableFeatures.filter((feature) => feature.module_id === module.id)
@@ -101,8 +114,7 @@ export function VersaoComercialEditor() {
   }, [availableFeatures, draft, planKey]);
 
   const serializedLimits = serializeStructuredLimits(limits);
-  const invalidLimited = Object.values(limits).some((value) => value.state === "limited" &&
-    (typeof value.value !== "number" || !Number.isFinite(value.value) || value.value < 0));
+  const invalidLimited = Object.values(limits).some((value) => !isValidStructuredLimit(value));
   const unknownLegacyLimits = Object.keys(legacyLimits).length > 0;
 
   const missing = [
@@ -141,10 +153,51 @@ export function VersaoComercialEditor() {
     setFeatures((current) => [...new Set([...current, featureKey, ...requiredKeys])]);
   };
 
+  const dependenciesFor = (keys: string[]) => {
+    const result = new Set(keys);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const selectedIds = new Set(availableFeatures.filter((feature) => result.has(feature.key)).map((feature) => feature.id));
+      for (const dependency of catalogo.data?.dependencies ?? []) {
+        if (!selectedIds.has(dependency.feature_id)) continue;
+        const required = availableFeatures.find((feature) => feature.id === dependency.depends_on_feature_id)?.key;
+        if (required && !result.has(required)) { result.add(required); changed = true; }
+      }
+    }
+    return [...result];
+  };
+
+  const removeFeaturesSafely = (current: string[], keysToRemove: string[]) => {
+    const remove = new Set(keysToRemove);
+    const remaining = current.filter((key) => !remove.has(key));
+    const remainingIds = new Set(availableFeatures.filter((feature) => remaining.includes(feature.key)).map((feature) => feature.id));
+    const removedIds = new Set(availableFeatures.filter((feature) => remove.has(feature.key)).map((feature) => feature.id));
+    const blocked = (catalogo.data?.dependencies ?? []).some((dependency) =>
+      remainingIds.has(dependency.feature_id) && removedIds.has(dependency.depends_on_feature_id));
+    if (blocked) {
+      toast.error("A seleção foi mantida porque outra funcionalidade depende dela.");
+      return current;
+    }
+    return remaining;
+  };
+
   const toggleModule = (moduleId: string, checked: boolean) => {
     const keys = availableFeatures.filter((feature) => feature.module_id === moduleId).map((feature) => feature.key);
-    setFeatures((current) => checked ? [...new Set([...current, ...keys])] : current.filter((key) => !keys.includes(key)));
+    setPendingBatch({
+      title: checked ? "Selecionar funcionalidades do módulo?" : "Remover funcionalidades do módulo?",
+      description: "Dependências serão preservadas automaticamente.",
+      apply: () => setFeatures((current) => checked
+        ? dependenciesFor([...current, ...keys])
+        : removeFeaturesSafely(current, keys)),
+    });
   };
+
+  const requestAllFeatures = (checked: boolean) => setPendingBatch({
+    title: checked ? "Selecionar todas as funcionalidades?" : "Limpar todas as funcionalidades?",
+    description: checked ? "Todas as opções disponíveis para o plano serão incluídas." : "A seleção atual será removida do rascunho.",
+    apply: () => setFeatures(checked ? dependenciesFor(availableFeatures.map((feature) => feature.key)) : []),
+  });
 
   const setLimitState = (key: string, state: LimitState) => setLimits((current) => ({
     ...current,
@@ -220,7 +273,7 @@ export function VersaoComercialEditor() {
         <div className="space-y-2"><Label htmlFor="versao-trial">Dias de teste *</Label><Input id="versao-trial" type="number" min="1" max="365" value={trialDays} onChange={(event) => setTrialDays(event.target.value)} placeholder="Informe o período" /></div>
         <div className="space-y-2"><Label htmlFor="versao-vigencia">Início da vigência *</Label><Input id="versao-vigencia" type="datetime-local" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} /></div>
         <fieldset className="space-y-3 sm:col-span-2">
-          <div className="flex flex-wrap items-end justify-between gap-3"><div><legend className="text-sm font-medium">Funcionalidades incluídas *</legend><p className="text-xs text-muted-foreground">{features.length} selecionadas de {availableFeatures.length} disponíveis</p></div><div className="flex gap-2"><Button type="button" size="sm" variant="outline" disabled={!availableFeatures.length} onClick={() => setFeatures(availableFeatures.map((feature) => feature.key))}>Selecionar todas</Button><Button type="button" size="sm" variant="ghost" disabled={!features.length} onClick={() => setFeatures([])}>Limpar</Button></div></div>
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><legend className="text-sm font-medium">Funcionalidades incluídas *</legend><p className="text-xs text-muted-foreground">{features.length} selecionadas de {availableFeatures.length} disponíveis</p></div><div className="flex gap-2"><Button type="button" size="sm" variant="outline" disabled={!availableFeatures.length} onClick={() => requestAllFeatures(true)}>Selecionar todas</Button><Button type="button" size="sm" variant="ghost" disabled={!features.length} onClick={() => requestAllFeatures(false)}>Limpar</Button></div></div>
           <div className="flex flex-col gap-2 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input aria-label="Buscar funcionalidades" value={featureSearch} onChange={(event) => setFeatureSearch(event.target.value)} placeholder="Buscar funcionalidades" className="pl-9" /></div><label className="flex items-center gap-2 text-sm"><Checkbox checked={onlySelected} onCheckedChange={(checked) => setOnlySelected(checked === true)} />Somente selecionadas</label></div>
           {catalogo.isLoading ? <p className="text-sm text-muted-foreground">Carregando catálogo…</p> : availableFeatures.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma funcionalidade foi aprovada como comercializável para este plano.</p> : <Accordion type="multiple" className="border-y">{groupedFeatures.map(({ module, features: moduleFeatures }) => {
             const selected = moduleFeatures.filter((feature) => features.includes(feature.key)).length;
@@ -229,9 +282,9 @@ export function VersaoComercialEditor() {
           })}</Accordion>}
         </fieldset>
         <fieldset className="space-y-3 sm:col-span-2">
-          <div className="flex flex-wrap items-end justify-between gap-3"><div><legend className="text-sm font-medium">Limites de uso do plano</legend><p className="text-xs text-muted-foreground">{Object.keys(limits).length} limites configurados</p></div><Button type="button" size="sm" variant="outline" disabled={limitDefinitions.length === 0}>Adicionar limite</Button></div>
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><legend className="text-sm font-medium">Limites de uso do plano</legend><p className="text-xs text-muted-foreground">Defina limites incluídos no plano, como quantidade de usuários, unidades ou recursos.</p><p className="text-xs text-muted-foreground">{configuredLimitDefinitions.length} limites configurados</p></div><Select value="" onValueChange={(key) => setLimits((current) => ({ ...current, [key]: { state: "not_included" } }))} disabled={addableLimitDefinitions.length === 0}><SelectTrigger className="w-48" aria-label="Adicionar limite"><SelectValue placeholder="Adicionar limite" /></SelectTrigger><SelectContent>{addableLimitDefinitions.map((limit) => <SelectItem key={limit.id} value={limit.key}>{limit.name}</SelectItem>)}</SelectContent></Select></div>
           <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input aria-label="Buscar limites" value={limitSearch} onChange={(event) => setLimitSearch(event.target.value)} placeholder="Buscar limites" className="pl-9" /></div>
-          {limitDefinitions.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma definição real de limite foi cadastrada. Nenhum valor padrão foi inventado.</p> : <div className="space-y-3">{limitDefinitions.filter((limit) => `${limit.name} ${limit.description} ${limit.category}`.toLocaleLowerCase("pt-BR").includes(limitSearch.toLocaleLowerCase("pt-BR"))).map((limit) => <div key={limit.id} className="grid gap-3 border-b pb-3 sm:grid-cols-[1fr_180px_140px]"><div><p className="text-sm font-medium">{limit.name}</p><p className="text-xs text-muted-foreground">{limit.description} · {limit.category} · {limit.unit} · {limit.application}</p></div><Select value={limits[limit.key]?.state ?? "not_included"} onValueChange={(value) => setLimitState(limit.key, value as LimitState)}><SelectTrigger aria-label={`Estado de ${limit.name}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not_included">Não incluído</SelectItem><SelectItem value="limited">Incluído com limite</SelectItem><SelectItem value="unlimited">Ilimitado</SelectItem></SelectContent></Select>{limits[limit.key]?.state === "limited" && <Input aria-label={`Valor de ${limit.name}`} type="number" min="0" step={limit.value_type === "integer" ? "1" : "any"} value={limits[limit.key]?.value ?? ""} onChange={(event) => setLimits((current) => ({ ...current, [limit.key]: { state: "limited", value: event.target.value === "" ? undefined : Number(event.target.value) } }))} />}</div>)}</div>}
+          {limitDefinitions.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma definição real de limite foi cadastrada. Nenhum valor padrão foi inventado.</p> : configuredLimitDefinitions.length === 0 ? <p className="text-sm text-muted-foreground">Adicione um limite aprovado para configurá-lo.</p> : <div className="space-y-3">{configuredLimitDefinitions.filter((limit) => `${limit.name} ${limit.description} ${limit.category}`.toLocaleLowerCase("pt-BR").includes(limitSearch.toLocaleLowerCase("pt-BR"))).map((limit) => <div key={limit.id} className="grid gap-3 border-b pb-3 sm:grid-cols-[1fr_180px_140px_auto]"><div><p className="text-sm font-medium">{limit.name}</p><p className="text-xs text-muted-foreground">{limit.description} · {limit.category} · {limit.unit} · {limit.application}</p></div><Select value={limits[limit.key]?.state ?? "not_included"} onValueChange={(value) => setLimitState(limit.key, value as LimitState)}><SelectTrigger aria-label={`Estado de ${limit.name}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not_included">Não incluído</SelectItem><SelectItem value="limited">Incluído com limite</SelectItem><SelectItem value="unlimited">Ilimitado</SelectItem></SelectContent></Select>{limits[limit.key]?.state === "limited" ? <Input aria-label={`Valor de ${limit.name}`} type="number" min="0" step={limit.value_type === "integer" ? "1" : "any"} value={limits[limit.key]?.value ?? ""} onChange={(event) => setLimits((current) => ({ ...current, [limit.key]: { state: "limited", value: event.target.value === "" ? undefined : Number(event.target.value) } }))} /> : <span />}<Button type="button" size="sm" variant="ghost" onClick={() => setLimits((current) => Object.fromEntries(Object.entries(current).filter(([key]) => key !== limit.key)))}>Remover</Button></div>)}</div>}
           {unknownLegacyLimits && <div className="rounded-md border border-destructive p-3"><p className="text-sm font-medium">Rascunho legado requer revisão</p><p className="text-xs text-muted-foreground">Há chaves sem definição no catálogo. Elas foram preservadas e bloqueiam a publicação até serem reconhecidas.</p></div>}
           <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm font-medium">Visualização técnica</summary><pre className="mt-3 max-h-64 overflow-auto text-xs">{JSON.stringify({ ...serializedLimits, ...legacyLimits }, null, 2)}</pre></details>
         </fieldset>
@@ -243,6 +296,12 @@ export function VersaoComercialEditor() {
         <div className="max-w-sm space-y-2"><Label htmlFor="versao-confirmacao">Digite PUBLICAR para confirmar</Label><Input id="versao-confirmacao" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
         <Button disabled={!draftId || missing.length > 0 || confirmation !== "PUBLICAR" || publicar.isPending} onClick={publicarRascunho}><Send className="mr-2 h-4 w-4" />{publicar.isPending ? "Publicando…" : "Publicar versão"}</Button>
       </div>
+      <AlertDialog open={pendingBatch !== null} onOpenChange={(open) => { if (!open) setPendingBatch(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>{pendingBatch?.title}</AlertDialogTitle><AlertDialogDescription>{pendingBatch?.description}</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => { pendingBatch?.apply(); setPendingBatch(null); }}>Confirmar</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
