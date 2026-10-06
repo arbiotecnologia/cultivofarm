@@ -8,7 +8,13 @@ type MoneyParseResult =
 const CURRENCY_LOCALE: Record<CommercialCurrency, string> = {
   BRL: "pt-BR",
   USD: "en-US",
-  EUR: "pt-PT",
+  EUR: "pt-BR",
+};
+
+const CURRENCY_SYMBOL: Record<CommercialCurrency, string> = {
+  BRL: "R$",
+  USD: "US$",
+  EUR: "€",
 };
 
 export const COMMERCIAL_CURRENCIES: ReadonlyArray<{
@@ -45,12 +51,11 @@ export function centsToDecimal(cents: number): string {
 }
 
 export function formatCommercialMoney(cents: number, currency: CommercialCurrency): string {
-  return new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
-    style: "currency",
-    currency,
+  const amount = new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(cents / 100);
+  return `${CURRENCY_SYMBOL[currency]} ${amount}`;
 }
 
 export function editableCommercialMoney(cents: number, currency: CommercialCurrency): string {
