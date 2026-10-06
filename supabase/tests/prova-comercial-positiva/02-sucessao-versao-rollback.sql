@@ -54,7 +54,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN o:=o||E'\nconfirmação errada negada'; END;
 
   pub  := public.platform_publish_plan_version_draft(d,'ab',k,'PUBLICAR');
-  pub2 := public.platform_publish_plan_version_draft(d,'ab',k,'PUBLICAR');
+  pub2 := public.platform_publish_plan_version_draft(d,'  ab ',k,'PUBLICAR'); -- motivo normalizado igual
   o:=o||format(E'\npublicado=%s retry mesmo id=%s auditorias(published,superseded)=%s/%s',
     (SELECT status FROM public.saas_plan_versions WHERE id=d), pub=pub2,
     (SELECT count(*) FROM public.saas_plan_version_audit WHERE idempotency_key=k AND action='published'),
@@ -63,6 +63,13 @@ BEGIN
     (SELECT status FROM public.saas_plan_versions WHERE id=v1),
     (SELECT effective_to FROM public.saas_plan_versions WHERE id=v1),
     (SELECT effective_to FROM public.saas_plan_versions WHERE id=v1) = eff);
+  -- mesma chave + mesmo draft + motivo divergente = conflito, sem nova auditoria
+  BEGIN PERFORM public.platform_publish_plan_version_draft(d,'outro motivo',k,'PUBLICAR'); o:=o||E'\nretry motivo divergente ACEITO(FALHA)';
+  EXCEPTION WHEN OTHERS THEN o:=o||E'\nretry motivo divergente: '||left(SQLERRM,40); END;
+  o:=o||format(' | auditorias após retries=%s', (SELECT count(*) FROM public.saas_plan_version_audit WHERE idempotency_key=k));
+  -- mesma transação, ticket de sucessão já emitido para v1: encerrar v2 diretamente deve falhar
+  BEGIN UPDATE public.saas_plan_versions SET effective_to=now()+interval '1 year' WHERE id=pub; GET DIAGNOSTICS n=ROW_COUNT; o:=o||E'\nencerrar v2 na mesma transação linhas='||n||' (FALHA)';
+  EXCEPTION WHEN OTHERS THEN o:=o||E'\nencerrar v2 na mesma transação negado'; END;
   SELECT md5((to_jsonb(v) - 'effective_to' - 'updated_at')::text) INTO v1_h1 FROM public.saas_plan_versions v WHERE id=v1;
   o:=o||' v1 conteúdo inalterado='||(v1_h0=v1_h1);
 
@@ -74,9 +81,10 @@ BEGIN
   -- alteração direta de v1 continua bloqueada
   BEGIN UPDATE public.saas_plan_versions SET price_amount=1 WHERE id=v1; GET DIAGNOSTICS n=ROW_COUNT; o:=o||E'\nupdate direto v1 linhas='||n;
   EXCEPTION WHEN OTHERS THEN o:=o||E'\nupdate direto v1 negado'; END;
-  BEGIN UPDATE public.saas_plan_versions SET effective_to=now()+interval '1 year' WHERE id=pub; GET DIAGNOSTICS n=ROW_COUNT; o:=o||' | encerrar v2 sem ticket linhas='||n;
-  EXCEPTION WHEN OTHERS THEN o:=o||' | encerrar v2 sem ticket negado'; END;
+  -- emitir ticket de sucessão para versão não vigente (v1 já encerrada) é negado
   EXECUTE 'reset role';
+  BEGIN PERFORM platform_private.issue_saas_plan_version_ticket('saas_plan_version_supersede',v1); o:=o||E'\nticket p/ versão encerrada ACEITO(FALHA)';
+  EXCEPTION WHEN OTHERS THEN o:=o||E'\nticket p/ versão encerrada negado'; END;
 
   SELECT md5(string_agg(row(s.*)::text,'|' ORDER BY s.id)) INTO subs1 FROM public.organization_subscriptions s;
   SELECT (SELECT count(*) FROM public.saas_payment_events)||'/'||(SELECT count(*) FROM public.saas_payment_outbox) INTO pay1;

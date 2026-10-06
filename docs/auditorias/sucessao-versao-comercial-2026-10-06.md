@@ -23,7 +23,13 @@
 - Mesma chave, outro rascunho: conflito.
 - UPDATE direto de preço da v1: negado.
 - Assinaturas idênticas; pagamentos 0/0 → 0/0.
-- Observação: encerrar v2 por UPDATE direto passou **no mesmo bloco de teste**, porque o ticket de sucessão já emitido valia para aquela transação. Pela API, cada chamada é uma transação separada e só o Superadmin pode emitir o ticket; o risco residual é aceito.
+- Encerrar v2 por UPDATE direto na mesma transação da publicação: **negado** após o hardening (ticket vinculado ao id exato da antecessora).
+
+## Hardening final (migration `20261006231457_d6fdffbd-2973-4016-9cf2-bd64cbf0cc2c.sql`)
+- Ticket `saas_plan_version_supersede` agora tem como alvo o id exato da versão antecessora; a emissão exige versão PUBLISHED com vigência aberta (demais escopos continuam validando o plano); o trigger exige `has_ticket(..., OLD.id)`; a publicação emite com `prev.id`.
+- Retry com mesma chave/mesma versão só devolve o id se o motivo normalizado for igual ao original; motivo divergente → `platform_conflict`; mesma chave em outra versão → conflito; sem auditoria duplicada.
+- Prova transacional com rollback: retry com motivo normalizado igual = mesmo id (auditorias 1 published + 1 superseded); motivo divergente = conflito, auditorias continuam 2; encerrar v2 na mesma transação = negado; ticket para versão já encerrada = negado; v1 conteúdo inalterado; assinaturas iguais; pagamentos 0/0.
+- O risco residual registrado antes foi eliminado.
 
 ## Estado real após a rodada
 1 PUBLISHED (v1, hash `ea28551e…` igual ao inicial, `effective_to NULL`), 0 DRAFT, 0 auditorias `superseded`, 5 assinaturas sem versão, pagamentos OFF. A v2 real não foi publicada.
