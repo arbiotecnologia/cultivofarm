@@ -29,8 +29,7 @@ import {
   confirmacaoPublicarNormalizada,
   confirmacaoPublicarValida,
   snapshotFromServer,
-  type CommercialDraftServerSnapshot,
-} from "./commercialDraftState";
+  type CommercialDraftServerSnapshot, draftIdParaSalvar, ultimaVersaoPublicada } from "./commercialDraftState";
 import {
   mensagemErroComCorrelacao,
   useCatalogoPlanosSaaS,
@@ -84,6 +83,7 @@ export function VersaoComercialEditor() {
 
   const plan = planos.data?.find((item) => item.key === planKey);
   const draft = versoes.data?.find((item) => item.plan_id === plan?.id && item.status === "DRAFT");
+  const publishedOrigin = draft ? undefined : ultimaVersaoPublicada(versoes.data, plan?.id);
   const availableFeatures = useMemo(() => {
     if (!plan) return [];
     const activeModuleIds = new Set((catalogo.data?.modules ?? []).filter((module) => module.active).map((module) => module.id));
@@ -386,8 +386,9 @@ export function VersaoComercialEditor() {
     <section className="space-y-5" aria-labelledby="versao-editor-titulo">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h3 id="versao-editor-titulo" className="font-semibold">Preparar versão comercial</h3><p className="text-sm text-muted-foreground">O rascunho não libera funcionalidades nem altera assinaturas.</p></div>
-        <Badge variant={draftId ? "secondary" : "outline"}>{draftId ? "Rascunho em edição" : "Novo rascunho"}</Badge>
+        <Badge variant={draftId ? "secondary" : "outline"}>{draftId ? "Rascunho em edição" : publishedOrigin ? `Nova versão ${publishedOrigin.version_number + 1}` : "Novo rascunho"}</Badge>
       </div>
+      {!draftId && publishedOrigin && <div role="status" className="rounded-md border p-3 text-sm"><p className="font-medium">A versão publicada é imutável; as alterações criarão a versão {publishedOrigin.version_number + 1} em rascunho.</p><p className="text-xs text-muted-foreground">Os valores da versão {publishedOrigin.version_number} foram carregados como ponto de partida. Informe um início de vigência posterior ao da versão publicada.</p></div>}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2"><Label htmlFor="versao-plano">Plano *</Label><Select value={planKey} onValueChange={(value) => { markCommercialChanged(); hydratedSnapshot.current = null; setPlanKey(value); }}><SelectTrigger id="versao-plano"><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{planos.data?.filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-2">
@@ -435,7 +436,7 @@ export function VersaoComercialEditor() {
         </fieldset>
         <div className="space-y-2 sm:col-span-2"><Label htmlFor="versao-motivo">Motivo *</Label><Input id="versao-motivo" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Motivo comercial desta revisão" aria-invalid={reason.length > 0 && normalizedReason === null} /><p className="text-xs text-muted-foreground">Mínimo de {MOTIVO_MIN_LENGTH} caracteres.</p></div>
       </div>
-      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!planKey || normalizedReason === null || !hasCommercialChanges || salvar.isPending || validar.isPending || publicar.isPending} onClick={salvarRascunho}><FilePenLine className="mr-2 h-4 w-4" />{salvar.isPending ? "Salvando…" : "Salvar rascunho"}</Button></div>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!planKey || normalizedReason === null || !hasCommercialChanges || salvar.isPending || validar.isPending || publicar.isPending} onClick={salvarRascunho}><FilePenLine className="mr-2 h-4 w-4" />{salvar.isPending ? "Salvando…" : draftId ? "Salvar rascunho" : publishedOrigin ? "Criar nova versão" : "Salvar novo rascunho"}</Button></div>
       <div className="border-t pt-5 space-y-3">
         <div className="flex items-start gap-2">{missing.length === 0 ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" /> : <AlertTriangle className="mt-0.5 h-4 w-4 text-muted-foreground" />}<p className="text-sm">{missing.length === 0 ? "Campos comerciais completos." : `Ainda falta: ${missing.join(", ")}.`}</p></div>
         <div className="max-w-sm space-y-2"><Label htmlFor="versao-confirmacao">Digite PUBLICAR para confirmar</Label><Input id="versao-confirmacao" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />{confirmation.length > 0 && !confirmacaoPublicarValida(confirmation) && <p className="text-xs text-destructive">Digite exatamente PUBLICAR (em maiúsculas).</p>}{publicar.isError && <p role="alert" className="text-xs text-destructive">{mensagemErroComCorrelacao(publicar.error)}</p>}</div>
