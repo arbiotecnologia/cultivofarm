@@ -3,6 +3,7 @@
 ## Decisão
 
 - **Segurança e isolamento:** PASS estrutural.
+- **Homologação funcional negativa autenticada:** UNVERIFIED neste gate final; o projeto usa Supabase externo e a execução não recebeu sessão autenticada segura.
 - **Núcleo A+B+C:** PASS estrutural.
 - **Ativação comercial:** NO-GO funcional até publicação explícita de versão real.
 - **Pagamento externo:** BLOCKED / NO-GO. Não existe gateway homologado e nenhum fluxo, webhook ou confirmação simulada foi criado.
@@ -53,6 +54,18 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - Limites numéricos só são exibidos quando presentes no snapshot/override. Como não existe métrica contratual confiável publicada, consumo/excedente quantitativo continua **BLOCKED/NO-GO**, sem números inferidos.
 - A prova A/B D51.6 continua válida para isolamento tenant; não foi reaberta nem reutilizada para declarar sucesso comercial.
 
+## Gate final de homologação autenticada real — 2026-10-06
+
+- Estado vivo preservado e consultado somente para leitura: cinco assinaturas, todas sem `plan_version_id`; zero versões comerciais e zero exceções vigentes.
+- Existem no estado vivo uma identidade Platform Superadmin e quatro candidatos tenant ativos com assinatura legada. Nenhum e-mail, UUID, token ou outro identificador sensível foi registrado.
+- Contrato vivo das funções: `get_my_entitlement_context()` é `SECURITY INVOKER`; `platform_private.my_entitlement_context()` é `SECURITY DEFINER`, não recebe organização, usa `auth.uid()`, `search_path` vazio e concede execução somente a `authenticated`; `anon` não executa. A exceção administrativa é decidida exclusivamente por `public.is_platform_superadmin(auth.uid())` no servidor.
+- `get_my_entitlements()` deriva a organização do perfil ativo associado a `auth.uid()` e só considera assinatura versionada em `ACTIVE` ou `TRIAL` vigente. Com zero assinaturas versionadas, a API não concede feature por inferência.
+- Frontend confirmado: toda identidade autenticada consulta primeiro `get_my_entitlement_context`; `get_my_entitlements` só é chamado após `active` ou `trial_active`. Menu e URL direta usam o mesmo `isPathEntitled`; rota mapeada falha fechada em `legacy_unversioned`, enquanto rota essencial não mapeada preserva RBAC/RLS.
+- Não foi encontrado bypass de entitlement por papel, armazenamento local, claim do navegador ou parâmetro de URL. Usos locais de `superadmin` fora do hook pertencem a apresentação/guards RBAC já existentes e não alteram o contexto de plano.
+- A execução recebeu `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`, sem sessão Supabase injetada, sem credenciais de auditoria e sem mecanismo seguro de mint para este backend externo. Conforme o gate, não foram solicitadas credenciais, criados usuários nem simulados tokens.
+- Portanto, as provas reais de retorno `platform_superadmin`, retorno `legacy_unversioned`, bloqueio/navegação no navegador, isolamento A/B e forja de organização permanecem **UNVERIFIED** nesta execução. A prova automatizada de que um papel local `superadmin` não concede bypass permanece válida, mas não substitui sessão real.
+- Decisão do gate: **PASS estrutural; homologação funcional negativa autenticada UNVERIFIED; comercial positivo BLOCKED**. Entitlements/UI não está 100% concluído enquanto faltar sessão segura para executar a matriz real.
+
 ## Validações
 
 - Estado vivo: zero versões comerciais e zero assinaturas vinculadas; dados legados preservados e três datas finais de trial derivadas somente do início registrado.
@@ -62,6 +75,7 @@ Pagamento externo permanece **BLOCKED / NO-GO**. Ativação automática por paga
 - Linter Supabase: 467 achados preexistentes (17 informativos, 450 avisos), nenhum novo achado atribuído às migrations D52.
 - Smoke passivo sem sessão: `/auth`, HTTP navegável e zero erro de página; nenhuma mutação ou cobrança foi acionada.
 - Estado final de entitlements/UI: zero versões comerciais e cinco assinaturas legadas; a prova negativa é real e fail-closed. Nenhuma publicação, transição, exceção ou dado comercial foi criado para fabricar PASS.
+- Gate autenticado final: não executado por indisponibilidade de sessão segura no Supabase externo; nenhuma conclusão funcional autenticada foi inferida a partir de inspeção administrativa.
 
 ## Rollback e forward-fix
 
