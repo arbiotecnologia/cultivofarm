@@ -11,6 +11,7 @@
 - [x] Editor estruturado — arquitetura, compatibilidade do catálogo anterior e validação server-side implantadas; catálogo de limites permanece vazio até definições reais aprovadas
 - [x] Editor estruturado — salvamento DRAFT, idempotência, autorização e validação server-side corrigidos e comprovados com rollback integral
 - [ ] Editor estruturado — homologar criação/publicação com dados comerciais reais aprovados, sem fixtures
+- [ ] Editor estruturado — validar no preview autenticado o ciclo pós-save corrigido; implementação/testes locais em andamento sem publicar
 
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
 
