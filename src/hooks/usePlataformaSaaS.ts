@@ -390,6 +390,7 @@ export class ErroRpcPlataforma extends Error {
   readonly code: string | null;
   readonly details: string | null;
   readonly hint: string | null;
+  readonly correlationId: string;
 
   constructor(error: PostgrestErrorLike) {
     super(error.message ?? "platform_rpc_error");
@@ -397,6 +398,7 @@ export class ErroRpcPlataforma extends Error {
     this.code = error.code ?? null;
     this.details = error.details ?? null;
     this.hint = error.hint ?? null;
+    this.correlationId = crypto.randomUUID().slice(0, 8).toUpperCase();
   }
 }
 
@@ -409,9 +411,16 @@ export function diagnosticoSeguro(value: string | null): string | null {
     .slice(0, 300);
 }
 
+/** Mensagem amigável + código de correlação (também registrado no console). */
+export function mensagemErroComCorrelacao(e: unknown): string {
+  const base = mensagemErroPlataforma(e);
+  return e instanceof ErroRpcPlataforma ? `${base} (código: ${e.correlationId})` : base;
+}
+
 function erroRpc(error: PostgrestErrorLike): ErroRpcPlataforma {
   const diagnostic = new ErroRpcPlataforma(error);
   console.error("Falha segura na operação de Plataforma", {
+    correlationId: diagnostic.correlationId,
     code: diagnostic.code,
     details: diagnosticoSeguro(diagnostic.details),
     hint: diagnosticoSeguro(diagnostic.hint),
