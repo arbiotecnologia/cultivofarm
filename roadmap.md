@@ -9,6 +9,7 @@
 - [x] Fase 4 — fundação provider-agnostic preparada e testada; cobrança real OFF/NO-GO
 - [x] Fase 5 — evidências técnicas fechadas; próxima fase não iniciada e PASS comercial ainda bloqueado
 - [x] Editor estruturado — arquitetura, compatibilidade do catálogo anterior e validação server-side implantadas; catálogo de limites permanece vazio até definições reais aprovadas
+- [x] Editor estruturado — salvamento DRAFT, idempotência, autorização e validação server-side corrigidos e comprovados com rollback integral
 - [ ] Editor estruturado — homologar criação/publicação com dados comerciais reais aprovados, sem fixtures
 
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
