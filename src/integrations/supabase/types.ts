@@ -11756,12 +11756,14 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          end_idempotency_key: string | null
           end_reason: string | null
           ended_at: string | null
           ended_by: string | null
           ends_at: string | null
           feature_id: string
           id: string
+          idempotency_key: string | null
           limit_value: number | null
           mode: string
           organization_id: string
@@ -11772,12 +11774,14 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          end_idempotency_key?: string | null
           end_reason?: string | null
           ended_at?: string | null
           ended_by?: string | null
           ends_at?: string | null
           feature_id: string
           id?: string
+          idempotency_key?: string | null
           limit_value?: number | null
           mode: string
           organization_id: string
@@ -11788,12 +11792,14 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          end_idempotency_key?: string | null
           end_reason?: string | null
           ended_at?: string | null
           ended_by?: string | null
           ends_at?: string | null
           feature_id?: string
           id?: string
+          idempotency_key?: string | null
           limit_value?: number | null
           mode?: string
           organization_id?: string
@@ -22077,10 +22083,19 @@ export type Database = {
         }
         Returns: string
       }
-      platform_end_feature_override: {
-        Args: { _override_id: string; _reason: string }
-        Returns: undefined
-      }
+      platform_end_feature_override:
+        | {
+            Args: { _override_id: string; _reason: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _idempotency_key: string
+              _override_id: string
+              _reason: string
+            }
+            Returns: undefined
+          }
       platform_extend_trial: {
         Args: {
           _correlation_id: string
@@ -22171,17 +22186,30 @@ export type Database = {
         }
         Returns: string
       }
-      platform_set_feature_override: {
-        Args: {
-          _ends_at?: string
-          _feature_key: string
-          _limit_value?: number
-          _mode: string
-          _organization_id: string
-          _reason: string
-        }
-        Returns: string
-      }
+      platform_set_feature_override:
+        | {
+            Args: {
+              _ends_at?: string
+              _feature_key: string
+              _limit_value?: number
+              _mode: string
+              _organization_id: string
+              _reason: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _ends_at: string
+              _feature_key: string
+              _idempotency_key: string
+              _limit_value: number
+              _mode: string
+              _organization_id: string
+              _reason: string
+            }
+            Returns: string
+          }
       platform_set_organization_status: {
         Args: { _motivo: string; _org: string; _status: string }
         Returns: undefined
