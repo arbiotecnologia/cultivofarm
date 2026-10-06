@@ -17499,9 +17499,79 @@ export type Database = {
           },
         ]
       }
+      saas_feature_dependencies: {
+        Row: {
+          created_at: string
+          depends_on_feature_id: string
+          feature_id: string
+        }
+        Insert: {
+          created_at?: string
+          depends_on_feature_id: string
+          feature_id: string
+        }
+        Update: {
+          created_at?: string
+          depends_on_feature_id?: string
+          feature_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_feature_dependencies_depends_on_feature_id_fkey"
+            columns: ["depends_on_feature_id"]
+            isOneToOne: false
+            referencedRelation: "saas_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_feature_dependencies_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "saas_features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_feature_limit_definitions: {
+        Row: {
+          created_at: string
+          feature_id: string
+          limit_definition_id: string
+          required: boolean
+        }
+        Insert: {
+          created_at?: string
+          feature_id: string
+          limit_definition_id: string
+          required?: boolean
+        }
+        Update: {
+          created_at?: string
+          feature_id?: string
+          limit_definition_id?: string
+          required?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_feature_limit_definitions_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "saas_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_feature_limit_definitions_limit_definition_id_fkey"
+            columns: ["limit_definition_id"]
+            isOneToOne: false
+            referencedRelation: "saas_limit_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_features: {
         Row: {
           active: boolean
+          commercializable: boolean
           created_at: string
           description: string | null
           id: string
@@ -17512,6 +17582,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          commercializable?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -17522,6 +17593,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          commercializable?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -17539,6 +17611,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saas_limit_definitions: {
+        Row: {
+          active: boolean
+          application: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          key: string
+          name: string
+          unit: string
+          updated_at: string
+          value_type: string
+        }
+        Insert: {
+          active?: boolean
+          application: string
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          key: string
+          name: string
+          unit: string
+          updated_at?: string
+          value_type?: string
+        }
+        Update: {
+          active?: boolean
+          application?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          key?: string
+          name?: string
+          unit?: string
+          updated_at?: string
+          value_type?: string
+        }
+        Relationships: []
       }
       saas_modules: {
         Row: {
@@ -22041,22 +22155,39 @@ export type Database = {
         }
         Returns: undefined
       }
-      platform_save_plan_version_draft: {
-        Args: {
-          _billing_cycle: string
-          _currency: string
-          _draft_id: string
-          _effective_from: string
-          _features: Json
-          _idempotency_key: string
-          _limits: Json
-          _plan_key: string
-          _price_amount: number
-          _reason: string
-          _trial_days: number
-        }
-        Returns: string
-      }
+      platform_save_plan_version_draft:
+        | {
+            Args: {
+              _billing_cycle: string
+              _currency: string
+              _draft_id: string
+              _effective_from: string
+              _features: Json
+              _idempotency_key: string
+              _limits: Json
+              _plan_key: string
+              _price_amount: number
+              _reason: string
+              _trial_days: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _billing_cycle: string
+              _currency: string
+              _draft_id: string
+              _effective_from: string
+              _features: Json
+              _idempotency_key: string
+              _limits: Json
+              _plan_key: string
+              _price_amount: number
+              _reason: string
+              _trial_days: number
+            }
+            Returns: string
+          }
       platform_set_feature_override: {
         Args: {
           _ends_at?: string

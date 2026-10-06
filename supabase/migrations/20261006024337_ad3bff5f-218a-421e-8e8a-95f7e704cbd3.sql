@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.platform_save_plan_version_draft(uuid,uuid,numeric,text,text,integer,timestamptz,jsonb,jsonb,text,uuid);
