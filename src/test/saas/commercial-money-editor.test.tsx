@@ -8,12 +8,15 @@ import {
 } from "@/components/plataforma/commercialMoney";
 
 const salvar = vi.fn();
+const planosData = [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }];
+const versoesData: unknown[] = [];
+const catalogoData = { features: [], links: [] };
 
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mensagemErroPlataforma: () => "Erro",
-  usePlanosSaaS: () => ({ data: [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }] }),
-  useVersoesPlanosSaaS: () => ({ data: [] }),
-  useCatalogoPlanosSaaS: () => ({ data: { features: [], links: [] } }),
+  usePlanosSaaS: () => ({ data: planosData }),
+  useVersoesPlanosSaaS: () => ({ data: versoesData }),
+  useCatalogoPlanosSaaS: () => ({ data: catalogoData }),
   useSalvarRascunhoPlano: () => ({ mutate: salvar, isPending: false }),
   usePublicarRascunhoPlano: () => ({ mutate: vi.fn(), isPending: false }),
 }));
