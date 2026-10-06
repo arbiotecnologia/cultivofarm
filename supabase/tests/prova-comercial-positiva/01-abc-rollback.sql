@@ -37,10 +37,11 @@ BEGIN
   UPDATE public.profiles SET organization_id = oA, ativo = false WHERE user_id = uA_ina;
   UPDATE public.profiles SET organization_id = oB, ativo = true, cliente_id = NULL WHERE user_id = uB_adm;
   UPDATE public.profiles SET organization_id = oC, ativo = true  WHERE user_id = uC_par;
-  DELETE FROM public.user_roles WHERE user_id IN (uA_adm,uA_fin,uA_gc,uA_tec,uA_ina,uB_adm,uC_par);
   INSERT INTO public.user_roles(user_id,role) VALUES
     (uA_adm,'administrador'),(uA_fin,'financeiro'),(uA_gc,'gestor_comercial'),
-    (uA_tec,'parceiro_b2b_tecnico'),(uA_ina,'administrador'),(uB_adm,'administrador'),(uC_par,'parceiro_b2b');
+    (uA_tec,'parceiro_b2b_tecnico'),(uA_ina,'administrador'),(uB_adm,'administrador'),(uC_par,'parceiro_b2b')
+    ON CONFLICT DO NOTHING;
+  DELETE FROM public.user_roles WHERE (user_id,role) IN ((uA_fin,'administrador'),(uA_gc,'administrador'),(uA_tec,'administrador'),(uA_ina,'aplicador'),(uB_adm,'cliente_produtor'));
   DELETE FROM public.partner_users WHERE user_id IN (uA_tec,uC_par);
   INSERT INTO public.partner_users(partner_id,user_id,papel) VALUES (pA,uA_tec,'tecnico'),(pC,uC_par,'gestor');
 
