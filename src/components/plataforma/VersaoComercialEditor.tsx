@@ -186,7 +186,7 @@ export function VersaoComercialEditor() {
         setValidatedFingerprint(null);
       },
     });
-  }, [catalogo.data, draft, featureKeyById, plan, validarRascunho]);
+  }, [catalogo.data, draft, featureKeyById, plan, validarRascunho, versoes.data]);
 
   const markCommercialChanged = () => {
     saveKey.current = crypto.randomUUID();
