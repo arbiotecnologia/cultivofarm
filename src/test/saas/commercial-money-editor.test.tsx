@@ -211,7 +211,7 @@ describe("editor de versão comercial", () => {
 
     expect(salvar).toHaveBeenCalledWith(expect.objectContaining({ priceAmount: "59.90", currency: "BRL" }), expect.any(Object));
     expect(screen.getByText("Limites de uso do plano")).toBeInTheDocument();
-    expect(screen.getByText("Defina limites incluídos no plano, como quantidade de usuários, unidades ou recursos.")).toBeInTheDocument();
-    expect(screen.getByText("Nenhuma definição real de limite foi cadastrada. Nenhum valor padrão foi inventado.")).toBeInTheDocument();
+    expect(screen.getByText("Limites disponíveis para as funcionalidades selecionadas, agrupados por módulo. Nenhum valor é preenchido automaticamente.")).toBeInTheDocument();
+    expect(screen.getByText("Nenhum limite disponível para as funcionalidades selecionadas. Nenhum valor padrão foi inventado.")).toBeInTheDocument();
   });
 });
