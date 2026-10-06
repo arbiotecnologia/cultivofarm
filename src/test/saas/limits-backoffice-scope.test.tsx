@@ -12,15 +12,19 @@ const catalogoData = {
   featureLimits: [{ feature_id: "f1", limit_definition_id: "l1", required: false }],
   dependencies: [],
 };
+const planos = { data: [{ id: "p1", key: "base", name: "Base", active: true }] };
+const versoes = { data: [] as unknown[], refetch: vi.fn() };
+const catalogo = { data: catalogoData };
+const idle = { mutate: vi.fn(), isPending: false, isError: false };
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mensagemErroPlataforma: () => "Erro",
   mensagemErroComCorrelacao: () => "Erro",
-  usePlanosSaaS: () => ({ data: [{ id: "p1", key: "base", name: "Base", active: true }] }),
-  useVersoesPlanosSaaS: () => ({ data: [], refetch: vi.fn() }),
-  useCatalogoPlanosSaaS: () => ({ data: catalogoData }),
-  useSalvarRascunhoPlano: () => ({ mutate: vi.fn(), isPending: false }),
-  useValidarRascunhoPlano: () => ({ mutate: vi.fn(), isPending: false }),
-  usePublicarRascunhoPlano: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  usePlanosSaaS: () => planos,
+  useVersoesPlanosSaaS: () => versoes,
+  useCatalogoPlanosSaaS: () => catalogo,
+  useSalvarRascunhoPlano: () => idle,
+  useValidarRascunhoPlano: () => idle,
+  usePublicarRascunhoPlano: () => idle,
 }));
 
 describe("Limites de uso do plano — editor", () => {
