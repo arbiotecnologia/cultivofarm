@@ -1,5 +1,14 @@
 # D51.5 — Remediação horizontal multi-tenant
 
+## Auditoria multipla­no e multiempresa — 2026-10-06
+
+- [ ] Inventariar contrato canônico, consumidores, grants/RLS, papéis, rotas e estado vivo antes da prova
+- [ ] Criar matriz A/B/C/D exclusivamente transacional, com snapshot/hash e rollback integral
+- [ ] Provar ciclo de entitlement, overrides, estados fail-closed, isolamento, RBAC e histórico
+- [ ] Validar sidebar, URL direta e estados seguros em desktop/mobile; registrar bloqueios de autenticação real
+- [ ] Corrigir somente divergências comprovadas com forward-fix e testes de regressão
+- [ ] Executar testes focados, typecheck, lint focado, scanner, build e confirmar restauração do estado vivo
+
 ## Pós-D52 — Prova comercial positiva e fundação de pagamentos
 
 - [x] Fase 1 — auditar estado vivo comercial, segurança e publicação; registrar diagnóstico sanitizado
