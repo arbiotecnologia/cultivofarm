@@ -4,10 +4,10 @@
 
 - [x] Fase 1 — auditar estado vivo comercial, segurança e publicação; registrar diagnóstico sanitizado
 - [x] Gate A — BLOCKED/NO-GO: zero versões e ausência de dados comerciais reais; publicação do app não é publicação comercial
-- [ ] Fase 2 — completar fluxo seguro de publicação somente se necessário e sem inventar dados comerciais
+- [x] Fase 2 — fluxo DRAFT/validação/publicação seguro implementado, sem inventar dados comerciais
 - [ ] Fase 3 — homologar ACTIVE/TRIAL versionado com sessão real e isolamento A/B
-- [ ] Fase 4 — preparar fundação provider-agnostic de pagamentos, mantendo cobrança real OFF/NO-GO
-- [ ] Fase 5 — fechar evidências e identificar a próxima fase, sem avançar antes do PASS comercial
+- [x] Fase 4 — fundação provider-agnostic preparada e testada; cobrança real OFF/NO-GO
+- [x] Fase 5 — evidências técnicas fechadas; próxima fase não iniciada e PASS comercial ainda bloqueado
 
 ## D52 — Assinatura, trial, pagamento e ciclo de vida SaaS
 

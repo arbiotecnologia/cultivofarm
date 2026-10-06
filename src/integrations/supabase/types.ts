@@ -17388,6 +17388,117 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_billing_contracts: {
+        Row: {
+          amount: number | null
+          billing_customer_id: string
+          billing_cycle: string | null
+          commercial_snapshot: Json
+          created_at: string
+          currency: string | null
+          id: string
+          organization_id: string
+          provider_contract_ref: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          billing_customer_id: string
+          billing_cycle?: string | null
+          commercial_snapshot?: Json
+          created_at?: string
+          currency?: string | null
+          id?: string
+          organization_id: string
+          provider_contract_ref?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          billing_customer_id?: string
+          billing_cycle?: string | null
+          commercial_snapshot?: Json
+          created_at?: string
+          currency?: string | null
+          id?: string
+          organization_id?: string
+          provider_contract_ref?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_billing_contracts_billing_customer_id_fkey"
+            columns: ["billing_customer_id"]
+            isOneToOne: false
+            referencedRelation: "saas_billing_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_billing_contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_billing_contracts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "organization_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_billing_customers: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          metadata: Json
+          organization_id: string
+          provider: string
+          provider_customer_ref: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          provider: string
+          provider_customer_ref: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          provider?: string
+          provider_customer_ref?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_billing_customers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_features: {
         Row: {
           active: boolean
@@ -17459,6 +17570,250 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_payment_audit: {
+        Row: {
+          action: string
+          created_at: string
+          event_id: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          origin: string
+          reason: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          origin: string
+          reason: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          origin?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_payment_audit_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "saas_payment_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_payment_events: {
+        Row: {
+          aggregate_ref: string | null
+          attempt_count: number
+          created_at: string
+          environment: string
+          event_type: string
+          id: string
+          last_error_code: string | null
+          next_retry_at: string | null
+          occurred_at: string
+          payload: Json
+          payload_hash: string
+          processed_at: string | null
+          processing_status: string
+          provider: string
+          provider_event_id: string
+          received_at: string
+          sequence_number: number | null
+          signature_status: string
+        }
+        Insert: {
+          aggregate_ref?: string | null
+          attempt_count?: number
+          created_at?: string
+          environment?: string
+          event_type: string
+          id?: string
+          last_error_code?: string | null
+          next_retry_at?: string | null
+          occurred_at: string
+          payload: Json
+          payload_hash: string
+          processed_at?: string | null
+          processing_status?: string
+          provider: string
+          provider_event_id: string
+          received_at?: string
+          sequence_number?: number | null
+          signature_status: string
+        }
+        Update: {
+          aggregate_ref?: string | null
+          attempt_count?: number
+          created_at?: string
+          environment?: string
+          event_type?: string
+          id?: string
+          last_error_code?: string | null
+          next_retry_at?: string | null
+          occurred_at?: string
+          payload?: Json
+          payload_hash?: string
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_event_id?: string
+          received_at?: string
+          sequence_number?: number | null
+          signature_status?: string
+        }
+        Relationships: []
+      }
+      saas_payment_outbox: {
+        Row: {
+          attempt_count: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          last_error_code: string | null
+          locked_at: string | null
+          payload: Json
+          status: string
+          topic: string
+        }
+        Insert: {
+          attempt_count?: number
+          available_at?: string
+          completed_at?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          last_error_code?: string | null
+          locked_at?: string | null
+          payload: Json
+          status?: string
+          topic: string
+        }
+        Update: {
+          attempt_count?: number
+          available_at?: string
+          completed_at?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          last_error_code?: string | null
+          locked_at?: string | null
+          payload?: Json
+          status?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_payment_outbox_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "saas_payment_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_payment_reconciliation_findings: {
+        Row: {
+          aggregate_ref: string | null
+          created_at: string
+          details: Json
+          event_id: string | null
+          id: string
+          local_status: string
+          provider_status: string
+          resolution_status: string
+          resolved_at: string | null
+          run_id: string
+        }
+        Insert: {
+          aggregate_ref?: string | null
+          created_at?: string
+          details?: Json
+          event_id?: string | null
+          id?: string
+          local_status: string
+          provider_status: string
+          resolution_status?: string
+          resolved_at?: string | null
+          run_id: string
+        }
+        Update: {
+          aggregate_ref?: string | null
+          created_at?: string
+          details?: Json
+          event_id?: string | null
+          id?: string
+          local_status?: string
+          provider_status?: string
+          resolution_status?: string
+          resolved_at?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_payment_reconciliation_findings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "saas_payment_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_payment_reconciliation_findings_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "saas_payment_reconciliation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_payment_reconciliation_runs: {
+        Row: {
+          checked_count: number
+          correlation_id: string
+          environment: string
+          finished_at: string | null
+          id: string
+          mismatch_count: number
+          provider: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          checked_count?: number
+          correlation_id: string
+          environment?: string
+          finished_at?: string | null
+          id?: string
+          mismatch_count?: number
+          provider: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          checked_count?: number
+          correlation_id?: string
+          environment?: string
+          finished_at?: string | null
+          id?: string
+          mismatch_count?: number
+          provider?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       saas_plan_features: {
         Row: {
           config: Json | null
@@ -17500,6 +17855,53 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_plan_version_audit: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          new_values: Json | null
+          old_values: Json | null
+          origin: string
+          plan_version_id: string
+          reason: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          origin?: string
+          plan_version_id: string
+          reason: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          origin?: string
+          plan_version_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_plan_version_audit_plan_version_id_fkey"
+            columns: ["plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plan_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -17548,13 +17950,17 @@ export type Database = {
       }
       saas_plan_versions: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           billing_cycle: string | null
           correlation_id: string | null
           created_at: string
           created_by: string | null
           currency: string | null
           description_snapshot: string | null
-          effective_from: string
+          draft_key: string | null
+          effective_from: string | null
           effective_to: string | null
           features_snapshot: Json
           id: string
@@ -17563,17 +17969,26 @@ export type Database = {
           plan_id: string
           price_amount: number | null
           publication_reason: string | null
-          published_at: string
+          publish_key: string | null
+          published_at: string | null
+          revision: number
+          status: string
+          trial_days: number | null
+          updated_at: string
           version_number: number
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           billing_cycle?: string | null
           correlation_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
           description_snapshot?: string | null
-          effective_from: string
+          draft_key?: string | null
+          effective_from?: string | null
           effective_to?: string | null
           features_snapshot?: Json
           id?: string
@@ -17582,17 +17997,26 @@ export type Database = {
           plan_id: string
           price_amount?: number | null
           publication_reason?: string | null
-          published_at?: string
+          publish_key?: string | null
+          published_at?: string | null
+          revision?: number
+          status?: string
+          trial_days?: number | null
+          updated_at?: string
           version_number: number
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           billing_cycle?: string | null
           correlation_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string | null
           description_snapshot?: string | null
-          effective_from?: string
+          draft_key?: string | null
+          effective_from?: string | null
           effective_to?: string | null
           features_snapshot?: Json
           id?: string
@@ -17601,7 +18025,12 @@ export type Database = {
           plan_id?: string
           price_amount?: number | null
           publication_reason?: string | null
-          published_at?: string
+          publish_key?: string | null
+          published_at?: string | null
+          revision?: number
+          status?: string
+          trial_days?: number | null
+          updated_at?: string
           version_number?: number
         }
         Relationships: [
@@ -21445,6 +21874,10 @@ export type Database = {
         Args: { p_job_id: string; p_lease_token: string }
         Returns: Json
       }
+      platform_archive_plan_version: {
+        Args: { _idempotency_key: string; _reason: string; _version_id: string }
+        Returns: string
+      }
       platform_claim_org_admin_email_delivery:
         | {
             Args: {
@@ -21585,6 +22018,15 @@ export type Database = {
         }
         Returns: string
       }
+      platform_publish_plan_version_draft: {
+        Args: {
+          _confirmation: string
+          _draft_id: string
+          _idempotency_key: string
+          _reason: string
+        }
+        Returns: string
+      }
       platform_register_org_admin: {
         Args: {
           p_actor_id: string
@@ -21598,6 +22040,22 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      platform_save_plan_version_draft: {
+        Args: {
+          _billing_cycle: string
+          _currency: string
+          _draft_id: string
+          _effective_from: string
+          _features: Json
+          _idempotency_key: string
+          _limits: Json
+          _plan_key: string
+          _price_amount: number
+          _reason: string
+          _trial_days: number
+        }
+        Returns: string
       }
       platform_set_feature_override: {
         Args: {
@@ -21623,6 +22081,10 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_validate_plan_version_draft: {
+        Args: { _draft_id: string }
+        Returns: Json
       }
       platform_wipe_global_product_catalog: {
         Args: { p_actor_id: string; p_correlation_id: string; p_reason: string }
@@ -24125,7 +24587,48 @@ export type Database = {
         Args: { p_embalagem_id: string; p_etiqueta_id: string }
         Returns: Json
       }
+      saas_claim_payment_outbox_non_operational: {
+        Args: { _limit?: number; _worker_id: string }
+        Returns: {
+          attempt_count: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          last_error_code: string | null
+          locked_at: string | null
+          payload: Json
+          status: string
+          topic: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "saas_payment_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       saas_has_feature: { Args: { _feature_key: string }; Returns: boolean }
+      saas_ingest_payment_event_non_operational: {
+        Args: {
+          _aggregate_ref: string
+          _environment: string
+          _event_type: string
+          _occurred_at: string
+          _payload: Json
+          _payload_hash: string
+          _provider: string
+          _provider_event_id: string
+          _sequence_number: number
+          _signature_status: string
+        }
+        Returns: string
+      }
+      saas_record_payment_retry_non_operational: {
+        Args: { _error_code: string; _event_id: string; _next_retry_at: string }
+        Returns: string
+      }
       save_client_portal_branding: {
         Args: {
           p_cliente_id: string

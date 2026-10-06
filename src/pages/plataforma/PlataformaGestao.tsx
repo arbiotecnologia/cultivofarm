@@ -46,6 +46,7 @@ export function AlterarAssinaturaCard() {
   const exigeVersao = acao === "start_trial" || acao === "change_plan";
   const agora = Date.now();
   const versoesVigentes = (versoes.data ?? []).filter((v) => {
+    if (v.status !== "PUBLISHED" || !v.effective_from) return false;
     const inicio = new Date(v.effective_from).getTime();
     const fim = v.effective_to ? new Date(v.effective_to).getTime() : null;
     return inicio <= agora && (fim === null || fim > agora);

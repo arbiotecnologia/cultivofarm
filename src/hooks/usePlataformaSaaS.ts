@@ -1,10 +1,9 @@
 /**
  * Gestão SaaS do Superadmin de Plataforma.
  *
- * Consultas diretas às tabelas do núcleo SaaS (Fase S1). A autorização real é
+ * Consultas e comandos do núcleo SaaS. A autorização real é
  * do servidor: policy `saas_platform_read` (SELECT) via
- * `public.is_platform_superadmin(auth.uid())`. Nenhuma escrita existe aqui —
- * não há policy de INSERT/UPDATE/DELETE nessas tabelas.
+ * `public.is_platform_superadmin(auth.uid())`; escritas usam exclusivamente RPCs auditadas.
  *
  * Os tipos gerados ainda não incluem as tabelas `saas_*`; por isso o cliente
  * canônico é usado com cast local. NÃO criar cliente Supabase paralelo.
@@ -70,12 +69,15 @@ export interface VersaoPlanoSaaS {
   version_number: number;
   name_snapshot: string;
   description_snapshot: string | null;
-  price_amount: number;
-  currency: string;
-  billing_cycle: string;
+  price_amount: number | null;
+  currency: string | null;
+  billing_cycle: string | null;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  trial_days: number | null;
+  revision: number;
   limits_snapshot: Record<string, unknown>;
-  features_snapshot: unknown[];
-  effective_from: string;
+  features_snapshot: Array<{ feature_id: string; enabled?: boolean; limit_value?: number | null; config?: unknown }>;
+  effective_from: string | null;
   effective_to: string | null;
   publication_reason: string | null;
   correlation_id: string | null;
@@ -123,7 +125,7 @@ export function useVersoesPlanosSaaS() {
       const { data, error } = await db
         .from("saas_plan_versions")
         .select(
-          "id,plan_id,version_number,name_snapshot,description_snapshot,price_amount,currency,billing_cycle," +
+          "id,plan_id,version_number,name_snapshot,description_snapshot,price_amount,currency,billing_cycle,status,trial_days,revision," +
             "limits_snapshot,features_snapshot,effective_from,effective_to,publication_reason,correlation_id,created_at",
         )
         .order("effective_from", { ascending: false })
@@ -153,6 +155,28 @@ export function useModulosFeaturesSaaS() {
         modulos: (mod.data ?? []) as ModuloSaaS[],
         features: (feat.data ?? []) as FeatureSaaS[],
       };
+    },
+    ...opcoes,
+  });
+}
+
+export interface PlanoFeatureSaaS {
+  plan_id: string;
+  feature_id: string;
+  enabled: boolean;
+}
+
+export function useCatalogoPlanosSaaS() {
+  return useQuery<{ features: FeatureSaaS[]; links: PlanoFeatureSaaS[] }>({
+    queryKey: ["plataforma", "saas_plan_feature_catalog"],
+    queryFn: async () => {
+      const [features, links] = await Promise.all([
+        db.from("saas_features").select("id,module_id,key,name,active").order("key").limit(LIMITE),
+        db.from("saas_plan_features").select("plan_id,feature_id,enabled").limit(LIMITE),
+      ]);
+      if (features.error) throw new Error(features.error.message);
+      if (links.error) throw new Error(links.error.message);
+      return { features: (features.data ?? []) as FeatureSaaS[], links: (links.data ?? []) as PlanoFeatureSaaS[] };
     },
     ...opcoes,
   });
@@ -402,6 +426,43 @@ export function usePublicarVersaoPlano() {
         _effective_from: v.effectiveFrom,
         _reason: v.reason,
         _correlation_id: crypto.randomUUID(),
+      });
+      if (error) throw new Error(error.message);
+      return data as string;
+    },
+    onSettled: invalidar,
+  });
+}
+
+export function useSalvarRascunhoPlano() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: {
+      draftId: string | null; planKey: string; priceAmount: number | null; currency: string | null;
+      billingCycle: string | null; trialDays: number | null; limits: Record<string, unknown>;
+      effectiveFrom: string | null; features: Array<{ feature_key: string; enabled: boolean }>; reason: string; idempotencyKey: string;
+    }) => {
+      const { data, error } = await db.rpc("platform_save_plan_version_draft", {
+        _draft_id: v.draftId, _plan_key: v.planKey, _price_amount: v.priceAmount, _currency: v.currency,
+        _billing_cycle: v.billingCycle, _trial_days: v.trialDays, _limits: v.limits,
+        _effective_from: v.effectiveFrom, _features: v.features, _reason: v.reason,
+        _idempotency_key: v.idempotencyKey,
+      });
+      if (error) throw new Error(error.message);
+      return data as string;
+    },
+    onSettled: invalidar,
+  });
+}
+
+export function usePublicarRascunhoPlano() {
+  const invalidar = useInvalidarPlataforma();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: { draftId: string; reason: string; confirmation: string; idempotencyKey: string }) => {
+      const { data, error } = await db.rpc("platform_publish_plan_version_draft", {
+        _draft_id: v.draftId, _reason: v.reason, _idempotency_key: v.idempotencyKey, _confirmation: v.confirmation,
       });
       if (error) throw new Error(error.message);
       return data as string;
