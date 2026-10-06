@@ -149,7 +149,7 @@ export function VersaoComercialEditor() {
         setValidatedFingerprint(null);
       },
     });
-  }, [catalogo.data, draft, featureKeyById, plan]);
+  }, [catalogo.data, draft, featureKeyById, plan, validar]);
 
   const markCommercialChanged = () => {
     saveKey.current = crypto.randomUUID();
@@ -174,7 +174,7 @@ export function VersaoComercialEditor() {
     priceCents === null || priceCents <= 0 ? "preço" : null, !cycle ? "ciclo" : null,
     !trialDays ? "período de teste" : null, !effectiveFrom ? "início da vigência" : null,
     invalidLimited || unknownLegacyLimits ? "revisão dos limites" : null, features.length === 0 ? "funcionalidades" : null,
-    reason.trim().length < 5 ? "motivo" : null,
+    reason.trim().length === 0 ? "motivo" : null,
   ].filter((item): item is string => Boolean(item));
 
   const salvarRascunho = () => {
