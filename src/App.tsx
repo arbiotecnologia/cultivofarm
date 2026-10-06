@@ -33,6 +33,7 @@ import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
 import { VisitaRouteGuard } from "@/components/guards/VisitaRouteGuard";
+import { EntitlementOutlet } from "@/components/guards/EntitlementOutlet";
 import Clientes from "@/pages/Clientes";
 import Fazendas from "@/pages/Fazendas";
 import Talhoes from "@/pages/Talhoes";
@@ -425,6 +426,7 @@ const App = () => (
 
                   {/* Somente técnico */}
                   <Route element={<TechnicalFeatureGuard />}>
+                   <Route element={<EntitlementOutlet />}>
                     <Route path="/app/fazendas" element={<MobileFazendas />} />
                     <Route path="/app/registrar" element={<MobileRegistrarOcorrencia />} />
                     {/* Workspace único de atendimento técnico */}
@@ -439,6 +441,7 @@ const App = () => (
                     <Route path="/app/visita/:id" element={<MobileVisita />} />
                     <Route path="/app/talhao/:id" element={<MobileTalhaoHistorico />} />
                     <Route path="/app/catalogo" element={<MobileCatalogoTecnico />} />
+                   </Route>
                   </Route>
 
                   {/* Somente produtor */}
@@ -480,6 +483,7 @@ const App = () => (
 
               {/* Portal Parceiro B2B */}
               <Route path="/portal-parceiro" element={<B2BRouteGuard><PortalParceiroLayout /></B2BRouteGuard>}>
+               <Route element={<EntitlementOutlet />}>
                 <Route index element={<Navigate to="/portal-parceiro/dashboard" replace />} />
                 <Route path="perfil" element={<PortalParceiroPerfil />} />
                 <Route path="dashboard" element={<ParceiroDashboardRouter />} />
@@ -502,6 +506,7 @@ const App = () => (
                 <Route path="meus-produtores/:clienteId" element={<ParceiroDetalheProdutorTecnico />} />
                 <Route path="tecnicos-produtores" element={<ParceiroTecnicosProdutores />} />
                 <Route path="usuarios-clientes" element={<ParceiroUsuariosClientesB2B />} />
+               </Route>
               </Route>
 
               {/* H9-G Bloco 2C — Visita técnica interna: guard fail-closed ANTES do layout interno. */}
