@@ -54,7 +54,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN o:=o||E'\nconfirmação errada negada'; END;
 
   pub  := public.platform_publish_plan_version_draft(d,'ab',k,'PUBLICAR');
-  pub2 := public.platform_publish_plan_version_draft(d,'ab',k,'PUBLICAR');
+  pub2 := public.platform_publish_plan_version_draft(d,'  ab ',k,'PUBLICAR'); -- motivo normalizado igual
   o:=o||format(E'\npublicado=%s retry mesmo id=%s auditorias(published,superseded)=%s/%s',
     (SELECT status FROM public.saas_plan_versions WHERE id=d), pub=pub2,
     (SELECT count(*) FROM public.saas_plan_version_audit WHERE idempotency_key=k AND action='published'),
@@ -82,9 +82,9 @@ BEGIN
   BEGIN UPDATE public.saas_plan_versions SET price_amount=1 WHERE id=v1; GET DIAGNOSTICS n=ROW_COUNT; o:=o||E'\nupdate direto v1 linhas='||n;
   EXCEPTION WHEN OTHERS THEN o:=o||E'\nupdate direto v1 negado'; END;
   -- emitir ticket de sucessão para versão não vigente (v1 já encerrada) é negado
+  EXECUTE 'reset role';
   BEGIN PERFORM platform_private.issue_saas_plan_version_ticket('saas_plan_version_supersede',v1); o:=o||E'\nticket p/ versão encerrada ACEITO(FALHA)';
   EXCEPTION WHEN OTHERS THEN o:=o||E'\nticket p/ versão encerrada negado'; END;
-  EXECUTE 'reset role';
 
   SELECT md5(string_agg(row(s.*)::text,'|' ORDER BY s.id)) INTO subs1 FROM public.organization_subscriptions s;
   SELECT (SELECT count(*) FROM public.saas_payment_events)||'/'||(SELECT count(*) FROM public.saas_payment_outbox) INTO pay1;
