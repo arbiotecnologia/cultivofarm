@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, FilePenLine, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,8 @@ export function VersaoComercialEditor() {
   const [features, setFeatures] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const saveKey = useRef(crypto.randomUUID());
+  const publishKey = useRef(crypto.randomUUID());
 
   const plan = planos.data?.find((item) => item.key === planKey);
   const draft = versoes.data?.find((item) => item.plan_id === plan?.id && item.status === "DRAFT");
@@ -82,16 +84,17 @@ export function VersaoComercialEditor() {
       billingCycle: cycle || null, trialDays: trialDays === "" ? null : Number(trialDays),
       limits: parsedLimits ?? {}, effectiveFrom: effectiveFrom ? new Date(effectiveFrom).toISOString() : null,
       features: features.map((featureKey) => ({ feature_key: featureKey, enabled: true })), reason: reason.trim(),
+      idempotencyKey: saveKey.current,
     }, {
-      onSuccess: (id) => { setDraftId(id); toast.success("Rascunho comercial salvo e auditado."); },
+      onSuccess: (id) => { setDraftId(id); saveKey.current = crypto.randomUUID(); toast.success("Rascunho comercial salvo e auditado."); },
       onError: (error) => toast.error(mensagemErroPlataforma(error)),
     });
   };
 
   const publicarRascunho = () => {
     if (!draftId || missing.length > 0 || confirmation !== "PUBLICAR") return;
-    publicar.mutate({ draftId, reason: reason.trim(), confirmation }, {
-      onSuccess: () => { toast.success("Versão comercial publicada."); setConfirmation(""); },
+    publicar.mutate({ draftId, reason: reason.trim(), confirmation, idempotencyKey: publishKey.current }, {
+      onSuccess: () => { publishKey.current = crypto.randomUUID(); toast.success("Versão comercial publicada."); setConfirmation(""); },
       onError: (error) => toast.error(mensagemErroPlataforma(error)),
     });
   };
