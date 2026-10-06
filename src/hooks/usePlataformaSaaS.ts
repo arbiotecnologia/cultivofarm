@@ -406,7 +406,7 @@ export class ErroRpcPlataforma extends Error {
   }
 }
 
-function diagnosticoSeguro(value: string | null): string | null {
+export function diagnosticoSeguro(value: string | null): string | null {
   if (!value) return null;
   return value
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, "[identificador]")
