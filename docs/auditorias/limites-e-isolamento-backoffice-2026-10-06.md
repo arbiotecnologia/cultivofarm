@@ -56,3 +56,10 @@ Forward-fix preferível. Reversão: desativar as 6 definições (`active=false`)
 - Isolamento das simulações: GO.
 - Catálogo de limites (definições): GO.
 - Aplicação de limites em runtime e publicação comercial: NO-GO.
+
+## Fechamento controlado (21:10 UTC)
+- Sem nova migração e sem alteração de banco nesta etapa; processos de teste/build presos encerrados.
+- Confirmado por leitura do código: editor agrupa limites por módulo/funcionalidade com estados Não incluído/Limitado/Ilimitado, sem JSON cru.
+- Concluídos na rodada anterior: provas SQL transacionais com rollback, suíte 5.535 PASS/4 skipped, typecheck, lint focado, build, scanner.
+- NÃO VERIFICADO: reexecução após o travamento; prova comercial positiva; enforcement runtime dos limites; UI autenticada na prévia.
+- Estado: 1 DRAFT, 0 PUBLISHED, valores de limites vazios, pagamentos OFF.
