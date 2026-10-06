@@ -62,7 +62,7 @@ export function VersaoComercialEditor() {
     setFeatures(availableFeatures.filter((feature) => enabledIds.has(feature.id)).map((feature) => feature.key));
     setReason("");
     setConfirmation("");
-  }, [draft?.id, planKey]);
+  }, [availableFeatures, draft, planKey]);
 
   let parsedLimits: Record<string, unknown> | null = null;
   try {
