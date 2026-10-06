@@ -73,6 +73,10 @@ describe("editor de versão comercial", () => {
     fireEvent.click(screen.getByText("Essencial"));
     fireEvent.focus(screen.getByLabelText("Preço *"));
     fireEvent.change(screen.getByLabelText("Preço *"), { target: { value: "59,90" } });
+    fireEvent.click(screen.getByText("Selecione o ciclo"));
+    fireEvent.click(screen.getByText("Mensal"));
+    fireEvent.change(screen.getByLabelText("Dias de teste *"), { target: { value: "14" } });
+    fireEvent.change(screen.getByLabelText("Início da vigência *"), { target: { value: "2026-10-07T09:00" } });
     fireEvent.click(screen.getByRole("button", { name: /Agronômico/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Consultas/ }));
     fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Preço inicial" } });
