@@ -33,7 +33,6 @@ BEGIN
   UPDATE public.organizations SET partner_account_id = pA WHERE id = oA;
   UPDATE public.organizations SET partner_account_id = pC WHERE id = oC;
 
-  PERFORM set_config('request.jwt.claims', json_build_object('sub',v_sa,'role','authenticated')::text, true);
   UPDATE public.profiles SET organization_id = oA, ativo = true  WHERE user_id IN (uA_adm,uA_fin,uA_gc,uA_tec);
   UPDATE public.profiles SET organization_id = oA, ativo = false WHERE user_id = uA_ina;
   UPDATE public.profiles SET organization_id = oB, ativo = true, cliente_id = NULL WHERE user_id = uB_adm;
@@ -46,6 +45,7 @@ BEGIN
   INSERT INTO public.partner_users(partner_id,user_id,papel) VALUES (pA,uA_tec,'tecnico'),(pC,uC_par,'gestor');
 
   -- Assinaturas pelo fluxo oficial (Superadmin)
+  PERFORM set_config('request.jwt.claims', json_build_object('sub',v_sa,'role','authenticated')::text, true);
   sA  := public.platform_transition_subscription(oA,'start_trial','AUDIT_PLAN_20261006_POS A',corr,ver);
   sA2 := public.platform_transition_subscription(oA,'start_trial','AUDIT_PLAN_20261006_POS A',corr,ver);
   SELECT count(*) INTO n FROM public.organization_subscriptions WHERE organization_id = oA;
