@@ -35,6 +35,8 @@
 - Histórico é append-only e registra ator, origem, motivo, ação, estados, planos, versão, snapshots e correlação.
 - Nenhuma chave, token, preço ou identidade de homologação aparece neste relatório.
 - Erros ou carregamento de entitlements não liberam rotas contratáveis; menu, rota e triggers server-side usam a mesma decisão restritiva.
+- Correção P0: removido o bypass de entitlement baseado no papel `superadmin` carregado pelo frontend. Todo usuário autenticado consulta primeiro o contexto server-side; somente o retorno exato `platform_superadmin`, calculado por `public.is_platform_superadmin(auth.uid())`, libera a exceção administrativa.
+- A RPC pública de contexto é `SECURITY INVOKER`; a leitura protegida ocorre em helper privado `SECURITY DEFINER`, sem parâmetros de usuário/organização, com `search_path` vazio e privilégios mínimos. Entitlements só são consultados após contexto `active` ou `trial_active`.
 
 ## Pagamento
 

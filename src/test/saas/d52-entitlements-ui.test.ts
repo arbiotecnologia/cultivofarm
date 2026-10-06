@@ -3,11 +3,13 @@ import { readFileSync } from "node:fs";
 
 const migration = readFileSync("supabase/migrations/20261005235114_bfbe25bc-7be0-44d3-b707-fc4f722e4c3c.sql", "utf8");
 const hardening = readFileSync("supabase/migrations/20261005234604_d2b4d8f7-1f3f-4d82-99b4-78435144ca8c.sql", "utf8");
+const serverContext = readFileSync("supabase/migrations/20261006002704_5dfd60a4-d4b2-4346-92a4-c6ab9eb6e191.sql", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
 const guard = readFileSync("src/components/guards/ForaDoPlano.tsx", "utf8");
 const hooks = readFileSync("src/hooks/usePlataformaSaaS.ts", "utf8");
 const gestao = readFileSync("src/pages/plataforma/PlataformaGestao.tsx", "utf8");
 const meuPlano = readFileSync("src/pages/configuracoes/MeuPlanoTab.tsx", "utf8");
+const entitlementHook = readFileSync("src/hooks/useEntitlements.ts", "utf8");
 
 describe("D52 — entitlements e telas", () => {
   it("deriva módulos da versão imutável e bloqueia legado/status não liberados", () => {
@@ -49,5 +51,18 @@ describe("D52 — entitlements e telas", () => {
     expect(meuPlano).not.toMatch(/\.insert\(|\.update\(|\.upsert\(|\.delete\(/);
     expect(guard).toContain("Regularização comercial pendente");
     expect(app).toContain("<RoleGuard><ComunicacaoRouteGuard><ComunicacaoAdminPage /></ComunicacaoRouteGuard></RoleGuard>");
+  });
+
+  it("não concede bypass por papel local e consulta features só após contexto elegível", () => {
+    expect(entitlementHook).not.toContain('roles.includes("superadmin"');
+    expect(entitlementHook).not.toContain("isSuper");
+    expect(entitlementHook).toContain('context.data === "platform_superadmin"');
+    expect(entitlementHook).toContain('context.data === "active" || context.data === "trial_active"');
+    expect(entitlementHook).toContain("enabled: !!user && context.isSuccess && eligible");
+    expect(serverContext).toContain("public.is_platform_superadmin(auth.uid())");
+    expect(serverContext).toContain("SECURITY DEFINER");
+    expect(serverContext).toContain("SECURITY INVOKER");
+    expect(serverContext).toContain("SET search_path TO ''");
+    expect(serverContext).not.toMatch(/organization_id\s+uuid\s*\)/);
   });
 });
