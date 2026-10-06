@@ -23,9 +23,9 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
 
 describe("moeda da versão comercial", () => {
   it("formata centavos em BRL, USD e EUR", () => {
-    expect(formatCommercialMoney(5990, "BRL")).toMatch(/R\$\s?59,90/);
-    expect(formatCommercialMoney(5990, "USD")).toMatch(/US\$59\.90|\$59\.90/);
-    expect(formatCommercialMoney(5990, "EUR")).toMatch(/59,90\s?€/);
+    expect(formatCommercialMoney(5990, "BRL")).toBe("R$ 59,90");
+    expect(formatCommercialMoney(5990, "USD")).toBe("US$ 59.90");
+    expect(formatCommercialMoney(5990, "EUR")).toBe("€ 59,90");
   });
 
   it("aceita vírgula ou ponto, preserva centavos e rejeita caracteres inválidos", () => {
@@ -46,11 +46,11 @@ describe("editor de versão comercial", () => {
     fireEvent.focus(price);
     fireEvent.change(price, { target: { value: "59,90" } });
     fireEvent.blur(price);
-    expect(price.value).toMatch(/R\$\s?59,90/);
+    expect(price.value).toBe("R$ 59,90");
 
     fireEvent.click(screen.getByLabelText("Moeda *"));
     fireEvent.click(screen.getByText("Dólar americano (USD) — US$"));
-    expect(price.value).toMatch(/US\$59\.90|\$59\.90/);
+    expect(price.value).toBe("US$ 59.90");
   });
 
   it("normaliza o preço para a RPC e apresenta os textos amigáveis de limites", () => {
