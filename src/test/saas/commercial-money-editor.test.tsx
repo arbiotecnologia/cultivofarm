@@ -12,7 +12,12 @@ const validar = vi.fn();
 const publicar = vi.fn();
 const planosData = [{ id: "plan-1", key: "essencial", name: "Essencial", active: true }];
 const versoesData: unknown[] = [];
-const catalogoData = { modules: [], features: [], links: [], limits: [], featureLimits: [], dependencies: [] };
+const catalogoData = {
+  modules: [{ id: "module-1", key: "agronomico", name: "Agronômico", description: "Recursos agronômicos", active: true }],
+  features: [{ id: "feature-1", module_id: "module-1", key: "consultas", name: "Consultas", description: "Consulta técnica", active: true, commercializable: true, created_at: "2026-10-06T00:00:00Z" }],
+  links: [{ plan_id: "plan-1", feature_id: "feature-1", enabled: true }],
+  limits: [], featureLimits: [], dependencies: [],
+};
 
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mensagemErroPlataforma: () => "Erro",
@@ -68,6 +73,8 @@ describe("editor de versão comercial", () => {
     fireEvent.click(screen.getByText("Essencial"));
     fireEvent.focus(screen.getByLabelText("Preço *"));
     fireEvent.change(screen.getByLabelText("Preço *"), { target: { value: "59,90" } });
+    fireEvent.click(screen.getByRole("button", { name: /Agronômico/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Consultas/ }));
     fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "Preço inicial" } });
     fireEvent.change(screen.getByLabelText("Digite PUBLICAR para confirmar"), { target: { value: "PUBLICAR" } });
 

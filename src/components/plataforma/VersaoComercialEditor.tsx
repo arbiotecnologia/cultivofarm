@@ -113,7 +113,7 @@ export function VersaoComercialEditor() {
     setFeatures(availableFeatures.filter((feature) => enabledIds.has(feature.id)).map((feature) => feature.key));
     setReason("");
     setConfirmation("");
-    setServerComplete(false);
+    setServerComplete((current) => draft?.id && draft.id === draftId ? current : false);
   }, [availableFeatures, draft, planKey]);
 
   const markChanged = () => {
