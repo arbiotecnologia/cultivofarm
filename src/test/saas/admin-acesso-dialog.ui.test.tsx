@@ -18,7 +18,7 @@ import { AdminGestaoAcoes } from "@/components/plataforma/AdminGestaoAcoes";
 const convite = { id: "invite-1", user_id: "user-1", organization_id: "org-1", nome: "Admin", email: "admin@example.test", status: "pendente", modo_acesso: "link" } as ConviteAdminEmpresa;
 const mutation = { mutate: mocks.invite, isPending: false };
 function renderDialog(mudanca: MudancaEmailAdmin | null = null) {
-  renderWithProviders(<AdminGestaoAcoes convite={convite} empresaNome="Empresa" responsavelAtualId={null} mudancaPendente={mudanca} convidar={mutation as Parameters<typeof AdminGestaoAcoes>[0]["convidar"]} />);
+  renderWithProviders(<AdminGestaoAcoes convite={convite} empresaNome="Empresa" responsavelAtualId={null} mudancaPendente={mudanca} convidar={mutation} />);
 }
 async function openAccess() {
   await userEvent.click(screen.getByRole("button", { name: "Gerenciar administrador" }));

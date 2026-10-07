@@ -317,7 +317,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
                          <AdminGestaoAcoes convite={c} empresaNome={nomeOrg(c.organization_id)} convidar={convidar} responsavelAtualId={responsavelDe(c.organization_id)} mudancaPendente={mudancaDe(c.id)} />
-</TableCell>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -40,7 +40,7 @@ export function AdminGestaoAcoes({
   responsavelAtualId: string | null;
   mudancaPendente: MudancaEmailAdmin | null;
   empresaNome: string;
-  convidar: ReturnType<typeof useConvidarAdminEmpresa>;
+  convidar: Pick<ReturnType<typeof useConvidarAdminEmpresa>, "mutate" | "isPending">;
 }) {
   const [open, setOpen] = useState(false);
   const [modo, setModo] = useState<Modo>("editar");
@@ -120,7 +120,7 @@ export function AdminGestaoAcoes({
     <>
       <Button size="sm" variant="outline" className="min-h-11" disabled={ocupado} onClick={() => abrir("editar")}>Gerenciar administrador</Button>
       <Dialog open={open} onOpenChange={fechar}>
-        <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto [&_button]:min-h-11">
           <DialogHeader>
             <DialogTitle>Gerenciar administrador</DialogTitle>
             <DialogDescription className="break-words">{convite.nome} · {empresaNome}<br />{mascararEmail(convite.email)} · {mudancaPendente ? "E-mail aguardando confirmação" : convite.status === "ativo" ? "Ativo" : convite.status === "pendente" ? "Convite pendente" : convite.status === "falhou" ? "Falhou" : "Criando acesso"}</DialogDescription>

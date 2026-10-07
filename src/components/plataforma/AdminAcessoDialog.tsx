@@ -15,7 +15,7 @@ const when = (v?: string | null) => v ? new Date(v).toLocaleString("pt-BR") : "â
 export function AdminAcessoSection({ convite, mudanca, convidar, operationLock, onBusyChange }: {
   convite: ConviteAdminEmpresa;
   mudanca: MudancaEmailAdmin | null;
-  convidar: ReturnType<typeof useConvidarAdminEmpresa>;
+  convidar: Pick<ReturnType<typeof useConvidarAdminEmpresa>, "mutate" | "isPending">;
   operationLock: MutableRefObject<boolean>;
   onBusyChange: (busy: boolean) => void;
 }) {
