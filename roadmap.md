@@ -1,9 +1,18 @@
+## Pós-deploy planos/admin/usuários — 2026-10-07, solicitação 19:57 UTC
+
+- [x] Deploy efetivo confirmado pelo executor independente: commit `2a23d2f952321f1ad962a60be736c31b04fc0d45`, frontend `https://cultivofarm.lovable.app`, deployment_id `4e27d947-1501-4feb-9a3a-3045dc71d404`; HEAD local igual antes da documentação.
+- [x] Edge canônica `swzpzcwiasxmjutrmvkm`: create-user ACTIVE v62, verify_jwt=true, hash remoto `93fee9bafa07af0970336b13393fd03ea53e4521490ba1dc7ee0ba9e57742fac`; leitura independente confirmou eventos/códigos sanitizados e ausência de retorno JSON createError.message. Não invocada/reimplantada por este agente.
+- [x] Smoke público no site publicado: `/`, `/configuracoes` e `/plataforma` → `/auth` desktop 1280×1800, HTTP inicial 200; `/configuracoes` → `/auth` mobile 390×844. Login visível, zero pageerror, sem overflow horizontal; capturas inspecionadas. Sem login/dados/código funcional/publicação.
+- [ ] NO-GO integral somente prova browser autenticada das oito identidades (admin + usuário existente por Base/Essencial/Gestão/Completo), incluindo verificações remotas autenticadas do roteiro; gate humano: execução com sessões reais e evidências sanitizadas, sem compartilhar credenciais.
+- [ ] Melhoria futura opcional: contrato/chave server-side para retry convergente; lock UI e unicidade e-mail/Auth não são idempotência distribuída.
+- [x] Pendência de deploy frontend/Edge encerrada. Registros abaixo são históricos; menções a Edge não implantada não representam o estado pós-deploy. Relatório atualizado, sem alteração de dados ou código funcional.
+
 ## Correção focal Auth/reentrada — 2026-10-07 19:45 UTC
 
 - [x] Erro Auth bruto removido; códigos públicos/logs fixos, e-mail duplicado preservado por código estruturado. Lock ref síncrono no mesmo formulário com mutateAsync/finally, isPending/disabled preservados.
 - [x] Focais 51/51; pertinente 778/778; Deno check, lint dos testes, scanners PASS; build automático OK 19:46:44 UTC. Lint Configuracoes: 18 erros/2 avisos idênticos ao baseline, nenhum novo; typecheck frontend separado não executado.
 - [x] Relatório e regra de arquitetura atualizados: PASS focal local, não idempotência distribuída; unicidade e-mail/Auth não substitui contrato de retry server-side convergente.
-- [ ] NO-GO integral: browser autenticado dos quatro planos e Edge remota pendentes de execução humana/autorização. Sem deploy, publicação, migration ou dados. Melhoria futura: contrato/chave server-side de retry, não implementado nesta rodada.
+- [x] Gate histórico atualizado pelo pós-deploy 19:57: Edge remota implantada independentemente; browser autenticado e melhoria futura de retry listados exclusivamente na seção atual acima. Esta rodada local de 19:45 não executou deploy, publicação, migration ou dados.
 
 ## Continuação planos/admin/usuários — 2026-10-07 19:34 UTC
 
@@ -19,7 +28,7 @@
 - [x] Provas independentes do executor Supabase do proprietário reconhecidas como PASS banco/RLS nesta auditoria: 40/40 rollback, counts/hashes reais, isolamento/admins e fixture restaurada sem resíduos. PASS estrutural frontend preservado.
 - [x] Edge mockada 17/17; focais 69/69; suíte pertinente 770/770; Deno check, lint focal, scanners e diff-check PASS. Typecheck frontend separado não executado; build automático OK 19:26:35 UTC.
 - [x] Revalidação 19:30 UTC: fechamento existente preservado, 770/770 reexecutados; Deno check, lint focal, scanners e diff-check PASS. Build automático OK 19:32:00 UTC; sem build/typecheck frontend manual. Sem operação remota.
-- [ ] NO-GO somente browser autenticado E2E (sessão real indisponível neste executor) e Edge remota corrigida (aguarda autorização de deploy/certificação). Sem migration/publicação/dados reais.
+- [x] Gate histórico consolidado no pós-deploy 19:57: implantação Edge concluída pelo executor independente; browser E2E permanece na seção atual. Sem migration/publicação/dados reais nesta rodada de 19:23.
 
 ## Auditoria planos/admin/usuários — 2026-10-07 19:05 UTC
 
@@ -27,7 +36,7 @@
 - [x] Mapeados criação/listagem/edição/login, dez papéis, guardas e caches; snapshots publicados 3/8/10/17 confirmados read-only. Provas banco/RLS executadas independentemente nesta auditoria pelo executor Supabase do proprietário, separadas da execução local deste agente.
 - [x] Matriz estrutural 4×10 usa inventário canônico; 44 testes novos PASS. Diagnósticos no_context/blocked_status/trial_expired preservados na UI. Diff create-user aprovado e aplicado localmente no fechamento corretivo, sem implantar.
 - [x] SaaS/usuários/config/RBAC 753/753; suíte completa 5.804 PASS/4 skipped; lint/scanners/diff-check PASS; build automático OK 19:17:02 UTC. Typecheck separado não executado. Scanner Supabase 10 INFO; advisor 461 históricos. Relatório auditoria-planos-admin-usuarios-2026-10-07.md consolidado; SHA observado 550a151775010339bfa4a75107fe85d7bf486226.
-- [ ] BLOCKED/NO-GO funcional: browser autenticado externo ausente; navegador público redirecionou para /auth desktop/mobile, não comprova menu/dados autenticados. Titular deve fornecer evidência sanitizada com identidades de teste existentes, incluindo cache/JWT antigo. Diff Edge testado isoladamente no fechamento corretivo; implantação remota requer autorização posterior; compensação continua best-effort. Sem migration/deploy/alteração de dados reais.
+- [x] Gate histórico consolidado no pós-deploy 19:57: browser autenticado externo ausente, pendência mantida na seção atual com cache/JWT antigo; implantação remota concluída independentemente. Navegador público não comprova menu/dados autenticados; compensação continua best-effort. Sem migration/deploy/alteração de dados reais nesta rodada de 19:05.
 
 ## Gestão de assinatura: plano não reativa — 2026-10-07
 
