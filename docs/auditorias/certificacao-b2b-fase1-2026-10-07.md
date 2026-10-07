@@ -3,6 +3,55 @@
 ## Decisão atual: NO-GO estrito
 Forward-fix focal aplicado e verificado estruturalmente. **A certificação ponta a ponta NÃO foi concluída.** Não há prova funcional SQL pós-fix 13:58, Auth real, concorrência ou isolamento Storage A/B nesta retomada. Não avançar à Fase 2. Nenhuma publicação, deploy de app/Edge, transmissão fiscal ou ativação fiscal/pagamentos foi realizada.
 
+## Rodada atual — encerramento 15:07 UTC (evidências anteriores abaixo são históricas)
+
+Destino validado: produção externa `swzpzcwiasxmjutrmvkm`. Run ID `20261007T150258Z`, prefixo reservado `CERT_B2B_E2E_20261007T150258Z`. Manifesto transitório sem credenciais: `/tmp/browser/b2b-e2e-20261007/manifest.json`; IDs criados/Auth/Storage vazios, nenhuma fixture iniciada. A autorização do proprietário é suficiente e não é o bloqueador.
+
+Auth Admin: credencial privada indisponível no executor mesmo após refresh. Backend `external_unmanaged`, sem sessões válidas existentes. Nenhuma chamada Admin autenticada, usuário descartável ou alteração SQL de auth.users/auth.sessions. Não usar service_role como prova RLS, fabricar JWT nem escolher arbitrariamente usuário existente.
+
+Scripts `01-abc-rollback.sql`/`02-flow-rollback.sql` auditados: UUIDs fixos, claims SQL/SET ROLE e exceção final; não comprovam Auth real e podem colidir com registros existentes. Não executados nesta rodada. Novo `03-authenticated-preflight.py` valida binding, aceita apenas tokens reais e grava manifesto sem segredos; executa somente leitura, não inicia fixtures sem acesso e cleanup por IDs comprovados. É preflight, não roteiro E2E concluído.
+
+### Migration focal e hashes
+`20261007150152_8c86721c-fb42-4d92-ac00-c1e13c9e42c9`: confirmação por SELECT no histórico remoto, junto à 13:58. Quatro policies técnicas usam `has_role((SELECT auth.uid()), ...)` dentro de SELECT; USING/WITH CHECK vivos inspecionados, guards preservados. Sem alterações de dados nem reversão das seis migrations. SHA-256 do arquivo: `d10582517448509df5c04412ac9050af206696f64d67c5bc4ddf4c39ace3efba`.
+
+### Matriz atual
+| Cenário/perfil | Resultado | Evidência/limite |
+|---|---|---|
+| Anônimo: pedidos, simulações, vínculos e recebíveis | PASS negativo público | GET real: pedidos/vínculos/recebíveis 200 com lista vazia; simulações 401 |
+| A: administrador, financeiro, gestor_comercial, parceiro_b2b, parceiro_b2b_tecnico | BLOCKED | Cinco identidades sem sessão válida |
+| B: administrador, financeiro, gestor_comercial, parceiro_b2b, parceiro_b2b_tecnico | BLOCKED | Cinco identidades sem sessão válida |
+| C: administrador, financeiro, gestor_comercial, parceiro_b2b, parceiro_b2b_tecnico | BLOCKED | Cinco identidades sem sessão válida; entitlement não exercitado |
+| Catálogo/preço/hash, simulação/conversão/histórico | BLOCKED | Sem request autenticado pós-fix |
+| Pedido/replay/conflito/forja organization_id e partner_id A↔B | BLOCKED | Sem request autenticado pós-fix |
+| Técnico atribuído/não atribuído, price-free, escrita financeira negada | PASS estrutural/unitário; BLOCKED funcional | Guards/projeção testados, nenhum bearer real |
+| Roles/transições/aprovação/produção/título exatamente uma vez/parcelas | BLOCKED | Código presente não comprova efeito funcional |
+| RLS A/B SELECT/INSERT/UPDATE/DELETE | BLOCKED | Probes públicos não comprovam RLS autenticada |
+| Storage A/B upload/leitura/alteração/exclusão | BLOCKED | Nenhum objeto/sessão criado |
+| Concorrência com duas sessões/requests | BLOCKED | Sem identidades reais independentes |
+| Snapshots preço/condição/itens/totais | BLOCKED | Não exercitados nesta rodada |
+| UI autenticada desktop/mobile | BLOCKED | Playwright em `/`, 1280×1800 e 390×844; capturas vazias, sem fluxo autenticado comprovado |
+| Sem emissão/cobrança/deploy e preço 59,90 BRL preservado | PASS quanto às ações da rodada | Nenhuma dessas operações acionada nem preço alterado |
+
+**Authenticated path: UNVERIFIED.** Não há prova funcional pós-fix do tenant financeiro ou título exatamente uma vez.
+
+### Verificações desta rodada
+- Focais: **18 PASS**, quatro arquivos. Suíte: **5.595 PASS / 4 skipped**, 390 arquivos PASS / 1 skipped, saída 0, duração 177,51s.
+- Lint focal **PASS**; lint global **FAIL**, 3.468 erros/127 avisos. Não feita limpeza global, nem considerado isoladamente FAIL funcional B2B.
+- Typecheck explícito **BLOCKED/não executado**: instrução do ambiente proíbe execução manual de typechecks/builds. Build automático **OK**, última entrada observada 15:02:47Z; não equivale a typecheck separado.
+- Scanner de segredos e fiscal **PASS**. Nenhum novo resultado de security scan de código; os 10 INFO abaixo pertencem à rodada anterior.
+- Supabase security advisor: **463 achados globais** (17 RLS sem policy, 2 DEFINER públicos, 443 executáveis por authenticated, 1 proteção de senhas desativada); não são FAIL isolado.
+- Performance advisor **BLOCKED**: CLI produção retorna failed_precondition para backend user-managed. Slow_queries funciona, mas não é advisor. Otimização estrutural confirmada; remoção dos quatro avisos não certificada pelo advisor.
+
+### Resíduos
+SELECT de leitura varreu **256 tabelas public**, JSON de todas as linhas: **zero `CERT_B2B_E2E` em cada tabela**, soma 0. Auth users: **0** por email/metadata; Storage objects: **0** por nome. Abrange todas as tabelas que seriam tocadas. Cleanup por IDs é conjunto vazio porque nada foi criado; não comprova restauração de rodadas históricas. Sequence **1026 / is_called=true**, não resetada. Nenhum pagamento/cobrança/documento fiscal criado por esta rodada.
+
+### Arquivos, Git e decisão
+Novos: migration gerenciada 15:01, `supabase/tests/certificacao-b2b-fase1/03-authenticated-preflight.py`, `src/test/saas/b2b-initplan-forward.test.ts`. Atualizados: este relatório, `roadmap.md`, regra focal em `AGENTS.md`. Logs/manifesto/capturas transitórios em `/tmp/browser/b2b-e2e-20261007`, sem segredos.
+
+HEAD observado antes da consolidação documental: `b0621d50c58b4b987d096579f0066b6fefa39e00`. Git gerenciado pelo ambiente; nenhum commit manual. Não afirmar que inclui documentação final.
+
+**NO-GO**: acesso Auth seguro e roteiro/cleanup por IDs, provas pós-correção de fluxos críticos/RLS/Storage/concorrência/UI, performance advisor e typecheck separado seguem bloqueados. Não iniciado Fase 2, não publicado e não declarada certificação 100%.
+
 ## Autorização e ambiente
 As fixtures mutáveis com limpeza e correções mínimas estavam expressamente autorizadas; a alegação anterior de falta de autorização foi incorreta e fica corrigida. As seis migrations 13:38–13:49 foram preservadas sem reversão. Avanço de sequence é aceito, não constitui bloqueio e não deve ser restaurado.
 
