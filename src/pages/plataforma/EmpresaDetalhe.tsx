@@ -55,8 +55,8 @@ export interface EmpresaDetalheProps {
 }
 
 const SITUACAO_FISCAL_LABEL: Record<string, string> = {
-  draft: "Em configuração", pending: "Pendente", configured: "Configurado", validated: "Validado",
-  incomplete: "Incompleto", ready: "Pronto", blocked: "Bloqueado",
+  DRAFT: "Em configuração", PENDING: "Pendente", CONFIGURED: "Configurado", VALIDATED: "Validado",
+  INCOMPLETE: "Incompleto", READY: "Pronto", BLOCKED: "Bloqueado",
 };
 const fusoLabel = (v: string | null | undefined) => (v ? FUSOS_BRASIL.find((f) => f.value === v)?.label ?? v : null);
 const regimeLabel = (v: string | null | undefined) => (v ? REGIMES_TRIBUTARIOS.find((r) => r.value === v)?.label ?? v : null);
@@ -198,7 +198,7 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
                 {superadmin && fiscal.data && !fiscal.data.configurado && <Campo label="Emissor fiscal" valor={<Badge variant="secondary">Sem configuração fiscal</Badge>} />}
                 {superadmin && fiscal.data?.configurado && (
                   <>
-                    <Campo label="Situação do emissor" valor={<Badge variant="outline">{SITUACAO_FISCAL_LABEL[fiscal.data.situacao ?? ""] ?? fiscal.data.situacao ?? "Não informado"}</Badge>} />
+                    <Campo label="Situação do emissor" valor={<Badge variant="outline">{SITUACAO_FISCAL_LABEL[(fiscal.data.situacao ?? "").toUpperCase()] ?? fiscal.data.situacao ?? "Não informado"}</Badge>} />
                     <Campo label="Inscrição estadual (emissor)" valor={fiscal.data.inscricao_estadual ?? null} />
                     <Campo label="Inscrição municipal" valor={fiscal.data.inscricao_municipal ?? null} />
                     <Campo label="Regime tributário / CRT" valor={[regimeLabel(fiscal.data.regime_tributario), fiscal.data.crt ? `CRT ${fiscal.data.crt}` : null].filter(Boolean).join(" · ") || null} />
