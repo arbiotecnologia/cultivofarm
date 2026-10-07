@@ -57,7 +57,9 @@ export function TrocaSenhaObrigatoria() {
         setErro(mensagemFalhaPrimeiroAcesso(detalhe, status));
         return;
       }
-      toast.success("Senha definida. Bem-vindo!");
+      setSenha(""); setConfirma("");
+      toast.success("Senha definida. Entre novamente com sua senha pessoal.");
+      await signOut();
       await refresh();
     } finally {
       setSalvando(false);

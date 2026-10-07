@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ManualAccessLinkAction } from "@/components/plataforma/ManualAccessLinkAction";
+import { AdminAcessoDialog } from "@/components/plataforma/AdminAcessoDialog";
 import { AdminGestaoAcoes } from "@/components/plataforma/AdminGestaoAcoes";
 import {
   mascararEmail,
@@ -291,11 +291,12 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copiar(resultado.senha_temporaria!, "Senha temporária")}
+                    onClick={() => { if (resultado.senha_temporaria) void copiar(resultado.senha_temporaria, "Senha temporária"); }}
                   >
                     <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
                     Copiar senha temporária
                   </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setResultado(null)}>Ocultar definitivamente</Button>
                   <p className="text-xs text-muted-foreground">
                     Esta senha aparece apenas agora. Ele será obrigado a trocá-la no primeiro acesso.
                   </p>
@@ -365,6 +366,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell>
                         <div className="flex min-w-max items-center gap-2">
                         <AdminGestaoAcoes convite={c} responsavelAtualId={responsavelDe(c.organization_id)} mudancaPendente={mudancaDe(c.id)} />
+                         <AdminAcessoDialog convite={c} mudanca={mudancaDe(c.id)} />
                         {c.modo_acesso === "link" && c.status !== "ativo" && (c.status === "falhou" || c.status === "pendente" || envioAmbiguo(c)) ? (
                           <div className="flex min-w-max flex-wrap gap-2">
                             {c.user_id && (
@@ -383,18 +385,6 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                                       : "Reenviar convite"}
                               </Button>
                             )}
-                            <ManualAccessLinkAction
-                              target={{
-                                organizationId: c.organization_id,
-                                nome: c.nome,
-                                email: c.email,
-                                cpf: c.cpf_cnpj ?? "",
-                                telefone: c.telefone ?? "",
-                                responsavelPrincipal: c.responsavel_principal,
-                              }}
-                              ambiguous={envioAmbiguo(c)}
-                              onSuccess={() => { void convites.refetch(); }}
-                            />
                           </div>
                         ) : null}
                         </div>
