@@ -968,7 +968,7 @@ export function useEditarAdminEmpresa() {
 }
 
 export interface ResultadoTrocaEmail {
-  status: "completed";
+  status: "completed" | "pending";
   reinvite_required: boolean;
   sessions_revoked?: number;
   old_address_notice?: "sent" | "skipped" | "failed";
@@ -981,12 +981,12 @@ export interface ResultadoTrocaEmail {
 export function useAlterarEmailAdmin() {
   const invalidar = useInvalidarPlataforma();
   const chave = useChaveEstavel();
-  return useMutation<ResultadoTrocaEmail, Error, { inviteId: string; newEmail: string; reason: string; idempotencyKey?: string }>({
+  return useMutation<ResultadoTrocaEmail, Error, { inviteId: string; newEmail: string; reason: string; idempotencyKey?: string; action?: "request" | "resend" | "reconcile" | "cancel" }>({
     retry: false,
     mutationFn: async (v) => {
       const key = v.idempotencyKey ?? chave.obter(JSON.stringify([v.inviteId, v.newEmail.trim().toLowerCase(), v.reason.trim()]));
       const { data, error } = await supabase.functions.invoke("platform-org-admin-email-change", {
-        body: { invite_id: v.inviteId, new_email: v.newEmail.trim().toLowerCase(), reason: v.reason.trim(), idempotency_key: key, confirm: true },
+        body: { invite_id: v.inviteId, new_email: v.newEmail.trim().toLowerCase(), reason: v.reason.trim(), idempotency_key: key, confirm: true, action: v.action ?? "request" },
       });
       const payload = (data ?? {}) as Record<string, unknown>;
       if (error || payload.error) {

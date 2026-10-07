@@ -1,5 +1,7 @@
 # Gestão segura de administradores provisionados — 2026-10-07
 
+> **Estado vigente: NO-GO funcional.** O complemento abaixo substitui os contratos e o GO técnico históricos que descreviam alteração imediata do e-mail ou revogação SQL de sessões. As evidências históricas não certificam o fluxo novo.
+
 ## Causa
 `PlataformaAdmins` só permitia provisionar e reenviar convites. Não havia como editar dados básicos, corrigir e-mail ou transferir o Responsável Principal sem mexer diretamente em `auth.users`, `profiles`, `platform_org_admin_invites` e `organizations`.
 
@@ -75,3 +77,41 @@ GO técnico para uso controlado pelo Superadmin. Homologação real da troca de 
 - O complemento do responsável principal já estava aplicado no banco: `set_org_principal_admin_core` grava a descrição padrão e `platform_begin_org_admin_email_change` grava a dele. Não foi criada nenhuma migration nova.
 - Provas 02 (e-mail) e 03 (responsável), executadas de novo no banco canônico com rollback, deram resultado idêntico ao anterior. A 03 agora também confere o timestamp da auditoria.
 - Deno 10/10, Vitest SaaS+Comunicação 790/790, typecheck, lint focal, build e scanner de segredos OK.
+
+## Finalização focal — 15:54–16:02 UTC
+
+### Contrato vigente
+- E-mail: `generateLink(email_change_current/email_change_new)` e SMTP canônico; nenhum `updateUserById(email)` ou `email_confirm:true` na Edge. O endereço antigo permanece válido até confirmação Auth; a conciliação exige novo endereço confirmado e ausência de `email_change`. Sem cancelamento manual de tokens; a ação é recusada com segurança.
+- Motivo de e-mail permanece opcional. A repetição do novo endereço e a confirmação da solicitação na tela não confirmam o destinatário: somente o Auth pode fazê-lo.
+- Senha definitiva: escolhida somente pelo titular. Links recovery nunca retornam ao operador. Provisória: geração criptográfica no servidor, resposta privada no-store uma única vez, prazo de 24h, troca obrigatória e estado server-side.
+- `platform_actor_access_ready` existe somente em `platform_private`; `has_role` e `h15_actor_organization` públicos são INVOKER com EXECUTE apenas authenticated/service_role, delegando aos cores privados DEFINER com search_path fixo. PUBLIC/anon sem EXECUTE. A barreira de JWT anterior (`access_valid_after`) aplica-se à sessão do titular, sem negar permanentemente verificações de outro usuário feitas pelo servidor.
+- Removidas referências a `profiles.updated_at` da marcação provisória, conclusão e conciliação. O fencing temporal vive no convite (`access_valid_after`), definido também antes de alterar a senha via Auth. Não houve escrita SQL em `auth.users` ou `auth.sessions` nesta finalização.
+- **Divergência esclarecida:** o `AdapterResult` real de `_shared/comunicacao/adapters-types.ts` possui `outcome`/`certainty` e o render possui `assunto`/`corpo`, não `status`/`provider_code` nem `subject`/`body`. As Edges passam snapshot e quarto argumento rendered corretamente; Deno check confirmou o contrato. `status` pertence ao resultado de `deliverInviteEmail`, não ao `sendEmail`. Não foi alterado o adapter compartilhado para inventar outro contrato.
+
+### Migrations e arquivos
+- Preservadas `20261007154835_fab9c208-6028-4d86-877e-960704e231c3`, `20261007154900_d43618d0-7094-4de3-b742-a06b85b7e66f` e `20261007154950_aed5b88c-4a8f-4bf1-8831-3d654ae44e91`.
+- Forward-fix aplicado: `20261007155703_7e6f0323-4d33-488f-8cdd-e091c104108d.sql`, somente no binding canônico `swzpzcwiasxmjutrmvkm` (config inspecionada). Definições/ACL remotas relidas após aplicação.
+- Focais nesta finalização: `platform-invite-org-admin/index.ts` (SDK pinado), `access-handler.ts` (tipo do cliente), `access-policy_test.ts` (novo), `platform-complete-first-access/index.ts` (narrowing da senha/AMR), `platform-org-admin-email-change/auth_test.ts`, `src/test/saas/plataforma-admins-gestao.ui.test.tsx`, `d51-admin-invite-resend.ui.test.tsx`, este relatório e `roadmap.md`. AGENTS.md não alterado nesta finalização.
+- SHA observado antes da documentação final: `6fdacec429a3951373b5711c6e7235295d67073e`. Não foi criado commit manual; o ambiente gerencia Git.
+
+### Matriz pós-correção
+| Aspecto | Resultado | Evidência/limite |
+|---|---|---|
+| UI unitária: confirmação em duas etapas, motivo opcional, sem link manual | PASS | 42 testes focais |
+| Parsing/geração provisória e autorização Edge | PASS unitário | Deno 17/17 |
+| Tipos das três Edges | PASS | `deno check` |
+| Suíte completa | PASS | 390 arquivos PASS/1 skipped; 5.595 testes PASS/4 skipped |
+| Lint focal | PASS | Arquivos corrigidos, saída sem findings |
+| Lint global | FAIL preexistente | 3.468 erros/127 avisos; sem limpeza global |
+| Build frontend automático | PASS | `/tmp/observability/build-errors.log`, último registro 15:57:17 UTC |
+| Typecheck frontend explícito | BLOCKED | Execução manual proibida pelo ambiente; não alegado como PASS |
+| Scanner segredos focal / integração fiscal | PASS | Nenhum segredo real/indicador de emissão |
+| Advisor de segurança / aviso novo | PASS focal | 461 históricos: 17 INFO, 2 WARN anon DEFINER, 441 WARN authenticated DEFINER, 1 proteção senha; nenhum finding novo na migration; helper privado/wrappers conferidos |
+| Confirmação Auth real, revogação e expiração provisória | BLOCKED | Auth Admin local ausente; fonte GoTrue não substitui prova funcional |
+| RLS pós-troca e UI desktop/mobile autenticadas | BLOCKED | `external_unmanaged`, sem sessão disponível |
+| Entrega SMTP ao titular | BLOCKED | Modo de teste não certifica entrega externa |
+
+Sem fixtures ou mudanças em dados empresariais nesta finalização; não foi executada contagem global de resíduos. Sem publicação frontend, emissão fiscal, cobrança, alterações comerciais ou retomada B2B. As Edges seguem o mecanismo automático do ambiente; não houve comando manual de deploy nesta finalização.
+
+### Riscos e decisão
+**NO-GO funcional** até prova com Auth real do antigo/novo e-mail, validade single-use, revogação, sessões anteriores negadas, troca provisória e UI/RLS autenticadas. Cooldown/lease e guards foram inspecionados, não certificados em concorrência real. A expiração nominal da confirmação na tabela é informativa; validade do link é controlada pelo Auth. Falha parcial após alteração de senha permanece fail-closed e exige novo login/reconciliação. Não se declara conclusão de homologação nem 100%.

@@ -100,17 +100,18 @@ describe("Gestão de administradores provisionados", () => {
     expect(m.editar).toHaveBeenCalledWith(expect.objectContaining({ inviteId: "i-b", nome: "Admin B Silva", expectedUpdatedAt: B.updated_at }), expect.any(Object));
   });
 
-  it("troca de e-mail exige e-mail válido, motivo e confirmação explícita", async () => {
+  it("troca de e-mail exige novo endereço repetido e confirmação explícita, com motivo opcional", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
     await userEvent.click(screen.getByRole("menuitem", { name: "Alterar e-mail" }));
     const d = screen.getByRole("dialog");
-    const botao = within(d).getByRole("button", { name: "Alterar e-mail" });
+    const botao = within(d).getByRole("button", { name: "Confirmar alteração" });
     fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "invalido" } });
     fireEvent.change(within(d).getByLabelText("Motivo (opcional)"), { target: { value: "Domínio novo" } });
     fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
     expect(botao).toBeDisabled();
     fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "novo@x.com.br" } });
+    fireEvent.change(within(d).getByLabelText("Confirmar novo e-mail"), { target: { value: "novo@x.com.br" } });
     await waitFor(() => expect(botao).toBeEnabled());
     fireEvent.click(botao);
     expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ inviteId: "i-b", newEmail: "novo@x.com.br", reason: "Domínio novo", idempotencyKey: undefined }), expect.any(Object));
@@ -121,10 +122,11 @@ describe("Gestão de administradores provisionados", () => {
     await abrirMenu("Admin B");
     await userEvent.click(screen.getByRole("menuitem", { name: "Alterar e-mail" }));
     const d = screen.getByRole("dialog");
-    const botao = within(d).getByRole("button", { name: "Alterar e-mail" });
+    const botao = within(d).getByRole("button", { name: "Confirmar alteração" });
     const motivo = within(d).getByLabelText("Motivo (opcional)");
     expect(motivo).not.toBeRequired();
     fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "novo@x.com.br" } });
+    fireEvent.change(within(d).getByLabelText("Confirmar novo e-mail"), { target: { value: "novo@x.com.br" } });
     fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
     fireEvent.change(motivo, { target: { value: " x " } });
     expect(botao).toBeDisabled();
@@ -140,11 +142,11 @@ describe("Gestão de administradores provisionados", () => {
     m.mudancas = [{ id: "c1", invite_id: "i-b", status: "failed", new_email: "novo@x.com.br", idempotency_key: "key-1", reason: "Domínio", last_error_code: "sync_failed" }];
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Concluir mudança de e-mail" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Gerenciar confirmação de e-mail" }));
     const d = screen.getByRole("dialog");
     fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
-    fireEvent.click(within(d).getByRole("button", { name: "Alterar e-mail" }));
-    expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "key-1", newEmail: "novo@x.com.br" }), expect.any(Object));
+    fireEvent.click(within(d).getByRole("button", { name: "Verificar confirmação" }));
+    expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "key-1", newEmail: "novo@x.com.br", action: "reconcile" }), expect.any(Object));
   });
 });
 
@@ -158,7 +160,10 @@ describe("contratos estruturais de segurança", () => {
     expect(fn).toMatch(/npm:@supabase\/supabase-js@2\.\d+\.\d+/);
     expect(authTs).toContain("auth.getUser(token)");
     expect(authTs).toContain("is_platform_superadmin");
-    expect(fn.indexOf("updateUserById")).toBeLessThan(fn.indexOf("platform_complete_org_admin_email_change"));
+    expect(fn).not.toContain("updateUserById");
+    expect(fn).not.toContain("email_confirm: true");
+    expect(fn).toContain('type: "email_change_new"');
+    expect(fn).toContain('type: "email_change_current"');
     expect(fn).not.toMatch(/user_metadata/);
   });
   it("frontend não usa service_role nem Admin Auth", () => {

@@ -1,16 +1,4 @@
-// Troca de e-mail de administrador provisionado (Platform Superadmin).
-//
-// Segurança:
-// - JWT validado em código via admin.auth.getUser(token) (service_role,
-//   server-side; mesmo padrão de communication-provider-settings) + gateway verify_jwt=true.
-// - Somente Platform Superadmin (is_platform_superadmin no servidor).
-// - service_role existe apenas aqui; RPCs de estado aceitam somente service_role.
-// - Auth é alterado via Admin API (updateUserById aplica a mudança diretamente,
-//   sem fluxo de confirmação — documentação oficial). Perfil e provisionamento
-//   só são sincronizados DEPOIS de o Auth refletir o novo e-mail.
-// - Sessões (refresh tokens) são revogadas na conclusão; access tokens já
-//   emitidos seguem válidos até expirar (limitação documentada do Supabase).
-// - Falha parcial deixa a operação reconciliável (retry com a mesma chave).
+// Alteração confirmada pelo titular; nenhum bypass de confirmação Auth.
 import { createClient } from "npm:@supabase/supabase-js@2.110.8";
 import { authorizeSuperadmin } from "./auth.ts";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
@@ -19,6 +7,7 @@ import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/comunicacao/adapters-types.ts";
 import { classifyBeginError, parseEmailChangeBody } from "./policy.ts";
+import { getPlatformInviteRedirectUrl } from "../platform-invite-org-admin/redirect-policy.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handlePreflight(req);
@@ -34,7 +23,7 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !serviceKey) return respond({ error: "Serviço indisponível.", code: "server_misconfigured" }, 500);
+    if (url !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !serviceKey) return respond({ error: "Serviço indisponível.", code: "server_misconfigured" }, 500);
     const admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -42,95 +31,66 @@ Deno.serve(async (req) => {
     if (!authz.ok) return respond({ error: authz.error, code: authz.code }, authz.status);
     const actorId = authz.actorId;
 
-    const parsed = parseEmailChangeBody(await req.json().catch(() => null));
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") return respond({ error: "Dados inválidos.", code: "invalid_body" }, 400);
+    const action = body.action ?? "request";
+    if (!["request", "resend", "reconcile", "cancel"].includes(action)) return respond({ error: "Operação inválida.", code: "invalid_action" }, 400);
+    if (body.user_id !== undefined || body.organization_id !== undefined) return respond({ error: "Operação não permitida.", code: "target_denied" }, 403);
+    if (action === "cancel") return respond({ error: "O Auth não oferece cancelamento administrativo seguro dos links já emitidos. Nenhuma alteração foi feita.", code: "cancel_not_supported" }, 409);
+    const parsed = parseEmailChangeBody(body);
     if (!parsed.ok) return respond({ error: parsed.message, code: parsed.code }, 400);
     const input = parsed.value;
-
     const { data: begun, error: beginError } = await admin.rpc("platform_begin_org_admin_email_change", {
-      p_actor_id: actorId,
-      p_invite_id: input.inviteId,
-      p_new_email: input.newEmail,
-      p_reason: input.reason,
-      p_idempotency_key: input.idempotencyKey,
+      p_actor_id: actorId, p_invite_id: input.inviteId, p_new_email: input.newEmail,
+      p_reason: input.reason, p_idempotency_key: input.idempotencyKey,
     });
     if (beginError || !begun) {
       const e = classifyBeginError(beginError?.message ?? "");
       return respond({ error: e.message, code: e.code }, e.status);
     }
-    const op = begun as Record<string, unknown>;
-    const opId = String(op.op_id);
-    if (op.status === "completed") {
-      return respond({ success: true, status: "completed", idempotent: true, reinvite_required: op.invite_status !== "ativo" });
+    if (begun.status === "completed") return respond({ status: "completed", idempotent: true });
+    if (!begun.user_id || begun.user_id === actorId) return respond({ error: "Acesso indisponível para esta operação.", code: "target_denied" }, 403);
+    const { data: current, error: getErr } = await admin.auth.admin.getUserById(String(begun.user_id));
+    if (getErr || !current.user) return respond({ error: "Não foi possível validar o acesso.", code: "auth_lookup_failed" }, 502);
+    if (current.user.email?.toLowerCase() === input.newEmail && !current.user.new_email) {
+      const { data: done, error } = await admin.rpc("platform_complete_org_admin_email_change", { p_actor_id: actorId, p_op_id: begun.op_id });
+      return error ? respond({ error: "Confirmação ainda não conciliada.", code: "reconciliation_pending" }, 409) : respond(done);
     }
-    const markFailed = (code: string) =>
-      admin.rpc("platform_mark_org_admin_email_change", { p_actor_id: actorId, p_op_id: opId, p_status: "failed", p_error_code: code });
-
-    const userId = typeof op.user_id === "string" ? op.user_id : null;
-    if (userId) {
-      const { data: current, error: getErr } = await admin.auth.admin.getUserById(userId);
-      if (getErr || !current?.user) {
-        await markFailed("auth_lookup_failed");
-        return respond({ error: "Não foi possível consultar o acesso atual.", code: "auth_lookup_failed" }, 502);
+    if (action === "reconcile") return respond({ status: "pending", confirmed: false });
+    if (action === "request" && begun.idempotent) return respond({ status: "pending", idempotent: true });
+    // No settings are changed; require both addresses to be deliverable. The
+    // current-address API refuses safely when secure-email-change is disabled.
+    const env = await loadRuntimeConfig(admin, readWorkerEnv);
+    if (!env.DELIVERY_ENABLED || !env.EMAIL_ENABLED || getSmtpConfigError(env) ||
+        ![String(begun.old_email), input.newEmail].every(email => isRecipientAllowedInTestMode(env, "email", email).allowed)) {
+      return respond({ error: "Entrega segura indisponível. O e-mail atual permanece válido.", code: "delivery_not_ready", status: "pending" }, 503);
+    }
+    const { data: lease, error: leaseError } = await admin.rpc("platform_claim_email_confirmation", { p_actor_id: actorId, p_op_id: begun.op_id, p_confirm_ambiguous: body.confirm_ambiguous_email_retry === true });
+    if (leaseError || !lease) return respond({ error: "Aguarde o prazo de reenvio ou verifique a entrega anterior.", code: "confirmation_busy" }, 409);
+    let outcome = "failed";
+    try {
+      const oldLink = await admin.auth.admin.generateLink({ type: "email_change_current", email: String(begun.old_email), newEmail: input.newEmail, options: { redirectTo: getPlatformInviteRedirectUrl() } });
+      // Only the specific disabled-secure-change error permits single-address mode.
+      const secureDisabled = oldLink.error?.message === "Enable secure email change to generate link for current email";
+      if (oldLink.error && !secureDisabled) throw new Error("link_generation_failed");
+      const newLink = await admin.auth.admin.generateLink({ type: "email_change_new", email: String(begun.old_email), newEmail: input.newEmail, options: { redirectTo: getPlatformInviteRedirectUrl() } });
+      if (newLink.error || !newLink.data?.properties?.action_link) throw new Error("link_generation_failed");
+      const deliveries = [{ email: input.newEmail, link: newLink.data.properties.action_link }];
+      if (!secureDisabled) {
+        if (!oldLink.data?.properties?.action_link) throw new Error("link_generation_failed");
+        deliveries.unshift({ email: String(begun.old_email), link: oldLink.data.properties.action_link });
       }
-      if ((current.user.email ?? "").toLowerCase() !== input.newEmail) {
-        const { error: updErr } = await admin.auth.admin.updateUserById(userId, { email: input.newEmail, email_confirm: true });
-        if (updErr) {
-          const conflict = /already|exists|registered/i.test(updErr.message ?? "");
-          await markFailed(conflict ? "auth_email_conflict" : "auth_update_failed");
-          return respond({
-            error: conflict ? "Este e-mail já está em uso por outro acesso." : "O acesso não foi alterado. Tente novamente.",
-            code: conflict ? "auth_email_conflict" : "auth_update_failed",
-          }, conflict ? 409 : 502);
-        }
+      for (const delivery of deliveries) {
+        outcome = "ambiguous";
+        const text = `Confirme a alteração do seu e-mail de acesso ao Cultivo Farm:\n${delivery.link}\nSe não reconhece a solicitação, não confirme.`;
+        const result = await sendEmail(env, { ok: true, canal: "email", address: delivery.email }, { canal: "email", assunto: "Confirme seu e-mail", corpo: "Confirmação segura", variaveis: [] }, { assunto: "Confirme seu e-mail", corpo: text });
+        if (result.outcome !== "sent") break;
+        outcome = "sent";
       }
-      await admin.rpc("platform_mark_org_admin_email_change", { p_actor_id: actorId, p_op_id: opId, p_status: "auth_updated", p_error_code: null });
-    }
-
-    const { data: done, error: completeErr } = await admin.rpc("platform_complete_org_admin_email_change", { p_actor_id: actorId, p_op_id: opId });
-    if (completeErr || !done) {
-      await markFailed("sync_failed");
-      return respond({
-        error: "O acesso foi alterado, mas o cadastro ainda não foi sincronizado. Repita a operação para concluir.",
-        code: "sync_pending",
-        status: "pending_reconciliation",
-      }, 502);
-    }
-    const result = done as Record<string, unknown>;
-    const wasActive = result.invite_status === "ativo";
-
-    // Aviso ao endereço anterior apenas para acesso ativo e somente se a
-    // infraestrutura de e-mail estiver habilitada; caso contrário, "skipped".
-    let oldAddressNotice: "sent" | "skipped" | "failed" = "skipped";
-    if (wasActive) {
-      try {
-        const env = await loadRuntimeConfig(admin, readWorkerEnv);
-        const oldEmail = String(op.old_email ?? "");
-        if (env && env.DELIVERY_ENABLED && env.EMAIL_ENABLED && !getSmtpConfigError(env) &&
-            isRecipientAllowedInTestMode(env, "email", oldEmail).allowed) {
-          const texto = "O e-mail de acesso da sua conta Cultivo Farm foi alterado pelo administrador da plataforma. Se você não reconhece esta alteração, contate o suporte.";
-          const sent = await sendEmail(env, { ok: true, canal: "email", address: oldEmail },
-            { canal: "email", assunto: "Seu e-mail de acesso foi alterado", corpo: texto, variaveis: [] },
-            { assunto: "Seu e-mail de acesso foi alterado", corpo: texto });
-          oldAddressNotice = sent.outcome === "sent" ? "sent" : "failed";
-        }
-      } catch { oldAddressNotice = "failed"; }
-      await admin.from("comunicacao_audit_log").insert({
-        acao: "org_admin_email_change_notice",
-        entidade: "platform_org_admin_email_changes",
-        entity_id: opId,
-        actor_id: actorId,
-        after_state: { outcome: oldAddressNotice },
-      });
-    }
-
-    return respond({
-      success: true,
-      status: "completed",
-      idempotent: result.idempotent === true,
-      sessions_revoked: Number(result.sessions_revoked ?? 0),
-      reinvite_required: !wasActive,
-      old_address_notice: oldAddressNotice,
-    });
+    } catch { /* No raw error, credential, token or link is returned or logged. */ }
+    const finished = await admin.rpc("platform_finish_email_confirmation", { p_actor_id: actorId, p_op_id: begun.op_id, p_lease: lease, p_outcome: outcome });
+    if (finished.error || outcome !== "sent") return respond({ error: "Entrega não confirmada. Não reenvie sem verificar a caixa de entrada.", code: "delivery_unconfirmed", status: "pending" }, 409);
+    return respond({ status: "pending", confirmation_sent: true });
   } catch {
     return respond({ error: "Falha inesperada ao alterar o e-mail.", code: "unexpected" }, 500);
   }

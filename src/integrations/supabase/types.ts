@@ -14980,6 +14980,12 @@ export type Database = {
           actor_user_id: string
           attempt_count: number
           completed_at: string | null
+          confirmation_delivery_status: string | null
+          confirmation_expires_at: string | null
+          confirmation_lease: string | null
+          confirmation_lease_expires_at: string | null
+          confirmation_next_attempt_at: string | null
+          confirmation_sent_at: string | null
           created_at: string
           id: string
           idempotency_key: string
@@ -14999,6 +15005,12 @@ export type Database = {
           actor_user_id: string
           attempt_count?: number
           completed_at?: string | null
+          confirmation_delivery_status?: string | null
+          confirmation_expires_at?: string | null
+          confirmation_lease?: string | null
+          confirmation_lease_expires_at?: string | null
+          confirmation_next_attempt_at?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           id?: string
           idempotency_key: string
@@ -15018,6 +15030,12 @@ export type Database = {
           actor_user_id?: string
           attempt_count?: number
           completed_at?: string | null
+          confirmation_delivery_status?: string | null
+          confirmation_expires_at?: string | null
+          confirmation_lease?: string | null
+          confirmation_lease_expires_at?: string | null
+          confirmation_next_attempt_at?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           id?: string
           idempotency_key?: string
@@ -15052,6 +15070,12 @@ export type Database = {
       }
       platform_org_admin_invites: {
         Row: {
+          access_expires_at: string | null
+          access_operation_id: string | null
+          access_operation_kind: string | null
+          access_operation_status: string | null
+          access_requested_at: string | null
+          access_valid_after: string | null
           attempt_count: number
           auth_created_at: string | null
           concluido_em: string | null
@@ -15084,6 +15108,12 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_expires_at?: string | null
+          access_operation_id?: string | null
+          access_operation_kind?: string | null
+          access_operation_status?: string | null
+          access_requested_at?: string | null
+          access_valid_after?: string | null
           attempt_count?: number
           auth_created_at?: string | null
           concluido_em?: string | null
@@ -15116,6 +15146,12 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_expires_at?: string | null
+          access_operation_id?: string | null
+          access_operation_kind?: string | null
+          access_operation_status?: string | null
+          access_requested_at?: string | null
+          access_valid_after?: string | null
           attempt_count?: number
           auth_created_at?: string | null
           concluido_em?: string | null
@@ -22210,6 +22246,23 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_claim_admin_access: {
+        Args: {
+          p_actor_id: string
+          p_invite_id: string
+          p_kind: string
+          p_operation_id: string
+        }
+        Returns: Json
+      }
+      platform_claim_email_confirmation: {
+        Args: {
+          p_actor_id: string
+          p_confirm_ambiguous?: boolean
+          p_op_id: string
+        }
+        Returns: string
+      }
       platform_claim_org_admin_email_delivery:
         | {
             Args: {
@@ -22343,8 +22396,31 @@ export type Database = {
         Args: { p_job_id: string; p_lease_token: string }
         Returns: string
       }
+      platform_finish_admin_access: {
+        Args: {
+          p_actor_id: string
+          p_invite_id: string
+          p_lease_token: string
+          p_operation_id: string
+          p_outcome: string
+        }
+        Returns: boolean
+      }
+      platform_finish_email_confirmation: {
+        Args: {
+          p_actor_id: string
+          p_lease: string
+          p_op_id: string
+          p_outcome: string
+        }
+        Returns: undefined
+      }
       platform_first_access_pending: {
         Args: { p_user_id: string }
+        Returns: boolean
+      }
+      platform_first_access_valid: {
+        Args: { p_recovery?: boolean; p_user_id: string }
         Returns: boolean
       }
       platform_get_organization_fiscal_summary: {
@@ -22363,6 +22439,10 @@ export type Database = {
           p_status: string
         }
         Returns: undefined
+      }
+      platform_org_admin_access_state: {
+        Args: { p_actor_id: string; p_invite_id: string }
+        Returns: Json
       }
       platform_publish_plan_version: {
         Args: {

@@ -66,12 +66,14 @@ Deno.test("superadmin => ok com actorId de data.user.id; nunca begin/updateUserB
   assertEquals(calls.includes("updateUserById"), false);
 });
 
-Deno.test("index.ts: autorização precede begin e updateUserById; sem getClaims/@2 flutuante", async () => {
+Deno.test("index.ts: autorização precede begin e links; nunca contorna confirmação", async () => {
   const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
   const authAt = src.indexOf("authorizeSuperadmin(");
   assertEquals(authAt > 0, true);
   assertEquals(authAt < src.indexOf("admin.rpc(\"platform_begin_org_admin_email_change\""), true);
-  assertEquals(authAt < src.indexOf("admin.auth.admin.updateUserById("), true);
+  assertEquals(authAt < src.indexOf("admin.auth.admin.generateLink("), true);
+  assertEquals(src.includes("updateUserById"), false);
+  assertEquals(src.includes("email_confirm: true"), false);
   assertEquals(src.includes("getClaims"), false);
   assertEquals(/supabase-js@2["']/.test(src), false);
   assertEquals(src.includes("esm.sh"), false);

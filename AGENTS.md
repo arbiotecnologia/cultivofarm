@@ -2,7 +2,7 @@
 
 - Escrita em organizations só por RPCs SECURITY DEFINER que emitem ticket em platform_private.authz_tickets (txid); triggers exigem o ticket — flags GUC não são fronteira de autorização.
 
-- Convites por link usam a mesma intenção/lease/fencing server-side; entrega por e-mail passa exclusivamente pelo SMTP, enquanto o fallback manual só devolve o recovery link em resposta privada no-store e o audita sem segredo — evita fluxo paralelo e persistência de credencial.
+- Provisioned-admin password links use the canonical SMTP provider and existing invitation lease/fencing; operator-facing recovery links are disabled — only the account holder defines a permanent password.
 - Convites operacionais sempre usam `https://app.cultivofarm.com.br/reset-password` definido no servidor; o `Origin` só autoriza a chamada e nunca compõe o redirect — evita fallback para localhost e open redirect.
 
 - Global communication provider settings are accessible only to Platform Superadmins through server-side `is_platform_superadmin`; tenant admins have no UI or endpoint access, while workers retain service-role-only RPC access — preserves SaaS isolation and secret boundaries.
@@ -22,7 +22,7 @@
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
 - Published plan versions are content-immutable; a successor is created as a new DRAFT and publishing it closes only the predecessor's `effective_to` under a `saas_plan_version_supersede` ticket — keeps price/feature snapshots and history intact.
 - Organization profile edits (legal name, trade name, e-mail) go only through `platform_update_organization_profile` with expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ, status, plan and admins keep their own flows — avoids parallel write paths.
-- Provisioned org-admin changes go only through `platform_*_org_admin*` RPCs (principal/edit) and the `platform-org-admin-email-change` Edge (Auth first, then service-role sync + session revoke), all audited in immutable `platform_org_admin_audit` — avoids parallel identity writes.
+- Provisioned-admin access reuses existing invitation/email-change records and Edges; Auth-confirmed email reconciliation and provisional password expiry feed the canonical role/organization guards, with immutable audit — prevents confirmation bypass and UI-only authorization.
 - Subscription transitions keep a public INVOKER wrapper over a private, server-authorized DEFINER core; version changes preserve existing trial deadlines — keeps ticket issuance private and prevents implicit trial changes.
 - B2B credit RPCs authorize through the canonical partner-scope guard before the service-only calculator, and direct financial-settings access has a restrictive active-tenant policy including writes — prevents role-only cross-tenant credit disclosure and modification.
 - B2B keeps tenant policies/private cores; titles reuse installments. Technical writes reuse active actor/partner/client assignments with zero-finance guards; headers/items use price-free RPCs — prevents leakage and duplication.

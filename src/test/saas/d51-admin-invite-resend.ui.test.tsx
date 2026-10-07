@@ -110,33 +110,10 @@ describe("D51.2 — reenvio persistente na lista de administradores", () => {
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
   });
 
-  it("gera link manual no mesmo registro e permite copiá-lo sem expor no toast", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-    mocks.mutate.mockImplementation((_payload, options) => options.onSuccess({
-      user_id: "user-1",
-      senha_temporaria: null,
-      email_status: "not_required",
-      manual_link: "https://auth.invalid/sensitive-value",
-    }));
+  it("não oferece recovery link ao operador e mantém gestão de acesso", () => {
     renderWithProviders(<PlataformaAdmins />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Gerar link" }));
-    const confirmation = screen.getByRole("alertdialog");
-    expect(confirmation).toHaveTextContent("Gerar link de acesso?");
-    fireEvent.click(within(confirmation).getByRole("button", { name: "Gerar link" }));
-
-    expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({
-      organizationId: "org-1",
-      deliveryMode: "manual_link",
-      confirmAmbiguousEmailRetry: false,
-    }), expect.any(Object));
-    const result = await screen.findByRole("dialog");
-    expect(result).toHaveTextContent("Link de acesso gerado");
-    expect(result).not.toHaveTextContent("sensitive-value");
-    fireEvent.click(within(result).getByRole("button", { name: "Copiar link" }));
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith("https://auth.invalid/sensitive-value"));
-    expect(document.body).not.toHaveTextContent("https://auth.invalid/sensitive-value");
+    expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gerenciar acesso" })).toBeEnabled();
   });
 
   it("não oferece link manual para ativo ou senha temporária", () => {
@@ -145,10 +122,9 @@ describe("D51.2 — reenvio persistente na lista de administradores", () => {
     expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
   });
 
-  it("avisa sobre link anterior quando o envio foi ambíguo", () => {
+  it("não expõe fallback manual para envio ambíguo", () => {
     mocks.convites = [{ ...base, email_delivery_status: "ambiguous" }];
     renderWithProviders(<PlataformaAdmins />);
-    fireEvent.click(screen.getByRole("button", { name: "Gerar link" }));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Pode existir um link anterior ainda válido");
+    expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
   });
 });
