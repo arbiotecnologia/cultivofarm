@@ -93,13 +93,33 @@ describe("Gestão de administradores provisionados", () => {
     const d = screen.getByRole("dialog");
     const botao = within(d).getByRole("button", { name: "Alterar e-mail" });
     fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "invalido" } });
-    fireEvent.change(within(d).getByLabelText("Motivo"), { target: { value: "Domínio novo" } });
+    fireEvent.change(within(d).getByLabelText("Motivo (opcional)"), { target: { value: "Domínio novo" } });
     fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
     expect(botao).toBeDisabled();
     fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "novo@x.com.br" } });
     await waitFor(() => expect(botao).toBeEnabled());
     fireEvent.click(botao);
-    expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ inviteId: "i-b", newEmail: "novo@x.com.br", idempotencyKey: undefined }), expect.any(Object));
+    expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ inviteId: "i-b", newEmail: "novo@x.com.br", reason: "Domínio novo", idempotencyKey: undefined }), expect.any(Object));
+  });
+
+  it("troca de e-mail: motivo opcional; vazio aceito, 1 caractere bloqueia", async () => {
+    renderWithProviders(<PlataformaAdmins />);
+    await abrirMenu("Admin B");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Alterar e-mail" }));
+    const d = screen.getByRole("dialog");
+    const botao = within(d).getByRole("button", { name: "Alterar e-mail" });
+    const motivo = within(d).getByLabelText("Motivo (opcional)");
+    expect(motivo).not.toBeRequired();
+    fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "novo@x.com.br" } });
+    fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
+    fireEvent.change(motivo, { target: { value: " x " } });
+    expect(botao).toBeDisabled();
+    expect(within(d).getByText(/ao menos 2 caracteres/)).toBeInTheDocument();
+    fireEvent.change(motivo, { target: { value: "   " } });
+    await waitFor(() => expect(botao).toBeEnabled());
+    expect(within(d).queryByText(/ao menos 2 caracteres/)).not.toBeInTheDocument();
+    fireEvent.click(botao);
+    expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ newEmail: "novo@x.com.br", reason: "" }), expect.any(Object));
   });
 
   it("retoma mudança pendente com a mesma chave idempotente", async () => {
