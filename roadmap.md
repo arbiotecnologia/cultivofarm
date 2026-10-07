@@ -1,3 +1,15 @@
+## Auditoria atual telas/perfis/planos/empresas — 2026-10-07 21:41 UTC
+
+- [x] Baseline vivo read-only canônico: Base ACTIVE 3, Essencial TRIAL 8, Gestão TRIAL 10, Completo ACTIVE/TRIAL 17; zero overrides e zero TRIAL expirado. Sem reabrir D52 ou alterar dados.
+- [x] Inventário revalidado: 179 declarações/178 paths/190 Route, 106 menus, 191 pages; 14 papéis (5 tipos presentes), 38 prefixos/17 features. Matriz integral no relatório auditoria-telas-perfis-planos-empresas-2026-10-07.md.
+- [x] Auditados guards/interseção, aliases, cache/identidade e amostra RLS/Storage/ACL/corpos remotos; 10 buckets privados + logos público. Provas históricas separadas das leituras atuais.
+- [x] Testes 904/904 e config/handler 245/245 (sobreposição, não total único); lint inventário PASS; lint fontes FAIL baseline useAuth (1 erro/3 warnings); scanners PASS. Typecheck isolado NOT RUN por restrição do ambiente; último build automático pré-documentação OK 21:35:25Z.
+- [x] Smoke público no domínio oficial: plataforma/financeiro/B2B → auth e visita/novo → app/login; Entrar visível/zero pageerror, sem login ou mutação. Lacuna latente PortalGuard sem feature /portal não classificada como bypass atual.
+- [ ] Prioridade segurança A03: comprovar/fechar escopo server-side de set_partner_user_papel (authenticated EXECUTE, DEFINER sem tenant do alvo no corpo); falta prova autenticada/alvo seguro para correção. Nenhuma RPC mutável executada.
+- [ ] NO-GO browser: sessão real do administrador AR BIOTECNOLOGIA Gestão v1/TRIAL/10 primeiro; depois oito identidades existentes nos quatro planos, Completo TRIAL, Superadmin/non-superadmin. External_unmanaged impede sessão injetada; sem credenciais em texto, mocks ou PASS inventado.
+- [ ] Forja/isolamento RLS/Storage e mutações sensíveis integrais: BLOCKED sem sessões reais e alvo de prova segura; advisors atuais NOT RUN, sem reutilizar números históricos como novos. Nenhum módulo seguinte iniciado.
+- [x] Somente relatório/roadmap alterados; sem código funcional, migration, deploy/publicação, fixtures ou alteração de Auth/SMTP/planos/comercial/fiscal/pagamentos.
+
 ## Pós-deploy planos/admin/usuários — 2026-10-07, solicitação 19:57 UTC
 
 - [x] Deploy efetivo confirmado pelo executor independente: commit `2a23d2f952321f1ad962a60be736c31b04fc0d45`, frontend `https://cultivofarm.lovable.app`, deployment_id `4e27d947-1501-4feb-9a3a-3045dc71d404`; HEAD local igual antes da documentação.
