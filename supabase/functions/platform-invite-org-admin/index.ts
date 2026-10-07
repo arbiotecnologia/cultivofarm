@@ -18,6 +18,8 @@ import { classifyFinalizeError, finalizeErrorResponse } from "../_shared/platfor
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 import { getPlatformInviteRedirectUrl } from "./redirect-policy.ts";
 import { manualLinkAuditState, manualLinkResponseHeaders, parseDeliveryMode } from "./manual-link-policy.ts";
+import { handleAccess } from "./access-handler.ts";
+import { CANONICAL_URL, temporaryPassword } from "./access-policy.ts";
 
 const json = (body: unknown, status = 200, origin: string | null = null, noStore = false) =>
   new Response(JSON.stringify(body), {
@@ -48,12 +50,7 @@ async function maskedId(value: string): Promise<string> {
 }
 
 function senhaTemporaria(): string {
-  const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes = new Uint8Array(14);
-  crypto.getRandomValues(bytes);
-  const base = Array.from(bytes, (b) => alfabeto[b % alfabeto.length]).join("");
-  // Garante complexidade mínima (letra, número e símbolo).
-  return `${base}#7`;
+  return temporaryPassword();
 }
 
 function soDigitos(v: unknown): string | null {
@@ -73,6 +70,7 @@ Deno.serve(async (req) => {
   const correlationId = crypto.randomUUID();
 
   try {
+    if (Deno.env.get("SUPABASE_URL") !== CANONICAL_URL) return respond({ error: "Serviço indisponível.", code: "binding_mismatch" }, 503, true);
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Não autorizado" }, 401);
 
@@ -102,6 +100,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") return respond({ error: "Dados inválidos." }, 400);
+    if ("access_action" in body) return handleAccess(adminClient, callerId, body as Record<string, unknown>, respond);
 
     const organizationId = String((body as Record<string, unknown>).organization_id ?? "");
     const nome = String((body as Record<string, unknown>).nome ?? "").trim();
@@ -132,6 +131,7 @@ Deno.serve(async (req) => {
       return respond({ error: "O link manual exige acesso por link.", code: "manual_link_requires_link_mode" }, 400);
     }
     const isManualLink = deliveryMode === "manual_link";
+    if (isManualLink) return respond({ error: "Use o envio direto ao titular. Links de senha não são disponibilizados ao operador.", code: "manual_link_disabled" }, 403, true);
 
     // O Origin continua validado no início da requisição para impedir chamadas
     // indevidas, mas nunca define o destino de um convite operacional.
@@ -455,7 +455,7 @@ Deno.serve(async (req) => {
       email_status: "not_required",
       status: "pendente",
       idempotent: !criamosUsuario,
-    });
+    }, 200, true);
   } catch (_err) {
     return respond({ error: "Falha inesperada ao criar o acesso." }, 500);
   }
