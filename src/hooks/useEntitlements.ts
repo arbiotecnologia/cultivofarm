@@ -41,8 +41,7 @@ export function useEntitlements(): EntitlementState {
   if (!context.isSuccess) return { status: "error" };
   if (context.data === "platform_superadmin") return { status: "platform_superadmin" };
   if (context.data === "legacy_unversioned") return { status: "legacy_unversioned" };
-  if (context.data === "no_subscription" || context.data === "no_context") return { status: "no_subscription" };
-  if (context.data === "blocked_status" || context.data === "trial_expired") return { status: "blocked" };
+  if (context.data === "no_subscription" || context.data === "no_context" || context.data === "blocked_status" || context.data === "trial_expired") return { status: context.data };
   if (!eligible) return { status: "error" };
   if (entitlements.isLoading) return { status: "loading" };
   if (!entitlements.isSuccess) return { status: "error" };

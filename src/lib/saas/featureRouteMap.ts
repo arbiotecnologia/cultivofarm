@@ -58,7 +58,7 @@ export function featureForPath(path: string): string | null {
 
 export type EntitlementState =
   | { status: "loading" | "error" }
-  | { status: "legacy_unversioned" | "blocked" | "no_subscription" }
+  | { status: "legacy_unversioned" | "blocked" | "no_subscription" | "no_context" | "blocked_status" | "trial_expired" }
   | { status: "platform_superadmin" }
   | { status: "ready"; features: ReadonlySet<string> };
 
