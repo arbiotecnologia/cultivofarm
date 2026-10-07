@@ -26,7 +26,9 @@ BEGIN
   INSERT INTO public.user_roles(user_id,role) VALUES (ua,'administrador'),(ua,'parceiro_b2b'),(ub,'administrador'),(ub,'parceiro_b2b'),(uc,'parceiro_b2b_tecnico');
   DELETE FROM public.partner_users WHERE user_id IN (ua,ub,uc);
   INSERT INTO public.partner_users(partner_id,user_id,papel) VALUES (pa,ua,'gestor'),(pb,ub,'gestor'),(pa,uc,'tecnico');
-  INSERT INTO public.partner_financial_settings(partner_id,credit_limit) VALUES (pa,101),(pb,202);
+  -- O cadastro de parceiro já cria suas configurações por trigger.
+  INSERT INTO public.partner_financial_settings(partner_id,credit_limit) VALUES (pa,101),(pb,202)
+  ON CONFLICT (partner_id) DO UPDATE SET credit_limit=EXCLUDED.credit_limit;
   stage:='A_credit';
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',ua,'role','authenticated')::text,true);
   SET LOCAL ROLE authenticated;
