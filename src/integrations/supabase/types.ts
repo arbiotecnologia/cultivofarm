@@ -22232,10 +22232,6 @@ export type Database = {
         Args: { p_job_id: string; p_lease_token: string }
         Returns: Json
       }
-      platform_actor_access_ready: {
-        Args: { p_user: string }
-        Returns: boolean
-      }
       platform_archive_plan_version: {
         Args: { _idempotency_key: string; _reason: string; _version_id: string }
         Returns: string
