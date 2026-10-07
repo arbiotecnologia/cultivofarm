@@ -9,9 +9,10 @@
  * canônico é usado com cast local. NÃO criar cliente Supabase paralelo.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { createSubscriptionTransition, SubscriptionResultUnknown, type SubscriptionAction } from "@/lib/saas/subscriptionTransition";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -369,6 +370,7 @@ export function useExcecoesSaaS() {
 
 /** Mensagens seguras para erros conhecidos de `platform_transition_subscription`. */
 export function mensagemErroAssinatura(e: unknown): string {
+  if (e instanceof SubscriptionResultUnknown) return `Não foi possível confirmar o resultado. Confira o histórico e a sessão antes de tentar novamente com os mesmos dados. Nenhuma repetição automática foi feita. Código: ${e.correlationId}`;
   const msg = e instanceof Error ? e.message : "";
   if (msg.includes("platform_forbidden")) return "Seu acesso não permite concluir esta operação.";
   if (msg.includes("assinatura legada")) return "Esta assinatura é antiga e só pode ser regularizada com “Alterar plano” para uma versão publicada e vigente.";
@@ -509,27 +511,48 @@ export function useEncerrarExcecao() {
   });
 }
 
+// Document-lifetime coordinator preserves in-flight and ambiguous keys across remounts.
+const transitionSubscription = createSubscriptionTransition({
+  write: (v, key, signal) => db.rpc("platform_transition_subscription", {
+    _organization_id: v.organizationId, _action: v.action, _reason: v.reason,
+    _correlation_id: key, _plan_version_id: v.planVersionId,
+  }).abortSignal(signal),
+  committed: async (org, key, signal) => {
+    const history = await db.from("organization_subscription_history").select("subscription_id")
+      .eq("organization_id", org).eq("correlation_id", key).limit(1).abortSignal(signal);
+    if (history.error) throw new Error("subscription_history_unavailable");
+    if (Array.isArray(history.data) && history.data.some((r: { subscription_id?: unknown }) => typeof r.subscription_id === "string")) return true;
+    const subscription = await db.from("organization_subscriptions").select("id")
+      .eq("organization_id", org).eq("last_correlation_id", key).limit(1).abortSignal(signal);
+    if (subscription.error) throw new Error("subscription_state_unavailable");
+    return Array.isArray(subscription.data) && subscription.data.some((r: { id?: unknown }) => typeof r.id === "string");
+  },
+});
+
 export function useAlterarAssinatura() {
-  const invalidar = useInvalidarPlataforma();
-  return useMutation({
+  const qc = useQueryClient();
+  const [verifying, setVerifying] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const mutation = useMutation({
     retry: false,
-    mutationFn: async (v: {
-      organizationId: string;
-      action: "start_trial" | "change_plan" | "mark_past_due" | "suspend" | "reactivate_manual" | "cancel" | "expire_trial";
-      planVersionId: string | null;
-      reason: string;
-    }) => {
-      const { error } = await db.rpc("platform_transition_subscription", {
-        _organization_id: v.organizationId,
-        _action: v.action,
-        _reason: v.reason,
-        _correlation_id: crypto.randomUUID(),
-        _plan_version_id: v.planVersionId,
-      });
-      if (error) throw new Error(error.message);
+    networkMode: "always",
+    mutationFn: async (v: SubscriptionAction) => {
+      try {
+        return await transitionSubscription(v, () => { if (mounted.current) setVerifying(true); });
+      } finally {
+        if (mounted.current) setVerifying(false);
+      }
     },
-    onSettled: invalidar,
+    onSuccess: () => {
+      // Never await refetch: an unresponsive read must not keep the button pending.
+      for (const queryKey of [
+        ["plataforma", "organization_subscriptions"], ["plataforma", "organization_subscription_history"],
+        ["saas", "entitlements"], ["saas", "entitlement-context"],
+      ]) void qc.invalidateQueries({ queryKey }).catch(() => undefined);
+    },
   });
+  return { ...mutation, verifying };
 }
 
 export function usePublicarVersaoPlano() {
