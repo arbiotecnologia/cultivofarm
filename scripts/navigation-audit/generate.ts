@@ -13,6 +13,7 @@ const routes = declaredRoutes();
 const internalReasons: Record<string, string> = {
   "/app/checkin": "contextual check-in; requires solicitation; not a top-level tab",
   "/app/visita/novo": "creation action inside technical workspace",
+  "/visita-tecnica/nova": "VisitaTecnicaLista creation action; not a standalone menu item",
   "/app/registrar": "MobileLayout floating action and technical dashboard",
   "/app/ordens": "technical/producer dashboard action",
   "/app/aplicacoes": "producer workflow; review discoverability with real identity",
@@ -42,7 +43,8 @@ const rows = routes.map((route) => {
 const pages = sourceFiles("src/pages").map((path) => {
   const module = path.replace(/^src\//, "@/").replace(/\.tsx?$/, "");
   const consumers = sources.filter((s) => s !== path && readFileSync(s, "utf8").includes(module));
-  const relativeConsumers = sources.filter((s) => s !== path && readFileSync(s, "utf8").includes(`./${path.split("/").pop()?.replace(/\.tsx?$/, "")}`));
+  const basename = path.split("/").pop()?.replace(/\.tsx?$/, "") ?? "";
+  const relativeConsumers = sources.filter((s) => s !== path && new RegExp(`from\\s+["'][^"']*/${basename}["']`).test(readFileSync(s, "utf8")));
   return { path, consumers: [...new Set([...consumers, ...relativeConsumers])], classification: consumers.length || relativeConsumers.length ? "route_or_embedded; inspect consumers" : "6: no import detected; not automatically exposed" };
 });
 writeFileSync("docs/auditorias/auditoria-rotas-inventario-2026-10-07.json", JSON.stringify({ source: "src/App.tsx; AST TypeScript", routes: rows, navigation: menus.map(({ id, route, source, audience }) => ({ id, route, source, audience })), pages }, null, 2) + "\n");

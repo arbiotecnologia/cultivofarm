@@ -1,4 +1,5 @@
-- Plano SaaS no frontend: gate só restringe via `isPathEntitled` (src/lib/saas/featureRouteMap.ts) somado ao RoleGuard e, nos portais, aninhado aos guards de vínculo (só features inequívocas); escrita de plataforma só por RPCs `platform_*` SECURITY INVOKER — evita bypass e alertas do linter.
+- SaaS gates only restrict via isPathEntitled plus role/link guards; platform writes use platform_* INVOKER RPCs — prevents bypass.
+- Route audit parses App.tsx JSX into a route/menu/feature snapshot; static coverage never replaces runtime guards/RLS. Legacy redirects merge query/hash with canonical parameter precedence — prevents malformed aliases.
 
 - Escrita em organizations só por RPCs SECURITY DEFINER que emitem ticket em platform_private.authz_tickets (txid); triggers exigem o ticket — flags GUC não são fronteira de autorização.
 
