@@ -2,7 +2,7 @@
  * D52 — gestão de exceções e transições específicas de assinatura.
  * Toda escrita passa por RPCs `platform_*` (superadmin, motivo obrigatório).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const orgs = useOrganizacoesSaaS();
   const versoes = useVersoesPlanosSaaS();
   const alterar = useAlterarAssinatura();
+  const submitting = useRef(false);
   const [org, setOrg] = useState(organizationIdInicial ?? "");
   useEffect(() => { if (organizationIdInicial) setOrg(organizationIdInicial); }, [organizationIdInicial]);
   const [versao, setVersao] = useState("");
@@ -55,15 +56,18 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   });
 
   const enviar = () => {
-    if (alterar.isPending) return;
+    if (submitting.current || alterar.isPending) return;
+    submitting.current = true;
     alterar.mutate(
       { organizationId: org, action: acao, planVersionId: exigeVersao ? versao : null, reason: motivo.trim() },
       {
         onSuccess: () => {
           toast.success("Ação aplicada e registrada no histórico.");
           setMotivo("");
+          setVersao("");
         },
         onError: (e) => toast.error(mensagemErroAssinatura(e)),
+        onSettled: () => { submitting.current = false; },
       },
     );
   };
@@ -100,8 +104,11 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
         <div className="sm:col-span-2">
           {exigeVersao && versoes.isSuccess && versoesVigentes.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Nenhuma versão comercial vigente. A ação permanece bloqueada.</p>}
           <Button disabled={!org || (exigeVersao && !versao) || !motivoOk(motivo) || alterar.isPending} onClick={enviar}>
-            {alterar.isPending ? "Aplicando…" : "Confirmar ação"}
+            {alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : "Aplicar ação"}
           </Button>
+          <p role="status" aria-live="polite" className="mt-2 text-sm text-muted-foreground">
+            {alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : alterar.isError ? mensagemErroAssinatura(alterar.error) : ""}
+          </p>
         </div>
       </CardContent>
     </Card>
