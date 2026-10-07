@@ -22444,6 +22444,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      platform_org_admin_access_state: {
+        Args: { p_actor_id: string; p_invite_id: string }
+        Returns: Json
+      }
       platform_publish_plan_version: {
         Args: {
           _billing_cycle: string
