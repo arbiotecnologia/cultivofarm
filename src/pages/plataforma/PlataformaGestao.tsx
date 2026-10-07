@@ -2,7 +2,7 @@
  * D52 — gestão de exceções e transições específicas de assinatura.
  * Toda escrita passa por RPCs `platform_*` (superadmin, motivo obrigatório).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -35,11 +35,12 @@ type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
-export function AlterarAssinaturaCard() {
+export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organizationIdInicial?: string | null } = {}) {
   const orgs = useOrganizacoesSaaS();
   const versoes = useVersoesPlanosSaaS();
   const alterar = useAlterarAssinatura();
-  const [org, setOrg] = useState("");
+  const [org, setOrg] = useState(organizationIdInicial ?? "");
+  useEffect(() => { if (organizationIdInicial) setOrg(organizationIdInicial); }, [organizationIdInicial]);
   const [versao, setVersao] = useState("");
   const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
