@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
           const sent = await sendEmail(env, { ok: true, canal: "email", address: oldEmail },
             { canal: "email", assunto: "Seu e-mail de acesso foi alterado", corpo: texto, variaveis: [] },
             { assunto: "Seu e-mail de acesso foi alterado", corpo: texto });
-          oldAddressNotice = sent.ok ? "sent" : "failed";
+          oldAddressNotice = sent.outcome === "sent" ? "sent" : "failed";
         }
       } catch { oldAddressNotice = "failed"; }
       await admin.from("comunicacao_audit_log").insert({
