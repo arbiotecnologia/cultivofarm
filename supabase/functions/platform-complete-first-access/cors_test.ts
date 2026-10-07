@@ -4,7 +4,7 @@ import { stub } from "https://deno.land/std@0.224.0/testing/mock.ts";
 let handler: ((req: Request) => Response | Promise<Response>) | undefined;
 const serve = stub(Deno, "serve", (candidate: unknown) => {
   handler = candidate as (req: Request) => Response | Promise<Response>;
-  return {} as Deno.HttpServer;
+  return {} as Deno.HttpServer<Deno.NetAddr>;
 });
 try { await import("./index.ts"); } finally { serve.restore(); }
 
