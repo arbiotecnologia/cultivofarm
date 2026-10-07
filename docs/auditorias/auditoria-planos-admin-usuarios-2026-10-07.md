@@ -6,7 +6,7 @@
 
 SHA observado após alterações de código/testes: `550a151775010339bfa4a75107fe85d7bf486226`. É a revisão observada antes desta consolidação documental, não um commit final criado manualmente.
 
-### Fechamento solicitado — 19:22 UTC
+### Fechamento anterior — 19:22 UTC (superado pela autorização de 19:23)
 
 Entrega encerrada sem reiniciar ou ampliar a auditoria. Revisão observada no início do fechamento: `980b09d676b8c2002c68f9fbd6fb1fb2ea8b1031`, com árvore limpa. A suíte já terminou: 5.804 PASS e 4 skipped; não havia teste em andamento a concluir. `git diff --check` passou. O log automático de build não estava disponível neste novo contexto; mantém-se a evidência anterior registrada, sem alegar novo build. Typecheck separado continua não executado. Nenhuma correção adicional de código foi aplicada; o candidato Edge permanece somente diff para revisão. Alterados neste fechamento apenas este relatório e roadmap. **PASS estrutural focal / NO-GO funcional** preservados; gates autenticados e teste do diff dependem de execução autorizada externa, não ficam implicitamente em andamento.
 
@@ -126,9 +126,11 @@ Alterados nesta auditoria: `src/lib/saas/featureRouteMap.ts`, `src/hooks/useEnti
 
 Criados: `src/test/saas/plan-admin-user-matrix.test.tsx`, diff candidato create-user e este relatório. `roadmap.md` consolidado. Nenhuma migration/Edge remota; não houve novos resíduos porque nenhuma fixture ou escrita remota foi criada nesta rodada. Zero-resíduo/restauração são provas executadas pelo executor independente nesta auditoria; este agente não fez nova varredura integral.
 
-Rollback local: reverter somente os hunks de diagnóstico e testes desta auditoria, remover diff candidato se rejeitado; nenhuma restauração de banco necessária. Inventário canônico e correções anteriores de assinatura permanecem intactos.
+Rollback local: reverter os hunks locais da Edge/diagnóstico e testes desta auditoria se necessário; nenhuma restauração de banco necessária. Inventário canônico e correções anteriores de assinatura permanecem intactos.
 
 Gate humano mínimo: evidência sanitizada em navegador real do proprietário com administrador e usuários de teste já existentes, nos quatro planos; verificar menu/URL/dados, bloqueios por perfil/plano, logout/login, atualização entre abas e JWT antigo. Não compartilhar tokens/senhas. Testes isolados da Edge concluídos; implantação e certificação remota dependem de autorização posterior. **PASS banco/RLS e PASS estrutural frontend; NO-GO apenas browser autenticado E2E e Edge remota**, sem alegação de 100%.
 ## Fechamento corretivo — 19:23 UTC
 
 Aplicado diff aprovado em `supabase/functions/create-user/index.ts` e adicionado `src/test/security/create-user-edge-handler.test.ts`: 17 cenários executam o handler real transpilado com SDK/Deno mockados, sem rede. Cobrem admin, JWT inválido/antigo mockado, erro/false has_role, tenant forjado, papéis reservados/desconhecidos, vínculos fail-closed, compensação profile/roles/exceção, sucesso e falha do compensador com resposta/log sanitizados. Deno check PASS; testes focais Edge/matriz/tenant 69/69; suíte pertinente 770/770 em 69 arquivos; ESLint focal, scanners segredos/fiscal e diff-check PASS. Suíte completa anterior 5.804 PASS/4 skipped preservada, não reexecutada. Typecheck frontend separado não executado (validação automática); nenhum build manual. Compensação continua best-effort em falha de rede/interrupção do processo. Nenhuma migration, escrita remota, publicação ou deploy manual. O diff arquivado continua como evidência da revisão aprovada, com sanitização adicional do log na fonte local.
+
+Build automático verificado: OK às 19:26:35 UTC. Deno check fornece validação de tipos da Edge; typecheck frontend separado não foi executado.
