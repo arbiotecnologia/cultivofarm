@@ -14,6 +14,8 @@ import { itemsForPlatform } from "@/config/navigation";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
 // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
@@ -31,6 +33,7 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
 
 export default function MobileLayout() {
   const { user, primaryRole, roles, loading } = useAuth();
+  const entitlements = useEntitlements();
   const location = useLocation();
   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
   const navigate = useNavigate();
@@ -74,7 +77,8 @@ export default function MobileLayout() {
   }
 
   // Fase 3 — se produtor + técnico e o usuário escolheu técnico, exibe menus técnicos.
-  const tabs = isProducerMode ? produtorTabs : consultorTabs;
+  const tabs = (isProducerMode ? produtorTabs : consultorTabs)
+    .filter((tab) => isPathEntitled(tab.path, entitlements));
   const isConsultor = !isProducerMode;
 
   return (
