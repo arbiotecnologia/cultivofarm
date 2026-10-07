@@ -115,3 +115,10 @@
 - [ ] Busca de empresas por cidade/UF (fase futura)
 - [x] Correção: troca de plano em assinatura legada (plan_version_id NULL) — migration `20261007035510` aplicada em produção; só `change_plan` para versão PUBLISHED vigente; provas com rollback PASS. Pendente: regularizar a AR BIOTECNOLOGIA pela tela (ação humana) e teste visual autenticado. Evidências: `docs/auditorias/pos-d52-prova-comercial-fase1-2026-10-06.md` §19.
 - [x] Revalidação autenticada 2026-10-07 13:00 UTC — corrigidos bloqueios de privilégio/ticket com wrapper INVOKER + core privado e preservação do trial no trigger; migrations `20261007125842` (permissão temporária, revogada pela seguinte) e `20261007125937` aplicadas somente na produção; rollback PASS e hash integral da assinatura real preservado. Mensagem atual do servidor traduzida; ver §20.
+
+## Certificação ponta a ponta Parceiro B2B — 2026-10-07
+- [ ] Fase 1 — auditar estado vivo e implementar roteiro A/B/C transacional canônico, isolamento, preços, idempotência, crédito, fluxo e resíduos; fiscal externo sempre desligado.
+- [ ] Fase 2 — confiabilidade financeira: retry/outbox, reconciliação, alerta e exatamente um título por pedido elegível.
+- [ ] Fase 3 — rascunho NF-e idempotente vinculado ao fluxo canônico e gate seguro de expedição, sem emissão real.
+- [ ] Fase 4 — documentação de transporte, CT-e recebido e decisão MDF-e fail-closed; emissão própria CT-e desligada.
+- [ ] Fechamento — matriz RLS/Storage/RPC, provas A/B/C, desktop/mobile, testes, verificações automáticas, scanner/advisors e relatório GO/NO-GO; decisões contábeis não inferidas.
