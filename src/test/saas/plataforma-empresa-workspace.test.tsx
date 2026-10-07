@@ -6,6 +6,7 @@ import { errosFormEmpresa, formEmpresaAlterado, formatarCnpj, mensagemErroEdicao
 const editar = vi.fn();
 const refetch = vi.fn().mockResolvedValue({});
 const rolesRef = { current: ["superadmin"] as string[] };
+const fiscalRef: { current: Record<string, unknown> } = { current: { configurado: false } };
 const orgs = [
   { id: "org-a", nome: "AR BIOTECNOLOGIA LTDA", nome_fantasia: "AR Bio", cnpj: "12345678000190", email_corporativo: "a@ar.com", status: "ativa", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-02-01T00:00:00Z" },
   { id: "org-b", nome: "REFIL INFORMATICA LTDA", nome_fantasia: null, cnpj: "98765432000110", email_corporativo: "b@refil.com", status: "onboarding", created_at: "2026-01-02T00:00:00Z", updated_at: "2026-02-02T00:00:00Z" },
@@ -31,6 +32,7 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useConvitesAdminEmpresa: () => ({ data: [{ id: "c1", organization_id: "org-a", nome: "Maria", email: "maria@ar.com", responsavel_principal: true, status: "ativo" }] }),
   useAuditoriaEmpresa: () => ({ data: [{ id: "e1", tipo: "situacao", created_at: "2026-02-01T00:00:00Z", motivo: "Ativação", resumo: "Situação: onboarding → ativa" }], refetch }),
   useEditarEmpresa: () => ({ mutateAsync: editar, isPending: false }),
+  useResumoFiscalEmpresa: () => ({ data: fiscalRef.current, isLoading: false, isError: false }),
 }));
 
 import PlataformaEmpresas from "@/pages/plataforma/PlataformaEmpresas";
