@@ -122,7 +122,7 @@ function renderProvider(strict = false) {
       </AuthProvider>
     </QueryClientProvider>
   );
-  return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
+  return { ...render(strict ? <StrictMode>{tree}</StrictMode> : tree), client };
 }
 
 
@@ -175,9 +175,54 @@ describe("AuthProvider — callback de autenticação", () => {
     emit("INITIAL_SESSION", sessionA);
     emit("SIGNED_IN", sessionA);
     await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
-    emit("TOKEN_REFRESHED", sessionA);
+    emit("SIGNED_IN", sessionA);
     await new Promise((r) => setTimeout(r, 10));
     expect(profileCalls).toBe(1);
+  });
+
+  it("SIGNED_OUT automático limpa cache privado e contexto de A", async () => {
+    const { client } = renderProvider();
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    client.setQueryData(["private-records"], [{ owner: "user-a" }]);
+    sessionStorage.setItem("active_portal_context", "admin");
+    await act(async () => { emit("SIGNED_OUT", null); });
+    expect(client.getQueryData(["private-records"])).toBeUndefined();
+    expect(sessionStorage.getItem("active_portal_context")).toBeNull();
+    expect(screen.getByTestId("role").textContent).toBe("-");
+  });
+
+  it.each(["TOKEN_REFRESHED", "USER_UPDATED"])("%s revalida perfil inativado do mesmo UID", async (event) => {
+    const { client } = renderProvider();
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    client.setQueryData(["private-records"], [{ owner: "user-a" }]);
+    sessionStorage.setItem("active_portal_context", "admin");
+    profileRow = { ...profileRow, ativo: false };
+    await act(async () => { emit(event, sessionA); });
+    expect(client.getQueryData(["private-records"])).toBeUndefined();
+    expect(sessionStorage.getItem("active_portal_context")).toBeNull();
+    expect(screen.getByTestId("role").textContent).toBe("-");
+    await waitFor(() => expect(signOutSpy).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("error").textContent).toBe("Sua conta está inativa.");
+    expect(profileCalls).toBe(2);
+    expect(callsInsideCallback).toBe(0);
+  });
+
+  it("USER_UPDATED descarta papel revogado antes de recarregar o mesmo UID", async () => {
+    renderProvider();
+    emit("SIGNED_IN", sessionA);
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+    rolesRows = [];
+    profileDelay = 25;
+    await act(async () => { emit("USER_UPDATED", sessionA); });
+    expect(screen.getByTestId("role").textContent).toBe("-");
+    expect(screen.getByTestId("loading").textContent).toBe("true");
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
+    expect(screen.getByTestId("role").textContent).toBe("-");
+    expect(screen.getByTestId("error").textContent).toContain("não possui uma função");
+    expect(profileCalls).toBe(2);
+    expect(callsInsideCallback).toBe(0);
   });
 
   it("resultado lento de A não aplica estado depois de B", async () => {

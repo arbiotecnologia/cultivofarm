@@ -1,4 +1,12 @@
-## Sincronização local A03/A05 — 2026-10-07 22:33 UTC (estado atual)
+## Correção focal de sessão — 2026-10-07 23:00 UTC (estado atual)
+
+- [x] Registrar escopo: somente código/testes/documentação; sem subagentes ou operações remotas. Preservar A03/A05 e D51.6/D52.
+- [x] Contenção independente Codex parcial: conta operacional desativada e papel administrador removido; Auth não excluído devido vínculos financeiros/entregas/Storage. Único admin operacional CultivoFarm, sem atingir Superadmin/AR Bio.
+- [x] Reprodução própria: 17 PASS/4 FAIL antes; callback corrigido sem chamadas Supabase na pilha, geração/StrictMode preservados; focal 21/21 PASS.
+- [x] Regressão própria Auth/multiportal/RBAC/SaaS/security: 940/940 PASS, 84 arquivos. Inicial 938 PASS/2 FAIL em expectativas textuais D51.4/D51.5, atualizadas para exigir condição ampliada. Lint fonte/duas regressões: 0 erros/3 warnings; lint incluindo mock authProviderCallback FAIL com 17 any preexistentes, sem ocultar. Scanners/diff-check PASS; build automático OK 23:03:58 UTC. Typecheck/manual build não executados (harness).
+- [ ] Browser integral por perfil/plano/API permanece UNVERIFIED/NO-GO; revalidação por evento não garante revogação imediata JWT. Preview Superadmin autenticado relatado não certifica publicado em /auth.
+
+## Sincronização local A03/A05 — 2026-10-07 22:33 UTC (histórico)
 
 - [x] Baseline local confirmado: `903fb41e321d12cebea991864a6c3ecb09864015`. Sem subagentes, escrita remota, execução SQL, fixtures, Auth, migration aplicada, publicação/deploy ou outro módulo.
 - [x] Registrar evidência independente Codex: canônico `swzpzcwiasxmjutrmvkm`, ledger `20261007222943`, A05 PASS focal SQL/RLS; A03 contenção ACL PASS, sem afirmar exploração A03. Fixtures transacionais integralmente revertidas.

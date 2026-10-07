@@ -24,8 +24,9 @@
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
 - Published plan versions are content-immutable; a successor is created as a new DRAFT and publishing it closes only the predecessor's `effective_to` under a `saas_plan_version_supersede` ticket — keeps price/feature snapshots and history intact.
 - Organization profile edits (legal name, trade name, e-mail) go only through `platform_update_organization_profile` with expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ, status, plan and admins keep their own flows — avoids parallel write paths.
-- Provisioned-admin management uses one dialog with internal sections, existing Edges/invitation mutation and a shared lock; private target checks, Auth confirmation, JWT fencing, expiry and audited retries remain server-side — prevents duplicate paths and authorization bypass.
-- Subscription transitions keep a public INVOKER wrapper over a private, server-authorized DEFINER core; version changes preserve existing trial deadlines — keeps ticket issuance private and prevents implicit trial changes.
+- Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target checks, Auth confirmation, JWT fencing, expiry/retry audits stay server-side — avoids bypass.
+- Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
+- Auth logout/renewal clears identity/cache; reload runs outside callbacks — avoids stale roles/deadlocks.
 - B2B credit RPCs authorize through the canonical partner-scope guard before the service-only calculator, and direct financial-settings access has a restrictive active-tenant policy including writes — prevents role-only cross-tenant credit disclosure and modification.
 - B2B keeps tenant policies/private cores; titles reuse installments. Technical writes reuse active actor/partner/client assignments with zero-finance guards; headers/items use price-free RPCs — prevents leakage and duplication.
 - Fixtures need real Auth, delivery OFF, ID cleanup and secret-free manifests; SQL rollback is not browser proof — avoids false PASS.
