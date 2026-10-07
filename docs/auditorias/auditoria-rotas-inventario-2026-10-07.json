@@ -1,0 +1,7238 @@
+{
+  "source": "src/App.tsx; AST TypeScript",
+  "routes": [
+    {
+      "path": "/auth",
+      "line": 405,
+      "index": false,
+      "components": [
+        "AuthRoute"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/guards/B2BRouteGuard.tsx",
+        "src/components/guards/PlataformaGuard.tsx",
+        "src/components/guards/TechnicalRouteGuard.tsx",
+        "src/components/guards/VisitaRouteGuard.tsx",
+        "src/lib/navigation/safeHome.ts",
+        "src/lib/permissions.ts",
+        "src/pages/ResetPassword.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+        "src/pages/portal/PortalLayout.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/reset-password",
+      "line": 406,
+      "index": false,
+      "components": [
+        "ResetPassword"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/pages/ResetPassword.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/selecionar-portal",
+      "line": 407,
+      "index": false,
+      "components": [
+        "AuthenticatedShell",
+        "SelecionarPortal"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/hooks/useSwitchPortal.ts",
+        "src/lib/navigation/safeHome.ts",
+        "src/pages/AcessoPendente.tsx",
+        "src/pages/SemPermissao.tsx",
+        "src/pages/app/MobileLogin.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/acesso-pendente",
+      "line": 408,
+      "index": false,
+      "components": [
+        "AuthenticatedShell",
+        "AcessoPendente"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/navigation/safeHome.ts",
+        "src/pages/SelecionarPortal.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/sem-permissao",
+      "line": 409,
+      "index": false,
+      "components": [
+        "AuthenticatedShell",
+        "SemPermissao"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/guards/AppPortalGuard.tsx",
+        "src/components/guards/B2BRouteGuard.tsx",
+        "src/components/guards/PlataformaGuard.tsx",
+        "src/components/guards/ProducerFeatureGuard.tsx",
+        "src/components/guards/TechnicalFeatureGuard.tsx",
+        "src/components/guards/TechnicalRouteGuard.tsx",
+        "src/components/guards/VisitaRouteGuard.tsx",
+        "src/features/comunicacao/RouteGuard.tsx",
+        "src/lib/navigation/safeHome.ts",
+        "src/pages/app/MobileLayout.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/plataforma",
+      "line": 412,
+      "index": false,
+      "components": [
+        "PlataformaHome"
+      ],
+      "ancestors": [
+        "PlataformaGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/catalogo-ia",
+      "line": 413,
+      "index": false,
+      "components": [
+        "ConfigCatalogoIA"
+      ],
+      "ancestors": [
+        "PlataformaGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/Configuracoes.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/validar-entrega/:token",
+      "line": 415,
+      "index": false,
+      "components": [
+        "ValidarEntrega"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/rastrear-produto/:token",
+      "line": 416,
+      "index": false,
+      "components": [
+        "RastrearProduto"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/login",
+      "line": 419,
+      "index": false,
+      "components": [
+        "MobileLogin"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/guards/AppPortalGuard.tsx",
+        "src/components/guards/ProducerFeatureGuard.tsx",
+        "src/components/guards/TechnicalFeatureGuard.tsx",
+        "src/hooks/useSwitchPortal.ts",
+        "src/pages/app/MobileLayout.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app",
+      "line": 423,
+      "index": false,
+      "components": [
+        "MobileDashboard"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:m-c-inicio:mobile-consultor,mobile-produtor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/hooks/useSwitchPortal.ts",
+        "src/lib/navigation/safeHome.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/portalContext.ts",
+        "src/pages/VisitaTecnica.tsx",
+        "src/pages/app/MobileAplicacoes.tsx",
+        "src/pages/app/MobileCheckin.tsx",
+        "src/pages/app/MobileLayout.tsx",
+        "src/pages/app/MobileRegistrarOcorrencia.tsx",
+        "src/pages/app/MobileSolicitar.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/perfil",
+      "line": 424,
+      "index": false,
+      "components": [
+        "MobilePerfil"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:m-perfil:mobile-consultor,mobile-produtor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/notificacoes",
+      "line": 425,
+      "index": false,
+      "components": [
+        "MobileNotificacoes"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:m-p-notificacoes:mobile-produtor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/fazendas",
+      "line": 430,
+      "index": false,
+      "components": [
+        "MobileFazendas"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [
+        "navigation:m-c-fazendas:mobile-consultor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardConsultor.tsx",
+        "src/pages/app/MobileTalhaoHistorico.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/registrar",
+      "line": 431,
+      "index": false,
+      "components": [
+        "MobileRegistrarOcorrencia"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileAtendimentos.tsx",
+        "src/pages/app/MobileDashboardConsultor.tsx",
+        "src/pages/app/MobileLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/atendimentos",
+      "line": 433,
+      "index": false,
+      "components": [
+        "MobileAtendimentos"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [
+        "navigation:m-c-atendimentos:mobile-consultor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardConsultor.tsx",
+        "src/pages/app/MobileVisitaWizard.tsx",
+        "src/pages/app/wizard/WizardRevisaoStep.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/registros",
+      "line": 435,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": "/app/atendimentos",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/solicitacoes",
+      "line": 436,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": "/app/atendimentos?aba=demandas",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/ordens",
+      "line": 437,
+      "index": false,
+      "components": [
+        "MobileOrdens"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardConsultor.tsx",
+        "src/pages/app/MobileDashboardProdutor.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/checkin/:solicitacaoId",
+      "line": 438,
+      "index": false,
+      "components": [
+        "MobileCheckin"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/checkin",
+      "line": 439,
+      "index": false,
+      "components": [
+        "MobileCheckin"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/visita/novo",
+      "line": 440,
+      "index": false,
+      "components": [
+        "MobileVisita"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/visita/:id",
+      "line": 441,
+      "index": false,
+      "components": [
+        "MobileVisita"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/talhao/:id",
+      "line": 442,
+      "index": false,
+      "components": [
+        "MobileTalhaoHistorico"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/catalogo",
+      "line": 443,
+      "index": false,
+      "components": [
+        "MobileCatalogoTecnico"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "TechnicalFeatureGuard",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "aplicador"
+      ],
+      "navigation": [
+        "navigation:m-c-catalogo:mobile-consultor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/recomendacoes",
+      "line": 449,
+      "index": false,
+      "components": [
+        "MobileRecomendacoesProdutor"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "ProducerFeatureGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:m-p-recomendacoes:mobile-produtor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardProdutor.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/entregas",
+      "line": 450,
+      "index": false,
+      "components": [
+        "MobileEntregas"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "ProducerFeatureGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:m-p-entregas:mobile-produtor"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardProdutor.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/aplicacoes",
+      "line": 451,
+      "index": false,
+      "components": [
+        "MobileAplicacoes"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "ProducerFeatureGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/aplicacoes/lista",
+      "line": 452,
+      "index": false,
+      "components": [
+        "MobileListaAplicacoes"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "ProducerFeatureGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardProdutor.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/app/solicitar",
+      "line": 453,
+      "index": false,
+      "components": [
+        "MobileSolicitar"
+      ],
+      "ancestors": [
+        "AppPortalGuard",
+        "MobileLayout",
+        "ProducerFeatureGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/app/MobileDashboardProdutor.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal",
+      "line": 460,
+      "index": false,
+      "components": [
+        "PortalDashboard"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:portal-produtor:desktop",
+        "portalMenus:pp-dashboard:producer"
+      ],
+      "references": [
+        "src/components/AppLayout.tsx",
+        "src/components/nav/NavItemRow.tsx",
+        "src/config/navigation.ts",
+        "src/config/portalMenus.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/portal/PortalLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/fazendas",
+      "line": 461,
+      "index": false,
+      "components": [
+        "PortalFazendas"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-fazendas:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/pages/portal/PortalFazendaDetalhe.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/fazendas/:id",
+      "line": 462,
+      "index": false,
+      "components": [
+        "PortalFazendaDetalhe"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/talhoes",
+      "line": 463,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": "/portal/fazendas",
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/talhoes/:id",
+      "line": 464,
+      "index": false,
+      "components": [
+        "PortalTalhaoDetalhe"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/agenda",
+      "line": 465,
+      "index": false,
+      "components": [
+        "PortalAgenda"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-agenda:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/registros",
+      "line": 466,
+      "index": false,
+      "components": [
+        "PortalRegistros"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-registros:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/pages/portal/PortalRegistroDetalhe.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/registros/:id",
+      "line": 467,
+      "index": false,
+      "components": [
+        "PortalRegistroDetalhe"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/recomendacoes",
+      "line": 468,
+      "index": false,
+      "components": [
+        "PortalRecomendacoes"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-recomendacoes:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/pages/portal/PortalLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/fila-aprovacao",
+      "line": 469,
+      "index": false,
+      "components": [
+        "PortalFilaAprovacao"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/acompanhamento",
+      "line": 470,
+      "index": false,
+      "components": [
+        "PortalAcompanhamento"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-acompanhamento:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/ordens-servico",
+      "line": 472,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": "/portal/acompanhamento?tab=ordens-servico",
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/portal/TalhaoRecomendacaoCard.tsx",
+        "src/pages/portal/PortalRecomendacoes.tsx"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/producao",
+      "line": 473,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": "/portal/acompanhamento?tab=producao",
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/entregas",
+      "line": 474,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": "/portal/acompanhamento?tab=entregas",
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/aplicacoes",
+      "line": 476,
+      "index": false,
+      "components": [
+        "PortalAplicacoes"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-aplicacoes:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/solicitar",
+      "line": 477,
+      "index": false,
+      "components": [
+        "PortalSolicitacao"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-solicitar:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/perfil",
+      "line": 478,
+      "index": false,
+      "components": [
+        "PortalPerfil"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-perfil:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/financeiro",
+      "line": 479,
+      "index": false,
+      "components": [
+        "PortalFinanceiro"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "portalMenus:pp-titulos:producer"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal/meus-pedidos",
+      "line": 481,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "PortalGuard"
+      ],
+      "redirect": "/portal",
+      "feature": null,
+      "profiles": [
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro",
+      "line": 485,
+      "index": false,
+      "components": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [],
+      "references": [
+        "src/hooks/useSwitchPortal.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro",
+      "line": 487,
+      "index": true,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": "/portal-parceiro/dashboard",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [],
+      "references": [
+        "src/hooks/useSwitchPortal.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/perfil",
+      "line": 488,
+      "index": false,
+      "components": [
+        "PortalParceiroPerfil"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [
+        "portalMenus:pb-perfil:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/dashboard",
+      "line": 489,
+      "index": false,
+      "components": [
+        "ParceiroDashboardRouter"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [
+        "portalMenus:pb-dashboard:gestor",
+        "portalMenus:pbt-dashboard:tecnico"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/navigation/safeHome.ts",
+        "src/lib/permissions.ts",
+        "src/lib/portalContext.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/pedidos",
+      "line": 490,
+      "index": false,
+      "components": [
+        "ParceiroMeusPedidos"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [
+        "portalMenus:pb-pedidos:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/NovoPedido.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/solicitacoes",
+      "line": 491,
+      "index": false,
+      "components": [
+        "ParceiroSolicitacoes"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/novo",
+      "line": 492,
+      "index": false,
+      "components": [
+        "ParceiroNovoPedido"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/DashboardPremium.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/catalogo",
+      "line": 493,
+      "index": false,
+      "components": [
+        "ParceiroNovoPedido"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "catalogo_precos",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [
+        "portalMenus:pb-catalogo:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/Favoritos.tsx",
+        "src/pages/portal-parceiro/MeusPedidos.tsx",
+        "src/pages/portal-parceiro/NovoPedido.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/simulador",
+      "line": 494,
+      "index": false,
+      "components": [
+        "ParceiroNovoPedido"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "simulacoes",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [
+        "portalMenus:pbt-simulador:tecnico"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/DashboardTecnico.tsx",
+        "src/pages/portal-parceiro/NovoPedido.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/historico",
+      "line": 495,
+      "index": false,
+      "components": [
+        "ParceiroHistorico"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/meu-historico",
+      "line": 496,
+      "index": false,
+      "components": [
+        "ParceiroMeuHistorico"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [
+        "portalMenus:pb-meu-historico:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/favoritos",
+      "line": 497,
+      "index": false,
+      "components": [
+        "ParceiroFavoritos"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [
+        "portalMenus:pb-favoritos:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/DashboardPremium.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/financeiro",
+      "line": 498,
+      "index": false,
+      "components": [
+        "ParceiroFinanceiro"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [
+        "portalMenus:pb-financeiro:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/historico-financeiro",
+      "line": 499,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": "/portal-parceiro/financeiro?tab=historico",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/meu-historico-financeiro",
+      "line": 500,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": "/portal-parceiro/financeiro?tab=historico",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/fichas",
+      "line": 502,
+      "index": false,
+      "components": [
+        "ParceiroFichasTecnicas"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "fichas_tecnicas",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [
+        "portalMenus:pb-fichas:gestor",
+        "portalMenus:pbt-fichas:tecnico"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/DashboardTecnico.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/simulacoes",
+      "line": 503,
+      "index": false,
+      "components": [
+        "ParceiroHistoricoSimulacoes"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "simulacoes",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [
+        "portalMenus:pbt-simulacoes:tecnico"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/DashboardTecnico.tsx",
+        "src/pages/portal-parceiro/NovoPedido.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/simulacoes-equipe",
+      "line": 504,
+      "index": false,
+      "components": [
+        "ParceiroSimulacoesEquipe"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": "simulacoes",
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [
+        "portalMenus:pb-simulacoes-equipe:gestor"
+      ],
+      "references": [
+        "src/config/portalMenus.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/meus-produtores",
+      "line": 505,
+      "index": false,
+      "components": [
+        "ParceiroMeusProdutoresTecnico"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/DashboardTecnico.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/meus-produtores/:clienteId",
+      "line": 506,
+      "index": false,
+      "components": [
+        "ParceiroDetalheProdutorTecnico"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b_tecnico"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/tecnicos-produtores",
+      "line": 507,
+      "index": false,
+      "components": [
+        "ParceiroTecnicosProdutores"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial",
+        "parceiro_b2b"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-parceiro/usuarios-clientes",
+      "line": 508,
+      "index": false,
+      "components": [
+        "ParceiroUsuariosClientesB2B"
+      ],
+      "ancestors": [
+        "B2BRouteGuard",
+        "PortalParceiroLayout",
+        "EntitlementOutlet"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/visita-tecnica",
+      "line": 515,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "VisitaTecnicaLista"
+      ],
+      "ancestors": [
+        "VisitaRouteGuard",
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo"
+      ],
+      "navigation": [
+        "navigation:visita-tecnica:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/components/executivo/clientes/ExecutivoClientesCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/lib/visita/visitaRouteAccess.ts",
+        "src/pages/VisitaTecnica.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/visita-tecnica/nova",
+      "line": 516,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "VisitaTecnica"
+      ],
+      "ancestors": [
+        "VisitaRouteGuard",
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/VisitaTecnicaLista.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/visita-tecnica/:id",
+      "line": 517,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "VisitaTecnica"
+      ],
+      "ancestors": [
+        "VisitaRouteGuard",
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/",
+      "line": 523,
+      "index": false,
+      "components": [
+        "Index"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/entregas/RegistrarEntregaDialog.tsx",
+        "src/components/guards/ForaDoPlano.tsx",
+        "src/components/nav/NavItemRow.tsx",
+        "src/components/onboarding/OnboardingEmpresa.tsx",
+        "src/config/navigation.ts",
+        "src/features/comunicacao/RouteGuard.tsx",
+        "src/hooks/usePushSubscription.ts",
+        "src/lib/accessAuditLog.ts",
+        "src/lib/comprovanteEntregaPdf.ts",
+        "src/lib/date-utils.ts",
+        "src/lib/equipe-tecnica/evidencias.ts",
+        "src/lib/fiscal/cnpjAlpha.ts",
+        "src/lib/mediaUpload.ts",
+        "src/lib/navigation/matchActive.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/lib/visita/etapasVisita.ts",
+        "src/pages/ConsultorTecnico.tsx",
+        "src/pages/NotFound.tsx",
+        "src/pages/app/MobilePlaceholder.tsx",
+        "src/pages/entregas/FormularioEntregaPrint.tsx",
+        "src/pages/portal-parceiro/NovoPedido.tsx",
+        "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+        "src/pwa/registerSW.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/clientes",
+      "line": 524,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Clientes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:clientes:desktop"
+      ],
+      "references": [
+        "src/components/executivo/clientes/ExecutivoClientesCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/clientes/ProdutoresTab.tsx",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/clientes/:id",
+      "line": 525,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ClienteDetalhe"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/parceiros/:id",
+      "line": 526,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ParceiroDetalhe"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/fazendas",
+      "line": 527,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Fazendas"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fazendas:desktop"
+      ],
+      "references": [
+        "src/components/executivo/clientes/ExecutivoClientesCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/FazendaDetalhe.tsx",
+        "src/pages/Fazendas.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/fazendas/:id",
+      "line": 528,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FazendaDetalhe"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/talhoes",
+      "line": 529,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Talhoes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/fazendas/TalhoesFazendaTab.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/Talhoes.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/talhoes/:id",
+      "line": 530,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "TalhaoHistorico"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/auditoria",
+      "line": 531,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Auditoria"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [
+        "navigation:auditorias:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/auditoria-sync",
+      "line": 532,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/auditoria?tab=sync",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/base-tecnica",
+      "line": 534,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Protocolos"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "catalogo_precos",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:protocolos:desktop",
+        "navigation:protocolos-produtos:desktop",
+        "navigation:protocolos-microrganismos:desktop",
+        "navigation:protocolos-catalogo-tecnico:desktop",
+        "navigation:protocolos-culturas:desktop",
+        "navigation:protocolos-problemas:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/protocolos",
+      "line": 535,
+      "index": false,
+      "components": [
+        "PreservedNavigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/base-tecnica",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/ordens-servico",
+      "line": 536,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "OrdensServico"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "ordens_producao",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:ordens-servico:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/ExecutivoGargalos.tsx",
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/components/executivo/alertas/ExecutivoAlertasCards.tsx",
+        "src/components/visita/VisitaStatusBanner.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/lotes",
+      "line": 538,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Lotes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "lotes_qualidade",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:lotes:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/controle-qualidade",
+      "line": 539,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ControleQualidade"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "lotes_qualidade",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:cq:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/envase",
+      "line": 540,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "EnvasePage"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "envase",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:envase:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/EnvasePage.tsx",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/estoque",
+      "line": 541,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Estoque"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "estoque_embalagens",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:estoque:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/estoque/embalagens",
+      "line": 542,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "EstoqueEmbalagens"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "estoque_embalagens",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/ExecutivoGargalos.tsx",
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/components/executivo/alertas/ExecutivoAlertasCards.tsx",
+        "src/config/navigation.ts"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/entregas",
+      "line": 543,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Entregas"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "aplicador",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:entregas:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/ExecutivoGargalos.tsx",
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/components/executivo/alertas/ExecutivoAlertasCards.tsx",
+        "src/components/executivo/clientes/ExecutivoClientesCards.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/dashboard/VisaoGeral.tsx",
+        "src/pages/entregas/FormularioEntregaPrint.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/entregas/:id/formulario",
+      "line": 544,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FormularioEntregaPrint"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "aplicador",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/etiquetas/:id/imprimir",
+      "line": 545,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "EtiquetaProdutoPrintPage"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/aplicacoes",
+      "line": 546,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Aplicacoes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "aplicador",
+        "cliente_produtor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:aplicacoes:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/relatorios",
+      "line": 547,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Relatorios"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "relatorios_operacionais",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:relatorios:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/consultor-tecnico",
+      "line": 548,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ConsultorTecnico"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:equipe-tecnica:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/fluxo-tecnico",
+      "line": 549,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FluxoTecnico"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:fluxo-tecnico:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/bi-agronomico",
+      "line": 551,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "BIAgronomico"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "paineis_executivos",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:bi-agronomico:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/bi-operacional",
+      "line": 552,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "BIOperacional"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "paineis_executivos",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:bi-operacional:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/alertas-operacionais",
+      "line": 553,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "AlertasOperacionais"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:alertas:desktop"
+      ],
+      "references": [
+        "src/components/alertas/AlertasNotificationBell.tsx",
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/ExecutivoGargalos.tsx",
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/components/executivo/alertas/ExecutivoAlertasCards.tsx",
+        "src/components/executivo/clientes/ExecutivoClientesCards.tsx",
+        "src/components/notificacoes/CentralNotificacoesHeader.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/previsao-agronomica",
+      "line": 556,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "PrevisaoAgronomica"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "recomendacoes_alertas",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm"
+      ],
+      "navigation": [
+        "navigation:previsao-climatica:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/solicitacoes",
+      "line": 557,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Solicitacoes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo"
+      ],
+      "navigation": [
+        "navigation:solicitacoes:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/VisitaTecnica.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/monitoramento-alertas",
+      "line": 558,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "MonitoramentoAlertas"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "recomendacoes_alertas",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo"
+      ],
+      "navigation": [
+        "navigation:monitoramento:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/PainelOperacional.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/agenda-tecnica",
+      "line": 559,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "AgendaTecnica"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "visitas_tecnicas",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo"
+      ],
+      "navigation": [
+        "navigation:agenda-tecnica:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/dashboard",
+      "line": 560,
+      "index": false,
+      "components": [
+        "PreservedNavigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/dashboard/geral",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/dashboard/geral",
+      "line": 561,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardUnificado"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [
+        "navigation:dashboard:desktop",
+        "navigation:dashboard-geral:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/dashboard/executivo",
+      "line": 562,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardUnificado"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "paineis_executivos",
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [
+        "navigation:dashboard-executivo:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/DashboardUnificado.tsx",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/dashboard/operacional",
+      "line": 563,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardUnificado"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [
+        "navigation:dashboard-operacional:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/dashboard/DashboardUnificado.tsx",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/painel-operacional",
+      "line": 564,
+      "index": false,
+      "components": [
+        "PreservedNavigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/dashboard/operacional",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/cockpit-laboratorio",
+      "line": 565,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "CockpitLaboratorio"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "ordens_producao",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "operador_onfarm",
+        "producao"
+      ],
+      "navigation": [
+        "navigation:cockpit-lab:desktop"
+      ],
+      "references": [
+        "src/components/AppSidebar.tsx",
+        "src/components/AuxiliaryScreenBanner.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro",
+      "line": 566,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinanceiroDashboard"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-dashboard:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroGargalos.tsx",
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/pages/dashboard/VisaoGeral.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/receber",
+      "line": 567,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ContasReceber"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "contas_receber",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-receber:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/clientes/ExecutivoClientesCards.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroCards.tsx",
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/financeiro/FinanceiroB2B.tsx",
+        "src/pages/financeiro/FinanceiroDashboard.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/pagar",
+      "line": 568,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ContasPagar"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "contas_pagar",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-pagar:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroCards.tsx",
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/financeiro/FinanceiroDashboard.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/categorias",
+      "line": 569,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinCategorias"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-categorias:desktop"
+      ],
+      "references": [
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/financeiro/DRE.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/centros-custo",
+      "line": 570,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinCentrosCusto"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-cc:desktop"
+      ],
+      "references": [
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/contas-bancarias",
+      "line": 571,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinContasBancarias"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-contas-bancarias:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/formas-pagamento",
+      "line": 572,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinFormasPagamento"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-formas-pgto:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/recorrencias",
+      "line": 573,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinRecorrencias"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-recorrencias:desktop"
+      ],
+      "references": [
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/fluxo-caixa",
+      "line": 574,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinFluxoCaixa"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "fluxo_caixa",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-fluxo:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/dre",
+      "line": 575,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinDRE"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-dre:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/notas-fiscais",
+      "line": 576,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinNotasFiscais"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "emissao_nfe_nfse",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-nfe:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroCards.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroGargalos.tsx",
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/financeiro/FinanceiroDashboard.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/entregas-nao-faturadas",
+      "line": 577,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinEntregasNaoFaturadas"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-ent-nfat:desktop"
+      ],
+      "references": [
+        "src/components/entregas/ConfirmacaoEntregaPanel.tsx",
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/ExecutivoResumoCards.tsx",
+        "src/components/executivo/alertas/ExecutivoAlertasCards.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroCards.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroGargalos.tsx",
+        "src/components/financeiro/bi/AlertasGestor.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/financeiro/FinanceiroDashboard.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/auditoria",
+      "line": 578,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/auditoria?tab=financeiro",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/configuracoes",
+      "line": 579,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/configuracoes?tab=financeiro",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios",
+      "line": 580,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinRelatorios"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-relatorios:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/mensal",
+      "line": 581,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelMensal"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/contas-receber",
+      "line": 582,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelReceber"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/contas-pagar",
+      "line": 583,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelPagar"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/inadimplencia",
+      "line": 584,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelInadimplencia"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/nfe-pendente",
+      "line": 585,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelNFePendente"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/entregas-faturamento",
+      "line": 586,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelEntregasFat"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/por-cliente",
+      "line": 587,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelPorCliente"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/relatorios/prestacao-contas",
+      "line": 588,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RelPrestacaoContas"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/recibos",
+      "line": 589,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinRecibos"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fin-recibos:desktop"
+      ],
+      "references": [
+        "src/components/executivo/ExecutivoAtalhos.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroCards.tsx",
+        "src/components/executivo/financeiro/ExecutivoFinanceiroGargalos.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/financeiro/FinanceiroRelatorios.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/executivo",
+      "line": 590,
+      "index": false,
+      "components": [
+        "PreservedNavigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/dashboard/executivo",
+      "feature": "paineis_executivos",
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/portal-executivo",
+      "line": 591,
+      "index": false,
+      "components": [
+        "PreservedNavigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/dashboard/executivo",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/parceiros",
+      "line": 592,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/clientes?aba=parceiros",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/pedidos-b2b",
+      "line": 593,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "PedidosB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-pedidos-b2b:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/ParceiroDetalhe.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/solicitacoes-b2b",
+      "line": 594,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ComercialSolicitacoesB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "pedidos_b2b",
+      "profiles": [
+        "administrador",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-solicitacoes-b2b:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/dashboard-b2b",
+      "line": 595,
+      "index": false,
+      "components": [
+        "Navigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/comercial/dashboard-consolidado",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/campanhas",
+      "line": 596,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "CampanhasComerciais"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-campanhas:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/simulador",
+      "line": 597,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "SimuladorComercial"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "simulacoes",
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-simulador:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/catalogo",
+      "line": 598,
+      "index": false,
+      "components": [
+        "PreservedNavigate"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": "/base-tecnica?tab=catalogo-tecnico",
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "gestor_comercial"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 7,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/indicadores",
+      "line": 599,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "IndicadoresComerciais"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-indicadores:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/alertas",
+      "line": 600,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "AlertasComerciais"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-alertas:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/dashboard-consolidado",
+      "line": 601,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardConsolidadoB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-consolidado:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/condicoes-pagamento",
+      "line": 602,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "CommercialPaymentPlansPage"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "catalogo_precos",
+      "profiles": [
+        "administrador",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:com-condicoes-pagamento:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comercial/auditoria-motor-b2b",
+      "line": 603,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "AuditoriaMotorB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/operacao/planejamento",
+      "line": 604,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "PlanejamentoProducao"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "ordens_producao",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "producao",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:planejamento-producao:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts",
+        "src/pages/operacao/PlanejamentoProducaoDetalhe.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/operacao/planejamento/:id",
+      "line": 605,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "PlanejamentoProducaoDetalhe"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "ordens_producao",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "producao",
+        "gestor_comercial"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/operacao/dashboard-producao",
+      "line": 606,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardProducao"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "ordens_producao",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "producao",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:dashboard-producao:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b",
+      "line": 607,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FinanceiroB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-visao:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/dashboard",
+      "line": 608,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardFinanceiroB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-dashboard:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/financeiro/FinanceiroB2B.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/governanca",
+      "line": 609,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "GovernancaFinanceiraB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-governanca:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/aging",
+      "line": 610,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "AgingFinanceiroB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-aging:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/previsao",
+      "line": 611,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "PrevisaoReceitaB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-previsao:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/rentabilidade",
+      "line": 612,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RentabilidadeParceirosB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-rentabilidade:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/alertas",
+      "line": 613,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "AlertasFinanceirosB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "administrativo",
+        "financeiro",
+        "gestor_comercial"
+      ],
+      "navigation": [
+        "navigation:b2b-alertas:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/central-governanca",
+      "line": 614,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "CentralGovernancaB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:b2b-central-gov:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/financeiro/b2b/regras",
+      "line": 615,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "RegrasGovernancaB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:b2b-regras-gov:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/executivo/socios-b2b",
+      "line": 616,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "DashboardSociosB2B"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "paineis_executivos",
+      "profiles": [
+        "administrador",
+        "gestor"
+      ],
+      "navigation": [
+        "navigation:b2b-socios:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes",
+      "line": 617,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "Configuracoes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [
+        "navigation:configuracoes:desktop"
+      ],
+      "references": [
+        "src/components/UserMenu.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/objetivos-visita",
+      "line": 618,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ObjetivosVisita"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/config/navigation.ts",
+        "src/pages/Configuracoes.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/parametros-cq",
+      "line": 619,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ParametrosCQPage"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "aplicador",
+        "cliente_produtor"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/cockpit/CQComparativoTable.tsx",
+        "src/config/navigation.ts",
+        "src/pages/Configuracoes.tsx"
+      ],
+      "classification": 2,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/fiscal/empresa",
+      "line": 620,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalEmpresa"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:config-fiscal:desktop"
+      ],
+      "references": [
+        "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
+        "src/config/navigation.ts",
+        "src/lib/fiscal/companyMissingFields.ts",
+        "src/lib/permissions.ts",
+        "src/pages/configuracoes/FiscalEmpresa.tsx",
+        "src/pages/fiscal/FiscalProntidao.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/fiscal/produtos",
+      "line": 621,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalProdutos"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fiscal-perfis-produtos:desktop"
+      ],
+      "references": [
+        "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/configuracoes/FiscalProdutos.tsx",
+        "src/pages/fiscal/FiscalProntidao.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/fiscal/servicos",
+      "line": 622,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalServicos"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fiscal-perfis-servicos:desktop"
+      ],
+      "references": [
+        "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/configuracoes/FiscalServicos.tsx",
+        "src/pages/fiscal/FiscalProntidao.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/configuracoes/fiscal/clientes",
+      "line": 623,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalClientes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fiscal-perfis-clientes:desktop"
+      ],
+      "references": [
+        "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/configuracoes/FiscalClientes.tsx",
+        "src/pages/fiscal/FiscalProntidao.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/fiscal/documentos",
+      "line": 624,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalDocumentos"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "emissao_nfe_nfse",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fiscal-rascunhos:desktop"
+      ],
+      "references": [
+        "src/components/fiscal/homologacao/HomologacaoSecao.tsx",
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/fiscal/FiscalDocumentos.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/fiscal/reconciliacao",
+      "line": 625,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalReconciliacao"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "emissao_nfe_nfse",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/permissions.ts",
+        "src/pages/fiscal/FiscalProntidao.tsx",
+        "src/pages/fiscal/FiscalReconciliacao.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/fiscal/prontidao",
+      "line": 626,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "FiscalProntidao"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "emissao_nfe_nfse",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:fiscal-prontidao:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/permissions.ts",
+        "src/pages/fiscal/FiscalProntidao.tsx"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/comunicacao",
+      "line": 627,
+      "index": false,
+      "components": [
+        "RoleGuard",
+        "ComunicacaoRouteGuard",
+        "ComunicacaoAdminPage"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": "envios_automaticos",
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [
+        "navigation:comunicacao-admin:desktop"
+      ],
+      "references": [
+        "src/config/navigation.ts",
+        "src/lib/notificacoes/deepLinkAllowlist.ts",
+        "src/lib/saas/featureRouteMap.ts"
+      ],
+      "classification": 1,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "/notificacoes",
+      "line": 630,
+      "index": false,
+      "components": [
+        "CentralNotificacoes"
+      ],
+      "ancestors": [
+        "ProtectedRoutes"
+      ],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/lib/notificacoes/deepLinkAllowlist.ts"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    },
+    {
+      "path": "*",
+      "line": 633,
+      "index": false,
+      "components": [
+        "NotFound"
+      ],
+      "ancestors": [],
+      "redirect": null,
+      "feature": null,
+      "profiles": [
+        "administrador",
+        "gestor",
+        "consultor_tecnico",
+        "tecnico_agronomo",
+        "administrativo",
+        "operador_onfarm",
+        "producao",
+        "financeiro"
+      ],
+      "navigation": [],
+      "references": [
+        "src/components/aplicacao/AplicacaoFormDialog.tsx",
+        "src/components/bi/BIFilterPresetButton.tsx",
+        "src/components/clientes/ClienteContatosTab.tsx",
+        "src/components/clientes/ClienteDocumentosTab.tsx",
+        "src/components/clientes/ClienteHistoricoDialog.tsx",
+        "src/components/entregas/ConfirmacaoEntregaPanel.tsx",
+        "src/components/entregas/ConfirmarEntregaDialog.tsx",
+        "src/components/entregas/EntregaComprovantePanel.tsx",
+        "src/components/estoque/EmbalagemMovimentacoesTimeline.tsx",
+        "src/components/estoque/EstoqueBI.tsx",
+        "src/components/estoque/HistoricoSheet.tsx",
+        "src/components/financeiro/BaixaDialog.tsx",
+        "src/components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx",
+        "src/components/financeiro/ContaDrawer.tsx",
+        "src/components/financeiro/DocumentosPanel.tsx",
+        "src/components/financeiro/DocumentosReceberTab.tsx",
+        "src/components/financeiro/FiscalReadinessBanner.tsx",
+        "src/components/financeiro/FiscalTab.tsx",
+        "src/components/financeiro/HistoricoTab.tsx",
+        "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+        "src/components/ordens-servico/RastreabilidadeProducaoTab.tsx",
+        "src/components/previsao/CalculoRisco.tsx",
+        "src/components/previsao/DashboardClimatico.tsx",
+        "src/components/previsao/HistoricoAlertas.tsx",
+        "src/components/previsao/PrevisaoInteligente.tsx",
+        "src/components/protocolos/CatalogoVolumesDialog.tsx",
+        "src/components/protocolos/MicrorganismosTab.tsx",
+        "src/components/protocolos/ProdutosTab.tsx",
+        "src/components/protocolos/catalog/VersoesHistoricoTab.tsx",
+        "src/components/shared/RecomendacaoChat.tsx",
+        "src/components/solicitacoes/SolicitacaoDetalheTabs.tsx",
+        "src/components/visita/AprovacaoCard.tsx",
+        "src/components/visita/EvidenciasTabs.tsx",
+        "src/components/visita/InconsistenciasVisita.tsx",
+        "src/components/visita/VisitaTimeline.tsx",
+        "src/components/visita/roteiro/useRoteiroEventos.ts",
+        "src/features/comunicacao/api.ts",
+        "src/hooks/useAlertasExecucoes.ts",
+        "src/hooks/useAlertasNotificacoes.ts",
+        "src/hooks/useAlertasOperacionais.ts",
+        "src/hooks/useAlertasRealtime.ts",
+        "src/hooks/useAlertasSLA.ts",
+        "src/hooks/useAuth.tsx",
+        "src/hooks/useB2BFinanceiro.ts",
+        "src/hooks/useBIOperacional.ts",
+        "src/hooks/useCQReferencia.ts",
+        "src/hooks/useCatalogSources.ts",
+        "src/hooks/useCatalogoVolumes.ts",
+        "src/hooks/useCommercial.ts",
+        "src/hooks/useCommercialPriceRules.ts",
+        "src/hooks/useCustomerFiscalProfiles.ts",
+        "src/hooks/useDisponibilidadeOS.ts",
+        "src/hooks/useEffectiveCatalogSources.ts",
+        "src/hooks/useFiscalCertificates.ts",
+        "src/hooks/useFiscalCompanySettings.ts",
+        "src/hooks/useFiscalReadiness.ts",
+        "src/hooks/useMetricasOperacionais.ts",
+        "src/hooks/useMicroorganismFiscalProfiles.ts",
+        "src/hooks/useMicroorganismProfile.ts",
+        "src/hooks/useNotificacoesOperacionais.ts",
+        "src/hooks/useNotificacoesUnificadas.ts",
+        "src/hooks/useParceirosB2B.ts",
+        "src/hooks/usePartnerCatalogTecnico.ts",
+        "src/hooks/usePartnerOrders.ts",
+        "src/hooks/usePartnerOrdersAdmin.ts",
+        "src/hooks/usePartnerPrices.ts",
+        "src/hooks/usePartnerUsers.ts",
+        "src/hooks/usePaymentTermsApproval.ts",
+        "src/hooks/usePedidoFormalHeader.ts",
+        "src/hooks/usePendenciasEsteira.ts",
+        "src/hooks/useProductFiscalProfiles.ts",
+        "src/hooks/useProductProfile.ts",
+        "src/hooks/useServiceFiscalProfiles.ts",
+        "src/hooks/useSystemConfig.ts",
+        "src/hooks/useVisitasTecnicasLista.ts",
+        "src/integrations/supabase/cultivofarm.types.ts",
+        "src/integrations/supabase/types.ts",
+        "src/lib/clienteDocumentos.ts",
+        "src/lib/equipe-tecnica/evidencias.ts",
+        "src/lib/fiscal/documentWorkflowValidation.ts",
+        "src/lib/fiscal/reconciliationValidation.ts",
+        "src/lib/pdf/dossieMicrorganismosPdf.ts",
+        "src/lib/pdf/fichaTecnicaMicrorganismoPdf.ts",
+        "src/lib/pdf/fichaTecnicaProdutoPdf.ts",
+        "src/pages/AuditoriaSync.tsx",
+        "src/pages/CockpitLaboratorio.tsx",
+        "src/pages/Entregas.tsx",
+        "src/pages/EnvasePage.tsx",
+        "src/pages/EstoqueEmbalagens.tsx",
+        "src/pages/Protocolos.tsx",
+        "src/pages/Solicitacoes.tsx",
+        "src/pages/VisitaTecnica.tsx",
+        "src/pages/app/MobileAplicacoes.tsx",
+        "src/pages/app/MobileDashboardProdutor.tsx",
+        "src/pages/app/MobileNotificacoes.tsx",
+        "src/pages/app/MobileVisitaWizard.tsx",
+        "src/pages/app/wizard/WizardAnexosStep.tsx",
+        "src/pages/app/wizard/WizardCampoStep.tsx",
+        "src/pages/app/wizard/WizardDiagnosticoStep.tsx",
+        "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+        "src/pages/auditoria/AgendaTab.tsx",
+        "src/pages/configuracoes/ConfigCatalogoIA.tsx",
+        "src/pages/entregas/FormularioEntregaPrint.tsx",
+        "src/pages/etiquetas/EtiquetaProdutoPrintPage.tsx",
+        "src/pages/financeiro/Categorias.tsx",
+        "src/pages/financeiro/CentrosCusto.tsx",
+        "src/pages/financeiro/ConfiguracoesFinanceiras.tsx",
+        "src/pages/financeiro/ContasBancarias.tsx",
+        "src/pages/financeiro/FormasPagamento.tsx",
+        "src/pages/financeiro/Recorrencias.tsx",
+        "src/pages/portal/PortalAplicacoes.tsx",
+        "src/pages/portal/PortalFazendaDetalhe.tsx",
+        "src/pages/portal/PortalLayout.tsx",
+        "src/pages/portal/PortalRecomendacoes.tsx",
+        "src/pages/portal/PortalTalhaoDetalhe.tsx"
+      ],
+      "classification": 8,
+      "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+    }
+  ],
+  "navigation": [
+    {
+      "id": "dashboard",
+      "route": "/dashboard/geral",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "dashboard-geral",
+      "route": "/dashboard/geral",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "dashboard-executivo",
+      "route": "/dashboard/executivo",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "dashboard-operacional",
+      "route": "/dashboard/operacional",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "portal-produtor",
+      "route": "/portal",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-consolidado",
+      "route": "/comercial/dashboard-consolidado",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-indicadores",
+      "route": "/comercial/indicadores",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-alertas",
+      "route": "/comercial/alertas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "clientes",
+      "route": "/clientes",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fazendas",
+      "route": "/fazendas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "solicitacoes",
+      "route": "/solicitacoes",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-pedidos-b2b",
+      "route": "/comercial/pedidos-b2b",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-solicitacoes-b2b",
+      "route": "/comercial/solicitacoes-b2b",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-campanhas",
+      "route": "/comercial/campanhas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos",
+      "route": "/base-tecnica",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos-produtos",
+      "route": "/base-tecnica?tab=produtos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos-microrganismos",
+      "route": "/base-tecnica?tab=microrganismos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos-catalogo-tecnico",
+      "route": "/base-tecnica?tab=catalogo-tecnico",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos-culturas",
+      "route": "/base-tecnica?tab=culturas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "protocolos-problemas",
+      "route": "/base-tecnica?tab=problemas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-simulador",
+      "route": "/comercial/simulador",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "com-condicoes-pagamento",
+      "route": "/comercial/condicoes-pagamento",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "agenda-tecnica",
+      "route": "/agenda-tecnica",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "visita-tecnica",
+      "route": "/visita-tecnica",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "aplicacoes",
+      "route": "/aplicacoes",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "equipe-tecnica",
+      "route": "/consultor-tecnico",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fluxo-tecnico",
+      "route": "/fluxo-tecnico",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "monitoramento",
+      "route": "/monitoramento-alertas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "previsao-climatica",
+      "route": "/previsao-agronomica",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "dashboard-producao",
+      "route": "/operacao/dashboard-producao",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "cockpit-lab",
+      "route": "/cockpit-laboratorio",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "planejamento-producao",
+      "route": "/operacao/planejamento",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "ordens-servico",
+      "route": "/ordens-servico",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "lotes",
+      "route": "/lotes",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "cq",
+      "route": "/controle-qualidade",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "envase",
+      "route": "/envase",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "estoque",
+      "route": "/estoque",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "entregas",
+      "route": "/entregas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-dashboard",
+      "route": "/financeiro",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-fluxo",
+      "route": "/financeiro/fluxo-caixa",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-dre",
+      "route": "/financeiro/dre",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-relatorios",
+      "route": "/financeiro/relatorios",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-receber",
+      "route": "/financeiro/receber",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-pagar",
+      "route": "/financeiro/pagar",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-ent-nfat",
+      "route": "/financeiro/entregas-nao-faturadas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-nfe",
+      "route": "/financeiro/notas-fiscais",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-recibos",
+      "route": "/financeiro/recibos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-recorrencias",
+      "route": "/financeiro/recorrencias",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-categorias",
+      "route": "/financeiro/categorias",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-cc",
+      "route": "/financeiro/centros-custo",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-contas-bancarias",
+      "route": "/financeiro/contas-bancarias",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fin-formas-pgto",
+      "route": "/financeiro/formas-pagamento",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-visao",
+      "route": "/financeiro/b2b",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-dashboard",
+      "route": "/financeiro/b2b/dashboard",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-aging",
+      "route": "/financeiro/b2b/aging",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-previsao",
+      "route": "/financeiro/b2b/previsao",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-rentabilidade",
+      "route": "/financeiro/b2b/rentabilidade",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-alertas",
+      "route": "/financeiro/b2b/alertas",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-governanca",
+      "route": "/financeiro/b2b/governanca",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-central-gov",
+      "route": "/financeiro/b2b/central-governanca",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-regras-gov",
+      "route": "/financeiro/b2b/regras",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "b2b-socios",
+      "route": "/executivo/socios-b2b",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "bi-agronomico",
+      "route": "/bi-agronomico",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "bi-operacional",
+      "route": "/bi-operacional",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "relatorios",
+      "route": "/relatorios",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "alertas",
+      "route": "/alertas-operacionais",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "auditorias",
+      "route": "/auditoria",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "configuracoes",
+      "route": "/configuracoes",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "config-fiscal",
+      "route": "/configuracoes/fiscal/empresa",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fiscal-prontidao",
+      "route": "/fiscal/prontidao",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fiscal-perfis-produtos",
+      "route": "/configuracoes/fiscal/produtos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fiscal-perfis-servicos",
+      "route": "/configuracoes/fiscal/servicos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fiscal-perfis-clientes",
+      "route": "/configuracoes/fiscal/clientes",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "fiscal-rascunhos",
+      "route": "/fiscal/documentos",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "comunicacao-admin",
+      "route": "/comunicacao",
+      "source": "navigation",
+      "audience": "desktop"
+    },
+    {
+      "id": "m-c-inicio",
+      "route": "/app",
+      "source": "navigation",
+      "audience": "mobile-consultor,mobile-produtor"
+    },
+    {
+      "id": "m-c-atendimentos",
+      "route": "/app/atendimentos",
+      "source": "navigation",
+      "audience": "mobile-consultor"
+    },
+    {
+      "id": "m-c-fazendas",
+      "route": "/app/fazendas",
+      "source": "navigation",
+      "audience": "mobile-consultor"
+    },
+    {
+      "id": "m-c-catalogo",
+      "route": "/app/catalogo",
+      "source": "navigation",
+      "audience": "mobile-consultor"
+    },
+    {
+      "id": "m-perfil",
+      "route": "/app/perfil",
+      "source": "navigation",
+      "audience": "mobile-consultor,mobile-produtor"
+    },
+    {
+      "id": "m-p-recomendacoes",
+      "route": "/app/recomendacoes",
+      "source": "navigation",
+      "audience": "mobile-produtor"
+    },
+    {
+      "id": "m-p-entregas",
+      "route": "/app/entregas",
+      "source": "navigation",
+      "audience": "mobile-produtor"
+    },
+    {
+      "id": "m-p-notificacoes",
+      "route": "/app/notificacoes",
+      "source": "navigation",
+      "audience": "mobile-produtor"
+    },
+    {
+      "id": "pp-dashboard",
+      "route": "/portal",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-titulos",
+      "route": "/portal/financeiro",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-fazendas",
+      "route": "/portal/fazendas",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-agenda",
+      "route": "/portal/agenda",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-registros",
+      "route": "/portal/registros",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-recomendacoes",
+      "route": "/portal/recomendacoes",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-acompanhamento",
+      "route": "/portal/acompanhamento",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-aplicacoes",
+      "route": "/portal/aplicacoes",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-solicitar",
+      "route": "/portal/solicitar",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pp-perfil",
+      "route": "/portal/perfil",
+      "source": "portalMenus",
+      "audience": "producer"
+    },
+    {
+      "id": "pb-dashboard",
+      "route": "/portal-parceiro/dashboard",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-pedidos",
+      "route": "/portal-parceiro/pedidos",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-simulacoes-equipe",
+      "route": "/portal-parceiro/simulacoes-equipe",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-catalogo",
+      "route": "/portal-parceiro/catalogo",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-favoritos",
+      "route": "/portal-parceiro/favoritos",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-fichas",
+      "route": "/portal-parceiro/fichas",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-meu-historico",
+      "route": "/portal-parceiro/meu-historico",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-financeiro",
+      "route": "/portal-parceiro/financeiro",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pb-perfil",
+      "route": "/portal-parceiro/perfil",
+      "source": "portalMenus",
+      "audience": "gestor"
+    },
+    {
+      "id": "pbt-dashboard",
+      "route": "/portal-parceiro/dashboard",
+      "source": "portalMenus",
+      "audience": "tecnico"
+    },
+    {
+      "id": "pbt-simulador",
+      "route": "/portal-parceiro/simulador",
+      "source": "portalMenus",
+      "audience": "tecnico"
+    },
+    {
+      "id": "pbt-simulacoes",
+      "route": "/portal-parceiro/simulacoes",
+      "source": "portalMenus",
+      "audience": "tecnico"
+    },
+    {
+      "id": "pbt-fichas",
+      "route": "/portal-parceiro/fichas",
+      "source": "portalMenus",
+      "audience": "tecnico"
+    }
+  ],
+  "pages": [
+    {
+      "path": "src/pages/AcessoPendente.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/AgendaTecnica.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/AlertasOperacionais.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Aplicacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Auditoria.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/pages/auditoria/SyncTab.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/AuditoriaSync.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/pages/auditoria/SyncTab.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Auth.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/BIAgronomico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/BIOperacional.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/CentralNotificacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/ClienteDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/pages/ParceiroDetalhe.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Clientes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/CockpitLaboratorio.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Configuracoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/ConsultorTecnico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/ControleQualidade.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Entregas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/EnvasePage.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Estoque.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/EstoqueEmbalagens.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/FazendaDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Fazendas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/FluxoTecnico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Index.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Lotes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/MonitoramentoAlertas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/NotFound.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/OrdensServico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/PainelOperacional.tsx",
+      "consumers": [
+        "src/pages/dashboard/DashboardUnificado.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/ParceiroDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/PlaceholderPage.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/PrevisaoAgronomica.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Protocolos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Relatorios.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/ResetPassword.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/SelecionarPortal.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/SemPermissao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Solicitacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/TalhaoHistorico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/Talhoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/VisitaTecnica.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/VisitaTecnicaLista.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileAplicacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileAtendimentos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileCatalogoTecnico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileCheckin.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileDashboard.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileDashboardConsultor.tsx",
+      "consumers": [
+        "src/pages/app/MobileDashboard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileDashboardProdutor.tsx",
+      "consumers": [
+        "src/pages/app/MobileDashboard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileEntregas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileFazendas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileLayout.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileListaAplicacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileLogin.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileNotificacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileOrdens.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobilePerfil.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobilePlaceholder.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileRecomendacoesProdutor.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileRegistrarOcorrencia.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileSolicitar.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileTalhaoHistorico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileVisita.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/MobileVisitaWizard.tsx",
+      "consumers": [
+        "src/pages/app/MobileVisita.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/app/wizard/WizardAnexosStep.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/app/wizard/WizardCampoStep.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/app/wizard/WizardCheckinStep.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/app/wizard/WizardDiagnosticoStep.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/app/wizard/WizardRevisaoStep.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/auditoria/AgendaTab.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/auditoria/ClientesTab.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/auditoria/ComunicacaoTab.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/auditoria/SenhasTab.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/auditoria/SyncTab.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/auditoria/VisitasTab.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/clientes/ParceirosB2BTab.tsx",
+      "consumers": [
+        "src/pages/Clientes.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/clientes/ProdutoresTab.tsx",
+      "consumers": [
+        "src/pages/Clientes.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/AlertasComerciais.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/AuditoriaMotorB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/CampanhasComerciais.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/DashboardB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/DashboardConsolidadoB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/IndicadoresComerciais.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/PedidosB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/SimuladorComercial.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/comercial/SolicitacoesB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/ComunicacaoConfigTab.tsx",
+      "consumers": [
+        "src/pages/plataforma/PlataformaHome.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/ConfigCatalogoIA.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/FiscalClientes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/FiscalEmpresa.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/FiscalProdutos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/FiscalServicos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/MeuPlanoTab.tsx",
+      "consumers": [
+        "src/pages/Configuracoes.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/ObjetivosVisita.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/ParametrosCQPage.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/SlaB2BTab.tsx",
+      "consumers": [
+        "src/pages/Configuracoes.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/configuracoes/comunicacaoValidation.ts",
+      "consumers": [
+        "src/pages/configuracoes/ComunicacaoConfigTab.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/dashboard/DashboardUnificado.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/dashboard/VisaoGeral.tsx",
+      "consumers": [
+        "src/pages/dashboard/DashboardUnificado.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/entregas/FormularioEntregaPrint.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/etiquetas/EtiquetaProdutoPrintPage.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/executivo/DashboardSociosB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/executivo/PortalExecutivo.tsx",
+      "consumers": [
+        "src/pages/dashboard/DashboardUnificado.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/AgingFinanceiroB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/AlertasFinanceirosB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/AuditoriaFinanceira.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/financeiro/Categorias.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/CentralGovernancaB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/CentrosCusto.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/ConfiguracoesFinanceiras.tsx",
+      "consumers": [
+        "src/pages/Configuracoes.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/ContasBancarias.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/ContasPagar.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/ContasReceber.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/DRE.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/DashboardFinanceiroB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/EntregasNaoFaturadas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/FinanceiroB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/FinanceiroDashboard.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/FinanceiroRelatorios.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/FluxoCaixa.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/FormasPagamento.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/GovernancaFinanceiraB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/NotasFiscais.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/PrevisaoReceitaB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/RecibosList.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/Recorrencias.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/RegrasGovernancaB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/RentabilidadeParceirosB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/PrestacaoContas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioContasPagar.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioContasReceber.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioEntregasFaturamento.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioInadimplencia.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioMensal.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioNFePendente.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/RelatorioPorCliente.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/financeiro/relatorios/types.ts",
+      "consumers": [
+        "src/features/comunicacao/api.ts",
+        "src/lib/fiscal/sinief49/builders.ts",
+        "src/lib/fiscal/sinief49/constants.ts",
+        "src/lib/fiscal/sinief49/formAdapter.ts",
+        "src/lib/fiscal/sinief49/idempotency.ts",
+        "src/lib/fiscal/sinief49/index.ts",
+        "src/lib/fiscal/sinief49/labels.ts",
+        "src/lib/fiscal/sinief49/persistenceMapper.ts",
+        "src/pages/financeiro/relatorios/PrestacaoContas.tsx",
+        "src/pages/financeiro/relatorios/RelatorioContasPagar.tsx",
+        "src/pages/financeiro/relatorios/RelatorioContasReceber.tsx",
+        "src/pages/financeiro/relatorios/RelatorioEntregasFaturamento.tsx",
+        "src/pages/financeiro/relatorios/RelatorioInadimplencia.tsx",
+        "src/pages/financeiro/relatorios/RelatorioMensal.tsx",
+        "src/pages/financeiro/relatorios/RelatorioNFePendente.tsx",
+        "src/pages/financeiro/relatorios/RelatorioPorCliente.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/fiscal/FiscalDocumentos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/fiscal/FiscalProntidao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/fiscal/FiscalReconciliacao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/operacao/DashboardProducao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/operacao/PlanejamentoProducao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/operacao/PlanejamentoProducaoDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/plataforma/EmpresaDetalhe.tsx",
+      "consumers": [
+        "src/pages/plataforma/PlataformaEmpresas.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/plataforma/OrganizationOnboardingFlow.tsx",
+      "consumers": [
+        "src/pages/plataforma/PlataformaEmpresas.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/plataforma/PlataformaAdmins.tsx",
+      "consumers": [
+        "src/pages/plataforma/PlataformaHome.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/plataforma/PlataformaEmpresas.tsx",
+      "consumers": [
+        "src/pages/plataforma/PlataformaHome.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/plataforma/PlataformaGestao.tsx",
+      "consumers": [
+        "src/pages/plataforma/PlataformaHome.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/plataforma/PlataformaHome.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/DashboardPremium.tsx",
+      "consumers": [
+        "src/pages/portal-parceiro/DashboardRouter.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/DashboardRouter.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/DashboardTecnico.tsx",
+      "consumers": [
+        "src/pages/portal-parceiro/DashboardRouter.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/DetalheProdutorTecnico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/Favoritos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/FichasTecnicas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/Financeiro.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/Historico.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/components/financeiro/ContaDrawer.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/HistoricoSimulacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/MeuHistorico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/MeusPedidos.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/MeusProdutoresTecnico.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/NovoPedido.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/PortalParceiroPerfil.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/SimulacoesEquipe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/Solicitacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/TecnicosProdutores.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal-parceiro/UsuariosClientesB2B.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalAcompanhamento.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalAgenda.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalAplicacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalDashboard.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalEntregas.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/pages/portal/PortalAcompanhamento.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalFazendaDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalFazendas.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalFilaAprovacao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalFinanceiro.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalLayout.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalMeusPedidos.tsx",
+      "consumers": [],
+      "classification": "6: no import detected; not automatically exposed"
+    },
+    {
+      "path": "src/pages/portal/PortalOrdensServico.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/pages/portal/PortalAcompanhamento.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalPerfil.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalProducao.tsx",
+      "consumers": [
+        "src/App.tsx",
+        "src/pages/portal/PortalAcompanhamento.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalRecomendacoes.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalRegistroDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalRegistros.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalSolicitacao.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/portal/PortalTalhaoDetalhe.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/public/RastrearProduto.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    },
+    {
+      "path": "src/pages/public/ValidarEntrega.tsx",
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
+    }
+  ]
+}
