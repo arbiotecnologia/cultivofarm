@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import type { Json } from "@/integrations/supabase/cultivofarm.types";
 
 export interface SimulacaoFormalHeaderData {
   id: string;
@@ -56,13 +58,14 @@ function simNumero(created_at: string, id: string): string {
 }
 
 export function useSimulacaoFormalHeader(simulationId: string | null | undefined) {
+  const { user, role } = useAuth();
   return useQuery({
-    queryKey: ["simulacao-formal-header", simulationId],
+    queryKey: ["simulacao-formal-header", simulationId, user?.id, role],
     enabled: !!simulationId,
     queryFn: async (): Promise<SimulacaoFormalHeaderData | null> => {
       if (!simulationId) return null;
-      const { data, error } = await supabase.rpc("b2b_read_simulations" as any, { p_simulation_id: simulationId });
-      const sim = (data as any[] | null)?.[0];
+      const { data, error } = await supabase.rpc("b2b_read_simulations", { p_simulation_id: simulationId });
+      const sim = Array.isArray(data) ? data[0] : null;
       if (error) throw error;
       if (!sim) return null;
       const s = sim as any;
@@ -105,14 +108,13 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
               .eq("id", s.converted_order_id)
               .maybeSingle()
           : Promise.resolve({ data: null } as any),
-        supabase
-          .from("partner_simulation_items" as any)
-          .select("quantidade, volume_ml")
-          .eq("simulation_id", simulationId),
+        supabase.rpc("b2b_read_simulations", { p_simulation_id: simulationId, p_items: true }),
       ]);
 
-      const itemsData = ((itemsRes as any)?.data ?? []) as Array<{ quantidade: number | null; volume_ml: number | null }>;
-      const volumeTotalLitros = itemsData.reduce((sum, it) => {
+      if (itemsRes.error) throw itemsRes.error;
+      const itemsData: Json[] = Array.isArray(itemsRes.data) ? itemsRes.data : [];
+      const volumeTotalLitros = itemsData.reduce<number>((sum, it) => {
+        if (!it || typeof it !== "object" || Array.isArray(it)) return sum;
         const q = Number(it.quantidade ?? 0);
         const v = Number(it.volume_ml ?? 0);
         return v > 0 && q > 0 ? sum + (q * v) / 1000 : sum;
