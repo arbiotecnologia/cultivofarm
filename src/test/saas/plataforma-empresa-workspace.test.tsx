@@ -138,4 +138,29 @@ describe("Gestão da plataforma — aba Empresa", () => {
     expect(mensagemErroEdicaoEmpresa(Object.assign(new Error("x"), { code: "42501" }))).toMatch(/acesso/);
     expect(mensagemErroEdicaoEmpresa(new Error("syntax error at SELECT"))).not.toMatch(/SELECT/);
   });
+
+  it("empresa antiga incompleta abre com indicador e pode ser completada via Editar da lista (patch parcial)", async () => {
+    editar.mockResolvedValue({});
+    fiscalRef.current = { configurado: false };
+    render(<PlataformaEmpresas {...handlers()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Editar empresa AR BIOTECNOLOGIA LTDA" })[0]);
+    expect(screen.getByText("Cadastro incompleto")).toBeInTheDocument();
+    expect(screen.getByText("Sem configuração fiscal")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Complemento"), { target: { value: "Sala 2" } });
+    fireEvent.change(screen.getByLabelText("CEP"), { target: { value: "01001000" } });
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "completar" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    await waitFor(() => expect(editar).toHaveBeenCalledTimes(1));
+    expect(editar.mock.calls[0][0].dados).toEqual({ complemento: "Sala 2", cep: "01001-000" });
+  });
+
+  it("resumo fiscal somente leitura, sem campos sensíveis, e aviso de divergência", () => {
+    fiscalRef.current = { configurado: true, razao_social: "OUTRA RAZAO", cnpj: "12345678000190", inscricao_estadual: "123", inscricao_municipal: "999", regime_tributario: "lucro_real", crt: "3", cnae_principal: "0111301", situacao: "configured", nfe_habilitada: true, nfse_habilitada: false };
+    render(<PlataformaEmpresas {...handlers()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Abrir empresa AR BIOTECNOLOGIA LTDA" })[0]);
+    expect(screen.getByText("999")).toBeInTheDocument();
+    expect(screen.getByText("0111301")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/Razão social, Inscrição estadual/);
+    expect(screen.queryByText(/certificad|token|credencial|série/i)).toBeNull();
+  });
 });
