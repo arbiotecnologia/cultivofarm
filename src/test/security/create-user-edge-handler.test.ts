@@ -13,6 +13,7 @@ type Scenario = {
   authorized?: boolean; authorizationError?: boolean; oldJwt?: boolean;
   invalidJwt?: boolean; profileFailure?: boolean; roleFailure?: boolean;
   unexpected?: boolean; compensationFailure?: "returned" | "thrown";
+  providerFailure?: string;
 };
 
 async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> = {}) {
@@ -21,7 +22,13 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
     data: !scenario.oldJwt && scenario.authorized !== false,
     error: scenario.authorizationError ? new Error(sentinel) : null,
   }));
-  const createUser = vi.fn(async () => ({ data: { user: { id: "created-user" } }, error: null }));
+  const createUser = vi.fn(async () => ({
+    data: { user: { id: "created-user" } },
+    error: scenario.providerFailure ? {
+      code: scenario.providerFailure, message: sentinel,
+      details: { email: sentinel, token: sentinel },
+    } : null,
+  }));
   const deleteUser = vi.fn(async () => {
     if (scenario.compensationFailure === "thrown") throw new Error(sentinel);
     return { error: scenario.compensationFailure === "returned" ? { code: sentinel, message: sentinel } : null };
@@ -67,6 +74,20 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
 }
 
 describe("create-user — handler real, SDK e Auth isolados", () => {
+  it("erro sensível do provedor retorna somente código genérico e log fixo", async () => {
+    const r = await invoke({ providerFailure: "private-test-sentinel" });
+    expect(r.response.status).toBe(400);
+    expect(r.body).toEqual({ error: "user_creation_failed" });
+    expect(r.errorLog).toHaveBeenCalledExactlyOnceWith("create_user_auth_failed");
+    expect(r.update).not.toHaveBeenCalled();
+    expect(r.deleteUser).not.toHaveBeenCalled();
+  });
+  it.each(["email_exists", "user_already_exists"])("preserva código seguro de e-mail duplicado: %s", async (providerFailure) => {
+    const r = await invoke({ providerFailure });
+    expect(r.response.status).toBe(400);
+    expect(r.body).toEqual({ error: "email_exists" });
+    expect(r.errorLog).toHaveBeenCalledExactlyOnceWith("create_user_email_exists");
+  });
   it("admin válido passa; sucesso só depois de profile/roles e não compensa", async () => {
     const r = await invoke();
     expect(r.response.status).toBe(200);
