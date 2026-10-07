@@ -1,3 +1,5 @@
+import type { OrganizacaoSaaS } from "@/hooks/usePlataformaSaaS";
+import { normalizarCnpj } from "@/lib/saas/orgOnboarding";
 import { MOTIVO_MIN_LENGTH } from "./commercialDraftState";
 
 export const EMAIL_EMPRESA_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -48,3 +50,13 @@ export function mensagemErroEdicaoEmpresa(e: unknown): string {
   if (msg.includes("motivo")) return "Informe o motivo (mínimo 2 caracteres).";
   return "Não foi possível salvar a empresa agora. Tente novamente.";
 }
+
+export function filtrarEmpresas(lista: OrganizacaoSaaS[], filtro: string): OrganizacaoSaaS[] {
+  const query = filtro.trim().toLowerCase();
+  if (!query) return lista;
+  const digitos = normalizarCnpj(query);
+  return lista.filter((org) =>
+    [org.nome, org.nome_fantasia, org.cnpj].some((value) => (value ?? "").toLowerCase().includes(query)) ||
+    Boolean(digitos && normalizarCnpj(org.cnpj ?? "")?.includes(digitos)));
+}
+

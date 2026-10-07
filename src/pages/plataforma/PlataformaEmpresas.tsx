@@ -9,8 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { mensagemErroPlataforma, useAlterarStatusEmpresa, useOrganizacoesSaaS, type OrganizacaoSaaS } from "@/hooks/usePlataformaSaaS";
-import { ORG_STATUS_LABEL, type OrgStatus, normalizarCnpj, transicaoPermitida } from "@/lib/saas/orgOnboarding";
-import { formatarCnpj } from "@/components/plataforma/empresaEdicao";
+import { ORG_STATUS_LABEL, type OrgStatus, transicaoPermitida } from "@/lib/saas/orgOnboarding";
+import { filtrarEmpresas, formatarCnpj } from "@/components/plataforma/empresaEdicao";
 import OrganizationOnboardingFlow from "./OrganizationOnboardingFlow";
 import EmpresaDetalhe from "./EmpresaDetalhe";
 
@@ -22,15 +22,6 @@ export interface PlataformaEmpresasProps {
   onAbrirAdministradores: (organizationId: string) => void;
   onAbrirAssinaturas?: (organizationId: string) => void;
   onAbrirHistorico?: (organizationId: string) => void;
-}
-
-export function filtrarEmpresas(lista: OrganizacaoSaaS[], filtro: string): OrganizacaoSaaS[] {
-  const query = filtro.trim().toLowerCase();
-  if (!query) return lista;
-  const digitos = normalizarCnpj(query);
-  return lista.filter((org) =>
-    [org.nome, org.nome_fantasia, org.cnpj].some((value) => (value ?? "").toLowerCase().includes(query)) ||
-    Boolean(digitos && normalizarCnpj(org.cnpj ?? "")?.includes(digitos)));
 }
 
 export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssinaturas = () => {}, onAbrirHistorico = () => {} }: PlataformaEmpresasProps) {

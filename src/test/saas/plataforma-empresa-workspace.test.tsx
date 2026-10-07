@@ -33,7 +33,8 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useEditarEmpresa: () => ({ mutateAsync: editar, isPending: false }),
 }));
 
-import PlataformaEmpresas, { filtrarEmpresas } from "@/pages/plataforma/PlataformaEmpresas";
+import PlataformaEmpresas from "@/pages/plataforma/PlataformaEmpresas";
+import { filtrarEmpresas } from "@/components/plataforma/empresaEdicao";
 
 const handlers = () => ({ onAbrirAdministradores: vi.fn(), onAbrirAssinaturas: vi.fn(), onAbrirHistorico: vi.fn() });
 

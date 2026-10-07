@@ -812,12 +812,12 @@ export interface EdicaoEmpresaInput {
 /** Chave idempotente estável por conteúdo: retry/duplo clique reutiliza a mesma chave. */
 export function useEditarEmpresa() {
   const invalidar = useInvalidarPlataforma();
-  const retryRef = useRef<{ signature: string; key: string } | null>(null);
+  const chaveRef = useRef<{ signature: string; key: string } | null>(null);
   return useMutation({
     retry: false,
     mutationFn: async (v: EdicaoEmpresaInput) => {
       const signature = JSON.stringify([v.organizationId, v.razaoSocial.trim(), v.nomeFantasia.trim(), v.email.trim().toLowerCase(), v.motivo.trim(), v.expectedUpdatedAt]);
-      if (retryRef.current?.signature !== signature) retryRef.current = { signature, key: crypto.randomUUID() };
+      if (chaveRef.current?.signature !== signature) chaveRef.current = { signature, key: crypto.randomUUID() };
       const { data, error } = await db.rpc("platform_update_organization_profile", {
         _org: v.organizationId,
         _razao_social: v.razaoSocial,
@@ -825,10 +825,10 @@ export function useEditarEmpresa() {
         _email: v.email,
         _motivo: v.motivo,
         _expected_updated_at: v.expectedUpdatedAt,
-        _idempotency_key: retryRef.current.key,
+        _idempotency_key: chaveRef.current.key,
       });
       if (error) throw new ErroRpcPlataforma(error);
-      retryRef.current = null;
+      chaveRef.current = null;
       return data as { organization_id: string; updated_at: string; idempotent: boolean };
     },
     onSuccess: invalidar,
