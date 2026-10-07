@@ -2,8 +2,8 @@
 
 - [x] Registrar escopo: somente código/testes/documentação; sem subagentes ou operações remotas. Preservar A03/A05 e D51.6/D52.
 - [x] Contenção independente Codex parcial: conta operacional desativada e papel administrador removido; Auth não excluído devido vínculos financeiros/entregas/Storage. Único admin operacional CultivoFarm, sem atingir Superadmin/AR Bio.
-- [ ] Reproduzir logout automático sem limpeza de cache e renovação mantendo papel antigo; corrigir callback síncrono, sem chamadas Supabase na pilha, preservando geração/StrictMode.
-- [ ] Validar SIGNED_IN repetido, SIGNED_OUT, TOKEN_REFRESHED e USER_UPDATED com revogação/inativação; regressão Auth/multiportal/RBAC, lint/scanners/build automático.
+- [x] Reprodução própria: 17 PASS/4 FAIL antes; callback corrigido sem chamadas Supabase na pilha, geração/StrictMode preservados; focal 21/21 PASS.
+- [x] Regressão própria Auth/multiportal/RBAC/SaaS/security: 940/940 PASS, 84 arquivos. Inicial 938 PASS/2 FAIL em expectativas textuais D51.4/D51.5, atualizadas para exigir condição ampliada. Lint fonte/duas regressões: 0 erros/3 warnings; lint incluindo mock authProviderCallback FAIL com 17 any preexistentes, sem ocultar. Scanners/diff-check PASS; build automático OK 23:03:58 UTC. Typecheck/manual build não executados (harness).
 - [ ] Browser integral por perfil/plano/API permanece UNVERIFIED/NO-GO; revalidação por evento não garante revogação imediata JWT. Preview Superadmin autenticado relatado não certifica publicado em /auth.
 
 ## Sincronização local A03/A05 — 2026-10-07 22:33 UTC (histórico)

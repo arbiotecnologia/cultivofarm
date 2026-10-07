@@ -16,9 +16,16 @@ Migration histórica `20260625145234_2039da42-e7cd-4e34-aebe-1ff6dbbf88c7.sql` c
 
 Preview **Superadmin autenticado**, conforme escopo reportado Codex, não equivale a autenticação no publicado, que permanece em `/auth`; nenhuma prova browser própria nesta rodada. Revalidação em renovação/atualização **não garante revogação imediata de JWT ou proteção de todas APIs**; autoridade final permanece server-side. Contenção parcial não é exclusão completa nem certificação integral por perfil/plano/RPC/Edge/Storage.
 
-### Verificações próprias — em fechamento
+### Verificações próprias — resultado final
 
-Reprodução local com quatro casos novos: **17 PASS / 4 FAIL** antes da correção (logout/cache, renovação, atualização, papel revogado). Evidência Codex de 17 PASS/2 FAIL→19 PASS é independente. Primeira regressão própria após correção: **938 PASS / 2 FAIL**, ambas expectativas textuais antigas em D51.4/D51.5; ajustadas para exigir a nova condição ampliada, sem reduzir proteção. Lint focal: 17 erros `no-explicit-any` preexistentes no mock authProviderCallback e 3 warnings baseline em useAuth; não mascarados. Scanners segredos/integração PASS. Resultado final da reexecução será registrado abaixo.
+Reprodução local com quatro casos novos: **17 PASS / 4 FAIL** antes da correção (logout/cache, renovação, atualização, papel revogado). Evidência Codex de 17 PASS/2 FAIL→19 PASS é independente. Primeira regressão própria após correção: **938 PASS / 2 FAIL**, ambas expectativas textuais antigas em D51.4/D51.5; ajustadas para exigir a nova condição ampliada, sem reduzir proteção.
+
+- Reexecução própria **940/940 PASS em 84 arquivos**, às 23:04:05 UTC, duração 32,01s; Auth callback **21/21 PASS**, incluídos no total. Cobertura Auth/topologia, StrictMode/corridas, multiportal/mobile, PortalGuard, RBAC, SaaS e security; provas locais mockadas, não login/RLS real.
+- Lint incluindo authProviderCallback: **FAIL**, 17 erros `no-explicit-any` preexistentes no mock e 3 warnings baseline em useAuth. Nenhum any novo ou regra desativada. Lint fonte useAuth + duas regressões estruturais: **0 erros / 3 warnings**, saída 0; não confundir os escopos.
+- Scanners segredos/integração e diff-check **PASS**; build automático **OK 23:03:58 UTC**. Build/typecheck manuais não executados por restrição do harness; nenhuma nova certificação de typecheck.
+- Arquivos desta correção: `src/hooks/useAuth.tsx`, `src/test/config/authProviderCallback.test.tsx`, `src/test/security/d51-4-tenant-users.test.ts`, `src/test/security/d51-5-p0c-portal-users.test.ts`, `AGENTS.md`, `roadmap.md` e este relatório. Regra Auth registrada; demais regras mantidas com redação compacta para limite do arquivo.
+- Revisão observada antes do fechamento documental: `7cb8ae7cfbfe0f1d0fa10171dc43cfd61f6315e8`; SHA final informado ao encerrar, sem criar commit manual.
+- Pendências: browser real de cada perfil/plano e cobertura RPC/Edge/Storage; exclusão Auth dessa conta continua não realizada, bloqueada pelas dependências relatadas, sem contorno autorizado nesta rodada. **NO-GO integral**.
 
 ## Atualização A03/A05 — 22:33 UTC (histórico)
 
