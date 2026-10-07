@@ -2268,8 +2268,8 @@
         "src/config/navigation.ts",
         "src/pages/VisitaTecnicaLista.tsx"
       ],
-      "classification": 2,
-      "navigationJustification": "system/internal route; never automatically expose",
+      "classification": 8,
+      "navigationJustification": "VisitaTecnicaLista creation action; not a standalone menu item",
       "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
@@ -6994,63 +6994,87 @@
     },
     {
       "path": "src/pages/app/wizard/WizardAnexosStep.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/app/wizard/WizardCampoStep.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/app/wizard/WizardCheckinStep.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/app/wizard/WizardDiagnosticoStep.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/app/wizard/WizardRecomendacaoStep.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/app/wizard/WizardRevisaoStep.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/app/MobileVisitaWizard.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/auditoria/AgendaTab.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/auditoria/ClientesTab.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/auditoria/ComunicacaoTab.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/auditoria/SenhasTab.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/auditoria/SyncTab.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/auditoria/VisitasTab.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/clientes/ParceirosB2BTab.tsx",
@@ -7271,8 +7295,10 @@
     },
     {
       "path": "src/pages/financeiro/AuditoriaFinanceira.tsx",
-      "consumers": [],
-      "classification": "6: no import detected; not automatically exposed"
+      "consumers": [
+        "src/pages/Auditoria.tsx"
+      ],
+      "classification": "route_or_embedded; inspect consumers"
     },
     {
       "path": "src/pages/financeiro/Categorias.tsx",
@@ -7487,7 +7513,14 @@
     {
       "path": "src/pages/financeiro/relatorios/types.ts",
       "consumers": [
+        "src/components/AppSidebar.tsx",
+        "src/components/nav/NavItemRow.tsx",
+        "src/components/nav/NavSectionGroup.tsx",
+        "src/components/nav/PortalSidebar.tsx",
+        "src/config/portalMenus.ts",
         "src/features/comunicacao/api.ts",
+        "src/features/comunicacao/ui/ComunicacaoAdminPage.tsx",
+        "src/hooks/useNavCollapseState.ts",
         "src/lib/fiscal/sinief49/builders.ts",
         "src/lib/fiscal/sinief49/constants.ts",
         "src/lib/fiscal/sinief49/formAdapter.ts",
@@ -7642,8 +7675,7 @@
     {
       "path": "src/pages/portal-parceiro/Historico.tsx",
       "consumers": [
-        "src/App.tsx",
-        "src/components/financeiro/ContaDrawer.tsx"
+        "src/App.tsx"
       ],
       "classification": "route_or_embedded; inspect consumers"
     },
