@@ -19,7 +19,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ManualAccessLinkAction } from "@/components/plataforma/ManualAccessLinkAction";
+import { AdminGestaoAcoes } from "@/components/plataforma/AdminGestaoAcoes";
 import {
+  mascararEmail,
+  useMudancasEmailAdmin,
   useConvidarAdminEmpresa,
   useConvitesAdminEmpresa,
   useOrganizacoesSaaS,
@@ -70,6 +73,9 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
   const orgs = useOrganizacoesSaaS();
   const convites = useConvitesAdminEmpresa();
   const convidar = useConvidarAdminEmpresa();
+  const mudancas = useMudancasEmailAdmin();
+  const responsavelDe = (orgId: string) => orgs.data?.find((o) => o.id === orgId)?.responsavel_user_id ?? null;
+  const mudancaDe = (inviteId: string) => mudancas.data?.find((m) => m.invite_id === inviteId) ?? null;
 
   const [org, setOrg] = useState(organizationIdInicial ?? "");
   const [nome, setNome] = useState("");
@@ -330,7 +336,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                     <TableHead>Forma de acesso</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Última atualização</TableHead>
-                    <TableHead>Ação</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -339,19 +345,26 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell className="font-medium">{nomeOrg(c.organization_id)}</TableCell>
                       <TableCell>
                         {c.nome}
-                        {c.responsavel_principal && (
+                        {(c.user_id ? c.user_id === responsavelDe(c.organization_id) : c.responsavel_principal) && (
                           <Badge variant="secondary" className="ml-2">
-                            Responsável
+                            Responsável principal
+                          </Badge>
+                        )}
+                        {mudancaDe(c.id) && (
+                          <Badge variant="destructive" className="ml-2">
+                            Mudança de e-mail pendente
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{c.email}</TableCell>
+                      <TableCell className="text-muted-foreground" title="E-mail mascarado; abra Alterar e-mail para ver completo">{mascararEmail(c.email)}</TableCell>
                       <TableCell>
                         {c.modo_acesso === "link" ? "Link de convite" : "Senha temporária"}
                       </TableCell>
-                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : STATUS_PROVISIONAMENTO[c.status] ?? c.status}</Badge></TableCell>
+                      <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : (c.status === "pendente" ? "Convite pendente" : STATUS_PROVISIONAMENTO[c.status] ?? c.status)}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
+                        <div className="flex min-w-max items-center gap-2">
+                        <AdminGestaoAcoes convite={c} responsavelAtualId={responsavelDe(c.organization_id)} mudancaPendente={mudancaDe(c.id)} />
                         {c.modo_acesso === "link" && c.status !== "ativo" && (c.status === "falhou" || c.status === "pendente" || envioAmbiguo(c)) ? (
                           <div className="flex min-w-max flex-wrap gap-2">
                             {c.user_id && (
@@ -383,7 +396,8 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                               onSuccess={() => { void convites.refetch(); }}
                             />
                           </div>
-                        ) : <span className="text-muted-foreground">—</span>}
+                        ) : null}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
