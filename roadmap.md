@@ -106,3 +106,4 @@
 - [x] Gestão da plataforma: aba "Empresa" com lista, Nova Empresa, detalhe e edição cadastral segura — relatório `docs/auditorias/plataforma-aba-empresa-2026-10-07.md`. Pendente: paginação server-side (>150 empresas) e verificação visual com login real.
 - [x] Hardening JWT em platform-org-admin-email-change (getUser service_role, pin supabase-js)
 - [x] Motivo opcional na troca de e-mail de administrador (UI, Edge, RPC; demais ações inalteradas)
+- [x] Motivo opcional em Definir responsável principal (UI + RPC; edição segue obrigatória)

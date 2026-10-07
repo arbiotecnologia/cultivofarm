@@ -71,9 +71,9 @@ export function AdminGestaoAcoes({
   const motivoOk = motivo.trim().length >= 2;
   const editarValido = nome.trim().length >= 3 && motivoOk &&
     [0, 10, 11].includes(digitos(telefone).length) && [0, 11].includes(digitos(cpf).length);
-  const motivoEmailLen = motivo.trim().length;
-  const motivoEmailErro = motivoEmailLen === 1;
-  const emailValido = EMAIL_RE.test(novoEmail.trim()) && novoEmail.trim().toLowerCase() !== convite.email.toLowerCase() && !motivoEmailErro && confirmado;
+  const motivoLen = motivo.trim().length;
+  const motivoCurto = motivoLen === 1;
+  const emailValido = EMAIL_RE.test(novoEmail.trim()) && novoEmail.trim().toLowerCase() !== convite.email.toLowerCase() && !motivoCurto && confirmado;
 
   const salvarEdicao = () => executar((done) => editar.mutate(
     { inviteId: convite.id, nome: nome.trim(), telefone: digitos(telefone), cpf: digitos(cpf), motivo: motivo.trim(), expectedUpdatedAt: convite.updated_at },
@@ -168,8 +168,8 @@ export function AdminGestaoAcoes({
             <div className="space-y-1"><Label htmlFor="ga-email">Novo e-mail</Label>
               <Input id="ga-email" type="email" value={novoEmail} disabled={!!mudancaPendente} onChange={(e) => setNovoEmail(e.target.value)} /></div>
             <div className="space-y-1"><Label htmlFor="ga-motivo-email">Motivo (opcional)</Label>
-              <Textarea id="ga-motivo-email" value={motivo} disabled={!!mudancaPendente} aria-invalid={motivoEmailErro} onChange={(e) => setMotivo(e.target.value)} />
-              {motivoEmailErro && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
+              <Textarea id="ga-motivo-email" value={motivo} disabled={!!mudancaPendente} aria-invalid={motivoCurto} onChange={(e) => setMotivo(e.target.value)} />
+              {motivoCurto && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
             <label className="flex items-start gap-2 text-sm">
               <Checkbox checked={confirmado} onCheckedChange={(v) => setConfirmado(v === true)} aria-label="Confirmo a alteração" />
               <span>Confirmo que o novo endereço pertence a este administrador.</span>
@@ -188,11 +188,12 @@ export function AdminGestaoAcoes({
             <DialogTitle>Definir como responsável principal</DialogTitle>
             <DialogDescription>{convite.nome} passa a ser o único responsável principal. O anterior continua administrador.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-1"><Label htmlFor="ga-motivo-resp">Motivo</Label>
-            <Textarea id="ga-motivo-resp" value={motivo} onChange={(e) => setMotivo(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="ga-motivo-resp">Motivo (opcional)</Label>
+            <Textarea id="ga-motivo-resp" value={motivo} aria-invalid={motivoCurto} onChange={(e) => setMotivo(e.target.value)} />
+            {motivoCurto && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
           <DialogFooter>
             <Button variant="outline" disabled={pendente} onClick={() => setModo(null)}>Cancelar</Button>
-            <Button disabled={!motivoOk || pendente} onClick={salvarResponsavel}>{definir.isPending ? "Salvando…" : "Confirmar"}</Button>
+            <Button disabled={motivoCurto || pendente} onClick={salvarResponsavel}>{definir.isPending ? "Salvando…" : "Confirmar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
