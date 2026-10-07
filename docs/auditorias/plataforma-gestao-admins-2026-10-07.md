@@ -249,3 +249,40 @@ O proprietário aprovou a remoção com base nas suas capturas reais. Essas capt
 | Homologação Auth real | BLOCKED | Gate anterior permanece; capturas relatadas não certificam operações, RLS ou sessões neste executor |
 
 **PASS focal de UX; NO-GO funcional autenticado preservado.** Somente frontend, testes, memória do requisito e documentação alterados; nenhuma migration, Edge Function, Supabase/Auth/SMTP/RLS, plano/B2B/fiscal/pagamento ou publicação/deploy manual.
+
+## Motivo opcional na edição dos dados — requisito aprovado 17:10 UTC
+
+### Auditoria antes da alteração
+- Fluxo confirmado: `AdminGestaoAcoes` → `useEditarAdminEmpresa` → `public.platform_update_org_admin` (INVOKER) → `platform_private.update_org_admin_core` (DEFINER). Não há Edge neste caminho.
+- Leitura remota no canônico `swzpzcwiasxmjutrmvkm` confirmou exigência de motivo mínimo 2 no core e constraint `platform_org_admin_audit_reason_check` com mínimo 2. A coluna `reason` é NOT NULL, sem default; histórico imutável, RLS de leitura exclusiva Superadmin e authenticated sem INSERT direto.
+- Preservados checks internos `auth.uid()`/Superadmin, validação do alvo e vínculo do perfil/organização, CPF ativo, `FOR UPDATE`, `expectedUpdatedAt`, updated_at monotônico e replay/conflito da chave idempotente.
+
+### Correção mínima e contrato vigente
+- Migration aplicada e confirmada no histórico remoto: `20261007171308_b0bcbd71-d200-4b53-97ff-223ba7905160.sql`. Altera somente a validação de motivo no core e a constraint da auditoria: string vazia permitida **apenas** para `action='admin_profile_updated'`; demais ações mantêm mínimo 2. Nenhum dado histórico reescrito.
+- Entrada null/vazio/espaços normaliza para `''`, preservando o contrato canônico NOT NULL text. Motivo preenchido exige pelo menos 2 caracteres após trim. Não há descrição inventada ou preenchimento automático. Os contratos históricos de outras ações não foram modificados.
+- Core permanece privado, DEFINER com `search_path=''`, mesmo owner/ACL via CREATE OR REPLACE. Wrapper público permanece INVOKER. Leitura pós-fix confirmou EXECUTE anon negado, authenticated autorizado no core com check interno obrigatório, INSERT authenticated na auditoria negado. Sem novo wrapper, grant, policy ou alteração Auth/SMTP.
+- UI exibe **Motivo (opcional)**, aceita vazio e mostra erro/aria-invalid para 1 caractere. Hook aceita motivo omitido/null, valida com Zod e normaliza antes da RPC e da chave estável; retry null/vazio/espaços usa a mesma chave. Demais validações, lock e seções preservados.
+
+### Evidências reais desta rodada
+| Verificação | Resultado | Evidência / limite |
+|---|---|---|
+| Destino canônico | PASS | config local e metadata remoto: produção `swzpzcwiasxmjutrmvkm`, user-managed; nenhum destino alternativo |
+| Contrato vivo null/vazio/espaços/2+ | PASS SQL | Prova embutida na migration em subtransação; cada edição gerou exatamente uma auditoria com ausência `''` ou motivo normalizado |
+| Auditoria completa e idempotência | PASS SQL | old_values/new_values com nome/telefone/CPF, ator, organização, origem platform_rpc, status, timestamp; replay não duplica auditoria, conflito de conteúdo negado |
+| 1 caractere / OCC desatualizado | PASS SQL | SQLSTATE 22023 e 40001 respectivamente |
+| Operação não autorizada | PASS SQL restrito | Wrapper e core negaram UID desconhecido com 42501; contexto SQL local de claims, **não sessão Auth real nem certificação RLS via API** |
+| Restauração e resíduos | PASS | Rollback deliberado da subtransação; hashes integrais de convites/auditoria/perfis antes/depois iguais. Leitura independente pós-migration: 0 convites e 0 auditorias prefixados CERT_ADMIN_REASON; nenhuma escrita Auth/Storage |
+| Testes focais gestão/acesso/reenvio/payload | PASS | 38/38 em 4 arquivos, incluindo null/omitido/vazio/trim, 1 caractere, 2+, retry e contratos anteriores de e-mail/senha |
+| Suíte pertinente SaaS + Comunicação | PASS | 846/846 em 64 arquivos; logs `/tmp/admin-motivo-focal.log` e `/tmp/admin-motivo-suite.log` |
+| Lint focal / scanners | PASS | 4 arquivos no ESLint; scanners segredos e integração fiscal sem findings |
+| Build automático | PASS | `/tmp/observability/build-errors.log`: build OK 2026-10-07T17:14:02Z; não executado build manual |
+| Typecheck frontend separado | NÃO EXECUTADO | Execução manual proibida pelo ambiente; build OK não foi tratado como prova separada de typecheck |
+| Advisor após DDL | PASS focal | Migration informa zero findings novos; reconsulta: mesmos 461 históricos (17 INFO, 2 WARN anon DEFINER, 441 WARN authenticated DEFINER, 1 proteção senha); sem limpeza global |
+| Revisão independente local | PASS focal | Constraint limitada à ação, core/ACL preservados, subtransação rollback e hash revisados, sem regressão objetiva identificada |
+| Auth/RLS/UI desktop/mobile autenticadas | BLOCKED | `external_unmanaged`, sem sessão real disponível; provas SQL locais não substituem homologação autenticada |
+
+Base inicial `8bfe5a9cb50b08580d7043531ba6aedcacbd3a57`; SHA observado antes deste complemento documental `d5cd6d3bead5462dcea21840c720ef5604c4dadf`; Git gerenciado pelo ambiente, sem commit manual. Arquivos: componente de gestão, hook existente, teste UI, novo teste de payload `admin-dados-motivo.test.tsx`, migration gerada pela ferramenta, roadmap/relatório e memória do requisito. Sem mudança estrutural: AGENTS.md preservado.
+
+Reversão possível somente por futura migration autorizada: restaurar validação anterior do core e constraint anterior, **sem apagar auditorias**. Como o novo contrato pode produzir motivos vazios, restaurar a constraint antiga exigiria `NOT VALID` para preservar histórico legítimo; não executar reversão automaticamente.
+
+**GO focal do contrato opcional; NO-GO funcional geral preservado** por ausência de Auth real. Sem Edge Function, SQL em auth.users/auth.sessions, alteração SMTP/Auth config/RLS, planos, B2B, fiscal, pagamentos ou publicação/deploy frontend. Fixture SQL fictícia descartada integralmente; dados reais e histórico preservados.
