@@ -9,7 +9,6 @@ DECLARE
   ia uuid; ib uuid; ic uuid; id_ uuid; if_ uuid;
   k1 uuid := gen_random_uuid(); k2 uuid := gen_random_uuid(); r jsonb; op jsonb; t timestamptz; n int;
   out text := '';
-  PROCEDURE_ok boolean;
 BEGIN
   -- Fixtures (postgres)
   INSERT INTO public.organizations(id,nome,ativo,status,onboarding_dados) VALUES (ox,'ZZ Prova X',true,'ativa','{}'),(oy,'ZZ Prova Y',true,'ativa','{}');
@@ -92,7 +91,7 @@ BEGIN
   op := public.platform_begin_org_admin_email_change(sa,if_,'zz.f2@prova.invalid','Endereço digitado errado',gen_random_uuid());
   r := public.platform_complete_org_admin_email_change(sa,(op->>'op_id')::uuid);
   SELECT count(*) INTO n FROM public.platform_org_admin_invites WHERE id=if_ AND email='zz.f2@prova.invalid' AND email_delivery_status='pending';
-  out:=out||'failed_invite_email:'||r->>'status'||'/reset='||n||';';
+  out:=out||'failed_invite_email:'||(r->>'status')||'/reset='||n||';';
   BEGIN PERFORM public.platform_begin_org_admin_email_change(sa,ib,'zz.c@prova.invalid','Em uso',gen_random_uuid()); out:=out||'email_in_use:ALLOWED!;';
   EXCEPTION WHEN OTHERS THEN out:=out||'email_in_use:denied;'; END;
   BEGIN PERFORM public.platform_begin_org_admin_email_change(sa,ib,'invalido','Inválido',gen_random_uuid()); out:=out||'email_invalid:ALLOWED!;';
