@@ -1,3 +1,9 @@
+## Correção urgente do botão de assinatura — 2026-10-07
+
+- [x] Auditado hook/RPC e corrigida espera sem deadline/invalidation global aguardada: 15 s + reconciliação read-only limitada, correlação estável por conteúdo/remount, duplo clique, sem retry automático, finally e quatro caches exatos. Nenhuma operação em dados reais.
+- [x] 11 testes novos e suíte SaaS 445/445 PASS; lint focal/scanners PASS; typecheck/build automáticos OK 18:04:53 UTC. Relatório assinaturas: docs/auditorias/assinatura-aplicando-timeout-2026-10-07.md. GO focal frontend.
+- [ ] BLOCKED/NO-GO funcional produção: sessão real e cenário de teste autorizado para observar UI/RPC/histórico. Conferir correlação anterior antes de tentativa manual; sem repetição automática, sem alteração de assinatura real/publicação.
+
 ## Auditoria de rotas, módulos e entitlements — 2026-10-07
 
 - [x] Primeira entrega estática encerrada a pedido do proprietário às 17:49 UTC: causa comprovada de assinaturas legadas sem snapshot/zero entitlements; matriz com perfis candidatos explicitamente separados dos guards efetivos. Sem novas correções runtime nesta consolidação, sem alteração de assinaturas ou publicação.
