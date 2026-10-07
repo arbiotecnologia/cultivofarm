@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
     }
     // Recovery is proven by Auth AMR, never by a client flag.
     const amr = claimsData?.claims?.amr;
-    const recoveryProof = Array.isArray(amr) && amr.some((entry: { method?: string }) => entry.method === "recovery" || entry.method === "otp");
+    const recoveryProof = Array.isArray(amr) && amr.some(entry => typeof entry === "object" && entry !== null && (entry.method === "recovery" || entry.method === "otp"));
     const { data: valid, error: validError } = await adminClient.rpc("platform_first_access_valid", { p_user_id: callerId, p_recovery: recoveryProof });
     if (validError || valid !== true) return falha(403, "nao_pendente", "A senha provisória expirou. Solicite um novo link de acesso.");
 

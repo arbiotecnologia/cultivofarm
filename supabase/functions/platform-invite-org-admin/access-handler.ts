@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.8";
 import { parseAccess, temporaryPassword } from "./access-policy.ts";
 import { getPlatformInviteRedirectUrl } from "./redirect-policy.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
@@ -6,7 +6,7 @@ import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/comunicacao/adapters-types.ts";
 
-export async function handleAccess(admin: ReturnType<typeof createClient>, actorId: string, body: Record<string, unknown>, respond: (body: unknown, status?: number, noStore?: boolean) => Response) {
+export async function handleAccess(admin: SupabaseClient, actorId: string, body: Record<string, unknown>, respond: (body: unknown, status?: number, noStore?: boolean) => Response) {
   const input = parseAccess(body);
   if (!input) return respond({ error: "Confirme uma operação válida.", code: "invalid_access_request" }, 400, true);
   const { data: state, error: stateError } = await admin.rpc("platform_org_admin_access_state", { p_actor_id: actorId, p_invite_id: input.inviteId });
