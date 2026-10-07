@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRoles(userRoles);
       setPrimaryRole(primary);
       setLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao carregar perfil/função:", err);
       if (!isCurrent()) return;
       // Falha de autorização/carregamento limpa papéis antigos e libera nova

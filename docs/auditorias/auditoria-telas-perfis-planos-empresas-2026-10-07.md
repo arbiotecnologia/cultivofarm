@@ -1,8 +1,43 @@
 # Auditoria atual de telas, perfis, planos e empresas — 2026-10-07
 
+## Atualização A03/A05 — 22:33 UTC (estado atual)
+
+**A05 PASS focal SQL/RLS; A03 contenção ACL PASS; NO-GO integral.** Baseline local confirmado `903fb41e321d12cebea991864a6c3ecb09864015`. A correção foi aplicada pelo **executor independente Codex**, no Supabase canônico `swzpzcwiasxmjutrmvkm`, migration `audit_a03_a05_tenant_containment`, ledger `20261007222943`. Este executor não executou SQL nem reaplicou migration; não criou dados, Auth, tenants/assinaturas, cobrança, fiscal ou e-mails, não publicou/implantou, não usou subagentes nem iniciou outro módulo.
+
+### Evidência independente recebida — não é login/browser
+
+- Prova SQL/RLS com duas identidades administradoras existentes de tenants distintos: A05 antes da correção **before_cross=1**, leitura cruzada comprovada sobre registro temporário. P0 A05 comprovado e corrigido focalmente; não extrapolar a outras tabelas/papéis.
+- Candidato e pós-aplicação: `own=1, cross=0, cross_update=0, cross_delete=0, own_update=1, forged_insert_denied=true, reparent_denied=true, rpc_denied=true, b_own=1, b_cross=0`. Pós-aplicação `before_cross=0`.
+- Exceção deliberada SQLSTATE `P0001`, marcador `A03_A05_ROLLBACK_RESULT`, reverteu fixtures e política candidata integralmente. Reconsulta independente: `clientes=2, registros_consultor=0, fixtures=0`. Nenhum tenant, assinatura ou usuário Auth criado.
+- Introspecção independente confirmou `audit_a05_tenant_isolation` **RESTRICTIVE ALL**, com USING/WITH CHECK por cliente → organização do ator `h15_actor_organization()`; políticas existentes de papel/vínculo continuam intersectadas, sem feature/papel novo. Legado NULL/sem dono permanece fail-closed.
+- A03: ACL `authenticated/anon=false` após revogar EXECUTE de PUBLIC, anon, authenticated em `set_partner_user_papel(uuid,text)`. Contenção da RPC legada DEFINER sem autorização do alvo; **não há exploração A03 afirmada**. Função, dados, service ACL e gestão canônica preservados. Busca própria em `src` confirmou somente declaração não consumida `useUpdatePartnerUserPapel` em `usePartnerUsers.ts` além dos tipos gerados; sem consumidores do hook. Clientes atuais e usuário partner sem organização: não atribuir tenant por inferência.
+
+### Sincronização e reprodução local
+
+- SQL exato recebido preservado em `restoration/audit-a03-a05/20261007222943_audit_a03_a05_tenant_containment.sql`, **não executado**. O arquivo solicitado `supabase/migrations/20261007222943_audit_a03_a05_tenant_containment.sql` ainda não foi criado: regra do ambiente proíbe criar/copiar migrations com ferramentas de arquivos; a ferramenta aplicadora não oferece sincronização somente local conhecida e não foi acionada para evitar reaplicação. Importação local pelo executor permanece pendente, não alteração remota.
+- Script de reprodução exato recebido: `scripts/rbac-audit/a05-transactional-proof.sql`, **não executado**. Contém claims SQL locais, SET LOCAL ROLE, fixtures temporárias/candidato condicional e exceção final; é reprodução SQL/RLS, nunca sessão Auth/browser. Validar destino canônico antes de qualquer futura execução autorizada; não rodar como parte das verificações locais.
+- Dois ajustes locais: `useAuth.tsx` catch `any` → `unknown`, sem mudança de comportamento; `sourceFiles` normaliza `join(root, entry.name).replace(/\\/g, "/")` antes de recursão/comparações. Teste de portabilidade usa código real transpilado com semântica `win32.join`; nenhuma alteração de guard.
+- Rollback: **não** reconceder a RPC nem remover isolamento automaticamente. Preferir contenção fail-closed + forward-fix; registrar reversão somente com substituto testado. Não reabrir D52.
+
+### Evidência do executor Windows e advisors — proveniência independente
+
+Codex: `tsc --noEmit -p tsconfig.app.json` PASS; Vite build PASS **30,72s**, chunk App ~**5,7MB**; SaaS/RBAC/security **833 PASS / 1 FAIL** (`h9f-pacote-e-gate`, bash ausente no Windows), falha não mascarada. Lint antes do ajuste: 1 any + 3 warnings em useAuth. Advisors atuais reportados: **460** achados — 17 INFO sem policy, 2 WARN anon DEFINER, 440 WARN authenticated DEFINER, 1 WARN leaked passwords. Não equivalem a 460 explorações nem foram reconsultados por este executor.
+
+### Browser e decisão
+
+**Codex controla Chrome do proprietário.** Domínio oficial está em `/auth`, login solicitado; iframe preview mostra Administrador e indicadores Indisponível, o que **não comprova identidade server-side**. Não confundir acesso ao navegador com login comprovado nem afirmar ausência de acesso Codex. Browser por perfil/plano e cobertura completa RPC/Edge/Storage continuam **UNVERIFIED**; NO-GO integral, separado dos PASS focais SQL/RLS e ACL. Histórico abaixo retrata rodadas anteriores e não reabre A03/A05 como descobertas ainda sem contenção atual.
+
+### Verificações próprias desta rodada
+
+- Suíte própria SaaS/RBAC/security/navegação: **928/928 PASS, 85 arquivos**, incluindo dois testes novos de portabilidade, às 22:36:20 UTC. Primeira tentativa: 926 PASS/2 FAIL no teste novo (mocks de script externo não transformados); corrigido para executar código real transpilado com win32.join e reexecutado integralmente. Falhas iniciais não mascaradas.
+- Lint focal `useAuth.tsx`, inventário e teste: **0 erros / 3 warnings** baseline em useAuth, saída 0. Scanners segredos/integração e `git diff --check`: **PASS**. Build automático observado **OK 22:36:13 UTC**. Typecheck próprio **NOT RUN** (manual vedado pelo ambiente); PASS Windows independente, não próprio. Advisors não reexecutados.
+- SHA observado após ajustes/documentação inicial: `5ad90fd97cf61f2ab163abfd48d0f488361a5fd4`, não presumido final das edições posteriores; Git gerenciado pelo ambiente.
+- SHA-256 cópia SQL: `1aa1a9295c6471110eb12e347006fd992c21a50e3c4004b37354e0dc2060b404`; reprodução: `b20aa55b903101fef1e6c3f19add2de8242537001769b75c15d03d5dedf337e1`.
+- Arquivos: `src/hooks/useAuth.tsx`, `scripts/navigation-audit/inventory.ts`, `src/test/navigation/inventory-portability.test.ts`, `scripts/rbac-audit/a05-transactional-proof.sql`, cópia SQL em `restoration/audit-a03-a05/`, relatório, `roadmap.md` e regra em `AGENTS.md`. Pasta migrations não alterada; importação local pendente pela restrição acima.
+
 ## 1. Decisão e limites
 
-### Rodada autorizada de fixtures — 21:44 UTC (estado atual)
+### Rodada autorizada de fixtures — 21:44 UTC (histórico)
 
 **BLOCKED antes da primeira escrita; NO-GO funcional.** Autorização expressa registrada, run reservado `AUDIT-RBAC-20261007-20261007T214515Z` e manifesto sanitizado `fixtures-rbac-20261007T214515Z.manifest.json`. A autorização permite fixtures e correções mínimas comprovadas; o bloqueio **não é falta de autorização**. A rodada anterior abaixo permanece histórica.
 

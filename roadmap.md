@@ -1,4 +1,15 @@
-## Fixtures autorizadas telas/perfis/planos/empresas — 2026-10-07 21:44 UTC
+## Sincronização local A03/A05 — 2026-10-07 22:33 UTC (estado atual)
+
+- [x] Baseline local confirmado: `903fb41e321d12cebea991864a6c3ecb09864015`. Sem subagentes, escrita remota, execução SQL, fixtures, Auth, migration aplicada, publicação/deploy ou outro módulo.
+- [x] Registrar evidência independente Codex: canônico `swzpzcwiasxmjutrmvkm`, ledger `20261007222943`, A05 PASS focal SQL/RLS; A03 contenção ACL PASS, sem afirmar exploração A03. Fixtures transacionais integralmente revertidas.
+- [x] Guardar SQL exato já aplicado em `restoration/audit-a03-a05/20261007222943_audit_a03_a05_tenant_containment.sql` e reprodução não executada em `scripts/rbac-audit/a05-transactional-proof.sql`.
+- [ ] Sincronizar arquivo em `supabase/migrations/20261007222943_audit_a03_a05_tenant_containment.sql`: BLOCKED pela regra do ambiente que reserva essa pasta à ferramenta de migration; ferramenta não acionada para não reaplicar. Cópia exata preservada em restoration para importação local pelo executor.
+- [x] Ajustes locais mínimos: catch unknown em useAuth e normalização Windows em sourceFiles; sem mudar guards/rotas/permissões ou dependências.
+- [x] Verificações próprias: 928/928 PASS, 85 arquivos; inicial 926 PASS/2 FAIL no teste novo, corrigido/reexecutado. Lint 0 erros/3 warnings baseline; scanners/diff-check PASS; build automático OK 22:36:13 UTC. Typecheck próprio NOT RUN (manual vedado); Windows/advisors são evidência Codex.
+- [ ] Browser real por perfil/plano e cobertura completa RPC/Edge/Storage UNVERIFIED; NO-GO integral. Codex controla Chrome do proprietário: domínio oficial /auth com login solicitado; iframe Administrador/Indisponível não comprova identidade server-side.
+- [ ] Rollback só com substituto testado: não reconceder RPC nem remover isolamento automaticamente; manter fail-closed e preferir forward-fix. Clientes atuais/partner sem organização não recebem vínculo por inferência. D52 preservado.
+
+## Fixtures autorizadas telas/perfis/planos/empresas — 2026-10-07 21:44 UTC (histórico)
 
 - [x] Registrar autorização expressa e reservar run_id AUDIT-RBAC-20261007-20261007T214515Z; manifesto sanitizado criado antes de qualquer escrita remota.
 - [x] Comprovar destino production swzpzcwiasxmjutrmvkm; capturar counts/hashes de organizações/perfis/papéis/assinaturas/histórico.

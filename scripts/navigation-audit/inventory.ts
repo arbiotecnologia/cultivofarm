@@ -59,7 +59,7 @@ export function declaredRoutes(source = readFileSync("src/App.tsx", "utf8")): Ro
 
 export function sourceFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(root, entry.name);
+    const path = join(root, entry.name).replace(/\\/g, "/");
     return entry.isDirectory() ? sourceFiles(path) : /\.[jt]sx?$/.test(path) ? [path] : [];
   });
 }
