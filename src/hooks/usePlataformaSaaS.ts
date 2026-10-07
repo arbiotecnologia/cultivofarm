@@ -298,6 +298,7 @@ export function useCriarEmpresa() {
       email: string;
       planKey: string;
       rascunho: boolean;
+      dados?: Record<string, string>;
     }) => {
       const { data, error } = await db.rpc("platform_create_organization", {
         _nome: v.nome,
@@ -306,6 +307,7 @@ export function useCriarEmpresa() {
         _email: v.email,
         _plan_key: v.planKey,
         _rascunho: v.rascunho,
+        _dados: v.dados ?? {},
       });
       if (error) throw new Error(error.message);
       return data as string;
@@ -734,6 +736,7 @@ export interface EmpresaDetalheSaaS {
   ativada_em: string | null;
   created_at: string;
   updated_at: string | null;
+  onboarding_dados?: Record<string, unknown> | null;
 }
 
 export function useEmpresaDetalhe(organizationId: string | null) {
@@ -743,7 +746,7 @@ export function useEmpresaDetalhe(organizationId: string | null) {
     queryFn: async () => {
       const { data, error } = await db
         .from("organizations")
-        .select("id,nome,razao_social,nome_fantasia,cnpj,email_corporativo,status,fuso_horario,responsavel_user_id,responsavel_definido_em,onboarding_concluido_em,ativada_em,created_at,updated_at")
+        .select("id,nome,razao_social,nome_fantasia,cnpj,email_corporativo,status,fuso_horario,responsavel_user_id,responsavel_definido_em,onboarding_concluido_em,ativada_em,created_at,updated_at,onboarding_dados")
         .eq("id", organizationId)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -765,11 +768,22 @@ const CAMPO_CADASTRAL_LABEL: Record<string, string> = {
   razao_social: "Razão social",
   nome_fantasia: "Nome fantasia",
   email_corporativo: "E-mail",
+  fuso_horario: "Fuso horário",
+};
+const CAMPO_DADOS_LABEL: Record<string, string> = {
+  telefone: "Telefone", email_contato: "E-mail de contato", responsavel_nome: "Contato responsável",
+  responsavel_cargo: "Cargo", cep: "CEP", logradouro: "Logradouro", numero: "Número", complemento: "Complemento",
+  bairro: "Bairro", cidade: "Cidade", uf: "UF", inscricao_estadual: "Inscrição estadual", fuso_horario: "Fuso horário",
 };
 
 export function resumoAlteracaoCadastral(oldValues: Record<string, unknown>, newValues: Record<string, unknown>): string {
-  const campos = Object.keys(CAMPO_CADASTRAL_LABEL).filter((k) => (oldValues?.[k] ?? null) !== (newValues?.[k] ?? null));
-  return campos.length ? `Cadastro alterado: ${campos.map((k) => CAMPO_CADASTRAL_LABEL[k]).join(", ")}` : "Cadastro revisado";
+  const campos = Object.keys(CAMPO_CADASTRAL_LABEL).filter((k) => (oldValues?.[k] ?? null) !== (newValues?.[k] ?? null)).map((k) => CAMPO_CADASTRAL_LABEL[k]);
+  const dados = (newValues?.dados ?? {}) as Record<string, unknown>;
+  for (const k of Object.keys(dados)) {
+    const label = CAMPO_DADOS_LABEL[k];
+    if (label && !campos.includes(label)) campos.push(label);
+  }
+  return campos.length ? `Cadastro alterado: ${campos.join(", ")}` : "Cadastro revisado";
 }
 
 export function useAuditoriaEmpresa(organizationId: string | null) {
@@ -808,6 +822,8 @@ export interface EdicaoEmpresaInput {
   email: string;
   motivo: string;
   expectedUpdatedAt: string;
+  /** Apenas chaves alteradas do subconjunto permitido; string vazia limpa o campo. */
+  dados?: Record<string, string>;
 }
 
 /** Chave idempotente estável por conteúdo: retry/duplo clique reutiliza a mesma chave. */
@@ -817,7 +833,7 @@ export function useEditarEmpresa() {
   return useMutation({
     retry: false,
     mutationFn: async (v: EdicaoEmpresaInput) => {
-      const signature = JSON.stringify([v.organizationId, v.razaoSocial.trim(), v.nomeFantasia.trim(), v.email.trim().toLowerCase(), v.motivo.trim(), v.expectedUpdatedAt]);
+      const signature = JSON.stringify([v.organizationId, v.razaoSocial.trim(), v.nomeFantasia.trim(), v.email.trim().toLowerCase(), v.motivo.trim(), v.expectedUpdatedAt, v.dados ?? {}]);
       if (chaveRef.current?.signature !== signature) chaveRef.current = { signature, key: crypto.randomUUID() };
       const { data, error } = await db.rpc("platform_update_organization_profile", {
         _org: v.organizationId,
@@ -827,12 +843,28 @@ export function useEditarEmpresa() {
         _motivo: v.motivo,
         _expected_updated_at: v.expectedUpdatedAt,
         _idempotency_key: chaveRef.current.key,
+        _dados: v.dados ?? {},
       });
       if (error) throw new ErroRpcPlataforma(error);
       chaveRef.current = null;
       return data as { organization_id: string; updated_at: string; idempotent: boolean };
     },
     onSuccess: invalidar,
+  });
+}
+
+/** Resumo fiscal mínimo (somente leitura, Superadmin). Sem certificados, credenciais ou séries. */
+export function useResumoFiscalEmpresa(organizationId: string | null, enabled = true) {
+  return useQuery<import("@/components/plataforma/empresaEdicao").ResumoFiscalEmpresa>({
+    queryKey: ["plataforma", "organization-fiscal-summary", organizationId],
+    enabled: Boolean(organizationId) && enabled,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await db.rpc("platform_get_organization_fiscal_summary", { _org: organizationId });
+      if (error) throw new ErroRpcPlataforma(error);
+      return (data ?? { configurado: false }) as import("@/components/plataforma/empresaEdicao").ResumoFiscalEmpresa;
+    },
+    ...opcoes,
   });
 }
 
