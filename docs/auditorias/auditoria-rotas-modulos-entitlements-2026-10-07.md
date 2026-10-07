@@ -2,6 +2,16 @@
 
 ## Decisão: NO-GO funcional
 
+**Primeira entrega estática encerrada — solicitação do proprietário às 17:49 UTC.** Causa raiz comprovada: assinaturas legadas sem versão vinculada, sem entitlements efetivos; as correções inequívocas de frontend e os contratos de cobertura estão entregues. PASS estrutural não significa restauração do acesso das empresas nem GO funcional.
+
+### Etapa operacional separada — não executada
+
+1. O proprietário identifica, para cada empresa real, a versão publicada vigente e o contrato aprovados; não inferir “Completo” por nome, papel ou arrays legados.
+2. Um operador autorizado regulariza pelo fluxo oficial, preservando preço, prazo TRIAL, snapshots, auditoria e histórico. Refil está SUSPENDED: eventual mudança de status exige autorização específica, não decorre desta auditoria.
+3. Após essa operação autorizada, conferir contexto/entitlements e interseção com RBAC; executar certificação autenticada de menus, URLs e dados, inclusive negativas e isolamento.
+
+Esta entrega não modifica assinaturas, preço 59,90 BRL, versões, cobrança, fiscal ou produção. Provas Auth/RLS/A/B/C continuam BLOCKED; não são pré-requisito ficticiamente satisfeito para o fechamento documental/estático.
+
 Correções frontend focais verificadas estruturalmente. **Não há prova autenticada integral de navegabilidade, dados, RLS, tenant forjado ou matriz A/B/C nesta rodada.** Não declarar 100% nem restaurar acesso comercial por bypass.
 
 Projeto frontend Cultivo Farm, Lovable `a79bb3db-f665-466d-bf41-ee8c6cb91fab`; cliente e `supabase/config.toml` confirmam exclusivamente `swzpzcwiasxmjutrmvkm`. Banco consultado somente por SELECT/advisor/scanner; nenhuma migration, Edge, fixture, mutação comercial, publicação ou deploy manual. Preço 59,90 BRL e versões comerciais preservados. Sem ativação de cobrança/NF-e/CT-e.
