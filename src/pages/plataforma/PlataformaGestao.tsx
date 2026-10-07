@@ -66,9 +66,12 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const [versao, setVersao] = useState("");
   const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
-  const assinatura = assinaturas.data?.find((s) => s.organization_id === org);
+  const assinatura = assinaturas.data?.find((s) => s.organization_id === org && s.status !== "CANCELLED" && s.status !== "EXPIRED");
   const atual = versoes.data?.find((v) => v.id === assinatura?.plan_version_id);
-  const permitidas = acoesAssinatura(assinatura?.status, assinatura?.trial_ends_at ?? null);
+  const trialUtilizado = assinaturas.data?.some((s) => s.organization_id === org && s.status === "TRIAL") || historico.data?.some((h) => h.organization_id === org && (h.action === "start_trial" || h.previous_status === "TRIAL" || h.new_status === "TRIAL"));
+  const permitidas = assinatura
+    ? assinatura.plan_version_id === null ? ["change_plan" as const] : acoesAssinatura(assinatura.status, assinatura.trial_ends_at)
+    : assinaturas.isSuccess && historico.isSuccess && !trialUtilizado ? ["start_trial" as const] : [];
   const mesmaVersao = acao === "change_plan" && !!versao && versao === assinatura?.plan_version_id;
   const busy = alterar.isPending || refreshing;
   const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo);
@@ -87,6 +90,18 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
     return inicio <= agora && (fim === null || fim > agora);
   });
 
+  const atualizarResumo = () => {
+    setRefreshing(true); setRefreshError(false);
+    void bounded(() => Promise.all([
+      assinaturas.refetch({ throwOnError: true }), historico.refetch({ throwOnError: true }),
+    ]), 8_000).catch(() => {
+      if (mounted.current) setRefreshError(true);
+    }).finally(() => {
+      submitting.current = false;
+      if (mounted.current) setRefreshing(false);
+    });
+  };
+
   const enviar = () => {
     if (submitting.current || alterar.isPending) return;
     if (refreshing || bloqueada || (exigeVersao && !versao)) return;
@@ -100,15 +115,7 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
           toast.success(suspensa ? `${plano?.name_snapshot ?? "Plano"} · v${plano?.version_number ?? ""} aplicado. A assinatura continua suspensa. Selecione Reativar assinatura para liberar o acesso.` : "Ação aplicada e registrada no histórico.");
           setMotivo("");
           setVersao("");
-          setRefreshing(true); setRefreshError(false);
-          void bounded(() => Promise.all([
-            assinaturas.refetch({ throwOnError: true }), historico.refetch({ throwOnError: true }),
-          ]), 8_000).catch(() => {
-            if (mounted.current) setRefreshError(true);
-          }).finally(() => {
-            submitting.current = false;
-            if (mounted.current) setRefreshing(false);
-          });
+          atualizarResumo();
         },
         onError: (e) => { submitting.current = false; toast.error(mensagemErroAssinatura(e)); },
       },
@@ -151,6 +158,7 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
           {exigeVersao && versoes.isSuccess && versoesVigentes.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Nenhuma versão comercial vigente. A ação permanece bloqueada.</p>}
           {acao === "change_plan" && assinatura?.status === "SUSPENDED" && <p className="mb-3 text-sm" role="note">O plano será atualizado, mas a assinatura continuará suspensa. Para liberar o acesso, use Reativar assinatura.</p>}
           {mesmaVersao && <p role="status" className="mb-3 text-sm">Este plano já está aplicado nesta empresa.</p>}
+          {refreshError && <Button variant="outline" onClick={atualizarResumo} disabled={busy} className="mb-3">Atualizar consulta</Button>}
           <Button disabled={bloqueada || (exigeVersao && !versao) || busy} onClick={enviar}>
             {refreshing ? "Atualizando resumo…" : alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : "Aplicar ação"}
           </Button>
