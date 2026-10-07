@@ -12,7 +12,7 @@
 // - Nenhuma senha, hash, token ou link é registrado em logs ou auditoria.
 //   Diagnóstico: apenas etapa + código/status técnico do erro.
 import { createClient } from "npm:@supabase/supabase-js@2.110.8";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 
 const VERSAO = "fa-3";
 
@@ -27,15 +27,6 @@ type Etapa =
   | "senha_atualizacao"
   | "liberacao"
   | "inesperado";
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store, private" },
-  });
-
-const falha = (status: number, etapa: Etapa, error: string, codigo?: string | number | null) =>
-  json({ error, etapa, codigo: codigo == null ? null : String(codigo).slice(0, 40) }, status);
 
 // Log sem segredos: só etapa e código/status técnico.
 function diag(etapa: Etapa, e: unknown) {
@@ -53,7 +44,16 @@ function senhaValida(s: unknown): s is string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const origin = req.headers.get("Origin");
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeadersFor(origin), "Content-Type": "application/json", "Cache-Control": "no-store, private" },
+    });
+  const falha = (status: number, etapa: Etapa, error: string, codigo?: string | number | null) =>
+    json({ error, etapa, codigo: codigo == null ? null : String(codigo).slice(0, 40) }, status);
+  if (origin && !isTrustedOrigin(origin)) return json({ error: "Origem não autorizada.", code: "origin_forbidden" }, 403);
   if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
 
   try {

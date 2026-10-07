@@ -157,6 +157,7 @@ describe("Gestão de administradores provisionados", () => {
     const d = screen.getByRole("dialog");
     expect(within(d).queryByRole("button", { name: "Cancelar solicitação" })).not.toBeInTheDocument();
     expect(within(d).getByText(/não podem ser cancelados com segurança/)).toBeInTheDocument();
+    expect(within(d).getByText(/Aguarde a expiração ou verifique a confirmação para reconciliar/)).toBeInTheDocument();
     fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
     expect(within(d).getByRole("button", { name: "Reenviar confirmação" })).toBeDisabled();
     expect(m.email).not.toHaveBeenCalled();
