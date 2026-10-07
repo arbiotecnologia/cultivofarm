@@ -19,6 +19,12 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
     refetch: mocks.refetch,
   }),
   useConvidarAdminEmpresa: () => ({ mutate: mocks.mutate, reset: mocks.reset, isPending: mocks.isPending }),
+  useMudancasEmailAdmin: () => ({ data: [] }),
+  useEditarAdminEmpresa: () => ({ mutate: vi.fn(), isPending: false }),
+  useAlterarEmailAdmin: () => ({ mutate: vi.fn(), isPending: false }),
+  useDefinirResponsavelPrincipal: () => ({ mutate: vi.fn(), isPending: false }),
+  mensagemErroPlataforma: () => "erro",
+  mascararEmail: (e: string) => e,
 }));
 
 import PlataformaAdmins from "@/pages/plataforma/PlataformaAdmins";
