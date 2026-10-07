@@ -11824,6 +11824,50 @@ export type Database = {
           },
         ]
       }
+      organization_profile_audit: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          new_values: Json
+          old_values: Json
+          organization_id: string
+          origin: string
+          reason: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          new_values: Json
+          old_values: Json
+          organization_id: string
+          origin?: string
+          reason: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          new_values?: Json
+          old_values?: Json
+          organization_id?: string
+          origin?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_profile_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_status_audit: {
         Row: {
           ator_id: string | null
@@ -22223,6 +22267,18 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_update_organization_profile: {
+        Args: {
+          _email: string
+          _expected_updated_at: string
+          _idempotency_key: string
+          _motivo: string
+          _nome_fantasia: string
+          _org: string
+          _razao_social: string
+        }
+        Returns: Json
       }
       platform_validate_plan_version_draft: {
         Args: { _draft_id: string }

@@ -112,6 +112,7 @@ export default function PlataformaHome() {
 
   const nomeOrg = (id: string) =>
     organizacoes.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
+  const historicoVisivel = (historico.data ?? []).filter((h) => !organizacaoEmContexto || h.organization_id === organizacaoEmContexto);
   const nomePlano = (id: string) => planos.data?.find((p) => p.id === id)?.name ?? id.slice(0, 8);
 
   return (
@@ -149,7 +150,7 @@ export default function PlataformaHome() {
         </Card>
 
         <Tabs value={aba} onValueChange={setAba}>
-          <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsList aria-label="Seções da gestão da plataforma" className="h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap p-1 [scrollbar-width:thin] [&>button]:min-h-10 [&>button]:shrink-0 [&>button]:px-3 [&>button:focus-visible]:ring-2 [&>button:focus-visible]:ring-ring">
             <TabsTrigger value="planos">
               <Layers className="mr-2 h-4 w-4" aria-hidden="true" />
               Planos
@@ -164,7 +165,7 @@ export default function PlataformaHome() {
             </TabsTrigger>
             <TabsTrigger value="empresas">
               <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
-              Nova Empresa
+              Empresa
             </TabsTrigger>
             <TabsTrigger value="admins">
               <UserCog className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -297,6 +298,14 @@ export default function PlataformaHome() {
                 setOrganizacaoEmContexto(organizationId);
                 setAba("admins");
               }}
+              onAbrirAssinaturas={(organizationId) => {
+                setOrganizacaoEmContexto(organizationId);
+                setAba("assinaturas");
+              }}
+              onAbrirHistorico={(organizationId) => {
+                setOrganizacaoEmContexto(organizationId);
+                setAba("historico");
+              }}
             />
           </TabsContent>
 
@@ -310,7 +319,7 @@ export default function PlataformaHome() {
 
 
           <TabsContent value="assinaturas" className="space-y-4">
-            <AlterarAssinaturaCard />
+            <AlterarAssinaturaCard organizationIdInicial={organizacaoEmContexto} />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Assinaturas por empresa</CardTitle>
@@ -370,14 +379,21 @@ export default function PlataformaHome() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {organizacaoEmContexto && (
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
+                    <span>Filtrado pela empresa:</span>
+                    <Badge variant="secondary">{nomeOrg(organizacaoEmContexto)}</Badge>
+                    <Button size="sm" variant="ghost" className="min-h-9" onClick={() => setOrganizacaoEmContexto(null)}>Mostrar todas</Button>
+                  </div>
+                )}
                 <EstadoConsulta
                   carregando={historico.isLoading}
                   erro={historico.isError}
-                  vazio={!!historico.data && historico.data.length === 0}
-                  mensagemVazio="Nenhuma mudança registrada."
+                  vazio={!!historico.data && historicoVisivel.length === 0}
+                  mensagemVazio={organizacaoEmContexto ? "Nenhuma mudança de assinatura registrada para esta empresa." : "Nenhuma mudança registrada."}
                   onTentarNovamente={() => historico.refetch()}
                 />
-                {historico.data && historico.data.length > 0 && (
+                {historico.data && historicoVisivel.length > 0 && (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -391,7 +407,7 @@ export default function PlataformaHome() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {historico.data.map((h) => (
+                        {historicoVisivel.map((h) => (
                           <TableRow key={h.id}>
                             <TableCell>{dataHora(h.created_at)}</TableCell>
                             <TableCell>{nomeOrg(h.organization_id)}</TableCell>
