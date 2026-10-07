@@ -18,13 +18,14 @@ export async function handleAccess(admin: SupabaseClient, actorId: string, body:
   if (input.action === "state") return respond({
     status: suspended ? "suspended" : expired ? "expired" : auth.user.new_email ? "email_confirmation" : state.pending_password ? "temporary_password" : state.status === "pendente" ? "invited" : "active",
     last_sent_at: state.last_sent_at, next_attempt_at: state.next_attempt_at, expires_at: state.provisional_expires_at,
+    operation_status: state.operation_status,
   }, 200, true);
   if (suspended) return respond({ error: "Acesso suspenso. Nenhuma credencial foi alterada.", code: "access_suspended" }, 409, true);
   const env = await loadRuntimeConfig(admin, readWorkerEnv);
   if (input.action === "password_link" && (!env.DELIVERY_ENABLED || !env.EMAIL_ENABLED || getSmtpConfigError(env) || !isRecipientAllowedInTestMode(env, "email", auth.user.email ?? "").allowed)) {
     return respond({ error: "Entrega segura indisponível para este destinatário.", code: "delivery_not_ready" }, 503, true);
   }
-  const { data: claim, error } = await admin.rpc("platform_claim_admin_access", { p_actor_id: actorId, p_invite_id: input.inviteId, p_operation_id: input.operationId, p_kind: input.action });
+  const { data: claim, error } = await admin.rpc("platform_claim_admin_access", { p_actor_id: actorId, p_invite_id: input.inviteId, p_operation_id: input.operationId, p_kind: input.action, p_confirm_ambiguous: body.confirm_ambiguous_email_retry === true });
   if (error || !claim) return respond({ error: "Operação indisponível. Aguarde e atualize o estado.", code: "access_busy_or_denied" }, 409, true);
   if (claim.idempotent) return respond({ status: claim.status, idempotent: true, senha_temporaria: null }, 200, true);
   const finish = async (outcome: string) => {

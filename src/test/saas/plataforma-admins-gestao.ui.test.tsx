@@ -148,6 +148,33 @@ describe("Gestão de administradores provisionados", () => {
     fireEvent.click(within(d).getByRole("button", { name: "Verificar confirmação" }));
     expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "key-1", newEmail: "novo@x.com.br", action: "reconcile" }), expect.any(Object));
   });
+
+  it("não oferece cancelamento fictício e respeita cooldown de reenvio", async () => {
+    m.mudancas = [{ id: "c1", invite_id: "i-b", status: "requested", new_email: "novo@x.com.br", idempotency_key: "key-1", reason: "", confirmation_delivery_status: "accepted", confirmation_next_attempt_at: new Date(Date.now() + 300000).toISOString() }];
+    renderWithProviders(<PlataformaAdmins />);
+    await abrirMenu("Admin B");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Gerenciar confirmação de e-mail" }));
+    const d = screen.getByRole("dialog");
+    expect(within(d).queryByRole("button", { name: "Cancelar solicitação" })).not.toBeInTheDocument();
+    expect(within(d).getByText(/não podem ser cancelados com segurança/)).toBeInTheDocument();
+    fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
+    expect(within(d).getByRole("button", { name: "Reenviar confirmação" })).toBeDisabled();
+    expect(m.email).not.toHaveBeenCalled();
+  });
+
+  it("reenvio ambíguo exige confirmação humana e mantém chave idempotente", async () => {
+    m.mudancas = [{ id: "c1", invite_id: "i-b", status: "requested", new_email: "novo@x.com.br", idempotency_key: "key-1", reason: "", confirmation_delivery_status: "ambiguous" }];
+    renderWithProviders(<PlataformaAdmins />);
+    await abrirMenu("Admin B");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Gerenciar confirmação de e-mail" }));
+    const d = screen.getByRole("dialog");
+    const resend = within(d).getByRole("button", { name: "Reenviar confirmação" });
+    expect(resend).toBeDisabled();
+    expect(within(d).getByText(/Verifiquei a caixa de entrada/)).toBeInTheDocument();
+    fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
+    fireEvent.click(resend);
+    expect(m.email).toHaveBeenCalledWith(expect.objectContaining({ action: "resend", idempotencyKey: "key-1", confirmAmbiguousRetry: true }), expect.any(Object));
+  });
 });
 
 describe("contratos estruturais de segurança", () => {

@@ -11,12 +11,12 @@
 - `organizations` exige o ticket `org_write` para escrita via API, e esse padrão foi mantido.
 - Supabase (docs oficiais): `auth.admin.updateUserById` aplica a mudança na hora, sem fluxo de confirmação. `signOut(jwt)` exige o JWT do próprio usuário, e access tokens já emitidos não podem ser revogados antes de expirar.
 
-## Desenho final
+## Desenho histórico — substituído pelo contrato vigente abaixo
 | Ação | Caminho | Garantias |
 |---|---|---|
 | Definir responsável principal | `public.platform_set_org_principal_admin` (INVOKER) → `platform_private.set_org_principal_admin_core` (DEFINER) | auth.uid + Superadmin; `FOR UPDATE` na organização; responsável esperado (concorrência otimista); chave idempotente; candidato ativo da mesma empresa com papel `administrador` e não Superadmin; atualiza `responsavel_user_id`, `responsavel_definido_em`, flags dos convites e `cargo` na mesma transação; papéis preservados |
 | Editar administrador | `public.platform_update_org_admin` → `platform_private.update_org_admin_core` | nome/telefone/CPF; CPF de administrador ativo já preenchido é bloqueado (exige fluxo específico); `updated_at` esperado; chave idempotente; convite e perfil atualizados juntos |
-| Alterar e-mail | Edge `platform-org-admin-email-change` + RPCs service-only `platform_begin/complete/mark_org_admin_email_change` | begin valida unicidade (convites, perfis, Auth, mudanças abertas), vínculo e tenant; Auth via `updateUserById(email, email_confirm)`; perfil e convite só são sincronizados depois que `auth.users` mostra o novo e-mail; `DELETE auth.sessions` (refresh tokens); convite pendente/falho recebe nova `email_idempotency_key` e passa a exigir reenvio pelo fluxo existente; falha parcial fica `failed`, e o retry com a mesma chave reconcilia |
+| Alterar e-mail (histórico, não vigente) | Edge + RPCs | Alteração imediata Auth e revogação SQL de sessões foram removidas; não constituem prova do contrato atual, que exige confirmação real do titular e não escreve nas tabelas Auth. |
 
 Histórico imutável em `platform_org_admin_audit`, só leitura para o Superadmin, com trigger que bloqueia UPDATE/DELETE. O estado das trocas fica em `platform_org_admin_email_changes`. Uma troca que falhou é substituída automaticamente por uma nova solicitação somente se o Auth ainda tiver o e-mail antigo.
 
@@ -115,3 +115,35 @@ Sem fixtures ou mudanças em dados empresariais nesta finalização; não foi ex
 
 ### Riscos e decisão
 **NO-GO funcional** até prova com Auth real do antigo/novo e-mail, validade single-use, revogação, sessões anteriores negadas, troca provisória e UI/RLS autenticadas. Cooldown/lease e guards foram inspecionados, não certificados em concorrência real. A expiração nominal da confirmação na tabela é informativa; validade do link é controlada pelo Auth. Falha parcial após alteração de senha permanece fail-closed e exige novo login/reconciliação. Não se declara conclusão de homologação nem 100%.
+
+## Execução autorizada — 16:05–16:19 UTC
+
+### Correções e rastreabilidade
+- Helper privado service-only valida ator Superadmin e alvo provisionado por `app_metadata.provisioning_request_id`, papel administrador, perfil/empresa ativos, tenant e exclusão do próprio ator/Superadmin; reutilizado nos caminhos de acesso/e-mail.
+- Finalizador verifica usuário atual Auth e `iat` assinado; RPC exige sessão posterior a `access_valid_after`, nega operação em processamento e recovery expirado anterior à provisória. Assinatura antiga retorna false.
+- Corrigidos parâmetro inexistente `p_delivery_mode`, referência remanescente a `profiles.updated_at` no finalize e renovação de prazo provisório 24h. Reenvio de convite nega mudança de e-mail aberta.
+- Reenvio ambíguo exige confirmação humana auditada, preservando cooldown/lease/idempotência. Entrega parcial dos dois e-mails não é reduzida a falha definitiva. Ambas as telas mostram cooldown e enviam confirmação; cancelamento fictício removido e limitação antecipada. Replay não reexibe senha; exceções são tratadas.
+- `AdapterResult.outcome/certainty` e rendered `assunto/corpo` confirmados por Deno; adapter compartilhado preservado.
+- Forward-only canônico: `20261007160947_b9acd0f6-dc4b-49ed-ad1e-0024247540db.sql` e `20261007161139_836bbbc4-21c6-4848-8fa2-bdd6d8f26e0d.sql`. Duas tentativas recusadas por aspas SQL foram verificadas sem aplicação parcial antes dos retries. Migrations anteriores preservadas; guard privado e ACLs remotas conferidos; RPCs sensíveis sem EXECUTE anon/authenticated.
+- SHA observado antes da documentação: `942a0ad3aa6c77f90c2936da4399d90065382967`; sem commit manual.
+
+### Evidências finais
+| Verificação | Resultado | Evidência |
+|---|---|---|
+| Deno check das três Edges | PASS | SDK/tipos/narrowing |
+| Deno unitário | PASS | 17/17 |
+| UI focal | PASS | 12/12, incluindo cooldown/ambiguidade/cancelamento indisponível |
+| Suíte completa final | PASS | 5.597 PASS, 4 skipped; 390 arquivos PASS |
+| Lint focal | PASS | Zero findings |
+| Lint global | FAIL preexistente | 3.468 erros/127 avisos |
+| Build automático | PASS | Último registro 16:15:32 UTC; tipos intermediários corrigidos |
+| Typecheck frontend separado | BLOCKED | Execução manual proibida; Deno não substitui |
+| Scanners focais | PASS | Sem segredos/integração fiscal |
+| Advisor segurança | PASS focal | 461 históricos, zero novos; ACLs inspecionadas |
+| Auth/sessões/RLS/UI autenticada | BLOCKED | Backend externo sem sessão/Auth Admin no ambiente |
+| SMTP/single-use/concorrência/revogação real | BLOCKED | Sem prova funcional real |
+
+### Decisão e limites
+**NO-GO funcional.** Implementação e verificações disponíveis executadas, homologação pendente. Confirmação de novo e-mail não possui revogação equivalente de refresh sessions demonstrada nesta rodada; a remoção histórica SQL não existe mais e não foi restaurada. Não presumir que refresh tokens expirem com o access token. A semântica de revogação na alteração de senha Admin foi revisada em GoTrue, mas ainda precisa de prova real.
+
+Sem SQL em `auth.users/auth.sessions`, fixtures, alteração de dados empresariais, cobrança, comercial, fiscal ou B2B; zero artefatos de teste criados em public/Auth/Storage por execução, sem varredura global de resíduos históricos. Sem publicação/deploy frontend. Edges seguem mecanismo automático do ambiente; execução remota autenticada não comprovada. Cancelamento Auth indisponível, sem simulação; apresentação provisória existente preservada sem refatoração adicional.

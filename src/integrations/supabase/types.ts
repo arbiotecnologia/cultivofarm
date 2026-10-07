@@ -22246,15 +22246,26 @@ export type Database = {
         }
         Returns: Json
       }
-      platform_claim_admin_access: {
-        Args: {
-          p_actor_id: string
-          p_invite_id: string
-          p_kind: string
-          p_operation_id: string
-        }
-        Returns: Json
-      }
+      platform_claim_admin_access:
+        | {
+            Args: {
+              p_actor_id: string
+              p_invite_id: string
+              p_kind: string
+              p_operation_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_actor_id: string
+              p_confirm_ambiguous: boolean
+              p_invite_id: string
+              p_kind: string
+              p_operation_id: string
+            }
+            Returns: Json
+          }
       platform_claim_email_confirmation: {
         Args: {
           p_actor_id: string
@@ -22419,10 +22430,19 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
-      platform_first_access_valid: {
-        Args: { p_recovery?: boolean; p_user_id: string }
-        Returns: boolean
-      }
+      platform_first_access_valid:
+        | {
+            Args: { p_recovery?: boolean; p_user_id: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_recovery: boolean
+              p_session_issued_at: number
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       platform_get_organization_fiscal_summary: {
         Args: { _org: string }
         Returns: Json

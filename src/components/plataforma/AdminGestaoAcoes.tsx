@@ -74,6 +74,8 @@ export function AdminGestaoAcoes({
     [0, 10, 11].includes(digitos(telefone).length) && [0, 11].includes(digitos(cpf).length);
   const motivoLen = motivo.trim().length;
   const motivoCurto = motivoLen === 1;
+  const reenvioAmbiguo = ["sending", "ambiguous"].includes(mudancaPendente?.confirmation_delivery_status ?? "");
+  const reenvioCooldown = !!mudancaPendente?.confirmation_next_attempt_at && Date.parse(mudancaPendente.confirmation_next_attempt_at) > Date.now();
   const emailValido = EMAIL_RE.test(novoEmail.trim()) && novoEmail.trim().toLowerCase() !== convite.email.toLowerCase() && novoEmail.trim().toLowerCase() === confirmacaoEmail.trim().toLowerCase() && !motivoCurto && confirmado;
 
   const salvarEdicao = () => executar((done) => editar.mutate(
@@ -86,7 +88,7 @@ export function AdminGestaoAcoes({
   ));
 
   const salvarEmail = (action: "request" | "resend" | "reconcile" | "cancel" = "request") => executar((done) => alterarEmail.mutate(
-    { inviteId: convite.id, newEmail: novoEmail, reason: motivo.trim(), idempotencyKey: mudancaPendente?.idempotency_key, action },
+    { inviteId: convite.id, newEmail: novoEmail, reason: motivo.trim(), idempotencyKey: mudancaPendente?.idempotency_key, action, confirmAmbiguousRetry: action === "resend" && reenvioAmbiguo && confirmado },
     {
       onSuccess: (r) => {
         toast.success(r.status === "completed" ? "E-mail confirmado pelo titular e cadastro sincronizado." : "Aguardando confirmação do titular. O e-mail atual continua válido.");
@@ -160,7 +162,7 @@ export function AdminGestaoAcoes({
           <div className="space-y-3">
             <p className="text-sm">E-mail atual: <span className="font-mono">{convite.email}</span></p>
             {mudancaPendente && (
-              <p className="text-sm text-muted-foreground">Aguardando confirmação do titular para {mudancaPendente.new_email}.</p>
+              <div className="space-y-1 text-sm text-muted-foreground"><p>Aguardando confirmação do titular para {mudancaPendente.new_email}.</p><p>Último envio: {mudancaPendente.confirmation_sent_at ? new Date(mudancaPendente.confirmation_sent_at).toLocaleString("pt-BR") : "—"}</p><p>Próximo reenvio: {mudancaPendente.confirmation_next_attempt_at ? new Date(mudancaPendente.confirmation_next_attempt_at).toLocaleString("pt-BR") : "—"}</p><p>Links já emitidos não podem ser cancelados com segurança.</p>{reenvioAmbiguo && <p>A entrega anterior não foi confirmada. Verifique a caixa de entrada; reenviar pode duplicar a mensagem.</p>}</div>
             )}
             <div className="space-y-1"><Label htmlFor="ga-email">Novo e-mail</Label>
               <Input id="ga-email" type="email" value={novoEmail} disabled={!!mudancaPendente} onChange={(e) => setNovoEmail(e.target.value)} /></div>
@@ -170,15 +172,14 @@ export function AdminGestaoAcoes({
               {motivoCurto && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
             <label className="flex items-start gap-2 text-sm">
               <Checkbox checked={confirmado} onCheckedChange={(v) => setConfirmado(v === true)} aria-label="Confirmo a alteração" />
-              <span>Confirmo que o novo endereço pertence a este administrador.</span>
+               <span>{reenvioAmbiguo ? "Verifiquei a caixa de entrada e autorizo o reenvio, ciente da possível duplicação." : "Confirmo que o novo endereço pertence a este administrador."}</span>
             </label>
           </div>
           <DialogFooter>
             <Button variant="outline" disabled={pendente} onClick={() => setModo(null)}>Cancelar</Button>
             {mudancaPendente ? <div className="flex flex-wrap gap-2">
-              <Button variant="outline" disabled={pendente} onClick={() => salvarEmail("resend")}>Reenviar confirmação</Button>
+               <Button variant="outline" disabled={pendente || !confirmado || reenvioCooldown} onClick={() => salvarEmail("resend")}>Reenviar confirmação</Button>
               <Button disabled={pendente} onClick={() => salvarEmail("reconcile")}>Verificar confirmação</Button>
-              <Button variant="outline" disabled={pendente} onClick={() => salvarEmail("cancel")}>Cancelar solicitação</Button>
             </div> : <Button disabled={!emailValido || pendente} onClick={() => salvarEmail()}>{alterarEmail.isPending ? "Enviando…" : "Confirmar alteração"}</Button>}
           </DialogFooter>
         </DialogContent>

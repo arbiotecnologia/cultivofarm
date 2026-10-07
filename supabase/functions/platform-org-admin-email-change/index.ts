@@ -84,7 +84,12 @@ Deno.serve(async (req) => {
         outcome = "ambiguous";
         const text = `Confirme a alteração do seu e-mail de acesso ao Cultivo Farm:\n${delivery.link}\nSe não reconhece a solicitação, não confirme.`;
         const result = await sendEmail(env, { ok: true, canal: "email", address: delivery.email }, { canal: "email", assunto: "Confirme seu e-mail", corpo: "Confirmação segura", variaveis: [] }, { assunto: "Confirme seu e-mail", corpo: text });
-        if (result.outcome !== "sent") break;
+        if (result.outcome !== "sent") {
+          // A previous address may already have received its link; never erase
+          // that uncertainty with a definitive failure for the second address.
+          outcome = deliveries.indexOf(delivery) > 0 || result.certainty === "ambiguous" || result.outcome === "ambiguous" ? "ambiguous" : "failed";
+          break;
+        }
         outcome = "sent";
       }
     } catch { /* No raw error, credential, token or link is returned or logged. */ }

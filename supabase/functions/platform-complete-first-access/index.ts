@@ -11,15 +11,10 @@
 //   limpa por função server-side transacional.
 // - Nenhuma senha, hash, token ou link é registrado em logs ou auditoria.
 //   Diagnóstico: apenas etapa + código/status técnico do erro.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const VERSAO = "fa-3";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 type Etapa =
   | "auth_header"
@@ -59,6 +54,7 @@ function senhaValida(s: unknown): s is string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -103,6 +99,8 @@ Deno.serve(async (req) => {
     const adminClient = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    const { data: currentUser, error: currentError } = await adminClient.auth.getUser(token);
+    if (currentError || currentUser.user?.id !== callerId) return falha(401, "auth_claims", "Sessão inválida ou expirada. Entre novamente.");
 
     // Modo diagnóstico (somente leitura): confirma identidade e pendência sem
     // alterar senha nem estado.
@@ -132,7 +130,9 @@ Deno.serve(async (req) => {
     // Recovery is proven by Auth AMR, never by a client flag.
     const amr = claimsData?.claims?.amr;
     const recoveryProof = Array.isArray(amr) && amr.some(entry => typeof entry === "object" && entry !== null && (entry.method === "recovery" || entry.method === "otp"));
-    const { data: valid, error: validError } = await adminClient.rpc("platform_first_access_valid", { p_user_id: callerId, p_recovery: recoveryProof });
+    const issuedAt = claimsData?.claims?.iat;
+    if (typeof issuedAt !== "number" || !Number.isSafeInteger(issuedAt)) return falha(401, "auth_claims", "Sessão inválida. Entre novamente.");
+    const { data: valid, error: validError } = await adminClient.rpc("platform_first_access_valid", { p_user_id: callerId, p_recovery: recoveryProof, p_session_issued_at: issuedAt });
     if (validError || valid !== true) return falha(403, "nao_pendente", "A senha provisória expirou. Solicite um novo link de acesso.");
 
     // (4) Atualização da senha pela Admin API.
