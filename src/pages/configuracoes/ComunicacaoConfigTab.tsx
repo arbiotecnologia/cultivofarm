@@ -84,6 +84,7 @@ type ProviderView = {
 
 const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "Sessão expirada ou sem permissão.",
+  invalid_token: "Sua sessão expirou. Saia e entre novamente.",
   forbidden: "Apenas o Superadmin de Plataforma pode alterar essa configuração.",
   authorization_check_failed: "Não foi possível validar a permissão de plataforma.",
   rate_limited: "Muitas tentativas em pouco tempo. Aguarde alguns segundos e tente novamente.",
@@ -209,12 +210,25 @@ const SMTP_PRESETS: Array<{ label: string; port: string; hint: string }> = [
   { label: "2525 · Alternativa", port: "2525", hint: "Fallback quando 587 é bloqueado pelo hosting." },
 ];
 
-async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<ProviderView> {
+async function getFreshAccessToken(forceRefresh = false): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const expiresSoon = !session?.expires_at || session.expires_at * 1000 - Date.now() < 60_000;
+  if (session && !forceRefresh && !expiresSoon) return session.access_token;
+  const { data: refreshed, error } = await supabase.auth.refreshSession();
+  if (error || !refreshed.session?.access_token) throw new Error("unauthorized");
+  return refreshed.session.access_token;
+}
+
+async function callSettings(method: "GET" | "PUT", body?: unknown, retried = false): Promise<ProviderView> {
+  const token = await getFreshAccessToken(retried);
   const { data, error } = await supabase.functions.invoke("communication-provider-settings", {
     method,
     body: body ?? undefined,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
   });
+  if (error && !retried && (error as unknown as { context?: { status?: number } })?.context?.status === 401) {
+    return callSettings(method, body, true);
+  }
   if (error) {
     const ctx = (error as unknown as { context?: { body?: unknown; status?: number } })?.context;
     const status = ctx?.status;
