@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { bounded } from "@/lib/saas/subscriptionTransition";
+import { acoesAssinatura, bounded } from "@/lib/saas/subscriptionTransition";
 import {
   mensagemErroAssinatura,
   mensagemErroPlataforma,
@@ -38,15 +38,6 @@ const ACOES = [
 type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const SITUACOES: Record<string, string> = { SUSPENDED: "Suspensa", ACTIVE: "Ativa", PAST_DUE: "Em atraso", TRIAL: "Em teste", CANCELLED: "Cancelada", EXPIRED: "Expirada" };
-export function acoesAssinatura(status: string | undefined, trialEndsAt: string | null, now = Date.now()): AcaoAssinatura[] {
-  switch (status) {
-    case "SUSPENDED": return ["reactivate_manual", "cancel", "change_plan"];
-    case "ACTIVE": return ["change_plan", "mark_past_due", "suspend", "cancel"];
-    case "PAST_DUE": return ["change_plan", "suspend", "cancel"];
-    case "TRIAL": return ["change_plan", "cancel", ...(trialEndsAt && new Date(trialEndsAt).getTime() <= now ? ["expire_trial" as const] : [])];
-    default: return [];
-  }
-}
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
@@ -71,7 +62,7 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const trialUtilizado = assinaturas.data?.some((s) => s.organization_id === org && s.status === "TRIAL") || historico.data?.some((h) => h.organization_id === org && (h.action === "start_trial" || h.previous_status === "TRIAL" || h.new_status === "TRIAL"));
   const permitidas = assinatura
     ? assinatura.plan_version_id === null ? ["change_plan" as const] : acoesAssinatura(assinatura.status, assinatura.trial_ends_at)
-    : assinaturas.isSuccess && historico.isSuccess && !trialUtilizado ? ["start_trial" as const] : [];
+    : assinaturas.isSuccess && historico.isSuccess && (assinaturas.data?.length ?? 0) < 200 && (historico.data?.length ?? 0) < 200 && !trialUtilizado ? ["start_trial" as const] : [];
   const mesmaVersao = acao === "change_plan" && !!versao && versao === assinatura?.plan_version_id;
   const busy = alterar.isPending || refreshing;
   const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo);

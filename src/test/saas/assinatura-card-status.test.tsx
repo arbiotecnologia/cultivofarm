@@ -21,7 +21,8 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useAlterarAssinatura: () => ({ mutate: mocks.mutate, isPending: false }),
   mensagemErroAssinatura: () => "Erro seguro", useCriarExcecao: vi.fn(), useEncerrarExcecao: vi.fn(), useExcecoesSaaS: vi.fn(), useModulosFeaturesSaaS: vi.fn(),
 }));
-import { AlterarAssinaturaCard, acoesAssinatura } from "@/pages/plataforma/PlataformaGestao";
+import { AlterarAssinaturaCard } from "@/pages/plataforma/PlataformaGestao";
+import { acoesAssinatura } from "@/lib/saas/subscriptionTransition";
 const action = (s: string) => fireEvent.change(screen.getAllByRole("combobox")[1], { target: { value: s } });
 const version = (s: string) => fireEvent.change(screen.getAllByRole("combobox")[2], { target: { value: s } });
 beforeEach(() => {
@@ -49,8 +50,9 @@ describe("Gestão de assinatura: plano não reativa", () => {
     expect(mocks.toast.mock.calls[0][0]).toContain("continua suspensa");
     expect(screen.getByText("Atualizando assinatura e histórico…")).toBeInTheDocument();
     await waitFor(() => expect(mocks.history).toHaveBeenCalledTimes(1));
-    await act(async () => { done?.(); });
-    await waitFor(() => expect(screen.getByText("Plano Base · v1 — Suspensa")).toBeInTheDocument());
+    await act(async () => { mocks.version = "other"; done?.(); });
+    await waitFor(() => expect(screen.getByText("Outra versão fictícia · v2 — Suspensa")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Aplicar ação" })).toBeDisabled();
   });
   it("reativar não tem versão e envia somente ação explícita com motivo", () => {
     render(<AlterarAssinaturaCard organizationIdInicial="org" />); action("reactivate_manual");
@@ -74,5 +76,23 @@ describe("Gestão de assinatura: plano não reativa", () => {
   it("legada permite apenas regularizar plano", () => {
     mocks.version = null; render(<AlterarAssinaturaCard organizationIdInicial="org" />);
     expect(screen.queryByRole("option", { name: "Reativar assinatura" })).not.toBeInTheDocument();
+  });
+  it("duplo clique antes do React Query atualizar não duplica RPC", () => {
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />); action("reactivate_manual");
+    fireEvent.change(screen.getByLabelText("Motivo da alteração *"), { target: { value: "Motivo válido" } });
+    const button = screen.getByRole("button", { name: "Aplicar ação" });
+    fireEvent.click(button); fireEvent.click(button);
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+  });
+  it("falha na releitura libera pendência e oferece consulta sem escrita", async () => {
+    mocks.subscriptions.mockRejectedValue(new Error("network"));
+    mocks.mutate.mockImplementation((_value, options) => options.onSuccess());
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />); action("reactivate_manual");
+    fireEvent.change(screen.getByLabelText("Motivo da alteração *"), { target: { value: "Motivo válido" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar ação" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Atualizar consulta" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Atualizar consulta" }));
+    await waitFor(() => expect(mocks.subscriptions).toHaveBeenCalledTimes(2));
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
   });
 });
