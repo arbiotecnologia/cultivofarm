@@ -175,3 +175,29 @@ Sem SQL em `auth.users/auth.sessions`, fixtures, alteração de dados empresaria
 SHA observado antes deste complemento documental: `da2c3d33e4105ec839eb096c5c886a2641c83143`; Git gerenciado pelo ambiente, sem commit manual. Arquivos focais: dois componentes, finalizador, novo `cors_test.ts`, novo `admin-acesso-dialog.ui.test.tsx`, testes `first-access`/`plataforma-admins-gestao.ui`, relatório e roadmap. `AGENTS.md` e guards privados não alterados.
 
 **Decisão: PASS dos três contratos focais nas evidências locais disponíveis; NO-GO funcional geral preservado**, sem Auth real, sem afirmar homologação de envio, confirmação, revogação, single-use, RLS, concorrência de negócio ou UI autenticada. A concorrência testada nesta revisão é exclusivamente isolamento de headers CORS, não Auth ou banco.
+
+## Unificação frontend aprovada — 16:27 UTC
+
+### Entrega
+- A coluna Ações possui somente **Gerenciar administrador** por linha. Removidos menu de três pontos, botão separado de acesso e botão/AlertDialog externo de reenvio.
+- `AdminGestaoAcoes` é dono do único diálogo rolável e do lock entre seções; cabeçalho com nome, empresa, e-mail mascarado e status. Quatro abas: **Dados**, **Responsabilidade**, **E-mail** e **Acesso**. Mobile usa duas colunas nas abas, ações de pelo menos 44px e texto longo quebrável; desktop mantém quatro abas.
+- Dados preserva nome/telefone/CPF, motivo obrigatório, CPF ativo bloqueado e `expectedUpdatedAt`. Responsabilidade preserva candidato ativo, responsável esperado e motivo opcional. E-mail preserva repetição do endereço, confirmação do titular, motivo opcional, chave da pendência, cooldown, confirmação de retry ambíguo e reconciliação; nenhum cancelamento fictício.
+- `AdminAcessoDialog.tsx` agora exporta somente a seção interna `AdminAcessoSection`, sem botão ou modal próprio. O reenvio real reutiliza **a mesma instância** de `useConvidarAdminEmpresa` da página e o contrato existente, com confirmação inline e flag de ambiguidade. Recovery permanece explicitamente **Enviar link para definir/redefinir senha** e nunca é rotulado como convite.
+- Confirmação de e-mail é centralizada na aba E-mail: Acesso informa a pendência e bloqueia mutações de acesso, sem duplicar hook, estado ou chamada de reenvio de confirmação. A consulta Auth ocorre somente ao entrar em Acesso e ao atualizar/reconciliar uma operação; falha de consulta bloqueia ações. Lock síncrono, estado pendente e bloqueio de fechamento/troca de aba evitam clique duplo em curso.
+- Senha provisória permanece recebida uma única vez do servidor; replay não exibe senha. O valor local é eliminado ao ocultar, trocar seção ou fechar o diálogo; nunca é persistido ou logado. Nenhuma autorização passou para o frontend.
+
+### Evidências
+| Verificação | Resultado | Limite |
+|---|---|---|
+| Testes focais UI | PASS 29/29 | Um botão por linha/diálogo, quatro abas, edição/responsabilidade/e-mail, convite real, flag ambígua, lock, recovery, cooldown/suspensão/falha de estado, provisória/replay/ocultação/reabertura |
+| Suíte pertinente SaaS + Comunicação | PASS 837/837, 63 arquivos | Não é reexecução da suíte global; alteração visual final revalidada nos 29 focais |
+| Lint focal | PASS | Seis arquivos de runtime/testes |
+| Scanners segredos e integração fiscal focais | PASS | Nenhum finding |
+| Typecheck + build automáticos | PASS | Último registro 2026-10-07T16:34:37Z: build OK; typecheck manual separado não executado |
+| Visual desktop/mobile isolado | PASS | Playwright 1280×1800 e 390×844; um diálogo/quatro abas, largura mobile 358px, sem overflow horizontal; screenshots inspecionadas das seções. Registro fictício apenas no DOM, sem sessão simulada nem mutação remota; não certifica UI autenticada |
+| Deno / Advisors remotos | NÃO REEXECUTADOS | Sem alteração de Edge, migration, schema, RLS ou banco nesta rodada; evidências anteriores não foram promovidas a novas provas |
+| Auth/SMTP/RLS/concorrência de negócio real | BLOCKED | Backend externo `external_unmanaged`, sem sessão disponível; NO-GO funcional mantido |
+
+Arquivos: `AdminGestaoAcoes.tsx`, `AdminAcessoDialog.tsx`, `PlataformaAdmins.tsx`, três testes UI correspondentes, relatório/roadmap e regra estrutural em `AGENTS.md`. SHA observado antes do complemento documental: `aed8fcb42d718ea53028231e617ab311cf656bf2`; Git gerenciado pelo ambiente, sem commit manual.
+
+**PASS focal da unificação frontend; NO-GO funcional geral preservado.** Nenhuma migration, Edge, operação de banco/Storage/Auth, fixture remota, alteração SMTP/Auth config, plano, B2B, fiscal, cobrança/pagamentos ou publicação/deploy frontend. Zero artefatos remotos criados por esta rodada; sem alegar nova varredura de resíduos históricos.
