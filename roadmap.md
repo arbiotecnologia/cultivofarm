@@ -101,7 +101,8 @@
 
 - [x] Fechamento controlado limites/isolamento (sem nova migração). NÃO VERIFICADO: reexecução pós-travamento, prova comercial positiva, enforcement runtime, UI autenticada.
 
-- [ ] Prova comercial positiva A/B/C — BLOCKED: versão publicada do Plano Base só entra em vigência em 2026-10-07 03:13 UTC (00:13 de Brasília); antes disso nenhuma assinatura pode ser vinculada. Roteiro pronto com rollback: `supabase/tests/prova-comercial-positiva/01-abc-rollback.sql`. Nada gravado; enforcement de limites e gateway seguem desligados.
+- [ ] Prova comercial positiva A/B/C — PARCIAL (2026-10-07): executada com rollback e 0 resíduos; GO para isolamento, entitlements em trial, imutabilidade e pagamentos 0/0/0. NO-GO para fechamento: assinatura ACTIVE não provada (sem fluxo oficial trial→active). A confirmar: simulação do próprio parceiro permitida a admin/financeiro/gestor_comercial e negada ao técnico. Evidências: `docs/auditorias/pos-d52-prova-comercial-fase1-2026-10-06.md` §18.
+- [ ] Advisors Supabase preexistentes (2026-10-07) — dívida/risco de produção, não tratados: segurança 17 INFO / 2+445 WARN DEFINER / senhas vazadas OFF; performance 166 FK sem índice, 36 initplan, 1 sem PK, 371 índices não usados, 127 políticas múltiplas.
 - [x] Sucessão de versão publicada (v1 → v2 em rascunho, encerramento controlado da vigência) — migrations `20261006225758_e18b38b3…` e `20261006230004_972d3b64…`; relatório `docs/auditorias/sucessao-versao-comercial-2026-10-06.md`. NÃO VERIFICADO: tela com login real e concorrência real.
 - [x] Gestão da plataforma: aba "Empresa" com lista, Nova Empresa, detalhe e edição cadastral segura — relatório `docs/auditorias/plataforma-aba-empresa-2026-10-07.md`. Pendente: paginação server-side (>150 empresas) e verificação visual com login real.
 - [x] Hardening JWT em platform-org-admin-email-change (getUser service_role, pin supabase-js)
