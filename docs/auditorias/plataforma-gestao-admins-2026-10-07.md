@@ -201,3 +201,29 @@ SHA observado antes deste complemento documental: `da2c3d33e4105ec839eb096c5c886
 Arquivos: `AdminGestaoAcoes.tsx`, `AdminAcessoDialog.tsx`, `PlataformaAdmins.tsx`, três testes UI correspondentes, relatório/roadmap e regra estrutural em `AGENTS.md`. SHA observado antes do complemento documental: `aed8fcb42d718ea53028231e617ab311cf656bf2`; Git gerenciado pelo ambiente, sem commit manual.
 
 **PASS focal da unificação frontend; NO-GO funcional geral preservado.** Nenhuma migration, Edge, operação de banco/Storage/Auth, fixture remota, alteração SMTP/Auth config, plano, B2B, fiscal, cobrança/pagamentos ou publicação/deploy frontend. Zero artefatos remotos criados por esta rodada; sem alegar nova varredura de resíduos históricos.
+
+## Homologação funcional read-only solicitada — 16:47 UTC
+
+Base confirmada: HEAD `4da7545c8e19307ff230e1258d6ee9f053bbf340`, árvore de trabalho inicialmente limpa. Nenhuma regressão objetiva da unificação foi demonstrada e nenhum código foi alterado.
+
+| Verificação | Resultado | Evidência real / limite |
+|---|---|---|
+| Base solicitada | PASS | SHA exato confirmado antes de qualquer alteração |
+| Sessão real de Platform Superadmin no executor | BLOCKED | `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`; variáveis de sessão, chave de armazenamento e cookies injetados ausentes |
+| Observação do navegador sem bypass | PASS restrito | Chromium real em `http://localhost:8080`, viewport 1280×1800; navegação inicial termina em `/auth`, formulário de entrada visível; sem access token na chave canônica de localStorage, zero cookies acessíveis ao documento. Não prova situação do navegador pessoal do proprietário |
+| Uma entrada por linha, cabeçalho e quatro seções, desktop/mobile autenticados | BLOCKED | Gestão não acessível com sessão real disponível; nenhuma fixture DOM usada nesta rodada; evidência visual anterior não promovida a homologação |
+| Acesso: estado, fail-closed, cooldown e bloqueio por e-mail pendente | BLOCKED | Nenhuma consulta autenticada à Edge de gerenciamento foi feita; nenhum envio/geração de senha tentado |
+| Identidade existente não Superadmin: gestão e operações negadas | BLOCKED | Nenhuma segunda sessão real disponível; ausência de sessão e tela de entrada não substituem negativa autenticada por papel |
+| Rede/Edge logs e CORS de operação autenticada | BLOCKED | Rede observada apenas com host canônico `swzpzcwiasxmjutrmvkm.supabase.co` e HTTP 401; sem imprimir caminho/query, headers, corpos ou tokens. Sem chamada de gerenciamento correlacionável, não houve consulta a logs remotos nem prova nova de origem/CORS |
+| Testes/lint/build nesta rodada | NÃO REEXECUTADOS | Apenas documentação alterada, conforme escopo; registro automático já existente observado: `build OK` 2026-10-07T16:48:04Z, sem atribuí-lo a nova bateria |
+
+Captura inspecionada: `/tmp/browser/admin-homologacao-readonly/public-start.png`; script de observação em `/tmp/browser/admin-homologacao-readonly/check_session.py`. Nenhuma autenticação simulada, JWT fabricado, credencial solicitada ou service_role usado no navegador. Nenhuma escrita remota, fixture, RPC mutável, migration, Edge, alteração de configuração, envio de convite/recovery/confirmação, geração de senha ou publicação/deploy manual.
+
+### Gate humano mínimo
+Este Supabase externo não oferece sessão gerenciada injetável ao executor; entrar no preview pessoal não comprova nem garante disponibilizar a sessão neste navegador isolado. O titular autorizado deve executar as leituras no próprio navegador autenticado e fornecer evidências sanitizadas, **sem senha, token, cookie, link recovery ou exportação HAR bruta**:
+1. Com Platform Superadmin, abrir Gestão da plataforma → Administradores; registrar uma única entrada por linha e o diálogo com cabeçalho/abas em desktop e mobile, mascarando dados pessoais nas capturas compartilhadas.
+2. Entrar em Acesso somente para consultar estado; registrar cooldown/pendência/bloqueio quando estados já existentes permitirem, sem criar esses estados nem clicar em envio ou senha. Estado ausente continua BLOCKED, não PASS por inferência.
+3. Com identidade de teste já existente não Superadmin, registrar recusa da gestão e de consulta read-only de estado, sem reclassificação e sem invocar mutações. Negativas das operações mutáveis permanecem sem prova dinâmica nesta rodada, pois invocá-las não integra a autorização read-only.
+4. Fornecer somente método, nome da Edge, horário UTC, status HTTP, origem/headers CORS permitidos e identificador de correlação não secreto para confronto focal com logs sanitizados, nunca Authorization/apikey/corpos pessoais.
+
+**Decisão: NO-GO funcional; provas autenticadas BLOCKED, nenhum FAIL de regressão demonstrado.** Mudanças limitadas a este relatório e `roadmap.md`; preservados dados/histórico e SMTP/Auth config, planos, B2B, fiscal e pagamentos.
