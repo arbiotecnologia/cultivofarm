@@ -24,6 +24,11 @@ export const REGIMES_TRIBUTARIOS = [
   { value: "outros", label: "Outros" },
 ] as const;
 
+export const UFS_BRASIL = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+] as const;
+
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const normalizarEmailEmpresa = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 export const emailEmpresaValido = (value: string | null | undefined) => {
@@ -40,7 +45,7 @@ export const regimeTributarioValido = (value: string | null | undefined) =>
 /** Whitelist de chaves aceitas pelo servidor (platform_private.onboarding_validar). */
 export const ONBOARDING_CAMPOS: Record<string, number> = {
   razao_social: 200, nome_fantasia: 200, cnpj: 18, inscricao_estadual: 20, regime_tributario: 40,
-  cep: 9, logradouro: 200, numero: 20, bairro: 120, cidade: 120, uf: 2, telefone: 20,
+  cep: 9, logradouro: 200, numero: 20, complemento: 120, bairro: 120, cidade: 120, uf: 2, telefone: 20,
   email_contato: 255, responsavel_nome: 160, responsavel_cargo: 120, fuso_horario: 64, idioma: 10,
 };
 export type OrgStatus = "rascunho" | "aguardando_ativacao" | "onboarding" | "ativa" | "suspensa" | "cancelada";
@@ -92,6 +97,7 @@ export interface OnboardingDados {
   cep?: string;
   logradouro?: string;
   numero?: string;
+  complemento?: string;
   bairro?: string;
   cidade?: string;
   uf?: string;

@@ -45,3 +45,27 @@ RPC: `auth.uid()` + `is_platform_superadmin`, `search_path=''`, sem EXECUTE para
 
 ## GO/NO-GO
 GO para uso, condicionado à verificação visual com login real de Platform Superadmin após publicar.
+
+## Fase 2 — Cadastro empresarial completo (2026-10-07)
+
+**Desenho:** ficha única `EmpresaDetalhe` com seções Dados básicos, Contatos, Endereço e Dados cadastrais/fiscais; sem tela, rota ou tabela nova. Fonte do cadastro: `organizations` + `onboarding_dados`. Fonte fiscal: `company_fiscal_settings` (somente leitura, nunca sincronizado). Divergências de razão social, CNPJ e IE são apenas sinalizadas.
+
+**Banco (2 migrations):**
+- `platform_private.onboarding_validar`: + `complemento` (120), UF restrita às 27 unidades, CEP normalizado `00000-000`.
+- `platform_private.org_cadastro_patch`: whitelist (telefone, e-mail de contato, responsável/cargo, endereço, IE, fuso), anti mass-assignment.
+- `platform_update_organization_profile` (INVOKER) → `update_organization_profile_core` (DEFINER, privado): `_dados jsonb` opcional, merge que preserva chaves não enviadas; `''` limpa só a chave enviada; fuso também na coluna; auditoria com `dados` antes/depois por campo + `dados_patch` na idempotência; motivo obrigatório, `expected_updated_at`, ticket `org_write`.
+- `platform_create_organization` agora INVOKER → `platform_private.create_organization_core` (DEFINER): `_dados` validado; telefone, CEP, logradouro, número, bairro, cidade e UF obrigatórios; sem evento extra de perfil (criação segue em `organization_status_audit`).
+- `platform_get_organization_fiscal_summary` (INVOKER) → `organization_fiscal_summary_core` (DEFINER, privado): devolve só razão, CNPJ, IE, IM, regime, CRT, CNAE principal, situação, NF-e/NFS-e habilitadas. Sem certificados, refs, séries ou configurações. RLS de `company_fiscal_settings` inalterada (4 políticas).
+- Grants: EXECUTE revogado de PUBLIC/anon; apenas authenticated/service_role. Todas validam `auth.uid()` + `is_platform_superadmin`.
+- Rollback: restaurar as definições anteriores (6/7 argumentos) dos três RPCs e remover `org_cadastro_patch`, `organization_fiscal_summary_core` e `create_organization_core`; dados gravados em `onboarding_dados` permanecem compatíveis.
+
+**Frontend:** `EmpresaDetalhe.tsx`, `PlataformaEmpresas.tsx` (ações Ver/Editar), `OrganizationOnboardingFlow.tsx` (contatos/endereço/IE pré-preenchidos pela consulta do CNPJ, revisados antes de criar), `CadastroEmpresaCampos.tsx` (novo, compartilhado), `empresaEdicao.ts`, `usePlataformaSaaS.ts`, `orgOnboarding.ts`.
+
+**Evidências:**
+- Prova SQL com rollback no banco canônico (fixture fictícia, CNPJ 11222333000181, resíduo 0): 28/28 PASS, mais 3/3 PASS na prova de concorrência. Cobriu criação completa, campos obrigatórios, mass-assignment, UF/CEP/telefone/e-mail inválidos, CNPJ duplicado, merge preservando chaves, auditoria campo a campo, idempotência e conflito de chave, versão desatualizada, motivo, CNPJ imutável, limpar IE e definir fuso, resumo fiscal vazio e sem campos sensíveis, não-Superadmin negado (público e núcleo), chamada sem `auth.uid` negada, ACL anon e RLS fiscal intacta.
+- Vitest SaaS + Comunicação 799/799 (inclui `empresa-cadastro-completo.test.ts` e novos casos de UI); typecheck, lint focal, build e scanner de segredos passaram.
+- Advisors: a nova função DEFINER exposta foi movida para schema privado; os 465 avisos preexistentes não foram tratados.
+
+**Não verificado / pendências:** navegador autenticado desktop/mobile real; busca por cidade/UF adiada (exigiria filtro amplo no cliente); o rótulo da situação do emissor só foi confirmado para o valor `DRAFT` existente.
+
+**Decisão:** GO técnico.

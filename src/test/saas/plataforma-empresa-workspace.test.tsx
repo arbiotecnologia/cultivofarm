@@ -6,6 +6,7 @@ import { errosFormEmpresa, formEmpresaAlterado, formatarCnpj, mensagemErroEdicao
 const editar = vi.fn();
 const refetch = vi.fn().mockResolvedValue({});
 const rolesRef = { current: ["superadmin"] as string[] };
+const fiscalRef: { current: Record<string, unknown> } = { current: { configurado: false } };
 const orgs = [
   { id: "org-a", nome: "AR BIOTECNOLOGIA LTDA", nome_fantasia: "AR Bio", cnpj: "12345678000190", email_corporativo: "a@ar.com", status: "ativa", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-02-01T00:00:00Z" },
   { id: "org-b", nome: "REFIL INFORMATICA LTDA", nome_fantasia: null, cnpj: "98765432000110", email_corporativo: "b@refil.com", status: "onboarding", created_at: "2026-01-02T00:00:00Z", updated_at: "2026-02-02T00:00:00Z" },
@@ -31,6 +32,7 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useConvitesAdminEmpresa: () => ({ data: [{ id: "c1", organization_id: "org-a", nome: "Maria", email: "maria@ar.com", responsavel_principal: true, status: "ativo" }] }),
   useAuditoriaEmpresa: () => ({ data: [{ id: "e1", tipo: "situacao", created_at: "2026-02-01T00:00:00Z", motivo: "Ativação", resumo: "Situação: onboarding → ativa" }], refetch }),
   useEditarEmpresa: () => ({ mutateAsync: editar, isPending: false }),
+  useResumoFiscalEmpresa: () => ({ data: fiscalRef.current, isLoading: false, isError: false }),
 }));
 
 import PlataformaEmpresas from "@/pages/plataforma/PlataformaEmpresas";
@@ -135,5 +137,30 @@ describe("Gestão da plataforma — aba Empresa", () => {
     expect(mensagemErroEdicaoEmpresa(new Error("platform_conflict: a empresa foi alterada por outra pessoa; recarregue"))).toMatch(/outra pessoa/);
     expect(mensagemErroEdicaoEmpresa(Object.assign(new Error("x"), { code: "42501" }))).toMatch(/acesso/);
     expect(mensagemErroEdicaoEmpresa(new Error("syntax error at SELECT"))).not.toMatch(/SELECT/);
+  });
+
+  it("empresa antiga incompleta abre com indicador e pode ser completada via Editar da lista (patch parcial)", async () => {
+    editar.mockResolvedValue({});
+    fiscalRef.current = { configurado: false };
+    render(<PlataformaEmpresas {...handlers()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Editar empresa AR BIOTECNOLOGIA LTDA" })[0]);
+    expect(screen.getByText("Cadastro incompleto")).toBeInTheDocument();
+    expect(screen.getByText("Sem configuração fiscal")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Complemento"), { target: { value: "Sala 2" } });
+    fireEvent.change(screen.getByLabelText("CEP"), { target: { value: "01001000" } });
+    fireEvent.change(screen.getByLabelText("Motivo *"), { target: { value: "completar" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    await waitFor(() => expect(editar).toHaveBeenCalledTimes(1));
+    expect(editar.mock.calls[0][0].dados).toEqual({ complemento: "Sala 2", cep: "01001-000" });
+  });
+
+  it("resumo fiscal somente leitura, sem campos sensíveis, e aviso de divergência", () => {
+    fiscalRef.current = { configurado: true, razao_social: "OUTRA RAZAO", cnpj: "12345678000190", inscricao_estadual: "123", inscricao_municipal: "999", regime_tributario: "lucro_real", crt: "3", cnae_principal: "0111301", situacao: "configured", nfe_habilitada: true, nfse_habilitada: false };
+    render(<PlataformaEmpresas {...handlers()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Abrir empresa AR BIOTECNOLOGIA LTDA" })[0]);
+    expect(screen.getByText("999")).toBeInTheDocument();
+    expect(screen.getByText("0111301")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/Razão social, Inscrição estadual/);
+    expect(screen.queryByText(/certificad|token|credencial|série/i)).toBeNull();
   });
 });

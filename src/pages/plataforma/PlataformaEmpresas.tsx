@@ -16,7 +16,7 @@ import EmpresaDetalhe from "./EmpresaDetalhe";
 
 const ACOES_SUPERADMIN: OrgStatus[] = ["aguardando_ativacao", "rascunho", "suspensa", "ativa", "cancelada"];
 
-type Visao = { tipo: "lista" } | { tipo: "nova" } | { tipo: "detalhe"; id: string };
+type Visao = { tipo: "lista" } | { tipo: "nova" } | { tipo: "detalhe"; id: string; editar?: boolean };
 
 export interface PlataformaEmpresasProps {
   onAbrirAdministradores: (organizationId: string) => void;
@@ -33,7 +33,7 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
   const [motivo, setMotivo] = useState("");
 
   const lista = filtrarEmpresas(orgs.data ?? [], filtro);
-  const abrir = (id: string) => setVisao({ tipo: "detalhe", id });
+  const abrir = (id: string, editar = false) => setVisao({ tipo: "detalhe", id, editar });
 
   const confirmarMudanca = async () => {
     if (!motivoDlg || motivo.trim().length < 5) return;
@@ -66,7 +66,9 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
   if (visao.tipo === "detalhe") {
     return (
       <EmpresaDetalhe
+        key={`${visao.id}-${visao.editar ? "e" : "v"}`}
         organizationId={visao.id}
+        iniciarEdicao={visao.editar}
         onVoltar={() => setVisao({ tipo: "lista" })}
         onAbrirAdministradores={onAbrirAdministradores}
         onAbrirAssinaturas={onAbrirAssinaturas}
@@ -138,7 +140,7 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <Badge variant="outline">{ORG_STATUS_LABEL[org.status as OrgStatus] ?? org.status}</Badge>
-                  <Button size="sm" className="min-h-10" onClick={() => abrir(org.id)} aria-label={`Abrir empresa ${org.nome}`}>Abrir empresa</Button>
+                  <div className="flex gap-2"><Button size="sm" variant="outline" className="min-h-10" onClick={() => abrir(org.id, true)} aria-label={`Editar empresa ${org.nome}`}>Editar</Button><Button size="sm" className="min-h-10" onClick={() => abrir(org.id)} aria-label={`Abrir empresa ${org.nome}`}>Ver</Button></div>
                 </div>
               </li>
             ))}
@@ -153,7 +155,8 @@ export default function PlataformaEmpresas({ onAbrirAdministradores, onAbrirAssi
                     <TableCell>{formatarCnpj(org.cnpj)}</TableCell>
                     <TableCell><Badge variant="outline">{ORG_STATUS_LABEL[org.status as OrgStatus] ?? org.status}</Badge></TableCell>
                     <TableCell className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="outline" className="min-h-9 mr-1" onClick={() => abrir(org.id)} aria-label={`Abrir empresa ${org.nome}`}>Abrir empresa</Button>
+                      <Button size="sm" variant="outline" className="min-h-9 mr-1" onClick={() => abrir(org.id)} aria-label={`Abrir empresa ${org.nome}`}>Ver</Button>
+                      <Button size="sm" variant="outline" className="min-h-9 mr-1" onClick={() => abrir(org.id, true)} aria-label={`Editar empresa ${org.nome}`}>Editar</Button>
                       {menuAcoes(org)}
                     </TableCell>
                   </TableRow>

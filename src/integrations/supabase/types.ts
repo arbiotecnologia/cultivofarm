@@ -22270,6 +22270,7 @@ export type Database = {
       platform_create_organization: {
         Args: {
           _cnpj: string
+          _dados?: Json
           _email: string
           _nome: string
           _nome_fantasia: string
@@ -22324,6 +22325,10 @@ export type Database = {
       platform_first_access_pending: {
         Args: { p_user_id: string }
         Returns: boolean
+      }
+      platform_get_organization_fiscal_summary: {
+        Args: { _org: string }
+        Returns: Json
       }
       platform_mark_org_admin_email_ambiguous: {
         Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
@@ -22452,6 +22457,7 @@ export type Database = {
       }
       platform_update_organization_profile: {
         Args: {
+          _dados?: Json
           _email: string
           _expected_updated_at: string
           _idempotency_key: string

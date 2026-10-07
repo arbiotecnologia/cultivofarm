@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, History, Pencil, RefreshCw, UserCog, Building2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, History, Pencil, RefreshCw, UserCog, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,9 +16,14 @@ import {
   useEditarEmpresa,
   useEmpresaDetalhe,
   usePlanosSaaS,
+  useResumoFiscalEmpresa,
 } from "@/hooks/usePlataformaSaaS";
-import { ORG_STATUS_LABEL, type OrgStatus } from "@/lib/saas/orgOnboarding";
-import { errosFormEmpresa, formEmpresaAlterado, formatarCnpj, mensagemErroEdicaoEmpresa, type FormEmpresa } from "@/components/plataforma/empresaEdicao";
+import { FUSOS_BRASIL, ORG_STATUS_LABEL, REGIMES_TRIBUTARIOS, type OrgStatus } from "@/lib/saas/orgOnboarding";
+import { CadastroEmpresaCampos } from "@/components/plataforma/CadastroEmpresaCampos";
+import {
+  camposFaltantes, dadosCadastroAtuais, divergenciasFiscais, errosFormEmpresa, formEmpresaAlterado, formatarCnpj,
+  formatarTelefone, mensagemErroEdicaoEmpresa, montarPatchCadastro, type FormEmpresa,
+} from "@/components/plataforma/empresaEdicao";
 
 const ASSINATURA_LABEL: Record<string, string> = {
   TRIAL: "Período de teste", ACTIVE: "Ativa", PAST_DUE: "Pagamento em atraso",
@@ -45,9 +50,28 @@ export interface EmpresaDetalheProps {
   onAbrirAdministradores: (organizationId: string) => void;
   onAbrirAssinaturas: (organizationId: string) => void;
   onAbrirHistorico: (organizationId: string) => void;
+  /** Abre direto o formulário de edição (ação "Editar" da lista). */
+  iniciarEdicao?: boolean;
 }
 
-export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdministradores, onAbrirAssinaturas, onAbrirHistorico }: EmpresaDetalheProps) {
+const SITUACAO_FISCAL_LABEL: Record<string, string> = {
+  DRAFT: "Em configuração", PENDING: "Pendente", CONFIGURED: "Configurado", VALIDATED: "Validado",
+  INCOMPLETE: "Incompleto", READY: "Pronto", BLOCKED: "Bloqueado",
+};
+const fusoLabel = (v: string | null | undefined) => (v ? FUSOS_BRASIL.find((f) => f.value === v)?.label ?? v : null);
+const regimeLabel = (v: string | null | undefined) => (v ? REGIMES_TRIBUTARIOS.find((r) => r.value === v)?.label ?? v : null);
+const simNao = (v: boolean | null | undefined) => (v == null ? null : v ? "Habilitada" : "Desabilitada");
+
+function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-2" aria-label={titulo}>
+      <h3 className="text-sm font-semibold text-muted-foreground">{titulo}</h3>
+      <dl className="grid gap-3 sm:grid-cols-2">{children}</dl>
+    </section>
+  );
+}
+
+export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdministradores, onAbrirAssinaturas, onAbrirHistorico, iniciarEdicao = false }: EmpresaDetalheProps) {
   const { roles } = useAuth();
   const superadmin = roles.includes("superadmin");
   const detalhe = useEmpresaDetalhe(organizationId);
@@ -56,24 +80,35 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
   const convites = useConvitesAdminEmpresa();
   const auditoria = useAuditoriaEmpresa(organizationId);
   const editar = useEditarEmpresa();
+  const fiscal = useResumoFiscalEmpresa(organizationId, superadmin);
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState<FormEmpresa>({ razaoSocial: "", nomeFantasia: "", email: "", motivo: "" });
   const enviando = useRef(false);
 
-  // Troca de empresa: descarta edição em curso.
-  useEffect(() => { setEditando(false); }, [organizationId]);
-
   const org = detalhe.data;
+  const edicaoInicialFeita = useRef(false);
+
+  // Troca de empresa: descarta edição em curso.
+  useEffect(() => { setEditando(false); edicaoInicialFeita.current = false; }, [organizationId]);
   const assinatura = (assinaturas.data ?? []).find((a) => a.organization_id === organizationId);
   const plano = assinatura ? planos.data?.find((p) => p.id === assinatura.plan_id) : undefined;
   const admins = (convites.data ?? []).filter((c) => c.organization_id === organizationId);
   const responsavel = admins.find((c) => c.responsavel_principal) ?? null;
 
+  const dadosAtuais = org ? dadosCadastroAtuais(org) : {};
+  const faltantes = org ? camposFaltantes(org, dadosAtuais) : [];
+  const divergencias = org ? divergenciasFiscais(org, dadosAtuais, fiscal.data) : [];
+
   const abrirEdicao = () => {
     if (!org) return;
-    setForm({ razaoSocial: org.razao_social ?? org.nome ?? "", nomeFantasia: org.nome_fantasia ?? "", email: org.email_corporativo ?? "", motivo: "" });
+    setForm({ razaoSocial: org.razao_social ?? org.nome ?? "", nomeFantasia: org.nome_fantasia ?? "", email: org.email_corporativo ?? "", motivo: "", dados: { ...dadosAtuais } });
     setEditando(true);
   };
+
+  useEffect(() => {
+    if (iniciarEdicao && superadmin && org && !edicaoInicialFeita.current) { edicaoInicialFeita.current = true; abrirEdicao(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iniciarEdicao, superadmin, org?.id]);
 
   const erros = errosFormEmpresa(form);
   const alterado = org ? formEmpresaAlterado(form, org) : false;
@@ -86,6 +121,7 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
       await editar.mutateAsync({
         organizationId, razaoSocial: form.razaoSocial, nomeFantasia: form.nomeFantasia,
         email: form.email, motivo: form.motivo, expectedUpdatedAt: org.updated_at,
+        dados: form.dados ? (montarPatchCadastro(form.dados, dadosAtuais) as Record<string, string>) : {},
       });
       toast.success("Empresa atualizada e registrada no histórico.");
       setEditando(false);
@@ -124,15 +160,61 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
       {org && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Dados cadastrais</CardTitle></CardHeader>
-            <CardContent>
-              <dl className="grid gap-3 sm:grid-cols-2">
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0 gap-2">
+              <CardTitle className="text-base">Cadastro da empresa</CardTitle>
+              {faltantes.length > 0
+                ? <Badge variant="secondary" title={`Faltando: ${faltantes.join(", ")}`}>Cadastro incompleto</Badge>
+                : <Badge variant="outline">Cadastro completo</Badge>}
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {faltantes.length > 0 && (
+                <p className="text-xs text-muted-foreground" aria-live="polite">Faltando: {faltantes.join(", ")}.{superadmin ? " Use “Editar empresa” para completar." : ""}</p>
+              )}
+              <Secao titulo="Dados básicos">
                 <Campo label="Razão social" valor={org.razao_social ?? org.nome} />
                 <Campo label="Nome fantasia" valor={org.nome_fantasia} />
                 <Campo label="CNPJ" valor={org.cnpj ? formatarCnpj(org.cnpj) : null} />
-                <Campo label="E-mail" valor={org.email_corporativo} />
+                <Campo label="E-mail corporativo" valor={org.email_corporativo} />
                 <Campo label="Situação" valor={<Badge variant="outline">{ORG_STATUS_LABEL[org.status as OrgStatus] ?? org.status}</Badge>} />
-                <Campo label="Fuso horário" valor={org.fuso_horario} />
+                <Campo label="Fuso horário" valor={fusoLabel(org.fuso_horario)} />
+              </Secao>
+              <Secao titulo="Contatos">
+                <Campo label="Telefone" valor={formatarTelefone(dadosAtuais.telefone)} />
+                <Campo label="E-mail de contato" valor={dadosAtuais.email_contato ?? null} />
+                <Campo label="Contato responsável" valor={dadosAtuais.responsavel_nome ?? null} />
+                <Campo label="Cargo" valor={dadosAtuais.responsavel_cargo ?? null} />
+              </Secao>
+              <Secao titulo="Endereço">
+                <Campo label="CEP" valor={dadosAtuais.cep ?? null} />
+                <Campo label="Logradouro" valor={[dadosAtuais.logradouro, dadosAtuais.numero].filter(Boolean).join(", ") || null} />
+                <Campo label="Complemento" valor={dadosAtuais.complemento ?? null} />
+                <Campo label="Bairro" valor={dadosAtuais.bairro ?? null} />
+                <Campo label="Cidade / UF" valor={[dadosAtuais.cidade, dadosAtuais.uf].filter(Boolean).join(" / ") || null} />
+              </Secao>
+              <Secao titulo="Dados cadastrais e fiscais">
+                <Campo label="Inscrição estadual (cadastro)" valor={dadosAtuais.inscricao_estadual ?? null} />
+                {superadmin && fiscal.isLoading && <Campo label="Emissor fiscal" valor="Carregando…" />}
+                {superadmin && fiscal.isError && <Campo label="Emissor fiscal" valor={<span className="text-muted-foreground font-normal">Não foi possível carregar o resumo fiscal.</span>} />}
+                {superadmin && fiscal.data && !fiscal.data.configurado && <Campo label="Emissor fiscal" valor={<Badge variant="secondary">Sem configuração fiscal</Badge>} />}
+                {superadmin && fiscal.data?.configurado && (
+                  <>
+                    <Campo label="Situação do emissor" valor={<Badge variant="outline">{SITUACAO_FISCAL_LABEL[(fiscal.data.situacao ?? "").toUpperCase()] ?? fiscal.data.situacao ?? "Não informado"}</Badge>} />
+                    <Campo label="Inscrição estadual (emissor)" valor={fiscal.data.inscricao_estadual ?? null} />
+                    <Campo label="Inscrição municipal" valor={fiscal.data.inscricao_municipal ?? null} />
+                    <Campo label="Regime tributário / CRT" valor={[regimeLabel(fiscal.data.regime_tributario), fiscal.data.crt ? `CRT ${fiscal.data.crt}` : null].filter(Boolean).join(" · ") || null} />
+                    <Campo label="CNAE principal" valor={fiscal.data.cnae_principal ?? null} />
+                    <Campo label="NF-e / NFS-e" valor={[simNao(fiscal.data.nfe_habilitada), simNao(fiscal.data.nfse_habilitada)].map((v) => v ?? "—").join(" / ")} />
+                  </>
+                )}
+              </Secao>
+              {divergencias.length > 0 && (
+                <div role="alert" className="flex gap-2 rounded-md border border-destructive/40 p-3 text-sm">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
+                  <p>Divergência com o emissor fiscal: {divergencias.join(", ")}. Nada é corrigido automaticamente; revise no módulo fiscal da empresa ou neste cadastro.</p>
+                </div>
+              )}
+              {superadmin && fiscal.data?.configurado && <p className="text-xs text-muted-foreground">Resumo somente leitura. O emissor fiscal é configurado pela própria empresa.</p>}
+              <dl className="grid gap-3 sm:grid-cols-2 border-t pt-3">
                 <Campo label="Criada em" valor={dataHora(org.created_at)} />
                 <Campo label="Atualizada em" valor={dataHora(org.updated_at)} />
                 <Campo label="Cadastro concluído em" valor={org.onboarding_concluido_em ? dataHora(org.onboarding_concluido_em) : null} />
@@ -190,7 +272,7 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
       )}
 
       <Dialog open={editando} onOpenChange={(open) => { if (!editar.isPending) setEditando(open); }}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
             <DialogDescription>Somente dados cadastrais. A alteração exige motivo e fica registrada.</DialogDescription>
@@ -204,7 +286,11 @@ export default function EmpresaDetalhe({ organizationId, onVoltar, onAbrirAdmini
               <Input id="emp-ed-cnpj" value={formatarCnpj(org?.cnpj)} readOnly disabled aria-describedby="emp-ed-cnpj-ajuda" />
               <p id="emp-ed-cnpj-ajuda" className="text-xs text-muted-foreground">O CNPJ não pode ser alterado aqui. Uma correção exige fluxo específico e auditado.</p>
             </div>
-            <p className="text-xs text-muted-foreground">Situação, plano, assinatura e administradores são alterados nas abas próprias.</p>
+            {form.dados && (
+              <CadastroEmpresaCampos idPrefix="emp-ed" value={form.dados} secoes={["contatos", "endereco", "fiscal", "fuso"]}
+                onChange={(dados) => setForm({ ...form, dados })} disabled={editar.isPending} />
+            )}
+            <p className="text-xs text-muted-foreground">Situação, plano, assinatura e administradores são alterados nas abas próprias. O emissor fiscal não é alterado por aqui.</p>
             <div className="space-y-1"><Label htmlFor="emp-ed-motivo">Motivo *</Label><Textarea id="emp-ed-motivo" maxLength={300} value={form.motivo} onChange={(e) => setForm({ ...form, motivo: e.target.value })} /></div>
             {erros.length > 0 && <ul className="text-xs text-muted-foreground list-disc pl-4" aria-live="polite">{erros.map((e) => <li key={e}>{e}</li>)}</ul>}
             {erros.length === 0 && !alterado && <p className="text-xs text-muted-foreground" aria-live="polite">Nenhuma alteração para salvar.</p>}

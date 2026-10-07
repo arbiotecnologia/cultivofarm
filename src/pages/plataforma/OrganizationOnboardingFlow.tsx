@@ -29,6 +29,8 @@ import {
 import { cnpjValido, normalizarCnpj } from "@/lib/saas/orgOnboarding";
 import { CODIGOS_FALLBACK_MANUAL, FONTE_OFICIAL, consultarCnpjOnboarding, mensagemConsulta, type DadosEmpresa } from "@/lib/saas/onboardingCnpj";
 import { ManualAccessLinkAction } from "@/components/plataforma/ManualAccessLinkAction";
+import { CadastroEmpresaCampos } from "@/components/plataforma/CadastroEmpresaCampos";
+import { CAMPOS_CADASTRO, errosCadastro, normalizarCampo, type DadosCadastro } from "@/components/plataforma/empresaEdicao";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 type Origem = { tipo: "api"; dados: DadosEmpresa } | { tipo: "manual"; motivo: string } | null;
@@ -48,7 +50,15 @@ interface EmpresaRevisada {
   planKey: string;
   planName: string;
   rascunho: boolean;
+  dados: Record<string, string>;
 }
+
+/** Normaliza e descarta vazios: só chaves da whitelist chegam ao servidor. */
+const dadosParaEnvio = (d: DadosCadastro): Record<string, string> => {
+  const out: Record<string, string> = {};
+  for (const c of CAMPOS_CADASTRO) { const v = normalizarCampo(c, d[c]); if (v) out[c] = v; }
+  return out;
+};
 
 const PROGRESSO_LABEL: Record<Progresso, string> = {
   preparando: "Preparando",
@@ -92,6 +102,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   const [fantasia, setFantasia] = useState("");
   const [emailEmpresa, setEmailEmpresa] = useState("");
   const [plano, setPlano] = useState("");
+  const [cadastro, setCadastro] = useState<DadosCadastro>({});
   const [revisaoSituacao, setRevisaoSituacao] = useState(false);
   const [responsavelNome, setResponsavelNome] = useState("");
   const [responsavelEmail, setResponsavelEmail] = useState("");
@@ -113,7 +124,8 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
   const dados = origem?.tipo === "api" ? origem.dados : null;
   const naoAtiva = Boolean(dados && dados.situacao_cadastral !== "ATIVA");
   const rascunho = origem?.tipo === "manual" || naoAtiva;
-  const empresaValida = Boolean(origem && nome.trim().length >= 2 && EMAIL_RE.test(emailEmpresa.trim()) && plano && cnpjOk && !existente && (!naoAtiva || revisaoSituacao));
+  const errosEndereco = errosCadastro(cadastro, true);
+  const empresaValida = Boolean(origem && errosEndereco.length === 0 && nome.trim().length >= 2 && EMAIL_RE.test(emailEmpresa.trim()) && plano && cnpjOk && !existente && (!naoAtiva || revisaoSituacao));
   const responsavelValido = responsavelNome.trim().length >= 3 && EMAIL_RE.test(responsavelEmail.trim()) &&
     [0, 11].includes(cpf.replace(/\D/g, "").length) && [0, 10, 11].includes(telefone.replace(/\D/g, "").length);
   const processando = criar.isPending || convidar.isPending;
@@ -128,6 +140,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
     empresaRevisada.fantasia === fantasia.trim() &&
     empresaRevisada.email === emailEmpresa.trim() &&
     empresaRevisada.planKey === plano &&
+    JSON.stringify(empresaRevisada.dados) === JSON.stringify(dadosParaEnvio(cadastro)) &&
     (origem?.tipo !== "api" || (
       consultaSnapshot?.normalized_cnpj === cnpjNorm &&
       consultaSnapshot.razao_social === nome.trim()
@@ -155,6 +168,11 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
         setNome(response.dados.razao_social ?? "");
         setFantasia(response.dados.nome_fantasia ?? "");
         if (response.dados.email_contato) setEmailEmpresa(response.dados.email_contato);
+        const r = response.dados;
+        setCadastro({
+          telefone: r.telefone ?? "", cep: r.cep ?? "", logradouro: r.logradouro ?? "", numero: r.numero ?? "",
+          complemento: r.complemento ?? "", bairro: r.bairro ?? "", cidade: r.cidade ?? "", uf: (r.uf ?? "").toUpperCase(),
+        });
       } else {
         setErroBusca({
           codigo: response.codigo,
@@ -168,7 +186,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
 
   const reiniciar = () => {
     setEtapa(1); setCnpjBusca(""); setErroBusca(null); setOrigem(null); setNome(""); setFantasia("");
-    setEmailEmpresa(""); setPlano(""); setRevisaoSituacao(false); setResponsavelNome(""); setResponsavelEmail("");
+    setEmailEmpresa(""); setPlano(""); setCadastro({}); setRevisaoSituacao(false); setResponsavelNome(""); setResponsavelEmail("");
     setCpf(""); setTelefone(""); setResponsavelPrincipal(true); setOrganizationId(null); setResultado(null); setProgresso("preparando");
     setConsultaSnapshot(null); setEmpresaRevisada(null); setConfirmacaoCnpj("");
   };
@@ -183,6 +201,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
       planKey: plano,
       planName: planoNome,
       rascunho,
+      dados: dadosParaEnvio(cadastro),
     }));
     setConfirmacaoCnpj("");
     setEtapa(3);
@@ -206,6 +225,7 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
       const createdOrganizationId = await criar.mutateAsync({
         nome: empresaRevisada.nome, nomeFantasia: empresaRevisada.fantasia, cnpj: empresaRevisada.cnpj,
         email: empresaRevisada.email, planKey: empresaRevisada.planKey, rascunho: empresaRevisada.rascunho,
+        dados: empresaRevisada.dados,
       });
       setOrganizationId(createdOrganizationId);
       setProgresso("empresa_pronta");
@@ -278,6 +298,11 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
               <div className="space-y-1"><Label htmlFor="emp-fantasia">Nome fantasia</Label><Input id="emp-fantasia" value={fantasia} maxLength={200} onChange={(event) => setFantasia(event.target.value)} /></div>
               <div className="space-y-1"><Label htmlFor="emp-email">E-mail corporativo da empresa *</Label><Input id="emp-email" type="email" value={emailEmpresa} maxLength={255} autoComplete="off" onChange={(event) => setEmailEmpresa(event.target.value)} /><p className="text-xs text-muted-foreground">Contato institucional; não será usado como login do responsável.</p></div>
               <div className="space-y-1"><Label htmlFor="emp-plano">Plano *</Label><Select value={plano} onValueChange={setPlano}><SelectTrigger id="emp-plano"><SelectValue placeholder="Selecione o plano" /></SelectTrigger><SelectContent>{(planos.data ?? []).filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.key}>{item.name}</SelectItem>)}</SelectContent></Select><p className="text-xs text-muted-foreground">A assinatura começa em período de teste.</p></div>
+              <div className="sm:col-span-2 space-y-2 border-t pt-3">
+                <p className="text-xs text-muted-foreground">Revise ou preencha contatos e endereço. Telefone e endereço são obrigatórios; complemento e inscrição estadual são opcionais.</p>
+                <CadastroEmpresaCampos idPrefix="emp-novo" value={cadastro} onChange={setCadastro} secoes={["contatos", "endereco", "fiscal"]} marcarObrigatorios />
+                {errosEndereco.length > 0 && <ul className="text-xs text-muted-foreground list-disc pl-4" aria-live="polite">{errosEndereco.map((e) => <li key={e}>{e}</li>)}</ul>}
+              </div>
               {naoAtiva && <div role="alert" className="flex gap-2 rounded-md border border-destructive/40 p-3 text-sm sm:col-span-2"><ShieldAlert className="h-4 w-4 shrink-0 text-destructive" /><div className="space-y-2"><p>Situação cadastral diferente de ATIVA. A empresa será criada como rascunho.</p><div className="flex items-center gap-2"><Checkbox id="emp-revisao" checked={revisaoSituacao} onCheckedChange={(value) => setRevisaoSituacao(value === true)} /><Label htmlFor="emp-revisao" className="font-normal">Revisei a situação cadastral</Label></div></div></div>}
             </div>}
             <div className="flex justify-end"><Button disabled={!empresaValida} onClick={() => setEtapa(2)}>Continuar<ChevronRight className="ml-2 h-4 w-4" /></Button></div>
@@ -313,6 +338,9 @@ export default function OrganizationOnboardingFlow({ onOpenAdmins, onShowOrganiz
                 <div><dt className="text-xs text-muted-foreground">Razão social</dt><dd className="font-medium">{empresaRevisada?.nome ?? "—"}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Nome fantasia</dt><dd className="font-medium">{empresaRevisada?.fantasia || "—"}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">E-mail corporativo</dt><dd className="font-medium break-all">{empresaRevisada?.email ?? "—"}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Telefone</dt><dd className="font-medium">{empresaRevisada?.dados.telefone ?? "—"}</dd></div>
+                <div className="sm:col-span-2"><dt className="text-xs text-muted-foreground">Endereço</dt><dd className="font-medium break-words">{empresaRevisada ? [empresaRevisada.dados.logradouro, empresaRevisada.dados.numero, empresaRevisada.dados.complemento, empresaRevisada.dados.bairro, `${empresaRevisada.dados.cidade ?? ""}/${empresaRevisada.dados.uf ?? ""}`, empresaRevisada.dados.cep].filter(Boolean).join(", ") : "—"}</dd></div>
+                {empresaRevisada?.dados.inscricao_estadual && <div><dt className="text-xs text-muted-foreground">Inscrição estadual</dt><dd className="font-medium">{empresaRevisada.dados.inscricao_estadual}</dd></div>}
                 <div><dt className="text-xs text-muted-foreground">Plano e trial</dt><dd className="font-medium">{empresaRevisada?.planName ?? "—"}</dd><dd className="text-muted-foreground">Período de teste</dd></div>
               </dl>
             </section>

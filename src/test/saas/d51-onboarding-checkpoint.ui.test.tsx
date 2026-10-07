@@ -45,7 +45,7 @@ async function chegarNaRevisao() {
   fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
   await screen.findByDisplayValue("EMPRESA OFICIAL CONTROLADA LTDA");
   fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
-  fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
+  fireEvent.change(screen.getAllByLabelText("Plano")[0], { target: { value: "base" } });
   fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
   fireEvent.change(screen.getByLabelText("Nome completo *"), { target: { value: "Responsável Controlado" } });
   fireEvent.change(screen.getByLabelText("E-mail de acesso e convite *"), { target: { value: "teste@refilinformatica.com.br" } });
@@ -70,6 +70,8 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
         nome_fantasia: "EMPRESA CONTROLADA",
         email_contato: "",
         situacao_cadastral: "ATIVA",
+        telefone: "1133334444", cep: "01001-000", logradouro: "Praça da Sé", numero: "100",
+        complemento: null, bairro: "Sé", cidade: "São Paulo", uf: "SP",
       },
     });
     mocks.criar.mockResolvedValue("org-controlada");
@@ -112,7 +114,7 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     const razao = await screen.findByLabelText("Razão social *");
     fireEvent.change(razao, { target: { value: "RAZÃO ALTERADA" } });
     fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
-    fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
+    fireEvent.change(screen.getAllByLabelText("Plano")[0], { target: { value: "base" } });
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
     fireEvent.change(screen.getByLabelText("Nome completo *"), { target: { value: "Responsável Controlado" } });
     fireEvent.change(screen.getByLabelText("E-mail de acesso e convite *"), { target: { value: "teste@refilinformatica.com.br" } });
@@ -147,7 +149,7 @@ describe("D51.2 — checkpoint explícito E01 → E02", () => {
     fireEvent.click(screen.getByRole("button", { name: "Buscar empresa" }));
     expect(await screen.findByLabelText("E-mail corporativo da empresa *")).toHaveAttribute("autocomplete", "off");
     fireEvent.change(screen.getByLabelText("E-mail corporativo da empresa *"), { target: { value: "renato@refilinformatica.com.br" } });
-    fireEvent.change(screen.getByLabelText("Plano"), { target: { value: "base" } });
+    fireEvent.change(screen.getAllByLabelText("Plano")[0], { target: { value: "base" } });
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
     expect(screen.getByLabelText("E-mail de acesso e convite *")).toHaveAttribute("autocomplete", "off");
   });
