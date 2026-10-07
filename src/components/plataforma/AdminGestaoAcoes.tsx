@@ -120,7 +120,7 @@ export function AdminGestaoAcoes({
     <>
       <Button size="sm" variant="outline" className="min-h-11" disabled={ocupado} onClick={() => abrir("editar")}>Gerenciar administrador</Button>
       <Dialog open={open} onOpenChange={fechar}>
-        <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto [&_button]:min-h-11">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto [&_button:not([role=checkbox])]:min-h-11">
           <DialogHeader>
             <DialogTitle>Gerenciar administrador</DialogTitle>
             <DialogDescription className="break-words">{convite.nome} · {empresaNome}<br />{mascararEmail(convite.email)} · {mudancaPendente ? "E-mail aguardando confirmação" : convite.status === "ativo" ? "Ativo" : convite.status === "pendente" ? "Convite pendente" : convite.status === "falhou" ? "Falhou" : "Criando acesso"}</DialogDescription>
@@ -152,9 +152,9 @@ export function AdminGestaoAcoes({
             <TabsContent value="email" className="space-y-4 pt-3">
               <p className="text-sm text-muted-foreground">O e-mail atual continua válido até o titular confirmar a mudança pelos links recebidos.</p>
           <div className="space-y-3">
-            <p className="text-sm">E-mail atual: <span className="font-mono">{convite.email}</span></p>
+            <p className="text-sm">E-mail atual: <span className="break-all font-mono">{convite.email}</span></p>
             {mudancaPendente && (
-               <div className="space-y-1 text-sm text-muted-foreground"><p>Aguardando confirmação do titular para {mudancaPendente.new_email}.</p><p>Último envio: {mudancaPendente.confirmation_sent_at ? new Date(mudancaPendente.confirmation_sent_at).toLocaleString("pt-BR") : "—"}</p><p>Próximo reenvio: {mudancaPendente.confirmation_next_attempt_at ? new Date(mudancaPendente.confirmation_next_attempt_at).toLocaleString("pt-BR") : "—"}</p><p>Links já emitidos não podem ser cancelados com segurança. Aguarde a expiração ou verifique a confirmação para reconciliar a solicitação.</p>{reenvioAmbiguo && <p>A entrega anterior não foi confirmada. Verifique a caixa de entrada; reenviar pode duplicar a mensagem.</p>}</div>
+               <div className="space-y-1 text-sm text-muted-foreground"><p>Aguardando confirmação do titular para <span className="break-all">{mudancaPendente.new_email}</span>.</p><p>Último envio: {mudancaPendente.confirmation_sent_at ? new Date(mudancaPendente.confirmation_sent_at).toLocaleString("pt-BR") : "—"}</p><p>Próximo reenvio: {mudancaPendente.confirmation_next_attempt_at ? new Date(mudancaPendente.confirmation_next_attempt_at).toLocaleString("pt-BR") : "—"}</p><p>Links já emitidos não podem ser cancelados com segurança. Aguarde a expiração ou verifique a confirmação para reconciliar a solicitação.</p>{reenvioAmbiguo && <p>A entrega anterior não foi confirmada. Verifique a caixa de entrada; reenviar pode duplicar a mensagem.</p>}</div>
             )}
             <div className="space-y-1"><Label htmlFor="ga-email">Novo e-mail</Label>
               <Input id="ga-email" type="email" value={novoEmail} disabled={!!mudancaPendente} onChange={(e) => setNovoEmail(e.target.value)} /></div>

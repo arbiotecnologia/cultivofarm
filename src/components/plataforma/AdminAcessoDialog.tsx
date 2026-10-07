@@ -85,7 +85,7 @@ export function AdminAcessoSection({ convite, mudanca, convidar, operationLock, 
   const blocked = !state || state.status === "suspended" || cooldown || !!mudanca;
   const canResendInvite = !!convite.user_id && convite.modo_acesso === "link" && convite.status !== "ativo" && (convite.status === "falhou" || convite.status === "pendente" || inviteAmbiguous);
   const selectAction = (value: typeof action) => { if (operationLock.current) return; setAction(value); setConfirmed(false); key.current = null; };
-  return <div className="space-y-4 [&_button]:min-h-11">
+  return <div className="space-y-4 [&_button:not([role=checkbox])]:min-h-11">
     {!convite.user_id && <p className="text-sm text-muted-foreground">Acesso ainda não provisionado. Confira o status antes de tentar novamente.</p>}
     {busy && <p role="status">Aguarde…</p>}
     {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
