@@ -343,6 +343,9 @@ export interface ExcecaoSaaS {
   starts_at: string;
   ends_at: string | null;
   reason: string;
+  confirmation_sent_at?: string | null;
+  confirmation_next_attempt_at?: string | null;
+  confirmation_delivery_status?: string | null;
   ended_at: string | null;
   end_reason: string | null;
   created_at: string;
@@ -903,7 +906,7 @@ export function useMudancasEmailAdmin() {
     queryFn: async () => {
       const { data, error } = await db
         .from("platform_org_admin_email_changes")
-        .select("id,invite_id,status,new_email,last_error_code,idempotency_key,reason")
+        .select("id,invite_id,status,new_email,last_error_code,idempotency_key,reason,confirmation_sent_at,confirmation_next_attempt_at,confirmation_delivery_status")
         .in("status", ["requested", "auth_updated", "failed"])
         .limit(LIMITE);
       if (error) throw new Error(error.message);
@@ -981,12 +984,12 @@ export interface ResultadoTrocaEmail {
 export function useAlterarEmailAdmin() {
   const invalidar = useInvalidarPlataforma();
   const chave = useChaveEstavel();
-  return useMutation<ResultadoTrocaEmail, Error, { inviteId: string; newEmail: string; reason: string; idempotencyKey?: string; action?: "request" | "resend" | "reconcile" | "cancel" }>({
+  return useMutation<ResultadoTrocaEmail, Error, { inviteId: string; newEmail: string; reason: string; idempotencyKey?: string; action?: "request" | "resend" | "reconcile" | "cancel"; confirmAmbiguousRetry?: boolean }>({
     retry: false,
     mutationFn: async (v) => {
       const key = v.idempotencyKey ?? chave.obter(JSON.stringify([v.inviteId, v.newEmail.trim().toLowerCase(), v.reason.trim()]));
       const { data, error } = await supabase.functions.invoke("platform-org-admin-email-change", {
-        body: { invite_id: v.inviteId, new_email: v.newEmail.trim().toLowerCase(), reason: v.reason.trim(), idempotency_key: key, confirm: true, action: v.action ?? "request" },
+        body: { invite_id: v.inviteId, new_email: v.newEmail.trim().toLowerCase(), reason: v.reason.trim(), idempotency_key: key, confirm: true, action: v.action ?? "request", confirm_ambiguous_email_retry: v.confirmAmbiguousRetry === true },
       });
       const payload = (data ?? {}) as Record<string, unknown>;
       if (error || payload.error) {
