@@ -44,8 +44,8 @@ BEGIN
   SELECT reason INTO v FROM public.platform_org_admin_audit WHERE action='principal_transferred' AND idempotency_key=k1;
   out := out||'audit_reason='||v||';';
   SELECT count(*) INTO n FROM public.platform_org_admin_audit WHERE idempotency_key=k1 AND organization_id=ox AND actor_user_id=sa
-    AND old_values::text LIKE '%'||ua||'%' AND new_values::text LIKE '%'||ub||'%';
-  out := out||'audit_old_new_actor_org='||n||';';
+    AND old_values::text LIKE '%'||ua||'%' AND new_values::text LIKE '%'||ub||'%' AND created_at IS NOT NULL;
+  out := out||'audit_old_new_actor_org_ts='||n||';';
   r := public.platform_set_org_principal_admin(ox,ub,'',ua,k1);
   out := out||'retry_same_key:idem='||(r->>'idempotent')||';';
   BEGIN PERFORM public.platform_set_org_principal_admin(ox,ub,'Outro',ua,k1); out:=out||'key_conflict:ALLOWED!;';

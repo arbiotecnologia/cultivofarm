@@ -107,3 +107,4 @@
 - [x] Hardening JWT em platform-org-admin-email-change (getUser service_role, pin supabase-js)
 - [x] Motivo opcional na troca de e-mail de administrador (UI, Edge, RPC; demais ações inalteradas)
 - [x] Motivo opcional em Definir responsável principal (UI + RPC; edição segue obrigatória)
+- [x] Revalidação consolidada motivo opcional (e-mail + responsável principal)
