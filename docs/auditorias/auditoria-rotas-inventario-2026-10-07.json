@@ -21,6 +21,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/guards/B2BRouteGuard.tsx",
@@ -34,6 +35,8 @@
         "src/pages/portal/PortalLayout.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -56,11 +59,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/pages/ResetPassword.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -84,6 +90,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/hooks/useSwitchPortal.ts",
@@ -93,6 +100,8 @@
         "src/pages/app/MobileLogin.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -116,12 +125,15 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/navigation/safeHome.ts",
         "src/pages/SelecionarPortal.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -145,6 +157,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/guards/AppPortalGuard.tsx",
@@ -159,6 +172,8 @@
         "src/pages/app/MobileLayout.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -183,11 +198,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -213,12 +231,15 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/Configuracoes.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "child configuration reached from Configuracoes; platform-only where guarded",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -241,9 +262,12 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -266,9 +290,12 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -288,6 +315,7 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/guards/AppPortalGuard.tsx",
@@ -297,6 +325,8 @@
         "src/pages/app/MobileLayout.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -319,6 +349,7 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-c-inicio:mobile-consultor,mobile-produtor"
       ],
@@ -337,6 +368,8 @@
         "src/pages/app/MobileSolicitar.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -359,6 +392,7 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-perfil:mobile-consultor,mobile-produtor"
       ],
@@ -367,6 +401,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -389,6 +425,7 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-p-notificacoes:mobile-produtor"
       ],
@@ -397,6 +434,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -420,6 +459,7 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-c-fazendas:mobile-consultor"
       ],
@@ -430,6 +470,8 @@
         "src/pages/app/MobileTalhaoHistorico.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -453,6 +495,7 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
@@ -460,7 +503,9 @@
         "src/pages/app/MobileDashboardConsultor.tsx",
         "src/pages/app/MobileLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "MobileLayout floating action and technical dashboard",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -484,6 +529,7 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-c-atendimentos:mobile-consultor"
       ],
@@ -495,6 +541,8 @@
         "src/pages/app/wizard/WizardRevisaoStep.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -518,11 +566,14 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -546,11 +597,14 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -574,13 +628,16 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/app/MobileDashboardConsultor.tsx",
         "src/pages/app/MobileDashboardProdutor.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "technical/producer dashboard action",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -604,11 +661,14 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -632,12 +692,15 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/lib/saas/featureRouteMap.ts"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "contextual check-in; requires solicitation; not a top-level tab",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -661,12 +724,15 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/app/MobileVisitaWizard.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "creation action inside technical workspace",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -690,11 +756,14 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -718,11 +787,14 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -746,6 +818,7 @@
         "tecnico_agronomo",
         "aplicador"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-c-catalogo:mobile-consultor"
       ],
@@ -754,6 +827,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -774,6 +849,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-p-recomendacoes:mobile-produtor"
       ],
@@ -783,6 +859,8 @@
         "src/pages/app/MobileDashboardProdutor.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -803,6 +881,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:m-p-entregas:mobile-produtor"
       ],
@@ -812,6 +891,8 @@
         "src/pages/app/MobileDashboardProdutor.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -832,11 +913,14 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "producer workflow; review discoverability with real identity",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -857,12 +941,15 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/app/MobileDashboardProdutor.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "producer dashboard action",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -883,12 +970,15 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/app/MobileDashboardProdutor.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "producer dashboard action",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -907,6 +997,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:portal-produtor:desktop",
         "portalMenus:pp-dashboard:producer"
@@ -921,6 +1012,8 @@
         "src/pages/portal/PortalLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -939,6 +1032,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-fazendas:producer"
       ],
@@ -947,6 +1041,8 @@
         "src/pages/portal/PortalFazendaDetalhe.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -965,9 +1061,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -986,9 +1085,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1007,9 +1109,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1028,6 +1133,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-agenda:producer"
       ],
@@ -1035,6 +1141,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1053,6 +1161,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-registros:producer"
       ],
@@ -1061,6 +1170,8 @@
         "src/pages/portal/PortalRegistroDetalhe.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1079,9 +1190,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1100,6 +1214,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-recomendacoes:producer"
       ],
@@ -1108,6 +1223,8 @@
         "src/pages/portal/PortalLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1126,9 +1243,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
-      "classification": 2,
+      "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1147,6 +1267,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-acompanhamento:producer"
       ],
@@ -1154,6 +1275,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1172,12 +1295,15 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/portal/TalhaoRecomendacaoCard.tsx",
         "src/pages/portal/PortalRecomendacoes.tsx"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1196,9 +1322,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1217,9 +1346,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1238,6 +1370,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-aplicacoes:producer"
       ],
@@ -1245,6 +1378,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1263,6 +1398,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-solicitar:producer"
       ],
@@ -1270,6 +1406,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1288,6 +1426,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-perfil:producer"
       ],
@@ -1295,6 +1434,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1313,6 +1454,7 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pp-titulos:producer"
       ],
@@ -1320,6 +1462,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1338,9 +1482,12 @@
         "administrador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1360,13 +1507,16 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/hooks/useSwitchPortal.ts",
         "src/lib/notificacoes/deepLinkAllowlist.ts",
         "src/lib/permissions.ts"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "layout entry and index redirect",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1389,6 +1539,7 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/hooks/useSwitchPortal.ts",
@@ -1396,6 +1547,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1418,6 +1571,7 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-perfil:gestor"
       ],
@@ -1425,6 +1579,8 @@
         "src/config/portalMenus.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1447,6 +1603,7 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-dashboard:gestor",
         "portalMenus:pbt-dashboard:tecnico"
@@ -1459,6 +1616,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1480,6 +1639,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-pedidos:gestor"
       ],
@@ -1491,6 +1651,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1512,13 +1674,16 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/lib/saas/featureRouteMap.ts",
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "deliberately redirected/hidden by existing portal product rules",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1540,6 +1705,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
@@ -1547,7 +1713,9 @@
         "src/pages/portal-parceiro/DashboardPremium.tsx",
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "order action; contextual entry",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1569,6 +1737,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-catalogo:gestor"
       ],
@@ -1582,6 +1751,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1604,6 +1775,7 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pbt-simulador:tecnico"
       ],
@@ -1616,6 +1788,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1637,12 +1811,15 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "deliberately redirected by existing portal product rules",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1664,6 +1841,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-meu-historico:gestor"
       ],
@@ -1673,6 +1851,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1694,6 +1874,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-favoritos:gestor"
       ],
@@ -1704,6 +1885,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1725,6 +1908,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-financeiro:gestor"
       ],
@@ -1734,6 +1918,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1756,9 +1942,12 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1781,9 +1970,12 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1806,6 +1998,7 @@
         "parceiro_b2b",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-fichas:gestor",
         "portalMenus:pbt-fichas:tecnico"
@@ -1817,6 +2010,8 @@
         "src/pages/portal-parceiro/DashboardTecnico.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1838,6 +2033,7 @@
         "gestor_comercial",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pbt-simulacoes:tecnico"
       ],
@@ -1849,6 +2045,8 @@
         "src/pages/portal-parceiro/NovoPedido.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1870,6 +2068,7 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "portalMenus:pb-simulacoes-equipe:gestor"
       ],
@@ -1880,6 +2079,8 @@
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1901,13 +2102,16 @@
         "gestor_comercial",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/portal-parceiro/DashboardTecnico.tsx",
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "technical dashboard action; gestor redirected",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1929,11 +2133,14 @@
         "gestor_comercial",
         "parceiro_b2b_tecnico"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1955,12 +2162,15 @@
         "gestor_comercial",
         "parceiro_b2b"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "existing link-management UI hidden for partner roles",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -1981,12 +2191,15 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
         "src/pages/portal-parceiro/PortalParceiroLayout.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "existing link-management UI hidden for partner roles",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2010,6 +2223,7 @@
         "tecnico_agronomo",
         "administrativo"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:visita-tecnica:desktop"
       ],
@@ -2023,6 +2237,8 @@
         "src/pages/VisitaTecnica.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2046,12 +2262,15 @@
         "tecnico_agronomo",
         "administrativo"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/VisitaTecnicaLista.tsx"
       ],
       "classification": 2,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2075,11 +2294,14 @@
         "tecnico_agronomo",
         "administrativo"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2104,6 +2326,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/entregas/RegistrarEntregaDialog.tsx",
@@ -2133,6 +2356,8 @@
         "src/pwa/registerSW.ts"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2158,6 +2383,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:clientes:desktop"
       ],
@@ -2170,6 +2396,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2195,11 +2423,14 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2225,11 +2456,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2254,6 +2488,7 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fazendas:desktop"
       ],
@@ -2266,6 +2501,8 @@
         "src/pages/Fazendas.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2290,11 +2527,14 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2319,6 +2559,7 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/fazendas/TalhoesFazendaTab.tsx",
@@ -2327,7 +2568,9 @@
         "src/lib/permissions.ts",
         "src/pages/Talhoes.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "Fazendas > TalhoesFazendaTab; not separate sidebar",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2352,11 +2595,14 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2376,6 +2622,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:auditorias:desktop"
       ],
@@ -2384,6 +2631,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2402,12 +2651,15 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2433,6 +2685,7 @@
         "producao",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:protocolos:desktop",
         "navigation:protocolos-produtos:desktop",
@@ -2447,6 +2700,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2470,12 +2725,15 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2501,6 +2759,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:ordens-servico:desktop"
       ],
@@ -2516,6 +2775,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2538,6 +2799,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:lotes:desktop"
       ],
@@ -2549,6 +2811,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2570,6 +2834,7 @@
         "administrativo",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:cq:desktop"
       ],
@@ -2581,6 +2846,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2602,6 +2869,7 @@
         "administrativo",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:envase:desktop"
       ],
@@ -2615,6 +2883,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2637,6 +2907,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:estoque:desktop"
       ],
@@ -2648,6 +2919,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2670,6 +2943,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/executivo/ExecutivoAtalhos.tsx",
@@ -2678,7 +2952,9 @@
         "src/components/executivo/alertas/ExecutivoAlertasCards.tsx",
         "src/config/navigation.ts"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "Estoque workspace and executive shortcuts",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2704,6 +2980,7 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:entregas:desktop"
       ],
@@ -2721,6 +2998,8 @@
         "src/pages/entregas/FormularioEntregaPrint.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2746,11 +3025,14 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2776,9 +3058,12 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2802,6 +3087,7 @@
         "cliente_produtor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:aplicacoes:desktop"
       ],
@@ -2811,6 +3097,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2835,6 +3123,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:relatorios:desktop"
       ],
@@ -2845,6 +3134,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2868,6 +3159,7 @@
         "administrativo",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:equipe-tecnica:desktop"
       ],
@@ -2877,6 +3169,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2901,6 +3195,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fluxo-tecnico:desktop"
       ],
@@ -2910,6 +3205,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2934,6 +3231,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:bi-agronomico:desktop"
       ],
@@ -2944,6 +3242,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -2968,6 +3268,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:bi-operacional:desktop"
       ],
@@ -2979,6 +3280,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3003,6 +3306,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:alertas:desktop"
       ],
@@ -3019,6 +3323,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3042,6 +3348,7 @@
         "administrativo",
         "operador_onfarm"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:previsao-climatica:desktop"
       ],
@@ -3051,6 +3358,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3073,6 +3382,7 @@
         "tecnico_agronomo",
         "administrativo"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:solicitacoes:desktop"
       ],
@@ -3084,6 +3394,8 @@
         "src/pages/VisitaTecnica.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3105,6 +3417,7 @@
         "consultor_tecnico",
         "tecnico_agronomo"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:monitoramento:desktop"
       ],
@@ -3115,6 +3428,8 @@
         "src/pages/PainelOperacional.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3136,6 +3451,7 @@
         "consultor_tecnico",
         "tecnico_agronomo"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:agenda-tecnica:desktop"
       ],
@@ -3146,6 +3462,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3164,12 +3482,15 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3189,6 +3510,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:dashboard:desktop",
         "navigation:dashboard-geral:desktop"
@@ -3198,6 +3520,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3217,6 +3541,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:dashboard-executivo:desktop"
       ],
@@ -3228,6 +3553,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3247,6 +3574,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:dashboard-operacional:desktop"
       ],
@@ -3257,6 +3585,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3275,12 +3605,15 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3303,6 +3636,7 @@
         "operador_onfarm",
         "producao"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:cockpit-lab:desktop"
       ],
@@ -3315,6 +3649,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3335,6 +3671,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-dashboard:desktop"
       ],
@@ -3347,6 +3684,8 @@
         "src/pages/dashboard/VisaoGeral.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3367,6 +3706,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-receber:desktop"
       ],
@@ -3382,6 +3722,8 @@
         "src/pages/financeiro/FinanceiroDashboard.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3402,6 +3744,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-pagar:desktop"
       ],
@@ -3415,6 +3758,8 @@
         "src/pages/financeiro/FinanceiroDashboard.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3435,6 +3780,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-categorias:desktop"
       ],
@@ -3445,6 +3791,8 @@
         "src/pages/financeiro/DRE.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3465,6 +3813,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-cc:desktop"
       ],
@@ -3474,6 +3823,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3494,6 +3845,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-contas-bancarias:desktop"
       ],
@@ -3502,6 +3854,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3522,6 +3876,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-formas-pgto:desktop"
       ],
@@ -3530,6 +3885,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3550,6 +3907,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-recorrencias:desktop"
       ],
@@ -3559,6 +3917,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3579,6 +3939,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-fluxo:desktop"
       ],
@@ -3590,6 +3951,8 @@
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3610,6 +3973,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-dre:desktop"
       ],
@@ -3619,6 +3983,8 @@
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3639,6 +4005,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-nfe:desktop"
       ],
@@ -3653,6 +4020,8 @@
         "src/pages/financeiro/FinanceiroDashboard.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3673,6 +4042,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-ent-nfat:desktop"
       ],
@@ -3689,6 +4059,8 @@
         "src/pages/financeiro/FinanceiroDashboard.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3708,11 +4080,14 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3732,11 +4107,14 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3757,6 +4135,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-relatorios:desktop"
       ],
@@ -3765,6 +4144,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3785,12 +4166,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3811,12 +4195,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3837,12 +4224,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3863,12 +4253,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3889,12 +4282,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3915,12 +4311,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3941,12 +4340,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3967,12 +4369,15 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child report reached from FinanceiroRelatorios",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -3993,6 +4398,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fin-recibos:desktop"
       ],
@@ -4005,6 +4411,8 @@
         "src/pages/financeiro/FinanceiroRelatorios.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4023,6 +4431,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
@@ -4031,6 +4440,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4055,11 +4466,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4078,12 +4492,15 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4103,6 +4520,7 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-pedidos-b2b:desktop"
       ],
@@ -4113,6 +4531,8 @@
         "src/pages/ParceiroDetalhe.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4133,6 +4553,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-solicitacoes-b2b:desktop"
       ],
@@ -4142,6 +4563,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4160,12 +4583,15 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4185,6 +4611,7 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-campanhas:desktop"
       ],
@@ -4193,6 +4620,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4212,6 +4641,7 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-simulador:desktop"
       ],
@@ -4221,6 +4651,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4240,12 +4672,15 @@
         "gestor",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4265,6 +4700,7 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-indicadores:desktop"
       ],
@@ -4273,6 +4709,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4292,6 +4730,7 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-alertas:desktop"
       ],
@@ -4300,6 +4739,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4319,6 +4760,7 @@
         "administrador",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-consolidado:desktop"
       ],
@@ -4327,6 +4769,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4347,6 +4791,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:com-condicoes-pagamento:desktop"
       ],
@@ -4356,6 +4801,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4381,9 +4828,12 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4405,6 +4855,7 @@
         "producao",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:planejamento-producao:desktop"
       ],
@@ -4415,6 +4866,8 @@
         "src/pages/operacao/PlanejamentoProducaoDetalhe.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4436,12 +4889,15 @@
         "producao",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/lib/permissions.ts"
       ],
       "classification": 8,
+      "navigationJustification": "contextual detail/token route; identifier required",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4463,6 +4919,7 @@
         "producao",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:dashboard-producao:desktop"
       ],
@@ -4472,6 +4929,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4494,6 +4953,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-visao:desktop"
       ],
@@ -4502,6 +4962,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4524,6 +4986,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-dashboard:desktop"
       ],
@@ -4533,6 +4996,8 @@
         "src/pages/financeiro/FinanceiroB2B.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4555,6 +5020,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-governanca:desktop"
       ],
@@ -4563,6 +5029,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4585,6 +5053,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-aging:desktop"
       ],
@@ -4593,6 +5062,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4615,6 +5086,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-previsao:desktop"
       ],
@@ -4623,6 +5095,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4645,6 +5119,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-rentabilidade:desktop"
       ],
@@ -4653,6 +5128,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4675,6 +5152,7 @@
         "financeiro",
         "gestor_comercial"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-alertas:desktop"
       ],
@@ -4683,6 +5161,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4703,6 +5183,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-central-gov:desktop"
       ],
@@ -4711,6 +5192,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4731,6 +5214,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-regras-gov:desktop"
       ],
@@ -4739,6 +5223,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4758,6 +5244,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:b2b-socios:desktop"
       ],
@@ -4766,6 +5253,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4792,6 +5281,7 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:configuracoes:desktop"
       ],
@@ -4801,6 +5291,8 @@
         "src/lib/permissions.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4827,12 +5319,15 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts",
         "src/pages/Configuracoes.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child configuration reached from Configuracoes; platform-only where guarded",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4859,13 +5354,16 @@
         "aplicador",
         "cliente_produtor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/cockpit/CQComparativoTable.tsx",
         "src/config/navigation.ts",
         "src/pages/Configuracoes.tsx"
       ],
-      "classification": 2,
+      "classification": 8,
+      "navigationJustification": "child configuration reached from Configuracoes; platform-only where guarded",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4886,6 +5384,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:config-fiscal:desktop"
       ],
@@ -4898,6 +5397,8 @@
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4918,6 +5419,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fiscal-perfis-produtos:desktop"
       ],
@@ -4929,6 +5431,8 @@
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4949,6 +5453,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fiscal-perfis-servicos:desktop"
       ],
@@ -4960,6 +5465,8 @@
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -4980,6 +5487,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fiscal-perfis-clientes:desktop"
       ],
@@ -4991,6 +5499,8 @@
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5015,11 +5525,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5044,11 +5557,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5073,11 +5589,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/config/navigation.ts"
       ],
       "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5098,6 +5617,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fiscal-rascunhos:desktop"
       ],
@@ -5108,6 +5628,8 @@
         "src/pages/fiscal/FiscalDocumentos.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5128,6 +5650,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/permissions.ts",
@@ -5135,6 +5658,8 @@
         "src/pages/fiscal/FiscalReconciliacao.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5155,6 +5680,7 @@
         "gestor",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:fiscal-prontidao:desktop"
       ],
@@ -5164,6 +5690,8 @@
         "src/pages/fiscal/FiscalProntidao.tsx"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5184,6 +5712,7 @@
         "administrador",
         "gestor"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [
         "navigation:comunicacao-admin:desktop"
       ],
@@ -5194,6 +5723,8 @@
         "src/lib/saas/featureRouteMap.ts"
       ],
       "classification": 1,
+      "navigationJustification": "declarative navigation",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5218,11 +5749,14 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/lib/notificacoes/deepLinkAllowlist.ts"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
     {
@@ -5245,6 +5779,7 @@
         "producao",
         "financeiro"
       ],
+      "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
       "navigation": [],
       "references": [
         "src/components/aplicacao/AplicacaoFormDialog.tsx",
@@ -5364,6 +5899,8 @@
         "src/pages/portal/PortalTalhaoDetalhe.tsx"
       ],
       "classification": 8,
+      "navigationJustification": "system/internal route; never automatically expose",
+      "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     }
   ],
