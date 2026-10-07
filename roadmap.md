@@ -3,7 +3,7 @@
 - [x] Diff aprovado aplicado localmente em create-user: autorização com bearer do ator, authorizationError negado, compensação no catch e erro/log genéricos; sem deploy ou operação remota.
 - [x] Provas independentes do executor Supabase do proprietário reconhecidas como PASS banco/RLS nesta auditoria: 40/40 rollback, counts/hashes reais, isolamento/admins e fixture restaurada sem resíduos. PASS estrutural frontend preservado.
 - [x] Edge mockada 17/17; focais 69/69; suíte pertinente 770/770; Deno check, lint focal, scanners e diff-check PASS. Typecheck frontend separado não executado; build automático OK 19:26:35 UTC.
-- [x] Revalidação 19:30 UTC: fechamento existente preservado, 770/770 reexecutados; Deno check, lint focal, scanners e diff-check PASS. Log de build atual indisponível; mantida evidência anterior, sem novo build/typecheck frontend manual. Sem operação remota.
+- [x] Revalidação 19:30 UTC: fechamento existente preservado, 770/770 reexecutados; Deno check, lint focal, scanners e diff-check PASS. Build automático OK 19:32:00 UTC; sem build/typecheck frontend manual. Sem operação remota.
 - [ ] NO-GO somente browser autenticado E2E (sessão real indisponível neste executor) e Edge remota corrigida (aguarda autorização de deploy/certificação). Sem migration/publicação/dados reais.
 
 ## Auditoria planos/admin/usuários — 2026-10-07 19:05 UTC
