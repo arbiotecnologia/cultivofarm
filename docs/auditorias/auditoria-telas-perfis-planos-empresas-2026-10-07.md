@@ -46,11 +46,13 @@ Matriz técnica complementar: `matriz-fixtures-rbac-20261007T214515Z.csv`, 179 l
 
 - Suíte pertinente: **829/829**, 75 arquivos (`saas`, `rbac`, `security`; diretório routes sem testes adicionais).
 - Novo teste do manifesto: **5/5**; conjunto focal com create-user/D51.6/D52: **43/43**, 5 arquivos, incluindo 20 testes mockados do handler. Não somar focais sobrepostos à pertinente como total único; novo arquivo foi criado após a execução pertinente.
-- Lint focal novo manifesto + handler/Storage/RBAC: PASS. Scanners fiscal secrets/integration: PASS. Nenhum código funcional alterado, dependência adicionada ou DDL aplicado; advisors pós-DDL NOT_APPLICABLE. Typecheck frontend separado NOT RUN (vedado manualmente pelo ambiente), sem inferir PASS a partir de testes. Build automático e diff-check registrados no fechamento.
+- Lint focal novo manifesto + handler/Storage/RBAC: PASS. Scanners fiscal secrets/integration: PASS. Nenhum código funcional alterado, dependência adicionada ou DDL aplicado; advisors pós-DDL NOT_APPLICABLE. Typecheck frontend separado NOT RUN (vedado manualmente pelo ambiente), sem inferir PASS a partir de testes. Diff-check PASS; build automático OK às 21:51:19 UTC.
 
 **Ponto de parada:** autenticar com segurança o **Platform Superadmin existente** para provisionamento; depois admin da fixture AUDIT Base, ou administrador existente AR BIOTECNOLOGIA para read-only enquanto fixtures estão bloqueadas. Para fixtures persistentes ainda é necessário um caminho homologado de remoção compatível com histórico, ou decisão explícita de retenção do histórico/tenants auditados; não prometer limpeza inexistente. Também comprovar serviços externos OFF sem alterar configurações reais. Sem publicação, Edge/migration, dados reais ou reabertura D52.
 
-**PASS estrutural/read-only focal; NO-GO para certificação funcional integral.** Browser autenticado: **UNVERIFIED/BLOCKED** (`external_unmanaged`). Não há credenciais/sessões reais disponíveis neste executor. Nenhum login simulado, fixture, RPC mutável, migration, deploy, publicação ou alteração de dados nesta rodada. D52 não foi reaberto. Somente este relatório e `roadmap.md` foram alterados.
+### Rodada anterior — registro histórico
+
+**PASS estrutural/read-only focal; NO-GO para certificação funcional integral.** Browser autenticado: **UNVERIFIED/BLOCKED** (`external_unmanaged`). Não havia credenciais/sessões reais disponíveis neste executor. Nenhum login simulado, fixture, RPC mutável, migration, deploy, publicação ou alteração de dados naquela rodada. D52 não foi reaberto. Somente este relatório e `roadmap.md` foram alterados naquela rodada.
 
 Baseline local observado: `edf34ae7b7ced624ddbd4a90ba4f113cf436d4de`. Destino canônico validado no cliente e config: `swzpzcwiasxmjutrmvkm`. Leituras remotas por SELECT; não houve prova transacional nova. O estado publicado não foi presumido idêntico ao HEAD local; o smoke abaixo testa o domínio publicado separadamente.
 
