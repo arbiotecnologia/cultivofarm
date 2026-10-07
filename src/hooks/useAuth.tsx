@@ -209,19 +209,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         const nextUserId = session?.user?.id ?? null;
-        const identityChanged = !!(lastUserId && nextUserId && lastUserId !== nextUserId);
-        if (identityChanged) {
+        const identityChanged = !!(lastUserId && lastUserId !== nextUserId);
+        const authorizationChanged = event === "TOKEN_REFRESHED" || event === "USER_UPDATED";
+        if (identityChanged || authorizationChanged || !nextUserId) {
           clearActivePortalContext();
           queryClient.clear();
         }
         lastUserId = nextUserId;
 
         if (nextUserId) {
-          // Troca de identidade: perfil/papéis do usuário anterior são
-          // descartados imediatamente, sem esperar o novo carregamento.
-          if (identityChanged) clearIdentityState();
-          // Eventos repetidos do mesmo usuário não recarregam nada.
-          if (loadedUserIdRef.current === nextUserId) return;
+          // Troca/renovação descarta papéis antes da revalidação agendada.
+          if (identityChanged || authorizationChanged) clearIdentityState();
+          // SIGNED_IN/INITIAL_SESSION repetidos deduplicam; renovação não.
+          if (loadedUserIdRef.current === nextUserId && !authorizationChanged) return;
           setLoading(true);
           setError(null);
           scheduleLoad(nextUserId);
