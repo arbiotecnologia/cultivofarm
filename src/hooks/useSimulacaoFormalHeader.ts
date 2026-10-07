@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Json } from "@/integrations/supabase/cultivofarm.types";
 
+// The canonical generated client predates this RPC; keep its contract local.
+const readSimulations = (args: { p_simulation_id: string; p_items?: boolean }) =>
+  (supabase.rpc as unknown as (
+    name: "b2b_read_simulations",
+    args: { p_simulation_id: string; p_items?: boolean },
+  ) => PromiseLike<{ data: Json | null; error: { message: string } | null }>)("b2b_read_simulations", args);
+
 export interface SimulacaoFormalHeaderData {
   id: string;
   tipo: "simulacao";
@@ -64,7 +71,7 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
     enabled: !!simulationId,
     queryFn: async (): Promise<SimulacaoFormalHeaderData | null> => {
       if (!simulationId) return null;
-      const { data, error } = await supabase.rpc("b2b_read_simulations", { p_simulation_id: simulationId });
+      const { data, error } = await readSimulations({ p_simulation_id: simulationId });
       const sim = Array.isArray(data) ? data[0] : null;
       if (error) throw error;
       if (!sim) return null;
@@ -108,7 +115,7 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
               .eq("id", s.converted_order_id)
               .maybeSingle()
           : Promise.resolve({ data: null } as any),
-        supabase.rpc("b2b_read_simulations", { p_simulation_id: simulationId, p_items: true }),
+        readSimulations({ p_simulation_id: simulationId, p_items: true }),
       ]);
 
       if (itemsRes.error) throw itemsRes.error;
