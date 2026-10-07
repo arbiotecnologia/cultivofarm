@@ -6,6 +6,7 @@
 - [ ] NO-GO integral somente prova browser autenticada das oito identidades (admin + usuário existente por Base/Essencial/Gestão/Completo), incluindo verificações remotas autenticadas do roteiro; gate humano: execução com sessões reais e evidências sanitizadas, sem compartilhar credenciais.
 - [ ] Melhoria futura opcional: contrato/chave server-side para retry convergente; lock UI e unicidade e-mail/Auth não são idempotência distribuída.
 - [x] Pendência de deploy frontend/Edge encerrada. Registros abaixo são históricos; menções a Edge não implantada não representam o estado pós-deploy. Relatório atualizado, sem alteração de dados ou código funcional.
+- [x] Validação documental: git diff --check PASS; build automático OK 19:59:31Z. Testes/lint/scanners não repetidos nesta rodada sem alteração funcional.
 
 ## Correção focal Auth/reentrada — 2026-10-07 19:45 UTC
 

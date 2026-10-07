@@ -38,7 +38,7 @@ Capturas desktop e mobile inspecionadas em `/tmp/browser/postdeploy-1957/desktop
 
 **Pendências atuais desta auditoria:** somente (1) prova browser autenticada de administrador e usuário existente por plano — Refil Base 3, Homologação Essencial 8, AR Bio Gestão 10, CultivoFarm ou FSF Completo 17 — incluindo contratos remotos autenticados aplicáveis do roteiro; (2) eventual contrato/chave server-side para idempotência distribuída futura. Implantação frontend/Edge não é mais pendência. Unicidade e-mail/Auth e lock local não são idempotência distribuída; compensação best-effort permanece limite conhecido, não certificação transacional.
 
-Alterados nesta rodada somente este relatório e `roadmap.md`; nenhuma alteração funcional, dado, Edge, migration ou nova publicação. Testes/lint/scanners não repetidos porque o escopo é documental e smoke público; resultados locais anteriores permanecem históricos, sem alegação de nova execução. Diff-check e estado do build automático serão registrados no fechamento desta rodada.
+Alterados nesta rodada somente este relatório e `roadmap.md`; nenhuma alteração funcional, dado, Edge, migration ou nova publicação. Testes/lint/scanners não repetidos porque o escopo é documental e smoke público; resultados locais anteriores permanecem históricos, sem alegação de nova execução. `git diff --check`: PASS após a atualização documental. Build automático observado: `build OK` em 2026-10-07T19:59:31Z; nenhum build manual e nenhuma nova publicação executados.
 
 ### Baseline histórico
 
