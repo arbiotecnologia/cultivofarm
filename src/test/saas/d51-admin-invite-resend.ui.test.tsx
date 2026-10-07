@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 
 const mocks = vi.hoisted(() => ({
+  invoke: vi.fn(),
   mutate: vi.fn(),
   reset: vi.fn(),
   refetch: vi.fn(),
@@ -27,6 +29,8 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   mascararEmail: (e: string) => e,
 }));
 
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: mocks.invoke } } }));
+
 import PlataformaAdmins from "@/pages/plataforma/PlataformaAdmins";
 
 const base = {
@@ -48,83 +52,70 @@ const base = {
   created_at: "2026-10-03T19:00:00Z",
 };
 
-describe("D51.2 — reenvio persistente na lista de administradores", () => {
+async function openAccess() {
+  await userEvent.click(screen.getByRole("button", { name: "Gerenciar administrador" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Acesso" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Atualizar estado" })).toBeEnabled());
+  return within(screen.getByRole("dialog"));
+}
+
+describe("D51.2 — reenvio no gerenciamento único", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.isPending = false;
-    mocks.convites = [{ ...base }];
+    vi.clearAllMocks(); mocks.isPending = false; mocks.convites = [{ ...base }];
+    mocks.invoke.mockResolvedValue({ data: { status: "invited" }, error: null });
   });
-
-  it("mostra reenvio para pendente por link e envia o mesmo registro após confirmação", async () => {
-    mocks.mutate.mockImplementation((_payload, options) => options.onSuccess({ email_status: "accepted" }));
+  it("reenvia o mesmo registro após confirmação dentro de Acesso", async () => {
+    mocks.mutate.mockImplementation((_payload, options) => { options.onSuccess({ email_status: "accepted" }); options.onSettled(); });
     renderWithProviders(<PlataformaAdmins />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Reenviar convite" }));
-    const dialog = screen.getByRole("alertdialog");
-    expect(dialog).toHaveTextContent("Reenviar convite de acesso?");
-    expect(dialog).toHaveTextContent("Nenhuma nova conta será criada.");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Reenviar convite" }));
-
+    expect(screen.queryByRole("button", { name: "Reenviar convite" })).not.toBeInTheDocument();
+    const dialog = await openAccess();
+    fireEvent.click(dialog.getByRole("button", { name: "Reenviar convite" }));
+    expect(dialog.getByText(/Nenhuma nova conta será criada/)).toBeInTheDocument();
+    const confirmar = dialog.getByRole("button", { name: "Confirmar reenvio do convite" });
+    expect(confirmar).toBeDisabled();
+    fireEvent.click(dialog.getByRole("checkbox")); fireEvent.click(confirmar);
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
-    expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({
-      organizationId: "org-1",
-      nome: "Administrador Controlado",
-      email: "admin@empresa.com.br",
-      confirmAmbiguousEmailRetry: false,
-    }), expect.any(Object));
-    await waitFor(() => expect(mocks.refetch).toHaveBeenCalledTimes(1));
+    expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({ organizationId: "org-1", nome: "Administrador Controlado", email: "admin@empresa.com.br", confirmAmbiguousEmailRetry: false }), expect.any(Object));
+    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
-
-  it.each([
-    ["ativo", "link"],
-    ["pendente", "senha_temporaria"],
-  ])("não mostra reenvio para status %s no modo %s", (status, modo_acesso) => {
+  it.each([["ativo", "link"], ["pendente", "senha_temporaria"]])("não oferece reenvio para %s/%s", async (status, modo_acesso) => {
     mocks.convites = [{ ...base, status, modo_acesso }];
-    renderWithProviders(<PlataformaAdmins />);
-    expect(screen.queryByRole("button", { name: /reenviar convite/i })).not.toBeInTheDocument();
+    renderWithProviders(<PlataformaAdmins />); const dialog = await openAccess();
+    expect(dialog.queryByRole("button", { name: "Reenviar convite" })).not.toBeInTheDocument();
   });
-
-  it("mantém tentativa direta para falha normal", () => {
+  it("permite tentativa de convite falho pelo mesmo caminho", async () => {
     mocks.convites = [{ ...base, status: "falhou", email_delivery_status: "failed" }];
-    renderWithProviders(<PlataformaAdmins />);
-    expect(screen.getByRole("button", { name: "Tentar convite novamente" })).toBeEnabled();
+    renderWithProviders(<PlataformaAdmins />); const dialog = await openAccess();
+    expect(dialog.getByRole("button", { name: "Reenviar convite" })).toBeEnabled();
   });
-
-  it("mantém confirmação especial e flag verdadeira para envio ambíguo", () => {
+  it("envio ambíguo exige confirmação humana e envia flag verdadeira", async () => {
     mocks.mutate.mockImplementation(() => undefined);
     mocks.convites = [{ ...base, email_delivery_status: "ambiguous" }];
-    renderWithProviders(<PlataformaAdmins />);
-    fireEvent.click(screen.getByRole("button", { name: "Não recebi — reenviar convite" }));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("O reenvio pode gerar uma segunda mensagem");
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar e reenviar" }));
+    renderWithProviders(<PlataformaAdmins />); const dialog = await openAccess();
+    fireEvent.click(dialog.getByRole("button", { name: "Reenviar convite" }));
+    expect(dialog.getByText(/O reenvio pode gerar uma segunda mensagem/)).toBeInTheDocument();
+    const confirmar = dialog.getByRole("button", { name: "Confirmar reenvio do convite" });
+    expect(confirmar).toBeDisabled();
+    fireEvent.click(dialog.getByRole("checkbox")); fireEvent.click(confirmar);
     expect(mocks.mutate).toHaveBeenCalledWith(expect.objectContaining({ confirmAmbiguousEmailRetry: true }), expect.any(Object));
   });
-
-  it("impede duplo clique síncrono na confirmação", () => {
+  it("impede duplo clique e bloqueia troca de seção/fechamento durante envio", async () => {
     mocks.mutate.mockImplementation(() => undefined);
-    renderWithProviders(<PlataformaAdmins />);
-    fireEvent.click(screen.getByRole("button", { name: "Reenviar convite" }));
-    const confirmar = within(screen.getByRole("alertdialog")).getByRole("button", { name: "Reenviar convite" });
-    fireEvent.click(confirmar);
-    fireEvent.click(confirmar);
+    renderWithProviders(<PlataformaAdmins />); const dialog = await openAccess();
+    fireEvent.click(dialog.getByRole("button", { name: "Reenviar convite" }));
+    fireEvent.click(dialog.getByRole("checkbox"));
+    const confirmar = dialog.getByRole("button", { name: "Confirmar reenvio do convite" });
+    fireEvent.click(confirmar); fireEvent.click(confirmar);
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    expect(dialog.getByRole("tab", { name: "Dados" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
-
-  it("não oferece recovery link ao operador e mantém gestão de acesso", () => {
-    renderWithProviders(<PlataformaAdmins />);
-    expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Gerenciar acesso" })).toBeEnabled();
-  });
-
-  it("não oferece link manual para ativo ou senha temporária", () => {
-    mocks.convites = [{ ...base, status: "ativo" }, { ...base, id: "invite-2", modo_acesso: "senha_temporaria" }];
-    renderWithProviders(<PlataformaAdmins />);
-    expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
-  });
-
-  it("não expõe fallback manual para envio ambíguo", () => {
-    mocks.convites = [{ ...base, email_delivery_status: "ambiguous" }];
-    renderWithProviders(<PlataformaAdmins />);
-    expect(screen.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
+  it("sem link manual ao operador e sem caminho de acesso separado", async () => {
+    renderWithProviders(<PlataformaAdmins />); const dialog = await openAccess();
+    expect(dialog.queryByRole("button", { name: "Gerar link" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Gerenciar acesso" })).not.toBeInTheDocument();
+    expect(dialog.getByRole("button", { name: "Enviar link para definir/redefinir senha" })).toBeEnabled();
   });
 });
