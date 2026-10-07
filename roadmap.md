@@ -4,7 +4,7 @@
 - [x] Preparado roteiro read-only quatro planos × admin e usuário existente, desktop/mobile, navegação/URL/guards/interseção, forja e isolamento; prova independente banco/RLS preservada.
 - [ ] BLOCKED: oito sessões browser externas não disponíveis; executar roteiro no navegador do proprietário com identidades existentes e evidência sanitizada. Login público desktop/mobile não certifica plano.
 - [ ] NO-GO: Edge remota aguarda autorização de deploy/certificação; resposta createError.message bruta é risco comprovado, duplicidade concorrente não certificada (isPending não é idempotência). Nenhuma correção comercial/banco ou criação de fixture nesta rodada.
-- [ ] Validação frontend: typecheck separado não executado; build automático a conferir, sem execução manual pelo ambiente.
+- [x] Build automático OK 19:42:10 UTC. Typecheck frontend separado não executado; não inferir PASS, sem execução manual pelo ambiente.
 
 ## Fechamento corretivo planos/admin/usuários — 2026-10-07 19:23 UTC
 

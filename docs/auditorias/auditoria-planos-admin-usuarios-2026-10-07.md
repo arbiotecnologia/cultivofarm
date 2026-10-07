@@ -156,7 +156,7 @@ Comparação com `a27652387ae58531b0a9488ee0cf5980190da445`: fonte `create-user/
 | Suíte completa | PASS 5.821; 4 skipped | 399 arquivos PASS / 1 skipped; 19:35:34 UTC, duração 230,65s |
 | Deno check / ESLint focal / scanners existentes / diff-check | PASS | sem rede de dados, sem deploy; Deno valida tipos da Edge |
 | Typecheck frontend separado | NÃO EXECUTADO | ambiente gerencia validações automáticas; não inferir PASS a partir do build |
-| Build automático novo | A CONFERIR | PASS anterior 19:32:00 UTC preservado; nenhum build manual |
+| Build automático novo | PASS | log build OK 19:42:10 UTC; nenhum build manual |
 | Banco/RLS dos quatro planos | PASS independente preservado | provas anteriores do executor Supabase do proprietário, não reexecutadas nesta rodada |
 | Browser autenticado, quatro empresas × duas identidades | BLOCKED | `external_unmanaged`; nenhum cookie/sessão injetado, armazenamento canônico ausente |
 | Duplicidade de criação sob concorrência | BLOCKED | UI tem isPending + botão disabled; isso não prova exclusão simultânea nem idempotência da Edge |
