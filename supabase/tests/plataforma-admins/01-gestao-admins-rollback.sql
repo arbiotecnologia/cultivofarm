@@ -19,7 +19,9 @@ BEGIN
     (ua,'Admin A','zz.a@prova.invalid',true,ox,'Responsável Principal',null),
     (ub,'Admin B','zz.b@prova.invalid',true,ox,'Administrador','52998224725'),
     (uc,'Admin C','zz.c@prova.invalid',true,oy,'Responsável Principal',null),
-    (ud,'Admin D','zz.d@prova.invalid',true,ox,'Administrador',null);
+    (ud,'Admin D','zz.d@prova.invalid',true,ox,'Administrador',null)
+  ON CONFLICT (user_id) DO UPDATE SET nome=excluded.nome,email=excluded.email,ativo=true,organization_id=excluded.organization_id,cargo=excluded.cargo,cpf_cnpj=excluded.cpf_cnpj;
+  DELETE FROM public.user_roles WHERE user_id IN (ua,ub,uc,ud);
   INSERT INTO public.user_roles(user_id,role) VALUES (ua,'administrador'),(ub,'administrador'),(uc,'administrador'),(ud,'administrador');
   INSERT INTO public.platform_org_admin_invites(organization_id,user_id,email,nome,cpf_cnpj,modo_acesso,responsavel_principal,invited_by,status,request_id)
     VALUES (ox,ua,'zz.a@prova.invalid','Admin A',null,'link',true,sa,'ativo',gen_random_uuid()) RETURNING id INTO ia;
