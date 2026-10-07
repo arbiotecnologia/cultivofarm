@@ -21,3 +21,4 @@
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
 - Published plan versions are content-immutable; a successor is created as a new DRAFT and publishing it closes only the predecessor's `effective_to` under a `saas_plan_version_supersede` ticket — keeps price/feature snapshots and history intact.
+- Organization profile edits (legal name, trade name, e-mail) go only through `platform_update_organization_profile` with expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ, status, plan and admins keep their own flows — avoids parallel write paths.
