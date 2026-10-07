@@ -17,7 +17,7 @@
 
 - Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
 - Dashboard summary RPCs derive organization from the active authenticated profile and fail closed for operational sources without deterministic tenant ownership — prevents cross-tenant aggregates.
-- Tenant administration derives organization server-side; identity/tenant fields are immutable and unowned links fail closed. create-user uses actor bearer and compensates errors; mocked entrypoint tests avoid production — prevents tenant hopping and stale-credential bypass.
+- Tenant admin derives org server-side, keeps identity/tenant immutable and unowned links closed. create-user uses actor bearer, compensation, fixed public Auth codes and mocked tests; a ref lock releases in finally — prevents leaks/local reentry, not distributed idempotency.
 - Tenant operational rows use server-guarded `organization_id` or a deterministic parent chain to `h15_actor_organization()`; legacy rows without deterministic ownership remain fail-closed — prevents horizontal data leakage.
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.

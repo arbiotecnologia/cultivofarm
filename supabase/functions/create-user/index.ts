@@ -164,7 +164,11 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+      // Only structured, allowlisted codes may leave the provider boundary.
+      const emailExists = createError.code === "email_exists" ||
+        createError.code === "user_already_exists";
+      console.error(emailExists ? "create_user_email_exists" : "create_user_auth_failed");
+      return new Response(JSON.stringify({ error: emailExists ? "email_exists" : "user_creation_failed" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

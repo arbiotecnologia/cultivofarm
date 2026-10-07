@@ -229,6 +229,7 @@ export default function Configuracoes() {
   const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
   const [createResumo, setCreateResumo] = useState<string | null>(null);
   const campoRefs = useRef<Record<string, HTMLElement | null>>({});
+  const createSubmitLock = useRef(false);
   const registrarCampo = (campo: CampoNovoUsuario) => (el: HTMLElement | null) => { campoRefs.current[campo] = el; };
   const erroProps = (campo: CampoNovoUsuario) =>
     createErros[campo]
@@ -277,25 +278,33 @@ export default function Configuracoes() {
     },
   });
 
-  function handleCriarUsuario() {
-    if (createUser.isPending) return; // bloqueia envio duplicado
-    const erros = validarNovoUsuario({
-      nome: newUser.nome,
-      email: newUser.email,
-      password: newUser.password,
-      roles: newUser.roles,
-      partner_id: newUser.partner_id,
-      cliente_ids: [],
-    });
-    setCreateErros(erros);
-    const primeiro = primeiroCampoInvalido(erros);
-    if (primeiro) {
-      setCreateResumo("Corrija os campos destacados antes de continuar.");
-      requestAnimationFrame(() => campoRefs.current[primeiro]?.focus?.());
-      return;
+  async function handleCriarUsuario() {
+    if (createSubmitLock.current || createUser.isPending) return;
+    // Synchronous, per-form exclusion before any await or React render.
+    createSubmitLock.current = true;
+    try {
+      const erros = validarNovoUsuario({
+        nome: newUser.nome,
+        email: newUser.email,
+        password: newUser.password,
+        roles: newUser.roles,
+        partner_id: newUser.partner_id,
+        cliente_ids: [],
+      });
+      setCreateErros(erros);
+      const primeiro = primeiroCampoInvalido(erros);
+      if (primeiro) {
+        setCreateResumo("Corrija os campos destacados antes de continuar.");
+        requestAnimationFrame(() => campoRefs.current[primeiro]?.focus?.());
+        return;
+      }
+      setCreateResumo(null);
+      await createUser.mutateAsync();
+    } catch {
+      // The existing mutation onError owns the safe message; no retry here.
+    } finally {
+      createSubmitLock.current = false;
     }
-    setCreateResumo(null);
-    createUser.mutate();
   }
 
   // Edit user dialog

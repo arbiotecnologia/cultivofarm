@@ -187,3 +187,28 @@ Para cada uma das oito identidades, em desktop e mobile:
 ### Riscos e decisão
 
 PASS banco/RLS independente e PASS estrutural da matriz permanecem válidos no escopo comprovado. **NO-GO integral**: faltam oito provas browser autenticadas e Edge remota; há também resposta Auth bruta comprovada e ausência de prova de não duplicidade concorrente. A proteção `isPending` em `Configuracoes.tsx:281,782` é apenas evidência de implementação, não prova funcional de clique duplo. Compensação não é idempotência nem transação distribuída. Sem editar código por inferência nem ampliar escopo; riscos registrados para correção focal autorizada. Gate humano mínimo: execução read-only com as oito identidades existentes no navegador do proprietário e evidências sanitizadas; deploy/testes remotos só após autorização separada. Nenhum GO 100% alegado.
+
+## Correção focal local autorizada — 19:45 UTC
+
+Esta seção substitui os dois bloqueios locais da rodada anterior, sem reclassificar as provas remotas históricas.
+
+- `supabase/functions/create-user/index.ts`: remove retorno de `createError.message`; erro Auth desconhecido retorna somente `{error:"user_creation_failed"}` (HTTP 400). Códigos estruturados `email_exists` e `user_already_exists` são normalizados ao código público `email_exists`, já aceito pelo mapeamento da UI. Nenhuma inferência por texto do provedor. Logs contêm exclusivamente eventos fixos `create_user_auth_failed` / `create_user_email_exists`, sem mensagem, código desconhecido, e-mail, token ou detalhes Auth.
+- `src/pages/Configuracoes.tsx`: mesmo handler/mutation existentes; ref exclusivo por formulário adquirido sincronamente antes de qualquer await/render, mantido durante `mutateAsync` e liberado em `finally`, inclusive erro/validação inválida. `isPending` e botão disabled preservados; `onSuccess/onError` continuam responsáveis por caches/formulário/mensagens. Nenhum retry automático.
+- `src/test/security/create-user-edge-handler.test.ts`: 20 testes, incluindo erro sensível no código/mensagem/details e logs, e duas formas de e-mail duplicado.
+- Novo `src/test/config/criacaoUsuarioReentrada.test.ts`: 5 testes executam o handler real extraído via AST com mutation mockada. Dois envios síncronos e evento adicional enquanto pendente, com `isPending` ainda false, invocam no máximo uma mutation; sucesso e falha liberam o lock para próxima tentativa; validação inválida e isPending cobertos. Não é montagem do browser autenticado nem teste distribuído.
+- `AGENTS.md`: regra focal de arquitetura registrada; relatório/roadmap atualizados. Sem migrations, dados, chamadas Supabase, publicação ou deploy manual; autorização/tenant/fencing/compensação não alterados.
+
+| Verificação desta correção | Resultado real |
+|---|---|
+| Focais Edge + reentrada + validação | PASS 51/51, 3 arquivos, 19:46:52 UTC |
+| Suíte pertinente SaaS/tenant/config/RBAC | PASS 778/778, 70 arquivos, 19:47:25 UTC |
+| Deno check create-user | PASS |
+| ESLint dos testes focais | PASS |
+| ESLint Configuracoes completo | FAIL baseline: 18 erros/2 avisos, iguais à revisão `cc72eae7`; 16 no-explicit-any, 1 prefer-const, 1 no-empty, 2 exhaustive-deps. Nenhum finding novo; não suprimidos nem corrigidos fora de escopo |
+| Scanners segredos e integração fiscal | PASS |
+| Build automático após código | PASS, log 19:46:44 UTC |
+| Suíte completa | Não repetida nesta rodada focal; anterior 5.821 PASS/4 skipped preservada |
+| Typecheck frontend separado | Não executado; Deno check não substitui frontend e build não implica PASS de typecheck |
+| Browser autenticado / Edge remota | BLOCKED, sem sessão e sem deploy autorizado |
+
+**Decisão revisada:** PASS focal local para sanitização Auth e exclusão de reentrada no mesmo formulário; PASS banco/RLS independente e estrutural preservados. **NO-GO integral** permanece para browser autenticado dos quatro planos e Edge remota. A unicidade de e-mail no Auth impede duplicidade persistente da mesma identidade, mas não foi reprovada com concorrência real nesta rodada. O lock da UI não abrange outra aba, outro dispositivo, remount ou retry após ambiguidade e **não é idempotência distribuída**. Retry totalmente convergente exigiria contrato/chave server-side e pode ficar como melhoria futura. Compensação continua best-effort; nenhum GO 100% ou prova Auth real alegado. Logs de comandos desta rodada em `/tmp/create-user-1945-*`; diff-check final registrado no fechamento.
