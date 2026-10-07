@@ -210,3 +210,10 @@ Executada no Supabase canônico `swzpzcwiasxmjutrmvkm` pelo roteiro `supabase/te
 **Segurança:** scanner completo reexecutado antes/depois: 10 INFO em ambas as execuções. Retorno das migrations: 465 advisors preexistentes (17 RLS sem policy, 2 DEFINER/anon, 445 DEFINER/authenticated, 1 proteção de senha vazada). Nenhum tratamento fora do incidente. Esses números vêm de verificações distintas e não são equivalentes.
 
 **Validação e decisão:** resultados finais dos comandos registrados abaixo. GO para a regularização pelo fluxo canônico comprovado no banco; NO-GO para alegar homologação visual/concorrência ou publicar. Assinatura real permanece inalterada. Commit-base inspecionado: `47d16a2b75114213d6255a37a24c71b8e3bc9279`; hash final é gerenciado pelo ambiente e não foi criado manualmente. Forward-fix preferível: desfazer o wrapper reinstala as falhas de privilégios; não fazer rollback operacional sem nova revisão.
+
+- Focal SaaS + Comunicação: 805/805 antes do teste adicional de 3 casos; esses 3 casos passaram na suíte final.
+- Suíte final: 386 arquivos PASS + 1 skipped; 5.577 testes PASS + 4 skipped, exit 0.
+- Lint focal dos quatro arquivos TS/TSX envolvidos: exit 0. Lint global não reexecutado; dívida global anterior não resolvida.
+- Scanner de segredos: OK, exit 0. Scanner completo: 10 INFO antes/depois, conforme seção acima.
+- Build automático do ambiente: `build OK` em 2026-10-07 13:00:57 UTC. Não executado build manual.
+- Typecheck: não executado manualmente por restrição do ambiente; não há resultado separado disponível nesta rodada. Não declarar typecheck PASS nem fechamento integral desse gate.
