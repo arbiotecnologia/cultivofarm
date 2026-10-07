@@ -188,11 +188,12 @@ export function AdminGestaoAcoes({
             <DialogTitle>Definir como responsável principal</DialogTitle>
             <DialogDescription>{convite.nome} passa a ser o único responsável principal. O anterior continua administrador.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-1"><Label htmlFor="ga-motivo-resp">Motivo</Label>
-            <Textarea id="ga-motivo-resp" value={motivo} onChange={(e) => setMotivo(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="ga-motivo-resp">Motivo (opcional)</Label>
+            <Textarea id="ga-motivo-resp" value={motivo} aria-invalid={motivoEmailErro} onChange={(e) => setMotivo(e.target.value)} />
+            {motivoEmailErro && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
           <DialogFooter>
             <Button variant="outline" disabled={pendente} onClick={() => setModo(null)}>Cancelar</Button>
-            <Button disabled={!motivoOk || pendente} onClick={salvarResponsavel}>{definir.isPending ? "Salvando…" : "Confirmar"}</Button>
+            <Button disabled={motivoEmailErro || pendente} onClick={salvarResponsavel}>{definir.isPending ? "Salvando…" : "Confirmar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
