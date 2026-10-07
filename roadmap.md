@@ -113,3 +113,4 @@
 - [x] Cadastro empresarial completo na ficha da empresa (contatos, endereço, IE, resumo fiscal somente leitura) — 2026-10-07
 - [ ] Validação visual autenticada da ficha da empresa (desktop/mobile)
 - [ ] Busca de empresas por cidade/UF (fase futura)
+- [x] Correção: troca de plano em assinatura legada (plan_version_id NULL) — migration `20261007035510` aplicada em produção; só `change_plan` para versão PUBLISHED vigente; provas com rollback PASS. Pendente: regularizar a AR BIOTECNOLOGIA pela tela (ação humana) e teste visual autenticado. Evidências: `docs/auditorias/pos-d52-prova-comercial-fase1-2026-10-06.md` §19.
