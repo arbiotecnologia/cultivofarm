@@ -14913,6 +14913,143 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_org_admin_audit: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          attempt: number
+          created_at: string
+          error_code: string | null
+          id: string
+          idempotency_key: string
+          invite_id: string | null
+          new_values: Json
+          old_values: Json
+          organization_id: string
+          origin: string
+          reason: string
+          status: string
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          attempt?: number
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          idempotency_key: string
+          invite_id?: string | null
+          new_values?: Json
+          old_values?: Json
+          organization_id: string
+          origin: string
+          reason: string
+          status: string
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          attempt?: number
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          idempotency_key?: string
+          invite_id?: string | null
+          new_values?: Json
+          old_values?: Json
+          organization_id?: string
+          origin?: string
+          reason?: string
+          status?: string
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_org_admin_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_org_admin_email_changes: {
+        Row: {
+          actor_user_id: string
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          invite_id: string
+          invite_status_at_request: string
+          last_error_code: string | null
+          new_email: string
+          old_email: string
+          organization_id: string
+          reason: string
+          sessions_revoked: number | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          actor_user_id: string
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          invite_id: string
+          invite_status_at_request: string
+          last_error_code?: string | null
+          new_email: string
+          old_email: string
+          organization_id: string
+          reason: string
+          sessions_revoked?: number | null
+          status: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          invite_id?: string
+          invite_status_at_request?: string
+          last_error_code?: string | null
+          new_email?: string
+          old_email?: string
+          organization_id?: string
+          reason?: string
+          sessions_revoked?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_org_admin_email_changes_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "platform_org_admin_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_org_admin_email_changes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_org_admin_invites: {
         Row: {
           attempt_count: number
@@ -22042,6 +22179,16 @@ export type Database = {
         Args: { _idempotency_key: string; _reason: string; _version_id: string }
         Returns: string
       }
+      platform_begin_org_admin_email_change: {
+        Args: {
+          p_actor_id: string
+          p_idempotency_key: string
+          p_invite_id: string
+          p_new_email: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_claim_org_admin_email_delivery:
         | {
             Args: {
@@ -22111,6 +22258,10 @@ export type Database = {
             }
             Returns: Json
           }
+      platform_complete_org_admin_email_change: {
+        Args: { p_actor_id: string; p_op_id: string }
+        Returns: Json
+      }
       platform_conclude_provisional_password: { Args: never; Returns: boolean }
       platform_conclude_provisional_password_server: {
         Args: { p_user_id: string }
@@ -22177,6 +22328,15 @@ export type Database = {
       platform_mark_org_admin_email_ambiguous: {
         Args: { p_error_code: string; p_job_id: string; p_lease_token: string }
         Returns: Json
+      }
+      platform_mark_org_admin_email_change: {
+        Args: {
+          p_actor_id: string
+          p_error_code: string
+          p_op_id: string
+          p_status: string
+        }
+        Returns: undefined
       }
       platform_publish_plan_version: {
         Args: {
@@ -22254,6 +22414,16 @@ export type Database = {
             }
             Returns: string
           }
+      platform_set_org_principal_admin: {
+        Args: {
+          _expected_responsavel: string
+          _idempotency_key: string
+          _motivo: string
+          _org: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       platform_set_organization_status: {
         Args: { _motivo: string; _org: string; _status: string }
         Returns: undefined
@@ -22267,6 +22437,18 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_update_org_admin: {
+        Args: {
+          _cpf: string
+          _expected_updated_at: string
+          _idempotency_key: string
+          _invite_id: string
+          _motivo: string
+          _nome: string
+          _telefone: string
+        }
+        Returns: Json
       }
       platform_update_organization_profile: {
         Args: {
