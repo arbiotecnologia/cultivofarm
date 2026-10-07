@@ -1,10 +1,17 @@
+## Fechamento corretivo planos/admin/usuários — 2026-10-07 19:23 UTC
+
+- [x] Diff aprovado aplicado localmente em create-user: autorização com bearer do ator, authorizationError negado, compensação no catch e erro/log genéricos; sem deploy ou operação remota.
+- [x] Provas independentes do executor Supabase do proprietário reconhecidas como PASS banco/RLS nesta auditoria: 40/40 rollback, counts/hashes reais, isolamento/admins e fixture restaurada sem resíduos. PASS estrutural frontend preservado.
+- [x] Edge mockada 17/17; focais 69/69; suíte pertinente 770/770; Deno check, lint focal, scanners e diff-check PASS. Typecheck frontend separado não executado; build automático OK 19:26:35 UTC.
+- [ ] NO-GO somente browser autenticado E2E (sessão real indisponível neste executor) e Edge remota corrigida (aguarda autorização de deploy/certificação). Sem migration/publicação/dados reais.
+
 ## Auditoria planos/admin/usuários — 2026-10-07 19:05 UTC
 
 - [x] Entrega encerrada às 19:22 UTC a pedido do proprietário, sem reiniciar testes ou ampliar escopo. Revisão observada no fechamento: `980b09d676b8c2002c68f9fbd6fb1fb2ea8b1031`; preservados código, testes e diff candidato. Sem novas correções runtime, migration, deploy ou escrita em dados reais.
-- [x] Mapeados criação/listagem/edição/login, dez papéis, guardas e caches; snapshots publicados 3/8/10/17 confirmados read-only. Provas banco/RLS fornecidas pelo proprietário separadas das verificações desta rodada.
-- [x] Matriz estrutural 4×10 usa inventário canônico; 44 testes novos PASS. Diagnósticos no_context/blocked_status/trial_expired preservados na UI. Diff candidato create-user para fencing JWT/compensação entregue para revisão, sem alterar fonte Edge/implantar.
+- [x] Mapeados criação/listagem/edição/login, dez papéis, guardas e caches; snapshots publicados 3/8/10/17 confirmados read-only. Provas banco/RLS executadas independentemente nesta auditoria pelo executor Supabase do proprietário, separadas da execução local deste agente.
+- [x] Matriz estrutural 4×10 usa inventário canônico; 44 testes novos PASS. Diagnósticos no_context/blocked_status/trial_expired preservados na UI. Diff create-user aprovado e aplicado localmente no fechamento corretivo, sem implantar.
 - [x] SaaS/usuários/config/RBAC 753/753; suíte completa 5.804 PASS/4 skipped; lint/scanners/diff-check PASS; build automático OK 19:17:02 UTC. Typecheck separado não executado. Scanner Supabase 10 INFO; advisor 461 históricos. Relatório auditoria-planos-admin-usuarios-2026-10-07.md consolidado; SHA observado 550a151775010339bfa4a75107fe85d7bf486226.
-- [ ] BLOCKED/NO-GO funcional: browser autenticado externo ausente; navegador público redirecionou para /auth desktop/mobile, não comprova menu/dados autenticados. Titular deve fornecer evidência sanitizada com identidades de teste existentes, incluindo cache/JWT antigo. Diff Edge precisa revisão e teste isolado antes de implantação autorizada; compensação continua best-effort. Sem migration/deploy/alteração de dados reais.
+- [ ] BLOCKED/NO-GO funcional: browser autenticado externo ausente; navegador público redirecionou para /auth desktop/mobile, não comprova menu/dados autenticados. Titular deve fornecer evidência sanitizada com identidades de teste existentes, incluindo cache/JWT antigo. Diff Edge testado isoladamente no fechamento corretivo; implantação remota requer autorização posterior; compensação continua best-effort. Sem migration/deploy/alteração de dados reais.
 
 ## Gestão de assinatura: plano não reativa — 2026-10-07
 
