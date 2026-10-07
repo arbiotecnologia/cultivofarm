@@ -58,6 +58,22 @@ export interface SimulacaoFormalHeaderData {
   converted_order: { id: string; numero: string; status: string; total: number } | null;
 }
 
+type SimulationProjection = Pick<SimulacaoFormalHeaderData,
+  "id" | "status" | "created_at" | "updated_at" | "converted_at" | "valid_until" |
+  "titulo" | "observacoes" | "cultura" | "area_total_ha" | "objetivo_tecnico"
+> & {
+  partner_id: string;
+  created_by: string | null;
+  converted_by: string | null;
+  converted_order_id: string | null;
+  cliente_id: string | null;
+  total_cheio?: number | null;
+  cliente_nome_snapshot: string | null;
+  propriedade_nome_snapshot: string | null;
+  cliente_cidade_snapshot: string | null;
+  cliente_uf_snapshot: string | null;
+};
+
 function simNumero(created_at: string, id: string): string {
   const year = new Date(created_at).getFullYear();
   const short = id.replace(/-/g, "").slice(0, 6).toUpperCase();
@@ -75,7 +91,7 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
       const sim = Array.isArray(data) ? data[0] : null;
       if (error) throw error;
       if (!sim) return null;
-      const s = sim as any;
+      const s = sim as unknown as SimulationProjection;
 
       const [cliRes, partRes, criadorRes, convRes, orderRes, itemsRes] = await Promise.all([
         s.cliente_id
@@ -86,7 +102,7 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
               )
               .eq("id", s.cliente_id)
               .maybeSingle()
-          : Promise.resolve({ data: null } as any),
+          : Promise.resolve({ data: null }),
         supabase
           .from("partner_accounts")
           .select(
@@ -100,21 +116,21 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
               .select("user_id, nome_completo, email")
               .eq("user_id", s.created_by)
               .maybeSingle()
-          : Promise.resolve({ data: null } as any),
+          : Promise.resolve({ data: null }),
         s.converted_by
           ? supabase
               .from("profiles")
               .select("user_id, nome_completo, email")
               .eq("user_id", s.converted_by)
               .maybeSingle()
-          : Promise.resolve({ data: null } as any),
+          : Promise.resolve({ data: null }),
         s.converted_order_id
           ? supabase
               .from("partner_orders")
               .select("id, numero, status, total")
               .eq("id", s.converted_order_id)
               .maybeSingle()
-          : Promise.resolve({ data: null } as any),
+          : Promise.resolve({ data: null }),
         readSimulations({ p_simulation_id: simulationId, p_items: true }),
       ]);
 
@@ -128,7 +144,7 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
       }, 0);
 
 
-      const cli = (cliRes as any)?.data ?? null;
+      const cli = cliRes.data;
       return {
         id: s.id,
         tipo: "simulacao",
@@ -182,10 +198,10 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
                 propriedade_nome_snapshot: s.propriedade_nome_snapshot,
               }
             : null,
-        partner: (partRes as any)?.data ?? null,
-        criador: (criadorRes as any)?.data ?? null,
-        convertido_por: (convRes as any)?.data ?? null,
-        converted_order: (orderRes as any)?.data ?? null,
+        partner: partRes.data ?? null,
+        criador: criadorRes.data ?? null,
+        convertido_por: convRes.data ?? null,
+        converted_order: orderRes.data ?? null,
       };
     },
   });
