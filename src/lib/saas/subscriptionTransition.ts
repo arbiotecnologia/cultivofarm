@@ -5,6 +5,17 @@ export interface SubscriptionAction {
   reason: string;
 }
 
+/** UX only: server authorization and transition rules remain authoritative. */
+export function acoesAssinatura(status: string | undefined, trialEndsAt: string | null, now = Date.now()): SubscriptionAction["action"][] {
+  switch (status) {
+    case "SUSPENDED": return ["reactivate_manual", "cancel", "change_plan"];
+    case "ACTIVE": return ["change_plan", "mark_past_due", "suspend", "cancel"];
+    case "PAST_DUE": return ["change_plan", "suspend", "cancel"];
+    case "TRIAL": return ["change_plan", "cancel", ...(trialEndsAt && new Date(trialEndsAt).getTime() <= now ? ["expire_trial" as const] : [])];
+    default: return [];
+  }
+}
+
 export class SubscriptionResultUnknown extends Error {
   constructor(readonly correlationId: string) {
     super("subscription_result_unknown");

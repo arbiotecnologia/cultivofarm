@@ -219,11 +219,11 @@ export function useCatalogoPlanosSaaS() {
   });
 }
 
-export function useAssinaturasSaaS() {
+export function useAssinaturasSaaS(organizationId?: string) {
   return useQuery<AssinaturaSaaS[]>({
-    queryKey: ["plataforma", "organization_subscriptions"],
+    queryKey: organizationId ? ["plataforma", "organization_subscriptions", organizationId] : ["plataforma", "organization_subscriptions"],
     queryFn: async () => {
-      const { data, error } = await db
+      let query = db
         .from("organization_subscriptions")
         .select(
           "id,organization_id,plan_id,plan_version_id,status,billing_cycle,billing_cycle_snapshot," +
@@ -232,6 +232,8 @@ export function useAssinaturasSaaS() {
         )
         .order("created_at", { ascending: false })
         .limit(LIMITE);
+      if (organizationId) query = query.eq("organization_id", organizationId);
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []) as AssinaturaSaaS[];
     },
@@ -239,11 +241,11 @@ export function useAssinaturasSaaS() {
   });
 }
 
-export function useHistoricoAssinaturasSaaS() {
+export function useHistoricoAssinaturasSaaS(organizationId?: string) {
   return useQuery<HistoricoSaaS[]>({
-    queryKey: ["plataforma", "organization_subscription_history"],
+    queryKey: organizationId ? ["plataforma", "organization_subscription_history", organizationId] : ["plataforma", "organization_subscription_history"],
     queryFn: async () => {
-      const { data, error } = await db
+      let query = db
         .from("organization_subscription_history")
         .select(
           "id,subscription_id,organization_id,source,action,reason,correlation_id,previous_status,new_status," +
@@ -251,6 +253,8 @@ export function useHistoricoAssinaturasSaaS() {
         )
         .order("created_at", { ascending: false })
         .limit(LIMITE);
+      if (organizationId) query = query.eq("organization_id", organizationId);
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []) as HistoricoSaaS[];
     },

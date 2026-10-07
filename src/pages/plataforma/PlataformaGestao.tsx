@@ -11,10 +11,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { acoesAssinatura, bounded } from "@/lib/saas/subscriptionTransition";
 import {
   mensagemErroAssinatura,
   mensagemErroPlataforma,
   useAlterarAssinatura,
+  useAssinaturasSaaS,
+  useHistoricoAssinaturasSaaS,
   useCriarExcecao,
   useEncerrarExcecao,
   useExcecoesSaaS,
@@ -25,14 +28,16 @@ import {
 
 const ACOES = [
   ["start_trial", "Iniciar período de teste"],
-  ["change_plan", "Alterar plano"],
+  ["change_plan", "Alterar plano (não muda a situação)"],
   ["mark_past_due", "Marcar pagamento em atraso"],
   ["suspend", "Suspender"],
-  ["reactivate_manual", "Reativar manualmente"],
+  ["reactivate_manual", "Reativar assinatura"],
   ["cancel", "Cancelar"],
   ["expire_trial", "Expirar período de teste vencido"],
 ] as const;
 type AcaoAssinatura = (typeof ACOES)[number][0];
+
+const SITUACOES: Record<string, string> = { SUSPENDED: "Suspensa", ACTIVE: "Ativa", PAST_DUE: "Em atraso", TRIAL: "Em teste", CANCELLED: "Cancelada", EXPIRED: "Expirada" };
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
@@ -42,10 +47,31 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const alterar = useAlterarAssinatura();
   const submitting = useRef(false);
   const [org, setOrg] = useState(organizationIdInicial ?? "");
+  const assinaturas = useAssinaturasSaaS(org || undefined);
+  const historico = useHistoricoAssinaturasSaaS(org || undefined);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => { if (organizationIdInicial) setOrg(organizationIdInicial); }, [organizationIdInicial]);
   const [versao, setVersao] = useState("");
   const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
+  const assinatura = assinaturas.data?.find((s) => s.organization_id === org && s.status !== "CANCELLED" && s.status !== "EXPIRED");
+  const atual = versoes.data?.find((v) => v.id === assinatura?.plan_version_id);
+  const trialUtilizado = assinaturas.data?.some((s) => s.organization_id === org && s.status === "TRIAL") || historico.data?.some((h) => h.organization_id === org && (h.action === "start_trial" || h.previous_status === "TRIAL" || h.new_status === "TRIAL"));
+  const permitidas = assinatura
+    ? assinatura.plan_version_id === null ? ["change_plan" as const] : acoesAssinatura(assinatura.status, assinatura.trial_ends_at)
+    : assinaturas.isSuccess && historico.isSuccess && (assinaturas.data?.length ?? 0) < 200 && (historico.data?.length ?? 0) < 200 && !trialUtilizado ? ["start_trial" as const] : [];
+  const mesmaVersao = acao === "change_plan" && !!versao && versao === assinatura?.plan_version_id;
+  const busy = alterar.isPending || refreshing;
+  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo);
+  useEffect(() => {
+    setVersao(""); setMotivo(""); setRefreshError(false);
+  }, [org]);
+  useEffect(() => {
+    if (!permitidas.includes(acao) && permitidas[0]) setAcao(permitidas[0]);
+  }, [assinatura?.status, assinatura?.trial_ends_at, acao]); // eslint-disable-line react-hooks/exhaustive-deps
   const exigeVersao = acao === "start_trial" || acao === "change_plan";
   const agora = Date.now();
   const versoesVigentes = (versoes.data ?? []).filter((v) => {
@@ -55,19 +81,34 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
     return inicio <= agora && (fim === null || fim > agora);
   });
 
+  const atualizarResumo = () => {
+    setRefreshing(true); setRefreshError(false);
+    void bounded(() => Promise.all([
+      assinaturas.refetch({ throwOnError: true }), historico.refetch({ throwOnError: true }),
+    ]), 8_000).catch(() => {
+      if (mounted.current) setRefreshError(true);
+    }).finally(() => {
+      submitting.current = false;
+      if (mounted.current) setRefreshing(false);
+    });
+  };
+
   const enviar = () => {
     if (submitting.current || alterar.isPending) return;
+    if (refreshing || bloqueada || (exigeVersao && !versao)) return;
     submitting.current = true;
     alterar.mutate(
       { organizationId: org, action: acao, planVersionId: exigeVersao ? versao : null, reason: motivo.trim() },
       {
         onSuccess: () => {
-          toast.success("Ação aplicada e registrada no histórico.");
+          const suspensa = acao === "change_plan" && assinatura?.status === "SUSPENDED";
+          const plano = versoes.data?.find((v) => v.id === versao);
+          toast.success(suspensa ? `${plano?.name_snapshot ?? "Plano"} · v${plano?.version_number ?? ""} aplicado. A assinatura continua suspensa. Selecione Reativar assinatura para liberar o acesso.` : "Ação aplicada e registrada no histórico.");
           setMotivo("");
           setVersao("");
+          atualizarResumo();
         },
-        onError: (e) => toast.error(mensagemErroAssinatura(e)),
-        onSettled: () => { submitting.current = false; },
+        onError: (e) => { submitting.current = false; toast.error(mensagemErroAssinatura(e)); },
       },
     );
   };
@@ -79,19 +120,22 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
         <CardDescription>Somente transições válidas são aceitas e toda ação exige motivo.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
-        <Select value={org} onValueChange={setOrg}>
+        <Select value={org} onValueChange={setOrg} disabled={busy}>
           <SelectTrigger aria-label="Empresa"><SelectValue placeholder="Empresa" /></SelectTrigger>
           <SelectContent>
             {orgs.data?.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={acao} onValueChange={(value) => { setAcao(value as AcaoAssinatura); setVersao(""); }}>
-          <SelectTrigger aria-label="Ação"><SelectValue /></SelectTrigger>
+        {org && <div role="status" aria-live="polite" className="text-sm sm:col-span-2 break-words">
+          {refreshing ? "Atualizando assinatura e histórico…" : refreshError ? "Ação registrada, mas não foi possível atualizar o resumo. Atualize a consulta antes de nova ação." : assinaturas.isError ? "Não foi possível consultar a assinatura." : !assinaturas.isSuccess ? "Carregando assinatura…" : assinatura ? `${atual ? `${atual.name_snapshot} · v${atual.version_number}` : assinatura.plan_version_id ? "Versão aplicada indisponível" : "Plano legado sem versão"} — ${SITUACOES[assinatura.status] ?? "Situação indisponível"}` : "Empresa sem assinatura."}
+        </div>}
+        <Select value={permitidas.includes(acao) ? acao : ""} disabled={busy || !assinaturas.isSuccess || !permitidas.length || refreshError} onValueChange={(value) => { setAcao(value as AcaoAssinatura); setVersao(""); }}>
+          <SelectTrigger aria-label="Ação" className="h-auto min-h-11 [&>span]:whitespace-normal [&>span]:text-left"><SelectValue placeholder="Nenhuma ação disponível" /></SelectTrigger>
           <SelectContent>
-            {ACOES.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+            {ACOES.filter(([value]) => permitidas.includes(value)).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
           </SelectContent>
         </Select>
-        {exigeVersao && <Select value={versao} onValueChange={setVersao}>
+        {exigeVersao && permitidas.includes(acao) && <Select value={versao} onValueChange={setVersao} disabled={busy}>
           <SelectTrigger aria-label="Versão comercial"><SelectValue placeholder="Versão comercial vigente" /></SelectTrigger>
           <SelectContent>
             {versoesVigentes.map((v) => <SelectItem key={v.id} value={v.id}>{v.name_snapshot} · v{v.version_number}</SelectItem>)}
@@ -99,12 +143,15 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
         </Select>}
         <div className="space-y-1">
           <Label htmlFor="assin-motivo">Motivo da alteração *</Label>
-          <Input id="assin-motivo" placeholder="Ex.: renovação contratual" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <Input id="assin-motivo" disabled={busy} placeholder="Ex.: renovação contratual" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
         </div>
         <div className="sm:col-span-2">
           {exigeVersao && versoes.isSuccess && versoesVigentes.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Nenhuma versão comercial vigente. A ação permanece bloqueada.</p>}
-          <Button disabled={!org || (exigeVersao && !versao) || !motivoOk(motivo) || alterar.isPending} onClick={enviar}>
-            {alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : "Aplicar ação"}
+          {acao === "change_plan" && assinatura?.status === "SUSPENDED" && <p className="mb-3 text-sm" role="note">O plano será atualizado, mas a assinatura continuará suspensa. Para liberar o acesso, use Reativar assinatura.</p>}
+          {mesmaVersao && <p role="status" className="mb-3 text-sm">Este plano já está aplicado nesta empresa.</p>}
+          {refreshError && <Button variant="outline" onClick={atualizarResumo} disabled={busy} className="mb-3">Atualizar consulta</Button>}
+          <Button disabled={bloqueada || (exigeVersao && !versao) || busy} onClick={enviar}>
+            {refreshing ? "Atualizando resumo…" : alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : "Aplicar ação"}
           </Button>
           <p role="status" aria-live="polite" className="mt-2 text-sm text-muted-foreground">
             {alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : alterar.isError ? mensagemErroAssinatura(alterar.error) : ""}

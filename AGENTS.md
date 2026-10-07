@@ -1,6 +1,6 @@
 - SaaS gates only restrict via isPathEntitled plus role/link guards; platform writes use platform_* INVOKER RPCs — prevents bypass.
 - App.tsx snapshots never replace guards/RLS; redirects merge query/hash with target precedence — prevents broken aliases.
-- Subscription deadlines reconcile correlation read-only; keys survive remounts, no auto-retry writes — prevents stuck UI/duplicates.
+- Subscription keys survive remounts; tenant reads bound reconciliation/refresh, no auto-retry writes — prevents stuck UI/duplicates.
 
 - Escrita em organizations só por RPCs SECURITY DEFINER que emitem ticket em platform_private.authz_tickets (txid); triggers exigem o ticket — flags GUC não são fronteira de autorização.
 

@@ -1,3 +1,9 @@
+## Gestão de assinatura: plano não reativa — 2026-10-07
+
+- [x] Resumo plano/versão/situação, matriz UX por status, bloqueio da mesma versão, aviso/toast de suspensão e releitura focal limitada a 8s; RPC/timeout/idempotência preservados. Nenhum dado real/publicação.
+- [x] 13 testes novos; suíte SaaS 458/458 PASS (45 arquivos), lint/scanners/diff-check PASS; typecheck/build automáticos OK 18:31:03 UTC. Relatório assinatura-aplicando-timeout-2026-10-07.md atualizado. GO focal.
+- [ ] NO-GO homologação autenticada: sessão externa real indisponível; conferir resumo/ações sem envio em sessão autorizada. Não repetir ações nem reativar Refil automaticamente.
+
 ## Correção urgente do botão de assinatura — 2026-10-07
 
 - [x] Auditado hook/RPC e corrigida espera sem deadline/invalidation global aguardada: 15 s + reconciliação read-only limitada, correlação estável por conteúdo/remount, duplo clique, sem retry automático, finally e quatro caches exatos. Nenhuma operação em dados reais.
