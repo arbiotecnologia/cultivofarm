@@ -1,7 +1,8 @@
 // Troca de e-mail de administrador provisionado (Platform Superadmin).
 //
 // Segurança:
-// - JWT validado em código (getClaims) + gateway verify_jwt=true.
+// - JWT validado em código via admin.auth.getUser(token) (service_role,
+//   server-side; mesmo padrão de communication-provider-settings) + gateway verify_jwt=true.
 // - Somente Platform Superadmin (is_platform_superadmin no servidor).
 // - service_role existe apenas aqui; RPCs de estado aceitam somente service_role.
 // - Auth é alterado via Admin API (updateUserById aplica a mudança diretamente,
@@ -10,7 +11,8 @@
 // - Sessões (refresh tokens) são revogadas na conclusão; access tokens já
 //   emitidos seguem válidos até expirar (limitação documentada do Supabase).
 // - Falha parcial deixa a operação reconciliável (retry com a mesma chave).
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+import { authorizeSuperadmin } from "./auth.ts";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
@@ -30,20 +32,15 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return respond({ error: "Método não permitido.", code: "method_not_allowed" }, 405);
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Não autorizado.", code: "unauthorized" }, 401);
-    const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
-    const { data: claims, error: claimsError } = await anon.auth.getClaims(authHeader.slice(7));
-    if (claimsError || !claims?.claims?.sub) return respond({ error: "Sessão inválida.", code: "invalid_token" }, 401);
-    const actorId = String(claims.claims.sub);
-
-    const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    const url = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceKey) return respond({ error: "Serviço indisponível.", code: "server_misconfigured" }, 500);
+    const admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: isSuper, error: superErr } = await admin.rpc("is_platform_superadmin", { _user_id: actorId });
-    if (superErr) return respond({ error: "Não foi possível validar sua permissão.", code: "authorization_check_failed" }, 500);
-    if (isSuper !== true) return respond({ error: "Apenas o superadmin de plataforma pode alterar e-mails.", code: "forbidden" }, 403);
+    const authz = await authorizeSuperadmin(req.headers.get("Authorization"), admin);
+    if (!authz.ok) return respond({ error: authz.error, code: authz.code }, authz.status);
+    const actorId = authz.actorId;
 
     const parsed = parseEmailChangeBody(await req.json().catch(() => null));
     if (!parsed.ok) return respond({ error: parsed.message, code: parsed.code }, 400);
