@@ -1,9 +1,16 @@
+## Correção focal Auth/reentrada — 2026-10-07 19:45 UTC
+
+- [x] Erro Auth bruto removido; códigos públicos/logs fixos, e-mail duplicado preservado por código estruturado. Lock ref síncrono no mesmo formulário com mutateAsync/finally, isPending/disabled preservados.
+- [x] Focais 51/51; pertinente 778/778; Deno check, lint dos testes, scanners PASS; build automático OK 19:46:44 UTC. Lint Configuracoes: 18 erros/2 avisos idênticos ao baseline, nenhum novo; typecheck frontend separado não executado.
+- [x] Relatório e regra de arquitetura atualizados: PASS focal local, não idempotência distribuída; unicidade e-mail/Auth não substitui contrato de retry server-side convergente.
+- [ ] NO-GO integral: browser autenticado dos quatro planos e Edge remota pendentes de execução humana/autorização. Sem deploy, publicação, migration ou dados. Melhoria futura: contrato/chave server-side de retry, não implementado nesta rodada.
+
 ## Continuação planos/admin/usuários — 2026-10-07 19:34 UTC
 
 - [x] Confirmada integridade de create-user/testes desde a276523; 17/17 primeiro, pertinente 770/770, completa 5.821 PASS/4 skipped; Deno check, lint focal, scanners e diff-check PASS. Sem deploy ou operação remota.
 - [x] Preparado roteiro read-only quatro planos × admin e usuário existente, desktop/mobile, navegação/URL/guards/interseção, forja e isolamento; prova independente banco/RLS preservada.
 - [ ] BLOCKED: oito sessões browser externas não disponíveis; executar roteiro no navegador do proprietário com identidades existentes e evidência sanitizada. Login público desktop/mobile não certifica plano.
-- [ ] NO-GO: Edge remota aguarda autorização de deploy/certificação; resposta createError.message bruta é risco comprovado, duplicidade concorrente não certificada (isPending não é idempotência). Nenhuma correção comercial/banco ou criação de fixture nesta rodada.
+- [x] Lacunas locais desta rodada corrigidas na seção 19:45: erro Auth bruto e reentrada síncrona. Edge remota/concorrência distribuída não certificadas; proteção de UI não é idempotência. Nenhuma correção comercial/banco ou criação de fixture.
 - [x] Build automático OK 19:42:10 UTC. Typecheck frontend separado não executado; não inferir PASS, sem execução manual pelo ambiente.
 
 ## Fechamento corretivo planos/admin/usuários — 2026-10-07 19:23 UTC
