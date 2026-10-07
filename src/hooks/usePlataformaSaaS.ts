@@ -10,6 +10,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -948,8 +949,11 @@ export function useDefinirResponsavelPrincipal() {
 }
 
 export interface EdicaoAdminInput {
-  inviteId: string; nome: string; telefone: string; cpf: string; motivo: string; expectedUpdatedAt: string;
+  inviteId: string; nome: string; telefone: string; cpf: string; motivo?: string | null; expectedUpdatedAt: string;
 }
+
+const motivoEdicaoAdminSchema = z.string().trim().nullish().transform((v) => v ?? "")
+  .refine((v) => v.length !== 1, "Se informar o motivo, use ao menos 2 caracteres.");
 
 export function useEditarAdminEmpresa() {
   const invalidar = useInvalidarPlataforma();
@@ -957,10 +961,11 @@ export function useEditarAdminEmpresa() {
   return useMutation({
     retry: false,
     mutationFn: async (v: EdicaoAdminInput) => {
-      const key = chave.obter(JSON.stringify([v.inviteId, v.nome.trim(), v.telefone, v.cpf, v.motivo.trim(), v.expectedUpdatedAt]));
+      const motivo = motivoEdicaoAdminSchema.parse(v.motivo);
+      const key = chave.obter(JSON.stringify([v.inviteId, v.nome.trim(), v.telefone, v.cpf, motivo, v.expectedUpdatedAt]));
       const { data, error } = await db.rpc("platform_update_org_admin", {
         _invite_id: v.inviteId, _nome: v.nome, _telefone: v.telefone || null, _cpf: v.cpf || null,
-        _motivo: v.motivo, _expected_updated_at: v.expectedUpdatedAt, _idempotency_key: key,
+        _motivo: motivo, _expected_updated_at: v.expectedUpdatedAt, _idempotency_key: key,
       });
       if (error) throw new ErroRpcPlataforma(error);
       chave.limpar();

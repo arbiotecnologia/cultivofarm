@@ -71,11 +71,10 @@ export function AdminGestaoAcoes({
     fn(() => { emCurso.current = false; });
   };
 
-  const motivoOk = motivo.trim().length >= 2;
-  const editarValido = nome.trim().length >= 3 && motivoOk &&
-    [0, 10, 11].includes(digitos(telefone).length) && [0, 11].includes(digitos(cpf).length);
   const motivoLen = motivo.trim().length;
   const motivoCurto = motivoLen === 1;
+  const editarValido = nome.trim().length >= 3 && !motivoCurto &&
+    [0, 10, 11].includes(digitos(telefone).length) && [0, 11].includes(digitos(cpf).length);
   const reenvioAmbiguo = ["sending", "ambiguous"].includes(mudancaPendente?.confirmation_delivery_status ?? "");
   const reenvioCooldown = !!mudancaPendente?.confirmation_next_attempt_at && Date.parse(mudancaPendente.confirmation_next_attempt_at) > Date.now();
   const emailValido = EMAIL_RE.test(novoEmail.trim()) && novoEmail.trim().toLowerCase() !== convite.email.toLowerCase() && novoEmail.trim().toLowerCase() === confirmacaoEmail.trim().toLowerCase() && !motivoCurto && confirmado;
@@ -125,8 +124,9 @@ export function AdminGestaoAcoes({
             <div className="space-y-1"><Label htmlFor="ga-cpf">CPF</Label>
               <Input id="ga-cpf" inputMode="numeric" value={cpf} disabled={cpfBloqueado} onChange={(e) => setCpf(e.target.value)} />
               {cpfBloqueado && <p className="text-xs text-muted-foreground">CPF de administrador ativo exige correção por fluxo específico.</p>}</div>
-            <div className="space-y-1"><Label htmlFor="ga-motivo">Motivo</Label>
-              <Textarea id="ga-motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} /></div>
+            <div className="space-y-1"><Label htmlFor="ga-motivo">Motivo (opcional)</Label>
+              <Textarea id="ga-motivo" value={motivo} aria-invalid={motivoCurto} onChange={(e) => setMotivo(e.target.value)} />
+              {motivoCurto && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
           </div>
           <DialogFooter>
             <Button variant="outline" disabled={pendente} onClick={() => setOpen(false)}>Cancelar</Button>

@@ -76,11 +76,34 @@ describe("Gestão de administradores provisionados", () => {
     expect(within(d).getByLabelText("CPF")).toBeDisabled();
     expect(within(d).queryByRole("textbox", { name: /e-mail/i })).not.toBeInTheDocument();
     fireEvent.change(within(d).getByLabelText("Nome completo"), { target: { value: "Admin B Silva" } });
-    fireEvent.change(within(d).getByLabelText("Motivo"), { target: { value: "x" } });
+    fireEvent.change(within(d).getByLabelText("Motivo (opcional)"), { target: { value: "x" } });
     expect(within(d).getByRole("button", { name: "Salvar" })).toBeDisabled();
-    fireEvent.change(within(d).getByLabelText("Motivo"), { target: { value: "Correção" } });
+    fireEvent.change(within(d).getByLabelText("Motivo (opcional)"), { target: { value: "Correção" } });
     fireEvent.click(within(d).getByRole("button", { name: "Salvar" }));
     expect(m.editar).toHaveBeenCalledWith(expect.objectContaining({ inviteId: "i-b", nome: "Admin B Silva", expectedUpdatedAt: B.updated_at }), expect.any(Object));
+  });
+
+  it.each(["", "   ", " ok "])("Dados aceita motivo opcional %j sem inventar texto", async (motivo) => {
+    renderWithProviders(<PlataformaAdmins />);
+    await abrirMenu("Admin B");
+    const d = within(screen.getByRole("dialog"));
+    expect(d.getByLabelText("Motivo (opcional)")).not.toBeRequired();
+    fireEvent.change(d.getByLabelText("Nome completo"), { target: { value: "Admin B Silva" } });
+    fireEvent.change(d.getByLabelText("Motivo (opcional)"), { target: { value: motivo } });
+    expect(d.getByRole("button", { name: "Salvar" })).toBeEnabled();
+    fireEvent.click(d.getByRole("button", { name: "Salvar" }));
+    expect(m.editar).toHaveBeenCalledWith(expect.objectContaining({ motivo: motivo.trim(), expectedUpdatedAt: B.updated_at }), expect.any(Object));
+  });
+
+  it("Dados bloqueia um caractere após trim e mostra a validação", async () => {
+    renderWithProviders(<PlataformaAdmins />);
+    await abrirMenu("Admin B");
+    const d = within(screen.getByRole("dialog"));
+    fireEvent.change(d.getByLabelText("Motivo (opcional)"), { target: { value: " x " } });
+    expect(d.getByLabelText("Motivo (opcional)")).toHaveAttribute("aria-invalid", "true");
+    expect(d.getByText(/ao menos 2 caracteres/)).toBeInTheDocument();
+    expect(d.getByRole("button", { name: "Salvar" })).toBeDisabled();
+    expect(m.editar).not.toHaveBeenCalled();
   });
 
   it("troca de e-mail exige novo endereço repetido e confirmação explícita, com motivo opcional", async () => {
