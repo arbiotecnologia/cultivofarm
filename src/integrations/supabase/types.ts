@@ -22419,10 +22419,19 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
-      platform_first_access_valid: {
-        Args: { p_recovery?: boolean; p_user_id: string }
-        Returns: boolean
-      }
+      platform_first_access_valid:
+        | {
+            Args: { p_recovery?: boolean; p_user_id: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_recovery: boolean
+              p_session_issued_at: number
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       platform_get_organization_fiscal_summary: {
         Args: { _org: string }
         Returns: Json
