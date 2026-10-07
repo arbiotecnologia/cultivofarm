@@ -2,7 +2,7 @@
 
 ## Decisão e limites
 
-**NO-GO funcional; PASS estrutural focal.** Não houve sessão Auth real nesta rodada (`external_unmanaged`, sessão não disponibilizada). Nenhuma mutação de banco, fixture, migration, implantação Edge ou publicação frontend foi executada. Produção canônica: `swzpzcwiasxmjutrmvkm`, confirmada na configuração local. Preços, versões, assinaturas, cobrança, SMTP/Auth, fiscal e dados reais preservados.
+**PASS banco/RLS independente; PASS estrutural frontend e Edge local. NO-GO restrito a browser autenticado E2E e Edge remota até deploy autorizado.** Não houve sessão Auth real nesta rodada (`external_unmanaged`, sessão não disponibilizada). Nenhuma mutação de banco, fixture, migration, implantação Edge ou publicação frontend foi executada. Produção canônica: `swzpzcwiasxmjutrmvkm`, confirmada na configuração local. Preços, versões, assinaturas, cobrança, SMTP/Auth, fiscal e dados reais preservados.
 
 SHA observado após alterações de código/testes: `550a151775010339bfa4a75107fe85d7bf486226`. É a revisão observada antes desta consolidação documental, não um commit final criado manualmente.
 
@@ -12,18 +12,18 @@ Entrega encerrada sem reiniciar ou ampliar a auditoria. Revisão observada no in
 
 ## Baseline: proveniência separada
 
-O proprietário forneceu os seguintes resultados vivos: Refil Base v1 ACTIVE; Homologação Essencial v1 TRIAL ativo; AR Bio Gestão v1 TRIAL ativo; CultivoFarm Completo v1 ACTIVE e FSF Completo v1 TRIAL ativo. Informou matriz PostgreSQL 40/40 com rollback, hashes de snapshots, isolamento de seis classes de dados, quatro administradores e fixture Base/admin revertida sem resíduos. **Essas provas não foram reexecutadas nesta rodada e não equivalem a browser autenticado.**
+O proprietário forneceu os seguintes resultados vivos: Refil Base v1 ACTIVE; Homologação Essencial v1 TRIAL ativo; AR Bio Gestão v1 TRIAL ativo; CultivoFarm Completo v1 ACTIVE e FSF Completo v1 TRIAL ativo. O executor Supabase do proprietário executou independentemente nesta auditoria a matriz transacional pg_temp 4 planos × 10 papéis (40 cenários), com rollback confirmado: contagens 3/8/10/17, contextos active/trial_active e zero falhas de hash. Zero leaks por organization_id em profiles, organizations, subscriptions, clientes, lotes e ordens_servico; admin próprio vê exatamente 1 assinatura e não-admin vê 0 diretamente. Administradores reais AR, CultivoFarm, FSF e Homologação passaram com claims sub/role/iat: entitlements 10/17/17/8, tenant_admin_list_users somente na organização própria e foreign 0. Fixture Auth inativa foi restaurada a organization_id null, ativo false e papel aplicador, sem resíduos. **PASS banco/RLS: execução independente nesta auditoria, não mera informação de baseline; não equivale a browser autenticado E2E. Este agente não reexecutou essas provas.**
 
 Consulta MCP somente leitura confirmou os conjuntos das versões publicadas v1 e as contagens abaixo; também retornou Base v2 com o mesmo conjunto. Não houve troca de versão nem inferência de assinatura a partir disso. As ligações correntes empresa/assinatura foram adotadas do baseline do proprietário, não recertificadas por nova mutação.
 
-| Snapshot v1 | Recursos | Hash MD5 do conjunto consultado |
+| Snapshot v1 | Recursos | Hash real do snapshot na prova independente |
 |---|---:|---|
-| Base | 3 | `ad8d1acfb6f6da833511093dbf95f989` |
-| Essencial | 8 | `d1b1772f9c43ceec9230fc42bec6b3dc` |
-| Gestão | 10 | `658255a26901c9a5db91c151198f6039` |
-| Completo | 17 | `bffbd1d6a69ceddda3f7d34c4a6a5022` |
+| Base | 3 | `be7745ca62c49f5bee533a7d10b65a69` |
+| Essencial | 8 | `490b1aafda4ce2c79d531b6b15d090e7` |
+| Gestão | 10 | `c6cca8f509d68f0f60b1c728ebf27033` |
+| Completo | 17 | `c5f2f7b80892ab1620043fd0c8be4bc9` |
 
-O hash acima identifica o conjunto consultado; não representa comprovação nova de igualdade de cada assinatura ao snapshot.
+Hashes corrigidos conforme a prova independente do executor Supabase do proprietário; não confundir com os hashes de conjunto da consulta MCP anterior. Zero falhas de igualdade na prova independente.
 
 ### As 17 feature keys reais
 
@@ -64,15 +64,15 @@ As definições remotas consultadas de listagem, edição e status usam organiza
 
 Causa: `useEntitlements` colapsava no_context em no_subscription e blocked_status/trial_expired em blocked. Agora preserva os valores distintos e `ForaDoPlano` apresenta diagnóstico específico, sem liberar qualquer recurso. Loading, erro, ausência de contexto/assinatura, legado, bloqueio e trial expirado continuam fail-closed.
 
-### 2. Autorização create-user sem contexto JWT do ator — diff de revisão, não aplicado
+### 2. Autorização create-user sem contexto JWT do ator — corrigido localmente, sem deploy
 
-A Edge chama `has_role` com cliente service-role, apesar de já possuir um cliente com o bearer validado. A definição canônica do guard privado depende do contexto do ator e do fencing de credencial/iat; conferir papel pelo cliente elevado não prova esse contexto. A revisão candidata troca a consulta pelo cliente do ator e nega também erro da RPC. **Exploit e rejeição real de JWT antigo não foram executados.**
+Antes da correção, a Edge chamava `has_role` com cliente service-role, apesar de já possuir um cliente com o bearer validado. A definição canônica do guard privado depende do contexto do ator e do fencing de credencial/iat; conferir papel pelo cliente elevado não prova esse contexto. O diff aprovado foi aplicado: consulta pelo anonClient com bearer do ator, negando também authorizationError. Testes isolados confirmam false/erro/fencing mockado negados antes de createUser. **Exploit e rejeição real de JWT antigo não foram executados.**
 
-### 3. Exceção inesperada após criação Auth — diff de revisão, não aplicado
+### 3. Exceção inesperada após criação Auth — corrigido localmente, sem deploy
 
-Já existe compensação explícita para erro de profile/roles. O catch global não a executa se uma exceção ocorrer após Auth. O diff candidato registra compensador, limpa após sucesso e tenta compensação no catch, retornando mensagem genérica. Exclusão compensatória continua best-effort: falha de rede na exclusão ainda pode deixar órfão; não há garantia distribuída transacional certificada.
+Já existe compensação explícita para erro de profile/roles. O catch global anterior não a executava se uma exceção ocorresse após Auth. Agora registra compensador, libera após conclusão de profile + roles (ou compensação bem-sucedida), tenta compensação no catch e retorna user_creation_failed genérico. Logs de falha usam somente evento fixo, sem código/mensagem potencialmente sensível. Exclusão compensatória continua best-effort: falha de rede na exclusão ainda pode deixar órfão; não há garantia distribuída transacional certificada.
 
-Arquivo entregue: `docs/auditorias/create-user-revisao-local-2026-10-07.diff`. A fonte Edge permanece intacta para impedir implantação automática não autorizada. O diff **não foi executado nem certificado em Deno/Auth**, exige revisão e teste isolado antes de aplicação. SDK não fixado e CORS genérico preexistentes foram observados; não alterados por inferência nesta rodada.
+Arquivo entregue: `docs/auditorias/create-user-revisao-local-2026-10-07.diff`. A fonte Edge foi alterada localmente conforme autorização de 19:23 UTC, sem chamada de deploy. Deno check PASS e testes isolados do handler PASS; nenhuma certificação remota/Auth da Edge alterada é alegada. SDK não fixado e CORS genérico preexistentes foram observados; não alterados por inferência nesta rodada.
 
 ## Matriz automatizada 4 × 10
 
@@ -104,7 +104,7 @@ O teste usa o inventário canônico `auditoria-rotas-inventario-2026-10-07.json`
 | Verificação | Resultado | Limite |
 |---|---|---|
 | Snapshots publicados MCP read-only | PASS | conjuntos e contagens; não reexecuta provas fornecidas |
-| Banco/RLS 40/40 e administradores | PASS informado pelo proprietário | não reexecutado; sem JWT simulado nesta rodada |
+| Banco/RLS 40/40 e administradores | PASS execução independente nesta auditoria pelo executor Supabase do proprietário | pg_temp/rollback, claims reais de administradores; não browser E2E |
 | Matriz/testes novos | PASS 44/44 | estrutural e renderização isolada de mensagens |
 | SaaS/usuários/config/RBAC/contexto | PASS 753/753, 68 arquivos | mocks/contratos, não Auth real |
 | Suíte completa | PASS 5.804; 4 skipped, 398 arquivos PASS/1 skipped | execução 19:11–19:16 UTC |
@@ -115,7 +115,8 @@ O teste usa o inventário canônico `auditoria-rotas-inventario-2026-10-07.json`
 | Advisor segurança | 461 achados históricos | 17 RLS sem policy, 2 DEFINER anon, 441 DEFINER authenticated, 1 proteção de senha; não certifica ausência de risco |
 | Browser público | PASS redirecionamento /configuracoes → /auth | sem sessão; desktop 1280×1800 e mobile 390×844, sem overflow no login |
 | Browser autenticado/menu/dados/RLS/JWT antigo | BLOCKED | external_unmanaged, sessão ausente |
-| Diff Edge compensação/fencing executado | BLOCKED | revisão não aplicada nem implantada |
+| Edge local compensação/fencing | PASS 17/17 mocks do handler + Deno check | sem rede; fencing mockado, não Auth real da Edge remota |
+| Edge remota após correção | BLOCKED / NO-GO | sem deploy autorizado |
 
 Capturas públicas após aguardar carregamento confirmaram login; primeira captura precoce estava em branco, portanto não foi usada como PASS. Logo não carregou nas capturas do login: observado, sem prova de regressão causada pelas alterações focais; não corrigido fora de escopo. Responsividade das áreas autenticadas não foi certificada.
 
@@ -123,8 +124,11 @@ Capturas públicas após aguardar carregamento confirmaram login; primeira captu
 
 Alterados nesta auditoria: `src/lib/saas/featureRouteMap.ts`, `src/hooks/useEntitlements.ts`, `src/components/guards/ForaDoPlano.tsx`, `src/test/saas/useEntitlements.test.tsx`.
 
-Criados: `src/test/saas/plan-admin-user-matrix.test.tsx`, diff candidato create-user e este relatório. `roadmap.md` consolidado. Nenhuma migration/Edge remota; não houve novos resíduos porque nenhuma fixture ou escrita remota foi criada nesta rodada. O zero-resíduo do baseline é evidência fornecida pelo proprietário, não nova varredura integral.
+Criados: `src/test/saas/plan-admin-user-matrix.test.tsx`, diff candidato create-user e este relatório. `roadmap.md` consolidado. Nenhuma migration/Edge remota; não houve novos resíduos porque nenhuma fixture ou escrita remota foi criada nesta rodada. Zero-resíduo/restauração são provas executadas pelo executor independente nesta auditoria; este agente não fez nova varredura integral.
 
 Rollback local: reverter somente os hunks de diagnóstico e testes desta auditoria, remover diff candidato se rejeitado; nenhuma restauração de banco necessária. Inventário canônico e correções anteriores de assinatura permanecem intactos.
 
-Gate humano mínimo: evidência sanitizada em navegador real do proprietário com administrador e usuários de teste já existentes, nos quatro planos; verificar menu/URL/dados, bloqueios por perfil/plano, logout/login, atualização entre abas e JWT antigo. Não compartilhar tokens/senhas. Revisar e testar o diff Edge em executor isolado antes de qualquer implantação autorizada. Até esses gates, **NO-GO funcional**, sem alegação de 100%.
+Gate humano mínimo: evidência sanitizada em navegador real do proprietário com administrador e usuários de teste já existentes, nos quatro planos; verificar menu/URL/dados, bloqueios por perfil/plano, logout/login, atualização entre abas e JWT antigo. Não compartilhar tokens/senhas. Testes isolados da Edge concluídos; implantação e certificação remota dependem de autorização posterior. **PASS banco/RLS e PASS estrutural frontend; NO-GO apenas browser autenticado E2E e Edge remota**, sem alegação de 100%.
+## Fechamento corretivo — 19:23 UTC
+
+Aplicado diff aprovado em `supabase/functions/create-user/index.ts` e adicionado `src/test/security/create-user-edge-handler.test.ts`: 17 cenários executam o handler real transpilado com SDK/Deno mockados, sem rede. Cobrem admin, JWT inválido/antigo mockado, erro/false has_role, tenant forjado, papéis reservados/desconhecidos, vínculos fail-closed, compensação profile/roles/exceção, sucesso e falha do compensador com resposta/log sanitizados. Deno check PASS; testes focais Edge/matriz/tenant 69/69; suíte pertinente 770/770 em 69 arquivos; ESLint focal, scanners segredos/fiscal e diff-check PASS. Suíte completa anterior 5.804 PASS/4 skipped preservada, não reexecutada. Typecheck frontend separado não executado (validação automática); nenhum build manual. Compensação continua best-effort em falha de rede/interrupção do processo. Nenhuma migration, escrita remota, publicação ou deploy manual. O diff arquivado continua como evidência da revisão aprovada, com sanitização adicional do log na fonte local.
