@@ -40,6 +40,23 @@ async function abrirMenu(nome: string) {
 describe("Gestão de administradores provisionados", () => {
   beforeEach(() => { vi.clearAllMocks(); m.convites = [A, B, P]; m.mudancas = []; });
 
+  it("tem apenas um botão por linha e um diálogo com quatro seções", async () => {
+    renderWithProviders(<PlataformaAdmins />);
+    for (const nome of ["Admin A", "Admin B", "Admin P"]) {
+      const row = screen.getByText(nome).closest("tr");
+      expect(row).not.toBeNull();
+      expect(within(row as HTMLElement).getAllByRole("button")).toHaveLength(1);
+    }
+    expect(screen.queryByRole("button", { name: "Gerenciar acesso" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reenviar convite" })).not.toBeInTheDocument();
+    await abrirMenu("Admin B");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    const d = within(screen.getByRole("dialog"));
+    expect(d.getByText(/Admin B · Empresa X/)).toHaveTextContent("bb***@x.com.br");
+    for (const name of ["Dados", "Responsabilidade", "E-mail", "Acesso"]) expect(d.getByRole("tab", { name })).toBeInTheDocument();
+  });
+
   it("mostra badges reais e e-mail mascarado", () => {
     m.mudancas = [{ id: "c1", invite_id: "i-b", status: "failed", new_email: "novo@x.com.br", idempotency_key: "k", reason: "rr", last_error_code: "sync_failed" }];
     renderWithProviders(<PlataformaAdmins />);
@@ -93,7 +110,7 @@ describe("Gestão de administradores provisionados", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Dados" }));
     const d = screen.getByRole("dialog");
     expect(within(d).getByLabelText("CPF")).toBeDisabled();
-    expect(within(d).queryByLabelText(/e-mail/i)).not.toBeInTheDocument();
+    expect(within(d).queryByRole("textbox", { name: /e-mail/i })).not.toBeInTheDocument();
     fireEvent.change(within(d).getByLabelText("Nome completo"), { target: { value: "Admin B Silva" } });
     fireEvent.change(within(d).getByLabelText("Motivo"), { target: { value: "x" } });
     expect(within(d).getByRole("button", { name: "Salvar" })).toBeDisabled();
