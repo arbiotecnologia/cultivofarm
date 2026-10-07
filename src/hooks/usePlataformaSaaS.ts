@@ -265,6 +265,7 @@ export interface OrganizacaoSaaS {
   email_corporativo: string | null;
   created_at: string;
   updated_at: string | null;
+  responsavel_user_id?: string | null;
 }
 
 export function useOrganizacoesSaaS() {
@@ -273,7 +274,7 @@ export function useOrganizacoesSaaS() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organizations")
-        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at,updated_at")
+        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at,updated_at,responsavel_user_id")
         .order("nome")
         .limit(LIMITE);
       if (error) throw new Error(error.message);
