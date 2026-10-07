@@ -118,6 +118,7 @@
 
 ## Certificação ponta a ponta Parceiro B2B — 2026-10-07
 - [ ] Fase 1 — auditar estado vivo e implementar roteiro A/B/C transacional canônico, isolamento, preços, idempotência, crédito, fluxo e resíduos; fiscal externo sempre desligado.
+- Retomada autorizada às 13:34 UTC: fechar catálogo/preço/hash, simulação/conversão, pedido/replay, forja tenant/parceiro, aprovação/produção, título elegível sem retry/outbox, RLS/Storage/perfis e concorrência segura; fixtures removidas por IDs/prefixo. Avanços de sequence são efeitos técnicos auditáveis, sem restauração em produção. UI depende de sessão disponível; repetir verificações e advisors focais, sem limpeza global ou Fase 2.
 - Fase 1 autorizada expressamente às 13:13 UTC: executar correções mínimas comprovadas e migrations indispensáveis somente no canônico, rollback integral, relatório PASS/FAIL/BLOCKED e commit quando disponível; não publicar/deploy nem iniciar Fase 2 enquanto o gate não estiver integralmente satisfeito.
 - Correção focal de crédito aplicada no canônico: `20261007131828_9007da9a-6dad-4793-a0b3-b02e73c03d15.sql`; prova prévia confirmou acesso cruzado. Roteiro A/B/C de crédito criado; certificação completa permanece pendente, sem avançar à Fase 2.
 - [x] Crédito focal: 11 provas RPC PASS e 4 provas de leitura/escrita direta PASS com rollback; segunda brecha contida por `20261007132558_fcace95c-5756-4110-9cb7-be2fbb192efd.sql`; 0 resíduos nas quatro classes consultadas. Relatório `docs/auditorias/certificacao-b2b-fase1-2026-10-07.md`.
