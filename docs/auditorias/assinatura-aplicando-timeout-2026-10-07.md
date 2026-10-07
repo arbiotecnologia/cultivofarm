@@ -41,3 +41,44 @@ Uma requisição abortada pode ter commit tardio. Ausência no prazo limitado é
 GO focal para os contratos frontend testados; **NO-GO para certificação funcional em produção**, sem sessão real e sem executar transições reais. Gate: proprietário observar o estado atualizado em sessão autorizada, consultar histórico/correlação do clique anterior e validar uma operação somente em cenário de teste especificamente autorizado. Não repetir o último clique automaticamente.
 
 Sem migration, Edge, alteração de assinatura/preço/plano/Auth/SMTP/RLS, publicação/deploy ou ativação de cobrança/NF-e/CT-e.
+
+## Correção focal: plano não é reativação — 18:27 UTC
+
+### Evidência fornecida pelo proprietário
+
+REFIL INFORMATICA LTDA (organização `4e537fd6-4632-4c70-a782-386dba3e8f9f`, assinatura `e5bccb8f-0d66-42ce-9934-0740e0ee42ba`): Plano Base v1 `713b1a31-ed4c-48b6-b6e7-22ebd3ee1092` aplicado em 18:19:13Z, snapshot **59,90 BRL**, permaneceu **SUSPENDED**. Reaplicação em 18:24:22Z produziu histórico redundante SUSPENDED→SUSPENDED. Evidência do proprietário, não reconfirmada remotamente nesta rodada. Revisão independente das migrations locais confirma change_plan preservando situação e reactivate_manual SUSPENDED→ACTIVE.
+
+**Causa UX:** ausência de resumo atual, ações indiferentes ao estado, rótulo sem distinguir plano de reativação e ausência de bloqueio da mesma versão. Backend preserva corretamente situação e não foi alterado.
+
+### Implementação exclusivamente frontend
+
+- Hooks existentes de assinatura/histórico aceitam filtro opcional organization_id, mantendo famílias de cache; Card usa consultas focais e assinatura corrente (exclui CANCELLED/EXPIRED). Resumo nome/versão/situação, loading/erro/sem assinatura/legada explícitos.
+- Suspensa: reativar/cancelar/alterar plano; ativa: alterar plano/atraso/suspender/cancelar; atraso: alterar plano/suspender/cancelar; trial: alterar plano/cancelar/expirar somente vencido. Legada oferece só regularizar plano. Iniciar trial preservado apenas sem assinatura corrente nem trial prévio conhecido, com bloqueio conservador se leitura atingir 200 linhas. Backend soberano.
+- Rótulos e aviso aprovados; reativar não tem seletor, envia versão null, exige motivo mínimo 5 caracteres. Mesma versão bloqueada no botão e handler sem RPC. Toast de plano suspenso orienta selecionar reativação, nunca encadeia duas RPCs.
+- Após sucesso duas releituras precedem o novo resumo, prazo adicional 8s. Resumo antigo oculto e controles bloqueados durante leitura. Falha libera pendência, bloqueia nova escrita e oferece Atualizar consulta somente read-only. Timeout/reconciliação/chaves existentes preservados.
+- Texto longo quebra no mobile; aria-live mantido e seletores bloqueados durante operação/refresh.
+
+### Arquivos
+
+`src/pages/plataforma/PlataformaGestao.tsx`, `src/hooks/usePlataformaSaaS.ts`, `src/lib/saas/subscriptionTransition.ts`, novo `src/test/saas/assinatura-card-status.test.tsx`, `AGENTS.md`, roadmap e relatório.
+
+### Validação
+
+| Contrato | Resultado |
+|---|---|
+| Base v1/Suspensa e mesma versão sem RPC | PASS Card renderizado com I/O fictício |
+| Mudança suspensa/orientação/duas leituras antes do novo resumo | PASS unitário; não é prova RPC real |
+| Reativar sem versão/motivo e matriz de seis situações | PASS |
+| Trial vigente/sem prazo e barreira legada | PASS |
+| Duplo clique e erro/reconsulta sem escrita extra | PASS |
+| Novos testes Card/matriz | 13/13 PASS |
+| Suíte SaaS incluindo timeout/correlação/hook | 458/458 PASS, 45 arquivos, 18:31 UTC |
+| Lint focal, scanners segredos/fiscal, diff-check | PASS |
+| Typecheck/build automáticos | PASS: build OK 18:31:03 UTC |
+| UI/Auth reais desktop/mobile | NÃO EXECUTADO/BLOCKED; sessão externa real indisponível |
+
+SHA observado após implementação/testes, antes de documentação: `3a28792218bd7651767442542960699ebdc66c1d`; commits automáticos.
+
+**GO focal frontend testado; NO-GO homologação autenticada.** Gate manual: proprietário conferir resumo/ações/mesma versão bloqueada em sessão Platform Superadmin, sem envio. Não reativar ou reaplicar plano nesta rodada. Mudança concorrente entre leitura/clique ainda depende do backend. Limite 200 preservado por empresa, evitando truncagem global do resumo.
+
+Sem consulta remota, alteração de dados reais, migration/Edge, RPC/RLS/preço/plano/versão, reativação automática, publicação/deploy ou ativação de cobrança/fiscal.

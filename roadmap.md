@@ -1,7 +1,8 @@
 ## Gestão de assinatura: plano não reativa — 2026-10-07
 
-- [ ] Corrigir resumo, matriz UX por status, no-op mesma versão, aviso/toast de suspensão e releitura limitada pós-sucesso; preservar RPC/timeout/idempotência. Frontend apenas, nenhum dado real/publicação.
-- [ ] Validar testes Card/matriz/refresh e regressões SaaS; documentar evidência informada pelo proprietário e GO/NO-GO.
+- [x] Resumo plano/versão/situação, matriz UX por status, bloqueio da mesma versão, aviso/toast de suspensão e releitura focal limitada a 8s; RPC/timeout/idempotência preservados. Nenhum dado real/publicação.
+- [x] 13 testes novos; suíte SaaS 458/458 PASS (45 arquivos), lint/scanners/diff-check PASS; typecheck/build automáticos OK 18:31:03 UTC. Relatório assinatura-aplicando-timeout-2026-10-07.md atualizado. GO focal.
+- [ ] NO-GO homologação autenticada: sessão externa real indisponível; conferir resumo/ações sem envio em sessão autorizada. Não repetir ações nem reativar Refil automaticamente.
 
 ## Correção urgente do botão de assinatura — 2026-10-07
 
