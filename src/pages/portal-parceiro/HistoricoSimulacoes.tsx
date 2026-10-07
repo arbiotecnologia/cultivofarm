@@ -91,7 +91,7 @@ export default function HistoricoSimulacoes() {
                   </Badge>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {formatDateDisplay(s.created_at)} · Total: <strong>{brl(Number(s.total_cheio))}</strong>
+                  {formatDateDisplay(s.created_at)} {role !== "parceiro_b2b_tecnico" && <> · Total: <strong>{brl(Number(s.total_cheio))}</strong></>}
                   {s.cliente_nome_snapshot && <> · Produtor: <strong>{s.cliente_nome_snapshot}</strong></>}
                   {s.cultura && <> · Cultura: {s.cultura}</>}
                 </div>
@@ -128,14 +128,14 @@ export default function HistoricoSimulacoes() {
           </DialogHeader>
           {openSim && (
             <div className="space-y-3 text-sm">
-              <div className="flex justify-end">
+              {role !== "parceiro_b2b_tecnico" && <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={() => handleDownload(openSim, items as any[])}>
                   <Download className="h-4 w-4 mr-1" /> Baixar PDF
                 </Button>
-              </div>
+              </div>}
               <div className="text-xs text-muted-foreground">
-                Criada em {formatDateDisplay(openSim.created_at)} · Total{" "}
-                <strong>{brl(Number(openSim.total_cheio))}</strong>
+                Criada em {formatDateDisplay(openSim.created_at)}
+                {role !== "parceiro_b2b_tecnico" && <> · Total <strong>{brl(Number(openSim.total_cheio))}</strong></>}
               </div>
               {openSim.observacoes && (
                 <div className="rounded-md border p-2 bg-muted/40 whitespace-pre-wrap text-xs">
@@ -153,10 +153,10 @@ export default function HistoricoSimulacoes() {
                       <div className="font-medium truncate">{it.nome}</div>
                       <div className="text-muted-foreground">
                         {it.item_tipo === "microrganismo" ? "Microrganismo" : "Produto"} ·{" "}
-                        {Number(it.quantidade)} × {brl(Number(it.valor_unitario_cheio))}
+                        {Number(it.quantidade)} {role !== "parceiro_b2b_tecnico" && <>× {brl(Number(it.valor_unitario_cheio))}</>}
                       </div>
                     </div>
-                    <div className="font-medium">{brl(Number(it.subtotal))}</div>
+                    {role !== "parceiro_b2b_tecnico" && <div className="font-medium">{brl(Number(it.subtotal))}</div>}
                   </div>
                 ))}
               </div>

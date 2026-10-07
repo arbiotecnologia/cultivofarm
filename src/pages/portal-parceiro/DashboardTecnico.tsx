@@ -10,7 +10,6 @@ import { usePartnerSimulations } from "@/hooks/usePartnerSimulations";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { getPrimeiroNome } from "@/components/portal-parceiro/UsuarioIdentidade";
-import { formatarMoeda } from "@/lib/catalogo/formatUnidades";
 
 export default function DashboardTecnico() {
   const { partner } = useOutletContext<{ partner: any }>();
@@ -119,7 +118,7 @@ export default function DashboardTecnico() {
           <CardContent className="text-sm space-y-1">
             <div className="font-medium">{ultima.titulo ?? "Simulação"}</div>
             <div className="text-muted-foreground">
-              {ultima.items_count ?? 0} itens • Total tabela {formatarMoeda(ultima.total_cheio ?? 0)}
+              {ultima.items_count ?? 0} itens
             </div>
             <Button asChild size="sm" variant="link" className="px-0">
               <Link to="/portal-parceiro/simulacoes">Ver histórico</Link>
