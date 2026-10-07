@@ -49,11 +49,9 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN out:=out||'authenticated_direct:denied;'; END;
   EXECUTE 'RESET ROLE';
 
-  -- Outras ações continuam exigindo motivo (rejeição ocorre antes de autorização/estado? registra SQLERRM curto)
+  -- Edição de administrador continua exigindo motivo (responsável principal: ver 03)
   PERFORM set_config('request.jwt.claims', json_build_object('sub',sa,'role','authenticated')::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
-  BEGIN PERFORM public.platform_set_org_principal_admin(ox,ub,'',ua,gen_random_uuid()); out:=out||'principal_empty:ALLOWED!;';
-  EXCEPTION WHEN OTHERS THEN out:=out||'principal_empty:denied('||left(SQLERRM,40)||');'; END;
   BEGIN PERFORM public.platform_update_org_admin(ib,'M B Silva','','','',now(),gen_random_uuid()); out:=out||'edit_empty:ALLOWED!;';
   EXCEPTION WHEN OTHERS THEN out:=out||'edit_empty:denied('||left(SQLERRM,40)||');'; END;
   EXECUTE 'RESET ROLE';

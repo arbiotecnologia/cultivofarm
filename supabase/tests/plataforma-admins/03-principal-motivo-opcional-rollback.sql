@@ -57,6 +57,8 @@ BEGIN
   out := out||'two_plus:ok('||v||');';
   SELECT count(*) INTO n FROM public.organizations WHERE id=ox AND responsavel_user_id=uc;
   out := out||'final_principal_c='||n||';';
+  BEGIN PERFORM public.platform_update_org_admin((SELECT id FROM public.platform_org_admin_invites WHERE user_id=ub),'R B Silva','','','',now(),gen_random_uuid()); out:=out||'edit_empty:ALLOWED!;';
+  EXCEPTION WHEN OTHERS THEN out:=out||'edit_empty:denied;'; END;
   EXECUTE 'RESET ROLE';
 
   RAISE EXCEPTION 'PROOF_ROLLBACK %', out;
