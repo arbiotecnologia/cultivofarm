@@ -19,6 +19,16 @@ describe("Auditoria integral — contratos estruturais (não equivalem a Auth/RL
       .toEqual(inventory.routes.map(({ path, components, ancestors, redirect }) => ({ path, components, ancestors, redirect })));
     for (const row of inventory.routes) expect(row.navigation.length > 0 || row.classification !== 1).toBe(true);
   });
+  it("cada rota registra perfil, guard, feature e justificativa sem promover candidatos a autorização", () => {
+    for (const row of inventory.routes) {
+      expect(Array.isArray(row.profiles), row.path).toBe(true);
+      expect(row.profileBasis, row.path).toContain("candidate");
+      expect(row.feature, row.path).toBe(featureForPath(row.path));
+      expect(row.navigationJustification.trim().length, row.path).toBeGreaterThan(0);
+      expect(row.desktopMobileJustification.trim().length, row.path).toBeGreaterThan(0);
+      expect(row.verification, row.path).toContain("STRUCTURAL_ONLY");
+    }
+  });
   it.each(all)("navegação $id resolve uma rota real, sem recorrer ao catch-all", (item) => {
     expect(routes.some((route) => matchesRoute(route.path, item.route))).toBe(true);
   });
