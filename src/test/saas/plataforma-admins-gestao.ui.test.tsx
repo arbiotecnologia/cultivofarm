@@ -118,8 +118,12 @@ describe("contratos estruturais de segurança", () => {
   const fn = readFileSync("supabase/functions/platform-org-admin-email-change/index.ts", "utf8");
   const hook = readFileSync("src/hooks/usePlataformaSaaS.ts", "utf8");
   it("Edge valida JWT e superadmin e só sincroniza após o Auth", () => {
-    expect(fn).toContain("getClaims");
-    expect(fn).toContain("is_platform_superadmin");
+    const authTs = readFileSync("supabase/functions/platform-org-admin-email-change/auth.ts", "utf8");
+    expect(fn).not.toContain("getClaims");
+    expect(fn).toContain("authorizeSuperadmin(");
+    expect(fn).toMatch(/npm:@supabase\/supabase-js@2\.\d+\.\d+/);
+    expect(authTs).toContain("auth.getUser(token)");
+    expect(authTs).toContain("is_platform_superadmin");
     expect(fn.indexOf("updateUserById")).toBeLessThan(fn.indexOf("platform_complete_org_admin_email_change"));
     expect(fn).not.toMatch(/user_metadata/);
   });
