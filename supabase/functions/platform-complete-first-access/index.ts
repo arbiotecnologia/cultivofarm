@@ -136,6 +136,7 @@ Deno.serve(async (req) => {
     if (validError || valid !== true) return falha(403, "nao_pendente", "A senha provisória expirou. Solicite um novo link de acesso.");
 
     // (4) Atualização da senha pela Admin API.
+    if (!senhaValida(novaSenha)) return falha(400, "senha_fraca", "Informe uma senha válida.");
     const { error: updError } = await adminClient.auth.admin.updateUserById(callerId, {
       password: novaSenha,
     });

@@ -8,7 +8,7 @@
 //   exclusivamente `administrador` da empresa indicada.
 // - Senha temporária ou link manual só voltam ao Superadmin na resposta
 //   solicitada; o link manual usa no-store e nunca é persistido ou logado.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
 import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { deliverInviteEmail, type InviteEmailClaim } from "../_shared/comunicacao/invite-email-delivery.ts";
