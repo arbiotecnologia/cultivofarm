@@ -1,5 +1,6 @@
 - SaaS gates only restrict via isPathEntitled plus role/link guards; platform writes use platform_* INVOKER RPCs — prevents bypass.
-- Route audit parses App.tsx JSX into a route/menu/feature snapshot; static coverage never replaces runtime guards/RLS. Legacy redirects merge query/hash with canonical parameter precedence — prevents malformed aliases.
+- App.tsx snapshots never replace guards/RLS; redirects merge query/hash with target precedence — prevents broken aliases.
+- Subscription deadlines reconcile correlation read-only; keys survive remounts, no auto-retry writes — prevents stuck UI/duplicates.
 
 - Escrita em organizations só por RPCs SECURITY DEFINER que emitem ticket em platform_private.authz_tickets (txid); triggers exigem o ticket — flags GUC não são fronteira de autorização.
 
