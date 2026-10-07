@@ -20710,6 +20710,18 @@ export type Database = {
         Args: { p_sim: string }
         Returns: boolean
       }
+      b2b_read_simulations: {
+        Args: {
+          p_items?: boolean
+          p_partner_id?: string
+          p_simulation_id?: string
+        }
+        Returns: Json
+      }
+      b2b_save_technical_simulation: {
+        Args: { p_payload: Json }
+        Returns: string
+      }
       bulk_inserir_alvos: {
         Args: { p_alvos: Json; p_kind: string; p_parent_id: string }
         Returns: Json
