@@ -90,3 +90,8 @@ verify_jwt = true
 
 [functions.onboarding-cnpj-lookup]
 verify_jwt = false
+
+# Troca de e-mail de administrador provisionado: JWT no gateway e Superadmin
+# revalidado em código; service_role somente dentro da função.
+[functions.platform-org-admin-email-change]
+verify_jwt = true

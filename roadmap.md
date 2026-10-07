@@ -1,3 +1,10 @@
+## Gestão de administradores provisionados — 2026-10-07
+
+- [x] Auditar provisionamento, guards de perfil/organização e semântica Admin Auth
+- [x] Responsável principal, edição básica e troca de e-mail (servidor + UI), com auditoria imutável
+- [x] Provas SQL com rollback, testes UI/Deno, typecheck, lint e scanner
+- [ ] Homologar login com novo e-mail e recusa do antigo usando conta fictícia (sem service_role/sessão real no harness)
+
 # D51.5 — Remediação horizontal multi-tenant
 
 ## Auditoria multipla­no e multiempresa — 2026-10-06

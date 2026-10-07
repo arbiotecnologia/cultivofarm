@@ -265,6 +265,7 @@ export interface OrganizacaoSaaS {
   email_corporativo: string | null;
   created_at: string;
   updated_at: string | null;
+  responsavel_user_id?: string | null;
 }
 
 export function useOrganizacoesSaaS() {
@@ -273,7 +274,7 @@ export function useOrganizacoesSaaS() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organizations")
-        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at,updated_at")
+        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at,updated_at,responsavel_user_id")
         .order("nome")
         .limit(LIMITE);
       if (error) throw new Error(error.message);
@@ -833,4 +834,129 @@ export function useEditarEmpresa() {
     },
     onSuccess: invalidar,
   });
+}
+
+// ===== Gestão de administradores provisionados =====
+
+export interface MudancaEmailAdmin {
+  id: string;
+  invite_id: string;
+  status: "requested" | "auth_updated" | "failed";
+  new_email: string;
+  last_error_code: string | null;
+  idempotency_key: string;
+  reason: string;
+}
+
+/** Mudanças de e-mail abertas (pendentes/reconciliáveis). */
+export function useMudancasEmailAdmin() {
+  return useQuery<MudancaEmailAdmin[]>({
+    queryKey: ["plataforma", "platform_org_admin_email_changes"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("platform_org_admin_email_changes")
+        .select("id,invite_id,status,new_email,last_error_code,idempotency_key,reason")
+        .in("status", ["requested", "auth_updated", "failed"])
+        .limit(LIMITE);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as MudancaEmailAdmin[];
+    },
+    ...opcoes,
+  });
+}
+
+/** Chave idempotente estável enquanto o conteúdo não muda (retry/duplo clique). */
+function useChaveEstavel() {
+  const ref = useRef<{ signature: string; key: string } | null>(null);
+  return {
+    obter: (signature: string) => {
+      if (ref.current?.signature !== signature) ref.current = { signature, key: crypto.randomUUID() };
+      return ref.current.key;
+    },
+    limpar: () => { ref.current = null; },
+  };
+}
+
+export function useDefinirResponsavelPrincipal() {
+  const invalidar = useInvalidarPlataforma();
+  const chave = useChaveEstavel();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: { organizationId: string; userId: string; motivo: string; expectedResponsavel: string | null }) => {
+      const key = chave.obter(JSON.stringify([v.organizationId, v.userId, v.motivo.trim(), v.expectedResponsavel]));
+      const { data, error } = await db.rpc("platform_set_org_principal_admin", {
+        _org: v.organizationId, _user_id: v.userId, _motivo: v.motivo,
+        _expected_responsavel: v.expectedResponsavel, _idempotency_key: key,
+      });
+      if (error) throw new ErroRpcPlataforma(error);
+      chave.limpar();
+      return data as { organization_id: string; responsavel_user_id: string; idempotent: boolean };
+    },
+    onSuccess: invalidar,
+  });
+}
+
+export interface EdicaoAdminInput {
+  inviteId: string; nome: string; telefone: string; cpf: string; motivo: string; expectedUpdatedAt: string;
+}
+
+export function useEditarAdminEmpresa() {
+  const invalidar = useInvalidarPlataforma();
+  const chave = useChaveEstavel();
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: EdicaoAdminInput) => {
+      const key = chave.obter(JSON.stringify([v.inviteId, v.nome.trim(), v.telefone, v.cpf, v.motivo.trim(), v.expectedUpdatedAt]));
+      const { data, error } = await db.rpc("platform_update_org_admin", {
+        _invite_id: v.inviteId, _nome: v.nome, _telefone: v.telefone || null, _cpf: v.cpf || null,
+        _motivo: v.motivo, _expected_updated_at: v.expectedUpdatedAt, _idempotency_key: key,
+      });
+      if (error) throw new ErroRpcPlataforma(error);
+      chave.limpar();
+      return data as { invite_id: string; updated_at: string; idempotent: boolean };
+    },
+    onSuccess: invalidar,
+  });
+}
+
+export interface ResultadoTrocaEmail {
+  status: "completed";
+  reinvite_required: boolean;
+  sessions_revoked?: number;
+  old_address_notice?: "sent" | "skipped" | "failed";
+}
+
+/**
+ * Troca de e-mail pela Edge Function. Para retomar uma operação falha,
+ * passe `idempotencyKey` da mudança pendente (mesmo e-mail e motivo).
+ */
+export function useAlterarEmailAdmin() {
+  const invalidar = useInvalidarPlataforma();
+  const chave = useChaveEstavel();
+  return useMutation<ResultadoTrocaEmail, Error, { inviteId: string; newEmail: string; reason: string; idempotencyKey?: string }>({
+    retry: false,
+    mutationFn: async (v) => {
+      const key = v.idempotencyKey ?? chave.obter(JSON.stringify([v.inviteId, v.newEmail.trim().toLowerCase(), v.reason.trim()]));
+      const { data, error } = await supabase.functions.invoke("platform-org-admin-email-change", {
+        body: { invite_id: v.inviteId, new_email: v.newEmail.trim().toLowerCase(), reason: v.reason.trim(), idempotency_key: key, confirm: true },
+      });
+      const payload = (data ?? {}) as Record<string, unknown>;
+      if (error || payload.error) {
+        const parsed = typeof payload.error === "string"
+          ? { code: typeof payload.code === "string" ? payload.code : "email_change_failed", message: payload.error }
+          : await lerErroFuncao(error);
+        throw new ErroConvitePlataforma(parsed.code, parsed.message);
+      }
+      chave.limpar();
+      return payload as unknown as ResultadoTrocaEmail;
+    },
+    onSettled: invalidar,
+  });
+}
+
+/** Mascara e-mail para visualização geral: "jo***@empresa.com.br". */
+export function mascararEmail(email: string): string {
+  const [u, d] = email.split("@");
+  if (!d) return "***";
+  return `${u.slice(0, 2)}***@${d}`;
 }
