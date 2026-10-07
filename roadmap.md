@@ -1,5 +1,7 @@
 ## Gestão de administradores provisionados — 2026-10-07
 
+- [ ] Correção segura 15:30 UTC — confirmação Auth real de e-mail, gestão de acesso, prazo de senha provisória e barreira server-side; sem publicação frontend e sem avançar B2B.
+- [x] Auditoria focal — troca atual contorna confirmação (`email_confirm: true`); barreira provisória existente somente na tela; SMTP configurado em modo teste não comprova entrega.
 - [x] Auditar provisionamento, guards de perfil/organização e semântica Admin Auth
 - [x] Responsável principal, edição básica e troca de e-mail (servidor + UI), com auditoria imutável
 - [x] Provas SQL com rollback, testes UI/Deno, typecheck, lint e scanner
