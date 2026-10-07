@@ -126,3 +126,43 @@ Dados mínimos ainda necessários: plano alvo, preço, moeda, ciclo, dias de tes
 - **Próxima fase do produto:** NÃO INICIADA.
 
 Próxima ação mínima: o Platform Superadmin preencher e revisar os dados comerciais reais. Somente após sua publicação explícita poderá ser executada a prova positiva autenticada, sem criar fixtures.
+## 18. Execução da prova comercial positiva A/B/C — 2026-10-07 (~03:42 UTC)
+
+Executada no Supabase canônico `swzpzcwiasxmjutrmvkm` pelo roteiro `supabase/tests/prova-comercial-positiva/01-abc-rollback.sql`, em bloco único encerrado por `RAISE EXCEPTION` (rollback integral). Sem migration, sem alteração de regras, preço, cobrança ou enforcement e sem publicação do app.
+
+### Versão comercial (consulta direta)
+- `713b1a31-ed4c-48b6-b6e7-22ebd3ee1092` — Plano Base v1, `PUBLISHED`, `effective_from` 2026-10-07 03:13 UTC, 59,90 BRL, `monthly`, 14 dias de trial; 3 features no snapshot (fichas_tecnicas, recomendacoes_alertas, visitas_tecnicas); `limits_snapshot` vazio.
+- Observação: `effective_to` = 2026-10-09 00:58 UTC (fim de vigência já registrado; não alterado nesta rodada).
+
+### Resultados (todos PASS, salvo indicação)
+- Fixtures A/B/C (3 organizações, 2 parceiros) criadas e revertidas; resíduos pós-execução = 0 (organizações, parceiros, histórico/overrides órfãos, marcação em `saas_features`). Os 7 perfis de teste reutilizados conferidos no estado original (organização, ativo, papéis, `partner_users`).
+- Idempotência: retry com mesma correlação → mesmo id, 1 assinatura, 1 histórico; segundo trial com outra chave negado; override com mesma chave → mesmo id; mesma chave com payload divergente negada.
+- Entitlements em trial: administrador, financeiro, gestor_comercial e técnico de A = `trial_active` com as 3 features; usuário inativo = `no_context`; B sem assinatura = `no_subscription`; assinatura legada sem versão recusada; parceiro_b2b de C = features com override aplicado.
+- Isolamento: cada perfil vê apenas a própria assinatura; catálogo do parceiro C acessível só a C (34 itens) e ao Superadmin; nenhum perfil de A acessa catálogo/simulação de C; preços técnicos visíveis = 0.
+- Forja: troca de `organization_id` próprio negada; override próprio negado; troca de `partner_account_id` negada; eventos de pagamento visíveis = 0.
+- Visitante (anon): contexto, catálogo e assinaturas negados.
+- Imutabilidade: UPDATE na versão publicada e DELETE das features negados; hashes da versão/features e snapshot da assinatura idênticos após alterar o catálogo global.
+- Pagamentos: eventos/outbox/auditoria 0/0/0 antes e depois.
+
+### Não provado
+- **Assinatura ACTIVE: NÃO PROVADA.** Não existe fluxo oficial de transição trial→active; a tentativa direta na transação foi bloqueada (`uq_org_sub_history_correlation`) e a assinatura permaneceu `TRIAL`.
+
+### Comportamento a confirmar (não classificado como falha)
+- Simulação de preço do próprio parceiro (A) permitida a administrador, financeiro e gestor_comercial de A; negada ao técnico (`not_authorized`). Nenhum desses perfis abre o catálogo de A.
+
+### Comandos desta rodada
+- Vitest suíte completa: 384 arquivos PASS + 1 skipped; 5.568 testes PASS + 4 skipped.
+- Vitest focado SaaS + Comunicação: 56/56 arquivos, 799/799 testes.
+- Vitest focado segurança/RBAC/guards multiportal: 31/31 arquivos, 356/356 testes.
+- Typecheck (`tsc --noEmit -p tsconfig.app.json`): exit 0.
+- Lint focal (saas, plataforma, usePlataformaSaaS, lib/saas): exit 0. Lint global (`eslint .`): exit 1, 3.604 problemas (3.477 erros, 127 avisos) preexistentes, não tratados.
+- Build (`vite build`): exit 0 (apenas aviso de tamanho de chunk).
+- Scanner de segredos (`scripts/fiscal-secrets-scan.sh`): OK, nenhum valor secreto real.
+
+### Advisors Supabase (informados em 2026-10-07; não corrigidos — dívida preexistente e risco de produção)
+- Segurança: 17 tabelas com RLS sem policy (INFO); 2 funções SECURITY DEFINER executáveis por anon (WARN); 445 executáveis por authenticated (WARN); proteção contra senhas vazadas desativada (1 WARN).
+- Performance: 166 FKs sem índice (INFO); 36 auth RLS initplan (WARN); 1 tabela sem PK (INFO); 371 índices não usados (INFO); 127 políticas permissivas múltiplas (WARN).
+
+### Decisão
+- **NO-GO** para considerar a prova comercial positiva totalmente fechada: falta fluxo oficial trial→active.
+- **GO** apenas para isolamento, entitlements em trial, imutabilidade de versão/snapshot e ausência de pagamentos.
