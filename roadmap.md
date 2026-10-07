@@ -1,3 +1,9 @@
+## Auditoria planos/admin/usuários — 2026-10-07 19:05 UTC
+
+- [ ] Mapear criação/listagem/edição/login, allowlist, guardas e caches; baseline remoto exclusivamente read-only.
+- [ ] Matriz automatizada 4 planos × 10 papéis e 17 features usando inventário canônico; corrigir somente regressões comprovadas locais.
+- [ ] Validar testes/lint/scanners/build disponível e relatório; browser autenticado externo indisponível = NO-GO funcional. Sem migration/deploy/alteração de dados reais.
+
 ## Gestão de assinatura: plano não reativa — 2026-10-07
 
 - [x] Resumo plano/versão/situação, matriz UX por status, bloqueio da mesma versão, aviso/toast de suspensão e releitura focal limitada a 8s; RPC/timeout/idempotência preservados. Nenhum dado real/publicação.
