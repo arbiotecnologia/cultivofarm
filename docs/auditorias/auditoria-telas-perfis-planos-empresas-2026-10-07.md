@@ -29,7 +29,11 @@ Codex: `tsc --noEmit -p tsconfig.app.json` PASS; Vite build PASS **30,72s**, chu
 
 ### Verificações próprias desta rodada
 
-Em andamento; resultados serão registrados após execução local. Não reutilizar contagens anteriores/Windows como resultados novos.
+- Suíte própria SaaS/RBAC/security/navegação: **928/928 PASS, 85 arquivos**, incluindo dois testes novos de portabilidade, às 22:36:20 UTC. Primeira tentativa: 926 PASS/2 FAIL no teste novo (mocks de script externo não transformados); corrigido para executar código real transpilado com win32.join e reexecutado integralmente. Falhas iniciais não mascaradas.
+- Lint focal `useAuth.tsx`, inventário e teste: **0 erros / 3 warnings** baseline em useAuth, saída 0. Scanners segredos/integração e `git diff --check`: **PASS**. Build automático observado **OK 22:36:13 UTC**. Typecheck próprio **NOT RUN** (manual vedado pelo ambiente); PASS Windows independente, não próprio. Advisors não reexecutados.
+- SHA observado após ajustes/documentação inicial: `5ad90fd97cf61f2ab163abfd48d0f488361a5fd4`, não presumido final das edições posteriores; Git gerenciado pelo ambiente.
+- SHA-256 cópia SQL: `1aa1a9295c6471110eb12e347006fd992c21a50e3c4004b37354e0dc2060b404`; reprodução: `b20aa55b903101fef1e6c3f19add2de8242537001769b75c15d03d5dedf337e1`.
+- Arquivos: `src/hooks/useAuth.tsx`, `scripts/navigation-audit/inventory.ts`, `src/test/navigation/inventory-portability.test.ts`, `scripts/rbac-audit/a05-transactional-proof.sql`, cópia SQL em `restoration/audit-a03-a05/`, relatório, `roadmap.md` e regra em `AGENTS.md`. Pasta migrations não alterada; importação local pendente pela restrição acima.
 
 ## 1. Decisão e limites
 

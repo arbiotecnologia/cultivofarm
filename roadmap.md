@@ -5,7 +5,7 @@
 - [x] Guardar SQL exato já aplicado em `restoration/audit-a03-a05/20261007222943_audit_a03_a05_tenant_containment.sql` e reprodução não executada em `scripts/rbac-audit/a05-transactional-proof.sql`.
 - [ ] Sincronizar arquivo em `supabase/migrations/20261007222943_audit_a03_a05_tenant_containment.sql`: BLOCKED pela regra do ambiente que reserva essa pasta à ferramenta de migration; ferramenta não acionada para não reaplicar. Cópia exata preservada em restoration para importação local pelo executor.
 - [x] Ajustes locais mínimos: catch unknown em useAuth e normalização Windows em sourceFiles; sem mudar guards/rotas/permissões ou dependências.
-- [ ] Verificações próprias e fechamento documental em andamento; resultados Windows e advisors atribuídos ao Codex, não novos resultados deste executor.
+- [x] Verificações próprias: 928/928 PASS, 85 arquivos; inicial 926 PASS/2 FAIL no teste novo, corrigido/reexecutado. Lint 0 erros/3 warnings baseline; scanners/diff-check PASS; build automático OK 22:36:13 UTC. Typecheck próprio NOT RUN (manual vedado); Windows/advisors são evidência Codex.
 - [ ] Browser real por perfil/plano e cobertura completa RPC/Edge/Storage UNVERIFIED; NO-GO integral. Codex controla Chrome do proprietário: domínio oficial /auth com login solicitado; iframe Administrador/Indisponível não comprova identidade server-side.
 - [ ] Rollback só com substituto testado: não reconceder RPC nem remover isolamento automaticamente; manter fail-closed e preferir forward-fix. Clientes atuais/partner sem organização não recebem vínculo por inferência. D52 preservado.
 
