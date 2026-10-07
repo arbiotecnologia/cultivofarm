@@ -1,3 +1,8 @@
+## Gestão de assinatura: plano não reativa — 2026-10-07
+
+- [ ] Corrigir resumo, matriz UX por status, no-op mesma versão, aviso/toast de suspensão e releitura limitada pós-sucesso; preservar RPC/timeout/idempotência. Frontend apenas, nenhum dado real/publicação.
+- [ ] Validar testes Card/matriz/refresh e regressões SaaS; documentar evidência informada pelo proprietário e GO/NO-GO.
+
 ## Correção urgente do botão de assinatura — 2026-10-07
 
 - [x] Auditado hook/RPC e corrigida espera sem deadline/invalidation global aguardada: 15 s + reconciliação read-only limitada, correlação estável por conteúdo/remount, duplo clique, sem retry automático, finally e quatro caches exatos. Nenhuma operação em dados reais.
