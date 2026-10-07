@@ -70,8 +70,8 @@ Deno.test("index.ts: autorização precede begin e updateUserById; sem getClaims
   const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
   const authAt = src.indexOf("authorizeSuperadmin(");
   assertEquals(authAt > 0, true);
-  assertEquals(authAt < src.indexOf("platform_begin_org_admin_email_change"), true);
-  assertEquals(authAt < src.indexOf("updateUserById"), true);
+  assertEquals(authAt < src.indexOf("admin.rpc(\"platform_begin_org_admin_email_change\""), true);
+  assertEquals(authAt < src.indexOf("admin.auth.admin.updateUserById("), true);
   assertEquals(src.includes("getClaims"), false);
   assertEquals(/supabase-js@2["']/.test(src), false);
   assertEquals(src.includes("esm.sh"), false);
