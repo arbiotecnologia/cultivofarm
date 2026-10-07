@@ -76,7 +76,7 @@ export default function PortalParceiroLayout() {
     return ownPartner;
   }, [isStaff, ownPartner, allPartners, simulatedId]);
 
-  const parceiroBrand = usePortalBranding("parceiro", (partner as any)?.id ?? null);
+  const parceiroBrand = usePortalBranding("parceiro", partner?.id ?? null);
 
   const location = useLocation();
 

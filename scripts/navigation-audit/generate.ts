@@ -10,11 +10,33 @@ const menus = [...flat.map((item) => ({ ...item, source: "navigation", audience:
   ...[PRODUTOR_MENU_GROUPS, PARCEIRO_GESTOR_GROUPS, PARCEIRO_TECNICO_GROUPS].flatMap((groups) => groups.flatMap((g) => g.items.map((item) => ({ ...item, source: "portalMenus", audience: item.showFor ?? "producer" }))))];
 const sources = sourceFiles("src").filter((path) => !path.includes("/test/") && !/\.(test|spec)\./.test(path));
 const routes = declaredRoutes();
+const internalReasons: Record<string, string> = {
+  "/app/checkin": "contextual check-in; requires solicitation; not a top-level tab",
+  "/app/visita/novo": "creation action inside technical workspace",
+  "/app/registrar": "MobileLayout floating action and technical dashboard",
+  "/app/ordens": "technical/producer dashboard action",
+  "/app/aplicacoes": "producer workflow; review discoverability with real identity",
+  "/app/aplicacoes/lista": "producer dashboard action",
+  "/app/solicitar": "producer dashboard action",
+  "/talhoes": "Fazendas > TalhoesFazendaTab; not separate sidebar",
+  "/estoque/embalagens": "Estoque workspace and executive shortcuts",
+  "/portal-parceiro": "layout entry and index redirect",
+  "/portal-parceiro/solicitacoes": "deliberately redirected/hidden by existing portal product rules",
+  "/portal-parceiro/novo": "order action; contextual entry",
+  "/portal-parceiro/historico": "deliberately redirected by existing portal product rules",
+  "/portal-parceiro/meus-produtores": "technical dashboard action; gestor redirected",
+  "/portal-parceiro/tecnicos-produtores": "existing link-management UI hidden for partner roles",
+  "/portal-parceiro/usuarios-clientes": "existing link-management UI hidden for partner roles",
+};
 const rows = routes.map((route) => {
   const nav = menus.filter((item) => matchesRoute(route.path, item.route));
   const links = sources.filter((path) => path !== "src/App.tsx" && readFileSync(path, "utf8").includes(`"${route.path}"`));
-  return { ...route, feature: featureForPath(route.path), profiles: ACTIVE_ROLES.filter((role) => canAccess(role, route.path)), navigation: nav.map((n) => `${n.source}:${n.id}:${n.audience}`), references: links,
-    classification: route.redirect || route.index ? 7 : route.path === "*" || route.path.includes(":") || route.ancestors.includes("PlataformaGuard") || ["/auth", "/reset-password", "/app/login", "/selecionar-portal", "/acesso-pendente", "/sem-permissao", "/", "/notificacoes", "/fiscal/reconciliacao", "/comercial/auditoria-motor-b2b"].includes(route.path) ? 8 : nav.length ? 1 : 2,
+  const contextual = internalReasons[route.path] ?? (route.path.startsWith("/financeiro/relatorios/") ? "child report reached from FinanceiroRelatorios" : route.path.startsWith("/configuracoes/") && !nav.length ? "child configuration reached from Configuracoes; platform-only where guarded" : null);
+  const alias = route.redirect || route.index || route.components.includes("PortalFilaAprovacao");
+  return { ...route, feature: featureForPath(route.path), profiles: ACTIVE_ROLES.filter((role) => canAccess(role, route.path)), profileBasis: "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict", navigation: nav.map((n) => `${n.source}:${n.id}:${n.audience}`), references: links,
+    classification: alias ? 7 : route.path === "*" || route.path.includes(":") || route.ancestors.includes("PlataformaGuard") || contextual || ["/auth", "/reset-password", "/app/login", "/selecionar-portal", "/acesso-pendente", "/sem-permissao", "/", "/notificacoes", "/fiscal/reconciliacao", "/comercial/auditoria-motor-b2b"].includes(route.path) ? 8 : nav.length ? 1 : 2,
+    navigationJustification: nav.length ? "declarative navigation" : alias ? "legacy/index redirect; inspect target" : contextual ?? (route.path.includes(":") ? "contextual detail/token route; identifier required" : "system/internal route; never automatically expose"),
+    desktopMobileJustification: "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
     verification: "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED" };
 });
 const pages = sourceFiles("src/pages").map((path) => {
