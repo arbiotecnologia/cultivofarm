@@ -22246,15 +22246,26 @@ export type Database = {
         }
         Returns: Json
       }
-      platform_claim_admin_access: {
-        Args: {
-          p_actor_id: string
-          p_invite_id: string
-          p_kind: string
-          p_operation_id: string
-        }
-        Returns: Json
-      }
+      platform_claim_admin_access:
+        | {
+            Args: {
+              p_actor_id: string
+              p_invite_id: string
+              p_kind: string
+              p_operation_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_actor_id: string
+              p_confirm_ambiguous: boolean
+              p_invite_id: string
+              p_kind: string
+              p_operation_id: string
+            }
+            Returns: Json
+          }
       platform_claim_email_confirmation: {
         Args: {
           p_actor_id: string
