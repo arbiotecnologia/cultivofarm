@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const sql = readFileSync('supabase/migrations/20261007131828_9007da9a-6dad-4793-a0b3-b02e73c03d15.sql', 'utf8');
 const proof = readFileSync('supabase/tests/certificacao-b2b-fase1/01-abc-rollback.sql', 'utf8');
+const settingsSql = readFileSync('supabase/migrations/20261007132558_fcace95c-5756-4110-9cb7-be2fbb192efd.sql', 'utf8');
 
 describe('Fase 1 B2B — crédito usa escopo canônico', () => {
   it.each(['rpc_b2b_partner_credit', 'rpc_b2b_credit_exposure'])('%s autoriza antes do cálculo', (name) => {
@@ -20,6 +21,14 @@ describe('Fase 1 B2B — crédito usa escopo canônico', () => {
     expect(sql).toContain('p_new_order_amount < 0');
     expect(sql).toContain("('NaN','Infinity','-Infinity')");
     expect(sql).toContain('po.id=p_exclude_order_id AND po.partner_id=p_partner_id');
+  });
+  it('restringe acesso direto a crédito pelo tenant ativo, inclusive escrita', () => {
+    expect(settingsSql).toContain('AS RESTRICTIVE FOR ALL TO authenticated');
+    expect(settingsSql).toContain('WITH CHECK');
+    expect(settingsSql.match(/pa.id=partner_financial_settings.partner_id/g)).toHaveLength(2);
+    expect(settingsSql).toContain("o.status='ativa'");
+    expect(settingsSql).toContain("NOT public.has_role(auth.uid(),'parceiro_b2b_tecnico'");
+    expect(settingsSql).toContain('public.is_platform_superadmin(auth.uid())');
   });
   it('prova A/B/C desfaz tudo e não consome sequências nem transmite documentos', () => {
     expect(proof).toContain("RAISE EXCEPTION 'CERT_B2B_F1_ROLLBACK:%'");

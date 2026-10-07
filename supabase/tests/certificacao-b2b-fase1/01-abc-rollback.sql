@@ -7,7 +7,7 @@ DECLARE
  ua uuid := 'd856140b-26c9-4d6a-a5aa-8bea47e78fff';
  ub uuid := 'ef031451-3fa1-462d-a792-f1e72f335257';
  uc uuid := 'a7d45277-6dec-413d-bf6b-86620c1ef39f';
- oa uuid; ob uuid; pa uuid; pb uuid; r jsonb;
+  oa uuid; ob uuid; pa uuid; pb uuid; r jsonb; n integer;
  evidence jsonb := '[]'; stage text := 'setup'; denied boolean;
 BEGIN
  BEGIN
@@ -34,6 +34,13 @@ BEGIN
   SET LOCAL ROLE authenticated;
   r:=public.rpc_b2b_partner_credit(pa);
   evidence:=evidence||jsonb_build_array(jsonb_build_object('case',stage,'pass',(r->>'credit_limit')::numeric=101));
+  SELECT count(*) INTO n FROM public.partner_financial_settings WHERE partner_id=pa;
+  evidence:=evidence||jsonb_build_array(jsonb_build_object('case','A_direct_own','pass',n=1));
+  SELECT count(*) INTO n FROM public.partner_financial_settings WHERE partner_id=pb;
+  evidence:=evidence||jsonb_build_array(jsonb_build_object('case','A_direct_cross','pass',n=0));
+  UPDATE public.partner_financial_settings SET credit_limit=999 WHERE partner_id=pb;
+  GET DIAGNOSTICS n=ROW_COUNT;
+  evidence:=evidence||jsonb_build_array(jsonb_build_object('case','A_cross_update','pass',n=0));
   denied:=false;
   BEGIN PERFORM public.rpc_b2b_partner_credit(pb); EXCEPTION WHEN insufficient_privilege THEN denied:=true; END;
   evidence:=evidence||jsonb_build_array(jsonb_build_object('case','A_cross_partner','pass',denied));
