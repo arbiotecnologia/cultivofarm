@@ -119,6 +119,7 @@
 ## Certificação ponta a ponta Parceiro B2B — 2026-10-07
 - [ ] Fase 1 — auditar estado vivo e implementar roteiro A/B/C transacional canônico, isolamento, preços, idempotência, crédito, fluxo e resíduos; fiscal externo sempre desligado.
 - Fase 1 autorizada expressamente às 13:13 UTC: executar correções mínimas comprovadas e migrations indispensáveis somente no canônico, rollback integral, relatório PASS/FAIL/BLOCKED e commit quando disponível; não publicar/deploy nem iniciar Fase 2 enquanto o gate não estiver integralmente satisfeito.
+- Correção focal de crédito aplicada no canônico: `20261007131828_9007da9a-6dad-4793-a0b3-b02e73c03d15.sql`; prova prévia confirmou acesso cruzado. Roteiro A/B/C de crédito criado; certificação completa permanece pendente, sem avançar à Fase 2.
 - [ ] Fase 2 — confiabilidade financeira: retry/outbox, reconciliação, alerta e exatamente um título por pedido elegível.
 - [ ] Fase 3 — rascunho NF-e idempotente vinculado ao fluxo canônico e gate seguro de expedição, sem emissão real.
 - [ ] Fase 4 — documentação de transporte, CT-e recebido e decisão MDF-e fail-closed; emissão própria CT-e desligada.

@@ -24,3 +24,4 @@
 - Organization profile edits (legal name, trade name, e-mail) go only through `platform_update_organization_profile` with expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ, status, plan and admins keep their own flows — avoids parallel write paths.
 - Provisioned org-admin changes go only through `platform_*_org_admin*` RPCs (principal/edit) and the `platform-org-admin-email-change` Edge (Auth first, then service-role sync + session revoke), all audited in immutable `platform_org_admin_audit` — avoids parallel identity writes.
 - Subscription transitions keep a public INVOKER wrapper over a private, server-authorized DEFINER core; version changes preserve existing trial deadlines — keeps ticket issuance private and prevents implicit trial changes.
+- B2B credit read RPCs authorize through the canonical partner-scope guard before calling the service-only credit calculator — prevents role-only cross-tenant credit disclosure.
