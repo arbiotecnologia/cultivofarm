@@ -39,7 +39,7 @@ describe("D51.4 Gate 1 — isolamento de usuários", () => {
   });
 
   it("troca de identidade limpa todo o cache antes de carregar o próximo tenant", () => {
-    expect(auth).toMatch(/if \(identityChanged\) \{[\s\S]*?queryClient\.clear\(\);/);
+    expect(auth).toMatch(/if \(identityChanged \|\| authorizationChanged \|\| !nextUserId\) \{[\s\S]*?queryClient\.clear\(\);/);
   });
 
   it("valida redefinição de senha no contexto autenticado do ator", () => {

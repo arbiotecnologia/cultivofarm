@@ -1,6 +1,26 @@
 # Auditoria atual de telas, perfis, planos e empresas — 2026-10-07
 
-## Atualização A03/A05 — 22:33 UTC (estado atual)
+## Correção focal de sessão — 23:00 UTC (estado atual)
+
+**NO-GO integral permanece.** Somente código, testes e documentação locais; nenhuma operação SQL, Auth, migration, Storage, fixture, exclusão, publicação ou deploy remoto neste executor; sem subagentes. Alterações anteriores preservadas.
+
+### Incidente e contenção parcial — evidência independente Codex
+
+O proprietário reportou `admin@arbio.com` removido; Codex confirmou Auth e profile ainda existentes, perfil ativo, administrador do tenant **CultivoFarm**, sem convite plataforma e zero sessões. Com autorização de desativação e posterior remoção, Codex aplicou exclusivamente `profile.ativo=false` e remoção do papel administrador; verificou `access_ready=false`, `has_role administrador=false`, zero papéis e zero sessões. **Auth NÃO foi excluído.** Referências financeiras/entregas e um objeto Storage impedem remoção segura; dashboard Supabase aberto na conta Refil sem acesso ao projeto. Não contornar vínculos/imutabilidade. É o único administrador operacional CultivoFarm; não atingiu Superadmin ou AR Bio. Estas informações foram recebidas, não reconsultadas por este executor.
+
+Migration histórica `20260625145234_2039da42-e7cd-4e34-aebe-1ff6dbbf88c7.sql` contém senha literal reportada: não reproduzida, lida ou reaplicada nesta rodada. Scanner focal não certifica saneamento de todo o histórico.
+
+### Correção e limites
+
+`useAuth.tsx`: troca A→null também conta como mudança de identidade; TOKEN_REFRESHED/USER_UPDATED limpam contexto, cache e papéis mesmo no mesmo UID. SIGNED_IN/INITIAL_SESSION repetidos continuam deduplicados. Releitura usa o `scheduleLoad` existente, fora da pilha do callback síncrono; geração/StrictMode preservados, sem novo fluxo/permissão.
+
+Preview **Superadmin autenticado**, conforme escopo reportado Codex, não equivale a autenticação no publicado, que permanece em `/auth`; nenhuma prova browser própria nesta rodada. Revalidação em renovação/atualização **não garante revogação imediata de JWT ou proteção de todas APIs**; autoridade final permanece server-side. Contenção parcial não é exclusão completa nem certificação integral por perfil/plano/RPC/Edge/Storage.
+
+### Verificações próprias — em fechamento
+
+Reprodução local com quatro casos novos: **17 PASS / 4 FAIL** antes da correção (logout/cache, renovação, atualização, papel revogado). Evidência Codex de 17 PASS/2 FAIL→19 PASS é independente. Primeira regressão própria após correção: **938 PASS / 2 FAIL**, ambas expectativas textuais antigas em D51.4/D51.5; ajustadas para exigir a nova condição ampliada, sem reduzir proteção. Lint focal: 17 erros `no-explicit-any` preexistentes no mock authProviderCallback e 3 warnings baseline em useAuth; não mascarados. Scanners segredos/integração PASS. Resultado final da reexecução será registrado abaixo.
+
+## Atualização A03/A05 — 22:33 UTC (histórico)
 
 **A05 PASS focal SQL/RLS; A03 contenção ACL PASS; NO-GO integral.** Baseline local confirmado `903fb41e321d12cebea991864a6c3ecb09864015`. A correção foi aplicada pelo **executor independente Codex**, no Supabase canônico `swzpzcwiasxmjutrmvkm`, migration `audit_a03_a05_tenant_containment`, ledger `20261007222943`. Este executor não executou SQL nem reaplicou migration; não criou dados, Auth, tenants/assinaturas, cobrança, fiscal ou e-mails, não publicou/implantou, não usou subagentes nem iniciou outro módulo.
 

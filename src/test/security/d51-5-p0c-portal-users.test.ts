@@ -42,7 +42,7 @@ describe("D51.5 P0-C — isolamento de usuários do portal", () => {
     expect(ui).toContain("const { user } = useAuth()");
     expect(ui).toContain("[clienteId, user?.id]");
     expect(ui).toContain("if (!current) return");
-    expect(auth).toMatch(/if \(identityChanged\) \{[\s\S]*?queryClient\.clear\(\);/);
+    expect(auth).toMatch(/if \(identityChanged \|\| authorizationChanged \|\| !nextUserId\) \{[\s\S]*?queryClient\.clear\(\);/);
     expect(auth).toMatch(/const signOut = async \(\) => \{[\s\S]*?queryClient\.clear\(\);/);
     expect(portalContext).toContain('localStorage.removeItem(PORTAL_CLIENT_STORAGE_KEY)');
   });
