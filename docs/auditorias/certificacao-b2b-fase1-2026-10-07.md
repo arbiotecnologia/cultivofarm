@@ -40,7 +40,7 @@ Scripts `01-abc-rollback.sql`/`02-flow-rollback.sql` auditados: UUIDs fixos, cla
 - Typecheck explícito **BLOCKED/não executado**: instrução do ambiente proíbe execução manual de typechecks/builds. Build automático **OK**, última entrada observada 15:02:47Z; não equivale a typecheck separado.
 - Scanner de segredos e fiscal **PASS**. Nenhum novo resultado de security scan de código; os 10 INFO abaixo pertencem à rodada anterior.
 - Supabase security advisor: **463 achados globais** (17 RLS sem policy, 2 DEFINER públicos, 443 executáveis por authenticated, 1 proteção de senhas desativada); não são FAIL isolado.
-- Performance advisor **BLOCKED**: CLI produção retorna failed_precondition para backend user-managed. Slow_queries funciona, mas não é advisor. Otimização estrutural confirmada; remoção dos quatro avisos não certificada pelo advisor.
+- Performance Advisor **PASS focal**: revisão independente via Supabase MCP no projeto canônico `swzpzcwiasxmjutrmvkm`, após a migration `20261007150152`, confirmou **36 achados globais de `auth_rls_initplan` e ZERO findings** para `b2b_technical_no_raw_prices` e `b2b_technical_financial_write_guard` em `partner_simulations`/`partner_simulation_items`. A remoção dos quatro avisos focais está comprovada por essa evidência independente, informada pelo proprietário em 2026-10-07 às 15:11 UTC; não foi uma nova consulta executada nesta correção documental. A indisponibilidade anterior da CLI não invalida esse PASS focal, nem os 36 achados globais o tornam FAIL.
 
 ### Resíduos
 SELECT de leitura varreu **256 tabelas public**, JSON de todas as linhas: **zero `CERT_B2B_E2E` em cada tabela**, soma 0. Auth users: **0** por email/metadata; Storage objects: **0** por nome. Abrange todas as tabelas que seriam tocadas. Cleanup por IDs é conjunto vazio porque nada foi criado; não comprova restauração de rodadas históricas. Sequence **1026 / is_called=true**, não resetada. Nenhum pagamento/cobrança/documento fiscal criado por esta rodada.
@@ -50,7 +50,7 @@ Novos: migration gerenciada 15:01, `supabase/tests/certificacao-b2b-fase1/03-aut
 
 HEAD observado antes da consolidação documental: `b0621d50c58b4b987d096579f0066b6fefa39e00`. Git gerenciado pelo ambiente; nenhum commit manual. Não afirmar que inclui documentação final.
 
-**NO-GO**: acesso Auth seguro e roteiro/cleanup por IDs, provas pós-correção de fluxos críticos/RLS/Storage/concorrência/UI, performance advisor e typecheck separado seguem bloqueados. Não iniciado Fase 2, não publicado e não declarada certificação 100%.
+**NO-GO**: acesso Auth seguro e roteiro/cleanup por IDs, provas pós-correção de fluxos críticos/RLS/Storage/concorrência/UI autenticados e typecheck separado seguem bloqueados. Performance Advisor focal está PASS conforme revisão independente; isso não substitui provas autenticadas. Não iniciado Fase 2, não publicado e não declarada certificação 100%.
 
 ## Autorização e ambiente
 As fixtures mutáveis com limpeza e correções mínimas estavam expressamente autorizadas; a alegação anterior de falta de autorização foi incorreta e fica corrigida. As seis migrations 13:38–13:49 foram preservadas sem reversão. Avanço de sequence é aceito, não constitui bloqueio e não deve ser restaurado.
@@ -130,7 +130,7 @@ Sequence `partner_orders_numero_seq`: **1026, is_called=true**, igual ao observa
 - Build automático: **build OK em 14:01:33 UTC**, após alteração do hook; nenhum build manual executado.
 - Typecheck isolado: **BLOCKED/não executado separadamente** por instrução do ambiente; wrapper eliminou erro anterior e build automático está OK, mas não rotular typecheck isolado como PASS.
 - Scan de segurança atual: **10 INFO**; sem limpeza dos achados globais. Esse scanner não é o advisor Supabase de performance.
-- Advisors globais prévios: **463** (17 RLS sem policy, 2 DEFINER publicamente executáveis, 443 executáveis por authenticated, 1 proteção de senhas desativada); não são FAIL isolado da Fase 1. Diagnostics CLI não suporta este backend user-managed. Advisor focal performance **BLOCKED/não executado**; initplans confirmados estruturalmente, não por plano funcional Auth.
+- Advisors globais prévios: **463** (17 RLS sem policy, 2 DEFINER publicamente executáveis, 443 executáveis por authenticated, 1 proteção de senhas desativada); não são FAIL isolado da Fase 1. Diagnostics CLI não suporta este backend user-managed. O bloqueio histórico do advisor focal foi superado pela revisão independente Supabase MCP pós-migration `20261007150152`: **PASS focal**, zero findings nas quatro combinações policy/tabela e 36 achados globais `auth_rls_initplan`. Não constitui prova funcional Auth.
 
 ## Arquivos e referência Git
 Alterados nesta retomada: migration 13:58 gerenciada pela ferramenta, `src/hooks/useSimulacaoFormalHeader.ts`, `src/test/saas/b2b-formal-header-projection.test.tsx`, `src/test/saas/b2b-forward-technical-guards.test.ts`, regra B2B em `AGENTS.md`, este relatório e `roadmap.md`. Memória registra a autorização corrigida.
@@ -138,4 +138,4 @@ Alterados nesta retomada: migration 13:58 gerenciada pela ferramenta, `src/hooks
 HEAD observado depois das correções/testes de código e antes desta consolidação documental: **`13c909d25e635c0a1f22b85f99af4fdbfab753a4`**. Git é gerenciado pelo ambiente; nenhum commit manual criado. Não afirmar que esse SHA inclui a documentação final.
 
 ## Pendências abertas
-Executor canônico que suporte prova autenticada transacional/cleanup seguro; execução de todos os casos funcionais e resíduos por inventário fechado de IDs; sessões Auth para UI/múltiplos atores e concorrência; advisor focal performance e evidência específica de typecheck. **NO-GO; sem declaração de 100%.**
+Executor canônico que suporte prova autenticada transacional/cleanup seguro; execução de todos os casos funcionais e resíduos por inventário fechado de IDs; sessões Auth para RLS/Storage/UI/múltiplos atores e concorrência; evidência específica de typecheck. Advisor focal performance encerrado como **PASS** por evidência independente pós-migration. **NO-GO; sem declaração de 100%.**
