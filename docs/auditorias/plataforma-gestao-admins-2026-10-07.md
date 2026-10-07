@@ -70,3 +70,8 @@ GO técnico para uso controlado pelo Superadmin. Homologação real da troca de 
 - **Migration pequena e idempotente** (só a função `platform_private.set_org_principal_admin_core`): motivo vazio/nulo vira `"Alteração de responsável principal"`; ≥ 2 caracteres mantido; auditoria inalterada (NOT NULL/CHECK). Rollback: remover a linha `IF v_motivo = '' ...`. RLS, grants e o wrapper INVOKER inalterados.
 - **Prova SQL com rollback** (`03-principal-motivo-opcional-rollback.sql`, banco canônico): não Superadmin negado; 1 caractere negado; tenant cruzado negado; sem motivo aceito, com descrição padrão e auditoria contendo ator, empresa, responsável anterior e novo; retry da mesma chave idempotente; mesma chave com outro motivo negada; responsável esperado desatualizado (concorrência) negado; 2+ aceito e normalizado; edição sem motivo negada. A prova 02 foi ajustada para não esperar mais a recusa do responsável principal sem motivo.
 - **Testes:** Vitest SaaS+Comunicação (inclui UI sem motivo / 1 caractere / 2+ / duplo clique); 790/790; typecheck, lint focal, build e scanner de segredos OK. Pendente: verificação visual autenticada.
+
+## Revalidação consolidada (a partir de d371122)
+- O complemento do responsável principal já estava aplicado no banco: `set_org_principal_admin_core` grava a descrição padrão e `platform_begin_org_admin_email_change` grava a dele. Não foi criada nenhuma migration nova.
+- Provas 02 (e-mail) e 03 (responsável), executadas de novo no banco canônico com rollback, deram resultado idêntico ao anterior. A 03 agora também confere o timestamp da auditoria.
+- Deno 10/10, Vitest SaaS+Comunicação 790/790, typecheck, lint focal, build e scanner de segredos OK.
