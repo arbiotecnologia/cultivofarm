@@ -264,6 +264,7 @@ export interface OrganizacaoSaaS {
   cnpj: string | null;
   email_corporativo: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 export function useOrganizacoesSaaS() {
@@ -272,7 +273,7 @@ export function useOrganizacoesSaaS() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organizations")
-        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at")
+        .select("id,nome,status,nome_fantasia,cnpj,email_corporativo,created_at,updated_at")
         .order("nome")
         .limit(LIMITE);
       if (error) throw new Error(error.message);
@@ -712,5 +713,124 @@ export function useConvidarAdminEmpresa() {
       };
     },
     onSettled: invalidar,
+  });
+}
+
+// ===== Empresa: detalhe, auditoria e edição cadastral segura =====
+
+export interface EmpresaDetalheSaaS {
+  id: string;
+  nome: string | null;
+  razao_social: string | null;
+  nome_fantasia: string | null;
+  cnpj: string | null;
+  email_corporativo: string | null;
+  status: string;
+  fuso_horario: string | null;
+  responsavel_user_id: string | null;
+  responsavel_definido_em: string | null;
+  onboarding_concluido_em: string | null;
+  ativada_em: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export function useEmpresaDetalhe(organizationId: string | null) {
+  return useQuery<EmpresaDetalheSaaS | null>({
+    queryKey: ["plataforma", "organization-detail", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("organizations")
+        .select("id,nome,razao_social,nome_fantasia,cnpj,email_corporativo,status,fuso_horario,responsavel_user_id,responsavel_definido_em,onboarding_concluido_em,ativada_em,created_at,updated_at")
+        .eq("id", organizationId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data ?? null) as EmpresaDetalheSaaS | null;
+    },
+    ...opcoes,
+  });
+}
+
+export interface EventoAuditoriaEmpresa {
+  id: string;
+  tipo: "situacao" | "cadastro";
+  created_at: string;
+  motivo: string | null;
+  resumo: string;
+}
+
+const CAMPO_CADASTRAL_LABEL: Record<string, string> = {
+  razao_social: "Razão social",
+  nome_fantasia: "Nome fantasia",
+  email_corporativo: "E-mail",
+};
+
+export function resumoAlteracaoCadastral(oldValues: Record<string, unknown>, newValues: Record<string, unknown>): string {
+  const campos = Object.keys(CAMPO_CADASTRAL_LABEL).filter((k) => (oldValues?.[k] ?? null) !== (newValues?.[k] ?? null));
+  return campos.length ? `Cadastro alterado: ${campos.map((k) => CAMPO_CADASTRAL_LABEL[k]).join(", ")}` : "Cadastro revisado";
+}
+
+export function useAuditoriaEmpresa(organizationId: string | null) {
+  return useQuery<EventoAuditoriaEmpresa[]>({
+    queryKey: ["plataforma", "organization-audit", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async () => {
+      const [status, perfil] = await Promise.all([
+        db.from("organization_status_audit").select("id,status_anterior,status_novo,motivo,created_at")
+          .eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(50),
+        db.from("organization_profile_audit").select("id,reason,old_values,new_values,created_at")
+          .eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(50),
+      ]);
+      if (status.error) throw new Error(status.error.message);
+      if (perfil.error) throw new Error(perfil.error.message);
+      const eventos: EventoAuditoriaEmpresa[] = [
+        ...((status.data ?? []) as Array<{ id: string; status_anterior: string | null; status_novo: string; motivo: string | null; created_at: string }>).map((e) => ({
+          id: e.id, tipo: "situacao" as const, created_at: e.created_at, motivo: e.motivo,
+          resumo: `Situação: ${e.status_anterior ?? "—"} → ${e.status_novo}`,
+        })),
+        ...((perfil.data ?? []) as Array<{ id: string; reason: string; old_values: Record<string, unknown>; new_values: Record<string, unknown>; created_at: string }>).map((e) => ({
+          id: e.id, tipo: "cadastro" as const, created_at: e.created_at, motivo: e.reason,
+          resumo: resumoAlteracaoCadastral(e.old_values, e.new_values),
+        })),
+      ];
+      return eventos.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    },
+    ...opcoes,
+  });
+}
+
+export interface EdicaoEmpresaInput {
+  organizationId: string;
+  razaoSocial: string;
+  nomeFantasia: string;
+  email: string;
+  motivo: string;
+  expectedUpdatedAt: string;
+}
+
+/** Chave idempotente estável por conteúdo: retry/duplo clique reutiliza a mesma chave. */
+export function useEditarEmpresa() {
+  const invalidar = useInvalidarPlataforma();
+  const retryRef = useRef<{ signature: string; key: string } | null>(null);
+  return useMutation({
+    retry: false,
+    mutationFn: async (v: EdicaoEmpresaInput) => {
+      const signature = JSON.stringify([v.organizationId, v.razaoSocial.trim(), v.nomeFantasia.trim(), v.email.trim().toLowerCase(), v.motivo.trim(), v.expectedUpdatedAt]);
+      if (retryRef.current?.signature !== signature) retryRef.current = { signature, key: crypto.randomUUID() };
+      const { data, error } = await db.rpc("platform_update_organization_profile", {
+        _org: v.organizationId,
+        _razao_social: v.razaoSocial,
+        _nome_fantasia: v.nomeFantasia,
+        _email: v.email,
+        _motivo: v.motivo,
+        _expected_updated_at: v.expectedUpdatedAt,
+        _idempotency_key: retryRef.current.key,
+      });
+      if (error) throw new ErroRpcPlataforma(error);
+      retryRef.current = null;
+      return data as { organization_id: string; updated_at: string; idempotent: boolean };
+    },
+    onSuccess: invalidar,
   });
 }
