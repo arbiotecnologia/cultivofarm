@@ -6,8 +6,7 @@
 // - A intenção é persistida antes do Auth e retomada com lease/fencing.
 // - O papel `superadmin` NUNCA é concedido aqui; o usuário criado recebe
 //   exclusivamente `administrador` da empresa indicada.
-// - Senha temporária ou link manual só voltam ao Superadmin na resposta
-//   solicitada; o link manual usa no-store e nunca é persistido ou logado.
+// - Senha temporária volta uma vez na resposta privada; links nunca voltam ao operador.
 import { createClient } from "npm:@supabase/supabase-js@2.110.8";
 import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
@@ -67,6 +66,7 @@ Deno.serve(async (req) => {
   }
 
   const respond = (body: unknown, status = 200, noStore = false) => json(body, status, requestOrigin, noStore);
+  if (req.method !== "POST") return respond({ error: "Método não permitido." }, 405, true);
   const correlationId = crypto.randomUUID();
 
   try {
@@ -166,7 +166,6 @@ Deno.serve(async (req) => {
         p_modo_acesso: modo,
         p_responsavel_principal: responsavelPrincipal,
         p_confirm_ambiguous_email_retry: confirmAmbiguousEmailRetry,
-        p_delivery_mode: deliveryMode,
       },
     );
     if (claimError || !claimed) {
