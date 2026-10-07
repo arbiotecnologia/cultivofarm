@@ -147,3 +147,31 @@ Sem fixtures ou mudanças em dados empresariais nesta finalização; não foi ex
 **NO-GO funcional.** Implementação e verificações disponíveis executadas, homologação pendente. Confirmação de novo e-mail não possui revogação equivalente de refresh sessions demonstrada nesta rodada; a remoção histórica SQL não existe mais e não foi restaurada. Não presumir que refresh tokens expirem com o access token. A semântica de revogação na alteração de senha Admin foi revisada em GoTrue, mas ainda precisa de prova real.
 
 Sem SQL em `auth.users/auth.sessions`, fixtures, alteração de dados empresariais, cobrança, comercial, fiscal ou B2B; zero artefatos de teste criados em public/Auth/Storage por execução, sem varredura global de resíduos históricos. Sem publicação/deploy frontend. Edges seguem mecanismo automático do ambiente; execução remota autenticada não comprovada. Cancelamento Auth indisponível, sem simulação; apresentação provisória existente preservada sem refatoração adicional.
+
+## Revisão independente focal — solicitação 16:20 UTC
+
+### Forward-fixes mínimos
+- `AdminAcessoDialog`: sem troca de e-mail pendente, todos os estados (inclusive `invited`) mostram **Enviar link para definir/redefinir senha** e explicam definição/redefinição pelo titular. A operação continua `password_link` (recovery); removidas as referências a reenvio/novo convite desse diálogo. Confirmação pendente continua usando a Edge de e-mail. Reenvio de convite na tabela foi preservado e testado.
+- `AdminGestaoAcoes`: o botão “Cancelar solicitação” já estava ausente; mantido assim. Texto ampliado para aguardar expiração ou verificar confirmação/reconciliar. Removido `cancel` da união de ações interna dessa tela; backend `cancel_not_supported` permanece intocado, fail-closed. O botão “Cancelar” que apenas fecha o diálogo continua disponível.
+- `platform-complete-first-access`: SDK **já estava fixado em 2.110.8**, preservado sem mudança de dependências. Import CORS flutuante substituído pelo helper compartilhado `corsHeadersFor/handlePreflight/isTrustedOrigin`. OPTIONS segue helper canônico; POST de origem não confiável recebe 403 antes de Auth/config/estado; POST sem Origin continua chegando à autenticação. Respostas JSON usam headers por requisição, incluindo erros, mantendo `no-store, private` e evitando mistura entre origens.
+- Nenhuma mudança de banco: **sem migration**, sem reversão das anteriores, sem SQL/RPC remota, sem fixtures. SMTP, configuração Auth, planos, B2B, fiscal e pagamentos não alterados. Sem publicação/deploy frontend; alterações Edge seguem o mecanismo automático do ambiente, sem prova de execução remota autenticada.
+
+### Evidências desta rodada
+| Verificação | Resultado | Evidência/limite |
+|---|---|---|
+| Deno check do finalizador | PASS | SDK 2.110.8 e tipos reais |
+| Deno focal | PASS | 18/18: autorização 6, policy e-mail 4, provisória 2, CORS 6 |
+| CORS no handler real local | PASS unitário | Preflight confiável 204/headers; origem não confiável 403 em OPTIONS/POST; POST sem Origin 401 Auth; erros 401/405 com CORS/no-store; isolamento concorrente de headers. Stub apenas de Deno.serve, sem JWT fictício ou chamada de banco |
+| UI recovery sem convite | PASS unitário | 4 novos testes: invited/active/temporary_password e confirmação de e-mail pendente; payloads das Edges verificados |
+| Cancelamento indisponível e convite da tabela | PASS unitário | Testes existentes preservados; assert de espera/expiração/reconciliação acrescido |
+| Suíte pertinente SaaS + Comunicação | PASS | 63 arquivos, 833/833 testes; avisos históricos React Router, sem falhas |
+| Lint focal | PASS | 7 arquivos alterados de runtime/testes; mock Deno corrigido para HttpServer<NetAddr> e revalidado |
+| Scanners focais | PASS | Segredos reais e integração fiscal: nenhum finding nos caminhos da revisão |
+| Build automático | PASS | Último registro observado `/tmp/observability/build-errors.log`: 2026-10-07T16:23:44Z, build OK |
+| Advisor segurança | PASS comparativo focal | 461 findings, distribuição igual à anterior: 17 INFO, 2 WARN anon DEFINER, 441 WARN authenticated DEFINER, 1 proteção senha. Sem alteração de banco nem limpeza global; contagens não certificam Auth/CORS ou identidade individual dos findings |
+| Typecheck frontend separado / suíte global | NÃO EXECUTADOS nesta rodada | Execução manual de typecheck/build proibida pelo ambiente; escopo da suíte foi pertinente, não reexecução dos 5.597 testes globais |
+| Auth/SMTP/sessões/UI autenticada reais | BLOCKED | Nenhuma nova evidência funcional real; limites anteriores permanecem |
+
+SHA observado antes deste complemento documental: `da2c3d33e4105ec839eb096c5c886a2641c83143`; Git gerenciado pelo ambiente, sem commit manual. Arquivos focais: dois componentes, finalizador, novo `cors_test.ts`, novo `admin-acesso-dialog.ui.test.tsx`, testes `first-access`/`plataforma-admins-gestao.ui`, relatório e roadmap. `AGENTS.md` e guards privados não alterados.
+
+**Decisão: PASS dos três contratos focais nas evidências locais disponíveis; NO-GO funcional geral preservado**, sem Auth real, sem afirmar homologação de envio, confirmação, revogação, single-use, RLS, concorrência de negócio ou UI autenticada. A concorrência testada nesta revisão é exclusivamente isolamento de headers CORS, não Auth ou banco.

@@ -87,7 +87,7 @@ export function AdminGestaoAcoes({
     },
   ));
 
-  const salvarEmail = (action: "request" | "resend" | "reconcile" | "cancel" = "request") => executar((done) => alterarEmail.mutate(
+  const salvarEmail = (action: "request" | "resend" | "reconcile" = "request") => executar((done) => alterarEmail.mutate(
     { inviteId: convite.id, newEmail: novoEmail, reason: motivo.trim(), idempotencyKey: mudancaPendente?.idempotency_key, action, confirmAmbiguousRetry: action === "resend" && reenvioAmbiguo && confirmado },
     {
       onSuccess: (r) => {
@@ -162,7 +162,7 @@ export function AdminGestaoAcoes({
           <div className="space-y-3">
             <p className="text-sm">E-mail atual: <span className="font-mono">{convite.email}</span></p>
             {mudancaPendente && (
-              <div className="space-y-1 text-sm text-muted-foreground"><p>Aguardando confirmação do titular para {mudancaPendente.new_email}.</p><p>Último envio: {mudancaPendente.confirmation_sent_at ? new Date(mudancaPendente.confirmation_sent_at).toLocaleString("pt-BR") : "—"}</p><p>Próximo reenvio: {mudancaPendente.confirmation_next_attempt_at ? new Date(mudancaPendente.confirmation_next_attempt_at).toLocaleString("pt-BR") : "—"}</p><p>Links já emitidos não podem ser cancelados com segurança.</p>{reenvioAmbiguo && <p>A entrega anterior não foi confirmada. Verifique a caixa de entrada; reenviar pode duplicar a mensagem.</p>}</div>
+               <div className="space-y-1 text-sm text-muted-foreground"><p>Aguardando confirmação do titular para {mudancaPendente.new_email}.</p><p>Último envio: {mudancaPendente.confirmation_sent_at ? new Date(mudancaPendente.confirmation_sent_at).toLocaleString("pt-BR") : "—"}</p><p>Próximo reenvio: {mudancaPendente.confirmation_next_attempt_at ? new Date(mudancaPendente.confirmation_next_attempt_at).toLocaleString("pt-BR") : "—"}</p><p>Links já emitidos não podem ser cancelados com segurança. Aguarde a expiração ou verifique a confirmação para reconciliar a solicitação.</p>{reenvioAmbiguo && <p>A entrega anterior não foi confirmada. Verifique a caixa de entrada; reenviar pode duplicar a mensagem.</p>}</div>
             )}
             <div className="space-y-1"><Label htmlFor="ga-email">Novo e-mail</Label>
               <Input id="ga-email" type="email" value={novoEmail} disabled={!!mudancaPendente} onChange={(e) => setNovoEmail(e.target.value)} /></div>

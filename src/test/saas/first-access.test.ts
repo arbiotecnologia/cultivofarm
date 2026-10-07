@@ -23,6 +23,15 @@ describe("primeiro acesso — política de senha", () => {
 });
 
 describe("primeiro acesso — fluxo server-side", () => {
+  it("fixa SDK canônico e nega origem não confiável antes da autenticação", () => {
+    expect(edge).toContain('npm:@supabase/supabase-js@2.110.8"');
+    expect(edge).toContain("corsHeadersFor, handlePreflight, isTrustedOrigin");
+    expect(edge).not.toContain("@2/cors");
+    expect(edge).toContain('if (req.method === "OPTIONS") return handlePreflight(req)');
+    expect(edge).toContain("origin && !isTrustedOrigin(origin)");
+    expect(edge.indexOf('code: "origin_forbidden"')).toBeLessThan(edge.indexOf('req.headers.get("Authorization")'));
+    expect(edge).toContain("...corsHeadersFor(origin)");
+  });
   it("não usa mais MD5, comparação de hash nem GUC na conclusão", () => {
     expect(edge).not.toMatch(/md5|encrypted_password|set_config/i);
   });
