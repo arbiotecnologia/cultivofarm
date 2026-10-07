@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "run_id": "AUDIT-RBAC-20261007-20261007T214515Z",
+  "canonical_project_ref": "swzpzcwiasxmjutrmvkm",
+  "binding_evidence": "lovable supabase info: production, managed_by_lovable=false, exact canonical ref and URL",
+  "authorized_at": "2026-10-07T21:44:00Z",
+  "status": "BLOCKED_BEFORE_FIRST_WRITE",
+  "blockers": [
+    "Official lovable auth-session --self failed_precondition: external user-managed Supabase cannot mint a managed preview session",
+    "No Auth Admin credential or secure credential handoff available in this executor",
+    "Subscription/history no-delete triggers and RESTRICT foreign keys prevent promised physical cleanup of persistent versioned tenants",
+    "Remote external delivery OFF settings unverified; no fixture write permitted"
+  ],
+  "fixture_label": "TEMPORARY_AUDIT",
+  "created": [],
+  "baseline": {
+    "status": "READ_ONLY_CAPTURED",
+    "hash_algorithm": "md5 of concatenated md5(to_jsonb(row)::text), ordered by id",
+    "tables": {
+      "organizations": {"count": 5, "hash": "f2ba615d8be4c6b3f312eb45519adb6d"},
+      "profiles": {"count": 8, "hash": "dafe6ce83eed724b8d8bae6b125e39d5"},
+      "user_roles": {"count": 8, "hash": "35e143db9e4ac88751b816e5bc6060be"},
+      "organization_subscriptions": {"count": 5, "hash": "e3c35a1138f5681ac5cabbf419b3121d"},
+      "organization_subscription_history": {"count": 20, "hash": "d92111c4f729fa546127485e39c1ad83"},
+      "partner_users": {"count": 1, "hash": "08f91e36436978140318e1d6f7be33b8"},
+      "registros_consultor": {"count": 0, "hash": "d41d8cd98f00b204e9800998ecf8427e"}
+    }
+  },
+  "planned_tenants": [
+    {"name": "AUDIT-RBAC-20261007-20261007T214515Z AUDIT Base", "plan": "base", "expected_features": 3},
+    {"name": "AUDIT-RBAC-20261007-20261007T214515Z AUDIT Essencial", "plan": "essencial", "expected_features": 8},
+    {"name": "AUDIT-RBAC-20261007-20261007T214515Z AUDIT Gestão", "plan": "gestao", "expected_features": 10},
+    {"name": "AUDIT-RBAC-20261007-20261007T214515Z AUDIT Completo", "plan": "completo", "expected_features": 17}
+  ],
+  "planned_internal_roles": ["administrador", "gestor", "gestor_comercial", "financeiro", "administrativo", "producao", "operador_onfarm", "tecnico_agronomo", "consultor_tecnico", "aplicador"],
+  "planned_external_roles": ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"],
+  "platform_identity": "EXISTING_SUPERADMIN_ONLY",
+  "external_delivery": "UNVERIFIED_NO_WRITES_ALLOWED",
+  "cleanup": {"status": "NOT_NEEDED_EMPTY_MANIFEST", "exact_ids_only": true, "auth_via_admin_api_only": true, "immutable_history_deletion": false},
+  "baseline_recheck": "Five initial tables have identical counts and hashes after read-only preflight",
+  "temporary_audit_remaining": [],
+  "credentials": "Never stored in this manifest or reports"
+}
