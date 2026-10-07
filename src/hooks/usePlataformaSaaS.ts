@@ -343,9 +343,6 @@ export interface ExcecaoSaaS {
   starts_at: string;
   ends_at: string | null;
   reason: string;
-  confirmation_sent_at?: string | null;
-  confirmation_next_attempt_at?: string | null;
-  confirmation_delivery_status?: string | null;
   ended_at: string | null;
   end_reason: string | null;
   created_at: string;
@@ -897,6 +894,9 @@ export interface MudancaEmailAdmin {
   last_error_code: string | null;
   idempotency_key: string;
   reason: string;
+  confirmation_sent_at?: string | null;
+  confirmation_next_attempt_at?: string | null;
+  confirmation_delivery_status?: string | null;
 }
 
 /** Mudanças de e-mail abertas (pendentes/reconciliáveis). */

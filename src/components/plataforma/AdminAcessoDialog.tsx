@@ -10,7 +10,7 @@ import type { ConviteAdminEmpresa, MudancaEmailAdmin } from "@/hooks/usePlatafor
 
 type State = { status: string; last_sent_at?: string; next_attempt_at?: string; expires_at?: string; operation_status?: string };
 const statuses: Record<string, string> = { invited: "Convite pendente", email_confirmation: "E-mail aguardando confirmação", active: "Ativo", temporary_password: "Senha provisória — troca obrigatória", suspended: "Acesso suspenso", expired: "Senha provisória expirada" };
-const when = (v?: string) => v ? new Date(v).toLocaleString("pt-BR") : "—";
+const when = (v?: string | null) => v ? new Date(v).toLocaleString("pt-BR") : "—";
 
 export function AdminAcessoDialog({ convite, mudanca }: { convite: ConviteAdminEmpresa; mudanca: MudancaEmailAdmin | null }) {
   const cache = useQueryClient();
@@ -24,7 +24,7 @@ export function AdminAcessoDialog({ convite, mudanca }: { convite: ConviteAdminE
   const [action, setAction] = useState<"temporary_password" | "password_link" | null>(null);
   const lock = useRef(false);
   const key = useRef<string | null>(null);
-  const ambiguous = !!mudanca ? ["sending", "ambiguous"].includes(mudanca.confirmation_delivery_status ?? "") : state?.operation_status === "ambiguous";
+  const ambiguous = mudanca ? ["sending", "ambiguous"].includes(mudanca.confirmation_delivery_status ?? "") : state?.operation_status === "ambiguous";
   const load = async () => {
     setBusy(true); setError("");
     setState(null);

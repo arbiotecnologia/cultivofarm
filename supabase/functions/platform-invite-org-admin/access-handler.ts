@@ -18,6 +18,7 @@ export async function handleAccess(admin: SupabaseClient, actorId: string, body:
   if (input.action === "state") return respond({
     status: suspended ? "suspended" : expired ? "expired" : auth.user.new_email ? "email_confirmation" : state.pending_password ? "temporary_password" : state.status === "pendente" ? "invited" : "active",
     last_sent_at: state.last_sent_at, next_attempt_at: state.next_attempt_at, expires_at: state.provisional_expires_at,
+    operation_status: state.operation_status,
   }, 200, true);
   if (suspended) return respond({ error: "Acesso suspenso. Nenhuma credencial foi alterada.", code: "access_suspended" }, 409, true);
   const env = await loadRuntimeConfig(admin, readWorkerEnv);
