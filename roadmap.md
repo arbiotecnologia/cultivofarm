@@ -2,12 +2,13 @@
 
 - [x] Registrar autorização expressa e reservar run_id AUDIT-RBAC-20261007-20261007T214515Z; manifesto sanitizado criado antes de qualquer escrita remota.
 - [x] Comprovar destino production swzpzcwiasxmjutrmvkm; capturar counts/hashes de organizações/perfis/papéis/assinaturas/histórico.
-- [ ] Preflight: serviços externos OFF e cleanup compatível com históricos imutáveis.
-- [ ] Inventariar fluxos canônicos organização/assinatura/admin/Auth/portais e disponibilidade de sessão segura.
-- [ ] Criar quatro tenants/assinaturas versionadas, admins e segundo usuário; Completo com dez papéis internos e três externos/vínculos mínimos, sem segundo Superadmin.
+- [ ] Preflight BLOCKED: flags remotas OFF não verificadas; triggers no-delete/append-only e FKs RESTRICT impedem limpeza física de assinaturas persistentes. Não alterar D52; exige caminho homologado de limpeza ou decisão de retenção.
+- [x] Inventariar fluxos canônicos organização/assinatura/admin/Auth/portais; tentativa oficial auth-session --self falhou por backend externo, sem secure handoff/editor_url disponível.
+- [ ] Criar quatro tenants/assinaturas/admins/segundo usuário, dez internos e três externos Completo — BLOCKED antes da primeira escrita: sessão Superadmin/Auth Admin segura ausente + gates OFF/cleanup.
 - [ ] Priorizar provas A03/A05 com Auth real e alvos descartáveis; interromper ao primeiro P0/P1 confirmado e corrigir com regressão antes de continuar.
 - [ ] Executar matriz browser/RLS/RPC/Edge/Storage/cache desktop-mobile por perfil/plano; marcar BLOCKED onde faltar evidência real.
-- [ ] Limpar por IDs exatos; listar TEMPORARY_AUDIT restantes, evidências e decisões por perfil/plano; preservar D51.6/D52.
+- [x] Manifesto vazio e baseline inicial relido idêntico; zero fixtures/TEMPORARY_AUDIT restantes, cleanup no-op. Documentadas decisões BLOCKED por perfil/plano; preservados D51.6/D52.
+- [x] Pertinente 829/829; focal 43/43 (5 novos do manifesto), lint focal/scanners PASS. Typecheck manual NOT RUN; advisors pós-DDL N/A, nenhum DDL. Sem código funcional/publicação/migration/Edge.
 
 ## Auditoria atual telas/perfis/planos/empresas — 2026-10-07 21:41 UTC
 

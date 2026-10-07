@@ -2,6 +2,54 @@
 
 ## 1. Decisão e limites
 
+### Rodada autorizada de fixtures — 21:44 UTC (estado atual)
+
+**BLOCKED antes da primeira escrita; NO-GO funcional.** Autorização expressa registrada, run reservado `AUDIT-RBAC-20261007-20261007T214515Z` e manifesto sanitizado `fixtures-rbac-20261007T214515Z.manifest.json`. A autorização permite fixtures e correções mínimas comprovadas; o bloqueio **não é falta de autorização**. A rodada anterior abaixo permanece histórica.
+
+- Destino comprovado via `lovable supabase info`: produção externa `swzpzcwiasxmjutrmvkm`, URL canônica, `managed_by_lovable=false`. Ambiente URL coincide; sem `PGHOST`, chave Auth Admin ou sessão gerenciada disponível. Nenhuma reconfiguração/rebind foi efetuada.
+- Mecanismo oficial tentado: `lovable auth-session --json --self` retornou `failed_precondition`: Supabase externo não permite emissão de sessão pelo Lovable. Catálogo oficial não oferece secure handoff/Auth Admin; nenhum `editor_url` disponível. Não foram pedidas credenciais em texto ou simulados JWTs, login, mocks browser ou RLS autenticada.
+- **Cleanup persistente incompatível:** introspecção atual confirmou `organization_subscriptions_no_delete_trg`, `trg_org_subscriptions_no_delete` e três triggers no histórico. `saas_no_delete`, `saas_history_no_mutation` e `saas_subscription_no_delete` rejeitam exclusão/alteração sem exceção de fixture; FKs do histórico para organização/assinatura são RESTRICT. Nenhuma RPC de purge/cleanup de organizações foi encontrada na consulta focal. Criar quatro assinaturas persistentes agora não garante removibilidade. Não desabilitar triggers/RLS nem mudar a imutabilidade D52 para contornar isso. Arquivamento/cancelamento não é exclusão física.
+- **Entrega externa não certificada OFF:** fontes têm modo `senha_temporaria` e envio de convite por link; `manual_link` é expressamente rejeitado antes de provisionar (`manual_link_disabled`). Não usar branches posteriores inalcançáveis como entrega segura disponível. Configurações remotas Auth/SMTP/flags de comunicação não foram lidas com sucesso; criação/convite/signup não executados.
+
+#### Dependências canônicas inventariadas
+
+| Etapa | Fluxo real | Dependência/gate atual |
+|---|---|---|
+| Organização | `useCriarEmpresa` → `platform_create_organization` INVOKER → `platform_private.create_organization_core` | Superadmin real; campos cadastrais; ticket server-side; UI mantém revisão CNPJ. Core valida DV/plano ativo, cria organização/auditoria, **não cria assinatura** |
+| Assinatura versionada | `platform_transition_subscription` com organização/ação/motivo/correlação/versão publicada | Actor Superadmin, snapshot publicado, histórico imutável; nenhuma transição executada |
+| Administrador | `platform-invite-org-admin` | Bearer real, Superadmin server-side, Auth Admin interno; senha temporária versus envio ao titular. Não existe handoff automático aprovado disponível nesta sessão |
+| Dez internos | `create-user` | Admin autenticado da fixture; tenant derivado do ator e allowlist; não permite perfis externos por este cadastro |
+| Produtor | `admin_provision_user_profile_v1`, `user_clientes`, `profiles.cliente_id`, cliente/fazenda/talhão | Auth real e vínculos no tenant correto; fixture não criada |
+| Parceiro/técnico B2B | Provisionamento/vínculos `partner_users`, `partner_user_clients`, organização↔parceiro | Validar proprietário/escopo antes de escrever; A03 continua prioritário |
+| Superadmin | Identidade real já homologada | Não criado segundo Superadmin; primeira identidade que precisa de autenticação segura para provisionar |
+
+Propostas delegadas de SQL direto em Auth, GUC sintético, mock browser ou associação de assinatura SaaS a assinatura fiscal foram descartadas: não são fluxo válido nem prova real.
+
+#### Baseline e limpeza
+
+Manifesto contém contagens e hashes integrais sanitizados: organizações 5, perfis 8, papéis 8, assinaturas 5, histórico 20, vínculos partner_users 1, registros_consultor 0. Os cinco agregados iniciais foram relidos após preflight e permaneceram **idênticos**. Isso não substitui snapshot global nem prova RLS. Criados **0** usuários Auth, **0** organizações, **0** assinaturas, **0** vínculos/objetos Storage. `created=[]`, `temporary_audit_remaining=[]`; cleanup desta rodada é no-op, sem DELETE amplo ou transação destrutiva. Nenhuma credencial provisória gerada.
+
+#### Decisão por perfil/plano
+
+| Grupo | Plano | Estado desta rodada | Próxima evidência |
+|---|---|---|---|
+| Admin + segundo interno Base | Base vigente 3 features | BLOCKED | Fixture versionada removível/retention acordada + Auth real |
+| Admin + segundo interno Essencial | Essencial vigente 8 | BLOCKED | Idem; TRIAL real |
+| Admin + segundo interno Gestão | Gestão vigente 10 | BLOCKED | Idem; TRIAL real |
+| Dez internos Completo (administrador, gestor, gestor_comercial, financeiro, administrativo, producao, operador_onfarm, tecnico_agronomo, consultor_tecnico, aplicador) | Completo vigente 17 | BLOCKED para cada papel | Contexto/vínculos, browser allowed/denied/forbidden, mutações e isolamento |
+| cliente_produtor, parceiro_b2b, parceiro_b2b_tecnico | Completo vigente 17 | BLOCKED para cada papel | Auth e vínculos próprios reais; desktop/mobile/Storage |
+| Superadmin existente | Plataforma; não usar bypass tenant | BLOCKED browser | Sessão segura real do proprietário Superadmin |
+
+Matriz técnica complementar: `matriz-fixtures-rbac-20261007T214515Z.csv`, 179 linhas reaproveitadas do inventário AST. Componentes/guards/roles/features são **estruturais**; contratos backend/RLS não rastreados por linha são UNVERIFIED/BLOCKED, nunca PASS inferido. Rotas públicas sem identidade: NOT_APPLICABLE somente para autenticação, não certificação integral. A03/A05 permanecem riscos prioritários; sem alvo descartável e Auth real, não houve exploração nem correção cega. `registros_consultor` vivo tem zero linhas, portanto não há leitura adversarial positiva possível sem fixture.
+
+#### Validações desta rodada
+
+- Suíte pertinente: **829/829**, 75 arquivos (`saas`, `rbac`, `security`; diretório routes sem testes adicionais).
+- Novo teste do manifesto: **5/5**; conjunto focal com create-user/D51.6/D52: **43/43**, 5 arquivos, incluindo 20 testes mockados do handler. Não somar focais sobrepostos à pertinente como total único; novo arquivo foi criado após a execução pertinente.
+- Lint focal novo manifesto + handler/Storage/RBAC: PASS. Scanners fiscal secrets/integration: PASS. Nenhum código funcional alterado, dependência adicionada ou DDL aplicado; advisors pós-DDL NOT_APPLICABLE. Typecheck frontend separado NOT RUN (vedado manualmente pelo ambiente), sem inferir PASS a partir de testes. Build automático e diff-check registrados no fechamento.
+
+**Ponto de parada:** autenticar com segurança o **Platform Superadmin existente** para provisionamento; depois admin da fixture AUDIT Base, ou administrador existente AR BIOTECNOLOGIA para read-only enquanto fixtures estão bloqueadas. Para fixtures persistentes ainda é necessário um caminho homologado de remoção compatível com histórico, ou decisão explícita de retenção do histórico/tenants auditados; não prometer limpeza inexistente. Também comprovar serviços externos OFF sem alterar configurações reais. Sem publicação, Edge/migration, dados reais ou reabertura D52.
+
 **PASS estrutural/read-only focal; NO-GO para certificação funcional integral.** Browser autenticado: **UNVERIFIED/BLOCKED** (`external_unmanaged`). Não há credenciais/sessões reais disponíveis neste executor. Nenhum login simulado, fixture, RPC mutável, migration, deploy, publicação ou alteração de dados nesta rodada. D52 não foi reaberto. Somente este relatório e `roadmap.md` foram alterados.
 
 Baseline local observado: `edf34ae7b7ced624ddbd4a90ba4f113cf436d4de`. Destino canônico validado no cliente e config: `swzpzcwiasxmjutrmvkm`. Leituras remotas por SELECT; não houve prova transacional nova. O estado publicado não foi presumido idêntico ao HEAD local; o smoke abaixo testa o domínio publicado separadamente.
