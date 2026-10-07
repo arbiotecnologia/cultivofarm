@@ -1,3 +1,14 @@
+## Fixtures autorizadas telas/perfis/planos/empresas — 2026-10-07 21:44 UTC
+
+- [x] Registrar autorização expressa e reservar run_id AUDIT-RBAC-20261007-20261007T214515Z; manifesto sanitizado criado antes de qualquer escrita remota.
+- [x] Comprovar destino production swzpzcwiasxmjutrmvkm; capturar counts/hashes de organizações/perfis/papéis/assinaturas/histórico.
+- [ ] Preflight: serviços externos OFF e cleanup compatível com históricos imutáveis.
+- [ ] Inventariar fluxos canônicos organização/assinatura/admin/Auth/portais e disponibilidade de sessão segura.
+- [ ] Criar quatro tenants/assinaturas versionadas, admins e segundo usuário; Completo com dez papéis internos e três externos/vínculos mínimos, sem segundo Superadmin.
+- [ ] Priorizar provas A03/A05 com Auth real e alvos descartáveis; interromper ao primeiro P0/P1 confirmado e corrigir com regressão antes de continuar.
+- [ ] Executar matriz browser/RLS/RPC/Edge/Storage/cache desktop-mobile por perfil/plano; marcar BLOCKED onde faltar evidência real.
+- [ ] Limpar por IDs exatos; listar TEMPORARY_AUDIT restantes, evidências e decisões por perfil/plano; preservar D51.6/D52.
+
 ## Auditoria atual telas/perfis/planos/empresas — 2026-10-07 21:41 UTC
 
 - [x] Baseline vivo read-only canônico: Base ACTIVE 3, Essencial TRIAL 8, Gestão TRIAL 10, Completo ACTIVE/TRIAL 17; zero overrides e zero TRIAL expirado. Sem reabrir D52 ou alterar dados.
