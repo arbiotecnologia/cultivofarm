@@ -366,6 +366,22 @@ export function useExcecoesSaaS() {
   });
 }
 
+/** Mensagens seguras para erros conhecidos de `platform_transition_subscription`. */
+export function mensagemErroAssinatura(e: unknown): string {
+  const msg = e instanceof Error ? e.message : "";
+  if (msg.includes("platform_forbidden")) return "Seu acesso não permite concluir esta operação.";
+  if (msg.includes("assinatura legada")) return "Esta assinatura é antiga e só pode ser regularizada com “Alterar plano” para uma versão publicada e vigente.";
+  if (msg.includes("versão inexistente ou fora de vigência")) return "A versão escolhida não está publicada ou não está em vigência. Escolha outra versão.";
+  if (msg.includes("versão obrigatória")) return "Escolha a versão do plano.";
+  if (msg.includes("motivo e correlação")) return "Informe um motivo com pelo menos 5 caracteres.";
+  if (msg.includes("trial já utilizado")) return "Esta empresa já usou o período de teste.";
+  if (msg.includes("trial exige")) return "O teste só pode começar em empresa sem assinatura em andamento.";
+  if (msg.includes("assinatura corrente inexistente")) return "Esta empresa não tem assinatura em andamento.";
+  if (msg.includes("transição inválida")) return "Esta ação não é permitida na situação atual da assinatura.";
+  if (msg.includes("empresa inexistente")) return "Empresa não encontrada. Recarregue a página.";
+  return "Não foi possível concluir a operação. Recarregue e confira antes de tentar de novo.";
+}
+
 /** Converte erros `platform_*` do servidor em mensagem segura em PT-BR. */
 export function mensagemErroPlataforma(e: unknown): string {
   const msg = e instanceof Error ? e.message : "";

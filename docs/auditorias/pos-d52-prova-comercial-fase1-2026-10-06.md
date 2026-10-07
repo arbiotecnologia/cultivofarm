@@ -166,3 +166,31 @@ Executada no Supabase canônico `swzpzcwiasxmjutrmvkm` pelo roteiro `supabase/te
 ### Decisão
 - **NO-GO** para considerar a prova comercial positiva totalmente fechada: falta fluxo oficial trial→active.
 - **GO** apenas para isolamento, entitlements em trial, imutabilidade de versão/snapshot e ausência de pagamentos.
+
+## 19. Correção — troca de plano em assinatura legada (2026-10-07 ~03:55 UTC)
+
+**Sintoma:** ao alterar o plano da AR BIOTECNOLOGIA LTDA (`007bb519-…`, assinatura `a472d79a-…`, TRIAL, plano Completo, `plan_version_id` NULL) para Completo v1 (`4ace3cd9-…`, PUBLISHED, vigente desde 2026-10-07 03:43 UTC), a RPC retornava "assinatura legada exige regularização explícita".
+
+**Causa:** `public.platform_transition_subscription` bloqueava toda assinatura com `plan_version_id` NULL antes de processar qualquer ação, inclusive o `change_plan`, que é justamente a regularização.
+
+**Correção (migration `20261007035510_7d788f41-445d-48cc-9a26-55693fed74b9.sql`, aplicada em produção `swzpzcwiasxmjutrmvkm`):**
+- Assinatura legada aceita somente `change_plan` com `_plan_version_id` informado; demais ações continuam negadas com a mesma mensagem.
+- Versão alvo passa a exigir explicitamente `status='PUBLISHED'`, além da vigência já exigida.
+- `change_plan` mantém `status` e `trial_ends_at`; vincula versão e atualiza snapshots de preço, moeda, ciclo, limites e funcionalidades. Mesmo `plan_id` aceito.
+- Preservados: Superadmin, motivo, idempotência por `correlation_id`, lock `FOR UPDATE`, ticket `saas_subscription_write`, histórico via trigger. EXECUTE revogado de PUBLIC/anon, concedido a authenticated/service_role.
+
+**Frontend:** `mensagemErroAssinatura` em `src/hooks/usePlataformaSaaS.ts` traduz os erros conhecidos da RPC sem detalhes internos; `src/pages/plataforma/PlataformaGestao.tsx` usa essa mensagem e ignora clique enquanto a ação está em andamento. Frontend não publicado.
+
+**Provas transacionais em produção (rollback integral, assinatura real inalterada):**
+- AR legado → Completo v1: PASS (versão vinculada; status e `trial_ends_at` preservados; snapshots iguais à versão).
+- Histórico: 1 linha na correlação; retry com mesma correlação → mesmo id, sem nova linha: PASS. Nova correlação após regularização segue o fluxo normal: PASS. Histórico append-only (UPDATE negado): PASS.
+- Legado com `cancel` negado; `change_plan` sem versão negado; não-Superadmin negado: PASS.
+- Versão futura, rascunho (fixture) e expirada (fixture) negadas: PASS.
+- Isolamento: assinatura legada de outra organização fictícia permaneceu sem versão: PASS.
+- Pós-prova: assinatura real da AR segue `plan_version_id` NULL, TRIAL, `trial_ends_at` 2026-10-16 05:10:25 UTC; fixtures 0.
+
+**Comandos:** Vitest focado SaaS+Comunicação 57/57 arquivos, 805/805 (inclui `src/test/saas/assinatura-legada-regularizacao.test.ts`, 6 testes); suíte completa 385 PASS + 1 skipped arquivos, 5.574 PASS + 4 skipped testes; typecheck exit 0; lint focal exit 0; build exit 0; scanner de segredos OK. Advisors: 465 preexistentes, nenhum novo.
+
+**Riscos:** correlação nova a cada clique (repetição por rede pode gerar segundo `change_plan` idempotente em efeito, mas com nova linha de histórico); fluxo autenticado na tela não testado no navegador.
+
+**Decisão:** GO para o Superadmin regularizar a AR pela tela "Alterar plano" com Completo v1. Sem publicação de frontend, de versão comercial, cobrança ou enforcement; homologação não espelhada.

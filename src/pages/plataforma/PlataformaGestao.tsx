@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
+  mensagemErroAssinatura,
   mensagemErroPlataforma,
   useAlterarAssinatura,
   useCriarExcecao,
@@ -53,7 +54,8 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
     return inicio <= agora && (fim === null || fim > agora);
   });
 
-  const enviar = () =>
+  const enviar = () => {
+    if (alterar.isPending) return;
     alterar.mutate(
       { organizationId: org, action: acao, planVersionId: exigeVersao ? versao : null, reason: motivo.trim() },
       {
@@ -61,9 +63,10 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
           toast.success("Ação aplicada e registrada no histórico.");
           setMotivo("");
         },
-        onError: (e) => toast.error(mensagemErroPlataforma(e)),
+        onError: (e) => toast.error(mensagemErroAssinatura(e)),
       },
     );
+  };
 
   return (
     <Card>
