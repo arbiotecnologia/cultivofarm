@@ -103,7 +103,7 @@ O teste usa o inventário canônico `auditoria-rotas-inventario-2026-10-07.json`
 
 | Verificação | Resultado | Limite |
 |---|---|---|
-| Snapshots publicados MCP read-only | PASS | conjuntos e contagens; não reexecuta provas fornecidas |
+| Snapshots publicados MCP read-only | PASS | conjuntos e contagens; execução distinta das provas independentes banco/RLS |
 | Banco/RLS 40/40 e administradores | PASS execução independente nesta auditoria pelo executor Supabase do proprietário | pg_temp/rollback, claims reais de administradores; não browser E2E |
 | Matriz/testes novos | PASS 44/44 | estrutural e renderização isolada de mensagens |
 | SaaS/usuários/config/RBAC/contexto | PASS 753/753, 68 arquivos | mocks/contratos, não Auth real |
@@ -134,3 +134,9 @@ Gate humano mínimo: evidência sanitizada em navegador real do proprietário co
 Aplicado diff aprovado em `supabase/functions/create-user/index.ts` e adicionado `src/test/security/create-user-edge-handler.test.ts`: 17 cenários executam o handler real transpilado com SDK/Deno mockados, sem rede. Cobrem admin, JWT inválido/antigo mockado, erro/false has_role, tenant forjado, papéis reservados/desconhecidos, vínculos fail-closed, compensação profile/roles/exceção, sucesso e falha do compensador com resposta/log sanitizados. Deno check PASS; testes focais Edge/matriz/tenant 69/69; suíte pertinente 770/770 em 69 arquivos; ESLint focal, scanners segredos/fiscal e diff-check PASS. Suíte completa anterior 5.804 PASS/4 skipped preservada, não reexecutada. Typecheck frontend separado não executado (validação automática); nenhum build manual. Compensação continua best-effort em falha de rede/interrupção do processo. Nenhuma migration, escrita remota, publicação ou deploy manual. O diff arquivado continua como evidência da revisão aprovada, com sanitização adicional do log na fonte local.
 
 Build automático verificado: OK às 19:26:35 UTC. Deno check fornece validação de tipos da Edge; typecheck frontend separado não foi executado.
+
+## Revalidação solicitada — 19:30 UTC
+
+O fechamento já estava aplicado na revisão `a27652387ae58531b0a9488ee0cf5980190da445`; não foi reaplicado nem duplicado. Reexecução local: 69 arquivos / 770 testes PASS (inclui Edge 17, matriz 44 e tenant 8), Deno check PASS, ESLint focal PASS, scanners segredos/integração fiscal PASS e diff-check PASS. O teste de JWT antigo usa resposta mockada de has_role, não certifica fencing remoto. Log do compensador permanece deliberadamente sanitizado (evento fixo, sem error.code), como documentado no fechamento anterior.
+
+Nesta revalidação, o log automático de build não estava disponível; preservado o PASS anterior de 19:26:35 UTC, sem alegar nova execução. Typecheck frontend separado e build manual não executados: validação do frontend é gerenciada automaticamente pelo ambiente. Nenhuma alteração adicional na Edge/testes, nenhuma operação Supabase, migration, publicação ou deploy. PASS banco/RLS independente e PASS estrutural preservados; NO-GO restrito ao browser autenticado E2E e à Edge remota até deploy autorizado. Compensação Auth permanece best-effort em indisponibilidade/interrupção.
