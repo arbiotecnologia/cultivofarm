@@ -12,7 +12,6 @@ import ForaDoPlano from "@/components/guards/ForaDoPlano";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { canAccess, getHomeForRole } from "@/lib/permissions";
 import {
-  homeForActiveContext,
   readActiveContext,
   resolveEffectiveRouteRole,
 } from "@/lib/navigation/portalRoleContext";
@@ -232,7 +231,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
   });
 
   if (!allowed) {
-    return <Navigate to={homeForActiveContext(roles, role, activeContext)} replace />;
+    return <Navigate to="/sem-permissao" state={{ from: location.pathname }} replace />;
   }
 
   // Fase S3 — plano contratado restringe (nunca amplia) o que o perfil permite.
@@ -621,6 +620,9 @@ const App = () => (
                 <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
+                <Route path="/fiscal/perfis/produtos" element={<PreservedNavigate to="/configuracoes/fiscal/produtos" />} />
+                <Route path="/fiscal/perfis/servicos" element={<PreservedNavigate to="/configuracoes/fiscal/servicos" />} />
+                <Route path="/fiscal/perfis/clientes" element={<PreservedNavigate to="/configuracoes/fiscal/clientes" />} />
                 <Route path="/fiscal/documentos" element={<RoleGuard><FiscalDocumentos /></RoleGuard>} />
                 <Route path="/fiscal/reconciliacao" element={<RoleGuard><FiscalReconciliacao /></RoleGuard>} />
                  <Route path="/fiscal/prontidao" element={<RoleGuard><FiscalProntidao /></RoleGuard>} />

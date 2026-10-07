@@ -204,8 +204,11 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
     administrador: "rw", gestor: "rw", consultor_tecnico: "r", tecnico_agronomo: "r",
   },
   "/portal": {
+    administrador: "rw",
     cliente_produtor: "rw",
   },
+  // Same scope as the existing communication guard; never inherit the root fallback.
+  "/comunicacao": { administrador: "rw", gestor: "rw" },
   "/auditoria-sync": {
     administrador: "rw", gestor: "r",
   },

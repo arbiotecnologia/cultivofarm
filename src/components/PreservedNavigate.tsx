@@ -6,5 +6,10 @@ import { Navigate, useLocation } from "react-router-dom";
  */
 export function PreservedNavigate({ to }: { to: string }) {
   const { search, hash } = useLocation();
-  return <Navigate to={`${to}${search}${hash}`} replace />;
+  const [targetPath, targetSearch = ""] = to.split("?");
+  const params = new URLSearchParams(search);
+  // Canonical destination parameters take precedence over legacy parameters.
+  new URLSearchParams(targetSearch).forEach((value, key) => params.set(key, value));
+  const merged = params.toString();
+  return <Navigate to={`${targetPath}${merged ? `?${merged}` : ""}${hash}`} replace />;
 }

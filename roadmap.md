@@ -1,3 +1,10 @@
+## Auditoria de rotas, módulos e entitlements — 2026-10-07
+
+- [x] Inventário estrutural anterior às correções (176 declarações), final AST/JSON de 179 declarações/106 itens/191 arquivos de páginas; catálogo vivo 7 módulos/17 features; 5/5 assinaturas sem plan_version_id. Relatório auditoria-rotas-modulos-entitlements-2026-10-07.md; não regularizar comercialmente por inferência.
+- [x] Correções focais: aliases fiscais já documentados, merge query/hash, 403 explícito, ACCESS_MAP espelhando portal/Comunicação existentes, filtros de plano mobile/parceiro, fallbacks/404 distintos; sem banco/migration/Edge/publicação.
+- [x] Verificações: 449 focais, 115 contratos finais, suíte 5.730 PASS/4 skipped; lint focal/scanners/build automático PASS. Advisor segurança 461 baseline; scanner Supabase 10 INFO; lint global 3.467 erros/127 avisos. Typecheck separado e advisor performance não executados. NO-GO funcional estrito.
+- [ ] BLOCKED: executar A/B/C SQL com rollback seguro e sessões Auth reais para UI/URL/dados/RLS/forja tenant/parceiro; executor transacional e sessões externas indisponíveis. Nenhuma fixture criada; A/B/C unitário não substitui Auth/RLS. Regularização real de AR Bio/Refil exige versão/contrato escolhido pelo proprietário via fluxo oficial, não bypass.
+
 ## Gestão de administradores provisionados — 2026-10-07
 
 - [x] Requisito 17:10 UTC — Motivo opcional em Dados: null/vazio/espaços PASS, 1 caractere após trim negado, 2+ PASS; ausência auditada como string vazia, sem padrão fictício. Migration canônica `20261007171308_b0bcbd71-d200-4b53-97ff-223ba7905160` mínima: validação core privado + constraint limitada a admin_profile_updated; ACLs/OCC/escopo preservados. Prova SQL por subtransação rollback PASS (auditoria, replay/conflito, OCC, negativa wrapper/core, hash integral restaurado), zero resíduos convites/auditoria. 38/38 focais, suíte 846/846, lint/scanners PASS, build automático OK 17:14:02Z; advisor 461 históricos/zero novos. Typecheck separado não executado; Auth/RLS/UI autenticadas BLOCKED, NO-GO funcional geral preservado. Sem Edge/config/publicação ou mudança comercial/B2B/fiscal.
