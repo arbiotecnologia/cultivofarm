@@ -100,7 +100,7 @@ describe("Gestão de administradores provisionados", () => {
     expect(m.editar).toHaveBeenCalledWith(expect.objectContaining({ inviteId: "i-b", nome: "Admin B Silva", expectedUpdatedAt: B.updated_at }), expect.any(Object));
   });
 
-  it("troca de e-mail exige e-mail válido, motivo e confirmação explícita", async () => {
+  it("troca de e-mail exige novo endereço repetido e confirmação explícita, com motivo opcional", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
     await userEvent.click(screen.getByRole("menuitem", { name: "Alterar e-mail" }));

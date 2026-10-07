@@ -1,6 +1,8 @@
 ## Gestão de administradores provisionados — 2026-10-07
 
-- [ ] Correção segura 15:30 UTC — confirmação Auth real de e-mail, gestão de acesso, prazo de senha provisória e barreira server-side; sem publicação frontend e sem avançar B2B.
+- [x] Correção estrutural 15:30–16:02 UTC — confirmação do titular, gestão de acesso e prazo provisório; forward-fix `20261007155703`, guard privado e wrappers INVOKER restritos; sem publicação frontend e sem avançar B2B. Não equivale à homologação Auth.
+- [x] Verificações pós-fix — 42 focais, 17 Deno, Deno check das três Edges, suíte 5.595 PASS/4 skipped, lint focal/scanners e build automático PASS; advisor 461 findings preexistentes, nenhum novo. Lint global FAIL (3.468 erros/127 avisos), não tratado fora do escopo.
+- [ ] Gate funcional NO-GO — Auth Admin local ausente e browser `external_unmanaged`; confirmação real, revogação, senha provisória expirada, RLS e UI autenticada não provados. Typecheck frontend explícito não executado: ambiente proíbe execução manual; Deno check não substitui essa evidência.
 - [x] Auditoria focal — troca atual contorna confirmação (`email_confirm: true`); barreira provisória existente somente na tela; SMTP configurado em modo teste não comprova entrega.
 - [x] Auditar provisionamento, guards de perfil/organização e semântica Admin Auth
 - [x] Responsável principal, edição básica e troca de e-mail (servidor + UI), com auditoria imutável
