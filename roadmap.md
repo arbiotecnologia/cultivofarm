@@ -1,3 +1,10 @@
+## Auditoria de rotas, módulos e entitlements — 2026-10-07
+
+- [ ] Fase 1: inventário integral antes de editar código; cruzar rotas, navegação, guards e catálogo/assinaturas vivos no Supabase canônico.
+- [ ] Fase 2: corrigir somente divergências comprovadas e adicionar contratos estáticos de cobertura; não alterar preço, versões comerciais, cobrança ou fiscal.
+- [ ] Fase 3: certificar matriz A/B/C, isolamento, URL direta e desktop/mobile; Auth externo ausente deve ser BLOCKED, nunca simulado como prova real.
+- [ ] Fase 4: testes, lint/scanners/advisors/build automático, relatório integral e decisão estrita GO/NO-GO.
+
 ## Gestão de administradores provisionados — 2026-10-07
 
 - [x] Requisito 17:10 UTC — Motivo opcional em Dados: null/vazio/espaços PASS, 1 caractere após trim negado, 2+ PASS; ausência auditada como string vazia, sem padrão fictício. Migration canônica `20261007171308_b0bcbd71-d200-4b53-97ff-223ba7905160` mínima: validação core privado + constraint limitada a admin_profile_updated; ACLs/OCC/escopo preservados. Prova SQL por subtransação rollback PASS (auditoria, replay/conflito, OCC, negativa wrapper/core, hash integral restaurado), zero resíduos convites/auditoria. 38/38 focais, suíte 846/846, lint/scanners PASS, build automático OK 17:14:02Z; advisor 461 históricos/zero novos. Typecheck separado não executado; Auth/RLS/UI autenticadas BLOCKED, NO-GO funcional geral preservado. Sem Edge/config/publicação ou mudança comercial/B2B/fiscal.
