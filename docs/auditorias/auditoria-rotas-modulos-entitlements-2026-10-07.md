@@ -129,4 +129,184 @@ Nenhuma migration/Edge alterada. Sem mutação de banco, não há rollback de ba
 
 Legenda: 1 = navegação declarativa estrutural; 7 = alias/index; 8 = interna/contextual/sensível/sistema com justificativa no JSON. Todas as linhas: Auth/URL/dados autenticados **UNVERIFIED**. Campos de perfil/referências completos estão no JSON; estes candidatos não substituem guards ancestrais. Não afirmar classes 3/4 em runtime sem sessão.
 
-<!-- ROUTE_MATRIX -->
+| Rota | Página/elementos | Guard ancestral | Feature | Nav/alias | Classe |
+|---|---|---|---|---|---|
+| /auth | AuthRoute | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
+| /reset-password | ResetPassword | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
+| /selecionar-portal | AuthenticatedShell, SelecionarPortal | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
+| /acesso-pendente | AuthenticatedShell, AcessoPendente | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
+| /sem-permissao | AuthenticatedShell, SemPermissao | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
+| /plataforma | PlataformaHome | PlataformaGuard | não mapeada | system/internal route; never automatically expose | 8 |
+| /configuracoes/catalogo-ia | ConfigCatalogoIA | PlataformaGuard | não mapeada | child configuration reached from Configuracoes; platform-only where guarded | 8 |
+| /validar-entrega/:token | ValidarEntrega | pública/sistema | não mapeada | contextual detail/token route; identifier required | 8 |
+| /rastrear-produto/:token | RastrearProduto | pública/sistema | não mapeada | contextual detail/token route; identifier required | 8 |
+| /app/login | MobileLogin | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
+| /app | MobileDashboard | AppPortalGuard, MobileLayout | não mapeada | navigation:m-c-inicio:mobile-consultor,mobile-produtor | 1 |
+| /app/perfil | MobilePerfil | AppPortalGuard, MobileLayout | não mapeada | navigation:m-perfil:mobile-consultor,mobile-produtor | 1 |
+| /app/notificacoes | MobileNotificacoes | AppPortalGuard, MobileLayout | não mapeada | navigation:m-p-notificacoes:mobile-produtor | 1 |
+| /app/fazendas | MobileFazendas | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | navigation:m-c-fazendas:mobile-consultor | 1 |
+| /app/registrar | MobileRegistrarOcorrencia | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | MobileLayout floating action and technical dashboard | 8 |
+| /app/atendimentos | MobileAtendimentos | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | navigation:m-c-atendimentos:mobile-consultor | 1 |
+| /app/registros | Navigate | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | /app/atendimentos | 7 |
+| /app/solicitacoes | Navigate | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | /app/atendimentos?aba=demandas | 7 |
+| /app/ordens | MobileOrdens | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | technical/producer dashboard action | 8 |
+| /app/checkin/:solicitacaoId | MobileCheckin | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | visitas_tecnicas | contextual detail/token route; identifier required | 8 |
+| /app/checkin | MobileCheckin | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | visitas_tecnicas | contextual check-in; requires solicitation; not a top-level tab | 8 |
+| /app/visita/novo | MobileVisita | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | visitas_tecnicas | creation action inside technical workspace | 8 |
+| /app/visita/:id | MobileVisita | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | visitas_tecnicas | contextual detail/token route; identifier required | 8 |
+| /app/talhao/:id | MobileTalhaoHistorico | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | contextual detail/token route; identifier required | 8 |
+| /app/catalogo | MobileCatalogoTecnico | AppPortalGuard, MobileLayout, TechnicalFeatureGuard, EntitlementOutlet | não mapeada | navigation:m-c-catalogo:mobile-consultor | 1 |
+| /app/recomendacoes | MobileRecomendacoesProdutor | AppPortalGuard, MobileLayout, ProducerFeatureGuard | não mapeada | navigation:m-p-recomendacoes:mobile-produtor | 1 |
+| /app/entregas | MobileEntregas | AppPortalGuard, MobileLayout, ProducerFeatureGuard | não mapeada | navigation:m-p-entregas:mobile-produtor | 1 |
+| /app/aplicacoes | MobileAplicacoes | AppPortalGuard, MobileLayout, ProducerFeatureGuard | não mapeada | producer workflow; review discoverability with real identity | 8 |
+| /app/aplicacoes/lista | MobileListaAplicacoes | AppPortalGuard, MobileLayout, ProducerFeatureGuard | não mapeada | producer dashboard action | 8 |
+| /app/solicitar | MobileSolicitar | AppPortalGuard, MobileLayout, ProducerFeatureGuard | não mapeada | producer dashboard action | 8 |
+| /portal | PortalDashboard | PortalGuard | não mapeada | navigation:portal-produtor:desktop, portalMenus:pp-dashboard:producer | 1 |
+| /portal/fazendas | PortalFazendas | PortalGuard | não mapeada | portalMenus:pp-fazendas:producer | 1 |
+| /portal/fazendas/:id | PortalFazendaDetalhe | PortalGuard | não mapeada | contextual detail/token route; identifier required | 8 |
+| /portal/talhoes | Navigate | PortalGuard | não mapeada | /portal/fazendas | 7 |
+| /portal/talhoes/:id | PortalTalhaoDetalhe | PortalGuard | não mapeada | contextual detail/token route; identifier required | 8 |
+| /portal/agenda | PortalAgenda | PortalGuard | não mapeada | portalMenus:pp-agenda:producer | 1 |
+| /portal/registros | PortalRegistros | PortalGuard | não mapeada | portalMenus:pp-registros:producer | 1 |
+| /portal/registros/:id | PortalRegistroDetalhe | PortalGuard | não mapeada | contextual detail/token route; identifier required | 8 |
+| /portal/recomendacoes | PortalRecomendacoes | PortalGuard | não mapeada | portalMenus:pp-recomendacoes:producer | 1 |
+| /portal/fila-aprovacao | PortalFilaAprovacao | PortalGuard | não mapeada | legacy/index redirect; inspect target | 7 |
+| /portal/acompanhamento | PortalAcompanhamento | PortalGuard | não mapeada | portalMenus:pp-acompanhamento:producer | 1 |
+| /portal/ordens-servico | Navigate | PortalGuard | não mapeada | /portal/acompanhamento?tab=ordens-servico | 7 |
+| /portal/producao | Navigate | PortalGuard | não mapeada | /portal/acompanhamento?tab=producao | 7 |
+| /portal/entregas | Navigate | PortalGuard | não mapeada | /portal/acompanhamento?tab=entregas | 7 |
+| /portal/aplicacoes | PortalAplicacoes | PortalGuard | não mapeada | portalMenus:pp-aplicacoes:producer | 1 |
+| /portal/solicitar | PortalSolicitacao | PortalGuard | não mapeada | portalMenus:pp-solicitar:producer | 1 |
+| /portal/perfil | PortalPerfil | PortalGuard | não mapeada | portalMenus:pp-perfil:producer | 1 |
+| /portal/financeiro | PortalFinanceiro | PortalGuard | não mapeada | portalMenus:pp-titulos:producer | 1 |
+| /portal/meus-pedidos | Navigate | PortalGuard | não mapeada | /portal | 7 |
+| /portal-parceiro | B2BRouteGuard, PortalParceiroLayout | pública/sistema | não mapeada | layout entry and index redirect | 8 |
+| /portal-parceiro | Navigate | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | /portal-parceiro/dashboard | 7 |
+| /portal-parceiro/perfil | PortalParceiroPerfil | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | portalMenus:pb-perfil:gestor | 1 |
+| /portal-parceiro/dashboard | ParceiroDashboardRouter | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | portalMenus:pb-dashboard:gestor, portalMenus:pbt-dashboard:tecnico | 1 |
+| /portal-parceiro/pedidos | ParceiroMeusPedidos | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | pedidos_b2b | portalMenus:pb-pedidos:gestor | 1 |
+| /portal-parceiro/solicitacoes | ParceiroSolicitacoes | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | pedidos_b2b | deliberately redirected/hidden by existing portal product rules | 8 |
+| /portal-parceiro/novo | ParceiroNovoPedido | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | pedidos_b2b | order action; contextual entry | 8 |
+| /portal-parceiro/catalogo | ParceiroNovoPedido | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | catalogo_precos | portalMenus:pb-catalogo:gestor | 1 |
+| /portal-parceiro/simulador | ParceiroNovoPedido | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | simulacoes | portalMenus:pbt-simulador:tecnico | 1 |
+| /portal-parceiro/historico | ParceiroHistorico | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | deliberately redirected by existing portal product rules | 8 |
+| /portal-parceiro/meu-historico | ParceiroMeuHistorico | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | portalMenus:pb-meu-historico:gestor | 1 |
+| /portal-parceiro/favoritos | ParceiroFavoritos | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | portalMenus:pb-favoritos:gestor | 1 |
+| /portal-parceiro/financeiro | ParceiroFinanceiro | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | portalMenus:pb-financeiro:gestor | 1 |
+| /portal-parceiro/historico-financeiro | Navigate | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | /portal-parceiro/financeiro?tab=historico | 7 |
+| /portal-parceiro/meu-historico-financeiro | Navigate | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | /portal-parceiro/financeiro?tab=historico | 7 |
+| /portal-parceiro/fichas | ParceiroFichasTecnicas | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | fichas_tecnicas | portalMenus:pb-fichas:gestor, portalMenus:pbt-fichas:tecnico | 1 |
+| /portal-parceiro/simulacoes | ParceiroHistoricoSimulacoes | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | simulacoes | portalMenus:pbt-simulacoes:tecnico | 1 |
+| /portal-parceiro/simulacoes-equipe | ParceiroSimulacoesEquipe | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | simulacoes | portalMenus:pb-simulacoes-equipe:gestor | 1 |
+| /portal-parceiro/meus-produtores | ParceiroMeusProdutoresTecnico | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | technical dashboard action; gestor redirected | 8 |
+| /portal-parceiro/meus-produtores/:clienteId | ParceiroDetalheProdutorTecnico | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | contextual detail/token route; identifier required | 8 |
+| /portal-parceiro/tecnicos-produtores | ParceiroTecnicosProdutores | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | existing link-management UI hidden for partner roles | 8 |
+| /portal-parceiro/usuarios-clientes | ParceiroUsuariosClientesB2B | B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet | não mapeada | existing link-management UI hidden for partner roles | 8 |
+| /visita-tecnica | RoleGuard, VisitaTecnicaLista | VisitaRouteGuard, ProtectedRoutes | visitas_tecnicas | navigation:visita-tecnica:desktop | 1 |
+| /visita-tecnica/nova | RoleGuard, VisitaTecnica | VisitaRouteGuard, ProtectedRoutes | visitas_tecnicas | VisitaTecnicaLista creation action; not a standalone menu item | 8 |
+| /visita-tecnica/:id | RoleGuard, VisitaTecnica | VisitaRouteGuard, ProtectedRoutes | visitas_tecnicas | contextual detail/token route; identifier required | 8 |
+| / | Index | ProtectedRoutes | não mapeada | system/internal route; never automatically expose | 8 |
+| /clientes | RoleGuard, Clientes | ProtectedRoutes | não mapeada | navigation:clientes:desktop | 1 |
+| /clientes/:id | RoleGuard, ClienteDetalhe | ProtectedRoutes | não mapeada | contextual detail/token route; identifier required | 8 |
+| /parceiros/:id | RoleGuard, ParceiroDetalhe | ProtectedRoutes | não mapeada | contextual detail/token route; identifier required | 8 |
+| /fazendas | RoleGuard, Fazendas | ProtectedRoutes | não mapeada | navigation:fazendas:desktop | 1 |
+| /fazendas/:id | RoleGuard, FazendaDetalhe | ProtectedRoutes | não mapeada | contextual detail/token route; identifier required | 8 |
+| /talhoes | RoleGuard, Talhoes | ProtectedRoutes | não mapeada | Fazendas > TalhoesFazendaTab; not separate sidebar | 8 |
+| /talhoes/:id | RoleGuard, TalhaoHistorico | ProtectedRoutes | não mapeada | contextual detail/token route; identifier required | 8 |
+| /auditoria | RoleGuard, Auditoria | ProtectedRoutes | não mapeada | navigation:auditorias:desktop | 1 |
+| /auditoria-sync | Navigate | ProtectedRoutes | não mapeada | /auditoria?tab=sync | 7 |
+| /base-tecnica | RoleGuard, Protocolos | ProtectedRoutes | catalogo_precos | navigation:protocolos:desktop, navigation:protocolos-produtos:desktop, navigation:protocolos-microrganismos:desktop, navigation:protocolos-catalogo-tecnico:desktop, navigation:protocolos-culturas:desktop, navigation:protocolos-problemas:desktop | 1 |
+| /protocolos | PreservedNavigate | ProtectedRoutes | não mapeada | /base-tecnica | 7 |
+| /ordens-servico | RoleGuard, OrdensServico | ProtectedRoutes | ordens_producao | navigation:ordens-servico:desktop | 1 |
+| /lotes | RoleGuard, Lotes | ProtectedRoutes | lotes_qualidade | navigation:lotes:desktop | 1 |
+| /controle-qualidade | RoleGuard, ControleQualidade | ProtectedRoutes | lotes_qualidade | navigation:cq:desktop | 1 |
+| /envase | RoleGuard, EnvasePage | ProtectedRoutes | envase | navigation:envase:desktop | 1 |
+| /estoque | RoleGuard, Estoque | ProtectedRoutes | estoque_embalagens | navigation:estoque:desktop | 1 |
+| /estoque/embalagens | RoleGuard, EstoqueEmbalagens | ProtectedRoutes | estoque_embalagens | Estoque workspace and executive shortcuts | 8 |
+| /entregas | RoleGuard, Entregas | ProtectedRoutes | não mapeada | navigation:entregas:desktop | 1 |
+| /entregas/:id/formulario | RoleGuard, FormularioEntregaPrint | ProtectedRoutes | não mapeada | contextual detail/token route; identifier required | 8 |
+| /etiquetas/:id/imprimir | RoleGuard, EtiquetaProdutoPrintPage | ProtectedRoutes | não mapeada | contextual detail/token route; identifier required | 8 |
+| /aplicacoes | RoleGuard, Aplicacoes | ProtectedRoutes | não mapeada | navigation:aplicacoes:desktop | 1 |
+| /relatorios | RoleGuard, Relatorios | ProtectedRoutes | relatorios_operacionais | navigation:relatorios:desktop | 1 |
+| /consultor-tecnico | RoleGuard, ConsultorTecnico | ProtectedRoutes | não mapeada | navigation:equipe-tecnica:desktop | 1 |
+| /fluxo-tecnico | RoleGuard, FluxoTecnico | ProtectedRoutes | não mapeada | navigation:fluxo-tecnico:desktop | 1 |
+| /bi-agronomico | RoleGuard, BIAgronomico | ProtectedRoutes | paineis_executivos | navigation:bi-agronomico:desktop | 1 |
+| /bi-operacional | RoleGuard, BIOperacional | ProtectedRoutes | paineis_executivos | navigation:bi-operacional:desktop | 1 |
+| /alertas-operacionais | RoleGuard, AlertasOperacionais | ProtectedRoutes | não mapeada | navigation:alertas:desktop | 1 |
+| /previsao-agronomica | RoleGuard, PrevisaoAgronomica | ProtectedRoutes | recomendacoes_alertas | navigation:previsao-climatica:desktop | 1 |
+| /solicitacoes | RoleGuard, Solicitacoes | ProtectedRoutes | não mapeada | navigation:solicitacoes:desktop | 1 |
+| /monitoramento-alertas | RoleGuard, MonitoramentoAlertas | ProtectedRoutes | recomendacoes_alertas | navigation:monitoramento:desktop | 1 |
+| /agenda-tecnica | RoleGuard, AgendaTecnica | ProtectedRoutes | visitas_tecnicas | navigation:agenda-tecnica:desktop | 1 |
+| /dashboard | PreservedNavigate | ProtectedRoutes | não mapeada | /dashboard/geral | 7 |
+| /dashboard/geral | RoleGuard, DashboardUnificado | ProtectedRoutes | não mapeada | navigation:dashboard:desktop, navigation:dashboard-geral:desktop | 1 |
+| /dashboard/executivo | RoleGuard, DashboardUnificado | ProtectedRoutes | paineis_executivos | navigation:dashboard-executivo:desktop | 1 |
+| /dashboard/operacional | RoleGuard, DashboardUnificado | ProtectedRoutes | não mapeada | navigation:dashboard-operacional:desktop | 1 |
+| /painel-operacional | PreservedNavigate | ProtectedRoutes | não mapeada | /dashboard/operacional | 7 |
+| /cockpit-laboratorio | RoleGuard, CockpitLaboratorio | ProtectedRoutes | ordens_producao | navigation:cockpit-lab:desktop | 1 |
+| /financeiro | RoleGuard, FinanceiroDashboard | ProtectedRoutes | não mapeada | navigation:fin-dashboard:desktop | 1 |
+| /financeiro/receber | RoleGuard, ContasReceber | ProtectedRoutes | contas_receber | navigation:fin-receber:desktop | 1 |
+| /financeiro/pagar | RoleGuard, ContasPagar | ProtectedRoutes | contas_pagar | navigation:fin-pagar:desktop | 1 |
+| /financeiro/categorias | RoleGuard, FinCategorias | ProtectedRoutes | não mapeada | navigation:fin-categorias:desktop | 1 |
+| /financeiro/centros-custo | RoleGuard, FinCentrosCusto | ProtectedRoutes | não mapeada | navigation:fin-cc:desktop | 1 |
+| /financeiro/contas-bancarias | RoleGuard, FinContasBancarias | ProtectedRoutes | não mapeada | navigation:fin-contas-bancarias:desktop | 1 |
+| /financeiro/formas-pagamento | RoleGuard, FinFormasPagamento | ProtectedRoutes | não mapeada | navigation:fin-formas-pgto:desktop | 1 |
+| /financeiro/recorrencias | RoleGuard, FinRecorrencias | ProtectedRoutes | não mapeada | navigation:fin-recorrencias:desktop | 1 |
+| /financeiro/fluxo-caixa | RoleGuard, FinFluxoCaixa | ProtectedRoutes | fluxo_caixa | navigation:fin-fluxo:desktop | 1 |
+| /financeiro/dre | RoleGuard, FinDRE | ProtectedRoutes | não mapeada | navigation:fin-dre:desktop | 1 |
+| /financeiro/notas-fiscais | RoleGuard, FinNotasFiscais | ProtectedRoutes | emissao_nfe_nfse | navigation:fin-nfe:desktop | 1 |
+| /financeiro/entregas-nao-faturadas | RoleGuard, FinEntregasNaoFaturadas | ProtectedRoutes | não mapeada | navigation:fin-ent-nfat:desktop | 1 |
+| /financeiro/auditoria | Navigate | ProtectedRoutes | não mapeada | /auditoria?tab=financeiro | 7 |
+| /financeiro/configuracoes | Navigate | ProtectedRoutes | não mapeada | /configuracoes?tab=financeiro | 7 |
+| /financeiro/relatorios | RoleGuard, FinRelatorios | ProtectedRoutes | não mapeada | navigation:fin-relatorios:desktop | 1 |
+| /financeiro/relatorios/mensal | RoleGuard, RelMensal | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/contas-receber | RoleGuard, RelReceber | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/contas-pagar | RoleGuard, RelPagar | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/inadimplencia | RoleGuard, RelInadimplencia | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/nfe-pendente | RoleGuard, RelNFePendente | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/entregas-faturamento | RoleGuard, RelEntregasFat | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/por-cliente | RoleGuard, RelPorCliente | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/relatorios/prestacao-contas | RoleGuard, RelPrestacaoContas | ProtectedRoutes | não mapeada | child report reached from FinanceiroRelatorios | 8 |
+| /financeiro/recibos | RoleGuard, FinRecibos | ProtectedRoutes | não mapeada | navigation:fin-recibos:desktop | 1 |
+| /executivo | PreservedNavigate | ProtectedRoutes | paineis_executivos | /dashboard/executivo | 7 |
+| /portal-executivo | PreservedNavigate | ProtectedRoutes | não mapeada | /dashboard/executivo | 7 |
+| /comercial/parceiros | Navigate | ProtectedRoutes | não mapeada | /clientes?aba=parceiros | 7 |
+| /comercial/pedidos-b2b | RoleGuard, PedidosB2B | ProtectedRoutes | pedidos_b2b | navigation:com-pedidos-b2b:desktop | 1 |
+| /comercial/solicitacoes-b2b | RoleGuard, ComercialSolicitacoesB2B | ProtectedRoutes | pedidos_b2b | navigation:com-solicitacoes-b2b:desktop | 1 |
+| /comercial/dashboard-b2b | Navigate | ProtectedRoutes | não mapeada | /comercial/dashboard-consolidado | 7 |
+| /comercial/campanhas | RoleGuard, CampanhasComerciais | ProtectedRoutes | não mapeada | navigation:com-campanhas:desktop | 1 |
+| /comercial/simulador | RoleGuard, SimuladorComercial | ProtectedRoutes | simulacoes | navigation:com-simulador:desktop | 1 |
+| /comercial/catalogo | PreservedNavigate | ProtectedRoutes | não mapeada | /base-tecnica?tab=catalogo-tecnico | 7 |
+| /comercial/indicadores | RoleGuard, IndicadoresComerciais | ProtectedRoutes | não mapeada | navigation:com-indicadores:desktop | 1 |
+| /comercial/alertas | RoleGuard, AlertasComerciais | ProtectedRoutes | não mapeada | navigation:com-alertas:desktop | 1 |
+| /comercial/dashboard-consolidado | RoleGuard, DashboardConsolidadoB2B | ProtectedRoutes | não mapeada | navigation:com-consolidado:desktop | 1 |
+| /comercial/condicoes-pagamento | RoleGuard, CommercialPaymentPlansPage | ProtectedRoutes | catalogo_precos | navigation:com-condicoes-pagamento:desktop | 1 |
+| /comercial/auditoria-motor-b2b | RoleGuard, AuditoriaMotorB2B | ProtectedRoutes | não mapeada | system/internal route; never automatically expose | 8 |
+| /operacao/planejamento | RoleGuard, PlanejamentoProducao | ProtectedRoutes | ordens_producao | navigation:planejamento-producao:desktop | 1 |
+| /operacao/planejamento/:id | RoleGuard, PlanejamentoProducaoDetalhe | ProtectedRoutes | ordens_producao | contextual detail/token route; identifier required | 8 |
+| /operacao/dashboard-producao | RoleGuard, DashboardProducao | ProtectedRoutes | ordens_producao | navigation:dashboard-producao:desktop | 1 |
+| /financeiro/b2b | RoleGuard, FinanceiroB2B | ProtectedRoutes | não mapeada | navigation:b2b-visao:desktop | 1 |
+| /financeiro/b2b/dashboard | RoleGuard, DashboardFinanceiroB2B | ProtectedRoutes | não mapeada | navigation:b2b-dashboard:desktop | 1 |
+| /financeiro/b2b/governanca | RoleGuard, GovernancaFinanceiraB2B | ProtectedRoutes | não mapeada | navigation:b2b-governanca:desktop | 1 |
+| /financeiro/b2b/aging | RoleGuard, AgingFinanceiroB2B | ProtectedRoutes | não mapeada | navigation:b2b-aging:desktop | 1 |
+| /financeiro/b2b/previsao | RoleGuard, PrevisaoReceitaB2B | ProtectedRoutes | não mapeada | navigation:b2b-previsao:desktop | 1 |
+| /financeiro/b2b/rentabilidade | RoleGuard, RentabilidadeParceirosB2B | ProtectedRoutes | não mapeada | navigation:b2b-rentabilidade:desktop | 1 |
+| /financeiro/b2b/alertas | RoleGuard, AlertasFinanceirosB2B | ProtectedRoutes | não mapeada | navigation:b2b-alertas:desktop | 1 |
+| /financeiro/b2b/central-governanca | RoleGuard, CentralGovernancaB2B | ProtectedRoutes | não mapeada | navigation:b2b-central-gov:desktop | 1 |
+| /financeiro/b2b/regras | RoleGuard, RegrasGovernancaB2B | ProtectedRoutes | não mapeada | navigation:b2b-regras-gov:desktop | 1 |
+| /executivo/socios-b2b | RoleGuard, DashboardSociosB2B | ProtectedRoutes | paineis_executivos | navigation:b2b-socios:desktop | 1 |
+| /configuracoes | RoleGuard, Configuracoes | ProtectedRoutes | não mapeada | navigation:configuracoes:desktop | 1 |
+| /configuracoes/objetivos-visita | RoleGuard, ObjetivosVisita | ProtectedRoutes | não mapeada | child configuration reached from Configuracoes; platform-only where guarded | 8 |
+| /configuracoes/parametros-cq | RoleGuard, ParametrosCQPage | ProtectedRoutes | não mapeada | child configuration reached from Configuracoes; platform-only where guarded | 8 |
+| /configuracoes/fiscal/empresa | RoleGuard, FiscalEmpresa | ProtectedRoutes | não mapeada | navigation:config-fiscal:desktop | 1 |
+| /configuracoes/fiscal/produtos | RoleGuard, FiscalProdutos | ProtectedRoutes | não mapeada | navigation:fiscal-perfis-produtos:desktop | 1 |
+| /configuracoes/fiscal/servicos | RoleGuard, FiscalServicos | ProtectedRoutes | não mapeada | navigation:fiscal-perfis-servicos:desktop | 1 |
+| /configuracoes/fiscal/clientes | RoleGuard, FiscalClientes | ProtectedRoutes | não mapeada | navigation:fiscal-perfis-clientes:desktop | 1 |
+| /fiscal/perfis/produtos | PreservedNavigate | ProtectedRoutes | emissao_nfe_nfse | /configuracoes/fiscal/produtos | 7 |
+| /fiscal/perfis/servicos | PreservedNavigate | ProtectedRoutes | emissao_nfe_nfse | /configuracoes/fiscal/servicos | 7 |
+| /fiscal/perfis/clientes | PreservedNavigate | ProtectedRoutes | emissao_nfe_nfse | /configuracoes/fiscal/clientes | 7 |
+| /fiscal/documentos | RoleGuard, FiscalDocumentos | ProtectedRoutes | emissao_nfe_nfse | navigation:fiscal-rascunhos:desktop | 1 |
+| /fiscal/reconciliacao | RoleGuard, FiscalReconciliacao | ProtectedRoutes | emissao_nfe_nfse | system/internal route; never automatically expose | 8 |
+| /fiscal/prontidao | RoleGuard, FiscalProntidao | ProtectedRoutes | emissao_nfe_nfse | navigation:fiscal-prontidao:desktop | 1 |
+| /comunicacao | RoleGuard, ComunicacaoRouteGuard, ComunicacaoAdminPage | ProtectedRoutes | envios_automaticos | navigation:comunicacao-admin:desktop | 1 |
+| /notificacoes | CentralNotificacoes | ProtectedRoutes | não mapeada | system/internal route; never automatically expose | 8 |
+| * | NotFound | pública/sistema | não mapeada | system/internal route; never automatically expose | 8 |
