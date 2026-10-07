@@ -6,6 +6,10 @@
 
 SHA observado após alterações de código/testes: `550a151775010339bfa4a75107fe85d7bf486226`. É a revisão observada antes desta consolidação documental, não um commit final criado manualmente.
 
+### Fechamento solicitado — 19:22 UTC
+
+Entrega encerrada sem reiniciar ou ampliar a auditoria. Revisão observada no início do fechamento: `980b09d676b8c2002c68f9fbd6fb1fb2ea8b1031`, com árvore limpa. A suíte já terminou: 5.804 PASS e 4 skipped; não havia teste em andamento a concluir. `git diff --check` passou. O log automático de build não estava disponível neste novo contexto; mantém-se a evidência anterior registrada, sem alegar novo build. Typecheck separado continua não executado. Nenhuma correção adicional de código foi aplicada; o candidato Edge permanece somente diff para revisão. Alterados neste fechamento apenas este relatório e roadmap. **PASS estrutural focal / NO-GO funcional** preservados; gates autenticados e teste do diff dependem de execução autorizada externa, não ficam implicitamente em andamento.
+
 ## Baseline: proveniência separada
 
 O proprietário forneceu os seguintes resultados vivos: Refil Base v1 ACTIVE; Homologação Essencial v1 TRIAL ativo; AR Bio Gestão v1 TRIAL ativo; CultivoFarm Completo v1 ACTIVE e FSF Completo v1 TRIAL ativo. Informou matriz PostgreSQL 40/40 com rollback, hashes de snapshots, isolamento de seis classes de dados, quatro administradores e fixture Base/admin revertida sem resíduos. **Essas provas não foram reexecutadas nesta rodada e não equivalem a browser autenticado.**
