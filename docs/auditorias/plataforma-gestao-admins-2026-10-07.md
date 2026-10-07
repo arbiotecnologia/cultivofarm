@@ -53,3 +53,13 @@ GO técnico para uso controlado pelo Superadmin. Homologação real da troca de 
 - **Sem migration**, sem alteração de dados reais. Função republicada.
 - **Risco evitado:** Superadmin legítimo recebendo 401 `invalid_token` e impossibilitado de trocar e-mail ativo.
 - **Pendente:** prova autenticada real no navegador (login com novo e-mail / recusa do antigo).
+
+## Ajuste — motivo opcional somente na troca de e-mail
+
+- **Escopo:** apenas `platform-org-admin-email-change` / `platform_begin_org_admin_email_change`. Responsável principal e edição de perfil continuam exigindo motivo (≥ 2).
+- **UI (`AdminGestaoAcoes.tsx`):** rótulo "Motivo (opcional)", sem required; 1 caractere (após trim) mostra validação e bloqueia; vazio não bloqueia o botão.
+- **Edge (`policy.ts`):** vazio/nulo aceito; 1 caractere → `invalid_reason`; > 500 rejeitado. Autenticação/autorização (`auth.ts`) inalteradas. Função republicada.
+- **RPC (migration pequena, idempotente, sem DDL de tabela):** motivo vazio vira a descrição padrão `"Alteração de e-mail administrativo"`, gravada na solicitação e na auditoria. As restrições `NOT NULL` e `CHECK ≥ 2` da auditoria foram mantidas, e RLS e grants não mudaram. Retry com a mesma chave e motivo vazio continua idempotente. Rollback: remover a linha `IF v_reason = '' ...`.
+- **Prova SQL com rollback** (`supabase/tests/plataforma-admins/02-email-motivo-opcional-rollback.sql`, executada no banco canônico): sem motivo aceito com descrição padrão (solicitação + auditoria); retry idempotente; mesma chave com outro motivo negado; 1 caractere negado; 2+ aceito e normalizado; não Superadmin negado; chamada direta `authenticated` negada; responsável principal e edição com motivo vazio negados.
+- **Testes:** Deno 10/10; Vitest SaaS+Comunicação 789/789 (novo teste de UI do motivo opcional); typecheck, lint focal, build e scanner de segredos OK.
+- **Pendente:** verificação visual autenticada no navegador.

@@ -27,3 +27,12 @@ Deno.test("classifica e-mail em uso como conflito sem vazar SQL", () => {
   assertEquals([e.code, e.status], ["email_in_use", 409]);
   assertEquals(classifyBeginError("qualquer coisa").code, "begin_failed");
 });
+
+Deno.test("motivo opcional: vazio/nulo aceito, 1 caractere rejeitado, 2+ aceito", () => {
+  assertEquals(parseEmailChangeBody({ ...base, reason: "" }).ok, true);
+  assertEquals(parseEmailChangeBody({ ...base, reason: "   " }).ok, true);
+  assertEquals(parseEmailChangeBody({ ...base, reason: undefined }).ok, true);
+  const r = parseEmailChangeBody({ ...base, reason: " x " });
+  assertEquals(r.ok ? "" : r.code, "invalid_reason");
+  assertEquals(parseEmailChangeBody({ ...base, reason: "ok" }).ok, true);
+});

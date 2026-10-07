@@ -16,7 +16,8 @@ export function parseEmailChangeBody(body: unknown):
   if (!UUID_RE.test(inviteId)) return { ok: false, code: "invalid_invite", message: "Administrador inválido." };
   if (!UUID_RE.test(idempotencyKey)) return { ok: false, code: "invalid_idempotency_key", message: "Chave de operação inválida." };
   if (!EMAIL_RE.test(newEmail) || newEmail.length > 254) return { ok: false, code: "invalid_email", message: "Informe um e-mail válido." };
-  if (reason.length < 2 || reason.length > 500) return { ok: false, code: "invalid_reason", message: "Informe o motivo (mínimo 2 caracteres)." };
+  // Motivo opcional somente nesta operação; se informado, mínimo 2 caracteres.
+  if (reason.length === 1 || reason.length > 500) return { ok: false, code: "invalid_reason", message: "O motivo, se informado, deve ter ao menos 2 caracteres." };
   if (b.confirm !== true) return { ok: false, code: "confirmation_required", message: "Confirme a alteração explicitamente." };
   return { ok: true, value: { inviteId, newEmail, reason, idempotencyKey } };
 }

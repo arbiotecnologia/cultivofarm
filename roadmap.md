@@ -105,3 +105,4 @@
 - [x] Sucessão de versão publicada (v1 → v2 em rascunho, encerramento controlado da vigência) — migrations `20261006225758_e18b38b3…` e `20261006230004_972d3b64…`; relatório `docs/auditorias/sucessao-versao-comercial-2026-10-06.md`. NÃO VERIFICADO: tela com login real e concorrência real.
 - [x] Gestão da plataforma: aba "Empresa" com lista, Nova Empresa, detalhe e edição cadastral segura — relatório `docs/auditorias/plataforma-aba-empresa-2026-10-07.md`. Pendente: paginação server-side (>150 empresas) e verificação visual com login real.
 - [x] Hardening JWT em platform-org-admin-email-change (getUser service_role, pin supabase-js)
+- [x] Motivo opcional na troca de e-mail de administrador (UI, Edge, RPC; demais ações inalteradas)

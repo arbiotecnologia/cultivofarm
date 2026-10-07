@@ -71,7 +71,9 @@ export function AdminGestaoAcoes({
   const motivoOk = motivo.trim().length >= 2;
   const editarValido = nome.trim().length >= 3 && motivoOk &&
     [0, 10, 11].includes(digitos(telefone).length) && [0, 11].includes(digitos(cpf).length);
-  const emailValido = EMAIL_RE.test(novoEmail.trim()) && novoEmail.trim().toLowerCase() !== convite.email.toLowerCase() && motivoOk && confirmado;
+  const motivoEmailLen = motivo.trim().length;
+  const motivoEmailErro = motivoEmailLen === 1;
+  const emailValido = EMAIL_RE.test(novoEmail.trim()) && novoEmail.trim().toLowerCase() !== convite.email.toLowerCase() && !motivoEmailErro && confirmado;
 
   const salvarEdicao = () => executar((done) => editar.mutate(
     { inviteId: convite.id, nome: nome.trim(), telefone: digitos(telefone), cpf: digitos(cpf), motivo: motivo.trim(), expectedUpdatedAt: convite.updated_at },
@@ -83,7 +85,7 @@ export function AdminGestaoAcoes({
   ));
 
   const salvarEmail = () => executar((done) => alterarEmail.mutate(
-    { inviteId: convite.id, newEmail: novoEmail, reason: motivo, idempotencyKey: mudancaPendente?.idempotency_key },
+    { inviteId: convite.id, newEmail: novoEmail, reason: motivo.trim(), idempotencyKey: mudancaPendente?.idempotency_key },
     {
       onSuccess: (r) => {
         toast.success(r.reinvite_required
@@ -165,8 +167,9 @@ export function AdminGestaoAcoes({
             )}
             <div className="space-y-1"><Label htmlFor="ga-email">Novo e-mail</Label>
               <Input id="ga-email" type="email" value={novoEmail} disabled={!!mudancaPendente} onChange={(e) => setNovoEmail(e.target.value)} /></div>
-            <div className="space-y-1"><Label htmlFor="ga-motivo-email">Motivo</Label>
-              <Textarea id="ga-motivo-email" value={motivo} disabled={!!mudancaPendente} onChange={(e) => setMotivo(e.target.value)} /></div>
+            <div className="space-y-1"><Label htmlFor="ga-motivo-email">Motivo (opcional)</Label>
+              <Textarea id="ga-motivo-email" value={motivo} disabled={!!mudancaPendente} aria-invalid={motivoEmailErro} onChange={(e) => setMotivo(e.target.value)} />
+              {motivoEmailErro && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
             <label className="flex items-start gap-2 text-sm">
               <Checkbox checked={confirmado} onCheckedChange={(v) => setConfirmado(v === true)} aria-label="Confirmo a alteração" />
               <span>Confirmo que o novo endereço pertence a este administrador.</span>
