@@ -34,7 +34,7 @@ const B = { ...base, id: "i-b", user_id: "u-b", nome: "Admin B", email: "bb@x.co
 const P = { ...base, id: "i-p", user_id: "u-p", nome: "Admin P", email: "pp@x.com.br", status: "pendente" };
 
 async function abrirMenu(nome: string) {
-  await userEvent.click(screen.getByRole("button", { name: `Gerenciar ${nome}` }));
+  await userEvent.click(within(screen.getByText(nome).closest("tr") as HTMLElement).getByRole("button", { name: "Gerenciar administrador" }));
 }
 
 describe("Gestão de administradores provisionados", () => {
@@ -52,7 +52,7 @@ describe("Gestão de administradores provisionados", () => {
   it("define responsável principal com motivo e responsável esperado, sem duplo envio", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Definir como responsável principal" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
     const d = screen.getByRole("dialog");
     const confirmar = within(d).getByRole("button", { name: "Confirmar" });
     const motivo = within(d).getByLabelText("Motivo (opcional)");
@@ -70,7 +70,7 @@ describe("Gestão de administradores provisionados", () => {
   it("define responsável principal sem motivo (vazio enviado)", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Definir como responsável principal" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
     const d = screen.getByRole("dialog");
     fireEvent.click(within(d).getByRole("button", { name: "Confirmar" }));
     expect(m.definir).toHaveBeenCalledWith(expect.objectContaining({ userId: "u-b", motivo: "" }), expect.any(Object));
@@ -79,16 +79,18 @@ describe("Gestão de administradores provisionados", () => {
   it("não oferece transferência para o atual responsável nem para convite pendente", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin A");
-    expect(screen.getByRole("menuitem", { name: "Definir como responsável principal" })).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
     await abrirMenu("Admin P");
-    expect(screen.getByRole("menuitem", { name: "Definir como responsável principal" })).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
   });
 
   it("edita somente nome/telefone/CPF e bloqueia CPF de ativo já preenchido", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Editar administrador" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Dados" }));
     const d = screen.getByRole("dialog");
     expect(within(d).getByLabelText("CPF")).toBeDisabled();
     expect(within(d).queryByLabelText(/e-mail/i)).not.toBeInTheDocument();
@@ -103,7 +105,7 @@ describe("Gestão de administradores provisionados", () => {
   it("troca de e-mail exige novo endereço repetido e confirmação explícita, com motivo opcional", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Alterar e-mail" }));
+    await userEvent.click(screen.getByRole("tab", { name: "E-mail" }));
     const d = screen.getByRole("dialog");
     const botao = within(d).getByRole("button", { name: "Confirmar alteração" });
     fireEvent.change(within(d).getByLabelText("Novo e-mail"), { target: { value: "invalido" } });
@@ -120,7 +122,7 @@ describe("Gestão de administradores provisionados", () => {
   it("troca de e-mail: motivo opcional; vazio aceito, 1 caractere bloqueia", async () => {
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Alterar e-mail" }));
+    await userEvent.click(screen.getByRole("tab", { name: "E-mail" }));
     const d = screen.getByRole("dialog");
     const botao = within(d).getByRole("button", { name: "Confirmar alteração" });
     const motivo = within(d).getByLabelText("Motivo (opcional)");
@@ -142,7 +144,7 @@ describe("Gestão de administradores provisionados", () => {
     m.mudancas = [{ id: "c1", invite_id: "i-b", status: "failed", new_email: "novo@x.com.br", idempotency_key: "key-1", reason: "Domínio", last_error_code: "sync_failed" }];
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Gerenciar confirmação de e-mail" }));
+    await userEvent.click(screen.getByRole("tab", { name: "E-mail" }));
     const d = screen.getByRole("dialog");
     fireEvent.click(within(d).getByLabelText("Confirmo a alteração"));
     fireEvent.click(within(d).getByRole("button", { name: "Verificar confirmação" }));
@@ -153,7 +155,7 @@ describe("Gestão de administradores provisionados", () => {
     m.mudancas = [{ id: "c1", invite_id: "i-b", status: "requested", new_email: "novo@x.com.br", idempotency_key: "key-1", reason: "", confirmation_delivery_status: "accepted", confirmation_next_attempt_at: new Date(Date.now() + 300000).toISOString() }];
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Gerenciar confirmação de e-mail" }));
+    await userEvent.click(screen.getByRole("tab", { name: "E-mail" }));
     const d = screen.getByRole("dialog");
     expect(within(d).queryByRole("button", { name: "Cancelar solicitação" })).not.toBeInTheDocument();
     expect(within(d).getByText(/não podem ser cancelados com segurança/)).toBeInTheDocument();
@@ -167,7 +169,7 @@ describe("Gestão de administradores provisionados", () => {
     m.mudancas = [{ id: "c1", invite_id: "i-b", status: "requested", new_email: "novo@x.com.br", idempotency_key: "key-1", reason: "", confirmation_delivery_status: "ambiguous" }];
     renderWithProviders(<PlataformaAdmins />);
     await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Gerenciar confirmação de e-mail" }));
+    await userEvent.click(screen.getByRole("tab", { name: "E-mail" }));
     const d = screen.getByRole("dialog");
     const resend = within(d).getByRole("button", { name: "Reenviar confirmação" });
     expect(resend).toBeDisabled();
