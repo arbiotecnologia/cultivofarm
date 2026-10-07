@@ -55,11 +55,25 @@ describe("Gestão de administradores provisionados", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Definir como responsável principal" }));
     const d = screen.getByRole("dialog");
     const confirmar = within(d).getByRole("button", { name: "Confirmar" });
+    const motivo = within(d).getByLabelText("Motivo (opcional)");
+    expect(motivo).not.toBeRequired();
+    expect(confirmar).toBeEnabled();
+    fireEvent.change(motivo, { target: { value: " x " } });
     expect(confirmar).toBeDisabled();
-    fireEvent.change(within(d).getByLabelText("Motivo"), { target: { value: "Troca" } });
+    expect(within(d).getByText(/ao menos 2 caracteres/)).toBeInTheDocument();
+    fireEvent.change(motivo, { target: { value: "Troca" } });
     fireEvent.click(confirmar); fireEvent.click(confirmar);
     expect(m.definir).toHaveBeenCalledTimes(1);
     expect(m.definir).toHaveBeenCalledWith({ organizationId: "org-1", userId: "u-b", motivo: "Troca", expectedResponsavel: "u-a" }, expect.any(Object));
+  });
+
+  it("define responsável principal sem motivo (vazio enviado)", async () => {
+    renderWithProviders(<PlataformaAdmins />);
+    await abrirMenu("Admin B");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Definir como responsável principal" }));
+    const d = screen.getByRole("dialog");
+    fireEvent.click(within(d).getByRole("button", { name: "Confirmar" }));
+    expect(m.definir).toHaveBeenCalledWith(expect.objectContaining({ userId: "u-b", motivo: "" }), expect.any(Object));
   });
 
   it("não oferece transferência para o atual responsável nem para convite pendente", async () => {
