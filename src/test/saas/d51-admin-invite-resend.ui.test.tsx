@@ -24,7 +24,6 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useMudancasEmailAdmin: () => ({ data: [] }),
   useEditarAdminEmpresa: () => ({ mutate: vi.fn(), isPending: false }),
   useAlterarEmailAdmin: () => ({ mutate: vi.fn(), isPending: false }),
-  useDefinirResponsavelPrincipal: () => ({ mutate: vi.fn(), isPending: false }),
   mensagemErroPlataforma: () => "erro",
   mascararEmail: (e: string) => e,
 }));

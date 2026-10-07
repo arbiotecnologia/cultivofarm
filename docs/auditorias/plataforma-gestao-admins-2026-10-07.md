@@ -227,3 +227,25 @@ Este Supabase externo não oferece sessão gerenciada injetável ao executor; en
 4. Fornecer somente método, nome da Edge, horário UTC, status HTTP, origem/headers CORS permitidos e identificador de correlação não secreto para confronto focal com logs sanitizados, nunca Authorization/apikey/corpos pessoais.
 
 **Decisão: NO-GO funcional; provas autenticadas BLOCKED, nenhum FAIL de regressão demonstrado.** Mudanças limitadas a este relatório e `roadmap.md`; preservados dados/histórico e SMTP/Auth config, planos, B2B, fiscal e pagamentos.
+
+## Decisão do proprietário: retirar Responsabilidade — 17:04 UTC
+
+O proprietário aprovou a remoção com base nas suas capturas reais. Essas capturas foram mencionadas na solicitação, mas não anexadas nesta rodada: a origem da decisão é o relato explícito do proprietário, não uma nova inspeção autenticada pelo executor. Esta decisão substitui a descrição anterior de quatro seções.
+
+- `AdminGestaoAcoes` apresenta exclusivamente **Dados, E-mail e Acesso**. Removidos modo `responsavel`, trigger/conteúdo, formulário/confirmação, `salvarResponsavel`, hook `useDefinirResponsavelPrincipal`, prop `responsavelAtualId` e cálculos exclusivos; lock compartilhado continua protegendo as operações restantes.
+- `PlataformaAdmins` não repassa mais a prop removida. `responsavelDe` continua necessário à identificação **Responsável principal**, preservada na tabela como informação somente leitura. Nenhum caminho substituto criado; provisionamento inicial preexistente não foi alterado.
+- Abas usam `grid-cols-3` em desktop e mobile, com altura mínima de 44px; textos curtos Dados/E-mail/Acesso. Teste verifica exatamente três abas e ausência de Responsabilidade, além de uma única ação por linha.
+- Os três testes específicos do fluxo retirado foram removidos, não contabilizados como provas atuais. Cobertura de edição, e-mail confirmado pelo titular, reenvio real de convite, recovery com rótulo correto, senha provisória/replay e travas permaneceu.
+- Auditoria independente local read-only não encontrou dependência que tornasse insegura a retirada; RPC, hook exportado compartilhado, migrations, auditoria e histórico de responsável principal foram preservados.
+
+| Verificação desta alteração | Resultado | Evidência / limite |
+|---|---|---|
+| Testes focais de gestão/acesso/reenvio | PASS | 26/26 em 3 arquivos |
+| Suíte pertinente SaaS + Comunicação | PASS | 834/834 em 63 arquivos; redução de 3 testes corresponde ao fluxo removido |
+| ESLint focal | PASS | Dois arquivos runtime e três testes, sem findings |
+| Scanners segredos/fiscal | PASS | Dois arquivos runtime; nenhum segredo ou indicador de emissão fiscal |
+| Build automático | PASS | Último registro observado: `build OK` 2026-10-07T17:05:57Z; build/typecheck manual não executados |
+| Layout de três colunas/área de toque | PASS estrutural | Asserção de três abas e grid; mínimo 44px preservado; não equivale a nova inspeção visual autenticada desktop/mobile |
+| Homologação Auth real | BLOCKED | Gate anterior permanece; capturas relatadas não certificam operações, RLS ou sessões neste executor |
+
+**PASS focal de UX; NO-GO funcional autenticado preservado.** Somente frontend, testes, memória do requisito e documentação alterados; nenhuma migration, Edge Function, Supabase/Auth/SMTP/RLS, plano/B2B/fiscal/pagamento ou publicação/deploy manual.

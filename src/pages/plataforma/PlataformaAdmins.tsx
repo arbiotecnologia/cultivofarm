@@ -316,7 +316,7 @@ export default function PlataformaAdmins({ organizationIdInicial = null }: { org
                       <TableCell><Badge variant={c.status === "falhou" ? "destructive" : "outline"}>{envioAmbiguo(c) ? "Envio não confirmado" : (c.status === "pendente" ? "Convite pendente" : STATUS_PROVISIONAMENTO[c.status] ?? c.status)}</Badge></TableCell>
                       <TableCell>{dataHora(c.updated_at || c.created_at)}</TableCell>
                       <TableCell>
-                         <AdminGestaoAcoes convite={c} empresaNome={nomeOrg(c.organization_id)} convidar={convidar} responsavelAtualId={responsavelDe(c.organization_id)} mudancaPendente={mudancaDe(c.id)} />
+                         <AdminGestaoAcoes convite={c} empresaNome={nomeOrg(c.organization_id)} convidar={convidar} mudancaPendente={mudancaDe(c.id)} />
                       </TableCell>
                     </TableRow>
                   ))}
