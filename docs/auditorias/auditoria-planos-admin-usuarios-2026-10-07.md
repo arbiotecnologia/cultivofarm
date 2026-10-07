@@ -140,3 +140,50 @@ Build automático verificado: OK às 19:26:35 UTC. Deno check fornece validaçã
 O fechamento já estava aplicado na revisão `a27652387ae58531b0a9488ee0cf5980190da445`; não foi reaplicado nem duplicado. Reexecução local: 69 arquivos / 770 testes PASS (inclui Edge 17, matriz 44 e tenant 8), Deno check PASS, ESLint focal PASS, scanners segredos/integração fiscal PASS e diff-check PASS. O teste de JWT antigo usa resposta mockada de has_role, não certifica fencing remoto. Log do compensador permanece deliberadamente sanitizado (evento fixo, sem error.code), como documentado no fechamento anterior.
 
 Nesta revalidação, o log automático inicialmente estava ausente; depois confirmou build OK às 19:32:00 UTC. Typecheck frontend separado e build manual não executados: validação do frontend é gerenciada automaticamente pelo ambiente. Nenhuma alteração adicional na Edge/testes, nenhuma operação Supabase, migration, publicação ou deploy. PASS banco/RLS independente e PASS estrutural preservados; NO-GO restrito ao browser autenticado E2E e à Edge remota até deploy autorizado. Compensação Auth permanece best-effort em indisponibilidade/interrupção.
+
+## Continuação autenticada solicitada — 19:34 UTC
+
+Comparação com `a27652387ae58531b0a9488ee0cf5980190da445`: fonte `create-user/index.ts` e seus testes permanecem idênticos. Primeiro teste executado: 17/17 PASS. Nenhuma publicação Edge ou frontend, migration, criação de usuário, alteração de sessão, assinatura, feature ou dado real nesta rodada. Alterados somente este relatório e `roadmap.md`.
+
+### Execução disponível e limites
+
+| Verificação | Resultado desta rodada | Evidência / limite |
+|---|---|---|
+| Correção local bearer/has_role/authorizationError/compensador | PASS | diff com commit-base vazio; 17 testes do handler |
+| Admin com sessão atual / iat antigo / tenant forjado / papéis proibidos | PASS isolado | SDK/Deno mockados; iat antigo é resposta false do guard mockado, não fence remoto |
+| Falha profile/roles/exceção; sucesso sem compensação; compensador falho | PASS isolado | testes existentes; não removeu usuário real |
+| Matriz plano × perfil e testes pertinentes | PASS 770/770, 69 arquivos | matriz 44, Edge 17, tenant 8 incluídos |
+| Suíte completa | PASS 5.821; 4 skipped | 399 arquivos PASS / 1 skipped; 19:35:34 UTC, duração 230,65s |
+| Deno check / ESLint focal / scanners existentes / diff-check | PASS | sem rede de dados, sem deploy; Deno valida tipos da Edge |
+| Typecheck frontend separado | NÃO EXECUTADO | ambiente gerencia validações automáticas; não inferir PASS a partir do build |
+| Build automático novo | PASS | log build OK 19:42:10 UTC; nenhum build manual |
+| Banco/RLS dos quatro planos | PASS independente preservado | provas anteriores do executor Supabase do proprietário, não reexecutadas nesta rodada |
+| Browser autenticado, quatro empresas × duas identidades | BLOCKED | `external_unmanaged`; nenhum cookie/sessão injetado, armazenamento canônico ausente |
+| Duplicidade de criação sob concorrência | BLOCKED | UI tem isPending + botão disabled; isso não prova exclusão simultânea nem idempotência da Edge |
+| Nenhum erro revela dado sensível na resposta Edge | FAIL estrutural do contrato universal | `create-user/index.ts:167` ainda retorna createError.message bruto; sanitização da UI não protege quem lê a resposta HTTP |
+
+Browser real sem Auth: `/configuracoes` redirecionou a `/auth` no desktop 1280×1800 e mobile 390×844; capturas inspecionadas em `/tmp/browser/plans-1934/desktop.png` e `mobile.png`, somente login. O caminho exploratório `/plataforma/gestao` retornou 404 (`platform.png`); não é evidência de regressão nem de guard autenticado, pois o registro observado é `/plataforma`. Nenhuma captura de login é tratada como prova dos planos. Logo aparece vazio, observação pública preexistente sem atribuição causal.
+
+### Roteiro autenticado preparado — somente leitura
+
+Pré-condições: proprietário/executor externo usa sessões reais existentes no canônico `swzpzcwiasxmjutrmvkm`; um administrador e pelo menos um usuário já criado por esse administrador por empresa, com vínculo de criação comprovado por auditoria existente. Não criar novos usuários nem mudar senha/acesso para obter a prova nesta rodada. Se não existir identidade ou evidência de vínculo, marcar BLOCKED. Não enviar credenciais/tokens ao chat; este executor não consegue injetar sessões de Supabase externo.
+
+| Cenário | Entitlements esperados | Admin | Usuário do admin |
+|---|---:|---|---|
+| Refil Informática — Base v1 | 3 | BLOCKED browser | BLOCKED browser |
+| Homologação CultivoFarm — Essencial v1 | 8 | BLOCKED browser | BLOCKED browser |
+| AR Biotecnologia — Gestão v1 | 10 | BLOCKED browser | BLOCKED browser |
+| CultivoFarm ou FSF Agroservice — Completo v1 | 17 | BLOCKED browser | BLOCKED browser |
+
+Para cada uma das oito identidades, em desktop e mobile:
+
+1. Confirmar perfil, organização, status active/trial_active e versão via respostas read-only do cliente canônico; comparar feature keys e hashes à matriz deste relatório. Registrar somente identificação mascarada, papel, contagens, códigos e horário.
+2. Usar inventário canônico de rotas para selecionar casos: feature e papel permitidos; feature ausente; feature presente mas papel proibido; rota interna; alias; rota inexistente. Confrontar sidebar, atalhos e busca com URL direta. Esperado: acesso = plano ∩ perfil/vínculo, nunca união.
+3. Confirmar `useEntitlements`, loading/erro e `ForaDoPlano` sem vazamento/liberação transitória; guard de papel prevalece quando não autorizado. Recarregar e repetir após logout/login, verificando cache segregado por identidade/empresa.
+4. Inspecionar botões/ações internas sem executar gravação, emissão, convite, recovery ou criação. Botão oculto não prova autorização backend; operações mutáveis ficam BLOCKED sem ambiente/fixtures autorizados.
+5. Usando apenas leituras e sessão própria, aplicar filtros de IDs de outra empresa às consultas canônicas de usuários, assinaturas, clientes, lotes, ordens, financeiro e fiscal. Esperado: vazio/negação, nunca dado estrangeiro. Campos/rotas/features ou perfil falsificados no estado local não podem ampliar acesso; não persistir falsificações nem enviar mutações. `partner_id` e `organization_id` forjados no create-user permanecem provas isoladas até autorização de execução remota.
+6. Registrar por caso: identidade mascarada, plano/papel, rota/feature, esperado/observado, status HTTP, contagem estrangeira, captura sem PII e resultado PASS/FAIL/BLOCKED. Não armazenar cabeçalhos bearer/cookies/corpos financeiros/fiscais.
+
+### Riscos e decisão
+
+PASS banco/RLS independente e PASS estrutural da matriz permanecem válidos no escopo comprovado. **NO-GO integral**: faltam oito provas browser autenticadas e Edge remota; há também resposta Auth bruta comprovada e ausência de prova de não duplicidade concorrente. A proteção `isPending` em `Configuracoes.tsx:281,782` é apenas evidência de implementação, não prova funcional de clique duplo. Compensação não é idempotência nem transação distribuída. Sem editar código por inferência nem ampliar escopo; riscos registrados para correção focal autorizada. Gate humano mínimo: execução read-only com as oito identidades existentes no navegador do proprietário e evidências sanitizadas; deploy/testes remotos só após autorização separada. Nenhum GO 100% alegado.
