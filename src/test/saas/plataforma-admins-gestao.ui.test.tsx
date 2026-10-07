@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { renderWithProviders } from "@/test/helpers/renderWithProviders";
 
 const m = vi.hoisted(() => ({
-  editar: vi.fn(), email: vi.fn(), definir: vi.fn(),
+  editar: vi.fn(), email: vi.fn(),
   convites: [] as Array<Record<string, unknown>>,
   mudancas: [] as Array<Record<string, unknown>>,
 }));
@@ -17,7 +17,6 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useMudancasEmailAdmin: () => ({ data: m.mudancas }),
   useEditarAdminEmpresa: () => ({ mutate: m.editar, isPending: false }),
   useAlterarEmailAdmin: () => ({ mutate: m.email, isPending: false }),
-  useDefinirResponsavelPrincipal: () => ({ mutate: m.definir, isPending: false }),
   mensagemErroPlataforma: () => "erro",
   mascararEmail: (e: string) => `${e.slice(0, 2)}***@${e.split("@")[1]}`,
 }));
@@ -40,7 +39,7 @@ async function abrirMenu(nome: string) {
 describe("Gestão de administradores provisionados", () => {
   beforeEach(() => { vi.clearAllMocks(); m.convites = [A, B, P]; m.mudancas = []; });
 
-  it("tem apenas um botão por linha e um diálogo com quatro seções", async () => {
+  it("tem apenas um botão por linha e um diálogo com exatamente três seções", async () => {
     renderWithProviders(<PlataformaAdmins />);
     for (const nome of ["Admin A", "Admin B", "Admin P"]) {
       const row = screen.getByText(nome).closest("tr");
@@ -54,7 +53,10 @@ describe("Gestão de administradores provisionados", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     const d = within(screen.getByRole("dialog"));
     expect(d.getByText(/Admin B · Empresa X/)).toHaveTextContent("bb***@x.com.br");
-    for (const name of ["Dados", "Responsabilidade", "E-mail", "Acesso"]) expect(d.getByRole("tab", { name })).toBeInTheDocument();
+    expect(d.getAllByRole("tab")).toHaveLength(3);
+    for (const name of ["Dados", "E-mail", "Acesso"]) expect(d.getByRole("tab", { name })).toBeInTheDocument();
+    expect(d.queryByText("Responsabilidade")).not.toBeInTheDocument();
+    expect(d.getByRole("tablist")).toHaveClass("grid-cols-3");
   });
 
   it("mostra badges reais e e-mail mascarado", () => {
@@ -64,44 +66,6 @@ describe("Gestão de administradores provisionados", () => {
     expect(screen.getByText("Mudança de e-mail pendente")).toBeInTheDocument();
     expect(screen.getByText("Convite pendente")).toBeInTheDocument();
     expect(screen.queryByText("bb@x.com.br")).not.toBeInTheDocument();
-  });
-
-  it("define responsável principal com motivo e responsável esperado, sem duplo envio", async () => {
-    renderWithProviders(<PlataformaAdmins />);
-    await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
-    const d = screen.getByRole("dialog");
-    const confirmar = within(d).getByRole("button", { name: "Confirmar" });
-    const motivo = within(d).getByLabelText("Motivo (opcional)");
-    expect(motivo).not.toBeRequired();
-    expect(confirmar).toBeEnabled();
-    fireEvent.change(motivo, { target: { value: " x " } });
-    expect(confirmar).toBeDisabled();
-    expect(within(d).getByText(/ao menos 2 caracteres/)).toBeInTheDocument();
-    fireEvent.change(motivo, { target: { value: "Troca" } });
-    fireEvent.click(confirmar); fireEvent.click(confirmar);
-    expect(m.definir).toHaveBeenCalledTimes(1);
-    expect(m.definir).toHaveBeenCalledWith({ organizationId: "org-1", userId: "u-b", motivo: "Troca", expectedResponsavel: "u-a" }, expect.any(Object));
-  });
-
-  it("define responsável principal sem motivo (vazio enviado)", async () => {
-    renderWithProviders(<PlataformaAdmins />);
-    await abrirMenu("Admin B");
-    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
-    const d = screen.getByRole("dialog");
-    fireEvent.click(within(d).getByRole("button", { name: "Confirmar" }));
-    expect(m.definir).toHaveBeenCalledWith(expect.objectContaining({ userId: "u-b", motivo: "" }), expect.any(Object));
-  });
-
-  it("não oferece transferência para o atual responsável nem para convite pendente", async () => {
-    renderWithProviders(<PlataformaAdmins />);
-    await abrirMenu("Admin A");
-    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
-    expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
-    await userEvent.keyboard("{Escape}");
-    await abrirMenu("Admin P");
-    await userEvent.click(screen.getByRole("tab", { name: "Responsabilidade" }));
-    expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
   });
 
   it("edita somente nome/telefone/CPF e bloqueia CPF de ativo já preenchido", async () => {

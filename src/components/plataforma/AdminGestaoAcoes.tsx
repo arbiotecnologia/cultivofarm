@@ -1,6 +1,6 @@
 /**
  * Ações de gestão de um administrador provisionado (Platform Superadmin):
- * editar dados básicos, alterar e-mail e definir responsável principal.
+ * editar dados básicos, alterar e-mail e gerenciar acesso.
  * Toda regra é validada no servidor; aqui só há UX, confirmação e trava de duplo clique.
  */
 import { useRef, useState } from "react";
@@ -18,7 +18,6 @@ import {
   mensagemErroPlataforma,
   type useConvidarAdminEmpresa,
   useAlterarEmailAdmin,
-  useDefinirResponsavelPrincipal,
   useEditarAdminEmpresa,
   type ConviteAdminEmpresa,
   type MudancaEmailAdmin,
@@ -27,17 +26,15 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const digitos = (v: string) => v.replace(/\D/g, "");
 
-type Modo = "editar" | "email" | "responsavel" | "acesso";
+type Modo = "editar" | "email" | "acesso";
 
 export function AdminGestaoAcoes({
   convite,
-  responsavelAtualId,
   mudancaPendente,
   empresaNome,
   convidar,
 }: {
   convite: ConviteAdminEmpresa;
-  responsavelAtualId: string | null;
   mudancaPendente: MudancaEmailAdmin | null;
   empresaNome: string;
   convidar: Pick<ReturnType<typeof useConvidarAdminEmpresa>, "mutate" | "isPending">;
@@ -56,13 +53,10 @@ export function AdminGestaoAcoes({
 
   const editar = useEditarAdminEmpresa();
   const alterarEmail = useAlterarEmailAdmin();
-  const definir = useDefinirResponsavelPrincipal();
 
-  const ehResponsavel = !!convite.user_id && convite.user_id === responsavelAtualId;
-  const podeSerResponsavel = convite.status === "ativo" && !!convite.user_id && !ehResponsavel;
   const ocupado = convite.status === "processando";
   const cpfBloqueado = convite.status === "ativo" && !!convite.cpf_cnpj;
-  const pendente = editar.isPending || alterarEmail.isPending || definir.isPending || accessBusy || convidar.isPending;
+  const pendente = editar.isPending || alterarEmail.isPending || accessBusy || convidar.isPending;
 
   const abrir = (m: Modo) => {
     setNome(convite.nome); setTelefone(convite.telefone ?? ""); setCpf(convite.cpf_cnpj ?? "");
@@ -107,15 +101,6 @@ export function AdminGestaoAcoes({
     },
   ));
 
-  const salvarResponsavel = () => { if (!convite.user_id) return; executar((done) => definir.mutate(
-    { organizationId: convite.organization_id, userId: convite.user_id ?? "", motivo: motivo.trim(), expectedResponsavel: responsavelAtualId },
-    {
-      onSuccess: () => { toast.success("Responsável principal atualizado."); setOpen(false); },
-      onError: (e) => toast.error(mensagemErroPlataforma(e)),
-      onSettled: done,
-    },
-  )); };
-
   return (
     <>
       <Button size="sm" variant="outline" className="min-h-11" disabled={ocupado} onClick={() => abrir("editar")}>Gerenciar administrador</Button>
@@ -126,9 +111,8 @@ export function AdminGestaoAcoes({
             <DialogDescription className="break-words">{convite.nome} · {empresaNome}<br />{mascararEmail(convite.email)} · {mudancaPendente ? "E-mail aguardando confirmação" : convite.status === "ativo" ? "Ativo" : convite.status === "pendente" ? "Convite pendente" : convite.status === "falhou" ? "Falhou" : "Criando acesso"}</DialogDescription>
           </DialogHeader>
           <Tabs value={modo} onValueChange={(value) => { if (!emCurso.current && !pendente) { setModo(value as Modo); setMotivo(value === "email" ? mudancaPendente?.reason ?? "" : ""); setConfirmado(false); } }}>
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-1">
               <TabsTrigger className="min-h-11" value="editar" disabled={pendente}>Dados</TabsTrigger>
-              <TabsTrigger className="min-h-11" value="responsavel" disabled={pendente}>Responsabilidade</TabsTrigger>
               <TabsTrigger className="min-h-11" value="email" disabled={pendente}>E-mail</TabsTrigger>
               <TabsTrigger className="min-h-11" value="acesso" disabled={pendente}>Acesso</TabsTrigger>
             </TabsList>
@@ -173,16 +157,6 @@ export function AdminGestaoAcoes({
                <Button variant="outline" disabled={pendente || !confirmado || reenvioCooldown} onClick={() => salvarEmail("resend")}>Reenviar confirmação</Button>
               <Button disabled={pendente} onClick={() => salvarEmail("reconcile")}>Verificar confirmação</Button>
             </div> : <Button disabled={!emailValido || pendente} onClick={() => salvarEmail()}>{alterarEmail.isPending ? "Enviando…" : "Confirmar alteração"}</Button>}
-          </DialogFooter>
-            </TabsContent>
-            <TabsContent value="responsavel" className="space-y-4 pt-3">
-              <p className="text-sm text-muted-foreground">{ehResponsavel ? "Este administrador já é o responsável principal." : podeSerResponsavel ? `${convite.nome} passa a ser o único responsável principal. O anterior continua administrador.` : "Somente um administrador ativo pode ser definido como responsável principal."}</p>
-          <div className="space-y-1"><Label htmlFor="ga-motivo-resp">Motivo (opcional)</Label>
-            <Textarea id="ga-motivo-resp" value={motivo} aria-invalid={motivoCurto} onChange={(e) => setMotivo(e.target.value)} />
-            {motivoCurto && <p className="text-xs text-destructive">Se informar o motivo, use ao menos 2 caracteres.</p>}</div>
-          <DialogFooter>
-            <Button variant="outline" disabled={pendente} onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button disabled={!podeSerResponsavel || motivoCurto || pendente} onClick={salvarResponsavel}>{definir.isPending ? "Salvando…" : "Confirmar"}</Button>
           </DialogFooter>
             </TabsContent>
             <TabsContent value="acesso" className="space-y-4 pt-3">
