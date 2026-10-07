@@ -1,3 +1,11 @@
+## Continuação planos/admin/usuários — 2026-10-07 19:34 UTC
+
+- [x] Confirmada integridade de create-user/testes desde a276523; 17/17 primeiro, pertinente 770/770, completa 5.821 PASS/4 skipped; Deno check, lint focal, scanners e diff-check PASS. Sem deploy ou operação remota.
+- [x] Preparado roteiro read-only quatro planos × admin e usuário existente, desktop/mobile, navegação/URL/guards/interseção, forja e isolamento; prova independente banco/RLS preservada.
+- [ ] BLOCKED: oito sessões browser externas não disponíveis; executar roteiro no navegador do proprietário com identidades existentes e evidência sanitizada. Login público desktop/mobile não certifica plano.
+- [ ] NO-GO: Edge remota aguarda autorização de deploy/certificação; resposta createError.message bruta é risco comprovado, duplicidade concorrente não certificada (isPending não é idempotência). Nenhuma correção comercial/banco ou criação de fixture nesta rodada.
+- [ ] Validação frontend: typecheck separado não executado; build automático a conferir, sem execução manual pelo ambiente.
+
 ## Fechamento corretivo planos/admin/usuários — 2026-10-07 19:23 UTC
 
 - [x] Diff aprovado aplicado localmente em create-user: autorização com bearer do ator, authorizationError negado, compensação no catch e erro/log genéricos; sem deploy ou operação remota.
