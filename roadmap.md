@@ -6,9 +6,11 @@
 - [x] Testes 904/904 e config/handler 245/245 (sobreposição, não total único); lint inventário PASS; lint fontes FAIL baseline useAuth (1 erro/3 warnings); scanners PASS. Typecheck isolado NOT RUN por restrição do ambiente; último build automático pré-documentação OK 21:35:25Z.
 - [x] Smoke público no domínio oficial: plataforma/financeiro/B2B → auth e visita/novo → app/login; Entrar visível/zero pageerror, sem login ou mutação. Lacuna latente PortalGuard sem feature /portal não classificada como bypass atual.
 - [ ] Prioridade segurança A03: comprovar/fechar escopo server-side de set_partner_user_papel (authenticated EXECUTE, DEFINER sem tenant do alvo no corpo); falta prova autenticada/alvo seguro para correção. Nenhuma RPC mutável executada.
+- [ ] Prioridade isolamento A05: registros_consultor sem policy RESTRICTIVE tenant; branches admin/gestor por papel confirmadas remotamente. Falta prova autenticada e investigação focal segura para correção; não extrapolar PASS das demais tabelas.
 - [ ] NO-GO browser: sessão real do administrador AR BIOTECNOLOGIA Gestão v1/TRIAL/10 primeiro; depois oito identidades existentes nos quatro planos, Completo TRIAL, Superadmin/non-superadmin. External_unmanaged impede sessão injetada; sem credenciais em texto, mocks ou PASS inventado.
 - [ ] Forja/isolamento RLS/Storage e mutações sensíveis integrais: BLOCKED sem sessões reais e alvo de prova segura; advisors atuais NOT RUN, sem reutilizar números históricos como novos. Nenhum módulo seguinte iniciado.
 - [x] Somente relatório/roadmap alterados; sem código funcional, migration, deploy/publicação, fixtures ou alteração de Auth/SMTP/planos/comercial/fiscal/pagamentos.
+- [x] Build automático pós-documentação OK 21:41:28Z/21:41:45Z; diff-check PASS antes da consolidação final, sem build/typecheck manual.
 
 ## Pós-deploy planos/admin/usuários — 2026-10-07, solicitação 19:57 UTC
 

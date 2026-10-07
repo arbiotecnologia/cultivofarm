@@ -85,7 +85,7 @@ Aliases/itens base checados contra App: nenhum menu órfão ou alias quebrado co
 
 - Troca de identidade/logout em `useAuth`: limpa cache/contexto antes de novo fetch; generation/ref evita aplicação de resultado de identidade anterior. Troca B2B/técnico cancela/remove queries focais e limpa seleção; contexto disponível vem da RPC, não do storage.
 - `usePortalCliente`: seleção persistida só aceita cliente na lista retornada pelo servidor. Filtro cliente_id não é fronteira de segurança.
-- Introspecção viva confirmou policies RESTRICTIVE de tenant em fazendas/entregas/registros_consultor e as fontes operacionais amostradas (ordens, lotes, financeiro, fiscal); policies de papel são combinadas com isolamento. A amostra não certifica todas as tabelas/RPCs do sistema nem substitui requisição autenticada.
+- Introspecção viva confirmou policies RESTRICTIVE de tenant em fazendas/entregas e nas fontes amostradas ordens/lotes/financeiro/fiscal. **registros_consultor é exceção: não possui policy RESTRICTIVE de tenant**; possui policies hardened permissivas com branches por vínculo e branches administrador/gestor sem escopo explícito (A05). Não generalizar o isolamento para essa tabela. A amostra não certifica todas as tabelas/RPCs do sistema nem substitui requisição autenticada.
 - Remoto: cores `platform_private.has_role`/`h15_actor_organization` DEFINER com search_path fixo; wrappers públicos INVOKER. `get_my_entitlement_context`, transição de assinatura e listagem tenant observados INVOKER. ACL/corpos de todos os helpers não foram exaustivamente provados.
 - Storage vivo: 11 buckets, 10 privados e `logos` público. Policies de clientes/financeiro usam helpers de posse, consultor exige prefixo organização, branding platform exige Superadmin, fiscal é privado. A existência dessas policies não prova download/upload cruzado negado em sessão real. Traversal tem testes unitários, não tentativa autenticada nova.
 - `create-user`/list-portal-users e contratos administrativos foram cobertos pelos testes locais (incluindo JWT/tenant/compensação/lock); mocks/contratos não equivalem a chamada Edge autenticada. O deploy v62 anteriormente confirmado é evidência histórica independente, não reimplantação nesta rodada.
@@ -98,6 +98,7 @@ Aliases/itens base checados contra App: nenhum menu órfão ou alias quebrado co
 | A02 | Configuração fiscal sem a mesma flag de itens irmãos | Pode ser base intencional; não é P1 inequívoco. Nenhuma mudança fiscal |
 | A03 | RPC legada set_partner_user_papel aceita link_id e valida papel do ator, sem tenant do alvo no corpo remoto | authenticated tem EXECUTE, anon não. DEFINER escreve partner_users/user_roles; triggers lidos cuidam de gate/revisão/admin global, não comprovam escopo do alvo. **Pendência prioritária de segurança**, sem prova autenticada de exploração nem correção às cegas. Hook existe, mas não é usado pela tabela atual. Ausência de botão não elimina chamada por API |
 | A04 | Cobertura integral de Edges/RPCs e adversarial RLS/Storage | Amostra estrutural/read-only apenas; não declarar P0/P1 resolvidos nem isolamento integral novo |
+| A05 | registros_consultor sem policy RESTRICTIVE; branches administrador/gestor permitem por papel | Definições remotas SELECT/INSERT/UPDATE/DELETE confirmadas. has_role privada valida perfil ativo/access_ready, mas não compara tenant do recurso; triggers amostrados incluem gate de feature/status, sem guarda tenant explícita identificada. **Risco prioritário de isolamento**, não prova autenticada de vazamento. Requer investigação focal/prova segura antes de correção |
 
 A03 não deve ser descartado como “papéis globais”: admins operacionais são tenant-scoped. Antes de forward-fix é necessário determinar alvo/partner/organization canônicos e testar negativa em sessão real/ambiente autorizado preservando dados. Esta rodada não invocou a RPC. `profiles.updated_at` existe atualmente (1 coluna confirmada), portanto o trigger remoto touch_related_profiles não foi classificado como incompatibilidade com base em relato histórico.
 
@@ -111,7 +112,7 @@ A03 não deve ser descartado como “papéis globais”: admins operacionais sã
 | Lint fontes auditadas | FAIL baseline: useAuth 1 erro no-explicit-any + 3 warnings; fontes não alteradas |
 | Scanners fiscal secrets/integration | PASS, sem segredo real/indicador de emissão |
 | Typecheck frontend isolado | NOT RUN: execução manual proibida neste ambiente; não inferir PASS pelo Vitest |
-| Build | Último sinal automático observado antes da documentação: build OK 21:35:25Z; checar entrada posterior separadamente |
+| Build | PASS automático após documentação: build OK 21:41:28Z e 21:41:45Z; sem build manual |
 | Advisors Supabase nesta rodada | NOT RUN; números antigos não são novas evidências |
 | Banco/RLS | PASS introspecção focal; provas 40/40 anteriores são baseline histórico do executor independente, não nova rodada |
 | Browser público | PASS para três redirects /auth e um /app/login; sem autenticação |
@@ -125,7 +126,7 @@ Primeira sessão necessária: **administrador existente da AR BIOTECNOLOGIA, Ges
 
 Depois: admin + usuário existente por Base/Essencial/Gestão/Completo (oito identidades quando existentes), Completo TRIAL separado e Superadmin/non-superadmin; papéis ausentes permanecem arquiteturais/BLOCKED. Confirmar isolamento read-only entre sessões e persistência de cache; teste de mutação sensível só com autorização e alvo descartável/rollback garantido, não contra dados reais.
 
-**NO-GO integral:** browser E2E/autorização real e escopo A03 não certificados. Nenhum novo módulo iniciado; nenhuma alteração comercial/fiscal/cobrança/SMTP/Auth/assinatura. Não há resíduos de fixtures desta rodada porque nenhuma foi criada; não foi feita varredura global de resíduos históricos.
+**NO-GO integral:** browser E2E/autorização real e escopos A03/A05 não certificados. Nenhum novo módulo iniciado; nenhuma alteração comercial/fiscal/cobrança/SMTP/Auth/assinatura. Não há resíduos de fixtures desta rodada porque nenhuma foi criada; não foi feita varredura global de resíduos históricos.
 
 ## 8. Matriz integral de rotas (evidência estrutural)
 
