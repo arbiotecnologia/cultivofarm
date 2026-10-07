@@ -60,11 +60,9 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
     queryKey: ["simulacao-formal-header", simulationId],
     enabled: !!simulationId,
     queryFn: async (): Promise<SimulacaoFormalHeaderData | null> => {
-      const { data: sim, error } = await supabase
-        .from("partner_simulations" as any)
-        .select("*")
-        .eq("id", simulationId!)
-        .maybeSingle();
+      if (!simulationId) return null;
+      const { data, error } = await supabase.rpc("b2b_read_simulations" as any, { p_simulation_id: simulationId });
+      const sim = (data as any[] | null)?.[0];
       if (error) throw error;
       if (!sim) return null;
       const s = sim as any;
@@ -110,7 +108,7 @@ export function useSimulacaoFormalHeader(simulationId: string | null | undefined
         supabase
           .from("partner_simulation_items" as any)
           .select("quantidade, volume_ml")
-          .eq("simulation_id", simulationId!),
+          .eq("simulation_id", simulationId),
       ]);
 
       const itemsData = ((itemsRes as any)?.data ?? []) as Array<{ quantidade: number | null; volume_ml: number | null }>;

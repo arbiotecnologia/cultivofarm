@@ -56,29 +56,34 @@ export interface PartnerSimulation {
 }
 
 export function usePartnerSimulations(partnerId: string | null | undefined) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["partner-simulations", partnerId],
+    queryKey: ["partner-simulations", partnerId, user?.id],
     enabled: !!partnerId,
     queryFn: async (): Promise<PartnerSimulation[]> => {
-      const { data, error } = await supabase
-        .from("partner_simulations" as any)
-        .select("*, partner_simulation_items(count)")
-        .eq("partner_id", partnerId!)
-        .order("created_at", { ascending: false });
+      if (!partnerId) return [];
+      const { data, error } = await supabase.rpc("b2b_read_simulations" as any, { p_partner_id: partnerId });
       if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      return ((data ?? []) as any[]).map((r: any) => ({
         ...r,
-        items_count: r.partner_simulation_items?.[0]?.count ?? 0,
+        items_count: r.items_count ?? 0,
       }));
     },
   });
 }
 
 export function usePartnerSimulationItems(simulationId: string | null) {
+  const { user, role } = useAuth();
   return useQuery({
-    queryKey: ["partner-simulation-items", simulationId],
+    queryKey: ["partner-simulation-items", simulationId, user?.id, role],
     enabled: !!simulationId,
     queryFn: async () => {
+      if (!simulationId) return [];
+      if (role === "parceiro_b2b_tecnico") {
+        const { data, error } = await supabase.rpc("b2b_read_simulations" as any, { p_simulation_id: simulationId, p_items: true });
+        if (error) throw error;
+        return (data ?? []) as any[];
+      }
       const { data, error } = await supabase
         .from("partner_simulation_items" as any)
         .select(`
@@ -94,7 +99,7 @@ export function usePartnerSimulationItems(simulationId: string | null) {
             nome, codigo, tipo, nome_cientifico, concentracao_label, funcao_agronomica, dose_ml_ha
           )
         `)
-        .eq("simulation_id", simulationId!)
+        .eq("simulation_id", simulationId)
         .order("created_at");
       if (error) throw error;
       return data ?? [];
@@ -104,7 +109,7 @@ export function usePartnerSimulationItems(simulationId: string | null) {
 
 export function useCreatePartnerSimulation() {
   const qc = useQueryClient();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   return useMutation({
     mutationFn: async (payload: {
       partner_id: string;
@@ -128,11 +133,19 @@ export function useCreatePartnerSimulation() {
         `Simulação ${new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`;
       const validUntil = payload.valid_until
         ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      if (!user) throw new Error("Sessão necessária para salvar simulação.");
+      if (role === "parceiro_b2b_tecnico") {
+        const { data, error } = await supabase.rpc("b2b_save_technical_simulation" as any, {
+          p_payload: { ...payload, titulo, valid_until: validUntil },
+        });
+        if (error) throw error;
+        return data as string;
+      }
       const { data: sim, error } = await supabase
         .from("partner_simulations" as any)
         .insert({
           partner_id: payload.partner_id,
-          created_by: user!.id,
+          created_by: user.id,
           titulo,
           observacoes: payload.observacoes ?? null,
           cultura: payload.cultura ?? null,
