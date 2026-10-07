@@ -108,3 +108,7 @@
 - [x] Motivo opcional na troca de e-mail de administrador (UI, Edge, RPC; demais ações inalteradas)
 - [x] Motivo opcional em Definir responsável principal (UI + RPC; edição segue obrigatória)
 - [x] Revalidação consolidada motivo opcional (e-mail + responsável principal)
+
+- [x] Cadastro empresarial completo na ficha da empresa (contatos, endereço, IE, resumo fiscal somente leitura) — 2026-10-07
+- [ ] Validação visual autenticada da ficha da empresa (desktop/mobile)
+- [ ] Busca de empresas por cidade/UF (fase futura)
