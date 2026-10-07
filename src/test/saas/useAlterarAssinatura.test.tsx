@@ -16,7 +16,7 @@ function setup() {
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
   return { ...renderHook(() => useAlterarAssinatura(), { wrapper }), invalidation };
 }
-beforeEach(() => mock.run.mockReset());
+beforeEach(() => { mock.run.mockReset(); });
 describe("useAlterarAssinatura — lifecycle limitado", () => {
   it("sucesso não espera caches pendentes e invalida apenas quatro famílias", async () => {
     mock.run.mockResolvedValue({ correlationId: "key", reconciled: false });

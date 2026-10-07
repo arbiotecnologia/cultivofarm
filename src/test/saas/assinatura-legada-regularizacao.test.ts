@@ -35,7 +35,7 @@ describe("regularização de assinatura legada (plan_version_id NULL)", () => {
     expect(desconhecido).not.toContain("42P01");
   });
   it("bloqueia duplo clique", () => {
-    expect(tela).toContain("if (alterar.isPending) return;");
+    expect(tela).toContain("if (submitting.current || alterar.isPending) return;");
     expect(tela).toContain("mensagemErroAssinatura(e)");
   });
 });

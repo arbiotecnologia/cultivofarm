@@ -23,7 +23,7 @@ describe("Assinatura: prazo finito e correlação idempotente", () => {
   });
   it("timeout sem commit encerra após leituras limitadas e preserva chave no retry manual", async () => {
     vi.useFakeTimers();
-    const write = vi.fn(stuck);
+    const write = vi.fn<import("@/lib/saas/subscriptionTransition").TransitionIO["write"]>(stuck);
     const committed = vi.fn().mockResolvedValue(false);
     const execute = createSubscriptionTransition({ write, committed }, 100, 50);
     const verify = vi.fn();
