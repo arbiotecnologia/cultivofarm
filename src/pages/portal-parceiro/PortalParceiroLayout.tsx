@@ -15,6 +15,8 @@ import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
 import { PARCEIRO_GESTOR_GROUPS, PARCEIRO_TECNICO_GROUPS } from "@/config/portalMenus";
 import { getPapelLabel } from "@/lib/portal/identidade";
 import { usePortalBranding } from "@/hooks/useBranding";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 
 import {
   Select,
@@ -32,6 +34,7 @@ import {
 
 export default function PortalParceiroLayout() {
   const { user, role, signOut, loading } = useAuth();
+  const entitlements = useEntitlements();
   const { data: ownPartner, isLoading } = useMyPartner();
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
@@ -42,7 +45,9 @@ export default function PortalParceiroLayout() {
 
   const isStaff = role === "administrador" || role === "gestor_comercial";
   const isTecnico = role === "parceiro_b2b_tecnico";
-  const menuGroups = isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS;
+  const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
+    .map((group) => ({ ...group, items: group.items.filter((item) => isPathEntitled(item.route, entitlements)) }))
+    .filter((group) => group.items.length > 0);
   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
 
 
