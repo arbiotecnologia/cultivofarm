@@ -194,3 +194,26 @@ Executada no Supabase canônico `swzpzcwiasxmjutrmvkm` pelo roteiro `supabase/te
 **Riscos:** correlação nova a cada clique (repetição por rede pode gerar segundo `change_plan` idempotente em efeito, mas com nova linha de histórico); fluxo autenticado na tela não testado no navegador.
 
 **Decisão:** GO para o Superadmin regularizar a AR pela tela "Alterar plano" com Completo v1. Sem publicação de frontend, de versão comercial, cobrança ou enforcement; homologação não espelhada.
+
+## 20. Revalidação com papel authenticated — 2026-10-07 13:00 UTC
+
+**Correção da conclusão anterior:** a regra de legado já estava em produção, mas isso não provava a execução pelo papel real do frontend. Nesta rodada, `SET LOCAL ROLE authenticated` revelou duas barreiras adicionais: ausência de UPDATE para o `FOR UPDATE` de uma RPC INVOKER e ausência de EXECUTE em `platform_private.issue_ticket`. Ambas as tentativas falharam e foram desfeitas. A leitura dos triggers revelou ainda que a vinculação de versão recalculava `trial_ends_at`, contrariando a preservação exigida.
+
+**Aplicação somente no canônico:** destino confirmado por `lovable supabase info`: produção externa `swzpzcwiasxmjutrmvkm`. A migration anterior `20261007035510` já estava registrada; não foi duplicada. `20261007125842_4be2ccb0-35d5-4c5c-8b83-05b3661d1678.sql` restaurou UPDATE, mas não resolveu o ticket. `20261007125937_6ec29729-d13c-4c57-b565-6b0b9dbe616f.sql` revogou essa permissão, manteve entrada pública SECURITY INVOKER e reutilizou integralmente o corpo vigente em core privado SECURITY DEFINER com search_path vazio e a mesma validação Superadmin. Nenhum acesso genérico ao emissor de tickets foi concedido. RLS/grants de leitura permanecem inalterados. O trigger inicializa trial somente no INSERT; a troca de versão preserva o prazo existente.
+
+**Frontend:** traduz também o texto vivo `versão inexistente, não publicada ou fora de vigência`; continua bloqueando clique pendente. Nenhum deploy/publicação.
+
+**Prova real com rollback — PASS:** identidade Superadmin + papel authenticated, regularização da assinatura indicada para a versão real vigente; mesmo plan_id, status TRIAL e trial_ends_at preservados; snapshots de preço/moeda/ciclo/limites/features iguais à versão, sem mudar a versão comercial; auditoria com ator, assinatura e versões anterior/nova; retry da mesma correlação sem linha adicional; histórico imutável; tenant não-Superadmin negado; ações legadas mark_past_due/suspend/reactivate_manual/cancel/expire_trial negadas; change_plan sem versão e UUID inexistente negados; demais assinaturas com hash agregado preservado. A transação terminou em ROLLBACK. Leitura posterior confirmou o mesmo hash integral da assinatura antes/depois, versão NULL e prazo original. Não foram criadas fixtures nesta rodada.
+
+**Limites:** concorrência entre duas conexões, navegador autenticado e retry com payload divergente não foram provados nesta rodada; o core preserva o contrato anterior, inclusive retorno por correlação existente, sem comparação de payload. Versões futura/expirada/rascunho não foram fabricadas nem reprovadas nesta rodada; a seleção vigente/PUBLISHED foi preservada e os testes estruturais a cobrem. Não apresentar essas lacunas como PASS novo.
+
+**Segurança:** scanner completo reexecutado antes/depois: 10 INFO em ambas as execuções. Retorno das migrations: 465 advisors preexistentes (17 RLS sem policy, 2 DEFINER/anon, 445 DEFINER/authenticated, 1 proteção de senha vazada). Nenhum tratamento fora do incidente. Esses números vêm de verificações distintas e não são equivalentes.
+
+**Validação e decisão:** resultados finais dos comandos registrados abaixo. GO para a regularização pelo fluxo canônico comprovado no banco; NO-GO para alegar homologação visual/concorrência ou publicar. Assinatura real permanece inalterada. Commit-base inspecionado: `47d16a2b75114213d6255a37a24c71b8e3bc9279`; hash final é gerenciado pelo ambiente e não foi criado manualmente. Forward-fix preferível: desfazer o wrapper reinstala as falhas de privilégios; não fazer rollback operacional sem nova revisão.
+
+- Focal SaaS + Comunicação: 805/805 antes do teste adicional de 3 casos; esses 3 casos passaram na suíte final.
+- Suíte final: 386 arquivos PASS + 1 skipped; 5.577 testes PASS + 4 skipped, exit 0.
+- Lint focal dos quatro arquivos TS/TSX envolvidos: exit 0. Lint global não reexecutado; dívida global anterior não resolvida.
+- Scanner de segredos: OK, exit 0. Scanner completo: 10 INFO antes/depois, conforme seção acima.
+- Build automático do ambiente: `build OK` em 2026-10-07 13:00:57 UTC. Não executado build manual.
+- Typecheck: não executado manualmente por restrição do ambiente; não há resultado separado disponível nesta rodada. Não declarar typecheck PASS nem fechamento integral desse gate.

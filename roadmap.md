@@ -114,3 +114,4 @@
 - [ ] Validação visual autenticada da ficha da empresa (desktop/mobile)
 - [ ] Busca de empresas por cidade/UF (fase futura)
 - [x] Correção: troca de plano em assinatura legada (plan_version_id NULL) — migration `20261007035510` aplicada em produção; só `change_plan` para versão PUBLISHED vigente; provas com rollback PASS. Pendente: regularizar a AR BIOTECNOLOGIA pela tela (ação humana) e teste visual autenticado. Evidências: `docs/auditorias/pos-d52-prova-comercial-fase1-2026-10-06.md` §19.
+- [x] Revalidação autenticada 2026-10-07 13:00 UTC — corrigidos bloqueios de privilégio/ticket com wrapper INVOKER + core privado e preservação do trial no trigger; migrations `20261007125842` (permissão temporária, revogada pela seguinte) e `20261007125937` aplicadas somente na produção; rollback PASS e hash integral da assinatura real preservado. Mensagem atual do servidor traduzida; ver §20.
