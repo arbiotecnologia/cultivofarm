@@ -371,7 +371,7 @@ export function mensagemErroAssinatura(e: unknown): string {
   const msg = e instanceof Error ? e.message : "";
   if (msg.includes("platform_forbidden")) return "Seu acesso não permite concluir esta operação.";
   if (msg.includes("assinatura legada")) return "Esta assinatura é antiga e só pode ser regularizada com “Alterar plano” para uma versão publicada e vigente.";
-  if (msg.includes("versão inexistente ou fora de vigência")) return "A versão escolhida não está publicada ou não está em vigência. Escolha outra versão.";
+  if (msg.includes("versão inexistente ou fora de vigência") || msg.includes("versão inexistente, não publicada ou fora de vigência")) return "A versão escolhida não está publicada ou não está em vigência. Escolha outra versão.";
   if (msg.includes("versão obrigatória")) return "Escolha a versão do plano.";
   if (msg.includes("motivo e correlação")) return "Informe um motivo com pelo menos 5 caracteres.";
   if (msg.includes("trial já utilizado")) return "Esta empresa já usou o período de teste.";

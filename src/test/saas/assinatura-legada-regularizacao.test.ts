@@ -28,6 +28,7 @@ describe("regularização de assinatura legada (plan_version_id NULL)", () => {
     const m = (s: string) => mensagemErroAssinatura(new Error(s));
     expect(m("platform_conflict: assinatura legada exige regularização explícita")).toContain("Alterar plano");
     expect(m("platform_invalid: versão inexistente ou fora de vigência")).toContain("não está publicada");
+    expect(m("platform_invalid: versão inexistente, não publicada ou fora de vigência")).toContain("não está publicada");
     expect(m("platform_forbidden: apenas superadmin")).toBe("Seu acesso não permite concluir esta operação.");
     expect(m("platform_conflict: transição inválida")).toContain("não é permitida");
     const desconhecido = m("ERROR 42P01 relation x does not exist");
