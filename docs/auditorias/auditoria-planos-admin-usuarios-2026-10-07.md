@@ -2,7 +2,7 @@
 
 ## Decisão e limites
 
-**PASS banco/RLS independente; PASS estrutural frontend e Edge local. NO-GO restrito a browser autenticado E2E e Edge remota até deploy autorizado.** Não houve sessão Auth real nesta rodada (`external_unmanaged`, sessão não disponibilizada). Nenhuma mutação de banco, fixture, migration, implantação Edge ou publicação frontend foi executada. Produção canônica: `swzpzcwiasxmjutrmvkm`, confirmada na configuração local. Preços, versões, assinaturas, cobrança, SMTP/Auth, fiscal e dados reais preservados.
+**PASS banco/RLS independente; PASS estrutural frontend e Edge local; deploy efetivo confirmado independentemente; PASS smoke público pós-deploy. NO-GO integral restrito à prova browser autenticada das oito identidades.** A pendência de implantação remota está encerrada conforme evidência independente do executor registrada abaixo; não equivale a prova autenticada da Edge. Idempotência distribuída permanece melhoria futura, não implementada nem certificada. Os registros históricos de “sem deploy” descrevem suas respectivas rodadas e são superados, quanto ao estado atual de implantação, pelo registro pós-deploy. Nesta rodada não houve login, mutação de banco, fixture, migration, implantação Edge ou publicação frontend por este agente. Produção canônica: `swzpzcwiasxmjutrmvkm`. Preços, versões, assinaturas, cobrança, SMTP/Auth, fiscal e dados reais preservados.
 
 SHA observado após alterações de código/testes: `550a151775010339bfa4a75107fe85d7bf486226`. É a revisão observada antes desta consolidação documental, não um commit final criado manualmente.
 
@@ -11,6 +11,36 @@ SHA observado após alterações de código/testes: `550a151775010339bfa4a75107f
 Entrega encerrada sem reiniciar ou ampliar a auditoria. Revisão observada no início do fechamento: `980b09d676b8c2002c68f9fbd6fb1fb2ea8b1031`, com árvore limpa. A suíte já terminou: 5.804 PASS e 4 skipped; não havia teste em andamento a concluir. `git diff --check` passou. O log automático de build não estava disponível neste novo contexto; mantém-se a evidência anterior registrada, sem alegar novo build. Typecheck separado continua não executado. Nenhuma correção adicional de código foi aplicada; o candidato Edge permanece somente diff para revisão. Alterados neste fechamento apenas este relatório e roadmap. **PASS estrutural focal / NO-GO funcional** preservados; gates autenticados e teste do diff dependem de execução autorizada externa, não ficam implicitamente em andamento.
 
 ## Baseline: proveniência separada
+
+## Registro pós-deploy — 2026-10-07, solicitação 19:57 UTC
+
+### Implantação efetiva: evidência independente do executor
+
+- Commit publicado: `2a23d2f952321f1ad962a60be736c31b04fc0d45`; `git rev-parse HEAD` local confirmou a mesma revisão antes das alterações documentais, com árvore limpa.
+- Frontend enviado a `https://cultivofarm.lovable.app`; deployment_id `4e27d947-1501-4feb-9a3a-3045dc71d404`.
+- Supabase canônico `swzpzcwiasxmjutrmvkm`: `create-user` ACTIVE, versão 62, `verify_jwt=true`, hash remoto `93fee9bafa07af0970336b13393fd03ea53e4521490ba1dc7ee0ba9e57742fac`.
+- Leitura remota independente confirmou `create_user_auth_failed` e `user_creation_failed`, sem retorno JSON de `createError.message`. Este agente não repetiu a leitura Supabase nem invocou a Edge; a proveniência é a execução independente confirmada pelo proprietário, não o smoke público.
+
+### Smoke público executado por este agente
+
+Chromium novo, sem cookies/sessão, sem preenchimento ou envio de login; navegação exclusivamente ao frontend publicado.
+
+| Verificação | Resultado observado | Limite |
+|---|---|---|
+| `/`, desktop 1280×1800 | PASS: HTTP inicial 200, destino `/auth`, botão Entrar visível | não prova identidade, plano ou build ID remoto |
+| `/configuracoes`, desktop 1280×1800 | PASS: HTTP inicial 200, destino `/auth` | guard de visitante, não autorização autenticada |
+| `/plataforma`, desktop 1280×1800 | PASS: HTTP inicial 200, destino `/auth` | não prova Platform Superadmin |
+| `/configuracoes`, mobile 390×844 | PASS: destino `/auth`, formulário visível, sem overflow horizontal | somente login público |
+| Erros JavaScript não tratados | PASS: zero eventos `pageerror` nas navegações | não certifica console/rede inteira nem áreas autenticadas |
+| Oito identidades dos quatro planos | BLOCKED / NO-GO integral | nenhuma autenticação realizada; segue roteiro abaixo |
+
+Capturas desktop e mobile inspecionadas em `/tmp/browser/postdeploy-1957/desktop-plataforma.png` e `mobile-configuracoes.png`; script e demais capturas no mesmo diretório temporário. Login renderizado nas capturas, com área superior sem marca visível, observação pública já registrada anteriormente; nenhuma correção funcional ou atribuição causal nesta rodada. Nenhuma informação privada apareceu no smoke.
+
+**Pendências atuais desta auditoria:** somente (1) prova browser autenticada de administrador e usuário existente por plano — Refil Base 3, Homologação Essencial 8, AR Bio Gestão 10, CultivoFarm ou FSF Completo 17 — incluindo contratos remotos autenticados aplicáveis do roteiro; (2) eventual contrato/chave server-side para idempotência distribuída futura. Implantação frontend/Edge não é mais pendência. Unicidade e-mail/Auth e lock local não são idempotência distribuída; compensação best-effort permanece limite conhecido, não certificação transacional.
+
+Alterados nesta rodada somente este relatório e `roadmap.md`; nenhuma alteração funcional, dado, Edge, migration ou nova publicação. Testes/lint/scanners não repetidos porque o escopo é documental e smoke público; resultados locais anteriores permanecem históricos, sem alegação de nova execução. `git diff --check`: PASS após a atualização documental. Build automático observado: `build OK` em 2026-10-07T19:59:31Z; nenhum build manual e nenhuma nova publicação executados.
+
+### Baseline histórico
 
 O proprietário forneceu os seguintes resultados vivos: Refil Base v1 ACTIVE; Homologação Essencial v1 TRIAL ativo; AR Bio Gestão v1 TRIAL ativo; CultivoFarm Completo v1 ACTIVE e FSF Completo v1 TRIAL ativo. O executor Supabase do proprietário executou independentemente nesta auditoria a matriz transacional pg_temp 4 planos × 10 papéis (40 cenários), com rollback confirmado: contagens 3/8/10/17, contextos active/trial_active e zero falhas de hash. Zero leaks por organization_id em profiles, organizations, subscriptions, clientes, lotes e ordens_servico; admin próprio vê exatamente 1 assinatura e não-admin vê 0 diretamente. Administradores reais AR, CultivoFarm, FSF e Homologação passaram com claims sub/role/iat: entitlements 10/17/17/8, tenant_admin_list_users somente na organização própria e foreign 0. Fixture Auth inativa foi restaurada a organization_id null, ativo false e papel aplicador, sem resíduos. **PASS banco/RLS: execução independente nesta auditoria, não mera informação de baseline; não equivale a browser autenticado E2E. Este agente não reexecutou essas provas.**
 
