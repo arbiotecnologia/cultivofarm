@@ -1,31 +1,34 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export function useSignedUrls(paths: (string | null | undefined)[], bucket: string = "consultor-arquivos") {
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const { user, profile, roles, loading: authLoading } = useAuth();
+  const ready = !authLoading && !!user?.id && profile?.user_id === user.id &&
+    profile.ativo === true && profile.senha_provisoria !== true &&
+    !!profile.organization_id && roles.length > 0;
+  const scope = JSON.stringify([ready, user?.id, profile?.organization_id, [...roles].sort(), bucket, paths]);
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
+  const generation = useRef(0);
+  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null }>({ scope: "", urls: {}, loading: false, error: null });
   const [tentativa, setTentativa] = useState(0);
-
-  const chave = JSON.stringify(paths);
 
   useEffect(() => {
     let cancelado = false;
+    const gen = ++generation.current;
+    const isCurrent = () => !cancelado && gen === generation.current && currentScope.current === scope;
+    setResult({ scope, urls: {}, loading: ready, error: null });
 
     const fetchUrls = async () => {
       // Caminhos válidos e sem repetição: evita pedir a mesma assinatura 2x.
       const validPaths = Array.from(
         new Set(paths.filter((p): p is string => typeof p === "string" && p.length > 0)),
       );
-      if (validPaths.length === 0) {
-        setUrls({});
-        setError(null);
-        setLoading(false);
+      if (!ready || validPaths.length === 0) {
+        setResult({ scope, urls: {}, loading: false, error: null });
         return;
       }
-
-      setLoading(true);
-      setError(null);
       try {
         const { data, error: erroStorage } = await supabase.storage
           .from(bucket)
@@ -43,24 +46,16 @@ export function useSignedUrls(paths: (string | null | undefined)[], bucket: stri
         // é tratada como falha: preservamos o que veio válido, mas expomos o
         // erro para habilitar "Tentar novamente". Nunca há fallback inseguro.
         const faltando = validPaths.filter((p) => !newUrls[p]);
-        if (!cancelado) {
-          setUrls(newUrls);
-          setError(
-            faltando.length > 0
+        if (isCurrent()) {
+          setResult({ scope, urls: newUrls, loading: false, error: faltando.length > 0
               ? new Error(
                   `Falha ao gerar ${faltando.length} de ${validPaths.length} URLs seguras`,
                 )
-              : null,
-          );
+              : null });
         }
-      } catch (err) {
-        // Nunca logar a URL assinada nem o token; apenas a mensagem.
-        if (!cancelado) {
-          setUrls({});
-          setError(err instanceof Error ? err : new Error("Falha ao gerar URLs seguras"));
-        }
-      } finally {
-        if (!cancelado) setLoading(false);
+      } catch {
+        // Erros do transporte podem conter tokens: não repassar nem registrar.
+        if (isCurrent()) setResult({ scope, urls: {}, loading: false, error: new Error("Falha ao gerar URLs seguras") });
       }
     };
 
@@ -69,9 +64,11 @@ export function useSignedUrls(paths: (string | null | undefined)[], bucket: stri
       cancelado = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chave, bucket, tentativa]);
+  }, [scope, tentativa]);
 
   const refresh = useCallback(() => setTentativa((n) => n + 1), []);
 
-  return { urls, loading, error, refresh };
+  // Cerca de apresentação no próprio render, antes de cleanup/effects.
+  const visible = ready && result.scope === scope;
+  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready, error: visible ? result.error : null, refresh };
 }

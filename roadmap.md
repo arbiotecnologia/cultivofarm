@@ -1,3 +1,8 @@
+## STORAGE-1 — 2026-10-08
+- [ ] Auditar e conter entrega-documentos/aplicacao-evidencias/consultor-arquivos com ator ativo, empresa e vínculo canônicos, ação e caminho estrito; migration oficial sem objetos/metadata SQL.
+- [ ] Corrigir URLs assinadas entre sessões e testar hook real; preservar documento financeiro único.
+- [ ] Provas SQL rollback, testes focais/lint/scanners/build automático; registrar typecheck explícito conforme disponibilidade e separar APIs JWT não verificadas. Sem publicação/envios/identidades novas/outras fases.
+
 ## Fechamento complementar NOTIF-2/3 — 2026-10-08
 - [x] Portal legado: administrador/gestor com vínculo real recuperam seleção, financeiro limpa; notificações portal continuam somente cliente_produtor/recipient_user_id. QueryClient real24/24, dois cenários novos; sem mudança de guards/AGENTS.
 - [x] Migration oficial única adicional `20261008124100_6f41ecb2-d446-4837-82fc-db5adfbc169b.sql`: RPC própria valida readiness+h15 antes de leitura/escrita; policy RESTRICTIVE individual/tenant. Nada reaplicado da123024, nenhum global restaurado/regrant/conta alterada.

@@ -25208,6 +25208,19 @@ export type Database = {
         Args: { p_lote: string; p_stock: string }
         Returns: boolean
       }
+      storage1_application_allowed: {
+        Args: { p_action: string; p_name: string }
+        Returns: boolean
+      }
+      storage1_consultor_allowed: {
+        Args: { p_action: string; p_name: string }
+        Returns: boolean
+      }
+      storage1_delivery_allowed: {
+        Args: { p_action: string; p_name: string }
+        Returns: boolean
+      }
+      storage1_path_strict: { Args: { p_name: string }; Returns: boolean }
       tenant_admin_list_users: {
         Args: {
           p_active?: boolean
