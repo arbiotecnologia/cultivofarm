@@ -47,8 +47,10 @@ function usePartnerReadScope(partnerId?: string | null) {
     const { data: partner, error } = await supabase.from("partner_accounts")
       .select("commercial_owner_organization_id").eq("id", partnerId).abortSignal(signal).maybeSingle();
     check();
-    if (error || !partner?.commercial_owner_organization_id ||
-      partner.commercial_owner_organization_id !== profile?.organization_id)
+    const rawPartner: unknown = partner;
+    const owner = rawPartner && typeof rawPartner === "object" && "commercial_owner_organization_id" in rawPartner
+      ? rawPartner.commercial_owner_organization_id : null;
+    if (error || typeof owner !== "string" || owner !== profile?.organization_id)
       throw new Error("partner_ownership_unavailable");
     return check;
   };

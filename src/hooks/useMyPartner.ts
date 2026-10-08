@@ -27,12 +27,14 @@ export function useMyPartner() {
         if (!current() || signal.aborted) throw new Error("partner_context_changed");
       };
       check();
-      const { data: context, error } = await supabase.rpc("get_my_commercial_partner_context");
+      const { data: rawContext, error } = await supabase.rpc("get_my_commercial_partner_context");
       check();
       if (error) throw new Error("partner_context_unavailable");
-      if (!context) return null;
-      if (typeof context !== "object" || Array.isArray(context) ||
-        typeof context.partner_id !== "string" || context.organization_id !== profile?.organization_id ||
+      if (!rawContext) return null;
+      if (typeof rawContext !== "object" || Array.isArray(rawContext))
+        throw new Error("partner_context_unavailable");
+      const context = rawContext as Record<string, unknown>;
+      if (typeof context.partner_id !== "string" || context.organization_id !== profile?.organization_id ||
         context.role !== role || (context.papel !== "gestor" && context.papel !== "tecnico") ||
         !["commercial_owner", "legacy_partner_tenant"].includes(String(context.mode)))
         throw new Error("partner_context_unavailable");
