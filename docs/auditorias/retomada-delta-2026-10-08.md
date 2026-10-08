@@ -1,8 +1,8 @@
 # Retomada delta — Cultivo Farm / RENATO 10K
 
 ## 1. Escopo e decisão
-**Adendo prioritário19:53–19:58UTC — P1 DRIFT-EMAIL:** a afirmação anterior de nenhum P1 descreve a rodada anterior ao achado independente. Foi autorizada e realizada implantação exclusiva da Edge de troca de email; não houve publicação frontend. Resultado focal e limites abaixo; NO-GO integral preservado.
-Auditoria desta fase, sem nova funcionalidade, publicação, emissão, cobrança, mensagens, Auth, fixtures ou alterações comerciais. **NO-GO integral**. Inventário completo não é certificação semântica nem prova autenticada. Nenhum P0/P1 funcional foi comprovado nesta rodada; não houve reabertura de permissões.
+**Adendo prioritário19:53–20:03UTC — P1 DRIFT-EMAIL:** a afirmação anterior de nenhum P1 descreve a rodada anterior ao achado independente. Foi autorizada e solicitada explicitamente a implantação somente da Edge de troca de email; **não é sustentado afirmar alcance exclusivo**, pois o Codex mediu alteração de versões nas41funções. Fonte viva pós-deploy **VERIFICADA** pelo Codex; não houve publicação frontend solicitada pelo agente. Resultado focal e limites abaixo; NO-GO integral preservado. Continuação20:03UTC somente documental/investigação read-only, sem novos deploys, migrations, envios ou mutações.
+Auditoria inicial sem nova funcionalidade, publicação frontend, emissão, cobrança, mensagens, Auth, fixtures ou alterações comerciais; autorização posterior de deploy focal DRIFT-EMAIL descrita acima. **NO-GO integral**. Inventário completo não é certificação semântica nem prova autenticada. Nenhum P0/P1 funcional foi comprovado na rodada inicial anterior ao adendo; não houve reabertura de permissões.
 
 ## 2. Referências Git e ancestralidade
 Base `ecff53113532b7d8363618f9c479b9e357d822c9`; HEAD inicial `7d030dc426faa821621b39822a9b784863c6ff14`. `git merge-base --is-ancestor BASE HEAD` exit0; merge-base igual à base; 643 commits intermediários. Worktree inicial limpa. Não foi usada aceitação de SHA pela API como prova.
@@ -33,11 +33,17 @@ ACL selecionada: `assign_b2b_user_client_secure`, `unassign_b2b_user_client_secu
 
 ## 7. Edge e Storage
 ### Adendo DRIFT-EMAIL — fonte e implantação
-Evidência independente fornecida pelo proprietário:canônico `platform-org-admin-email-change`v7/updated_at1791341327241/verify_jwt=true usava `admin.auth.admin.updateUserById(userId,{email:input.newEmail,email_confirm:true})` antes de complete; diff substancial com HEAD7d030dc4. Outros entrypoints informados compatíveis:create-user66/PDF aplicação65/PDF visita65/provider-settings70/push63. **Fonte viva inicial é evidência do proprietário, não leitura refeita pelo agente.**
+Medição independente do **Codex nesta auditoria**, via Supabase MCP:canônico `platform-org-admin-email-change`v7/updated_at1791341327241/verify_jwt=true usava `admin.auth.admin.updateUserById(userId,{email:input.newEmail,email_confirm:true})` antes de complete; diff substancial com HEAD7d030dc4. Outros entrypoints inicialmente medidos compatíveis:create-user66/PDF aplicação65/PDF visita65/provider-settings70/push63. Não atribuir essas medições ao proprietário nem a reexecução pelo Lovable.
 
-Código local inicial hashSHA256`df71235cf910ce303b82b516fa565c7f35cfae21ac37d75ed150e125f348d00e`, sem updateUserById/email_confirm bypass, com generateLink current/new/claim/finish. Primeiro deploy exclusivo falhou sem implantar nada:import sibling `platform-invite-org-admin/redirect-policy.ts` não incluído no bundle. Correção mínima:constantes/função canônicas movidas para `_shared/platform-invite-redirect.ts`, sibling mantém re-export; email-change importa shared. Segundo deploy retornou **Successfully deployed platform-org-admin-email-change**, destino canônico explicitado na primeira tentativa. Nenhuma outra Edge implantada.
+Código local inicial hashSHA256`df71235cf910ce303b82b516fa565c7f35cfae21ac37d75ed150e125f348d00e`, sem updateUserById/email_confirm bypass, com generateLink current/new/claim/finish. Primeira chamada explícita, direcionada somente a email-change, retornou falha de bundle/deployed:none:import sibling `platform-invite-org-admin/redirect-policy.ts` não incluído. Correção mínima:constantes/função canônicas movidas para `_shared/platform-invite-redirect.ts`, sibling mantém re-export; email-change importa shared. Segunda chamada retornou **Successfully deployed platform-org-admin-email-change**, destino canônico explicitado na primeira tentativa. Isso descreve a solicitação/resposta da ferramenta, **não prova ausência de outras implantações**.
 
-HashSHA256 do entrypoint local implantado`6c674ed91540f804bb165e9bba4e271072ad94b6d38193b0eb05f36918c1aeda`. **Hash/versão/fonte viva pós-deploy UNVERIFIED:**tools disponíveis não expõem get_edge_function; não há Management token no sandbox, nem forwarding Supabase autorizado; logs não retornaram entradas. Deploy+preflight não provam igualdade byte-a-byte. Não chamar v8 confirmada apenas pelo caminho temporário do bundle.
+HashSHA256 do entrypoint local`6c674ed91540f804bb165e9bba4e271072ad94b6d38193b0eb05f36918c1aeda`. **Fonte viva pós-deploy VERIFICADA — Codex/Supabase MCP get_edge_function:**ACTIVE **v9**, verify_jwt=true, updated_at1791489582101; **todos12arquivos retornados exatamente iguais** aos arquivos do commit`196247dd76079b7205c1fcc36a71eb17b2b5d24f`. Entrypoint sem updateUserById/email_confirm:true. A limitação anterior de leitura pelas ferramentas deste agente foi superada pela medição independente do Codex; deploy/preflight isolados continuam não sendo prova de paridade. Não se deduz v8 ou seus conteúdos a partir do caminho temporário.
+
+**Alcance observado — Codex/list_edge_functions antes/depois:**as41funções mudaram de versão:40subiram+1;email7→9. Exemplos:create-user66→67,PDF65→66,provider70→71,push63→64. Retirada a afirmação “nenhuma outra Edge implantada”. Versionamento não prova alteração de conteúdo das outras40nem permite atribuir causalidade à chamada explícita, ao shared ou à publicação automática sem logs correlacionados. Paridade viva dos demais entrypoints aguarda a verificação independente anunciada. Ficha de proveniência:`codex-evidencias-2003.json`; listagens/12corpos brutos não anexados nesta mensagem.
+
+**Investigação read-only do mecanismo nesta continuação:**`supabase/config.toml:23–28` contém registro histórico de incidente2026-09-18:reconexão do Supabase republicou automaticamente37funções e motivou verify_jwt explícito. É indício documental de republicação ampla em integração/plataforma, **não log de execução20:03nem prova de reconexão atual**. A orientação da integração disponibilizada ao agente também informa deploy automático de Edge; não descreve seleção exata/execução desta rodada. Busca em scripts/package/config não identificou executor local automático de deploy das41. O script encontrado `scripts/fiscal-staging-deploy-preflight.sh:5,38` declara execução não automática/confirmada e deploy fiscal-preflight em staging; não foi executado e não comprova este evento canônico. A consulta de conhecimento não forneceu rastreamento adicional do mecanismo.
+
+Não é comprovado que Supabase em si, reconexão, mudança em `_shared`, políticas globais ou falha de bundle causaram o conjunto de versões. Tampouco se atribui a v8 à tentativa falha:deployed:none e salto7→9 não estabelecem essa relação. Origem/seleção/ordem das implantações exige histórico correlacionado da automação/Management. Nenhuma inspeção remota nova, deploy, publicação ou mutação foi realizada nesta continuação; investigação local somente leitura. Paridade restante será medida independentemente, conforme anunciado.
 24arquivos Edge afetados no delta; superfícies e sinais estão em CSV/diff. Contenções de PDF/Comunicação são indisponibilidade deliberada, não habilitação de transporte. Consulta de corpo/ACL não equivale a execução Edge autenticada.
 
 Upload/download/signed URL, traversal, delete, proprietário forjado e concorrência de Storage: **UNVERIFIED remotamente**. Testes locais de cercas de sessão/Storage passaram. Composição de policies permissivas em buckets fora do recorte restrictive requer revisão individual; nenhum relaxamento aplicado.
@@ -48,23 +54,36 @@ Upload/download/signed URL, traversal, delete, proprietário forjado e concorrê
 Regra preservada:menu não autoriza; plano∩RBAC∩ator ativo∩tenant/vínculo∩backend. `getAccessLevel` não substitui guards específicos nem concessões do servidor. O inventário AST passou; decisão efetiva por operação permanece UNVERIFIED quando não exercitada.
 
 ## 9. Roles e identidades reais
-### Adendo — provas independentes do proprietário, não reexecutadas
+### Adendo — medições independentes do Codex, não reexecutadas pelo Lovable
 8identidades existentes×33tabelas organization_id=264SELECTs read-only com authenticated/claims e rollback:sem cross-tenant nos atores empresariais testados. Admins A/B com claims tenant forjados:1assinatura própria/0alheias/0profiles cruzados; h15 deriva tenant verdadeiro.14enum roles/7papéis atribuídos,3admins3tenants,gestor+consultor ativos,B2B/produtor ativos sem org,aplicador inativo; ACTIVE2/TRIAL3 versionadas. Único objeto financial-docs invisível aos8atores.
 
-Estas são **provas SQL com claims**, não login JWT/browser, não cobrem mutações/Edge/Realtime/concorrência/download real nem todos14roles. Browser atual sem login. Resultado restrito aos264casos e negativas explicitadas; não ampliar PASS. Origem:relato independente do proprietário19:53UTC; scripts/output brutos não anexados nesta mensagem.
+Estas são **provas SQL com claims**, não login JWT/browser, não cobrem mutações/Edge/Realtime/concorrência/download real nem todos14roles. Resultado restrito aos264casos e negativas explicitadas; não ampliar PASS. Origem:medições independentes do Codex nesta auditoria, comunicadas19:53UTC e esclarecidas20:03UTC; scripts/output brutos não anexados. Evidência Chrome posterior é separada na seção11.
 Enum vivo14roles:administrador, tecnico_agronomo, producao, administrativo, gestor, cliente_produtor, consultor_tecnico, aplicador, operador_onfarm, financeiro, gestor_comercial, parceiro_b2b, parceiro_b2b_tecnico, superadmin. Não foi inventado papel Comercial separado de gestor_comercial.
 
-Consulta correta usa profiles.user_id=user_roles.user_id. Nove profiles; há administrador ativo em3organizações, gestor/consultor ativos em AR Bio, cliente_produtor/parceiro_b2b/superadmin ativos sem organização e aplicador inativo sem organização. Ausência de conta representativa para um role não foi preenchida com criação/alteração de usuário.
+Consulta correta usa profiles.user_id=user_roles.user_id. Nove profiles; há administrador ativo em3organizações, **conta gestor+consultor ativa no tenant FSF, não AR Bio** (correção da medição Codex20:03UTC), cliente_produtor/parceiro_b2b/superadmin ativos sem organização e aplicador inativo sem organização. Ausência de conta representativa para um role não foi preenchida com criação/alteração de usuário.
 
 ## 10. Planos, estados e tenant A/P
 Leitura observada:AR Bio TRIAL17features; Homologação onboarding TRIAL8; Refil rascunho ACTIVE3; CultivoFarm ACTIVE17; FSF TRIAL17. Nome Homologação não estabelece paridade ou sandbox seguro. Não se presumiu cobertura de todos os planos/estados a partir dessas linhas.
 
-A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_account_id não autorizam herança. Positivos/negativos reais nos dois sentidos e plano sem ampliação RBAC: **UNVERIFIED** nesta rodada, sem sessão. Mocks de guards/entitlements/cache são evidência estática separada.
+A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_account_id não autorizam herança. Isolamento dinâmico nos dois sentidos e plano sem ampliação RBAC integral: **UNVERIFIED**; medição Chrome admin AR Bio focal não substitui essa cobertura. Mocks de guards/entitlements/cache são evidência estática separada.
 
 ## 11. Browser público versus privado
 `browser-publico.json` registra URLs/estados desktop1280×1800 e mobile. Após hidratação, `/configuracoes`, `/plataforma`, `/clientes`, `/financeiro`, `/estoque`, `/portal-parceiro`, `/portal`, `/selecionar-portal` redirecionam `/auth`; `/app` vai `/app/login`. `/fiscal` e `/producao` e path inexistente mostram404:paths não presumidos como rotas válidas. Sem erro JS observado nesses smokes.
 
-`LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`:não há sessão gerenciada. Não se pediu credencial, não houve login simulado nem mudança de senha. Sidebar autenticada, URLs por role, leitura/mutação, tenant forjado, logout/identidade tardia no browser, Storage/API/JWT: **UNVERIFIED**. Smoke público não valida isolamento autenticado. Settings hospedados de signup/sign-in não verificados.
+`LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`:não há sessão gerenciada neste sandbox Lovable; isso **não significa ausência de browser autenticado na auditoria Codex**. Não se pediu credencial, não houve login simulado nem mudança de senha. Smoke público histórico não valida isolamento autenticado. Settings hospedados de signup/sign-in não verificados.
+
+**Chrome real publicado — medição independente Codex20:03UTC**, `https://app.cultivofarm.com.br`, Renato administrador AR Bio:
+
+| Caso observado | Resultado | Escopo do PASS |
+|---|---|---|
+| `/plataforma` | redireciona `/sem-permissao` | negativa de acesso/renderização dessa rota nesse perfil |
+| Sidebar | sem plataforma | apresentação nesse perfil; menu nunca autoriza |
+| `/configuracoes` | acessível | acesso/renderização |
+| Meu Plano | Completo TRIAL02→16/10,17features | renderização do estado/plano observado |
+| `/clientes` — Produtores | lista vazia | acesso/renderização, não prova isolamento por lista vazia |
+| `/financeiro/receber` | zero contas | acesso/renderização, não prova isolamento por contagem zero |
+
+**PASS focal de acesso/renderização somente**; não mutação, isolamento por si só, todos perfis/planos, logout/cache entre identidades, API/JWT/revogação, Storage/Realtime/concorrência. Outra sessão será disponibilizada; não iniciada nesta continuação. A medição pertence ao Codex, não ao proprietário nem a este agente.
 
 ## 12. Achados e correções mínimas
 | ID | Prioridade | Evidência | Ação/limite |
@@ -73,9 +92,11 @@ A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_ac
 | RD-02 | P2 falso positivo | regex de teste encontrava skipWaiting apenas em comentário push | comentário alterado; PUSH_DELIVERY_AVAILABLE=false e controles de navegação intactos |
 | RD-03 | dívida lint |4any adicionais em usePartnerSimulations | sem mudança semântica oportunista; não prova P1 |
 | RD-04 | dívida hooks | warning de scope/loadDeps e2warnings usersPage | dois últimos já existiam e mudaram linhas; não tratar7diagnósticos brutos como7regressões reais |
-| RD-05 | bloqueio de certificação | sem sessão/executor transacional/paridade | NO-GO dinâmico |
+| RD-05 | bloqueio de certificação | cobertura dinâmica incompleta; fonte email verificada e Chrome admin focal pelo Codex | NO-GO integral, não ausência de toda prova privada |
+| DRIFT-EMAIL | P1 drift | Codex comprovou bypass v7 e paridade dos12arquivos v9 com commit196247dd | bypass retirado na fonte viva; fluxo positivo não executado |
+| RD-DEPLOY | alcance observado | Codex mediu41versões alteradas; pedido explícito somente email-change | exclusividade retirada; causalidade e paridade dos outros entrypoints pendentes |
 
-Não foi confirmado vazamento P0/P1 novo. O import runtime `@/integrations/supabase/client` é canônico; não é cliente paralelo. Constante push false impede openWindow; a ocorrência textual não prova navegação insegura.
+Na rodada inicial não foi confirmado vazamento P0/P1 novo; o adendo DRIFT-EMAIL trouxe P1 independente confirmado, tratado separadamente. O import runtime `@/integrations/supabase/client` é canônico; não é cliente paralelo. Constante push false impede openWindow; a ocorrência textual não prova navegação insegura.
 
 ## 13. Testes antes/depois
 ### Adendo — DRIFT-EMAIL
@@ -87,6 +108,7 @@ Antes:2falhas locais reproduzidas na dupla de testes config (15PASS/2FAIL). Depo
 Focal11arquivos251/251PASS; ampliada66arquivos730/730PASS, incluindo SaaS/roles/navigation/Auth/Storage/notificações. Contagens sobrepostas **não somadas**. PostgreSQL isolado usa Auth stub/claims locais e não prova RLS/JWT canônico. Nenhum novo SQL rollback canônico nesta rodada.
 
 ## 14. Lint, scanners, typecheck e build
+**Validação independente Codex20:03UTC:**typecheck local explícito `tsc -p tsconfig.app` e `tsconfig.node` **PASS**;build **PASS**;217testes focais **PASS**;pós-correção handler realVM10 **PASS**. Lint global **3.396erros/125avisos (FAIL)** em snapshot composto, **não checkout Git exato**; não tratar diferença com3.385como regressão medida do mesmo SHA. Comandos não reexecutados nesta continuação documental. A suíte histórica6.161PASS/4skip e o handlerVM10deste agente permanecem evidências distintas e não somáveis. A tabela abaixo conserva o que foi executado pelo Lovable na rodada original, não nega o PASS independente de typecheck.
 | Verificação | Comando/método | Exit/resultado |
 |---|---|---|
 | Lint HEAD inicial | bun run lint -- --format json |1;3.385erros/125avisos,1.529arquivos |
@@ -96,7 +118,7 @@ Focal11arquivos251/251PASS; ampliada66arquivos730/730PASS, incluindo SaaS/roles/
 | Segredos | bash scripts/fiscal-secrets-scan.sh |0 |
 | Integração fiscal | bash scripts/fiscal-integration-scan.sh |0 |
 | Whitespace | git diff --check |0, rechecado no fechamento |
-| Typecheck app/node | solicitados tsc -p tsconfig.app.json --noEmit e node | **NOT RUN**:instrução ambiental proíbe typecheck manual; não inferir PASS por Vitest/build |
+| Typecheck app/node — Lovable original | solicitados tsc -p tsconfig.app.json --noEmit e node | **NOT RUN pelo Lovable** por instrução ambiental; **PASS explícito independente Codex** registrado acima |
 | Build | automático /tmp/observability/build-errors.log |build OK19:45:58,19:50:39,19:51:54UTC; nenhum build manual |
 
 `lovable build status` permaneceu referindo o HEAD inicial e sucesso19:35:27; por isso não é usado como prova das alterações posteriores. Log automático posterior é a evidência focal. Lint amplo segue FAIL, não foi ocultado pelo sucesso focal.
@@ -109,9 +131,9 @@ Consulta de integridade nesta rodada:partner_orders0/hashd41d8cd98f00b204e980099
 Sem escrita de dados, migrations, grants, Auth ou Storage. Rollback local:reverter somente import Json e comentário, se necessário, sem alterar cliente canônico/guards/RLS. Isso reapresentaria as falhas P2; não remover contenções para restaurar operação. Documentação e inventários são removíveis independentemente do runtime.
 
 ## 16. Decisão por perfil/módulo e bloqueios
-Todos14roles têm inventário estrutural e cobertura mocks parcial; **nenhum role recebe PASS integral**. Superadmin/admin/gestor/comercial/financeiro/administrativo/produção/onfarm/técnico/B2B/produtor:JWT/browser remoto UNVERIFIED. B2B/financeiro downstream permanece fail-closed; NOTIF/STORAGE/fiscal têm bloqueios explícitos preservados. Nenhuma cobrança/emissão/envio/publicação/pagamento habilitado.
+Todos14roles têm inventário estrutural e cobertura mocks parcial; **nenhum role recebe PASS integral**. Administrador AR Bio tem **PASS focal Chrome de acesso/renderização** nos casos da seção11 medidos pelo Codex; outros perfis, mutações e isolamento dinâmico integral seguem UNVERIFIED. Fonte viva email v9/12arquivos **VERIFICADA** pelo Codex; paridade viva dos demais entrypoints pendente. B2B/financeiro downstream permanece fail-closed; NOTIF/STORAGE/fiscal têm bloqueios explícitos preservados. Nenhuma cobrança/emissão/envio/pagamento habilitado; alcance de versões Edge observado não foi exclusivo.
 
-Bloqueios concretos:revisão semântica individual de643commits/394arquivos ainda não concluída; matriz efetiva de autorização backend por ação não comprovada; sessão externa gerenciada indisponível; executor SQL transacional autenticado não utilizado; paridade homolog não acessada; typecheck manual proibido; lint amplo legado FAIL. **Não declarar100%,GO operacional ou auditoria integral PASS.**
+Bloqueios concretos:revisão semântica individual de643commits/394arquivos ainda não concluída; matriz efetiva de autorização backend por ação incompleta; próxima sessão/perfis não exercitados; isolamento dinâmico/mutações/Storage/concorrência não comprovados; paridade homolog não acessada; lint amplo FAIL; causalidade das41versões e paridade viva dos demais entrypoints pendentes. Typecheck não é bloqueio por ausência de execução:PASS explícito Codex, com limite de snapshot registrado. **Não declarar100%,GO operacional ou auditoria integral PASS.**
 
 ## 17. Prompt da próxima fase (não iniciada)
 “Retomar somente fechamento RD, confirmar novo HEAD e ancestralidade, preservar contenções. Revisar semanticamente commits/arquivos priorizados do CSV sem assumir classificação automática como aceite; fechar vínculo rota→ação→RPC/RLS/Edge e decisão por role/plano/tenant. Com acesso seguro existente, provar positivos próprios e negativos cruzados nos dois tenants, separado de SQL claims; não criar contas/dados comerciais nem alterar senhas. Sem sessão, manter UI/API/JWT/Storage UNVERIFIED. Corrigir somente P0/P1 reproduzidos reversivelmente; atualizar evidências/roadmap e manter sem publicação, emissão, mensagens ou cobrança.”

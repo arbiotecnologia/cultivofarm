@@ -1,0 +1,63 @@
+{
+  "received_at_utc": "2026-10-08T20:03:00Z",
+  "provenance": "Medições independentes do Codex nesta mesma auditoria, comunicadas nesta conversa; não medições do proprietário nem reexecução pelo Lovable.",
+  "canonical_supabase_ref": "swzpzcwiasxmjutrmvkm",
+  "live_email_function": {
+    "name": "platform-org-admin-email-change",
+    "status": "ACTIVE",
+    "version": 9,
+    "verify_jwt": true,
+    "updated_at": 1791489582101,
+    "method": "Supabase MCP get_edge_function",
+    "files_returned": 12,
+    "all_files_exactly_equal_to_commit": "196247dd76079b7205c1fcc36a71eb17b2b5d24f",
+    "entrypoint_updateUserById_absent": true,
+    "entrypoint_email_confirm_true_absent": true,
+    "source_parity_status": "VERIFICADA por medição independente Codex"
+  },
+  "deployment_scope_observed": {
+    "method": "Supabase MCP list_edge_functions antes/depois",
+    "functions_changed": 41,
+    "functions_incremented_by_one": 40,
+    "email_version_before": 7,
+    "email_version_after": 9,
+    "examples": {
+      "create-user": [66, 67],
+      "PDF": [65, 66],
+      "provider": [70, 71],
+      "push": [63, 64]
+    },
+    "causality": "Não comprovada; solicitação explícita de deploy de uma função não demonstra exclusividade do alcance observado.",
+    "other_entrypoint_live_parity": "Pendente de verificação independente anunciada nesta conversa."
+  },
+  "identity_correction": {
+    "gestor_consultor_tenant": "FSF",
+    "not_tenant": "AR Bio"
+  },
+  "published_browser": {
+    "origin": "https://app.cultivofarm.com.br",
+    "browser": "Chrome real publicado controlado pelo Codex",
+    "actor": "Renato, administrador AR Bio",
+    "observations": [
+      {"path": "/plataforma", "result": "Redireciona para /sem-permissao"},
+      {"surface": "sidebar", "result": "Sem plataforma"},
+      {"path": "/configuracoes", "result": "Acessível"},
+      {"surface": "Meu Plano", "result": "Completo, TRIAL 02→16/10, 17 features"},
+      {"path": "/clientes", "result": "Produtores: lista vazia"},
+      {"path": "/financeiro/receber", "result": "Zero contas"}
+    ],
+    "status": "PASS somente acesso/renderização nos casos medidos",
+    "not_proven": ["mutações", "isolamento por si só", "outros perfis", "revogação JWT/API", "Storage", "concorrência"]
+  },
+  "independent_local_validation": {
+    "typecheck": "PASS explícito tsc -p tsconfig.app e tsconfig.node",
+    "build": "PASS",
+    "focused_tests_passed": 217,
+    "real_handler_vm_tests_passed": 10,
+    "global_lint_errors": 3396,
+    "global_lint_warnings": 125,
+    "snapshot": "Composto, não checkout Git exato",
+    "not_added_to_historical_suite": {"passed": 6161, "skipped": 4}
+  },
+  "limits": "Saídas MCP brutas, do Chrome e dos comandos Codex não anexadas nesta mensagem; esta ficha preserva a medição independente comunicada, sem inventar hashes individuais, screenshots ou logs. Nenhuma nova operação remota foi executada nesta continuação documental."
+}
