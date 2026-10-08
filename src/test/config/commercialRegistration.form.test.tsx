@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
+import { z } from "zod";
 const s=vi.hoisted(()=>({save:vi.fn(),update:vi.fn(),close:vi.fn(),cep:vi.fn(),resolve:undefined as undefined|(()=>void)}));
 vi.mock("@/lib/api/viacep",()=>({fetchCEP:s.cep}));
 vi.mock("@/hooks/useCommercialRegistrationScope",()=>({useCommercialRegistrationScope:()=>({scope:"A",canManagePartners:true,ready:true,organizationId:"OA",capture:()=>()=>true})}));
@@ -11,6 +12,15 @@ import { ParceiroB2BFormDialog } from "@/components/comercial/ParceiroB2BFormDia
 import type { ParceiroB2B } from "@/hooks/useParceirosB2B";
 beforeEach(()=>{s.save.mockReset();s.update.mockReset();s.close.mockReset();s.cep.mockReset();s.resolve=undefined;});
 function nameInput(){const input=screen.getByText("Razão Social *").parentElement?.querySelector("input");if(!input)throw new Error("name input missing");return input;}
+it("preserva string obrigatória vazia na validação, mantendo opcionais nulos", () => {
+ const parse = vi.spyOn(z.ZodObject.prototype, "safeParse");
+ try {
+  render(<ParceiroB2BFormDialog open onOpenChange={s.close}/>);
+  fireEvent.click(screen.getByRole("button", {name: "Criar parceiro"}));
+  expect(parse).toHaveBeenCalledWith(expect.objectContaining({razao_social: "", nome_fantasia: null, cnpj: null}));
+  expect(s.save).not.toHaveBeenCalled();
+ } finally { parse.mockRestore(); }
+});
 it.each(["", " ", "A"])("nega razão social insuficiente sem envio: %j", (value) => {
  render(<ParceiroB2BFormDialog open onOpenChange={s.close}/>);
  fireEvent.change(nameInput(), {target: {value}});
