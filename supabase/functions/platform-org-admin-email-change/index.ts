@@ -7,7 +7,7 @@ import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../_shared/comunicacao/adapters-types.ts";
 import { classifyBeginError, parseEmailChangeBody } from "./policy.ts";
-import { getPlatformInviteRedirectUrl } from "../platform-invite-org-admin/redirect-policy.ts";
+import { getPlatformInviteRedirectUrl } from "../_shared/platform-invite-redirect.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handlePreflight(req);

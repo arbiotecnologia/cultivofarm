@@ -1,0 +1,26 @@
+[
+  {
+    "case": "anonymous",
+    "status": 401,
+    "body": "{\"code\":\"UNAUTHORIZED_NO_AUTH_HEADER\",\"message\":\"Missing authorization header\"}",
+    "allow_origin": "*"
+  },
+  {
+    "case": "invalid_bearer",
+    "status": 401,
+    "body": "{\"code\":\"UNAUTHORIZED_INVALID_JWT_FORMAT\",\"message\":\"Invalid JWT\"}",
+    "allow_origin": "*"
+  },
+  {
+    "case": "trusted_preflight",
+    "status": 204,
+    "body": "",
+    "allow_origin": "https://app.cultivofarm.com.br"
+  },
+  {
+    "case": "untrusted_preflight",
+    "status": 403,
+    "body": "",
+    "allow_origin": null
+  }
+]
