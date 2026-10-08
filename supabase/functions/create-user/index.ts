@@ -155,6 +155,12 @@ Deno.serve(async (req) => {
         }
         if (state === "completed") return reply({ success: true, user_id: claim.user_id, replay: true }, 200);
         if (state === "aborted") return reply({ error: "b2b_provisioning_aborted" }, 409);
+        const { data: owned, error: ownedError } = await adminClient.auth.admin.getUserById(claim.user_id);
+        if (ownedError || owned?.user?.id !== claim.user_id ||
+          owned.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
+          owned.user.user_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
+          return reply({ error: "b2b_provisioning_reconciliation_required" }, 503);
+        }
         const { error: deletionError } = await adminClient.auth.admin.deleteUser(claim.user_id);
         if (deletionError) return reply({ error: "b2b_provisioning_compensation_pending" }, 503);
         const { data: done, error: doneError } = await adminClient.rpc("b2b_complete_provisioning_compensation", receiptArgs);
