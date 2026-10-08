@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,15 +26,23 @@ import { canWrite } from "@/lib/permissions";
 
 import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR, normalizePhoneBR } from "@/lib/masks";
 import { normalizeInscricaoEstadualCadastro } from "@/lib/schemas/inscricaoEstadualCadastro";
+import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
+import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
 import { Link } from "react-router-dom";
 
 export default function ProdutoresTab() {
   const isMobile = useIsMobile();
   const { role } = useAuth();
+  const scope = useCommercialRegistrationScope();
+  const submitLock = useRef(false);
+  const draftId = useRef(crypto.randomUUID());
+  const readGeneration = useRef(0);
   const isAdmin = role === "administrador";
-  const canManage = canWrite(role, "/clientes");
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [portalAccess, setPortalAccess] = useState<Set<string>>(new Set());
+  const canManage = scope.ready && canWrite(role, "/clientes");
+  const [clientRows, setClientes] = useState<{ scope: string; rows: any[] }>({ scope: "", rows: [] });
+  const clientes = scope.ready && clientRows.scope === scope.scope ? clientRows.rows : [];
+  const [accessState, setPortalAccess] = useState<{ scope: string; ids: Set<string> }>({ scope: "", ids: new Set() });
+  const portalAccess = scope.ready && accessState.scope === scope.scope ? accessState.ids : new Set<string>();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
@@ -96,17 +104,23 @@ export default function ProdutoresTab() {
   };
 
   const fetchClientes = async () => {
-    const { data } = await supabase
+    if (!scope.ready) return;
+    const fence = scope.capture();
+    const generation = ++readGeneration.current;
+    const current = () => fence() && readGeneration.current === generation;
+    const { data, error } = await supabase
       .from("clientes")
-      .select("*, fazendas(count)")
+      .select("*, fazendas(count)").filter("organization_id", "eq", scope.organizationId ?? "")
       .order("nome_fantasia");
-    if (data) setClientes(data);
+    if (!current()) return;
+    if (error) { toast.error(commercialRegistrationError(error)); return; }
+    if (data) setClientes({ scope: scope.scope, rows: data });
 
     // Fetch portal access map: cliente_id -> tem produtor ativo
     try {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("user_id, cliente_id, ativo")
+        .select("user_id, cliente_id, ativo").eq("organization_id", scope.organizationId ?? "")
         .not("cliente_id", "is", null)
         .eq("ativo", true);
       const userIds = (profs ?? []).map(p => p.user_id);
@@ -120,18 +134,24 @@ export default function ProdutoresTab() {
         const clientesComAcesso = new Set(
           (profs ?? []).filter(p => produtorSet.has(p.user_id)).map(p => p.cliente_id as string)
         );
-        setPortalAccess(clientesComAcesso);
+        if (current()) setPortalAccess({ scope: scope.scope, ids: clientesComAcesso });
       } else {
-        setPortalAccess(new Set());
+        if (current()) setPortalAccess({ scope: scope.scope, ids: new Set() });
       }
     } catch (e) {
-      console.warn("portal access fetch failed", e);
+      if (current()) setPortalAccess({ scope: scope.scope, ids: new Set() });
     }
   };
 
-  useEffect(() => { fetchClientes(); }, []);
+  useEffect(() => {
+    setOpen(false); setSelectedClienteId(null); setDelDialog(null); setHistoryOpen(false);
+    methods.reset(defaultValues); draftId.current = crypto.randomUUID();
+    void fetchClientes();
+  }, [scope.scope]);
 
   const handleCreateOrUpdate = async (values: ClienteSchema) => {
+    if (submitLock.current || !canManage) return;
+    const current = scope.capture();
     // Validação e normalização dos telefones antes de qualquer persistência.
     const mainCheck = validatePhoneBR(values.telefone, { fieldLabel: "Telefone principal" });
     if (!mainCheck.ok) { toast.error(mainCheck.error); return; }
@@ -181,6 +201,8 @@ export default function ProdutoresTab() {
       }
     });
 
+    submitLock.current = true;
+    try {
     let savedRow: any = null;
     if (selectedClienteId) {
       const { data, error } = await supabase
@@ -191,7 +213,7 @@ export default function ProdutoresTab() {
         .single();
       if (error) {
         if (error.code === "23505") toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.");
-        else toast.error("Erro ao atualizar: " + error.message);
+        else toast.error(commercialRegistrationError(error));
         return;
       }
       savedRow = data;
@@ -199,12 +221,12 @@ export default function ProdutoresTab() {
     } else {
       const { data, error } = await supabase
         .from("clientes")
-        .insert([payload])
+        .insert([{ ...payload, id: draftId.current }])
         .select("*, fazendas(count)")
         .single();
       if (error) {
         if (error.code === "23505") toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.");
-        else toast.error("Erro ao cadastrar: " + error.message);
+        else toast.error(commercialRegistrationError(error));
         return;
       }
       savedRow = data;
@@ -212,12 +234,15 @@ export default function ProdutoresTab() {
     }
 
     // Fechar modal e limpar estado após salvar com sucesso.
+    if (!current()) return;
     if (savedRow) {
       setOpen(false);
       setSelectedClienteId(null);
       methods.reset(defaultValues);
     }
     fetchClientes();
+    } catch (error) { if (current()) toast.error(commercialRegistrationError(error)); }
+    finally { submitLock.current = false; }
   };
 
   const handleEdit = (cliente: any) => {
@@ -227,20 +252,21 @@ export default function ProdutoresTab() {
   };
 
   const handleInativarCliente = async (id: string, novoStatus: "ativo" | "inativo") => {
+    if (!canManage) throw new Error("cadastro_not_ready");
     const { error } = await supabase.from("clientes").update({ status_cliente: novoStatus }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(commercialRegistrationError(error)); throw new Error("cadastro_action_failed"); }
     toast.success(novoStatus === "inativo" ? "Cliente inativado" : "Cliente reativado");
     fetchClientes();
   };
 
   const handleExcluirCliente = async (id: string) => {
+    if (!canManage) throw new Error("cadastro_not_ready");
     // cliente_contatos, cliente_documentos, portal_notificacoes, portal_solicitacoes e audit_log 
     // já são configurados com ON DELETE CASCADE ou tratados no banco.
     const { error } = await supabase.from("clientes").delete().eq("id", id);
     if (error) { 
-      console.error("Erro ao excluir cliente:", error);
-      toast.error("Erro ao excluir cliente: " + error.message); 
-      return; 
+      toast.error(commercialRegistrationError(error));
+      throw new Error("cadastro_action_failed"); 
     }
     toast.success("Cliente excluído definitivamente");
     fetchClientes();
@@ -284,7 +310,7 @@ export default function ProdutoresTab() {
       <div className="flex justify-end">
         {canManage ? <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { setSelectedClienteId(null); methods.reset(defaultValues); } }}>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto" onClick={() => { setSelectedClienteId(null); methods.reset(defaultValues); }}><Plus className="h-4 w-4 mr-2" />Novo Produtor</Button>
+            <Button className="w-full sm:w-auto" onClick={() => { draftId.current = crypto.randomUUID(); setSelectedClienteId(null); methods.reset(defaultValues); }}><Plus className="h-4 w-4 mr-2" />Novo Produtor</Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{selectedClienteId ? "Editar Produtor" : "Novo Produtor"}</DialogTitle></DialogHeader>
@@ -320,7 +346,7 @@ export default function ProdutoresTab() {
                 <ClienteFormTabs clienteId={selectedClienteId || undefined} />
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                  <Button type="submit">{selectedClienteId ? "Atualizar" : "Salvar Produtor"}</Button>
+                  <Button type="submit" disabled={methods.formState.isSubmitting}>{selectedClienteId ? "Atualizar" : "Salvar Produtor"}</Button>
                 </div>
               </form>
             </FormProvider>
@@ -363,7 +389,7 @@ export default function ProdutoresTab() {
                   <SelectItem value="ativo">Ativo</SelectItem>
                   <SelectItem value="inativo">Inativo</SelectItem>
                   <SelectItem value="prospect">Prospect</SelectItem>
-                  <SelectItem value="bloqueado">Bloqueado</SelectItem>
+                  <SelectItem value="bloqueado_financeiro">Bloqueado</SelectItem>
                 </SelectContent>
               </Select>
 

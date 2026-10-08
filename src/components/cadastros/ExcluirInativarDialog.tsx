@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -10,8 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertTriangle, Archive, Trash2, Info, ArrowRight, Download, FileArchive } from "lucide-react";
 import { DepCounts, totalDeps, depLabel, getDepRoute } from "@/lib/cadastros";
 import { supabase } from "@/integrations/supabase/client";
-import { gerarBackupDocumentosCliente, removerTodosDocumentosCliente } from "@/lib/clienteDocumentos";
+import { gerarBackupDocumentosCliente } from "@/lib/clienteDocumentos";
 import { toast } from "sonner";
+import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 
 type Entidade = "cliente" | "fazenda" | "talhão";
 
@@ -40,6 +41,8 @@ export function ExcluirInativarDialog({
   const [backupFeito, setBackupFeito] = useState(false);
   const [backupConfirmado, setBackupConfirmado] = useState(false);
   const [gerandoBackup, setGerandoBackup] = useState(false);
+  const scope = useCommercialRegistrationScope();
+  const actionLock = useRef(false);
 
   useEffect(() => {
     if (!open) {
@@ -50,51 +53,65 @@ export function ExcluirInativarDialog({
       return;
     }
     setLoading(true);
-    loadDeps().then(setDeps).catch(() => setDeps({})).finally(() => setLoading(false));
+    setDeps(null);
+    setDocsCount(null);
+    const current = scope.capture();
+    let disposed = false;
+    const live = () => current() && !disposed;
+    loadDeps().then(value => { if (live()) setDeps(value); }).catch(() => {
+      if (live()) toast.error("Não foi possível verificar vínculos. A exclusão permanece bloqueada.");
+    }).finally(() => { if (live()) setLoading(false); });
 
     if (entidade === "cliente") {
       supabase
         .from("cliente_documentos")
         .select("id", { count: "exact", head: true })
         .eq("cliente_id", entidadeId)
-        .then(({ count }) => setDocsCount(count ?? 0));
+        .then(({ count, error }) => { if (live() && !error) setDocsCount(count ?? 0); });
     } else {
       setDocsCount(0);
     }
-  }, [open, entidade, entidadeId]);
+    return () => { disposed = true; };
+  }, [open, entidade, entidadeId, scope.scope]);
 
   const total = totalDeps(deps);
   const exigeBackup = entidade === "cliente" && (docsCount ?? 0) > 0;
   const backupOk = !exigeBackup || (backupFeito && backupConfirmado);
-  const podeExcluir = isAdmin && !loading && total === 0 && backupOk;
+  const podeExcluir = scope.ready && isAdmin && deps !== null && docsCount === 0 && !loading && total === 0 && backupOk;
   const vinculos = deps ? Object.entries(deps).filter(([, v]) => Number(v) > 0) : [];
 
   const wrap = async (fn: () => Promise<void>, isExcluir = false) => {
+    if (actionLock.current || !scope.ready || (isExcluir && !podeExcluir)) return;
+    actionLock.current = true;
+    const current = scope.capture();
     setActing(true);
     try {
-      if (isExcluir && exigeBackup) {
-        await removerTodosDocumentosCliente(entidadeId);
-      }
       await fn();
-      onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao executar ação");
+      if (current()) onOpenChange(false);
+    } catch {
+      if (current()) toast.error("Não foi possível executar a ação. O cadastro foi mantido.");
     } finally {
+      actionLock.current = false;
       setActing(false);
     }
   };
 
   const handleGerarBackup = async () => {
+    if (!scope.ready || actionLock.current) return;
+    actionLock.current = true;
+    const current = scope.capture();
     setGerandoBackup(true);
     try {
       const r = await gerarBackupDocumentosCliente(entidadeId, nome);
-      setBackupFeito(true);
+      if (!current()) return;
+      setBackupFeito(r.falhas.length === 0);
       toast.success(
         `Backup gerado (${r.baixados}/${r.totalDocs} arquivos).${r.falhas.length ? ` ${r.falhas.length} falha(s).` : ""}`
       );
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao gerar backup");
+    } catch {
+      if (current()) toast.error("Não foi possível gerar o backup dos documentos.");
     } finally {
+      actionLock.current = false;
       setGerandoBackup(false);
     }
   };
@@ -109,6 +126,8 @@ export function ExcluirInativarDialog({
               <div><span className="font-medium text-foreground">{nome}</span></div>
               {loading ? (
                 <div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Verificando vínculos…</div>
+              ) : deps === null ? (
+                <p role="alert" className="text-sm text-destructive">Vínculos não verificados. Exclusão indisponível.</p>
               ) : total > 0 ? (
                 <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm flex gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />

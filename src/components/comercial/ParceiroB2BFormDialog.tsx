@@ -40,12 +40,13 @@ import {
   useUpdateParceiroB2B,
   type ParceiroB2BInput,
 } from "@/hooks/useParceiroB2BMutations";
+import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 import type { ParceiroB2B } from "@/hooks/useParceirosB2B";
 
 const emailOpt = z.string().trim().email("E-mail inválido").max(200).or(z.literal("")).optional().nullable();
 
 const schema = z.object({
-  codigo: z.string().trim().max(40).optional().nullable(),
+  codigo: z.string().trim().max(41).optional().nullable(),
   razao_social: z.string().trim().min(2, "Razão social obrigatória").max(200),
   nome_fantasia: z.string().trim().max(200).optional().nullable(),
   inscricao_estadual: inscricaoEstadualCadastroSchema.optional().nullable(),
@@ -54,7 +55,7 @@ const schema = z.object({
     .optional()
     .nullable()
     .refine((v) => !v || validateCNPJ(v), "CNPJ inválido"),
-  client_id: z.string().uuid().optional().nullable(),
+  client_id: z.string({ required_error: "Selecione um cliente da sua empresa" }).uuid("Selecione um cliente da sua empresa"),
   desconto_padrao: z.number().min(0).max(100),
   observacoes: z.string().trim().max(1000).optional().nullable(),
   ativo: z.boolean(),
@@ -133,16 +134,23 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
   const create = useCreateParceiroB2B();
   const update = useUpdateParceiroB2B();
   const editing = !!parceiro;
+  const scope = useCommercialRegistrationScope();
+  const submitLock = useRef(false);
+  const draftId = useRef(crypto.randomUUID());
+  const [tab, setTab] = useState("dados");
+  const live = useRef({ form: empty, open, scope: scope.scope });
 
   const [form, setForm] = useState<ParceiroB2BInput>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  live.current = { form, open, scope: scope.scope };
   const set = <K extends keyof ParceiroB2BInput>(k: K, v: ParceiroB2BInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
     if (open) {
       setErrors({});
+      setTab("dados");
       if (parceiro) {
         setForm({
           ...empty,
@@ -153,55 +161,55 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
           meta_mensal_brl: parceiro.meta_mensal_brl !== null ? Number(parceiro.meta_mensal_brl) : null,
         });
       } else {
+        draftId.current = crypto.randomUUID();
         setForm(empty);
-        (async () => {
-          const { data } = await supabase
-            .from("partner_accounts")
-            .select("codigo")
-            .like("codigo", "PARC-%")
-            .order("codigo", { ascending: false })
-            .limit(1);
-          const last = data?.[0]?.codigo ?? "";
-          const match = last.match(/^PARC-(\d+)$/);
-          const next = (match ? parseInt(match[1], 10) : 0) + 1;
-          setForm((f) => ({ ...f, codigo: `PARC-${String(next).padStart(3, "0")}` }));
-        })();
+
       }
     }
-  }, [open, parceiro]);
+  }, [open, parceiro, scope.scope]);
 
-  const { data: clientes } = useQuery({
-    queryKey: ["clientes-lookup-b2b"],
-    enabled: open,
-    queryFn: async () => {
+  const clientesQuery = useQuery({
+    queryKey: ["clientes-lookup-b2b", scope.scope],
+    enabled: open && scope.canManagePartners,
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const current = scope.capture();
       const { data, error } = await supabase
         .from("clientes")
-        .select("id, nome, razao_social")
+        .select("id, nome, razao_social").filter("organization_id", "eq", scope.organizationId ?? "").abortSignal(signal)
         .order("nome")
         .limit(500);
+      if (!current()) throw new Error("commercial_context_changed");
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const { data: consultores } = useQuery({
-    queryKey: ["consultores-lookup"],
-    enabled: open,
-    queryFn: async () => {
-      const { data } = await supabase
+    queryKey: ["consultores-lookup", scope.scope],
+    enabled: open && scope.canManagePartners,
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const current = scope.capture();
+      const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, nome")
+        .select("id, user_id, nome").eq("organization_id", scope.organizationId ?? "").abortSignal(signal)
         .eq("ativo", true)
         .order("nome");
+      if (!current() || error) throw new Error("commercial_lookup_unavailable");
       return data ?? [];
     },
   });
+  const clientes = scope.canManagePartners ? clientesQuery.data : undefined;
 
   const handleCepBlur = async () => {
     const cep = form.cep ? form.cep.replace(/\D/g, "") : "";
     if (cep.length !== 8) return;
+    const current = scope.capture();
+    const original = form;
     try {
       const r = await fetchCEP(cep);
+      if (!current() || !live.current.open || live.current.form !== original) return;
       setForm((f) => ({
         ...f,
         endereco_logradouro: r.logradouro || f.endereco_logradouro,
@@ -209,17 +217,22 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
         commercial_city: r.localidade || f.commercial_city,
         commercial_state: r.uf || f.commercial_state,
       }));
-    } catch (e: any) {
-      toast.error(e.message || "CEP não encontrado");
+    } catch {
+      if (current() && live.current.open && live.current.form === original) toast.error("Não foi possível consultar o CEP. Preencha manualmente.");
     }
   };
 
   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
   const cnpjAbortRef = useRef<AbortController | null>(null);
-  useEffect(() => () => cnpjAbortRef.current?.abort(), []);
+  useEffect(() => {
+    if (!open) { cnpjAbortRef.current?.abort(); setLoadingCNPJ(false); }
+    return () => cnpjAbortRef.current?.abort();
+  }, [open, scope.scope]);
 
   const handleCNPJLookup = async () => {
     const raw = unmaskCnpj(form.cnpj ?? "");
+    const current = scope.capture();
+    const original = form;
     if (raw.length !== 14 || !validateCNPJ(raw)) {
       toast.error("Insira um CNPJ válido para buscar", {
         description: "Verifique o número digitado e o dígito verificador.",
@@ -262,6 +275,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
 
       const data = (await resp.json()) as Awaited<ReturnType<typeof fetchCNPJ>>;
 
+      if (!current() || !live.current.open || live.current.form !== original || ctrl.signal.aborted) return;
       const patch = {
         razao_social: data.razao_social || form.razao_social,
         nome_fantasia:
@@ -302,6 +316,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
         description: `${filledCount} campo(s) preenchido(s). Revise antes de salvar.`,
       });
     } catch (e: any) {
+      if (!current() || !live.current.open || cnpjAbortRef.current !== ctrl) return;
       if (ctrl.signal.aborted) {
         toast.error("Consulta cancelada", {
           description: "A busca demorou demais ou foi interrompida. Tente novamente.",
@@ -313,11 +328,15 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       }
     } finally {
       clearTimeout(timeoutId);
-      setLoadingCNPJ(false);
+      if (cnpjAbortRef.current === ctrl && current()) setLoadingCNPJ(false);
     }
   };
 
   const handleSubmit = async () => {
+    if (submitLock.current) return;
+    if (!scope.canManagePartners || !clientes?.some(c => c.id === form.client_id)) {
+      setErrors({ client_id: "Selecione um cliente da sua empresa antes de salvar" }); setTab("dados"); return;
+    }
     const telCheck = validatePhoneBR(form.telefone_comercial, { fieldLabel: "Telefone comercial" });
     if (!telCheck.ok) { toast.error(telCheck.error); return; }
     const waCheck = validatePhoneBR(form.whatsapp_comercial, { fieldLabel: "WhatsApp comercial" });
@@ -353,16 +372,22 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
         errs[String(e.path[0])] = e.message;
       });
       setErrors(errs);
+      const field = String(parsed.error.errors[0]?.path[0] ?? "");
+      setTab(field.startsWith("email_") ? "contatos" : ["comissao_percentual", "limite_credito_brl", "meta_mensal_brl", "prazo_pagamento_padrao_dias"].includes(field) ? "financeiro" : "dados");
       toast.error(parsed.error.errors[0].message);
       return;
     }
     const cleanData: ParceiroB2BInput = { ...(payload as ParceiroB2BInput) };
-    if (editing && parceiro) {
-      await update.mutateAsync({ id: parceiro.id, ...cleanData });
-    } else {
-      await create.mutateAsync(cleanData);
-    }
-    onOpenChange(false);
+    submitLock.current = true;
+    const current = scope.capture();
+    try {
+      if (editing && parceiro) await update.mutateAsync({ id: parceiro.id, ...cleanData });
+      else await create.mutateAsync({ ...cleanData, id: draftId.current });
+      if (current()) onOpenChange(false);
+    } catch {
+      // The mutation shows a sanitized error; retain the entire draft.
+    } finally { submitLock.current = false; }
+
   };
 
   const num = (v: string) => (v === "" ? null : Number(v));
@@ -377,7 +402,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="dados">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="dados">Dados Cadastrais</TabsTrigger>
             <TabsTrigger value="endereco">Endereço</TabsTrigger>
@@ -394,7 +419,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
                 <Label>Código</Label>
-                <Input value={form.codigo ?? ""} readOnly className="bg-muted" />
+                <Input value={form.codigo ?? ""} placeholder="Gerado ao salvar" readOnly className="bg-muted" />
               </div>
               <div>
                 <Label>CNPJ</Label>
@@ -523,16 +548,19 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                 </Select>
               </div>
               <div className="sm:col-span-2">
-                <Label>Cliente vinculado (opcional)</Label>
+                <Label>Cliente da empresa *</Label>
                 <Select value={form.client_id ?? "none"} onValueChange={(v) => set("client_id", v === "none" ? null : v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
+                  <SelectTrigger aria-label="Cliente da empresa" aria-invalid={!!errors.client_id}><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— Sem vínculo —</SelectItem>
+                    <SelectItem value="none">— Selecione um cliente —</SelectItem>
                     {clientes?.map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>{c.razao_social || c.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.client_id && <p role="alert" className="text-xs text-destructive mt-1">{errors.client_id}</p>}
+                {clientesQuery.isError && <div role="alert" className="text-sm text-destructive">Não foi possível carregar clientes. <Button type="button" variant="link" onClick={() => clientesQuery.refetch()}>Tentar novamente</Button></div>}
+                {!clientesQuery.isLoading && !clientesQuery.isError && clientes?.length === 0 && <p className="text-sm text-muted-foreground">Cadastre primeiro o produtor/cliente desta empresa na aba Produtores e depois selecione-o aqui.</p>}
               </div>
               <div className="flex items-end gap-3">
                 <div>
@@ -760,7 +788,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={create.isPending || update.isPending}>
+          <Button onClick={handleSubmit} disabled={create.isPending || update.isPending || !scope.canManagePartners}>
             {editing ? "Salvar alterações" : "Criar parceiro"}
           </Button>
         </DialogFooter>

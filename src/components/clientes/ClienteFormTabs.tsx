@@ -16,6 +16,7 @@ import { ClienteContatosTab } from "./ClienteContatosTab";
 import { ClienteDocumentosTab } from "./ClienteDocumentosTab";
 import { AcessoPortalTab } from "./AcessoPortalTab";
 import { useCanManageClienteDocs } from "@/hooks/useCanManageClienteDocs";
+import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { MoneyInput } from "../ui/money-input";
 import { InscricaoEstadualCadastroInput } from "./InscricaoEstadualCadastroInput";
@@ -75,6 +76,13 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
   const canManageDocs = useCanManageClienteDocs();
   const { role } = useAuth();
+  const scope = useCommercialRegistrationScope();
+  const [tab, setTab] = useState("geral");
+  const cepGeneration = useRef({ endereco: 0, cobranca: 0 });
+  useEffect(() => {
+    const field = Object.keys(errors)[0];
+    if (field) setTab(field.startsWith("endereco_") || field.startsWith("cobranca_") ? "endereco" : field.startsWith("contato_financeiro_") || field === "limite_credito" ? "financeiro" : "geral");
+  }, [errors]);
   const canManagePortalAccess = role === "administrador" || role === "gestor" || role === "administrativo";
 
   const { fields, append, remove } = useFieldArray({
@@ -115,25 +123,35 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
 
   const handleCEPBlur = async (field: "endereco" | "cobranca", cep: string) => {
     if (cep?.replace(/\D/g, "").length !== 8) return;
+    const current = scope.capture();
+    const generation = ++cepGeneration.current[field];
+    const snapshot = JSON.stringify(watch());
     setLoadingCEP(true);
     try {
       const data = await fetchCEP(cep);
+      if (!current() || generation !== cepGeneration.current[field] || snapshot !== JSON.stringify(watch())) return;
       const prefix = field === "endereco" ? "endereco" : "cobranca";
       setValue(`${prefix}_logradouro`, data.logradouro);
       setValue(`${prefix}_bairro`, data.bairro);
       setValue(`${prefix}_municipio`, data.localidade);
       setValue(`${prefix}_estado`, data.uf);
     } catch (err: any) {
-      toast.error(err.message);
+      if (current()) toast.error("Não foi possível consultar o CEP. Preencha o endereço manualmente.");
     } finally {
-      setLoadingCEP(false);
+      if (current() && generation === cepGeneration.current[field]) setLoadingCEP(false);
     }
   };
 
   const cnpjAbortRef = useRef<AbortController | null>(null);
-  useEffect(() => () => cnpjAbortRef.current?.abort(), []);
+  useEffect(() => () => cnpjAbortRef.current?.abort(), [scope.scope, clienteId]);
+  useEffect(() => {
+    const field = Object.keys(errors)[0];
+    if (field) setTab(field.startsWith("endereco_") || field.startsWith("cobranca_") ? "endereco" : field.startsWith("contato_financeiro_") || field === "limite_credito" ? "financeiro" : "geral");
+  }, [errors]);
 
   const handleCNPJLookup = async () => {
+    const current = scope.capture();
+    const snapshot = JSON.stringify(watch());
     const cnpj = watch("cpf_cnpj");
     const clean = (cnpj ?? "").replace(/\D/g, "");
     if (clean.length !== 14 || !validateCNPJ(clean)) {
@@ -178,6 +196,7 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
 
       const data = (await resp.json()) as BrasilAPI_CNPJ;
 
+      if (!current() || ctrl.signal.aborted || snapshot !== JSON.stringify(watch())) return;
       const fields: Array<[string, string | undefined | null]> = [
         ["razao_social", data.razao_social],
         ["nome_fantasia", data.nome_fantasia || data.razao_social],
@@ -226,12 +245,12 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
       }
     } finally {
       clearTimeout(timeoutId);
-      setLoadingCNPJ(false);
+      if (cnpjAbortRef.current === ctrl && current()) setLoadingCNPJ(false);
     }
   };
 
   return (
-    <Tabs defaultValue="geral" className="w-full">
+    <Tabs value={tab} onValueChange={setTab} className="w-full">
       <div className="w-full overflow-x-auto no-scrollbar pb-2">
         <TabsList className="w-max sm:w-full h-auto gap-1 p-1.5 bg-muted/50 flex">
           <TabsTrigger value="geral" className="text-xs sm:text-sm py-2 min-w-[80px]">Geral</TabsTrigger>

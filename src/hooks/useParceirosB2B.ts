@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useCommercialRegistrationScope } from "./useCommercialRegistrationScope";
 import { supabase } from "@/integrations/supabase/client";
 
 export type StatusFiltroParceiro = "ativos" | "inativos" | "todos";
@@ -92,15 +93,19 @@ export function useParceirosB2B(params: UseParceirosParams = {}) {
     pageSize = 20,
   } = params;
 
-  return useQuery({
+  const scope = useCommercialRegistrationScope();
+  const result = useQuery({
+    enabled: scope.ready,
+    retry: false,
     queryKey: [
-      "parceiros-b2b",
+      "parceiros-b2b", scope.scope,
       { search, status, partnerType, uf, consultor, faixaDesconto, vinculoCliente, page, pageSize },
     ],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      const current = scope.capture();
       let query = (supabase as any)
         .from("partner_accounts")
-        .select("*", { count: "exact" })
+        .select("*", { count: "exact" }).abortSignal(signal)
         .order("created_at", { ascending: false });
 
       if (status === "ativos") query = query.eq("ativo", true);
@@ -132,6 +137,7 @@ export function useParceirosB2B(params: UseParceirosParams = {}) {
       query = query.range(from, to);
 
       const { data, error, count } = await query;
+      if (!current()) throw new Error("commercial_context_changed");
       if (error) throw error;
 
       return {
@@ -140,4 +146,5 @@ export function useParceirosB2B(params: UseParceirosParams = {}) {
       };
     },
   });
+  return { ...result, data: scope.ready ? result.data : undefined };
 }
