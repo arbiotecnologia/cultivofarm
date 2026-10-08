@@ -3,7 +3,7 @@ import { renderHook } from "@testing-library/react";
 import { readFileSync, readdirSync } from "node:fs";
 
 const m = vi.hoisted(() => ({
-  auth: { user: { id: "A" }, profile: { organization_id: "OA", ativo: true }, roles: ["administrador"] },
+  auth: { user: { id: "A" }, profile: { user_id: "A", organization_id: "OA", ativo: true }, roles: ["administrador"] },
   portal: { clienteId: "CA", loading: false },
   queries: [] as Array<Record<string, unknown>>,
   chain: {} as Record<string, ReturnType<typeof vi.fn>>,
@@ -24,7 +24,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 import { useNotificacoesUnificadas } from "@/hooks/useNotificacoesUnificadas";
 
 beforeEach(() => {
-  m.auth = { user: { id: "A" }, profile: { organization_id: "OA", ativo: true }, roles: ["administrador"] };
+  m.auth = { user: { id: "A" }, profile: { user_id: "A", organization_id: "OA", ativo: true }, roles: ["administrador"] };
   m.portal = { clienteId: "CA", loading: false };
   m.queries = []; m.mutations = []; m.remove.mockClear();
   for (const name of ["select", "eq", "filter", "order", "limit", "update"]) m.chain[name] = vi.fn(() => m.chain);
@@ -34,7 +34,7 @@ describe("P1 notification identity/tenant scope (mock, not browser)", () => {
   it("cache keys distinguish user and tenant and role", () => {
     const h = renderHook(() => useNotificacoesUnificadas());
     expect(m.queries[0].queryKey).toEqual(["notif-unified", "op", "A", "OA", "administrador"]);
-    m.auth = { user: { id: "B" }, profile: { organization_id: "OB", ativo: true }, roles: ["gestor"] };
+    m.auth = { user: { id: "B" }, profile: { user_id: "B", organization_id: "OB", ativo: true }, roles: ["gestor"] };
     h.rerender();
     expect(m.queries.at(-2)?.queryKey).toEqual(["notif-unified", "op", "B", "OB", "gestor"]);
     expect(m.remove).toHaveBeenCalled();
