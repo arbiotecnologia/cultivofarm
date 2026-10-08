@@ -1,4 +1,11 @@
-## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (estado atual)
+## Motor estoque — hardening focal — 2026-10-08 03:07 UTC (estado atual)
+
+- [ ] Conferir delta 0a1966fa→e92fa850, callers, corpos vivos, h15/RBAC/entitlement e semântica das referências.
+- [ ] Aplicar migration oficial endurecendo motor/reserva, preservando três contenções e ACL bloqueadas.
+- [ ] Executar prova transacional positiva/negativa com rollback obrigatório; conferir cleanup e hashes.
+- [ ] Testes focais/lint/scanners/sinais automáticos; relatório, limites das nove ações e NO-GO operacional até revisão.
+
+## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (histórico)
 
 - [x] Destino canônico, RLS/ACL/helpers e referências privilegiadas auditados; pré-prova AR/FSF órfão 1/1. Não inferir organização por expedido_por.
 - [x] Migration oficial `20261008022948` aplicada após tentativa revertida: policy RESTRICTIVE USING/WITH CHECK pelo lote, trigger ator/old/new/referências; fechamento textual pós-aplicação de 23 DEFINER sem EXECUTE cliente, service preservado. Entrada contida antes de replay/leitura; RPCs não restaurados funcionalmente.
