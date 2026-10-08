@@ -1,6 +1,6 @@
 import { useNotificacoesUnificadas } from "@/hooks/useNotificacoesUnificadas";
 import { Card } from "@/components/ui/card";
-import { Bell, Smartphone, Check, RefreshCw } from "lucide-react";
+import { Bell, Check, RefreshCw } from "lucide-react";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ const TIPO_ICONS: Record<string, string> = {
 };
 
 export default function MobileNotificacoes() {
-  const { permission, subscribe } = usePushSubscription();
+  const { deliveryAvailable, canUnsubscribe, unsubscribe, isLoading: pushLoading } = usePushSubscription();
   const { all: notificacoes, unreadCount, isLoading, isError, refetch, markRead, markAllRead } = useNotificacoesUnificadas({ limit: 30 });
 
   return (
@@ -28,21 +28,11 @@ export default function MobileNotificacoes() {
         </div>
       </header>
 
-      {permission === "default" && (
-        <Card className="p-4 bg-primary/5 border-primary/20 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Smartphone className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Ativar notificações?</p>
-              <p className="text-xs text-muted-foreground leading-tight">Receba alertas de visitas e prazos direto no seu celular.</p>
-            </div>
-          </div>
-          <Button size="sm" className="w-full h-9 bg-primary text-white" onClick={subscribe}>
-            Permitir Notificações
-          </Button>
-        </Card>
+      {!deliveryAvailable && (
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>Notificações push indisponíveis no momento.</p>
+          {canUnsubscribe && <Button variant="outline" size="sm" disabled={pushLoading} onClick={unsubscribe}>Desativar inscrição neste navegador</Button>}
+        </div>
       )}
 
       {isError ? (

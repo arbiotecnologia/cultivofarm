@@ -15,13 +15,13 @@ export interface NotificacaoOperacional {
 }
 
 export function useNotificacoesOperacionais() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles, loading: authLoading } = useAuth();
   const organizationId = profile?.organization_id;
-  const ready = !!user && !!organizationId && profile?.ativo !== false;
+  const ready = !authLoading && !!user && !!organizationId && profile?.user_id === user.id && profile?.ativo === true && roles.length > 0;
   const qc = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["notificacoes-operacionais", user?.id, organizationId],
+    queryKey: ["notificacoes-operacionais", user?.id, organizationId, roles.join(",")],
     queryFn: async (): Promise<NotificacaoOperacional[]> => {
       if (!ready || !user) return [];
       const { data, error } = await supabase
@@ -52,14 +52,14 @@ export function useNotificacoesOperacionais() {
           filter: `usuario_id=eq.${user.id}`,
         },
         () => {
-          qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user.id, organizationId] });
+          qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user.id, organizationId, roles.join(",")] });
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, organizationId, ready, qc]);
+  }, [user, organizationId, ready, roles, qc]);
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
@@ -70,7 +70,7 @@ export function useNotificacoesOperacionais() {
         .eq("id", id).eq("usuario_id", user.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id, organizationId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id, organizationId, roles.join(",")] }),
   });
 
   const markAllRead = useMutation({
@@ -83,7 +83,7 @@ export function useNotificacoesOperacionais() {
         .eq("lido", false);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id, organizationId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id, organizationId, roles.join(",")] }),
   });
 
   const unreadCount = (query.data || []).filter((n) => !n.lido).length;

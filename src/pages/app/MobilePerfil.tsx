@@ -12,7 +12,7 @@ import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 export default function MobilePerfil() {
   const { profile, primaryRole, roles, signOut } = useAuth();
-  const { isSupported, subscription, subscribe, unsubscribe, isLoading: isLoadingPush } = usePushSubscription();
+  const { isSupported, subscription, deliveryAvailable, unsubscribe, isLoading: isLoadingPush } = usePushSubscription();
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
   const canSwitch =
@@ -88,13 +88,14 @@ export default function MobilePerfil() {
             <Bell className="h-5 w-5 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">Notificações Push</p>
-              <p className="text-[10px] text-muted-foreground">Receber alertas no celular</p>
+              <p className="text-[10px] text-muted-foreground">Notificações push indisponíveis no momento.</p>
             </div>
           </div>
           <Switch 
             checked={!!subscription} 
-            onCheckedChange={(checked) => checked ? subscribe() : unsubscribe()}
-            disabled={isLoadingPush || !isSupported}
+            onCheckedChange={(checked) => { if (!checked) void unsubscribe(); }}
+            aria-label="Desativar inscrição push neste navegador"
+            disabled={isLoadingPush || !isSupported || (!deliveryAvailable && !subscription)}
           />
         </div>
         {!isSupported && (

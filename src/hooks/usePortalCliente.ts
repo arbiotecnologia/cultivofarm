@@ -11,10 +11,11 @@ interface ClienteVinculado {
 const STORAGE_KEY = "portal_active_cliente_id";
 
 export function usePortalCliente() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles, loading: authLoading } = useAuth();
   const organizationId = profile?.organization_id ?? null;
+  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && !!organizationId && roles.includes("cliente_produtor");
   const generation = useRef(0);
-  const scope = `${user?.id ?? ""}:${organizationId ?? ""}`;
+  const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${roles.join(",")}:${ready}`;
   const [resolvedScope, setResolvedScope] = useState("");
   const [clientes, setClientes] = useState<ClienteVinculado[]>([]);
   const [clienteId, setClienteId] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export function usePortalCliente() {
     const requestGeneration = ++generation.current;
     setClientes([]); setClienteId(null); setClienteNome(null);
     setResolvedScope("");
-    if (!user || !organizationId || profile?.ativo === false) {
+    if (!ready || !user || !organizationId) {
       setLoading(false);
       return;
     }
@@ -97,7 +98,7 @@ export function usePortalCliente() {
     setClienteId(active?.id ?? null);
     setClienteNome(active?.nome ?? null);
     setLoading(false);
-  }, [user, organizationId, profile?.ativo, scope]);
+  }, [user, organizationId, ready, scope]);
 
   useEffect(() => {
     void load();
@@ -107,15 +108,15 @@ export function usePortalCliente() {
   const setClienteAtivo = useCallback(
     (id: string) => {
       const found = clientes.find((c) => c.id === id);
-      if (!found) return;
+      if (!ready || resolvedScope !== scope || !found) return;
       setClienteId(found.id);
       setClienteNome(found.nome);
       try {
         window.localStorage.setItem(`${STORAGE_KEY}:${scope}`, found.id);
       } catch { /* Selection remains valid in memory if storage is unavailable. */ }
     },
-    [clientes, scope]
+    [clientes, scope, ready, resolvedScope]
   );
 
-  return { clienteId: resolvedScope === scope ? clienteId : null, clienteNome: resolvedScope === scope ? clienteNome : null, clientes: resolvedScope === scope ? clientes : [], setClienteAtivo, loading: loading || (!!user && !!organizationId && resolvedScope !== scope), reload: load };
+  return { clienteId: ready && resolvedScope === scope ? clienteId : null, clienteNome: ready && resolvedScope === scope ? clienteNome : null, clientes: ready && resolvedScope === scope ? clientes : [], setClienteAtivo, loading: authLoading || (ready && (loading || resolvedScope !== scope)), reload: load };
 }

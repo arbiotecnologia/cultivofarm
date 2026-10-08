@@ -1,36 +1,28 @@
 /* global self */
-// Stable standalone push worker. It does not cache the app shell, claim clients,
-// activate itself early, navigate clients, or control frontend version updates.
+// Standalone containment worker. No cache, claim, skipWaiting or session data.
+// Existing installed workers are NOT automatically replaced by this file.
+const PUSH_DELIVERY_AVAILABLE = false;
 
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
+function safeNotificationUrl(value) {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return null;
   try {
-    const data = event.data.json();
-    const { title, body, icon, badge, url } = data;
-    event.waitUntil(
-      self.registration.showNotification(title, {
-        body,
-        icon: icon || "/pwa-icon-192.png",
-        badge: badge || "/favicon.png",
-        data: { url },
-      })
-    );
-  } catch (e) {
-    event.waitUntil(
-      self.registration.showNotification("Cultivo Farm", { body: event.data.text() })
-    );
-  }
+    const decoded = decodeURIComponent(value.split(/[?#]/)[0]);
+    if (decoded.includes("\\") || decoded.split("/").includes("..") || decoded.startsWith("//")) return null;
+    const url = new URL(value, self.location.origin);
+    if (url.origin !== self.location.origin || !/^\/(app|notificacoes|portal|portal-parceiro)(\/|$)/.test(url.pathname)) return null;
+    return url.href;
+  } catch { return null; }
+}
+
+self.addEventListener("push", () => {
+  // Do not parse or display payloads, including text fallback, while contained.
+  if (!PUSH_DELIVERY_AVAILABLE) return;
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/app";
-  event.waitUntil(
-    self.clients.matchAll({ type: "window" }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(url) && "focus" in client) return client.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
-    })
-  );
+  const url = safeNotificationUrl(event.notification.data?.url);
+  // Old notifications cannot navigate even internally while delivery is blocked.
+  if (!PUSH_DELIVERY_AVAILABLE || !url) return;
+  event.waitUntil(self.clients.openWindow(url));
 });
