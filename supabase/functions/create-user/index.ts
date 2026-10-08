@@ -117,8 +117,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (password.length < 6) {
-      return new Response(JSON.stringify({ error: "A senha deve ter no mínimo 6 caracteres." }), {
+    // Mesmo contrato de usuariosValidation.senhaValida: não normalizar a senha.
+    if (password.length < 8 || password.length > 128 ||
+      !/[A-Za-zÀ-ÿ]/.test(password) || !/[0-9]/.test(password)) {
+      return new Response(JSON.stringify({ error: "A senha deve ter de 8 a 128 caracteres, com ao menos uma letra e um número." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
