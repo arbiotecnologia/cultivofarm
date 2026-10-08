@@ -7,6 +7,7 @@ describe("canonical partner policies — isolated PostgreSQL, simulated Auth", (
     expect(output).toContain("PASS real baseline technical reads own financial row");
     expect(output).toContain("PASS technical direct financial rows denied");
     expect(output).toContain("PASS internal admin A still sees exactly two A partners");
-    expect(output.match(/NOTICE: {2}PASS/g)).toHaveLength(13);
+    expect(output).toContain("PASS single residual LIMIT1 cannot authorize cross tenant");
+    expect(output.match(/NOTICE: {2}PASS/g)).toHaveLength(15);
   }, 60_000);
 });

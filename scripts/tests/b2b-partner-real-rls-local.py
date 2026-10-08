@@ -11,7 +11,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main():
+def main(lifecycle=False):
     tmp = Path(tempfile.mkdtemp(prefix="b2b-real-rls-", dir="/tmp"))
     tmp.chmod(0o777)
     prefix = ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"] if os.getuid() == 0 else []
@@ -26,13 +26,13 @@ CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role;
 CREATE SCHEMA auth; CREATE SCHEMA platform_private;
 GRANT USAGE ON SCHEMA auth,platform_private TO authenticated;
 CREATE TYPE public.app_role AS ENUM ('administrador','gestor_comercial','parceiro_b2b','parceiro_b2b_tecnico');
-CREATE TABLE public.profiles(user_id uuid, organization_id uuid, ativo boolean, senha_provisoria boolean);
+CREATE TABLE public.profiles(user_id uuid PRIMARY KEY, organization_id uuid, ativo boolean, senha_provisoria boolean, updated_at timestamptz DEFAULT now(), nome text, email text, cliente_id uuid);
 CREATE TABLE public.user_roles(user_id uuid,role public.app_role);
 CREATE TABLE public.partner_users(user_id uuid,partner_id uuid,papel text);
-CREATE TABLE public.organizations(id uuid,ativo boolean);
-CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
+CREATE TABLE public.organizations(id uuid,ativo boolean,status text DEFAULT 'ativa',partner_account_id uuid);
+CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz,status text);
 CREATE TABLE public.clientes(id uuid,organization_id uuid);
-CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,client_id uuid,desconto_padrao numeric,limite_credito_brl numeric);
+CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,client_id uuid,desconto_padrao numeric,limite_credito_brl numeric,ativo boolean DEFAULT true,deleted_at timestamptz);
 GRANT SELECT ON public.partner_accounts,public.clientes TO authenticated;
 ALTER TABLE public.partner_accounts ENABLE ROW LEVEL SECURITY;
 -- Only Auth transport is mocked. Helpers below are live definitions copied
@@ -52,12 +52,12 @@ $$;
 CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SET search_path='' AS $$ SELECT platform_private.h15_actor_organization(); $$;
 CREATE FUNCTION public.get_user_partner_id() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT partner_id FROM public.partner_users WHERE user_id=auth.uid() LIMIT 1; $$;
 CREATE FUNCTION pg_temp.assert_true(label text,result boolean) RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF result IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAIL %',label; END IF; RAISE NOTICE 'PASS %',label; END $$;
-INSERT INTO public.organizations VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true),('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true);
-INSERT INTO public.partner_accounts VALUES
+INSERT INTO public.organizations(id,ativo) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true),('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true);
+INSERT INTO public.partner_accounts(id,commercial_owner_organization_id,client_id,desconto_padrao,limite_credito_brl) VALUES
  ('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',NULL,25,1000),
  ('22222222-2222-4222-8222-222222222222','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',NULL,50,2000),
  ('33333333-3333-4333-8333-333333333333','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',NULL,75,3000);
-INSERT INTO public.profiles VALUES ('44444444-4444-4444-8444-444444444444','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,false);
+INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria) VALUES ('44444444-4444-4444-8444-444444444444','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,false);
 INSERT INTO public.user_roles VALUES ('44444444-4444-4444-8444-444444444444','parceiro_b2b_tecnico');
 INSERT INTO public.partner_users VALUES ('44444444-4444-4444-8444-444444444444','11111111-1111-4111-8111-111111111111','tecnico');
 SELECT set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',true);
@@ -100,19 +100,38 @@ UPDATE public.profiles SET organization_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('legacy self-link branch survives internal tenant move baseline risk',(SELECT count(*) FROM public.partner_accounts)=2 AND EXISTS(SELECT 1 FROM public.partner_accounts WHERE commercial_owner_organization_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'));
 RESET ROLE;
--- Internal identities are not provisioned with partner_users by this contract.
--- The live legacy guard's self-link branch otherwise survives a tenant move.
-DELETE FROM public.partner_users;
+"""
+        # Canonical context body; only entitlement/legacy dependencies and Auth
+        # transport are local stubs, not a claim of full production replay.
+        sql += """
+CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql AS $$ SELECT 'catalogo_precos'::text $$;
+CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid,boolean) RETURNS boolean LANGUAGE sql AS $$ SELECT false $$;
+"""
+        sql += (ROOT / "scripts/rbac-audit/b2b-commercial-context.sql").read_text()
+        sql += (ROOT / "scripts/rbac-audit/b2b-partner-self-coherence.sql").read_text()
+        sql += r"""
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.assert_true('internal admin B only sees tenant B',(SELECT array_agg(id) FROM public.partner_accounts)=ARRAY['33333333-3333-4333-8333-333333333333'::uuid]);
+SELECT pg_temp.assert_true('internal admin B with residual duplicate links only sees tenant B',(SELECT array_agg(id) FROM public.partner_accounts)=ARRAY['33333333-3333-4333-8333-333333333333'::uuid]);
+RESET ROLE;
+DELETE FROM public.partner_users WHERE partner_id='22222222-2222-4222-8222-222222222222';
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true('single residual LIMIT1 cannot authorize cross tenant',NOT EXISTS(SELECT 1 FROM public.partner_accounts WHERE commercial_owner_organization_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'));
+RESET ROLE;
+UPDATE public.user_roles SET role='gestor_comercial';
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true('internal commercial role residual link cannot authorize cross tenant',(SELECT count(*) FROM public.partner_accounts)=1);
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('anonymous actor cannot read',(SELECT count(*) FROM public.partner_accounts)=0);
 RESET ROLE;
 SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_function_privilege('anon','platform_private.b2b_direct_partner_row_allowed()','EXECUTE'));
-ROLLBACK;
 """
+        if lifecycle:
+            sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-local.sql").read_text()
+            sql += (ROOT / "scripts/rbac-audit/b2b-provisioning-lifecycle.sql").read_text()
+            sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-assertions.sql").read_text()
+        sql += "ROLLBACK;"
         result = subprocess.run(["psql", "-X", "-h", str(tmp), "-p", "55486", "-U", "local_audit", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], input=sql, text=True, capture_output=True)
         print(result.stderr)
         if result.returncode:
