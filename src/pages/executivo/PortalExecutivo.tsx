@@ -70,7 +70,7 @@ export default function PortalExecutivo() {
                 />
               </div>
             </div>
-            <ExecutivoTimeline eventos={timelineQ.data ?? []} isLoading={timelineQ.isLoading} />
+            <ExecutivoTimeline eventos={timelineQ.data?.items ?? []} indisponiveis={timelineQ.data?.dados_indisponiveis ?? []} motivo={timelineQ.data?.motivo_indisponibilidade} hasError={timelineQ.isError} isLoading={timelineQ.isLoading} />
           </TabsContent>
 
           <TabsContent value="financeiro" className="mt-4">
@@ -90,7 +90,7 @@ export default function PortalExecutivo() {
           </TabsContent>
 
           <TabsContent value="gargalos" className="mt-4">
-            <ExecutivoGargalos gargalos={gargalosQ.data ?? []} isLoading={gargalosQ.isLoading} />
+            <ExecutivoGargalos gargalos={gargalosQ.data?.items ?? []} indisponiveis={gargalosQ.data?.dados_indisponiveis ?? []} motivo={gargalosQ.data?.motivo_indisponibilidade} hasError={gargalosQ.isError} isLoading={gargalosQ.isLoading} />
           </TabsContent>
         </Tabs>
 

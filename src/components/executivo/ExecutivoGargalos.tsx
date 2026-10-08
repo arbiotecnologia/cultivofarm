@@ -8,6 +8,9 @@ import type { Gargalo } from "@/hooks/useExecutivoGargalos";
 interface Props {
   gargalos: Gargalo[];
   isLoading: boolean;
+  indisponiveis: string[];
+  motivo?: string | null;
+  hasError?: boolean;
 }
 
 const ROTA_POR_TABELA: Record<string, (id: string) => string> = {
@@ -23,7 +26,7 @@ function gravidadeBadge(g: string) {
   return <Badge variant="secondary">Baixa</Badge>;
 }
 
-export function ExecutivoGargalos({ gargalos, isLoading }: Props) {
+export function ExecutivoGargalos({ gargalos, isLoading, indisponiveis, motivo, hasError }: Props) {
   const navigate = useNavigate();
 
   return (
@@ -34,6 +37,10 @@ export function ExecutivoGargalos({ gargalos, isLoading }: Props) {
       </div>
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Carregando…</p>
+      ) : hasError || indisponiveis.length > 0 ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          Gargalos indisponíveis. {hasError ? "Não foi possível consultar os gargalos." : motivo ?? "Fontes sem vínculo organizacional comprovado."}
+        </p>
       ) : gargalos.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sem gargalos identificados no período.</p>
       ) : (

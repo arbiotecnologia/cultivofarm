@@ -5,9 +5,12 @@ import type { TimelineEvento } from "@/hooks/useExecutivoTimeline";
 interface Props {
   eventos: TimelineEvento[];
   isLoading: boolean;
+  indisponiveis: string[];
+  motivo?: string | null;
+  hasError?: boolean;
 }
 
-export function ExecutivoTimeline({ eventos, isLoading }: Props) {
+export function ExecutivoTimeline({ eventos, isLoading, indisponiveis, motivo, hasError }: Props) {
   return (
     <Card className="p-4">
       <div className="flex items-center gap-2 mb-3">
@@ -16,6 +19,10 @@ export function ExecutivoTimeline({ eventos, isLoading }: Props) {
       </div>
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Carregando…</p>
+      ) : hasError || indisponiveis.length > 0 ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          Timeline indisponível. {hasError ? "Não foi possível consultar os eventos." : motivo ?? "Fontes sem vínculo organizacional comprovado."}
+        </p>
       ) : eventos.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sem eventos recentes.</p>
       ) : (
