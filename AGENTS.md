@@ -37,4 +37,3 @@
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
-- Partner-user reads fence active actor/tenant/roles/resource and verify the partner client chain; legacy link/change/delete UI stays unavailable until integrated provisioning is authorized — avoids stale disclosure and unowned role writes.
