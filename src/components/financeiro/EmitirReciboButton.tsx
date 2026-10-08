@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Receipt, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 interface Props {
   paymentId: string;
@@ -19,13 +20,17 @@ interface Props {
  */
 export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = "sm", variant = "outline" }: Props) {
   const [busy, setBusy] = useState(false);
+  const access = useStorageAccessScope(`receipt:${paymentId}`);
 
   const handle = async () => {
+    if (!access.ready) return;
+    const current = access.capture();
     setBusy(true);
     try {
       const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
         _payment_id: paymentId,
       });
+      if (!current()) return;
       if (error) throw error;
       const res = data as any;
       const receiptId = res?.receipt_id;
@@ -39,9 +44,11 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       const { data: pdfRes, error: pdfErr } = await supabase.functions.invoke("generate-financial-receipt", {
         body: { receipt_id: receiptId },
       });
+      if (!current()) return;
       if (pdfErr) throw pdfErr;
       if ((pdfRes as any)?.url) window.open((pdfRes as any).url, "_blank");
     } catch (e: any) {
+      if (!current()) return;
       toast.error(e.message ?? "Erro ao emitir recibo");
     } finally {
       setBusy(false);

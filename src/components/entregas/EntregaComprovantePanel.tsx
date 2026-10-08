@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,7 @@ function mesmoRecebedor(a: RecebedorPayload, b: RecebedorPayload) {
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
   const { user, role } = useAuth();
+  const access = useStorageAccessScope(`comprovante:${entrega?.id}`);
   const [openSign, setOpenSign] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
@@ -140,7 +142,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setRessalvas("");
     setMotivoDispensa("");
     setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
-  }, [entrega?.id]);
+  }, [entrega?.id, access.scope]);
 
   // Unmount: invalida qualquer operação em voo.
   useEffect(() => {
@@ -159,33 +161,35 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
   // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
   const {
-    data: entregaAtual,
+    data: scopedEntregaAtual,
     isLoading: entregaCarregando,
     isError: entregaErro,
     refetch: recarregarEntrega,
   } = useQuery({
-    queryKey: ["entrega-comprovante-status", entrega?.id],
-    enabled: !!entrega?.id,
+    queryKey: ["entrega-comprovante-status", entrega?.id, access.scope],
+    enabled: access.ready && !!entrega?.id,
     queryFn: async () => {
+      const current = access.capture();
       const { data, error } = await supabase
         .from("entregas")
         .select("id, comprovante_status, validation_token")
         .eq("id", entrega.id)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return current() ? data as any : null;
     },
   });
 
   const {
-    data: comprovante,
+    data: scopedComprovante,
     isLoading: comprovanteCarregando,
     isError: comprovanteErro,
     refetch: recarregarComprovante,
   } = useQuery({
-    queryKey: ["entrega-comprovante", entrega?.id],
-    enabled: !!entrega?.id,
+    queryKey: ["entrega-comprovante", entrega?.id, access.scope],
+    enabled: access.ready && !!entrega?.id,
     queryFn: async () => {
+      const current = access.capture();
       const { data, error } = await supabase
         .from("entrega_comprovantes" as any)
         .select("*")
@@ -194,9 +198,12 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return current() ? data as any : null;
     },
   });
+
+  const entregaAtual = access.ready ? scopedEntregaAtual : null;
+  const comprovante = access.ready ? scopedComprovante : null;
 
   const isAdmin = role === "administrador" || role === "gestor" || role === "administrativo";
   const carregando = entregaCarregando || comprovanteCarregando;
@@ -223,7 +230,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
   /** Trava síncrona compartilhada entre assinatura, anexo e demais ações. */
   const iniciarAcao = () => {
-    if (acaoRef.current) return false;
+    if (!access.ready || acaoRef.current) return false;
     acaoRef.current = true;
     setAcaoEmAndamento(true);
     return true;
@@ -597,13 +604,17 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   };
 
   const abrirComprovanteArquivo = async () => {
+    if (!access.ready) return;
+    const current = access.capture();
     try {
       const { data, error } = await supabase.storage
         .from("entrega-documentos")
         .createSignedUrl(comprovante.arquivo_path, 300);
+      if (!current()) return;
       if (error || !data?.signedUrl) throw new Error("sem-url");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch {
+      if (!current()) return;
       toast({
         title: "Não foi possível abrir o comprovante",
         description: "O link seguro do arquivo não pôde ser gerado. Tente novamente.",

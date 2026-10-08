@@ -8,6 +8,10 @@ const { fromMock, rpcMock, toastMock, invokeMock } = vi.hoisted(() => ({
   toastMock: vi.fn(),
   invokeMock: vi.fn(),
 }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
+  user: { id: "u1" }, profile: { user_id: "u1", organization_id: "O1", ativo: true, senha_provisoria: false },
+  roles: ["administrador"], role: "administrador", loading: false,
+}) }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: fromMock, rpc: rpcMock, functions: { invoke: invokeMock }, storage: { from: vi.fn() } },

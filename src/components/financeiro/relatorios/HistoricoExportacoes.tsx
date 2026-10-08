@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 interface ExportRow {
   id: string;
@@ -26,7 +27,9 @@ interface ExportRow {
 }
 
 export function HistoricoExportacoes() {
-  const [rows, setRows] = useState<ExportRow[]>([]);
+  const access = useStorageAccessScope("financial-export-history");
+  const [result, setResult] = useState<{ scope: string; rows: ExportRow[] }>({ scope: "", rows: [] });
+  const rows = access.ready && result.scope === access.scope ? result.rows : [];
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState("");
   const [format, setFormat] = useState("");
@@ -34,6 +37,8 @@ export function HistoricoExportacoes() {
   const [to, setTo] = useState("");
 
   const load = async () => {
+    if (!access.ready) return;
+    const current = access.capture();
     setLoading(true);
     let q = supabase.from("financial_report_exports" as any)
       .select("*")
@@ -44,14 +49,22 @@ export function HistoricoExportacoes() {
     if (from) q = q.gte("generated_at", from);
     if (to) q = q.lte("generated_at", to + "T23:59:59");
     const { data, error } = await q;
+    if (!current()) return;
     if (error) toast.error(error.message);
-    setRows((data as any) ?? []);
+    setResult({ scope: access.scope, rows: (data as unknown as ExportRow[]) ?? [] });
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [type, format, from, to]);
+  useEffect(() => {
+    setResult({ scope: access.scope, rows: [] });
+    setLoading(false);
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, format, from, to, access.scope]);
 
   const download = async (r: ExportRow) => {
+    if (!access.ready) return;
+    const current = access.capture();
     if (!r.storage_path) {
       toast.error("Arquivo não disponível");
       return;
@@ -59,11 +72,12 @@ export function HistoricoExportacoes() {
     const { data, error } = await supabase.storage
       .from(r.storage_bucket ?? "financial-reports")
       .createSignedUrl(r.storage_path, 3600);
+    if (!current()) return;
     if (error || !data?.signedUrl) {
       toast.error(error?.message ?? "Falha ao gerar URL");
       return;
     }
-    window.open(data.signedUrl, "_blank");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   return (

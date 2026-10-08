@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FileText, Download, Trash2, Upload } from "lucide-react";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 export type DocOwnerType =
   | "RECEIVABLE" | "PAYABLE" | "DELIVERY"
@@ -35,25 +36,29 @@ interface Props {
 
 export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", canDelete = false, compact, onChanged }: Props) {
   const { user, role, profile } = useAuth();
+  const access = useStorageAccessScope(`financial:${ownerType}:${ownerId}`);
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState(defaultType);
 
-  const { data: docs = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["fin-docs", ownerType, ownerId],
-    enabled: !!ownerId,
+  const { data: scopedDocs = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["fin-docs", ownerType, ownerId, access.scope],
+    enabled: access.ready && !!ownerId,
     queryFn: async () => {
+      if (!ownerId) return [];
+      const current = access.capture();
       const { data, error } = await supabase
         .from("financial_documents")
         .select("*")
         .eq("owner_type", ownerType)
-        .eq("owner_id", ownerId!)
+        .eq("owner_id", ownerId)
         .is("deleted_at", null)
         .order("uploaded_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return current() ? data : [];
     },
   });
+  const docs = access.ready ? scopedDocs : [];
 
   const upload = useMutation({
     mutationFn: async (file: File) => {
@@ -99,9 +104,12 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
   });
 
   const download = async (doc: any) => {
+    if (!access.ready) return;
+    const current = access.capture();
     const { data, error } = await supabase.storage.from("financial-docs").createSignedUrl(doc.storage_path, 60 * 5);
+    if (!current()) return;
     if (error || !data) { toast.error("Falha ao baixar"); return; }
-    window.open(data.signedUrl, "_blank");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   const isStaff = role === "administrador" || role === "gestor" || role === "administrativo" || role === "financeiro";

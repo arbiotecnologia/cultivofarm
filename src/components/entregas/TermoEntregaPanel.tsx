@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { ClipboardCheck, Download, FileSignature, Loader2, Ban } from "lucide-react";
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { parseQuantidadeConferencia } from "@/lib/entregas/quantidadeConferencia";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 type ConfStatus = "aceito" | "recusado" | "pendente";
 
@@ -65,6 +66,7 @@ async function sha256Hex(text: string): Promise<string> {
 }
 
 export function TermoEntregaPanel({ entregaId }: Props) {
+  const access = useStorageAccessScope(`termo:${entregaId}`);
   const qc = useQueryClient();
   const [rascunho, setRascunho] = useState<Record<string, { status: ConfStatus; quantidade: string; motivo: string }>>({});
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
@@ -86,12 +88,12 @@ export function TermoEntregaPanel({ entregaId }: Props) {
       tokenRef.current += 1;
       emAndamentoRef.current = false;
     };
-  }, [entregaId]);
+  }, [entregaId, access.scope]);
 
 
   const itensQuery = useQuery({
-    queryKey: ["entrega-conferencia", entregaId],
-    enabled: !!entregaId,
+    queryKey: ["entrega-conferencia", entregaId, access.scope],
+    enabled: access.ready && !!entregaId,
     queryFn: async () => {
       const { data: vinculos, error: e1 } = await supabase
         .from("entrega_etiquetas")
@@ -116,8 +118,8 @@ export function TermoEntregaPanel({ entregaId }: Props) {
   });
 
   const termoQuery = useQuery({
-    queryKey: ["entrega-termo", entregaId],
-    enabled: !!entregaId,
+    queryKey: ["entrega-termo", entregaId, access.scope],
+    enabled: access.ready && !!entregaId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entrega_termos")
@@ -131,7 +133,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     },
   });
 
-  const termo = termoQuery.data as any;
+  const termo = access.ready ? termoQuery.data as any : undefined;
   const assinado = termo?.status === "assinado";
 
   const itens = itensQuery.data ?? [];
@@ -171,11 +173,12 @@ export function TermoEntregaPanel({ entregaId }: Props) {
   type Ctx = { vivo: () => boolean; entregaDaOperacao: string };
 
   const run = async (fn: (ctx: Ctx) => Promise<void>) => {
-    if (emAndamentoRef.current) return; // trava síncrona contra duplo clique
+    if (!access.ready || emAndamentoRef.current) return; // trava síncrona contra duplo clique
+    const current = access.capture();
     emAndamentoRef.current = true;
     const token = ++tokenRef.current;
     const entregaDaOperacao = entregaId;
-    const vivo = () => token === tokenRef.current;
+    const vivo = () => current() && token === tokenRef.current;
     setBusy(true);
     try {
       await fn({ vivo, entregaDaOperacao });
