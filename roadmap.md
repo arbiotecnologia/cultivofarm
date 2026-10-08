@@ -1,9 +1,10 @@
 ## CADASTRO-1 — criação de usuários/B2B — 2026-10-08
 - [x] Complemento senha: contrato server-side alinhado à regra existente8..128/letra/número; reprodução6FAIL23PASS→29PASS no handler isolado, suíte cadastro/recuperação65/65. Lint/scanners/diff-check PASS; harness build OK15:16:33. Sem contas/envios/migration/publicação, MULTIPORTAL-1 preservado.
 - [x] Primeiro acesso conferido read-only no canônico: handle_new_user não marca senha provisória, default=false e guards não provisionam estado; created_by_admin não prova flag. Limite e dependência integrada registrados em cadastro-1-2026-10-08.md; sem ativação isolada da flag.
-- [ ] Auditar UI/Edge/contratos vivos/ACL/triggers e ciclo de usuário; distinguir propriedade canônica de parceiro de inferência legada.
-- [ ] Corrigir mensagens contraditórias e bugs comprovados, sem abrir cadastro B2B sem contrato; testes, matriz e relatório focal.
-- [ ] Definir plano integrado de criação/primeiro acesso; nenhum Auth/fixture/convite/envio/papel/vínculo real, publicação ou alteração dos checkpoints anteriores.
+- [x] HEAD inicial3b42e364: senha presente, hooks/copy faltavam. Contratos vivos e ACL revalidados; parceiro com cliente.organization_id NULL e organizations.partner_account_id sem vínculo. Nenhuma propriedade inferida.
+- [x] Hooks/readiness/cache/promessas cercados; instruções corrigidas e writes B2B explicitamente indisponíveis. Migration oficial20261008152024 contém link_partner_user; set_partner_user_papel ACL preservada fechada. Hashes links1/roles9 intactos; 88/88 testes em5 arquivos, lint focal/scanners/diff-check PASS; Configuracoes mantém18 erros/2warnings legados; harness build OK15:22:26.
+- [x] Plano exato de restauração integrada/primeiro acesso documentado em cadastro-1-2026-10-08.md, sem fluxo paralelo.
+- [ ] BLOQUEADO externo: titularidade revisada do parceiro/cliente/organização e contrato integrado aprovado; browser/API JWT/primeiro acesso/concorrência UNVERIFIED. CadastroB2B não habilitado; NO-GO integral. Sem Auth/fixtures/vínculos/envios/publicação.
 
 ## MULTIPORTAL-1 — Gestão/Técnico — 2026-10-08
 - [x] Checkpoint STORAGE-2 fechado:267/267 testes, migration144506 e hashes registrados; limitações operacionais preservadas, sem reabertura.
