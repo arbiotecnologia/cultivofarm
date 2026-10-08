@@ -1,3 +1,7 @@
+## Inscrição estadual — ajuste focal de cadastro — 2026-10-08
+- [x] Remover máscara e bloqueio por UF dos cadastros cliente/parceiro; manter limites sintáticos, normalização e aviso não bloqueante, sem alterar emissão fiscal.
+- [ ] Executar testes focais e conferir build automático; sem cadastro real, banco ou publicação. Checkpoints anteriores preservados.
+
 ## CADASTRO-1 — criação de usuários/B2B — 2026-10-08
 - [x] Complemento senha: contrato server-side alinhado à regra existente8..128/letra/número; reprodução6FAIL23PASS→29PASS no handler isolado, suíte cadastro/recuperação65/65. Lint/scanners/diff-check PASS; harness build OK15:16:33. Sem contas/envios/migration/publicação, MULTIPORTAL-1 preservado.
 - [x] Primeiro acesso conferido read-only no canônico: handle_new_user não marca senha provisória, default=false e guards não provisionam estado; created_by_admin não prova flag. Limite e dependência integrada registrados em cadastro-1-2026-10-08.md; sem ativação isolada da flag.

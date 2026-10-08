@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { inscricaoEstadualCadastroSchema } from "./inscricaoEstadualCadastro";
 
 export const clienteSchema = z.object({
   tipo_pessoa: z.enum(["fisica", "juridica"]),
@@ -6,7 +7,7 @@ export const clienteSchema = z.object({
   nome_fantasia: z.string().min(2, "Nome fantasia deve ter pelo menos 2 caracteres"),
   nome: z.string().default(""), // Preenchido automaticamente a partir de nome_fantasia
   cpf_cnpj: z.string().optional(),
-  inscricao_estadual: z.string().optional(),
+  inscricao_estadual: inscricaoEstadualCadastroSchema.optional(),
   inscricao_municipal: z.string().optional(),
   telefone: z.string().optional(),
   telefones: z.array(z.string()).default([]),

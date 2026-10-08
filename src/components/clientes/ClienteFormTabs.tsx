@@ -18,7 +18,7 @@ import { AcessoPortalTab } from "./AcessoPortalTab";
 import { useCanManageClienteDocs } from "@/hooks/useCanManageClienteDocs";
 import { useAuth } from "@/hooks/useAuth";
 import { MoneyInput } from "../ui/money-input";
-import { validateIE } from "@/lib/fiscal/ie";
+import { InscricaoEstadualCadastroInput } from "./InscricaoEstadualCadastroInput";
 
 
 interface ClienteFormTabsProps {
@@ -70,7 +70,7 @@ function MaskedField({
 }
 
 export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
-  const { register, watch, setValue, control, setError, clearErrors, formState: { errors } } = useFormContext();
+  const { register, watch, setValue, control, formState: { errors } } = useFormContext();
   const [loadingCEP, setLoadingCEP] = useState(false);
   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
   const canManageDocs = useCanManageClienteDocs();
@@ -304,21 +304,11 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
           </div>
           <div className="space-y-2">
             <Label>Inscrição Estadual</Label>
-            <MaskedField
+            <Controller
+              control={control}
               name="inscricao_estadual"
-              mask="ie"
-              uf={watch("endereco_estado")}
-              placeholder={watch("endereco_estado") ? "Conforme UF selecionada (ou ISENTO)" : "Selecione o Estado primeiro"}
-              autoCase="upper"
-              onBlurExtra={(value) => {
-                const uf = watch("endereco_estado");
-                const r = validateIE(uf ?? null, value, { allowIsento: true });
-                if (!r.ok) {
-                  setError("inscricao_estadual", { type: "manual", message: r.error });
-                } else {
-                  clearErrors("inscricao_estadual");
-                }
-              }}
+              render={({ field }) => <InscricaoEstadualCadastroInput {...field}
+                value={field.value ?? ""} uf={watch("endereco_estado")} />}
             />
             {errors.inscricao_estadual?.message && (
               <p className="text-xs text-destructive">{String(errors.inscricao_estadual.message)}</p>
