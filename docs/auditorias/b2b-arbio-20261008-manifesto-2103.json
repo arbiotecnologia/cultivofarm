@@ -5,12 +5,31 @@
   "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
   "prefix": "TESTE AUDITORIA B2B 20261008",
   "provenance": "Lovable: inspeção read-only via ferramenta Supabase conectada e testes locais; sem agente adicional",
-  "created_ids": [],
+  "created_ids": ["7e52de9a-4bed-4d1e-8200-3255a805465c"],
   "created_relations": [],
-  "creation_actor": null,
+  "creation_actor": "a7d45277-6dec-413d-bf6b-86620c1ef39f",
+  "independent_codex_creation": {
+    "source": "Relato independente Codex21:10, browser real AR Bio e SELECT; não execução Lovable",
+    "table": "partner_accounts",
+    "id": "7e52de9a-4bed-4d1e-8200-3255a805465c",
+    "name": "TESTE AUDITORIA B2B 20261008",
+    "commercial_owner_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "created_by": "a7d45277-6dec-413d-bf6b-86620c1ef39f",
+    "created_at": "2026-10-08T21:09:35Z",
+    "method": "UI normal autenticada; toast e linha confirmados",
+    "contact_fields": "Sem CNPJ, emails ou telefones",
+    "audit_count": 1,
+    "order_count": 0,
+    "trigger_review": "partner_accounts→settings/audit→governance audit, sem hooks externos segundo inspeção Codex",
+    "auth_created": false,
+    "global_flags_changed": false,
+    "dependent_row_ids": "Não fornecidos; não inventar IDs de settings/audits",
+    "duplicate_creation_allowed": false
+  },
   "remote_writes": 0,
   "remote_external_calls": 0,
   "matching_fixture_partner_count_observed": 0,
+  "matching_fixture_partner_count_independent_after": 1,
   "active_fiscal_settings_ARBio": 0,
   "validated_active_fiscal_settings_ARBio": 0,
   "live_flags": {
@@ -30,7 +49,7 @@
     "typecheck": "NOT RUN manual: restrição harness",
     "build": "NOT RUN manual: restrição harness; sem runtime alterado"
   },
-  "rollback": "Sem dados persistidos: não necessário; futuro cleanup porIDs e fluxos normais, sem apagar auditorias/snapshots nem restaurar RPC global",
-  "blockers": ["external_unmanaged sem sessão AR Bio acessível", "zero externos não comprovado/entrega e email true", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED", "nenhum emissor ativo/validado AR Bio", "provisionamento login parceiro não certificado"],
-  "decision": "GO inspeção/testes locais; NO-GO persistência/fluxo real/faturamento/integral"
+  "rollback": "Parceiro persistido por Codex: preservar mesmoID; cleanup futuro por fluxo normal autorizado e IDs comprovados, sem apagar auditorias/snapshots. Nenhum cleanup executado Lovable.",
+  "blockers": ["external_unmanaged limita somente browser local Lovable, não a sessão Codex", "zero externos precisa prova por cada próxima ação; flags globais não demonstram envio por cadastro", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED", "nenhum emissor ativo/validado AR Bio", "provisionamento login parceiro não certificado"],
+  "decision": "PASS focal cadastro comercial UI Codex do único parceiro; NO-GO login/faturamento/integral; não duplicar"
 }
