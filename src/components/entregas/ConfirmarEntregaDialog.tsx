@@ -153,8 +153,9 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
 
       // 1) Upload dos arquivos pendentes
       for (const pf of pending) {
-        const ext = pf.file.name.split(".").pop() || "bin";
-        const path = `${entrega.id}/${crypto.randomUUID()}.${ext}`;
+        const rawExt = pf.file.name.split(".").pop()?.toLowerCase();
+        const ext = rawExt && /^[a-z0-9]{1,10}$/.test(rawExt) ? rawExt : "bin";
+        const path = `entregas/${entrega.id}/comprovantes/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from("entrega-documentos")
           .upload(path, pf.file, { contentType: pf.file.type || undefined, upsert: false });
