@@ -33,7 +33,7 @@ BEGIN
   RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501';
  END IF;
  IF p_role NOT IN ('parceiro_b2b','parceiro_b2b_tecnico') OR p_role IS NULL
- OR p_papel IS DISTINCT FROM CASE WHEN p_role='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END
+ OR p_papel IS DISTINCT FROM (CASE WHEN p_role='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END)
  OR NOT EXISTS(SELECT 1 FROM public.partner_accounts p WHERE p.id=p_partner
    AND p.commercial_owner_organization_id=org AND p.ativo IS TRUE AND p.deleted_at IS NULL)
  OR NOT EXISTS(SELECT 1 FROM public.organizations o WHERE o.id=org AND o.ativo IS TRUE AND o.status='ativa')

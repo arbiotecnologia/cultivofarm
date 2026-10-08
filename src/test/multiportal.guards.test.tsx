@@ -65,6 +65,8 @@ const contextsState: ContextsState = {
 vi.mock("@/hooks/useAvailableContexts", () => ({
   useAvailableContexts: () => contextsState,
 }));
+const ownState = { ready: true, data: { id: "own" } as { id: string } | undefined, isLoading: false, isError: false };
+vi.mock("@/hooks/useMyPartner", () => ({ useMyPartner: () => ownState }));
 
 vi.mock("@/lib/accessAuditLog", () => ({
   logAccessDeniedOnce: vi.fn(),
@@ -119,6 +121,7 @@ function renderB2BGuard(initialPath = "/portal-parceiro") {
 }
 
 function resetState() {
+  Object.assign(ownState, { ready: true, data: { id: "own" }, isLoading: false, isError: false });
   authState.user = { id: "u1" };
   authState.roles = [];
   authState.primaryRole = null;
@@ -299,14 +302,21 @@ describe("B2BRouteGuard", () => {
     expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
   });
 
-  it("permite multipapel somente com contexto B2B explícito", () => {
+  it("nega papéis cumulativos mesmo com contexto B2B explícito", () => {
     authState.roles = ["administrador", "parceiro_b2b"];
     if (contextsState.data) {
       contextsState.data.has_b2b_access = true;
       contextsState.data.available_contexts = ["admin", "b2b"];
     }
     renderB2BGuard();
-    expect(screen.getByText("B2B_OK")).toBeInTheDocument();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
+  it("nega parceiro sem projeção própria mesmo com contexto em cache", () => {
+    authState.roles = ["parceiro_b2b"];
+    ownState.data = undefined;
+    if (contextsState.data) { contextsState.data.has_b2b_access = true; contextsState.data.available_contexts = ["b2b"]; }
+    renderB2BGuard();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
   });
 });
 
