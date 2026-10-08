@@ -7,6 +7,7 @@ DECLARE
  b uuid:='cbdc4ef3-005a-4674-8ea3-4410c7d7d212'; -- FSF
  oa uuid; ob uuid; la uuid:=gen_random_uuid(); lb uuid:=gen_random_uuid();
  sa uuid:=gen_random_uuid(); sb uuid:=gen_random_uuid(); ma uuid; mb uuid;
+ ea uuid:=gen_random_uuid(); eb uuid:=gen_random_uuid();
  u uuid; own_id uuid; cross_id uuid; n int; d int:=0; j jsonb:='[]';
 BEGIN
  SELECT organization_id INTO oa FROM public.profiles WHERE user_id=a AND ativo;
@@ -15,11 +16,14 @@ BEGIN
  INSERT INTO public.lotes(id,codigo_lote,microrganismo_id,volume_produzido,status,organization_id,observacoes_tecnicas) VALUES
  (la,r||'_A','74eb1d1a-dcbc-5ed3-9290-63462a32668f',10000,'aprovado',oa,r),
  (lb,r||'_B','74eb1d1a-dcbc-5ed3-9290-63462a32668f',10000,'aprovado',ob,r);
+ INSERT INTO public.controle_qualidade(lote_id,resultado,organization_id) VALUES(la,'aprovado',oa),(lb,'aprovado',ob);
+ INSERT INTO public.envase(id,lote_id,tipo_embalagem,volume_por_unidade,quantidade,organization_id) VALUES
+ (ea,la,'frasco_1L',1000,10,oa),(eb,lb,'frasco_1L',1000,10,ob);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated')::text,true);
- INSERT INTO public.estoque_produto(id,lote_id,quantidade,volume_total,observacao_reserva) VALUES(sa,la,10,10000,r);
+ INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sa,la,ea,10,10000,CURRENT_DATE+30,r);
  SELECT id INTO ma FROM public.estoque_movimentacoes WHERE estoque_produto_id=sa;
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated')::text,true);
- INSERT INTO public.estoque_produto(id,lote_id,quantidade,volume_total,observacao_reserva) VALUES(sb,lb,10,10000,r);
+ INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sb,lb,eb,10,10000,CURRENT_DATE+30,r);
  SELECT id INTO mb FROM public.estoque_movimentacoes WHERE estoque_produto_id=sb;
  FOREACH u IN ARRAY ARRAY[a,b] LOOP
   own_id:=CASE WHEN u=a THEN sa ELSE sb END; cross_id:=CASE WHEN u=a THEN sb ELSE sa END;
@@ -41,5 +45,5 @@ BEGIN
  BEGIN INSERT INTO public.estoque_movimentacoes(estoque_produto_id,lote_id,acao,movimentacao_origem_id) VALUES(sb,lb,'ajuste',ma); EXCEPTION WHEN insufficient_privilege THEN d:=d+1; END;
  BEGIN INSERT INTO public.estoque_movimentacoes(estoque_produto_id,lote_id,acao,referencia_tipo,referencia_id) VALUES(sb,lb,'ajuste','estoque',sa); EXCEPTION WHEN insufficient_privilege THEN d:=d+1; END;
  IF d<>4 THEN RAISE EXCEPTION 'DENIALS %',d; END IF;
- RAISE EXCEPTION 'MOV_P1_POST_ROLLBACK result=%,denied=%,manifest=%',j,d,jsonb_build_object('run_id',r,'lotes',jsonb_build_array(la,lb),'stock',jsonb_build_array(sa,sb),'movs',jsonb_build_array(ma,mb));
+ RAISE EXCEPTION 'MOV_P1_POST_ROLLBACK result=%,denied=%,manifest=%',j,d,jsonb_build_object('run_id',r,'lotes',jsonb_build_array(la,lb),'envases',jsonb_build_array(ea,eb),'stock',jsonb_build_array(sa,sb),'movs',jsonb_build_array(ma,mb));
 END $proof$;
