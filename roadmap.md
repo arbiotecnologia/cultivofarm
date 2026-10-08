@@ -1,6 +1,8 @@
 ## STORAGE-1 — 2026-10-08
-- [ ] Corrigir URLs assinadas entre sessões e testar hook real; preservar documento financeiro único.
-- [ ] Provas SQL rollback, testes focais/lint/scanners/build automático; registrar typecheck explícito conforme disponibilidade e separar APIs JWT não verificadas. Sem publicação/envios/identidades novas/outras fases.
+- [x] Contenção de entrega-documentos/aplicacao-evidencias/consultor-arquivos: quatro restritivas, atores h15 e vínculos/ação/status/caminho; ledger oficial 141326/141359/141537/141612 confirmado, zero avisos novos após cores privados. Sem objetos/metadata Storage SQL.
+- [x] Hook de URLs cerca readiness/identidade/empresa/papéis/path/bucket e promises antigas; erro sanitizado e retry. Dialog usa caminho canônico de comprovante. 45/45 testes em quatro arquivos, incluindo hook real/QueryClient/StrictMode; lint hook/teste e scanners/diff-check PASS, build automático OK. Lint dialog: 7 erros any +1 warning preexistentes, não PASS global; typecheck explícito NOT RUN por restrição do ambiente.
+- [x] SQL rollback próprio: 10 positivos/61 negativos, manifesto e cleanup exato clientes/entregas/registros0; Storage1/hash134e7b7d9d35217ee6127e40c68c6ef3 preservado. Prova de helpers, não API JWT/upload/download; relatório/matriz em docs/auditorias/storage-p1-2026-10-08.md. Sem publicação/envios/identidades novas/outras fases.
+- [ ] NO-GO operacional/integral: upload de aplicação anterior ao cadastro e formatos consultor sem vínculo ficam fail-closed; falta contrato seguro de staging/fluxos e autorização para ampliá-lo. Positivos de aplicação/entrega aberta, produtor/financeiro/aplicador, galerias diretas e APIs JWT/browser/concorrência dependem de sessões e provas próprias. Typecheck explícito bloqueado pelo ambiente. Nenhuma próxima fase iniciada.
 
 ## Fechamento complementar NOTIF-2/3 — 2026-10-08
 - [x] Portal legado: administrador/gestor com vínculo real recuperam seleção, financeiro limpa; notificações portal continuam somente cliente_produtor/recipient_user_id. QueryClient real24/24, dois cenários novos; sem mudança de guards/AGENTS.
