@@ -1,0 +1,8 @@
+CREATE OR REPLACE FUNCTION public.rpc_create_operational_notification_secure(p_usuario_id uuid,p_titulo text,p_mensagem text,p_tipo text,p_link text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN RAISE EXCEPTION 'NOTIF_SOURCE_REQUIRED' USING ERRCODE='42501'; END $$;
+CREATE OR REPLACE FUNCTION public.rpc_create_portal_notification_secure(p_cliente_id uuid,p_titulo text,p_mensagem text,p_tipo text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN RAISE EXCEPTION 'NOTIF_SOURCE_RECIPIENT_REQUIRED' USING ERRCODE='42501'; END $$;
+CREATE OR REPLACE FUNCTION public.rpc_dispatch_inapp_notification(p_outbox_id uuid,p_cliente_id uuid,p_user_id uuid,p_titulo text,p_mensagem text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN RAISE EXCEPTION 'NOTIF_SOURCE_RECIPIENT_REQUIRED' USING ERRCODE='42501'; END $$;
+REVOKE ALL ON FUNCTION public.rpc_create_operational_notification_secure(uuid,text,text,text,text),public.rpc_create_portal_notification_secure(uuid,text,text,text),public.rpc_dispatch_inapp_notification(uuid,uuid,uuid,text,text) FROM PUBLIC,anon,authenticated;
+CREATE OR REPLACE FUNCTION platform_private.notification_outbox_closed() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$ BEGIN RETURN NULL; END $$;
+REVOKE ALL ON FUNCTION platform_private.notification_outbox_closed() FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION platform_private.notification_outbox_closed() TO service_role;
+-- No new communication outbox entries until the shared source/recipient pipeline is homologated.
+CREATE TRIGGER notification_p1_outbox_closed BEFORE INSERT ON public.comunicacao_outbox FOR EACH ROW EXECUTE FUNCTION platform_private.notification_outbox_closed();
