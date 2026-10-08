@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExecutivoFiltros } from "./useExecutivoResumo";
+import { parseExecutivoOperationalPayload, useExecutivoOperationalScope } from "./useExecutivoOperationalScope";
 
 export interface Gargalo {
   tipo: string;
@@ -16,18 +17,20 @@ export interface Gargalo {
 }
 
 export function useExecutivoGargalos(filtros: ExecutivoFiltros, limit = 10) {
-  return useQuery({
-    queryKey: ["executivo-gargalos", filtros, limit],
+  const scope = useExecutivoOperationalScope();
+  const query = useQuery({
+    queryKey: ["executivo-gargalos", ...scope.key, filtros, limit],
+    enabled: scope.ready,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_executivo_gargalos" as any, {
-        p_filtros: filtros as any,
+      const { data, error } = await supabase.rpc("rpc_executivo_gargalos", {
+        p_filtros: { ...filtros },
         p_limit: limit,
       });
       if (error) throw error;
-      const payload = data as any;
-      return (payload?.gargalos ?? []) as Gargalo[];
+      return parseExecutivoOperationalPayload<Gargalo>(data, "gargalos");
     },
     staleTime: 45_000,
     refetchOnWindowFocus: false,
   });
+  return { ...query, data: scope.ready ? query.data : undefined };
 }

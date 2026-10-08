@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExecutivoFiltros } from "./useExecutivoResumo";
+import { parseExecutivoOperationalPayload, useExecutivoOperationalScope } from "./useExecutivoOperationalScope";
 
 export interface TimelineEvento {
   tipo: string;
@@ -11,18 +12,20 @@ export interface TimelineEvento {
 }
 
 export function useExecutivoTimeline(filtros: ExecutivoFiltros, limit = 20) {
-  return useQuery({
-    queryKey: ["executivo-timeline", filtros, limit],
+  const scope = useExecutivoOperationalScope();
+  const query = useQuery({
+    queryKey: ["executivo-timeline", ...scope.key, filtros, limit],
+    enabled: scope.ready,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_executivo_timeline_operacional" as any, {
-        p_filtros: filtros as any,
+      const { data, error } = await supabase.rpc("rpc_executivo_timeline_operacional", {
+        p_filtros: { ...filtros },
         p_limit: limit,
       });
       if (error) throw error;
-      const payload = data as any;
-      return (payload?.eventos ?? []) as TimelineEvento[];
+      return parseExecutivoOperationalPayload<TimelineEvento>(data, "eventos");
     },
     staleTime: 45_000,
     refetchOnWindowFocus: false,
   });
+  return { ...query, data: scope.ready ? query.data : undefined };
 }
