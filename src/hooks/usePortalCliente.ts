@@ -13,7 +13,8 @@ const STORAGE_KEY = "portal_active_cliente_id";
 export function usePortalCliente() {
   const { user, profile, roles, loading: authLoading } = useAuth();
   const organizationId = profile?.organization_id ?? null;
-  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && !!organizationId && roles.includes("cliente_produtor");
+  const portalRole = roles.some(role => ["cliente_produtor", "administrador", "gestor"].includes(role));
+  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && !!organizationId && portalRole;
   const generation = useRef(0);
   const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${roles.join(",")}:${ready}`;
   const [resolvedScope, setResolvedScope] = useState("");

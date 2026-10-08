@@ -19,6 +19,18 @@ const row = (id: string) => ({ id, titulo: id, tipo: 'informativo', lido: false,
 function resolve(table: string, data: unknown) { const r = m.requests.find(r => r.table === table); if (!r) throw new Error(`Missing ${table}`); m.requests.splice(m.requests.indexOf(r), 1); r.resolve({ data, error: null }); }
 beforeEach(() => { m.requests = []; m.remove.mockClear(); m.auth = { user: { id: 'A' }, profile: { user_id: 'A', organization_id: 'OA', ativo: true }, roles: ['cliente_produtor'], loading: false }; });
 describe('NOTIF-2 real QueryClient, only auth/server mocked', () => {
+ for (const role of ['administrador', 'gestor']) it(`portal resolves linked CA for ${role} and clears selection for financeiro`, async () => {
+  m.auth.roles = [role];
+  const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true }]));
+  await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
+  await waitFor(() => expect(h.result.current.clienteId).toBe('CA'));
+  expect(h.result.current.clientes.map(c => c.id)).toEqual(['CA']);
+  m.auth.roles = ['financeiro']; h.rerender();
+  expect(h.result.current.clienteId).toBeNull();
+  expect(h.result.current.clientes).toEqual([]);
+  h.unmount();
+ });
  for (const kind of ['unified', 'operational'] as const) {
   const hook = kind === 'unified' ? useNotificacoesUnificadas : useNotificacoesOperacionais;
   const rows = (result: ReturnType<typeof hook>) => result.data ?? [];
