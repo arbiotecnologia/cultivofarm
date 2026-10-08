@@ -1,4 +1,5 @@
 ## Motor estoque — hardening focal — 2026-10-08 03:07 UTC (estado atual)
+- [ ] Complemento 03:20: contexto canônico protegido, deduplicação literal e notificações tenant; prova pré-forja/payload inválido, ACL fechada.
 
 - [x] Conferir delta 0a1966fa→e92fa850, callers e corpos vivos; helpers h15/RBAC/saas_has_feature estoque_embalagens. Sem referências habilitadas por inferência.
 - [x] Migration oficial 20261008031156 motor/reserva aplicada; três contenções e ACL bloqueadas preservadas, corpos finais inspecionados.
