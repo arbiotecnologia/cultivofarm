@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,16 @@ import { normalizeInscricaoEstadualCadastro } from "@/lib/schemas/inscricaoEstad
 import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
 import { Link } from "react-router-dom";
+import type { Database } from "@/integrations/supabase/types";
+
+type ClienteRow = Database["public"]["Tables"]["clientes"]["Row"] & { fazendas?: { count: number }[] };
+type ClienteInsert = Database["public"]["Tables"]["clientes"]["Insert"];
+type ClientePayload = Omit<ClienteInsert, "codigo_cliente">;
+const defaultValues: ClienteSchema = {
+  tipo_pessoa: "fisica", status_cliente: "ativo", tags: [],
+  cobranca_mesmo_endereco: true, nome_fantasia: "", razao_social: "",
+  nome: "", telefones_adicionais: [],
+};
 
 export default function ProdutoresTab() {
   const isMobile = useIsMobile();
@@ -39,7 +49,7 @@ export default function ProdutoresTab() {
   const readGeneration = useRef(0);
   const isAdmin = role === "administrador";
   const canManage = scope.ready && canWrite(role, "/clientes");
-  const [clientRows, setClientes] = useState<{ scope: string; rows: any[] }>({ scope: "", rows: [] });
+  const [clientRows, setClientes] = useState<{ scope: string; rows: ClienteRow[] }>({ scope: "", rows: [] });
   const clientes = scope.ready && clientRows.scope === scope.scope ? clientRows.rows : [];
   const [accessState, setPortalAccess] = useState<{ scope: string; ids: Set<string> }>({ scope: "", ids: new Set() });
   const portalAccess = scope.ready && accessState.scope === scope.scope ? accessState.ids : new Set<string>();
@@ -53,17 +63,6 @@ export default function ProdutoresTab() {
 
   const [delDialog, setDelDialog] = useState<{ id: string; nome: string; inativo: boolean } | null>(null);
 
-  const defaultValues: ClienteSchema = {
-    tipo_pessoa: "fisica",
-    status_cliente: "ativo",
-    tags: [],
-    cobranca_mesmo_endereco: true,
-    nome_fantasia: "",
-    razao_social: "",
-    nome: "",
-    telefones_adicionais: []
-  };
-
   const methods = useForm<ClienteSchema>({
     resolver: zodResolver(clienteSchema),
     defaultValues
@@ -72,7 +71,7 @@ export default function ProdutoresTab() {
   // Converte um registro do banco em valores prontos para o formulário,
   // garantindo que nulls virem strings vazias e que campos derivados
   // (telefones_adicionais, condição de pagamento) sejam preenchidos.
-  const clienteToFormValues = (cliente: any): any => {
+  const clienteToFormValues = (cliente: ClienteRow | null): ClienteSchema => {
     if (!cliente) return defaultValues;
 
     const telefonesAdicionais = (cliente.telefones || [])
@@ -84,15 +83,12 @@ export default function ProdutoresTab() {
     const condicao_pagamento_valor = condicaoMatch ? condicaoMatch[1] : "";
     const condicao_pagamento_unidade = condicaoMatch ? condicaoMatch[2] : "dias";
 
-    const sanitized: any = { ...cliente };
-    delete sanitized.fazendas;
-    Object.keys(sanitized).forEach((key) => {
-      if (sanitized[key] === null || sanitized[key] === undefined) {
-        if (key === "tags") sanitized[key] = [];
-        else if (key === "cobranca_mesmo_endereco") sanitized[key] = true;
-        else sanitized[key] = "";
-      }
-    });
+    const { fazendas: _fazendas, ...rowFields } = cliente;
+    const sanitized = Object.fromEntries(Object.entries(rowFields).map(([key, value]) => [
+      key, value === null || value === undefined
+        ? key === "tags" ? [] : key === "cobranca_mesmo_endereco" ? true : ""
+        : value,
+    ]));
 
     return {
       ...defaultValues,
@@ -100,12 +96,16 @@ export default function ProdutoresTab() {
       telefones_adicionais: telefonesAdicionais,
       condicao_pagamento_valor,
       condicao_pagamento_unidade,
-    };
+    } as ClienteSchema;
   };
 
-  const fetchClientes = async () => {
+  // capture is recreated by the fence hook; keep its latest generation without
+  // changing fetch identity on unrelated form renders.
+  const captureRef = useRef(scope.capture);
+  captureRef.current = scope.capture;
+  const fetchClientes = useCallback(async () => {
     if (!scope.ready) return;
-    const fence = scope.capture();
+    const fence = captureRef.current();
     const generation = ++readGeneration.current;
     const current = () => fence() && readGeneration.current === generation;
     const { data, error } = await supabase
@@ -141,13 +141,14 @@ export default function ProdutoresTab() {
     } catch (e) {
       if (current()) setPortalAccess({ scope: scope.scope, ids: new Set() });
     }
-  };
+  }, [scope.ready, scope.organizationId, scope.scope]);
 
+  const { reset } = methods;
   useEffect(() => {
     setOpen(false); setSelectedClienteId(null); setDelDialog(null); setHistoryOpen(false);
-    methods.reset(defaultValues); draftId.current = crypto.randomUUID();
+    reset(defaultValues); draftId.current = crypto.randomUUID();
     void fetchClientes();
-  }, [scope.scope]);
+  }, [scope.scope, reset, fetchClientes]);
 
   const handleCreateOrUpdate = async (values: ClienteSchema) => {
     if (submitLock.current || !canManage) return;
@@ -175,9 +176,9 @@ export default function ProdutoresTab() {
       nome: _ignoredNome,
       fazendas: _ignoredFazendas,
       ...cleanValues
-    } = values as any;
+    } = values as ClienteSchema & { fazendas?: ClienteRow["fazendas"] };
 
-    const payload: any = {
+    const rawPayload: ClientePayload = {
       ...cleanValues,
       nome: (values.nome_fantasia || values.razao_social || "Sem Nome").trim(),
       cpf_cnpj: unmaskCpfCnpj(values.cpf_cnpj) || null,
@@ -189,21 +190,19 @@ export default function ProdutoresTab() {
       contato_financeiro_telefone: financeiroCheck.value,
     };
 
-    // Strings vazias viram null para evitar erro em colunas numéricas/enums.
-    Object.keys(payload).forEach((key) => {
-      if (payload[key] === "") payload[key] = null;
-    });
-
-    // Campos numéricos opcionais: garantir null quando vazios.
-    ["limite_credito", "endereco_latitude", "endereco_longitude"].forEach((k) => {
-      if (payload[k] === "" || payload[k] === undefined || Number.isNaN(payload[k])) {
-        payload[k] = null;
-      }
-    });
+    // Preserve the existing per-field normalization, including undefined/NaN
+    // numeric values. The boundary type reflects nullable database fields.
+    const payload = Object.fromEntries(Object.entries(rawPayload).map(([key, value]) => [
+      key, value === "" || (["limite_credito", "endereco_latitude", "endereco_longitude"].includes(key)
+        && (value === undefined || Number.isNaN(value))) ? null : value,
+    ])) as ClientePayload;
+    for (const key of ["limite_credito", "endereco_latitude", "endereco_longitude"] as const) {
+      if (payload[key] === undefined || Number.isNaN(payload[key])) payload[key] = null;
+    }
 
     submitLock.current = true;
     try {
-    let savedRow: any = null;
+    let savedRow: ClienteRow | null = null;
     if (selectedClienteId) {
       const { data, error } = await supabase
         .from("clientes")
@@ -222,7 +221,9 @@ export default function ProdutoresTab() {
     } else {
       const { data, error } = await supabase
         .from("clientes")
-        .insert([{ ...payload, id: draftId.current }])
+        // Live trigger derives codigo_cliente; generated Insert still requires it.
+        // This type-only boundary must never invent a browser-side code.
+        .insert([{ ...payload, id: draftId.current } as ClienteInsert])
         .select("*, fazendas(count)")
         .single();
       if (!current()) return;
@@ -247,7 +248,7 @@ export default function ProdutoresTab() {
     finally { submitLock.current = false; }
   };
 
-  const handleEdit = (cliente: any) => {
+  const handleEdit = (cliente: ClienteRow) => {
     setSelectedClienteId(cliente.id);
     methods.reset(clienteToFormValues(cliente));
     setOpen(true);
@@ -342,7 +343,7 @@ export default function ProdutoresTab() {
                 }
                 const [field, err] = entries[0];
                 const label = fieldLabels[field] || field.replace(/_/g, " ");
-                const rawMsg = (err as any)?.message;
+                const rawMsg: unknown = err?.message;
                 const friendlyMsg = typeof rawMsg === "string" && rawMsg && !rawMsg.toLowerCase().includes("expected")
                   ? rawMsg
                   : "preenchimento inválido";
@@ -414,7 +415,7 @@ export default function ProdutoresTab() {
                 </SelectContent>
               </Select>
 
-              <Select value={portalFilter} onValueChange={(v) => setPortalFilter(v as any)}>
+              <Select value={portalFilter} onValueChange={(v: "all" | "com" | "sem") => setPortalFilter(v)}>
                 <SelectTrigger className="w-full h-9 text-xs">
                   <div className="flex items-center gap-2">
                     <Filter className="h-3 w-3 text-muted-foreground" />

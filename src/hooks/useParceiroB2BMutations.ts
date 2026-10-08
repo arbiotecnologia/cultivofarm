@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Database, Json } from "@/integrations/supabase/types";
+
+type PartnerInsert = Database["public"]["Tables"]["partner_accounts"]["Insert"];
+type PartnerUpdate = Database["public"]["Tables"]["partner_accounts"]["Update"];
 import { useCommercialRegistrationScope } from "./useCommercialRegistrationScope";
 import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
 
@@ -47,7 +51,7 @@ export interface ParceiroB2BInput {
   prazo_pagamento_padrao_dias?: number | null;
   condicao_pagamento_padrao?: string | null;
   forma_pagamento_preferida?: string | null;
-  dados_bancarios?: any;
+  dados_bancarios?: string | { texto?: string; [key: string]: Json | undefined } | null;
   comissao_percentual?: number | null;
   meta_mensal_brl?: number | null;
   // Logística
@@ -71,11 +75,11 @@ export function useCreateParceiroB2B() {
     mutationFn: async (input: ParceiroB2BInput) => {
       if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
       const current = scope.capture();
-      const { data: userData } = await (supabase as any).auth.getUser();
+      const { data: userData } = await supabase.auth.getUser();
       if (!current() || !userData.user?.id || userData.user.id !== scope.actorId) throw { code: "42501" };
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("partner_accounts")
-        .insert({ ...input, codigo: null, created_by: userData.user.id } as any)
+        .insert({ ...input, codigo: null, created_by: userData.user.id } as PartnerInsert)
         .select()
         .single();
       if (error) throw error;
@@ -99,9 +103,9 @@ export function useUpdateParceiroB2B() {
     mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
       if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
       const current = scope.capture();
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("partner_accounts")
-        .update(input as any)
+        .update(input as PartnerUpdate)
         .eq("id", id)
         .select()
         .single();
@@ -126,12 +130,12 @@ export function useSoftDeleteParceiroB2B() {
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
       if (!scope.canManagePartners) throw { code: "42501" };
       const current = scope.capture();
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("partner_accounts")
         .update({
           ativo,
           deleted_at: ativo ? null : new Date().toISOString(),
-        } as any)
+        } satisfies PartnerUpdate)
         .eq("id", id)
         .select()
         .single();
