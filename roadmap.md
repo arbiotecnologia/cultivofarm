@@ -1,4 +1,6 @@
 ## CADASTRO-1 — criação de usuários/B2B — 2026-10-08
+- [x] Complemento senha: contrato server-side alinhado à regra existente8..128/letra/número; reprodução6FAIL23PASS→29PASS no handler isolado, suíte cadastro/recuperação65/65. Lint/scanners/diff-check PASS; harness build OK15:16:33. Sem contas/envios/migration/publicação, MULTIPORTAL-1 preservado.
+- [x] Primeiro acesso conferido read-only no canônico: handle_new_user não marca senha provisória, default=false e guards não provisionam estado; created_by_admin não prova flag. Limite e dependência integrada registrados em cadastro-1-2026-10-08.md; sem ativação isolada da flag.
 - [ ] Auditar UI/Edge/contratos vivos/ACL/triggers e ciclo de usuário; distinguir propriedade canônica de parceiro de inferência legada.
 - [ ] Corrigir mensagens contraditórias e bugs comprovados, sem abrir cadastro B2B sem contrato; testes, matriz e relatório focal.
 - [ ] Definir plano integrado de criação/primeiro acesso; nenhum Auth/fixture/convite/envio/papel/vínculo real, publicação ou alteração dos checkpoints anteriores.
