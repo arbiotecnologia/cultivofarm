@@ -107,7 +107,7 @@ export default function ProdutoresTab() {
     const current = scope.capture();
     const { data, error } = await supabase
       .from("clientes")
-      .select("*, fazendas(count)").eq("organization_id", scope.organizationId ?? "")
+      .select("*, fazendas(count)").filter("organization_id", "eq", scope.organizationId ?? "")
       .order("nome_fantasia");
     if (!current()) return;
     if (error) { toast.error(commercialRegistrationError(error)); return; }

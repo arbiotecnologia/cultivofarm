@@ -174,7 +174,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       const current = scope.capture();
       const { data, error } = await supabase
         .from("clientes")
-        .select("id, nome, razao_social").eq("organization_id", scope.organizationId ?? "").abortSignal(signal)
+        .select("id, nome, razao_social").filter("organization_id", "eq", scope.organizationId ?? "").abortSignal(signal)
         .order("nome")
         .limit(500);
       if (!current()) throw new Error("commercial_context_changed");
