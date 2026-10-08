@@ -5,8 +5,21 @@ const migration = readFileSync("supabase/migrations/20261008022948_3e92d4d7-cfe5
 const proof = readFileSync("scripts/rbac-audit/stock-p1-transactional-proof.sql", "utf8");
 const movementMigration = readFileSync("supabase/migrations/20261008024032_daf0ffb8-65f0-4dc1-a52c-f216705b9198.sql", "utf8");
 const movementProof = readFileSync("scripts/rbac-audit/stock-p1-movements-proof.sql", "utf8");
+const historyLedger = readFileSync("restoration/stock-p1-history/20261008024129_stock_p1_history_tenant_containment.sql", "utf8");
 
 describe("P1 estoque — contrato estrutural (não prova runtime)", () => {
+  it("preserva o SQL do ledger Codex sem reaplicação nem relaxamento", () => {
+    expect(historyLedger).toContain("CREATE POLICY stock_p1_history_tenant_isolation");
+    expect(historyLedger).toContain("AS RESTRICTIVE FOR ALL TO authenticated");
+    const using = historyLedger.split("USING (")[1]?.split("WITH CHECK (")[0];
+    const check = historyLedger.split("WITH CHECK (")[1]?.split("COMMENT ON POLICY")[0];
+    for (const clause of [using, check]) {
+      expect(clause).toContain("ep.id = estoque_movimentacoes.estoque_produto_id");
+      expect(clause).toContain("ep.lote_id = estoque_movimentacoes.lote_id");
+      expect(clause).toContain("public.stock_p1_lote_owned(ep.lote_id)");
+    }
+    expect(historyLedger).not.toMatch(/\b(?:DROP|ALTER|GRANT|INSERT|UPDATE|DELETE)\b/i);
+  });
   it("restringe histórico pelo par estoque/lote pertencente ao ator", () => {
     for (const text of ["AS RESTRICTIVE FOR ALL TO authenticated", "USING(public.stock_p1_movement_owned(estoque_produto_id,lote_id))", "WITH CHECK(public.stock_p1_movement_owned(estoque_produto_id,lote_id))", "e.id=p_stock AND e.lote_id=p_lote", "stock_p1_lote_owned(e.lote_id)"])
       expect(movementMigration).toContain(text);
