@@ -14,16 +14,21 @@ BEGIN
  SELECT organization_id INTO ob FROM public.profiles WHERE user_id=ub AND ativo IS TRUE;
  IF oa IS NULL OR ob IS NULL OR oa=ob THEN RAISE EXCEPTION 'STORAGE1_ACTORS_UNAVAILABLE'; END IF;
  INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES(ca,run_id||'_A',run_id||'_A',oa),(cb,run_id||'_B',run_id||'_B',ob);
- INSERT INTO public.entregas(id,cliente_id,organization_id,status) VALUES(ea,ca,oa,'separado'),(eb,cb,ob,'separado');
+ -- Cancelled fixtures avoid stock/commercial operations and prove the mutation barrier.
+ INSERT INTO public.entregas(id,cliente_id,organization_id,status) VALUES(ea,ca,oa,'cancelada'),(eb,cb,ob,'cancelada');
  INSERT INTO public.registros_consultor(id,cliente_id,status) VALUES(ra,ca,'rascunho'),(rb,cb,'rascunho');
  SET LOCAL ROLE authenticated;
  FOREACH actor IN ARRAY ARRAY[ua,ub] LOOP
-  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated')::text,true);
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
   own_e:=CASE WHEN actor=ua THEN ea ELSE eb END; other_e:=CASE WHEN actor=ua THEN eb ELSE ea END;
   own_r:=CASE WHEN actor=ua THEN ra ELSE rb END; other_r:=CASE WHEN actor=ua THEN rb ELSE ra END;
   org:=CASE WHEN actor=ua THEN oa ELSE ob END; other_org:=CASE WHEN actor=ua THEN ob ELSE oa END;
   FOREACH action IN ARRAY ARRAY['select','insert','update','delete'] LOOP
-   IF public.storage1_delivery_allowed('entregas/'||own_e||'/comprovantes/a.pdf',action) IS NOT TRUE THEN RAISE EXCEPTION 'STORAGE1_OWN_DELIVERY_DENIED %',action; END IF; own_n:=own_n+1;
+   IF action='select' THEN
+    IF public.storage1_delivery_allowed('entregas/'||own_e||'/comprovantes/a.pdf',action) IS NOT TRUE THEN RAISE EXCEPTION 'STORAGE1_OWN_DELIVERY_DENIED'; END IF; own_n:=own_n+1;
+   ELSE
+    IF public.storage1_delivery_allowed('entregas/'||own_e||'/comprovantes/a.pdf',action) IS NOT FALSE THEN RAISE EXCEPTION 'STORAGE1_CANCELLED_MUTATION_ALLOWED'; END IF; denied_n:=denied_n+1;
+   END IF;
    IF public.storage1_delivery_allowed('entregas/'||other_e||'/comprovantes/a.pdf',action) IS NOT FALSE THEN RAISE EXCEPTION 'STORAGE1_CROSS_DELIVERY_LEAK'; END IF; denied_n:=denied_n+1;
    IF public.storage1_consultor_allowed(org||'/'||own_r||'/foto/a.jpg',action) IS NOT TRUE THEN RAISE EXCEPTION 'STORAGE1_OWN_CONSULTOR_DENIED %',action; END IF; own_n:=own_n+1;
    IF public.storage1_consultor_allowed(org||'/'||other_r||'/foto/a.jpg',action) IS NOT FALSE THEN RAISE EXCEPTION 'STORAGE1_FORGED_PREFIX_LEAK'; END IF; denied_n:=denied_n+1;
