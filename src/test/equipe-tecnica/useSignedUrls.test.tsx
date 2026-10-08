@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
+import { StrictMode, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const createSignedUrls = vi.fn();
 const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["administrador"], loading: false }));
@@ -22,6 +24,24 @@ beforeEach(() => {
 });
 
 describe("useSignedUrls", () => {
+  it("isola respostas antigas sob StrictMode com QueryClient real e unmount", async () => {
+    const pending: Array<(value: unknown) => void> = [];
+    createSignedUrls.mockImplementation(() => new Promise(resolve => pending.push(resolve)));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={queryClient}><StrictMode>{children}</StrictMode></QueryClientProvider>;
+    const h = renderHook(() => useSignedUrls(["a.png"]), { wrapper });
+    expect(pending.length).toBe(2);
+    await act(async () => pending[0]({ data: [{ path: "a.png", signedUrl: "https://s/stale" }], error: null }));
+    expect(h.result.current.urls).toEqual({});
+    await act(async () => pending[1]({ data: [{ path: "a.png", signedUrl: "https://s/current" }], error: null }));
+    expect(h.result.current.urls["a.png"]).toBe("https://s/current");
+    act(() => h.result.current.refresh());
+    h.unmount();
+    await act(async () => pending[2]({ data: [{ path: "a.png", signedUrl: "https://s/late" }], error: null }));
+    const next = renderHook(() => useSignedUrls(["a.png"]), { wrapper });
+    expect(next.result.current.urls).toEqual({});
+    next.unmount(); queryClient.clear();
+  });
   for (const change of ["identity", "tenant", "roles", "logout", "inactive", "mismatch", "loading", "provisional"] as const) {
     it(`limpa apresentação imediatamente em ${change}`, async () => {
       createSignedUrls.mockResolvedValue({ data: [{ path: "a.png", signedUrl: "https://s/old" }], error: null });
