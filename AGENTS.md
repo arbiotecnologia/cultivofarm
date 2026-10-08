@@ -21,7 +21,6 @@
 - Stock requires h15/RBAC/feature, finite positive quantities (reversal NULL), tenant refs/notices, private txid context and literal keys. Only reviewed motor/batch have client ACL; private actor/tenant/content receipts and sorted locks prevent replay leaks; helpers stay closed.
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
-- Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
 - Published versions are immutable; successors start DRAFT. Publishing closes only predecessor `effective_to` under `saas_plan_version_supersede` ticket — preserves snapshots/history.
 - Legal/trade name and email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins retain separate flows — prevents parallel writes.
 - Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target checks, Auth confirmation, JWT fencing, expiry/retry audits stay server-side — avoids bypass.
@@ -37,6 +36,3 @@
 <!-- LOVABLE:END -->
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
-
-
-- Candidate B2B provisioning provenance uses reserved IDs, private receipts and server-owned app metadata; finish revalidates the claim's actor iat/invitation fence and takes the user guard gate before row locks — prevents editable provenance, stale-admin completion and gate/profile lock inversion.
