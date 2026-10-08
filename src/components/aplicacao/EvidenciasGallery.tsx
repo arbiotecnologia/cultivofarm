@@ -4,6 +4,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FileText, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
 
 interface Evidencia {
   id: string;
@@ -23,13 +26,22 @@ interface Props {
 }
 
 export function EvidenciasGallery({ aplicacaoId }: Props) {
-  const [items, setItems] = useState<(Evidencia & { signedUrl?: string })[]>([]);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const access = useStorageAccessScope(`aplicacao:${aplicacaoId}`);
+  const [result, setResult] = useState<{ scope: string; items: Evidencia[] }>({ scope: "", items: [] });
+  const items = access.ready && result.scope === access.scope ? result.items : [];
+  const { urls } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias");
+  const [lightbox, setLightbox] = useState<{ scope: string; path: string } | null>(null);
+  const lightboxUrl = lightbox?.scope === access.scope ? urls[lightbox.path] : undefined;
 
   useEffect(() => {
+    const current = access.capture();
+    let cancelled = false;
+    setResult({ scope: access.scope, items: [] });
+    setLightbox(null);
+    if (!access.ready || !aplicacaoId) return;
     (async () => {
       // Usando query com join para pegar a versão da aplicação de origem
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("aplicacao_evidencias_vinculos")
         .select(`
           evidencia:evidencia_id (
@@ -40,21 +52,14 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
         .eq("aplicacao_id", aplicacaoId)
         .order("created_at", { ascending: true });
         
-      if (!data?.length) return setItems([]);
-      
-      const flattened = data.map((d: any) => d.evidencia).filter(Boolean);
-      
-      const withUrls = await Promise.all(
-        flattened.map(async (e: any) => {
-          const { data: s } = await supabase.storage
-            .from("aplicacao-evidencias")
-            .createSignedUrl(e.storage_path, 3600);
-          return { ...e, signedUrl: s?.signedUrl };
-        })
-      );
-      setItems(withUrls);
-    })();
-  }, [aplicacaoId]);
+      if (!current() || cancelled) return;
+      const flattened = error ? [] : (data ?? []).flatMap(d => d.evidencia ? [d.evidencia as unknown as Evidencia] : []);
+      setResult({ scope: access.scope, items: flattened });
+    })().catch(() => { if (current() && !cancelled) setResult({ scope: access.scope, items: [] }); });
+    return () => { cancelled = true; };
+    // Scope includes resource, readiness, identity, tenant and roles.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access.scope, aplicacaoId]);
 
   if (!items.length) {
     return <p className="text-sm text-muted-foreground italic">Sem evidências anexadas.</p>;
@@ -65,13 +70,19 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {items.map((e) => (
           <div key={e.id} className="border rounded-lg overflow-hidden bg-card relative group">
-            <button
+            <Button
+              variant="ghost"
               type="button"
-              onClick={() => e.signedUrl && (e.tipo === "foto" ? setLightbox(e.signedUrl) : window.open(e.signedUrl, "_blank"))}
-              className="block w-full aspect-square bg-muted relative"
+              disabled={!urls[e.storage_path]}
+              onClick={() => {
+                if (!access.ready || !urls[e.storage_path]) return;
+                if (e.tipo === "foto") setLightbox({ scope: access.scope, path: e.storage_path });
+                else window.open(urls[e.storage_path], "_blank", "noopener,noreferrer");
+              }}
+              className="block w-full h-auto p-0 aspect-square bg-muted relative"
             >
-              {e.tipo === "foto" && e.signedUrl ? (
-                <img src={e.signedUrl} alt={e.legenda || ""} className="w-full h-full object-cover" />
+              {e.tipo === "foto" && urls[e.storage_path] ? (
+                <img src={urls[e.storage_path]} alt={e.legenda || ""} className="w-full h-full object-cover" />
               ) : (
                 <FileText className="h-8 w-8 text-muted-foreground absolute inset-0 m-auto" />
               )}
@@ -81,7 +92,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="secondary" className="px-1 py-0 h-5 bg-white/80 dark:bg-black/60 backdrop-blur-sm text-[10px] font-normal border-none">
+                        <Badge variant="secondary" className="px-1 py-0 h-5 backdrop-blur-sm text-[10px] font-normal border-none">
                           <History className="h-3 w-3 mr-0.5 opacity-70" />
                           v{e.aplicacoes_origem?.versao || "?"}
                         </Badge>
@@ -93,14 +104,14 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
                   </TooltipProvider>
                 </div>
               )}
-            </button>
+            </Button>
             {e.legenda && <p className="text-xs p-2 truncate bg-background/50 border-t">{e.legenda}</p>}
           </div>
         ))}
       </div>
-      <Dialog open={!!lightbox} onOpenChange={() => setLightbox(null)}>
+      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightbox(null)}>
         <DialogContent className="max-w-4xl p-2">
-          {lightbox && <img src={lightbox} alt="" className="w-full h-auto" />}
+          {lightboxUrl && <img src={lightboxUrl} alt="" className="w-full h-auto" />}
         </DialogContent>
       </Dialog>
     </>
