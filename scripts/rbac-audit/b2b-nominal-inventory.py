@@ -14,9 +14,15 @@ def main():
     parser.add_argument('--functions', required=True)
     parser.add_argument('--relations', required=True)
     parser.add_argument('--policies', required=True)
+    parser.add_argument('--dependencies')
+    parser.add_argument('--relation-security')
     args = parser.parse_args()
     sources = {kind: Path(getattr(args, kind)) for kind in ('functions', 'relations', 'policies')}
     texts = {kind: path.read_text().removeprefix('[map[nominal:').removesuffix(']]') for kind, path in sources.items()}
+    for kind, value in [('dependencies', args.dependencies), ('relation-security', args.relation_security)]:
+        if value:
+            sources[kind] = Path(value)
+            texts[kind] = Path(value).read_text().removeprefix('[map[nominal:').removesuffix(']]')
     files = list((ROOT / 'src').rglob('*.ts')) + list((ROOT / 'src').rglob('*.tsx')) + list((ROOT / 'supabase/functions').rglob('*.ts'))
     literal_callers = {}
     for path in files:
@@ -55,7 +61,11 @@ def main():
             state, evidence = 'negado por guard verificado', 'SELECT inteiro: b2b-partner-row-containment + self-coherence; demais comandos não certificados.'
         if name == 'public.configuracoes_sistema':
             state, evidence = 'público intencional', 'Leitura por usuário ativo de branding global; não anon; mutação só Platform Superadmin (não certificada nesta linha).'
-        add('tabela/view com privilégio authenticated', name, line, state, evidence)
+        security = next((item for item in texts.get('relation-security', '').splitlines() if item.startswith(name+'|')), '')
+        add('tabela/view com privilégio authenticated', name, line+'; '+security, state, evidence)
+    for line in texts.get('dependencies', '').splitlines():
+        if line.strip():
+            add('dependência em outro schema (EXECUTE não prova USAGE/exposição)', line.split('|')[0], line)
     for definition in re.split(r'\n(?=(?:public|storage)\.)', texts['policies']):
         if not definition.strip():
             continue
@@ -73,6 +83,10 @@ def main():
         section = re.search(r'\[functions\.' + re.escape(name) + r'\]([^\[]*)', config)
         add('Edge (fonte local; alcance vivo UNVERIFIED)', name, str(path.relative_to(ROOT)) + '; ' + (section.group(1).strip() if section else 'verify_jwt não declarado no config local'))
     destination = ROOT / 'docs/auditorias/b2b-commercial-owner-canais-nominais-20261008.csv'
+    raw = destination.parent / 'b2b-commercial-owner-canais-fontes-20261008'
+    raw.mkdir(exist_ok=True)
+    for kind, text in texts.items():
+        (raw / (kind+'.txt')).write_text(text+'\n')
     with destination.open('w', newline='') as out:
         writer = csv.DictWriter(out, fieldnames=list(rows[0]))
         writer.writeheader()

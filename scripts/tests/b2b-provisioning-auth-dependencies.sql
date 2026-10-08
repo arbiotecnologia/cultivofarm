@@ -22,6 +22,9 @@ END;
 $function$;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 CREATE TRIGGER a00_cf_user_gate BEFORE DELETE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();
+CREATE FUNCTION cf_user_guards_v1.block_truncate() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$
+BEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $$;
+CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate();
 -- Canonical invitation columns/defaults/checks needed by the real claim producer.
 ALTER TABLE public.platform_org_admin_invites
  ADD PRIMARY KEY(id), ADD COLUMN organization_id uuid NOT NULL DEFAULT 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' REFERENCES public.organizations(id),
