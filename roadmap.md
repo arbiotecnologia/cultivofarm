@@ -1,3 +1,9 @@
+## B2B-FISCAL — P2B operação interna A — 2026-10-08
+- [x] HEADec99f0d3/canônico/ledger173204/174953/184449 e ACL BF02/03/P1A/P2A conferidos, preservados sem migration ou runtime editado.
+- [x] Catálogo vivo: primeiro INSERT pedido não congela org credor/emissor; cotação recria condições e usa parâmetro divergente Q-01. Contrato insuficiente: plano documental validável sem mandato/backfill/reabertura em b2b-fiscal-p2b-migration-plan.md.
+- [x] Relatório P2B/matriz por perfil/status/replay:114/114 locais PASS; lint focal5arquivos PASS/ampliado4any baseline; scanners/diff-check PASS, build automático19:06:37 OK/typecheck manual NOT RUN. Zero fixtures/DML/Auth/emissão/cobrança/publicação.
+- [ ] Gate P2C NO-GO: seleção canônica credor/emissor A, selo/revisões econômicas, guards/replay P residuais, paridade homolog/executor rollback/JWT/browser/concorrência UNVERIFIED; não iniciar automaticamente.
+
 ## B2B-FISCAL — P2A operação interna A — 2026-10-08
 - [x] HEAD589eb384/ledger173204/174953/181641 canônicos conferidos; BF01–03/P1A e proposta retirada preservados. Sem mandato/CNPJ como autorização.
 - [x] Primeira quebra estrutural: simulação/pedido exigem tenant P; correção mínima somente consulta da matriz interna por owner A na migration oficial184449. Pedido sem snapshot credor/emissor A e caminhos posteriores não restaurados, sem guard compartilhado/backfill.
