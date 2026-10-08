@@ -30,7 +30,7 @@ CREATE TABLE public.profiles(user_id uuid PRIMARY KEY, organization_id uuid, ati
 CREATE TABLE public.user_roles(user_id uuid,role public.app_role);
 CREATE TABLE public.partner_users(user_id uuid,partner_id uuid,papel text);
 CREATE TABLE public.organizations(id uuid,ativo boolean,status text DEFAULT 'ativa',partner_account_id uuid);
-CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
+CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz,status text);
 CREATE TABLE public.clientes(id uuid,organization_id uuid);
 CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,client_id uuid,desconto_padrao numeric,limite_credito_brl numeric,ativo boolean DEFAULT true,deleted_at timestamptz);
 GRANT SELECT ON public.partner_accounts,public.clientes TO authenticated;

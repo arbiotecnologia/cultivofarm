@@ -35,6 +35,14 @@ SELECT pg_temp.assert_true('exactly dedicated manager role',count(*)=1 AND min(r
 SELECT pg_temp.assert_true('exactly own partner link',count(*)=1 AND min(partner_id::text)='11111111-1111-4111-8111-111111111111' AND min(papel)='gestor') FROM public.partner_users WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='one');
 SELECT pg_temp.assert_true('first access server only recovery required',p.senha_provisoria AND s.expires_at IS NULL AND s.pwd_digest IS NULL) FROM public.profiles p JOIN platform_private.provisional_password_state s USING(user_id) WHERE p.user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='one');
 SELECT pg_temp.assert_true('first access actor not ready',NOT platform_private.platform_actor_access_ready((body->>'user_id')::uuid)) FROM claims WHERE label='one';
+-- Live canonical overload, copied without rewriting its authorization predicate.
+CREATE FUNCTION public.platform_first_access_valid(p_user_id uuid,p_recovery boolean,p_session_issued_at bigint)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT p_session_issued_at IS NOT NULL AND p_session_issued_at>0 AND to_timestamp(p_session_issued_at)<=clock_timestamp()+interval '1 minute' AND EXISTS(SELECT 1 FROM public.profiles p JOIN platform_private.provisional_password_state s ON s.user_id=p.user_id WHERE p.user_id=p_user_id AND p.ativo IS TRUE AND p.senha_provisoria IS TRUE AND (s.expires_at>now() OR (p_recovery AND to_timestamp(p_session_issued_at)>s.desde))) AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user_id AND (i.access_operation_status='processing' OR i.status='processando' OR (i.access_valid_after IS NOT NULL AND to_timestamp(p_session_issued_at)<=i.access_valid_after)));
+$$;
+SELECT pg_temp.assert_true('existing first access denies non recovery password session',NOT public.platform_first_access_valid((body->>'user_id')::uuid,false,extract(epoch FROM clock_timestamp())::bigint)) FROM claims WHERE label='one';
+-- Simulate a later verified recovery JWT iat (AMR verification belongs to Edge).
+SELECT pg_temp.assert_true('existing first access accepts later recovery proof',public.platform_first_access_valid((body->>'user_id')::uuid,true,extract(epoch FROM clock_timestamp())::bigint+2)) FROM claims WHERE label='one';
 SET LOCAL ROLE authenticated;
 INSERT INTO claims VALUES('two',public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222','66666666-6666-4666-8666-666666666666','two@example.invalid','Two'));
 RESET ROLE;
