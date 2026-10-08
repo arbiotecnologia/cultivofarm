@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FileText, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -110,7 +110,8 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
         ))}
       </div>
       <Dialog open={!!lightboxUrl} onOpenChange={() => setLightbox(null)}>
-        <DialogContent className="max-w-4xl p-2">
+        <DialogContent className="max-w-4xl p-2" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Evidência da aplicação</DialogTitle>
           {lightboxUrl && <img src={lightboxUrl} alt="" className="w-full h-auto" />}
         </DialogContent>
       </Dialog>

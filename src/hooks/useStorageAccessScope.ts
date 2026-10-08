@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 /** Presentation/request fencing only. Server authorization remains mandatory. */
 export function useStorageAccessScope(resource: string) {
-  const { user, profile, roles, loading } = useAuth();
+  const { user, profile, roles = [], loading } = useAuth();
   const ready = !loading && !!user?.id && profile?.user_id === user.id &&
     profile.ativo === true && profile.senha_provisoria !== true &&
     !!profile.organization_id && roles.length > 0;
@@ -14,8 +14,9 @@ export function useStorageAccessScope(resource: string) {
     state.current.epoch += 1;
   }
   useEffect(() => {
-    state.current.mounted = true;
-    return () => { state.current.mounted = false; state.current.epoch += 1; };
+    const current = state.current;
+    current.mounted = true;
+    return () => { current.mounted = false; current.epoch += 1; };
   }, []);
   const capture = () => {
     const epoch = state.current.epoch;
