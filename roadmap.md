@@ -1,3 +1,8 @@
+## STORAGE-2/APLICAÇÕES — 2026-10-08
+- [ ] Auditar ACL/triggers e endurecer rpc_salvar_aplicacao_v1 antes de replay: identidade/tenant/referências/payload/evidências, sem staging paralelo nem liberar IDs inexistentes.
+- [ ] Reproduzir e corrigir galeria e aberturas atrasadas de arquivos por identidade/empresa/readiness; testes comportamentais e provas SQL rollback A/B, preservação de metadata/histórico.
+- [ ] Registrar matriz e limites: novos uploads, unidade inequívoca e portais; sem publicar/enviar/PDF/Auth/roles/vínculos/bytes reais. Verificações focais e NO-GO integral até provas reais restantes.
+
 ## STORAGE-1 — 2026-10-08
 - [x] Revisão14:24: migration oficial142611 alinha permissiva ao core cliente/aplicação/arquivo, DELETE sem owner bypass; financial/clientes validam path estrito. Composição de todas as policies vivas OR/AND em memória: próprios30/negações258, UID ausente negado separado; rollback e manifesto cliente/fazenda/talhão/OS/aplicação0, metadata_writes0. Hash financeiro1/efa4cc1e23e8f094668a8a2724e22e63 intacto. Hook19/19, séries45/45 e61/61 sobrepostas não somadas; lint focal/scanners/diff-check PASS, build automático14:29:03 OK. Typecheck explícito NOT RUN. Sem API/upload/download alegados, publicação ou novo deploy.
 - [x] Complemento privilegiado PDF: enviar-pdf-visita/aplicacao contidos antes de Auth/domínio/upload/sign/send e implantados individualmente no canônico; shared guard intacto. Deno16/16, lint dos entrypoints/scanners/diff-check PASS, build14:23:06 OK. HTTP estéril401 gateway em ambas; 503 autenticado remoto UNVERIFIED. Predicados independentes anteriores6 permitidos não são download; financial-docs1/hash id:name efa4cc1e23e8f094668a8a2724e22e63 confirmado read-only. Sem frontend publicado/envios/objetos alterados.
