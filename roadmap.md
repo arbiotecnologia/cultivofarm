@@ -1,3 +1,8 @@
+## CADASTROS-PRODUTOR-PARCEIRO — 2026-10-08
+- [ ] Auditar contratos vivos, corrigir vínculo comercial cliente/parceiro e ações equivalentes de produtores; preservar CADASTRO-1/MULTIPORTAL/STORAGE.
+- [ ] Provas authenticated A/B com fixtures TEMPORARY_AUDIT UUID aleatórias em rollback; hashes/contagens intactos, sem Auth/papéis/envios/publicação.
+- [ ] Testes focais, lint/scanners e sinais automáticos de typecheck/build; relatório de 17 itens e matriz roles/rotas/RLS; JWT/browser somente com evidência real.
+
 ## Inscrição estadual — ajuste focal de cadastro — 2026-10-08
 - [x] Remover máscara e bloqueio por UF dos cadastros cliente/parceiro; manter limites sintáticos, normalização e aviso não bloqueante, sem alterar emissão fiscal.
 - [x] Testes cadastro + regressão fiscal288/288 em2 arquivos; scanners/diff-check PASS e build automático OK15:51:49. Typecheck separado não executado (harness); sem cadastro real, banco ou publicação. Checkpoints anteriores preservados.
