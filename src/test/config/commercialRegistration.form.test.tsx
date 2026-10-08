@@ -11,6 +11,24 @@ import { ParceiroB2BFormDialog } from "@/components/comercial/ParceiroB2BFormDia
 import type { ParceiroB2B } from "@/hooks/useParceirosB2B";
 beforeEach(()=>{s.save.mockReset();s.update.mockReset();s.close.mockReset();s.cep.mockReset();s.resolve=undefined;});
 function nameInput(){const input=screen.getByText("Razão Social *").parentElement?.querySelector("input");if(!input)throw new Error("name input missing");return input;}
+it.each(["", " ", "A"])("nega razão social insuficiente sem envio: %j", (value) => {
+ render(<ParceiroB2BFormDialog open onOpenChange={s.close}/>);
+ fireEvent.change(nameInput(), {target: {value}});
+ fireEvent.click(screen.getByRole("button", {name: "Criar parceiro"}));
+ expect(s.save).not.toHaveBeenCalled();
+ expect(s.update).not.toHaveBeenCalled();
+ expect(s.close).not.toHaveBeenCalled();
+});
+it("nega CNPJ repetido sem envio", () => {
+ render(<ParceiroB2BFormDialog open onOpenChange={s.close}/>);
+ fireEvent.change(nameInput(), {target: {value: "TESTE AUDITORIA B2B 20261008"}});
+ const cnpj = screen.getByText("CNPJ").parentElement?.querySelector("input");
+ if (!cnpj) throw new Error("cnpj input missing");
+ fireEvent.change(cnpj, {target: {value: "11.111.111/1111-11"}});
+ fireEvent.click(screen.getByRole("button", {name: "Criar parceiro"}));
+ expect(s.save).not.toHaveBeenCalled();
+ expect(s.close).not.toHaveBeenCalled();
+});
 async function fill(){fireEvent.change(nameInput(),{target:{value:"TEMPORARY_AUDIT"}});fireEvent.click(screen.getByRole("combobox",{name:"Cliente da empresa"}));fireEvent.click(await screen.findByRole("option",{name:"Cliente próprio"}));}
 it("cadastra parceiro sem vínculo com cliente",async()=>{render(<ParceiroB2BFormDialog open onOpenChange={s.close}/>);fireEvent.change(nameInput(),{target:{value:"TEMPORARY_AUDIT"}});fireEvent.click(screen.getByRole("button",{name:"Criar parceiro"}));await waitFor(()=>expect(s.save).toHaveBeenCalledTimes(1));expect(s.save.mock.calls[0][0]).toMatchObject({razao_social:"TEMPORARY_AUDIT",client_id:null});});
 it("edita parceiro mantendo cliente opcional",async()=>{const parceiro={id:"EXISTING",razao_social:"TEMPORARY_AUDIT",client_id:null,ativo:true,desconto_padrao:0,limite_credito_brl:null,comissao_percentual:null,meta_mensal_brl:null} as ParceiroB2B;render(<ParceiroB2BFormDialog open onOpenChange={s.close} parceiro={parceiro}/>);fireEvent.click(screen.getByRole("button",{name:"Salvar alterações"}));await waitFor(()=>expect(s.update).toHaveBeenCalledTimes(1));expect(s.update.mock.calls[0][0]).toMatchObject({id:"EXISTING",client_id:null});});

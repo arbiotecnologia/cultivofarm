@@ -361,9 +361,9 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
         : null,
     };
 
-    // Normalize empty strings → null for nullable cols
+    // Preserve the required string for required-name validation.
     Object.keys(payload).forEach((k) => {
-      if (payload[k] === "") payload[k] = null;
+      if (k !== "razao_social" && payload[k] === "") payload[k] = null;
     });
     const parsed = schema.safeParse(payload);
     if (!parsed.success) {
