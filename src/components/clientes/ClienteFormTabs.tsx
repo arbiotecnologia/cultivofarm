@@ -79,7 +79,6 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
   const scope = useCommercialRegistrationScope();
   const [tab, setTab] = useState("geral");
   const cepGeneration = useRef({ endereco: 0, cobranca: 0 });
-  const { formState: { errors } } = useFormContext();
   useEffect(() => {
     const field = Object.keys(errors)[0];
     if (field) setTab(field.startsWith("endereco_") || field.startsWith("cobranca_") ? "endereco" : field.startsWith("contato_financeiro_") || field === "limite_credito" ? "financeiro" : "geral");
