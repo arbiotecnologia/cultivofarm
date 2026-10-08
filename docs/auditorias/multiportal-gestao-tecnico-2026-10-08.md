@@ -52,6 +52,7 @@ Script `scripts/rbac-audit/multiportal-1-proof.sql` executado com claims SQL de 
 - Lint focal dos arquivos alterados, inclusive `App.tsx`: sem erros/avisos; scanners secretos/fiscal e `git diff --check`: PASS.
 - Harness automático executou typecheck/build: último registro **build OK 15:09:47 UTC**. Typecheck/build manual não executados por regra do ambiente. Erro intermediário do tipo `admin` em safeHome foi corrigido e revalidado.
 - Warnings React Router future flags e log sanitizado de falha esperada preservados; não são falhas dos testes.
+- Revalidação focal às 15:14 UTC: **58/58 em cinco arquivos** (Gestão/Técnico, sessão/cache, guards, hardening e perfil mobile); conjunto sobreposto, não somado aos anteriores. `git diff --check` PASS; harness **build OK 15:14:44 UTC**. Sem SQL, Auth ou publicação nesta revalidação.
 
 ## Limites e rollback
 
