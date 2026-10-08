@@ -24,11 +24,13 @@ BEGIN
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sa,la,ea,10,10000,current_date+30,r);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sb,lb,eb,10,10000,current_date+30,r);
+ PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  -- Only fixture ledger seeds: these matched the former LIKE underscore/percent wildcard.
  INSERT INTO public.estoque_movimentacoes(estoque_produto_id,lote_id,acao,usuario_id,idempotency_key,metadata)
  VALUES(sa,la,'ajuste',a,r||'Xajuste#0','{}'),(sa,la,'ajuste',a,r||'_OTHER_perda#0','{}');
  -- Temporary schema privilege strictly inside this transaction; final exception undoes it.
  GRANT EXECUTE ON FUNCTION public.rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) TO authenticated;
+ PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  SET LOCAL ROLE authenticated;
  BEGIN PERFORM public.rpc_estoque_operar_v1('ajuste',sb,1,r||'_PLAN',jsonb_build_object('motivo',r)); RAISE EXCEPTION 'PLAN_NOT_DENIED';
  EXCEPTION WHEN insufficient_privilege THEN IF SQLERRM NOT LIKE '%ESTQ_FEATURE_REQUIRED%' THEN RAISE; END IF; denied:=denied+1; END;
