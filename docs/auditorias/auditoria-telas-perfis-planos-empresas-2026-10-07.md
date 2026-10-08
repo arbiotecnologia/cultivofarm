@@ -1,6 +1,14 @@
 # Auditoria atual de telas, perfis, planos e empresas — 2026-10-07
 
-## Meu Plano — P2 de exibição — 2026-10-08 (estado atual)
+## Rótulo do portal — P2 apresentação — 2026-10-08 02:11 UTC (estado atual)
+
+- **Evidência UI recebida:** administrador real AR Bio com somente papel administrador abre `/app` e vê Consultor Técnico/consultor em cabeçalho/menu/saudação. Relato do proprietário, não nova sessão autenticada deste executor; apresentação incorreta não prova alteração de papel ou falha de autorização.
+- **Correção mínima:** retirada somente da linha `if (activeCtx === "technical") return ROLE_LABELS.consultor_tecnico` em `src/lib/portalDisplayLabel.ts`. Sem papel técnico real, usa o fallback já existente do papel primário ou `—`. Precedência técnica real, multipapel, B2B e produtor preservados. Sem guards/RLS/papéis/acesso mobile/banco ou publicação. Correção MeuPlano da revisão `943710ceff2da573a6390fbd86f9b53427cb168e` preservada.
+- **Resultados próprios:** **29/29 PASS em 4 arquivos** às 02:12:43 UTC: portalDisplayLabel 9, cabecalhoContexto 7, MeuPlano lógica 8/renderização 5. Quatro novos casos cobrem administrador e saudação, ausência de papel, multipapel técnico e B2B/produtor. Lint nos dois arquivos alterados, scanners segredos/integração e diff-check **PASS**. Build automático **OK 02:12:39 UTC**. Testes locais/estruturais, sem prova browser autenticada pós-correção.
+- **Rollback local:** reintroduzir exclusivamente a linha retirada se necessário, após revisão e testes; isso restauraria o defeito de apresentação conhecido. Nenhuma reversão executada, sem tocar a correção MeuPlano ou regras de acesso.
+- **Arquivos:** `src/lib/portalDisplayLabel.ts`, `src/lib/portalDisplayLabel.test.ts`, `roadmap.md` e este relatório; nenhuma nova arquitetura. Revisão final no encerramento. P2 validado localmente, não publicado; **NO-GO integral mantido**, sem iniciar outra grande fase.
+
+## Meu Plano — P2 de exibição — 2026-10-08 (histórico)
 
 - **Achado:** proprietário reproduziu no publicado, em sessão real do administrador AR Biotecnologia, ausência de assinatura simultânea a Gestão / Período de teste / Vinculada. Evidência recebida, não novo browser autenticado deste executor. Não comprova regressão de status.
 - **Causa/correção local:** `EstadoConsulta` incondicional em `MeuPlanoTab.tsx` retornava mensagem de ausência apesar de `assinatura.data`. Renderização limitada a `carregando || erro || !assinatura.data`; consultas, status e detalhes válidos preservados. Nenhuma mudança banco/Auth/permissões/plano/preço ou publicação.
