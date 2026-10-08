@@ -67,7 +67,7 @@ export interface SafeHomeInput {
   roles?: readonly string[] | null;
   primaryRole?: string | null;
   /** Contextos de portal resolvidos pela RPC segura (opcional). */
-  availableContexts?: readonly ("b2b" | "technical")[] | null;
+  availableContexts?: readonly ("b2b" | "technical" | "admin")[] | null;
 }
 
 export function resolveSafeHome(input: SafeHomeInput): string {

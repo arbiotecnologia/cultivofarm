@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { useSwitchPortal } from "@/hooks/useSwitchPortal";
 import { resolveSafeHome } from "@/lib/navigation/safeHome";
 
 /**
@@ -17,6 +18,7 @@ export default function SemPermissao() {
   };
   const { roles, primaryRole, signOut, user } = useAuth();
   const { data } = useAvailableContexts();
+  const switchPortal = useSwitchPortal();
 
   const canSwitch =
     !!data && data.available_contexts.length >= 2;
@@ -62,7 +64,7 @@ export default function SemPermissao() {
           {canSwitch && (
             <Button
               variant="outline"
-              onClick={() => navigate("/selecionar-portal", { replace: true })}
+              onClick={() => { void switchPortal(); }}
               aria-label="Trocar de portal"
             >
               <Repeat className="mr-2 h-4 w-4" aria-hidden="true" />

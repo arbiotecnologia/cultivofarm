@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Store, Sprout, LogOut, AlertCircle, Loader2 } from "lucide-react";
+import { Store, Sprout, LayoutDashboard, LogOut, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -11,9 +11,8 @@ import {
   registerLoginRedirect,
   type PortalContext,
 } from "@/hooks/useAvailableContexts";
-import { PORTAL_CONTEXT_HOME } from "@/lib/portalContext";
+import { PORTAL_CONTEXT_HOME, automaticPortalContext } from "@/lib/portalContext";
 import { setActivePortalContext } from "@/lib/activePortalContext";
-import { getHomeForRole } from "@/lib/permissions";
 import { toast } from "sonner";
 
 function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: string | null } | null): string {
@@ -30,20 +29,23 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
 
 export default function SelecionarPortal() {
   const navigate = useNavigate();
-  const { signOut, user, roles } = useAuth();
-  const { data, isLoading, isError, refetch, isFetching } = useAvailableContexts();
+  const { signOut, user, profile } = useAuth();
+  const [params] = useSearchParams();
+  const manual = params.get("intent") === "switch";
+  const { data, isLoading, isError, refetch, isFetching, ready, scope } = useAvailableContexts();
   const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState<PortalContext | null>(null);
 
-  const firstName = useMemo(() => getFirstName(user as any), [user]);
-  const isAdmin = roles.includes("administrador");
-
-  // Admin tem acesso total ao sistema — nunca precisa escolher portal.
+  const firstName = useMemo(() => profile?.nome?.trim().split(/\s+/)[0] ?? getFirstName(user), [profile?.nome, user]);
+  const current = useRef({ scope, mounted: true, epoch: 0 });
+  if (current.current.scope !== scope) { current.current.scope = scope; current.current.epoch += 1; }
+  const lock = useRef(false);
   useEffect(() => {
-    if (isAdmin) {
-      navigate(getHomeForRole("administrador"), { replace: true });
-    }
-  }, [isAdmin, navigate]);
+    const state = current.current;
+    state.mounted = true;
+    return () => { state.mounted = false; state.epoch += 1; };
+  }, []);
+  useEffect(() => { setSubmitting(null); setRemember(false); }, [scope]);
 
   // Sincroniza estado inicial do checkbox com a preferência atual (revalidada pela RPC).
   useEffect(() => {
@@ -56,40 +58,34 @@ export default function SelecionarPortal() {
   // Não redireciona para /acesso-pendente enquanto a consulta estiver carregando,
   // revalidando (isFetching) ou em erro transitório.
   useEffect(() => {
-    if (isAdmin || !data || submitting || isLoading || isFetching || isError) return;
+    if (!ready || !data || submitting || isLoading || isFetching || isError) return;
     const ctxs = data.available_contexts;
 
     if (ctxs.length === 0) {
       navigate("/acesso-pendente", { replace: true });
       return;
     }
-    if (ctxs.length === 1) {
-      const only = ctxs[0];
-      setActivePortalContext(only);
-      registerLoginRedirect(only);
-      navigate(PORTAL_CONTEXT_HOME[only], { replace: true });
-      return;
+    const target = automaticPortalContext(ctxs, data.preferred_context, data.skip_context_selector, manual);
+    if (target) {
+      setActivePortalContext(target);
+      void registerLoginRedirect(target);
+      navigate(PORTAL_CONTEXT_HOME[target], { replace: true });
     }
-    if (
-      data.skip_context_selector &&
-      data.preferred_context &&
-      ctxs.includes(data.preferred_context)
-    ) {
-      const pref = data.preferred_context;
-      setActivePortalContext(pref);
-      registerLoginRedirect(pref);
-      navigate(PORTAL_CONTEXT_HOME[pref], { replace: true });
-    }
-  }, [data, submitting, navigate, isLoading, isFetching, isError, isAdmin]);
+  }, [data, submitting, navigate, isLoading, isFetching, isError, ready, manual]);
 
   async function pick(ctx: PortalContext) {
-    if (submitting) return; // evita duplo clique
+    if (lock.current || !ready || !data?.available_contexts.includes(ctx)) return;
+    lock.current = true;
+    const started = scope;
+    const epoch = current.current.epoch;
+    const valid = () => current.current.mounted && current.current.scope === started && current.current.epoch === epoch;
     setSubmitting(ctx);
     try {
       const { data: res, error } = await supabase.rpc("set_my_context_preference", {
         p_context: ctx,
         p_remember: remember,
       });
+      if (!valid()) return;
       if (error) throw error;
       const parsed = res as { ok: boolean; error_code?: string } | null;
       if (!parsed?.ok) {
@@ -97,23 +93,28 @@ export default function SelecionarPortal() {
           description: "Seus acessos podem ter mudado. Atualizando…",
         });
         await refetch();
+        if (!valid()) return;
         setSubmitting(null);
         return;
       }
       setActivePortalContext(ctx);
       navigate(PORTAL_CONTEXT_HOME[ctx], { replace: true });
-    } catch (e) {
-      console.error("[SelecionarPortal] pick failed", e);
+    } catch {
+      if (!valid()) return;
+      console.warn("[SelecionarPortal] context_selection_unavailable");
       toast.error("Não foi possível abrir o portal selecionado.", {
         description: "Tente novamente em instantes.",
       });
       setSubmitting(null);
+    } finally {
+      lock.current = false;
+      if (valid()) setSubmitting(null);
     }
   }
 
   if (!user) return null;
 
-  if (isLoading) {
+  if (isLoading || !ready) {
     return (
       <div
         className="min-h-dvh flex items-center justify-center bg-background p-4"
@@ -198,74 +199,21 @@ export default function SelecionarPortal() {
           role="group"
           aria-label="Portais disponíveis"
         >
-          {/* Card B2B */}
-          <Card className="flex flex-col border-2 transition hover:border-primary focus-within:border-primary">
-            <CardHeader className="space-y-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10"
-                aria-hidden="true"
-              >
-                <Store className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle className="text-lg">Portal Parceiro B2B</CardTitle>
-              <CardDescription className="text-sm leading-relaxed">
-                Acesse catálogo, simulações, pedidos, condições comerciais,
-                financeiro, histórico e atividades da parceria.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button
-                className="w-full min-h-11"
-                disabled={disabled}
-                aria-label="Acessar Portal Parceiro B2B"
-                onClick={() => pick("b2b")}
-              >
-                {submitting === "b2b" ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                    Abrindo o portal…
-                  </>
-                ) : (
-                  "Acessar Portal B2B"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Card Técnico */}
-          <Card className="flex flex-col border-2 transition hover:border-emerald-500 focus-within:border-emerald-500">
-            <CardHeader className="space-y-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10"
-                aria-hidden="true"
-              >
-                <Sprout className="h-6 w-6 text-emerald-600" />
-              </div>
-              <CardTitle className="text-lg">Portal Técnico</CardTitle>
-              <CardDescription className="text-sm leading-relaxed">
-                Gerencie produtores, agenda, visitas técnicas, diagnósticos,
-                recomendações e ordens de serviço.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button
-                className="w-full min-h-11"
-                variant="secondary"
-                disabled={disabled}
-                aria-label="Acessar Portal Técnico"
-                onClick={() => pick("technical")}
-              >
-                {submitting === "technical" ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                    Abrindo o portal…
-                  </>
-                ) : (
-                  "Acessar Portal Técnico"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          {data.available_contexts.map((ctx) => {
+            const label = ctx === "admin" ? "Gestão" : ctx === "technical" ? "Portal Técnico" : "Portal Parceiro B2B";
+            const Icon = ctx === "admin" ? LayoutDashboard : ctx === "technical" ? Sprout : Store;
+            return <Card key={ctx} className="flex flex-col border-2 transition hover:border-primary focus-within:border-primary">
+              <CardHeader className="space-y-3">
+                <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                <CardTitle className="text-lg">{label}</CardTitle>
+              </CardHeader>
+              <CardContent className="mt-auto">
+                <Button className="w-full min-h-11" disabled={disabled || isFetching} aria-label={`Acessar ${label}`} onClick={() => pick(ctx)}>
+                  {submitting === ctx ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />Abrindo o portal…</> : `Acessar ${label}`}
+                </Button>
+              </CardContent>
+            </Card>;
+          })}
         </div>
 
         <div className="rounded-lg border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

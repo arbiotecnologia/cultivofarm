@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Shield, Mail, Bell, ArrowLeftRight, Sprout, Store } from "lucide-react";
+import { LogOut, User, Shield, Mail, Bell, ArrowLeftRight, Sprout, Store, LayoutDashboard } from "lucide-react";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
@@ -16,8 +16,7 @@ export default function MobilePerfil() {
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
   const canSwitch =
-    !!contexts?.available_contexts?.includes("b2b") &&
-    !!contexts?.available_contexts?.includes("technical");
+    (contexts?.available_contexts.length ?? 0) > 1;
 
   const activeCtx = getActivePortalContext();
   const derivedFromRole: ActivePortalContext | null =
@@ -25,7 +24,9 @@ export default function MobilePerfil() {
       ? "producer"
       : primaryRole === "parceiro_b2b" || primaryRole === "parceiro_b2b_tecnico"
         ? "b2b"
-        : primaryRole
+        : primaryRole === "gestor" || primaryRole === "administrador"
+          ? "admin"
+          : primaryRole
           ? "technical"
           : null;
   const effectiveCtx = activeCtx ?? derivedFromRole;
@@ -38,11 +39,12 @@ export default function MobilePerfil() {
     roles,
   });
   const portalLabel = displayRoleLabel;
-  const PortalIcon = effectiveCtx === "b2b" ? Store : Sprout;
+  const PortalIcon = effectiveCtx === "b2b" ? Store : effectiveCtx === "admin" ? LayoutDashboard : Sprout;
 
   const others: string[] = [];
-  if (contexts?.has_b2b_access && effectiveCtx !== "b2b") others.push("Portal Parceiro B2B");
-  if (contexts?.has_technical_access && effectiveCtx !== "technical") others.push("Portal Técnico");
+  if (contexts?.available_contexts.includes("admin") && effectiveCtx !== "admin") others.push("Gestão");
+  if (contexts?.available_contexts.includes("b2b") && effectiveCtx !== "b2b") others.push("Portal Parceiro B2B");
+  if (contexts?.available_contexts.includes("technical") && effectiveCtx !== "technical") others.push("Portal Técnico");
 
 
 

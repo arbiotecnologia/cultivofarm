@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   isB2BQueryKey,
   isTechnicalQueryKey,
@@ -11,8 +10,8 @@ import {
 import { hasUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
-import { useAuth } from "@/hooks/useAuth";
-import { getHomeForRole } from "@/lib/permissions";
+import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { useRef } from "react";
 
 /**
  * useSwitchPortal — troca de contexto B2B ↔ Técnico sem logout.
@@ -26,16 +25,15 @@ import { getHomeForRole } from "@/lib/permissions";
 export function useSwitchPortal() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { roles } = useAuth();
-  const isAdmin = roles.includes("administrador");
+  const { ready, scope } = useAvailableContexts();
+  const current = useRef({ scope, epoch: 0 });
+  if (current.current.scope !== scope) { current.current.scope = scope; current.current.epoch += 1; }
 
   return useCallback(
     async (options?: { force?: boolean }) => {
-      // Admin não passa pelo seletor — retorna direto para a home administrativa.
-      if (isAdmin) {
-        navigate(getHomeForRole("administrador"), { replace: true });
-        return true;
-      }
+      if (!ready) return false;
+      const startedScope = scope;
+      const epoch = current.current.epoch;
       const currentPath =
         typeof window !== "undefined" ? window.location.pathname : "";
       const leavingB2B = currentPath.startsWith("/portal-parceiro");
@@ -73,6 +71,7 @@ export function useSwitchPortal() {
           queryClient.invalidateQueries({ queryKey: ["notifications"] }),
         ]);
 
+        if (current.current.scope !== startedScope || current.current.epoch !== epoch) return false;
         try {
           const keys = leavingB2B
             ? B2B_SESSION_KEYS
@@ -87,13 +86,13 @@ export function useSwitchPortal() {
         clearActivePortalContext();
         broadcastPortalEvent({ type: "portal_switched", at: Date.now() });
 
-        await supabase.auth.getSession();
-      } finally {
-        navigate("/selecionar-portal", { replace: true });
+        navigate("/selecionar-portal?intent=switch", { replace: true });
+      } catch {
+        return false;
       }
       return true;
     },
-    [navigate, queryClient, isAdmin]
+    [navigate, queryClient, ready, scope]
   );
 }
 
