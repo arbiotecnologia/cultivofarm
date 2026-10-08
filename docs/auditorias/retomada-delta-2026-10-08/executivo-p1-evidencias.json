@@ -26,7 +26,8 @@
     "provenance": "Lovable ferramentas Supabase, fontes vivas e transações read-only rollback no canônico",
     "ledger": [
       "20261008203543",
-      "20261008204053"
+      "20261008204053",
+      "20261008204534"
     ],
     "live_md5": {
       "rpc_executivo_timeline_operacional": "db6e99a1eb660d4cd1e0532c2e7649af",
@@ -36,7 +37,8 @@
       "anon": false,
       "authenticated": true,
       "service_role": true,
-      "PUBLIC": "revogado"
+      "PUBLIC": "revogado",
+      "scope": "timeline/gargalos somente; não se aplica aos16bloqueados"
     },
     "search_path": "",
     "ARBio": {
@@ -71,18 +73,72 @@
     "functional_readiness": "NO-GO: fontes operacionais indisponíveis"
   },
   "validation": {
-    "vitest": "38/38 PASS em 2 arquivos (22 novos +16 regressão estrutural histórica), não soma à suíte histórica",
-    "lint": "7 arquivos alterados PASS,0 erros/avisos",
+    "vitest": "complemento24/24PASS(22sobrepostos+2novos);inicial38/38(22+16históricos),não somar rodadas",
+    "lint": "complemento3arquivos PASS0/0;inicial7arquivos PASS0/0",
     "secrets": "PASS fiscal-secrets-scan",
     "typecheck": "NOT RUN manual por restrição do harness; não transferir PASS Codex anterior para este patch",
-    "build": "automático build OK 20:38:53UTC; sem build manual"
+    "build": "automático build OK20:47:43UTC;sem build manual"
   },
   "method_limits": [
     "read_query inicialmente negou EXECUTE/SET ROLE: não equivale a teste autenticado",
     "primeiro teste negativo sem iat encontrou NO_IAT_ACCEPTED em ARBio; h15 não exige iat universalmente, apenas barreira do convite quando aplicável; follow-up adiciona iat explícito sem alterar helper global",
     "gargalos não lê fontes e não usa período; somente timeline valida período personalizado",
     "banco local iniciado sem fixtures e sem executar testes locais SQL; provas finais no canônico read-only",
-    "405 achados linter preexistentes,nenhum introduzido:15 INFO RLS sem policy,2 PUBLIC DEFINER,387 authenticated DEFINER,1 leaked password disabled"
+    "389achados advisors finais preexistentes:15INFO RLSsemPolicy,2PUBLICDefiner,371authenticatedDefiner,1leakedPassword;nenhum introduzido"
   ],
-  "rollback": "Manter estas contenções e ACL; forward-fix apenas. Nunca restaurar RPC legada vazando; sem backfill,Auth,roles,envios,fiscal ou publicação frontend."
+  "rollback": "Manter estas contenções e ACL; forward-fix apenas. Nunca restaurar RPC legada vazando; sem backfill,Auth,roles,envios,fiscal ou publicação frontend.",
+  "family": {
+    "inventory": 19,
+    "preserved": [
+      "rpc_executivo_resumo_geral",
+      "rpc_executivo_timeline_operacional",
+      "rpc_executivo_gargalos"
+    ],
+    "blocked": [
+      "rpc_executivo_alertas_prioridades",
+      "rpc_executivo_alertas_resumo",
+      "rpc_executivo_arquivar_relatorio",
+      "rpc_executivo_cliente_detalhe",
+      "rpc_executivo_clientes_ranking",
+      "rpc_executivo_clientes_resumo",
+      "rpc_executivo_exportar_relatorio_evento",
+      "rpc_executivo_fazenda_detalhe",
+      "rpc_executivo_financeiro_gargalos",
+      "rpc_executivo_financeiro_ranking_clientes",
+      "rpc_executivo_financeiro_resumo",
+      "rpc_executivo_gerar_relatorio",
+      "rpc_executivo_listar_relatorios",
+      "rpc_executivo_obter_relatorio",
+      "rpc_executivo_plano_acao",
+      "rpc_executivo_responsaveis_pendencias"
+    ],
+    "before_structural": "16remanescentes DEFINER/is_executivo-only sem ownership; não executar mutadoras legadas",
+    "dynamic_before_only": [
+      "timeline",
+      "gargalos"
+    ],
+    "after_acl": {
+      "PUBLIC": false,
+      "anon": false,
+      "authenticated": false,
+      "service_role": true
+    },
+    "after_body": "42501 EXECUTIVO_SOURCE_UNAVAILABLE antes de argumentos/fontes/escrita/audit, inclusive chamadas privilegiadas",
+    "search_path": "",
+    "signatures_and_return_types": "preservados",
+    "ledger_live": "20261008204534 confirmado",
+    "A_B_negative_invocations": 96,
+    "claims_variants": [
+      "iat atual simulado",
+      "iat ausente",
+      "iat stale simulado"
+    ],
+    "privileged_denial_body_invocations": 16,
+    "additional_absent_actor_denial": "PASS",
+    "additional_role_iteration": "RLS limitada; não contabilizar todos roles",
+    "plan_bridge": "negativa universal de ACL/corpo; não prova positiva por plano",
+    "callpaths": "19hooks;4abas não montam detalhes/gerar/arquivar/exportar;sem frontend publicado",
+    "other_public_private_function_body_references": 0,
+    "limits": "SQL claims não JWT/browser; não pleno PASS funcional ou fechamento integral"
+  }
 }
