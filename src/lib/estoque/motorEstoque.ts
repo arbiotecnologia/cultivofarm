@@ -112,6 +112,7 @@ export function mensagemErroEstoque(err: unknown): string {
     ESTQ_REFERENCE_FORBIDDEN: "Os vínculos informados não são válidos para esta operação.",
     ESTQ_REFERENCE_UNSUPPORTED: "Este tipo de vínculo ainda não está habilitado para esta operação.",
     ESTQ_PAYLOAD_INVALIDO: "Os dados informados para esta operação são inválidos.",
+    ESTQ_QUANTIDADE_INVALIDA: "Informe uma quantidade finita e maior que zero.",
     ESTQ_ESTORNO_ORIGEM_INVALIDA: "A movimentação de origem não é válida para este estorno.",
     ESTQ_SEM_TRILHA: "Não foi possível confirmar o registro da movimentação. A operação foi revertida.",
     ESTQ_SEM_PERMISSAO: "Seu perfil não tem permissão para esta operação de estoque.",
