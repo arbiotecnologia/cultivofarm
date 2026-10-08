@@ -57,7 +57,8 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
   const organizationId = profile?.organization_id ?? null;
   const ready = !!user && !!organizationId && profile?.ativo !== false;
   const portalReady = ready && !portalLoading && roles.includes("cliente_produtor") && !!clienteId;
-  const scope = [user?.id, organizationId, roles.join(",")];
+  const roleScope = roles.join(",");
+  const scope = [user?.id, organizationId, roleScope];
   const qc = useQueryClient();
   const displayLimit = options?.limit ?? 30;
 
@@ -114,13 +115,13 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
           table: "notificacoes_operacionais",
           filter: `usuario_id=eq.${userId}`,
         },
-        () => qc.invalidateQueries({ queryKey: ["notif-unified", "op", userId, organizationId, roles.join(",")] }),
+        () => qc.invalidateQueries({ queryKey: ["notif-unified", "op", userId, organizationId, roleScope] }),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, organizationId, ready, roles.join(","), qc]);
+  }, [userId, organizationId, ready, roleScope, qc]);
 
   useEffect(() => {
     if (!portalReady || !clienteId || !userId) return;
@@ -134,13 +135,13 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
           table: "portal_notificacoes",
           filter: `recipient_user_id=eq.${userId}`,
         },
-        () => qc.invalidateQueries({ queryKey: ["notif-unified", "portal", ...scope, clienteId] }),
+        () => qc.invalidateQueries({ queryKey: ["notif-unified", "portal", userId, organizationId, roleScope, clienteId] }),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clienteId, userId, organizationId, portalReady, roles.join(","), qc]);
+  }, [clienteId, userId, organizationId, portalReady, roleScope, qc]);
 
   const combined = useMemo<NotificacaoUnificada[]>(() => {
     const op = (ready ? opQuery.data ?? [] : []).map<NotificacaoUnificada>((n) => ({

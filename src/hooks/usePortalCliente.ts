@@ -32,7 +32,7 @@ export function usePortalCliente() {
     setLoading(true);
 
     // 1) Busca vínculos cru (sem join embutido para não depender de relacionamento PostgREST)
-    const { data: vinculos, error: vinculosError } = await (supabase as any)
+    const { data: vinculos, error: vinculosError } = await supabase
       .from("user_clientes")
       .select("cliente_id, principal")
       .eq("user_id", user.id);
@@ -46,12 +46,12 @@ export function usePortalCliente() {
 
     // 2) Fallback: profiles.cliente_id (compatibilidade com cadastros antigos)
     if (clienteIds.length === 0) {
-      const { data: prof } = await (supabase as any)
+      const { data: prof } = await supabase
         .from("profiles")
         .select("cliente_id")
         .eq("user_id", user.id)
         .maybeSingle();
-      const cid = (prof as any)?.cliente_id;
+      const cid = prof?.cliente_id;
       if (cid) clienteIds.push(cid);
     }
 
@@ -59,17 +59,17 @@ export function usePortalCliente() {
 
     if (clienteIds.length > 0) {
       // 3) Resolve nomes dos clientes em uma query separada
-      const { data: clis, error: clisError } = await (supabase as any)
+      const { data: clis, error: clisError } = await supabase
         .from("clientes")
         .select("id, nome")
-        .in("id", clienteIds as any)
+        .in("id", clienteIds)
         .eq("organization_id", organizationId);
 
       if (clisError) {
         console.error("usePortalCliente: erro ao buscar clientes:", clisError);
       }
 
-      const nomeMap = new Map<string, string>((clis ?? []).map((c: any) => [c.id, c.nome]));
+      const nomeMap = new Map<string, string>((clis ?? []).map((c) => [c.id, c.nome]));
       const principalMap = new Map<string, boolean>(vincList.map((v) => [v.cliente_id, !!v.principal]));
 
       list = clienteIds.filter((id) => nomeMap.has(id))
@@ -112,7 +112,7 @@ export function usePortalCliente() {
       setClienteNome(found.nome);
       try {
         window.localStorage.setItem(`${STORAGE_KEY}:${scope}`, found.id);
-      } catch {}
+      } catch { /* Selection remains valid in memory if storage is unavailable. */ }
     },
     [clientes, scope]
   );
