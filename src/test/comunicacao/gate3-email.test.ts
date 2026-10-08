@@ -270,7 +270,8 @@ function findLatestGate3Migration(): string {
   const files = readdirSync(dir).filter((f) => f.endsWith(".sql"));
   for (const f of files.sort().reverse()) {
     const body = readFileSync(join(dir, f), "utf8");
-    if (/rpc_admin_replay_communication_dead_letter/.test(body) && /rpc_admin_communication_outbox_metrics/.test(body)) {
+    // Historical Gate 3 definition, not a later containment mentioning its names.
+    if (/CREATE OR REPLACE FUNCTION public\.rpc_fail_communication_delivery_v2\s*\(/.test(body) && /CREATE OR REPLACE FUNCTION public\.rpc_admin_communication_outbox_metrics\s*\(/.test(body)) {
       return body;
     }
   }

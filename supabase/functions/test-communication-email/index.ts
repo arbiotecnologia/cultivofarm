@@ -53,7 +53,7 @@ function buildSmtpCandidateRuntime(
 }
 
 async function auditDiagnostic(
-  sb: ReturnType<typeof createClient<any>>,
+  sb: ReturnType<typeof createClient>,
   actor: string,
   action: "smtp_connection_test" | "smtp_connection_candidate_test" | "smtp_send_test",
   outcome: "success" | "failure" | "ambiguous" | "blocked",
@@ -84,6 +84,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handlePreflight(req);
   if (origin && !isTrustedOrigin(origin)) return json(origin, 403, { ok: false, error: "origin_not_allowed" });
   if (req.method !== "POST") return json(origin, 405, { ok: false, error: "method_not_allowed" });
+  // NOTIF-3: diagnostics must not fetch credentials/open sockets/send mail.
+  const diagnosticContractAvailable = false;
+  if (!diagnosticContractAvailable) return json(origin, 503, { ok: false, error: "NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE" });
   if (!SUPABASE_URL || !SERVICE_KEY) return json(origin, 500, { ok: false, error: "not_configured" });
 
   const auth = req.headers.get("Authorization") ?? "";

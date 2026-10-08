@@ -22,7 +22,8 @@ function findMigration(needle: string): string {
   const files = readdirSync(MIG_DIR).filter((f) => f.endsWith(".sql")).sort();
   for (const f of files.reverse()) {
     const txt = readFileSync(resolve(MIG_DIR, f), "utf8");
-    if (txt.includes(needle)) return txt;
+    // Historical creation contract; current NOTIF-3 ACL is tested separately.
+    if (txt.includes(`CREATE OR REPLACE FUNCTION public.${needle}(`)) return txt;
   }
   throw new Error(`migration com "${needle}" não encontrada`);
 }

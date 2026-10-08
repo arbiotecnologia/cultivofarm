@@ -149,7 +149,7 @@ describe("fase2 health: apenas booleans, sem segredos", () => {
     }
     // Sanitizador de defesa em profundidade contra vazamento de secrets.
     expect(healthSrc).toMatch(/sanitize\s*\(/);
-    expect(healthSrc).toMatch(/administrador/);
+    expect(healthSrc).toMatch(/NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE/);
   });
 });
 

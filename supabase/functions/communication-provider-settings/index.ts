@@ -31,7 +31,7 @@ function jsonWith(origin: string | null, status: number, body: unknown): Respons
   });
 }
 
-type Sb = ReturnType<typeof createClient<any>>;
+type Sb = ReturnType<typeof createClient>;
 
 function isKinghostSmtpiCandidateAvailable(host: string | undefined, port: string | undefined): boolean {
   if (Number(port) !== 465) return false;
@@ -63,6 +63,12 @@ async function authorizePlatformSuperadmin(req: Request, origin: string | null):
     return { ok: false, res: jsonWith(origin, 500, { ok: false, error: "authorization_check_failed" }) };
   }
   if (isSuperadmin !== true) {
+    return { ok: false, res: jsonWith(origin, 403, { ok: false, error: "forbidden" }) };
+  }
+  // A stored role alone does not authorize an inactive account.
+  const { data: profile, error: profileError } = await sb.from("profiles")
+    .select("user_id,ativo").eq("user_id", uid).maybeSingle();
+  if (profileError || profile?.user_id !== uid || profile?.ativo !== true) {
     return { ok: false, res: jsonWith(origin, 403, { ok: false, error: "forbidden" }) };
   }
   return { ok: true, sb, userId: uid };
