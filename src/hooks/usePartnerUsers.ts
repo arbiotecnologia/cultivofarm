@@ -45,18 +45,12 @@ function usePartnerReadScope(partnerId?: string | null) {
     };
     if (!ready || !partnerId) throw new Error("partner_context_not_ready");
     const { data: partner, error } = await supabase.from("partner_accounts")
-      .select("client_id").eq("id", partnerId).abortSignal(signal).maybeSingle();
+      .select("commercial_owner_organization_id").eq("id", partnerId).abortSignal(signal).maybeSingle();
     check();
-    if (error || !partner?.client_id) throw new Error("partner_ownership_unavailable");
-    const { data: owner, error: ownerError } = await supabase.from("clientes")
-      .select("organization_id").eq("id", partner.client_id).abortSignal(signal).maybeSingle();
-    check();
-    // Generated types omit this live column; narrow the response, never regenerate
-    // types from another binding or trust a cast as ownership authorization.
-    const rawOwner: unknown = owner;
-    const ownerOrg = rawOwner && typeof rawOwner === "object" && "organization_id" in rawOwner
-      ? rawOwner.organization_id : null;
-    if (ownerError || typeof ownerOrg !== "string" || !ownerOrg || ownerOrg !== profile?.organization_id)
+    const rawPartner: unknown = partner;
+    const owner = rawPartner && typeof rawPartner === "object" && "commercial_owner_organization_id" in rawPartner
+      ? rawPartner.commercial_owner_organization_id : null;
+    if (error || typeof owner !== "string" || owner !== profile?.organization_id)
       throw new Error("partner_ownership_unavailable");
     return check;
   };
@@ -105,7 +99,7 @@ export function useAvailablePartnerUsers(partnerId?: string | null) {
       const linkedSet = new Set((linked.data ?? []).map(l => l.user_id));
       return (profiles.data ?? []).filter(p => !linkedSet.has(p.user_id)).map(p => ({
         ...p, roles: (roles.data ?? []).filter(r => r.user_id === p.user_id).map(r => r.role),
-      })).filter(p => p.roles.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico"));
+      })).filter(p => p.roles.length === 1 && (p.roles[0] === "parceiro_b2b" || p.roles[0] === "parceiro_b2b_tecnico"));
     },
   });
   return { ...result, data: context.ready ? result.data : undefined, ready: context.ready, scope: context.scope };

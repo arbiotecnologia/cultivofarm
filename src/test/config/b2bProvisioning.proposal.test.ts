@@ -11,22 +11,22 @@ type Review = {
 };
 function readyForReview(r: Review): boolean {
   return r.actorActive && r.owner === r.actorTenant && r.partnerActive
-    && r.userTenant === r.expectedUserTenant && r.userActive
+    && r.userTenant === r.actorTenant && r.userTenant === r.expectedUserTenant && r.userActive
     && r.roles.length === 1 && ["parceiro_b2b", "parceiro_b2b_tecnico"].includes(r.roles[0])
     && r.linkCount === 0 && r.freshSession && r.entitled && !r.cancelled
     && (!r.partialFailure || r.compensated);
 }
 const candidate: Review = {
   actorTenant: "A", owner: "A", actorActive: true, partnerActive: true,
-  userTenant: "P", expectedUserTenant: "P", userActive: true,
+  userTenant: "A", expectedUserTenant: "A", userActive: true,
   roles: ["parceiro_b2b"], linkCount: 0, freshSession: true,
   entitled: true, cancelled: false, compensated: false, partialFailure: false,
 };
 describe("B2B proposed contract — review-only, no authorization or remote effects", () => {
-  it("separates commercial owner A from explicitly reviewed candidate identity P", () => {
-    expect(candidate.actorTenant).not.toBe(candidate.userTenant);
+  it("commercial client identity uses owner tenant, not independent subscription", () => {
+    expect(candidate.actorTenant).toBe(candidate.userTenant);
     expect(readyForReview(candidate)).toBe(true);
-    expect(readyForReview({...candidate, userTenant: "A"})).toBe(false);
+    expect(readyForReview({...candidate, userTenant: "P", expectedUserTenant: "P"})).toBe(false);
   });
   it.each<[string, Partial<Review>]>([
     ["foreign partner", {owner: "B"}], ["orphan partner", {owner: null}],

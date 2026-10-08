@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({ auth: { user: { id: "A" } as { id: string } | 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => {
  state.calls.push(table);
- const value = () => ({ error: state.failed && table === "user_roles" ? { message: "fail" } : null, data: table === "partner_accounts" ? { client_id: "C" } : table === "clientes" ? { organization_id: state.orphan ? null : state.auth.profile.organization_id } : table === "profiles" ? [{ user_id: "U", nome: "Own", email: "local" }] : table === "partner_users" ? [] : [{ user_id: "U", role: "parceiro_b2b" }] });
+ const value = () => ({ error: state.failed && table === "user_roles" ? { message: "fail" } : null, data: table === "partner_accounts" ? { commercial_owner_organization_id: state.orphan ? null : state.auth.profile.organization_id } : table === "profiles" ? [{ user_id: "U", nome: "Own", email: "local" }] : table === "partner_users" ? [] : [{ user_id: "U", role: "parceiro_b2b" }] });
  const chain: Record<string, unknown> = {};
  for (const method of ["select", "eq", "in", "order", "abortSignal", "maybeSingle"]) chain[method] = () => chain;
  chain.then = (resolve: (v: unknown) => void) => state.pending ? state.resolvers.push(resolve) : resolve(value());
@@ -21,7 +21,7 @@ function setup() {
  return { h, client };
 }
 describe("partner users real QueryClient", () => {
- it("returns own eligible users after partner ownership proof", async () => { const { h, client } = setup(); await waitFor(() => expect(h.result.current.available.data?.[0].user_id).toBe("U")); expect(state.calls).toContain("clientes"); h.unmount(); client.clear(); });
+ it("uses commercial owner without optional client", async () => { const { h, client } = setup(); await waitFor(() => expect(h.result.current.available.data?.[0].user_id).toBe("U")); expect(state.calls).not.toContain("clientes"); h.unmount(); client.clear(); });
  for (const change of ["identity", "tenant", "logout", "inactive", "mismatch", "loading", "roles", "provisional", "noorg"] as const) {
  it(`clears both caches immediately: ${change}`, async () => {
   const { h, client } = setup(); await waitFor(() => expect(h.result.current.available.data).toHaveLength(1)); state.pending = true;
@@ -43,7 +43,7 @@ describe("partner users real QueryClient", () => {
  it("fences late responses and A-B-A", async () => {
  state.pending = true; const { h, client } = setup(); await waitFor(() => expect(state.resolvers.length).toBeGreaterThan(0)); const old = [...state.resolvers];
  state.auth.profile.organization_id = "OB"; h.rerender(); state.auth.profile.organization_id = "OA"; h.rerender();
- await act(async () => old.forEach(resolve => resolve({ data: { client_id: "C" }, error: null })));
+ await act(async () => old.forEach(resolve => resolve({ data: { commercial_owner_organization_id: "OA" }, error: null })));
  expect(h.result.current.available.data).toBeUndefined(); expect(state.calls).not.toContain("profiles"); h.unmount(); client.clear();
  });
  it("closed mutations never call Supabase", async () => { const { h, client } = setup(); await waitFor(() => expect(h.result.current.available.isSuccess).toBe(true)); const before = state.calls.length;
