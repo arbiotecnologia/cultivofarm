@@ -1,3 +1,11 @@
+## FISCAL NATIVO — FISC-0–6 — diretriz 2026-10-08 19:29 UTC
+- [ ] FISC-0: inventário real/paridade/matriz e fontes oficiais 2026; preservar P2–P6 e conter transporte.
+- [ ] FISC-1: contrato tenant/estabelecimento/settings/roles/ambiente/séries/certificados; avançar somente após prova server-side.
+- [ ] FISC-2/3: NF-e55 e NFS-e nacional/municipal em simulação ou homologação oficial após gates; nunca produção.
+- [ ] FISC-4: CT-e57/MDF-e58 somente se elegibilidade/atividade/habilitação e contrato comprovados.
+- [ ] FISC-5/6: contingência/eventos/artefatos privados/retry e E2E tenant×role; distinguir mock, SQL, JWT/browser e autorização oficial.
+- [ ] Documentar arquitetura reutilizada, gaps, cronograma por gates e rollback; sem PFX/senha/Auth/convites/cobranças/publicação/documentos reais.
+
 ## B2B-FISCAL — continuidade P2B–P6 autorizada — 2026-10-08 19:15 UTC
 - [x] P2B/P2C: catálogo vivo revisado; migrations oficiais192025/192236/192601 protegem snapshots novos/imutabilidade e mantêm Q-01/revisão/planejamento/produção/recebível fail-closed. BF01–03/P1A/P2A/legados preservados, sem mandato A/P.
 - [x] P3/P4: produção/estoque/entrega inventariados e regressões locais executadas; origem ainda não propagada até OS/entrega, nenhum elo liberado.
