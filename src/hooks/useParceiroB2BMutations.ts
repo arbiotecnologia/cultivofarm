@@ -67,11 +67,12 @@ export function useCreateParceiroB2B() {
   const qc = useQueryClient();
   const scope = useCommercialRegistrationScope();
   return useMutation({
+    onMutate: () => ({ current: scope.capture(), scope: scope.scope }),
     mutationFn: async (input: ParceiroB2BInput) => {
       if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
       const current = scope.capture();
       const { data: userData } = await (supabase as any).auth.getUser();
-      if (!current() || !userData.user?.id) throw { code: "42501" };
+      if (!current() || !userData.user?.id || userData.user.id !== scope.actorId) throw { code: "42501" };
       const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .insert({ ...input, codigo: null, created_by: userData.user.id } as any)
@@ -81,11 +82,12 @@ export function useCreateParceiroB2B() {
       if (!current()) throw { code: "42501" };
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
+    onSuccess: (_data, _input, context) => {
+      if (!context?.current()) return;
+      qc.invalidateQueries({ queryKey: ["parceiros-b2b", context.scope] });
       toast.success("Parceiro criado com sucesso");
     },
-    onError: (e: unknown) => toast.error(commercialRegistrationError(e)),
+    onError: (e: unknown, _input, context) => { if (context?.current()) toast.error(commercialRegistrationError(e)); },
   });
 }
 
@@ -93,6 +95,7 @@ export function useUpdateParceiroB2B() {
   const qc = useQueryClient();
   const scope = useCommercialRegistrationScope();
   return useMutation({
+    onMutate: () => ({ current: scope.capture(), scope: scope.scope }),
     mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
       if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
       const current = scope.capture();
@@ -106,11 +109,12 @@ export function useUpdateParceiroB2B() {
       if (!current()) throw { code: "42501" };
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
+    onSuccess: (_data, _input, context) => {
+      if (!context?.current()) return;
+      qc.invalidateQueries({ queryKey: ["parceiros-b2b", context.scope] });
       toast.success("Parceiro atualizado");
     },
-    onError: (e: unknown) => toast.error(commercialRegistrationError(e)),
+    onError: (e: unknown, _input, context) => { if (context?.current()) toast.error(commercialRegistrationError(e)); },
   });
 }
 
@@ -118,6 +122,7 @@ export function useSoftDeleteParceiroB2B() {
   const qc = useQueryClient();
   const scope = useCommercialRegistrationScope();
   return useMutation({
+    onMutate: () => ({ current: scope.capture(), scope: scope.scope }),
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
       if (!scope.canManagePartners) throw { code: "42501" };
       const current = scope.capture();
@@ -134,10 +139,11 @@ export function useSoftDeleteParceiroB2B() {
       if (!current()) throw { code: "42501" };
       return data;
     },
-    onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
+    onSuccess: (_d, vars, context) => {
+      if (!context?.current()) return;
+      qc.invalidateQueries({ queryKey: ["parceiros-b2b", context.scope] });
       toast.success(vars.ativo ? "Parceiro reativado" : "Parceiro inativado");
     },
-    onError: (e: unknown) => toast.error(commercialRegistrationError(e)),
+    onError: (e: unknown, _input, context) => { if (context?.current()) toast.error(commercialRegistrationError(e)); },
   });
 }
