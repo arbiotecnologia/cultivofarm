@@ -115,7 +115,8 @@
     "before_structural": "16remanescentes DEFINER/is_executivo-only sem ownership; não executar mutadoras legadas",
     "dynamic_before_only": [
       "timeline",
-      "gargalos"
+      "gargalos",
+      "cliente_detalhe (AR Bio; SQL claims simulados, somente booleanos)"
     ],
     "after_acl": {
       "PUBLIC": false,
@@ -175,5 +176,37 @@
     "reference_files_are_instructions": false,
     "runtime_or_remote_changes": false,
     "decision": "NO-GO integral; mesma auditoria/sem nova fase"
+  },
+  "client_detail_addendum": {
+    "reported_at": "2026-10-08T20:50:00Z",
+    "provenance": "Prova adicional relatada nesta conversa; não reexecutada pelo Lovable",
+    "external_reference": "executive-client-readonly-before.json",
+    "raw_file_available": false,
+    "temporal_limit": "Relatada como before; recebida após contenção. Não confirma nova exposição pós-fix ou paridade temporal de fontes.",
+    "actor": "administrador AR Bio",
+    "claims": "sub/role/iat atuais SIMULADOS; authenticated READ ONLY ROLLBACK",
+    "clients_tested": 2,
+    "organization_id": "NULL para ambos",
+    "each_result": {
+      "direct_SELECT_count": 0,
+      "RPC_cliente": true,
+      "RPC_documento_field": true
+    },
+    "PII_values_extracted": false,
+    "mutations_executed": false,
+    "classification": "P1 dinâmico legado sem tenant; ownership alheio não comprovado",
+    "other_blocked_channels_structural_only": 15,
+    "after_existing_evidence": {
+      "migration": "20261008204534",
+      "authenticated_EXECUTE": false,
+      "body": "42501 EXECUTIVO_SOURCE_UNAVAILABLE antes de fontes/audit",
+      "forged_ID": "incluído nas96negativas A/B×3claims, não nova rodada",
+      "privileged_body": "incluído nas16negativas anteriores, não nova rodada",
+      "same_two_real_IDs_retested": false
+    },
+    "runtime_or_remote_changes": false,
+    "fixtures_created": false,
+    "JWT_browser_after": "UNVERIFIED",
+    "decision": "NO-GO integral; mesma auditoria/foco AR Bio; rollback nunca restaura vazamento"
   }
 }
