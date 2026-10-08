@@ -1,8 +1,8 @@
 ## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (estado atual)
 
 - [x] Remover somente fallback que inventava Consultor Técnico em contexto technical sem papel técnico; preservar papéis reais/multipapel/B2B/produtor e entrega 943710ce.
-- [ ] Validar portalDisplayLabel/cabecalhoContexto/MeuPlano, lint alterados, scanners/diff-check/build; documentar evidência recebida, rollback e ausência de publicação.
-- [ ] Encerrar correção pequena; NO-GO integral mantido, sem nova fase/guards/RLS/banco/papéis/acesso mobile.
+- [x] Testes próprios 29/29 PASS em 4 arquivos (rótulo 9/cabeçalho 7/MeuPlano 13); lint alterados, scanners/diff-check PASS; build automático OK 02:12:39 UTC. Relatório com evidência recebida, rollback mínimo não executado e ausência de publicação.
+- [x] Encerrar correção pequena; NO-GO integral mantido, sem nova fase/guards/RLS/banco/papéis/acesso mobile. Sem browser autenticado próprio pós-correção.
 
 ## Meu Plano — P2 de exibição — 2026-10-08 (histórico)
 
