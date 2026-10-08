@@ -134,6 +134,8 @@ SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_functio
         if channels:
             sql += (ROOT / "scripts/tests/b2b-latent-channels-local.sql").read_text()
             sql += (ROOT / "supabase/migrations/20260702170704_ba93e0c6-98f8-4598-b4d3-3fcd52182f3b.sql").read_text()
+            message_source = (ROOT / "supabase/migrations/20260904130941_h7n_p1_rpc_guards.sql").read_text()
+            sql += message_source.split("CREATE OR REPLACE FUNCTION public.rpc_message_set_status", 1)[1].split("CREATE OR REPLACE FUNCTION public.rpc_partner_message_counters", 1)[0].join(["CREATE OR REPLACE FUNCTION public.rpc_message_set_status", ""])
             sql += (ROOT / "scripts/tests/b2b-latent-channels-baseline.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-latent-channel-containment.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-latent-channels-assertions.sql").read_text()
