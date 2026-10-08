@@ -15,11 +15,19 @@ type Scenario = {
   unexpected?: boolean; compensationFailure?: "returned" | "thrown";
   providerFailure?: string;
   preflightFailure?: boolean; preflightOrg?: string;
+  b2bOpen?: boolean; claimFailure?: boolean; claimStatus?: string; acquired?: boolean;
+  finishFailure?: boolean; finishThrown?: boolean; uncertainCompleted?: boolean;
+  compensationRpcFailure?: boolean; compensationFinishFailure?: boolean;
+  authLookupMismatch?: boolean;
 };
 
 async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> = {}) {
   const sentinel = "private-test-sentinel";
-  const rpc = vi.fn(async (name: string, args: Record<string, string>) => name === "b2b_provisioning_preflight" ? ({
+  const rpc = vi.fn(async (name: string, args: Record<string, string>) => name === "b2b_claim_provisioning" ? ({
+    data: { claim_id: "receipt", fence: "fence", user_id: "created-user", organization_id: "actor-org",
+      status: scenario.claimStatus ?? "claimed", lease_valid: true, acquired: scenario.acquired !== false },
+    error: scenario.claimFailure ? new Error(sentinel) : null,
+  }) : name === "b2b_provisioning_preflight" ? ({
     data: { organization_id: scenario.preflightOrg ?? "actor-org", partner_id: args.p_partner, role: args.p_role, papel: args.p_papel, enabled: true },
     error: scenario.preflightFailure ? new Error(sentinel) : null,
   }) : ({
@@ -42,7 +50,20 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
     return { data: scenario.profileFailure ? [] : [{ user_id: "created-user" }], error: null };
   } }) }));
   const insert = vi.fn(async () => ({ error: scenario.roleFailure ? new Error(sentinel) : null }));
-  const elevatedRpc = vi.fn(() => { throw new Error("must-not-authorize-with-service-role"); });
+  const elevatedRpc = vi.fn(async (name: string) => {
+    if (name === "b2b_finish_provisioning") {
+      if (scenario.finishThrown) throw new Error(sentinel);
+      return { data: { success: !scenario.finishFailure }, error: scenario.finishFailure ? new Error(sentinel) : null };
+    }
+    if (name === "b2b_prepare_provisioning_compensation") return {
+      data: scenario.uncertainCompleted ? "completed" : "compensating",
+      error: scenario.compensationRpcFailure ? new Error(sentinel) : null,
+    };
+    if (name === "b2b_complete_provisioning_compensation") return {
+      data: !scenario.compensationFinishFailure, error: scenario.compensationFinishFailure ? new Error(sentinel) : null,
+    };
+    throw new Error("must-not-authorize-with-service-role");
+  });
   const scoped = {
     rpc,
     auth: { getClaims: vi.fn(async () => ({
@@ -51,7 +72,10 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
     })) },
   };
   const elevated = {
-    rpc: elevatedRpc, auth: { admin: { createUser, deleteUser } },
+    rpc: elevatedRpc, auth: { admin: { createUser, deleteUser, getUserById: vi.fn(async () => ({
+      data: { user: { id: scenario.authLookupMismatch ? "foreign" : "created-user", email: "test@example.invalid",
+        user_metadata: { b2b_provisioning_receipt: "receipt" } } }, error: null,
+    })) } },
     from: (table: string) => table === "profiles" ? {
       select: () => ({ eq: () => ({ maybeSingle: async () => ({
         data: { organization_id: "actor-org", ativo: true }, error: null,
@@ -62,7 +86,9 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
   let handler: ((req: Request) => Promise<Response>) | undefined;
   const deno = { env: { get: () => "isolated-value" }, serve: (fn: typeof handler) => { handler = fn; } };
   const errorLog = vi.fn();
-  new Function("Deno", "createClient", "console", javascript)(deno, createClient, { error: errorLog });
+  new Function("Deno", "createClient", "console", scenario.b2bOpen
+    ? javascript.replace("const B2B_PROVISIONING_CHANNELS_REVIEWED = false", "const B2B_PROVISIONING_CHANNELS_REVIEWED = true")
+    : javascript)(deno, createClient, { error: errorLog });
   if (!handler) throw new Error("handler_not_registered");
   const token = scenario.oldJwt ? "mock-old-jwt" : "mock-valid-jwt";
   const response = await handler(new Request("https://isolated.invalid", {
@@ -72,9 +98,9 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
   const body = await response.json();
   expect(JSON.stringify(body)).not.toContain(sentinel);
   expect(JSON.stringify(errorLog.mock.calls)).not.toContain(sentinel);
-  expect(elevatedRpc).not.toHaveBeenCalled();
+  expect(elevatedRpc.mock.calls.every(([name]) => name.startsWith("b2b_"))).toBe(true);
   expect(createClient.mock.calls[0]?.[2]).toEqual({ global: { headers: { Authorization: `Bearer ${token}` } } });
-  return { response, body, rpc, createUser, deleteUser, update, insert, errorLog };
+  return { response, body, rpc, elevatedRpc, createUser, deleteUser, update, insert, errorLog };
 }
 
 describe("create-user — handler real, SDK e Auth isolados", () => {
@@ -190,5 +216,58 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
     expect(r.response.status).toBe(500);
     expect(r.body).toEqual({ error: "user_creation_failed" });
     expect(r.errorLog).toHaveBeenCalledWith("create_user_compensation_failed");
+  });
+  const b2bPayload = { role: "parceiro_b2b", partner_id: partnerId, password: undefined,
+    idempotency_key: "55555555-5555-4555-8555-555555555555" };
+  it("executes claim → reserved Auth without password/send → transactional finish in an isolated open gate", async () => {
+    const r = await invoke({ b2bOpen: true }, b2bPayload);
+    expect(r.response.status).toBe(200);
+    expect(r.createUser).toHaveBeenCalledExactlyOnceWith({ id: "created-user", email: "test@example.invalid",
+      email_confirm: false, user_metadata: { nome: "Teste", b2b_provisioning_receipt: "receipt" } });
+    expect(r.elevatedRpc).toHaveBeenCalledExactlyOnceWith("b2b_finish_provisioning", { p_claim: "receipt", p_fence: "fence", p_user: "created-user" });
+    expect(r.update).not.toHaveBeenCalled(); expect(r.insert).not.toHaveBeenCalled();
+    expect(r.deleteUser).not.toHaveBeenCalled();
+    expect(r.body).toEqual({ success: true, user_id: "created-user", first_access_pending: true });
+  });
+  it.each([{ claimFailure: true }, { acquired: false }, { claimStatus: "compensating" }])("claim conflict/busy prevents Auth: %j", async scenario => {
+    const r = await invoke({ b2bOpen: true, ...scenario }, b2bPayload);
+    expect(r.response.status).toBe(409); expect(r.createUser).not.toHaveBeenCalled();
+  });
+  it("completed idempotent replay never creates Auth again", async () => {
+    const r = await invoke({ b2bOpen: true, claimStatus: "completed" }, b2bPayload);
+    expect(r.response.status).toBe(200); expect(r.createUser).not.toHaveBeenCalled();
+    expect(r.body.replay).toBe(true);
+  });
+  it.each([{ finishFailure: true }, { finishThrown: true }])("finish failure compensates only after fenced reconciliation: %j", async scenario => {
+    const r = await invoke({ b2bOpen: true, ...scenario }, b2bPayload);
+    expect(r.response.status).toBe(409); expect(r.deleteUser).toHaveBeenCalledExactlyOnceWith("created-user");
+    expect(r.elevatedRpc.mock.calls.map(([name]) => name)).toEqual([
+      "b2b_finish_provisioning", "b2b_prepare_provisioning_compensation", "b2b_complete_provisioning_compensation",
+    ]);
+  });
+  it("lost finish response with completed receipt must not delete committed identity", async () => {
+    const r = await invoke({ b2bOpen: true, finishFailure: true, uncertainCompleted: true }, b2bPayload);
+    expect(r.response.status).toBe(200); expect(r.deleteUser).not.toHaveBeenCalled();
+  });
+  it("uncertain compensation state never deletes Auth", async () => {
+    const r = await invoke({ b2bOpen: true, finishFailure: true, compensationRpcFailure: true }, b2bPayload);
+    expect(r.response.status).toBe(503); expect(r.deleteUser).not.toHaveBeenCalled();
+  });
+  it.each([{ compensationFailure: "returned" as const }, { compensationFinishFailure: true }])("failed cleanup remains pending: %j", async scenario => {
+    const r = await invoke({ b2bOpen: true, finishFailure: true, ...scenario }, b2bPayload);
+    expect(r.response.status).toBe(503);
+  });
+  it("never adopts or deletes unrelated Auth on create conflict", async () => {
+    const r = await invoke({ b2bOpen: true, providerFailure: "email_exists", authLookupMismatch: true }, b2bPayload);
+    expect(r.response.status).toBe(409); expect(r.deleteUser).not.toHaveBeenCalled();
+    expect(r.elevatedRpc).not.toHaveBeenCalled();
+  });
+  it("converges on reserved identity after uncertain create response", async () => {
+    const r = await invoke({ b2bOpen: true, providerFailure: "user_already_exists" }, b2bPayload);
+    expect(r.response.status).toBe(200); expect(r.deleteUser).not.toHaveBeenCalled();
+  });
+  it.each([{ password: "operator-password1" }, { role: "parceiro_b2b_tecnico" }, { idempotency_key: null }])("denies operator password/technical role/missing key: %j", async payload => {
+    const r = await invoke({ b2bOpen: true }, { ...b2bPayload, ...payload });
+    expect(r.response.status).toBe(payload.role ? 403 : 400); expect(r.createUser).not.toHaveBeenCalled();
   });
 });

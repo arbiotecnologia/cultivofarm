@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Code-reviewed activation gate, not request/env/preflight flags. Keep closed
+// until the complete same-owner channel audit is approved. Tests open locally.
+const B2B_PROVISIONING_CHANNELS_REVIEWED = false;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -90,7 +94,7 @@ Deno.serve(async (req) => {
     if (rolesArr.some((r) => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico")) {
       const dedicatedRole = rolesArr[0];
       const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
-      if (rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
+      if (dedicatedRole !== "parceiro_b2b" || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
         (role && role !== dedicatedRole) || typeof partner_id !== "string" ||
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(partner_id) ||
         (partner_papel != null && partner_papel !== expectedPapel) ||
@@ -108,11 +112,71 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // This reviewed slice has no create/claim/finish capability. A remote flag
-      // cannot open Auth; same-tenant general-channel containment is mandatory.
-      return new Response(JSON.stringify({ error: "b2b_same_tenant_channels_unverified" }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const reply = (value: unknown, status: number) => new Response(JSON.stringify(value), {
+        status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
       });
+      if (!B2B_PROVISIONING_CHANNELS_REVIEWED) {
+        return reply({ error: "b2b_same_tenant_channels_unverified" }, 503);
+      }
+      // Operator never supplies/receives a password, link or token. Auth sends
+      // nothing via createUser; the holder's existing recovery flow is separate.
+      const key = body.idempotency_key;
+      if (password != null || typeof email !== "string" || email.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || typeof nome !== "string" ||
+        !nome.trim() || nome.trim().length > 200 || typeof key !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key)) {
+        return reply({ error: "b2b_provisioning_invalid" }, 400);
+      }
+      const { data: claim, error: claimError } = await anonClient.rpc("b2b_claim_provisioning", {
+        p_partner: partner_id, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
+      });
+      if (claimError || !claim?.claim_id || !claim?.fence || !claim?.user_id ||
+        claim.organization_id !== actorOrganizationId) return reply({ error: "b2b_provisioning_conflict" }, 409);
+      const receiptArgs = { p_claim: claim.claim_id, p_fence: claim.fence, p_user: claim.user_id };
+      if (claim.status === "completed") {
+        const { data, error } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
+        return !error && data?.success === true ? reply({ success: true, user_id: claim.user_id, replay: true }, 200)
+          : reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+      }
+      if (claim.status !== "claimed" || claim.lease_valid !== true || claim.acquired !== true) {
+        return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+      }
+      const reconcileOrCompensate = async () => {
+        const { data: state, error } = await adminClient.rpc("b2b_prepare_provisioning_compensation", receiptArgs);
+        if (error || !["completed", "compensating", "aborted"].includes(state)) {
+          return reply({ error: "b2b_provisioning_reconciliation_required" }, 503);
+        }
+        if (state === "completed") return reply({ success: true, user_id: claim.user_id, replay: true }, 200);
+        if (state === "aborted") return reply({ error: "b2b_provisioning_aborted" }, 409);
+        const { error: deletionError } = await adminClient.auth.admin.deleteUser(claim.user_id);
+        if (deletionError) return reply({ error: "b2b_provisioning_compensation_pending" }, 503);
+        const { data: done, error: doneError } = await adminClient.rpc("b2b_complete_provisioning_compensation", receiptArgs);
+        return !doneError && done === true ? reply({ error: "b2b_provisioning_aborted" }, 409)
+          : reply({ error: "b2b_provisioning_compensation_pending" }, 503);
+      };
+      try {
+        // Reserved ID makes concurrent/retried creates converge, never email-based
+        // adoption of an existing user. Metadata is provenance, not authorization.
+        const { data: created, error: authError } = await adminClient.auth.admin.createUser({
+          id: claim.user_id, email: email.trim().toLowerCase(), email_confirm: false,
+          user_metadata: { nome: nome.trim(), b2b_provisioning_receipt: claim.claim_id },
+        });
+        if (authError || created?.user?.id !== claim.user_id) {
+          const { data: existing, error: lookupError } = await adminClient.auth.admin.getUserById(claim.user_id);
+          if (lookupError || existing?.user?.id !== claim.user_id ||
+            existing.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
+            existing.user.user_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
+            // Never delete/adopt an unrelated identity; receipt stays fenced.
+            return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+          }
+        }
+        const { data: finished, error: finishError } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
+        if (finishError || finished?.success !== true) return await reconcileOrCompensate();
+        return reply({ success: true, user_id: claim.user_id, first_access_pending: true }, 200);
+      } catch {
+        try { return await reconcileOrCompensate(); }
+        catch { return reply({ error: "b2b_provisioning_reconciliation_required" }, 503); }
+      }
     }
 
     if (
