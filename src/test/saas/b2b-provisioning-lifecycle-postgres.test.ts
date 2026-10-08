@@ -16,5 +16,6 @@ describe("B2B provisioning candidate — isolated PostgreSQL and simulated Auth"
     expect(output).toContain("PASS two connections claim same reserved ID exactly one acquired");
     expect(output).toContain("PASS two connections profile gate versus finish no deadlock");
     expect(output).toContain("PASS two connections finish versus compensation preserves completed");
+    expect(output).toContain("PASS two connections real invitation producer one row lease conflict");
   }, 60_000);
 });
