@@ -46,7 +46,6 @@ export function getPortalDisplayLabel({
     return "Aplicador";
   }
   if (primaryRole === "cliente_produtor") return "Produtor";
-  if (activeCtx === "technical") return ROLE_LABELS.consultor_tecnico;
   return primaryRole ? ROLE_LABELS[primaryRole] || primaryRole : "—";
 }
 

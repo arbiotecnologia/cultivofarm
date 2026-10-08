@@ -1,4 +1,10 @@
-## Meu Plano — P2 de exibição — 2026-10-08 (estado atual)
+## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (estado atual)
+
+- [x] Remover somente fallback que inventava Consultor Técnico em contexto technical sem papel técnico; preservar papéis reais/multipapel/B2B/produtor e entrega 943710ce.
+- [ ] Validar portalDisplayLabel/cabecalhoContexto/MeuPlano, lint alterados, scanners/diff-check/build; documentar evidência recebida, rollback e ausência de publicação.
+- [ ] Encerrar correção pequena; NO-GO integral mantido, sem nova fase/guards/RLS/banco/papéis/acesso mobile.
+
+## Meu Plano — P2 de exibição — 2026-10-08 (histórico)
 
 - [x] Corrigir somente EstadoConsulta incondicional; preservar detalhes/loading/erro/retry/ausência real, sem banco/Auth/permissões/plano/preço/publicação.
 - [x] Suíte SaaS própria 512/512 PASS (47 arquivos), incluindo 5 renderizações; lint dois arquivos, scanners/diff-check PASS; build automático OK 02:04:58 UTC. Typecheck tsconfig.app.json NOT RUN (manual vedado pelo harness).
