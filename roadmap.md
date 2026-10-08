@@ -1,6 +1,6 @@
 ## Inscrição estadual — ajuste focal de cadastro — 2026-10-08
 - [x] Remover máscara e bloqueio por UF dos cadastros cliente/parceiro; manter limites sintáticos, normalização e aviso não bloqueante, sem alterar emissão fiscal.
-- [ ] Executar testes focais e conferir build automático; sem cadastro real, banco ou publicação. Checkpoints anteriores preservados.
+- [x] Testes cadastro + regressão fiscal288/288 em2 arquivos; scanners/diff-check PASS e build automático OK15:51:49. Typecheck separado não executado (harness); sem cadastro real, banco ou publicação. Checkpoints anteriores preservados.
 
 ## CADASTRO-1 — criação de usuários/B2B — 2026-10-08
 - [x] Complemento senha: contrato server-side alinhado à regra existente8..128/letra/número; reprodução6FAIL23PASS→29PASS no handler isolado, suíte cadastro/recuperação65/65. Lint/scanners/diff-check PASS; harness build OK15:16:33. Sem contas/envios/migration/publicação, MULTIPORTAL-1 preservado.
