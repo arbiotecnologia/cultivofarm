@@ -28,7 +28,7 @@ describe("own orders — mocked transport, real identity/cache fences", () => {
   it.each([payload(B), payload(A, { total: 50 }), payload(A, { commercial_notes: "PRIVATE" })])("rejects sibling or unreviewed fields", async data => {
     state.rpc.mockResolvedValue({ data, error: null }); const { h, clean } = setup(); await waitFor(() => expect(h.result.current.isError).toBe(true)); expect(h.result.current.data).toBeUndefined(); clean();
   });
-  it.each([["parceiro_b2b_tecnico"], ["administrador"], ["parceiro_b2b", "gestor"]])("does not call for role %j", roles => { state.auth.roles = roles; const { h, clean } = setup(); expect(state.rpc).not.toHaveBeenCalled(); expect(h.result.current.ready).toBe(false); clean(); });
+  it.each([{ roles: ["parceiro_b2b_tecnico"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "gestor"] }])("does not call for role %j", ({ roles }) => { state.auth.roles = roles; const { h, clean } = setup(); expect(state.rpc).not.toHaveBeenCalled(); expect(h.result.current.ready).toBe(false); clean(); });
   it("hides cache immediately on logout", async () => { const { h, clean } = setup(); await waitFor(() => expect(h.result.current.data).toHaveLength(1)); state.auth.user = null; h.rerender({ id: A }); expect(h.result.current.data).toBeUndefined(); clean(); });
   it("fences late response after identity change", async () => {
     let resolve: ((value: unknown) => void) | undefined;

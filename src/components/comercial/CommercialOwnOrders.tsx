@@ -8,6 +8,6 @@ export function CommercialOwnOrders({ partnerId }: { partnerId: string }) {
     {orders.isLoading ? <p role="status" className="text-muted-foreground">Carregando pedidos...</p>
       : orders.isError ? <div role="alert" className="space-y-2"><p>Pedidos indisponíveis no momento.</p><Button variant="outline" onClick={() => { void orders.refetch(); }}>Tentar novamente</Button></div>
       : !orders.data?.length ? <p className="text-muted-foreground">Nenhum pedido encontrado.</p>
-      : <ul className="divide-y divide-border">{orders.data.map(order => <li key={order.id} className="flex flex-wrap justify-between gap-2 py-3"><span className="font-medium">{order.numero}</span><span className="text-muted-foreground">{order.status.replaceAll("_", " ")}</span><time className="text-sm text-muted-foreground" dateTime={order.created_at}>{new Date(order.created_at).toLocaleDateString("pt-BR")}</time></li>)}</ul>}
+      : <ul className="divide-y divide-border">{orders.data.map(order => <li key={order.id} className="flex flex-wrap justify-between gap-2 py-3"><span className="font-medium">{order.numero}</span><span className="text-muted-foreground">{order.status.replace(/_/g, " ")}</span><time className="text-sm text-muted-foreground" dateTime={order.created_at}>{new Date(order.created_at).toLocaleDateString("pt-BR")}</time></li>)}</ul>}
   </section>;
 }
