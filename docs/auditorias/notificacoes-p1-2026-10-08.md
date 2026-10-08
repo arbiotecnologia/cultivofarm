@@ -133,3 +133,73 @@ Alterações funcionais concluídas e revisadas no HEAD `e2a8d80e`, conforme inf
 **Matriz focal atualizada:** hook/UI push contenção PASS comportamental local; worker supressão/URL PASS em execução JavaScript real via VM, não browser instalado; cache/sessão/late promises/cleanup PASS com React Query real e servidor/auth mockados. APIJWT/browser/Realtime real/concorrência/Storage/portal com vínculos reais UNVERIFIED. Nenhum novo transporte ou canal global implementado. **PASS focal / NO-GO integral**, sem publicação/envios e sem retomada de produtores sem prova.
 
 **Rollback seguro:** preservar indisponibilidade explícita, supressão de worker e exigências de sessão; não restaurar convite/registro automático/fallback texto/URL arbitrária nem remover bloqueios banco/Edges. Defeito futuro UI pode retirar só interface de desativação local mantendo ativação negada; rollback de hooks deve reter identidade/tenant/papel/fencing. Não excluir dados/subscrições de terceiros nem unregister de outro worker. Nenhum rollback executado. NOTIF-2 concluída localmente; nenhuma fase seguinte iniciada.
+
+### NOTIF-3 — contenção P1 Comunicação global — 2026-10-08
+
+**Escopo/decisão:** baseline próprio `a7add64e197cd58939ed49f570f78a8ddcc3a0df`; preservar NOTIF-2, estoque, D52 e todos os bloqueios externos. **PASS focal contenção SQL e handlers locais / NO-GO operacional/integral**. Evidência independente inicial Codex: FSF leu audit/event criados temporariamente com actor/created_by ARBio e health global; rollback `COMMUNICATION_GLOBAL_READ_ROLLBACK`. Identidade de autoria não foi convertida em empresa. Não houve consulta de secrets, envio, alteração de contas/consentimento real, publicação frontend, regrant ou edição AGENTS.
+
+**Migration EXATA aplicada oficialmente:** `supabase/migrations/20261008123024_f0f1b7ab-f7e0-44e8-bcdd-dac1d00d4ba8.sql`, ledger `20261008123024`/nome `f0f1b7ab-f7e0-44e8-bcdd-dac1d00d4ba8` confirmado. Arquivo gerado pela ferramenta oficial, nenhuma cópia/edição manual/reaplicação. Nenhuma tabela criada e nenhum GRANT adicionado.
+
+Policy `notif3_global_client_containment`: **11** tabelas, RESTRICTIVE ALL para anon/authenticated, USING(false)/WITH CHECK(false), confirmado vivo. Tabelas: `comunicacao_eventos`, `comunicacao_outbox`, `comunicacao_audit_log`, `comunicacao_consent_log`, `comunicacao_provider_receipts`, `comunicacao_dlq_replay_audit`, `comunicacao_regras`, `comunicacao_templates`, `communication_provider_settings`, `communication_provider_settings_audit`, `communication_provider_settings_rate_limit`. Policies anteriores preservadas. Data API global também bloqueada ao Platform Superadmin; não se introduziu exceção genérica por cargo.
+
+**ACL e guards EXATOS:** PUBLIC/anon/authenticated sem EXECUTE, service_role preservado, negação `NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE` no primeiro BEGIN, antes de leitura/replay/efeitos, nas 16 assinaturas abaixo (releitura confirmou false/false/true e guard=true):
+```text
+rpc_activate_communication_template(uuid)
+rpc_archive_communication_template(uuid)
+rpc_create_communication_template(text,text,comunicacao_canal,text,text,jsonb)
+rpc_update_communication_template(uuid,text,text,text,jsonb)
+rpc_set_communication_template_metadata(uuid,text,text,jsonb,text)
+rpc_upsert_communication_rule(uuid,text,app_role,text,comunicacao_canal,text,integer,jsonb,integer,boolean,integer)
+rpc_preview_administrative_broadcast_count(app_role)
+rpc_publish_communication_event(text,text,uuid,jsonb,text)
+rpc_publish_communication_event_v2(text,text,uuid,jsonb,text)
+rpc_admin_set_whatsapp_consent(uuid,uuid,text,text,text)
+rpc_verify_communication_channel(uuid,uuid,comunicacao_canal,boolean,boolean)
+rpc_admin_communication_health_snapshot()
+rpc_admin_communication_outbox_metrics()
+rpc_admin_list_communication_dead_letter(integer,integer)
+rpc_admin_replay_communication_dead_letter(uuid)
+rpc_admin_replay_communication_dead_letter_batch(integer)
+```
+`_comunicacao_require_admin()` nega incondicionalmente, search_path vazio e ACL cliente revogada. `_comunicacao_publish_system_event(text,text,uuid,jsonb,text)` retorna `{ok:false,suppressed:true,code:...}`, sem ler/publicar; ACL cliente revogada. Preserva operação-pai dos triggers, mas não significa entrega positiva nem prova dinâmica de cada pai.
+
+**Inventário complementar de RPCs/helpers:** `_comunicacao_build_snapshot`/`_v2`, `_comunicacao_can_deliver`, `_comunicacao_expand_event`, `_comunicacao_resolve_recipients`/`_v2`, `_comunicacao_resolve_template`, `_comunicacao_write_audit`, `_comunicacao_write_consent`, `_comunicacao_dlq_replay_rate_check` e três `_comunicacao_trg_*`: cliente já fechado, não reaberto. Worker RPCs `rpc_claim_communication_outbox`, `rpc_resolve_outbox_address`, `rpc_complete_communication_delivery`, `rpc_skip_communication_delivery`, `rpc_cancel_communication_delivery`, `rpc_defer_communication_delivery`, `rpc_fail_communication_delivery`/`_v2`, `rpc_record_whatsapp_delivery_status` permanecem service-only, não homologados para entrega. Trigger functions de imutabilidade/touch que ainda têm ACL pública retornam trigger e não constituem RPC HTTP invocável como função ordinária; não ampliadas.
+
+`rpc_update_communication_preferences(comunicacao_canal,boolean,boolean)` preservada: usa exclusivamente auth.uid, sem parâmetro user/cliente/tenant alvo, consulta/upsert da própria preferência e trilha própria; não lê auditoria global nem configura provedor. Esta revisão **não exercitou consentimento positivo**, não alterou consentimento real e não certifica permissões de conta inativa dessa RPC. Provider RPCs `rpc_service_load_provider_runtime_config`, `rpc_service_apply_provider_settings`, `rpc_service_set_provider_secret`, `rpc_service_clear_provider_secret`, `rpc_service_check_rate_limit`, `rpc_service_record_smtp_diagnostic` continuam service-only; credencial interna não autoriza caller HTTP. Nenhuma invocação real desses RPCs nesta fase.
+
+**Edge source versus deployment — arquivos EXATOS alterados:**
+| Fonte | Contenção/contrato | Prova local | Deployment NOTIF-3 |
+|---|---|---|---|
+| `supabase/functions/communication-health/index.ts` | tenant HTTP403; interno503 antes de snapshot; erro sem detalhe bruto | dois testes reais do handler em VM | UNVERIFIED |
+| `supabase/functions/process-communication-outbox/index.ts` | autenticação interna preservada;503 antes de runtime secrets/claim/adapter/ledger | interno503 e zero efeitos | UNVERIFIED |
+| `supabase/functions/whatsapp-status-webhook/index.ts` |503 antes de config/challenge/receipt; HMAC original mantido mas inalcançável durante contenção | interno503 e zero efeitos | UNVERIFIED |
+| `supabase/functions/test-communication-email/index.ts` |503 após método/CORS, antes de config/secrets/socket/envio; autorização específica antiga preservada abaixo do gate |503 e zero efeitos | UNVERIFIED |
+| `supabase/functions/communication-provider-settings/index.ts` | fluxo específico existente Platform Superadmin; agora exige também profile.user_id correspondente e ativo antes de rate/config/mutação; não dá acesso a audit/event global | tenant403/inativo403 antes de efeitos | UNVERIFIED |
+
+Não houve chamada manual de deploy nem HTTP remoto nesta fase. Não inferir implantação pelo arquivo editado ou pela automação: Codex deverá conferir versão/pacote remoto. v60 VERIFIED documental anterior pertence somente aos bloqueadores `send-push-notification`/`enviar-alertas-notificacoes`, não a esses cinco handlers. `verify_jwt`/config.toml não alterados. Provider-settings positivo específico permanece **não exercitado**, não restaurado por esta fase.
+
+**Outros wrappers/produtores revisados:** `entrega-termo-pdf` usa publicação v2 por referência: RPC agora nega mesmo sob service, erro de comunicação não reverte termo conforme fonte; positivo pai não executado. `entrega-runtime-harness` tem bloqueio explícito do projeto canônico antes de fixtures e consulta global, mantido. `platform-invite-org-admin` escreve audit por service dentro de fluxo específico de convite/fencing/autorização plataforma já existente; não é API de leitura global, não alterado/não exercitado e nenhum convite enviado. Produtores laboratoriais/portal/B2B/estoque enumerados na seção7 mantidos; publicação system é suprimida e fanout não restaurado. Os dois bloqueadores externos anteriores permanecem intactos.
+
+**Frontend inventariado, sem ampliar acesso:** `src/features/comunicacao/api.ts` consulta templates/regras/eventos/outbox e chama health/métricas/lista/replay/publicação/preferências; `ConsentimentoWhatsappPanel.tsx` chama consentimento admin. Leituras globais agora vazias/negadas; RPCs globais indisponíveis por servidor, não autorizados pelo menu/feature. Guards/rotas/papéis/planos não modificados; UI de erro e cada portal real permanecem UNVERIFIED nesta fase.
+
+**Matriz de superfícies contidas versus restauradas:**
+| Superfície | Estado atual | Evidência/limite |
+|---|---|---|
+| 11 tabelas globais via Data API | CONTIDA para anon/authenticated, inclusive Superadmin |11 policies vivas +22 superfícies SQL FSF/ARBio |
+|16 RPCs globais/health/broadcast/templates/regras/consent/verify/DLQ | CONTIDA, nenhum endpoint restaurado |ACL+guard vivos;12 negações focais, não execução dinâmica de todas16 |
+| publicação automática system | SUPRIMIDA, pai preservado no contrato |retorno supressed comprovado, pais integrais UNVERIFIED |
+| worker/webhook/diagnóstico/health HTTP | SOURCE CONTIDO |VM PASS;deployment/JWT remoto UNVERIFIED |
+| provider-settings plataforma | PRESERVADO ESPECÍFICO, não liberação global |tenant/inativo negados localmente;positivo/deployment UNVERIFIED |
+| preferência pessoal | PRESERVADA, sem alvo arbitrário |corpo vivo revisado, positivo mutante não executado |
+| notificações próprias/lido-only e NOTIF-2 sessão/push | PRESERVADAS |regressões locais PASS;browser/API/Realtime UNVERIFIED |
+| global legítimo, fanout e canais externos | NÃO RESTAURADOS |nenhum envio;contrato ainda não provado |
+
+**Prova transacional própria:** `scripts/rbac-audit/communication-notif3-proof.sql`. UIDs reais FSF `cbdc4ef3-005a-4674-8ea3-4410c7d7d212` e ARBio `a7d45277-6dec-413d-bf6b-86620c1ef39f`, SET LOCAL ROLE authenticated e claims/iat atual. Fixtures somente audit/event TEMPORARY_AUDIT_NOTIF3 com autoria ARBio; **22** superfícies invisíveis ou negadas, **12** negações (health/publicação/consent/verify/INSERT por duas identidades mais health/publicação privilegiados), UPDATE fixture sem efeito; publicação system suprimida. Não são22 linhas de negócio positivas nem teste de JWT/API. Final obrigatório `NOTIF3_COMMUNICATION_ROLLBACK hidden=22 denied=12 parent_suppressed=true`, SQLSTATE P0001; nenhuma falha intermediária nesta prova.
+
+Manifesto: run `0a17806b-ce02-4c79-a0db-1faa13bcd607`, evento `eba8e0e4-4a62-4189-9c40-a67875262a81`, audit `-1367359368935`. Releitura posterior por IDs exatos: resíduos **0/0**, sem DELETE. Hash anterior=posterior (mesma fórmula seção14): eventos1/`16c85f5f5e7f8ae49fe0f3693e84b439`, audit5/`a6712c33f658ae483a31b4d2345e6f26`, avisos67/`1dea25864d5e24f7464c83c02e7e4d39`, outbox0/`d41d8cd98f00b204e9800998ecf8427e`. Nada persistido, nenhum consentimento/secret alterado. Consulta pg_publication_tables: **nenhuma** das duas tabelas notificacoes_operacionais/portal_notificacoes publicada; não habilitar nem declarar Realtime runtime PASS.
+
+**Testes/arquivos adicionais EXATOS:** novo `src/test/comunicacao/notif3-global-containment.test.ts`: **7/7**, executa source real transpiled em VM com Request/Response e dependências mockadas, não apenas grep. Ajustados `src/test/comunicacao/gate3-email.test.ts` e `gate4-whatsapp.test.ts` para localizar definição histórica CREATE FUNCTION e não migration posterior que só menciona nome; `fase2.test.ts` agora exige marker de contenção, não cargo administrador global. Testes históricos de contratos continuam preservados como históricos, não prova da ACL atual.
+
+Verificação Linux: comando NOTIF-2 seção131 acrescido implicitamente do novo teste na pasta comunicacao, **681/681 em35 arquivos** (sete novos inclusos, não somar). Rodada inicial **670 PASS/11 FAIL**: dez seleções incorretas de migration pelo harness histórico e uma expectativa de health por cargo; corrigidas, sem restaurar permissões para fazer teste passar. Primeiro teste novo teve6/7 por VM sem exports, corrigido para execução do módulo, final7/7. Lint dos cinco sources Edge e quatro testes **PASS**, removidos dois `createClient<any>` preexistentes nos sources já alterados, sem contrato novo. Scanners fiscal-secrets/fiscal-integration **PASS**. Linter Supabase da migration reportou420 achados de baseline (15 RLS sem policy,2 PUBLIC DEFINER,402 authenticated DEFINER,1 leaked-password protection), não PASS global. Typecheck explícito **NOT RUN** por restrição do harness; Windows não executado nesta rodada, falhas históricas seção116 não somadas. Build automático/diff-check conferidos no fechamento.
+
+**Rollback seguro/pendências:** não remover policies ou regrantar RPCs nem restaurar bodies globais antigos. Se houver regressão pai comprovada, corrigir apenas retorno de supressão preservando negação global; não fazer broadcast/atribuir tenant ao histórico. Fontes Edge devem manter gates503 e autorização específica; nunca recuperar caminho de transporte como rollback. Nenhum rollback de DDL executado. Resta certificar deployment dos cinco sources, JWT/API/browser/concorrência, perfis/vínculos reais, Realtime/Storage e cada pai preservado. Contenção não é tenantização nem aprovação do módulo. **NO-GO integral**, encerramento desta fase apenas.
