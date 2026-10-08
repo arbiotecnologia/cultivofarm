@@ -1,4 +1,5 @@
 ## Notificações — P1 autorizado 2026-10-08 04:08 UTC
+- [x] Mensagem pendente revalidada 04:26 UTC: seis migrations presentes no ledger canônico, nenhuma reaplicação/regrant/alteração de estoque. Reexecutadas provas A/B +11 negativas e final +4, ambas com exceção obrigatória de rollback; cleanup por novos IDs 0/0/0 e 0/0, 67 avisos e hashes históricos intactos. Regressões 820/820, lint focal/scanners/diff-check PASS; sem envios/publicação. Limites e manifesto adicional no relatório.
 - [x] Inventário vivo/callers e hashes; histórico sem origem invisível, lido-only e produtores legados contidos sem apagar dados.
 - [x] Migrations oficiais 041123/041233/041316/041641/041815/042050; SQL A/B positivo/replay +11 negativas e final +4, rollback obrigatório e resíduos zero.
 - [x] Cache/Realtime/cliente/mobile corrigidos; 820/820 testes, lint focal/scanners/diff-check/build automático PASS. Relatório17seções/matriz docs/auditorias/notificacoes-p1-2026-10-08.md; typecheck separado NOT RUN; baseline linter438. Sem publicação.
