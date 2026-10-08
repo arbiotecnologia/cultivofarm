@@ -1,4 +1,6 @@
 ## RETOMADA DELTA — RENATO 10K — 2026-10-08 19:37 UTC
+- [ ] P1 DRIFT-EMAIL prioritário: fonte viva v7 informada pelo proprietário atualiza Auth sem confirmação; RPCs canônicas de confirmação existem; testes handler10/10 e Deno10/10 PASS sem efeitos. Deploy exclusivo falhou por import irmão ausente; corrigir empacotamento shared e verificar deploy/negativas, sem links/envios/troca real.
+- [x] Registrar evidência independente264SELECTs8atores×33tabelas com claims/rollback, negativas tenant forjado e Storage único objeto negado; não equivale a JWT/browser nem ampliar PASS.
 - [x] Ancestralidade Git comprovada: base ecff53113532b7d8363618f9c479b9e357d822c9 é ancestral do HEAD 7d030dc426faa821621b39822a9b784863c6ff14; 643 commits; worktree inicial limpo.
 - [x] Inventários:643commits/1027alterações intermediárias/394arquivos/119migrations/179declarações178paths×14roles=2506linhas; diff integral preservado. Classificação automatizada NÃO equivale à revisão semântica integral, que permanece UNVERIFIED.
 - [x] Correções mínimas P2: import Json canônico no motor estoque; comentário push sem falso positivo regex. Suíte completa6161PASS/4skipped434arquivos, focal251/251 e ampliada730/730 não somadas;lint focal PASS/amplo FAIL3385erros125avisos versus base3477/127;scanners/diff/build automático PASS. Typecheck manual NOT RUN por restrição ambiental.
