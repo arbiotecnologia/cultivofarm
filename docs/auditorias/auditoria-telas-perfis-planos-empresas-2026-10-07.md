@@ -1,6 +1,73 @@
 # Auditoria atual de telas, perfis, planos e empresas — 2026-10-07
 
-## Rótulo do portal — P2 apresentação — 2026-10-08 02:11 UTC (estado atual)
+## Estoque legado — P1 isolamento — 2026-10-08 (estado atual)
+
+### Diagnóstico/aplicação
+
+- Destino confirmado antes das operações: `swzpzcwiasxmjutrmvkm`. Pré-prova própria SQL com claims reais AR Bio/FSF e SET LOCAL ROLE authenticated: ambos liam o órfão `000cd77c-506c-4cdf-b2bd-7233aff8efeb` (1/1); transação revertida por exceção deliberada. Confirma vazamento RLS, não browser/API autenticada. Bloqueio de plano na UI não autoriza banco.
+- Estoque sem organization_id/policy tenant RESTRICTIVE; lote/programação/cliente sem organização determinística. Não atribuir ownership por expedido_por. Leitores DEFINER/operadores/reserva/replay por ID sem escopo foram auditados, incluindo 15 referências diretas e fechamento textual de callers; SQL dinâmico não tem cobertura integral garantida.
+- Migration oficial aplicada **ledger `20261008022948`**, arquivo `supabase/migrations/20261008022948_3e92d4d7-cfe5-477b-b100-70f5eeff24d6.sql`; SHA-256 `b2c0c1ccf289e390083e9d438266239abcca9233471f72f189a0c5a64dc79416`. Primeira tentativa falhou por alias PL/pgSQL `f` não atribuído; consulta confirmou ausência de policy/trigger. Alias corrigido para `candidate` antes da aplicação bem-sucedida. Não duplicar/reaplicar ledger.
+- `platform_private.stock_p1_lote_owned` usa auth.uid e `h15_actor_organization`, wrapper público INVOKER. Policy `stock_p1_tenant_isolation` RESTRICTIVE FOR ALL exige organização explícita do lote igual à organização ativa do ator em **USING+WITH CHECK**. Sem backfill/inferência, preserva órfãos invisíveis.
+- Trigger `a00_stock_p1_tenant_guard`/`platform_private.stock_p1_guard` valida ator, lote OLD/NEW e programação/envase (mesmo lote/org), cliente, partner/order por helpers B2B e OS manual/B2B/onfarm. Falha fechada também para executor privilegiado sem ator. Guards/contexto/movimentação e corpos de negócio existentes preservados.
+
+### ACL/impacto preciso
+
+Contenção específica por **revogação de entradas cliente**, não reescrita dos motores: impede entrar no corpo antes de leitura/replay, mas não certifica replay funcional. Catálogo pós-aplicação: **23 DEFINER**, todos anon=false, authenticated=false, service_role=true:
+
+```text
+d51_5_p0d_ab_selftest()
+fn_comprovante_entrega_montar_v1(uuid)
+fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)
+fn_estoque_produto_guard()
+fn_validate_entrega_estoque()
+fn_validate_envase_volume()
+log_estoque_movimentacao()
+reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)
+rpc_cockpit_cancelar_reserva_v1(uuid,uuid,text,text)
+rpc_cockpit_confirmar_entrega_v1(uuid,uuid,text,jsonb)
+rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)
+rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)
+rpc_criar_embalagens_pos_envase(jsonb)
+rpc_entrega_cancelar_v1(uuid,text)
+rpc_entrega_confirmar_v1(uuid,jsonb,jsonb)
+rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb)
+rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)
+rpc_gerar_etiqueta_produto(jsonb)
+rpc_gerar_etiquetas_embalagens_lote(jsonb)
+rpc_get_comprovante_entrega_data(uuid,boolean)
+rpc_rastreio_produto_interno(uuid)
+rpc_substituir_etiqueta_produto(uuid,text)
+validate_estoque_entrada()
+```
+
+- **Indisponibilidade conhecida:** clientes não podem chamar estes RPCs de estoque/entrega/cockpit/comprovante/rastreio/etiquetas até hardening individual aprovado. Triggers continuam disparando independentemente de EXECUTE cliente. ACL service preservada não torna leitores service seguros: bypass-RLS permanece. Nenhum service token foi usado como identidade cliente.
+- `src/hooks/useEsteiraLaboratorio.ts` mantém insert direto legado; INSERT/UPDATE/DELETE authenticated já sem privilégios, não foram abertos. `supabase/functions/entrega-runtime-harness/index.ts` cria/deleta estoque por service sem ator; novo guard bloqueia setup/cleanup desse canal. Harness não executado nem alterado/deployado; não liberar bypass. Nenhum fluxo paralelo criado.
+- Fechamento textual prosrc pode omitir referências dinâmicas. Não declarar cobertura total de API/Edge/Storage ou todos leitores service. Papéis/planos/guards não ampliados.
+
+### Prova e manifesto
+
+- Setups anteriores revertidos: item do lote inválido; envase sem CQ aprovado; INSERT authenticated negado por ACL preexistente. Não concedido INSERT para fazer prova passar. Setup final usou item ativo, lotes/CQ aprovado/envase; estoque pelo executor com claims de ator existente, nunca mutação de linha real.
+- `run_id=TEMPORARY_AUDIT_STOCK_P1_20261008T0237`, admins AR Bio/FSF: leitura RLS own=1/1, cross=0/0, órfão=0/0. Update próprio privilegiado com ator A=1; **11 negações**: insert cruzado, reparent lote, envase cruzado, três RPCs, update/delete cliente cruzados nos dois sentidos e update privilegiado B→A. Escritas cliente negadas por **ACL**, não prova isolada WITH CHECK. Programação/cliente/partner/OS verificadas estruturalmente, não todas exercitadas runtime.
+- Exceção esperada `P0001 STOCK_P1_PROOF_ROLLBACK` ocorreu após todas assertions: erro da ferramenta é reversão deliberada, não falha das assertions. Manifesto:
+
+```text
+lotes: 1a6acf4f-a9d4-4f7c-90ee-5f477e495c08, c5098ec0-7118-45cc-aa20-47bc38e8df27
+envases: 20fd674e-8584-4080-91d9-4d1ce3326bfb, 73b62137-2c78-49a9-b419-4ea273838200
+estoque: 904db36a-3a09-4a26-b6e2-74861910329d, 802a12dc-ae7e-4f0c-bb82-eaf4724219b4
+CQ/movimentações: derivados somente destes lote/estoque IDs
+```
+
+- Leitura independente pós-rollback: lote/envase/CQ/estoque/movimentação fixtures **0/0/0/0/0**. Estoque real **total=1**, MD5 agregado rows **`be36d9a5734010a68dbc8639f2bae1d4`** antes/depois idêntico. Órfão preservado/invisível aos dois atores. Sequências podem avançar apesar de rollback; não se afirma identidade global do banco. Não houve cleanup destrutivo.
+- Reprodução revisada `scripts/rbac-audit/stock-p1-transactional-proof.sql`, SHA-256 `9b2139ae42198b4f544370a8a37ccf8f7f185bc49f59161e824a2541d90da822`: mesmos cenários, não transcrição byte-a-byte da chamada executada. Reexecutar somente com novo run_id/destino verificado/autorização; nunca remover exceção final.
+
+### Resultados/limites/rollback seguro
+
+- Regressão inicial própria estoque/RBAC/multiportal **124/124 PASS em 11 arquivos**; novo contrato estrutural `src/test/estoque/stock-p1-containment.test.ts`. Resultados finais de testes/lint/scanners registrados após execução. Estrutural não substitui SQL nem browser.
+- Linter remoto: **444 achados / 4 classes** (17 RLS sem policy INFO, 2 DEFINER público WARN, 424 DEFINER authenticated WARN, 1 proteção senha vazada WARN); não certificados como exploração nem corrigidos fora do escopo. Build automático **OK 02:33:50 UTC**; typecheck separado **NOT RUN** (manual vedado pelo harness).
+- **PASS focal SQL leitura/trigger/ACL/preservação; NO-GO operacional/integral**: RPCs contidos aguardam hardening individual anterior a leitura/replay e prova autenticada por perfil/plano; referências dinâmicas/Edge/Storage UNVERIFIED. Sem frontend funcional alterado/publicado, Auth/assinaturas/preços/dados reais modificados, comunicação externa ou próxima fase. D52 preservado. Revisão observada antes do fechamento `dce10dc8dbd578b9a7d80eb6f1e8a4ff042dbbe6`, gerida pelo ambiente; nenhum commit manual.
+- **Rollback documental não executado:** nunca remover policy/guard nem restaurar EXECUTE cliente automaticamente, pois reabriria vazamento. Manter negações em incompatibilidade. Migration substitutiva futura deve autorizar ator/recurso antes da leitura/replay, validar referências, provar own/cross/órfão e só então liberar assinatura específica. Restaurar corpos somente de fonte/hash auditados sob autorização; nenhum backfill/inferência. Nenhuma SQL de reabertura executada.
+
+## Rótulo do portal — P2 apresentação — 2026-10-08 02:11 UTC (histórico)
 
 - **Evidência UI recebida:** administrador real AR Bio com somente papel administrador abre `/app` e vê Consultor Técnico/consultor em cabeçalho/menu/saudação. Relato do proprietário, não nova sessão autenticada deste executor; apresentação incorreta não prova alteração de papel ou falha de autorização.
 - **Correção mínima:** retirada somente da linha `if (activeCtx === "technical") return ROLE_LABELS.consultor_tecnico` em `src/lib/portalDisplayLabel.ts`. Sem papel técnico real, usa o fallback já existente do papel primário ou `—`. Precedência técnica real, multipapel, B2B e produtor preservados. Sem guards/RLS/papéis/acesso mobile/banco ou publicação. Correção MeuPlano da revisão `943710ceff2da573a6390fbd86f9b53427cb168e` preservada.

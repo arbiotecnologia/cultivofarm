@@ -1,0 +1,30 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const migration = readFileSync("supabase/migrations/20261008022948_3e92d4d7-cfe5-477b-b100-70f5eeff24d6.sql", "utf8");
+const proof = readFileSync("scripts/rbac-audit/stock-p1-transactional-proof.sql", "utf8");
+
+describe("P1 estoque — contrato estrutural (não prova runtime)", () => {
+  it("restringe leitura/escrita pela organização explícita do lote", () => {
+    for (const text of ["AS RESTRICTIVE FOR ALL TO authenticated", "USING (public.stock_p1_lote_owned(lote_id))", "WITH CHECK (public.stock_p1_lote_owned(lote_id))", "l.organization_id IS NOT NULL", "l.organization_id = public.h15_actor_organization()"])
+      expect(migration).toContain(text);
+  });
+  it("protege ator, old/new e referências antes dos guards legados", () => {
+    for (const text of ["auth.uid() IS NULL OR v_org IS NULL", "stock_p1_lote_owned(OLD.lote_id)", "stock_p1_lote_owned(NEW.lote_id)", "a00_stock_p1_tenant_guard BEFORE INSERT OR UPDATE OR DELETE", "e.lote_id=NEW.lote_id AND e.organization_id=v_org"])
+      expect(migration).toContain(text);
+    for (const table of ["programacao_producao", "envase", "clientes", "partner_orders", "ordens_servico_onfarm", "ordens_servico"])
+      expect(migration).toContain(`public.${table}`);
+  });
+  it("contém entradas privilegiadas sem alterar dados ou abrir replay", () => {
+    expect(migration).toContain("WITH RECURSIVE funcs AS");
+    expect(migration).toContain("WHERE prosecdef");
+    expect(migration).toContain("REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated");
+    expect(migration).not.toMatch(/GRANT\s+(?:ALL|EXECUTE).*rpc_estoque/i);
+    expect(migration).not.toMatch(/(?:UPDATE|DELETE FROM)\s+public\.estoque_produto/i);
+  });
+  it("mantém rollback obrigatório e separa SQL de browser", () => {
+    for (const text of ["NOT a signed-in browser/API session", "TEMPORARY_AUDIT_STOCK_P1_", "SET LOCAL ROLE authenticated", "STOCK_P1_PROOF_ROLLBACK", "IF denied<>11"])
+      expect(proof).toContain(text);
+    expect(proof).not.toMatch(/\bCOMMIT\b/i);
+  });
+});
