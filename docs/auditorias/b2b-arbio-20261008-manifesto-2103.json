@@ -1,0 +1,36 @@
+{
+  "run_id": "B2B_ARBIO_20261008_2103",
+  "head": "28cf0b05746eaf96f67d6a533a90b770aa44d8db",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+  "prefix": "TESTE AUDITORIA B2B 20261008",
+  "provenance": "Lovable: inspeção read-only via ferramenta Supabase conectada e testes locais; sem agente adicional",
+  "created_ids": [],
+  "created_relations": [],
+  "creation_actor": null,
+  "remote_writes": 0,
+  "remote_external_calls": 0,
+  "matching_fixture_partner_count_observed": 0,
+  "active_fiscal_settings_ARBio": 0,
+  "validated_active_fiscal_settings_ARBio": 0,
+  "live_flags": {
+    "delivery_enabled": true,
+    "email_delivery_enabled": true,
+    "whatsapp_delivery_enabled": false,
+    "inapp_delivery_enabled": false,
+    "whatsapp_webhook_enabled": false,
+    "test_mode_enabled": true
+  },
+  "prospective_registration_effects": ["partner_accounts", "partner_financial_settings", "partner_audit_logs"],
+  "fixtures_local_only": "PostgreSQL isolado descartável /tmp; Auth/roles stub não são JWT real;23cenários em1teste",
+  "validations": {
+    "vitest": "41/41 PASS em7arquivos",
+    "lint_inspected_hooks": "FAIL2any preexistentes useCreatePartnerOrder:78/99",
+    "fiscal_secrets_scan": "PASS desta rodada, distinto do scanner Codex executivo pendente",
+    "typecheck": "NOT RUN manual: restrição harness",
+    "build": "NOT RUN manual: restrição harness; sem runtime alterado"
+  },
+  "rollback": "Sem dados persistidos: não necessário; futuro cleanup porIDs e fluxos normais, sem apagar auditorias/snapshots nem restaurar RPC global",
+  "blockers": ["external_unmanaged sem sessão AR Bio acessível", "zero externos não comprovado/entrega e email true", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED", "nenhum emissor ativo/validado AR Bio", "provisionamento login parceiro não certificado"],
+  "decision": "GO inspeção/testes locais; NO-GO persistência/fluxo real/faturamento/integral"
+}
