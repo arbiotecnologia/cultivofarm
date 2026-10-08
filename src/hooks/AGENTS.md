@@ -1,0 +1,2 @@
+- Notification caches, reads, counters and mutations must include active identity, tenant and individual portal recipient; server RLS remains authoritative to prevent stale-context disclosure.
+- Portal client selection must fence late requests and scope remembered selection by identity/tenant, so logout or organization changes cannot reuse previous client data.

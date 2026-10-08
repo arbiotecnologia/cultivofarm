@@ -1,5 +1,9 @@
 # Auditoria atual de telas, perfis, planos e empresas — 2026-10-07
 
+## Notificações P1 — 2026-10-08 04:21 UTC
+
+Relatório de **17 seções**, produtores/matriz/migrations/provas/rollback: [notificacoes-p1-2026-10-08.md](notificacoes-p1-2026-10-08.md). SQL A/B positivo/replay/lido-only +11 negativas; prova final +4, rollback integral; históricos67 e hashes estoque/movimentos preservados. Seis migrations oficiais 041123/041233/041316/041641/041815/042050; nenhum regrant estoque ou publicação frontend. **820/820 testes PASS**, lint focal/scanners/diff-check/build automático PASS; typecheck separado NOT RUN, findings438 preexistentes. **NO-GO operacional/integral:** portal positivo sem identidade vinculada válida, fanout/legados contidos, browser/API/concorrência/Realtime/Edge remoto/Storage UNVERIFIED. D52 preservada; ACL histórica abaixo não representa estado vivo (motor/batch liberados individualmente na fase anterior).
+
 ## Fechamento de compatibilidade — mesma fase P1 — 2026-10-08 03:39 UTC
 
 - Baseline observado: `81c107d4140dc6599e3ab9af6c5243e6aa9f0087`, checkout inicialmente sem alterações locais. Preservadas entregas anteriores e D52; nenhuma nova fase.

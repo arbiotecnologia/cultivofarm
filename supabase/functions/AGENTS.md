@@ -5,3 +5,4 @@
 - Native SMTP connection failures are normalized server-side to an allowlisted DNS/TCP/TLS code; raw runtime errors never reach logs, audit rows, or clients — improves diagnosis without leaking infrastructure details.
 - Shared communication email sends use the same native Deno TLS/EHLO/AUTH protocol core as the SMTP probe; `SmtpLikeClient` remains the injectable consumer contract — prevents probe/send transport divergence.
 - KingHost SMTPi diagnostics use only a server-side allowlisted in-memory route; persistence requires a separate explicit Superadmin action that changes only the SMTP host — prevents arbitrary host probing and silent configuration changes.
+- Legacy alert-email and push dispatch stay fail-closed until server-proven source, tenant and individual recipient contracts are homologated; flags alone cannot authorize delivery.

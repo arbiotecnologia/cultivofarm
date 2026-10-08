@@ -52,16 +52,21 @@ const OP_LIMIT = 50;
 const PORTAL_LIMIT = 50;
 
 export function useNotificacoesUnificadas(options?: { limit?: number }) {
-  const { user } = useAuth();
-  const { clienteId } = usePortalCliente();
+  const { user, profile, roles } = useAuth();
+  const { clienteId, loading: portalLoading } = usePortalCliente();
+  const organizationId = profile?.organization_id ?? null;
+  const ready = !!user && !!organizationId && profile?.ativo !== false;
+  const portalReady = ready && !portalLoading && roles.includes("cliente_produtor") && !!clienteId;
+  const roleScope = roles.join(",");
+  const scope = [user?.id, organizationId, roleScope];
   const qc = useQueryClient();
   const displayLimit = options?.limit ?? 30;
 
   const opQuery = useQuery({
-    queryKey: ["notif-unified", "op", user?.id],
+    queryKey: ["notif-unified", "op", ...scope],
     queryFn: async (): Promise<NotifOp[]> => {
-      if (!user) return [];
-      const { data, error } = await (supabase as any)
+      if (!ready || !user) return [];
+      const { data, error } = await supabase
         .from("notificacoes_operacionais")
         .select("id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("usuario_id", user.id)
@@ -70,25 +75,26 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       if (error) throw error;
       return (data as NotifOp[]) ?? [];
     },
-    enabled: !!user,
+    enabled: ready,
     staleTime: 15_000,
     refetchInterval: 120_000,
   });
 
   const portalQuery = useQuery({
-    queryKey: ["notif-unified", "portal", clienteId],
+    queryKey: ["notif-unified", "portal", ...scope, clienteId],
     queryFn: async (): Promise<NotifPortal[]> => {
-      if (!clienteId) return [];
-      const { data, error } = await (supabase as any)
+      if (!portalReady || !clienteId || !user) return [];
+      const { data, error } = await supabase
         .from("portal_notificacoes")
         .select("id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("cliente_id", clienteId)
+        .filter("recipient_user_id", "eq", user.id)
         .order("created_at", { ascending: false })
         .limit(PORTAL_LIMIT);
       if (error) throw error;
       return (data as NotifPortal[]) ?? [];
     },
-    enabled: !!clienteId,
+    enabled: portalReady,
     staleTime: 15_000,
     refetchInterval: 120_000,
   });
@@ -96,7 +102,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
   const userId = user?.id ?? null;
 
   useEffect(() => {
-    if (!userId) return;
+    if (!ready || !userId) return;
     // Sufixo único por montagem: evita reaproveitar um canal já inscrito
     // (Supabase lança erro ao registrar callbacks depois do subscribe()).
     const channel = supabase
@@ -109,16 +115,16 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
           table: "notificacoes_operacionais",
           filter: `usuario_id=eq.${userId}`,
         },
-        () => qc.invalidateQueries({ queryKey: ["notif-unified", "op", userId] }),
+        () => qc.invalidateQueries({ queryKey: ["notif-unified", "op", userId, organizationId, roleScope] }),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, qc]);
+  }, [userId, organizationId, ready, roleScope, qc]);
 
   useEffect(() => {
-    if (!clienteId) return;
+    if (!portalReady || !clienteId || !userId) return;
     const channel = supabase
       .channel(`notif-unified-portal-${clienteId}-${Math.random().toString(36).slice(2)}`)
       .on(
@@ -127,18 +133,18 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
           event: "*",
           schema: "public",
           table: "portal_notificacoes",
-          filter: `cliente_id=eq.${clienteId}`,
+          filter: `recipient_user_id=eq.${userId}`,
         },
-        () => qc.invalidateQueries({ queryKey: ["notif-unified", "portal", clienteId] }),
+        () => qc.invalidateQueries({ queryKey: ["notif-unified", "portal", userId, organizationId, roleScope, clienteId] }),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clienteId, qc]);
+  }, [clienteId, userId, organizationId, portalReady, roleScope, qc]);
 
   const combined = useMemo<NotificacaoUnificada[]>(() => {
-    const op = (opQuery.data ?? []).map<NotificacaoUnificada>((n) => ({
+    const op = (ready ? opQuery.data ?? [] : []).map<NotificacaoUnificada>((n) => ({
       id: `op:${n.id}`,
       origem: "operacional",
       tipo: n.tipo,
@@ -148,7 +154,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       lido: n.lido,
       created_at: n.created_at,
     }));
-    const portal = (portalQuery.data ?? []).map<NotificacaoUnificada>((n) => ({
+    const portal = (portalReady ? portalQuery.data ?? [] : []).map<NotificacaoUnificada>((n) => ({
       id: `portal:${n.id}`,
       origem: "portal",
       tipo: n.tipo,
@@ -159,7 +165,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       created_at: n.created_at,
     }));
     return dedupAndSort([...op, ...portal]);
-  }, [opQuery.data, portalQuery.data]);
+  }, [opQuery.data, portalQuery.data, ready, portalReady]);
 
   const unreadCount = combined.filter((n) => !n.lido).length;
 
@@ -167,24 +173,29 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
     mutationFn: async (compositeId: string) => {
       const parsed = parseCompositeId(compositeId);
       if (!parsed) return;
-      const table =
-        parsed.origem === "operacional" ? "notificacoes_operacionais" : "portal_notificacoes";
-      const { error } = await (supabase as any).from(table as any).update({ lido: true }).eq("id", parsed.rawId);
+      if (!ready || !user) throw new Error("NOTIF_SESSION_REQUIRED");
+      const request = parsed.origem === "operacional"
+        ? supabase.from("notificacoes_operacionais").update({ lido: true }).eq("id", parsed.rawId).eq("usuario_id", user.id)
+        : portalReady && clienteId
+          ? supabase.from("portal_notificacoes").update({ lido: true }).eq("id", parsed.rawId).filter("recipient_user_id", "eq", user.id).eq("cliente_id", clienteId)
+          : null;
+      if (!request) throw new Error("NOTIF_PORTAL_REQUIRED");
+      const { error } = await request;
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notif-unified", "op", user?.id] });
-      qc.invalidateQueries({ queryKey: ["notif-unified", "portal", clienteId] });
+      qc.invalidateQueries({ queryKey: ["notif-unified", "op", ...scope] });
+      qc.invalidateQueries({ queryKey: ["notif-unified", "portal", ...scope, clienteId] });
     },
   });
 
   const markAllRead = useMutation({
     mutationFn: async () => {
       const tasks: Promise<{ error: unknown }>[] = [];
-      if (user) {
+      if (ready && user) {
         tasks.push(
           (async () => {
-            const r = await (supabase as any)
+            const r = await supabase
               .from("notificacoes_operacionais")
               .update({ lido: true })
               .eq("usuario_id", user.id)
@@ -193,13 +204,14 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
           })(),
         );
       }
-      if (clienteId) {
+      if (portalReady && user && clienteId) {
         tasks.push(
           (async () => {
-            const r = await (supabase as any)
+            const r = await supabase
               .from("portal_notificacoes")
               .update({ lido: true })
               .eq("cliente_id", clienteId)
+              .filter("recipient_user_id", "eq", user.id)
               .eq("lido", false);
             return { error: r.error as unknown };
           })(),
@@ -211,8 +223,8 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
     },
 
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notif-unified", "op", user?.id] });
-      qc.invalidateQueries({ queryKey: ["notif-unified", "portal", clienteId] });
+      qc.invalidateQueries({ queryKey: ["notif-unified", "op", ...scope] });
+      qc.invalidateQueries({ queryKey: ["notif-unified", "portal", ...scope, clienteId] });
     },
   });
 
@@ -220,7 +232,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
     data: combined.slice(0, displayLimit),
     all: combined,
     unreadCount,
-    isLoading: opQuery.isLoading || portalQuery.isLoading,
+    isLoading: (ready && opQuery.isLoading) || (portalReady && portalQuery.isLoading),
     isError: opQuery.isError || portalQuery.isError,
     error: opQuery.error ?? portalQuery.error,
     refetch: () => {

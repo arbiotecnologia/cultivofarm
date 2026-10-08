@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-const sql = readdirSync("supabase/migrations").filter(n => n.startsWith("202610080") && n >= "20261008035712").map(n => readFileSync(`supabase/migrations/${n}`,"utf8")).join("\n");
+const sql = readdirSync("supabase/migrations").filter(n => n.startsWith("202610080") && n >= "20261008035712" && n < "20261008040800").map(n => readFileSync(`supabase/migrations/${n}`,"utf8")).join("\n");
 const proof = readFileSync("scripts/rbac-audit/stock-batch-hardening-proof.sql","utf8");
 describe("batch — estrutura não é API/browser", () => {
  it("autoriza antes do replay", () => {

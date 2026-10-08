@@ -15,14 +15,16 @@ export interface NotificacaoOperacional {
 }
 
 export function useNotificacoesOperacionais() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const organizationId = profile?.organization_id;
+  const ready = !!user && !!organizationId && profile?.ativo !== false;
   const qc = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["notificacoes-operacionais", user?.id],
+    queryKey: ["notificacoes-operacionais", user?.id, organizationId],
     queryFn: async (): Promise<NotificacaoOperacional[]> => {
-      if (!user) return [];
-      const { data, error } = await (supabase as any)
+      if (!ready || !user) return [];
+      const { data, error } = await supabase
         .from("notificacoes_operacionais")
         .select("id, usuario_id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("usuario_id", user.id)
@@ -31,14 +33,14 @@ export function useNotificacoesOperacionais() {
       if (error) throw error;
       return (data as NotificacaoOperacional[]) || [];
     },
-    enabled: !!user,
+    enabled: ready,
     refetchInterval: 180_000,
     staleTime: 30_000,
   });
 
   // Realtime subscription
   useEffect(() => {
-    if (!user) return;
+    if (!ready || !user) return;
     const channel = supabase
       .channel(`notif-op-${user.id}`)
       .on(
@@ -50,40 +52,41 @@ export function useNotificacoesOperacionais() {
           filter: `usuario_id=eq.${user.id}`,
         },
         () => {
-          qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user.id] });
+          qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user.id, organizationId] });
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, qc]);
+  }, [user, organizationId, ready, qc]);
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      if (!ready || !user) throw new Error("NOTIF_SESSION_REQUIRED");
+      const { error } = await supabase
         .from("notificacoes_operacionais")
         .update({ lido: true })
-        .eq("id", id);
+        .eq("id", id).eq("usuario_id", user.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id, organizationId] }),
   });
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      if (!user) return;
-      const { error } = await (supabase as any)
+      if (!ready || !user) return;
+      const { error } = await supabase
         .from("notificacoes_operacionais")
         .update({ lido: true })
         .eq("usuario_id", user.id)
         .eq("lido", false);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notificacoes-operacionais", user?.id, organizationId] }),
   });
 
   const unreadCount = (query.data || []).filter((n) => !n.lido).length;
 
-  return { ...query, unreadCount, markRead, markAllRead };
+  return { ...query, data: ready ? query.data : [], unreadCount: ready ? unreadCount : 0, markRead, markAllRead };
 }

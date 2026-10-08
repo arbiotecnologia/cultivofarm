@@ -1,11 +1,6 @@
-import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useNotificacoesUnificadas } from "@/hooks/useNotificacoesUnificadas";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Bell, Smartphone } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { Button } from "@/components/ui/button";
 
@@ -19,31 +14,8 @@ const TIPO_ICONS: Record<string, string> = {
 };
 
 export default function MobileNotificacoes() {
-  const { role } = useAuth();
-  const { clienteId } = usePortalCliente();
   const { permission, subscribe } = usePushSubscription();
-
-  const { data: notificacoes, isLoading } = useQuery({
-    queryKey: ["mobile-notificacoes", clienteId],
-    queryFn: async () => {
-      if (role === "cliente_produtor" && clienteId) {
-        const { data } = await supabase
-          .from("portal_notificacoes")
-          .select("*")
-          .eq("cliente_id", clienteId)
-          .order("created_at", { ascending: false })
-          .limit(30);
-        return data || [];
-      }
-      // For non-producer roles, show all notifications they can access
-      const { data } = await supabase
-        .from("portal_notificacoes")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30);
-      return data || [];
-    },
-  });
+  const { data: notificacoes, isLoading } = useNotificacoesUnificadas({ limit: 30 });
 
   return (
     <div className="p-4 space-y-4">
