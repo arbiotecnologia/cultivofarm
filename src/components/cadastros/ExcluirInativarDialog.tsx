@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertTriangle, Archive, Trash2, Info, ArrowRight, Download, FileArchive } from "lucide-react";
 import { DepCounts, totalDeps, depLabel, getDepRoute } from "@/lib/cadastros";
 import { supabase } from "@/integrations/supabase/client";
-import { gerarBackupDocumentosCliente, removerTodosDocumentosCliente } from "@/lib/clienteDocumentos";
+import { gerarBackupDocumentosCliente } from "@/lib/clienteDocumentos";
 import { toast } from "sonner";
 import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 
@@ -77,7 +77,7 @@ export function ExcluirInativarDialog({
   const total = totalDeps(deps);
   const exigeBackup = entidade === "cliente" && (docsCount ?? 0) > 0;
   const backupOk = !exigeBackup || (backupFeito && backupConfirmado);
-  const podeExcluir = scope.ready && isAdmin && deps !== null && docsCount !== null && !loading && total === 0 && backupOk;
+  const podeExcluir = scope.ready && isAdmin && deps !== null && docsCount === 0 && !loading && total === 0 && backupOk;
   const vinculos = deps ? Object.entries(deps).filter(([, v]) => Number(v) > 0) : [];
 
   const wrap = async (fn: () => Promise<void>, isExcluir = false) => {
@@ -86,9 +86,6 @@ export function ExcluirInativarDialog({
     const current = scope.capture();
     setActing(true);
     try {
-      if (isExcluir && exigeBackup) {
-        await removerTodosDocumentosCliente(entidadeId);
-      }
       await fn();
       if (current()) onOpenChange(false);
     } catch {
@@ -100,16 +97,21 @@ export function ExcluirInativarDialog({
   };
 
   const handleGerarBackup = async () => {
+    if (!scope.ready || actionLock.current) return;
+    actionLock.current = true;
+    const current = scope.capture();
     setGerandoBackup(true);
     try {
       const r = await gerarBackupDocumentosCliente(entidadeId, nome);
-      setBackupFeito(true);
+      if (!current()) return;
+      setBackupFeito(r.falhas.length === 0);
       toast.success(
         `Backup gerado (${r.baixados}/${r.totalDocs} arquivos).${r.falhas.length ? ` ${r.falhas.length} falha(s).` : ""}`
       );
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao gerar backup");
+    } catch {
+      if (current()) toast.error("Não foi possível gerar o backup dos documentos.");
     } finally {
+      actionLock.current = false;
       setGerandoBackup(false);
     }
   };
