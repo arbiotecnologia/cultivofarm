@@ -29,7 +29,7 @@ import { normalizeInscricaoEstadualCadastro } from "@/lib/schemas/inscricaoEstad
 import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
 import { Link } from "react-router-dom";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 type ClienteRow = Database["public"]["Tables"]["clientes"]["Row"] & { fazendas?: { count: number }[] };
 type ClienteInsert = Database["public"]["Tables"]["clientes"]["Insert"];

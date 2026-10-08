@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Database, Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
 
 type PartnerInsert = Database["public"]["Tables"]["partner_accounts"]["Insert"];
 type PartnerUpdate = Database["public"]["Tables"]["partner_accounts"]["Update"];
