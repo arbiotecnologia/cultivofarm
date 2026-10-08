@@ -1,0 +1,226 @@
+[
+  {
+    "viewport": "desktop",
+    "requested": "/",
+    "final_path": "/",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/configuracoes",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/plataforma",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/clientes",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/financeiro",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/fiscal",
+    "final_path": "/fiscal",
+    "heading": [
+      "404"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/producao",
+    "final_path": "/producao",
+    "heading": [
+      "404"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/estoque",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/portal-parceiro",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/portal",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/app",
+    "final_path": "/app/login",
+    "heading": [
+      "Cultivo Farm"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/selecionar-portal",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "desktop",
+    "requested": "/rota-inexistente-auditoria",
+    "final_path": "/rota-inexistente-auditoria",
+    "heading": [
+      "404"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/",
+    "final_path": "/",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/configuracoes",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/plataforma",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/clientes",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/financeiro",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/fiscal",
+    "final_path": "/fiscal",
+    "heading": [
+      "404"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/producao",
+    "final_path": "/producao",
+    "heading": [
+      "404"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/estoque",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/portal-parceiro",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/portal",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/app",
+    "final_path": "/app/login",
+    "heading": [
+      "Cultivo Farm"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/selecionar-portal",
+    "final_path": "/auth",
+    "heading": [],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  },
+  {
+    "viewport": "mobile",
+    "requested": "/rota-inexistente-auditoria",
+    "final_path": "/rota-inexistente-auditoria",
+    "heading": [
+      "404"
+    ],
+    "errors": [],
+    "evidence": "PUBLIC_SIGNED_OUT_ONLY"
+  }
+]

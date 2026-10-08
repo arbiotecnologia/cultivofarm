@@ -1,0 +1,216 @@
+{
+  "added": [
+    {
+      "file": "src/components/cadastros/ExcluirInativarDialog.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "React Hook useEffect has missing dependencies: 'loadDeps' and 'scope'. Either include them or remove the dependency array. If 'loadDeps' changes too often, find the parent component that defines it and wrap that definition in useCallback.",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/hooks/usePartnerSimulations.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 4
+    },
+    {
+      "file": "src/pages/Configuracoes.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "The 'usersPage' logical expression could make the dependencies of useMemo Hook (at line 184) change on every render. To fix this, wrap the initialization of 'usersPage' in its own useMemo() Hook.",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/pages/Configuracoes.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "The 'usersPage' logical expression could make the dependencies of useEffect Hook (at line 352) change on every render. To fix this, wrap the initialization of 'usersPage' in its own useMemo() Hook.",
+      "severity": 1,
+      "count": 1
+    }
+  ],
+  "removed": [
+    {
+      "file": "src/components/aplicacao/EvidenciasGallery.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 2
+    },
+    {
+      "file": "src/components/cadastros/ExcluirInativarDialog.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "React Hook useEffect has a missing dependency: 'loadDeps'. Either include it or remove the dependency array. If 'loadDeps' changes too often, find the parent component that defines it and wrap that definition in useCallback.",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/components/cadastros/ExcluirInativarDialog.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 2
+    },
+    {
+      "file": "src/components/clientes/ClienteDocumentosTab.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 2
+    },
+    {
+      "file": "src/components/comercial/ParceiroB2BFormDialog.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+      "rule": null,
+      "message": "Unused eslint-disable directive (no problems were reported).",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array.",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/hooks/useAuth.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "src/hooks/useAvailableContexts.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 2
+    },
+    {
+      "file": "src/hooks/useNotificacoesOperacionais.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 3
+    },
+    {
+      "file": "src/hooks/useNotificacoesUnificadas.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 6
+    },
+    {
+      "file": "src/hooks/useParceiroB2BMutations.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 11
+    },
+    {
+      "file": "src/hooks/usePartnerUsers.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 22
+    },
+    {
+      "file": "src/hooks/usePortalCliente.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 6
+    },
+    {
+      "file": "src/hooks/usePortalCliente.ts",
+      "rule": "no-empty",
+      "message": "Empty block statement.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "src/hooks/usePushSubscription.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 6
+    },
+    {
+      "file": "src/hooks/useSimulacaoFormalHeader.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 13
+    },
+    {
+      "file": "src/lib/estoque/motorEstoque.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 2
+    },
+    {
+      "file": "src/pages/Configuracoes.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "The 'usersPage' logical expression could make the dependencies of useMemo Hook (at line 183) change on every render. To fix this, wrap the initialization of 'usersPage' in its own useMemo() Hook.",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/pages/Configuracoes.tsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "message": "The 'usersPage' logical expression could make the dependencies of useEffect Hook (at line 342) change on every render. To fix this, wrap the initialization of 'usersPage' in its own useMemo() Hook.",
+      "severity": 1,
+      "count": 1
+    },
+    {
+      "file": "src/pages/SelecionarPortal.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "src/pages/clientes/ProdutoresTab.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 11
+    },
+    {
+      "file": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "supabase/functions/communication-provider-settings/index.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    },
+    {
+      "file": "supabase/functions/test-communication-email/index.ts",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "message": "Unexpected any. Specify a different type.",
+      "severity": 2,
+      "count": 1
+    }
+  ]
+}

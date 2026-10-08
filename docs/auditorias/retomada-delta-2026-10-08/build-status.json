@@ -1,0 +1,13 @@
+{
+  "target": "main",
+  "preview_url": "https://id-preview--a79bb3db-f665-466d-bf41-ee8c6cb91fab.lovable.app",
+  "latest_commit_sha": "7d030dc426faa821621b39822a9b784863c6ff14",
+  "preview_build_sha": "7d030dc426faa821621b39822a9b784863c6ff14",
+  "in_sync": true,
+  "latest_run": {
+    "run_id": "br_eb12af73-089f-4a93-bdf5-4200794f0aef",
+    "status": "succeeded",
+    "commit_sha": "7d030dc426faa821621b39822a9b784863c6ff14",
+    "finished_at": "2026-10-08T19:35:27Z"
+  }
+}
