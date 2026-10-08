@@ -41,8 +41,9 @@ export default function SelecionarPortal() {
   if (current.current.scope !== scope) { current.current.scope = scope; current.current.epoch += 1; }
   const lock = useRef(false);
   useEffect(() => {
-    current.current.mounted = true;
-    return () => { current.current.mounted = false; current.current.epoch += 1; };
+    const state = current.current;
+    state.mounted = true;
+    return () => { state.mounted = false; state.epoch += 1; };
   }, []);
   useEffect(() => { setSubmitting(null); setRemember(false); }, [scope]);
 

@@ -36,8 +36,9 @@ export function useAvailableContexts() {
     clearActivePortalContext();
   }
   useEffect(() => {
-    current.current.mounted = true;
-    return () => { current.current.mounted = false; current.current.epoch += 1; };
+    const state = current.current;
+    state.mounted = true;
+    return () => { state.mounted = false; state.epoch += 1; };
   }, []);
   useEffect(() => {
     // Previous identities/tenants/roles must not retain selectable context data.
