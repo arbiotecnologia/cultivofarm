@@ -74,7 +74,7 @@ export class EstoqueMotorError extends Error {
     return this.codigo === "ESTQ_IDEMPOTENCY_CONFLITO";
   }
   get isPermissao() {
-    return this.codigo === "ESTQ_SEM_PERMISSAO" || this.codigo === "ESTQ_ESCOPO_INVALIDO";
+    return ["ESTQ_SEM_PERMISSAO", "ESTQ_ESCOPO_INVALIDO", "ESTQ_NAO_AUTENTICADO", "ESTQ_IDENTIDADE_INATIVA", "ESTQ_FEATURE_REQUIRED", "ESTQ_TENANT_FORBIDDEN", "ESTQ_REFERENCE_FORBIDDEN"].includes(this.codigo);
   }
 }
 
@@ -105,6 +105,15 @@ export async function operarEstoque(
 export function mensagemErroEstoque(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   const mapa: Record<string, string> = {
+    ESTQ_NAO_AUTENTICADO: "Entre novamente para realizar esta operação de estoque.",
+    ESTQ_IDENTIDADE_INATIVA: "Sua sessão ou empresa não está habilitada para esta operação.",
+    ESTQ_FEATURE_REQUIRED: "O plano da sua empresa não habilita esta operação de estoque.",
+    ESTQ_TENANT_FORBIDDEN: "Este item não está disponível para a sua empresa.",
+    ESTQ_REFERENCE_FORBIDDEN: "Os vínculos informados não são válidos para esta operação.",
+    ESTQ_REFERENCE_UNSUPPORTED: "Este tipo de vínculo ainda não está habilitado para esta operação.",
+    ESTQ_PAYLOAD_INVALIDO: "Os dados informados para esta operação são inválidos.",
+    ESTQ_ESTORNO_ORIGEM_INVALIDA: "A movimentação de origem não é válida para este estorno.",
+    ESTQ_SEM_TRILHA: "Não foi possível confirmar o registro da movimentação. A operação foi revertida.",
     ESTQ_SEM_PERMISSAO: "Seu perfil não tem permissão para esta operação de estoque.",
     ESTQ_ESCOPO_INVALIDO: "Este item pertence a outro cliente, OS ou pedido.",
     ESTQ_SALDO_INSUFICIENTE: "Saldo insuficiente para concluir a operação.",

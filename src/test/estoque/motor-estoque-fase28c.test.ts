@@ -41,6 +41,15 @@ describe("FASE 28C — chaveIdempotencia", () => {
 
 describe("FASE 28C — mensagemErroEstoque", () => {
   const casos: Array<[string, RegExp]> = [
+    ["ESTQ_NAO_AUTENTICADO", /Entre novamente/i],
+    ["ESTQ_IDENTIDADE_INATIVA", /sessão ou empresa/i],
+    ["ESTQ_FEATURE_REQUIRED", /plano da sua empresa/i],
+    ["ESTQ_TENANT_FORBIDDEN", /sua empresa/i],
+    ["ESTQ_REFERENCE_FORBIDDEN", /vínculos informados/i],
+    ["ESTQ_REFERENCE_UNSUPPORTED", /ainda não está habilitado/i],
+    ["ESTQ_PAYLOAD_INVALIDO", /dados informados/i],
+    ["ESTQ_ESTORNO_ORIGEM_INVALIDA", /origem não é válida/i],
+    ["ESTQ_SEM_TRILHA", /operação foi revertida/i],
     ["ESTQ_SALDO_INSUFICIENTE", /Saldo insuficiente/i],
     ["ESTQ_IDEMPOTENCY_CONFLITO", /já registrada/i],
     ["ESTQ_UPDATE_DIRETO_BLOQUEADO", /operações oficiais de estoque/i],
@@ -94,6 +103,9 @@ describe("FASE 28C — EstoqueMotorError", () => {
 
   it("é uma instância de Error", () => {
     expect(new EstoqueMotorError("x")).toBeInstanceOf(Error);
+  });
+  it.each(["ESTQ_NAO_AUTENTICADO", "ESTQ_IDENTIDADE_INATIVA", "ESTQ_FEATURE_REQUIRED", "ESTQ_TENANT_FORBIDDEN", "ESTQ_REFERENCE_FORBIDDEN"])("classifica %s como restrição de acesso", (codigo) => {
+    expect(new EstoqueMotorError(codigo).isPermissao).toBe(true);
   });
 });
 

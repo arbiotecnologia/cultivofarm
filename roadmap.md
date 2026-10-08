@@ -1,4 +1,12 @@
-## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (estado atual)
+## Motor estoque — hardening focal — 2026-10-08 03:07 UTC (estado atual)
+
+- [x] Conferir delta 0a1966fa→e92fa850, callers e corpos vivos; helpers h15/RBAC/saas_has_feature estoque_embalagens. Sem referências habilitadas por inferência.
+- [x] Migration oficial 20261008031156 motor/reserva aplicada; três contenções e ACL bloqueadas preservadas, corpos finais inspecionados.
+- [x] Prova SQL positiva focal, cinco negativas e replay parcial sem duplicação; exceção final rollback, nove classes cleanup zero e hashes históricos iguais. Não é browser/API Auth.
+- [x] 262/262 testes estoque/entregas, lint testes/scanner segredos/diff-check PASS; relatório com limites das nove ações/rollback. Typecheck separado NOT RUN (harness).
+- [ ] Revisão funcional ampliada e autorização posterior de ACL: bloqueadas até prompt específico; identidade inativa/atores ambos habilitados/referências dinâmicas/concorrência/browser API ainda UNVERIFIED, NO-GO operacional.
+
+## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (histórico)
 
 - [x] Destino canônico, RLS/ACL/helpers e referências privilegiadas auditados; pré-prova AR/FSF órfão 1/1. Não inferir organização por expedido_por.
 - [x] Migration oficial `20261008022948` aplicada após tentativa revertida: policy RESTRICTIVE USING/WITH CHECK pelo lote, trigger ator/old/new/referências; fechamento textual pós-aplicação de 23 DEFINER sem EXECUTE cliente, service preservado. Entrada contida antes de replay/leitura; RPCs não restaurados funcionalmente.
