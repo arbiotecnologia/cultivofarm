@@ -51,7 +51,12 @@ function usePartnerReadScope(partnerId?: string | null) {
     const { data: owner, error: ownerError } = await supabase.from("clientes")
       .select("organization_id").eq("id", partner.client_id).abortSignal(signal).maybeSingle();
     check();
-    if (ownerError || !owner?.organization_id || owner.organization_id !== profile?.organization_id)
+    // Generated types omit this live column; narrow the response, never regenerate
+    // types from another binding or trust a cast as ownership authorization.
+    const rawOwner: unknown = owner;
+    const ownerOrg = rawOwner && typeof rawOwner === "object" && "organization_id" in rawOwner
+      ? rawOwner.organization_id : null;
+    if (ownerError || typeof ownerOrg !== "string" || !ownerOrg || ownerOrg !== profile?.organization_id)
       throw new Error("partner_ownership_unavailable");
     return check;
   };
