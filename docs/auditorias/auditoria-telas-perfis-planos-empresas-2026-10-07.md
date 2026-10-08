@@ -2,7 +2,7 @@
 
 ## Estoque legado — P1 isolamento — 2026-10-08 (estado atual)
 
-### Complemento residual histórico/views — 02:47 UTC
+### Complemento residual histórico/views — fechamento 02:44 UTC
 
 - Reteste independente recebido: dois movimentos visíveis aos dois admins. Pré-prova própria sem iat retornou AR Bio=2/FSF=0 direto/view, pois readiness FSF falhava fechado; não substitui relato com claims completos nem prova isolamento. Identidades confirmadas: AR Bio `a7d45277-6dec-413d-bf6b-86620c1ef39f`, FSF `cbdc4ef3-005a-4674-8ea3-4410c7d7d212`.
 - **Migration oficial adicional `20261008024032` aplicada no canônico**, arquivo `supabase/migrations/20261008024032_daf0ffb8-65f0-4dc1-a52c-f216705b9198.sql`, SHA-256 `52fd794b44d568582ec8d368a9f5086d32af0364d2b8d0afab48e9d9f2be03a5`. Anterior não reaplicada. Policy `stock_p1_mov_tenant_isolation` RESTRICTIVE FOR ALL USING/WITH CHECK; helper privado DEFINER `stock_p1_movement_owned` verifica par estoque/lote e reutiliza `stock_p1_lote_owned`; wrapper público INVOKER, EXECUTE negado PUBLIC/anon.
@@ -15,7 +15,7 @@
 - Reprodução `scripts/rbac-audit/stock-p1-movements-proof.sql`, SHA-256 `5ef541ee24c496503bb96c0657f53caf899d05436674b4037a40c6fdf9c853d1`: equivalente revisado com CQ/envase/iat, não transcrição literal; exige novo run_id/autorização antes de reexecutar.
 - **PASS focal RLS/views e quatro negativas trigger; NO-GO operacional/integral.** 23 DEFINER cliente continuam contidos: estoque/entrega/cockpit/comprovante/rastreio/etiquetas indisponíveis nesses pontos; negação universal não é PASS funcional. Browser perfil/plano, RPCs funcionais, Edge/Storage/dinâmico UNVERIFIED. Sem publicação, Auth, assinatura, comunicação externa ou fase seguinte.
 - **Rollback adicional documental não executado:** nunca remover policy/guard ou reconceder RPCs automaticamente. Manter negações em incompatibilidade; forward-fix específico autorizado deve provar own/cross/órfão/referências e preservar hashes antes da liberação. Não atribuir organização ao legado por inferência.
-- Validações locais adicionais em andamento. Migration tool informou **444 findings preexistentes**, sem novos atribuídos: 17 RLS INFO, 2 DEFINER público, 424 DEFINER authenticated, 1 senha vazada OFF; não corrigidos fora do escopo.
+- Validações próprias adicionais: **168/168 PASS em 13 arquivos**, estoque/RBAC/quatro suítes multiportal, incluindo três novas assertions estruturais (sete testes no arquivo de contenção); lint focal/scanners fiscal-secrets/fiscal-integration/diff-check PASS; build automático **OK 02:44:13 UTC**. Typecheck separado **NOT RUN**, execução manual vedada pelo harness; não inferir PASS. Migration tool informou **444 findings preexistentes**, sem novos atribuídos: 17 RLS INFO, 2 DEFINER público, 424 DEFINER authenticated, 1 senha vazada OFF; não corrigidos fora do escopo. Revisão observada durante verificações `fd7a433c2d0318c374180650bacebedf91916e21`, commits geridos pelo ambiente, nenhum commit manual.
 
 ### Diagnóstico/aplicação
 
