@@ -1,4 +1,11 @@
-## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (estado atual)
+## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (estado atual)
+
+- [ ] Auditar destino canônico, RLS/ACL/helpers e todos leitores/writers privilegiados antes da contenção.
+- [ ] Aplicar migration oficial focal com vínculo seguro pelo lote, autorização antes de replay/leitura e proteção de referências cruzadas; preservar órfãos sem backfill.
+- [ ] Provar own/cross/órfão e mutações/replay com duas identidades existentes em fixtures integralmente revertidas; registrar hashes/manifesto e limites.
+- [ ] Testes focais, lint/scanners e sinais automáticos typecheck/build; relatório e rollback seguro, sem publicação/Auth/assinaturas ou módulo seguinte.
+
+## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (histórico)
 
 - [x] Remover somente fallback que inventava Consultor Técnico em contexto technical sem papel técnico; preservar papéis reais/multipapel/B2B/produtor e entrega 943710ce.
 - [x] Testes próprios 29/29 PASS em 4 arquivos (rótulo 9/cabeçalho 7/MeuPlano 13); lint alterados, scanners/diff-check PASS; build automático OK 02:12:39 UTC. Relatório com evidência recebida, rollback mínimo não executado e ausência de publicação.

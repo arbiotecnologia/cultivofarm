@@ -25196,6 +25196,7 @@ export type Database = {
           is_new: boolean
         }[]
       }
+      stock_p1_lote_owned: { Args: { p_lote: string }; Returns: boolean }
       tenant_admin_list_users: {
         Args: {
           p_active?: boolean
