@@ -1,5 +1,5 @@
 /* global self */
-// Standalone containment worker. No cache, claim, skipWaiting or session data.
+// Standalone containment worker. No app-shell lifecycle or session data.
 // Existing installed workers are NOT automatically replaced by this file.
 const PUSH_DELIVERY_AVAILABLE = false;
 

@@ -1,3 +1,9 @@
+## RETOMADA DELTA — RENATO 10K — 2026-10-08 19:37 UTC
+- [x] Ancestralidade Git comprovada: base ecff53113532b7d8363618f9c479b9e357d822c9 é ancestral do HEAD 7d030dc426faa821621b39822a9b784863c6ff14; 643 commits; worktree inicial limpo.
+- [ ] Inventários completos de commits/arquivos/migrations e matriz rota×papel; distinguir extração automática de revisão semântica e evidência dinâmica.
+- [ ] Regressões focais/lint/scanners/build automático, comparação de baseline e relatório em 17 tópicos; typecheck manual proibido pelo ambiente, registrar NOT RUN.
+- [ ] Provas JWT/browser privados e SQL transacional: dependem de sessão/executor seguros; external_unmanaged, sem contas/fixtures/senhas/alterações comerciais. Não avançar FISC/P2–P6 nem publicar.
+
 ## FISCAL NATIVO — FISC-0–6 — diretriz 2026-10-08 19:29 UTC
 - [x] FISC-0 parcial: inventário canônico28/28tabelas RLS, rotas/Edges/modelos/reserva/Storage/fontes oficiais; relatório fiscal-nativo-fisc0-6-2026-10-08.md,117/117locais/scanners PASS. P2–P6/BF/P1A/P2A preservados; sem runtime/migration/transporte.
 - [ ] FISC-0 fechamento bloqueado: homolog/paridade não acessadas, NFS-e oficial HTTP403 e pacote NF-e localNTv1.40 versus página oficialv1.52; obter/diff fontes/manifestos, sem fixtures persistentes antes de prova.

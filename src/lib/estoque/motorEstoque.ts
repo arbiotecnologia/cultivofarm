@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import type { Json } from "@/integrations/supabase/cultivofarm.types";
 
 /**
  * Motor canônico de movimentações de estoque (Fase 2).
