@@ -1,39 +1,30 @@
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-const proposal = readFileSync("restoration/b2b-p1b/mandate-schema.proposed.sql", "utf8");
-const executable = proposal.replace(/--[^\n]*/g, "");
+// Executes the actual read-only audit predicate locally. No Supabase/RLS/JWT proof.
+const sql = readFileSync("scripts/rbac-audit/b2b-p1b-contract-cases.readonly.sql", "utf8");
+const execution = spawnSync("python3", ["-c", `
+import sqlite3,sys,json
+c=sqlite3.connect(':memory:')
+c.execute("attach database ':memory:' as public")
+c.execute('create table public.fiscal_environment_marker(project_ref text)')
+c.execute("insert into public.fiscal_environment_marker values ('swzpzcwiasxmjutrmvkm')")
+print(json.dumps(c.execute(sys.stdin.read()).fetchall()))
+`], { input: sql, encoding: "utf8" });
+if (execution.status !== 0) throw new Error("local_audit_predicate_failed");
+const rows: [string, number, number, string][] = JSON.parse(execution.stdout);
 
-describe("P1B proposed inactive schema — static, not PostgreSQL/JWT proof", () => {
-  it("cannot approve a mandate, even through a privileged insert", () => {
-    expect(executable).toContain("NEW.status IS DISTINCT FROM 'DRAFT'");
-    expect(executable).toContain("mandate_activation_unavailable");
-    expect(executable).toContain("BEFORE INSERT OR UPDATE OR DELETE");
-    expect(executable).toContain("TG_OP <> 'INSERT'");
+describe("P1B internal A predicate model — not runtime authorization", () => {
+  it("allows authorized A only in its commercial context", () => {
+    expect(rows.find(([name]) => name === "internal_A")?.[1]).toBe(1);
   });
-  it("keeps A and P distinct with explicit creditor and issuer", () => {
-    expect(executable).toContain("NEW.contractor_organization_id = NEW.partner_organization_id");
-    expect(executable).toContain("p.commercial_owner_organization_id = NEW.contractor_organization_id");
-    expect(executable).toContain("o.partner_account_id = NEW.partner_account_id");
-    expect(executable).toContain("c.organization_id = NEW.creditor_organization_id");
-    expect(executable).toContain("NEW.issuer_organization_id NOT IN");
-  });
-  it("requires bounded time, exact predecessor and an allowlisted action scope", () => {
-    expect(executable).toContain("NEW.valid_until <= NEW.valid_from");
-    expect(executable).toContain("NOT isfinite(NEW.valid_until)");
-    expect(executable).toContain("NOT NEW.action_scope <@ ARRAY[");
-    expect(executable).toContain("m.revision = NEW.revision - 1");
-  });
-  it("has grants before RLS, but no caller write or activation grants", () => {
-    const grants = executable.indexOf("GRANT SELECT ON public.b2b_operation_mandates TO authenticated");
-    expect(grants).toBeGreaterThan(0);
-    expect(grants).toBeLessThan(executable.indexOf("ENABLE ROW LEVEL SECURITY"));
-    expect(executable).toContain("AS RESTRICTIVE FOR ALL TO anon, authenticated USING (false) WITH CHECK (false)");
-    expect(executable).not.toMatch(/GRANT\s+(?:INSERT|UPDATE|DELETE|EXECUTE)/i);
-  });
-  it("does not rewrite historical rows or reopen BF/P1A functions", () => {
-    expect(executable).not.toMatch(/\b(?:INSERT INTO|UPDATE public\.|DELETE FROM|DROP|TRUNCATE)\b/i);
-    expect(executable).not.toMatch(/GRANT[^;]*(?:assign_b2b|cancel_b2b|rpc_b2b|rpc_portal)/i);
-    expect(executable).not.toContain("SECURITY DEFINER");
-  });
+  for (const name of ["P_to_A", "A_to_P", "same_cnpj_P_to_A",
+    "linked_organization_P_to_A", "cross_tenant", "inactive", "no_org",
+    "no_role", "no_feature", "legacy_owner", "resource_P", "creditor_P",
+    "issuer_P", "customer_P", "no_scope"]) {
+    it(`denies ${name}`, () => {
+      expect(rows.find(([key]) => key === name)?.[1]).toBe(0);
+    });
+  }
 });
