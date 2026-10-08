@@ -55,7 +55,7 @@ const schema = z.object({
     .optional()
     .nullable()
     .refine((v) => !v || validateCNPJ(v), "CNPJ inválido"),
-  client_id: z.string({ required_error: "Selecione um cliente da sua empresa" }).uuid("Selecione um cliente da sua empresa"),
+  client_id: z.string().uuid("Selecione um cliente da sua empresa").optional().nullable(),
   desconto_padrao: z.number().min(0).max(100),
   observacoes: z.string().trim().max(1000).optional().nullable(),
   ativo: z.boolean(),
@@ -334,8 +334,8 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
 
   const handleSubmit = async () => {
     if (submitLock.current) return;
-    if (!scope.canManagePartners || !clientes?.some(c => c.id === form.client_id)) {
-      setErrors({ client_id: "Selecione um cliente da sua empresa antes de salvar" }); setTab("dados"); return;
+    if (!scope.canManagePartners || (form.client_id && !clientes?.some(c => c.id === form.client_id))) {
+      setErrors({ client_id: "O cliente selecionado deve pertencer à sua empresa" }); setTab("dados"); return;
     }
     const telCheck = validatePhoneBR(form.telefone_comercial, { fieldLabel: "Telefone comercial" });
     if (!telCheck.ok) { toast.error(telCheck.error); return; }
@@ -548,11 +548,11 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                 </Select>
               </div>
               <div className="sm:col-span-2">
-                <Label>Cliente da empresa *</Label>
+                <Label>Cliente da empresa (opcional)</Label>
                 <Select value={form.client_id ?? "none"} onValueChange={(v) => set("client_id", v === "none" ? null : v)}>
                   <SelectTrigger aria-label="Cliente da empresa" aria-invalid={!!errors.client_id}><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— Selecione um cliente —</SelectItem>
+                    <SelectItem value="none">— Sem vínculo com cliente —</SelectItem>
                     {clientes?.map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>{c.razao_social || c.nome}</SelectItem>
                     ))}
@@ -560,7 +560,6 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                 </Select>
                 {errors.client_id && <p role="alert" className="text-xs text-destructive mt-1">{errors.client_id}</p>}
                 {clientesQuery.isError && <div role="alert" className="text-sm text-destructive">Não foi possível carregar clientes. <Button type="button" variant="link" onClick={() => clientesQuery.refetch()}>Tentar novamente</Button></div>}
-                {!clientesQuery.isLoading && !clientesQuery.isError && clientes?.length === 0 && <p className="text-sm text-muted-foreground">Cadastre primeiro o produtor/cliente desta empresa na aba Produtores e depois selecione-o aqui.</p>}
               </div>
               <div className="flex items-end gap-3">
                 <div>

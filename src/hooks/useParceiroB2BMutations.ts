@@ -73,7 +73,7 @@ export function useCreateParceiroB2B() {
   return useMutation({
     onMutate: () => ({ current: scope.capture(), scope: scope.scope }),
     mutationFn: async (input: ParceiroB2BInput) => {
-      if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
+      if (!scope.canManagePartners) throw { code: "42501" };
       const current = scope.capture();
       const { data: userData } = await supabase.auth.getUser();
       if (!current() || !userData.user?.id || userData.user.id !== scope.actorId) throw { code: "42501" };
@@ -101,7 +101,7 @@ export function useUpdateParceiroB2B() {
   return useMutation({
     onMutate: () => ({ current: scope.capture(), scope: scope.scope }),
     mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
-      if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
+      if (!scope.canManagePartners) throw { code: "42501" };
       const current = scope.capture();
       const { data, error } = await supabase
         .from("partner_accounts")
