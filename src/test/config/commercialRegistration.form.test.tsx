@@ -13,11 +13,11 @@ import type { ParceiroB2B } from "@/hooks/useParceirosB2B";
 beforeEach(()=>{s.save.mockReset();s.update.mockReset();s.close.mockReset();s.cep.mockReset();s.resolve=undefined;});
 function nameInput(){const input=screen.getByText("Razão Social *").parentElement?.querySelector("input");if(!input)throw new Error("name input missing");return input;}
 it("preserva string obrigatória vazia na validação, mantendo opcionais nulos", () => {
- const parse = vi.spyOn(z.ZodObject.prototype, "safeParse");
+ const parse = vi.spyOn(z.ZodObject.prototype, "_parse");
  try {
   render(<ParceiroB2BFormDialog open onOpenChange={s.close}/>);
   fireEvent.click(screen.getByRole("button", {name: "Criar parceiro"}));
-  expect(parse).toHaveBeenCalledWith(expect.objectContaining({razao_social: "", nome_fantasia: null, cnpj: null}));
+  expect(parse).toHaveBeenCalledWith(expect.objectContaining({data: expect.objectContaining({razao_social: "", nome_fantasia: null, cnpj: null})}));
   expect(s.save).not.toHaveBeenCalled();
  } finally { parse.mockRestore(); }
 });
