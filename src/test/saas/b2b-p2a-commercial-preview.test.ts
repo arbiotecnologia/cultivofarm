@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const sql = readFileSync("supabase/migrations/20261008184449_025a0908-63b7-4d56-b1c6-6006510e4aed.sql", "utf8");
-const predicate = sql.match(/WHERE pa\.id=p_partner_id[\s\S]*?\n   \)\)/)?.[0];
+const predicate = sql.match(/WHERE pa\.id=p_partner_id[\s\S]*?\n {3}\)\)/)?.[0];
 if (!predicate) throw new Error("commercial_predicate_missing");
 const result = spawnSync("python3", ["-c", `
 import sqlite3,json,sys

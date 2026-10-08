@@ -1,8 +1,9 @@
 ## B2B-FISCAL — P2A operação interna A — 2026-10-08
-- [ ] Conferir HEAD efetivo e ledger canônico; preservar BF01–03/P1A e proposta retirada. P isolado, sem mandato ou herança por CNPJ.
-- [ ] Auditar fluxo existente interno A e primeira quebra; corrigir apenas integração/contensão reversível demonstrada, sem reescrever histórico.
-- [ ] Comparar homolog antes de persistência; sem acesso/paridade/executor seguro, registrar UNVERIFIED e não improvisar fixtures.
-- [ ] Testes positivos/negativos por camada, hashes/contagens, lint/scanners/build automático, relatório e gate P2B; sem efeitos externos.
+- [x] HEAD589eb384/ledger173204/174953/181641 canônicos conferidos; BF01–03/P1A e proposta retirada preservados. Sem mandato/CNPJ como autorização.
+- [x] Primeira quebra estrutural: simulação/pedido exigem tenant P; correção mínima somente consulta da matriz interna por owner A na migration oficial184449. Pedido sem snapshot credor/emissor A e caminhos posteriores não restaurados, sem guard compartilhado/backfill.
+- [x] Limites de paridade/executor registrados: homolog não acessado, PGHOST ausente e DML não autenticado inadequado para claims/rollback; zero fixtures/Auth/vínculos/dados operacionais/emissão/cobrança/publicação.
+- [x] Relatório b2b-fiscal-p2a-2026-10-08.md:114/114 locais6arquivos,14novos; lint focal/scanners/diff-check PASS; ampliado3any baseline sem alteração. Seis hashes/contagens iguais; ACL BF02/03 fechada, resolver intacto. Typecheck manual NOT RUN.
+- [ ] Gate P2B NO-GO: authenticated A/negativas RPC, portal P residual, snapshot A do pedido, propagação produção/entrega/título/fiscal, homolog paritária, executor rollback, JWT/browser/Storage/concorrência UNVERIFIED. Falta sessão/executor seguros e contrato demonstrado no fluxo de escrita; não iniciar próxima fase.
 
 ## B2B-FISCAL — P1B — 2026-10-08
 - [x] HEAD b5531f49 e ledger173204/174953/181641 canônicos conferidos; BF01–03/P1A preservados, sem reaplicação.
