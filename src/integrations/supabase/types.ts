@@ -25197,6 +25197,10 @@ export type Database = {
         }[]
       }
       stock_p1_lote_owned: { Args: { p_lote: string }; Returns: boolean }
+      stock_p1_movement_owned: {
+        Args: { p_lote: string; p_stock: string }
+        Returns: boolean
+      }
       tenant_admin_list_users: {
         Args: {
           p_active?: boolean
