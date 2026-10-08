@@ -1,3 +1,8 @@
+## CADASTRO-1 — criação de usuários/B2B — 2026-10-08
+- [ ] Auditar UI/Edge/contratos vivos/ACL/triggers e ciclo de usuário; distinguir propriedade canônica de parceiro de inferência legada.
+- [ ] Corrigir mensagens contraditórias e bugs comprovados, sem abrir cadastro B2B sem contrato; testes, matriz e relatório focal.
+- [ ] Definir plano integrado de criação/primeiro acesso; nenhum Auth/fixture/convite/envio/papel/vínculo real, publicação ou alteração dos checkpoints anteriores.
+
 ## MULTIPORTAL-1 — Gestão/Técnico — 2026-10-08
 - [x] Checkpoint STORAGE-2 fechado:267/267 testes, migration144506 e hashes registrados; limitações operacionais preservadas, sem reabertura.
 - [x] Inventário login/guards/layout/sidebar/storage/broadcast/query keys e contratos RPC/constraints de preferência/log; banco atual contém um perfil ativo gestor+consultor_tecnico, divergindo do inventário independente anterior.
