@@ -1,5 +1,32 @@
 # Provisionamento B2B — preparação do contrato, mesma auditoria
 
+## Continuação21:55 — contenção de tabela real aplicada, provisionamento aberto
+
+Destino comprovado pela marca canônica `swzpzcwiasxmjutrmvkm`. As cinco policies vivas de `partner_accounts`, incluindo a combinação permissiva/restritiva, foram copiadas para `scripts/rbac-audit/b2b-partner-real-policies.sql`; helpers has_role/h15/readiness/get_user_partner_id usam definições vivas. Harness `scripts/tests/b2b-partner-real-rls-local.py` cria DDL mínimo dessa tabela real e dependências, **não test_orders**, Auth/iat simulados, sem triggers/DDL integral de produção. Reproduziu técnico lendo desconto25/limite1000 do próprio parceiro, sem irmãos/tenantB. Portanto risco financeiro técnico não é mais apenas relato; prova local com policies reais, não JWT vivo.
+
+Migration oficial `20261008215514_35afd7bc-aadd-43ee-8e0f-569b728d2432` aplicada após replay positivo/negativo: adiciona apenas policy RESTRICTIVE e helper privado DEFINER/search_path vazio. Técnico B2B e gestor commercial_owner não acessam diretamente linha completa; projeções mínimas próprias já existentes continuam caminho separado. Detecção de role é independente de readiness para não desaparecer em primeiro acesso/inatividade ou com papel extra. ACL anon=false/authenticated+service=true confirmadas; nenhuma ampliação de grants ou alteração de organizações/dados. Não fecha automaticamente outras tabelas/RPCs/Edges/Storage, nem prova negação financeira em todas elas.
+
+Os testes também revelaram risco da policy **legada**: ator interno com partner_users residuais, movido para tenantB, retém leitura pelo ramo self-link/LIMIT1. O replay registra esse resultado (2linhas:umaA+umaB) antes de remover somente links locais; administração B sem vínculo residual lê somente sua linha. Não ocultar a hipótese inválida nem chamar isto de isolamento de todos atores internos: exige revisão específica do ramo self/imutabilidade de vínculos. Nenhum ator remoto foi modificado. Treze asserções SQL em um teste Vitest; não contar como13testes independentes.
+
+### Bloqueadores exatos, sem nova decisão de negócio
+
+| Ponto | Condição ainda não satisfeita |
+|---|---|
+| Superfície geral | 256tabelas public/647policies,30policiesStorage e538RPCspúblicas+31privadas executáveis authenticated inventariadas por contagem, não revisadas integralmente; referências diretas legadas34+6, SQL dinâmico5funções. Contagem não autoriza ativação. |
+| Clientes vinculados | get_b2b_user_clients_secure executável authenticated; corpo DEFINER usa vínculos/roles antigos e devolve telefone/cidade/estatísticas, sem validar o contrato commercial_owner em todos caminhos. Nenhuma leitura de PII remota realizada. |
+| Mensagens | rpc_message_set_status executável authenticated autoriza via get_user_partner_id/LIMIT1, sem core owner/roleúnica antes do UPDATE. Mutação não executada. |
+| Storage | Policy de upload logo parceiro usa partner_users.papel=gestor/path; composição das30policies e helpers ainda não certificada, nenhum byte/upload/download. |
+| Claim/idempotência | Nenhum receipt/lease/fencing B2B liga preflight ao novo AuthID e à compensação; unicidade email/lock local não substituem contrato distribuído. |
+| Finish | Falta transação autoritativa profile tenant derivado+role exclusiva+partner_users e prova de replay/falha/compensação parcial com definições reais. |
+| Primeiro acesso | Finalizador existente exige estado server-only/AMR/iat; fluxo de convite admin existente é específico do administrador provisionado, não deve ser reutilizado como autorização B2B ou emitir link ao operador. Nenhuma senha/link/Auth criado. |
+| Seletor | create-user segue503 antes Auth; seletor fechado. Backend ainda não pode atestar containment total, portanto nenhuma flag cliente habilita. |
+
+Validações: rodada criação+vínculos+primeiro acesso+RLS teve70PASS/1FAIL em71testes; falha é asserção textual histórica que espera URL literal no arquivo redirect-policy agora re-exportado de `_shared`, não falha de fluxo Auth executado. Nenhum ajuste oportunista ao fluxo emailv9. Focal anterior9/9PASS em3arquivos, lint novo/scanner fiscal-secrets/diffPASS; não somar sobreposições. Build automáticoOK21:55:34; typecheck manual não executado por restrição do harness. Advisor389preexistentes sem novos:15INFO/2WARNPUBLIC/371WARNauthenticated/1proteção senha; não classificar globalPASS.
+
+Revalidação final21:58:45: **59/59 testes em4arquivos PASS** (37handler,14vínculos,7cache,1PostgreSQL com13asserções); lint novo/diffPASS,scannerPASS e build automáticoOK21:58:38. Corrigida a expectativa do risco legado: LIMIT1 preserva uma linhaA, não duas; a evidência positiva não foi mascarada. A falha textual first-access da rodada ampliada permanece documentada, não incluída nestes59.
+
+Executivo19 conferido read-only:16corpos EXECUTIVO_SOURCE_UNAVAILABLE com ACLanon/authenticated negada,19total. emailv9 não editado/reimplantado. Rollback seguro é sucessor de contenção que preserve negação direta financeira até projeção autorizada; não remover esta policy para restaurar exposição. **PASS contenção focal aplicada; NO-GO provisionamento/login/faturamento/integral. Objetivo de provisionamento mínimo ativo ainda não entregue; pendências são implementação/prova, não nova decisão humana.**
+
 ## Revisão independente21:45 — implantação comprovada, gate técnico não satisfeito
 
 Evidência independente recebida: core/fachada do recorte `e2733c` **já estão implantados** no Supabase canônico `swzpzcwiasxmjutrmvkm`, com paridade exata dos corpos SQL verificada; EXECUTE anon=false, core SECURITY DEFINER, fachada SECURITY INVOKER e search_path vazio. Não descrever estes resolvers como apenas locais nem estender sua paridade a todas as policies/RPCs/Edges/Storage. Esta rodada registra a revisão, sem nova consulta remota ou implantação.
