@@ -27,7 +27,10 @@ export function useMyPartner() {
         if (!current() || signal.aborted) throw new Error("partner_context_changed");
       };
       check();
-      const { data: rawContext, error } = await supabase.rpc("get_my_commercial_partner_context");
+      // Canonical client only. Generated RPC names lag this additive migration;
+      // keep response unknown and validate it rather than modifying generated types.
+      const contextRpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+      const { data: rawContext, error } = await contextRpc.call(supabase, "get_my_commercial_partner_context");
       check();
       if (error) throw new Error("partner_context_unavailable");
       if (!rawContext) return null;
