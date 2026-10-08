@@ -27,6 +27,17 @@ describe('contained push hook', () => {
   await act(async () => h.result.current.unsubscribe()); expect(unsubscribe).toHaveBeenCalledOnce(); expect(unregister).not.toHaveBeenCalled();
   m.auth.loading = true; h.rerender(); expect(h.result.current.subscription).toBeNull(); h.unmount();
  });
+ it('fences late browser subscription on identity change', async () => {
+  let finish: (value: unknown) => void = () => {};
+  const old = new Promise(resolve => { finish = resolve; });
+  const getRegistration = vi.fn().mockReturnValueOnce(old).mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { getRegistration } });
+  vi.stubGlobal('PushManager', function() {});
+  const h = renderHook(() => usePushSubscription());
+  m.auth = { ...m.auth, user: { id: 'B' }, profile: { ...m.auth.profile, user_id: 'B', organization_id: 'OB' } }; h.rerender();
+  await act(async () => finish({ active: { scriptURL: `${location.origin}/push-sw.js` }, pushManager: { getSubscription: vi.fn().mockResolvedValue({ unsubscribe: vi.fn() }) } }));
+  expect(h.result.current.subscription).toBeNull(); h.unmount();
+ });
  it('does not inspect subscriptions belonging to non-push worker', async () => {
   const getSubscription = vi.fn();
   Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { getRegistration: vi.fn().mockResolvedValue({ active: { scriptURL: `${location.origin}/sw.js` }, pushManager: { getSubscription } }) } });

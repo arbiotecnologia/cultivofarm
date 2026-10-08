@@ -6,7 +6,7 @@ vi.mock("@/hooks/useNotificacoesUnificadas", () => ({ useNotificacoesUnificadas:
   unreadCount: 1, isLoading: false, isError: m.error, refetch: m.refetch,
   markRead: { mutate: m.read, isPending: m.pending }, markAllRead: { mutate: m.allRead, isPending: m.pending },
 }) }));
-vi.mock("@/hooks/usePushSubscription", () => ({ usePushSubscription: () => ({ permission: "denied" }) }));
+vi.mock("@/hooks/usePushSubscription", () => ({ usePushSubscription: () => ({ deliveryAvailable: false, canUnsubscribe: false }) }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 import MobileNotificacoes from "@/pages/app/MobileNotificacoes";
 beforeEach(() => { vi.clearAllMocks(); m.error = false; m.pending = false; });
@@ -19,6 +19,10 @@ describe("Mobile notifications (mock, not authenticated browser)", () => {
     expect(m.read).toHaveBeenCalledWith("op:N", expect.objectContaining({ onError: expect.any(Function) }));
     fireEvent.click(screen.getByRole("button", { name: "Marcar todas" }));
     expect(m.allRead).toHaveBeenCalled();
+  });
+  it("contained UI never offers push activation", () => {
+    render(<MobileNotificacoes />);
+    expect(screen.queryByRole("button", { name: "Permitir Notificações" })).toBeNull();
   });
   it("shows failure and retry instead of false empty state", () => {
     m.error = true; render(<MobileNotificacoes />);

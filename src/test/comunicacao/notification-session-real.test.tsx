@@ -48,6 +48,29 @@ describe('NOTIF-2 real QueryClient, only auth/server mocked', () => {
    expect(m.remove).toHaveBeenCalled(); h.unmount();
   });
  }
+ for (const state of ['loading', 'mismatch', 'inactive', 'logout', 'revoked', 'unowned'] as const) it(`portal hides resolved selection during ${state}`, async () => {
+  const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true }]));
+  await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
+  await waitFor(() => expect(h.result.current.clienteId).toBe('CA'));
+  if (state === 'loading') m.auth.loading = true;
+  if (state === 'mismatch') m.auth.profile.user_id = 'B';
+  if (state === 'inactive') m.auth.profile.ativo = false;
+  if (state === 'logout') m.auth.user = null;
+  if (state === 'revoked') m.auth.roles = [];
+  if (state === 'unowned') m.auth.profile.organization_id = '';
+  h.rerender(); expect(h.result.current.clienteId).toBeNull(); expect(h.result.current.clientes).toEqual([]); h.unmount();
+ });
+ it('unified portal data disappears when producer role is removed despite cached rows', async () => {
+  const h = renderHook(() => useNotificacoesUnificadas(), { wrapper: wrapper() });
+  await act(async () => resolve('notificacoes_operacionais', []));
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true }]));
+  await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
+  await waitFor(() => expect(m.requests.some(r => r.table === 'portal_notificacoes')).toBe(true));
+  await act(async () => resolve('portal_notificacoes', [row('PORTAL')]));
+  await waitFor(() => expect(h.result.current.all[0]?.titulo).toBe('PORTAL'));
+  m.auth.roles = ['administrador']; h.rerender(); expect(h.result.current.all).toEqual([]); expect(m.remove).toHaveBeenCalled(); h.unmount();
+ });
  it('portal fences late selection and role removal including remembered selection', async () => {
   const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
   const old = m.requests.shift(); expect(old?.table).toBe('user_clientes');
