@@ -20,7 +20,7 @@ function handler(name: string, profileActive = true, superadmin = true) {
   const noEffects = vi.fn(() => { throw new Error('unexpected effect'); });
   const schema = { object: () => schema, enum: () => schema, default: () => schema, optional: () => schema, literal: () => schema, string: () => schema, trim: () => schema, email: () => schema, max: () => schema, strict: () => schema };
   const context = {
-    Request, Response, crypto, console,
+    Request, Response, crypto, console, exports: {},
     Deno: { env: { get: (key: string) => key === 'SUPABASE_URL' ? 'https://swzpzcwiasxmjutrmvkm.supabase.co' : 'test-only' }, serve: (fn: typeof serve) => { serve = fn; } },
     createClient, serviceClient, z: schema,
     json: (status: number, body: unknown) => new Response(JSON.stringify(body), { status }),
