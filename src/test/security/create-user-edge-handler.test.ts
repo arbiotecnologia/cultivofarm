@@ -63,7 +63,7 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
   const token = scenario.oldJwt ? "mock-old-jwt" : "mock-valid-jwt";
   const response = await handler(new Request("https://isolated.invalid", {
     method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "test@example.invalid", password: "mock-password", nome: "Teste", role: "gestor", ...payload }),
+    body: JSON.stringify({ email: "test@example.invalid", password: "mock-password1", nome: "Teste", role: "gestor", ...payload }),
   }));
   const body = await response.json();
   expect(JSON.stringify(body)).not.toContain(sentinel);
@@ -74,6 +74,35 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
 }
 
 describe("create-user — handler real, SDK e Auth isolados", () => {
+  it.each([
+    ["seis letras", "abcdef"],
+    ["oito letras sem número", "abcdefgh"],
+    ["oito números sem letra", "12345678"],
+    ["130 caracteres", "a1".repeat(65)],
+    ["sete caracteres com letra e número", "abcde12"],
+    ["129 caracteres", "a1".repeat(64) + "a"],
+  ])("nega senha inválida antes de createUser: %s", async (_label, password) => {
+    const r = await invoke({}, { password });
+    expect(r.response.status).toBe(400);
+    expect(r.createUser).not.toHaveBeenCalled();
+    expect(r.update).not.toHaveBeenCalled();
+    expect(r.insert).not.toHaveBeenCalled();
+    expect(r.deleteUser).not.toHaveBeenCalled();
+    expect(JSON.stringify(r.body)).not.toContain(password);
+    expect(JSON.stringify(r.errorLog.mock.calls)).not.toContain(password);
+  });
+  it.each([
+    ["limite inferior 8", "abcdefg1"],
+    ["limite superior 128", "a1".repeat(64)],
+    ["letra acentuada da regra existente", "á2345678"],
+  ])("aceita a regra existente: %s", async (_label, password) => {
+    const r = await invoke({}, { password });
+    expect(r.response.status).toBe(200);
+    expect(r.createUser).toHaveBeenCalledOnce();
+    expect(r.createUser).toHaveBeenCalledWith(expect.objectContaining({ password }));
+    expect(JSON.stringify(r.body)).not.toContain(password);
+    expect(JSON.stringify(r.errorLog.mock.calls)).not.toContain(password);
+  });
   it("erro sensível do provedor retorna somente código genérico e log fixo", async () => {
     const r = await invoke({ providerFailure: "private-test-sentinel" });
     expect(r.response.status).toBe(400);
