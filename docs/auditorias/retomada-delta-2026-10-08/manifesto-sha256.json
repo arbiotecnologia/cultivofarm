@@ -14,5 +14,6 @@
   "browser-publico.json": "6821dfbde6e5e59e91cbe0fff0fcd6a6310e1d2801055c2aee3ca36aee332086",
   "historico-completo.txt": "776aab227fc15961429371d3b6e3412de4ac3e44ea8322c9d7a99748b807fe36",
   "resumo.json": "74bc7937a6f7549ad383afc00b6ad9fa55d92b753e2431852902eb2215a67a33",
-  "delta-completo.patch": "c8d715ecf1f117fec5d0944fc5b4a38517eba9b38e3bf5eb5b628ecf79a9fd24"
+  "delta-completo.patch": "c8d715ecf1f117fec5d0944fc5b4a38517eba9b38e3bf5eb5b628ecf79a9fd24",
+  "http-drift-email.json": "33d753987cd1383d61d17944edc24e3bf676df118fa0439ff22954cb055bd356"
 }
