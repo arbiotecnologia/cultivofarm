@@ -1,2 +1,3 @@
-- Notification caches, reads, counters and mutations must include active identity, tenant and individual portal recipient; server RLS remains authoritative to prevent stale-context disclosure.
+- Notification caches, reads, counters and mutations require resolved Auth, a matching active profile, tenant, roles and individual portal recipient; server RLS remains authoritative to prevent stale-context disclosure.
 - Portal client selection must fence late requests and scope remembered selection by identity/tenant, so logout or organization changes cannot reuse previous client data.
+- Push stays explicitly unavailable: no automatic worker registration, permission requests or subscription writes; only inspect the same-origin push worker and revoke browser-local subscriptions — avoids false activation and deleting unproven server ownership.

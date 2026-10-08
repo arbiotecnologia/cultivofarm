@@ -52,10 +52,10 @@ const OP_LIMIT = 50;
 const PORTAL_LIMIT = 50;
 
 export function useNotificacoesUnificadas(options?: { limit?: number }) {
-  const { user, profile, roles } = useAuth();
+  const { user, profile, roles, loading: authLoading } = useAuth();
   const { clienteId, loading: portalLoading } = usePortalCliente();
   const organizationId = profile?.organization_id ?? null;
-  const ready = !!user && !!organizationId && profile?.ativo !== false;
+  const ready = !authLoading && !!user && !!organizationId && profile?.user_id === user.id && profile?.ativo === true && roles.length > 0;
   const portalReady = ready && !portalLoading && roles.includes("cliente_produtor") && !!clienteId;
   const roleScope = roles.join(",");
   const scope = [user?.id, organizationId, roleScope];
