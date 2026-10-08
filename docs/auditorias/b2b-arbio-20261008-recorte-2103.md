@@ -1,5 +1,7 @@
 # B2B AR Bio — inspeção inicial21:03UTC, mesma auditoria
 
+**Estado supersedente21:38:** decisão comercialA implementada parcialmente além do resolver: migrations213523/213604 (projeção mínima/preflight/contextos), guard exclusivo e layout com canais indisponíveis, handlercreate-user local com validação bearer.94/94tests6filesPASS(35asserçõesPGisolado dentro de1teste),lint6/scanner/diffPASS/buildautomáticoOK21:37:39. Policies completas/JWT/Storage/Edges same-tenant não certificados; Auth/partner_users/claim-finish/primeiro acesso não implementados neste recorte, dropdown continua fechado. Detalhes/rollback/389achados advisor preexistentes e duas chamadasSELECT1desnecessárias no contrato de provisionamento. NO-GO login/faturamento/integral; implementação integrada solicitada AINDA INCOMPLETA. Evidência Codex catálogo42501forbidden_partner/planos0 preservada; não inventar preços ou fiscalVALIDATED.
+
 ## 1. Autorização e escopo
 Fixtures comerciais autorizadas exclusivamente para AR Biotecnologia `007bb519-cba0-4704-be2c-cb93ad010048`, prefixo `TESTE AUDITORIA B2B 20261008`. Não criar Auth/credenciais/grants/convites, modificar reais/legado NULL/outros tenants nem publicar. Nenhum agente adicional utilizado.
 

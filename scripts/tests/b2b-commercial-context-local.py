@@ -36,8 +36,9 @@ CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid,boolean) RETURN
 CREATE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2::text) $$;
 """
         sql += (ROOT / "scripts/rbac-audit/b2b-commercial-context.sql").read_text()
-        sql += (ROOT / "scripts/rbac-audit/b2b-commercial-portal.sql").read_text()
-        sql += (ROOT / "scripts/rbac-audit/b2b-commercial-available-contexts.sql").read_text()
+        # Replay the exact versioned SQL applied by the migration tool, not a JS model.
+        sql += (ROOT / "supabase/migrations/20261008213523_3c470e56-48ee-4700-8e09-7465b6dbb558.sql").read_text()
+        sql += (ROOT / "supabase/migrations/20261008213604_f5fd1733-6ccc-448f-a16c-2e67f30f77ef.sql").read_text()
         sql += r"""
 INSERT INTO public.organizations VALUES('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,'ativa',NULL),('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,'ativa',NULL);
 INSERT INTO public.partner_accounts(id,commercial_owner_organization_id,ativo,deleted_at) VALUES('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,NULL),('22222222-2222-4222-8222-222222222222','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,NULL),('33333333-3333-4333-8333-333333333333','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,NULL);
