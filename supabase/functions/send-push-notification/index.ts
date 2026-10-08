@@ -1,7 +1,6 @@
 // Fase 0.1: broadcast restrito a internal/service_role/administrador.
 // Usuário comum não pode disparar push (nem para si). Assinaturas continuam via tabela push_subscriptions (RLS auth.uid()=user_id).
 import { authenticate, corsHeaders, json, requirePost } from "../_shared/auth-guard.ts";
-import webpush from "https://esm.sh/web-push@3.6.6";
 
 const MAX_TARGETS = 500;
 const MAX_TITLE = 120;
@@ -33,6 +32,10 @@ Deno.serve(async (req) => {
   const auth = await authenticate(req);
   if ("error" in auth) return auth.error;
   const { caller, supabase } = auth;
+
+  // P1 containment: this legacy contract carries no proven source/tenant.
+  // Never read subscriptions or send, even if a delivery flag is changed.
+  return json(503, { error: "NOTIF_EXTERNAL_DELIVERY_DISABLED" });
 
   const canDispatch =
     caller.kind === "internal" ||
@@ -69,7 +72,6 @@ Deno.serve(async (req) => {
   if (!vapidPublic || !vapidPrivate) {
     return json(503, { error: "Push não configurado (VAPID ausente)" });
   }
-  webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
   const { data: subs, error: subError } = await supabase
     .from("push_subscriptions")
@@ -81,10 +83,7 @@ Deno.serve(async (req) => {
   const results = await Promise.all(
     (subs ?? []).map(async (sub) => {
       try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          notification,
-        );
+        throw new Error("NOTIF_EXTERNAL_DELIVERY_DISABLED");
         await supabase
           .from("push_subscriptions")
           .update({ last_used_at: new Date().toISOString() })

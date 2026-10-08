@@ -15203,6 +15203,7 @@ export type Database = {
           lido: boolean
           link: string | null
           mensagem: string | null
+          recipient_user_id: string | null
           source_id: string | null
           source_type: string | null
           tipo: Database["public"]["Enums"]["tipo_notificacao_portal"]
@@ -15217,6 +15218,7 @@ export type Database = {
           lido?: boolean
           link?: string | null
           mensagem?: string | null
+          recipient_user_id?: string | null
           source_id?: string | null
           source_type?: string | null
           tipo?: Database["public"]["Enums"]["tipo_notificacao_portal"]
@@ -15231,6 +15233,7 @@ export type Database = {
           lido?: boolean
           link?: string | null
           mensagem?: string | null
+          recipient_user_id?: string | null
           source_id?: string | null
           source_type?: string | null
           tipo?: Database["public"]["Enums"]["tipo_notificacao_portal"]
@@ -22199,6 +22202,10 @@ export type Database = {
       lote_volume_envasado: { Args: { _lote_id: string }; Returns: number }
       mask_sensitive_jsonb: { Args: { v: Json }; Returns: Json }
       normalizar_alvo: { Args: { p_nome: string }; Returns: string }
+      notification_p1_visible: {
+        Args: { cid?: string; sid: string; st: string; uid: string }
+        Returns: boolean
+      }
       org_onboarding_complete: { Args: never; Returns: Json }
       org_onboarding_save: { Args: { _dados: Json }; Returns: undefined }
       org_onboarding_state: { Args: never; Returns: Json }

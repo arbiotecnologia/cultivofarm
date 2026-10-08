@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -11,14 +11,21 @@ interface ClienteVinculado {
 const STORAGE_KEY = "portal_active_cliente_id";
 
 export function usePortalCliente() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const organizationId = profile?.organization_id ?? null;
+  const generation = useRef(0);
+  const scope = `${user?.id ?? ""}:${organizationId ?? ""}`;
+  const [resolvedScope, setResolvedScope] = useState("");
   const [clientes, setClientes] = useState<ClienteVinculado[]>([]);
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [clienteNome, setClienteNome] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!user) {
+    const requestGeneration = ++generation.current;
+    setClientes([]); setClienteId(null); setClienteNome(null);
+    setResolvedScope("");
+    if (!user || !organizationId || profile?.ativo === false) {
       setLoading(false);
       return;
     }
@@ -55,7 +62,8 @@ export function usePortalCliente() {
       const { data: clis, error: clisError } = await (supabase as any)
         .from("clientes")
         .select("id, nome")
-        .in("id", clienteIds as any);
+        .in("id", clienteIds as any)
+        .eq("organization_id", organizationId);
 
       if (clisError) {
         console.error("usePortalCliente: erro ao buscar clientes:", clisError);
@@ -64,7 +72,7 @@ export function usePortalCliente() {
       const nomeMap = new Map<string, string>((clis ?? []).map((c: any) => [c.id, c.nome]));
       const principalMap = new Map<string, boolean>(vincList.map((v) => [v.cliente_id, !!v.principal]));
 
-      list = clienteIds
+      list = clienteIds.filter((id) => nomeMap.has(id))
         .map((id) => ({
           id,
           nome: nomeMap.get(id) ?? "Cliente",
@@ -75,10 +83,12 @@ export function usePortalCliente() {
         );
     }
 
+    if (requestGeneration !== generation.current) return;
+    setResolvedScope(scope);
     setClientes(list);
 
     // Selecionar cliente ativo
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(`${STORAGE_KEY}:${scope}`) : null;
     const active =
       list.find((c) => c.id === stored) ||
       list.find((c) => c.principal) ||
@@ -87,10 +97,11 @@ export function usePortalCliente() {
     setClienteId(active?.id ?? null);
     setClienteNome(active?.nome ?? null);
     setLoading(false);
-  }, [user]);
+  }, [user, organizationId, profile?.ativo, scope]);
 
   useEffect(() => {
-    load();
+    void load();
+    return () => { generation.current += 1; };
   }, [load]);
 
   const setClienteAtivo = useCallback(
@@ -100,11 +111,11 @@ export function usePortalCliente() {
       setClienteId(found.id);
       setClienteNome(found.nome);
       try {
-        window.localStorage.setItem(STORAGE_KEY, found.id);
+        window.localStorage.setItem(`${STORAGE_KEY}:${scope}`, found.id);
       } catch {}
     },
-    [clientes]
+    [clientes, scope]
   );
 
-  return { clienteId, clienteNome, clientes, setClienteAtivo, loading, reload: load };
+  return { clienteId: resolvedScope === scope ? clienteId : null, clienteNome: resolvedScope === scope ? clienteNome : null, clientes: resolvedScope === scope ? clientes : [], setClienteAtivo, loading: loading || (!!user && !!organizationId && resolvedScope !== scope), reload: load };
 }

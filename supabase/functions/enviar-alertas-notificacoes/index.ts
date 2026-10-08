@@ -3,14 +3,8 @@
 // Protegida por segredo (header x-cron-secret ou Authorization Bearer).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-cron-secret, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -71,6 +65,9 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json(405, { success: false, message: "Method not allowed" });
   if (!validarSegredo(req)) return json(401, { success: false, message: "Unauthorized" });
 
+  // No dispatch contract proves both source and recipient: keep delivery closed.
+  return json(503, { success: false, message: "NOTIF_EXTERNAL_DELIVERY_DISABLED" });
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -125,14 +122,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: SMTP_HOST,
-        port: SMTP_PORT,
-        tls: SMTP_PORT === 465,
-        auth: { username: SMTP_USER, password: SMTP_PASS },
-      },
-    });
+    const client = {
+      send: async (_payload: unknown): Promise<never> => { throw new Error("NOTIF_EXTERNAL_DELIVERY_DISABLED"); },
+      close: async () => {},
+    };
 
     for (const n of pendentes) {
       try {
