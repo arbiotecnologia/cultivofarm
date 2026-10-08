@@ -1,4 +1,10 @@
-## Correção focal de sessão — 2026-10-07 23:00 UTC (estado atual)
+## Meu Plano — P2 de exibição — 2026-10-08 (estado atual)
+
+- [x] Corrigir somente EstadoConsulta incondicional; preservar detalhes/loading/erro/retry/ausência real, sem banco/Auth/permissões/plano/preço/publicação.
+- [ ] Validar renderização e suíte SaaS, lint focal, scanners, diff-check e build automático; typecheck manual não permitido pelo harness.
+- [ ] Registrar resultados e limites no relatório; nenhuma próxima fase.
+
+## Correção focal de sessão — 2026-10-07 23:00 UTC (histórico)
 
 - [x] Registrar escopo: somente código/testes/documentação; sem subagentes ou operações remotas. Preservar A03/A05 e D51.6/D52.
 - [x] Contenção independente Codex parcial: conta operacional desativada e papel administrador removido; Auth não excluído devido vínculos financeiros/entregas/Storage. Único admin operacional CultivoFarm, sem atingir Superadmin/AR Bio.
