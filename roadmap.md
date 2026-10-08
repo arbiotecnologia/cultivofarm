@@ -1,5 +1,5 @@
 ## Cadastro parceiro — cliente opcional — 2026-10-08
-- [ ] Tornar cliente opcional no formulário e gravação, com ownership comercial explícito derivado no servidor; preservar isolamento e legados órfãos. Testar cadastro sem cliente e cliente cruzado; sem publicação/Auth/envios.
+- [x] Cliente opcional no formulário e gravação; migration181641 deriva owner comercial no servidor, valida cliente quando presente e mantém órfãos fechados, sem backfill. 33/33 testes focais PASS; lint focal/scanners/diff-check PASS; build automático18:17:33 OK, typecheck manual NOT RUN. Sem publicação/Auth/envios/dados reais; JWT/browser privado não verificado. Relatório parceiro-cliente-opcional-2026-10-08.md.
 
 ## B2B-FISCAL — ampliação autorizada F0–F6 — 2026-10-08
 - [x] P1A17:45–17:53: HEAD0ba9033f/ledger173204 conferidos e preservados;5org/0P vinculados/0ownership comercial comprovado/0pedidos. Contrato por ação e gates na seção12; nenhuma restauração BF02/03 por inferência. Migration oficial174953 fecha8leitores financeiros individualmente,12ACL caller fechadas e2policies false mantidas;7hashes/contagens iguais, sem dados/fixtures/Auth/envios/PFX/publicação.
