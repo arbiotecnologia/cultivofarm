@@ -6,3 +6,5 @@
 - Shared communication email sends use the same native Deno TLS/EHLO/AUTH protocol core as the SMTP probe; `SmtpLikeClient` remains the injectable consumer contract — prevents probe/send transport divergence.
 - KingHost SMTPi diagnostics use only a server-side allowlisted in-memory route; persistence requires a separate explicit Superadmin action that changes only the SMTP host — prevents arbitrary host probing and silent configuration changes.
 - Legacy alert-email and push dispatch stay fail-closed until server-proven source, tenant and individual recipient contracts are homologated; flags alone cannot authorize delivery.
+- Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
+- Candidate B2B provisioning provenance uses reserved IDs, private receipts and server-owned app metadata; finish revalidates the claim's actor iat/invitation fence and takes the user guard gate before row locks — prevents editable provenance, stale-admin completion and gate/profile lock inversion.

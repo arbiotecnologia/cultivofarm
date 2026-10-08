@@ -35,3 +35,7 @@ dist-ssr
 # Ambiente gerado pela plataforma: o runtime usa apenas client.ts
 .env
 .env.*
+
+# Generated Python bytecode only
+__pycache__/
+*.py[cod]

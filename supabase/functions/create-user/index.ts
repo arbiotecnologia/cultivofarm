@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
         const { data: owned, error: ownedError } = await adminClient.auth.admin.getUserById(claim.user_id);
         if (ownedError || owned?.user?.id !== claim.user_id ||
           owned.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
-          owned.user.user_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
+          owned.user.app_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
           return reply({ error: "b2b_provisioning_reconciliation_required" }, 503);
         }
         const { error: deletionError } = await adminClient.auth.admin.deleteUser(claim.user_id);
@@ -172,13 +172,14 @@ Deno.serve(async (req) => {
         // adoption of an existing user. Metadata is provenance, not authorization.
         const { data: created, error: authError } = await adminClient.auth.admin.createUser({
           id: claim.user_id, email: email.trim().toLowerCase(), email_confirm: false,
-          user_metadata: { nome: nome.trim(), b2b_provisioning_receipt: claim.claim_id },
+          user_metadata: { nome: nome.trim() },
+          app_metadata: { b2b_provisioning_receipt: claim.claim_id },
         });
         if (authError || created?.user?.id !== claim.user_id) {
           const { data: existing, error: lookupError } = await adminClient.auth.admin.getUserById(claim.user_id);
           if (lookupError || existing?.user?.id !== claim.user_id ||
             existing.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
-            existing.user.user_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
+            existing.user.app_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
             // Never delete/adopt an unrelated identity; receipt stays fenced.
             return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
           }

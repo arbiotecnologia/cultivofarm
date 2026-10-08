@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS platform_private.b2b_provisioning_receipts (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), actor_id uuid NOT NULL,
  organization_id uuid NOT NULL, partner_id uuid NOT NULL,
  idempotency_key uuid NOT NULL, email text NOT NULL, nome text NOT NULL,
- actor_stamp timestamptz NOT NULL, user_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+ actor_stamp timestamptz NOT NULL, actor_iat bigint NOT NULL, actor_invite_fence jsonb NOT NULL, user_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),
  fence uuid NOT NULL DEFAULT gen_random_uuid(), status text NOT NULL DEFAULT 'claimed',
  lease_until timestamptz NOT NULL DEFAULT clock_timestamp()+interval '5 minutes',
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -16,21 +16,29 @@ ALTER TABLE platform_private.b2b_provisioning_receipts ENABLE ROW LEVEL SECURITY
 
 CREATE OR REPLACE FUNCTION platform_private.b2b_claim_provisioning(p_partner uuid,p_key uuid,p_email text,p_nome text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
-DECLARE ctx jsonb; r platform_private.b2b_provisioning_receipts; stamp timestamptz; inserted integer;
+DECLARE ctx jsonb; r platform_private.b2b_provisioning_receipts; stamp timestamptz; issued bigint; invitation jsonb; inserted integer;
 BEGIN
+ -- Same first lock as live statement triggers: gate → receipt/profile → rows.
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
  ctx:=public.b2b_provisioning_preflight(p_partner,'parceiro_b2b','gestor');
  IF p_key IS NULL OR p_email IS NULL OR p_nome IS NULL OR length(trim(p_nome)) NOT BETWEEN 1 AND 200
  OR length(p_email)>254 OR lower(trim(p_email)) !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' THEN
   RAISE EXCEPTION 'b2b_provisioning_invalid' USING ERRCODE='22023'; END IF;
- SELECT updated_at INTO STRICT stamp FROM public.profiles WHERE user_id=auth.uid();
- INSERT INTO platform_private.b2b_provisioning_receipts(actor_id,organization_id,partner_id,idempotency_key,email,nome,actor_stamp)
- VALUES(auth.uid(),(ctx->>'organization_id')::uuid,p_partner,p_key,lower(trim(p_email)),trim(p_nome),stamp)
+ issued:=(auth.jwt()->>'iat')::bigint;
+ IF issued IS NULL OR issued<=0 OR to_timestamp(issued)>clock_timestamp()+interval '1 minute' THEN
+ RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
+ SELECT updated_at INTO STRICT stamp FROM public.profiles WHERE user_id=auth.uid() FOR UPDATE;
+ PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=auth.uid() ORDER BY id FOR UPDATE;
+ SELECT coalesce(jsonb_agg(jsonb_build_array(id,access_operation_id,access_operation_status,status,access_valid_after) ORDER BY id),'[]'::jsonb) INTO invitation FROM public.platform_org_admin_invites WHERE user_id=auth.uid();
+ INSERT INTO platform_private.b2b_provisioning_receipts(actor_id,organization_id,partner_id,idempotency_key,email,nome,actor_stamp,actor_iat,actor_invite_fence)
+ VALUES(auth.uid(),(ctx->>'organization_id')::uuid,p_partner,p_key,lower(trim(p_email)),trim(p_nome),stamp,issued,invitation)
  ON CONFLICT(actor_id,idempotency_key) DO NOTHING;
  GET DIAGNOSTICS inserted=ROW_COUNT;
  SELECT * INTO STRICT r FROM platform_private.b2b_provisioning_receipts
  WHERE actor_id=auth.uid() AND idempotency_key=p_key FOR UPDATE;
- IF ROW(r.organization_id,r.partner_id,r.email,r.nome,r.actor_stamp) IS DISTINCT FROM
- ROW((ctx->>'organization_id')::uuid,p_partner,lower(trim(p_email)),trim(p_nome),stamp) THEN
+ IF ROW(r.organization_id,r.partner_id,r.email,r.nome,r.actor_stamp,r.actor_iat,r.actor_invite_fence) IS DISTINCT FROM
+ ROW((ctx->>'organization_id')::uuid,p_partner,lower(trim(p_email)),trim(p_nome),stamp,issued,invitation) THEN
   RAISE EXCEPTION 'b2b_provisioning_conflict' USING ERRCODE='42501'; END IF;
  -- Never renew/reclaim a timed-out lease: Auth may already exist. Reconcile by ID.
  RETURN jsonb_build_object('claim_id',r.id,'user_id',r.user_id,'fence',r.fence,'status',r.status,
@@ -47,12 +55,19 @@ GRANT EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text) TO 
 
 CREATE OR REPLACE FUNCTION public.b2b_finish_provisioning(p_claim uuid,p_fence uuid,p_user uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
-DECLARE r platform_private.b2b_provisioning_receipts; actor public.profiles; target public.profiles;
+DECLARE r platform_private.b2b_provisioning_receipts; actor public.profiles; target public.profiles; invitation jsonb;
 BEGIN
  PERFORM platform_private.require_service_role();
+ -- Acquire before receipt/profile locks, never wait for the trigger gate afterward.
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
  SELECT * INTO r FROM platform_private.b2b_provisioning_receipts WHERE id=p_claim FOR UPDATE;
  IF r.id IS NULL OR r.fence IS DISTINCT FROM p_fence OR r.user_id IS DISTINCT FROM p_user THEN
   RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=r.actor_id ORDER BY id FOR UPDATE;
+ SELECT coalesce(jsonb_agg(jsonb_build_array(id,access_operation_id,access_operation_status,status,access_valid_after) ORDER BY id),'[]'::jsonb) INTO invitation FROM public.platform_org_admin_invites WHERE user_id=r.actor_id;
+ IF invitation IS DISTINCT FROM r.actor_invite_fence OR EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=r.actor_id AND (i.access_operation_status='processing' OR i.status='processando' OR (i.access_valid_after IS NOT NULL AND to_timestamp(r.actor_iat)<=i.access_valid_after))) THEN
+ RAISE EXCEPTION 'b2b_provisioning_actor_revoked' USING ERRCODE='42501'; END IF;
  SELECT * INTO actor FROM public.profiles WHERE user_id=r.actor_id FOR UPDATE;
  PERFORM 1 FROM public.partner_accounts WHERE id=r.partner_id FOR UPDATE;
  IF actor.organization_id IS DISTINCT FROM r.organization_id OR actor.updated_at IS DISTINCT FROM r.actor_stamp
@@ -75,7 +90,7 @@ BEGIN
   RAISE EXCEPTION 'b2b_provisioning_stale' USING ERRCODE='42501'; END IF;
  SELECT * INTO target FROM public.profiles WHERE user_id=p_user FOR UPDATE;
  IF NOT EXISTS(SELECT 1 FROM auth.users u WHERE u.id=r.user_id AND lower(u.email)=r.email
-   AND u.raw_user_meta_data->>'b2b_provisioning_receipt'=r.id::text)
+   AND u.raw_app_meta_data->>'b2b_provisioning_receipt'=r.id::text)
  OR target.user_id IS NULL OR target.organization_id IS NOT NULL OR target.cliente_id IS NOT NULL
  OR lower(target.email) IS DISTINCT FROM r.email
  OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user)
@@ -100,6 +115,9 @@ RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
 DECLARE r platform_private.b2b_provisioning_receipts;
 BEGIN
  PERFORM platform_private.require_service_role();
+ -- Acquire before receipt/profile locks, never wait for the trigger gate afterward.
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
  SELECT * INTO r FROM platform_private.b2b_provisioning_receipts WHERE id=p_claim FOR UPDATE;
  IF r.id IS NULL OR r.fence IS DISTINCT FROM p_fence OR r.user_id IS DISTINCT FROM p_user THEN
   RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
@@ -114,6 +132,9 @@ CREATE OR REPLACE FUNCTION public.b2b_complete_provisioning_compensation(p_claim
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
 BEGIN
  PERFORM platform_private.require_service_role();
+ -- Acquire before receipt/profile locks, never wait for the trigger gate afterward.
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
  -- Auth deletion's cascades must have completed; never pretend cleanup succeeded.
  IF EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user)
  OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user)

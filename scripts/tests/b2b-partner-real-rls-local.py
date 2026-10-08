@@ -17,7 +17,7 @@ def main(lifecycle=False, channels=False):
     prefix = ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"] if os.getuid() == 0 else []
     started = False
     try:
-        subprocess.run(prefix + ["initdb", "-D", str(tmp / "data"), "-A", "trust", "-U", "local_audit"], check=True, capture_output=True)
+        subprocess.run(prefix + ["initdb", "-D", str(tmp / "data"), "-A", "trust", "-U", "postgres"], check=True, capture_output=True)
         subprocess.run(prefix + ["pg_ctl", "-D", str(tmp / "data"), "-l", str(tmp / "server.log"), "-o", f'-k {tmp} -h "" -p 55486', "start"], check=True, capture_output=True)
         started = True
         sql = r"""
@@ -30,7 +30,7 @@ CREATE TABLE public.profiles(user_id uuid PRIMARY KEY, organization_id uuid, ati
 CREATE TABLE public.user_roles(user_id uuid,role public.app_role);
 CREATE TABLE public.partner_users(user_id uuid,partner_id uuid,papel text);
 CREATE TABLE public.organizations(id uuid,ativo boolean,status text DEFAULT 'ativa',partner_account_id uuid);
-CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz,status text);
+CREATE TABLE public.platform_org_admin_invites(id uuid DEFAULT gen_random_uuid(),access_operation_id uuid,user_id uuid,access_operation_status text,access_valid_after timestamptz,status text);
 CREATE TABLE public.clientes(id uuid,organization_id uuid);
 CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,client_id uuid,desconto_padrao numeric,limite_credito_brl numeric,ativo boolean DEFAULT true,deleted_at timestamptz);
 GRANT SELECT ON public.partner_accounts,public.clientes TO authenticated;
@@ -38,7 +38,7 @@ ALTER TABLE public.partner_accounts ENABLE ROW LEVEL SECURITY;
 -- Only Auth transport is mocked. Helpers below are live definitions copied
 -- from canonical pg_get_functiondef, not a model of expected authorization.
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$ SELECT jsonb_build_object('iat',extract(epoch FROM now())::bigint) $$;
+CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$ SELECT jsonb_build_object('iat',coalesce(nullif(current_setting('request.jwt.claim.iat',true),'')::bigint,extract(epoch FROM now())::bigint)) $$;
 CREATE FUNCTION platform_private.platform_actor_access_ready(p_user uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)
  AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));
@@ -129,6 +129,8 @@ SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_functio
 """
         if lifecycle:
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-local.sql").read_text()
+            sql += "UPDATE public.user_roles SET role='administrador';"
+            sql += (ROOT / "scripts/tests/b2b-provisioning-real-triggers.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-provisioning-lifecycle.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-assertions.sql").read_text()
         if channels:
@@ -139,11 +141,19 @@ SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_functio
             sql += (ROOT / "scripts/tests/b2b-latent-channels-baseline.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-latent-channel-containment.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-latent-channels-assertions.sql").read_text()
-        sql += "ROLLBACK;"
-        result = subprocess.run(["psql", "-X", "-h", str(tmp), "-p", "55486", "-U", "local_audit", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], input=sql, text=True, capture_output=True)
+        sql += "COMMIT;" if lifecycle else "ROLLBACK;"
+        result = subprocess.run(["psql", "-X", "-h", str(tmp), "-p", "55486", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], input=sql, text=True, capture_output=True)
         print(result.stderr)
         if result.returncode:
             raise RuntimeError("Real policy local replay failed")
+        if lifecycle:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("b2b_concurrency", ROOT / "scripts/tests/b2b-provisioning-concurrency.py")
+            if spec is None or spec.loader is None:
+                raise RuntimeError("concurrency runner unavailable")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            module.run(["psql", "-X", "-qAt", "-h", str(tmp), "-p", "55486", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"])
     finally:
         if started:
             subprocess.run(prefix + ["pg_ctl", "-D", str(tmp / "data"), "-m", "immediate", "stop"], capture_output=True)

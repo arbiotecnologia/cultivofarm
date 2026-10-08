@@ -1,5 +1,5 @@
 -- Isolated Auth stub ONLY. Actual candidate functions loaded by harness below.
-CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,raw_user_meta_data jsonb);
+CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,raw_app_meta_data jsonb,raw_user_meta_data jsonb DEFAULT '{}');
 CREATE TABLE public.user_clientes(user_id uuid,cliente_id uuid);
 CREATE TABLE platform_private.provisional_password_state(user_id uuid PRIMARY KEY,desde timestamptz DEFAULT now(),expires_at timestamptz,pwd_digest text);
 CREATE FUNCTION platform_private.require_service_role() RETURNS void LANGUAGE plpgsql AS $$ BEGIN

@@ -18,7 +18,7 @@ type Scenario = {
   b2bOpen?: boolean; claimFailure?: boolean; claimStatus?: string; acquired?: boolean;
   finishFailure?: boolean; finishThrown?: boolean; uncertainCompleted?: boolean;
   compensationRpcFailure?: boolean; compensationFinishFailure?: boolean;
-  authLookupMismatch?: boolean;
+  authLookupMismatch?: boolean; editableReceiptOnly?: boolean;
 };
 
 async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> = {}) {
@@ -74,7 +74,8 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
   const elevated = {
     rpc: elevatedRpc, auth: { admin: { createUser, deleteUser, getUserById: vi.fn(async () => ({
       data: { user: { id: scenario.authLookupMismatch ? "foreign" : "created-user", email: "test@example.invalid",
-        user_metadata: { b2b_provisioning_receipt: "receipt" } } }, error: null,
+        user_metadata: { b2b_provisioning_receipt: "receipt" },
+        app_metadata: scenario.editableReceiptOnly ? {} : { b2b_provisioning_receipt: "receipt" } } }, error: null,
     })) } },
     from: (table: string) => table === "profiles" ? {
       select: () => ({ eq: () => ({ maybeSingle: async () => ({
@@ -223,7 +224,7 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
     const r = await invoke({ b2bOpen: true }, b2bPayload);
     expect(r.response.status).toBe(200);
     expect(r.createUser).toHaveBeenCalledExactlyOnceWith({ id: "created-user", email: "test@example.invalid",
-      email_confirm: false, user_metadata: { nome: "Teste", b2b_provisioning_receipt: "receipt" } });
+      email_confirm: false, user_metadata: { nome: "Teste" }, app_metadata: { b2b_provisioning_receipt: "receipt" } });
     expect(r.elevatedRpc).toHaveBeenCalledExactlyOnceWith("b2b_finish_provisioning", { p_claim: "receipt", p_fence: "fence", p_user: "created-user" });
     expect(r.update).not.toHaveBeenCalled(); expect(r.insert).not.toHaveBeenCalled();
     expect(r.deleteUser).not.toHaveBeenCalled();
@@ -261,6 +262,11 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
     const r = await invoke({ b2bOpen: true, providerFailure: "email_exists", authLookupMismatch: true }, b2bPayload);
     expect(r.response.status).toBe(409); expect(r.deleteUser).not.toHaveBeenCalled();
     expect(r.elevatedRpc).not.toHaveBeenCalled();
+  });
+  it.each([{ providerFailure: "email_exists" }, { finishFailure: true }])("editable receipt cannot authorize adoption/compensation: %j", async scenario => {
+    const r = await invoke({ b2bOpen: true, editableReceiptOnly: true, ...scenario }, b2bPayload);
+    expect(r.response.status).toBe(scenario.finishFailure ? 503 : 409);
+    expect(r.deleteUser).not.toHaveBeenCalled();
   });
   it("converges on reserved identity after uncertain create response", async () => {
     const r = await invoke({ b2bOpen: true, providerFailure: "user_already_exists" }, b2bPayload);
