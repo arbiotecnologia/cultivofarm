@@ -38,3 +38,5 @@
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
+
+- Candidate B2B provisioning provenance uses reserved IDs, private receipts and server-owned app metadata; finish revalidates the claim's actor iat/invitation fence and takes the user guard gate before row locks — prevents editable provenance, stale-admin completion and gate/profile lock inversion.

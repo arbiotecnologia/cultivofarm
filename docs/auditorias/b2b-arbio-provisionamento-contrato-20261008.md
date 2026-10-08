@@ -1,5 +1,20 @@
 # Provisionamento B2B — preparação do contrato, mesma auditoria
 
+## Revisão22:17 — candidato corrigido, não ativado
+
+Proveniência `b2b_provisioning_receipt` movida para **app_metadata/raw_app_meta_data**, escrita somente pelo administrador Auth no handler existente. user_metadata conserva apenas nome e nunca participa de finish, adoção ou compensação. ID reservado+receipt privada+fence são autoridade principal; email/metadado são verificações adicionais, nunca adoção por email. Testes negam receipt somente editável tanto em SQL quanto nas duas decisões do handler.
+
+Claim guarda **iat do bearer validado e snapshot ordenado dos convites** (id/operação/status/access_valid_after) server-side. Finish usa esse iat, bloqueia linhas de convite existentes e rejeita mudança do snapshot, processing/processando ou access_valid_after >= iat, mesmo com service subject NULL. Helper geral não alterado. Testes provam revogação apenas no convite sem mudança de updated_at do perfil, além de mudança de operação. Snapshot não contém senha/token e não é retornado ao operador.
+
+Ordem de locks: candidato adquire **gate global cf_user_guards_v1.state antes de receipt/perfil** em claim/finish/preparar e concluir compensação, compatível com acquire_gate dos triggers. O teste carrega os corpos reais relevantes de profiles/user_roles/partner_users: acquire_gate, touch_related_profiles (IDs ordenados), advance_stamp, require_admin, senha/ticket/sensitive/tenant/organization/superadmin/produtor e updated_at. Duas conexões PostgreSQL independentes, bloqueio observado em pg_stat_activity, verificam: claim concorrente (mesmo ID, exatamente um acquired), UPDATE de perfil→finish sem inversão gate/perfil e finish→compensação mantendo completed. Repetição sequencial anterior não é prova de corrida e fica supersedida por esses três recortes locais.
+
+**58/58 testes focais em4arquivos PASS**, lint dos testes modificados/scanner fiscal-secrets/diff-check PASS; prévia build OK. Typecheck separado NOT RUN (harness); lint global não reexecutado. Artefato .pyc rastreado removido; ignore somente __pycache__/ e *.py[cod], sem excluir arquivos do usuário.
+
+**Limites:** DDL ainda reduzido, Auth/users creation e bearer simulados; tickets de conclusão não exercitados, triggers de lifecycle Auth/constraints/FKs completos e todos produtores remotos de convite não reproduzidos. Locks de convites existentes não certificam inserção concorrente de novo convite nem todos os caminhos administrativos; esse caso/ordem global desses produtores continua pendente antes ativação. Três disputas locais não são prova de ausência universal de deadlocks nem concorrência remota. Não declarar elo integralmente validado por mocks. SQL lifecycle continua **candidato não implantado**, gatefalse/dropdown fechado; nenhuma criação Auth real, envio, fixture, alteração remota ou publicação. Organizations/projeções e auditoria geral canais continuam bloqueadores concretos; login/JWT/faturamento NO-GO. Executivo19/emailv9 e contenções financeiras/técnicas preservados.
+
+**Rollback:** descartar somente candidato não aplicado/manter gatefalse; nunca restaurar user_metadata como prova ou retirar checagem de iat. Nenhum rollback remoto necessário neste recorte. Candidato anterior df8b1c5 supersedido nestes pontos, sem adulterar evidências históricas.
+
+
 ## Adendo22:11 — canais latentes corrigidos sem interromper o elo entregue
 
 Migration oficial **20261008221537_95b4f2b6-6fc2-40b5-9a17-b81a56cc4025** aplicada ao canônico, nenhuma mutação de registros reais. `get_b2b_user_clients_secure` agora exige interno admin/gestor_comercial ativo/ready/tenant e exclui roles B2B cumulativas; todas linhas provam cliente.owner=partner.owner=actor. Alvo assignment deve ser ativo/ready, role exclusiva e um único partner_users/papel coerente. Alvo forjado cross-tenant é negado; NULL lê somente assignments coerentes da própria empresa. Tipo_pessoa casttext corrigido **junto ao escopo**, não isoladamente. Gestor parceiro/técnico recebem42501indisponível até contrato de assignments completo; não abrir PII por ocultaçãoUI.
