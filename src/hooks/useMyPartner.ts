@@ -41,16 +41,19 @@ export function useMyPartner() {
         context.role !== role || (context.papel !== "gestor" && context.papel !== "tecnico") ||
         !["commercial_owner", "legacy_partner_tenant"].includes(String(context.mode)))
         throw new Error("partner_context_unavailable");
-      const { data: partner, error: e2 } = await supabase
-        .from("partner_accounts")
-        .select("id, codigo, razao_social, nome_fantasia, desconto_padrao, ativo")
-        .eq("id", context.partner_id)
-        .abortSignal(signal)
-        .maybeSingle();
+      const { data: rawPartner, error: e2 } = await contextRpc.call(supabase, "get_my_commercial_partner_projection");
       check();
       if (e2) throw new Error("partner_context_unavailable");
-      if (!partner || partner.ativo !== true) return null;
-      return { ...partner, papel: context.papel as PartnerUserPapel };
+      if (!rawPartner) return null;
+      if (typeof rawPartner !== "object" || Array.isArray(rawPartner)) throw new Error("partner_context_unavailable");
+      const partner = rawPartner as Record<string, unknown>;
+      if (partner.id !== context.partner_id || partner.papel !== context.papel || partner.mode !== context.mode || partner.ativo !== true)
+        throw new Error("partner_context_unavailable");
+      if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
+      return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
+        nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
+        ativo: true, papel: context.papel as PartnerUserPapel,
+        mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
     },
   });
   return { ...result, data: ready ? result.data : undefined, ready, scope: fence.scope };
