@@ -22,6 +22,11 @@ describe("P1 estoque — contrato estrutural (não prova runtime)", () => {
       expect(movementProof).toContain(text);
     expect(movementProof).not.toMatch(/\bCOMMIT\b/i);
   });
+  it("gera run_id único e emite manifesto exato no rollback", () => {
+    expect(movementProof).toContain("'TEMPORARY_AUDIT_STOCK_MOV_P1_'||gen_random_uuid()::text");
+    for (const text of ["'run_id',r", "'lotes',jsonb_build_array(la,lb)", "'envases',jsonb_build_array(ea,eb)", "'stock',jsonb_build_array(sa,sb)", "'movs',jsonb_build_array(ma,mb)"])
+      expect(movementProof).toContain(text);
+  });
   it("restringe leitura/escrita pela organização explícita do lote", () => {
     for (const text of ["AS RESTRICTIVE FOR ALL TO authenticated", "USING (public.stock_p1_lote_owned(lote_id))", "WITH CHECK (public.stock_p1_lote_owned(lote_id))", "l.organization_id IS NOT NULL", "l.organization_id = public.h15_actor_organization()"])
       expect(migration).toContain(text);
