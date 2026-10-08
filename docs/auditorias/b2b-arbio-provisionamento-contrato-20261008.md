@@ -23,6 +23,8 @@ Os testes também revelaram risco da policy **legada**: ator interno com partner
 
 Validações: rodada criação+vínculos+primeiro acesso+RLS teve70PASS/1FAIL em71testes; falha é asserção textual histórica que espera URL literal no arquivo redirect-policy agora re-exportado de `_shared`, não falha de fluxo Auth executado. Nenhum ajuste oportunista ao fluxo emailv9. Focal anterior9/9PASS em3arquivos, lint novo/scanner fiscal-secrets/diffPASS; não somar sobreposições. Build automáticoOK21:55:34; typecheck manual não executado por restrição do harness. Advisor389preexistentes sem novos:15INFO/2WARNPUBLIC/371WARNauthenticated/1proteção senha; não classificar globalPASS.
 
+Revalidação final21:58:45: **59/59 testes em4arquivos PASS** (37handler,14vínculos,7cache,1PostgreSQL com13asserções); lint novo/diffPASS,scannerPASS e build automáticoOK21:58:38. Corrigida a expectativa do risco legado: LIMIT1 preserva uma linhaA, não duas; a evidência positiva não foi mascarada. A falha textual first-access da rodada ampliada permanece documentada, não incluída nestes59.
+
 Executivo19 conferido read-only:16corpos EXECUTIVO_SOURCE_UNAVAILABLE com ACLanon/authenticated negada,19total. emailv9 não editado/reimplantado. Rollback seguro é sucessor de contenção que preserve negação direta financeira até projeção autorizada; não remover esta policy para restaurar exposição. **PASS contenção focal aplicada; NO-GO provisionamento/login/faturamento/integral. Objetivo de provisionamento mínimo ativo ainda não entregue; pendências são implementação/prova, não nova decisão humana.**
 
 ## Revisão independente21:45 — implantação comprovada, gate técnico não satisfeito
