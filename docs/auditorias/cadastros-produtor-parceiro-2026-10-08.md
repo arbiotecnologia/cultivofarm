@@ -1,5 +1,61 @@
 # CADASTROS-PRODUTOR-PARCEIRO — checkpoint 2026-10-08
 
+## Revisão independente do checkpoint — 17:08 UTC, sem nova fase
+
+**HEAD auditado:** `119fd610af5b44be11a456a8f5c55816c2d55285`, árvore inicialmente limpa. Baseline de comparação: `3773015091fb5efa93ad75f963612e4ad359a85f`, anterior à continuidade16:16. Nesta revisão foram executados somente leitura local e testes/lint; nenhuma consulta ou escrita remota, SQL, fixture, Auth, envio, migration ou publicação. Nenhuma regressão funcional comprovada exigiu correção. Atualizações persistentes somente neste relatório e `roadmap.md`.
+
+### 1. Lint: comparação objetiva, não presunção de baseline
+
+ESLint foi executado no HEAD e no conteúdo obtido por `git show` do baseline, via stdin com o mesmo `--stdin-filename`, usando as mesmas dependências/configuração atuais. `eslint.config.js`, `package.json` e lockfiles não têm diff entre as duas revisões. Cada diagnóstico foi associado a linha de código inalterada por comparação de sequências, verificando regra, mensagem e coluna: **19/19 correspondências, zero diagnósticos introduzidos por esta continuidade**. Isso comprova preexistência em relação ao baseline37730150, não atribui origem a todas as fases anteriores.
+
+|Arquivo/regra|Linhas HEAD (colunas)|Linhas baseline correspondentes|Resultado|
+|---|---|---|---|
+|`src/hooks/useParceiroB2BMutations.ts`, `no-explicit-any`|50(21),74(53),76(50),78(77),102(50),104(26),129(50),134(14)|50,73,75,77,99,101,124,129|8 erros preexistentes|
+|`src/pages/clientes/ProdutoresTab.tsx`, `no-explicit-any`|42(69),75(41),75(47),87(22),178(19),180(20),206(19),250(32),345(40),417(87)|42,75,75,87,178,180,206,248,339,411|10 erros preexistentes|
+|`src/pages/clientes/ProdutoresTab.tsx`, `react-hooks/exhaustive-deps`|150(6)|150(6)|1 warning preexistente: `defaultValues`, `fetchClientes`, `methods`|
+
+**FAIL lint ampliado:**18 erros/1 warning permanecem. **PASS ausência de regressão de lint neste checkpoint.** Sem refatoração ou supressão de regras, pois o recorte autoriza corrigir somente regressão comprovada. **PASS lint focal:** `src/hooks/useCommercialRegistrationScope.ts` e testes `commercialRegistration.producer.test.tsx`, `.session.test.tsx`, `.form.test.tsx`. Saídas temporárias em `/tmp/cadastros-review/`, não entregáveis nem novas regras de projeto.
+
+### 2. Typecheck e build
+
+**Typecheck explícito: NOT RUN.** A instrução vigente do ambiente proíbe execução manual de builds/typechecks do projeto; trocar para outro compilador não contorna essa restrição. `package.json` oferece `typecheck`, mas sua presença não autoriza executar. Leitura de `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` não certifica compilação. **Build automático: PASS observado**, log17:09:17 UTC; nenhuma execução manual. Não apresentar Vite como typecheck independente.
+
+### 3. Matriz bidirecional: ownership comercial não é tenant próprio do parceiro
+
+**A = contratante; P = tenant próprio do parceiro.** Cadeia comercial `partner_accounts.client_id → clientes.organization_id` e vínculo de portal `organizations.partner_account_id` têm significados distintos. A prova histórica A/B usou duas empresas independentes, **não** um par contratante/parceiro efetivamente vinculado. Nenhuma nova prova viva foi feita nesta revisão; ausência de vínculo real continua sendo informação histórica não revalidada remotamente.
+
+|Operação/alvo|A→registros comerciais próprios|A→dados privados de P|P→registros comerciais/dados privados de A|P→dados próprios/portal|
+|---|---|---|---|---|
+|CREATE cliente/produtor/parceiro|PASS SQL histórico próprio; mocks create positivos atuais|UNVERIFIED A/P vinculado; SQL histórico nega spoof/referência cruzada entre empresas independentes|UNVERIFIED A/P vinculado; cliente do tenant do ator exigido estruturalmente|UNVERIFIED CRUD real de P; vínculo portal não concede escrita comercial em A|
+|READ cliente/parceiro|PASS SQL histórico; mocks de lista/cache atuais|UNVERIFIED relação A/P; SQL histórico A/B nega leituras cruzadas|UNVERIFIED A/P; exceção histórica self-select do próprio partner exige contrato/colunas aprovado, não acesso geral|UNVERIFIED JWT/browser e colunas compartilháveis do portal|
+|UPDATE/reativar/inativar|PASS SQL histórico parceiro próprio; mocks edição/callbacks atuais|UNVERIFIED A/P; SQL histórico A/B nega update/reparent|UNVERIFIED A/P; admin de P não equivale a admin de A|UNVERIFIED operação real de P; contexto visual nunca autoriza|
+|DELETE físico cliente|PASS SQL histórico próprio sem dependências; mock nega exclusão com documentos/erro de dependências|UNVERIFIED delete bidirecional vinculado; não extrapolar SELECT/UPDATE|UNVERIFIED delete bidirecional vinculado|UNVERIFIED delete real em P; Storage não certificado|
+|DELETE físico parceiro|UNVERIFIED: UI usa inativação, não foi provada exclusão física de parceiro|UNVERIFIED|UNVERIFIED|UNVERIFIED|
+|Portal/vínculos/usuários/financeiro/documentos/notificações|Leitura estrutural anterior delimitada; provisionamento login continua contido|UNVERIFIED dinâmica vinculada em todas essas superfícies|UNVERIFIED dinâmica vinculada; vínculo comercial não transfere administração|UNVERIFIED portal real; `usePartnerUsers` não é gestão do tenant próprio de P|
+
+**SQL:** evidências históricas com ROLE/claims simulados, não reexecutadas. Script `scripts/rbac-audit/commercial-context-isolation-proof.sql` cobre SELECT cliente/parceiro, UPDATE parceiro próprio/cruzado, UPDATE cliente cruzado e reparent negado; seus6 positivos/10 negativos não cobrem DELETE nem portal. **Mocks:**65/65 atuais não exercitam servidor, policies, JWT ou vínculo real A/P; testes com propriedade fictícia `partner_account_id` não provam o vínculo de `organizations`. **JWT real e browser:** UNVERIFIED em todas as células; nenhum login realizado. Não declarar matriz integral PASS por SQL entre tenants não vinculados.
+
+### 4. Callbacks, UUID e idempotência
+
+**PASS delimitação local:** fences suprimem toasts e invalidações de resposta antiga; locks impedem reentrada do formulário local; UUID estável evita gerar outro ID no retry do mesmo draft. **UNVERIFIED idempotência server-side convergente/concorrência:** índice único pode devolver conflito após primeira gravação e perda da resposta; isso não prova replay com mesmo resultado, validação de payload divergente, recibo ator/tenant ou reconciliação. UPDATE já enviado pode ser persistido mesmo com callback suprimido. Nenhum endpoint de replay foi criado; código PARC derivado do UUID não é protocolo de idempotência. Remontagem/outro formulário/outro dispositivo não são cobertos pelo lock.
+
+### 5. Provas novas, arquivos e gate de homologação
+
+**PASS:**65/65 em7 arquivos, início17:09:49 UTC (reexecução, não somar aos65 anteriores):
+`src/test/config/commercialRegistration.producer.test.tsx`, `commercialRegistration.session.test.tsx`, `commercialRegistration.form.test.tsx`, `commercialRegistration.delete.test.tsx`, `commercialRegistration.validation.test.ts`, `partnerUsers.session.test.tsx`, `src/test/lib/inscricao-estadual-cadastro.test.tsx`. Os seis primeiros ficam em `src/test/config/`. Nenhum novo teste/arquivo de código foi criado. `useAvailablePartnerUsers` está declarado em `src/hooks/usePartnerUsers.ts`; não existe arquivo separado com esse nome. **PASS diff-check.** Avisos de acessibilidade/React Router dos testes não foram classificados como testes falhos ou provas browser.
+
+|Gate/ação futura (não executada aqui)|Responsável|Critério de aceite|
+|---|---|---|
+|Revisar contrato A/P, colunas de self-select e direitos por ação|Proprietário + responsável de segurança/B2B|Contrato explícito sem administração cruzada; não inferir ownership de legado|
+|Disponibilizar sessão/vínculo válido por mecanismo seguro, sem pedir credenciais em texto|Proprietário + operador do ambiente|Identidades existentes adequadas; sem criar roles/contas para fabricar PASS; se indisponível, UNVERIFIED mantido|
+|Homologar API JWT e browser desktop/mobile para create/read/update/inativação/delete permitido e portal, nas duas direções|QA + segurança, após autorização específica|Positivos próprios, negativos cruzados e RBAC/plano; evidência separada por transporte; fixture/cleanup somente sob autorização específica|
+|Validar retry após resposta perdida, concorrência, IDs/payload divergentes e reconciliação|Responsável backend + QA|Resultado persistido demonstrado sem duplicidade e contrato de replay aprovado; sem confundir lock com idempotência|
+|Tratar dívida de18 erros/1warning fora desta revisão restrita, ou aceitar formalmente a dívida|Manutenção frontend + proprietário|Lint ampliado PASS ou aceite limitado documentado; zero nova regressão|
+|Executar typecheck pelo mecanismo permitido do ambiente|Operador/harness|Resultado explícito de tipos; até lá NOT RUN, sem contornar a proibição manual|
+|Esclarecer divergência histórica do hash de partner_audit_logs|Responsável banco + auditor independente|Baseline/evidência de origem sem modificar histórico; ausência mantém UNVERIFIED|
+
+**Decisão:** PASS testes/fences e ausência de regressão de lint em relação ao baseline; FAIL lint ampliado; typecheck NOT RUN; isolamento A/P efetivamente vinculado, JWT/browser/Storage/concorrência e integridade histórica pendente UNVERIFIED. **NO-GO integral para homologação.** Nenhuma próxima fase, correção de ACL ou reabertura de login B2B. Pausar para revisão do proprietário.
+
 ## Continuidade autorizada — 16:16–16:20 UTC
 HEAD conferido antes de editar: `3773015091fb5efa93ad75f963612e4ad359a85f`, árvore limpa. A execução anterior e seus limites foram revisados; não foram tomadas como prova JWT/browser. Leitura viva confirmou ref `swzpzcwiasxmjutrmvkm`, ledger `20261008160048/0379dfbf-559f-4d87-91bb-89e36ca35bbc` e restritiva `d51_5_partner_accounts_tenant_guard` intacta. Nenhuma migration nova/reaplicada e nenhuma escrita remota, fixture, conta, convite, exclusão, alteração de legado ou publicação neste complemento.
 
