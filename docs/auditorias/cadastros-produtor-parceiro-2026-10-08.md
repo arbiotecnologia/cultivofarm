@@ -1,5 +1,29 @@
 # CADASTROS-PRODUTOR-PARCEIRO — checkpoint 2026-10-08
 
+## Continuidade autorizada — 16:16–16:20 UTC
+HEAD conferido antes de editar: `3773015091fb5efa93ad75f963612e4ad359a85f`, árvore limpa. A execução anterior e seus limites foram revisados; não foram tomadas como prova JWT/browser. Leitura viva confirmou ref `swzpzcwiasxmjutrmvkm`, ledger `20261008160048/0379dfbf-559f-4d87-91bb-89e36ca35bbc` e restritiva `d51_5_partner_accounts_tenant_guard` intacta. Nenhuma migration nova/reaplicada e nenhuma escrita remota, fixture, conta, convite, exclusão, alteração de legado ou publicação neste complemento.
+
+### Lacunas verificadas e correções locais
+|Antes (inspeção do código)|Depois|Prova|
+|---|---|---|
+|`getUser()` podia divergir do ator pronto capturado antes do insert|Comparação explícita SDK UID/ator; divergência nega antes do insert|Teste mock: SDK B/ator A, zero inserts|
+|Callbacks de mutação de parceiro notificavam erros antigos e invalidavam todas as empresas|`onMutate` captura geração/empresa; sucesso/erro cercados e invalidação só da chave iniciadora|Criar/editar/inativar atrasados após troca: zero toasts/invalidations|
+|Produtor mostrava sucesso/duplicidade antes de conferir contexto após await|Fence imediato após create/edit; inativar/excluir também conferem contexto antes de efeitos visuais|Formulário real com SDK mock: resultado antigo sucesso/erro não aparece|
+|Cobertura explícita de edição do parceiro incompleta|Testes de edição própria com ID existente e cliente cruzado ausente da lista|Update próprio uma chamada, zero create; cliente cruzado zero writes|
+
+Arquivos desta continuidade: `src/hooks/useCommercialRegistrationScope.ts`, `src/hooks/useParceiroB2BMutations.ts`, `src/pages/clientes/ProdutoresTab.tsx`, `src/test/config/commercialRegistration.session.test.tsx`, `src/test/config/commercialRegistration.form.test.tsx`, novo `src/test/config/commercialRegistration.producer.test.tsx`, regra estrutural em `AGENTS.md`, este relatório e `roadmap.md`. RLS continua autorizando o servidor; fences não revogam request já enviado nem garantem que uma mutação em trânsito não tenha sido persistida.
+
+IE não precisou de novo diff: cadastro aceita vazio/ISENTO/formatos variados com aviso fiscal; regressões confirmam que `510.193.600/89` é aceito no cadastro e segue inválido na validação estrita MG de emissão. Seleção explícita de cliente próprio já existe antes do insert; preservada. Tenant próprio do parceiro não substitui ownership comercial da contratante.
+
+### Resultado por categoria
+- **PASS local/mock:** 65/65 testes em 7 arquivos às16:20 UTC (não somar com72/72 ou36/36 anteriores); formulário produtor mantém geração, parceiro create/edit/negativa e lock/retry, sessão/readiness/queries, erros sanitizados, IE. Teste de edição inicialmente falhou por fixture mock incompleta gerando NaN; corrigidos campos nullable da fixture, sem alterar regra financeira.
+- **PASS leitura viva SQL:** ref, ledger e restritiva confirmados. Índices vivos: documento normalizado de cliente por empresa; código cliente global único, código parceiro global único e derivado UUID. **UNVERIFIED:** unicidade CNPJ parceiro por tenant; não inventada nem nova restrição introduzida. Provas SQL anteriores create/edit/negativas/rollback permanecem históricas, não reexecutadas agora.
+- **PASS lint focal:** scope e testes alterados. **FAIL lint ampliado:** hooks de mutação/produtores18 erros `any`/1 aviso de dependências preexistentes; não alegar lint global PASS. Scanners secrets/fiscal e diff-check PASS.
+- **PASS build automático:** `/tmp/observability/build-errors.log` registrou `build OK`16:20:07 UTC. **Typecheck explícito NOT RUN** (instrução do ambiente proíbe execução manual); build não foi rotulado como typecheck independente.
+- **UNVERIFIED JWT/API/browser/mobile/concorrência remota:** sem sessão autenticada, sem transporte validado. Testes de componentes usam SDK/mock, não RLS; SQL anterior com claims não é JWT. Lock é reentrância local, UUID/índice impedem duplicidade persistente por ID, mas replay convergente/reconciliação e disputa concorrente real permanecem não certificados.
+
+**Riscos e pendências mantidos:** divergência histórica `partner_audit_logs` sem baseline; vínculo real tenant parceiro ausente; compartilhar somente contrato B2B aprovado, nunca administração cruzada; Storage/exclusões não atômicas contidas; login B2B não habilitado. Rollback deste complemento: reverter somente hunks/fences/testes correspondentes em revisão controlada, sem tocar migration/RLS/dados, reconhecendo que restaura efeitos visuais atrasados. **NO-GO integral; aguardar revisão, nenhuma fase seguinte iniciada.**
+
 ## Escopo e decisão
 Cadastro comercial de clientes/produtores e parceiros, distinto de provisionamento de login B2B. Checkpoints STORAGE-2, MULTIPORTAL-1, CADASTRO-1 e inscrição estadual preservados. Nenhuma publicação, conta Auth, papel, convite ou envio; sem atribuir empresa a legado órfão.
 
