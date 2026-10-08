@@ -1,8 +1,14 @@
+## CADASTRO-1 — criação de usuários/B2B — 2026-10-08
+- [ ] Auditar UI/Edge/contratos vivos/ACL/triggers e ciclo de usuário; distinguir propriedade canônica de parceiro de inferência legada.
+- [ ] Corrigir mensagens contraditórias e bugs comprovados, sem abrir cadastro B2B sem contrato; testes, matriz e relatório focal.
+- [ ] Definir plano integrado de criação/primeiro acesso; nenhum Auth/fixture/convite/envio/papel/vínculo real, publicação ou alteração dos checkpoints anteriores.
+
 ## MULTIPORTAL-1 — Gestão/Técnico — 2026-10-08
 - [x] Checkpoint STORAGE-2 fechado:267/267 testes, migration144506 e hashes registrados; limitações operacionais preservadas, sem reabertura.
 - [x] Inventário login/guards/layout/sidebar/storage/broadcast/query keys e contratos RPC/constraints de preferência/log; banco atual contém um perfil ativo gestor+consultor_tecnico, divergindo do inventário independente anterior.
 - [x] Seleção Gestão/Técnico corrigida com destinos existentes; troca manual ignora preferência só em intent=switch, preservando cancelamento. Readiness/tenant/papéis e respostas antigas cercados. Migration oficial única150531 aplicada, sem reaplicação; flags B2B administrativas legadas preservadas, sem parceria inventada.
 - [x] Testes comportamentais/Auth/guards/mobile/Storage179/179 em15 arquivos; Meu Plano/retorno seguro23/23 em3 arquivos, conjuntos separados. Lint focal inclusive App/scanners/diff-check PASS; harness typecheck+build OK15:09:47, execução manual não realizada. SQL com identidades existentes/rollback: Gestão/Técnico/preferências/log próprios positivos, B2B indevido negado e5 negações inativo/semorg/semUID; preferências0 e logs2/hashes intactos. Relatório multiportal-gestao-tecnico-2026-10-08.md.
+- [x] Revalidação focal15:14:58/58 em5 arquivos, sobreposta/não somada; diff-check PASS e harness build OK15:14:44. Sem novas operações remotas ou publicação; demais checkpoints preservados.
 - [ ] NO-GO integral: sessão real gestor+técnico, JWT/API, troca real de identidade/abas, revogação e concorrência remota UNVERIFIED (external_unmanaged). Nenhuma conta/papel/vínculo/Auth criado; sem publicação/envios/nova fase. Checkpoint STORAGE-2 não reaberto.
 
 ## STORAGE-2/APLICAÇÕES — 2026-10-08
