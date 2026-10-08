@@ -10,6 +10,8 @@ A leitura do arquivo atual `useMyPartner.ts` nesta rodada não encontrou retorno
 
 Foco imediato permanece **gestor comercial parceiro_b2b**, exclusivamente seus pedidos/financeiro. Somente resumo próprio de pedidos está ativo neste recorte; financeiro próprio ainda indisponível, sem inventar preços/planos. Técnico/provisionamento/primeiro acesso continuam bloqueados até contratos e provas necessários; nenhuma fixture Auth antes do primeiro acesso humano. Executivo19/emailv9 preservados; NO-GO login/faturamento/integral.
 
+Validação desta nota21:46: **17/17 testes em2arquivos PASS**, incluindo2regressões de campos financeiros extras no resultado do hook (gestor/técnico, transporte mockado). Lint do teste, scanner fiscal-secrets e diff-check PASS; log automático **build OK21:46:42Z**. Typecheck separado não executado. Nenhuma prova nova de negação financeira direta tabela/RPC ou JWT; não somar estes17 aos123 anteriores como casos independentes.
+
 ## Matriz integrada e gates
 
 | Elo | Fonte/caminho existente | Evidência e limite | Gate para restauração |
