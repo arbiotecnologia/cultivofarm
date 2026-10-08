@@ -39,6 +39,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useDebounce } from "@/hooks/useDebounce";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -776,6 +777,7 @@ export default function Configuracoes() {
                                 );
                               })}
                             </div>
+                            <p className="text-xs text-muted-foreground mt-1">{PARTNER_REGISTRATION_UNAVAILABLE}</p>
                             {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
@@ -798,6 +800,7 @@ export default function Configuracoes() {
                 </div>
               </CardHeader>
               <CardContent className={isMobile ? "p-3" : "p-6"}>
+                <p role="status" className="text-sm text-muted-foreground mb-4">{PARTNER_REGISTRATION_UNAVAILABLE} O perfil Produtor também depende de vínculo de cliente comprovado e permanece indisponível nesta tela.</p>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <div className="relative flex-1">

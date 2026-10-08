@@ -36,3 +36,4 @@
 <!-- LOVABLE:END -->
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
+

@@ -1,3 +1,4 @@
 - Notification caches, reads, counters and mutations require resolved Auth, a matching active profile, tenant, roles and individual portal recipient; server RLS remains authoritative to prevent stale-context disclosure.
 - Portal client selection must fence late requests and scope remembered selection by identity/tenant, so logout or organization changes cannot reuse previous client data.
 - Push stays explicitly unavailable: no automatic worker registration, permission requests or subscription writes; only inspect the same-origin push worker and revoke browser-local subscriptions — avoids false activation and deleting unproven server ownership.
+- Partner-user reads fence active actor/tenant/roles/resource and verify the partner client chain; legacy link/change/delete hooks stay unavailable until integrated provisioning is authorized — avoids stale disclosure and unowned role writes.
