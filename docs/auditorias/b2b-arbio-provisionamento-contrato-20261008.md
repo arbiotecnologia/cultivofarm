@@ -1,5 +1,15 @@
 # Provisionamento B2B — preparação do contrato, mesma auditoria
 
+## Revisão independente21:45 — implantação comprovada, gate técnico não satisfeito
+
+Evidência independente recebida: core/fachada do recorte `e2733c` **já estão implantados** no Supabase canônico `swzpzcwiasxmjutrmvkm`, com paridade exata dos corpos SQL verificada; EXECUTE anon=false, core SECURITY DEFINER, fachada SECURITY INVOKER e search_path vazio. Não descrever estes resolvers como apenas locais nem estender sua paridade a todas as policies/RPCs/Edges/Storage. Esta rodada registra a revisão, sem nova consulta remota ou implantação.
+
+**Risco financeiro técnico relatado:** `partner_accounts_self_select` permite a role `parceiro_b2b_tecnico` ler a linha inteira, inclusive campos financeiros. Sem prova de negação direta na tabela/RPC, **NO-GO provisionamento técnico**. Projeção mínima e ocultação UI não contêm acesso direto; revisar a composição de todas as policies/grants/callers antes de desbloquear. Nenhuma conta técnica foi criada nem policy alterada nesta integração da nota.
+
+A leitura do arquivo atual `useMyPartner.ts` nesta rodada não encontrou retorno de `desconto_padrao`: o hook reconstrói apenas id/código/nome/ativo/papel/modo; o SQL de projeção revisado também não inclui desconto. Portanto, a afirmação independente sobre o hook é registrada como divergência de revisão, **não como vazamento atual reproduzido ou correção backend concluída**. Regressão local confirma que campos financeiros extras não chegam ao resultado para gestor ou técnico; isso não prova negação de SELECT/RPC financeiro.
+
+Foco imediato permanece **gestor comercial parceiro_b2b**, exclusivamente seus pedidos/financeiro. Somente resumo próprio de pedidos está ativo neste recorte; financeiro próprio ainda indisponível, sem inventar preços/planos. Técnico/provisionamento/primeiro acesso continuam bloqueados até contratos e provas necessários; nenhuma fixture Auth antes do primeiro acesso humano. Executivo19/emailv9 preservados; NO-GO login/faturamento/integral.
+
 ## Matriz integrada e gates
 
 | Elo | Fonte/caminho existente | Evidência e limite | Gate para restauração |
