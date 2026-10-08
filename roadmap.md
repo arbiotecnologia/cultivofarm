@@ -1,3 +1,9 @@
+## MULTIPORTAL-1 — Gestão/Técnico — 2026-10-08
+- [x] Checkpoint STORAGE-2 fechado:267/267 testes, migration144506 e hashes registrados; limitações operacionais preservadas, sem reabertura.
+- [x] Inventário login/guards/layout/sidebar/storage/broadcast/query keys e contratos RPC/constraints de preferência/log; banco atual contém um perfil ativo gestor+consultor_tecnico, divergindo do inventário independente anterior.
+- [ ] Corrigir seleção Gestão/Técnico e intenção manual sem ampliar RBAC/RLS ou remover acesso B2B legado; readiness/tenant/papéis e fencing de cache. Plano focal em revisão.
+- [ ] Testes comportamentais e provas SQL com identidades existentes, rollback obrigatório; relatório e limites JWT/browser, sem Auth/roles/envios/publicação.
+
 ## STORAGE-2/APLICAÇÕES — 2026-10-08
 - [x] ACL/triggers auditados; replay inativo e OS cruzada reproduzidos em rollback. Migration oficial144506 contém RPC antes dos efeitos; legado privado sem EXECUTE runtime. Prova após:blocked5/legacy_acl_denied5, rollback obrigatório, metadata_writes0 e hashes intactos.
 - [x] Galeria8 falhas antes/8 PASS depois; downloads cercados por sessão/empresa. Suíte focal267/267 em20 arquivos; lint novos arquivos/scanners/diff-check/build automático PASS. Lint ampliado mantém erros legados; typecheck explícito NOT RUN por restrição do ambiente. Relatório atualizado.
