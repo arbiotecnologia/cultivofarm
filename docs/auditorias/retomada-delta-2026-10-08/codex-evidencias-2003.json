@@ -22,13 +22,25 @@
     "email_version_before": 7,
     "email_version_after": 9,
     "examples": {
-      "create-user": [66, 67],
-      "PDF": [65, 66],
-      "provider": [70, 71],
-      "push": [63, 64]
+      "create-user": [
+        66,
+        67
+      ],
+      "PDF": [
+        65,
+        66
+      ],
+      "provider": [
+        70,
+        71
+      ],
+      "push": [
+        63,
+        64
+      ]
     },
     "causality": "Não comprovada; solicitação explícita de deploy de uma função não demonstra exclusividade do alcance observado.",
-    "other_entrypoint_live_parity": "Pendente de verificação independente anunciada nesta conversa."
+    "other_entrypoint_live_parity": "VERIFICADA Codex para40/41Edges (inclui email-change); fiscal-xml-engine UNVERIFIED por erro interno MCP; versionamento não prova mudança semântica."
   },
   "identity_correction": {
     "gestor_consultor_tenant": "FSF",
@@ -39,15 +51,63 @@
     "browser": "Chrome real publicado controlado pelo Codex",
     "actor": "Renato, administrador AR Bio",
     "observations": [
-      {"path": "/plataforma", "result": "Redireciona para /sem-permissao"},
-      {"surface": "sidebar", "result": "Sem plataforma"},
-      {"path": "/configuracoes", "result": "Acessível"},
-      {"surface": "Meu Plano", "result": "Completo, TRIAL 02→16/10, 17 features"},
-      {"path": "/clientes", "result": "Produtores: lista vazia"},
-      {"path": "/financeiro/receber", "result": "Zero contas"}
+      {
+        "path": "/plataforma",
+        "result": "Redireciona para /sem-permissao"
+      },
+      {
+        "surface": "sidebar",
+        "result": "Sem plataforma"
+      },
+      {
+        "path": "/configuracoes",
+        "result": "Acessível"
+      },
+      {
+        "surface": "Meu Plano",
+        "result": "Completo, TRIAL 02→16/10, 17 features"
+      },
+      {
+        "path": "/clientes",
+        "result": "Produtores: lista vazia"
+      },
+      {
+        "path": "/financeiro/receber",
+        "result": "Zero contas"
+      },
+      {
+        "path": "/estoque",
+        "result": "Zero itens"
+      },
+      {
+        "path": "/fiscal/documentos",
+        "result": "Zero registros; aviso explícito emissão/manual desativada"
+      }
     ],
     "status": "PASS somente acesso/renderização nos casos medidos",
-    "not_proven": ["mutações", "isolamento por si só", "outros perfis", "revogação JWT/API", "Storage", "concorrência"]
+    "not_proven": [
+      "mutações",
+      "isolamento por si só",
+      "outros perfis",
+      "revogação JWT/API",
+      "Storage",
+      "concorrência",
+      "mobile autenticado",
+      "cache/logout/troca de identidade",
+      "demais rotas"
+    ],
+    "mobile_attempt": {
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "effective_dimensions": [
+        958,
+        854
+      ],
+      "status": "UNVERIFIED; NÃO registrar mobile autenticado PASS"
+    },
+    "second_session": "Outra aba ainda mostra Renato Cunha administrador; aguardando segunda sessão do usuário."
   },
   "independent_local_validation": {
     "typecheck": "PASS explícito tsc -p tsconfig.app e tsconfig.node",
@@ -57,7 +117,69 @@
     "global_lint_errors": 3396,
     "global_lint_warnings": 125,
     "snapshot": "Composto, não checkout Git exato",
-    "not_added_to_historical_suite": {"passed": 6161, "skipped": 4}
+    "not_added_to_historical_suite": {
+      "passed": 6161,
+      "skipped": 4
+    }
   },
-  "limits": "Saídas MCP brutas, do Chrome e dos comandos Codex não anexadas nesta mensagem; esta ficha preserva a medição independente comunicada, sem inventar hashes individuais, screenshots ou logs. Nenhuma nova operação remota foi executada nesta continuação documental."
+  "limits": "Saídas MCP brutas, do Chrome e dos comandos Codex não anexadas nesta mensagem; esta ficha preserva a medição independente comunicada, sem inventar hashes individuais, screenshots ou logs. Nenhuma nova operação remota foi executada nesta continuação documental.",
+  "final_addendum_received_at_utc": "2026-10-08T20:09:00Z",
+  "live_edges_final_addendum": {
+    "method": "Codex/Supabase MCP leitura viva",
+    "functions_read": 40,
+    "functions_total": 41,
+    "includes": [
+      "platform-org-admin-email-change",
+      "convite",
+      "first-access"
+    ],
+    "all_returned_files_exactly_equal_to_commit": "196247dd76079b7205c1fcc36a71eb17b2b5d24f",
+    "unverified": {
+      "fiscal-xml-engine": "Erro interno MCP; não prova drift nem paridade"
+    },
+    "semantic_change_from_versioning": "Não comprovada",
+    "causality": "Não identificada"
+  },
+  "independent_local_validation_final_addendum": {
+    "provenance": "Codex independente; sem reexecução Lovable",
+    "tests": {
+      "passed": 27,
+      "total": 27,
+      "files": 3,
+      "names": [
+        "drift-email-handler",
+        "cultivofarm-runtime.static",
+        "pwa-binding-hardening"
+      ]
+    },
+    "tsc_app_node": "PASS",
+    "focused_lint": {
+      "files": 4,
+      "status": "PASS",
+      "file_names": "Não fornecidos"
+    },
+    "scanner": {
+      "files": 3730,
+      "findings": 0,
+      "command": "Não fornecido"
+    },
+    "build": "PASS",
+    "global_lint": {
+      "errors": 3396,
+      "warnings": 125,
+      "status": "FAIL",
+      "snapshot": "Cópia composta, não checkout Git exato"
+    },
+    "counts_not_summed": true
+  },
+  "api_git_path_reconciliation": {
+    "provenance": "Medição independente Codex comunicada20:09UTC",
+    "api_files": 393,
+    "git_files": 394,
+    "method": "Comparar nomes normalizados/decodificar escapes Unicode",
+    "api_unicode_escaped_names_same_paths": 10,
+    "git_only_path": "docs/auditorias/auditoria-rotas-inventario-2026-10-07.json",
+    "raw_api_listing_attached": false
+  },
+  "decision": "NO-GO integral; mesma fase, somente relatório/roadmap/evidências/matriz; sem runtime/deploy/migration."
 }
