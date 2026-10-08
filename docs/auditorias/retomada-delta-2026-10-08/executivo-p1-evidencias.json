@@ -1,0 +1,88 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "finding": "EXECUTIVO-P1",
+  "classification": "lacuna de hardening em função legada; regressão no delta NÃO comprovada",
+  "before": {
+    "provenance": "Medição independente Codex relatada nesta conversa; executive-p1-before.json bruto não disponibilizado",
+    "browser": "AR Bio /dashboard/executivo: Entrega entregue e Envase registrado 13/09; resumo indisponível",
+    "claims": "SIMULADOS sub/role/iat atuais authenticated/read-only/rollback",
+    "ARBio": {
+      "eventos": 2,
+      "gargalos": 1
+    },
+    "FSF": {
+      "eventos": 2,
+      "gargalos": 1
+    },
+    "eventos_md5": "208db566ed8b57866ff9ae8e08840de3",
+    "gargalos_md5": "6bcccb7ad78292d188f966bbb87a7613",
+    "direct_SELECT_each": {
+      "envase": 0,
+      "entregas": 0
+    },
+    "ownership": "legado NULL; nenhuma empresa proprietária comprovada"
+  },
+  "after": {
+    "provenance": "Lovable ferramentas Supabase, fontes vivas e transações read-only rollback no canônico",
+    "ledger": [
+      "20261008203543",
+      "20261008204053"
+    ],
+    "live_md5": {
+      "rpc_executivo_timeline_operacional": "db6e99a1eb660d4cd1e0532c2e7649af",
+      "rpc_executivo_gargalos": "e3df4241218f2e62e4e79f87fcfd0902"
+    },
+    "acl": {
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "PUBLIC": "revogado"
+    },
+    "search_path": "",
+    "ARBio": {
+      "eventos": 0,
+      "gargalos": 0,
+      "dados_indisponiveis": true
+    },
+    "FSF": {
+      "eventos": 0,
+      "gargalos": 0,
+      "dados_indisponiveis": true
+    },
+    "assertions": {
+      "payloads": 4,
+      "forged_filters": 16,
+      "bounds": 8,
+      "malformed_filters": 4,
+      "infinite_periods": 2,
+      "missing_iat": 4,
+      "absent_actor": 2,
+      "non_executive_existing_identities": 4,
+      "anon_RPC_negatives": 2
+    },
+    "legacy_counts": {
+      "envase_total": 1,
+      "envase_NULL": 1,
+      "entregas_total": 1,
+      "entregas_NULL": 1
+    },
+    "claims": "SIMULADOS; SET LOCAL ROLE authenticated; READ ONLY; ROLLBACK",
+    "authenticated_JWT_browser": "UNVERIFIED",
+    "functional_readiness": "NO-GO: fontes operacionais indisponíveis"
+  },
+  "validation": {
+    "vitest": "38/38 PASS em 2 arquivos (22 novos +16 regressão estrutural histórica), não soma à suíte histórica",
+    "lint": "7 arquivos alterados PASS,0 erros/avisos",
+    "secrets": "PASS fiscal-secrets-scan",
+    "typecheck": "NOT RUN manual por restrição do harness; não transferir PASS Codex anterior para este patch",
+    "build": "automático build OK 20:38:53UTC; sem build manual"
+  },
+  "method_limits": [
+    "read_query inicialmente negou EXECUTE/SET ROLE: não equivale a teste autenticado",
+    "primeiro teste negativo sem iat encontrou NO_IAT_ACCEPTED em ARBio; h15 não exige iat universalmente, apenas barreira do convite quando aplicável; follow-up adiciona iat explícito sem alterar helper global",
+    "gargalos não lê fontes e não usa período; somente timeline valida período personalizado",
+    "banco local iniciado sem fixtures e sem executar testes locais SQL; provas finais no canônico read-only",
+    "405 achados linter preexistentes,nenhum introduzido:15 INFO RLS sem policy,2 PUBLIC DEFINER,387 authenticated DEFINER,1 leaked password disabled"
+  ],
+  "rollback": "Manter estas contenções e ACL; forward-fix apenas. Nunca restaurar RPC legada vazando; sem backfill,Auth,roles,envios,fiscal ou publicação frontend."
+}
