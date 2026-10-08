@@ -1,3 +1,12 @@
+## B2B-FISCAL — continuidade P2B–P6 autorizada — 2026-10-08 19:15 UTC
+- [x] P2B/P2C: catálogo vivo revisado; migrations oficiais192025/192236/192601 protegem snapshots novos/imutabilidade e mantêm Q-01/revisão/planejamento/produção/recebível fail-closed. BF01–03/P1A/P2A/legados preservados, sem mandato A/P.
+- [x] P3/P4: produção/estoque/entrega inventariados e regressões locais executadas; origem ainda não propagada até OS/entrega, nenhum elo liberado.
+- [x] P5/P6: título/faturamento/preparação fiscal inventariados e regressões locais; gerador legado não consome credor selado e fiscal sem proveniência comprovada. Sem transporte/cobrança/PFX/Auth/publicação.
+- [x] Relatório b2b-fiscal-p2c-p6-2026-10-08.md:23cenários PostgreSQL local/Auth stub e176/176Vitest17arquivos PASS (não somar);3hashes iguais; lint focal/scanners/diff PASS;lint amplo FAIL3385erros/125avisos;build automático OK19:26:47/typecheck manual NOT RUN; rollback documental.
+- [ ] GO operacional bloqueado: parceiro legado sem owner comprovado,2emissores DRAFT,criador A/revisão/propagação sem contrato provado; homolog/paridade/executor rollback autenticado/JWT/browser/Storage/concorrência UNVERIFIED. Auditoria segura P2B–P6 concluída, não aguarda confirmação para leitura.
+
+Checkpoints seguintes são históricos; seus gates e ausência de migration descrevem as rodadas originais, não substituem o estado vigente acima.
+
 ## B2B-FISCAL — P2B operação interna A — 2026-10-08
 - [x] HEADec99f0d3/canônico/ledger173204/174953/184449 e ACL BF02/03/P1A/P2A conferidos, preservados sem migration ou runtime editado.
 - [x] Catálogo vivo: primeiro INSERT pedido não congela org credor/emissor; cotação recria condições e usa parâmetro divergente Q-01. Contrato insuficiente: plano documental validável sem mandato/backfill/reabertura em b2b-fiscal-p2b-migration-plan.md.
