@@ -208,5 +208,76 @@
     "fixtures_created": false,
     "JWT_browser_after": "UNVERIFIED",
     "decision": "NO-GO integral; mesma auditoria/foco AR Bio; rollback nunca restaura vazamento"
+  },
+  "final_independent_addendum": {
+    "reported_at": "2026-10-08T20:54:00Z",
+    "provenance": "Resultados independentes Codex relatados nesta auditoria; publicação informada pelo usuário, observada pelo Codex",
+    "external_references": [
+      "executive-family-after.json",
+      "executive-client-after.json",
+      "executive-final-tests.json"
+    ],
+    "raw_files_available": false,
+    "supersedes": [
+      "pendência de publicação frontend no recorte",
+      "browser pós-fix AR Bio neste recorte",
+      "ausência de reteste dos mesmos2IDs reais"
+    ],
+    "browser": {
+      "origin": "https://app.cultivofarm.com.br",
+      "actor": "administrador AR Bio",
+      "real_session": true,
+      "after_reload": true,
+      "explicit_unavailability": [
+        "Timeline",
+        "Gargalos",
+        "Financeiro",
+        "Clientes&Fazendas",
+        "Alertas&Ações",
+        "Relatórios"
+      ],
+      "status": "PASS focal contenção/renderização; frontend publicado observado"
+    },
+    "live_pg_proc": {
+      "total": 19,
+      "identical_blocked_bodies": 16,
+      "body": "somente RAISE42501 EXECUTIVO_SOURCE_UNAVAILABLE",
+      "search_path": "",
+      "anon_EXECUTE": false,
+      "authenticated_EXECUTE": false,
+      "preserved_previous": 3
+    },
+    "read_only_negatives": {
+      "script_rerun": 96,
+      "status": "PASS; rodada distinta, não somar às96anteriores"
+    },
+    "same_real_client_IDs_retest": {
+      "same_pre_fix_IDs": true,
+      "clients": 2,
+      "actors": [
+        "AR Bio",
+        "FSF"
+      ],
+      "claims": "atuais SIMULADOS",
+      "denials_42501": 4,
+      "writes": false,
+      "PII_extracted": false
+    },
+    "local_tests": {
+      "vitest": "24/24 PASS em2novos arquivos; não somar rodada histórica",
+      "typecheck_app": "PASS",
+      "typecheck_node": "PASS",
+      "lint": "PASS3arquivos família",
+      "build": "PASS30.76s",
+      "scanner": "EM VALIDAÇÃO; não afirmar PASS"
+    },
+    "decisions": {
+      "containment_19_channels": "PASS",
+      "operational_restoration": "NO-GO",
+      "integral_audit": "NO-GO"
+    },
+    "limits": "Browser real focal distinto de SQL claims simulados; não certifica RPC via JWT real, CRUD/cache/Realtime/Storage/isolamento integral nem regressão por commit",
+    "DRIFT_EMAIL_v9": "evidências e limites preservados",
+    "Lovable_actions_this_addendum": "somente documentação; sem reexecutar testes,deploy,migration,runtime,fixtures ou mutações"
   }
 }
