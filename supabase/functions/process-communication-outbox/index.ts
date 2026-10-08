@@ -61,6 +61,11 @@ Deno.serve(async (req: Request) => {
   const authz = authorize(req);
   if (!authz.ok) return authz.res;
 
+  // NOTIF-3: internal credentials do not prove source/tenant/recipient.
+  // No runtime secret load, claim, adapter or ledger effects while contained.
+  const deliveryContractAvailable = false;
+  if (!deliveryContractAvailable) return json(503, { ok: false, error: "NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE" });
+
   const supabase = serviceClient();
   const env = await loadRuntimeConfig(supabase, readWorkerEnv);
 

@@ -27,6 +27,9 @@ function jsonResponse(status: number, body: Record<string, unknown>): Response {
 
 Deno.serve(async (req: Request) => {
   try {
+    // NOTIF-3: no secret fetch or receipt mutation before a proven contract.
+    const webhookContractAvailable = false;
+    if (!webhookContractAvailable) return jsonResponse(503, { ok: false, error: "NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE" });
     if (!SUPABASE_URL || !SERVICE_KEY) return jsonResponse(500, { ok: false, error: "not_configured" });
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {

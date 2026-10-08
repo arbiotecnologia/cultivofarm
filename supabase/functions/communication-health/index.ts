@@ -1,6 +1,6 @@
 // Edge Function: communication-health
 // POST-only. Autorização: INTERNAL_FUNCTION_SECRET OU service_role JWT OU
-// JWT autenticado com role=administrador (checagem via user_roles).
+// Usuários HTTP não têm contrato para leitura global (NOTIF-3).
 // Retorna EXCLUSIVAMENTE o snapshot consolidado do RPC admin
 // `rpc_admin_communication_health_snapshot` — sem secrets, sem PII,
 // sem valores/UUIDs de credenciais. Não invoca worker nem altera flags.
@@ -24,10 +24,7 @@ async function authorize(req: Request): Promise<{ ok: true } | { ok: false; res:
   const sb = serviceClient();
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data?.user) return { ok: false, res: json(401, { ok: false, error: "invalid_token" }) };
-  const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", data.user.id);
-  const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "administrador");
-  if (!isAdmin) return { ok: false, res: json(403, { ok: false, error: "forbidden" }) };
-  return { ok: true };
+  return { ok: false, res: json(403, { ok: false, error: "NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE" }) };
 }
 
 type Snapshot = Record<string, unknown> & { ok?: boolean };
@@ -57,8 +54,12 @@ Deno.serve(async (req: Request) => {
   const az = await authorize(req);
   if (!az.ok) return az.res;
 
+  // Also fail closed for internal callers, before global aggregation.
+  const globalContractAvailable = false;
+  if (!globalContractAvailable) return json(503, { ok: false, error: "NOTIF3_GLOBAL_CONTRACT_UNAVAILABLE" });
+
   const sb = serviceClient();
   const { data, error } = await sb.rpc("rpc_admin_communication_health_snapshot", {});
-  if (error) return json(500, { ok: false, error: "snapshot_failed", detail: error.message });
+  if (error) return json(500, { ok: false, error: "snapshot_failed" });
   return json(200, sanitize((data ?? {}) as Snapshot));
 });
