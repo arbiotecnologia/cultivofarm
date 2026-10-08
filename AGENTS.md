@@ -18,7 +18,7 @@
 - Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
 - Dashboard summary RPCs derive organization from the active authenticated profile and fail closed for operational sources without deterministic tenant ownership — prevents cross-tenant aggregates.
 - Tenant admin derives org server-side, keeps identity/tenant immutable and unowned links closed. create-user uses actor bearer, compensation, fixed public Auth codes and mocked tests; a ref lock releases in finally — prevents leaks/local reentry, not distributed idempotency.
-- Stock uses h15/RBAC/entitlement before replay, actor/source-item binding and coherent tenant guards; private txid context, literal ledger prefixes and same-tenant recipients prevent GUC spoofing/leaks; client ACL stays closed.
+- Stock requires h15/RBAC/entitlement, finite positive supplied quantities before lookup/replay (reversal permits NULL), actor/item binding, tenant guards, private txid context, literal key prefixes and tenant recipients; ACL closed — prevents poisoning/spoofing/leaks.
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
