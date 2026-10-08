@@ -8,6 +8,7 @@ import type { PortalContext } from "@/hooks/useAvailableContexts";
 export const PORTAL_CONTEXT_HOME: Record<PortalContext, string> = {
   b2b: "/portal-parceiro/dashboard",
   technical: "/app",
+  admin: "/dashboard/geral",
 } as const;
 
 /**
@@ -73,4 +74,10 @@ const PORTAL_ROLES: AppRole[] = [
 /** Indica se algum dos papéis do usuário precisa passar pelo resolver de portal. */
 export function hasPortalRole(roles: AppRole[]): boolean {
   return roles.some((r) => PORTAL_ROLES.includes(r));
+}
+
+/** Manual intent bypasses saved preference only; it never grants a context. */
+export function automaticPortalContext(contexts: readonly PortalContext[], preferred: PortalContext | null | undefined, skip: boolean | undefined, manual: boolean): PortalContext | null {
+  if (contexts.length === 1) return contexts[0];
+  return !manual && skip && preferred && contexts.includes(preferred) ? preferred : null;
 }

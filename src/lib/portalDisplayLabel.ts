@@ -27,6 +27,10 @@ export function getPortalDisplayLabel({
   primaryRole,
   roles,
 }: PortalDisplayInput): string {
+  if (activeCtx === "admin") {
+    if (roles.includes("administrador")) return ROLE_LABELS.administrador;
+    if (roles.includes("gestor")) return ROLE_LABELS.gestor;
+  }
   if (activeCtx === "b2b") {
     if (primaryRole === "parceiro_b2b" || primaryRole === "parceiro_b2b_tecnico") {
       return ROLE_LABELS[primaryRole];

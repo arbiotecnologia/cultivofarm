@@ -350,7 +350,11 @@ function AuthRoute() {
     );
   }
   if (user) {
-    // Prioridade administrativa: preserva a home mesmo se o usuário também tiver acesso a portais.
+    // Multipapel Gestão/Técnico usa o resolver; contexto não amplia autorização.
+    if ((roles.includes("gestor") || roles.includes("administrador")) && hasPortalRole(roles)) {
+      return <Navigate to="/selecionar-portal" replace />;
+    }
+    // Prioridade administrativa: preserva a home de papéis internos únicos.
     if (primaryRole && (ADMIN_HOME_ROLES as readonly string[]).includes(primaryRole)) {
       return <Navigate to={getHomeForRole(primaryRole)} replace />;
     }
