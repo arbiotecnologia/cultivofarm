@@ -98,7 +98,7 @@ SELECT pg_temp.assert_true('internal admin A cannot see tenant B',NOT EXISTS(SEL
 RESET ROLE;
 UPDATE public.profiles SET organization_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.assert_true('legacy self-link branch survives internal tenant move baseline risk',(SELECT count(*) FROM public.partner_accounts)=3);
+SELECT pg_temp.assert_true('legacy self-link branch survives internal tenant move baseline risk',(SELECT count(*) FROM public.partner_accounts)=2 AND EXISTS(SELECT 1 FROM public.partner_accounts WHERE commercial_owner_organization_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'));
 RESET ROLE;
 -- Internal identities are not provisioned with partner_users by this contract.
 -- The live legacy guard's self-link branch otherwise survives a tenant move.
