@@ -5,7 +5,7 @@ DECLARE
  r text:='TEMPORARY_AUDIT_STOCK_MOTOR_'||gen_random_uuid()::text;
  a uuid:='cbdc4ef3-005a-4674-8ea3-4410c7d7d212'; b uuid:='a7d45277-6dec-413d-bf6b-86620c1ef39f';
  oa uuid; ob uuid; la uuid:=gen_random_uuid(); lb uuid:=gen_random_uuid(); ea uuid:=gen_random_uuid(); eb uuid:=gen_random_uuid();
- sa uuid:=gen_random_uuid(); sb uuid:=gen_random_uuid(); ca uuid:=gen_random_uuid(); os uuid:=gen_random_uuid();
+ sa uuid:=gen_random_uuid(); sb uuid:=gen_random_uuid(); ca uuid:=gen_random_uuid(); os uuid:=gen_random_uuid(); fa uuid:=gen_random_uuid(); ta uuid:=gen_random_uuid();
  j jsonb; replay jsonb; payload jsonb; target uuid; expmov uuid; n int; before_n int; denied int:=0; action text;
  results jsonb:='{}'; stocks uuid[]; moves uuid[];
 BEGIN
@@ -18,7 +18,9 @@ BEGIN
  INSERT INTO public.envase(id,lote_id,tipo_embalagem,volume_por_unidade,quantidade,organization_id) VALUES(ea,la,'frasco_1L',1000,10,oa),(eb,lb,'frasco_1L',1000,10,ob);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES(ca,r,r,oa);
- INSERT INTO public.ordens_servico(id,numero_os,cliente_id,organization_id,origem,microrganismo_id,tipo_item) VALUES(os,r,ca,oa,'agronomica','74eb1d1a-dcbc-5ed3-9290-63462a32668f','microrganismo');
+ INSERT INTO public.fazendas(id,cliente_id,nome,organization_id) VALUES(fa,ca,r,oa);
+ INSERT INTO public.talhoes(id,fazenda_id,nome,organization_id) VALUES(ta,fa,r,oa);
+ INSERT INTO public.ordens_servico(id,numero_os,cliente_id,fazenda_id,talhao_id,organization_id,origem,microrganismo_id,tipo_item) VALUES(os,r,ca,fa,ta,oa,'agronomica','74eb1d1a-dcbc-5ed3-9290-63462a32668f','microrganismo');
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sa,la,ea,10,10000,current_date+30,r);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sb,lb,eb,10,10000,current_date+30,r);
@@ -64,5 +66,5 @@ BEGIN
  SELECT array_agg(id) INTO stocks FROM public.estoque_produto WHERE lote_id IN (la,lb);
  SELECT array_agg(id) INTO moves FROM public.estoque_movimentacoes WHERE lote_id IN (la,lb);
  IF denied<>5 THEN RAISE EXCEPTION 'DENIAL_COUNT %',denied; END IF;
- RAISE EXCEPTION 'STOCK_MOTOR_PROOF_ROLLBACK results=%,denied=%,manifest=%',results,denied,jsonb_build_object('run_id',r,'lotes',jsonb_build_array(la,lb),'envases',jsonb_build_array(ea,eb),'clientes',ca,'os',os,'stock',stocks,'moves',moves);
+ RAISE EXCEPTION 'STOCK_MOTOR_PROOF_ROLLBACK results=%,denied=%,manifest=%',results,denied,jsonb_build_object('run_id',r,'lotes',jsonb_build_array(la,lb),'envases',jsonb_build_array(ea,eb),'clientes',ca,'fazendas',fa,'talhoes',ta,'os',os,'stock',stocks,'moves',moves);
 END $proof$;
