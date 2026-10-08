@@ -21880,6 +21880,7 @@ export type Database = {
         Returns: Json
       }
       get_my_available_portal_contexts: { Args: never; Returns: Json }
+      get_my_commercial_orders_projection: { Args: never; Returns: Json }
       get_my_commercial_partner_context: { Args: never; Returns: Json }
       get_my_commercial_partner_projection: { Args: never; Returns: Json }
       get_my_entitlement_context: { Args: never; Returns: string }
