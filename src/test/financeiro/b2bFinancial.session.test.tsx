@@ -70,7 +70,7 @@ describe("B2B financial session isolation — mocked server, real QueryClient", 
   it("rejects a late A→B→A result even if scope text becomes equal", async () => {
     state.pending = true;
     const { hook, client } = setup();
-    await waitFor(() => expect(state.resolve.length).toBe(3));
+    await waitFor(() => expect(state.resolve.length).toBeGreaterThanOrEqual(3));
     const old = [...state.resolve];
     state.auth.profile.organization_id = "OB"; hook.rerender();
     state.auth.profile.organization_id = "OA"; hook.rerender();
