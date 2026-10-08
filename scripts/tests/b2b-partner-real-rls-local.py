@@ -11,7 +11,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main(lifecycle=False):
+def main(lifecycle=False, channels=False):
     tmp = Path(tempfile.mkdtemp(prefix="b2b-real-rls-", dir="/tmp"))
     tmp.chmod(0o777)
     prefix = ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"] if os.getuid() == 0 else []
@@ -131,6 +131,12 @@ SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_functio
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-local.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-provisioning-lifecycle.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-assertions.sql").read_text()
+        if channels:
+            sql += (ROOT / "scripts/tests/b2b-latent-channels-local.sql").read_text()
+            sql += (ROOT / "supabase/migrations/20260702170704_ba93e0c6-98f8-4598-b4d3-3fcd52182f3b.sql").read_text()
+            sql += (ROOT / "scripts/tests/b2b-latent-channels-baseline.sql").read_text()
+            sql += (ROOT / "scripts/rbac-audit/b2b-latent-channel-containment.sql").read_text()
+            sql += (ROOT / "scripts/tests/b2b-latent-channels-assertions.sql").read_text()
         sql += "ROLLBACK;"
         result = subprocess.run(["psql", "-X", "-h", str(tmp), "-p", "55486", "-U", "local_audit", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], input=sql, text=True, capture_output=True)
         print(result.stderr)
