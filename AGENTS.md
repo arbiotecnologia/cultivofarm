@@ -29,5 +29,5 @@
 - Auth logout/renewal clears identity/cache; reload runs outside callbacks — avoids stale roles/deadlocks.
 - B2B credit RPCs authorize through the canonical partner-scope guard before the service-only calculator, and direct financial-settings access has a restrictive active-tenant policy including writes — prevents role-only cross-tenant credit disclosure and modification.
 - B2B keeps tenant policies/private cores; titles reuse installments. Technical writes reuse active actor/partner/client assignments with zero-finance guards; headers/items use price-free RPCs — prevents leakage and duplication.
-- Fixtures need real Auth, delivery OFF, ID cleanup and secret-free manifests; SQL rollback is not browser proof — avoids false PASS.
-- Notification rules: see supabase/AGENTS.md to prevent tenant leaks.
+- Fixtures require real Auth, delivery OFF and ID cleanup; SQL rollback is not browser proof — avoids false PASS.
+- Notifications follow supabase/AGENTS.md; mobile reads the unified scoped collection and mutations — keeps counts/read state coherent without widening access.
