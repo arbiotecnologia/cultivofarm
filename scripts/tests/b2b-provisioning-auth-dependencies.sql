@@ -27,10 +27,10 @@ BEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END 
 CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate();
 -- Canonical invitation columns/defaults/checks needed by the real claim producer.
 ALTER TABLE public.platform_org_admin_invites
- ADD PRIMARY KEY(id), ADD COLUMN organization_id uuid NOT NULL DEFAULT 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' REFERENCES public.organizations(id),
- ADD COLUMN email text NOT NULL DEFAULT 'revocation@example.invalid', ADD COLUMN nome text NOT NULL DEFAULT 'Fixture',
- ADD COLUMN cpf_cnpj text, ADD COLUMN telefone text, ADD COLUMN modo_acesso text NOT NULL DEFAULT 'link' CHECK(modo_acesso IN ('link','senha_temporaria')),
- ADD COLUMN responsavel_principal boolean NOT NULL DEFAULT true, ADD COLUMN invited_by uuid NOT NULL DEFAULT '44444444-4444-4444-8444-444444444444',
+ ADD PRIMARY KEY(id), ADD COLUMN organization_id uuid NOT NULL REFERENCES public.organizations(id),
+ ADD COLUMN email text NOT NULL, ADD COLUMN nome text NOT NULL,
+ ADD COLUMN cpf_cnpj text, ADD COLUMN telefone text, ADD COLUMN modo_acesso text NOT NULL CHECK(modo_acesso IN ('link','senha_temporaria')),
+ ADD COLUMN responsavel_principal boolean NOT NULL DEFAULT true, ADD COLUMN invited_by uuid NOT NULL,
  ADD COLUMN created_at timestamptz NOT NULL DEFAULT now(), ADD COLUMN request_id uuid NOT NULL DEFAULT gen_random_uuid(),
  ADD COLUMN updated_at timestamptz NOT NULL DEFAULT now(), ADD COLUMN attempt_count integer NOT NULL DEFAULT 0,
  ADD COLUMN lease_token uuid, ADD COLUMN lease_expires_at timestamptz, ADD COLUMN auth_created_at timestamptz, ADD COLUMN last_error_code text,

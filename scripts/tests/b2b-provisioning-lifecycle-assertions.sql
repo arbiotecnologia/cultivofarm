@@ -78,7 +78,8 @@ RESET ROLE;
 INSERT INTO auth.users(id,email,raw_app_meta_data) SELECT (body->>'user_id')::uuid,'three@example.invalid',jsonb_build_object('b2b_provisioning_receipt',body->>'claim_id') FROM claims WHERE label='three';
 -- Service subject is NULL; invite-only revocation must not depend on profile stamp.
 CREATE TEMP TABLE original_stamp AS SELECT updated_at FROM public.profiles WHERE user_id='44444444-4444-4444-8444-444444444444';
-INSERT INTO public.platform_org_admin_invites(user_id,status,access_valid_after) VALUES('44444444-4444-4444-8444-444444444444','ativo',clock_timestamp());
+INSERT INTO public.platform_org_admin_invites(user_id,status,access_valid_after,organization_id,email,nome,modo_acesso,invited_by)
+VALUES('44444444-4444-4444-8444-444444444444','ativo',clock_timestamp(),'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','admin@example.invalid','Admin','link','44444444-4444-4444-8444-444444444444');
 SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE service_role;
 SELECT pg_temp.denied('revoked iat after claim with service uid null',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='three';
