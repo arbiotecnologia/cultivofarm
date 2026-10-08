@@ -5,7 +5,7 @@
 - [x] Ancestralidade Git comprovada: base ecff53113532b7d8363618f9c479b9e357d822c9 é ancestral do HEAD 7d030dc426faa821621b39822a9b784863c6ff14; 643 commits; worktree inicial limpo.
 - [x] Inventários:643commits/1027alterações intermediárias/394arquivos/119migrations/179declarações178paths×14roles=2506linhas; diff integral preservado. Classificação automatizada NÃO equivale à revisão semântica integral, que permanece UNVERIFIED.
 - [x] Correções mínimas P2: import Json canônico no motor estoque; comentário push sem falso positivo regex. Suíte completa6161PASS/4skipped434arquivos, focal251/251 e ampliada730/730 não somadas;lint focal PASS/amplo FAIL3385erros125avisos versus base3477/127;scanners/diff/build automático PASS. Typecheck manual NOT RUN por restrição ambiental.
-- [x] Relatório17tópicos e CSVs em docs/auditorias/retomada-delta-2026-10-08.md e pasta homônima; nenhum P0/P1 funcional comprovado/liberado; contenções BF/NOTIF/STORAGE preservadas, zero SQL writes/Auth/envios/publicação.
+- [x] Relatório17tópicos e CSVs em docs/auditorias/retomada-delta-2026-10-08.md e pasta homônima; rodada inicial sem P0/P1, adendo DRIFT-EMAIL prioritário acima. Contenções BF/NOTIF/STORAGE preservadas, zero SQL writes/Auth/envios/publicação frontend.
 - [ ] Revisão semântica individual dos643commits e decisão efetiva de cada rota/operação: inventário completo disponível, certificação integral NÃO concluída.
 - [ ] Provas JWT/browser privados e SQL transacional: sessão/executor seguros indisponíveis (external_unmanaged); Storage/API/concorrência/read-mutate cross-tenant UNVERIFIED. NO-GO integral; não avançar FISC/P2–P6 nem publicar.
 
