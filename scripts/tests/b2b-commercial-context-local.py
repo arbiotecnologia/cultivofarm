@@ -115,6 +115,8 @@ SELECT pg_temp.assert_true('projection own only',public.get_my_commercial_partne
 SELECT pg_temp.assert_true('portal commercial exclusive B2B',public.get_my_available_portal_contexts()->'available_contexts'='["b2b"]'::jsonb);
 SELECT pg_temp.assert_true('projection has no commercial discount',NOT (public.get_my_commercial_partner_projection() ? 'desconto_padrao'));
 RESET ROLE;
+UPDATE public.user_roles SET role='parceiro_b2b';
+UPDATE public.partner_users SET papel='gestor';
 INSERT INTO public.partner_orders VALUES
  ('aaaaaaaa-1111-4111-8111-111111111111','11111111-1111-4111-8111-111111111111','OWN','aberta',now(),10,'internal'),
  ('aaaaaaaa-2222-4222-8222-222222222222','22222222-2222-4222-8222-222222222222','SIBLING','aberta',now(),20,'internal'),

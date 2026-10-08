@@ -17,6 +17,7 @@ import { getPapelLabel } from "@/lib/portal/identidade";
 import { usePortalBranding } from "@/hooks/useBranding";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
+import { CommercialOwnOrders } from "@/components/comercial/CommercialOwnOrders";
 
 import {
   Select,
@@ -188,8 +189,9 @@ export default function PortalParceiroLayout() {
           <section className="space-y-4" aria-label="Cliente comercial">
             <h1 className="text-2xl font-semibold">{ownPartner.razao_social}</h1>
             <p className="text-muted-foreground">{ownPartner.codigo}</p>
+            {!isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
             <p role="status" className="text-muted-foreground">
-              Pedidos, catálogo, simulações, financeiro e arquivos estão indisponíveis enquanto o acesso exclusivo do parceiro é validado.
+              Catálogo, simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
             </p>
           </section>
         ) : !partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
