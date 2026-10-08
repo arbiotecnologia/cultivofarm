@@ -211,6 +211,7 @@ export default function ProdutoresTab() {
         .eq("id", selectedClienteId)
         .select("*, fazendas(count)")
         .single();
+      if (!current()) return;
       if (error) {
         if (error.code === "23505") toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.");
         else toast.error(commercialRegistrationError(error));
@@ -224,6 +225,7 @@ export default function ProdutoresTab() {
         .insert([{ ...payload, id: draftId.current }])
         .select("*, fazendas(count)")
         .single();
+      if (!current()) return;
       if (error) {
         if (error.code === "23505") toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.");
         else toast.error(commercialRegistrationError(error));
@@ -253,7 +255,9 @@ export default function ProdutoresTab() {
 
   const handleInativarCliente = async (id: string, novoStatus: "ativo" | "inativo") => {
     if (!canManage) throw new Error("cadastro_not_ready");
+    const current = scope.capture();
     const { error } = await supabase.from("clientes").update({ status_cliente: novoStatus }).eq("id", id);
+    if (!current()) throw new Error("commercial_context_changed");
     if (error) { toast.error(commercialRegistrationError(error)); throw new Error("cadastro_action_failed"); }
     toast.success(novoStatus === "inativo" ? "Cliente inativado" : "Cliente reativado");
     fetchClientes();
@@ -261,9 +265,11 @@ export default function ProdutoresTab() {
 
   const handleExcluirCliente = async (id: string) => {
     if (!canManage) throw new Error("cadastro_not_ready");
+    const current = scope.capture();
     // cliente_contatos, cliente_documentos, portal_notificacoes, portal_solicitacoes e audit_log 
     // já são configurados com ON DELETE CASCADE ou tratados no banco.
     const { error } = await supabase.from("clientes").delete().eq("id", id);
+    if (!current()) throw new Error("commercial_context_changed");
     if (error) { 
       toast.error(commercialRegistrationError(error));
       throw new Error("cadastro_action_failed"); 

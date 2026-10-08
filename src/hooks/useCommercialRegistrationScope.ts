@@ -14,6 +14,6 @@ export function useCommercialRegistrationScope() {
     void client.cancelQueries({ predicate });
     client.removeQueries({ predicate });
   }, [client, fence.scope]);
-  return { ...fence, organizationId: auth.profile?.organization_id,
+  return { ...fence, actorId: auth.user?.id, organizationId: auth.profile?.organization_id,
     canManagePartners: fence.ready && auth.roles.some(r => r === "administrador" || r === "gestor_comercial") };
 }
