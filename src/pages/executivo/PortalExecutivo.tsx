@@ -8,10 +8,7 @@ import { ExecutivoSaudeOperacional } from "@/components/executivo/ExecutivoSaude
 import { ExecutivoGargalos } from "@/components/executivo/ExecutivoGargalos";
 import { ExecutivoTimeline } from "@/components/executivo/ExecutivoTimeline";
 import { ExecutivoAtalhos } from "@/components/executivo/ExecutivoAtalhos";
-import { ExecutivoFinanceiroResumo } from "@/components/executivo/financeiro/ExecutivoFinanceiroResumo";
-import { ExecutivoClientesResumo } from "@/components/executivo/clientes/ExecutivoClientesResumo";
-import { ExecutivoAlertasResumo } from "@/components/executivo/alertas/ExecutivoAlertasResumo";
-import { ExecutivoRelatorios } from "@/components/executivo/relatorios/ExecutivoRelatorios";
+import { ExecutivoFonteIndisponivel } from "@/components/executivo/ExecutivoFonteIndisponivel";
 import { useExecutivoResumo, type ExecutivoFiltros as Filtros } from "@/hooks/useExecutivoResumo";
 import { useExecutivoGargalos } from "@/hooks/useExecutivoGargalos";
 import { useExecutivoTimeline } from "@/hooks/useExecutivoTimeline";
@@ -74,19 +71,19 @@ export default function PortalExecutivo() {
           </TabsContent>
 
           <TabsContent value="financeiro" className="mt-4">
-            <ExecutivoFinanceiroResumo filtros={filtros} />
+            <ExecutivoFonteIndisponivel />
           </TabsContent>
 
           <TabsContent value="clientes" className="mt-4">
-            <ExecutivoClientesResumo filtros={filtros} />
+            <ExecutivoFonteIndisponivel />
           </TabsContent>
 
           <TabsContent value="alertas" className="mt-4">
-            <ExecutivoAlertasResumo filtros={filtros} />
+            <ExecutivoFonteIndisponivel />
           </TabsContent>
 
           <TabsContent value="relatorios" className="mt-4">
-            <ExecutivoRelatorios filtrosBase={filtros} />
+            <ExecutivoFonteIndisponivel />
           </TabsContent>
 
           <TabsContent value="gargalos" className="mt-4">
