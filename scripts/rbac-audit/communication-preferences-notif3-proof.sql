@@ -6,6 +6,8 @@ DECLARE
   cross_client uuid := gen_random_uuid();
   cross_pref uuid := gen_random_uuid();
   cross_link uuid := gen_random_uuid();
+  inactive_pref uuid := gen_random_uuid();
+  unowned_pref uuid := gen_random_uuid();
   actor uuid;
   n bigint;
   result jsonb;
@@ -19,6 +21,9 @@ BEGIN
     VALUES(cross_pref,NULL,cross_client,'email','cliente_portal');
   INSERT INTO public.user_clientes(id,user_id,cliente_id)
     VALUES(cross_link,'cbdc4ef3-005a-4674-8ea3-4410c7d7d212',cross_client);
+  INSERT INTO public.comunicacao_preferencias(id,user_id,canal,source) VALUES
+    (inactive_pref,'d856140b-26c9-4d6a-a5aa-8bea47e78fff','email','user'),
+    (unowned_pref,'37303555-f734-4ba8-8d13-f8fa54603853','email','user');
   FOREACH actor IN ARRAY ARRAY['cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid,'a7d45277-6dec-413d-bf6b-86620c1ef39f'::uuid] LOOP
     PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated','iat',extract(epoch FROM clock_timestamp())::bigint)::text,true);
     EXECUTE 'SET LOCAL ROLE authenticated';
@@ -59,5 +64,5 @@ BEGIN
   SELECT count(*) INTO n FROM public.comunicacao_consent_log WHERE user_id=ANY(ARRAY['cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid,'a7d45277-6dec-413d-bf6b-86620c1ef39f'::uuid]) AND canal='in_app';
   IF n<>2 THEN RAISE EXCEPTION 'consent effects mismatch'; END IF;
   IF positive<>2 OR denied<>10 THEN RAISE EXCEPTION 'coverage mismatch'; END IF;
-  RAISE EXCEPTION 'NOTIF3_PREFERENCES_ROLLBACK own=% denied=% run=% client=% preference=% link=%',positive,denied,run_id,cross_client,cross_pref,cross_link USING ERRCODE='P0001';
+  RAISE EXCEPTION 'NOTIF3_PREFERENCES_ROLLBACK own=% denied=% run=% client=% preference=% link=% inactive_pref=% unowned_pref=%',positive,denied,run_id,cross_client,cross_pref,cross_link,inactive_pref,unowned_pref USING ERRCODE='P0001';
 END $proof$;
