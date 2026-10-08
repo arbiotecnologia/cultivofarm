@@ -103,6 +103,6 @@ describe("P1 structural containment (not remote runtime)", () => {
     expect(hook).toContain("requestGeneration !== generation.current");
     expect(hook).toContain('setClientes([]); setClienteId(null); setClienteNome(null)');
     expect(hook).toContain("${STORAGE_KEY}:${scope}");
-    expect(hook).toContain('.eq("organization_id", organizationId)');
+    expect(hook).toContain('.filter("organization_id", "eq", organizationId)');
   });
 });

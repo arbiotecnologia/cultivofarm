@@ -63,7 +63,7 @@ export function usePortalCliente() {
         .from("clientes")
         .select("id, nome")
         .in("id", clienteIds)
-        .eq("organization_id", organizationId);
+        .filter("organization_id", "eq", organizationId);
 
       if (clisError) {
         console.error("usePortalCliente: erro ao buscar clientes:", clisError);
