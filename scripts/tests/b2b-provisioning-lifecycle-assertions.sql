@@ -22,9 +22,8 @@ SELECT pg_temp.denied('claim retry cannot change partner',$$SELECT public.b2b_cl
 SELECT pg_temp.denied('cross tenant preflight denied',$$SELECT public.b2b_claim_provisioning('33333333-3333-4333-8333-333333333333','66666666-6666-4666-8666-666666666666','foreign@example.invalid','Foreign')$$);
 SELECT pg_temp.denied('finish not executable by authenticated',$$SELECT public.b2b_finish_provisioning(null,null,null)$$);
 RESET ROLE;
--- Simulate only Auth's normal profile creation: no auth.users trigger modification.
+-- Local auth.users INSERT now executes the canonical handle_new_user trigger.
 INSERT INTO auth.users(id,email,raw_app_meta_data) SELECT (body->>'user_id')::uuid,'one@example.invalid',jsonb_build_object('b2b_provisioning_receipt',body->>'claim_id') FROM claims WHERE label='one';
-INSERT INTO public.profiles(user_id,email,ativo,senha_provisoria) SELECT id,email,true,false FROM auth.users;
 SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE service_role;
 SELECT pg_temp.denied('wrong fence denied',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id','99999999-9999-4999-8999-999999999999',body->>'user_id')) FROM claims WHERE label='one';
@@ -50,7 +49,6 @@ SET LOCAL ROLE authenticated;
 INSERT INTO claims VALUES('two',public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222','66666666-6666-4666-8666-666666666666','two@example.invalid','Two'));
 RESET ROLE;
 INSERT INTO auth.users(id,email,raw_app_meta_data) SELECT (body->>'user_id')::uuid,'two@example.invalid',jsonb_build_object('b2b_provisioning_receipt',body->>'claim_id') FROM claims WHERE label='two';
-INSERT INTO public.profiles(user_id,email,ativo,senha_provisoria) SELECT id,email,true,false FROM auth.users WHERE email='two@example.invalid';
 -- Inject error at the last write; whole finish must roll back profile/role/link/state.
 CREATE FUNCTION pg_temp.fail_first_access() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected' USING ERRCODE='42501'; END $$;
 CREATE TRIGGER injected BEFORE INSERT ON platform_private.provisional_password_state FOR EACH ROW EXECUTE FUNCTION pg_temp.fail_first_access();
@@ -78,10 +76,10 @@ SET LOCAL ROLE authenticated;
 INSERT INTO claims VALUES('three',public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222','77777777-7777-4777-8777-777777777777','three@example.invalid','Three'));
 RESET ROLE;
 INSERT INTO auth.users(id,email,raw_app_meta_data) SELECT (body->>'user_id')::uuid,'three@example.invalid',jsonb_build_object('b2b_provisioning_receipt',body->>'claim_id') FROM claims WHERE label='three';
-INSERT INTO public.profiles(user_id,email,ativo,senha_provisoria) SELECT id,email,true,false FROM auth.users WHERE email='three@example.invalid';
 -- Service subject is NULL; invite-only revocation must not depend on profile stamp.
 CREATE TEMP TABLE original_stamp AS SELECT updated_at FROM public.profiles WHERE user_id='44444444-4444-4444-8444-444444444444';
-INSERT INTO public.platform_org_admin_invites(user_id,status,access_valid_after) VALUES('44444444-4444-4444-8444-444444444444','enviado',clock_timestamp());
+INSERT INTO public.platform_org_admin_invites(user_id,status,access_valid_after,organization_id,email,nome,modo_acesso,invited_by)
+VALUES('44444444-4444-4444-8444-444444444444','ativo',clock_timestamp(),'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','admin@example.invalid','Admin','link','44444444-4444-4444-8444-444444444444');
 SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE service_role;
 SELECT pg_temp.denied('revoked iat after claim with service uid null',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='three';

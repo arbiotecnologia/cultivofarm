@@ -11,7 +11,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main(lifecycle=False, channels=False):
+def main(lifecycle=False, channels=False, organizations=False):
     tmp = Path(tempfile.mkdtemp(prefix="b2b-real-rls-", dir="/tmp"))
     tmp.chmod(0o777)
     prefix = ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"] if os.getuid() == 0 else []
@@ -127,10 +127,16 @@ SELECT pg_temp.assert_true('anonymous actor cannot read',(SELECT count(*) FROM p
 RESET ROLE;
 SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_function_privilege('anon','platform_private.b2b_direct_partner_row_allowed()','EXECUTE'));
 """
+        if organizations:
+            sql += (ROOT / "scripts/tests/b2b-organizations-local.sql").read_text()
+            sql += (ROOT / "scripts/rbac-audit/b2b-organizations-containment.sql").read_text()
+            sql += (ROOT / "scripts/tests/b2b-organizations-assertions.sql").read_text()
         if lifecycle:
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-local.sql").read_text()
             sql += "UPDATE public.user_roles SET role='administrador';"
             sql += (ROOT / "scripts/tests/b2b-provisioning-real-triggers.sql").read_text()
+            sql += (ROOT / "scripts/tests/b2b-provisioning-auth-dependencies.sql").read_text()
+            sql += (ROOT / "supabase/migrations/20261005153330_2399bc2a-d81a-4746-acfb-e9f1858aec5d.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-provisioning-lifecycle.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-assertions.sql").read_text()
         if channels:

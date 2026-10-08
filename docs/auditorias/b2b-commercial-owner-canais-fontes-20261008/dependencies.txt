@@ -1,0 +1,13 @@
+finance_private.set_payable_allocations(p_payable_id uuid, p_allocations jsonb, p_reason text, p_expected_version integer, p_request_key uuid)|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=true|SEARCH_PATH=search_path=""
+cron.schedule(schedule text, command text)|DEFINER=false|ANON=true|AUTHENTICATED=true|SCHEMA_USAGE=false
+cron.schedule(job_name text, schedule text, command text)|DEFINER=false|ANON=true|AUTHENTICATED=true|SCHEMA_USAGE=false
+cron.unschedule(job_id bigint)|DEFINER=false|ANON=true|AUTHENTICATED=true|SCHEMA_USAGE=false
+cron.unschedule(job_name text)|DEFINER=false|ANON=true|AUTHENTICATED=true|SCHEMA_USAGE=false
+cron.job_cache_invalidate()|DEFINER=false|ANON=true|AUTHENTICATED=true|SCHEMA_USAGE=false
+private.fn_public_validation_rate_check(p_token uuid)|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=false
+private.fn_public_validation_rate_prune(p_keep interval)|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=false
+private.h7n_catalogo_ficha_microrganismos()|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=false
+private.h7n_catalogo_ficha_produtos()|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=false
+private.h7n_esteira_laboratorio()|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=false
+private.h7n_fluxo_visita_tecnica()|DEFINER=true|ANON=false|AUTHENTICATED=true|SCHEMA_USAGE=false
+

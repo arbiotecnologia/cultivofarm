@@ -56,7 +56,7 @@ def run(base):
     print('PASS two connections claim same reserved ID exactly one acquired')
     receipt=receipts[0]
     uid=receipt['user_id']
-    query(f"SET request.jwt.claim.sub=''; INSERT INTO auth.users(id,email,raw_app_meta_data) VALUES('{uid}','race@example.invalid',jsonb_build_object('b2b_provisioning_receipt','{receipt['claim_id']}')); INSERT INTO public.profiles(user_id,email,ativo,senha_provisoria) VALUES('{uid}','race@example.invalid',true,false);")
+    query(f"SET request.jwt.claim.sub=''; INSERT INTO auth.users(id,email,raw_app_meta_data) VALUES('{uid}','race@example.invalid',jsonb_build_object('b2b_provisioning_receipt','{receipt['claim_id']}'));")
     args=f"'{receipt['claim_id']}','{receipt['fence']}','{uid}'"
     service="SET request.jwt.claim.sub=''; SET ROLE service_role; "
     # Ordinary profile DML gets the live statement gate first; finish must wait
@@ -69,3 +69,14 @@ def run(base):
     if 'completed' not in outputs[1]:
         raise RuntimeError('completed identity became compensatable')
     print('PASS two connections finish versus compensation preserves completed')
+    # Real service-only producer creates a new invitation; second connection
+    # must wait on its email advisory lock and observe the live lease conflict.
+    superuser='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa'
+    query(f"SET request.jwt.claim.sub=''; INSERT INTO auth.users(id,email) VALUES('{superuser}','super@example.invalid'); INSERT INTO public.user_roles VALUES('{superuser}','superadmin');")
+    producer=f"SELECT public.platform_claim_org_admin_provisioning('{superuser}','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','new-invite@example.invalid','New Invite');"
+    claim_service="SET request.jwt.claim.sub=''; SET request.jwt.claim.role='service_role'; SET ROLE service_role; "
+    negative="DO $test$ BEGIN "+producer+" RAISE EXCEPTION 'unexpected acquisition'; EXCEPTION WHEN SQLSTATE '55P03' THEN RAISE NOTICE 'PASS producer lease denied'; END $test$;"
+    outputs=blocked_pair(claim_service+producer,claim_service+negative)
+    if query("SELECT count(*) FROM public.platform_org_admin_invites WHERE email='new-invite@example.invalid';")!='1':
+        raise RuntimeError('real producer duplicated new invite')
+    print('PASS two connections real invitation producer one row lease conflict')
