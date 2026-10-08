@@ -28,6 +28,7 @@ CREATE TABLE public.organizations(id uuid,ativo boolean,status text,partner_acco
 CREATE TYPE public.app_role AS ENUM ('administrador','parceiro_b2b','parceiro_b2b_tecnico');
 CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,ativo boolean,deleted_at timestamptz,codigo text DEFAULT 'P1',razao_social text DEFAULT 'Synthetic Partner',nome_fantasia text);
 CREATE TABLE public.partner_users(user_id uuid,partner_id uuid,papel text);
+CREATE TABLE public.partner_orders(id uuid,partner_id uuid,numero text,status text,created_at timestamptz,total numeric,commercial_notes text);
 CREATE TABLE public.user_access_preferences(user_id uuid,preferred_context text,last_context text,skip_context_selector boolean);
 CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT current_setting('test.fresh',true)='true' AND EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo IS TRUE AND senha_provisoria IS FALSE) $$;
 CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() AND platform_private.platform_actor_access_ready(user_id) $$;
@@ -39,6 +40,7 @@ CREATE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE s
         # Replay the exact versioned SQL applied by the migration tool, not a JS model.
         sql += (ROOT / "supabase/migrations/20261008213523_3c470e56-48ee-4700-8e09-7465b6dbb558.sql").read_text()
         sql += (ROOT / "supabase/migrations/20261008213604_f5fd1733-6ccc-448f-a16c-2e67f30f77ef.sql").read_text()
+        sql += (ROOT / "scripts/rbac-audit/b2b-commercial-own-orders.sql").read_text()
         sql += r"""
 INSERT INTO public.organizations VALUES('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,'ativa',NULL),('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,'ativa',NULL);
 INSERT INTO public.partner_accounts(id,commercial_owner_organization_id,ativo,deleted_at) VALUES('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,NULL),('22222222-2222-4222-8222-222222222222','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,NULL),('33333333-3333-4333-8333-333333333333','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,NULL);
@@ -113,10 +115,25 @@ SELECT pg_temp.assert_true('projection own only',public.get_my_commercial_partne
 SELECT pg_temp.assert_true('portal commercial exclusive B2B',public.get_my_available_portal_contexts()->'available_contexts'='["b2b"]'::jsonb);
 SELECT pg_temp.assert_true('projection has no commercial discount',NOT (public.get_my_commercial_partner_projection() ? 'desconto_padrao'));
 RESET ROLE;
+INSERT INTO public.partner_orders VALUES
+ ('aaaaaaaa-1111-4111-8111-111111111111','11111111-1111-4111-8111-111111111111','OWN','aberta',now(),10,'internal'),
+ ('aaaaaaaa-2222-4222-8222-222222222222','22222222-2222-4222-8222-222222222222','SIBLING','aberta',now(),20,'internal'),
+ ('bbbbbbbb-3333-4333-8333-333333333333','33333333-3333-4333-8333-333333333333','FOREIGN','aberta',now(),30,'internal');
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true('own orders excludes sibling and foreign',jsonb_array_length(public.get_my_commercial_orders_projection()->'orders')=1 AND public.get_my_commercial_orders_projection()->'orders'->0->>'numero'='OWN');
+SELECT pg_temp.assert_true('own orders no financial or internal notes',NOT ((public.get_my_commercial_orders_projection()->'orders'->0) ?| ARRAY['total','commercial_notes']));
+RESET ROLE;
 UPDATE public.partner_users SET partner_id='22222222-2222-4222-8222-222222222222';
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('projection second sibling only',public.get_my_commercial_partner_projection()->>'id'='22222222-2222-4222-8222-222222222222');
+SELECT pg_temp.assert_true('second sibling sees only own order',public.get_my_commercial_orders_projection()->'orders'->0->>'numero'='SIBLING');
 RESET ROLE;
+UPDATE public.user_roles SET role='parceiro_b2b_tecnico';
+UPDATE public.partner_users SET papel='tecnico';
+DO $$ BEGIN
+ BEGIN PERFORM public.get_my_commercial_orders_projection(); RAISE EXCEPTION 'technical accepted'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS technical orders denied'; END;
+END $$;
+UPDATE public.partner_users SET papel='gestor';
 UPDATE public.user_roles SET role='administrador';
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('internal admin never gets partner context',public.get_my_available_portal_contexts()->'available_contexts'='["admin"]'::jsonb);
@@ -129,6 +146,7 @@ END $$;
 RESET ROLE;
 SELECT pg_temp.assert_true('projection anon no execute',NOT has_function_privilege('anon','public.get_my_commercial_partner_projection()','EXECUTE'));
 SELECT pg_temp.assert_true('preflight anon no execute',NOT has_function_privilege('anon','public.b2b_provisioning_preflight(uuid,text,text)','EXECUTE'));
+SELECT pg_temp.assert_true('own orders anon no execute',NOT has_function_privilege('anon','public.get_my_commercial_orders_projection()','EXECUTE'));
 INSERT INTO public.user_roles VALUES(auth.uid(),'parceiro_b2b');
 SELECT pg_temp.assert_true('mixed internal roles no B2B portal',NOT (public.get_my_available_portal_contexts()->'available_contexts' ? 'b2b'));
 SELECT set_config('test.uid','',true);
