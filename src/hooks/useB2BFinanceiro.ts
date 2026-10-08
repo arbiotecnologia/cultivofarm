@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useScopedB2BFinancialQuery } from "@/hooks/useB2BFinancialScope";
 
 const sb = supabase as any;
 
@@ -28,7 +29,7 @@ export interface B2BFilters {
 }
 
 export function useB2BReceivables(filters: B2BFilters = {}) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-receivables", filters],
     queryFn: async (): Promise<B2BReceivableRow[]> => {
       let q = sb
@@ -109,7 +110,7 @@ export function useCancelB2BReceivable() {
 }
 
 export function useB2BFinancialKpis(filters: { from?: string; to?: string; partner_id?: string } = {}) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-financial-kpis", filters],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_financial_kpis", {
@@ -124,7 +125,7 @@ export function useB2BFinancialKpis(filters: { from?: string; to?: string; partn
 }
 
 export function usePartnerFinancialSettings(partner_id: string | null | undefined) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["pfs", partner_id],
     enabled: !!partner_id,
     queryFn: async () => {
@@ -155,7 +156,7 @@ export function useUpdatePartnerFinancialSettings() {
 }
 
 export function usePortalPartnerFinancial(partnerId?: string | null, enabled = true) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["portal-partner-financial", partnerId ?? null],
     enabled,
     queryFn: async () => {
@@ -194,7 +195,7 @@ export interface PartnerCredit {
 }
 
 export function usePartnerCredit(partner_id: string | null | undefined) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["partner-credit", partner_id],
     enabled: !!partner_id,
     queryFn: async (): Promise<PartnerCredit> => {
@@ -206,7 +207,7 @@ export function usePartnerCredit(partner_id: string | null | undefined) {
 }
 
 export function usePortalPartnerCredit(enabled = true) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["portal-partner-credit"],
     enabled,
     queryFn: async (): Promise<PartnerCredit> => {
@@ -218,7 +219,7 @@ export function usePortalPartnerCredit(enabled = true) {
 }
 
 export function useB2BGovernanceKpis() {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-gov-kpis"],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_governance_kpis");
@@ -229,7 +230,7 @@ export function useB2BGovernanceKpis() {
 }
 
 export function useB2BAging(partner_id?: string | null) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-aging", partner_id ?? null],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_aging", { p_partner_id: partner_id ?? null });
@@ -275,7 +276,7 @@ export interface AgingRow {
 }
 
 export function useB2BAgingDetalhado(filters: { from?: string; to?: string; partner_id?: string; status?: string } = {}) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-aging-det", filters],
     queryFn: async (): Promise<AgingRow[]> => {
       const { data, error } = await sb.rpc("rpc_b2b_aging_detalhado", {
@@ -291,7 +292,7 @@ export function useB2BAgingDetalhado(filters: { from?: string; to?: string; part
 }
 
 export function useB2BRevenueForecast(partner_id?: string | null) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-forecast", partner_id ?? null],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_revenue_forecast", { p_partner_id: partner_id ?? null });
@@ -313,7 +314,7 @@ export interface ProfitabilityRow {
 }
 
 export function useB2BPartnerProfitability(filters: { from?: string; to?: string; partner_id?: string } = {}) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-profit", filters],
     queryFn: async (): Promise<ProfitabilityRow[]> => {
       const { data, error } = await sb.rpc("rpc_b2b_partner_profitability", {
@@ -328,7 +329,7 @@ export function useB2BPartnerProfitability(filters: { from?: string; to?: string
 }
 
 export function useB2BExecutiveAlerts() {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-exec-alerts"],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_executive_alerts");
@@ -339,7 +340,7 @@ export function useB2BExecutiveAlerts() {
 }
 
 export function useB2BCarteiraKpis(filters: { from?: string; to?: string } = {}) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-carteira-kpis", filters],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_carteira_kpis", {
@@ -352,7 +353,7 @@ export function useB2BCarteiraKpis(filters: { from?: string; to?: string } = {})
 }
 
 export function useB2BExecutiveDashboard() {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["b2b-exec-dashboard"],
     queryFn: async () => {
       const { data, error } = await sb.rpc("rpc_b2b_executive_dashboard");
@@ -363,7 +364,7 @@ export function useB2BExecutiveDashboard() {
 }
 
 export function usePartnerRiskScore(partner_id: string | null | undefined) {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["partner-risk-score", partner_id],
     enabled: !!partner_id,
     queryFn: async () => {
@@ -397,7 +398,7 @@ export function useRecalcPartnerRiskScore() {
 }
 
 export function useFinancialGovernanceRules() {
-  return useQuery({
+  return useScopedB2BFinancialQuery({
     queryKey: ["fgr"],
     queryFn: async () => {
       const { data, error } = await sb.from("financial_governance_rules").select("*").order("regra");
