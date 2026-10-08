@@ -617,3 +617,45 @@ Perfis abaixo são candidatos de ACCESS_MAP, não autorização efetiva. Pais/ro
 | /comunicacao | envios_automaticos | navigation:comunicacao-admin:desktop | administrador, gestor | ProtectedRoutes, RoleGuard, ComunicacaoRouteGuard, ComunicacaoAdminPage | 1 |
 | /notificacoes | — | contextual/sistema | administrador, gestor, consultor_tecnico, tecnico_agronomo, administrativo, operador_onfarm, producao, financeiro | ProtectedRoutes, CentralNotificacoes | 8 |
 | * | — | contextual/sistema | administrador, gestor, consultor_tecnico, tecnico_agronomo, administrativo, operador_onfarm, producao, financeiro | NotFound | 8 |
+
+
+## Fechamento focal — batch e grants individuais — 2026-10-08 04:08 UTC
+
+### Escopo e baseline
+- Destino único conferido: `swzpzcwiasxmjutrmvkm`. Publicação anterior é informação do proprietário; nenhuma publicação foi executada neste recorte. D52 e contenções anteriores preservadas.
+- Corpo inicial batch MD5 `3e87236d748785704a59e65ed4ede470`; motor permanece `c71a9e848eff0a522cbaa3a7ec2949a5`. Batch final `ce2e7cd4080ff2f8fc15cce9294046d9`.
+- Falha comprovada inicial: batch consultava replay antes do escopo completo. Callers reais usam padrao/manual/onfarm/b2b. Referências onfarm derivam do cliente da OS, nunca do expedidor ou órfãos. Alias on_farm normalizado para onfarm; padrao para manual. B2B/onfarm completos ainda não tiveram prova positiva dinâmica neste recorte.
+
+### Migrations oficiais aplicadas (não reaplicar)
+| Ledger | Resultado |
+|---|---|
+| 20261008035712 | Batch usa ator ativo/h15, RBAC e estoque_embalagens antes de lookup/replay; valida finitude/OS/cliente/parceiro/item/payload, recibo privado ator+tenant+conteúdo, ordenação dos itens e locks; ACL ainda fechada. |
+| 20261008035740 | Policy service-only na tabela privada stock_batch_requests, sem acesso cliente. |
+| 20261008035936 | Forward-fix do contexto: remove referência duplicada de OS no histórico da linha-fonte da reserva parcial, preservando verificação real OS/cliente/lote/tenant. |
+| 20261008040053 | Baseline otimista corpos/hashes/zero resíduos; GRANT individual authenticated somente motor e batch, anon negado. Fecha também ctx open/force/close/read. |
+| 20261008040156 | Nega colisão da chave derivada com ledger do motor direto; primeiro batch não aceita replay oculto de operação anterior. Mantém somente os dois grants. |
+
+A primeira prova falhou em ESTQ_MOV_REFERENCE_FORBIDDEN na reserva parcial; foi integralmente revertida, motivando o forward-fix 035936. Nenhum trigger foi desabilitado. Cada mudança foi pelo fluxo oficial, sem duplicação das migrations até 033250.
+
+### Evidências próprias SQL/role (NÃO JWT/API/browser)
+- Prova batch com FSF authenticated: reserva parcial (saldo fonte 8, reservado 2 e alvo novo), reserva total, replay sem duplicar ledger, atomicidade da falha multi-item e contexto pré-forjado ignorado. Dezesseis negativas: chave/conteúdo conflitante, item cross-tenant, org forjada, OS inválida, NaN/±Infinity/zero/negativo, formatos inválidos, estado inválido, ARBio sem feature e identidade inativa. Exceção final STOCK_BATCH_PROOF_ROLLBACK atingida: assertions passaram e tudo foi revertido.
+- Reteste pós-grants e pós-040156: motor direto criou reserva 1 com chave derivada; batch rejeitou reutilização (unique_violation). Cinco números inválidos rejeitados; batch legítimo reservou 2, saldo fonte 7, replay sem nova movimentação, contexto privado zerado. Exceção STOCK_BATCH_FINAL_ROLLBACK atingida, denied=6. GRANT de ctx_force foi apenas temporário dentro da transação revertida para injetar contexto forjado; ACL viva permanece false.
+- Manifesto final: run TEMPORARY_AUDIT_STOCK_BATCH_FINAL_70e12fde-bdf1-48a9-8d3c-ec30628507be; lote 9ed273d7-a780-464f-bc90-e8c94532585c; envase 896a961f-a5cf-4593-b355-14c5f26c7154; cliente a963f118-ca54-488b-a84b-daa2f191717a; fazenda d404aa34-691d-4fa0-90ec-a57158c03518; talhão 321ad119-68bc-441f-abbe-da8b460d458b; OS 0bedc3db-9864-496f-84d5-6633fd7e351f. Estoques: 8fe9af3f-0ae5-42d7-8d90-40110fdc6edb / bd75d87e-bfe2-4715-8406-ccfb63fcb055 / 74672296-2b5b-4291-8c68-531cf70be0d2. Movimentos: 55bc64f6-b2f7-48d2-91d4-b0708f33b870 / f22fa06c-c08c-4fa9-88f6-74c2fd5f1ba2 / 49c5f956-39d9-4cd5-9045-c640a9116e07 / 28bcce5e-9e1f-4aa0-904a-396aee4c2e93 / c5a25f7b-7053-4280-b162-1f29a765c21b.
+- Consulta posterior: lote/CQ/envase/estoque/movimentos/cliente/fazenda/talhão/OS/batch/contexto = onze classes zero. Hash histórico estoque 1/0c1a052173a564454cd51e69fcb72947; movimentos 2/f8b6fcf6aa756d745eaf205f606f7795, idênticos. Usuários/assinaturas reais não foram alterados.
+- Prova independente Codex recebida: nove ações, reservas/cancelamentos totais e parciais, 50 negativas numéricas +14 escopo/payload/replay, rollback/zero resíduos/hashes intactos. É evidência atribuída, não execução própria ou navegador.
+
+### ACL e fundamento de cada liberação
+- Motor: authenticated=true/anon=false; sustentado por provas próprias anteriores positivas saldo/replay/split, reteste próprio final e prova independente nove ações. Corpo numérico/contexto permanece preservado.
+- Batch: authenticated=true/anon=false; sustentado por prova própria parcial/total/replay/atomicidade/16 negativas antes da liberação e reteste final após correção de colisão.
+- Reserva interna e ctx open/force/close/read authenticated=false/anon=false; demais caminhos legados não foram regranted. Sem regrant em massa.
+- Advisory lock serializa chave batch e locks de estoque têm ordem determinística; isso é inspeção SQL, NÃO prova de corrida/deadlock sob concorrência. Colisão cruzada de chave é rejeitada, não reutiliza recibo.
+
+### Código, verificações e limites
+- Hook batch: rejeita quantidade JS não finita e resultado sem ok=true antes de anunciar sucesso. Tipagem gerada do cliente canônico cultivofarm.types.ts não contém batch, embora types.ts contenha; não foi criado cliente paralelo nem editado arquivo gerado. Cast preexistente permanece e é dívida de lint/tipagem, não corrigida ampliando escopo.
+- Testes próprios estoque/entregas/caller: **286/286 PASS**, 23 arquivos. Novo teste estrutural: 5/5; não equivale a RPC real. Lint teste novo PASS; hook mantém **57 erros any preexistentes**, sem PASS global. Scanners segredos/fiscal e diff-check PASS. Build automático OK 04:03:27 UTC após código; typecheck explícito próprio NOT RUN (tsgo indisponível e validação manual vedada pelo harness).
+- Advisor global: 442 achados de baseline, incluindo 17 RLS sem policy, 2 PUBLIC DEFINER, 422 authenticated DEFINER e 1 proteção de senha vazada desativada. Dois endpoints canônicos liberados geram advertências esperadas de DEFINER callable; não afirmar scanner de banco global PASS. Nenhum outro módulo foi iniciado.
+- **PASS focal SQL/role e liberação individual autorizada; NO-GO operacional/integral.** JWT/API/browser, concorrência real, B2B/onfarm completos, runtime destinatários, demais RPC/Edge/Storage e matriz ampla continuam UNVERIFIED. A ACL não amplia plano/RBAC nem reativa entradas legadas.
+
+### Arquivos e rollback seguro
+- Cinco migrations oficiais em supabase/migrations/ (prefixos acima); scripts/rbac-audit/stock-batch-hardening-proof.sql; scripts/rbac-audit/stock-endpoints-safe-rollback.sql; src/hooks/useEsteiraLaboratorio.ts; src/test/estoque/stock-batch-hardening.test.ts; AGENTS.md; roadmap.md; este relatório e matriz CSV.
+- Rollback documental: revogar authenticated somente motor e batch usando stock-endpoints-safe-rollback.sql pelo fluxo oficial. Não reabrir helpers, remover policies/recibos ou restaurar corpos inseguros. Não executado; não altera dados/histórico.

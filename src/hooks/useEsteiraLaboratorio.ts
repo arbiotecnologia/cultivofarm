@@ -531,7 +531,7 @@ export function useEsteiraLaboratorio() {
       toast.error("Selecione ao menos uma embalagem.");
       return { ok: false, replay: false };
     }
-    if (itens.some((i) => !i.quantidade || i.quantidade <= 0)) {
+    if (itens.some((i) => !Number.isFinite(i.quantidade) || i.quantidade <= 0)) {
       toast.error("Informe uma quantidade válida para cada embalagem.");
       return { ok: false, replay: false };
     }
@@ -557,6 +557,11 @@ export function useEsteiraLaboratorio() {
         return { ok: false, replay: false };
       }
 
+      if (data?.ok !== true) {
+        toast.error("Não foi possível confirmar a reserva de estoque.");
+        invalidateAll();
+        return { ok: false, replay: false };
+      }
       const replay = !!data?.replay;
       await registrarAuditoria({
         origem,

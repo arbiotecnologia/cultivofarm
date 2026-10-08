@@ -1,0 +1,1 @@
+CREATE POLICY stock_batch_service_only ON platform_private.stock_batch_requests FOR ALL TO service_role USING (true) WITH CHECK (true);
