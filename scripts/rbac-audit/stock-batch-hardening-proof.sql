@@ -27,6 +27,7 @@ BEGIN
 
  data:=jsonb_build_object('cliente_id',ca); items:=jsonb_build_array(jsonb_build_object('item_id',sa,'quantidade',2));
  GRANT EXECUTE ON FUNCTION public.rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb),public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) TO authenticated;
+ GRANT EXECUTE ON FUNCTION public.fn_estoque_ctx_force(jsonb) TO authenticated; -- temporary only, final exception reverts
  SET LOCAL ROLE authenticated;
  PERFORM public.fn_estoque_ctx_force(jsonb_build_object('acao','ajuste','idempotency_key',r||'_FORGED','metadata',jsonb_build_object('forged',true)));
  j:=public.rpc_estoque_reservar_v1(os,'padrao',items,r||'_BATCH',data);
