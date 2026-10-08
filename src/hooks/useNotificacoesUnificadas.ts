@@ -87,7 +87,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
         .from("portal_notificacoes")
         .select("id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("cliente_id", clienteId)
-        .eq("recipient_user_id", user?.id)
+        .filter("recipient_user_id", "eq", user.id)
         .order("created_at", { ascending: false })
         .limit(PORTAL_LIMIT);
       if (error) throw error;
@@ -176,7 +176,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       const request = parsed.origem === "operacional"
         ? supabase.from("notificacoes_operacionais").update({ lido: true }).eq("id", parsed.rawId).eq("usuario_id", user.id)
         : portalReady && clienteId
-          ? supabase.from("portal_notificacoes").update({ lido: true }).eq("id", parsed.rawId).eq("recipient_user_id", user.id).eq("cliente_id", clienteId)
+          ? supabase.from("portal_notificacoes").update({ lido: true }).eq("id", parsed.rawId).filter("recipient_user_id", "eq", user.id).eq("cliente_id", clienteId)
           : null;
       if (!request) throw new Error("NOTIF_PORTAL_REQUIRED");
       const { error } = await request;
@@ -210,7 +210,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
               .from("portal_notificacoes")
               .update({ lido: true })
               .eq("cliente_id", clienteId)
-        .eq("recipient_user_id", user?.id)
+              .filter("recipient_user_id", "eq", user.id)
               .eq("lido", false);
             return { error: r.error as unknown };
           })(),
