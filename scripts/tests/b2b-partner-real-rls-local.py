@@ -129,6 +129,7 @@ SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_functio
 """
         if lifecycle:
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-local.sql").read_text()
+            sql += "UPDATE public.user_roles SET role='administrador';"
             sql += (ROOT / "scripts/tests/b2b-provisioning-real-triggers.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-provisioning-lifecycle.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-assertions.sql").read_text()
