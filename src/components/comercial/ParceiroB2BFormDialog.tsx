@@ -46,7 +46,7 @@ import type { ParceiroB2B } from "@/hooks/useParceirosB2B";
 const emailOpt = z.string().trim().email("E-mail inválido").max(200).or(z.literal("")).optional().nullable();
 
 const schema = z.object({
-  codigo: z.string().trim().max(40).optional().nullable(),
+  codigo: z.string().trim().max(41).optional().nullable(),
   razao_social: z.string().trim().min(2, "Razão social obrigatória").max(200),
   nome_fantasia: z.string().trim().max(200).optional().nullable(),
   inscricao_estadual: inscricaoEstadualCadastroSchema.optional().nullable(),

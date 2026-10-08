@@ -1,5 +1,5 @@
 import { formatDateDisplay } from "@/lib/date-utils";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   const [uploading, setUploading] = useState(false);
   const [confirmDel, setConfirmDel] = useState<any | null>(null);
   const [showErrors, setShowShowErrors] = useState(false);
+  const mutationLock = useRef(false);
 
   const fetchDocs = useCallback(async () => {
     if (!clienteId || !access.ready) return;
@@ -69,7 +70,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
       .eq("cliente_id", clienteId)
       .order("uploaded_at", { ascending: false });
     if (!current()) return;
-    if (error) toast.error(error.message);
+    if (error) toast.error("Não foi possível carregar documentos.");
     setResult({ scope: access.scope, docs: data || [] });
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,14 +85,19 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   }, [fetchDocs, access.scope]);
 
   const handleUpload = async () => {
+    if (!access.ready || mutationLock.current) return;
     setShowShowErrors(true);
     if (!tipo) return toast.error("Selecione o tipo do documento");
     if (!file) return toast.error("Selecione um arquivo para enviar");
     if (file.size > MAX_BYTES) return toast.error("Arquivo excede o limite de 10 MB");
 
+    mutationLock.current = true;
+    const current = access.capture();
     setUploading(true);
     try {
       if (!profile?.organization_id) throw new Error("Contexto da empresa inválido");
+      const { data: client, error: clientError } = await supabase.from("clientes").select("id").eq("id", clienteId).filter("organization_id", "eq", profile.organization_id).maybeSingle();
+      if (!current() || clientError || !client) throw new Error("cadastro_scope_denied");
       const ext = file.name.split(".").pop() || "bin";
       const path = `${profile.organization_id}/clientes/${clienteId}/${tipo}/${Date.now()}-${Math.random()
         .toString(36)
@@ -102,8 +108,10 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
         .upload(path, file, { contentType: file.type });
       
       if (upErr) throw upErr;
+      if (!current()) return;
 
       const { data: { user } } = await supabase.auth.getUser();
+      if (!current() || !user) return;
       const { error: dbErr } = await supabase.from("cliente_documentos").insert([
         {
           cliente_id: clienteId,
@@ -122,6 +130,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
         await supabase.storage.from("clientes-docs").remove([path]);
         throw dbErr;
       }
+      if (!current()) return;
 
       toast.success("Documento enviado com sucesso!");
       setFile(null);
@@ -131,10 +140,10 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
       const input = document.getElementById("doc-file") as HTMLInputElement | null;
       if (input) input.value = "";
       fetchDocs();
-    } catch (err: any) {
-      console.error("Erro no upload:", err);
-      toast.error(err.message || "Falha ao enviar documento");
+    } catch {
+      if (current()) toast.error("Não foi possível enviar o documento. Confira a sessão e tente novamente.");
     } finally {
+      mutationLock.current = false;
       setUploading(false);
     }
   };
@@ -151,19 +160,25 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   };
 
   const handleDelete = async (doc: any) => {
+    if (!access.ready || mutationLock.current || !docs.some(d => d.id === doc.id)) return;
+    mutationLock.current = true;
+    const current = access.capture();
     try {
-      await supabase.storage.from("clientes-docs").remove([doc.arquivo_path]);
+      const { error: storageError } = await supabase.storage.from("clientes-docs").remove([doc.arquivo_path]);
+      if (storageError) throw storageError;
+      if (!current()) return;
       const { error } = await supabase
         .from("cliente_documentos")
         .delete()
         .eq("id", doc.id);
       if (error) throw error;
+      if (!current()) return;
       toast.success("Documento removido");
       setConfirmDel(null);
       fetchDocs();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch {
+      if (current()) toast.error("Não foi possível remover o documento.");
+    } finally { mutationLock.current = false; }
   };
 
   const grupos = docs.reduce<Record<string, any[]>>((acc, d) => {
