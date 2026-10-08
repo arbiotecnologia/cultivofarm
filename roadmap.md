@@ -1,3 +1,9 @@
+## B2B-FISCAL — P1B — 2026-10-08
+- [ ] Verificar HEAD e ledger canônico; preservar BF01–03 e ACL P1A.
+- [ ] Auditar contrato A/P/credor/emissor por operação e paridade da homologação sem rebind.
+- [ ] Elaborar contrato mínimo explícito se o esquema não comportar mandato; não ativar vínculos reais.
+- [ ] Preparar provas reproduzíveis com rollback, distinguir execução SQL/JWT e documentar primeira quebra e gate P2.
+
 ## Cadastro parceiro — cliente opcional — 2026-10-08
 - [x] Cliente opcional no formulário e gravação; migration181641 deriva owner comercial no servidor, valida cliente quando presente e mantém órfãos fechados, sem backfill. 33/33 testes focais PASS; lint focal/scanners/diff-check PASS; build automático18:17:33 OK, typecheck manual NOT RUN. Sem publicação/Auth/envios/dados reais; JWT/browser privado não verificado. Relatório parceiro-cliente-opcional-2026-10-08.md.
 
