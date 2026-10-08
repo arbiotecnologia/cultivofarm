@@ -43,6 +43,7 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 type ContextsState = {
+  ready: boolean;
   data: {
     has_b2b_access: boolean;
     has_technical_access: boolean;
@@ -55,6 +56,7 @@ type ContextsState = {
 };
 
 const contextsState: ContextsState = {
+  ready: true,
   data: undefined,
   isLoading: false,
   isError: false,
@@ -130,6 +132,7 @@ function resetState() {
   };
   contextsState.isLoading = false;
   contextsState.isError = false;
+  contextsState.ready = true;
 }
 
 // Captura console.error → falha o teste se houver aviso de ordem de hooks.
@@ -226,26 +229,29 @@ describe("AppPortalGuard", () => {
 // ---------------------------------------------------------------------------
 
 describe("B2BRouteGuard", () => {
-  it("libera administrador em modo suporte mesmo sem has_b2b_access", () => {
+  it("nega administrador sem vínculo B2B resolvido no servidor", () => {
     authState.roles = ["administrador"];
     authState.primaryRole = "administrador";
-    contextsState.data!.has_b2b_access = false;
+    if (contextsState.data) contextsState.data.has_b2b_access = false;
     renderB2BGuard();
-    expect(screen.getByText("B2B_OK")).toBeInTheDocument();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
   });
 
-  it("libera gestor_comercial em modo suporte", () => {
+  it("nega gestor_comercial sem vínculo B2B resolvido no servidor", () => {
     authState.roles = ["gestor_comercial"];
     authState.primaryRole = "gestor_comercial";
-    contextsState.data!.has_b2b_access = false;
+    if (contextsState.data) contextsState.data.has_b2b_access = false;
     renderB2BGuard();
-    expect(screen.getByText("B2B_OK")).toBeInTheDocument();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
   });
 
   it("libera parceiro_b2b com has_b2b_access=true", () => {
     authState.roles = ["parceiro_b2b"];
     authState.primaryRole = "parceiro_b2b";
-    contextsState.data!.has_b2b_access = true;
+    if (contextsState.data) {
+      contextsState.data.has_b2b_access = true;
+      contextsState.data.available_contexts = ["b2b"];
+    }
     renderB2BGuard();
     expect(screen.getByText("B2B_OK")).toBeInTheDocument();
   });
@@ -271,6 +277,36 @@ describe("B2BRouteGuard", () => {
     contextsState.data = undefined;
     renderB2BGuard();
     expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
+
+  it("nega contexto de gestão mesmo com a flag legada has_b2b_access", () => {
+    authState.roles = ["administrador"];
+    if (contextsState.data) {
+      contextsState.data.has_b2b_access = true;
+      contextsState.data.available_contexts = ["admin"];
+    }
+    renderB2BGuard();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
+
+  it("nega readiness perdida mesmo com resultado B2B em cache", () => {
+    contextsState.ready = false;
+    if (contextsState.data) {
+      contextsState.data.has_b2b_access = true;
+      contextsState.data.available_contexts = ["b2b"];
+    }
+    renderB2BGuard();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
+
+  it("permite multipapel somente com contexto B2B explícito", () => {
+    authState.roles = ["administrador", "parceiro_b2b"];
+    if (contextsState.data) {
+      contextsState.data.has_b2b_access = true;
+      contextsState.data.available_contexts = ["admin", "b2b"];
+    }
+    renderB2BGuard();
+    expect(screen.getByText("B2B_OK")).toBeInTheDocument();
   });
 });
 

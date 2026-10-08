@@ -18,11 +18,15 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const { data, ready, isLoading, isError } = useAvailableContexts();
+  // has_b2b_access historically includes the management context. A real B2B
+  // context additionally proves the partner binding; management alone cannot.
+  const hasPartnerContext = data?.has_b2b_access === true &&
+    data.available_contexts.includes("b2b");
   const denied =
     !loading &&
     !!user &&
     !isLoading &&
-    (!ready || isError || !data?.has_b2b_access);
+    (!ready || isError || !hasPartnerContext);
 
   useEffect(() => {
     if (denied) {
@@ -50,7 +54,7 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
     return <Navigate to="/sem-permissao" replace />;
   }
 
-  if (!data?.has_b2b_access) {
+  if (!hasPartnerContext) {
     return (
       <Navigate
         to="/sem-permissao"
