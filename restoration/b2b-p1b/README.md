@@ -1,6 +1,13 @@
-# P1B — proposta inativa, não aplicada
+# P1B — proposta retirada por esclarecimento vinculante18:32
 
-`mandate-schema.proposed.sql` é uma proposta de migration, **não é uma migration
+**Não estabelecer mandato, federação ou entitlement cross-tenant nesta etapa.**
+A opera exclusivamente seus cadastros comerciais de terceiros; tenant P isolado.
+Mesmo CNPJ/organizations.partner_account_id não concedem acesso nos dois sentidos.
+A proposta foi renomeada para `mandate-schema.withdrawn.sql.txt`, somente histórico,
+nunca aplicada. Não executar, promover ou reintroduzir como gate de operação.
+As seções abaixo preservam a proposta anterior, **superada e não autorizada**.
+
+`mandate-schema.withdrawn.sql.txt` foi uma proposta de migration, **não é uma migration
 executada nem fonte de autorização operacional**. Nenhum vínculo real ou fixture
 persistente foi criado. BF01–03 e leitores financeiros P1A permanecem fechados.
 
