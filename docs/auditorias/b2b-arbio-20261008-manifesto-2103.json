@@ -27,6 +27,7 @@
     "duplicate_creation_allowed": false
   },
   "remote_writes": 0,
+  "remote_writes_scope": "Somente execução Lovable; criação independente Codex registrada separadamente",
   "remote_external_calls": 0,
   "matching_fixture_partner_count_observed": 0,
   "matching_fixture_partner_count_independent_after": 1,
@@ -47,7 +48,19 @@
     "lint_inspected_hooks": "FAIL2any preexistentes useCreatePartnerOrder:78/99",
     "fiscal_secrets_scan": "PASS desta rodada, distinto do scanner Codex executivo pendente",
     "typecheck": "NOT RUN manual: restrição harness",
-    "build": "NOT RUN manual: restrição harness; sem runtime alterado"
+    "build": "NOT RUN manual: restrição harness; estado inicial sem runtime alterado",
+    "approved_plan_final": {
+      "vitest": "69/69 PASS em4arquivos;11form/14hooks/29handler/15proposta; não somar rodadas",
+      "lint_changed_tests": "PASS2arquivos",
+      "lint_form": "FAIL5any preexistentes; nenhuma introdução nesta alteração",
+      "scanner": "fiscal-secrets-scan PASS",
+      "diff_check": "PASS",
+      "preview_build": "build OK2026-10-08T21:14:27Z após alteração do formulário",
+      "typecheck": "NOT RUN manual; restrição harness; sem PASS observado",
+      "private_browser": "UNVERIFIED neste harness",
+      "proposal_scope": "Especificação executável local não autoritativa; não importada pelo runtime",
+      "provisioning": "NO-GO contrato integrado não comprovado; ACL/roles/Auth/mutações fechadas preservadas"
+    }
   },
   "rollback": "Parceiro persistido por Codex: preservar mesmoID; cleanup futuro por fluxo normal autorizado e IDs comprovados, sem apagar auditorias/snapshots. Nenhum cleanup executado Lovable.",
   "blockers": ["external_unmanaged limita somente browser local Lovable, não a sessão Codex", "zero externos precisa prova por cada próxima ação; flags globais não demonstram envio por cadastro", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED", "nenhum emissor ativo/validado AR Bio", "provisionamento login parceiro não certificado"],
