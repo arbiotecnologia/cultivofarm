@@ -1,0 +1,1 @@
+CREATE POLICY stock_motor_context_no_client ON platform_private.stock_motor_context AS RESTRICTIVE FOR ALL TO authenticated USING(false) WITH CHECK(false);
