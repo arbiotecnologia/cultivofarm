@@ -1,3 +1,8 @@
+## NOTIF-3 — P1 Comunicação global — 2026-10-08
+- [ ] Inventariar RLS/ACL/RPCs e Edges globais no canônico; preservar NOTIF-2 e contenções anteriores.
+- [ ] Conter acessos tenant sem contrato de origem/tenant/destinatário; provas SQL FSF/ARBio com rollback obrigatório e históricos intactos.
+- [ ] Testes focais/Comunicação/Auth, lint/scanners/build automático; matriz exata fonte/deployment/ACL e rollback seguro. Sem envios, credenciais, publicação ou AGENTS.
+
 ## NOTIF-2 — frontend sessão/push — 2026-10-08 12:19 UTC
 - [x] Baseline confirmado fb9c2dcce2f3d35a04f3a983e60ba3a3a4315b2a. Push explicitamente indisponível em hook/duas telas; sem registro automático/permissão/subscrição/escrita servidor. Inscrição local existente desativável sem apagar linha de outro usuário ou remover worker. Worker novo não exibe payload/navega enquanto contido, URL validada; workers antigos não atualizados automaticamente.
 - [x] Reproduzido cache visível durante auth loading/profile incompatível; três hooks exigem perfil ativo correspondente/tenant/papel; selector portal cerca seleção/late promises. QueryClient REAL, auth/servidor mockados: 22 testes sessão/portal; 13 push/worker e 4 mobile; regressão Comunicação/Auth/multiportal/MobilePerfil 674/674 em34 arquivos, lint focal/scanners/diff-check PASS, build automático OK. Typecheck explícito NOT RUN por restrição do harness, sem PASS global.
