@@ -12342,6 +12342,7 @@ export type Database = {
           codigo: string | null
           comissao_percentual: number | null
           commercial_city: string | null
+          commercial_owner_organization_id: string | null
           commercial_region: string | null
           commercial_state: string | null
           condicao_pagamento_padrao: string | null
@@ -12403,6 +12404,7 @@ export type Database = {
           codigo?: string | null
           comissao_percentual?: number | null
           commercial_city?: string | null
+          commercial_owner_organization_id?: string | null
           commercial_region?: string | null
           commercial_state?: string | null
           condicao_pagamento_padrao?: string | null
@@ -12464,6 +12466,7 @@ export type Database = {
           codigo?: string | null
           comissao_percentual?: number | null
           commercial_city?: string | null
+          commercial_owner_organization_id?: string | null
           commercial_region?: string | null
           commercial_state?: string | null
           condicao_pagamento_padrao?: string | null
@@ -12523,6 +12526,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_accounts_commercial_owner_organization_id_fkey"
+            columns: ["commercial_owner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
