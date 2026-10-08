@@ -182,7 +182,7 @@
     "raw_api_listing_attached": false
   },
   "decision": "NO-GO integral; mesma fase, somente relatório/roadmap/evidências/matriz; sem runtime/deploy/migration.",
-  "latest_addendum_received_at_utc": "2026-10-08T20:16:00Z",
+  "latest_addendum_received_at_utc": "2026-10-08T20:24:00Z",
   "published_browser_by_tenant": {
     "AR Bio": {
       "evidence_reference": "published_browser",
@@ -221,6 +221,16 @@
         {
           "path": "/estoque",
           "result": "Zero itens; não CRUD PASS"
+        },
+        {
+          "path": "/financeiro/receber",
+          "result": "0de0; PASS acesso/renderização apenas, não CRUD/isolamento",
+          "received_at_utc": "2026-10-08T20:24:00Z"
+        },
+        {
+          "path": "/fiscal/documentos",
+          "result": "0registros; emissão manual desativada; PASS renderização apenas",
+          "received_at_utc": "2026-10-08T20:24:00Z"
         }
       ],
       "url_parameter_negative": {
@@ -267,5 +277,102 @@
       ]
     }
   },
-  "next_identity": "Usuário consultado sobre Superadmin/Gestor; aguardando resposta/sessão, sem nova fase."
+  "next_identity": "Gestor+Consultor consultado ao usuário; aguardando resposta/sessão, sem nova fase. Platform Superadmin real já observado.",
+  "published_browser_platform_superadmin": {
+    "received_at_utc": "2026-10-08T20:24:00Z",
+    "origin": "https://app.cultivofarm.com.br",
+    "role": "superadmin",
+    "login": "Real concluído pelo usuário; observações independentes Codex",
+    "path": "/plataforma",
+    "status": "PASS focal acesso global/renderização/leituras; sem sidebar operacional",
+    "tabs": [
+      "Planos",
+      "Assinaturas",
+      "Exceções",
+      "Empresa",
+      "Administradores",
+      "Comunicação",
+      "Histórico"
+    ],
+    "read_counts": {
+      "subscriptions": 5,
+      "organizations": 5,
+      "provisioned_admins": 3,
+      "history": "Lido; contagem não fornecida"
+    },
+    "denied_paths": [
+      "/clientes",
+      "/financeiro/receber",
+      "/estoque"
+    ],
+    "denial_message": "Acesso não autorizado",
+    "email_dialog": {
+      "target": "Administrador AR Bio",
+      "holder_confirmation_notice": true,
+      "fields_empty": true,
+      "confirm_disabled": true,
+      "cancelled_without_effects": true,
+      "email_change_executed": false
+    },
+    "communication": {
+      "renders": true,
+      "ui_notice": "Uma ou mais flags ativas",
+      "save_test_send_executed": false,
+      "all_flags_OFF": "NÃO COMPROVADO",
+      "real_delivery_availability": "UNVERIFIED"
+    },
+    "not_proven": [
+      "CRUD/mutações",
+      "isolamento integral",
+      "todos caches",
+      "concorrência",
+      "Realtime",
+      "mobile Superadmin",
+      "JWT/API de mutação",
+      "envio/troca real de email"
+    ]
+  },
+  "methodological_addendum_current_iat": {
+    "provenance": "Medições independentes Codex comunicadas20:24UTC; sem reexecução Lovable",
+    "readiness_rule": "platform_private.platform_actor_access_ready: auth.jwt.iat > access_valid_after",
+    "previous_round_limit": "Claims anteriores sem iat bloqueavam FSF antes do recorte; negativa não prova leitura própria/isolamento positivo",
+    "current_round": {
+      "identities": 8,
+      "tables": 33,
+      "selects": 264,
+      "claims": [
+        "sub",
+        "role",
+        "iat"
+      ],
+      "claims_status": "Atuais SIMULADOS; NÃO JWT real",
+      "read_only": true,
+      "rollback": true,
+      "non_superadmin_cross_tenant_rows": 0,
+      "superadmin_expected_global_saas_tables_visible": 7
+    },
+    "rounds_not_summed": true,
+    "password_scope": {
+      "function": "admin_can_update_user_password_server",
+      "combinations": 64,
+      "matrix": "8×8",
+      "claims": "Atuais SIMULADOS",
+      "allowed": 4,
+      "denied": 60,
+      "allowed_cases": [
+        "3administradores self",
+        "administrador FSF→gestor FSF"
+      ],
+      "without_iat": "Somente2self permitidas; barreira de sessão",
+      "password_changes": 0,
+      "mutation_or_real_jwt_proven": false
+    },
+    "external_local_codex_files": [
+      "rls-read-current-iat.json",
+      "password-scope-current-iat.json",
+      "browser-superadmin.json"
+    ],
+    "raw_files_available_in_checkout": false,
+    "limits": "Somente relatos factuais documentados; nenhum hash/log bruto fabricado; não promove autorização SQL agregada a PASS por rota/ação."
+  }
 }
