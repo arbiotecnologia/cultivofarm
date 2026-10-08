@@ -18,20 +18,23 @@ def main():
     sources = {kind: Path(getattr(args, kind)) for kind in ('functions', 'relations', 'policies')}
     texts = {kind: path.read_text().removeprefix('[map[nominal:').removesuffix(']]') for kind, path in sources.items()}
     files = list((ROOT / 'src').rglob('*.ts')) + list((ROOT / 'src').rglob('*.tsx')) + list((ROOT / 'supabase/functions').rglob('*.ts'))
-    contents = [(str(path.relative_to(ROOT)), path.read_text()) for path in files]
+    literal_callers = {}
+    for path in files:
+        for literal in set(re.findall(r'[\"\x27]([a-zA-Z0-9_/-]+)[\"\x27]', path.read_text())):
+            literal_callers.setdefault(literal, []).append(str(path.relative_to(ROOT)))
     rows = []
 
     def add(kind, name, definition, status='UNVERIFIED', evidence='Escopo efetivo não exercitado; grant não autoriza por si só.'):
         bare = name.split('(')[0].split('.')[-1]
-        callers = [path for path, text in contents if re.search(r'[\"\x27]' + re.escape(bare) + r'[\"\x27]', text)]
+        callers = literal_callers.get(bare, [])
         rows.append({'tipo': kind, 'canal': name, 'estado': status, 'evidencia': evidence,
                      'callers_locais': ';'.join(callers) or 'sem caller literal localizado (não prova inacessibilidade)',
                      'definicao_ou_grants': definition})
 
     verified_functions = {
         'get_my_commercial_partner_context': ('projeção própria', 'scripts/rbac-audit/b2b-commercial-context.sql; src/test/saas/b2b-commercial-context-postgres.test.ts'),
-        'get_my_commercial_partner': ('projeção própria', 'scripts/rbac-audit/b2b-commercial-portal.sql; projeção mínima, não linha financeira'),
-        'get_my_commercial_partner_orders': ('projeção própria', 'scripts/rbac-audit/b2b-commercial-own-orders.sql; pedidos resumidos, não faturamento'),
+        'get_my_commercial_partner_projection': ('projeção própria', 'scripts/rbac-audit/b2b-commercial-portal.sql; projeção mínima, não linha financeira'),
+        'get_my_commercial_orders_projection': ('projeção própria', 'scripts/rbac-audit/b2b-commercial-own-orders.sql; pedidos resumidos, não faturamento'),
         'get_b2b_user_clients_secure': ('negado por guard verificado', 'scripts/rbac-audit/b2b-latent-channel-containment.sql; src/test/saas/b2b-latent-channels-postgres.test.ts'),
         'rpc_message_set_status': ('projeção própria', 'mutação própria owner/contexto: scripts/rbac-audit/b2b-latent-channel-containment.sql; PG local, não API'),
     }
