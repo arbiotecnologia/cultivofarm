@@ -1,7 +1,7 @@
 {
   "project_ref": "swzpzcwiasxmjutrmvkm",
   "evidence": "read-only catalog metadata; not effective role execution/JWT",
-  "rows": 1573,
+  "rows": 1585,
   "sources": {
     "functions": {
       "sha256": "eaaa5680677eb9cdc5da9a601a46d8795eeecb9f262dab491f0b08003522bc24",
@@ -14,10 +14,18 @@
     "policies": {
       "sha256": "4064b93d4e1d908053267d4133ac96202036f45b3c6e267614e4f2a42ee44524",
       "result": "20261008-223322-373126"
+    },
+    "dependencies": {
+      "sha256": "fa219d1f8671a7883e7a929afc83a996bdbd404043a09376bd191355933b34fe",
+      "result": "dependencies.txt"
+    },
+    "relation-security": {
+      "sha256": "cb74beac2dfc5a137378c937b0ea1bab3aa54f0ef05d9cf9ad65f550a0ddc0d2",
+      "result": "20261008-223708-138059"
     }
   },
   "states": {
-    "UNVERIFIED": 1563,
+    "UNVERIFIED": 1575,
     "negado por guard verificado": 5,
     "projeção própria": 4,
     "público intencional": 1
