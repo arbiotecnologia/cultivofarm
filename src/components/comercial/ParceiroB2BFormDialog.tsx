@@ -136,6 +136,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
   const editing = !!parceiro;
   const scope = useCommercialRegistrationScope();
   const submitLock = useRef(false);
+  const draftId = useRef(crypto.randomUUID());
   const [tab, setTab] = useState("dados");
   const live = useRef({ form: empty, open, scope: scope.scope });
 
@@ -160,6 +161,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
           meta_mensal_brl: parceiro.meta_mensal_brl !== null ? Number(parceiro.meta_mensal_brl) : null,
         });
       } else {
+        draftId.current = crypto.randomUUID();
         setForm(empty);
 
       }
@@ -215,8 +217,8 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
         commercial_city: r.localidade || f.commercial_city,
         commercial_state: r.uf || f.commercial_state,
       }));
-    } catch (e: any) {
-      toast.error(e.message || "CEP não encontrado");
+    } catch {
+      if (current() && live.current.open && live.current.form === original) toast.error("Não foi possível consultar o CEP. Preencha manualmente.");
     }
   };
 
@@ -314,6 +316,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
         description: `${filledCount} campo(s) preenchido(s). Revise antes de salvar.`,
       });
     } catch (e: any) {
+      if (!current() || !live.current.open || cnpjAbortRef.current !== ctrl) return;
       if (ctrl.signal.aborted) {
         toast.error("Consulta cancelada", {
           description: "A busca demorou demais ou foi interrompida. Tente novamente.",
@@ -325,7 +328,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       }
     } finally {
       clearTimeout(timeoutId);
-      if (cnpjAbortRef.current === ctrl) setLoadingCNPJ(false);
+      if (cnpjAbortRef.current === ctrl && current()) setLoadingCNPJ(false);
     }
   };
 
@@ -379,7 +382,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
     const current = scope.capture();
     try {
       if (editing && parceiro) await update.mutateAsync({ id: parceiro.id, ...cleanData });
-      else await create.mutateAsync(cleanData);
+      else await create.mutateAsync({ ...cleanData, id: draftId.current });
       if (current()) onOpenChange(false);
     } catch {
       // The mutation shows a sanitized error; retain the entire draft.

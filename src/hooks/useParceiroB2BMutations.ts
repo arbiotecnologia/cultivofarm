@@ -5,6 +5,7 @@ import { useCommercialRegistrationScope } from "./useCommercialRegistrationScope
 import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
 
 export interface ParceiroB2BInput {
+  id?: string;
   codigo?: string | null;
   razao_social: string;
   nome_fantasia?: string | null;
@@ -77,6 +78,7 @@ export function useCreateParceiroB2B() {
         .select()
         .single();
       if (error) throw error;
+      if (!current()) throw { code: "42501" };
       return data;
     },
     onSuccess: () => {
@@ -93,6 +95,7 @@ export function useUpdateParceiroB2B() {
   return useMutation({
     mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
       if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
+      const current = scope.capture();
       const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .update(input as any)
@@ -100,6 +103,7 @@ export function useUpdateParceiroB2B() {
         .select()
         .single();
       if (error) throw error;
+      if (!current()) throw { code: "42501" };
       return data;
     },
     onSuccess: () => {
@@ -116,6 +120,7 @@ export function useSoftDeleteParceiroB2B() {
   return useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
       if (!scope.canManagePartners) throw { code: "42501" };
+      const current = scope.capture();
       const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .update({
@@ -126,6 +131,7 @@ export function useSoftDeleteParceiroB2B() {
         .select()
         .single();
       if (error) throw error;
+      if (!current()) throw { code: "42501" };
       return data;
     },
     onSuccess: (_d, vars) => {

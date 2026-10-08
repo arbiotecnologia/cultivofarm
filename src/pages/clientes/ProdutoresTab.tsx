@@ -36,6 +36,7 @@ export default function ProdutoresTab() {
   const scope = useCommercialRegistrationScope();
   const submitLock = useRef(false);
   const draftId = useRef(crypto.randomUUID());
+  const readGeneration = useRef(0);
   const isAdmin = role === "administrador";
   const canManage = scope.ready && canWrite(role, "/clientes");
   const [clientRows, setClientes] = useState<{ scope: string; rows: any[] }>({ scope: "", rows: [] });
@@ -104,7 +105,9 @@ export default function ProdutoresTab() {
 
   const fetchClientes = async () => {
     if (!scope.ready) return;
-    const current = scope.capture();
+    const fence = scope.capture();
+    const generation = ++readGeneration.current;
+    const current = () => fence() && readGeneration.current === generation;
     const { data, error } = await supabase
       .from("clientes")
       .select("*, fazendas(count)").filter("organization_id", "eq", scope.organizationId ?? "")
