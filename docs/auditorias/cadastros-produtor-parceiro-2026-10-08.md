@@ -1,5 +1,68 @@
 # CADASTROS-PRODUTOR-PARCEIRO — checkpoint 2026-10-08
 
+## Fases autorizadas A corretiva e B read-only — 17:13 UTC
+
+HEAD inicial `3381e213c817063de3520a1afde16d698f5a956a`, árvore limpa. Auditoria17:08 preservada como histórico. **A concluída / B inventariada; C não iniciada.** Não houve escrita remota, migration, Auth, vínculo, papel, convite, bytes Storage ou publicação.
+
+### Fase A — correção dos19 diagnósticos
+- `src/hooks/useParceiroB2BMutations.ts`: SDK canônico sem cast `any`, payloads `PartnerInsert`/`PartnerUpdate`, dados bancários tipados como texto/objeto JSON; erros inferidos do SDK e callbacks `unknown`. Asserções de enum na fronteira tipada preservam strings do formulário existente, sem acrescentar validação/regras. Fences, query keys, UID, calls/selects/status e soft-delete intactos.
+- `src/pages/clientes/ProdutoresTab.tsx`: rows/insert/payload/form/error/filter tipados, mesmos defaults movidos para constante estável; `fetchClientes` com `useCallback` dependente de readiness/org/scope e ref da captura mais recente. Effect inclui reset/fetch estáveis: não reseta draft nem repete leitura ao digitar ou rerender na mesma sessão. Generation/caches/fences preservados. Normalização por campo mantém vazio→null, undefined/NaN numérico→null e exclusão dos campos auxiliares; nenhum código de cliente inventado.
+- Tipos importados de `src/integrations/supabase/cultivofarm.types.ts`, que é o contrato usado pelo cliente canônico. Tentativa inicial com o outro arquivo gerado provocou incompatibilidades no harness; alinhada à importação do cliente, **build automático final OK17:16:23**. Nenhum arquivo gerado/cliente/dependência foi modificado. A asserção de insert cliente documenta que código obrigatório nos tipos é derivado pelo trigger vivo; não adiciona valor ao payload.
+- `src/test/config/commercialRegistration.producer.test.tsx`: um teste adicional comprova draft mantido e zero consultas adicionais em rerender de mesma sessão; caso existente também afirma três numéricos opcionais null. **65 existentes PASS**17:15:35; **66/66 em7 arquivos PASS**17:16:38, não somar execuções. Mesmos sete arquivos da revisão17:08.
+- **ESLint ampliado PASS:0 erros/0 warnings** em ambos os arquivos (antes18/1); focal scope/testes PASS; diff-check e scanners fiscal secrets/integration PASS. **Typecheck manual NOT RUN**, proibido; não contornado. Harness automático foi observado, não rotulado como execução manual independente. Avisos de Dialog/React Router nos testes permanecem.
+
+### Fase B — inventário vivo exclusivamente SELECT
+
+Destino confirmado antes do inventário por `fiscal_environment_marker.project_ref=swzpzcwiasxmjutrmvkm`. Contagens17:15–17:17: organizações5, com `partner_account_id`0; parceiro1, órfão comercial1. Nenhuma atribuição de ownership. Queries de catálogo retornam contratos reais, não sessão JWT de usuário nem teste de mutação.
+
+|Objeto|Contrato vivo / grants / limite|
+|---|---|
+|`clientes`|RLS ON; permissivas read helper + writers admin/gestor/comercial; restritiva `tenant_isolation_d51_5` exige org não NULL=actor h15 em ALL. Documentos normalizados únicos por org; ID/código únicos.|
+|`partner_accounts`|RLS ON; SELECT admin/comercial ou self B2B; INSERT/UPDATE admin/comercial; restritiva ALL permite USING cliente próprio **ou** id=get_user_partner_id; CHECK exige cliente próprio. Sem permissiva DELETE. Guard INSERT/UPDATE exige ator/org/cliente/consultor, deriva autor/código, bloqueia alteração identidade e valores inválidos.|
+|`organizations`|authenticated SELECT=true, INSERT/UPDATE/DELETE=false; policies próprio perfil, partner_users→partner_account_id e superadmin. Vínculo comercial não cria tenant.|
+|`partner_users`|Única policy SELECT tenant admin para usuário alvo; sem write policies. `get_user_partner_id()` é DEFINER que obtém primeiro partner_users por auth.uid, **não valida readiness/tenant por si**. Não confundir com organizations.partner_account_id.|
+|`partner_clients`|INSERT/UPDATE e leitura admin/comercial são role-only; SELECT B2B por partner/atribuição; não há restritiva tenant na lista viva. Único trigger não interno: updated_at. **Lacuna estrutural de escopo a revisar**, não exploração certificada.|
+|`partner_user_clients`|Permissivas role-only admin/comercial ou parceiro; trigger valida associação usuário/parceiro e cliente ativo em partner_clients; sync PUC→PTC. Validação não demonstra empresa contratante. **Lacuna estrutural**, sem mutação/prova JWT nesta fase.|
+
+ACL de tabela por `has_table_privilege`: clientes, partner_accounts, partner_clients, partner_user_clients e partner_users têm authenticated SELECT/INSERT/UPDATE/DELETE=true, anon SELECT=true; relacl inclui grants amplos anon/auth. **Grants não autorizam rows:** policies continuam necessárias, ausência de DELETE policy nega DELETE parceiro. Consulta information_schema retornou vazio e não foi usada para concluir ausência de grants; confirmado por pg_class/has_table_privilege. Não alterados.
+
+|RPC público|anon EXECUTE|authenticated EXECUTE|service_role EXECUTE|Observação do corpo|
+|---|---|---|---|---|
+|`link_partner_user(uuid,uuid,text)`|false|false|true|Fail-closed `CADASTRO1_PARTNER_CONTRACT_UNAVAILABLE`, sem efeitos|
+|`set_partner_user_papel(uuid,text)`|false|false|true|Legado role-only/sem alvo tenant; fechado para caller, não reabrir|
+|`get_user_partner_id()`|false|true|true|Lookup por UID apenas, não prova ator ativo/empresa|
+|`can_user_access_cliente(uuid)` e `(uuid,uuid)`|false|true|true|Ramos globais de papéis; RLS restritiva protege SELECT direto, não assumir proteção em todo DEFINER|
+|`check_cliente_dependencies(uuid)`|false|true|true|Ator/org/alvo próprios exigidos|
+|`get_my_available_portal_contexts()`|false|true|true|Contexto visual; não substitui autorização alvo|
+|`get_b2b_partner_clients_for_assignment_secure(text)`|false|true|true|DEFINER: ramo admin/comercial SELECT clientes sem org, LIMIT500; B2B usa partner_clients. **Falta escopo no corpo comprovada por leitura**, transporte/vazamento UNVERIFIED|
+|`assign_b2b_user_client_secure(uuid,uuid,text,boolean,boolean,text)`|false|true|true|DEFINER: admin deriva partner pelo usuário alvo e faz upsert partner_clients/PUC sem empresa; trigger valida vínculo mas não tenant. Sem readiness/contrato A/P canônico no corpo|
+|`unassign_b2b_user_client_secure(uuid,uuid,text)`|false|true|true|DEFINER: admin busca partner por alvo; UPDATE PUC/PTC sem org, `(v_partner IS NULL OR...)`; sem escopo tenant no corpo. Efeito real não executado|
+
+Consumidor existente dos três últimos RPCs: `src/pages/portal-parceiro/UsuariosClientesB2B.tsx` (queries partner-only/user-only e callbacks sem fence canônico). Não modificado: B é read-only. Achados não são sanados pelo bloqueio de `useLinkPartnerUser`. **FAIL contrato estrutural desses endpoints quanto a tenant/readiness explícitos; UNVERIFIED exploração/efeito JWT**. Não emitir PASS global/RLS dessa superfície nem alegar zero vazamento por negar UI.
+
+### Matriz A contratante / P tenant parceiro: resultados versus expectativas
+
+|Ação|A sobre cadastro comercial próprio|P sobre dados privados de A|A sobre dados privados de P|Evidência atual|
+|---|---|---|---|---|
+|CREATE cliente/parceiro|Esperado permitido com papel/cliente próprio|Esperado negado, vínculo não transfere org|Esperado negado|SQL histórico own positivo/spoof negativo; mocks atuais PASS. A/P ligado JWT UNVERIFIED|
+|READ direto cliente/parceiro|Próprio permitido|Cliente de A negado pela restritiva; self partner depende contrato de colunas|Dados privados de P negados|Policies SELECT auditadas; SQL histórico A/B PASS, não A/P. RPC lista admin sem escopo é exceção estrutural FAIL|
+|UPDATE/inativação|Próprio permitido|Esperado negado para dados de A|Esperado negado para dados de P|Guard/CHECK tenant; mocks e SQL histórico, sem nova escrita. Assign/unassign legados não certificados|
+|DELETE|Cliente próprio sem dependências conforme regra; parceiro físico sem permissiva DELETE|Esperado negado|Esperado negado|Cliente SQL histórico own positivo; P/A ligado e exclusão física parceiro JWT UNVERIFIED|
+|Portal/usuários/atribuições|Apenas contrato explícito aprovado|Nenhum acesso geral à contratante|Nenhuma administração do tenant P|Nenhum tenant vinculado vivo; RPCs/PUC/PC com lacunas; browser/JWT UNVERIFIED|
+
+### Idempotência servidor atual e proposta separada (não implementada)
+Cadastro comercial continua INSERT/UPDATE direto: UUID/código/índices evitam repetição de **ID**, mas não há recibo ator+tenant+payload/replay convergente. Upserts nas atribuições alteram active/updated_at e auditam de novo; não equivalem idempotência estrita. **UNVERIFIED concorrência/retry real.**
+
+Proposta para autorização futura, sem SQL/migration nesta fase: reutilizar fluxos existentes com core transacional server-side; readiness/org/RBAC/ownership antes de alvo/replay; chave por ator/tenant/operação/draft, hash de payload canônico; lock/unique receipt; mesma chave+payload retorna resultado persistido, divergente nega; audit única; update com versão esperada para evitar lost update; timeout reconcilia read-only, não retry cego. Exige migration/contrato e provas rollback/JWT concorrentes; não foi adicionado fluxo paralelo.
+
+### Plano de prova JWT real e gate
+1. Proprietário/segurança aprova compartilhamento específico A/P e remedia lacunas dos RPCs/tabelas antes de homologar, em autorização separada: sem impor A=P, sem regrant, sem inferir órfão. B não autoriza essas escritas.
+2. Operador disponibiliza sessões reais existentes pelo mecanismo seguro, sem credenciais em texto; QA confirma actor ativo/org/papéis e vínculo A/P canônico. Atualmente linked organizations=0; não criar vínculo/roles nesta fase.
+3. QA/segurança testa JWT A e P (e não pronto/papel insuficiente): list/detail/CREATE/UPDATE/DELETE permitido, spoof/reparent/cross CRUD, RPCs e portal, desktop/mobile, logout/resposta antiga; evidência HTTP/rows separada de SQL/mocks. Writes apenas com futura autorização de fixtures+manifesto/rollback/cleanup verificável; nunca usar dados reais como teste.
+4. Backend/QA prova retry/concorrência/recibos após contrato idempotente; operador observa typecheck autorizado. Auditor independente esclarece hash histórico pendente. Não confundir contagens inventário com hashes preservados nesta fase.
+
+Arquivos alterados **somente**: `src/hooks/useParceiroB2BMutations.ts`, `src/pages/clientes/ProdutoresTab.tsx`, `src/test/config/commercialRegistration.producer.test.tsx`, este relatório e `roadmap.md`. Nenhuma migration/ACL/guard/RLS/rota/AGENTS/dependência modificada. **PASS A focal; FAIL escopo estrutural legado encontrado em B; NOT RUN typecheck manual; UNVERIFIED JWT/browser/A-P ligado/Storage/concorrência/histórico. NO-GO integral; parar após A/B, sem C.**
+
 ## Revisão independente do checkpoint — 17:08 UTC, sem nova fase
 
 **HEAD auditado:** `119fd610af5b44be11a456a8f5c55816c2d55285`, árvore inicialmente limpa. Baseline de comparação: `3773015091fb5efa93ad75f963612e4ad359a85f`, anterior à continuidade16:16. Nesta revisão foram executados somente leitura local e testes/lint; nenhuma consulta ou escrita remota, SQL, fixture, Auth, envio, migration ou publicação. Nenhuma regressão funcional comprovada exigiu correção. Atualizações persistentes somente neste relatório e `roadmap.md`.
