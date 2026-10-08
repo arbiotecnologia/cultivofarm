@@ -37,12 +37,12 @@ export default function SelecionarPortal() {
   const [submitting, setSubmitting] = useState<PortalContext | null>(null);
 
   const firstName = useMemo(() => profile?.nome?.trim().split(/\s+/)[0] ?? getFirstName(user), [profile?.nome, user]);
-  const current = useRef({ scope, mounted: true });
-  current.current.scope = scope;
+  const current = useRef({ scope, mounted: true, epoch: 0 });
+  if (current.current.scope !== scope) { current.current.scope = scope; current.current.epoch += 1; }
   const lock = useRef(false);
   useEffect(() => {
     current.current.mounted = true;
-    return () => { current.current.mounted = false; };
+    return () => { current.current.mounted = false; current.current.epoch += 1; };
   }, []);
   useEffect(() => { setSubmitting(null); setRemember(false); }, [scope]);
 
@@ -76,7 +76,8 @@ export default function SelecionarPortal() {
     if (lock.current || !ready || !data?.available_contexts.includes(ctx)) return;
     lock.current = true;
     const started = scope;
-    const valid = () => current.current.mounted && current.current.scope === started;
+    const epoch = current.current.epoch;
+    const valid = () => current.current.mounted && current.current.scope === started && current.current.epoch === epoch;
     setSubmitting(ctx);
     try {
       const { data: res, error } = await supabase.rpc("set_my_context_preference", {

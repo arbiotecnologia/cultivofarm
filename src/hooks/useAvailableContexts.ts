@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { useAuth } from "@/hooks/useAuth";
 
 export type PortalContext = "b2b" | "technical" | "admin";
@@ -28,11 +29,15 @@ export function useAvailableContexts() {
     profile.ativo === true && profile.senha_provisoria === false &&
     !!profile.organization_id && roles.length > 0;
   const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort()]);
-  const current = useRef({ scope, mounted: true });
-  current.current.scope = scope;
+  const current = useRef({ scope, mounted: true, epoch: 0 });
+  if (current.current.scope !== scope) {
+    current.current.scope = scope;
+    current.current.epoch += 1;
+    clearActivePortalContext();
+  }
   useEffect(() => {
     current.current.mounted = true;
-    return () => { current.current.mounted = false; };
+    return () => { current.current.mounted = false; current.current.epoch += 1; };
   }, []);
   useEffect(() => {
     // Previous identities/tenants/roles must not retain selectable context data.
@@ -49,8 +54,9 @@ export function useAvailableContexts() {
     refetchOnWindowFocus: true,
     queryFn: async ({ signal }): Promise<AvailableContexts> => {
       if (!ready) throw new Error("portal_context_not_ready");
+      const epoch = current.current.epoch;
       const { data, error } = await supabase.rpc("get_my_available_portal_contexts").abortSignal(signal);
-      if (signal.aborted || !current.current.mounted || current.current.scope !== scope) throw new Error("portal_context_changed");
+      if (signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch) throw new Error("portal_context_changed");
       if (error) throw new Error("portal_context_unavailable");
       const raw = (data ?? {}) as unknown as Partial<AvailableContexts>;
       const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";

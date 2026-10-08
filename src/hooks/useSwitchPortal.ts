@@ -26,13 +26,14 @@ export function useSwitchPortal() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { ready, scope } = useAvailableContexts();
-  const current = useRef(scope);
-  current.current = scope;
+  const current = useRef({ scope, epoch: 0 });
+  if (current.current.scope !== scope) { current.current.scope = scope; current.current.epoch += 1; }
 
   return useCallback(
     async (options?: { force?: boolean }) => {
       if (!ready) return false;
       const startedScope = scope;
+      const epoch = current.current.epoch;
       const currentPath =
         typeof window !== "undefined" ? window.location.pathname : "";
       const leavingB2B = currentPath.startsWith("/portal-parceiro");
@@ -70,6 +71,7 @@ export function useSwitchPortal() {
           queryClient.invalidateQueries({ queryKey: ["notifications"] }),
         ]);
 
+        if (current.current.scope !== startedScope || current.current.epoch !== epoch) return false;
         try {
           const keys = leavingB2B
             ? B2B_SESSION_KEYS
@@ -81,7 +83,6 @@ export function useSwitchPortal() {
           /* sessionStorage indisponível */
         }
 
-        if (current.current !== startedScope) return false;
         clearActivePortalContext();
         broadcastPortalEvent({ type: "portal_switched", at: Date.now() });
 
