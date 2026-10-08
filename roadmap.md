@@ -4,6 +4,7 @@
 - [x] Migration oficial `20261008022948` aplicada após tentativa revertida: policy RESTRICTIVE USING/WITH CHECK pelo lote, trigger ator/old/new/referências; fechamento textual pós-aplicação de 23 DEFINER sem EXECUTE cliente, service preservado. Entrada contida antes de replay/leitura; RPCs não restaurados funcionalmente.
 - [x] SQL com duas identidades: own 1/1, cross 0/0, órfão 0/0, update próprio privilegiado 1 e 11 negações ACL/trigger; rollback. Resíduos lote/envase/CQ/estoque/movimentação 0; estoque real total=1/hash inalterado. Manifesto no relatório.
 - [x] Regressões iniciais 124/124 PASS; testes estruturais/lint/scanners e sinais automáticos registrados no relatório. Typecheck separado NOT RUN (harness). Sem publicação/Auth/assinaturas ou módulo seguinte.
+- [x] Residual histórico/views: migration adicional `20261008024032`, RLS par estoque/lote e guard referências, append-only preservado. SQL A/B own direto/view=1/1, cross/órfão=0/0; quatro negativas trigger, rollback integral e resíduos 0 nas cinco classes. Hash estoque 1/0c1a052173a564454cd51e69fcb72947 e movimentos 2/f8b6fcf6aa756d745eaf205f606f7795 preservados. Validações locais adicionais em andamento.
 - [ ] **Bloqueador operacional:** RPCs relacionados contidos por ACL; liberar somente após hardening individual aprovado e prova. Harness service sem ator também bloqueado/não executado. Browser/API real, referências dinâmicas e Edge/Storage integral UNVERIFIED: NO-GO.
 
 ## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (histórico)
