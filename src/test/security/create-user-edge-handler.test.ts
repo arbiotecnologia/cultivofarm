@@ -14,11 +14,15 @@ type Scenario = {
   invalidJwt?: boolean; profileFailure?: boolean; roleFailure?: boolean;
   unexpected?: boolean; compensationFailure?: "returned" | "thrown";
   providerFailure?: string;
+  preflightFailure?: boolean; preflightOrg?: string;
 };
 
 async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> = {}) {
   const sentinel = "private-test-sentinel";
-  const rpc = vi.fn(async () => ({
+  const rpc = vi.fn(async (name: string, args: Record<string, string>) => name === "b2b_provisioning_preflight" ? ({
+    data: { organization_id: scenario.preflightOrg ?? "actor-org", partner_id: args.p_partner, role: args.p_role, papel: args.p_papel, enabled: true },
+    error: scenario.preflightFailure ? new Error(sentinel) : null,
+  }) : ({
     data: !scenario.oldJwt && scenario.authorized !== false,
     error: scenario.authorizationError ? new Error(sentinel) : null,
   }));
@@ -74,6 +78,29 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
 }
 
 describe("create-user — handler real, SDK e Auth isolados", () => {
+  const partnerId = "11111111-1111-4111-8111-111111111111";
+  it("validates commercial preflight with caller bearer but never opens Auth via a remote flag", async () => {
+    const r = await invoke({}, { role: "parceiro_b2b", partner_id: partnerId, password: undefined });
+    expect(r.rpc).toHaveBeenCalledWith("b2b_provisioning_preflight", { p_partner: partnerId, p_role: "parceiro_b2b", p_papel: "gestor" });
+    expect(r.response.status).toBe(503);
+    expect(r.createUser).not.toHaveBeenCalled();
+  });
+  it.each([{ preflightFailure: true }, { preflightOrg: "foreign" }])("rejects unauthorized owner preflight: %j", async (scenario) => {
+    const r = await invoke(scenario, { role: "parceiro_b2b", partner_id: partnerId });
+    expect(r.response.status).toBe(403); expect(r.createUser).not.toHaveBeenCalled();
+  });
+  it.each([
+    { role: "parceiro_b2b", roles: ["parceiro_b2b", "gestor"] },
+    { role: "parceiro_b2b", roles: ["parceiro_b2b", "parceiro_b2b"] },
+    { role: "parceiro_b2b", partner_papel: "tecnico" },
+    { role: "gestor", roles: ["parceiro_b2b"] },
+    { role: "parceiro_b2b", cliente_ids: ["other"] },
+  ])("rejects extras/mismatch before preflight: %j", async (payload) => {
+    const r = await invoke({}, { partner_id: partnerId, ...payload });
+    expect(r.response.status).toBe(403);
+    expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
+    expect(r.createUser).not.toHaveBeenCalled();
+  });
   it.each([
     ["seis letras", "abcdef"],
     ["oito letras sem número", "abcdefgh"],

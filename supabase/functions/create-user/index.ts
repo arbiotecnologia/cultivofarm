@@ -85,6 +85,36 @@ Deno.serve(async (req) => {
       ? Array.from(new Set(rolesInput.filter(Boolean)))
       : (role ? [role] : []);
 
+    // Existing entrypoint, actor-scoped preflight. Never authorize this branch
+    // with the elevated SDK or turn a partner role into a cumulative staff role.
+    if (rolesArr.some((r) => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico")) {
+      const dedicatedRole = rolesArr[0];
+      const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
+      if (rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
+        (role && role !== dedicatedRole) || typeof partner_id !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(partner_id) ||
+        (partner_papel != null && partner_papel !== expectedPapel) ||
+        cliente_id || principal_cliente_id || (Array.isArray(cliente_ids) && cliente_ids.length > 0)) {
+        return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: preflight, error: preflightError } = await anonClient.rpc("b2b_provisioning_preflight", {
+        p_partner: partner_id, p_role: dedicatedRole, p_papel: expectedPapel,
+      });
+      if (preflightError || preflight?.organization_id !== actorOrganizationId ||
+        preflight?.partner_id !== partner_id || preflight?.role !== dedicatedRole || preflight?.papel !== expectedPapel) {
+        return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // This reviewed slice has no create/claim/finish capability. A remote flag
+      // cannot open Auth; same-tenant general-channel containment is mandatory.
+      return new Response(JSON.stringify({ error: "b2b_same_tenant_channels_unverified" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (
       typeof email !== "string" || !email.trim() ||
       typeof password !== "string" || !password ||
