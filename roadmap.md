@@ -1,9 +1,10 @@
 ## Motor estoque — hardening focal — 2026-10-08 03:07 UTC (estado atual)
 
-- [ ] Conferir delta 0a1966fa→e92fa850, callers, corpos vivos, h15/RBAC/entitlement e semântica das referências.
-- [ ] Aplicar migration oficial endurecendo motor/reserva, preservando três contenções e ACL bloqueadas.
-- [ ] Executar prova transacional positiva/negativa com rollback obrigatório; conferir cleanup e hashes.
-- [ ] Testes focais/lint/scanners/sinais automáticos; relatório, limites das nove ações e NO-GO operacional até revisão.
+- [x] Conferir delta 0a1966fa→e92fa850, callers e corpos vivos; helpers h15/RBAC/saas_has_feature estoque_embalagens. Sem referências habilitadas por inferência.
+- [x] Migration oficial 20261008031156 motor/reserva aplicada; três contenções e ACL bloqueadas preservadas, corpos finais inspecionados.
+- [x] Prova SQL positiva focal, cinco negativas e replay parcial sem duplicação; exceção final rollback, nove classes cleanup zero e hashes históricos iguais. Não é browser/API Auth.
+- [x] 262/262 testes estoque/entregas, lint testes/scanner segredos/diff-check PASS; relatório com limites das nove ações/rollback. Typecheck separado NOT RUN (harness).
+- [ ] Revisão funcional ampliada e autorização posterior de ACL: bloqueadas até prompt específico; identidade inativa/atores ambos habilitados/referências dinâmicas/concorrência/browser API ainda UNVERIFIED, NO-GO operacional.
 
 ## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (histórico)
 
