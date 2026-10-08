@@ -76,8 +76,10 @@ describe("Portal B2B — contrato de logs seguros", () => {
     expect(body).not.toMatch(/insert\s+into\s+partner_catalog_access_logs/i);
   });
 
-  it("assign_b2b_user_client_secure usa insert_partner_catalog_access_log_internal", () => {
-    expect(assignSql).toContain("insert_partner_catalog_access_log_internal");
+  it("atribuição contida não grava log nem vínculo antes de negar o contrato", () => {
+    expect(assignSql).toContain("MESSAGE='B2B_ASSIGNMENT_CONTRACT_UNAVAILABLE'");
+    expect(assignSql).not.toMatch(/\b(insert|update|delete)\s+(into|public\.)/i);
+    expect(assignSql).toContain("FROM PUBLIC,anon,authenticated");
   });
 
   it("partner_catalog_access_logs não tem policy INSERT aberta para authenticated", () => {
