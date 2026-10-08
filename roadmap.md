@@ -1,4 +1,5 @@
 ## Motor estoque — hardening focal — 2026-10-08 03:07 UTC (estado atual)
+- [ ] Complemento consolidado 03:32: conferir ledger sem duplicar contexto/ledger; gate numérico finito positivo motor/reserva, estorno NULL/default ajuste preservados; prova transacional, hashes e ACL.
 - [x] Complemento 03:20: migrations oficiais 20261008032313/032343/032551, contexto privado txid/ator/item, prefixo literal e avisos tenant; prova pré-forja/payload inválido, 14 negativas, sucesso/replay/split e rollback obrigatório. IDs exatos/contexto zero, hashes históricos iguais e ACL fechada. 267/267 testes, lint focal/scanners/diff-check PASS; build automático OK 03:28:05 UTC. Typecheck separado NOT RUN (harness); runtime avisos/ator inativo/concorrência e browser/API UNVERIFIED. Mesma fase, sem publicação.
 
 - [x] Conferir delta 0a1966fa→e92fa850, callers e corpos vivos; helpers h15/RBAC/saas_has_feature estoque_embalagens. Sem referências habilitadas por inferência.
