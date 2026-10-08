@@ -1,3 +1,8 @@
+## B2B-FISCAL — P2B operação interna A — 2026-10-08
+- [ ] Conferir HEAD, ledger e corpos/ACL vivos preservando BF01–03/P1A/P2A.
+- [ ] Auditar snapshots, ownership credor/emissor e ciclo de status; corrigir somente com contrato comprovado ou entregar proposta validável sem desbloquear pedidos.
+- [ ] Registrar paridade, hashes/contagens, testes por camada e gate P2C; sem efeitos externos ou alteração de histórico.
+
 ## B2B-FISCAL — P2A operação interna A — 2026-10-08
 - [x] HEAD589eb384/ledger173204/174953/181641 canônicos conferidos; BF01–03/P1A e proposta retirada preservados. Sem mandato/CNPJ como autorização.
 - [x] Primeira quebra estrutural: simulação/pedido exigem tenant P; correção mínima somente consulta da matriz interna por owner A na migration oficial184449. Pedido sem snapshot credor/emissor A e caminhos posteriores não restaurados, sem guard compartilhado/backfill.
