@@ -84,7 +84,7 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
   };
   const createClient = vi.fn((_url, _key, options) => options ? scoped : elevated);
   let handler: ((req: Request) => Promise<Response>) | undefined;
-  const deno = { env: { get: () => "isolated-value" }, serve: (fn: typeof handler) => { handler = fn; } };
+  const deno = { env: { get: (name: string) => name === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "isolated-value" }, serve: (fn: typeof handler) => { handler = fn; } };
   const errorLog = vi.fn();
   new Function("Deno", "createClient", "console", scenario.b2bOpen
     ? javascript.replace("const B2B_PROVISIONING_CHANNELS_REVIEWED = false", "const B2B_PROVISIONING_CHANNELS_REVIEWED = true")

@@ -92,6 +92,13 @@ Deno.serve(async (req) => {
     // Existing entrypoint, actor-scoped preflight. Never authorize this branch
     // with the elevated SDK or turn a partner role into a cumulative staff role.
     if (rolesArr.some((r) => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico")) {
+      if (Deno.env.get("SUPABASE_URL") !== "https://swzpzcwiasxmjutrmvkm.supabase.co" ||
+        typeof callerId !== "string" || !callerId || claimsData.claims.role !== "authenticated" ||
+        !Number.isSafeInteger(claimsData.claims.iat)) {
+        return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const dedicatedRole = rolesArr[0];
       const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
       if (dedicatedRole !== "parceiro_b2b" || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
