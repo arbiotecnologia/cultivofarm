@@ -1,3 +1,9 @@
+## B2B-FISCAL — continuidade P2B–P6 autorizada — 2026-10-08 19:15 UTC
+- [ ] P2B/P2C: revisar catálogo vivo e construir somente snapshot aditivo/contrato determinístico seguro; preservar BF01–03/P1A/P2A e legados.
+- [ ] P3/P4: auditar produção/estoque/entrega e regressões locais; sem habilitar elos bloqueados.
+- [ ] P5/P6: auditar recebível/faturamento/preparação fiscal; nenhum transporte, cobrança, certificado, Auth ou publicação.
+- [ ] Consolidar evidências, integridade, reversão e matriz PASS/FAIL/UNVERIFIED; gates não provados bloqueiam operação, não leitura posterior.
+
 ## B2B-FISCAL — P2B operação interna A — 2026-10-08
 - [x] HEADec99f0d3/canônico/ledger173204/174953/184449 e ACL BF02/03/P1A/P2A conferidos, preservados sem migration ou runtime editado.
 - [x] Catálogo vivo: primeiro INSERT pedido não congela org credor/emissor; cotação recria condições e usa parâmetro divergente Q-01. Contrato insuficiente: plano documental validável sem mandato/backfill/reabertura em b2b-fiscal-p2b-migration-plan.md.

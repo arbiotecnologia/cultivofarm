@@ -13817,6 +13817,8 @@ export type Database = {
           financial_status: string
           future_financial_link: string | null
           id: string
+          internal_economic_snapshot: Json | null
+          internal_origin_snapshot: Json | null
           itens_pendentes_motivo: string | null
           itens_pendentes_resolvido_em: string | null
           itens_pendentes_solicitado_em: string | null
@@ -13867,6 +13869,8 @@ export type Database = {
           financial_status?: string
           future_financial_link?: string | null
           id?: string
+          internal_economic_snapshot?: Json | null
+          internal_origin_snapshot?: Json | null
           itens_pendentes_motivo?: string | null
           itens_pendentes_resolvido_em?: string | null
           itens_pendentes_solicitado_em?: string | null
@@ -13917,6 +13921,8 @@ export type Database = {
           financial_status?: string
           future_financial_link?: string | null
           id?: string
+          internal_economic_snapshot?: Json | null
+          internal_origin_snapshot?: Json | null
           itens_pendentes_motivo?: string | null
           itens_pendentes_resolvido_em?: string | null
           itens_pendentes_solicitado_em?: string | null
