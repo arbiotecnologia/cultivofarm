@@ -35,6 +35,25 @@ Cadastro comercial de clientes/produtores e parceiros, distinto de provisionamen
 |Inativo/não pronto/sem empresa/sem UID|Cadastros|Negações SQL; não equivale renovação JWT real.|
 |Demais papéis/planos|URLs e operações|Guards/entitlements preservados; matriz dinâmica completa UNVERIFIED.|
 
+### Complemento humano — contratante e tenant próprio do parceiro
+O parceiro pode ser outro tenant. `partner_accounts.client_id → clientes.organization_id` define ownership **comercial da contratante**; `organizations.partner_account_id` define o contexto próprio do parceiro. Não exigir igualdade dessas empresas. Cadastro/vínculo comercial não transfere clientes, usuários, financeiro, documentos ou notificações e não torna administrador do parceiro administrador da contratante.
+
+Revisão do código atual: o trigger comercial160048 não consulta `organizations.partner_account_id`; sua igualdade cliente/ator diz respeito somente à escrita da contratante. Hooks comerciais cercam perfil/empresa do ator, não substituem contexto pelo parceiro. `usePartnerUsers` é leitura de usuários da **gestão comercial contratante**; não foi convertido em provisionamento/administração do tenant parceiro. A proposta de restauração em cadastro-1 foi esclarecida para não impor igualdade entre contextos distintos.
+
+|Direção/superfície|Evidência|Gate|
+|---|---|---|
+|A→B e B→A, clientes/cadastros parceiros|SQL6 positivos próprios,10 negações de leitura/update/reparent|PASS focal entre empresas independentes|
+|Administrador no tenant próprio do parceiro→contratante|Admin é local; nenhum organizations.partner_account_id preenchido no estado vivo|Relação parceiro-tenant real UNVERIFIED, não fabricada|
+|Contratante→usuários/financeiro/documentos/notificações do parceiro|Policies vivas de profiles, accounts_receivable, financial_documents, cliente_documentos e notificações escopadas|Leitura estrutural; dinâmica vinculada UNVERIFIED|
+|Leitura B2B explicitamente permitida|`partner_accounts_self_select` + `get_user_partner_id()` permitem próprio registro por vínculo/papel; não permitem clientes da contratante pela restritiva de clientes|Contrato/colunas compartilháveis requer revisão; não reabrir nem ampliar ACL|
+|Tenant parceiro→administração comercial|Trigger exige cliente na empresa do ator para writes; vínculo B2B não satisfaz essa condição|Não substitui prova API real|
+
+Risco registrado: SELECT da linha `partner_accounts` retorna todas as colunas alcançáveis; antes de restaurar provisionamento B2B, aprovar quais informações comerciais podem ser compartilhadas e verificar o guard de vínculo/prontidão. Não afirmar que cadastro comercial autoriza esse compartilhamento. Nenhuma migration nova, perfil/papel/vínculo/organização real alterado para fabricar cenário.
+
+Prova mantida em `scripts/rbac-audit/commercial-context-isolation-proof.sql`. Run `TEMPORARY_AUDIT_228ee6ff-db64-4d60-99aa-8728ff4b46a1`: clientes `69ec6db2-ae16-41d3-84a9-95b462984d44`, `c93f4fd3-075d-4547-aa44-c434935a19e0`; parceiros `6016ebbe-3d18-4784-b1da-f2e176d87556`, `b48d583e-fa49-4663-9a0d-dfba40c5304b`. Exceção final deliberada com `positive=6 denied=10`; leitura posterior clients/partners/audits=0. Hashes antes/depois deste complemento: clientes2/65474d6e09f5030d2e96f1a619cc1efe, parceiros1/b5bad2bcc8982ec47233b346ef77994d e audit1/aa7523f762f2b171f10a80f9dfd5fc81 iguais. Divergência histórica anterior permanece sem explicação, não apagada.
+
+Testes deste complemento:36/36 em5 arquivos, incluindo dois casos novos de contexto comercial/empresa do ator; lint teste/diff-check PASS, harness build OK16:15:25 UTC. Conjuntos anteriores não somados. SQL usa claims simulados, não JWT verificado. Prova com tenant próprio efetivamente vinculado permanece bloqueada por ausência de vínculo real e proibição de alterar organizações/vínculos reais; não criar Auth/papéis.
+
 ## Migration e rollback
 Migration oficial única, ledger confirmado read-only:
 `supabase/migrations/20261008160048_0379dfbf-559f-4d87-91bb-89e36ca35bbc.sql`.
