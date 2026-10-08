@@ -1,0 +1,18 @@
+{
+  "commits.csv": "18a764461471d948ff99f679f991add59f14fd911998b092c44375b8cd2c7b5f",
+  "commits-arquivos.csv": "b5c215fe82710e250cbe3d34b5036bca2fda949da4040833b5a4b6799a6e5de0",
+  "arquivos.csv": "19b299b752abc827289a07701c2161091535326cf9d044a88665d630a4a7fe49",
+  "migrations.csv": "357e39f12b8539c1c770184fbdb1c51ae3a15733d383cfaccb8ace271f20ff61",
+  "matriz.csv": "9f3596725f608bdcdeed53b65f163a7dde44a1412b57e74a4ff5a2a463492c23",
+  "git-evidence.json": "96780e3f6dabd0881ed0f0623d81b81f4cf6a017b017b3850fc54c9e00cf7b40",
+  "lint-base-summary.json": "63b289039574b67921ce9a90e82f4f0a5b074a0231ce835af32d7cef3d1aef40",
+  "lint-head-summary.json": "96cfee808b976d6d668751c520e824203c7fbfd51b6e766dd4381787b778f078",
+  "lint-delta.json": "5d3b8bddb61beaf14f0c1471d51db1d3dcd6cf0a579ba86e760f378f6fef2b3d",
+  "lint-focal.json": "7736781a5fdd74da8ed600cad7352ae1e9199233608225a70d594b9306756553",
+  "build-status.json": "869403668cf2ca31c37bf5ed2cbf56d27501242b3c77b8fa3b61772460ac377a",
+  "full-tests.json": "e9778727994deeafa2c16e13046986ebca4cef0b3da45cfee4c099d988b444a5",
+  "browser-publico.json": "6821dfbde6e5e59e91cbe0fff0fcd6a6310e1d2801055c2aee3ca36aee332086",
+  "historico-completo.txt": "776aab227fc15961429371d3b6e3412de4ac3e44ea8322c9d7a99748b807fe36",
+  "resumo.json": "74bc7937a6f7549ad383afc00b6ad9fa55d92b753e2431852902eb2215a67a33",
+  "delta-completo.patch": "c8d715ecf1f117fec5d0944fc5b4a38517eba9b38e3bf5eb5b628ecf79a9fd24"
+}
