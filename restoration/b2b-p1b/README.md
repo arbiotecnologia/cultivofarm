@@ -29,7 +29,7 @@ de replay. A proposta não altera endpoints existentes ou seus grants.
 
 ## Provas e rollback
 
-`contract-cases.readonly.sql` testa **predicado contratual simulado** com VALUES,
+`scripts/rbac-audit/b2b-p1b-contract-cases.readonly.sql` testa **predicado contratual simulado** com VALUES,
 sem Auth/fixtures de negócio. Pode ser executado com SELECT canônico após conferir
 o marcador. Não comprova RLS, RPC, JWT, transação mutável ou concorrência.
 

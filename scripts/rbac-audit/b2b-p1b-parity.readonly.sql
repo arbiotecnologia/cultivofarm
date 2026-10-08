@@ -35,7 +35,7 @@ snapshots(category,items) AS (
    'args',pg_get_function_identity_arguments(p.oid),'definition_hash',md5(pg_get_functiondef(p.oid)),
    'definer',p.prosecdef,'config',p.proconfig,'acl',p.proacl::text,
    'anon',has_function_privilege('anon',p.oid,'EXECUTE'),
-   'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE')) ORDER BY n.nspname,p.proname,p.oid),'[]'::jsonb)
+   'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE')) ORDER BY n.nspname,p.proname,pg_get_function_identity_arguments(p.oid)),'[]'::jsonb)
  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
  WHERE n.nspname IN ('public','platform_private') AND p.prokind='f'
    AND (p.proname ILIKE '%b2b%' OR p.proname ILIKE '%partner%'
