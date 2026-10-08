@@ -1,8 +1,8 @@
 ## Meu Plano — P2 de exibição — 2026-10-08 (estado atual)
 
 - [x] Corrigir somente EstadoConsulta incondicional; preservar detalhes/loading/erro/retry/ausência real, sem banco/Auth/permissões/plano/preço/publicação.
-- [ ] Validar renderização e suíte SaaS, lint focal, scanners, diff-check e build automático; typecheck manual não permitido pelo harness.
-- [ ] Registrar resultados e limites no relatório; nenhuma próxima fase.
+- [x] Suíte SaaS própria 512/512 PASS (47 arquivos), incluindo 5 renderizações; lint dois arquivos, scanners/diff-check PASS; build automático OK 02:04:58 UTC. Typecheck tsconfig.app.json NOT RUN (manual vedado pelo harness).
+- [x] Relatório atualizado: achado P2, sem regressão de status comprovada; validação local mockada, sem nova prova publicada/autenticada. NO-GO integral preservado; nenhuma próxima fase.
 
 ## Correção focal de sessão — 2026-10-07 23:00 UTC (histórico)
 

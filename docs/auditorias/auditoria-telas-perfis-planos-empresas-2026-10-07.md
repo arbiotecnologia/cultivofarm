@@ -1,6 +1,14 @@
 # Auditoria atual de telas, perfis, planos e empresas — 2026-10-07
 
-## Correção focal de sessão — 23:00 UTC (estado atual)
+## Meu Plano — P2 de exibição — 2026-10-08 (estado atual)
+
+- **Achado:** proprietário reproduziu no publicado, em sessão real do administrador AR Biotecnologia, ausência de assinatura simultânea a Gestão / Período de teste / Vinculada. Evidência recebida, não novo browser autenticado deste executor. Não comprova regressão de status.
+- **Causa/correção local:** `EstadoConsulta` incondicional em `MeuPlanoTab.tsx` retornava mensagem de ausência apesar de `assinatura.data`. Renderização limitada a `carregando || erro || !assinatura.data`; consultas, status e detalhes válidos preservados. Nenhuma mudança banco/Auth/permissões/plano/preço ou publicação.
+- **Verificações próprias:** suíte SaaS **512/512 PASS, 47 arquivos**, às 02:05:03 UTC (23,10s), incluindo **5 testes novos de renderização**: assinatura válida, ausência real, loading e erro/retry com/sem dados. Testes locais mockados, não evidência E2E nem mudança server-side. Lint nos dois arquivos alterados, scanners segredos/integração e diff-check **PASS**. Build automático **OK 02:04:58 UTC**. Typecheck `tsconfig.app.json` separado **NOT RUN**, execução manual vedada pelo harness; não alegar PASS.
+- **Arquivos:** `src/pages/configuracoes/MeuPlanoTab.tsx`, `src/test/saas/meuPlanoTab.render.test.tsx`, `roadmap.md` e este relatório. Sem decisão arquitetural nova, sem outra fase. Revisão final informada no encerramento.
+- **Decisão:** correção P2 validada localmente; não publicada nem verificada novamente na sessão real. **NO-GO integral da auditoria permanece**; histórico D51.6/D52 preservado.
+
+## Correção focal de sessão — 23:00 UTC (histórico)
 
 **NO-GO integral permanece.** Somente código, testes e documentação locais; nenhuma operação SQL, Auth, migration, Storage, fixture, exclusão, publicação ou deploy remoto neste executor; sem subagentes. Alterações anteriores preservadas.
 
