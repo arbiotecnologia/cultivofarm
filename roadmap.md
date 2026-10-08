@@ -1,7 +1,7 @@
 ## STORAGE-2/APLICAÇÕES — 2026-10-08
-- [ ] Auditar ACL/triggers e endurecer rpc_salvar_aplicacao_v1 antes de replay: identidade/tenant/referências/payload/evidências, sem staging paralelo nem liberar IDs inexistentes.
-- [ ] Reproduzir e corrigir galeria e aberturas atrasadas de arquivos por identidade/empresa/readiness; testes comportamentais e provas SQL rollback A/B, preservação de metadata/histórico.
-- [ ] Registrar matriz e limites: novos uploads, unidade inequívoca e portais; sem publicar/enviar/PDF/Auth/roles/vínculos/bytes reais. Verificações focais e NO-GO integral até provas reais restantes.
+- [x] ACL/triggers auditados; replay inativo e OS cruzada reproduzidos em rollback. Migration oficial144506 contém RPC antes dos efeitos; legado privado sem EXECUTE runtime. Prova após:blocked5/legacy_acl_denied5, rollback obrigatório, metadata_writes0 e hashes intactos.
+- [x] Galeria8 falhas antes/8 PASS depois; downloads cercados por sessão/empresa. Suíte focal267/267 em20 arquivos; lint novos arquivos/scanners/diff-check/build automático PASS. Lint ampliado mantém erros legados; typecheck explícito NOT RUN por restrição do ambiente. Relatório atualizado.
+- [ ] NO-GO operacional/integral: salvamento/retificação e novos uploads bloqueados até contrato integrado seguro de referências/evidências/idempotência e unidade inequívoca. Portais/API JWT/browser/concorrência real UNVERIFIED; PDFs v64 preservados, sem publicação/envios/Auth/vínculos/bytes reais ou próxima fase.
 
 ## STORAGE-1 — 2026-10-08
 - [x] Revisão14:24: migration oficial142611 alinha permissiva ao core cliente/aplicação/arquivo, DELETE sem owner bypass; financial/clientes validam path estrito. Composição de todas as policies vivas OR/AND em memória: próprios30/negações258, UID ausente negado separado; rollback e manifesto cliente/fazenda/talhão/OS/aplicação0, metadata_writes0. Hash financeiro1/efa4cc1e23e8f094668a8a2724e22e63 intacto. Hook19/19, séries45/45 e61/61 sobrepostas não somadas; lint focal/scanners/diff-check PASS, build automático14:29:03 OK. Typecheck explícito NOT RUN. Sem API/upload/download alegados, publicação ou novo deploy.
