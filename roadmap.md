@@ -1,4 +1,12 @@
-## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (estado atual)
+## Estoque legado — P1 isolamento — 2026-10-08 02:22 UTC (estado atual)
+
+- [x] Destino canônico, RLS/ACL/helpers e referências privilegiadas auditados; pré-prova AR/FSF órfão 1/1. Não inferir organização por expedido_por.
+- [x] Migration oficial `20261008022948` aplicada após tentativa revertida: policy RESTRICTIVE USING/WITH CHECK pelo lote, trigger ator/old/new/referências; fechamento textual pós-aplicação de 23 DEFINER sem EXECUTE cliente, service preservado. Entrada contida antes de replay/leitura; RPCs não restaurados funcionalmente.
+- [x] SQL com duas identidades: own 1/1, cross 0/0, órfão 0/0, update próprio privilegiado 1 e 11 negações ACL/trigger; rollback. Resíduos lote/envase/CQ/estoque/movimentação 0; estoque real total=1/hash inalterado. Manifesto no relatório.
+- [x] Regressões iniciais 124/124 PASS; testes estruturais/lint/scanners e sinais automáticos registrados no relatório. Typecheck separado NOT RUN (harness). Sem publicação/Auth/assinaturas ou módulo seguinte.
+- [ ] **Bloqueador operacional:** RPCs relacionados contidos por ACL; liberar somente após hardening individual aprovado e prova. Harness service sem ator também bloqueado/não executado. Browser/API real, referências dinâmicas e Edge/Storage integral UNVERIFIED: NO-GO.
+
+## Rótulo de portal — P2 apresentação — 2026-10-08 02:11 UTC (histórico)
 
 - [x] Remover somente fallback que inventava Consultor Técnico em contexto technical sem papel técnico; preservar papéis reais/multipapel/B2B/produtor e entrega 943710ce.
 - [x] Testes próprios 29/29 PASS em 4 arquivos (rótulo 9/cabeçalho 7/MeuPlano 13); lint alterados, scanners/diff-check PASS; build automático OK 02:12:39 UTC. Relatório com evidência recebida, rollback mínimo não executado e ausência de publicação.
