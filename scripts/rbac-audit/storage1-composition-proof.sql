@@ -6,6 +6,7 @@ DECLARE
  ua uuid:='a7d45277-6dec-413d-bf6b-86620c1ef39f'; ub uuid:='cbdc4ef3-005a-4674-8ea3-4410c7d7d212';
  inactive uuid:='28c5f1ca-32a7-4826-b1ee-8fb93c5a5ab9'; oa uuid; ob uuid;
  ca uuid:=gen_random_uuid(); cb uuid:=gen_random_uuid(); osa uuid:=gen_random_uuid(); osb uuid:=gen_random_uuid();
+ fa uuid:=gen_random_uuid(); fb uuid:=gen_random_uuid(); ta uuid:=gen_random_uuid(); tb uuid:=gen_random_uuid();
  aa uuid:=gen_random_uuid(); ab uuid:=gen_random_uuid(); actor uuid; org uuid; client uuid; app uuid; cross_app uuid;
  run_id text:='TEMPORARY_AUDIT_STORAGE1_COMPOSITION_'||gen_random_uuid();
  policies jsonb; pol jsonb; expr text; action text; bucket text; path text; variant text; own_n int:=0; denied_n int:=0;
@@ -16,8 +17,10 @@ BEGIN
  IF oa IS NULL OR ob IS NULL OR oa=ob THEN RAISE EXCEPTION 'ACTORS_UNAVAILABLE'; END IF;
  SELECT jsonb_agg(to_jsonb(p)) INTO policies FROM pg_policies p WHERE schemaname='storage' AND tablename='objects' AND roles && ARRAY['authenticated','public']::name[];
  INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES(ca,run_id||'_A',run_id||'_A',oa),(cb,run_id||'_B',run_id||'_B',ob);
- INSERT INTO public.ordens_servico(id,cliente_id,organization_id,produto_id,status,numero_os) VALUES
- (osa,ca,oa,'44b809ec-2e23-5d73-b6bb-b59afe728eea','finalizada',run_id||'_A'),(osb,cb,ob,'44b809ec-2e23-5d73-b6bb-b59afe728eea','finalizada',run_id||'_B');
+ INSERT INTO public.fazendas(id,cliente_id,nome,organization_id) VALUES(fa,ca,run_id||'_A',oa),(fb,cb,run_id||'_B',ob);
+ INSERT INTO public.talhoes(id,fazenda_id,nome,organization_id) VALUES(ta,fa,run_id||'_A',oa),(tb,fb,run_id||'_B',ob);
+ INSERT INTO public.ordens_servico(id,cliente_id,fazenda_id,talhao_id,organization_id,produto_id,status,numero_os) VALUES
+ (osa,ca,fa,ta,oa,'44b809ec-2e23-5d73-b6bb-b59afe728eea','finalizada',run_id||'_A'),(osb,cb,fb,tb,ob,'44b809ec-2e23-5d73-b6bb-b59afe728eea','finalizada',run_id||'_B');
  INSERT INTO public.aplicacoes(id,ordem_servico_id,organization_id) VALUES(aa,osa,oa),(ab,osb,ob);
  SET LOCAL ROLE authenticated;
  FOREACH actor IN ARRAY ARRAY[ua,ub,inactive] LOOP
@@ -59,5 +62,5 @@ BEGIN
  END LOOP;
  PERFORM set_config('request.jwt.claims','{}',true);
  IF public.aplicacao_storage_path_permitido(ca||'/'||aa||'/a.jpg','select') IS NOT FALSE THEN RAISE EXCEPTION 'NO_UID_ALLOWED'; END IF;
- RAISE EXCEPTION 'STORAGE1_COMPOSITION_EXPECTED_ROLLBACK own=% denied=% metadata_writes=0 manifest=%',own_n,denied_n,jsonb_build_object('run_id',run_id,'clientes',ARRAY[ca,cb],'os',ARRAY[osa,osb],'aplicacoes',ARRAY[aa,ab]);
+ RAISE EXCEPTION 'STORAGE1_COMPOSITION_EXPECTED_ROLLBACK own=% denied=% metadata_writes=0 manifest=%',own_n,denied_n,jsonb_build_object('run_id',run_id,'clientes',ARRAY[ca,cb],'fazendas',ARRAY[fa,fb],'talhoes',ARRAY[ta,tb],'os',ARRAY[osa,osb],'aplicacoes',ARRAY[aa,ab]);
 END $$;
