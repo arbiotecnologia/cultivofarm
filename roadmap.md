@@ -1,3 +1,9 @@
+## B2B-FISCAL — P1B — 2026-10-08
+- [x] HEAD b5531f49 e ledger173204/174953/181641 canônicos conferidos; BF01–03/P1A preservados, sem reaplicação.
+- [x] Contrato por ação e primeira lacuna A/P documentados em docs/auditorias/b2b-fiscal-p1b-2026-10-08.md; credor/emissor não inferidos, proposta DRAFT inativa não aplicada.
+- [x] Scripts read-only/paridade e plano de fixtures rollback preparados; SQL VALUES16/16 PASS somente predicado simulado, testes locais79/79 PASS, lint focal/scanners/diff-check PASS, build automático18:31:11 OK; typecheck manual NOT RUN.
+- [ ] Gate P2 bloqueado: homolog sem acesso read-only seguro/paridade; falta contrato bilateral aprovado, executor transacional seguro e prova real A/P/JWT/API/browser/concorrência. Nenhuma fixture/vínculo/migration P1B/emissão/cobrança/publicação.
+
 ## Cadastro parceiro — cliente opcional — 2026-10-08
 - [x] Cliente opcional no formulário e gravação; migration181641 deriva owner comercial no servidor, valida cliente quando presente e mantém órfãos fechados, sem backfill. 33/33 testes focais PASS; lint focal/scanners/diff-check PASS; build automático18:17:33 OK, typecheck manual NOT RUN. Sem publicação/Auth/envios/dados reais; JWT/browser privado não verificado. Relatório parceiro-cliente-opcional-2026-10-08.md.
 
