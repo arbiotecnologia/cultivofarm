@@ -1,3 +1,4 @@
+import { validateCPF_CNPJ } from "@/lib/validators/cpfCnpj";
 import { z } from "zod";
 import { inscricaoEstadualCadastroSchema } from "./inscricaoEstadualCadastro";
 
@@ -6,7 +7,7 @@ export const clienteSchema = z.object({
   razao_social: z.string().optional(),
   nome_fantasia: z.string().min(2, "Nome fantasia deve ter pelo menos 2 caracteres"),
   nome: z.string().default(""), // Preenchido automaticamente a partir de nome_fantasia
-  cpf_cnpj: z.string().optional(),
+  cpf_cnpj: z.string().optional().refine(v => !v || validateCPF_CNPJ(v), "CPF/CNPJ inválido"),
   inscricao_estadual: inscricaoEstadualCadastroSchema.optional(),
   inscricao_municipal: z.string().optional(),
   telefone: z.string().optional(),
