@@ -1,7 +1,8 @@
 ## Notificações — P1 autorizado 2026-10-08 04:08 UTC
-- [ ] Inventariar produtores vivos/callers/portais/Edge/Push e baseline de hashes; conter legado sem origem e writes indevidos.
-- [ ] Hardening integrado tenant/destinatário/origem, lido-only e envios OFF; migrations oficiais e provas rollback positivas/negativas.
-- [ ] Cache/Realtime/deep links, testes, matriz e relatório 17 seções; registrar limites/rollback sem publicação.
+- [x] Inventário vivo/callers e hashes; histórico sem origem invisível, lido-only e produtores legados contidos sem apagar dados.
+- [x] Migrations oficiais 041123/041233/041316/041641/041815/042050; SQL A/B positivo/replay +11 negativas e final +4, rollback obrigatório e resíduos zero.
+- [x] Cache/Realtime/cliente/mobile corrigidos; 820/820 testes, lint focal/scanners/diff-check/build automático PASS. Relatório17seções/matriz docs/auditorias/notificacoes-p1-2026-10-08.md; typecheck separado NOT RUN; baseline linter438. Sem publicação.
+- [ ] NO-GO operacional: positivo portal exige produtor realmente vinculado com tenant (único ativo sem organization); fanout/legados contidos não restaurados. Browser/API/concorrência/Realtime real/global legítimo/Edge remoto/flags/Storage UNVERIFIED; bloqueadores de identidade/contrato/homologação, não iniciar outro módulo.
 
 ## Motor estoque — hardening focal — 2026-10-08 03:07 UTC (estado atual)
 - [x] Recorte 03:52 concluído: batch endurecido; migrations 035712/035740/035936/040053/040156 aplicadas oficialmente. Motor e batch liberados individualmente; internos/legados fechados. SQL positivo/parcial/total/replay +16 negativas, reteste final +6 negativas/colisão derivada/contexto; rollback obrigatório, onze classes zero e hashes intactos. 286/286 testes PASS, scanners/diff-check/build automático PASS; lint hook baseline 57 erros, teste novo PASS; typecheck próprio NOT RUN. Matriz/relatório/rollback documental atualizados; sem publicação.
