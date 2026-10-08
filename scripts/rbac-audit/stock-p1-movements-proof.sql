@@ -11,7 +11,7 @@ DECLARE
  u uuid; own_id uuid; cross_id uuid; n int; d int:=0; j jsonb:='[]';
 BEGIN
  SELECT organization_id INTO oa FROM public.profiles WHERE user_id=a AND ativo;
- SELECT organization_id INTO ob FROM public.profiles WHERE user_id=b AND ativo;
+  SELECT organization_id INTO ob FROM public.profiles WHERE user_id=b AND ativo;
  IF oa IS NULL OR ob IS NULL OR oa=ob THEN RAISE EXCEPTION 'INVALID_ACTORS'; END IF;
  INSERT INTO public.lotes(id,codigo_lote,microrganismo_id,volume_produzido,status,organization_id,observacoes_tecnicas) VALUES
  (la,r||'_A','74eb1d1a-dcbc-5ed3-9290-63462a32668f',10000,'aprovado',oa,r),
