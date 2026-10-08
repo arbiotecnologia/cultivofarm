@@ -25,6 +25,7 @@ import {
 import { FileIcon, Upload, Trash2, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 const TIPOS: { value: string; label: string }[] = [
   { value: "cnh", label: "CNH" },
@@ -47,7 +48,9 @@ interface Props {
 
 export function ClienteDocumentosTab({ clienteId }: Props) {
   const { profile } = useAuth();
-  const [docs, setDocs] = useState<any[]>([]);
+  const access = useStorageAccessScope(`cliente:${clienteId}`);
+  const [result, setResult] = useState<{ scope: string; docs: any[] }>({ scope: "", docs: [] });
+  const docs = access.ready && result.scope === access.scope ? result.docs : [];
   const [loading, setLoading] = useState(false);
   const [tipo, setTipo] = useState<string>("");
   const [descricao, setDescricao] = useState("");
@@ -57,21 +60,28 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   const [showErrors, setShowShowErrors] = useState(false);
 
   const fetchDocs = useCallback(async () => {
-    if (!clienteId) return;
+    if (!clienteId || !access.ready) return;
+    const current = access.capture();
     setLoading(true);
     const { data, error } = await supabase
       .from("cliente_documentos")
       .select("*")
       .eq("cliente_id", clienteId)
       .order("uploaded_at", { ascending: false });
+    if (!current()) return;
     if (error) toast.error(error.message);
-    setDocs(data || []);
+    setResult({ scope: access.scope, docs: data || [] });
     setLoading(false);
-  }, [clienteId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId, access.scope]);
 
   useEffect(() => {
+    setResult({ scope: access.scope, docs: [] });
+    setConfirmDel(null);
+    setFile(null);
+    setLoading(false);
     fetchDocs();
-  }, [fetchDocs]);
+  }, [fetchDocs, access.scope]);
 
   const handleUpload = async () => {
     setShowShowErrors(true);
@@ -130,11 +140,14 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   };
 
   const handleDownload = async (doc: any) => {
+    if (!access.ready) return;
+    const current = access.capture();
     const { data, error } = await supabase.storage
       .from("clientes-docs")
       .createSignedUrl(doc.arquivo_path, 60);
+    if (!current()) return;
     if (error || !data) return toast.error(error?.message || "Erro ao gerar link");
-    window.open(data.signedUrl, "_blank", "noopener");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleDelete = async (doc: any) => {

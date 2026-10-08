@@ -8,6 +8,7 @@ import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
 import { brl } from "@/lib/financial/format";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 const TIPO_LABEL: Record<string, string> = {
   RECIBO_ASSINADO: "Recibo assinado",
@@ -21,23 +22,26 @@ interface Props {
 }
 
 export function ConfirmacaoEntregaPanel({ entrega }: Props) {
-  const { data: docs = [] } = useQuery({
-    queryKey: ["entrega-docs", entrega?.id],
-    enabled: !!entrega?.id,
+  const access = useStorageAccessScope(`entrega:${entrega?.id}`);
+  const { data: scopedDocs = [] } = useQuery({
+    queryKey: ["entrega-docs", entrega?.id, access.scope],
+    enabled: access.ready && !!entrega?.id,
     queryFn: async () => {
+      const current = access.capture();
       const { data, error } = await supabase
         .from("entrega_documentos" as any)
         .select("*")
         .eq("entrega_id", entrega.id)
         .order("uploaded_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return current() ? data as any[] : [];
     },
   });
+  const docs = access.ready ? scopedDocs : [];
 
   const { data: confirmador } = useQuery({
-    queryKey: ["profile", entrega?.confirmado_por],
-    enabled: !!entrega?.confirmado_por,
+    queryKey: ["profile", entrega?.confirmado_por, access.scope],
+    enabled: access.ready && !!entrega?.confirmado_por,
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
@@ -50,8 +54,8 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
 
   const navigate = useNavigate();
   const { data: receivable } = useQuery({
-    queryKey: ["ar-of-entrega", entrega?.receivable_id],
-    enabled: !!entrega?.receivable_id,
+    queryKey: ["ar-of-entrega", entrega?.receivable_id, access.scope],
+    enabled: access.ready && !!entrega?.receivable_id,
     queryFn: async () => {
       const q: any = supabase
         .from("accounts_receivable")
@@ -65,12 +69,15 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
 
 
   const baixar = async (path: string, nome: string) => {
+    if (!access.ready) return;
+    const current = access.capture();
     const { data, error } = await supabase.storage.from("entrega-documentos").createSignedUrl(path, 60);
+    if (!current()) return;
     if (error || !data?.signedUrl) {
       toast({ title: "Não foi possível abrir o arquivo", description: error?.message, variant: "destructive" });
       return;
     }
-    window.open(data.signedUrl, "_blank");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   if (!entrega) return null;

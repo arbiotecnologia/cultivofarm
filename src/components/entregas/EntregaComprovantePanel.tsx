@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,7 @@ function mesmoRecebedor(a: RecebedorPayload, b: RecebedorPayload) {
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
   const { user, role } = useAuth();
+  const access = useStorageAccessScope(`comprovante:${entrega?.id}`);
   const [openSign, setOpenSign] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
@@ -597,13 +599,17 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   };
 
   const abrirComprovanteArquivo = async () => {
+    if (!access.ready) return;
+    const current = access.capture();
     try {
       const { data, error } = await supabase.storage
         .from("entrega-documentos")
         .createSignedUrl(comprovante.arquivo_path, 300);
+      if (!current()) return;
       if (error || !data?.signedUrl) throw new Error("sem-url");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch {
+      if (!current()) return;
       toast({
         title: "Não foi possível abrir o comprovante",
         description: "O link seguro do arquivo não pôde ser gerado. Tente novamente.",

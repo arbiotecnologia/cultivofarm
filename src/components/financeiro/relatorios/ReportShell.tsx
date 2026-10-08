@@ -8,6 +8,7 @@ import { FileDown, FileSpreadsheet, FileText, Loader2, Printer } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 interface ReportShellProps<TData = unknown> {
   title: string;
@@ -31,6 +32,7 @@ export function ReportShell<TData = unknown>({
   requiresCustomer,
 }: ReportShellProps<TData>) {
   const { user } = useAuth();
+  const access = useStorageAccessScope(`report:${reportType}`);
   const [filters, setFilters] = useState<Record<string, unknown>>(defaultFilters);
   const [data, setData] = useState<TData | null>(null);
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
@@ -91,19 +93,22 @@ export function ReportShell<TData = unknown>({
   };
 
   const exportFormat = async (format: "PDF" | "XLSX" | "CSV") => {
-    if (!validate()) return;
+    if (!access.ready || !validate()) return;
+    const current = access.capture();
     setExporting(format);
     try {
       const { data: res, error } = await supabase.functions.invoke("generate-financial-report", {
         body: { report_type: reportType, filters, format, title },
       });
+      if (!current()) return;
       if (error) throw error;
       const url = (res as { url?: string } | null | undefined)?.url;
       if (url) {
-        window.open(url, "_blank");
+        window.open(url, "_blank", "noopener,noreferrer");
         toast.success(`${format} gerado`);
       }
     } catch (e: unknown) {
+      if (!current()) return;
       toast.error(e instanceof Error ? e.message : "Erro ao exportar");
     } finally {
       setExporting(null);
