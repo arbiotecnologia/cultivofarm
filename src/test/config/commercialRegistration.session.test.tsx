@@ -1,0 +1,23 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StrictMode, type ReactNode } from "react";
+import { beforeEach, expect, it, vi } from "vitest";
+const s = vi.hoisted(() => ({ auth: { user: { id: "A" } as {id:string}|null, profile: {user_id:"A",organization_id:"OA",ativo:true,senha_provisoria:false}, roles:["administrador"], loading:false }, pending:false, resolve:[] as Array<(v:unknown)=>void>, inserts:[] as unknown[], authCalls:0 }));
+vi.mock("@/hooks/useAuth",()=>({useAuth:()=>s.auth}));
+vi.mock("sonner",()=>({toast:{success:vi.fn(),error:vi.fn()}}));
+vi.mock("@/integrations/supabase/client",()=>({supabase:{auth:{getUser:async()=>{s.authCalls++;return {data:{user:{id:"A"}}};}},from:()=>{
+ const q: Record<string,unknown>={};
+ for(const name of ["select","order","eq","gte","lte","gt","is","not","range","abortSignal","update"]) q[name]=()=>q;
+ q.insert=(v:unknown)=>{s.inserts.push(v);return q;}; q.single=()=>q;
+ q.then=(resolve:(v:unknown)=>void)=>s.pending?s.resolve.push(resolve):resolve({data:[{id:"OWN"}],count:1,error:null});return q;
+}}}));
+import { useParceirosB2B } from "@/hooks/useParceirosB2B";
+import { useCreateParceiroB2B } from "@/hooks/useParceiroB2BMutations";
+beforeEach(()=>{s.auth.user={id:"A"};Object.assign(s.auth.profile,{user_id:"A",organization_id:"OA",ativo:true,senha_provisoria:false});s.auth.roles=["administrador"];s.auth.loading=false;s.pending=false;s.resolve=[];s.inserts=[];s.authCalls=0;});
+function setup(){const client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});const wrapper=({children}:{children:ReactNode})=><QueryClientProvider client={client}><StrictMode>{children}</StrictMode></QueryClientProvider>;const h=renderHook(()=>({list:useParceirosB2B(),create:useCreateParceiroB2B()}),{wrapper});return {h,client};}
+for(const change of ["tenant","identity","logout","inactive","mismatch","roles","loading"]){it(`não mantém cache anterior: ${change}`,async()=>{const {h,client}=setup();await waitFor(()=>expect(h.result.current.list.data?.items[0].id).toBe("OWN"));s.pending=true;
+ if(change==="tenant")s.auth.profile.organization_id="OB";if(change==="identity"){s.auth.user={id:"B"};s.auth.profile.user_id="B";}if(change==="logout")s.auth.user=null;if(change==="inactive")s.auth.profile.ativo=false;if(change==="mismatch")s.auth.profile.user_id="B";if(change==="roles")s.auth.roles=[];if(change==="loading")s.auth.loading=true;
+ h.rerender();expect(h.result.current.list.data).toBeUndefined();expect(client.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);h.unmount();client.clear();});}
+it("nega parceiro sem cliente antes de Auth ou insert",async()=>{const {h,client}=setup();await expect(h.result.current.create.mutateAsync({razao_social:"Novo",client_id:null,ativo:true,desconto_padrao:0})).rejects.toEqual({code:"42501"});expect(s.authCalls).toBe(0);expect(s.inserts).toEqual([]);h.unmount();client.clear();});
+it("preserva UUID do draft e não calcula sequência PARC no browser",async()=>{const {h,client}=setup();await act(async()=>{await h.result.current.create.mutateAsync({id:"DRAFT",razao_social:"Novo",client_id:"C",ativo:true,desconto_padrao:0});});expect(s.inserts).toEqual([{id:"DRAFT",razao_social:"Novo",client_id:"C",ativo:true,desconto_padrao:0,codigo:null,created_by:"A"}]);h.unmount();client.clear();});
+it("rejeita resultado tardio A→B→A",async()=>{s.pending=true;const {h,client}=setup();await waitFor(()=>expect(s.resolve.length).toBeGreaterThan(0));const old=[...s.resolve];s.auth.profile.organization_id="OB";h.rerender();s.auth.profile.organization_id="OA";h.rerender();await act(async()=>old.forEach(r=>r({data:[{id:"OLD"}],count:1,error:null})));expect(h.result.current.list.data).toBeUndefined();h.unmount();client.clear();});
