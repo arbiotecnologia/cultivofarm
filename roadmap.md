@@ -2,7 +2,8 @@
 - [x] HEAD b5531f49 e ledger173204/174953/181641 canônicos conferidos; BF01–03/P1A preservados, sem reaplicação.
 - [x] Esclarecimento vinculante18:32: operação exclusivamente interna A; P apenas cadastro terceiro, tenant P isolado. Proposta de mandato retirada como SQL executável e preservada como texto histórico, nunca aplicada.
 - [x] Scripts read-only/paridade e plano de fixtures rollback preparados; SQL VALUES16/16 PASS somente predicado simulado, testes locais79/79 PASS, lint focal/scanners/diff-check PASS, build automático18:31:11 OK; typecheck manual NOT RUN.
-- [ ] P1B interno em revisão: provar ownership comercial A e cadeia interna por operador A, sem mandato/federação/entitlement cross-tenant. Homolog/paridade e executor transacional seguro indisponíveis; JWT/API/browser/concorrência UNVERIFIED. Portal/RPC inter-tenant fechados; sem emissão/cobrança/publicação.
+- [x] Revisão vinculante:43/43 testes4arquivos e16/16 SELECTs de modelo interno (1A/15negativas) PASS, lint/scanners/diff-check PASS, build automático18:34:15 OK; memória/docs atualizados e proposta retirada, sem alteração runtime/banco.
+- [ ] P1B interno NO-GO: permissões residuais get_user_partner_id/b2b_phase1_partner_visible e geradores sem owner A exigem contenção/prova server-side; BF02/03/P1A mantidos. Homolog/paridade e executor transacional seguro indisponíveis; JWT/API/browser/concorrência UNVERIFIED. Nenhum mandato, emissão, cobrança ou publicação.
 
 ## Cadastro parceiro — cliente opcional — 2026-10-08
 - [x] Cliente opcional no formulário e gravação; migration181641 deriva owner comercial no servidor, valida cliente quando presente e mantém órfãos fechados, sem backfill. 33/33 testes focais PASS; lint focal/scanners/diff-check PASS; build automático18:17:33 OK, typecheck manual NOT RUN. Sem publicação/Auth/envios/dados reais; JWT/browser privado não verificado. Relatório parceiro-cliente-opcional-2026-10-08.md.
