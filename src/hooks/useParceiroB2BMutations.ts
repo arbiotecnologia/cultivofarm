@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCommercialRegistrationScope } from "./useCommercialRegistrationScope";
+import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
 
 export interface ParceiroB2BInput {
   codigo?: string | null;
@@ -62,12 +64,16 @@ export interface ParceiroB2BInput {
 
 export function useCreateParceiroB2B() {
   const qc = useQueryClient();
+  const scope = useCommercialRegistrationScope();
   return useMutation({
     mutationFn: async (input: ParceiroB2BInput) => {
+      if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
+      const current = scope.capture();
       const { data: userData } = await (supabase as any).auth.getUser();
+      if (!current() || !userData.user?.id) throw { code: "42501" };
       const { data, error } = await (supabase as any)
         .from("partner_accounts")
-        .insert({ ...input, created_by: userData.user?.id } as any)
+        .insert({ ...input, codigo: null, created_by: userData.user.id } as any)
         .select()
         .single();
       if (error) throw error;
@@ -77,14 +83,16 @@ export function useCreateParceiroB2B() {
       qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
       toast.success("Parceiro criado com sucesso");
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao criar parceiro"),
+    onError: (e: unknown) => toast.error(commercialRegistrationError(e)),
   });
 }
 
 export function useUpdateParceiroB2B() {
   const qc = useQueryClient();
+  const scope = useCommercialRegistrationScope();
   return useMutation({
     mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
+      if (!scope.canManagePartners || !input.client_id) throw { code: "42501" };
       const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .update(input as any)
@@ -98,14 +106,16 @@ export function useUpdateParceiroB2B() {
       qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
       toast.success("Parceiro atualizado");
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao atualizar parceiro"),
+    onError: (e: unknown) => toast.error(commercialRegistrationError(e)),
   });
 }
 
 export function useSoftDeleteParceiroB2B() {
   const qc = useQueryClient();
+  const scope = useCommercialRegistrationScope();
   return useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      if (!scope.canManagePartners) throw { code: "42501" };
       const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .update({
@@ -122,6 +132,6 @@ export function useSoftDeleteParceiroB2B() {
       qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
       toast.success(vars.ativo ? "Parceiro reativado" : "Parceiro inativado");
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao alterar status"),
+    onError: (e: unknown) => toast.error(commercialRegistrationError(e)),
   });
 }
