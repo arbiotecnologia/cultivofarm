@@ -1,4 +1,10 @@
-# P2B — Plano validável de migration, NÃO APLICADO
+# P2B — Plano histórico; implementação parcial aditiva aplicada
+
+Atualização: [continuidade P2B/P2C–P6](b2b-fiscal-p2c-p6-2026-10-08.md) registra
+as migrations oficiais `20261008192025`, `20261008192236` e `20261008192601`.
+Snapshots JSONB/triggers e contenções foram aplicados; criador interno, revisão
+append-only, propagação e provas autenticadas não foram liberados/comprovados.
+A sequência abaixo é a proposta histórica, não SQL para aplicar nem GO operacional.
 
 ## Escopo e pré-condições
 
@@ -25,4 +31,4 @@ SQL claims simulados = camada PostgreSQL/RLS, não JWT/API/browser. Exigir execu
 
 ## Reversão/gates
 
-Rollback operacional por sucessora que bloqueia o endpoint novo antes de efeitos e mantém colunas/snapshots/histórico; não apagar dados nem reabrir helpers P ou ACL financeiras. Nenhuma alteração aplicada nesta P2B. Gate de implementação depende contrato comprovado e revisão do plano; gate P2C depende provas positivas/negativas por camada e concorrência real. Não avançar automaticamente.
+Rollback operacional por sucessora que bloqueia o endpoint novo antes de efeitos e mantém colunas/snapshots/histórico; não apagar dados nem reabrir helpers P ou ACL financeiras. A implementação parcial posterior está descrita no relatório vigente; não reaplicar migrations. Gate operacional depende provas positivas/negativas por camada e concorrência real. A autorização contínua permite auditar read-only as fases posteriores, nunca habilitar elos sem prova.
