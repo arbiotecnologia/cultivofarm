@@ -107,7 +107,7 @@
       ],
       "status": "UNVERIFIED; NÃO registrar mobile autenticado PASS"
     },
-    "second_session": "Outra aba ainda mostra Renato Cunha administrador; aguardando segunda sessão do usuário."
+    "second_session": "Histórico20:09UTC:segunda sessão ainda aguardada; concluída FSF pelo usuário e observada pelo Codex20:16UTC, separadamente abaixo."
   },
   "independent_local_validation": {
     "typecheck": "PASS explícito tsc -p tsconfig.app e tsconfig.node",
@@ -181,5 +181,91 @@
     "git_only_path": "docs/auditorias/auditoria-rotas-inventario-2026-10-07.json",
     "raw_api_listing_attached": false
   },
-  "decision": "NO-GO integral; mesma fase, somente relatório/roadmap/evidências/matriz; sem runtime/deploy/migration."
+  "decision": "NO-GO integral; mesma fase, somente relatório/roadmap/evidências/matriz; sem runtime/deploy/migration.",
+  "latest_addendum_received_at_utc": "2026-10-08T20:16:00Z",
+  "published_browser_by_tenant": {
+    "AR Bio": {
+      "evidence_reference": "published_browser",
+      "received_at_utc": [
+        "2026-10-08T20:03:00Z",
+        "2026-10-08T20:09:00Z"
+      ],
+      "limits": "Recorte AR Bio histórico preservado; não recebe PASS mobile FSF."
+    },
+    "FSF Agroservice": {
+      "received_at_utc": "2026-10-08T20:16:00Z",
+      "origin": "https://app.cultivofarm.com.br",
+      "role": "administrador",
+      "login": "Real, concluído pelo usuário; Codex confirmou email diferente, sem armazenar valor.",
+      "two_tabs": "Perfil da empresa FSF nas duas abas; aba antes Estoque AR Bio voltou Dashboard durante transição.",
+      "context_switch": "PASS focal troca visual;nenhum dado AR Bio visto nas Configurações posteriores; não todos caches/concorrência/Realtime.",
+      "observations": [
+        {
+          "path": "/configuracoes",
+          "surface": "Perfil da empresa",
+          "result": "Somente FSF nas duas abas"
+        },
+        {
+          "surface": "Meu Plano",
+          "result": "Completo TRIAL02→16/10,17features"
+        },
+        {
+          "path": "/plataforma",
+          "result": "Redireciona /sem-permissao"
+        },
+        {
+          "path": "/clientes",
+          "surface": "Produtores e Parceiros B2B",
+          "result": "Ambas listas vazias; não CRUD PASS"
+        },
+        {
+          "path": "/estoque",
+          "result": "Zero itens; não CRUD PASS"
+        }
+      ],
+      "url_parameter_negative": {
+        "path": "/configuracoes",
+        "parameters": [
+          "organization_id",
+          "tenant_id"
+        ],
+        "foreign_tenant": "AR Bio",
+        "foreign_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+        "result": "Exibiu somente FSF",
+        "status": "PASS negativo parâmetros URL; não payloadRPC/JWT"
+      },
+      "mobile": {
+        "method": "Emulation CDP direto",
+        "viewport": [
+          390,
+          844
+        ],
+        "DOM_clientWidth": 390,
+        "DOM_scrollWidth": 390,
+        "legible_screenshots_reported": [
+          "Configurações/Perfil da empresa",
+          "Estoque"
+        ],
+        "menu_opens": true,
+        "status": "PASS somente este recorte mobile autenticado FSF;tentativa geral anterior falhou",
+        "emulation_restored": true,
+        "ux_observation": {
+          "priority": "P2 observação para avaliar",
+          "result": "Click Estoque mudou URL mas drawer continuou aberto;Escape fechou",
+          "confirmed_regression": false,
+          "fix_performed": false
+        }
+      },
+      "not_proven": [
+        "CRUD/mutações",
+        "isolamento integral",
+        "payloadRPC/JWT",
+        "todos caches",
+        "concorrência",
+        "Realtime",
+        "demais mobile/rotas/perfis"
+      ]
+    }
+  },
+  "next_identity": "Usuário consultado sobre Superadmin/Gestor; aguardando resposta/sessão, sem nova fase."
 }
