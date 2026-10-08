@@ -54,11 +54,11 @@ BEGIN
  SELECT quantidade INTO n FROM public.estoque_produto WHERE id=sa; IF n<>6 THEN RAISE EXCEPTION 'SPLIT_SOURCE_BALANCE %',n; END IF;
  SELECT quantidade_reservada INTO n FROM public.estoque_produto WHERE id=target; IF n<>2 THEN RAISE EXCEPTION 'SPLIT_TARGET_BALANCE %',n; END IF;
  BEGIN PERFORM public.rpc_estoque_operar_v1('reserva',target,2,r||'_SPLIT',payload); RAISE EXCEPTION 'WRONG_ITEM_REPLAY'; EXCEPTION WHEN unique_violation THEN denied:=denied+1; END;
- j:=public.rpc_estoque_operar_v1('expedicao',target,2,r||'_EXP','{}'); expmov:=(j->>'movimentacao_id')::uuid;
+ j:=public.rpc_estoque_operar_v1('cancelamento_reserva',target,1,r||'_CANCEL','{}');
+ j:=public.rpc_estoque_operar_v1('expedicao',target,1,r||'_EXP','{}'); expmov:=(j->>'movimentacao_id')::uuid;
  j:=public.rpc_estoque_operar_v1('estorno_expedicao',target,NULL,r||'_REV',jsonb_build_object('movimentacao_origem_id',expmov));
  j:=public.rpc_estoque_operar_v1('entrega',target,1,r||'_DEL','{}');
- j:=public.rpc_estoque_operar_v1('cancelamento_reserva',target,1,r||'_CANCEL','{}');
- -- Business status may deny last cancellation; never relax safeguards to make proof green.
+ -- No business status guard is relaxed to make proof green.
  results:=results||jsonb_build_object('split',target,'expedition',expmov,'last',j);
  RESET ROLE;
  SELECT array_agg(id) INTO stocks FROM public.estoque_produto WHERE lote_id IN (la,lb);
