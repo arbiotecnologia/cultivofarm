@@ -17,6 +17,7 @@ import {
   useAvailablePartnerUsers,
   useLinkPartnerUser,
   useUnlinkPartnerUser,
+  PARTNER_REGISTRATION_UNAVAILABLE,
   type PartnerUserPapel,
 } from "@/hooks/usePartnerUsers";
 
@@ -29,8 +30,8 @@ function derivePapel(roles: string[] | undefined): PartnerUserPapel {
 }
 
 export function ParceiroUsuariosTab({ partnerId }: Props) {
-  const { data: linked = [], isLoading } = usePartnerUsers(partnerId);
-  const { data: available = [] } = useAvailablePartnerUsers();
+  const { data: linked = [], isLoading, isError, refetch } = usePartnerUsers(partnerId);
+  const { data: available = [] } = useAvailablePartnerUsers(partnerId);
   const link = useLinkPartnerUser(partnerId);
   const unlink = useUnlinkPartnerUser(partnerId);
   const [selected, setSelected] = useState<string>("");
@@ -40,10 +41,12 @@ export function ParceiroUsuariosTab({ partnerId }: Props) {
 
   return (
     <div className="space-y-3">
+      <p role="status" className="text-sm text-muted-foreground">{PARTNER_REGISTRATION_UNAVAILABLE}</p>
+      {isError && <div role="alert"><p>Não foi possível comprovar a empresa do parceiro ou carregar os acessos.</p><Button variant="outline" onClick={() => refetch()}>Tentar novamente</Button></div>}
       <Card className="p-3 flex flex-col sm:flex-row gap-2 sm:items-end">
         <div className="flex-1">
           <label className="text-sm font-medium">Vincular usuário ao parceiro</label>
-          <Select value={selected} onValueChange={setSelected}>
+          <Select value={selected} onValueChange={setSelected} disabled>
             <SelectTrigger>
               <SelectValue placeholder={available.length ? "Selecione um usuário disponível" : "Nenhum usuário com perfil Parceiro B2B ou Técnico B2B disponível"} />
             </SelectTrigger>
@@ -72,7 +75,7 @@ export function ParceiroUsuariosTab({ partnerId }: Props) {
           )}
         </div>
         <Button
-          disabled={!selected || link.isPending}
+          disabled
           onClick={() => {
             if (!selectedPapel) return;
             link.mutate(
@@ -100,7 +103,7 @@ export function ParceiroUsuariosTab({ partnerId }: Props) {
             {isLoading && (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Carregando...</TableCell></TableRow>
             )}
-            {!isLoading && linked.length === 0 && (
+            {!isLoading && !isError && linked.length === 0 && (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Nenhum usuário vinculado.</TableCell></TableRow>
             )}
             {linked.map((u) => (
@@ -118,7 +121,8 @@ export function ParceiroUsuariosTab({ partnerId }: Props) {
                     size="icon"
                     variant="ghost"
                     onClick={() => unlink.mutate(u.id)}
-                    title="Remover vínculo"
+                    disabled
+                    title="Remoção de vínculo indisponível"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -140,7 +144,7 @@ export function ParceiroUsuariosTab({ partnerId }: Props) {
         </p>
         <p className="italic">
           O papel é definido pelo perfil do usuário. Para trocar de Gestor para Técnico (ou vice-versa),
-          altere o perfil em Configurações → Usuários e revincule.
+          a alteração permanece indisponível até a integração segura do cadastro B2B.
         </p>
       </div>
     </div>
