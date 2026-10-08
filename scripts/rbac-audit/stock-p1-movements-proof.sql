@@ -2,7 +2,7 @@
 -- Expected final exception rolls back every fixture. Use a new run_id per execution.
 DO $proof$
 DECLARE
- r text:='TEMPORARY_AUDIT_STOCK_MOV_P1_20261008T0242';
+ r text:='TEMPORARY_AUDIT_STOCK_MOV_P1_'||gen_random_uuid()::text;
  a uuid:='a7d45277-6dec-413d-bf6b-86620c1ef39f'; -- AR Bio
  b uuid:='cbdc4ef3-005a-4674-8ea3-4410c7d7d212'; -- FSF
  oa uuid; ob uuid; la uuid:=gen_random_uuid(); lb uuid:=gen_random_uuid();
