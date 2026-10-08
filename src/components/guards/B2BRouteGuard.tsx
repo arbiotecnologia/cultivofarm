@@ -11,22 +11,22 @@ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
  * Autorização resolvida no servidor via `get_my_available_portal_contexts()`
  * (RPC segura). Nunca confia em localStorage, sessionStorage ou query string.
  *
- * Admin/gestor_comercial mantêm acesso legado (impersonação) — sem regressão.
+ * Nenhum papel local substitui readiness ou o vínculo resolvido no servidor.
+ * Este gate visual não substitui entitlements, RLS ou autorização de cada RPC.
  */
 export function B2BRouteGuard({ children }: { children: ReactNode }) {
-  const { user, roles, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
-  const { data, isLoading, isError } = useAvailableContexts();
-
-  const isAdmin = roles.includes("administrador");
-  const isGestorComercial = roles.includes("gestor_comercial");
-  const legacyBypass = isAdmin || isGestorComercial;
+  const { data, ready, isLoading, isError } = useAvailableContexts();
+  // has_b2b_access historically includes the management context. A real B2B
+  // context additionally proves the partner binding; management alone cannot.
+  const hasPartnerContext = data?.has_b2b_access === true &&
+    data.available_contexts.includes("b2b");
   const denied =
     !loading &&
     !!user &&
     !isLoading &&
-    !legacyBypass &&
-    (isError || !data?.has_b2b_access);
+    (!ready || isError || !hasPartnerContext);
 
   useEffect(() => {
     if (denied) {
@@ -50,15 +50,11 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
-  if (legacyBypass) {
-    return <>{children}</>;
-  }
-
-  if (isError) {
+  if (!ready || isError) {
     return <Navigate to="/sem-permissao" replace />;
   }
 
-  if (!data?.has_b2b_access) {
+  if (!hasPartnerContext) {
     return (
       <Navigate
         to="/sem-permissao"

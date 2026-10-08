@@ -1,5 +1,9 @@
 # CADASTROS-PRODUTOR-PARCEIRO — checkpoint 2026-10-08
 
+## Continuidade B2B-FISCAL autorizada — 17:32 UTC
+
+Fase A preservada. BF02 **contido**, não homologado: migration oficial `20261008173204_54750128-42c5-4dfd-a9d1-4774eb2f71be.sql` adiciona RESTRICTIVE false em PC/PUC e fecha ACL/corpos assign/unassign/list; BF03 cancelamento igualmente bloqueado. Nenhum tenant P vinculado nem ownership comercial do parceiro comprovado; não inferir/preencher legado. SQL ROLE/claims com ROLLBACK:9negações, fixture invisível/UPDATE0,7contagens/hashes preservados. Não é JWT/browser nem prova positiva A/P. Detalhes no relatório B2B-FISCAL seção11. **NO-GO operacional**; checkpoints e divergência histórica de partner_audit_logs abaixo preservados.
+
 ## Fases autorizadas A corretiva e B read-only — 17:13 UTC
 
 HEAD inicial `3381e213c817063de3520a1afde16d698f5a956a`, árvore limpa. Auditoria17:08 preservada como histórico. **A concluída / B inventariada; C não iniciada.** Não houve escrita remota, migration, Auth, vínculo, papel, convite, bytes Storage ou publicação.
