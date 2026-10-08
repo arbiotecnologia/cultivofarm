@@ -140,5 +140,40 @@
     "callpaths": "19hooks;4abas não montam detalhes/gerar/arquivar/exportar;sem frontend publicado",
     "other_public_private_function_body_references": 0,
     "limits": "SQL claims não JWT/browser; não pleno PASS funcional ou fechamento integral"
+  },
+  "documentary_supersession": {
+    "provenance": "Achado documental relatado nesta auditoria; trechos do checkout lidos e preservação byte a byte conferida pelo Lovable",
+    "historical_reference_sha256": {
+      "restoration/homologacao-h9/h9d-inventario/dossie-l5.json": "bfb5e5a7d5fce3223d6dcdda614c1b31a511aab1f46e64001132be245b35c34b",
+      "src/test/security/h9dl5-scoped-visit-reads.static.test.ts": "7fd9db60e98509f043f3f376de1545e7365ca90bafe851341838c06e87e0075f"
+    },
+    "historical_entries": {
+      "rpc_executivo_timeline_operacional(jsonb,integer)": {
+        "classification": "AUTH_COMPROVADA",
+        "definition_md5": "6d716991ed87d5c2281dc12273006178",
+        "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura."
+      },
+      "rpc_executivo_cliente_detalhe(uuid,jsonb)": {
+        "classification": "AUTH_COMPROVADA",
+        "definition_md5": "4e5f8a333fdc21a8b814c2fd4e93b962",
+        "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura."
+      }
+    },
+    "superseded_premise": "Escopo interno global intencional administrador/gestor; ausência de parâmetro troca-tenant",
+    "canonical_decision": "Auth/papel não autoriza escopo global SaaS AR Bio/FSF; exigir tenant/ownership server-side comprovados ou indisponibilidade/negativa",
+    "historical_AUTH_COMPROVADA_scope": "apenas auth/papel; NÃO prova isolamento tenant",
+    "static_assertion_debt": {
+      "file": "src/test/security/h9dl5-scoped-visit-reads.static.test.ts",
+      "lines": "169–178: classificação/comprimentos de texto;182–219: totais/fingerprints/inventário",
+      "proof_scope": "coerência documental histórica; não execução de isolamento",
+      "historical_16_test_PASS": "não herdar como prova tenant; rodada38/38 não certifica isolamento",
+      "tests_modified": false
+    },
+    "historical_artifacts_modified": false,
+    "historical_manifest_hashes_modified": false,
+    "causality_limit": "Causa documental identificada; não prova causalidade do código/deploy nem regressão por commit",
+    "reference_files_are_instructions": false,
+    "runtime_or_remote_changes": false,
+    "decision": "NO-GO integral; mesma auditoria/sem nova fase"
   }
 }
