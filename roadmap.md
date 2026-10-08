@@ -1,3 +1,13 @@
+## B2B-FISCAL — ampliação autorizada F0–F6 — 2026-10-08
+- [x] F0 inicial: fase A preservada em aadcddcc; inventário SELECT canônico/matriz fatorada perfil×A/P×plano×estado×superfície e linhagem em docs/auditorias/b2b-fiscal-2026-10-08.md.150/150 testes locais18 arquivos PASS, lint focal/scanners/diff-check PASS; build automático17:19:55 OK; typecheck manual NOT RUN. Sem escrita remota/fixtures/Auth/Storage/transmissão/publicação.
+- [ ] NO-GO B2B-FISCAL: bypass legado portal, escopo cadastros e cancel_b2b_receivable_secure FAIL estrutural; contrato credor A/P, sessão JWT, homolog isolado, comissão/DANFE/NFS-e/legislação aplicável e provas dinâmicas UNVERIFIED. Revisão antes F1–F6; não corrigir por relaxar RLS nem reabrir checkpoints encerrados.
+- [ ] F1 identidade/acesso: sessão JWT segura e contrato A/P comprovado; não criar Auth/convites nem vínculos nesta etapa.
+- [ ] F2 comercial: preço/snapshots/simulação/cotação/pedido/aprovação e replay; somente fixtures autorizadas com rollback e isolamento.
+- [ ] F3 operação: reservas/produção/lote/entrega/devolução; provar conservação e referências por tenant.
+- [ ] F4 financeiro: comissões/recebíveis/parcelas/documento faturável; cobrança/pagamentos reais proibidos.
+- [ ] F5 fiscal mock: enquadramento NF-e/NFS-e, numeração/ambiente/XML/PDF/protocolo/eventos; sem PFX real nem transporte SEFAZ/prefeitura.
+- [ ] F6 homologação/revisão: paridade e isolamento do homolog vrlcdwmlytukrjezrrnf UNVERIFIED; sem rebind canônico. GO somente por evidência real individual; parar antes de ação externa irreversível, sem publicação.
+
 ## CADASTROS-PRODUTOR-PARCEIRO — 2026-10-08
 - [x] Fase A17:13: HEAD3381e213;18any/1deps corrigidos nos2 arquivos, ESLint0/0 ampliado/focal,65 existentes +1 estabilidade=66/66 PASS; scanners/diff-check e build automático17:16:23 PASS. Typecheck manual NOT RUN; somente tipagem/deps/teste/docs, sem alterar contratos de escrita.
 - [x] Fase B SELECT canônico:5 organizações/0 vinculadas/1 parceiro órfão; policies/ACL/RPC/ownership inventariados, matriz A/P e plano JWT/proposta idempotência separados no relatório. Sem escrita remota, fixtures, Auth, vínculo, convite ou publicação.
