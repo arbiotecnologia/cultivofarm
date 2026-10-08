@@ -28,6 +28,7 @@ CREATE TABLE public.organizations(id uuid,ativo boolean,status text,partner_acco
 CREATE TYPE public.app_role AS ENUM ('administrador','parceiro_b2b','parceiro_b2b_tecnico');
 CREATE TABLE public.partner_accounts(id uuid,commercial_owner_organization_id uuid,ativo boolean,deleted_at timestamptz,codigo text DEFAULT 'P1',razao_social text DEFAULT 'Synthetic Partner',nome_fantasia text);
 CREATE TABLE public.partner_users(user_id uuid,partner_id uuid,papel text);
+CREATE TABLE public.user_access_preferences(user_id uuid,preferred_context text,last_context text,skip_context_selector boolean);
 CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT current_setting('test.fresh',true)='true' AND EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo IS TRUE AND senha_provisoria IS FALSE) $$;
 CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() AND platform_private.platform_actor_access_ready(user_id) $$;
 CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql AS $$ SELECT 'catalogo_precos' WHERE current_setting('test.entitled',true)='true' $$;
@@ -36,6 +37,7 @@ CREATE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE s
 """
         sql += (ROOT / "scripts/rbac-audit/b2b-commercial-context.sql").read_text()
         sql += (ROOT / "scripts/rbac-audit/b2b-commercial-portal.sql").read_text()
+        sql += (ROOT / "scripts/rbac-audit/b2b-commercial-available-contexts.sql").read_text()
         sql += r"""
 INSERT INTO public.organizations VALUES('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,'ativa',NULL),('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,'ativa',NULL);
 INSERT INTO public.partner_accounts(id,commercial_owner_organization_id,ativo,deleted_at) VALUES('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,NULL),('22222222-2222-4222-8222-222222222222','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true,NULL),('33333333-3333-4333-8333-333333333333','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,NULL);
@@ -107,6 +109,7 @@ UPDATE public.partner_accounts SET commercial_owner_organization_id='aaaaaaaa-aa
 UPDATE public.organizations SET partner_account_id=NULL;
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('projection own only',public.get_my_commercial_partner_projection()->>'id'='11111111-1111-4111-8111-111111111111');
+SELECT pg_temp.assert_true('portal commercial exclusive B2B',public.get_my_available_portal_contexts()->'available_contexts'='["b2b"]'::jsonb);
 SELECT pg_temp.assert_true('projection has no commercial discount',NOT (public.get_my_commercial_partner_projection() ? 'desconto_padrao'));
 RESET ROLE;
 UPDATE public.partner_users SET partner_id='22222222-2222-4222-8222-222222222222';
@@ -115,6 +118,7 @@ SELECT pg_temp.assert_true('projection second sibling only',public.get_my_commer
 RESET ROLE;
 UPDATE public.user_roles SET role='administrador';
 SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true('internal admin never gets partner context',public.get_my_available_portal_contexts()->'available_contexts'='["admin"]'::jsonb);
 SELECT pg_temp.assert_true('preflight owner admin gate closed',public.b2b_provisioning_preflight('11111111-1111-4111-8111-111111111111','parceiro_b2b','gestor')->>'enabled'='false');
 DO $$ BEGIN
  BEGIN PERFORM public.b2b_provisioning_preflight('33333333-3333-4333-8333-333333333333','parceiro_b2b','gestor'); RAISE EXCEPTION 'foreign owner accepted'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS preflight foreign owner denied'; END;
@@ -124,6 +128,10 @@ END $$;
 RESET ROLE;
 SELECT pg_temp.assert_true('projection anon no execute',NOT has_function_privilege('anon','public.get_my_commercial_partner_projection()','EXECUTE'));
 SELECT pg_temp.assert_true('preflight anon no execute',NOT has_function_privilege('anon','public.b2b_provisioning_preflight(uuid,text,text)','EXECUTE'));
+INSERT INTO public.user_roles VALUES(auth.uid(),'parceiro_b2b');
+SELECT pg_temp.assert_true('mixed internal roles no B2B portal',NOT (public.get_my_available_portal_contexts()->'available_contexts' ? 'b2b'));
+SELECT set_config('test.uid','',true);
+SELECT pg_temp.assert_true('anonymous no portal contexts',public.get_my_available_portal_contexts()->'available_contexts'='[]'::jsonb);
 ROLLBACK;
 """
         result = subprocess.run(["psql", "-h", str(tmp), "-p", "55485", "-U", "local_audit", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], input=sql, text=True, capture_output=True)
