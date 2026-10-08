@@ -572,6 +572,7 @@ export default function Entregas() {
                   referencia_tipo: "entrega",
                   referencia_id: (created as any).id,
                   os_id: itemOsId,
+                  os_tipo: itemOsTipo,
                   cliente_id: itemClienteId,
                   observacao: `Expedição automática pela entrega ${(created as any).id}`,
                 },
