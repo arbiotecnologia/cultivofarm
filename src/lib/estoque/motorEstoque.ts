@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 /**
  * Motor canônico de movimentações de estoque (Fase 2).
@@ -90,15 +91,15 @@ export async function operarEstoque(
   idempotencyKey: string,
   payload: EstoqueOperacaoPayload = {},
 ): Promise<EstoqueOperacaoResultado> {
-  const { data, error } = await (supabase.rpc as any)("rpc_estoque_operar_v1", {
+  const { data, error } = await supabase.rpc("rpc_estoque_operar_v1", {
     p_acao: acao,
     p_item_id: itemId,
     p_quantidade: quantidade,
     p_idempotency_key: idempotencyKey,
-    p_payload: payload as any,
+    p_payload: payload as unknown as Json,
   });
   if (error) throw new EstoqueMotorError(error.message);
-  return data as EstoqueOperacaoResultado;
+  return data as unknown as EstoqueOperacaoResultado;
 }
 
 /** Mensagem amigável por código de erro do motor. */
