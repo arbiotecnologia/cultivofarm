@@ -1,3 +1,10 @@
+## Fechamento complementar NOTIF-2/3 — 2026-10-08
+- [x] Portal legado: administrador/gestor com vínculo real recuperam seleção, financeiro limpa; notificações portal continuam somente cliente_produtor/recipient_user_id. QueryClient real24/24, dois cenários novos; sem mudança de guards/AGENTS.
+- [x] Migration oficial única adicional `20261008124100_6f41ecb2-d446-4837-82fc-db5adfbc169b.sql`: RPC própria valida readiness+h15 antes de leitura/escrita; policy RESTRICTIVE individual/tenant. Nada reaplicado da123024, nenhum global restaurado/regrant/conta alterada.
+- [x] Provas SQL rollback: FSF/ARBio próprios2, negativas10; complemento com preferências semeadas de inativo/semorg e semJWT6 negativas. Preferências/consent0/0 e hashes intactos; relatório contém manifestos e tentativas de fixture revertidas.
+- [x] Regressões Comunicação/Auth/multiportal/mobile683/683 em35 arquivos; finais sessão+contrato28/28 (24 sessão +4 estrutura SQL), lint3 arquivos/scanners/build automático PASS. Resultados Windows do Codex permanecem independentes, sem mascarar falhas.
+- [ ] NO-GO integral: comparação/deployment Edge a cargo do Codex; HTTP/JWT/browser/concorrência/Storage e demais positivos globais/portal real pendentes. Realtime não habilitado, typecheck manual NOT RUN por harness. Sem publicação/envios; não iniciar outro módulo.
+
 ## NOTIF-3 — P1 Comunicação global — 2026-10-08
 - [x] Inventário SQL/Edge/frontend no canônico; migration oficial única `20261008123024_f0f1b7ab-f7e0-44e8-bcdd-dac1d00d4ba8.sql`. Onze tabelas com RESTRICTIVE ALL false, 16 RPCs com negação antes dos efeitos e ACL PUBLIC/anon/authenticated revogada; helpers internos permanecem fechados. NOTIF-2/estoque/AGENTS preservados, sem regrant.
 - [x] SQL FSF/ARBio: 22 superfícies invisíveis/negadas, 12 negações e publicação-pai suprimida; exceção final NOTIF3_COMMUNICATION_ROLLBACK, resíduos evento/audit0/0, quatro hashes históricos intactos. Sem envio, credenciais ou consentimento real alterado.
