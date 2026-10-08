@@ -22,7 +22,8 @@ vi.mock("@/hooks/use-toast", () => ({
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "u1" }, role: "administrador" }),
+  useAuth: () => ({ user: { id: "u1" }, role: "administrador", roles: ["administrador"], loading: false,
+    profile: { user_id: "u1", organization_id: "O1", ativo: true, senha_provisoria: false } }),
 }));
 
 vi.mock("@/components/entregas/EntregaChecklistPanel", () => ({
