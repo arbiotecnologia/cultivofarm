@@ -19,15 +19,15 @@ BEGIN
  INSERT INTO public.controle_qualidade(lote_id,resultado,organization_id) VALUES(la,'aprovado',oa),(lb,'aprovado',ob);
  INSERT INTO public.envase(id,lote_id,tipo_embalagem,volume_por_unidade,quantidade,organization_id) VALUES
  (ea,la,'frasco_1L',1000,10,oa),(eb,lb,'frasco_1L',1000,10,ob);
- PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated')::text,true);
+ PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sa,la,ea,10,10000,CURRENT_DATE+30,r);
  SELECT id INTO ma FROM public.estoque_movimentacoes WHERE estoque_produto_id=sa;
- PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated')::text,true);
+ PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sb,lb,eb,10,10000,CURRENT_DATE+30,r);
  SELECT id INTO mb FROM public.estoque_movimentacoes WHERE estoque_produto_id=sb;
  FOREACH u IN ARRAY ARRAY[a,b] LOOP
   own_id:=CASE WHEN u=a THEN sa ELSE sb END; cross_id:=CASE WHEN u=a THEN sb ELSE sa END;
-  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u,'role','authenticated')::text,true);
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO n FROM public.estoque_movimentacoes WHERE estoque_produto_id=own_id; IF n<>1 THEN RAISE EXCEPTION 'OWN_DIRECT %',n; END IF;
   SELECT count(*) INTO n FROM public.vw_bi_movimentacoes WHERE estoque_produto_id=own_id; IF n<>1 THEN RAISE EXCEPTION 'OWN_VIEW %',n; END IF;
