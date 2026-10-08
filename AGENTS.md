@@ -33,6 +33,7 @@
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
 - Storage UI and delayed file openings share an identity/tenant/role/resource generation fence; server authorization remains mandatory — prevents stale-session disclosure.
+- Commercial B2B context is an actor-derived fenced RPC with exclusive role and unique partner link; unreviewed channels remain closed — prevents sibling-partner disclosure.
 <!-- LOVABLE:END -->
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.

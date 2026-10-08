@@ -29,10 +29,10 @@ BEGIN
    'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,'mode',mode);
 END $fn$;
 REVOKE ALL ON FUNCTION platform_private.b2b_commercial_context() FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION platform_private.b2b_commercial_context() TO service_role;
+GRANT EXECUTE ON FUNCTION platform_private.b2b_commercial_context() TO authenticated,service_role;
 
 CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_context()
-RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $fn$
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $fn$
  SELECT platform_private.b2b_commercial_context();
 $fn$;
 REVOKE ALL ON FUNCTION public.get_my_commercial_partner_context() FROM PUBLIC,anon;

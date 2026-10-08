@@ -20,7 +20,7 @@ def main():
         sql = r"""
 BEGIN;
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
-CREATE SCHEMA auth; CREATE SCHEMA platform_private;
+CREATE SCHEMA auth; CREATE SCHEMA platform_private; GRANT USAGE ON SCHEMA platform_private TO authenticated;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('test.uid',true),'')::uuid $$;
 CREATE TABLE public.profiles(user_id uuid,organization_id uuid,ativo boolean,senha_provisoria boolean);
 CREATE TABLE public.user_roles(user_id uuid,role text);
@@ -97,7 +97,8 @@ SELECT pg_temp.assert_true('legacy explicit proven branch',public.get_my_commerc
 SELECT set_config('test.uid','',true);
 SELECT pg_temp.assert_true('anonymous denied',public.get_my_commercial_partner_context() IS NULL);
 SELECT pg_temp.assert_true('ACL anonymous closed',NOT has_function_privilege('anon','public.get_my_commercial_partner_context()','EXECUTE'));
-SELECT pg_temp.assert_true('private core closed',NOT has_function_privilege('authenticated','platform_private.b2b_commercial_context()','EXECUTE'));
+SELECT pg_temp.assert_true('private core anonymous closed',NOT has_function_privilege('anon','platform_private.b2b_commercial_context()','EXECUTE'));
+SELECT pg_temp.assert_true('public endpoint invoker',NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_my_commercial_partner_context()'::regprocedure));
 ROLLBACK;
 """
         result = subprocess.run(["psql", "-h", str(tmp), "-p", "55485", "-U", "local_audit", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], input=sql, text=True, capture_output=True)
