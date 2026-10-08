@@ -13,6 +13,9 @@ def main():
         body=base[base.index('ALTER TABLE'):base.index('-- Fix Q-01')]
         follow=(ROOT/'supabase/migrations/20261008192236_b41d54d0-8ff8-4e47-ae9f-149434dd4fc2.sql').read_text()
         follow=follow[follow.index('DO $$ DECLARE'):].replace("IF md5(def)<>'6609bf943b9d2b0b95b556bc7c070b71' THEN RAISE EXCEPTION 'SNAPSHOT_GUARD_BASELINE_CHANGED'; END IF;",'')
+        final=(ROOT/'supabase/migrations/20261008192601_beb97fe3-6ee1-40fe-8a35-dd35d43b318a.sql').read_text()
+        final=final[final.index('DO $$ DECLARE'):final.index('FOREACH name')]+'END $$;'
+        final=final.replace("IF md5(def)<>'8294269d170fc826c9ee384e14c82177' THEN RAISE EXCEPTION 'GUARD_BASELINE_CHANGED'; END IF;",'')
         schema='''BEGIN;
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE SCHEMA auth; CREATE SCHEMA platform_private;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('test.uid',true),'')::uuid $$;
@@ -51,6 +54,10 @@ SELECT pg_temp.denied('insufficient_role',$q$UPDATE partner_orders SET total=101
 SELECT set_config('test.role','administrador',false),set_config('test.feature','false',false);
 SELECT pg_temp.denied('missing_feature',$q$UPDATE partner_orders SET total=101$q$,'ACTOR_DENIED');
 SELECT set_config('test.feature','true',false);
+SELECT set_config('test.org','',false);
+SELECT pg_temp.denied('missing_organization',$q$UPDATE partner_orders SET total=101$q$,'ACTOR_DENIED');
+SELECT set_config('test.org','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',false);
+SELECT pg_temp.denied('premature_planning',$q$UPDATE partner_orders SET ready_for_production=true$q$,'DOWNSTREAM_UNVERIFIED');
 INSERT INTO partner_order_items VALUES ('11111111-2222-4333-8444-555555555555','dddddddd-dddd-4ddd-8ddd-dddddddddddd',1,100,0,100,now());
 INSERT INTO partner_order_payment_terms VALUES ('22222222-2222-4333-8444-555555555555','dddddddd-dddd-4ddd-8ddd-dddddddddddd',100,100,0,1,'not_required');
 INSERT INTO partner_order_payment_schedule VALUES ('33333333-2222-4333-8444-555555555555','dddddddd-dddd-4ddd-8ddd-dddddddddddd','22222222-2222-4333-8444-555555555555',1,current_date,100,100,0,'pending',NULL);
@@ -63,6 +70,9 @@ SELECT pg_temp.denied('schedule_sum',$q$UPDATE partner_orders SET status='aprova
 UPDATE partner_order_payment_schedule SET amount=100;
 UPDATE partner_orders SET status='aprovado';
 INSERT INTO results SELECT 'approval_seals_real_rows',internal_economic_snapshot->'items'->0->>'preco_unitario'='100' AND internal_economic_snapshot->'terms'->>'final_amount'='100' FROM partner_orders;
+UPDATE partner_orders SET status='aprovado';
+INSERT INTO results SELECT 'same_status_replay_preserves_seal',internal_economic_snapshot IS NOT NULL FROM partner_orders;
+SELECT pg_temp.denied('sealed_planning',$q$UPDATE partner_orders SET ready_for_production=true$q$,'DOWNSTREAM_UNVERIFIED');
 SELECT pg_temp.denied('sealed_price',$q$UPDATE partner_order_items SET preco_unitario=101$q$,'ECONOMICS_IMMUTABLE');
 SELECT pg_temp.denied('sealed_discount',$q$UPDATE partner_order_items SET desconto_percentual=10$q$,'ECONOMICS_IMMUTABLE');
 SELECT pg_temp.denied('sealed_terms',$q$UPDATE partner_order_payment_terms SET final_amount=101$q$,'ECONOMICS_IMMUTABLE');
@@ -81,7 +91,7 @@ DO $$ BEGIN IF EXISTS(SELECT 1 FROM results WHERE passed IS DISTINCT FROM true) 
 SELECT json_agg(name ORDER BY name) FROM results;
 ROLLBACK;
 '''
-        r=subprocess.run(['psql','-X','-h',str(tmp),'-p','55484','-U','local_audit','-d','postgres','-v','ON_ERROR_STOP=1','-At'],input=schema+body+follow+tests,text=True,capture_output=True)
+        r=subprocess.run(['psql','-X','-h',str(tmp),'-p','55484','-U','local_audit','-d','postgres','-v','ON_ERROR_STOP=1','-At'],input=schema+body+follow+final+tests,text=True,capture_output=True)
         if r.returncode: raise RuntimeError(r.stderr)
         cases=json.loads([x for x in r.stdout.splitlines() if x.startswith('[')][-1])
         print(json.dumps({'passed':len(cases),'cases':cases,'layer':'isolated PostgreSQL; stub Auth; not live RLS/JWT'}))
