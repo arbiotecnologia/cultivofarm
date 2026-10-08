@@ -16,7 +16,7 @@ BEGIN
   INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id)
     VALUES(cross_client,'TEMPORARY_AUDIT_NOTIF3_PREF', 'AUD-'||run_id::text,'007bb519-cba0-4704-be2c-cb93ad010048');
   INSERT INTO public.comunicacao_preferencias(id,user_id,cliente_id,canal,source)
-    VALUES(cross_pref,NULL,cross_client,'email','TEMPORARY_AUDIT_NOTIF3_PREF');
+    VALUES(cross_pref,NULL,cross_client,'email','cliente_portal');
   INSERT INTO public.user_clientes(id,user_id,cliente_id)
     VALUES(cross_link,'cbdc4ef3-005a-4674-8ea3-4410c7d7d212',cross_client);
   FOREACH actor IN ARRAY ARRAY['cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid,'a7d45277-6dec-413d-bf6b-86620c1ef39f'::uuid] LOOP
@@ -34,7 +34,7 @@ BEGIN
     -- No caller-supplied owner exists in the RPC contract; direct writes remain closed.
     BEGIN
       INSERT INTO public.comunicacao_preferencias(user_id,canal,source)
-        VALUES(CASE WHEN actor='cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid THEN 'a7d45277-6dec-413d-bf6b-86620c1ef39f'::uuid ELSE 'cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid END,'whatsapp','TEMPORARY_AUDIT_NOTIF3_PREF');
+        VALUES(CASE WHEN actor='cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid THEN 'a7d45277-6dec-413d-bf6b-86620c1ef39f'::uuid ELSE 'cbdc4ef3-005a-4674-8ea3-4410c7d7d212'::uuid END,'whatsapp','user');
       RAISE EXCEPTION 'forged owner allowed';
     EXCEPTION WHEN insufficient_privilege THEN denied:=denied+1; END;
     EXECUTE 'RESET ROLE';
