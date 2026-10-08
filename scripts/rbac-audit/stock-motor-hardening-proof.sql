@@ -18,7 +18,7 @@ BEGIN
  INSERT INTO public.envase(id,lote_id,tipo_embalagem,volume_por_unidade,quantidade,organization_id) VALUES(ea,la,'frasco_1L',1000,10,oa),(eb,lb,'frasco_1L',1000,10,ob);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES(ca,r,r,oa);
- INSERT INTO public.ordens_servico(id,numero_os,cliente_id,organization_id,origem) VALUES(os,r,ca,oa,'agronomica');
+ INSERT INTO public.ordens_servico(id,numero_os,cliente_id,organization_id,origem,microrganismo_id,tipo_item) VALUES(os,r,ca,oa,'agronomica','74eb1d1a-dcbc-5ed3-9290-63462a32668f','microrganismo');
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sa,la,ea,10,10000,current_date+30,r);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',b,'role','authenticated','iat',extract(epoch from now())::bigint)::text,true);
  INSERT INTO public.estoque_produto(id,lote_id,envase_id,quantidade,volume_total,validade,observacao_reserva) VALUES(sb,lb,eb,10,10000,current_date+30,r);
