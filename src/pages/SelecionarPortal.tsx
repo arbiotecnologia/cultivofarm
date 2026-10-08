@@ -93,6 +93,7 @@ export default function SelecionarPortal() {
           description: "Seus acessos podem ter mudado. Atualizando…",
         });
         await refetch();
+        if (!valid()) return;
         setSubmitting(null);
         return;
       }

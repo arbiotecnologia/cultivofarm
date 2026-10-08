@@ -34,3 +34,5 @@
 <!-- LOVABLE:BEGIN -->
 - Storage UI and delayed file openings share an identity/tenant/role/resource generation fence; server authorization remains mandatory — prevents stale-session disclosure.
 <!-- LOVABLE:END -->
+
+- Portal selection and preferences use the canonical ready actor/tenant resolver; selectable real-role contexts stay separate from legacy access flags, and manual switching only bypasses preference — prevents invented roles and removes stale-scope navigation.

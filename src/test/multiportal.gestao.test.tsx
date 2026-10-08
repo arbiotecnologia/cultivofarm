@@ -46,11 +46,13 @@ it("papel técnico nunca autoriza rota de Gestão por contexto forjado", () => {
 it("seleção atrasada após tenant A→B→A não navega nem grava contexto", async () => {
  let finish: ((r: unknown) => void) | undefined;
  rpc.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
- const h = selector(); fireEvent.click(screen.getByRole("button", { name: "Acessar Gestão" }));
- state.scope = "B"; h.rerender(<MemoryRouter><Selector /></MemoryRouter>);
- state.scope = "A"; h.rerender(<MemoryRouter><Selector /></MemoryRouter>);
+ const tree = () => <MemoryRouter initialEntries={["/selecionar-portal?intent=switch"]}><Selector /><Location /></MemoryRouter>;
+ const h = render(tree()); fireEvent.click(screen.getByRole("button", { name: "Acessar Gestão" }));
+ state.scope = "B"; h.rerender(tree());
+ state.scope = "A"; h.rerender(tree());
  await act(async () => finish?.({ data: { ok: true }, error: null }));
  expect(getActivePortalContext()).toBeNull();
+ expect(screen.getByTestId("location")).toHaveTextContent("/selecionar-portal?intent=switch");
 });
 it("duplo clique bloqueado e lock liberado após erro", async () => {
  let finish: ((r: unknown) => void) | undefined;
