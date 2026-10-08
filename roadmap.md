@@ -1,4 +1,5 @@
 ## CADASTROS-PRODUTOR-PARCEIRO — 2026-10-08
+- [ ] Complemento humano: separar ownership comercial da contratante e tenant próprio do parceiro; provar isolamento bidirecional sem exigir igualdade entre contextos distintos ou alterar vínculos reais.
 - [x] Contratos vivos auditados; cliente da empresa obrigatório, tenant/autor/código derivados servidor. Migration oficial única160048, RLS preservada, sem regrant/ownership legado; cache/consultas/reentrância e ações produtores cercadas. Checkpoints anteriores preservados.
 - [x] SQL ROLE authenticated/claims simulados: positives9/denied13 e own_delete1/denied7, rollback obrigatório; manifestos exatos sem resíduos. Clientes2/parceiros1/links1 hashes intactos; não é prova JWT/browser. Sem Auth/papéis/envios/publicação.
 - [x] Testes72/72 em8 arquivos, lint arquivos novos/scanners/diff-check PASS; ampliado30 erros/2warnings, sem PASS global. Harness build OK16:11:24; typecheck separado NOT RUN. Relatório17 itens/matriz/rollback em cadastros-produtor-parceiro-2026-10-08.md.
