@@ -27,7 +27,7 @@
 - Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target checks, Auth confirmation, JWT fencing, expiry/retry audits stay server-side — avoids bypass.
 - Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
 - Auth logout/renewal clears identity/cache; reload runs outside callbacks — avoids stale roles/deadlocks.
-- B2B credit RPCs authorize through the canonical partner-scope guard before the service-only calculator, and direct financial-settings access has a restrictive active-tenant policy including writes — prevents role-only cross-tenant credit disclosure and modification.
+- B2B credit RPCs use the canonical partner guard before the service-only calculator; financial settings require restrictive active-tenant policies for reads/writes — prevents cross-tenant credit access.
 - B2B keeps tenant policies/private cores; titles reuse installments. Technical writes reuse active actor/partner/client assignments with zero-finance guards; headers/items use price-free RPCs — prevents leakage and duplication.
-- Fixtures need real Auth, delivery OFF, ID cleanup and secret-free manifests; SQL rollback is not browser proof — avoids false PASS.
-- Notification rules: see supabase/AGENTS.md to prevent tenant leaks.
+- Fixtures require real Auth, delivery OFF and ID cleanup; SQL rollback is not browser proof — avoids false PASS.
+- Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
