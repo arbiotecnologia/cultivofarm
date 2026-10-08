@@ -70,7 +70,7 @@ Segunda prova final após 042050: NOTIFICATION_FINAL_ROLLBACK, quatro negativas 
 
 ## 14. Manifesto/hashes
 Run TEMPORARY_AUDIT_NOTIF_6c24866a-ab37-4f88-a781-ed6586e1766c. Clientes 52d54831-dcb2-450b-9d80-d57a39e88f3a / da493628-5226-44f7-8d15-67de745cae18; fontes dfe089e6-ad0e-4b56-80b8-f638985da1ab / f8a9e431-f1bc-4575-ba05-5ad44e99a7d9; avisos 5482e0ec-188c-46a5-8f46-bc440abe3891 / 8123b4a7-b2f0-4b49-82c8-78ecdf8c956b. Cleanup posterior por IDs: 0/0/0, sem DELETE.
-Prova final cliente 21fd2276-8d96-48a9-955e-c2cdcd8eb7a0, fonte 40f41d9c-4f12-4b82-9edd-cb788d352862; cleanup final conferido na conclusão.
+Prova final cliente 21fd2276-8d96-48a9-955e-c2cdcd8eb7a0, fonte 40f41d9c-4f12-4b82-9edd-cb788d352862; cleanup posterior pelos dois IDs confirmado **0/0**; hashes históricos iguais.
 Hash md5(string_agg(to_jsonb(t)::text,'' ORDER BY id)) próprio preservado: avisos67/1dea25864d5e24f7464c83c02e7e4d39; estoque1/0c1a052173a564454cd51e69fcb72947; movimentos2/f8b6fcf6aa756d745eaf205f606f7795. Portal/alertas/outbox/push=0. Invisível não significa excluído.
 
 ## 15. Verificações
@@ -82,3 +82,6 @@ Código: src/hooks/useNotificacoesUnificadas.ts,useNotificacoesOperacionais.ts,u
 
 ## 17. Pendências
 NO-GO: portal positivo individual e client-source forgery com produtores realmente vinculados; fanout/legados B2B/visita/aplicação/estoque; laboratório positivo; JWT/API/browser desktop/mobile, logout/cache/Realtime reais; concorrência replay; global privilegiado legítimo sem dados tenant; Edge remoto/flags e Storage. Bloqueadores nomeados, nada executa após turno. Não iniciar outro módulo/publicar.
+
+### Evidência de fechamento
+Revisão observada `a4d38cf54f3c5ef03bb068191b90e26a1a8ed60a` antes desta atualização documental; commit final gerenciado pela plataforma. Build automático OK04:24:02 UTC; reteste focal11/11 PASS. SHA256 prova A/B `4c3dfd2856742082e420fc561563558de7ee19ee570708af05b0afee3d3e4647`; prova final `b9a31b43b01d30cb4021a8c03b78d6b79e5524977ec5a23e8e5be3ec94f5c175`. Cleanup final0/0 e hashes reais novamente iguais.
