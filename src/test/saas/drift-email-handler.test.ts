@@ -1,17 +1,15 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import { authorizeSuperadmin } from "../../../supabase/functions/platform-org-admin-email-change/auth";
+import { classifyBeginError, parseEmailChangeBody } from "../../../supabase/functions/platform-org-admin-email-change/policy";
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../../../supabase/functions/_shared/comunicacao/cors";
+import { getSmtpConfigError, isRecipientAllowedInTestMode } from "../../../supabase/functions/_shared/comunicacao/adapters-types";
 
 const state = vi.hoisted(() => ({
   serve: vi.fn(), getUser: vi.fn(), rpc: vi.fn(), getUserById: vi.fn(),
   generateLink: vi.fn(), updateUserById: vi.fn(), send: vi.fn(), runtime: vi.fn(),
 }));
-vi.mock("npm:@supabase/supabase-js@2.110.8", () => ({ createClient: () => ({
-  auth: { getUser: state.getUser, admin: {
-    getUserById: state.getUserById, generateLink: state.generateLink, updateUserById: state.updateUserById,
-  } }, rpc: state.rpc,
-}) }));
-vi.mock("../../../supabase/functions/_shared/comunicacao/adapters.ts", () => ({ readWorkerEnv: vi.fn() }));
-vi.mock("../../../supabase/functions/_shared/comunicacao/email-adapter.ts", () => ({ sendEmail: state.send }));
-vi.mock("../../../supabase/functions/_shared/comunicacao/runtime-config.ts", () => ({ loadRuntimeConfig: state.runtime }));
 
 const actor = "33333333-3333-4333-8333-333333333333";
 const target = "44444444-4444-4444-8444-444444444444";
@@ -40,7 +38,17 @@ beforeEach(async () => {
   });
   state.getUserById.mockResolvedValue({ data: { user: { email: "old@example.invalid" } }, error: null });
   state.runtime.mockResolvedValue({ DELIVERY_ENABLED: false, EMAIL_ENABLED: false });
-  await import("../../../supabase/functions/platform-org-admin-email-change/index.ts");
+  const source = readFileSync("supabase/functions/platform-org-admin-email-change/index.ts", "utf8")
+    .replace(/^import .*;\n/gm, "")
+    .replace("body: unknown", "body");
+  runInNewContext(source, {
+    Deno: { serve: (fn: typeof handler) => { handler = fn; }, env: { get: (key: string) => key === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "mock-not-a-secret" } },
+    Response, authorizeSuperadmin, classifyBeginError, parseEmailChangeBody,
+    corsHeadersFor, handlePreflight, isTrustedOrigin, getSmtpConfigError, isRecipientAllowedInTestMode,
+    readWorkerEnv: vi.fn(), loadRuntimeConfig: state.runtime, sendEmail: state.send,
+    getPlatformInviteRedirectUrl: () => "https://app.cultivofarm.com.br/reset-password",
+    createClient: () => ({ auth: { getUser: state.getUser, admin: { getUserById: state.getUserById, generateLink: state.generateLink, updateUserById: state.updateUserById } }, rpc: state.rpc }),
+  });
 });
 afterAll(() => vi.unstubAllGlobals());
 
