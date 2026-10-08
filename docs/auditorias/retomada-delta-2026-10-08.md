@@ -1,7 +1,7 @@
 # Retomada delta — Cultivo Farm / RENATO 10K
 
 ## 1. Escopo e decisão
-**Adendo prioritário19:53–20:03UTC — P1 DRIFT-EMAIL:** a afirmação anterior de nenhum P1 descreve a rodada anterior ao achado independente. Foi autorizada e solicitada explicitamente a implantação somente da Edge de troca de email; **não é sustentado afirmar alcance exclusivo**, pois o Codex mediu alteração de versões nas41funções. Fonte viva pós-deploy **VERIFICADA** pelo Codex; não houve publicação frontend solicitada pelo agente. Resultado focal e limites abaixo; NO-GO integral preservado. Continuações20:03 e20:09UTC somente documentais/investigação read-only, sem runtime, novos deploys, migrations, envios ou mutações; nenhuma nova fase iniciada.
+**Adendo prioritário19:53–20:03UTC — P1 DRIFT-EMAIL:** a afirmação anterior de nenhum P1 descreve a rodada anterior ao achado independente. Foi autorizada e solicitada explicitamente a implantação somente da Edge de troca de email; **não é sustentado afirmar alcance exclusivo**, pois o Codex mediu alteração de versões nas41funções. Fonte viva pós-deploy **VERIFICADA** pelo Codex; não houve publicação frontend solicitada pelo agente. Resultado focal e limites abaixo; NO-GO integral preservado. Continuações20:03,20:09 e20:16UTC somente documentais/investigação read-only, sem runtime, novos deploys, migrations, envios ou mutações; nenhuma nova fase iniciada.
 Auditoria inicial sem nova funcionalidade, publicação frontend, emissão, cobrança, mensagens, Auth, fixtures ou alterações comerciais; autorização posterior de deploy focal DRIFT-EMAIL descrita acima. **NO-GO integral**. Inventário completo não é certificação semântica nem prova autenticada. Nenhum P0/P1 funcional foi comprovado na rodada inicial anterior ao adendo; não houve reabertura de permissões.
 
 ## 2. Referências Git e ancestralidade
@@ -55,6 +55,8 @@ Upload/download/signed URL, traversal, delete, proprietário forjado e concorrê
 
 **Adendo20:09UTC:** somente seis linhas role=administrador receberam evidência Chrome Codex para a conta Renato/AR Bio: `/plataforma`, `/configuracoes`, `/clientes`, `/financeiro/receber`, `/estoque`, `/fiscal/documentos`. PASS restrito a acesso/renderização (ou negativa esperada), não ao role em todos os tenants; demais linhas e mutações/isolamento/cache permanecem UNVERIFIED. Campos estruturais, guards, plano e candidatos backend não foram alterados.
 
+**Adendo20:16UTC:** nas mesmas linhas administrador, acrescentadas provas FSF somente para `/plataforma`, `/configuracoes`, `/clientes` e `/estoque`, separadas das provas AR Bio. Configurações inclui negativa focal de parâmetros URL e troca visual nas duas abas; Configurações/Perfil da empresa e Estoque incluem mobile CDP390×844. Não ampliar para outros tenants, CRUD, payloadRPC/JWT, caches, concorrência ou Realtime.
+
 Regra preservada:menu não autoriza; plano∩RBAC∩ator ativo∩tenant/vínculo∩backend. `getAccessLevel` não substitui guards específicos nem concessões do servidor. O inventário AST passou; decisão efetiva por operação permanece UNVERIFIED quando não exercitada.
 
 ## 9. Roles e identidades reais
@@ -69,7 +71,7 @@ Consulta correta usa profiles.user_id=user_roles.user_id. Nove profiles; há adm
 ## 10. Planos, estados e tenant A/P
 Leitura observada:AR Bio TRIAL17features; Homologação onboarding TRIAL8; Refil rascunho ACTIVE3; CultivoFarm ACTIVE17; FSF TRIAL17. Nome Homologação não estabelece paridade ou sandbox seguro. Não se presumiu cobertura de todos os planos/estados a partir dessas linhas.
 
-A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_account_id não autorizam herança. Isolamento dinâmico nos dois sentidos e plano sem ampliação RBAC integral: **UNVERIFIED**; medição Chrome admin AR Bio focal não substitui essa cobertura. Mocks de guards/entitlements/cache são evidência estática separada.
+A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_account_id não autorizam herança. Isolamento dinâmico nos dois sentidos e plano sem ampliação RBAC integral: **UNVERIFIED**; medições Chrome admin AR Bio e FSF focais não substituem essa cobertura. Mocks de guards/entitlements/cache são evidência estática separada.
 
 ## 11. Browser público versus privado
 `browser-publico.json` registra URLs/estados desktop1280×1800 e mobile. Após hidratação, `/configuracoes`, `/plataforma`, `/clientes`, `/financeiro`, `/estoque`, `/portal-parceiro`, `/portal`, `/selecionar-portal` redirecionam `/auth`; `/app` vai `/app/login`. `/fiscal` e `/producao` e path inexistente mostram404:paths não presumidos como rotas válidas. Sem erro JS observado nesses smokes.
@@ -89,7 +91,23 @@ A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_ac
 | `/estoque` | zero itens | acesso/renderização, não prova isolamento por contagem zero |
 | `/fiscal/documentos` | zero registros; aviso explícito de emissão/manual desativada | acesso/renderização do estado de contenção, não emissão fiscal |
 
-**PASS focal de acesso/renderização somente**; não mutação, isolamento por si só, todos perfis/planos, logout/cache entre identidades, API/JWT/revogação, Storage/Realtime/concorrência. **Mobile autenticado NÃO PASS:** tentativa de viewport390×844 manteve dimensão efetiva958×854; não comprovou viewport mobile. Outra aba visível ainda mostra Renato Cunha administrador, não uma segunda identidade. Segunda sessão aguarda disponibilização pelo usuário; não iniciada nesta continuação. A medição pertence ao Codex, não ao proprietário nem a este agente.
+**PASS focal de acesso/renderização somente**; não mutação, isolamento por si só, todos perfis/planos, logout/cache entre identidades, API/JWT/revogação, Storage/Realtime/concorrência. **Histórico20:09UTC — mobile autenticado NÃO PASS:** tentativa geral de viewport390×844 manteve dimensão efetiva958×854; não comprovou viewport mobile. Naquele momento a outra aba ainda mostrava Renato Cunha administrador, não uma segunda identidade. O adendo20:16UTC abaixo comprova a segunda sessão FSF e um recorte mobile distinto, sem promover a tentativa anterior a PASS. A medição pertence ao Codex, não ao proprietário nem a este agente.
+
+### Adendo20:16UTC — FSF Agroservice administrador, evidência independente Codex
+Login real concluído pelo usuário na mesma origem `https://app.cultivofarm.com.br`; Codex confirmou email do login diferente (valor não registrado) e Perfil da empresa FSF nas **duas abas**. A aba antes em Estoque AR Bio voltou ao Dashboard durante a transição; não se inferiu caminho/redirect exato. Nenhum dado AR Bio foi visto nas Configurações posteriores. **PASS focal troca visual de contexto**, não todos caches, concorrência, Realtime ou revogação JWT.
+
+| Caso FSF observado | Resultado | Escopo do PASS |
+|---|---|---|
+| `/configuracoes` / Perfil da empresa | somente FSF nas duas abas | acesso/renderização e troca visual focal |
+| Meu Plano | Completo TRIAL02→16/10,17features | renderização do estado/plano FSF |
+| `/plataforma` | redireciona `/sem-permissao` | negativa focal de acesso |
+| `/clientes` — Produtores e Parceiros B2B | ambas listas vazias | acesso/renderização; não CRUD nem isolamento por vazio |
+| `/estoque` | zero itens | acesso/renderização; não CRUD nem isolamento por zero |
+| Configurações com `organization_id` e `tenant_id` AR Bio `007bb519-cba0-4704-be2c-cb93ad010048` na URL | exibiu somente FSF | **PASS negativo de parâmetros URL**, não payloadRPC/JWT nem isolamento integral |
+
+**Mobile autenticado FSF PASS somente neste recorte:** Emulation CDP direto390×844, DOM `clientWidth=390` e `scrollWidth=390`; screenshots de Configurações/Perfil da empresa e Estoque legíveis conforme medição Codex comunicada, sem arquivos brutos anexados. Menu móvel abre. Clique Estoque muda URL, mas drawer permaneceu aberto; Escape fechou. **Observação UX P2 para avaliar**, sem correção nesta fase e sem afirmar regressão comprovada. Emulação restaurada. Não estender PASS a toda navegação/mobile ou à tentativa geral anterior falha.
+
+Usuário consultado sobre próxima identidade Superadmin/Gestor; aguarda resposta/sessão, sem iniciar nova fase. AR Bio e FSF permanecem recortes distintos; mutações, isolamento integral, payloadRPC/JWT, cache, concorrência, Realtime e demais perfis/rotas continuam **UNVERIFIED**. Nenhuma execução browser, autenticação ou operação remota realizada pelo Lovable neste adendo documental.
 
 ## 12. Achados e correções mínimas
 | ID | Prioridade | Evidência | Ação/limite |
@@ -100,6 +118,7 @@ A contratante e P próprio permanecem distintos; CNPJ e organizations.partner_ac
 | RD-04 | dívida hooks | warning de scope/loadDeps e2warnings usersPage | dois últimos já existiam e mudaram linhas; não tratar7diagnósticos brutos como7regressões reais |
 | RD-05 | bloqueio de certificação | cobertura dinâmica incompleta; fonte email verificada e Chrome admin focal pelo Codex | NO-GO integral, não ausência de toda prova privada |
 | DRIFT-EMAIL | P1 drift | Codex comprovou bypass v7 e paridade dos12arquivos v9 com commit196247dd | bypass retirado na fonte viva; fluxo positivo não executado |
+| RD-UX-MOBILE | observação UX P2, não regressão comprovada | Codex FSF CDP390×844:click Estoque muda URL;drawer permanece aberto;Escape fecha | somente registrada para avaliar; nenhuma correção autorizada agora |
 | RD-DEPLOY | alcance observado | Codex mediu41versões alteradas; pedido explícito somente email-change | exclusividade retirada; causalidade não comprovada;40/41paridades verificadas Codex;fiscal-xml-engine UNVERIFIED |
 
 Na rodada inicial não foi confirmado vazamento P0/P1 novo; o adendo DRIFT-EMAIL trouxe P1 independente confirmado, tratado separadamente. O import runtime `@/integrations/supabase/client` é canônico; não é cliente paralelo. Constante push false impede openWindow; a ocorrência textual não prova navegação insegura.
@@ -138,9 +157,9 @@ Consulta de integridade nesta rodada:partner_orders0/hashd41d8cd98f00b204e980099
 Sem escrita de dados, migrations, grants, Auth ou Storage. Rollback local:reverter somente import Json e comentário, se necessário, sem alterar cliente canônico/guards/RLS. Isso reapresentaria as falhas P2; não remover contenções para restaurar operação. Documentação e inventários são removíveis independentemente do runtime.
 
 ## 16. Decisão por perfil/módulo e bloqueios
-Todos14roles têm inventário estrutural e cobertura mocks parcial; **nenhum role recebe PASS integral**. Administrador AR Bio tem **PASS focal Chrome de acesso/renderização** nos casos da seção11 medidos pelo Codex; outros perfis, mutações e isolamento dinâmico integral seguem UNVERIFIED. Fonte viva email v9/12arquivos **VERIFICADA** pelo Codex; paridade viva de40/41Edges **VERIFICADA Codex** no commit196247dd; somente `fiscal-xml-engine` **UNVERIFIED** por erro interno MCP. B2B/financeiro downstream permanece fail-closed; NOTIF/STORAGE/fiscal têm bloqueios explícitos preservados. Nenhuma cobrança/emissão/envio/pagamento habilitado; alcance de versões Edge observado não foi exclusivo.
+Todos14roles têm inventário estrutural e cobertura mocks parcial; **nenhum role recebe PASS integral**. Administradores AR Bio e FSF têm **PASS focal Chrome de acesso/renderização** nos respectivos casos da seção11 medidos pelo Codex; FSF tem PASS focal troca visual/parâmetros URL e mobile CDP390×844 somente no recorte Configurações/Perfil da empresa/Estoque; outros perfis, mutações e isolamento dinâmico integral seguem UNVERIFIED. Fonte viva email v9/12arquivos **VERIFICADA** pelo Codex; paridade viva de40/41Edges **VERIFICADA Codex** no commit196247dd; somente `fiscal-xml-engine` **UNVERIFIED** por erro interno MCP. B2B/financeiro downstream permanece fail-closed; NOTIF/STORAGE/fiscal têm bloqueios explícitos preservados. Nenhuma cobrança/emissão/envio/pagamento habilitado; alcance de versões Edge observado não foi exclusivo.
 
-Bloqueios concretos:revisão semântica individual de643commits/394arquivos ainda não concluída; matriz efetiva de autorização backend por ação incompleta; próxima sessão/perfis não exercitados; isolamento dinâmico/mutações/Storage/concorrência não comprovados; paridade homolog não acessada; lint amplo FAIL; causalidade das41versões não comprovada; fiscal-xml-engine UNVERIFIED por erro interno MCP; mobile autenticado não comprovado (viewport efetivo958×854, não390×844). Typecheck não é bloqueio por ausência de execução:PASS explícito Codex, com limite de snapshot registrado. **Não declarar100%,GO operacional ou auditoria integral PASS.**
+Bloqueios concretos:revisão semântica individual de643commits/394arquivos ainda não concluída; matriz efetiva de autorização backend por ação incompleta; próxima identidade Superadmin/Gestor consultada, aguarda resposta/sessão; demais perfis não exercitados; isolamento dinâmico/mutações/Storage/concorrência não comprovados; paridade homolog não acessada; lint amplo FAIL; causalidade das41versões não comprovada; fiscal-xml-engine UNVERIFIED por erro interno MCP; mobile FSF focal comprovado via CDP390×844; demais mobile UNVERIFIED, tentativa geral anterior958×854 permanece falha; observação drawer UX P2 não corrigida nem regressão comprovada. Typecheck não é bloqueio por ausência de execução:PASS explícito Codex, com limite de snapshot registrado. **Não declarar100%,GO operacional ou auditoria integral PASS.**
 
 ## 17. Prompt da próxima fase (não iniciada)
 “Retomar somente fechamento RD, confirmar novo HEAD e ancestralidade, preservar contenções. Revisar semanticamente commits/arquivos priorizados do CSV sem assumir classificação automática como aceite; fechar vínculo rota→ação→RPC/RLS/Edge e decisão por role/plano/tenant. Com acesso seguro existente, provar positivos próprios e negativos cruzados nos dois tenants, separado de SQL claims; não criar contas/dados comerciais nem alterar senhas. Sem sessão, manter UI/API/JWT/Storage UNVERIFIED. Corrigir somente P0/P1 reproduzidos reversivelmente; atualizar evidências/roadmap e manter sem publicação, emissão, mensagens ou cobrança.”

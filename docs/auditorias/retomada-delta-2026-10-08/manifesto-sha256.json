@@ -3,7 +3,7 @@
   "commits-arquivos.csv": "b5c215fe82710e250cbe3d34b5036bca2fda949da4040833b5a4b6799a6e5de0",
   "arquivos.csv": "19b299b752abc827289a07701c2161091535326cf9d044a88665d630a4a7fe49",
   "migrations.csv": "357e39f12b8539c1c770184fbdb1c51ae3a15733d383cfaccb8ace271f20ff61",
-  "matriz.csv": "61ee68af7694f3ca5582154fea2459797f7ca7fac8f01663e982b8553a0f80be",
+  "matriz.csv": "709cd1326dace63853e18354cf2a6fe8168a3bb7341ec7c650bc7336e3a036ab",
   "git-evidence.json": "96780e3f6dabd0881ed0f0623d81b81f4cf6a017b017b3850fc54c9e00cf7b40",
   "lint-base-summary.json": "63b289039574b67921ce9a90e82f4f0a5b074a0231ce835af32d7cef3d1aef40",
   "lint-head-summary.json": "96cfee808b976d6d668751c520e824203c7fbfd51b6e766dd4381787b778f078",
@@ -16,5 +16,5 @@
   "resumo.json": "74bc7937a6f7549ad383afc00b6ad9fa55d92b753e2431852902eb2215a67a33",
   "delta-completo.patch": "c8d715ecf1f117fec5d0944fc5b4a38517eba9b38e3bf5eb5b628ecf79a9fd24",
   "http-drift-email.json": "33d753987cd1383d61d17944edc24e3bf676df118fa0439ff22954cb055bd356",
-  "codex-evidencias-2003.json": "ac90f4b313b5248f4440707b7f5939186ad88ba58648ef4175c46ad39bb8f8bc"
+  "codex-evidencias-2003.json": "f3dc2a97c3eced17afa5d9df7de45720fe505e684640dd3206e49f2ad2a5765f"
 }
