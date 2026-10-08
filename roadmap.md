@@ -1,8 +1,9 @@
 ## MULTIPORTAL-1 — Gestão/Técnico — 2026-10-08
 - [x] Checkpoint STORAGE-2 fechado:267/267 testes, migration144506 e hashes registrados; limitações operacionais preservadas, sem reabertura.
 - [x] Inventário login/guards/layout/sidebar/storage/broadcast/query keys e contratos RPC/constraints de preferência/log; banco atual contém um perfil ativo gestor+consultor_tecnico, divergindo do inventário independente anterior.
-- [ ] Corrigir seleção Gestão/Técnico e intenção manual sem ampliar RBAC/RLS ou remover acesso B2B legado; readiness/tenant/papéis e fencing de cache. Plano focal em revisão.
-- [ ] Testes comportamentais e provas SQL com identidades existentes, rollback obrigatório; relatório e limites JWT/browser, sem Auth/roles/envios/publicação.
+- [x] Seleção Gestão/Técnico corrigida com destinos existentes; troca manual ignora preferência só em intent=switch, preservando cancelamento. Readiness/tenant/papéis e respostas antigas cercados. Migration oficial única150531 aplicada, sem reaplicação; flags B2B administrativas legadas preservadas, sem parceria inventada.
+- [x] Testes comportamentais/Auth/guards/mobile/Storage179/179 em15 arquivos; Meu Plano/retorno seguro23/23 em3 arquivos, conjuntos separados. Lint focal inclusive App/scanners/diff-check PASS; harness typecheck+build OK15:09:47, execução manual não realizada. SQL com identidades existentes/rollback: Gestão/Técnico/preferências/log próprios positivos, B2B indevido negado e5 negações inativo/semorg/semUID; preferências0 e logs2/hashes intactos. Relatório multiportal-gestao-tecnico-2026-10-08.md.
+- [ ] NO-GO integral: sessão real gestor+técnico, JWT/API, troca real de identidade/abas, revogação e concorrência remota UNVERIFIED (external_unmanaged). Nenhuma conta/papel/vínculo/Auth criado; sem publicação/envios/nova fase. Checkpoint STORAGE-2 não reaberto.
 
 ## STORAGE-2/APLICAÇÕES — 2026-10-08
 - [x] ACL/triggers auditados; replay inativo e OS cruzada reproduzidos em rollback. Migration oficial144506 contém RPC antes dos efeitos; legado privado sem EXECUTE runtime. Prova após:blocked5/legacy_acl_denied5, rollback obrigatório, metadata_writes0 e hashes intactos.
