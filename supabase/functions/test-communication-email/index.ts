@@ -53,7 +53,7 @@ function buildSmtpCandidateRuntime(
 }
 
 async function auditDiagnostic(
-  sb: ReturnType<typeof createClient<any>>,
+  sb: ReturnType<typeof createClient>,
   actor: string,
   action: "smtp_connection_test" | "smtp_connection_candidate_test" | "smtp_send_test",
   outcome: "success" | "failure" | "ambiguous" | "blocked",

@@ -31,7 +31,7 @@ function jsonWith(origin: string | null, status: number, body: unknown): Respons
   });
 }
 
-type Sb = ReturnType<typeof createClient<any>>;
+type Sb = ReturnType<typeof createClient>;
 
 function isKinghostSmtpiCandidateAvailable(host: string | undefined, port: string | undefined): boolean {
   if (Number(port) !== 465) return false;
