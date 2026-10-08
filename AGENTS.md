@@ -16,7 +16,7 @@
 - Commercial plans offer the global active catalog in audited DRAFTs; all runtime checks share one server-side resolver over linked published snapshots, overrides are idempotent, and payments stay OFF.
 
 - Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
-- Executive RPCs use the ready h15 tenant; unproven sources fail closed. Hooks retain unavailable payloads and scope caches by actor/tenant/roles — prevents leakage and false emptiness.
+- Executive RPCs require ready h15 tenant; unproven sources fail closed. Hooks retain unavailability and fence actor/tenant/role caches — prevents leaks/false emptiness.
 - Tenant admin derives org server-side, keeps identity/tenant immutable and unowned links closed. create-user uses actor bearer, compensation, fixed public Auth codes and mocked tests; a ref lock releases in finally — prevents leaks/local reentry, not distributed idempotency.
 - Stock requires h15/RBAC/feature, finite positive quantities (reversal NULL), tenant refs/notices, private txid context and literal keys. Only reviewed motor/batch have client ACL; private actor/tenant/content receipts and sorted locks prevent replay leaks; helpers stay closed.
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
