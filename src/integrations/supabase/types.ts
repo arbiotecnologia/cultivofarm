@@ -20765,6 +20765,10 @@ export type Database = {
         Args: { p_sim: string }
         Returns: boolean
       }
+      b2b_provisioning_preflight: {
+        Args: { p_papel: string; p_partner: string; p_role: string }
+        Returns: Json
+      }
       b2b_read_simulations: {
         Args: {
           p_items?: boolean
@@ -21876,7 +21880,9 @@ export type Database = {
         Returns: Json
       }
       get_my_available_portal_contexts: { Args: never; Returns: Json }
+      get_my_commercial_orders_projection: { Args: never; Returns: Json }
       get_my_commercial_partner_context: { Args: never; Returns: Json }
+      get_my_commercial_partner_projection: { Args: never; Returns: Json }
       get_my_entitlement_context: { Args: never; Returns: string }
       get_my_entitlements: {
         Args: never

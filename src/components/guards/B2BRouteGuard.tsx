@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { useMyPartner } from "@/hooks/useMyPartner";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
 
 /**
@@ -15,17 +16,20 @@ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
  * Este gate visual não substitui entitlements, RLS ou autorização de cada RPC.
  */
 export function B2BRouteGuard({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, roles } = useAuth();
+  const own = useMyPartner();
   const location = useLocation();
   const { data, ready, isLoading, isError } = useAvailableContexts();
   // has_b2b_access historically includes the management context. A real B2B
   // context additionally proves the partner binding; management alone cannot.
-  const hasPartnerContext = data?.has_b2b_access === true &&
-    data.available_contexts.includes("b2b");
+  const exclusivePartner = roles.length === 1 &&
+    (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico");
+  const hasPartnerContext = exclusivePartner && own.ready && !!own.data && !own.isError &&
+    data?.has_b2b_access === true && data.available_contexts.includes("b2b");
   const denied =
     !loading &&
     !!user &&
-    !isLoading &&
+    !isLoading && !own.isLoading &&
     (!ready || isError || !hasPartnerContext);
 
   useEffect(() => {
@@ -34,7 +38,7 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
     }
   }, [denied, location.pathname]);
 
-  if (loading || (user && isLoading)) {
+  if (loading || (user && (isLoading || (exclusivePartner && own.isLoading)))) {
     return (
       <div
         className="min-h-dvh flex items-center justify-center bg-background"

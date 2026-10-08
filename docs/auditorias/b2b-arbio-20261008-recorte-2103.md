@@ -1,5 +1,7 @@
 # B2B AR Bio — inspeção inicial21:03UTC, mesma auditoria
 
+**Estado supersedente21:44:** decisão comercialA implementada parcialmente além do resolver: migrations213523/213604 (projeção mínima/preflight/contextos) e214232(leitura resumida própria de pedidos), guard exclusivo e layout com lista própria sem montar canais indisponíveis, handlercreate-user local com validação bearer.123/123tests9filesPASS(40asserçõesPGisolado dentro de1teste),lintfocal/scanner/diffPASS/buildautomáticoOK21:43:43 após corrigir2erros typecheck. Policies completas/JWT/Storage/Edges same-tenant não certificados; Auth/partner_users/claim-finish/primeiro acesso não implementados neste recorte, dropdown continua fechado. Detalhes/rollback/43consumidoresSQLdiretos/389achados advisor preexistentes e duas chamadasSELECT1desnecessárias no contrato de provisionamento. NO-GO login/faturamento/integral; implementação integrada solicitada AINDA INCOMPLETA. Evidência Codex catálogo42501forbidden_partner/planos0 preservada; não inventar preços ou fiscalVALIDATED.
+
 ## 1. Autorização e escopo
 Fixtures comerciais autorizadas exclusivamente para AR Biotecnologia `007bb519-cba0-4704-be2c-cb93ad010048`, prefixo `TESTE AUDITORIA B2B 20261008`. Não criar Auth/credenciais/grants/convites, modificar reais/legado NULL/outros tenants nem publicar. Nenhum agente adicional utilizado.
 
@@ -25,6 +27,7 @@ Cadastro comercial não provisiona Auth. `ParceiroUsuariosTab` mantém vincular/
 Fontes existentes: usePartnerCatalog/get_partner_catalog_secure, usePartnerSimulations/b2b_read_simulations/b2b_save_technical_simulation, motor canônico fn_resolve_b2b_cart. Não alterar catálogo global/preços reais. Não criar pedido na simulação. Percurso positivo real não executado por gate de sessão/externos.
 
 ## 9. Pedido e condições
+Adendo21:44: leitura própria mínima ativa via RPC sem parâmetros e lista do portal comercial, sem valores/notas/cliente/arquivos; técnico negado. TestesPGisolado+cache/mock PASS, JWT real UNVERIFIED. Não é habilitação de escrita, aprovação ou faturamento. Preservar descrição histórica abaixo.
 `/portal-parceiro`, `/comercial/pedidos-b2b`; create_partner_order_secure authenticated EXECUTE=true, MD5 definição viva `85be378d0751a26470cb98cc641a230f`. Front envia IDs/quantidade/unidade, hash de carrinho e idempotency_key; valores financeiros autoritativos permanecem server-side. EXECUTE não é autorização. assert_b2b_partner_scope usa b2b_actor_scope/org_partner: não confundir tenant P com ownership comercial A nem criar mandato cross-tenant para passar.
 
 ## 10. Aprovação e snapshots

@@ -17,6 +17,7 @@ import { getPapelLabel } from "@/lib/portal/identidade";
 import { usePortalBranding } from "@/hooks/useBranding";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
+import { CommercialOwnOrders } from "@/components/comercial/CommercialOwnOrders";
 
 import {
   Select,
@@ -45,8 +46,9 @@ export default function PortalParceiroLayout() {
 
   const isStaff = role === "administrador" || role === "gestor_comercial";
   const isTecnico = role === "parceiro_b2b_tecnico";
+  const commercialOwner = ownPartner?.mode === "commercial_owner";
   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
-    .map((group) => ({ ...group, items: group.items.filter((item) => isPathEntitled(item.route, entitlements)) }))
+    .map((group) => ({ ...group, items: group.items.filter((item) => !commercialOwner && isPathEntitled(item.route, entitlements)) }))
     .filter((group) => group.items.length > 0);
   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
 
@@ -76,7 +78,7 @@ export default function PortalParceiroLayout() {
     return ownPartner;
   }, [isStaff, ownPartner, allPartners, simulatedId]);
 
-  const parceiroBrand = usePortalBranding("parceiro", partner?.id ?? null);
+  const parceiroBrand = usePortalBranding("parceiro", commercialOwner ? null : partner?.id ?? null);
 
   const location = useLocation();
 
@@ -183,7 +185,16 @@ export default function PortalParceiroLayout() {
             Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
           </div>
         )}
-        {!partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
+        {commercialOwner ? (
+          <section className="space-y-4" aria-label="Cliente comercial">
+            <h1 className="text-2xl font-semibold">{ownPartner.razao_social}</h1>
+            <p className="text-muted-foreground">{ownPartner.codigo}</p>
+            {!isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
+            <p role="status" className="text-muted-foreground">
+              Catálogo, simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
+            </p>
+          </section>
+        ) : !partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
 
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
             Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a Cultivo Farm.
