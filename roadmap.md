@@ -1,4 +1,10 @@
-## Correção focal de sessão — 2026-10-07 23:00 UTC (estado atual)
+## Meu Plano — P2 de exibição — 2026-10-08 (estado atual)
+
+- [x] Corrigir somente EstadoConsulta incondicional; preservar detalhes/loading/erro/retry/ausência real, sem banco/Auth/permissões/plano/preço/publicação.
+- [x] Suíte SaaS própria 512/512 PASS (47 arquivos), incluindo 5 renderizações; lint dois arquivos, scanners/diff-check PASS; build automático OK 02:04:58 UTC. Typecheck tsconfig.app.json NOT RUN (manual vedado pelo harness).
+- [x] Relatório atualizado: achado P2, sem regressão de status comprovada; validação local mockada, sem nova prova publicada/autenticada. NO-GO integral preservado; nenhuma próxima fase.
+
+## Correção focal de sessão — 2026-10-07 23:00 UTC (histórico)
 
 - [x] Registrar escopo: somente código/testes/documentação; sem subagentes ou operações remotas. Preservar A03/A05 e D51.6/D52.
 - [x] Contenção independente Codex parcial: conta operacional desativada e papel administrador removido; Auth não excluído devido vínculos financeiros/entregas/Storage. Único admin operacional CultivoFarm, sem atingir Superadmin/AR Bio.

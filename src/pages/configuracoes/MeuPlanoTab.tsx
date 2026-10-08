@@ -252,7 +252,7 @@ export function MeuPlanoTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <EstadoConsulta
+          {(carregando || erro || !assinatura.data) && <EstadoConsulta
             carregando={carregando}
             erro={erro}
             mensagem="Nenhuma assinatura encontrada para a sua empresa no momento."
@@ -261,7 +261,7 @@ export function MeuPlanoTab() {
               catalogo.refetch();
               entitlements.refetch();
             }}
-          />
+          />}
           {assinatura.data && (
             <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div>
