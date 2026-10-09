@@ -4,12 +4,13 @@ import { captureHighAccuracyPosition } from "./geo";
 let success: PositionCallback;
 let failure: PositionErrorCallback;
 const clearWatch = vi.fn();
-const watchPosition = vi.fn((ok: PositionCallback, fail: PositionErrorCallback) => {
+const watchPosition = vi.fn((ok: PositionCallback, fail: PositionErrorCallback, _opts?: PositionOptions) => {
   success = ok; failure = fail; return 7;
 });
 const sample = (acc: number, lat = 1): GeolocationPosition => ({
-  coords: { latitude: lat, longitude: 2, accuracy: acc, altitude: null, altitudeAccuracy: null, heading: null, speed: null },
+  coords: { latitude: lat, longitude: 2, accuracy: acc, altitude: null, altitudeAccuracy: null, heading: null, speed: null, toJSON: () => ({}) },
   timestamp: Date.now(),
+  toJSON: () => ({}),
 });
 const error = (code: number): GeolocationPositionError => ({ code, message: "fake", PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
 
