@@ -268,6 +268,7 @@ export default function VisitaTecnica() {
   const resumoRef = useRef<HTMLTextAreaElement | null>(null);
   /** Trava de uma finalização por vez (inclui a checagem assíncrona). */
   const finalizandoRef = useRef(false);
+  const persistLock = useRef(false);
 
   // -------- Queries --------
   const { data: clientes = [] } = useQuery({
@@ -590,12 +591,15 @@ export default function VisitaTecnica() {
   const saveMutation = useMutation({
     mutationFn: async ({ payload, finalizar }: { payload: any; finalizar: boolean }) => {
       if (!user) throw new Error("Sessão indisponível.");
+      let expectedVersion: number | null = null;
       if (!isNew) {
         const current = await workspaceQuery.refetch();
         if (current.isError || !current.data?.permissions.can_edit ||
             !["rascunho", "em_andamento"].includes(current.data.status ?? "")) {
           throw new Error("Conteúdo da visita somente para leitura.");
         }
+        expectedVersion = current.data.version;
+        if (!expectedVersion) throw new Error("version_conflict");
       }
       // Caminhos pós-finalização legados não possuem persistência atômica auditada.
       if (finalizar && ["gerar_os", "emitir_recomendacao", "programar_nova_visita"].includes(encerramento.proximoPasso)) {
@@ -631,7 +635,7 @@ export default function VisitaTecnica() {
           .from("registros_consultor")
           .update(payloadPersistivel)
           .eq("id", id)
-          .eq("version", workspaceQuery.data?.version)
+          .eq("version", expectedVersion)
           .select("id, version")
           .single();
         if (error) throw error;
@@ -683,6 +687,7 @@ export default function VisitaTecnica() {
       if (!currentRegistroId) throw new Error("Visita não encontrada.");
       return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar };
     },
+    onSettled: () => { persistLock.current = false; },
     onError: (err: any) => {
       toast.error(translateError(err?.message || "Erro ao salvar"));
       if (!isNew) refetchVisita();
@@ -754,6 +759,8 @@ export default function VisitaTecnica() {
     // o salvamento deve ser explícito para registrar o motivo no histórico).
     if ((visita as any).status && (visita as any).status !== "rascunho") return;
     const t = setTimeout(() => {
+      if (persistLock.current) return;
+      persistLock.current = true;
       saveMutation.mutate({ payload: buildPayload(), finalizar: false });
     }, 3000);
     return () => clearTimeout(t);
@@ -776,7 +783,8 @@ export default function VisitaTecnica() {
    */
   const salvarCanonico = () => {
     if (saveMutation.isPending) return;
-    if (!acoesVisita.canPersist) return;
+    if (!acoesVisita.canPersist || persistLock.current) return;
+    persistLock.current = true;
     saveMutation.mutate({ payload: buildPayload(), finalizar: false });
   };
 
@@ -892,7 +900,8 @@ export default function VisitaTecnica() {
     // locais (inclusive notas rápidas); ele é persistido antes da RPC de
     // finalização e, se o salvamento falhar, a finalização não acontece.
     if (saveMutation.isPending) return;
-    if (!acoesVisita.showFinalize) return;
+    if (!acoesVisita.showFinalize || persistLock.current) return;
+    persistLock.current = true;
     saveMutation.mutate({
       payload: buildPayload(),
       finalizar: true,
@@ -1512,7 +1521,7 @@ export default function VisitaTecnica() {
 
       {!isNew && id && (
         <>
-          <AprovacaoCard registroId={id} registroStatus={(visita as any)?.status} />
+          <AprovacaoCard registroId={id} registroStatus={registroStatus} />
           {/* Banner de status para OS Multi-Produto */}
           {(visita as any)?.status === "enviado_aprovacao" && encerramento.proximoPasso === "gerar_os" && (
             <Card className="border-amber-200 bg-amber-50">
@@ -1572,7 +1581,7 @@ export default function VisitaTecnica() {
           ].filter(Boolean).join(" • ") || "Sem vínculos vinculados"}
           action={
             <div className="flex items-center gap-1.5 flex-wrap">
-              {!isNew && registroStatus === "rascunho" && (
+              {!isNew && registroStatus === "rascunho" && acoesVisita.canPersist && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
