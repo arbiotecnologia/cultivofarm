@@ -89,15 +89,15 @@ export function deriveVisitaWizardState(
   }
 
   const perms = workspace.permissions ?? {};
-  if (perms.can_edit === true) {
+  if (perms.can_edit === true && ["rascunho", "em_andamento"].includes(workspace.status ?? "")) {
     return { state: "editavel", locked: false, message: null, canRetry: false };
   }
 
-  if (perms.is_editable_status === false) {
+  if (perms.is_editable_status === false || ["finalizado", "enviado_aprovacao", "aprovado", "reprovado", "convertido_os", "arquivado"].includes(workspace.status ?? "")) {
     return {
       state: "somente_leitura",
       locked: true,
-      message: "Visita concluída. Modo somente leitura.",
+      message: workspace.status === "reprovado" ? "Visita reprovada. Modo somente leitura." : "Visita concluída. Modo somente leitura.",
       canRetry: false,
     };
   }

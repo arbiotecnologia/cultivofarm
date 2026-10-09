@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Gauge, Calendar, Save, Loader2, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { EncerramentoState } from "./EncerramentoCard";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
@@ -31,15 +32,15 @@ export function PlanoMonitoramentoEditor({
   registroId,
   observacoesAtuais,
   dataProximaVisita,
-  clienteId,
-  fazendaId,
   talhaoId,
-  consultorId,
   onUpdate
 }: PlanoMonitoramentoEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isScheduling, setIsScheduling] = useState(false);
+  const workspace = useVisitaWorkspace(registroId);
+  const locked = readOnly || workspace.isError || !workspace.data?.permissions.can_edit ||
+    !["rascunho", "em_andamento"].includes(workspace.data?.status ?? "");
+  const writeLock = useRef(false);
   
   const initialPlano = parsePlanoMonitoramento(observacoesAtuais);
   
@@ -70,7 +71,7 @@ export function PlanoMonitoramentoEditor({
   };
 
   const handleSave = async () => {
-    if (readOnly || isSaving) return;
+    if (locked || writeLock.current) return;
     if (!state.monitoramentoItens || state.monitoramentoItens.length === 0) {
       toast.error("Selecione pelo menos um item para monitorar");
       return;
@@ -80,24 +81,29 @@ export function PlanoMonitoramentoEditor({
       return;
     }
 
+    writeLock.current = true;
     setIsSaving(true);
     try {
+      const current = await workspace.refetch();
+      if (current.isError || !current.data?.permissions.can_edit ||
+          !["rascunho", "em_andamento"].includes(current.data.status ?? "")) throw new Error("Conteúdo somente para leitura.");
       const cleanObs = stripPlanoMonitoramento(observacoesAtuais);
       const newPlanoBlock = serializePlanoMonitoramento(state);
       const finalObs = `${cleanObs}\n\n${newPlanoBlock}`.trim();
 
-      const { error: updateError } = await (supabase as any)
+      const { data: updated, error: updateError } = await supabase
         .from("registros_consultor")
         .update({
           observacoes_tecnicas: finalObs,
           data_proxima_visita: state.dataProximaVisita
         })
-        .eq("id", registroId).select("id").single();
+        .eq("id", registroId).eq("version", current.data.version).select("id").single();
 
       if (updateError) throw updateError;
+      if (!updated) throw new Error("Não foi possível confirmar a atualização.");
 
       // Atualizar alerta agronômico vinculado
-      const { data: alerta } = await (supabase as any)
+      const { data: alerta, error: alertReadError } = await supabase
         .from("alertas_agronomicos")
         .select("id")
         .eq("talhao_id", talhaoId)
@@ -105,55 +111,28 @@ export function PlanoMonitoramentoEditor({
         .ilike("tipo_alerta", "monitoramento")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+      if (alertReadError) throw alertReadError;
 
       if (alerta) {
-        await (supabase as any)
+        const { error: alertError } = await supabase
           .from("alertas_agronomicos")
           .update({
             data_alerta: state.dataProximaVisita,
             descricao: `Área em monitoramento: ${state.monitoramentoItens.join(", ")}`
           })
           .eq("id", alerta.id);
+        if (alertError) throw alertError;
       }
 
       toast.success("Plano de monitoramento atualizado!");
       setIsOpen(false);
       onUpdate();
-    } catch (error: any) {
-      toast.error("Erro ao atualizar plano: " + error.message);
+    } catch {
+      toast.error("Não foi possível concluir a atualização do plano. Reconsulte a visita.");
     } finally {
+      writeLock.current = false;
       setIsSaving(false);
-    }
-  };
-
-  const handleSchedule = async () => {
-    // Sem contrato de agendamento auditado nesta superfície: fechado antes de qualquer write.
-    toast.error("Agendamento indisponível nesta tela.");
-    return;
-    setIsScheduling(true);
-    try {
-    const { error } = await (supabase as any)
-        .from("portal_solicitacoes")
-        .insert({
-          cliente_id: clienteId,
-          fazenda_id: fazendaId,
-          talhao_id: talhaoId,
-          tipo_demanda: "monitoramento_programado",
-          data_prevista_atendimento: state.dataProximaVisita || new Date().toISOString().split("T")[0],
-          status: "atribuida",
-          consultor_atribuido: consultorId,
-          origem_solicitacao: "monitoramento_automatico",
-          urgencia: "media",
-          user_id: consultorId // Explicitly set user_id to satisfy RLS/schema
-        });
-
-      if (error) throw error;
-      toast.success("Monitoramento agendado na sua agenda técnica!");
-    } catch (error: any) {
-      toast.error("Erro ao agendar: " + error.message);
-    } finally {
-      setIsScheduling(false);
     }
   };
 
@@ -165,7 +144,7 @@ export function PlanoMonitoramentoEditor({
             <Gauge className="h-4 w-4 text-emerald-600" />
             <CardTitle className="text-sm font-semibold text-emerald-800">Monitoramento Ativo</CardTitle>
           </div>
-          <Button variant="outline" size="sm" disabled={readOnly} onClick={() => { if (!readOnly) setIsOpen(true); }} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+          <Button variant="outline" size="sm" disabled={locked} onClick={() => { if (!locked) setIsOpen(true); }} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
             Editar Plano
           </Button>
         </CardHeader>
@@ -188,11 +167,10 @@ export function PlanoMonitoramentoEditor({
           </div>
           <Button 
             className="w-full h-8 text-xs mt-2 bg-emerald-600 hover:bg-emerald-700 text-white" 
-            onClick={handleSchedule}
             disabled={true}
           >
-            {isScheduling ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <PlusCircle className="h-3 w-3 mr-2" />}
-            Agendar Próxima na Agenda
+            <PlusCircle className="h-3 w-3 mr-2" />
+            Agendamento indisponível
           </Button>
         </CardContent>
       </Card>
@@ -206,7 +184,7 @@ export function PlanoMonitoramentoEditor({
             </DialogTitle>
           </DialogHeader>
           
-          <fieldset disabled={readOnly || isSaving} className="space-y-4 py-4">
+          <fieldset disabled={locked || isSaving} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase font-bold">O que monitorar?</Label>
               <div className="flex flex-wrap gap-1.5">
@@ -232,7 +210,7 @@ export function PlanoMonitoramentoEditor({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase font-bold">Frequência</Label>
-                <Select disabled={readOnly || isSaving}
+                <Select disabled={locked || isSaving}
                   value={state.monitoramentoFrequencia} 
                   onValueChange={(val) => setState({ ...state, monitoramentoFrequencia: val })}
                 >
@@ -272,7 +250,7 @@ export function PlanoMonitoramentoEditor({
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSaving}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={isSaving || readOnly} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleSave} disabled={isSaving || locked} className="bg-emerald-600 hover:bg-emerald-700">
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar Alterações
             </Button>

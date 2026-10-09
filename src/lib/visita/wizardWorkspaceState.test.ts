@@ -7,6 +7,9 @@ const ws = (can_edit: boolean, is_editable_status: boolean, status = "rascunho")
 });
 
 describe("deriveVisitaWizardState", () => {
+  it.each(["reprovado", "finalizado", "aprovado", "enviado_aprovacao"])("%s não permite edição mesmo com permissão stale", (status) => {
+    expect(deriveVisitaWizardState({ isNew: false, loading: false, workspace: ws(true, true, status) }).locked).toBe(true);
+  });
   it("nova visita é editável e sem banner", () => {
     const r = deriveVisitaWizardState({ isNew: true, loading: false });
     expect(r.state).toBe("novo");
