@@ -24,7 +24,7 @@ DDL/triggers vivos inspecionados: nenhum trigger invite prévio; gates/stamps/Au
 Duas conexões PG descartável: claim/claim; profilegate/finish; finish/compensação; claiminvite/emaillease; INSERTassociado/finish nega phantom; UPDATEuser_idNULL→ator/finish nega; finalizador administrativo real associa ator/finish nega; revogador acesso real/finish nega; produtor row→gate ocupado falha55P03 semdeadlock; finish antes revoke conserva completed/nega replay; DELETEinvite não ressuscita receipt. Negativas verificam zero role persistida. Não prova concorrência remota/JWT/browser/serviçosAuth.
 
 ## 15. Validação
-Resultados finais no roadmap. Typecheck/build manuais proibidos pelo harness: reportar só status automático observado, não inventar comandos separados. Lint focal/scanner/diff executados; nenhum PASSJWT/Auth integral.
+58/58 Vitest focais PASS em quatro arquivos: 55 testes do handler create-user (Auth mockada) e três harnesses PostgreSQL (lifecycle, partner_accounts e organizations). Onze cenários locais de concorrência/lifecycle registrados, incluindo exclusão ABA. Lint focal, scanner fiscal-secrets, diff-check e JSON do manifesto PASS. Prévia automática build OK às 15:20:39 UTC. Typecheck manual NOT RUN, execução delegada ao harness sem evidência separada disponível; não declarar typecheck PASS. Nenhum PASS JWT/Auth integral. Commit intermediário observado: 9cd9c813f0e3ff2a12796281797bfe048bce412c; atualização documental final recebe commit gerenciado posteriormente.
 
 ## 16. Rollback
 Candidato não aplicado: manter gatefalse. Se futuramente implantado, forwardfix conserva gate/stamp/negações, não restaurar producer inseguro. Preços não reaplicados; não remover policy nem apagar dados. Cleanup fixtures apenas IDs comprovados/autorização futura.
