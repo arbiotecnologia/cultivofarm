@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
-import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
+import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey, TECHNICAL_STALE_REVALIDATION, useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 import { wizardUnlockedUpTo } from "@/lib/visita/wizardProgress";
 import { deriveVisitaWizardState } from "@/lib/visita/wizardWorkspaceState";
 import { STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
@@ -165,6 +165,12 @@ export default function MobileVisitaWizard() {
   const isNew = !id || id === "novo";
   const registroId = isNew ? null : (id as string);
   const localIdParam = searchParams.get("local_id");
+  const registroSession = useTechnicalQuerySession("mobile-wizard-registro");
+  const formIdentity = `${registroSession.scope}:${registroId ?? localIdParam ?? "novo"}`;
+  const formHydration = useRef({ identity: formIdentity, hydrated: false, dirty: false });
+  if (formHydration.current.identity !== formIdentity) {
+    formHydration.current = { identity: formIdentity, hydrated: false, dirty: false };
+  }
 
   // Estado da Etapa 1
   const [clienteId, setClienteId] = useState("");
@@ -292,21 +298,29 @@ export default function MobileVisitaWizard() {
     isLoading: loadingRegistro,
     error: registroError,
   } = useQuery({
-    queryKey: ["mobile-wizard-registro", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
+    queryKey: ["mobile-wizard-registro", registroId, registroSession.scope],
+    enabled: !!registroId && registroSession.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }) => {
+      if (!registroId) throw new Error("missing_visit");
+      const assertCurrent = registroSession.fence();
+      assertCurrent(signal);
       const { data, error } = await supabase
         .from("registros_consultor")
         .select("*")
-        .eq("id", registroId!)
-        .maybeSingle();
+        .eq("id", registroId)
+        .maybeSingle().abortSignal(signal);
+      assertCurrent(signal);
       if (error) throw error;
       return data;
     },
   });
 
   useEffect(() => {
-    if (!registro) return;
+    // Background status refresh must never replace the mounted form or a pending save.
+    if (!registroSession.ready || !registro || formHydration.current.hydrated ||
+      formHydration.current.dirty || saveState === "saving" || saveState === "pending_sync") return;
+    formHydration.current.hydrated = true;
     setClienteId(registro.cliente_id ?? "");
     setFazendaId(registro.fazenda_id ?? "");
     setTalhaoId(registro.talhao_id ?? "");
@@ -316,7 +330,7 @@ export default function MobileVisitaWizard() {
     setObjetivo(registro.objetivo_visita ?? "");
     setSafra(registro.safra ?? "");
     setFaseFenologica(registro.fase_fenologica ?? "");
-  }, [registro]);
+  }, [registro, registroSession.ready, formIdentity, saveState]);
 
   // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
   // Nunca derivar permissão apenas do status local, e nunca afirmar "concluída"
@@ -348,6 +362,7 @@ export default function MobileVisitaWizard() {
   const { data: checkinExistente } = useQuery({
     queryKey: ["wizard-checkin-flag", registroId],
     enabled: !!registroId,
+    ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
         .from("visitas_checkin")
@@ -363,6 +378,7 @@ export default function MobileVisitaWizard() {
   const { data: campoExistente } = useQuery({
     queryKey: ["wizard-campo-flag", registroId],
     enabled: !!registroId,
+    ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
         .from("visitas_campo" as any)
@@ -377,6 +393,7 @@ export default function MobileVisitaWizard() {
   const { data: diagExistente } = useQuery({
     queryKey: ["wizard-diag-flag", registroId],
     enabled: !!registroId,
+    ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
         .from("visita_diagnosticos")
@@ -392,6 +409,7 @@ export default function MobileVisitaWizard() {
   const { data: recExistente } = useQuery({
     queryKey: ["wizard-rec-flag", registroId],
     enabled: !!registroId,
+    ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
         .from("registros_consultor_recomendacoes")
@@ -845,7 +863,7 @@ export default function MobileVisitaWizard() {
       </header>
 
       {/* Corpo */}
-      <main className="flex-1 p-4 space-y-4">
+      <main className="flex-1 p-4 space-y-4" onChangeCapture={() => { formHydration.current.dirty = true; }}>
         {currentStep === 1 && (
           <>
         <Card className="p-4 space-y-3">
