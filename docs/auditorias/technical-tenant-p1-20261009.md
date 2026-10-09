@@ -1,7 +1,39 @@
 # P1 técnico — candidato local sobre 85eeb6c
 
+## Adendo supersedente — aplicação independente 2026-10-09 20:46 UTC
+**Contenção RPC/helper/RLS aplicada independentemente; PASS focal SQL relatado. Auditoria global de writers e fases maiores continuam NO-GO/UNVERIFIED.** As seções anteriores abaixo descrevem o estado histórico anterior à aplicação, não o estado remoto atual.
+
+O solicitante informou aplicação por Supabase MCP oficial, com `project_id=swzpzcwiasxmjutrmvkm`, link canônico e `success:true`. Migration `technical_tenant_rpc_containment`, ledger versão **20261009204546**. Nesta continuação houve somente leitura do ledger e arquivamento, **sem reaplicar, executar testes remotos ou modificar banco**. A comprovação de destino da aplicação é a evidência independente explícita; o literal `requested_ref` das consultas anteriores continua não sendo prova.
+
+### Arquivo exato e diferença verificada
+Arquivo permitido: `scripts/rbac-audit/20261009204546_technical_tenant_rpc_containment.sql`, extraído dos statements do ledger, sem reconstruir SQL a partir do candidato. Ledger contém um statement; bytes UTF-8 preservados via base64, MD5 conferido com o retorno SQL: `dd48a1241ca0b81636e047d49ae78723`; 32.234 bytes; SHA-256 `b7f68715dd1e6396694a936a901b7a214754a5e7eefc9cf6c1053af07513bc47`.
+
+Comparação com candidato histórico **c19774e**: conteúdo exato após remover o bloco inteiro iniciado em `-- Definer writes must cross...` até antes de `rpc_listar_atendimentos_tecnicos_v1`, além das duas linhas de comentário explicativas acrescentadas no início do aplicado. Demais helpers, policies e RPCs coincidem. **`technical_row_tenant_guard` e seus dois triggers NÃO foram aplicados.** O candidato e harness locais permanecem históricos, sem alteração.
+
+Motivo da exclusão: revisão independente identificou writer service-role em `supabase/functions/sync-calendar-event/index.ts:139` que atualiza `portal_solicitacoes.external_event_id`; o trigger indiscriminado poderia bloquear essa integração ainda não certificada. Não se declara a integração segura nem seu funcionamento testado. Auditoria automática/DEFINER global permanece **UNVERIFIED**; não há contenção geral de writers por esse trigger no subset aplicado.
+
+### Reteste independente relatado — claims SQL no canônico
+| Ator | Resultado informado |
+|---|---|
+| Consultor responsável | view/manage true; lista 1; resumo todos 1; fazendas 1 |
+| Administrador AR Bio | view/manage true; lista 1; fazendas 2 |
+| Administrador FSF | view/manage false; lista 0; resumo todos 0 |
+| Financeiro | view false; lista forbidden |
+| Superadmin sem tenant | ready false; lista unauthenticated |
+| Ator forjado admin AR Bio sob outros atores | false |
+
+Estes resultados são **medições independentes relatadas**, não execução Lovable, não JWT real e não reteste browser pós-fix. As **37 asserções locais anteriores testaram o candidato completo, incluindo trigger excluído**, e **não certificam o subset aplicado**; os 25 testes Vitest anteriores também não foram reexecutados nesta continuação nem transferidos como PASS do subset.
+
+### Fixtures e preparação autorizada
+Ocorrência real fictícia `098fa34f-1cce-4820-af52-7b22a07a49b7`, código **VT-2026-0001**, foi criada pelo consultor na prévia **antes** da aplicação e permanece rascunho, segundo relato independente. O UPDATE pré-fix para cliente controle sem carteira foi rejeitado com **42501**, seguido de rollback; fixture preservada. Isso não é prova de escrita pós-fix nem certificação completa de lifecycle.
+
+Seed `user_clientes` **751e07ea-cdcd-4843-b76d-ed2dfa1416df**, via conector, é **preparação autorizada** para o cliente principal, execute/principal; **não é fluxo de atribuição pela UI certificado**. Não criamos/alteramos/excluímos fixtures ou identidades nesta rodada.
+
+### Decisão atual e rollback
+Bloqueio histórico de aplicação superado pela aplicação independente explícita, sem alteração de binding local. **PASS focal de contenção nos canais retestados por claims SQL; NO-GO integral/fases maiores**. Writers automáticos/DEFINER, concorrência e browser/JWT pós-fix seguem UNVERIFIED. Forward-fix deve preservar contenção e revisar writers individualmente; não restaurar helpers globais nem instalar o trigger excluído sem revisão/provas próprias. Sem publicação, emails/push/WhatsApp, cobrança ou fiscal; B2B gatesfalse, Executivo19 e emailv9 preservados.
+
 ## Estado e bloqueio concreto
-**PASS local focal / NO-GO remoto. Migration NÃO aplicada. P1 vivo não declarado corrigido.**
+**Estado histórico pré-aplicação:** PASS local focal / NO-GO remoto; migration ainda não aplicada naquele momento. Supersedido pelo adendo acima.
 
 A ferramenta de leitura não comprova o destino: `supabase.project_ref`, `app.settings.project_ref` e `app.settings.supabase_url` retornaram NULL. O `requested_ref` das consultas anteriores era literal enviado na consulta, **não prova do destino**. Configuração/cliente apontam para `swzpzcwiasxmjutrmvkm`, mas a ferramenta de migration não aceita ref nem fornece preflight de binding. A regra canônica exige interromper escrita sem prova; nenhuma tentativa de migration foi feita.
 
