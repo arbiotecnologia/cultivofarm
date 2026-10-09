@@ -1,18 +1,22 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { PasswordRecoveryForm } from "@/components/auth/PasswordRecoveryForm";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff, Leaf } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import logoCultivoFarm from "@/assets/logo-cultivofarm.png.asset.json";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { traduzirErroAuth } from "@/lib/auth-errors";
 
 export default function Auth() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const recovery = searchParams.get("recovery") === "1";
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -74,10 +78,13 @@ export default function Auth() {
             )}
           </div>
           <CardDescription>
-            {isLogin ? "Entre na sua conta" : "Crie sua conta"}
+            {recovery ? "Recuperar senha" : isLogin ? "Entre na sua conta" : "Crie sua conta"}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {recovery ? <PasswordRecoveryForm initialEmail={email} onBack={() => {
+            setSearchParams((params) => { params.delete("recovery"); return params; }, { replace: true });
+          }} /> : <>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errorMsg && (
               <Alert variant="destructive">
@@ -138,6 +145,14 @@ export default function Auth() {
               {loading ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
             </Button>
           </form>
+          <Button type="button" variant="link" className="w-full mt-2" disabled={loading}
+            onClick={() => {
+              setErrorMsg("");
+              setSearchParams((params) => { params.set("recovery", "1"); return params; }, { replace: true });
+            }}>
+            Esqueci minha senha
+          </Button>
+          </>}
           {/* Registro público removido para segurança do sistema */}
         </CardContent>
       </Card>

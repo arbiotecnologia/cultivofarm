@@ -31,6 +31,7 @@
 - Fixtures require real Auth, delivery OFF and ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Desktop/mobile recovery share one form and the existing canonical redirect policy, with synchronous pending lock and account-neutral states — prevents divergent recovery and local duplicate sends.
 - Storage UI and delayed file openings share an identity/tenant/role/resource generation fence; server authorization remains mandatory — prevents stale-session disclosure.
 - Commercial B2B context is an actor-derived fenced RPC with exclusive role and unique partner link; unreviewed channels remain closed — prevents sibling-partner disclosure.
 <!-- LOVABLE:END -->

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   lerFalhaPrimeiroAcesso,
@@ -121,7 +121,11 @@ export default function ResetPassword() {
     <Card className="w-full max-w-md">
       <CardHeader><CardTitle>Definir nova senha</CardTitle><CardDescription>{recoveryMode === "first_access" ? "Defina sua senha pessoal para concluir o primeiro acesso." : "Use o link de recuperação recebido para continuar."}</CardDescription></CardHeader>
       <CardContent>
-        {!recovery ? <Alert><AlertDescription>Link inválido, expirado ou já utilizado. Solicite uma nova recuperação.</AlertDescription></Alert> :
+        {!recovery ? <div className="space-y-4">
+          <Alert><AlertDescription>Link inválido, expirado ou já utilizado. Solicite uma nova recuperação.</AlertDescription></Alert>
+          <Button asChild className="w-full"><Link to="/auth?recovery=1">Solicitar nova recuperação</Link></Button>
+          <Button asChild variant="link" className="w-full"><Link to="/auth">Voltar ao login</Link></Button>
+        </div> :
           <form className="space-y-4" onSubmit={salvar}>
             {erro && <Alert variant="destructive"><AlertDescription>{erro}</AlertDescription></Alert>}
             <div className="space-y-2"><Label htmlFor="recovery-password">Nova senha</Label><Input id="recovery-password" type="password" autoComplete="new-password" value={senha} onChange={(e) => setSenha(e.target.value)} required /></div>

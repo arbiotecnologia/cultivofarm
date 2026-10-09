@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { traduzirErroAuth } from "@/lib/auth-errors";
 
+import { PasswordRecoveryForm } from "@/components/auth/PasswordRecoveryForm";
 import { LogoDisplay } from "@/components/LogoDisplay";
 
 export default function MobileLogin() {
@@ -24,7 +25,6 @@ export default function MobileLogin() {
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
-  const logoUrl = config?.logo_url || null;
 
   // H9-G 2F — após autenticar, o destino é decidido pelo seletor canônico:
   // ele redireciona sozinho quando há um único contexto ou preferência salva
@@ -40,24 +40,6 @@ export default function MobileLogin() {
       const friendly = traduzirErroAuth(error);
       setErrorMsg(friendly);
       toast.error(friendly);
-    }
-    setLoading(false);
-  };
-
-  const handleRecovery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg("");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) {
-      const friendly = traduzirErroAuth(error);
-      setErrorMsg(friendly);
-      toast.error(friendly);
-    } else {
-      toast.success("Email de recuperação enviado!");
-      setMode("login");
     }
     setLoading(false);
   };
@@ -121,52 +103,20 @@ export default function MobileLogin() {
             {loading ? "Entrando..." : "Entrar"}
           </Button>
 
-          <button
+          <Button
             type="button"
+            variant="link"
+            disabled={loading}
             onClick={() => setMode("recovery")}
             className="block w-full text-center text-sm text-primary font-medium"
           >
             Esqueceu a senha?
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={handleRecovery} className="w-full max-w-sm space-y-5">
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            className="flex items-center gap-1 text-sm text-muted-foreground mb-2"
-          >
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </button>
-
-          <p className="text-sm text-muted-foreground">
-            Informe seu email para receber o link de recuperação de senha.
-          </p>
-
-          {errorMsg && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errorMsg}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="recovery-email" className="text-sm font-medium">Email</Label>
-            <Input
-              id="recovery-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              required
-              className="h-12 text-base"
-            />
-          </div>
-
-          <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={loading}>
-            {loading ? "Enviando..." : "Enviar link de recuperação"}
           </Button>
         </form>
+      ) : (
+        <div className="w-full max-w-sm">
+          <PasswordRecoveryForm initialEmail={email} onBack={() => { setErrorMsg(""); setMode("login"); }} />
+        </div>
       )}
     </div>
   );
