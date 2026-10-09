@@ -8,6 +8,7 @@
  */
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { TECHNICAL_STALE_REVALIDATION, useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 
 export interface VisitaListaItem {
   id: string;
@@ -79,6 +80,7 @@ export function periodoParaIntervalo(
 }
 
 export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
+  const session = useTechnicalQuerySession("visitas-tecnicas-lista");
   const {
     search = null,
     status = null,
@@ -91,11 +93,14 @@ export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
     enabled = true,
   } = filters;
 
-  return useQuery({
-    queryKey: ["visitas-tecnicas-lista", { search, status, de, ate, clienteId, fazendaId, page, pageSize }],
-    enabled,
-    placeholderData: keepPreviousData,
-    queryFn: async (): Promise<VisitasListaResult> => {
+  const result = useQuery({
+    queryKey: ["visitas-tecnicas-lista", { search, status, de, ate, clienteId, fazendaId, page, pageSize }, session.scope],
+    enabled: enabled && session.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    placeholderData: (previous, query) => query?.queryKey.at(-1) === session.scope ? keepPreviousData(previous) : undefined,
+    queryFn: async ({ signal }): Promise<VisitasListaResult> => {
+      const assertCurrent = session.fence();
+      assertCurrent(signal);
       const { data, error } = await supabase.rpc("rpc_listar_visitas_tecnicas_v1" as never, {
         p_search: search || null,
         p_status: status && status.length ? status : null,
@@ -105,7 +110,8 @@ export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
         p_fazenda_id: fazendaId || null,
         p_page: page,
         p_page_size: pageSize,
-      } as never);
+      } as never).abortSignal(signal);
+      assertCurrent(signal);
       if (error) throw error;
       const res = (data ?? {}) as Partial<VisitasListaResult>;
       return {
@@ -117,4 +123,5 @@ export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
       };
     },
   });
+  return { ...result, data: session.ready ? result.data : undefined };
 }
