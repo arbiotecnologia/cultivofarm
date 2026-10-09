@@ -172,6 +172,10 @@ function MobileVisitaWizardForm() {
   const registroId = isNew ? null : (id as string);
   const localIdParam = searchParams.get("local_id");
   const registroSession = useTechnicalQuerySession("mobile-wizard-registro");
+  const checkinSession = useTechnicalQuerySession("wizard-checkin-flag");
+  const campoSession = useTechnicalQuerySession("wizard-campo-flag");
+  const diagSession = useTechnicalQuerySession("wizard-diag-flag");
+  const recSession = useTechnicalQuerySession("wizard-rec-flag");
   const formIdentity = `${registroSession.scope}:${registroId ?? localIdParam ?? "novo"}`;
   const formHydration = useRef({ identity: formIdentity, hydrated: false, dirty: false });
   if (formHydration.current.identity !== formIdentity) {
@@ -366,8 +370,8 @@ function MobileVisitaWizardForm() {
 
   // Check-in existente para esta visita (habilita Etapa 3)
   const { data: checkinExistente } = useQuery({
-    queryKey: ["wizard-checkin-flag", registroId],
-    enabled: !!registroId,
+    queryKey: ["wizard-checkin-flag", registroId, checkinSession.scope],
+    enabled: !!registroId && checkinSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
@@ -382,8 +386,8 @@ function MobileVisitaWizardForm() {
 
   // Registro de campo já preenchido (habilita Etapa 4)
   const { data: campoExistente } = useQuery({
-    queryKey: ["wizard-campo-flag", registroId],
-    enabled: !!registroId,
+    queryKey: ["wizard-campo-flag", registroId, campoSession.scope],
+    enabled: !!registroId && campoSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
@@ -397,8 +401,8 @@ function MobileVisitaWizardForm() {
 
   // Diagnóstico já registrado (habilita Etapa 5)
   const { data: diagExistente } = useQuery({
-    queryKey: ["wizard-diag-flag", registroId],
-    enabled: !!registroId,
+    queryKey: ["wizard-diag-flag", registroId, diagSession.scope],
+    enabled: !!registroId && diagSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
@@ -413,8 +417,8 @@ function MobileVisitaWizardForm() {
 
   // Recomendação já registrada (habilita Etapa 6)
   const { data: recExistente } = useQuery({
-    queryKey: ["wizard-rec-flag", registroId],
-    enabled: !!registroId,
+    queryKey: ["wizard-rec-flag", registroId, recSession.scope],
+    enabled: !!registroId && recSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       const { data } = await supabase
