@@ -134,14 +134,21 @@ def run(base):
     body=fresh_claim('inversion-race')
     # Existing producer holds invite before acquiring gate. A waiting gate
     # would deadlock with finish's gate→invite path; NOWAIT rolls producer back.
-    blocked_pair("SELECT revision FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;",claim_service+denial(f"SELECT id FROM public.platform_org_admin_invites WHERE id='{job['job_id']}' FOR UPDATE; UPDATE public.platform_org_admin_invites SET access_valid_after=clock_timestamp() WHERE id='{job['job_id']}';",'55P03'),expect_block=False)
+    query(f"UPDATE public.platform_org_admin_invites SET access_operation_status=NULL,access_requested_at=NULL,lease_expires_at=NULL WHERE id='{job['job_id']}';")
+    body=fresh_claim('inversion-final')
+    blocked_pair("SELECT revision FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;",claim_service+denial(f"SELECT public.platform_claim_admin_access('{superuser}','{job['job_id']}','{uuid.uuid4()}','temporary_password',false);",'55P03'),expect_block=False)
     result=json.loads(query(finish(body)))
     if not result['success']:
         raise RuntimeError('finish failed after rejected inversion')
     print('PASS row-before-gate NOWAIT abort no deadlock and finish succeeds')
     # A committed finish linearizes before revocation; later replay is denied.
-    query(claim_service+f"UPDATE public.platform_org_admin_invites SET access_valid_after=clock_timestamp() WHERE id='{job['job_id']}';")
+    query(f"UPDATE public.platform_org_admin_invites SET access_valid_after=clock_timestamp() WHERE id='{job['job_id']}';")
     query(service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
     if query(f"SELECT status FROM platform_private.b2b_provisioning_receipts WHERE id='{body['claim_id']}';")!='completed':
         raise RuntimeError('later revocation deleted completed receipt')
     print('PASS finish before revoke preserves completed but denies replay')
+    # Removing the invite cannot resurrect a receipt (ABA); existing profile
+    # stamp is advanced for both old and new user_id by the candidate trigger.
+    query(f"DELETE FROM public.platform_org_admin_invites WHERE id='{job['job_id']}';")
+    query(service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    print('PASS invite deletion cannot resurrect old claim ABA')
