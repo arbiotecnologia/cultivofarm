@@ -1,0 +1,17 @@
+-- Additional restrictive fence; existing permissive policies still determine allowed actions.
+CREATE OR REPLACE FUNCTION public.technical_child_read_scope(p_registro_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT public.can_view_technical_visit(auth.uid(),p_registro_id)
+ OR (public.technical_actor_ready(auth.uid()) AND public.has_role(auth.uid(),'cliente_produtor')
+ AND EXISTS (SELECT 1 FROM public.registros_consultor r
+ WHERE r.id=p_registro_id
+ AND public.technical_refs_in_actor_tenant(r.cliente_id,r.fazenda_id,r.talhao_id)
+ AND r.cliente_id=ANY(public.get_cliente_ids_for_user(auth.uid()))
+ AND r.status::text IN ('aprovado','finalizado','convertido_os')));
+$$;
+REVOKE ALL ON FUNCTION public.technical_child_read_scope(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.technical_child_read_scope(uuid) TO authenticated,service_role;
+CREATE POLICY technical_child_tenant_scope ON public.visitas_checkin AS RESTRICTIVE FOR ALL TO authenticated USING (public.technical_child_read_scope(registro_consultor_id)) WITH CHECK (public.can_manage_technical_visit(auth.uid(),registro_consultor_id) OR (public.can_view_technical_visit(auth.uid(),registro_consultor_id) AND public.is_active_visit_participant(auth.uid(),registro_consultor_id) AND EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id=visitas_checkin.registro_consultor_id AND public.technical_client_link(auth.uid(),r.cliente_id,ARRAY['execute','manage']::text[]))));
+CREATE POLICY technical_child_tenant_scope ON public.visitas_campo AS RESTRICTIVE FOR ALL TO authenticated USING (public.technical_child_read_scope(registro_consultor_id)) WITH CHECK (public.can_manage_technical_visit(auth.uid(),registro_consultor_id) OR (public.can_view_technical_visit(auth.uid(),registro_consultor_id) AND public.is_active_visit_participant(auth.uid(),registro_consultor_id) AND EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id=visitas_campo.registro_consultor_id AND public.technical_client_link(auth.uid(),r.cliente_id,ARRAY['execute','manage']::text[]))));
+CREATE POLICY technical_child_tenant_scope ON public.visita_diagnosticos AS RESTRICTIVE FOR ALL TO authenticated USING (public.technical_child_read_scope(registro_id)) WITH CHECK (public.can_manage_technical_visit(auth.uid(),registro_id) OR (public.can_view_technical_visit(auth.uid(),registro_id) AND public.is_active_visit_participant(auth.uid(),registro_id) AND EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id=visita_diagnosticos.registro_id AND public.technical_client_link(auth.uid(),r.cliente_id,ARRAY['execute','manage']::text[]))));
+CREATE POLICY technical_child_tenant_scope ON public.registros_consultor_recomendacoes AS RESTRICTIVE FOR ALL TO authenticated USING (public.technical_child_read_scope(registro_consultor_id)) WITH CHECK (public.can_manage_technical_visit(auth.uid(),registro_consultor_id) OR (public.can_view_technical_visit(auth.uid(),registro_consultor_id) AND public.is_active_visit_participant(auth.uid(),registro_consultor_id) AND EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id=registros_consultor_recomendacoes.registro_consultor_id AND public.technical_client_link(auth.uid(),r.cliente_id,ARRAY['execute','manage']::text[]))));

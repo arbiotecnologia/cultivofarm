@@ -1,5 +1,38 @@
 # P1 técnico — candidato local sobre 85eeb6c
 
+## Adendo documental — 2026-10-09 21:28 UTC
+**PASS focal de contenção por evidência independente de claims SQL; finalização real, produtores reais e auditoria integral NÃO certificados.** Nenhum SQL, teste remoto, código funcional, fixture ou publicação executado nesta rodada; `AGENTS.md` intacto.
+
+### Duas migrations aplicadas independentemente
+Destino e ledger confirmados pelo conector segundo relato do solicitante: **swzpzcwiasxmjutrmvkm**. Arquivamento literal dos SQLs fornecidos, sem consulta própria ao ledger ou reaplicação:
+- `20261009212121_technical_finalize_active_scope`: `scripts/rbac-audit/20261009212121_technical_finalize_active_scope.sql`.
+- `20261009212351_technical_child_tenant_scope`: `scripts/rbac-audit/20261009212351_technical_child_tenant_scope.sql`.
+Os arquivos são evidência documental, não instrução para executar. Não se alega verificação própria de paridade com o ledger nesta chamada.
+
+### P1 finalização — prova e retestes independentes
+Revogação de `user_clientes` em rollback comprovou que `rpc_finalizar_visita_v2` ainda permitia finalizar pelo fallback `created_by`. SQL aplicado exige view atual e manage ou participante ativo com vínculo `execute/manage`, antes de concluir a finalização; contrato/versão preservados.
+**7 retestes rollback relatados:** revoked, read_only, FSF, Financeiro e stale negados; consultor e administrador AR Bio positivos. Claims SQL simulados não são JWT/browser. A fixture **098fa34f-1cce-4820-af52-7b22a07a49b7** permanece **rascunho, versão 3**; confirmação nativa da UI não foi completada pela ferramenta. **Não houve finalização real comprovada.**
+
+### P1 filhos — leitura direta e isolamento focal
+Pré-fix: FSF lia uma linha em cada check-in/campo/diagnóstico/recomendação; Financeiro lia um diagnóstico. Aplicação adicionou helper e quatro policies RESTRICTIVE, preservando policies permissivas e ramo produtor liberado.
+| Ator (claims SQL independentes) | Check-in | Campo | Diagnóstico | Recomendação |
+|---|---:|---:|---:|---:|
+| Consultor | 1 | 1 | 1 | 1 |
+| Administrador AR Bio | 1 | 1 | 1 | 1 |
+| Administrador FSF | 0 | 0 | 0 | 0 |
+| Financeiro | 0 | 0 | 0 | 0 |
+Produtor real **não exercitado**. Cada uma das quatro tabelas tinha uma linha, sem parent NULL e sem fixtures antigas; isso não certifica cobertura de legado inexistente nem writers globais. Retestes distintos das sete provas de finalização, sem total agregado inventado.
+
+### Persistências fictícias reais preservadas
+- Check-in **35cc6812-f845-47c2-8130-6e82d707dec2**, browser real com GPS autorizado, precisão **4116m**; capturado antes da alteração GPS8s, sem coordenadas nos artefatos. Replay `idempotent=true`, duplicidade nova bloqueada e FSF negado são evidências **SQL claims**.
+- Campo **031d8f12-ea00-4b09-a142-5f44ef6d039f**, diagnóstico **aac6ca1d-d106-4917-87de-6c0a495e75db**, recomendação **d2c3c98a-91e0-4a7d-ba62-0f6bc86b4b29**: fictícios realmente persistidos, sem OS, produto ou anexo. Nenhum criado, duplicado, alterado ou excluído nesta rodada.
+- Seed `user_clientes` anterior continua preparação autorizada via conector, não atribuição UI certificada.
+
+### Verificações, limites e rollback
+GPS8s implementado em **c981810**: **21 testes independentes PASS**, typecheck app/node, lint novos, scanner **3827 arquivos/zero achados** e build **PASS relatados**. A suíte própria anterior **33/33** é distinta: não somar nem transferir resultados entre suítes. Categoria **Select Outro confirmada na UI**; GPS8s real permanece pendente. Lint ampliado/global não é PASS: **17 any legados** continuam registrados (e dois avisos da rodada anterior).
+Writers automáticos/DEFINER globais, produtor real, JWT FSF, finalização real, concorrência/worker offline, uploads e demais fases permanecem **UNVERIFIED/NO-GO integral**. Preservados B2B gates false, Executivo19 e emailv9; nenhuma fase maior liberada.
+Rollback somente por revisão específica/forward-fix ou fechamento seguro: não restaurar fallback de autorização por `created_by` nem remover o isolamento dos filhos para reabrir leituras globais. Arquivos históricos/backups não autorizam execução. Esta rodada apenas arquiva e documenta.
+
 ## Adendo focal UI/GPS — 2026-10-09 21:19 UTC
 Continuação em `visita-wizard-gps-20261009.md`: GPS ativo8s/melhorfix, enums diagnóstico, flags/workspace e campo serializado;33/33tests locais, sem fixtures/banco/publicação. Check-in35cc6812-f845-47c2-8130-6e82d707dec2 com precisão4116m, campo031d8f12-ea00-4b09-a142-5f44ef6d039f e diagnósticoaac6ca1d-d106-4917-87de-6c0a495e75db são persistências independentes relatadas, preservadas sem coordenadas nos artefatos.
 Migration20261009210536 approval tenant fence aplicada independentemente no canônico foi arquivada pelo SQL exato fornecido, **sem reaplicar**. FSF reprovar passou de status_invalido para forbidden_visita; reabrir/ajuste forbidden_visita.7claimsSQLrollback/29frontendPASS independentes não equivalem JWTFSF, não somados a testes Lovable. Culturas8/dropdown consultorPASSfocal relatado, sem inserts. Writers automáticos/DEFINERglobais e NO-GOintegral permanecem.

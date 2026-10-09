@@ -1,5 +1,16 @@
 # Fase focal UI wizard + GPS — 2026-10-09 21:19 UTC
 
+## Adendo documental — 2026-10-09 21:28 UTC
+GPS8s implementado em **c981810**; **21 testes independentes PASS**, typechecks app/node, lint dos novos arquivos, scanner **3827 arquivos/zero achados** e build **PASS**, conforme evidência independente recebida, sem reexecução nesta rodada. Os **33/33 testes próprios** abaixo são suíte distinta: **não somar contagens**. Typechecks anteriores NOT RUN descrevem aquela execução, não invalidam nem substituem a medição independente. Lint ampliado/global **não é PASS**: 17 `any` legados e os dois avisos anteriores permanecem registrados.
+
+UI categoria **Select Outro confirmada** independentemente. Check-in **35cc6812-f845-47c2-8130-6e82d707dec2** foi salvo pelo browser com GPS autorizado e precisão **4116m antes da mudança**; **GPS8s real permanece pendente**, sem promessa de melhora de precisão. Nenhuma coordenada registrada nos artefatos. Replay `idempotent=true`, bloqueio de nova duplicidade e negação FSF são provas **claims SQL**, não chamadas JWT/browser certificadas.
+
+Campo **031d8f12-ea00-4b09-a142-5f44ef6d039f**, diagnóstico **aac6ca1d-d106-4917-87de-6c0a495e75db** e recomendação **d2c3c98a-91e0-4a7d-ba62-0f6bc86b4b29** são fictícios reais persistidos, sem OS/produto/anexo; nenhuma duplicação/alteração nesta rodada. Visita **098fa34f-1cce-4820-af52-7b22a07a49b7** permanece **rascunho versão 3**; confirmação nativa não completada, **finalização real não comprovada**.
+
+Migrations **20261009212121_technical_finalize_active_scope** e **20261009212351_technical_child_tenant_scope**, aplicadas independentemente no canônico com ledger confirmado pelo conector segundo relato recebido, apenas arquivadas como SQL literal em `scripts/rbac-audit/`. Detalhes dos P1, sete retestes rollback de finalização e matriz dos quatro filhos estão no adendo 21:28 de `technical-tenant-p1-20261009.md`; **não houve consulta ao ledger, execução SQL ou reaplicação nesta rodada**. Produtor real não exercitado; todas as quatro tabelas tinham uma linha, sem parent NULL/fixtures antigas.
+
+**PASS focal independente de contenção SQL e categoria UI; GPS8s real/finalização real/writers globais/concorrência/upload/JWT FSF e demais fases UNVERIFIED; NO-GO integral.** Somente documentação, sem código, testes reexecutados, fixtures, banco, publicação ou envios; `AGENTS.md` não alterado, B2B gates false/Executivo19/emailv9 preservados. Rollback exige forward-fix/fechamento seguro, nunca restaurar fallback `created_by` ou leitura global dos filhos. Histórico abaixo preservado com seus limites originais.
+
 ## Escopo e entrega local
 - Sem banco, papéis, RLS, novas fixtures, Auth, envios, fiscal ou publicação. Gates B2B false, Executivo19 e emailv9 preservados.
 - GPS: extração do util já existente em CheckinCard para `src/lib/geo.ts`; WizardCheckinStep usa hook abortável. Observação ativa até **8.000ms**, `watchPosition`, `enableHighAccuracy:true`, `maximumAge:0`, menor accuracy, término antecipado **<=30m**. Timeout global começa antes do pedido ao navegador, mesmo sem callbacks. ClearWatch, intervalo, deadline e listener de abort são liberados em sucesso/prazo/erro/cancelamento; recaptura e unmount cercam callbacks antigos.
