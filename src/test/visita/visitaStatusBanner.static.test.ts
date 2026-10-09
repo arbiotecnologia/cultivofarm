@@ -5,13 +5,6 @@ const banner = readFileSync("src/components/visita/VisitaStatusBanner.tsx", "utf
 const page = readFileSync("src/pages/VisitaTecnica.tsx", "utf8");
 
 describe("H9-G 2A · regressão estática", () => {
-  it("botão Liberar para Produtor exige desfecho aprovável", () => {
-    const idx = banner.indexOf("Liberar para Produtor");
-    expect(idx).toBeGreaterThan(0);
-    const bloco = banner.slice(Math.max(0, idx - 1400), idx);
-    expect(bloco).toContain("geraArtefatoAprovavel");
-  });
-
   it("banner não usa mais texto fixo de aprovação para toda visita finalizada", () => {
     expect(banner).not.toContain('descricao = "Pronta para envio à aprovação técnica.";');
     expect(banner).toContain("descricaoVisitaFinalizada(proximoPasso)");

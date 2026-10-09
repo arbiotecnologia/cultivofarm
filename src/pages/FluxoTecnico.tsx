@@ -55,7 +55,7 @@ const SELECT_OS_ONFARM =
   "id, numero_os, status, origem, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
 
 export default function FluxoTecnico() {
-  const { role } = useAuth();
+  const { role, roles } = useAuth();
   const [searchAprov, setSearchAprov] = useState("");
   const [searchOS, setSearchOS] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -64,7 +64,7 @@ export default function FluxoTecnico() {
   const [selectedOS, setSelectedOS] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  const papelDecide = podeDecidirPorPapel(role);
+  const papelDecide = podeDecidirPorPapel(role) || roles.some(podeDecidirPorPapel);
 
   const {
     data: pendentes = [],

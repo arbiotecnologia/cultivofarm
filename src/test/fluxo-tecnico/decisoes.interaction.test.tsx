@@ -12,6 +12,8 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
 import { TechnicalDecisionActions, VisitaStatusBanner } from "@/components/visita/VisitaStatusBanner";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
+import FluxoTecnico from "@/pages/FluxoTecnico";
+vi.mock("@/components/shared/RecomendacaoChat", () => ({ RecomendacaoChat: () => null }));
 
 const clients: QueryClient[] = [];
 beforeEach(() => {
@@ -112,6 +114,9 @@ it.each([
 it("reabre análise admin/aprovado6 para enviado7 sem callback de edição e sem OS", async () => {
   mocks.workspace.status = "aprovado"; mocks.workspace.version = 6;
   const onReopen = vi.fn();
+  mocks.rpc.mockImplementation(async (name) => name === "rpc_get_visita_workspace"
+    ? { data: { ...mocks.workspace }, error: null }
+    : { data: { ok: true, version: 7, status: "enviado_aprovacao" }, error: null });
   mount(<VisitaStatusBanner registroId="visit-fake" status="aprovado" isEditing={false} canReopen={true} onReopen={onReopen} onSave={vi.fn()} onCancel={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Reabrir análise" }));
   expect(screen.getByRole("button", { name: "Confirmar decisão" })).toBeDisabled();
@@ -122,6 +127,41 @@ it("reabre análise admin/aprovado6 para enviado7 sem callback de edição e sem
   expect(onReopen).not.toHaveBeenCalled();
   expect(screen.queryByRole("button", { name: "Editar visita" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Gerar OS de Produção" })).toBeNull();
+});
+
+it.each(["cancelar", "erro", "duplo"])("reabertura admin %s mantém barreiras", async (mode) => {
+  mocks.workspace.status = "aprovado"; mocks.workspace.version = 6;
+  const original = mocks.rpc.getMockImplementation();
+  let finish: ((value: unknown) => void) | undefined;
+  mocks.rpc.mockImplementation((name, args) => name !== "rpc_reabrir_visita" ? original?.(name, args)
+    : mode === "erro" ? Promise.resolve({ data: null, error: { message: "version_conflict" } })
+    : new Promise((resolve) => { finish = resolve; }));
+  const { invalidate } = mount(<TechnicalDecisionActions registroId="visit-fake" mode="reabrir" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Reabrir análise" }));
+  fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "Reanálise fictícia" } });
+  if (mode === "cancelar") {
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(mocks.rpc.mock.calls.some(([name]) => name === "rpc_reabrir_visita")).toBe(false);
+    return;
+  }
+  const confirm = screen.getByRole("button", { name: "Confirmar decisão" });
+  act(() => { fireEvent.click(confirm); fireEvent.click(confirm); });
+  await waitFor(() => expect(mocks.rpc.mock.calls.filter(([name]) => name === "rpc_reabrir_visita")).toHaveLength(1));
+  if (mode === "erro") {
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Motivo")).toHaveValue("Reanálise fictícia");
+    expect(invalidate).not.toHaveBeenCalled();
+  } else {
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
+    await act(async () => { finish?.({ data: { ok: true, status: "enviado_aprovacao", version: 7 }, error: null }); });
+  }
+});
+
+it("liberação não aparece para visita finalizada nem desfecho não aprovável", async () => {
+  mocks.workspace.status = "finalizado";
+  mount(<VisitaStatusBanner registroId="visit-fake" status="finalizado" proximoPasso="monitorar" isEditing={false} canReopen={false} onReopen={vi.fn()} onSave={vi.fn()} onCancel={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: "Liberar para Produtor" })).toBeNull();
+  expect(mocks.rpc).not.toHaveBeenCalled();
 });
 
 it.each(["gestor", "consultor_tecnico"])("reabertura indisponível para %s", async (role) => {
