@@ -27,6 +27,22 @@
     "duplicate_creation_allowed": false
   },
   "remote_writes": 0,
+  "independent_20261009_existing_fixtures": {
+    "source": "Relato Renato/Codex 2026-10-09; não escritas Lovable nem inventário remoto integral",
+    "principal_count_reported": 11,
+    "partners": [
+      {"id":"7e52de9a-4bed-4d1e-8200-3255a805465c","client_id":"b2bd6b53-4198-40ba-b2da-603cea5eda2b"},
+      {"id":"2ff13d85-85a9-4e4e-b010-b14af2e32ebc","client_id":"8b138956-514e-4412-9b2e-c17de581e974"},
+      {"id":"5027792c-ecb1-42fc-8c0c-9713736cd898","active":false}
+    ],
+    "clients_prefix":"TESTE AUDITORIA 20261009","client_codes":["0004","0005"],
+    "farms_count":2,"plots_count":3,
+    "farms_and_plots_ids":"Não fornecidos; cleanup bloqueado até manifesto por IDs exatos",
+    "prices":[{"id":"b54acfae-7480-4c3e-89d0-33d342d2e61d","final":90},{"id":"e7dd1b5c-557e-49aa-b46f-8b1336a63bdf","final":200}],
+    "product_id":"44b809ec-2e23-5d73-b6bb-b59afe728eea",
+    "orders":0,"linked_users":0,"external_effects":"Sem emissão/cobrança/email/estoque segundo relato",
+    "no_duplicate_or_cleanup_executed":true
+  },
   "remote_writes_scope": "Somente execução Lovable; criação independente Codex registrada separadamente",
   "remote_external_calls": 0,
   "matching_fixture_partner_count_observed": 0,

@@ -23,5 +23,6 @@ describe("B2B provisioning candidate — isolated PostgreSQL and simulated Auth"
     expect(output).toContain("PASS real access revocation versus finish denied");
     expect(output).toContain("PASS row-before-gate NOWAIT abort no deadlock and finish succeeds");
     expect(output).toContain("PASS finish before revoke preserves completed but denies replay");
+    expect(output).toContain("PASS invite deletion cannot resurrect old claim ABA");
   }, 60_000);
 });
