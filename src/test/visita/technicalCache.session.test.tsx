@@ -74,15 +74,32 @@ it("foco stale atualiza workspace sem substituir campo sujo em edição", async 
   expect(screen.getByLabelText("Objetivo da visita *")).toHaveValue("Minha edição pendente");
 });
 
-it.each([useVisitaWorkspace, useVisitasTecnicasLista, useAtendimentosTecnicos, useAtendimentosResumo])("consulta técnica revalida remount stale sem alterar defaults", async (hook) => {
+const useWorkspaceRead = () => useVisitaWorkspace("fake-visit");
+it.each([useWorkspaceRead, useVisitasTecnicasLista, useAtendimentosTecnicos, useAtendimentosResumo])("consulta técnica revalida remount stale sem alterar defaults", async (useRead) => {
   const { client, wrapper } = setup();
-  const useRead = () => hook === useVisitaWorkspace ? useVisitaWorkspace("fake-visit") : hook();
   const first = renderHook(useRead, { wrapper }); await waitFor(() => expect(first.result.current.data).toBeDefined());
   const count = mocks.rpc.mock.calls.length; first.unmount(); mocks.status = "rascunho"; age(client);
   const next = renderHook(useRead, { wrapper });
   await waitFor(() => expect(mocks.rpc.mock.calls.length).toBeGreaterThan(count));
   await waitFor(() => expect(next.result.current.isFetching).toBe(false));
   expect(client.getDefaultOptions().queries?.refetchOnMount).toBe(false);
+});
+
+it("remount e foco com workspace fresco não consultam novamente", async () => {
+  const { wrapper } = setup(); const first = renderHook(useWorkspaceRead, { wrapper });
+  await waitFor(() => expect(first.result.current.data).toBeDefined());
+  const count = mocks.rpc.mock.calls.length; first.unmount();
+  renderHook(useWorkspaceRead, { wrapper });
+  await act(async () => { focusManager.setFocused(false); focusManager.setFocused(true); });
+  expect(mocks.rpc).toHaveBeenCalledTimes(count);
+});
+
+it("lista não reaproveita placeholder de outra identidade", async () => {
+  const { wrapper } = setup(); const h = renderHook(() => useVisitasTecnicasLista(), { wrapper });
+  await waitFor(() => expect(h.result.current.data?.items[0]?.id).toBe("fake-visit"));
+  mocks.rpc.mockImplementation(() => new Promise(() => {}));
+  mocks.auth.user = { id: "actor-B" }; mocks.auth.profile.user_id = "actor-B";
+  h.rerender(); expect(h.result.current.data).toBeUndefined();
 });
 
 it.each(["identity", "tenant", "roles", "logout", "inactive", "loading"])("workspace oculta sessão antiga e rejeita promessa tardia em %s", async change => {
