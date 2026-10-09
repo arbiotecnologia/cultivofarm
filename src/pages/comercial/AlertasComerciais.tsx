@@ -5,10 +5,10 @@ import { AlertTriangle } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 
 export default function AlertasComerciais() {
-  const { data, isLoading } = useCommercialAlerts();
+  const { data, isLoading, isError } = useCommercialAlerts();
 
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando...</div>;
-  if (!data) return null;
+  if (isError || !data) return <div role="alert" className="p-6 text-sm text-muted-foreground">Não foi possível carregar os alertas comerciais.</div>;
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
@@ -27,7 +27,9 @@ export default function AlertasComerciais() {
       <Card>
         <CardHeader><CardTitle className="text-base">Campanhas próximas do vencimento (15d)</CardTitle></CardHeader>
         <CardContent>
-          {(data.campanhas_vencendo ?? []).length === 0 ? (
+          {data.campanhas_disponiveis === false ? (
+            <div role="status" className="text-sm text-muted-foreground py-4">Campanhas indisponíveis no momento.</div>
+          ) : (data.campanhas_vencendo ?? []).length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-4">Nenhuma.</div>
           ) : (
             <ul className="text-sm space-y-1">

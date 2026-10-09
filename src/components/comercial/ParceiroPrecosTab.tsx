@@ -54,14 +54,18 @@ export function ParceiroPrecosTab({ partnerId, defaultDiscount = 0 }: Props) {
     if (!confirm(`Gerar tabela inicial aplicando ${defaultDiscount}% em todos os itens ativos?`)) return;
     setGenerating(true);
     try {
-      const { error } = await supabase.rpc(
+      const { data: count, error } = await supabase.rpc(
         "partner_apply_default_discount" as any,
         { p_partner_id: partnerId },
       );
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["partner-prices", partnerId] });
       await qc.invalidateQueries({ queryKey: ["partner-catalog-secure", partnerId] });
-      toast.success("Tabela inicial gerada com sucesso");
+      if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) {
+        toast.info("Catálogo indisponível ou sem itens autorizados para gerar a tabela.");
+      } else {
+        toast.success("Tabela inicial gerada com sucesso");
+      }
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao gerar tabela");
     } finally {
