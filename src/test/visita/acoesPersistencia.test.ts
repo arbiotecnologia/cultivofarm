@@ -40,20 +40,25 @@ describe("resolveVisitaAcoes", () => {
     expect(a.showFinalize).toBe(false);
   });
 
-  it("após iniciar edição justificada a ação canônica de salvar volta", () => {
+  it("edição local justificada não desbloqueia finalizado nem para admin", () => {
     const a = resolveVisitaAcoes({ isNew: false, status: "finalizado", uiMode: "editing", canEdit: true });
-    expect(a.canPersist).toBe(true);
-    expect(a.showSave).toBe(true);
+    expect(a.canPersist).toBe(false);
+    expect(a.showSave).toBe(false);
     // finalizar não reaparece: a visita já está finalizada
     expect(a.showFinalize).toBe(false);
   });
 
   it("status pós-aprovação ficam travados mesmo em modo edição", () => {
-    for (const status of ["enviado_aprovacao", "aprovado", "convertido_os", "arquivado"]) {
+    for (const status of ["finalizado", "enviado_aprovacao", "aprovado", "reprovado", "convertido_os", "arquivado"]) {
       const a = resolveVisitaAcoes({ isNew: false, status, uiMode: "editing", canEdit: true });
       expect(a.canPersist).toBe(false);
       expect(a.showSave).toBe(false);
     }
+  });
+  it("nega rascunho ao leitor e estado desconhecido, permite em_andamento autorizado", () => {
+    expect(resolveVisitaAcoes({ isNew: false, status: "rascunho", uiMode: "editing", canEdit: false }).canPersist).toBe(false);
+    expect(resolveVisitaAcoes({ isNew: false, uiMode: "editing", canEdit: true }).canPersist).toBe(false);
+    expect(resolveVisitaAcoes({ isNew: false, status: "em_andamento", uiMode: "editing", canEdit: true }).canPersist).toBe(true);
   });
 });
 
