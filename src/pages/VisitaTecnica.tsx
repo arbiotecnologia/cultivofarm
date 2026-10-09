@@ -6,7 +6,7 @@
  * conduta, encerramento e timeline.
  *
  * Reutiliza:
- *  - mutações otimistas com rollback (status do registro)
+ *  - persistência confirmada sem status otimista
  *  - StatusStepper, ChecklistFinalizacao, AudioRecorder, UploadQueuePanel
  *  - useMediaUploadQueue, generateVisitaPdf, EnviarPdfVisitaDialog
  *
@@ -587,7 +587,7 @@ export default function VisitaTecnica() {
     };
   };
 
-  // -------- Save mutation (otimista) --------
+  // -------- Persistência de conteúdo editável confirmada --------
   const saveMutation = useMutation({
     mutationFn: async ({ payload, finalizar }: { payload: any; finalizar: boolean }) => {
       if (!user) throw new Error("Sessão indisponível.");
@@ -755,8 +755,7 @@ export default function VisitaTecnica() {
   // -------- Autosave (debounced) --------
   useEffect(() => {
     if (isNew || !visita || !workspaceQuery.data?.permissions.can_edit || saveMutation.isPending) return;
-    // Não autosalvar quando a visita já foi finalizada (mesmo em modo edição,
-    // o salvamento deve ser explícito para registrar o motivo no histórico).
+    // Conteúdo fechado nunca entra no autosave.
     if ((visita as any).status && (visita as any).status !== "rascunho") return;
     const t = setTimeout(() => {
       if (persistLock.current) return;
@@ -777,8 +776,8 @@ export default function VisitaTecnica() {
    * O botão inferior ("Salvar"), o atalho Ctrl/Cmd+S e o botão do banner
    * ("Salvar alterações") chamam exatamente esta função. Ela decide o modo:
    *  - rascunho: salva o rascunho;
-   *  - finalizada em edição: salva exigindo motivo e registra no histórico;
-   *  - finalizada bloqueada: nada a salvar.
+   *  - em andamento: persiste conteúdo autorizado;
+   *  - finalizada/reprovada: nenhuma edição local.
    * Cliques repetidos são ignorados enquanto houver salvamento em andamento.
    */
   const salvarCanonico = () => {

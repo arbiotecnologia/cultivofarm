@@ -366,61 +366,63 @@ export function useFluxoVisitaTecnica() {
 
   // --- Implementação de Ações Reais (Fase 10.2.1.3.1) ---
 
+  const readWorkflowContext = async (id: string, statuses: string[], permission: "can_edit" | "can_manage") => {
+    if (loading || !user || profile?.user_id !== user.id || profile.ativo !== true || !profile.organization_id) {
+      throw new Error("unauthenticated");
+    }
+    const scope = actorScope;
+    const { data, error } = await supabase.rpc("rpc_get_visita_workspace", { p_registro_id: id });
+    if (error) throw error;
+    const ws = data as { status?: string; version?: number; permissions?: Record<string, boolean> } | null;
+    if (scope !== currentActor.current || !ws || !statuses.includes(ws.status ?? "") || ws.permissions?.[permission] !== true) {
+      throw new Error("forbidden_visita");
+    }
+    if (!ws.version || !Number.isInteger(ws.version)) throw new Error("version_conflict");
+    return { version: ws.version, scope };
+  };
+
   const salvarRascunho = async (id: string, data: any): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
+    if (decisionLock.current) return { success: false, message: "Uma operação já está em andamento." };
+    decisionLock.current = true;
     try {
-      const { error } = await (supabase as any)
-        .from("registros_consultor")
-        .update(data)
-        .eq("id", id);
+      const context = await readWorkflowContext(id, ["rascunho", "em_andamento"], "can_edit");
+      // Este canal salva conteúdo, nunca status/versão/ownership vindos do caller.
+      if (Object.keys(data).some(key => ["status", "version", "created_by", "consultor_responsavel", "organization_id"].includes(key))) {
+        throw new Error("forbidden_visita");
+      }
+      const { data: saved, error } = await supabase.from("registros_consultor").update(data)
+        .eq("id", id).eq("version", context.version).select("id").single();
       if (error) throw error;
+      if (!saved || context.scope !== currentActor.current) throw new Error("version_conflict");
+      await invalidateDecision(id);
       return { success: true, message: "Rascunho salvo com sucesso" };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao salvar rascunho", error: error.message };
-    }
+    } catch (error: unknown) {
+      return { success: false, message: mensagemAmigavelVisita(error) };
+    } finally { decisionLock.current = false; }
   };
 
-  const finalizarVisita = async (id: string): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
+  const executeWorkflow = async (id: string, action: "finalizar" | "enviar"): Promise<FluxoResponse> => {
+    if (decisionLock.current) return { success: false, message: "Uma operação já está em andamento." };
+    decisionLock.current = true;
     try {
-      const { data: reg, error: regErr } = await (supabase as any)
-        .from("registros_consultor")
-        .select("version")
-        .eq("id", id)
-        .maybeSingle();
-      if (regErr) throw regErr;
-      const { error } = await (supabase as any).rpc("rpc_finalizar_visita_v2" as any, {
-        p_registro_id: id,
-        p_expected_version: (reg as any)?.version ?? 1,
+      const context = await readWorkflowContext(id, action === "finalizar" ? ["rascunho", "em_andamento"] : ["finalizado"], action === "finalizar" ? "can_edit" : "can_manage");
+      const { data, error } = await supabase.rpc(action === "finalizar" ? "rpc_finalizar_visita_v2" : "rpc_enviar_visita_aprovacao", {
+        p_registro_id: id, p_expected_version: context.version,
       });
       if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
-      return { success: true, message: "Visita finalizada com sucesso" };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao finalizar visita", error: error.message };
-    }
+      const out = data as { id?: string; status?: string; version?: number; ok?: boolean; success?: boolean } | null;
+      const target = action === "finalizar" ? "finalizado" : "enviado_aprovacao";
+      if (!out || out.ok === false || out.success === false || out.id !== id || out.status !== target || !out.version || context.scope !== currentActor.current) {
+        throw new Error("Não foi possível confirmar a operação.");
+      }
+      await invalidateDecision(id);
+      return { success: true, message: action === "finalizar" ? "Visita finalizada com sucesso" : "Visita enviada para aprovação" };
+    } catch (error: unknown) {
+      return { success: false, message: mensagemAmigavelVisita(error) };
+    } finally { decisionLock.current = false; }
   };
-
-  const enviarParaAprovacao = async (id: string): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
-    try {
-      const { data: reg, error: regErr } = await (supabase as any)
-        .from("registros_consultor")
-        .select("version")
-        .eq("id", id)
-        .maybeSingle();
-      if (regErr) throw regErr;
-      const { error } = await (supabase as any).rpc("rpc_enviar_visita_aprovacao" as any, {
-        p_registro_id: id,
-        p_expected_version: (reg as any)?.version ?? 1,
-      });
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
-      return { success: true, message: "Visita enviada para aprovação" };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao enviar para aprovação", error: error.message };
-    }
-  };
+  const finalizarVisita = (id: string) => executeWorkflow(id, "finalizar");
+  const enviarParaAprovacao = (id: string) => executeWorkflow(id, "enviar");
 
   const aprovarRecomendacao = async (id: string): Promise<FluxoResponse> => {
     // Agora centralizado na RPC que também libera se configurado, ou apenas aprova
