@@ -137,6 +137,7 @@ SELECT pg_temp.assert_true('anonymous cannot execute new helper',NOT has_functio
             sql += (ROOT / "scripts/tests/b2b-provisioning-real-triggers.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-provisioning-auth-dependencies.sql").read_text()
             sql += (ROOT / "supabase/migrations/20261005153330_2399bc2a-d81a-4746-acfb-e9f1858aec5d.sql").read_text()
+            sql += (ROOT / "scripts/tests/b2b-invitation-producers-live.sql").read_text()
             sql += (ROOT / "scripts/rbac-audit/b2b-provisioning-lifecycle.sql").read_text()
             sql += (ROOT / "scripts/tests/b2b-provisioning-lifecycle-assertions.sql").read_text()
         if channels:

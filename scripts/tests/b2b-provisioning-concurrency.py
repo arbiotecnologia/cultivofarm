@@ -16,7 +16,7 @@ def run(base):
     query("RESET ROLE; UPDATE public.profiles SET organization_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' WHERE user_id='"+actor+"';")
     call = "SELECT public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','99999999-9999-4999-8999-999999999998','race@example.invalid','Race');"
 
-    def blocked_pair(first_sql, second_sql):
+    def blocked_pair(first_sql, second_sql, expect_block=True):
         first = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         first.stdin.write("BEGIN; SET LOCAL application_name='b2b_lock_holder'; "+first_sql+" SELECT pg_sleep(0.8); COMMIT;")
         first.stdin.close()
@@ -27,7 +27,7 @@ def run(base):
                 break
             time.sleep(0.02)
         else:
-            raise RuntimeError('holder not observed')
+            raise RuntimeError('holder not observed: '+(first.stderr.read() if first.poll() is not None else 'running'))
         second = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         second.stdin.write(second_sql)
         second.stdin.close()
@@ -38,7 +38,7 @@ def run(base):
                 blocked = True
                 break
             time.sleep(0.01)
-        if not blocked:
+        if expect_block and not blocked:
             raise RuntimeError('competing connection never blocked')
         outputs=[]
         for process in (first,second):
@@ -80,3 +80,75 @@ def run(base):
     if query("SELECT count(*) FROM public.platform_org_admin_invites WHERE email='new-invite@example.invalid';")!='1':
         raise RuntimeError('real producer duplicated new invite')
     print('PASS two connections real invitation producer one row lease conflict')
+    # New invite association, real finalizer and real revocation share the
+    # existing gate. Local Auth insertion fires the live profile trigger.
+    import uuid
+
+    def fresh_claim(label):
+        key=str(uuid.uuid4())
+        body=json.loads(query(prefix+f"SELECT public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','{key}','{label}@example.invalid','Race');"))
+        query(f"SET request.jwt.claim.sub=''; INSERT INTO auth.users(id,email,raw_app_meta_data) VALUES('{body['user_id']}','{label}@example.invalid',jsonb_build_object('b2b_provisioning_receipt','{body['claim_id']}')); ")
+        return body
+
+    def finish(body):
+        return service+f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"
+
+    def denial(statement, code='42501'):
+        return "DO $test$ BEGIN "+statement+f" RAISE EXCEPTION 'unexpected success'; EXCEPTION WHEN SQLSTATE '{code}' THEN RAISE NOTICE 'expected denial'; END $test$;"
+
+    def uncommitted(body):
+        if query(f"SELECT count(*) FROM public.user_roles WHERE user_id='{body['user_id']}';")!='0':
+            raise RuntimeError('revoked finish persisted role')
+
+    fields="organization_id,email,nome,modo_acesso,invited_by,status,user_id"
+    values=f"'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','actor-new@example.invalid','Actor','link','{superuser}','ativo','{actor}'"
+    body=fresh_claim('insert-race')
+    blocked_pair(f"INSERT INTO public.platform_org_admin_invites({fields}) VALUES({values});",service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    uncommitted(body)
+    print('PASS new associated invite versus finish denies phantom')
+    query("DELETE FROM public.platform_org_admin_invites WHERE email='actor-new@example.invalid';")
+
+    job=json.loads(query(claim_service+f"SELECT public.platform_claim_org_admin_provisioning('{superuser}','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','associate@example.invalid','Associate',NULL,NULL,'link',false);"))
+    body=fresh_claim('associate-race')
+    blocked_pair(f"UPDATE public.platform_org_admin_invites SET user_id='{actor}' WHERE id='{job['job_id']}';",service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    uncommitted(body)
+    print('PASS NULL user_id association versus finish denied')
+    query(f"UPDATE public.platform_org_admin_invites SET user_id=NULL WHERE id='{job['job_id']}';")
+
+    body=fresh_claim('finalize-race')
+    # The real platform finalizer consumes a provenance-matching Auth stub.
+    query(f"UPDATE auth.users SET email='associate@example.invalid',raw_app_meta_data=jsonb_build_object('provisioning_request_id','{job['request_id']}') WHERE id='{actor}';")
+    finalize=claim_service+f"SELECT public.platform_finalize_org_admin_provisioning('{job['job_id']}','{job['lease_token']}','{actor}');"
+    blocked_pair(finalize,service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    uncommitted(body)
+    if query(f"SELECT user_id FROM public.platform_org_admin_invites WHERE id='{job['job_id']}';")!=actor:
+        raise RuntimeError('canonical finalizer did not associate actor')
+    print('PASS real finalizer association versus finish denied')
+    query(f"UPDATE public.profiles SET senha_provisoria=false WHERE user_id='{actor}'; UPDATE public.platform_org_admin_invites SET status='ativo',access_valid_after=NULL,access_operation_status=NULL WHERE id='{job['job_id']}';")
+    body=fresh_claim('revoke-race')
+    revoke=claim_service+f"SELECT public.platform_claim_admin_access('{superuser}','{job['job_id']}','{uuid.uuid4()}','temporary_password',false);"
+    blocked_pair(revoke,service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    uncommitted(body)
+    print('PASS real access revocation versus finish denied')
+    query(f"UPDATE public.profiles SET senha_provisoria=false WHERE user_id='{actor}'; UPDATE public.platform_org_admin_invites SET status='ativo',access_valid_after=NULL,access_operation_status=NULL WHERE id='{job['job_id']}';")
+    body=fresh_claim('inversion-race')
+    # Existing producer holds invite before acquiring gate. A waiting gate
+    # would deadlock with finish's gate→invite path; NOWAIT rolls producer back.
+    query(f"UPDATE public.platform_org_admin_invites SET access_operation_status=NULL,access_requested_at=NULL,lease_expires_at=NULL WHERE id='{job['job_id']}';")
+    body=fresh_claim('inversion-final')
+    blocked_pair("SELECT revision FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;",claim_service+denial(f"SELECT public.platform_claim_admin_access('{superuser}','{job['job_id']}','{uuid.uuid4()}','temporary_password',false);",'55P03'),expect_block=False)
+    result=json.loads(query(finish(body)))
+    if not result['success']:
+        raise RuntimeError('finish failed after rejected inversion')
+    print('PASS row-before-gate NOWAIT abort no deadlock and finish succeeds')
+    # A committed finish linearizes before revocation; later replay is denied.
+    query(f"UPDATE public.platform_org_admin_invites SET access_valid_after=clock_timestamp() WHERE id='{job['job_id']}';")
+    query(service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    if query(f"SELECT status FROM platform_private.b2b_provisioning_receipts WHERE id='{body['claim_id']}';")!='completed':
+        raise RuntimeError('later revocation deleted completed receipt')
+    print('PASS finish before revoke preserves completed but denies replay')
+    # Removing the invite cannot resurrect a receipt (ABA); existing profile
+    # stamp is advanced for both old and new user_id by the candidate trigger.
+    query(f"DELETE FROM public.platform_org_admin_invites WHERE id='{job['job_id']}';")
+    query(service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
+    print('PASS invite deletion cannot resurrect old claim ABA')

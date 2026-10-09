@@ -1,6 +1,10 @@
 -- Canonical Auth lifecycle producer, captured read-only; no hosted Auth calls.
 ALTER TABLE public.profiles ALTER COLUMN ativo SET DEFAULT true;
 ALTER TABLE public.profiles ALTER COLUMN senha_provisoria SET DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN telefone text, ADD COLUMN cargo text, ADD COLUMN cpf_cnpj text;
+ALTER TABLE public.platform_org_admin_invites ADD COLUMN concluido_em timestamptz;
+CREATE TABLE public.platform_org_admin_audit(organization_id uuid,target_user_id uuid,invite_id uuid,actor_user_id uuid,action text,status text,reason text,origin text,idempotency_key uuid,new_values jsonb,created_at timestamptz DEFAULT now());
+CREATE TABLE public.platform_org_admin_email_changes(invite_id uuid,status text);
 ALTER TABLE public.organizations ADD PRIMARY KEY(id);
 ALTER TABLE public.partner_accounts ADD PRIMARY KEY(id);
 ALTER TABLE public.clientes ADD PRIMARY KEY(id);
@@ -45,3 +49,12 @@ ALTER TABLE public.platform_org_admin_invites ADD CHECK(status IN ('pendente','p
 CREATE FUNCTION public.is_platform_superadmin(_user_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=_user_id AND r.role='superadmin'::public.app_role)
 $$;
+CREATE FUNCTION platform_private.require_provisioned_admin_target(p_actor uuid,p_invite uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+DECLARE j public.platform_org_admin_invites%ROWTYPE;
+BEGIN
+ PERFORM platform_private.require_service_role();
+ IF p_actor IS NULL OR NOT public.is_platform_superadmin(p_actor) THEN RAISE EXCEPTION 'platform_forbidden' USING ERRCODE='42501'; END IF;
+ SELECT * INTO j FROM public.platform_org_admin_invites WHERE id=p_invite;
+ IF NOT FOUND OR j.user_id IS NULL OR j.user_id=p_actor OR public.is_platform_superadmin(j.user_id) OR j.status NOT IN ('ativo','pendente') OR NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id WHERE p.user_id=j.user_id AND p.organization_id=j.organization_id AND p.ativo IS TRUE AND o.ativo IS TRUE) OR NOT EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=j.user_id AND r.role='administrador'::public.app_role) OR NOT EXISTS(SELECT 1 FROM auth.users u WHERE u.id=j.user_id AND u.raw_app_meta_data->>'provisioning_request_id'=j.request_id::text) THEN RAISE EXCEPTION 'platform_target_denied' USING ERRCODE='42501'; END IF;
+END $function$;
