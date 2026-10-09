@@ -72,6 +72,17 @@ it("aceita exatamente 15MB e rejeita acima do limite", () => {
   const oversized = file(); Object.defineProperty(oversized, "size", { value: 15 * 1024 * 1024 + 1 });
   expect(() => validateTechnicalAttachment(oversized)).toThrow("15MB");
 });
+it("arquivo acima de 15MB não chega ao Storage", async () => {
+  const oversized = file(); Object.defineProperty(oversized, "size", { value: 15 * 1024 * 1024 + 1 });
+  render(<WizardAnexosStep {...props} />); choose(oversized);
+  await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith(expect.stringContaining("15MB")));
+  expect(mocks.upload).not.toHaveBeenCalled();
+});
+it("visita inválida não gera upload nem metadata", async () => {
+  render(<WizardAnexosStep {...props} remoteRegistroId="../visit" />); choose(file());
+  await waitFor(() => expect(mocks.toastError).toHaveBeenCalled());
+  expect(mocks.upload).not.toHaveBeenCalled(); expect(mocks.insert).not.toHaveBeenCalled();
+});
 it.each([["movie.mp4", "video/mp4"], ["sound.webm", "audio/webm"], ["file.jpg", "application/pdf"], ["file.pdf", ""], ["evil.svg", "image/svg+xml"], ["../file.pdf", "application/pdf"]])(
   "nega MIME/extensão %s antes do upload", async (name, mime) => {
     render(<WizardAnexosStep {...props} />); choose(file(name, mime));
@@ -156,4 +167,22 @@ it("leitura conserva acesso assinado sem controles de escrita", () => {
   expect(screen.queryByRole("button", { name: "Remover" })).toBeNull();
   expect(screen.queryByLabelText("Selecionar foto ou PDF")).toBeNull();
   expect(mocks.remove).not.toHaveBeenCalled(); expect(mocks.upload).not.toHaveBeenCalled();
+});
+it("falha metadata de remoção não anuncia sucesso", async () => {
+  mocks.rows = [attachment()]; mocks.deleted.mockResolvedValue({ error: { message: "denied" }, data: null });
+  render(<WizardAnexosStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Remover" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar remoção" }));
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("preservado"));
+  expect(mocks.toastSuccess).not.toHaveBeenCalled(); expect(screen.getByRole("alertdialog")).toBeTruthy();
+});
+it("troca de tenant durante upload impede metadata e sucesso tardios", async () => {
+  let finish: ((value: { error: null }) => void) | undefined;
+  mocks.upload.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const h = render(<WizardAnexosStep {...props} />); choose(file());
+  await waitFor(() => expect(mocks.upload).toHaveBeenCalledTimes(1));
+  mocks.organization = "33333333-3333-4333-8333-333333333333"; h.rerender(<WizardAnexosStep {...props} />);
+  await act(async () => { finish?.({ error: null }); });
+  expect(mocks.insert).not.toHaveBeenCalled(); expect(mocks.toastSuccess).not.toHaveBeenCalled();
+  expect(mocks.remove).toHaveBeenCalledWith([mocks.upload.mock.calls[0][0]]);
 });

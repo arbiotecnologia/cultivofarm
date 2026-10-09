@@ -37,7 +37,7 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
   const [uploading, setUploading] = useState(false);
   const [legenda, setLegenda] = useState("");
 
-  const { data: anexos = [], refetch } = useQuery({
+  const { data: anexos = [], refetch, isLoading, error: listError } = useQuery({
     queryKey: ["wizard-anexos", remoteRegistroId, access.scope],
     enabled: !!remoteRegistroId && access.ready,
     queryFn: async () => {
@@ -54,7 +54,7 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
     },
   });
 
-  const safeAnexos = access.ready ? anexos : [];
+  const safeAnexos = useMemo(() => access.ready ? anexos : [], [access.ready, anexos]);
   const paths = useMemo(
     () => safeAnexos.flatMap((a) => a.arquivo_path && profile?.organization_id && remoteRegistroId &&
       isConsultorStoragePath(a.arquivo_path, profile.organization_id, remoteRegistroId) ? [a.arquivo_path] : []),
@@ -171,7 +171,7 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
           {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <Button variant="destructive" disabled={deleting || !isOnline} onClick={handleDelete}>{deleting ? "Removendo…" : "Confirmar remoção"}</Button>
+            <Button variant="destructive" disabled={uploading || deleting || !isOnline} onClick={handleDelete}>{deleting ? "Removendo…" : "Confirmar remoção"}</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -226,15 +226,16 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
         </div>
       ))}
       {urlError && <div role="alert" className="text-sm text-destructive">Não foi possível acessar alguns anexos. <Button variant="link" onClick={refreshUrls}>Tentar novamente</Button></div>}
+      {listError && <div role="alert" className="text-sm text-destructive">Não foi possível consultar os anexos. <Button variant="link" onClick={() => refetch()}>Tentar novamente</Button></div>}
 
       <ul className="space-y-2">
-        {safeAnexos.length === 0 ? (
+        {isLoading ? <li className="text-sm text-muted-foreground">Carregando anexos…</li> : listError ? null : safeAnexos.length === 0 ? (
           <li className="text-sm text-muted-foreground text-center py-4">
             Nenhum anexo enviado ainda.
           </li>
         ) : (
           safeAnexos.map((a) => {
-            const url = a.arquivo_path ? urls[a.arquivo_path] : null;
+            const url = a.arquivo_path && paths.includes(a.arquivo_path) ? urls[a.arquivo_path] : null;
             const isImage = a.tipo_midia === "foto";
             return (
               <li key={a.id} className="border rounded-md p-2 flex items-center gap-2">
