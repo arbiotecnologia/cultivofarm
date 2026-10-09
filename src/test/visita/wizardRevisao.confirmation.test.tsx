@@ -77,9 +77,11 @@ it("status atualizado enquanto confirmação está aberta impede RPC", () => {
   expect(mocks.rpc).not.toHaveBeenCalled();
 });
 it.each([
-  ["rascunho", "Finalizar visita", "Confirmar finalização", "finalizado"],
-  ["finalizado", "Enviar para aprovação", "Confirmar envio", "enviado_aprovacao"],
-])("sucesso %s atualiza consultas ativas e invalida inativas sem cache global", async (status, opener, confirm, nextStatus) => {
+  ["rascunho", "Finalizar visita", "Confirmar finalização", "finalizado", true],
+  ["rascunho", "Finalizar visita", "Confirmar finalização", "finalizado", false],
+  ["finalizado", "Enviar para aprovação", "Confirmar envio", "enviado_aprovacao", true],
+  ["finalizado", "Enviar para aprovação", "Confirmar envio", "enviado_aprovacao", false],
+])("sucesso %s atualiza consultas ativas e invalida inativas sem cache global (resumo ativo %s)", async (status, opener, confirm, nextStatus, summaryActive) => {
   mocks.registro.status = status;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
   const listKey = ["atendimentos-tecnicos", { aba: "todos", page: 1 }];
@@ -94,7 +96,7 @@ it.each([
   const listObserver = new QueryObserver(client, { queryKey: listKey, queryFn: listFetch });
   const summaryObserver = new QueryObserver(client, { queryKey: summaryKey, queryFn: summaryFetch });
   const unsubscribeList = listObserver.subscribe(() => undefined);
-  const unsubscribeSummary = summaryObserver.subscribe(() => undefined);
+  const unsubscribeSummary = summaryActive ? summaryObserver.subscribe(() => undefined) : () => undefined;
   mocks.invalidate.mockImplementation((filters) => client.invalidateQueries(filters));
   try {
     render(<WizardRevisaoStep {...props} />);
@@ -102,13 +104,11 @@ it.each([
     fireEvent.click(screen.getByRole("button", { name: confirm }));
     await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/app/atendimentos"));
     expect(listFetch).toHaveBeenCalledTimes(1);
-    expect(summaryFetch).toHaveBeenCalledTimes(1);
+    expect(summaryFetch).toHaveBeenCalledTimes(summaryActive ? 1 : 0);
     expect(client.getQueryData(listKey)).toEqual({ status: nextStatus });
-    expect(client.getQueryData(summaryKey)).toEqual({ aguardando: nextStatus === "enviado_aprovacao" ? 1 : 0 });
+    expect(client.getQueryData(summaryKey)).toEqual({ aguardando: summaryActive && nextStatus === "enviado_aprovacao" ? 1 : 0 });
     expect(client.getQueryState(inactiveListKey)?.isInvalidated).toBe(true);
-    unsubscribeSummary();
-    await client.invalidateQueries({ queryKey: summaryKey });
-    expect(client.getQueryState(summaryKey)?.isInvalidated).toBe(true);
+    expect(client.getQueryState(summaryKey)?.isInvalidated).toBe(!summaryActive);
     expect(client.getQueryData(["unrelated"])).toBe(42);
     expect(client.getQueryState(["unrelated"])?.isInvalidated).toBe(false);
   } finally {
