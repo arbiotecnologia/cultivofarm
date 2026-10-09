@@ -1,5 +1,30 @@
 -- REVIEWABLE CANDIDATE ONLY. Do not activate or apply until channel audit gate.
 -- No Auth writes, passwords, links or emails in SQL. Used verbatim in local PG tests.
+-- All invite mutations use the EXISTING user gate. Older producers may already
+-- hold an invitation row before DML: never wait on the gate in that order.
+-- NOWAIT aborts that transaction (55P03), releases its rows and requires an
+-- explicit retry; no automatic email/Auth retry and no second lock registry.
+CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_invitation_gate()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $gate$
+BEGIN
+ IF TG_LEVEL<>'STATEMENT' OR TG_RELID<>'public.platform_org_admin_invites'::regclass THEN
+  RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN
+  RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ RETURN NULL;
+END $gate$;
+REVOKE ALL ON FUNCTION cf_user_guards_v1.acquire_invitation_gate() FROM PUBLIC,anon,authenticated;
+DROP TRIGGER IF EXISTS a00_cf_invitation_gate ON public.platform_org_admin_invites;
+CREATE TRIGGER a00_cf_invitation_gate BEFORE INSERT OR UPDATE OR DELETE
+ON public.platform_org_admin_invites FOR EACH STATEMENT
+EXECUTE FUNCTION cf_user_guards_v1.acquire_invitation_gate();
+DROP TRIGGER IF EXISTS a00_cf_invitation_no_truncate ON public.platform_org_admin_invites;
+CREATE TRIGGER a00_cf_invitation_no_truncate BEFORE TRUNCATE
+ON public.platform_org_admin_invites FOR EACH STATEMENT
+EXECUTE FUNCTION cf_user_guards_v1.block_truncate();
 CREATE TABLE IF NOT EXISTS platform_private.b2b_provisioning_receipts (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), actor_id uuid NOT NULL,
  organization_id uuid NOT NULL, partner_id uuid NOT NULL,
