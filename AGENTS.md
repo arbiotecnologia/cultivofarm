@@ -38,4 +38,4 @@
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
-- Wizard progression uses persisted prerequisites without an attachment gate; review mutations use controlled AlertDialog confirmation and a shared synchronous ref lock — prevents optional files blocking navigation and duplicate local submissions.
+- Wizard uses persisted prerequisites, not attachments; review uses controlled AlertDialog and a shared synchronous ref lock — prevents blocked navigation and duplicate submissions.
