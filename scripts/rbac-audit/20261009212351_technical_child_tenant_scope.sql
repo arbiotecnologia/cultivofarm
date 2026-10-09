@@ -1,7 +1,7 @@
 -- Additional restrictive fence; existing permissive policies still determine allowed actions.
 CREATE OR REPLACE FUNCTION public.technical_child_read_scope(p_registro_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
- SELECT public.can_view_technical_visit_visit(auth.uid(),p_registro_id)
+ SELECT public.can_view_technical_visit(auth.uid(),p_registro_id)
  OR (public.technical_actor_ready(auth.uid()) AND public.has_role(auth.uid(),'cliente_produtor')
  AND EXISTS (SELECT 1 FROM public.registros_consultor r
  WHERE r.id=p_registro_id
