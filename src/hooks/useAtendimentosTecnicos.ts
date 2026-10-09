@@ -10,6 +10,7 @@
  */
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { TECHNICAL_STALE_REVALIDATION, useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 
 export type AtendimentoAba =
   | "todos"
@@ -111,20 +112,24 @@ export interface AtendimentosFilters {
 }
 
 export function useAtendimentosTecnicos(filters: AtendimentosFilters = {}) {
+  const session = useTechnicalQuerySession("atendimentos-tecnicos");
   const { aba = "todos", search = null, page = 1, pageSize = 20, enabled = true } = filters;
 
-  return useQuery({
-    queryKey: ["atendimentos-tecnicos", { aba, search, page, pageSize }],
-    enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 15_000,
-    queryFn: async (): Promise<AtendimentosResult> => {
+  const result = useQuery({
+    queryKey: ["atendimentos-tecnicos", { aba, search, page, pageSize }, session.scope],
+    enabled: enabled && session.ready,
+    placeholderData: (previous, query) => query?.queryKey[query.queryKey.length - 1] === session.scope ? keepPreviousData(previous) : undefined,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }): Promise<AtendimentosResult> => {
+      const assertCurrent = session.fence();
+      assertCurrent(signal);
       const { data, error } = await supabase.rpc("rpc_listar_atendimentos_tecnicos_v1" as never, {
         p_aba: aba,
         p_search: search?.trim() || null,
         p_page: page,
         p_page_size: pageSize,
       } as never);
+      assertCurrent(signal);
       if (error) throw error;
       const res = (data ?? {}) as Partial<AtendimentosResult> & { ok?: boolean; error?: string };
       // O backend valida a aba: valor desconhecido é rejeitado explicitamente.
@@ -139,17 +144,24 @@ export function useAtendimentosTecnicos(filters: AtendimentosFilters = {}) {
       };
     },
   });
+  return { ...result, data: session.ready ? result.data : undefined };
 }
 
 export function useAtendimentosResumo(enabled = true) {
-  return useQuery({
-    queryKey: ["atendimentos-tecnicos-resumo"],
-    enabled,
+  const session = useTechnicalQuerySession("atendimentos-tecnicos-resumo");
+  const result = useQuery({
+    queryKey: ["atendimentos-tecnicos-resumo", session.scope],
+    enabled: enabled && session.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
     staleTime: 30_000,
-    queryFn: async (): Promise<AtendimentosResumo> => {
+    queryFn: async ({ signal }): Promise<AtendimentosResumo> => {
+      const assertCurrent = session.fence();
+      assertCurrent(signal);
       const { data, error } = await supabase.rpc("rpc_resumo_atendimentos_tecnicos_v1" as never);
+      assertCurrent(signal);
       if (error) throw error;
       return { ...EMPTY_ATENDIMENTOS_RESUMO, ...((data ?? {}) as Partial<AtendimentosResumo>) };
     },
   });
+  return { ...result, data: session.ready ? result.data : undefined };
 }

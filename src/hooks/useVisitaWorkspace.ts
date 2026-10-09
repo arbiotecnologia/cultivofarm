@@ -32,7 +32,7 @@ export function useTechnicalQuerySession(prefix: string) {
   }
   useEffect(() => {
     const predicate = (query: { queryKey: readonly unknown[] }) =>
-      query.queryKey[0] === prefix && query.queryKey.at(-1) !== scope;
+      query.queryKey[0] === prefix && query.queryKey[query.queryKey.length - 1] !== scope;
     void client.cancelQueries({ predicate });
     client.removeQueries({ predicate });
   }, [client, prefix, scope]);
@@ -122,7 +122,7 @@ export function useVisitaWorkspace(registroId?: string | null) {
       assertCurrent(signal);
       const { data, error } = await supabase.rpc("rpc_get_visita_workspace" as never, {
         p_registro_id: registroId,
-      } as never).abortSignal(signal);
+      } as never);
       assertCurrent(signal);
       if (error) throw error;
       const ws = (data ?? {}) as any;

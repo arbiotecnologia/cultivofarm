@@ -97,7 +97,7 @@ export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
     queryKey: ["visitas-tecnicas-lista", { search, status, de, ate, clienteId, fazendaId, page, pageSize }, session.scope],
     enabled: enabled && session.ready,
     ...TECHNICAL_STALE_REVALIDATION,
-    placeholderData: (previous, query) => query?.queryKey.at(-1) === session.scope ? keepPreviousData(previous) : undefined,
+    placeholderData: (previous, query) => query?.queryKey[query.queryKey.length - 1] === session.scope ? keepPreviousData(previous) : undefined,
     queryFn: async ({ signal }): Promise<VisitasListaResult> => {
       const assertCurrent = session.fence();
       assertCurrent(signal);
@@ -110,7 +110,7 @@ export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
         p_fazenda_id: fazendaId || null,
         p_page: page,
         p_page_size: pageSize,
-      } as never).abortSignal(signal);
+      } as never);
       assertCurrent(signal);
       if (error) throw error;
       const res = (data ?? {}) as Partial<VisitasListaResult>;
