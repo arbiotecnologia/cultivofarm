@@ -57,6 +57,17 @@ export const formatDateDisplay = (date: DateInput): string => {
   }
 };
 
+/** Data civil serializada pela RPC como timestamp: não aplicar fuso local.
+ * Usar somente em campos cujo contrato de apresentação é uma data civil.
+ * Timestamps de eventos continuam usando formatDateDisplay/formatDateTimeDisplay.
+ */
+export const formatCivilDateDisplay = (date: DateInput): string => {
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}(?:$|T| )/.test(date)) {
+    return formatDateDisplay(date.slice(0, 10));
+  }
+  return formatDateDisplay(date);
+};
+
 /**
  * Formata data + hora para DD/MM/YYYY HH:mm (fuso local).
  */

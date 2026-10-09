@@ -1,5 +1,13 @@
 # Fase focal UI wizard + GPS — 2026-10-09 21:19 UTC
 
+## P2 visual — status e data civil — 2026-10-09 22:39 UTC
+- Evidência real **recebida do usuário, na PRÉVIA**, não produção nem execução deste harness: `TESTE-AUDITORIA-ANEXO.png` enviado manualmente pela UI; metadata `57b21390-288f-4485-a376-8fca113fe078`, blob existente, categoria geral, foto e uploader consultor. Visita `098fa34f-1cce-4820-af52-7b22a07a49b7` finalizada pela UI, modo leitura com **Abrir** e sem **Remover**. Supersede apenas pendências históricas de upload/finalização/leitura desse recorte. Não prova download dos bytes, remoção, produtor real ou isolamento integral.
+- Envio à aprovação pela UI relatado; **resultado/status posterior ainda UNVERIFIED**, sem consultar ou mutar dados nesta rodada. Não atribuir versão nova nem aprovação efetiva.
+- Cabeçalho: idle significa **Sem envio pendente**, não Rascunho; status exibido separadamente usa workspace autoritativo e rótulos existentes (Finalizado/Aguardando aprovação), sem fallback ao registro local antigo nem mudança de permissões/RPC/version.
+- Cards: contrato SQL arquivado projeta `data_vistoria::timestamptz` em `data_ref` e data civil de retorno em `data_prevista`. Formatter civil reaproveita `formatDateDisplay` sobre a parte YYYY-MM-DD para visitas; demandas e eventos continuam conversão local. `data_ref` também pode ter fallback `created_at`: no card de visita apresenta a data serializada, não horário local; sem alterar timestamp/DB nem generalizar a outros callers.
+- Testes locais: datas em America/Sao_Paulo, bloqueio de edição em finalizado/enviado_aprovacao com registro local ainda rascunho e regressões de navegação/revisão. Resultados de execução registrados após validação; não somar suítes anteriores.
+- **AGENTS.md preservado byte a byte**; sem migrations, dados, fixtures, transições, gates ou publicação. Rollback somente apresentação destes dois P2, preferindo forward-fix sem restaurar rótulo contraditório ou deslocamento civil. Produção/aprovação posterior/demais fases UNVERIFIED, NO-GO integral.
+
 ## Adendo somente documental — DDLs aplicados externamente — 2026-10-09 22:16 UTC
 Os três textos exatos fornecidos foram arquivados, **sem execução, reaplicação, consulta ao ledger, nova implementação, testes reexecutados, dados/transições ou publicação**. Aplicação externa no Supabase canônico `swzpzcwiasxmjutrmvkm` e IDs são evidências recebidas, não validação remota própria. **AGENTS.md intacto**, sem compactação/reformulação.
 

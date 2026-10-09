@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { formatDateDisplay } from "@/lib/date-utils";
+import { formatCivilDateDisplay, formatDateDisplay } from "@/lib/date-utils";
 import { STATUS_LABEL_REGISTRO } from "@/lib/registroTransitions";
 import {
   useAtendimentosTecnicos,
@@ -244,7 +244,7 @@ export default function MobileAtendimentos() {
                 )}
                 {item.responsavel_nome && <span className="truncate">👤 {item.responsavel_nome}</span>}
                 {item.data_prevista && (
-                  <span>SLA {formatDateDisplay(item.data_prevista)}</span>
+                  <span>SLA {item.kind === "visita" ? formatCivilDateDisplay(item.data_prevista) : formatDateDisplay(item.data_prevista)}</span>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
@@ -253,7 +253,7 @@ export default function MobileAtendimentos() {
                   {item.origem ? ` · ${ORIGEM_LABEL[item.origem] ?? item.origem}` : ""}
                 </span>
                 <span className="shrink-0">
-                  {item.data_ref ? formatDateDisplay(item.data_ref) : "—"}
+                  {item.data_ref ? (item.kind === "visita" ? formatCivilDateDisplay(item.data_ref) : formatDateDisplay(item.data_ref)) : "—"}
                 </span>
               </div>
               {item.proxima_acao && (

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ missing: "", rpc: vi.fn() }));
+const mocks = vi.hoisted(() => ({ missing: "", status: "rascunho", rpc: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn(), useParams: () => ({ id: "visit-fake" }), useSearchParams: () => [new URLSearchParams()] }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor-fake" } }) }));
@@ -8,7 +8,7 @@ vi.mock("@/hooks/useOfflineSync", () => ({ useOnlineStatus: () => true }));
 vi.mock("@/hooks/useUnsavedChanges", () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock("@/hooks/useObjetivosVisita", () => ({ useObjetivosVisita: () => ({ data: [] }) }));
 vi.mock("@/hooks/useVisitaWorkspace", () => ({
-  useVisitaWorkspace: () => ({ data: { status: "rascunho", permissions: { can_edit: true, is_editable_status: true } }, isLoading: false }),
+  useVisitaWorkspace: () => ({ data: { status: mocks.status, permissions: { can_edit: mocks.status === "rascunho", is_editable_status: mocks.status === "rascunho" } }, isLoading: false }),
   EMPTY_VISITA_PERMISSIONS: {}, visitaWorkspaceKey: (id: string) => ["visita-workspace", id],
 }));
 vi.mock("@tanstack/react-query", () => ({
@@ -28,7 +28,7 @@ vi.mock("@/pages/app/wizard/WizardAnexosStep", () => ({ default: () => null }));
 vi.mock("@/pages/app/wizard/WizardRevisaoStep", () => ({ default: () => <div>Revisão montada</div> }));
 vi.mock("@/components/visita/AcompanhamentoVisita", () => ({ AcompanhamentoVisita: () => <div>Acompanhamento montado</div> }));
 import MobileVisitaWizard from "@/pages/app/MobileVisitaWizard";
-beforeEach(() => { mocks.missing = ""; vi.clearAllMocks(); });
+beforeEach(() => { mocks.missing = ""; mocks.status = "rascunho"; vi.clearAllMocks(); });
 afterEach(cleanup);
 it("navega às etapas 7 e 8 com recomendação persistida e zero anexos sem mutação", () => {
   render(<MobileVisitaWizard />);
@@ -36,6 +36,12 @@ it("navega às etapas 7 e 8 com recomendação persistida e zero anexos sem muta
   expect(screen.getByText("Revisão montada")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "8 Acompanhamento" }));
   expect(screen.getByText("Acompanhamento montado")).toBeTruthy();
+  expect(mocks.rpc).not.toHaveBeenCalled();
+});
+it.each(["finalizado", "enviado_aprovacao"])("preserva leitura sem mutações com workspace %s e registro local antigo", (status) => {
+  mocks.status = status;
+  render(<MobileVisitaWizard />);
+  expect(screen.getByRole("button", { name: /Salvar/ })).toBeDisabled();
   expect(mocks.rpc).not.toHaveBeenCalled();
 });
 it.each([
