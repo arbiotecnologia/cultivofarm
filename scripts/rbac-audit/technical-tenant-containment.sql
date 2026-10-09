@@ -32,6 +32,33 @@ $$;
 REVOKE ALL ON FUNCTION public.technical_client_link(uuid,uuid,text[]) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.technical_client_link(uuid,uuid,text[]) TO authenticated,service_role;
 
+-- Callers of lower-level helpers receive the same actor/reference fence.
+CREATE OR REPLACE FUNCTION public.is_visit_responsible(p_user_id uuid,p_registro_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+ SELECT public.technical_actor_ready(p_user_id) AND EXISTS (
+ SELECT 1 FROM public.registros_consultor r WHERE r.id=p_registro_id
+ AND public.technical_refs_in_actor_tenant(r.cliente_id,r.fazenda_id,r.talhao_id)
+ AND public.technical_client_link(p_user_id,r.cliente_id,ARRAY['read','execute','manage'])
+ AND (r.consultor_responsavel=p_user_id OR r.created_by=p_user_id
+ OR r.consultor_profile_id IN (SELECT p.id FROM public.profiles p WHERE p.user_id=p_user_id)));
+$$;
+CREATE OR REPLACE FUNCTION public.is_active_visit_participant(p_user_id uuid,p_registro_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+ SELECT public.technical_actor_ready(p_user_id) AND EXISTS (
+ SELECT 1 FROM public.technical_visit_assignments a JOIN public.registros_consultor r ON r.id=a.registro_consultor_id
+ WHERE r.id=p_registro_id AND a.user_id=p_user_id AND a.is_active IS TRUE AND a.removed_at IS NULL
+ AND public.technical_refs_in_actor_tenant(r.cliente_id,r.fazenda_id,r.talhao_id)
+ AND public.technical_client_link(p_user_id,r.cliente_id,ARRAY['read','execute','manage']));
+$$;
+CREATE OR REPLACE FUNCTION public.is_visit_org_manager(p_user_id uuid,p_registro_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+ SELECT public.technical_actor_ready(p_user_id) AND public.has_role(p_user_id,'gestor') AND EXISTS (
+ SELECT 1 FROM public.registros_consultor r WHERE r.id=p_registro_id
+ AND public.technical_refs_in_actor_tenant(r.cliente_id,r.fazenda_id,r.talhao_id));
+$$;
+REVOKE ALL ON FUNCTION public.is_visit_responsible(uuid,uuid),public.is_active_visit_participant(uuid,uuid),public.is_visit_org_manager(uuid,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.is_visit_responsible(uuid,uuid),public.is_active_visit_participant(uuid,uuid),public.is_visit_org_manager(uuid,uuid) TO authenticated,service_role;
+
 CREATE OR REPLACE FUNCTION public.can_view_technical_visit(p_user_id uuid,p_registro_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
  SELECT public.technical_actor_ready(p_user_id) AND EXISTS (
@@ -64,7 +91,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
  OR ((public.has_role(auth.uid(),'consultor_tecnico') OR public.has_role(auth.uid(),'tecnico_agronomo') OR public.has_role(auth.uid(),'aplicador'))
  AND public.technical_client_link(auth.uid(),s.cliente_id,ARRAY['read','execute','manage'])
  AND (s.consultor_atribuido=auth.uid() OR s.created_by=auth.uid() OR s.user_id=auth.uid()))
- OR (public.has_role(auth.uid(),'cliente_produtor') AND public.technical_client_link(auth.uid(),s.cliente_id,ARRAY['read','execute','manage']))));
+ OR (public.has_role(auth.uid(),'cliente_produtor') AND s.cliente_id=ANY(public.get_cliente_ids_for_user(auth.uid())))));
 $$;
 REVOKE ALL ON FUNCTION public.can_user_access_solicitacao(uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.can_user_access_solicitacao(uuid) TO authenticated,service_role;
@@ -294,7 +321,7 @@ BEGIN
     'os_ativas', (SELECT count(*) FROM public.ordens_servico_onfarm os
                    WHERE os.status NOT IN ('finalizada','entregue','cancelada')
                      AND os.registro_consultor_id IN (SELECT id FROM visitas)),
-    'fazendas', (SELECT count(*) FROM public.fazendas f WHERE public.technical_refs_in_actor_tenant(f.cliente_id,f.id,NULL) AND public.can_user_access_cliente(f.cliente_id))
+    'fazendas', (SELECT count(*) FROM public.fazendas f WHERE public.technical_refs_in_actor_tenant(f.cliente_id,f.id,NULL) AND public.can_user_access_cliente(f.cliente_id) AND (v_is_admin OR public.technical_client_link(v_uid,f.cliente_id,ARRAY['read','execute','manage'])))
   ) INTO v_res;
 
   RETURN v_res;
@@ -631,3 +658,6 @@ BEGIN
   RETURN v_res;
 END;
 $function$;
+
+REVOKE ALL ON FUNCTION public.rpc_listar_atendimentos_tecnicos_v1(text,text,integer,integer),public.rpc_resumo_atendimentos_tecnicos_v1() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.rpc_listar_atendimentos_tecnicos_v1(text,text,integer,integer),public.rpc_resumo_atendimentos_tecnicos_v1() TO authenticated,service_role;
