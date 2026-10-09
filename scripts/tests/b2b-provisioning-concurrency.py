@@ -27,7 +27,7 @@ def run(base):
                 break
             time.sleep(0.02)
         else:
-            raise RuntimeError('holder not observed')
+            raise RuntimeError('holder not observed: '+(first.stderr.read() if first.poll() is not None else 'running'))
         second = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         second.stdin.write(second_sql)
         second.stdin.close()
@@ -103,7 +103,7 @@ def run(base):
     fields="organization_id,email,nome,modo_acesso,invited_by,status,user_id"
     values=f"'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','actor-new@example.invalid','Actor','link','{superuser}','ativo','{actor}'"
     body=fresh_claim('insert-race')
-    blocked_pair(f"INSERT INTO public.platform_org_admin_invites({fields}) VALUES({values});",service+denial(finish(body).split('SELECT ',1)[1].join(['SELECT ', ''])))
+    blocked_pair(f"INSERT INTO public.platform_org_admin_invites({fields}) VALUES({values});",service+denial(f"SELECT public.b2b_finish_provisioning('{body['claim_id']}','{body['fence']}','{body['user_id']}');"))
     uncommitted(body)
     print('PASS new associated invite versus finish denies phantom')
     query("DELETE FROM public.platform_org_admin_invites WHERE email='actor-new@example.invalid';")
