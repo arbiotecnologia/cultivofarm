@@ -4,6 +4,7 @@ ALTER TABLE public.profiles ALTER COLUMN senha_provisoria SET DEFAULT false;
 ALTER TABLE public.profiles ADD COLUMN telefone text, ADD COLUMN cargo text, ADD COLUMN cpf_cnpj text;
 ALTER TABLE public.platform_org_admin_invites ADD COLUMN concluido_em timestamptz;
 CREATE TABLE public.platform_org_admin_audit(organization_id uuid,target_user_id uuid,invite_id uuid,actor_user_id uuid,action text,status text,reason text,origin text,idempotency_key uuid,new_values jsonb,created_at timestamptz DEFAULT now());
+CREATE TABLE public.platform_org_admin_email_changes(invite_id uuid,status text);
 ALTER TABLE public.organizations ADD PRIMARY KEY(id);
 ALTER TABLE public.partner_accounts ADD PRIMARY KEY(id);
 ALTER TABLE public.clientes ADD PRIMARY KEY(id);
