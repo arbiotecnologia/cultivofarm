@@ -1,5 +1,22 @@
 # Fase focal UI wizard + GPS — 2026-10-09 21:19 UTC
 
+## Adendo somente documental — DDLs aplicados externamente — 2026-10-09 22:16 UTC
+Os três textos exatos fornecidos foram arquivados, **sem execução, reaplicação, consulta ao ledger, nova implementação, testes reexecutados, dados/transições ou publicação**. Aplicação externa no Supabase canônico `swzpzcwiasxmjutrmvkm` e IDs são evidências recebidas, não validação remota própria. **AGENTS.md intacto**, sem compactação/reformulação.
+
+| ID fornecido | Arquivo literal em `scripts/rbac-audit/` | Recorte |
+|---|---|---|
+| 20261009220953 | `applied-20261009220953-technical-files-tenant-scope.sql` | Quatro policies RESTRICTIVE metadata, preservando permissivas existentes |
+| 20261009221311 | `applied-20261009221311-technical-storage-release-scope.sql` | SELECT Storage condicionado a `technical_child_read_scope`; escrita editável e manage |
+| 20261009221430 | `applied-20261009221430-technical-content-immutability.sql` | Trigger em cinco tabelas verifica parents OLD/NEW ordenados com FOR SHARE |
+
+**Evidências independentes recebidas, claims SQL/rollback, não JWT/browser:** metadata admin FSF via RLS antes **1**, depois **0**; consultor/Admin AR **1**, financeiro **0**. INSERT consultor válido PASS; organização forjada, path de outra visita e uploader forjado negados. Helper Storage SELECT/INSERT consultor/Admin AR **true**, FSF/financeiro **false**. Nova cerca SELECT inclui liberação por status do ramo produtor; **produtor real UNVERIFIED**. Não equivalem a upload/download de bytes ou signed URLs exercitados por sessão real.
+
+P1 pós-finalização comprovado independentemente: recomendação permanecia alterável. Trigger novo em `visitas_checkin`, `visitas_campo`, `visita_diagnosticos`, `registros_consultor_recomendacoes` e `registros_consultor_arquivos` permite conteúdo somente em **rascunho/em_andamento**, verifica OLD/NEW parent sob **FOR SHARE**, **sem exceção administrativa**. **Sete testes rollback PASS** relatados: draft update, finalize RPC, quatro updates bloqueados e delete bloqueado; a transição foi revertida. Não prova concorrência integral nem certifica automaticamente writers não exercitados.
+
+**Visita do consultor permanece rascunho**, sem criação de dados/transição nesta rodada, até teste UI; finalização real/revisão autenticada pendentes. **44 testes locais independentes PASS**, scanner **3833/zero achados**; suíte distinta dos 50 próprios anteriores, **não somar**. Lint `mediaUpload.ts`: **cinco ERROS legados, não avisos**; lint global não PASS. **Typechecks app/node e build independentes EM EXECUÇÃO**, sem resultado conclusivo recebido; isso não substitui os checkpoints próprios históricos NOT RUN/build automático OK.
+
+SQLs arquivados como recebidos, sem normalizar/corrigir statements ou acrescentar SQL executável. Este adendo supersede apenas a pendência de fornecimento/arquivo literal de `technical_files_tenant_scope` abaixo; paridade com ledger remoto não foi verificada pelo harness. **Rollback só pode remover cercas sob contenção e correção substitutiva**, pois removê-las reabre P1; nenhum rollback foi executado. **PASS focal SQL relatado; produtor real, UI/JWT/Storage bytes, writers e demais fases UNVERIFIED; NO-GO integral**. B2B gates/Executivo19/emailv9 preservados.
+
 ## ANEXOS técnicos — 2026-10-09 22:10 UTC
 - Base observada `e5053ac6fc10c4ac7bfb353e7fa1b2d035da6f4c`. Alterações exclusivamente locais; **AGENTS.md preservado byte a byte**, SHA-256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244`. Sem banco, migrations, fixtures, publicação, Auth ou entregas externas; gates B2B/Executivo19/emailv9 intactos.
 - `WizardAnexosStep` reutiliza `buildTenantStoragePath`, `buildRemotePath`, `BUCKET`, `useStorageAccessScope` e `useSignedUrls`; não usa o fluxo legado de retry/upsert para compensação, pois esta exige blob novo confirmado com **upsert:false**. Validação focal adicionada ao util de mídia existente, sem redesenhar upload/offline de outros callers. Caminho `orgUUID/visitaUUID/foto|documento/UUID.ext`, validado contra tenant/visita antes de upload/assinatura/delete. Metadata tipada: `categoria_arquivo=geral`, `tipo_midia=foto|pdf`, MIME em `tipo_arquivo`, `uploaded_by` do ator; sem `any` novo.
