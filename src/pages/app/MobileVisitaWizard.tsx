@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
-import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
+import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey, TECHNICAL_STALE_REVALIDATION, useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 import { wizardUnlockedUpTo } from "@/lib/visita/wizardProgress";
 import { deriveVisitaWizardState } from "@/lib/visita/wizardWorkspaceState";
 import { STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
@@ -155,6 +155,12 @@ const ERROR_LABELS: Record<string, string> = {
 };
 
 export default function MobileVisitaWizard() {
+  const { user, profile, roles, loading } = useAuth();
+  const identity = JSON.stringify([loading, user?.id, profile?.user_id, profile?.organization_id, profile?.ativo, [...(roles ?? [])].sort()]);
+  return <MobileVisitaWizardForm key={identity} />;
+}
+
+function MobileVisitaWizardForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const [searchParams] = useSearchParams();
@@ -165,6 +171,16 @@ export default function MobileVisitaWizard() {
   const isNew = !id || id === "novo";
   const registroId = isNew ? null : (id as string);
   const localIdParam = searchParams.get("local_id");
+  const registroSession = useTechnicalQuerySession("mobile-wizard-registro");
+  const checkinSession = useTechnicalQuerySession("wizard-checkin-flag");
+  const campoSession = useTechnicalQuerySession("wizard-campo-flag");
+  const diagSession = useTechnicalQuerySession("wizard-diag-flag");
+  const recSession = useTechnicalQuerySession("wizard-rec-flag");
+  const formIdentity = `${registroSession.scope}:${registroId ?? localIdParam ?? "novo"}`;
+  const formHydration = useRef({ identity: formIdentity, hydrated: false, dirty: false });
+  if (formHydration.current.identity !== formIdentity) {
+    formHydration.current = { identity: formIdentity, hydrated: false, dirty: false };
+  }
 
   // Estado da Etapa 1
   const [clienteId, setClienteId] = useState("");
@@ -292,21 +308,29 @@ export default function MobileVisitaWizard() {
     isLoading: loadingRegistro,
     error: registroError,
   } = useQuery({
-    queryKey: ["mobile-wizard-registro", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
+    queryKey: ["mobile-wizard-registro", registroId, registroSession.scope],
+    enabled: !!registroId && registroSession.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }) => {
+      if (!registroId) throw new Error("missing_visit");
+      const assertCurrent = registroSession.fence();
+      assertCurrent(signal);
       const { data, error } = await supabase
         .from("registros_consultor")
         .select("*")
-        .eq("id", registroId!)
-        .maybeSingle();
+        .eq("id", registroId)
+        .abortSignal(signal).maybeSingle();
+      assertCurrent(signal);
       if (error) throw error;
       return data;
     },
   });
 
   useEffect(() => {
-    if (!registro) return;
+    // Background status refresh must never replace the mounted form or a pending save.
+    if (!registroSession.ready || !registro || formHydration.current.hydrated ||
+      formHydration.current.dirty || saveState === "saving" || saveState === "pending_sync") return;
+    formHydration.current.hydrated = true;
     setClienteId(registro.cliente_id ?? "");
     setFazendaId(registro.fazenda_id ?? "");
     setTalhaoId(registro.talhao_id ?? "");
@@ -316,7 +340,7 @@ export default function MobileVisitaWizard() {
     setObjetivo(registro.objetivo_visita ?? "");
     setSafra(registro.safra ?? "");
     setFaseFenologica(registro.fase_fenologica ?? "");
-  }, [registro]);
+  }, [registro, registroSession.ready, formIdentity, saveState]);
 
   // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
   // Nunca derivar permissão apenas do status local, e nunca afirmar "concluída"
@@ -346,59 +370,75 @@ export default function MobileVisitaWizard() {
 
   // Check-in existente para esta visita (habilita Etapa 3)
   const { data: checkinExistente } = useQuery({
-    queryKey: ["wizard-checkin-flag", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
+    queryKey: ["wizard-checkin-flag", registroId, checkinSession.scope],
+    enabled: !!registroId && checkinSession.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }) => {
+      const assertCurrent = checkinSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("visitas_checkin")
         .select("id")
         .eq("registro_consultor_id", registroId!)
         .limit(1)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
 
   // Registro de campo já preenchido (habilita Etapa 4)
   const { data: campoExistente } = useQuery({
-    queryKey: ["wizard-campo-flag", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
+    queryKey: ["wizard-campo-flag", registroId, campoSession.scope],
+    enabled: !!registroId && campoSession.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }) => {
+      const assertCurrent = campoSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("visitas_campo" as any)
         .select("id")
         .eq("registro_consultor_id", registroId!)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
 
   // Diagnóstico já registrado (habilita Etapa 5)
   const { data: diagExistente } = useQuery({
-    queryKey: ["wizard-diag-flag", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
+    queryKey: ["wizard-diag-flag", registroId, diagSession.scope],
+    enabled: !!registroId && diagSession.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }) => {
+      const assertCurrent = diagSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("visita_diagnosticos")
         .select("id")
         .eq("registro_id", registroId!)
         .limit(1)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
 
   // Recomendação já registrada (habilita Etapa 6)
   const { data: recExistente } = useQuery({
-    queryKey: ["wizard-rec-flag", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
+    queryKey: ["wizard-rec-flag", registroId, recSession.scope],
+    enabled: !!registroId && recSession.ready,
+    ...TECHNICAL_STALE_REVALIDATION,
+    queryFn: async ({ signal }) => {
+      const assertCurrent = recSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("id")
         .eq("registro_consultor_id", registroId!)
         .limit(1)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
@@ -845,7 +885,7 @@ export default function MobileVisitaWizard() {
       </header>
 
       {/* Corpo */}
-      <main className="flex-1 p-4 space-y-4">
+      <main className="flex-1 p-4 space-y-4" onChangeCapture={() => { formHydration.current.dirty = true; }}>
         {currentStep === 1 && (
           <>
         <Card className="p-4 space-y-3">

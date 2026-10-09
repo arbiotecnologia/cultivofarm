@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { TECHNICAL_STALE_REVALIDATION } from "@/hooks/useVisitaWorkspace";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,6 +29,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const { data: registro, isLoading } = useQuery({
     queryKey: ["wizard-revisao-registro", remoteRegistroId],
     enabled: !!remoteRegistroId,
+    ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       if (!remoteRegistroId) return null;
       const { data, error } = await supabase
@@ -49,6 +51,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const { data: counts } = useQuery({
     queryKey: ["wizard-revisao-counts", remoteRegistroId],
     enabled: !!remoteRegistroId,
+    ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       if (!remoteRegistroId) return null;
       const [checkin, campo, diag, rec, anexos] = await Promise.all([

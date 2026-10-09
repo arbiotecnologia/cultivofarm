@@ -9,6 +9,7 @@ vi.mock("@/hooks/useUnsavedChanges", () => ({ useUnsavedChanges: vi.fn() }));
 vi.mock("@/hooks/useObjetivosVisita", () => ({ useObjetivosVisita: () => ({ data: [] }) }));
 vi.mock("@/hooks/useVisitaWorkspace", () => ({
   useVisitaWorkspace: () => ({ data: { status: mocks.status, permissions: { can_edit: mocks.status === "rascunho", is_editable_status: mocks.status === "rascunho" } }, isLoading: false }),
+  TECHNICAL_STALE_REVALIDATION: {}, useTechnicalQuerySession: () => ({ ready: true, scope: "fake-scope" }),
   EMPTY_VISITA_PERMISSIONS: {}, visitaWorkspaceKey: (id: string) => ["visita-workspace", id],
 }));
 vi.mock("@tanstack/react-query", () => ({
