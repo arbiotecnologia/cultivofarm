@@ -202,3 +202,35 @@ it("hook liberar atual invalida parecer e resumo após resposta success true", a
   await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["visita-aprovacoes", "visit-fake"] }));
   expect(invalidate).toHaveBeenCalledWith({ queryKey: ["atendimentos-tecnicos-resumo"] });
 });
+
+it("gestor autorizado decide e erro de versão reconsulta antes do retry explícito", async () => {
+  mocks.auth.roles = ["gestor"];
+  const original = mocks.rpc.getMockImplementation();
+  let attempts = 0;
+  mocks.rpc.mockImplementation((name, args) => {
+    if (name !== "rpc_solicitar_ajuste_visita") return original?.(name, args);
+    attempts += 1;
+    if (attempts === 1) {
+      mocks.workspace.version = 7;
+      return Promise.resolve({ data: null, error: { message: "version_conflict" } });
+    }
+    return Promise.resolve({ data: { ok: true, version: 8, status: "rascunho" }, error: null });
+  });
+  mount(); fireEvent.click(await screen.findByRole("button", { name: "Solicitar ajuste" }));
+  fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "Motivo conservado" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar decisão" }));
+  await screen.findByRole("alert");
+  await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar decisão" })).not.toBeDisabled());
+  expect(attempts).toBe(1);
+  expect(screen.getByLabelText("Motivo")).toHaveValue("Motivo conservado");
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar decisão" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(mocks.rpc).toHaveBeenCalledWith("rpc_solicitar_ajuste_visita", { p_registro_id: "visit-fake", p_expected_version: 7, p_motivo: "Motivo conservado" });
+});
+
+it("não permite reabertura administrativa de finalizado", async () => {
+  mocks.workspace.status = "finalizado";
+  mount(<TechnicalDecisionActions registroId="visit-fake" mode="reabrir" />);
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalled());
+  expect(screen.queryByRole("button", { name: "Reabrir análise" })).toBeNull();
+});

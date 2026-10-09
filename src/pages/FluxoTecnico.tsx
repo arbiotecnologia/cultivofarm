@@ -358,7 +358,7 @@ export default function FluxoTecnico() {
       </Tabs>
 
       <Sheet open={showReview} onOpenChange={(open) => { if (!open) fecharRevisao(); else setShowReview(true); }}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent aria-describedby={undefined} className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader><SheetTitle>Revisão Técnica</SheetTitle></SheetHeader>
           {selectedRegistro && (
             <div className="space-y-6 mt-6">
