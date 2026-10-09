@@ -17,6 +17,25 @@ import { buildTenantStoragePath, getCurrentOrganizationId, isTenantScopedStorage
 export const MAX_UPLOAD_ATTEMPTS = 3;
 export const BUCKET = "consultor-arquivos";
 
+export const TECHNICAL_ATTACHMENT_MAX_BYTES = 15 * 1024 * 1024;
+export const TECHNICAL_ATTACHMENT_ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
+
+/** Wizard attachments only; legacy capture/retry contracts remain unchanged. */
+export function validateTechnicalAttachment(file: File): { extension: string; kind: MediaKind; mediaType: "foto" | "pdf" } {
+  if (!Number.isFinite(file.size) || file.size <= 0 || file.size > TECHNICAL_ATTACHMENT_MAX_BYTES) {
+    throw new Error("Selecione um arquivo não vazio de até 15MB.");
+  }
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const allowed: Record<string, readonly string[]> = {
+    "image/jpeg": ["jpg", "jpeg"], "image/png": ["png"], "image/webp": ["webp"], "application/pdf": ["pdf"],
+  };
+  if (!extension || !allowed[file.type]?.includes(extension) || file.name.length > 255 ||
+    /[\\/]/.test(file.name) || Array.from(file.name).some(character => character.charCodeAt(0) < 32)) {
+    throw new Error("Tipo ou extensão inválidos. Use foto JPEG, PNG, WebP ou PDF.");
+  }
+  return { extension, kind: file.type === "application/pdf" ? "documento" : "foto", mediaType: file.type === "application/pdf" ? "pdf" : "foto" };
+}
+
 export type MediaKind = "foto" | "audio" | "documento";
 
 export interface UploadInput {

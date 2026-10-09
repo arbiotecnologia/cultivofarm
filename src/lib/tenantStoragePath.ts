@@ -6,6 +6,15 @@ export function isTenantScopedStoragePath(path: string, organizationId: string):
   return UUID_RE.test(organizationId) && path.startsWith(`${organizationId}/`);
 }
 
+/** Strict consultant path; presentation validation does not replace Storage RLS. */
+export function isConsultorStoragePath(path: string, organizationId: string, registroId: string): boolean {
+  if (!UUID_RE.test(organizationId) || !UUID_RE.test(registroId)) return false;
+  const parts = path.split("/");
+  return parts.length === 4 && parts[0] === organizationId && parts[1] === registroId &&
+    ["foto", "audio", "documento"].includes(parts[2]) &&
+    /^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/.test(parts[3]);
+}
+
 export async function getCurrentOrganizationId(): Promise<string> {
   const { data: authData, error: authError } = await supabase.auth.getUser();
   const userId = authData.user?.id;
