@@ -17,6 +17,7 @@ import {
   FileText, Package, Sprout, History,
 } from "lucide-react";
 import { OSFlowTimeline } from "@/components/visita/OSFlowTimeline";
+import { TechnicalDecisionActions } from "@/components/visita/VisitaStatusBanner";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { RecomendacaoChat } from "@/components/shared/RecomendacaoChat";
 import {
@@ -26,6 +27,7 @@ import {
   MSG_DECISAO_INDISPONIVEL,
   MSG_GERACAO_OS_INDISPONIVEL,
   RPC_GERACAO_OS_DISPONIVEL,
+  RPC_APROVACAO_TRANSACIONAL_DISPONIVEL,
 } from "@/lib/fluxo-tecnico/fluxo";
 
 const STATUS_OS_ONFARM: Record<string, { label: string; color: string }> = {
@@ -170,7 +172,7 @@ export default function FluxoTecnico() {
         <p className="text-sm text-muted-foreground">Aprovação de recomendações e acompanhamento de ordens de serviço.</p>
       </div>
 
-      <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+      {!RPC_APROVACAO_TRANSACIONAL_DISPONIVEL && <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
           <div className="text-sm">
             <p className="font-medium text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
@@ -179,7 +181,7 @@ export default function FluxoTecnico() {
               a fila permanece disponível apenas para consulta.
             </p>
           </div>
-        </div>
+        </div>}
 
       {errorAprovacoes && (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border p-3">
@@ -376,7 +378,7 @@ export default function FluxoTecnico() {
                   Seu perfil pode acompanhar a revisão, mas a decisão é exclusiva de administrador ou gestor.
                 </p>
               ) : (
-                <p role="alert" className="text-sm text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
+                <TechnicalDecisionActions key={selectedRegistro.id} registroId={selectedRegistro.id} onSuccess={fecharRevisao} />
               )}
               {!RPC_GERACAO_OS_DISPONIVEL
                 && selectedRegistro.proxima_acao_recomendada === "gerar_os" && (
