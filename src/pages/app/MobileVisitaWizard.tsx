@@ -373,13 +373,16 @@ function MobileVisitaWizardForm() {
     queryKey: ["wizard-checkin-flag", registroId, checkinSession.scope],
     enabled: !!registroId && checkinSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      const assertCurrent = checkinSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("visitas_checkin")
         .select("id")
         .eq("registro_consultor_id", registroId!)
         .limit(1)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
@@ -389,12 +392,15 @@ function MobileVisitaWizardForm() {
     queryKey: ["wizard-campo-flag", registroId, campoSession.scope],
     enabled: !!registroId && campoSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      const assertCurrent = campoSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("visitas_campo" as any)
         .select("id")
         .eq("registro_consultor_id", registroId!)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
@@ -404,13 +410,16 @@ function MobileVisitaWizardForm() {
     queryKey: ["wizard-diag-flag", registroId, diagSession.scope],
     enabled: !!registroId && diagSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      const assertCurrent = diagSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("visita_diagnosticos")
         .select("id")
         .eq("registro_id", registroId!)
         .limit(1)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });
@@ -420,13 +429,16 @@ function MobileVisitaWizardForm() {
     queryKey: ["wizard-rec-flag", registroId, recSession.scope],
     enabled: !!registroId && recSession.ready,
     ...TECHNICAL_STALE_REVALIDATION,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      const assertCurrent = recSession.fence();
+      assertCurrent(signal);
       const { data } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("id")
         .eq("registro_consultor_id", registroId!)
         .limit(1)
         .maybeSingle();
+      assertCurrent(signal);
       return data;
     },
   });

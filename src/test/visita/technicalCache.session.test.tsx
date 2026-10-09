@@ -75,7 +75,8 @@ it("foco stale atualiza workspace sem substituir campo sujo em edição", async 
 });
 
 const useWorkspaceRead = () => useVisitaWorkspace("fake-visit");
-it.each([useWorkspaceRead, useVisitasTecnicasLista, useAtendimentosTecnicos, useAtendimentosResumo])("consulta técnica revalida remount stale sem alterar defaults", async (useRead) => {
+const readers: Array<() => { data: unknown; isFetching: boolean }> = [useWorkspaceRead, useVisitasTecnicasLista, useAtendimentosTecnicos, useAtendimentosResumo];
+it.each(readers)("consulta técnica revalida remount stale sem alterar defaults", async (useRead) => {
   const { client, wrapper } = setup();
   const first = renderHook(useRead, { wrapper }); await waitFor(() => expect(first.result.current.data).toBeDefined());
   const count = mocks.rpc.mock.calls.length; first.unmount(); mocks.status = "rascunho"; age(client);
