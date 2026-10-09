@@ -194,7 +194,7 @@ export default function FluxoTecnico() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiCard label="Pendentes" value={kpiPendentes} icon={Clock} color="text-yellow-500" />
-        <KpiCard label="Aprovadas" value={kpiAprovados} icon={CheckCircle} color="text-green-500" />
+        <KpiCard label="Aprovações registradas" value={kpiAprovados} icon={CheckCircle} color="text-green-500" />
         <KpiCard label="OS Abertas" value={kpiOSAbertas} icon={FileText} color="text-blue-500" />
         <KpiCard label="Em Produção" value={kpiEmProducao} icon={Factory} color="text-purple-500" />
         <KpiCard label="Prontas" value={kpiProntas} icon={Truck} color="text-emerald-500" />

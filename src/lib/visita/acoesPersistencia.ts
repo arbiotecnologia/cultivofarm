@@ -11,8 +11,10 @@ export type VisitaUiMode = "locked" | "editing";
 
 /** Status pós-aprovação: travados permanentemente, nem edição justificada. */
 export const STATUS_TRAVADOS_PERMANENTEMENTE: readonly string[] = [
+  "finalizado",
   "enviado_aprovacao",
   "aprovado",
+  "reprovado",
   "convertido_os",
   "arquivado",
 ];
@@ -42,25 +44,13 @@ export function resolveVisitaAcoes(input: VisitaAcoesInput): VisitaAcoes {
   // Visita ainda não persistida: só existe a ação de salvar. Finalizar depende
   // de um registro no servidor (check-in, evidências e status não existem
   // antes disso), então a ação não é oferecida.
-  if (isNew) {
-    return { readOnly: false, canPersist: true, showSave: true, showFinalize: false };
-  }
-
-  const finalizada = !!status && status !== "rascunho";
-  const travada = !!status && STATUS_TRAVADOS_PERMANENTEMENTE.includes(status);
-  const editando = uiMode === "editing";
-
-  // Sem permissão efetiva de edição → somente leitura, mesmo com read no cliente.
-  if (canEdit === false && finalizada) {
-    return { readOnly: true, canPersist: false, showSave: false, showFinalize: false };
-  }
-
-  const canPersist = !travada && (!finalizada || editando);
+  const canPersist = canEdit !== false && (isNew ||
+    (canEdit === true && (status === "rascunho" || status === "em_andamento") && uiMode === "editing"));
 
   return {
     readOnly: !canPersist,
     canPersist,
     showSave: canPersist,
-    showFinalize: canPersist && !finalizada,
+    showFinalize: canPersist && !isNew,
   };
 }

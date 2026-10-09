@@ -1,3 +1,4 @@
+import React from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -233,4 +234,24 @@ it("não permite reabertura administrativa de finalizado", async () => {
   mount(<TechnicalDecisionActions registroId="visit-fake" mode="reabrir" />);
   await waitFor(() => expect(mocks.rpc).toHaveBeenCalled());
   expect(screen.queryByRole("button", { name: "Reabrir análise" })).toBeNull();
+});
+it.each(["reprovado", "aprovado", "enviado_aprovacao"])("hook finalizar/salvar nega parent fechado %s sem writes", async status => {
+  mocks.workspace.status = status;
+  function Caller() { const hook = useFluxoVisitaTecnica(); return <><button onClick={() => { void hook.finalizarVisita("visit-fake"); }}>Finalizar teste</button><button onClick={() => { void hook.salvarRascunho("visit-fake", { objetivo_visita: "novo" }); }}>Salvar teste</button></>; }
+  mount(<Caller />); fireEvent.click(screen.getByRole("button", { name: "Finalizar teste" }));
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("rpc_get_visita_workspace", { p_registro_id: "visit-fake" }));
+  expect(mocks.rpc.mock.calls.every(([name]) => name === "rpc_get_visita_workspace")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Salvar teste" }));
+  expect(mocks.from).not.toHaveBeenCalled();
+});
+it.each(["okfalse", "version_conflict", "missing"])("hook envio não declara sucesso com %s", async failure => {
+  mocks.workspace.status = "finalizado";
+  mocks.rpc.mockImplementation(async name => name === "rpc_get_visita_workspace"
+    ? { data: { ...mocks.workspace, permissions: { can_manage: true } }, error: null }
+    : failure === "version_conflict" ? { data: null, error: { message: "version_conflict" } }
+    : { data: failure === "missing" ? null : { ok: false }, error: null });
+  function Caller() { const hook = useFluxoVisitaTecnica(); const [result, setResult] = React.useState(""); return <><button onClick={async () => { const out = await hook.enviarParaAprovacao("visit-fake"); setResult(String(out.success)); }}>Enviar teste</button><output>{result}</output></>; }
+  const { invalidate } = mount(<Caller />); fireEvent.click(screen.getByRole("button", { name: "Enviar teste" }));
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("false"));
+  expect(invalidate).not.toHaveBeenCalled(); expect(mocks.from).not.toHaveBeenCalled();
 });

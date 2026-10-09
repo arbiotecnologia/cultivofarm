@@ -136,7 +136,9 @@ export function useAtendimentosTecnicos(filters: AtendimentosFilters = {}) {
       if (res.ok === false) throw new Error(res.error ?? "atendimentos_indisponivel");
 
       return {
-        items: (res.items ?? []) as AtendimentoItem[],
+        // Contenção de apresentação: não amplia can_edit nem inventa transição.
+        items: ((res.items ?? []) as AtendimentoItem[]).map((item) => item.kind === "visita" && item.status === "reprovado"
+          ? { ...item, can_edit: false, proxima_acao: "Consultar motivo da reprovação" } : item),
         total: res.total ?? 0,
         page: res.page ?? page,
         page_size: res.page_size ?? pageSize,
