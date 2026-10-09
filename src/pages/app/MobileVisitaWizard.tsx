@@ -7,6 +7,7 @@ import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
 import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
+import { wizardUnlockedUpTo } from "@/lib/visita/wizardProgress";
 import { deriveVisitaWizardState } from "@/lib/visita/wizardWorkspaceState";
 
 import { Button } from "@/components/ui/button";
@@ -401,32 +402,14 @@ export default function MobileVisitaWizard() {
     },
   });
 
-  // Anexos registrados (habilita Etapa 7 — Revisão)
-  const { data: anexosExistente } = useQuery({
-    queryKey: ["wizard-anexos-flag", registroId],
-    enabled: !!registroId,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("registros_consultor_arquivos")
-        .select("id")
-        .eq("registro_consultor_id", registroId!)
-        .neq("categoria_arquivo", "checkin")
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
+  // Anexos são opcionais; só persistências canônicas liberam as etapas seguintes.
+  const unlockedUpTo = wizardUnlockedUpTo({
+    identificacao: !isNew && !!registro,
+    checkin: !!checkinExistente,
+    campo: !!campoExistente,
+    diagnostico: !!diagExistente,
+    recomendacao: !!recExistente,
   });
-
-  const step1Done = !isNew && !!registro;
-  const unlockedUpTo = useMemo(() => {
-    if (!step1Done) return 1;
-    if (!checkinExistente) return 2;
-    if (!campoExistente) return 3;
-    if (!diagExistente) return 4;
-    if (!recExistente) return 5;
-    if (!anexosExistente) return 6;
-    return 8; // Revisão e Acompanhamento liberados
-  }, [step1Done, checkinExistente, campoExistente, diagExistente, recExistente, anexosExistente]);
 
   // Auto-advance para etapa solicitada via ?step= (respeitando unlockedUpTo)
   const stepParam = Number(searchParams.get("step") || 0);

@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Loader2, Lock, WifiOff, FileCheck2, ClipboardList, Send } from "lucide-react";
 import { toast } from "sonner";
-import { canTransition, showTransitionErrorToast, STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
+import { canTransition, STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
 
 interface Props {
   remoteRegistroId: string | null;
@@ -19,13 +20,16 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const queryClient = useQueryClient();
-  const [finalizing, setFinalizing] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [action, setAction] = useState<"finalizar" | "aprovar" | null>(null);
+  const [pending, setPending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const submissionLock = useRef(false);
 
   const { data: registro, isLoading } = useQuery({
     queryKey: ["wizard-revisao-registro", remoteRegistroId],
     enabled: !!remoteRegistroId,
     queryFn: async () => {
+      if (!remoteRegistroId) return null;
       const { data, error } = await supabase
         .from("registros_consultor")
         .select(`
@@ -35,10 +39,10 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           talhoes:talhao_id(nome),
           culturas:cultura_id(nome)
         `)
-        .eq("id", remoteRegistroId!)
+        .eq("id", remoteRegistroId)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
   });
 
@@ -46,12 +50,13 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
     queryKey: ["wizard-revisao-counts", remoteRegistroId],
     enabled: !!remoteRegistroId,
     queryFn: async () => {
+      if (!remoteRegistroId) return null;
       const [checkin, campo, diag, rec, anexos] = await Promise.all([
-        supabase.from("visitas_checkin").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId!),
-        supabase.from("visitas_campo" as any).select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId!),
-        supabase.from("visita_diagnosticos").select("id", { count: "exact", head: true }).eq("registro_id", remoteRegistroId!),
-        supabase.from("registros_consultor_recomendacoes").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId!),
-        supabase.from("registros_consultor_arquivos").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId!).neq("categoria_arquivo", "checkin"),
+        supabase.from("visitas_checkin").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId),
+        supabase.from("visitas_campo" as never).select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId),
+        supabase.from("visita_diagnosticos").select("id", { count: "exact", head: true }).eq("registro_id", remoteRegistroId),
+        supabase.from("registros_consultor_recomendacoes").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId),
+        supabase.from("registros_consultor_arquivos").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId).neq("categoria_arquivo", "checkin"),
       ]);
       return {
         checkin: checkin.count ?? 0,
@@ -82,77 +87,49 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
     }
   };
 
-  const handleFinalizar = async () => {
-    if (!remoteRegistroId) return;
-    if (!isOnline) {
-      toast.error("Sem conexão. Finalização exige internet.");
-      return;
-    }
-    if (!canFinalize) {
-      showTransitionErrorToast(`Transição inválida: não é possível mudar de "${status}" para "finalizado".`);
-      return;
-    }
-    if (culturaAusente) {
-      toast.error("Informe a cultura na etapa Identificação antes de finalizar.");
-      return;
-    }
-    if (!confirm("Finalizar esta visita? Após finalizar, o conteúdo ficará somente leitura.")) return;
-    setFinalizing(true);
-    try {
-      const { data, error } = await supabase.rpc("rpc_finalizar_visita_v2" as any, {
-        p_registro_id: remoteRegistroId,
-        p_expected_version: registro?.version ?? 1,
-      });
-      if (error) {
-        const msg = translateRpcError(error.message, error.message || "Não foi possível finalizar a visita.");
-        toast.error(msg);
-        await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
-        return;
-      }
-      toast.success("Visita finalizada.");
-      await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
-      await queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] });
-      navigate("/app/atendimentos");
-    } catch (err: any) {
-      showTransitionErrorToast(err, "Não foi possível finalizar a visita.");
-    } finally {
-      setFinalizing(false);
-    }
+  const canSendApproval = useMemo(() => canTransition(status, "enviado_aprovacao"), [status]);
+  const actionAllowed = action === "finalizar"
+    ? !locked && status === "rascunho" && canFinalize && !culturaAusente
+    : status === "finalizado" && canSendApproval;
+
+  const openConfirmation = (next: "finalizar" | "aprovar") => {
+    if (submissionLock.current) return;
+    setActionError(null);
+    setAction(next);
   };
 
-  const canSendApproval = useMemo(() => canTransition(status, "enviado_aprovacao"), [status]);
-
-  const handleEnviarAprovacao = async () => {
-    if (!remoteRegistroId) return;
-    if (!isOnline) {
-      toast.error("Sem conexão.");
+  const handleConfirm = async () => {
+    if (submissionLock.current || !action || !remoteRegistroId) return;
+    if (!isOnline || !actionAllowed) {
+      setActionError(!isOnline ? "Sem conexão. Esta ação exige internet." : "Esta ação não está disponível no estado atual da visita.");
       return;
     }
-    if (!canSendApproval) {
-      showTransitionErrorToast(`Transição inválida: não é possível mudar de "${status}" para "enviado_aprovacao".`);
-      return;
-    }
-    if (!confirm("Enviar esta visita para aprovação?")) return;
-    setSending(true);
+    submissionLock.current = true;
+    setPending(true);
+    setActionError(null);
     try {
-      const { error } = await supabase.rpc("rpc_enviar_visita_aprovacao" as any, {
-        p_registro_id: remoteRegistroId,
-        p_expected_version: registro?.version ?? 1,
-      });
-      if (error) {
-        const msg = translateRpcError(error.message, error.message || "Não foi possível enviar para aprovação.");
-        toast.error(msg);
-        await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
-        return;
-      }
-      toast.success("Visita enviada para aprovação.");
-      await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
-      await queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] });
+      const { error } = await supabase.rpc(
+        (action === "finalizar" ? "rpc_finalizar_visita_v2" : "rpc_enviar_visita_aprovacao") as never,
+        { p_registro_id: remoteRegistroId, p_expected_version: registro?.version ?? 1 } as never,
+      );
+      if (error) throw error;
+      toast.success(action === "finalizar" ? "Visita finalizada." : "Visita enviada para aprovação.");
+      setAction(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] }),
+        queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] }),
+        queryClient.invalidateQueries({ queryKey: ["visita-workspace", remoteRegistroId] }),
+      ]);
       navigate("/app/atendimentos");
-    } catch (err: any) {
-      showTransitionErrorToast(err, "Não foi possível enviar para aprovação.");
+    } catch (err: unknown) {
+      const message = err && typeof err === "object" && "message" in err && typeof err.message === "string" ? err.message : undefined;
+      const msg = translateRpcError(message, message || "Não foi possível concluir a operação. Tente novamente.");
+      setActionError(msg);
+      toast.error(msg);
+      await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
     } finally {
-      setSending(false);
+      submissionLock.current = false;
+      setPending(false);
     }
   };
 
@@ -174,6 +151,26 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
 
   return (
     <div className="space-y-3">
+      <AlertDialog open={action !== null} onOpenChange={(open) => {
+        if (!open && !submissionLock.current) { setAction(null); setActionError(null); }
+      }}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg" onEscapeKeyDown={(event) => { if (submissionLock.current) event.preventDefault(); }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{action === "finalizar" ? "Finalizar esta visita?" : "Enviar esta visita para aprovação?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {action === "finalizar" ? "Após finalizar, o conteúdo ficará somente leitura." : "A visita será encaminhada para aprovação técnica."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {actionError && <p role="alert" className="text-sm text-destructive break-words">{actionError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
+            <Button onClick={handleConfirm} disabled={pending || !isOnline || !actionAllowed}>
+              {pending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {pending ? "Aguarde…" : action === "finalizar" ? "Confirmar finalização" : "Confirmar envio"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Card className="p-4 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -250,10 +247,10 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           <Button
             className="w-full"
             size="lg"
-            onClick={handleFinalizar}
-            disabled={finalizing || !isOnline || !canFinalize || culturaAusente}
+            onClick={() => openConfirmation("finalizar")}
+            disabled={pending || !isOnline || !canFinalize || culturaAusente}
           >
-            {finalizing ? (
+            {pending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Finalizando…</>
             ) : (
               <><CheckCircle2 className="h-4 w-4 mr-2" /> Finalizar visita</>
@@ -277,10 +274,10 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           <Button
             className="w-full"
             size="lg"
-            onClick={handleEnviarAprovacao}
-            disabled={sending || !isOnline || !canSendApproval}
+            onClick={() => openConfirmation("aprovar")}
+            disabled={pending || !isOnline || !canSendApproval}
           >
-            {sending ? (
+            {pending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando…</>
             ) : (
               <><Send className="h-4 w-4 mr-2" /> Enviar para aprovação</>
