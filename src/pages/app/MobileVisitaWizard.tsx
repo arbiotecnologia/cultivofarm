@@ -155,6 +155,12 @@ const ERROR_LABELS: Record<string, string> = {
 };
 
 export default function MobileVisitaWizard() {
+  const { user, profile, roles, loading } = useAuth();
+  const identity = JSON.stringify([loading, user?.id, profile?.user_id, profile?.organization_id, profile?.ativo, [...(roles ?? [])].sort()]);
+  return <MobileVisitaWizardForm key={identity} />;
+}
+
+function MobileVisitaWizardForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const [searchParams] = useSearchParams();
