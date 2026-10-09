@@ -41,7 +41,8 @@ it("navega às etapas 7 e 8 com recomendação persistida e zero anexos sem muta
 it.each(["finalizado", "enviado_aprovacao"])("preserva leitura sem mutações com workspace %s e registro local antigo", (status) => {
   mocks.status = status;
   render(<MobileVisitaWizard />);
-  expect(screen.getByRole("button", { name: /Salvar/ })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: "Produtor *" })).toBeDisabled();
   expect(mocks.rpc).not.toHaveBeenCalled();
 });
 it.each([
