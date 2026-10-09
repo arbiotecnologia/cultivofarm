@@ -25244,6 +25244,15 @@ export type Database = {
         Returns: boolean
       }
       storage1_path_strict: { Args: { p_name: string }; Returns: boolean }
+      technical_actor_ready: { Args: { p_user: string }; Returns: boolean }
+      technical_client_link: {
+        Args: { p_cliente: string; p_levels: string[]; p_user: string }
+        Returns: boolean
+      }
+      technical_refs_in_actor_tenant: {
+        Args: { p_cliente: string; p_fazenda: string; p_talhao: string }
+        Returns: boolean
+      }
       tenant_admin_list_users: {
         Args: {
           p_active?: boolean
