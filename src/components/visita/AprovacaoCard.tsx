@@ -1,6 +1,7 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,11 +13,12 @@ import {
   ArrowRight,
   History,
   User as UserIcon,
+  type LucideIcon,
 } from "lucide-react";
 import { STATUS_LABEL_REGISTRO } from "@/lib/registroTransitions";
 import { cn } from "@/lib/utils";
 
-const STATUS_APROVACAO: Record<string, { label: string; className: string; icon: any }> = {
+const STATUS_APROVACAO: Record<string, { label: string; className: string; icon: LucideIcon }> = {
   pendente: {
     label: "Pendente",
     className: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
@@ -55,12 +57,13 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
   const { data: aprovacoes = [] } = useQuery({
     queryKey: ["visita-aprovacoes", registroId],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await supabase
         .from("aprovacoes_tecnicas")
         .select("*")
         .eq("registro_consultor_id", registroId)
         .order("created_at", { ascending: false });
-      return (data || []) as any[];
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!registroId,
     refetchInterval: 180000,
@@ -68,64 +71,67 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
   });
 
   const gestorIds = Array.from(
-    new Set((aprovacoes as any[]).map((a) => a.gestor_responsavel).filter(Boolean))
+    new Set(aprovacoes.map((a) => a.aprovado_por).filter((id): id is string => id !== null))
   );
 
   const { data: gestores = [] } = useQuery({
     queryKey: ["aprovacao-gestores", gestorIds],
     enabled: gestorIds.length > 0,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await supabase
         .from("profiles")
         .select("user_id, nome")
         .in("user_id", gestorIds);
-      return (data || []) as any[];
+      if (error) throw error;
+      return data || [];
     },
   });
 
   const { data: log = [] } = useQuery({
     queryKey: ["visita-status-log", registroId],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await supabase
         .from("registros_consultor_status_log")
         .select("*")
         .eq("registro_consultor_id", registroId)
         .order("changed_at", { ascending: false });
-      return (data || []) as any[];
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!registroId,
     refetchInterval: 180000,
   });
 
   const changedByIds = Array.from(
-    new Set((log as any[]).map((l) => l.changed_by).filter(Boolean))
+    new Set(log.map((l) => l.changed_by).filter((id): id is string => id !== null))
   );
 
   const { data: logUsers = [] } = useQuery({
     queryKey: ["status-log-users", changedByIds],
     enabled: changedByIds.length > 0,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await supabase
         .from("profiles")
         .select("user_id, nome")
         .in("user_id", changedByIds);
-      return (data || []) as any[];
+      if (error) throw error;
+      return data || [];
     },
   });
 
   if (!registroStatus || !VISIBLE_STATUSES.has(registroStatus)) return null;
 
-  const ultimaAprovacao = (aprovacoes as any[])[0];
+  const ultimaAprovacao: Tables<"aprovacoes_tecnicas"> | undefined = aprovacoes[0];
   const statusKey = ultimaAprovacao?.status_aprovacao || "pendente";
   const statusInfo = STATUS_APROVACAO[statusKey] || STATUS_APROVACAO.pendente;
   const StatusIcon = statusInfo.icon;
 
   const gestorNome =
-    (gestores as any[]).find((g) => g.user_id === ultimaAprovacao?.gestor_responsavel)?.nome ||
+    gestores.find((g) => g.user_id === ultimaAprovacao?.aprovado_por)?.nome ||
     null;
 
   const userNameById = (uid: string | null) =>
-    (logUsers as any[]).find((u) => u.user_id === uid)?.nome || null;
+    logUsers.find((u) => u.user_id === uid)?.nome || null;
 
   const formatDate = (iso?: string | null) => formatDateTimeDisplay(iso) || "—";
 
@@ -154,7 +160,7 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
           {gestorNome && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <UserIcon className="h-3 w-3" />
-              <span>Gestor: {gestorNome}</span>
+              <span>Aprovado por: {gestorNome}</span>
             </div>
           )}
           {ultimaAprovacao?.comentario_gestor && (
@@ -170,14 +176,14 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
         </div>
 
         {/* Histórico de mudanças */}
-        {(log as any[]).length > 0 && (
+        {log.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <History className="h-3.5 w-3.5" />
               Histórico de mudanças
             </div>
             <ol className="space-y-2 border-l border-border pl-3">
-              {(log as any[]).map((entry) => {
+              {log.map((entry) => {
                 const fromLabel =
                   STATUS_LABEL_REGISTRO[entry.status_anterior as keyof typeof STATUS_LABEL_REGISTRO] ||
                   entry.status_anterior ||
