@@ -27,6 +27,8 @@ Primeira execução excedeu tempo porque mock retornava array novo em cada rende
 
 Lint do teste PASS; lint conjunto das duas telas **FAIL por oito any preexistentes** (quatro em cada), nenhum any novo. Scanner fiscal-secrets/diff-check PASS. Typecheck manual NOT RUN conforme restrição do harness, sem declarar PASS separado; build automático observado registrado no roadmap.
 
+Rodada final: **19/19 PASS em dois arquivos** (8 novos de UI + 11 regressões do formulário). Cópia SQL comparada exatamente com statements lidos, SHA256 `36d05382813d64560ba47bcec617adfe4ce41ff9dd79f537e59ea947568b81d2`; manifesto JSON/count12/IDs verificado. Prévia build OK **15:26:59 UTC**. Commit observado `3390c2d52454cd26c965778e8678bb6ed0a9cb27` antes deste adendo documental; commits finais são gerenciados pelo ambiente, não criados manualmente.
+
 ## Manifesto reconciliado
 **11 novos registros + 1 parceiro reutilizado = 12 objetos principais**. Produto existente não é novo fixture. Manifesto incorpora IDs de duas fazendas e três talhões fornecidos; todos AR Bio/TESTE AUDITORIA segundo relato. Não apagou, recriou nem duplicou dados. Histórico antigo preservado, reconciliação supersede apenas pendência de contagem/IDs.
 
