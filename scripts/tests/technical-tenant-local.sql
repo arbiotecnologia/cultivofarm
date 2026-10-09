@@ -68,6 +68,8 @@ INSERT INTO user_clientes VALUES('11111111-1111-4111-8111-111111111111','aaaaaaa
 INSERT INTO registros_consultor(id,client_uuid,cliente_id,fazenda_id,talhao_id,consultor_responsavel,origem_atendimento) VALUES('aaaaaaaa-0000-4000-8000-000000000004',gen_random_uuid(),'aaaaaaaa-0000-4000-8000-000000000001','aaaaaaaa-0000-4000-8000-000000000002','aaaaaaaa-0000-4000-8000-000000000003','11111111-1111-4111-8111-111111111111','ocorrencia_campo');
 INSERT INTO portal_solicitacoes(id,cliente_id,fazenda_id,talhao_id,consultor_atribuido) VALUES('aaaaaaaa-0000-4000-8000-000000000005','aaaaaaaa-0000-4000-8000-000000000001','aaaaaaaa-0000-4000-8000-000000000002','aaaaaaaa-0000-4000-8000-000000000003','11111111-1111-4111-8111-111111111111');
 -- BASELINE_RPCS
+REVOKE ALL ON FUNCTION public.rpc_listar_atendimentos_tecnicos_v1(text,text,integer,integer),public.rpc_resumo_atendimentos_tecnicos_v1() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.rpc_listar_atendimentos_tecnicos_v1(text,text,integer,integer),public.rpc_resumo_atendimentos_tecnicos_v1() TO authenticated,service_role;
 SELECT set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',true),set_config('request.jwt.claim.iat',extract(epoch FROM now())::bigint::text,true);
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('baseline direct visit zero',(SELECT count(*) FROM registros_consultor)=0);
@@ -125,6 +127,22 @@ SET LOCAL ROLE authenticated;
 SELECT pg_temp.assert_true('inactive actor denied',NOT technical_actor_ready(auth.uid()));
 RESET ROLE;
 UPDATE profiles SET ativo=true WHERE user_id=auth.uid();
+-- Exercise actual create/replay body in the local transaction only.
+SET LOCAL ROLE authenticated;
+DO $$ DECLARE r jsonb; k uuid:=gen_random_uuid(); BEGIN
+ r:=rpc_criar_visita_idempotente(p_client_uuid:=k,p_cliente_id:='aaaaaaaa-0000-4000-8000-000000000001',p_fazenda_id:='aaaaaaaa-0000-4000-8000-000000000002',p_talhao_id:='aaaaaaaa-0000-4000-8000-000000000003',p_cultura_id:=NULL,p_data_vistoria:=CURRENT_DATE,p_tipo_visita:='vistoria_inicial',p_origem:='ocorrencia_campo');
+ PERFORM pg_temp.assert_true('create own actual RPC',r->>'created'='true');
+ r:=rpc_criar_visita_idempotente(p_client_uuid:=k,p_cliente_id:='aaaaaaaa-0000-4000-8000-000000000001',p_fazenda_id:='aaaaaaaa-0000-4000-8000-000000000002',p_talhao_id:='aaaaaaaa-0000-4000-8000-000000000003',p_cultura_id:=NULL,p_data_vistoria:=CURRENT_DATE,p_tipo_visita:='vistoria_inicial',p_origem:='ocorrencia_campo');
+ PERFORM pg_temp.assert_true('replay own actual RPC',r->>'idempotent'='true');
+ PERFORM set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',true);
+ r:=rpc_criar_visita_idempotente(p_client_uuid:=k,p_cliente_id:='aaaaaaaa-0000-4000-8000-000000000001',p_fazenda_id:='aaaaaaaa-0000-4000-8000-000000000002',p_talhao_id:='aaaaaaaa-0000-4000-8000-000000000003',p_cultura_id:=NULL,p_data_vistoria:=CURRENT_DATE,p_tipo_visita:='vistoria_inicial',p_origem:='ocorrencia_campo');
+ PERFORM pg_temp.assert_true('cross replay actual RPC',r->>'ok'='false' AND NOT(r ? 'registro_id'));
+ PERFORM pg_temp.assert_true('cross start actual RPC',rpc_iniciar_atendimento_solicitacao_v1('aaaaaaaa-0000-4000-8000-000000000005')->>'ok'='false');
+ PERFORM set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+ r:=rpc_iniciar_atendimento_solicitacao_v1('aaaaaaaa-0000-4000-8000-000000000005');
+ PERFORM pg_temp.assert_true('start own actual RPC',r->>'ok'='true');
+END $$;
+RESET ROLE;
 -- Farms count remains assigned before the first visit.
 DELETE FROM registros_consultor;
 SET LOCAL ROLE authenticated;

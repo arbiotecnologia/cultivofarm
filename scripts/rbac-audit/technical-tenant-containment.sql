@@ -1,11 +1,11 @@
 -- Candidate: canonical swzpzcwiasxmjutrmvkm only. No data/backfill/Auth changes.
 CREATE OR REPLACE FUNCTION public.technical_actor_ready(p_user uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
- SELECT p_user IS NOT NULL AND p_user=auth.uid()
- AND (auth.jwt()->>'iat') ~ '^[0-9]{1,10}$'
- AND CASE WHEN (auth.jwt()->>'iat') ~ '^[0-9]{1,10}$' THEN (auth.jwt()->>'iat')::bigint > 0 ELSE false END
- AND platform_private.h15_actor_organization() IS NOT NULL
- AND platform_private.platform_actor_access_ready(p_user);
+ SELECT CASE WHEN p_user IS NULL OR p_user IS DISTINCT FROM auth.uid()
+   OR COALESCE((auth.jwt()->>'iat') ~ '^[0-9]{1,10}$',false) IS FALSE THEN false
+ ELSE CASE WHEN (auth.jwt()->>'iat')::bigint <= 0 THEN false
+ ELSE platform_private.h15_actor_organization() IS NOT NULL
+ AND platform_private.platform_actor_access_ready(p_user) END END;
 $$;
 REVOKE ALL ON FUNCTION public.technical_actor_ready(uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.technical_actor_ready(uuid) TO authenticated,service_role;
