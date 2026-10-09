@@ -119,6 +119,8 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
         queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] }),
         queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] }),
         queryClient.invalidateQueries({ queryKey: ["visita-workspace", remoteRegistroId] }),
+        queryClient.invalidateQueries({ queryKey: ["atendimentos-tecnicos"] }),
+        queryClient.invalidateQueries({ queryKey: ["atendimentos-tecnicos-resumo"] }),
       ]);
       navigate("/app/atendimentos");
     } catch (err: unknown) {
