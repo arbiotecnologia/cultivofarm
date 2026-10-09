@@ -1,8 +1,9 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
+import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
+import { podeDecidir, RPC_GERACAO_OS_DISPONIVEL } from "@/lib/fluxo-tecnico/fluxo";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, Lock, Pencil, Save, X, AlertTriangle, Loader2,
@@ -65,12 +66,11 @@ export function VisitaStatusBanner({
   status, proximoPasso, isEditing, canReopen, finalizedAt, saving,
   onReopen, onSave, onCancel, registroId, osExistenteId,
 }: Props) {
-  const { role, user } = useAuth();
-  const { liberarRecomendacaoParaProdutor, converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
+  const { role } = useAuth();
+  const { converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
-  const [liberando, setLiberando] = useState(false);
   const geraArtefatoAprovavel = desfechoGeraArtefatoAprovavel(proximoPasso);
 
   if (!status || status === "rascunho") return null;
@@ -181,30 +181,11 @@ export function VisitaStatusBanner({
                 <Pencil className="h-4 w-4 mr-1" /> Editar visita
               </Button>
             )}
-            {registroId && geraArtefatoAprovavel && (status === "finalizado" || status === "enviado_aprovacao") && (role === "administrador" || role === "gestor") && (
-              <Button
-                size="sm"
-                disabled={liberando}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                onClick={async () => {
-                  if (liberando) return;
-                  setLiberando(true);
-                  try {
-                    const res = await liberarRecomendacaoParaProdutor(registroId);
-                    if (!res?.success && !res?.message) {
-                      toast.error("Não foi possível liberar para o produtor.");
-                    }
-                  } finally {
-                    setLiberando(false);
-                  }
-                }}
-              >
-                {liberando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Liberar para Produtor
-              </Button>
+            {registroId && (status === "aprovado" || (geraArtefatoAprovavel && status === "enviado_aprovacao")) && (
+              <TechnicalDecisionActions registroId={registroId} mode={status === "aprovado" ? "reabrir" : "liberar"} />
             )}
             
-            {registroId && status === "aprovado" && !osExistenteId && (role === "administrador" || role === "gestor" || role === "consultor_tecnico" || role === "tecnico_agronomo") && (
+            {RPC_GERACAO_OS_DISPONIVEL && registroId && status === "aprovado" && !osExistenteId && (role === "administrador" || role === "gestor" || role === "consultor_tecnico" || role === "tecnico_agronomo") && (
               <Button 
                 size="sm" 
                 className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm"
@@ -303,4 +284,71 @@ export function VisitaStatusBanner({
       </AlertDialog>
     </>
   );
+}
+
+/** Decisões transacionais; reanálise não chama o callback de edição local. */
+export function TechnicalDecisionActions({ registroId, mode = "decidir", onSuccess }: {
+  registroId: string; mode?: "decidir" | "liberar" | "reabrir"; onSuccess?: () => void;
+}) {
+  const { roles, loading, user, profile } = useAuth();
+  const workspace = useVisitaWorkspace(registroId);
+  const actions = useFluxoVisitaTecnica();
+  const [action, setAction] = useState<"aprovar" | "ajuste" | "reprovar" | "reabrir" | null>(null);
+  const [motivo, setMotivo] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const ws = workspace.data;
+  const ready = !loading && !!user && profile?.user_id === user.id && profile.ativo === true && !!profile.organization_id
+    && !workspace.isFetching && !workspace.isError && ws?.permissions.can_approve === true;
+  const allowed = ready && (mode === "reabrir"
+    ? roles.includes("administrador") && ws?.status === "aprovado"
+    : roles.some((role) => podeDecidir(role, ws?.status)));
+  const needsReason = action !== "aprovar";
+  const labels = { aprovar: mode === "liberar" ? "Liberar para Produtor" : "Aprovar recomendação", ajuste: "Solicitar ajuste", reprovar: "Reprovar recomendação", reabrir: "Reabrir análise" };
+  const open = (next: NonNullable<typeof action>) => { setAction(next); setMotivo(""); setError(""); };
+  const submit = async () => {
+    if (lock.current || !allowed || !action || (needsReason && !motivo.trim())) return;
+    lock.current = true; setBusy(true); setError("");
+    try {
+      const result = action === "aprovar" ? await actions.liberarRecomendacaoParaProdutor(registroId)
+        : action === "ajuste" ? await actions.solicitarAjusteVisita(registroId, motivo, ws?.version ?? undefined)
+        : action === "reprovar" ? await actions.reprovarRecomendacao(registroId, motivo, ws?.version ?? undefined)
+        : await actions.reabrirVisita(registroId, motivo, ws?.version ?? undefined);
+      if (!result.success) {
+        setError(result.message);
+        await workspace.refetch();
+        return;
+      }
+      setAction(null); setMotivo(""); onSuccess?.();
+    } catch {
+      setError("Não foi possível concluir a decisão. Tente novamente.");
+      await workspace.refetch();
+    } finally { lock.current = false; setBusy(false); }
+  };
+  return <>
+    {allowed && <div className="flex flex-wrap gap-2">
+      {mode === "reabrir" ? <Button size="sm" variant="outline" onClick={() => open("reabrir")}>Reabrir análise</Button> : <>
+        <Button size="sm" onClick={() => open("aprovar")}>{labels.aprovar}</Button>
+        {mode === "decidir" && <>
+          <Button size="sm" variant="outline" onClick={() => open("ajuste")}>Solicitar ajuste</Button>
+          <Button size="sm" variant="destructive" onClick={() => open("reprovar")}>Reprovar recomendação</Button>
+        </>}
+      </>}
+    </div>}
+    <AlertDialog open={action !== null} onOpenChange={(value) => { if (!value && !lock.current) { setAction(null); setMotivo(""); setError(""); } }}>
+      <AlertDialogContent onEscapeKeyDown={(event) => { if (lock.current) event.preventDefault(); }}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{action ? labels[action] : "Decisão técnica"}</AlertDialogTitle>
+          <AlertDialogDescription>{action === "reabrir" ? "A recomendação voltará à análise técnica, sem liberar edição direta." : "Confirma o registro desta decisão técnica?"}</AlertDialogDescription>
+        </AlertDialogHeader>
+        {needsReason && <div className="space-y-2"><Label htmlFor={`decision-reason-${registroId}`}>Motivo</Label><Textarea id={`decision-reason-${registroId}`} value={motivo} disabled={busy} onChange={(event) => setMotivo(event.target.value)} /></div>}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+          <Button disabled={busy || !allowed || (needsReason && !motivo.trim())} onClick={() => { void submit(); }}>Confirmar decisão</Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>;
 }

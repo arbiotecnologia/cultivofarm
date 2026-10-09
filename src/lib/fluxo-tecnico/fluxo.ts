@@ -129,11 +129,11 @@ export function podeDecidirPorPapel(role: string | null | undefined): boolean {
  * ------------------------------------------------------------------ */
 
 /**
- * Não existe RPC pública e transacional que grave, em uma única transação,
- * `registros_consultor.status` + `aprovacoes_tecnicas` + `status_log`.
- * Enquanto isso, a decisão fica desabilitada para não corromper o fluxo.
+ * Contratos canônicos auditados: liberar (success) e ajuste/reprovar (ok),
+ * com tenant fence e ledger/log transacionais já aplicados externamente.
+ * Disponibilidade é apenas UI; workspace/RPC/RLS continuam autoritativos.
  */
-export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = false;
+export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = true;
 
 /**
  * Também não existe RPC idempotente para gerar as OS de Produção de uma

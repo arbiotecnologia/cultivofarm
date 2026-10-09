@@ -17,6 +17,7 @@ import {
   RPC_APROVACAO_TRANSACIONAL_DISPONIVEL,
   RPC_GERACAO_OS_DISPONIVEL,
   MSG_DECISAO_INDISPONIVEL,
+  podeDecidir,
 } from "@/lib/fluxo-tecnico/fluxo";
 
 const pagina = fs.readFileSync(
@@ -92,8 +93,12 @@ describe("fluxo técnico — autorização por papel", () => {
     }
   });
 
-  it("sem RPC transacional a decisão permanece indisponível no contrato", () => {
-    expect(RPC_APROVACAO_TRANSACIONAL_DISPONIVEL).toBe(false);
+  it("contrato disponível restringe decisões a admin/gestor e enviado_aprovacao", () => {
+    expect(RPC_APROVACAO_TRANSACIONAL_DISPONIVEL).toBe(true);
+    expect(podeDecidir("administrador", "enviado_aprovacao")).toBe(true);
+    expect(podeDecidir("gestor", "enviado_aprovacao")).toBe(true);
+    expect(podeDecidir("consultor_tecnico", "enviado_aprovacao")).toBe(false);
+    expect(podeDecidir("administrador", "aprovado")).toBe(false);
   });
 
   it("geração automática de OS permanece bloqueada sem RPC idempotente", () => {

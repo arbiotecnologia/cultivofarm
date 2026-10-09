@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useNavigate } from "react-router-dom";
@@ -16,9 +17,76 @@ export type FluxoResponse = {
 };
 
 export function useFluxoVisitaTecnica() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const decisionLock = useRef(false);
+  const actorScope = `${user?.id ?? ""}:${profile?.organization_id ?? ""}:${roles.join(",")}`;
+  const currentActor = useRef(actorScope);
+  currentActor.current = actorScope;
+
+  // Apenas prefixos existentes ligados à decisão; nunca limpar cache global.
+  const invalidateDecision = async (id: string) => {
+    await Promise.all([
+      ...["visita-tecnica", "visita-workspace", "mobile-wizard-registro", "wizard-revisao-registro",
+        "visita-aprovacoes", "visita-status-log", "visita-timeline", "inconsistencias-visita"].map(
+        (key) => queryClient.invalidateQueries({ queryKey: [key, id] }),
+      ),
+      ...["fluxo-pendentes", "aprovacoes-todas", "atendimentos-tecnicos", "atendimentos-tecnicos-resumo",
+        "solicitacoes", "visitas"].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
+    ]);
+  };
+
+  const executeDecision = async (
+    id: string,
+    action: "aprovar" | "ajuste" | "reprovar" | "reabrir",
+    motivo = "",
+    expectedVersion?: number,
+  ): Promise<FluxoResponse> => {
+    if (loading || !user || profile?.user_id !== user.id || profile.ativo !== true || !profile.organization_id) {
+      return { success: false, message: "Sessão indisponível. Entre novamente para continuar." };
+    }
+    if (!roles.some((role) => role === "administrador" || (action !== "reabrir" && role === "gestor"))) {
+      return { success: false, message: "Seu perfil não permite esta decisão." };
+    }
+    if (action !== "aprovar" && !motivo.trim()) return { success: false, message: "Informe o motivo para esta decisão." };
+    if (decisionLock.current) return { success: false, message: "Uma decisão já está em andamento." };
+    decisionLock.current = true;
+    const scope = actorScope;
+    try {
+      // Versão/status/permissão canônicos antes da chamada; nunca usar default inventado.
+      const { data: wsData, error: wsError } = await supabase.rpc("rpc_get_visita_workspace", { p_registro_id: id });
+      if (wsError) throw wsError;
+      const ws = wsData && typeof wsData === "object" && !Array.isArray(wsData) ? wsData : {};
+      const permissions = ws.permissions;
+      const canApprove = permissions && typeof permissions === "object" && !Array.isArray(permissions) && permissions.can_approve === true;
+      const requiredStatus = action === "reabrir" ? "aprovado" : "enviado_aprovacao";
+      if (scope !== currentActor.current || !canApprove || ws.status !== requiredStatus) {
+        return { success: false, message: "Esta visita não está disponível para esta decisão." };
+      }
+      const version = expectedVersion ?? ws.version;
+      if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+        return { success: false, message: "Não foi possível confirmar a versão da visita." };
+      }
+      const result = action === "aprovar"
+        ? await supabase.rpc("rpc_liberar_recomendacao_produtor", { p_registro_id: id })
+        : await supabase.rpc(action === "ajuste" ? "rpc_solicitar_ajuste_visita" : action === "reprovar" ? "rpc_reprovar_visita" : "rpc_reabrir_visita", {
+          p_registro_id: id, p_expected_version: version, p_motivo: motivo.trim(),
+        });
+      if (result.error) throw result.error;
+      const out = result.data && typeof result.data === "object" && !Array.isArray(result.data) ? result.data : {};
+      const success = action === "aprovar" ? out.success === true : out.ok === true;
+      if (!success) return { success: false, message: "Não foi possível concluir esta decisão. Reconsulte a visita e tente novamente." };
+      if (scope !== currentActor.current) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
+      await invalidateDecision(id);
+      return { success: true, message: action === "reabrir" ? "Análise reaberta." : "Decisão registrada.", data: out };
+    } catch (error: unknown) {
+      return { success: false, message: mensagemAmigavelVisita(error), error: codigoTecnicoVisita(error) ?? undefined };
+    } finally {
+      decisionLock.current = false;
+    }
+  };
 
   // --- Funções de Ação ---
 
@@ -214,30 +282,8 @@ export function useFluxoVisitaTecnica() {
     }
   };
 
-  const liberarRecomendacaoParaProdutor = async (registroId: string): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
-    try {
-      const { data, error } = await (supabase as any).rpc("rpc_liberar_recomendacao_produtor", { p_registro_id: registroId });
-      if (error) throw error;
-      const res = (data as any) || {};
-
-      if (res.success) {
-        toast.success(res.message || "Recomendação liberada ao produtor.");
-        queryClient.invalidateQueries({ queryKey: ["visita-tecnica", registroId] });
-        queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
-        queryClient.invalidateQueries({ queryKey: ["visitas"] });
-        queryClient.invalidateQueries({ queryKey: ["inconsistencias-visita"] });
-      } else {
-        toast.error(res.message || "Não foi possível liberar a recomendação.");
-      }
-
-      return { success: !!res.success, message: res.message || "", data: res };
-    } catch (error: any) {
-      console.error("Erro em liberarRecomendacaoParaProdutor:", error);
-      toast.error(error.message || "Erro na liberação da recomendação");
-      return { success: false, message: "Erro na liberação", error: error.message };
-    }
-  };
+  const liberarRecomendacaoParaProdutor = (registroId: string): Promise<FluxoResponse> =>
+    executeDecision(registroId, "aprovar");
 
   const converterRecomendacaoEmOS = async (registroId: string, observacao?: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
@@ -397,57 +443,14 @@ export function useFluxoVisitaTecnica() {
     queryClient.invalidateQueries({ queryKey: ["visita-workspace", id] });
   };
 
-  const reprovarRecomendacao = async (id: string, motivo: string): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
-    if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reprovação" };
-    try {
-      const { error } = await (supabase as any).rpc("rpc_reprovar_visita" as any, {
-        p_registro_id: id,
-        p_expected_version: await fetchVersion(id),
-        p_motivo: motivo.trim(),
-      });
-      if (error) throw error;
-      invalidateVisita(id);
-      return { success: true, message: "Visita reprovada com sucesso" };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao reprovar visita", error: error.message };
-    }
-  };
+  const reprovarRecomendacao = (id: string, motivo: string, expectedVersion?: number): Promise<FluxoResponse> =>
+    executeDecision(id, "reprovar", motivo, expectedVersion);
 
-  const solicitarAjusteVisita = async (id: string, motivo: string): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
-    if (!motivo?.trim()) return { success: false, message: "Informe o motivo do ajuste" };
-    try {
-      const { error } = await (supabase as any).rpc("rpc_solicitar_ajuste_visita" as any, {
-        p_registro_id: id,
-        p_expected_version: await fetchVersion(id),
-        p_motivo: motivo.trim(),
-      });
-      if (error) throw error;
-      invalidateVisita(id);
-      return { success: true, message: "Ajuste solicitado ao consultor" };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao solicitar ajuste", error: error.message };
-    }
-  };
+  const solicitarAjusteVisita = (id: string, motivo: string, expectedVersion?: number): Promise<FluxoResponse> =>
+    executeDecision(id, "ajuste", motivo, expectedVersion);
 
-  const reabrirVisita = async (id: string, motivo: string): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
-    if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reabertura" };
-    try {
-      const { error } = await (supabase as any).rpc("rpc_reabrir_visita" as any, {
-        p_registro_id: id,
-        p_expected_version: await fetchVersion(id),
-        p_motivo: motivo.trim(),
-      });
-      if (error) throw error;
-      invalidateVisita(id);
-      return { success: true, message: "Visita reaberta para revisão" };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao reabrir visita", error: error.message };
-    }
-  };
-
+  const reabrirVisita = (id: string, motivo: string, expectedVersion?: number): Promise<FluxoResponse> =>
+    executeDecision(id, "reabrir", motivo, expectedVersion);
 
   const ativarMonitoramento = async (
     id: string,

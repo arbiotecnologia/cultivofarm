@@ -39,6 +39,11 @@ const STATUS_APROVACAO: Record<string, { label: string; className: string; icon:
     className: "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
     icon: RotateCcw,
   },
+  ajuste_solicitado: {
+    label: "Ajuste solicitado",
+    className: "bg-muted text-muted-foreground border-border",
+    icon: RotateCcw,
+  },
 };
 
 interface AprovacaoCardProps {
