@@ -29,7 +29,8 @@ export function validateTechnicalAttachment(file: File): { extension: string; ki
   const allowed: Record<string, readonly string[]> = {
     "image/jpeg": ["jpg", "jpeg"], "image/png": ["png"], "image/webp": ["webp"], "application/pdf": ["pdf"],
   };
-  if (!extension || !allowed[file.type]?.includes(extension) || file.name.length > 255 || /[\\/\u0000-\u001f]/.test(file.name)) {
+  if (!extension || !allowed[file.type]?.includes(extension) || file.name.length > 255 ||
+    /[\\/]/.test(file.name) || Array.from(file.name).some(character => character.charCodeAt(0) < 32)) {
     throw new Error("Tipo ou extensão inválidos. Use foto JPEG, PNG, WebP ou PDF.");
   }
   return { extension, kind: file.type === "application/pdf" ? "documento" : "foto", mediaType: file.type === "application/pdf" ? "pdf" : "foto" };
