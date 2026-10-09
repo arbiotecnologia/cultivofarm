@@ -6,7 +6,7 @@ import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { podeDecidir, RPC_GERACAO_OS_DISPONIVEL } from "@/lib/fluxo-tecnico/fluxo";
 import { useNavigate } from "react-router-dom";
 import {
-  CheckCircle2, Lock, Pencil, Save, X, AlertTriangle, Loader2,
+  CheckCircle2, Lock,
   ClipboardCheck, UserCheck, FileSearch, PackageCheck, ArrowRight, Flag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,14 +63,11 @@ function getEtapaAtiva(status?: string, proximoPasso?: string): string {
 }
 
 export function VisitaStatusBanner({
-  status, proximoPasso, isEditing, canReopen, finalizedAt, saving,
-  onReopen, onSave, onCancel, registroId, osExistenteId,
+  status, proximoPasso, finalizedAt, registroId, osExistenteId,
 }: Props) {
   const { role } = useAuth();
   const { converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [motivo, setMotivo] = useState("");
   const geraArtefatoAprovavel = desfechoGeraArtefatoAprovavel(proximoPasso);
 
   if (!status || status === "rascunho") return null;
@@ -78,28 +75,6 @@ export function VisitaStatusBanner({
   const dateLabel = finalizedAt
     ? formatDateTimeDisplay(finalizedAt)
     : null;
-
-  // Editing variant
-  if (isEditing) {
-    return (
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-amber-900">Editando visita finalizada</p>
-          <p className="text-xs text-amber-800">As alterações serão registradas no histórico com o motivo informado.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={onCancel} disabled={saving}>
-            <X className="h-4 w-4 mr-1" /> Cancelar
-          </Button>
-          <Button size="sm" onClick={onSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            Salvar alterações
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const label = STATUS_LABEL_REGISTRO[status] || status;
   const etapaAtiva = getEtapaAtiva(status, proximoPasso);
@@ -126,7 +101,7 @@ export function VisitaStatusBanner({
     tone = "indigo";
   } else if (status === "aprovado") {
     titulo = "Recomendação aprovada";
-    descricao = "O produtor já pode visualizar no Portal e decidir: aceitar, solicitar aplicação (gerar OS) ou recusar.";
+    descricao = "Recomendação disponível para consulta. Decisão do produtor indisponível nesta fase.";
     cta = { label: "Acompanhar no Fluxo Técnico", onClick: () => navigate("/fluxo-tecnico?tab=aprovados") };
     tone = "violet";
   } else if (status === "convertido_os") {
@@ -136,8 +111,8 @@ export function VisitaStatusBanner({
     tone = "amber";
   } else if (status === "reprovado") {
     titulo = "Recomendação reprovada";
-    descricao = "Reveja os apontamentos da aprovação técnica e ajuste se necessário.";
-    cta = { label: "Ver motivo", onClick: () => navigate("/fluxo-tecnico?tab=aprovacoes") };
+    descricao = "Visita reprovada, somente para consulta. Consulte o motivo no histórico; edição e reenvio não estão disponíveis.";
+    cta = { label: "Ver motivo", onClick: () => navigate("?tab=acompanhamento") };
     tone = "amber";
   } else if (status === "arquivado") {
     titulo = "Visita arquivada";
@@ -174,11 +149,6 @@ export function VisitaStatusBanner({
             {cta && (
               <Button size="sm" variant="outline" className={cn(t.border)} onClick={cta.onClick}>
                 {cta.label} <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            )}
-            {isFinalized && canReopen && (
-              <Button size="sm" variant="outline" className="border-emerald-300" onClick={() => setOpen(true)}>
-                <Pencil className="h-4 w-4 mr-1" /> Editar visita
               </Button>
             )}
             {registroId && (status === "aprovado" || (geraArtefatoAprovavel && status === "enviado_aprovacao")) && (
@@ -253,35 +223,6 @@ export function VisitaStatusBanner({
         </div>
       </div>
 
-      <AlertDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setMotivo(""); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reabrir visita para edição?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Toda alteração ficará registrada no histórico desta visita.
-              Informe o motivo da edição (mínimo 5 caracteres).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-2">
-            <Label className="text-xs">Motivo da edição <span className="text-destructive">*</span></Label>
-            <Textarea
-              rows={3}
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Ex: corrigir dose recomendada, ajustar problema identificado..."
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={motivo.trim().length < 5}
-              onClick={() => { onReopen(motivo.trim()); setOpen(false); setMotivo(""); }}
-            >
-              Reabrir para edição
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

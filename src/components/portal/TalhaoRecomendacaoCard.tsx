@@ -1,14 +1,10 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import {
   Beaker,
@@ -30,26 +26,10 @@ import {
   Layers,
   History,
   ExternalLink,
-  Check,
-  X,
-  Send,
-  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseConduta } from "@/lib/condutaSerializer";
 import { RoteiroVisita } from "@/components/visita/roteiro/RoteiroVisita";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   CATEGORIA_LABELS,
   ESTRATEGIA_LABELS,
@@ -73,12 +53,6 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
   const [openDiag, setOpenDiag] = useState(defaultOpen);
   const [openConduta, setOpenConduta] = useState(defaultOpen);
   const [openRoteiro, setOpenRoteiro] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [refusalReason, setRefusalReason] = useState("");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-
   const status = registro?.status as string | undefined;
   const talhao = registro?.talhoes?.nome || "Talhão";
   const fazenda = registro?.fazendas?.nome || "Fazenda";
@@ -90,128 +64,6 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
     : null;
 
   const { conduta, clean } = parseConduta(registro?.observacoes_tecnicas);
-
-  const handleDecision = async (decision: "aceitar_os" | "aceitar_direto" | "recusar") => {
-    setIsSubmitting(true);
-    try {
-      const statusAnterior = registro?.status;
-      const newStatus = (decision === "aceitar_os" ? "convertido_os" : "finalizado") as any;
-      const confirmacao =
-        decision === "aceitar_os"
-          ? "solicitou_os"
-          : decision === "aceitar_direto"
-            ? "aceita_sem_os"
-            : "recusada";
-
-      // 1) Se for "Aprovar e gerar OS", criar as OS PRIMEIRO. Se falhar, o registro
-      //    continua em "aprovado" e o produtor pode tentar de novo.
-      if (decision === "aceitar_os") {
-        const prioridade =
-          registro?.nivel_pressao === "critica" || registro?.nivel_pressao === "alta"
-            ? "alta"
-            : "media";
-        const areaCalc =
-          Number(registro?.area_hectares) ||
-          Number(registro?.talhoes?.area_hectares) ||
-          0;
-
-        for (const rec of recomendacoes) {
-          const dose = Number(rec.dose_recomendada_valor) || 0;
-          const volumeTotal = dose * areaCalc;
-          const produtoId = rec.produto_biologico_sugerido_id || rec.produto_id || null;
-
-          const { error: osError } = await (supabase as any).from("ordens_servico_onfarm").insert({
-            registro_consultor_id: registro.id,
-            cliente_id: registro.cliente_id,
-            fazenda_id: registro.fazenda_id,
-            talhao_id: registro.talhao_id,
-            produto_id: produtoId,
-            dose_ml_ha: dose,
-            area_hectares: areaCalc,
-            volume_total_ml: volumeTotal,
-            modo_aplicacao: rec.modo_aplicacao || null,
-            status: "aberta" as any,
-            prioridade: prioridade as any,
-            data_recomendada: new Date().toISOString().split("T")[0],
-          } as any);
-
-          if (osError) throw osError;
-        }
-      }
-
-      // 2) Atualizar status do registro
-      const { data: updatedReg, error: regError } = await (supabase as any)
-        .from("registros_consultor")
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", registro.id)
-        .select("id")
-        .maybeSingle();
-      if (regError) throw regError;
-      if (!updatedReg) {
-        throw new Error(
-          "Não foi possível atualizar o status da recomendação. Verifique suas permissões e tente novamente.",
-        );
-      }
-
-      // 3) Histórico de status (igual ao caminho do gestor)
-      await (supabase as any).from("registros_consultor_status_log").insert({
-        registro_consultor_id: registro.id,
-        status_anterior: statusAnterior,
-        status_novo: newStatus,
-        changed_by: user?.id || null,
-        motivo:
-          decision === "recusar"
-            ? `Recusada pelo produtor: ${refusalReason.trim() || "sem motivo informado"}`
-            : decision === "aceitar_os"
-              ? "Aprovada pelo produtor — OS gerada"
-              : "Aceita pelo produtor sem aplicação",
-      } as any);
-
-      // 4) Espelhar no portal_solicitacoes, quando houver vínculo
-      if (registro.solicitacao_id) {
-        await (supabase as any)
-          .from("portal_solicitacoes")
-          .update({
-            status: newStatus === "finalizado" ? "concluida" : "aguardando_os",
-            confirmacao_produtor: confirmacao,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", registro.solicitacao_id);
-      }
-
-      toast({
-        title:
-          decision === "aceitar_os"
-            ? "Aprovado — Ordem de Serviço gerada"
-            : decision === "aceitar_direto"
-              ? "Recomendação aceita"
-              : "Recomendação recusada",
-        description:
-          decision === "aceitar_os"
-            ? "A OS entrou na fila de produção. Acompanhe em Ordens de Serviço."
-            : decision === "recusar"
-              ? "O consultor poderá ajustar a prescrição e reenviar."
-              : "Registro atualizado.",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["portal-fila-recs"] });
-      queryClient.invalidateQueries({ queryKey: ["portal-fila-aguardando"] });
-      queryClient.invalidateQueries({ queryKey: ["portal-recomendacoes"] });
-      queryClient.invalidateQueries({ queryKey: ["portal-ordens-servico"] });
-    } catch (error: any) {
-      console.error("[TalhaoRecomendacaoCard] handleDecision falhou:", error);
-      toast({
-        title: "Erro ao processar decisão",
-        description: error?.message || "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const hasDiagnostico =
     registro?.problema_principal ||
@@ -470,100 +322,9 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
 
 
 
-        {/* ===== Ações do Produtor (Apenas se pendente de decisão) ===== */}
-        {status === "aprovado" && (
-          <>
-            <Separator />
-            <div className="p-4 sm:p-5 bg-primary/5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <h4 className="text-sm font-bold text-foreground uppercase tracking-tight">
-                  Sua decisão sobre esta recomendação
-                </h4>
-              </div>
-              
-              <div className="rounded-md border border-primary/20 bg-background p-3 text-xs text-muted-foreground space-y-1.5">
-                <p>
-                  <span className="font-semibold text-foreground">Aprovar e gerar OS</span> — confirma
-                  a aplicação. Uma Ordem de Serviço entra automaticamente na fila de produção e você
-                  acompanha em <Link to="/portal/ordens-servico" className="text-primary underline">Ordens de Serviço</Link>.
-                </p>
-                <p>
-                  <span className="font-semibold text-foreground">Aceitar sem aplicar</span> — registra
-                  sua concordância técnica, sem gerar OS.
-                </p>
-                <p>
-                  <span className="font-semibold text-foreground">Recusar</span> — devolve ao consultor
-                  para ajuste da prescrição.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Button 
-                  className="w-full flex items-center justify-center gap-2 h-11"
-                  disabled={isSubmitting}
-                  onClick={() => handleDecision("aceitar_os")}
-                >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Aprovar e gerar OS
-                </Button>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full flex items-center justify-center gap-2 h-11 border-primary/30 text-primary hover:bg-primary/10"
-                  disabled={isSubmitting}
-                  onClick={() => handleDecision("aceitar_direto")}
-                >
-                  <Check className="h-4 w-4" />
-                  Aceitar sem aplicar
-                </Button>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full flex items-center justify-center gap-2 h-11 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={isSubmitting}
-                    >
-                      <X className="h-4 w-4" />
-                      Recusar
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Recusar recomendação técnica?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Por favor, informe o motivo da recusa para que o consultor possa ajustar a prescrição.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="py-2">
-                      <Textarea 
-                        placeholder="Ex: Já realizei esta aplicação / Vou optar por outro produto..." 
-                        value={refusalReason}
-                        onChange={(e) => setRefusalReason(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Voltar</AlertDialogCancel>
-                      <AlertDialogAction 
-                        className="bg-destructive hover:bg-destructive/90"
-                        onClick={() => handleDecision("recusar")}
-                        disabled={!refusalReason.trim() || isSubmitting}
-                      >
-                        Confirmar Recusa
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-              
-              <p className="text-[11px] text-muted-foreground italic text-center">
-                Ao solicitar aplicação, uma Ordem de Serviço será gerada automaticamente.
-              </p>
-            </div>
-          </>
-        )}
+        {status === "aprovado" && <div className="p-4 sm:p-5 border-t">
+          <p role="status" className="text-sm text-muted-foreground">Decisão do produtor indisponível. Recomendação disponível somente para consulta.</p>
+        </div>}
       </CardContent>
     </Card>
   );

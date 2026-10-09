@@ -121,7 +121,7 @@ export default function VisitaTecnica() {
   const { user, profile, role } = useAuth();
   const queryClient = useQueryClient();
   const { config } = useSystemConfig();
-  const { registrarTimeline, programarRetorno, converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
+  const { registrarTimeline } = useFluxoVisitaTecnica();
 
   const isNew = !id || id === "novo" || id === "nova";
   const solicitacaoIdParam = searchParams.get("solicitacao_id");
@@ -262,7 +262,6 @@ export default function VisitaTecnica() {
   const [activeStep, setActiveStep] = useState<string>("identificacao");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [uiMode, setUiMode] = useState<"editing" | "locked">("locked");
-  const [editMotivo, setEditMotivo] = useState<string>("");
 
   const problemaRef = useRef<HTMLInputElement | null>(null);
   const descricaoRef = useRef<HTMLTextAreaElement | null>(null);
@@ -589,20 +588,32 @@ export default function VisitaTecnica() {
 
   // -------- Save mutation (otimista) --------
   const saveMutation = useMutation({
-    mutationFn: async ({ payload, finalizar, edit }: { payload: any; finalizar: boolean; edit?: { motivo: string } }) => {
+    mutationFn: async ({ payload, finalizar }: { payload: any; finalizar: boolean }) => {
+      if (!user) throw new Error("Sessão indisponível.");
+      if (!isNew) {
+        const current = await workspaceQuery.refetch();
+        if (current.isError || !current.data?.permissions.can_edit ||
+            !["rascunho", "em_andamento"].includes(current.data.status ?? "")) {
+          throw new Error("Conteúdo da visita somente para leitura.");
+        }
+      }
+      // Caminhos pós-finalização legados não possuem persistência atômica auditada.
+      if (finalizar && ["gerar_os", "emitir_recomendacao", "programar_nova_visita"].includes(encerramento.proximoPasso)) {
+        throw new Error("Este desfecho está indisponível nesta tela. Use a revisão técnica existente.");
+      }
       let currentRegistroId = id;
 
       // H9-GR: a finalização NUNCA é gravada por UPDATE direto. O status só muda
       // pelo RPC seguro `rpc_finalizar_visita_v2`, que grava atomicamente
       // status + finalized_at + finalized_by + version + histórico.
       const { status: _statusIgnorado, ...payloadSemStatus } = (payload ?? {}) as any;
-      const payloadPersistivel = finalizar ? payloadSemStatus : payload;
+      const payloadPersistivel = payloadSemStatus;
 
       if (isNew) {
         const insertPayload = {
           ...payloadPersistivel,
-          created_by: user!.id,
-          consultor_responsavel: user!.id,
+          created_by: user.id,
+          consultor_responsavel: user.id,
           consultor_profile_id: profile?.id || null,
           hora_inicio: new Date().toISOString(),
           status: "rascunho",
@@ -616,17 +627,22 @@ export default function VisitaTecnica() {
         if (error) throw error;
         currentRegistroId = data.id;
       } else {
-        const { error } = await supabase
+        const { data: saved, error } = await supabase
           .from("registros_consultor")
           .update(payloadPersistivel)
-          .eq("id", id);
+          .eq("id", id)
+          .eq("version", workspaceQuery.data?.version)
+          .select("id, version")
+          .single();
         if (error) throw error;
+        if (!saved) throw new Error("version_conflict");
       }
 
       // Salvar múltiplos diagnósticos
       if (currentRegistroId && currentRegistroId !== "nova" && currentRegistroId !== "novo") {
         // Deletar os atuais e inserir os novos (estratégia simples para rascunho/edição)
-        await supabase.from("visita_diagnosticos").delete().eq("registro_id", currentRegistroId);
+        const { error: deleteError } = await supabase.from("visita_diagnosticos").delete().eq("registro_id", currentRegistroId);
+        if (deleteError) throw deleteError;
         
         const diagsToInsert = diagnosticos.map(d => ({
           registro_id: currentRegistroId,
@@ -640,7 +656,7 @@ export default function VisitaTecnica() {
 
         if (diagsToInsert.length > 0) {
           const { error: diagError } = await supabase.from("visita_diagnosticos").insert(diagsToInsert);
-          if (diagError) console.error("Erro ao salvar diagnósticos:", diagError);
+          if (diagError) throw diagError;
         }
       }
 
@@ -653,289 +669,30 @@ export default function VisitaTecnica() {
           .single();
         if (versaoError) throw versaoError;
 
-        const { error: finalizeError } = await supabase.rpc("rpc_finalizar_visita_v2" as any, {
+        const { data: finalized, error: finalizeError } = await supabase.rpc("rpc_finalizar_visita_v2" as any, {
           p_registro_id: currentRegistroId,
-          p_expected_version: (atual as any)?.version ?? 1,
+          p_expected_version: atual.version,
         } as any);
         if (finalizeError) throw finalizeError;
+        const result = finalized as { id?: string; status?: string; version?: number; ok?: boolean; success?: boolean } | null;
+        if (!result || result.ok === false || result.success === false || result.id !== currentRegistroId || result.status !== "finalizado" || !result.version) {
+          throw new Error("Não foi possível confirmar a finalização.");
+        }
       }
 
-      // Log de edição pós-finalização
-      if (!isNew && edit?.motivo) {
-        await supabase.from("registros_consultor_status_log").insert({
-          registro_consultor_id: id!,
-          status_anterior: "finalizado",
-          status_novo: "finalizado",
-          changed_by: user?.id || null,
-          motivo: edit.motivo,
-        } as any);
-      }
-
-      return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId!, finalizar };
+      if (!currentRegistroId) throw new Error("Visita não encontrada.");
+      return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar };
     },
-    onMutate: async ({ payload, finalizar }) => {
-      if (isNew) return { previous: null };
-      await queryClient.cancelQueries({ queryKey: ["visita-tecnica", id] });
-      const previous = queryClient.getQueryData<any>(["visita-tecnica", id]);
-      queryClient.setQueryData<any>(["visita-tecnica", id], (old: any) =>
-        old ? { ...old, ...payload, status: finalizar ? "finalizado" : old.status } : old,
-      );
-      return { previous };
-    },
-    onError: (err: any, _vars, context) => {
-      if (!isNew && context?.previous) {
-        queryClient.setQueryData(["visita-tecnica", id], context.previous);
-      }
+    onError: (err: any) => {
       toast.error(translateError(err?.message || "Erro ao salvar"));
       if (!isNew) refetchVisita();
     },
     onSuccess: async (result) => {
-      // Quando finaliza qualquer visita, encerra monitoramentos anteriores do talhão
-      if (result.finalizar && talhaoId) {
-        await supabase
-          .from("alertas_agronomicos")
-          .update({ status: "encerrado" })
-          .eq("talhao_id", talhaoId)
-          .eq("status", "monitoramento");
-      }
-
-      // Logic for monitoring alert
-      if (result.finalizar && encerramento.proximoPasso === "monitorar_area") {
-        try {
-          // Map monitorarO to tipo_alerta enum
-          const mapTipo = (item?: string) => {
-            if (!item) return "praga" as const;
-            if (item.includes("Praga")) return "praga" as const;
-            if (item.includes("Doença")) return "doenca" as const;
-            if (item.includes("Daninha")) return "daninha" as const;
-            if (item.includes("Clima")) return "estresse_hidrico" as const;
-            return "praga" as const;
-          };
-
-          await supabase.from("alertas_agronomicos").insert({
-            tipo_alerta: mapTipo(encerramento.monitoramentoItens?.[0]),
-            nivel_risco: nivelPressao === "severo" ? "critico" : nivelPressao === "alto" ? "alto" : "medio",
-            descricao: `Área em monitoramento (${encerramento.monitoramentoItens?.join(", ")}) — reavaliar até ${encerramento.dataProximaVisita}`,
-            status: "monitoramento",
-            fazenda_id: fazendaId!,
-            talhao_id: talhaoId!,
-            data_vencimento: encerramento.dataProximaVisita || null,
-            registro_origem_id: result.id,
-          });
-          toast.success("Alerta de monitoramento ativado");
-        } catch (e) {
-          console.error("Erro ao gerar alerta:", e);
-        }
-      }
-      
-      // Logic for Retorno Programado - Fase 10.2.1.3
-      if (result.finalizar && encerramento.proximoPasso === "programar_nova_visita") {
-        try {
-          const res = await programarRetorno({
-            visita_original_id: id,
-            cliente_id: clienteId,
-            fazenda_id: fazendaId,
-            talhao_id: talhaoId,
-            data_prevista: formatDateToISO(encerramento.dataProximaVisita),
-            descricao: encerramento.retornoMotivo,
-            ...encerramento
-          });
-
-          if (res.success && res.data?.solicitacao_id) {
-            // Sincronizar com calendário
-            supabase.functions.invoke("sync-calendar-event", {
-              body: { solicitacaoId: res.data.solicitacao_id, action: "create" }
-            }).catch(console.error);
-
-            // 2. Criar alerta agronômico de monitoramento (lembrete)
-            const eventDate = encerramento.dataProximaVisita ? new Date(encerramento.dataProximaVisita + (encerramento.retornoTurno === 'tarde' ? 'T14:00:00' : 'T09:00:00')) : new Date();
-            const dataAlerta = new Date(eventDate);
-            dataAlerta.setDate(dataAlerta.getDate() - (encerramento.retornoLembreteDias || 1));
-
-            await supabase.from("alertas_agronomicos").insert({
-              tipo_alerta: "monitoramento" as any,
-              nivel_risco: "medio",
-              descricao: `Retorno técnico programado: ${encerramento.retornoMotivo}`,
-              status: "ativo" as any,
-              fazenda_id: fazendaId!,
-              talhao_id: talhaoId!,
-              data_vencimento: encerramento.dataProximaVisita || null,
-              data_alerta: dataAlerta.toISOString(),
-              registro_origem_id: result.id,
-            });
-
-            // 3. Notificação operacional (via RPC segura)
-            await supabase.rpc("rpc_create_notificacao_operacional", {
-              _usuario_id: user!.id,
-              _tipo: "retorno_programado",
-              _titulo: "Novo retorno agendado",
-              _mensagem: `Visita para ${encerramento.retornoMotivo} agendada em ${encerramento.dataProximaVisita}`,
-              _link: `/agenda-tecnica?data=${encerramento.dataProximaVisita}`,
-              _source_type: "registros_consultor",
-              _source_id: result.id,
-              _idempotency_key: `visita-retorno-${result.id}`,
-            });
-
-            // 4. Notificar produtor se solicitado
-            if (encerramento.retornoNotificarProdutor) {
-               await supabase.rpc("rpc_create_portal_notification_secure", {
-                 _cliente_id: clienteId!,
-                 _tipo: "recomendacao",
-                 _titulo: "Visita Técnica Agendada",
-                 _mensagem: `O consultor agendou um retorno para o dia ${formatDateDisplay(encerramento.dataProximaVisita)} (Turno: ${encerramento.retornoTurno}) para ${encerramento.retornoMotivo}.`,
-                 _link: null,
-                 _source_type: "registros_consultor",
-                 _source_id: result.id,
-                 _idempotency_key: `visita-retorno-portal-${result.id}`,
-               });
-            }
-
-          }
-          toast.success("Retorno agendado na sua agenda");
-        } catch (e: any) {
-          console.error("Erro ao agendar retorno:", e);
-          const errorMsg = translateError(e.message || "");
-          toast.error("Falha ao agendar retorno", {
-            description: errorMsg,
-            duration: 5000
-          });
-        }
-      }
-
-      // Logic for Multi-OS generation
-      if (result.finalizar && encerramento.proximoPasso === "gerar_os" && encerramento.osItens?.length > 0) {
-        try {
-          // 1. Criar recomendações para cada item da Pré-OS
-          const recsToInsert = encerramento.osItens.map(item => ({
-            registro_consultor_id: result.id,
-            produto_biologico_sugerido_id: item.tipo === "microrganismo" ? null : (item.produtoId || null),
-            microrganismo_id: item.tipo === "microrganismo" ? (item.microrganismoId || null) : null,
-            dose_recomendada_valor: parseFloat(item.doseMlHa),
-            dose_recomendada_unidade: "mL/ha",
-            modo_aplicacao: item.modoAplicacao as any,
-            recomendacao_tecnica: `Item de Pré-OS: ${encerramento.osObservacoes || ""}`,
-            // Usamos um marcador no campo de observações para o lote
-            observacoes_finais: `[LOTE_PRE_OS:${crypto.randomUUID()}]` 
-          }));
-
-          // Note: randomUUID for each item is not correct if we want a LOT, 
-          // but we'll use a single one for the session or better, handle in loop
-          const loteId = crypto.randomUUID();
-          const finalRecs = recsToInsert.map(r => ({ ...r, observacoes_finais: `[LOTE_PRE_OS:${loteId}]` }));
-
-          await supabase.from("registros_consultor_recomendacoes").insert(finalRecs);
-
-          // 2. Avançar status para enviado_aprovacao
-          await supabase
-            .from("registros_consultor")
-            .update({ status: "enviado_aprovacao" as any })
-            .eq("id", result.id);
-
-          // 3. Notificar gestores (via RPC segura, uma por gestor)
-          const { data: gestores } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
-          if (gestores && gestores.length > 0) {
-            await Promise.all(gestores.map((g) =>
-              supabase.rpc("rpc_create_notificacao_operacional", {
-                _usuario_id: g.user_id,
-                _tipo: "aprovacao_urgente",
-                _titulo: "OS Multi-Produto aguardando aprovação",
-                _mensagem: `Visita ${result.id} finalizada com solicitação de OS imediata (${encerramento.osItens.length} itens).`,
-                _link: `/fluxo-tecnico?tab=aprovacoes`,
-                _source_type: "registros_consultor",
-                _source_id: result.id,
-                _idempotency_key: `visita-multios-${result.id}-${g.user_id}`,
-              })
-            ));
-          }
-
-
-          toast.success("Solicitação de OS enviada para aprovação");
-        } catch (e) {
-          console.error("Erro ao gerar Pré-OS:", e);
-          toast.error("Erro ao processar solicitações de OS");
-        }
-      }
-
-      // Logic for Emitir Recomendação inline (sem redirecionamento)
-      if (result.finalizar && encerramento.proximoPasso === "emitir_recomendacao" && (encerramento.recItens?.length || 0) > 0) {
-        try {
-          const recsToInsert = (encerramento.recItens || []).map(item => ({
-            registro_consultor_id: result.id,
-            produto_biologico_sugerido_id: item.tipo === "microrganismo" ? null : (item.produtoId || null),
-            microrganismo_id: item.tipo === "microrganismo" ? (item.microrganismoId || null) : null,
-            dose_recomendada_valor: parseFloat(item.doseMlHa) || null,
-            dose_recomendada_unidade: "mL/ha",
-            modo_aplicacao: item.modoAplicacao as any,
-            recomendacao_tecnica: item.justificativa || "",
-            observacoes_finais: encerramento.recObservacoes || null,
-          }));
-
-          if (recsToInsert.length > 0) {
-            await supabase.from("registros_consultor_recomendacoes").insert(recsToInsert as any);
-          }
-
-          if (encerramento.exigirAprovacao) {
-            await supabase
-              .from("registros_consultor")
-              .update({ status: "enviado_aprovacao" as any })
-              .eq("id", result.id);
-
-            // Notificar gestores (via RPC segura)
-            const { data: gestores } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
-            if (gestores && gestores.length > 0) {
-              await Promise.all(gestores.map((g) =>
-                supabase.rpc("rpc_create_notificacao_operacional", {
-                  _usuario_id: g.user_id,
-                  _tipo: "aprovacao_recomendacao",
-                  _titulo: "Recomendação técnica aguardando aprovação",
-                  _mensagem: `Visita finalizada com ${recsToInsert.length} item(ns) de recomendação técnica.`,
-                  _link: `/fluxo-tecnico?tab=aprovacoes`,
-                  _source_type: "registros_consultor",
-                  _source_id: result.id,
-                  _idempotency_key: `visita-recaprov-${result.id}-${g.user_id}`,
-                })
-              ));
-            }
-
-            toast.success("Recomendação registrada e enviada para aprovação");
-          } else if (encerramento.recLiberarAutomaticamente && clienteId) {
-            // Move o registro para "aprovado" — estado canônico de "aguarda decisão do produtor".
-            // Sem isso, o card no portal não exibe os botões de Solicitar OS / Aceitar / Recusar.
-            const prevStatus = (visita as any)?.status || "finalizado";
-            await supabase
-              .from("registros_consultor")
-              .update({ status: "aprovado" as any })
-              .eq("id", result.id);
-
-            await supabase.from("registros_consultor_status_log").insert({
-              registro_consultor_id: result.id,
-              status_anterior: prevStatus,
-              status_novo: "aprovado",
-              changed_by: user?.id,
-              motivo: "Liberação direta ao produtor (sem aprovação técnica)",
-            } as any);
-
-            await supabase.rpc("rpc_create_portal_notification_secure", {
-              _cliente_id: clienteId,
-              _tipo: "recomendacao",
-              _titulo: "Nova recomendação aguardando sua decisão",
-              _mensagem: `O consultor emitiu ${recsToInsert.length} item(ns) de recomendação. Aprove para gerar a Ordem de Serviço.`,
-              _link: null,
-              _source_type: "registros_consultor",
-              _source_id: result.id,
-              _idempotency_key: `visita-rec-liberar-${result.id}`,
-            });
-
-            toast.success("Recomendação liberada — aguardando decisão do produtor");
-          } else {
-            toast.success("Recomendação registrada");
-          }
-        } catch (e: any) {
-          console.error("Erro ao registrar recomendação:", e);
-          toast.error("Erro ao registrar recomendação", { description: e?.message });
-        }
-      }
-
+      // Nenhum efeito legado após fechamento do conteúdo: sem OS, writes filhas ou envios.
+      await Promise.all([...["visita-tecnica", "visita-workspace", "visita-timeline", "visita-status-log"].map(
+        key => queryClient.invalidateQueries({ queryKey: [key, result.id] })),
+        ...["atendimentos-tecnicos", "atendimentos-tecnicos-resumo", "visitas"].map(
+          key => queryClient.invalidateQueries({ queryKey: [key] }))]);
       if (result.mode === "insert") {
         toast.success(result.finalizar ? "Visita criada e finalizada" : "Rascunho criado");
         if (!result.finalizar) {
@@ -958,53 +715,7 @@ export default function VisitaTecnica() {
   });
 
 
-  // -------- Enviar para aprovação (status finalizado → enviado_aprovacao) --------
-  const enviarAprovacaoMutation = useMutation({
-    mutationFn: async () => {
-      if (isNew || !id) throw new Error("Salve a visita antes de enviar para aprovação.");
-      const currentStatus = (visita as any)?.status;
-      
-      // Se o próximo passo for emitir recomendação, valida se ela existe
-      if (encerramento.proximoPasso === "emitir_recomendacao") {
-        const { count } = await supabase
-          .from("registros_consultor_recomendacoes")
-          .select("*", { count: 'exact', head: true })
-          .eq("registro_consultor_id", id);
-        
-        if (!count || count === 0) {
-          throw new Error("Cadastre a recomendação técnica antes de enviar para aprovação.");
-        }
-      }
-
-      if (!canTransition(currentStatus, "enviado_aprovacao")) {
-        throw new Error(getBlockReason(currentStatus, "enviado_aprovacao"));
-      }
-      const { error } = await supabase
-        .from("registros_consultor")
-        .update({ status: "enviado_aprovacao" as any })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["visita-tecnica", id] });
-      const previous = queryClient.getQueryData<any>(["visita-tecnica", id]);
-      queryClient.setQueryData<any>(["visita-tecnica", id], (old: any) =>
-        old ? { ...old, status: "enviado_aprovacao" } : old,
-      );
-      return { previous };
-    },
-    onError: (err, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(["visita-tecnica", id], context.previous);
-      showTransitionErrorToast(err);
-      refetchVisita();
-    },
-    onSuccess: () => {
-      toast.success("Recomendação enviada para aprovação do gestor");
-      refetchVisita();
-      queryClient.invalidateQueries({ queryKey: ["visita-status-log", id] });
-      queryClient.invalidateQueries({ queryKey: ["fluxo-pendentes"] });
-    },
-  });
+  // Envio/aprovação ficam na revisão existente via RPC; nenhum UPDATE de workflow aqui.
 
   // -------- Descartar rascunho --------
   const discardDraftMutation = useMutation({
@@ -1014,10 +725,15 @@ export default function VisitaTecnica() {
         throw new Error("Apenas rascunhos podem ser descartados.");
       }
       
-      const { error } = await supabase
+      if (!workspaceQuery.data?.permissions.can_edit) throw new Error("Sem permissão para descartar.");
+      const { data: deleted, error } = await supabase
         .from("registros_consultor")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("status", "rascunho")
+        .select("id")
+        .single();
+      if (!deleted && !error) throw new Error("Não foi possível confirmar o descarte.");
       
       if (error) throw error;
     },
@@ -1033,7 +749,7 @@ export default function VisitaTecnica() {
 
   // -------- Autosave (debounced) --------
   useEffect(() => {
-    if (isNew || !visita) return;
+    if (isNew || !visita || !workspaceQuery.data?.permissions.can_edit || saveMutation.isPending) return;
     // Não autosalvar quando a visita já foi finalizada (mesmo em modo edição,
     // o salvamento deve ser explícito para registrar o motivo no histórico).
     if ((visita as any).status && (visita as any).status !== "rascunho") return;
@@ -1060,28 +776,7 @@ export default function VisitaTecnica() {
    */
   const salvarCanonico = () => {
     if (saveMutation.isPending) return;
-    const statusAtual = (visita as any)?.status;
-    if (statusAtual && statusAtual !== "rascunho") {
-      if (uiMode !== "editing") return;
-      if (!editMotivo || editMotivo.trim().length < 5) {
-        toast.error("Motivo da edição é obrigatório (mínimo 5 caracteres).");
-        return;
-      }
-      saveMutation.mutate(
-        { payload: buildPayload(), finalizar: false, edit: { motivo: editMotivo.trim() } },
-        {
-          onSuccess: () => {
-            toast.success("Alterações salvas no histórico da visita.");
-            setEditMotivo("");
-            setUiMode("locked");
-            queryClient.invalidateQueries({ queryKey: ["visita-status-log", id] });
-            queryClient.invalidateQueries({ queryKey: ["visita-timeline", id] });
-            refetchVisita();
-          },
-        }
-      );
-      return;
-    }
+    if (!acoesVisita.canPersist) return;
     saveMutation.mutate({ payload: buildPayload(), finalizar: false });
   };
 
@@ -1120,26 +815,13 @@ export default function VisitaTecnica() {
     }, 150);
   };
 
-  const registroStatus: string | undefined = (visita as any)?.status;
-  const isFinalized = !!registroStatus && registroStatus !== "rascunho";
-  // Status pós-aprovação são travados permanentemente
-  const isLockedForever = !!registroStatus && ["enviado_aprovacao", "aprovado", "convertido_os", "arquivado"].includes(registroStatus);
-  // Read-only quando finalizado e não em modo edição manual
-  const isReadOnly = isFinalized && uiMode === "locked";
-  const canReopen = registroStatus === "finalizado" && (
-    role === "administrador" || role === "gestor" ||
-    (visita as any)?.consultor_responsavel === user?.id ||
-    (visita as any)?.consultor_responsavel === profile?.id ||
-    (visita as any)?.created_by === user?.id
-  );
-
-  // H9-G 2F — fonte canônica única das ações de persistência.
+  const registroStatus = workspaceQuery.data?.status ?? undefined;
+  const isFinalized = !!registroStatus && !["rascunho", "em_andamento"].includes(registroStatus);
   const acoesVisita = resolveVisitaAcoes({
-    isNew,
-    status: registroStatus,
-    uiMode,
-    canEdit: registroStatus === "rascunho" || uiMode === "editing" || canReopen,
+    isNew, status: registroStatus, uiMode,
+    canEdit: isNew || (!workspaceQuery.isError && workspaceQuery.data?.permissions.can_edit === true),
   });
+  const isReadOnly = acoesVisita.readOnly;
 
   /**
    * Máquina de etapas: define o que já pode ser acionado e qual é o PRIMEIRO
@@ -1163,21 +845,10 @@ export default function VisitaTecnica() {
   // Garante uiMode coerente quando o registro carrega/muda
   useEffect(() => {
     if (!registroStatus) return;
-    if (registroStatus === "rascunho") setUiMode("editing");
+    if (["rascunho", "em_andamento"].includes(registroStatus)) setUiMode("editing");
     else setUiMode("locked");
   }, [registroStatus]);
 
-  const handleReopenForEdit = (motivo: string) => {
-    setEditMotivo(motivo);
-    setUiMode("editing");
-    toast.info("Modo edição ativado. Faça as alterações e clique em Salvar.");
-  };
-  const handleCancelEdit = () => {
-    setEditMotivo("");
-    hydratedIdRef.current = null;
-    refetchVisita();
-    setUiMode("locked");
-  };
   // Banner e barra inferior compartilham a MESMA ação canônica.
   const handleSaveEdit = salvarCanonico;
 
@@ -1185,7 +856,7 @@ export default function VisitaTecnica() {
   const handleFinalize = async () => {
     // Um clique por vez: enquanto a checagem assíncrona de retorno duplicado
     // roda, novos cliques são ignorados (evita finalização duplicada).
-    if (finalizandoRef.current || saveMutation.isPending) return;
+    if (finalizandoRef.current || saveMutation.isPending || !acoesVisita.showFinalize) return;
 
     // ORDEM CANÔNICA: a mensagem sempre aponta o PRIMEIRO requisito bloqueante
     // (identificação → visita salva → check-in → diagnóstico → desfecho),
@@ -1203,38 +874,6 @@ export default function VisitaTecnica() {
 
     finalizandoRef.current = true;
     try {
-      // Validação para evitar retorno duplicado acidental - Fase 10.2.1.3
-      if (encerramento.proximoPasso === "programar_nova_visita") {
-        const { data: existingRetorno } = await supabase
-          .from("portal_solicitacoes")
-          .select("id")
-          .eq("registro_origem_id", id)
-          .eq("tipo_demanda", "retorno_tecnico")
-          .in("status", ["pendente", "aberta", "atribuida", "agendada", "em_visita", "checkin_realizado"])
-          .maybeSingle();
-
-        if (existingRetorno) {
-          // Buscar se já existe registro_consultor para este retorno
-          const { data: existingVisit } = await supabase
-            .from("registros_consultor")
-            .select("id")
-            .eq("solicitacao_id", existingRetorno.id)
-            .maybeSingle();
-
-          if (existingVisit) {
-            toast.info("Já existe um retorno técnico em andamento para esta visita.");
-            navigate(`/visita-tecnica/${existingVisit.id}`);
-            return;
-          }
-
-          const confirm = window.confirm("Já existe uma solicitação de retorno aberta para esta visita. Deseja criar um novo retorno mesmo assim?");
-          if (!confirm) {
-            navigate("/solicitacoes");
-            return;
-          }
-        }
-      }
-
       if (fotos.length === 0) {
         setConfirmFinalizeNoPhotos(true);
         return;
@@ -1253,8 +892,9 @@ export default function VisitaTecnica() {
     // locais (inclusive notas rápidas); ele é persistido antes da RPC de
     // finalização e, se o salvamento falhar, a finalização não acontece.
     if (saveMutation.isPending) return;
+    if (!acoesVisita.showFinalize) return;
     saveMutation.mutate({
-      payload: buildPayload({ status: "finalizado", hora_fim: new Date().toISOString() }),
+      payload: buildPayload(),
       finalizar: true,
     });
   };
@@ -1385,7 +1025,7 @@ export default function VisitaTecnica() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Cliente <span className="text-destructive">*</span></Label>
-            <Select value={clienteId} onValueChange={(v) => { setClienteId(v); setFazendaId(""); setTalhaoId(""); }}>
+            <Select disabled={isReadOnly} value={clienteId} onValueChange={(v) => { setClienteId(v); setFazendaId(""); setTalhaoId(""); }}>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
                 {clientesOptions.map((c: any) => (
@@ -1396,7 +1036,7 @@ export default function VisitaTecnica() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Fazenda <span className="text-destructive">*</span></Label>
-            <Select value={fazendaId} onValueChange={(v) => { setFazendaId(v); setTalhaoId(""); }} disabled={!clienteId}>
+            <Select value={fazendaId} onValueChange={(v) => { setFazendaId(v); setTalhaoId(""); }} disabled={isReadOnly || !clienteId}>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
                 {fazendasOptionsAll
@@ -1409,7 +1049,7 @@ export default function VisitaTecnica() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Talhão</Label>
-            <Select value={talhaoId} onValueChange={setTalhaoId} disabled={!fazendaId}>
+            <Select value={talhaoId} onValueChange={setTalhaoId} disabled={isReadOnly || !fazendaId}>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
                 {talhoesOptionsAll
@@ -1422,7 +1062,7 @@ export default function VisitaTecnica() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Cultura</Label>
-            <Select value={culturaId} onValueChange={setCulturaId}>
+            <Select disabled={isReadOnly} value={culturaId} onValueChange={setCulturaId}>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
                 {culturasOptions.map((c: any) => (
@@ -1433,7 +1073,7 @@ export default function VisitaTecnica() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Data da visita</Label>
-            <Input 
+            <Input disabled={isReadOnly} 
               placeholder="DD/MM/YYYY"
               value={dataVisita} 
               onChange={(e) => setDataVisita(applyDateMask(e.target.value))} 
@@ -1452,6 +1092,7 @@ export default function VisitaTecnica() {
               ].map((tipo) => (
                 <Button
                   key={tipo.val}
+                  disabled={isReadOnly}
                   type="button"
                   variant="outline"
                   className={cn(
@@ -1471,7 +1112,7 @@ export default function VisitaTecnica() {
             <Label className="text-xs">Objetivo da visita</Label>
             {objetivosVisita.length > 0 ? (
               <>
-                <Select
+                <Select disabled={isReadOnly}
                   value={
                     objetivoOutro
                       ? "__outro__"
@@ -1500,7 +1141,7 @@ export default function VisitaTecnica() {
                   </SelectContent>
                 </Select>
                 {objetivoOutro && (
-                  <Input
+                  <Input disabled={isReadOnly}
                     value={objetivoVisita}
                     onChange={(e) => setObjetivoVisita(e.target.value)}
                     placeholder="Descreva o objetivo da visita"
@@ -1508,7 +1149,7 @@ export default function VisitaTecnica() {
                 )}
               </>
             ) : (
-              <Input
+              <Input disabled={isReadOnly}
                 value={objetivoVisita}
                 onChange={(e) => setObjetivoVisita(e.target.value)}
                 placeholder="Ex: avaliar pressão de lagartas"
@@ -1519,7 +1160,7 @@ export default function VisitaTecnica() {
             <Label className="text-xs">Fase fenológica</Label>
             {estagiosFenologicos ? (
               <>
-                <Select
+                <Select disabled={isReadOnly}
                   value={
                     faseOutro
                       ? "__outro__"
@@ -1548,7 +1189,7 @@ export default function VisitaTecnica() {
                   </SelectContent>
                 </Select>
                 {faseOutro && (
-                  <Input
+                  <Input disabled={isReadOnly}
                     value={faseFenologica}
                     onChange={(e) => setFaseFenologica(e.target.value)}
                     placeholder="Descreva o estágio"
@@ -1558,7 +1199,7 @@ export default function VisitaTecnica() {
                 )}
               </>
             ) : (
-              <Input
+              <Input disabled={isReadOnly}
                 value={faseFenologica}
                 onChange={(e) => setFaseFenologica(e.target.value)}
                 placeholder={culturaId ? "Ex: V4, R2..." : "Selecione a cultura"}
@@ -1567,7 +1208,7 @@ export default function VisitaTecnica() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Safra</Label>
-            <Input value={safra} onChange={(e) => setSafra(e.target.value)} placeholder="Ex: 2024/25" />
+            <Input disabled={isReadOnly} value={safra} onChange={(e) => setSafra(e.target.value)} placeholder="Ex: 2024/25" />
           </div>
         </div>
         {acoesVisita.showSave && (
@@ -1665,13 +1306,13 @@ export default function VisitaTecnica() {
               <Label className={diag.problema.trim() ? "text-xs" : "text-xs text-destructive"}>
                 Problema <span className="text-destructive">*</span>
               </Label>
-              <ProblemaSelector 
+              <fieldset disabled={isReadOnly}><ProblemaSelector
                 value={diag.problema}
                 onSelect={(p) => {
                   updateDiagnostico(diag.id, "problema", p.nome);
                   updateDiagnostico(diag.id, "categoria", p.categoria);
                 }}
-              />
+              /></fieldset>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-end gap-4">
@@ -2025,13 +1666,13 @@ export default function VisitaTecnica() {
               registroId={id}
               status={registroStatus}
               proximoPasso={encerramento.proximoPasso}
-              isEditing={uiMode === "editing"}
-              canReopen={!!canReopen && !isLockedForever}
+              isEditing={false}
+              canReopen={false}
               finalizedAt={(visita as any)?.hora_fim || (visita as any)?.updated_at}
               saving={saveMutation.isPending}
-              onReopen={handleReopenForEdit}
+              onReopen={() => undefined}
               onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
+              onCancel={() => undefined}
               osExistenteId={(ordensConsolidado as any[])[0]?.id || null}
             />
           </div>
@@ -2074,7 +1715,7 @@ export default function VisitaTecnica() {
             className="mt-4"
           >
             <TabsList>
-              <TabsTrigger value="edicao">Edição</TabsTrigger>
+              <TabsTrigger value="edicao">Dados da visita</TabsTrigger>
               <TabsTrigger value="roteiro">Roteiro da visita</TabsTrigger>
               <TabsTrigger value="acompanhamento">Acompanhamento</TabsTrigger>
             </TabsList>
@@ -2103,7 +1744,7 @@ export default function VisitaTecnica() {
                     <AccordionItem value="monitoramento" className="border-none">
                       {isFinalized && necessidadeIntervencao === "monitorar" && id && (
                         <div className="px-1 py-3">
-                          <PlanoMonitoramentoEditor 
+                          <PlanoMonitoramentoEditor readOnly={isReadOnly}
                             registroId={id}
                             observacoesAtuais={visita?.observacoes_tecnicas || ""}
                             dataProximaVisita={visita?.data_proxima_visita}
@@ -2130,7 +1771,7 @@ export default function VisitaTecnica() {
                   {evidenciasBlock}
                   {condutaBlock}
                   {isFinalized && necessidadeIntervencao === "monitorar" && id && (
-                    <PlanoMonitoramentoEditor 
+                    <PlanoMonitoramentoEditor readOnly={isReadOnly}
                       registroId={id}
                       observacoesAtuais={visita?.observacoes_tecnicas || ""}
                       dataProximaVisita={visita?.data_proxima_visita}

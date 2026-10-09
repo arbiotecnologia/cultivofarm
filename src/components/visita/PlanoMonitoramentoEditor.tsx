@@ -15,6 +15,7 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
 
 interface PlanoMonitoramentoEditorProps {
+  readOnly?: boolean;
   registroId: string;
   observacoesAtuais: string;
   dataProximaVisita?: string;
@@ -26,6 +27,7 @@ interface PlanoMonitoramentoEditorProps {
 }
 
 export function PlanoMonitoramentoEditor({
+  readOnly = true,
   registroId,
   observacoesAtuais,
   dataProximaVisita,
@@ -68,6 +70,7 @@ export function PlanoMonitoramentoEditor({
   };
 
   const handleSave = async () => {
+    if (readOnly || isSaving) return;
     if (!state.monitoramentoItens || state.monitoramentoItens.length === 0) {
       toast.error("Selecione pelo menos um item para monitorar");
       return;
@@ -89,7 +92,7 @@ export function PlanoMonitoramentoEditor({
           observacoes_tecnicas: finalObs,
           data_proxima_visita: state.dataProximaVisita
         })
-        .eq("id", registroId);
+        .eq("id", registroId).select("id").single();
 
       if (updateError) throw updateError;
 
@@ -125,6 +128,9 @@ export function PlanoMonitoramentoEditor({
   };
 
   const handleSchedule = async () => {
+    // Sem contrato de agendamento auditado nesta superfície: fechado antes de qualquer write.
+    toast.error("Agendamento indisponível nesta tela.");
+    return;
     setIsScheduling(true);
     try {
     const { error } = await (supabase as any)
@@ -159,7 +165,7 @@ export function PlanoMonitoramentoEditor({
             <Gauge className="h-4 w-4 text-emerald-600" />
             <CardTitle className="text-sm font-semibold text-emerald-800">Monitoramento Ativo</CardTitle>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setIsOpen(true)} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+          <Button variant="outline" size="sm" disabled={readOnly} onClick={() => { if (!readOnly) setIsOpen(true); }} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
             Editar Plano
           </Button>
         </CardHeader>
@@ -183,7 +189,7 @@ export function PlanoMonitoramentoEditor({
           <Button 
             className="w-full h-8 text-xs mt-2 bg-emerald-600 hover:bg-emerald-700 text-white" 
             onClick={handleSchedule}
-            disabled={isScheduling}
+            disabled={true}
           >
             {isScheduling ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <PlusCircle className="h-3 w-3 mr-2" />}
             Agendar Próxima na Agenda
@@ -200,7 +206,7 @@ export function PlanoMonitoramentoEditor({
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <fieldset disabled={readOnly || isSaving} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase font-bold">O que monitorar?</Label>
               <div className="flex flex-wrap gap-1.5">
@@ -226,7 +232,7 @@ export function PlanoMonitoramentoEditor({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase font-bold">Frequência</Label>
-                <Select 
+                <Select disabled={readOnly || isSaving}
                   value={state.monitoramentoFrequencia} 
                   onValueChange={(val) => setState({ ...state, monitoramentoFrequencia: val })}
                 >
@@ -262,11 +268,11 @@ export function PlanoMonitoramentoEditor({
                 className="text-xs border-emerald-200"
               />
             </div>
-          </div>
+          </fieldset>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSaving}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleSave} disabled={isSaving || readOnly} className="bg-emerald-600 hover:bg-emerald-700">
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar Alterações
             </Button>
