@@ -315,7 +315,7 @@ function MobileVisitaWizardForm() {
         .from("registros_consultor")
         .select("*")
         .eq("id", registroId)
-        .maybeSingle().abortSignal(signal);
+        .abortSignal(signal).maybeSingle();
       assertCurrent(signal);
       if (error) throw error;
       return data;

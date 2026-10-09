@@ -115,7 +115,7 @@ export function useAtendimentosTecnicos(filters: AtendimentosFilters = {}) {
   const session = useTechnicalQuerySession("atendimentos-tecnicos");
   const { aba = "todos", search = null, page = 1, pageSize = 20, enabled = true } = filters;
 
-  const result = useQuery({
+  const result = useQuery<AtendimentosResult>({
     queryKey: ["atendimentos-tecnicos", { aba, search, page, pageSize }, session.scope],
     enabled: enabled && session.ready,
     placeholderData: (previous, query) => query?.queryKey[query.queryKey.length - 1] === session.scope ? keepPreviousData(previous) : undefined,

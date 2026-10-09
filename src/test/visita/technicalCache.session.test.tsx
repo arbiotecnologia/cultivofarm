@@ -76,10 +76,10 @@ it("foco stale atualiza workspace sem substituir campo sujo em edição", async 
 
 it.each([useVisitaWorkspace, useVisitasTecnicasLista, useAtendimentosTecnicos, useAtendimentosResumo])("consulta técnica revalida remount stale sem alterar defaults", async (hook) => {
   const { client, wrapper } = setup();
-  const read = () => hook === useVisitaWorkspace ? useVisitaWorkspace("fake-visit") : hook();
-  const first = renderHook(read, { wrapper }); await waitFor(() => expect(first.result.current.data).toBeDefined());
+  const useRead = () => hook === useVisitaWorkspace ? useVisitaWorkspace("fake-visit") : hook();
+  const first = renderHook(useRead, { wrapper }); await waitFor(() => expect(first.result.current.data).toBeDefined());
   const count = mocks.rpc.mock.calls.length; first.unmount(); mocks.status = "rascunho"; age(client);
-  const next = renderHook(read, { wrapper });
+  const next = renderHook(useRead, { wrapper });
   await waitFor(() => expect(mocks.rpc.mock.calls.length).toBeGreaterThan(count));
   await waitFor(() => expect(next.result.current.isFetching).toBe(false));
   expect(client.getDefaultOptions().queries?.refetchOnMount).toBe(false);
@@ -91,6 +91,7 @@ it.each(["identity", "tenant", "roles", "logout", "inactive", "loading"])("works
   let resolve: ((v: unknown) => void) | undefined;
   mocks.rpc.mockImplementation(() => new Promise(r => { resolve = r; }));
   await act(async () => { void h.result.current.refetch(); });
+  const oldResolve = resolve;
   if (change === "identity") { mocks.auth.user = { id: "actor-B" }; mocks.auth.profile.user_id = "actor-B"; }
   if (change === "tenant") mocks.auth.profile.organization_id = "org-B";
   if (change === "roles") mocks.auth.roles = ["gestor"];
@@ -98,6 +99,6 @@ it.each(["identity", "tenant", "roles", "logout", "inactive", "loading"])("works
   if (change === "inactive") mocks.auth.profile.ativo = false;
   if (change === "loading") mocks.auth.loading = true;
   h.rerender(); expect(h.result.current.data).toBeUndefined();
-  await act(async () => { resolve?.({ data: { status: "aprovado" }, error: null }); });
+  await act(async () => { oldResolve?.({ data: { status: "aprovado" }, error: null }); });
   expect(h.result.current.data).toBeUndefined();
 });

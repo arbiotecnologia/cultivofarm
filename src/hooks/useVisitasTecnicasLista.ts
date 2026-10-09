@@ -93,7 +93,7 @@ export function useVisitasTecnicasLista(filters: VisitasListaFilters = {}) {
     enabled = true,
   } = filters;
 
-  const result = useQuery({
+  const result = useQuery<VisitasListaResult>({
     queryKey: ["visitas-tecnicas-lista", { search, status, de, ate, clienteId, fazendaId, page, pageSize }, session.scope],
     enabled: enabled && session.ready,
     ...TECHNICAL_STALE_REVALIDATION,
