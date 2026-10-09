@@ -29,6 +29,10 @@ Desbloqueio: ferramenta oficial deve comprovar `swzpzcwiasxmjutrmvkm` antes da e
 
 Runner persistente `src/test/visita/technicalTenantPostgres.test.ts`; resultados da rodada registrados no roadmap, sem somar contagens sobrepostas. Helpers auxiliares/DDL reduzidos: positivos produtor/participante e concorrência multiconexão ainda não certificados. Triggers atuais e writers automáticos exigem revisão antes de aplicar.
 
+Validação desta execução: **25/25 Vitest em quatro arquivos PASS**, incluindo runner PostgreSQL com 37 asserções (não somar como 62 testes); lint focal do runner, scanner de segredos e diff-check PASS. Prévia automática build OK20:35:57UTC. Typechecks app/node separados **NOT RUN** por proibição ambiental de execução manual; não atribuídos a outra medição. Lint global não reexecutado, sem alegação de PASS integral.
+
+Arquivos: candidato SQL, harness Python/SQL, teste Vitest, este relatório, adendo `retomada-delta-2026-10-08.md`, `roadmap.md` e regra em `AGENTS.md`. Nenhum arquivo em `supabase/migrations/` criado/editado manualmente. Commit observado após artefatos/testes: `7678576cd7ea446e9599c783097fb9d1d9db3938`, antes deste fechamento documental; Git stateful não executado.
+
 ## Rollback e decisão
 Rollback seguro é forward-fix ou fechamento temporário, nunca restaurar bodies/policies globais vazantes. Sem aplicação não há rollback remoto. Candidato não faz backfill, update ou exclusão de registros. Fixtures fornecidos intactos; sem Auth novo/senha/envios/fiscal/cobrança/publicação.
 
