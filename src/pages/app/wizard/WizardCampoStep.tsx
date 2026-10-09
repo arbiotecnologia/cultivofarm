@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Check, CircleDashed, WifiOff, AlertCircle, Lock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { invalidateWizardProgress } from "@/lib/visita/invalidateWizardProgress";
 import {
   savePendingCampo,
   getPendingCampoByRegistro,
@@ -78,7 +79,11 @@ export default function WizardCampoStep({
   const isOnline = useOnlineStatus();
   const [form, setForm] = useState<CampoForm>(EMPTY);
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [versao, setVersao] = useState<number>(0);
+  const versionRef = useRef(0);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const advanceLock = useRef(false);
+  const [advancing, setAdvancing] = useState(false);
+  const queryClient = useQueryClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hydratedRef = useRef(false);
 
@@ -90,7 +95,7 @@ export default function WizardCampoStep({
       const { data, error } = await supabase
         .from("talhoes")
         .select("id, nome, fazenda_id, fazendas!inner(cliente_id)")
-        .eq("fazendas.cliente_id", clienteId!)
+        .eq("fazendas.cliente_id", clienteId ?? "")
         .order("nome");
       if (error) throw error;
       return data ?? [];
@@ -130,7 +135,7 @@ export default function WizardCampoStep({
               uniformidade: (d.uniformidade ?? "") as CampoForm["uniformidade"],
               observacoes_campo: d.observacoes_campo ?? "",
             });
-            setVersao(d.versao ?? 1);
+            versionRef.current = d.versao ?? 1;
             setSaveState("saved");
             hydratedRef.current = true;
             return;
@@ -140,7 +145,7 @@ export default function WizardCampoStep({
         if (!alive) return;
         if (pending) {
           setForm({ ...EMPTY, ...(pending.payload as CampoForm) });
-          setVersao(pending.versao);
+          versionRef.current = pending.versao;
           setSaveState(pending.syncStatus === "synced" ? "saved" : "pending_sync");
         }
         hydratedRef.current = true;
@@ -165,56 +170,55 @@ export default function WizardCampoStep({
     [form],
   );
 
-  const persist = async (next: CampoForm, opts?: { force?: boolean }) => {
-    if (locked) return;
-    if (!opts?.force && isEmpty) return;
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
 
-    setSaveState("saving");
-
-    // Sempre grava rascunho local (fonte da verdade offline)
-    const entry: PendingCampo = {
-      localRegistroId,
-      clientUuid: clientUuid ?? undefined,
-      remoteRegistroId: remoteRegistroId ?? undefined,
-      payload: next,
-      versao,
-      updatedAt: new Date().toISOString(),
-      syncStatus: "pending_sync",
+  const persist = (next: CampoForm, opts?: { force?: boolean }): Promise<boolean> => {
+    // Queue complete snapshots; read the version only when this write begins.
+    const run = async (): Promise<boolean> => {
+      if (locked || (!opts?.force && !Object.values(next).some(Boolean))) return false;
+      setSaveState("saving");
+      try {
+        const versao = versionRef.current;
+        const entry: PendingCampo = {
+          localRegistroId, clientUuid: clientUuid ?? undefined,
+          remoteRegistroId: remoteRegistroId ?? undefined,
+          payload: next, versao, updatedAt: new Date().toISOString(), syncStatus: "pending_sync",
+        };
+        await savePendingCampo(entry);
+        if (!isOnline || !remoteRegistroId) {
+          setSaveState("pending_sync");
+          return true;
+        }
+        const { data, error } = await supabase.rpc("rpc_salvar_campo_visita" as never, {
+          p_registro_consultor_id: remoteRegistroId, p_client_uuid: clientUuid,
+          p_payload: next, p_versao: versao,
+        } as never);
+        if (error) throw error;
+        const res = data as { versao?: number } | null;
+        versionRef.current = res?.versao ?? versao + 1;
+        await updatePendingCampo(localRegistroId, { syncStatus: "synced", versao: versionRef.current });
+        const { removePendingCampo } = await import("@/lib/offlineDb");
+        await removePendingCampo(localRegistroId);
+        setSaveState("saved");
+        await invalidateWizardProgress(queryClient, remoteRegistroId, "campo");
+        return true;
+      } catch (err) {
+        const message = err && typeof err === "object" && "message" in err ? String(err.message) : "Falha ao salvar campo";
+        await updatePendingCampo(localRegistroId, { syncStatus: "sync_error", lastSyncError: message }).catch(() => {});
+        setSaveState("error");
+        toast.error(message);
+        return false;
+      }
     };
-    await savePendingCampo(entry);
-
-    if (!isOnline || !remoteRegistroId) {
-      setSaveState("pending_sync");
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.rpc("rpc_salvar_campo_visita" as never, {
-        p_registro_consultor_id: remoteRegistroId,
-        p_client_uuid: clientUuid,
-        p_payload: next,
-        p_versao: versao,
-      } as never);
-      if (error) throw error;
-      const res = data as any;
-      setVersao(res?.versao ?? versao + 1);
-      await updatePendingCampo(localRegistroId, { syncStatus: "synced", versao: res?.versao ?? versao + 1 });
-      // Após sincronizado, remove pendência da fila
-      const { removePendingCampo } = await import("@/lib/offlineDb");
-      await removePendingCampo(localRegistroId);
-      setSaveState("saved");
-    } catch (err: any) {
-      console.error("rpc_salvar_campo_visita error", err);
-      await updatePendingCampo(localRegistroId, {
-        syncStatus: "sync_error",
-        lastSyncError: err?.message,
-      });
-      setSaveState("error");
-      toast.error(err?.message || "Falha ao salvar campo");
-    }
+    const task = queueRef.current.then(run, run);
+    queueRef.current = task;
+    return task;
   };
 
   const patch = (p: Partial<CampoForm>) => {
+    if (advanceLock.current) return;
     const next = { ...form, ...p };
     setForm(next);
     setSaveState("saving");
@@ -223,13 +227,20 @@ export default function WizardCampoStep({
   };
 
   const handleAdvance = async () => {
+    if (advanceLock.current || locked) return;
     if (isEmpty) {
       toast.error("Preencha ao menos um campo antes de avançar");
       return;
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    await persist(form, { force: true });
-    onDone();
+    advanceLock.current = true;
+    setAdvancing(true);
+    try {
+      if (await persist(form, { force: true })) onDone();
+    } finally {
+      advanceLock.current = false;
+      setAdvancing(false);
+    }
   };
 
   if (locked) {
@@ -353,7 +364,7 @@ export default function WizardCampoStep({
         className="w-full"
         size="lg"
         onClick={handleAdvance}
-        disabled={saveState === "saving"}
+        disabled={advancing}
       >
         Salvar e avançar
         <ChevronRight className="h-4 w-4 ml-1" />
