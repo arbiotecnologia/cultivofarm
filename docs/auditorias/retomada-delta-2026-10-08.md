@@ -1,5 +1,8 @@
 # Retomada delta — Cultivo Farm / RENATO 10K
 
+## P1 técnico sobre 85eeb6c — candidato local, aplicação bloqueada
+37 asserções PostgreSQL isolado validaram contenção de helpers/lista/resumo/solicitações/replay e contador de fazendas antes da primeira visita. Corpos de quatro RPCs comparados por MD5; DDL auxiliar reduzido e Auth/claims simulados não equivalem a JWT/browser. **Migration não aplicada:** ferramenta não comprova binding canônico; requested_ref literal não prova destino. P1 vivo não declarado corrigido, NO-GO remoto/integral. Detalhes, risco de writers sem ator e rollback seguro em `technical-tenant-p1-20261009.md`. Fixtures, B2B gatesfalse, Executivo19/emailv9 preservados; sem Auth/envio/publicação/subagentes.
+
 ## Adendo focal 2026-10-09 — recuperação do login principal
 Sobre `fe5755e`, login principal e mobile compartilham formulário de recuperação com redirect canônico, confirmação genérica, erro sanitizado, rejection/finally e lock síncrono. Link inválido permite novo pedido/login; diagnóstico first-access e finalizadores preservados. 36/36 testes focais PASS, lint seis arquivos/scanner/diff PASS, prévia build automático OK20:02:49UTC; typechecks app/node separados NOT RUN por restrição de execução manual. Browser público local verificou abrir/voltar/novo pedido e largura390 sem overflow, zero envio; não prova email real/publicação. Delta, arquivos e rollback em `recuperacao-login-principal-20261009.md`. Nenhuma migration, Auth real, senha, gate B2B ou publicação; **NO-GO integral preservado**.
 
