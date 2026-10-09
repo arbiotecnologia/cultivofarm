@@ -9,6 +9,7 @@ import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
 import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
 import { wizardUnlockedUpTo } from "@/lib/visita/wizardProgress";
 import { deriveVisitaWizardState } from "@/lib/visita/wizardWorkspaceState";
+import { STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -84,7 +85,7 @@ type SaveState = "idle" | "saving" | "saved" | "pending_sync" | "error";
 
 function SaveStatus({ state }: { state: SaveState }) {
   const map: Record<SaveState, { icon: React.ReactNode; label: string; cls: string }> = {
-    idle: { icon: <CircleDashed className="h-3.5 w-3.5" />, label: "Rascunho", cls: "text-muted-foreground" },
+    idle: { icon: <CircleDashed className="h-3.5 w-3.5" />, label: "Sem envio pendente", cls: "text-muted-foreground" },
     saving: { icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />, label: "Salvando…", cls: "text-muted-foreground" },
     saved: { icon: <Check className="h-3.5 w-3.5" />, label: "Salvo", cls: "text-emerald-600" },
     pending_sync: { icon: <WifiOff className="h-3.5 w-3.5" />, label: "Pendente de sincronização", cls: "text-amber-600" },
@@ -769,7 +770,14 @@ export default function MobileVisitaWizard() {
               Etapa {currentStep} de {STEPS.length} · {STEPS[currentStep - 1].label}
             </p>
           </div>
-          <SaveStatus state={saveState} />
+          <div className="flex flex-col items-end gap-1 max-w-[50%] text-right">
+            {!workspaceLoading && !workspaceError && workspace?.status && (
+              <span className="text-xs font-medium break-words">
+                {STATUS_LABEL_REGISTRO[workspace.status as RegistroStatus] ?? workspace.status}
+              </span>
+            )}
+            <SaveStatus state={saveState} />
+          </div>
         </div>
         <div className="px-3 pb-2">
           <StepIndicator
