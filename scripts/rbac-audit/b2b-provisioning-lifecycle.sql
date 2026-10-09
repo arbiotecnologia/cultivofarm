@@ -21,6 +21,25 @@ DROP TRIGGER IF EXISTS a00_cf_invitation_gate ON public.platform_org_admin_invit
 CREATE TRIGGER a00_cf_invitation_gate BEFORE INSERT OR UPDATE OR DELETE
 ON public.platform_org_admin_invites FOR EACH STATEMENT
 EXECUTE FUNCTION cf_user_guards_v1.acquire_invitation_gate();
+-- Stamp both old/new associated actors. This uses the existing profile stamp,
+-- preventing delete/reinsert or revoke/reset (ABA) from restoring an old claim.
+CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_invitation_profiles()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $stamp$
+DECLARE old_id uuid; new_id uuid; item uuid;
+BEGIN
+ IF TG_LEVEL<>'ROW' OR TG_RELID<>'public.platform_org_admin_invites'::regclass THEN
+  RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;
+ IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;
+ FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x
+ LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;
+ RETURN NULL;
+END $stamp$;
+REVOKE ALL ON FUNCTION cf_user_guards_v1.touch_invitation_profiles() FROM PUBLIC,anon,authenticated;
+DROP TRIGGER IF EXISTS z90_cf_invitation_profile_stamp ON public.platform_org_admin_invites;
+CREATE TRIGGER z90_cf_invitation_profile_stamp AFTER INSERT OR UPDATE OR DELETE
+ON public.platform_org_admin_invites FOR EACH ROW
+EXECUTE FUNCTION cf_user_guards_v1.touch_invitation_profiles();
 DROP TRIGGER IF EXISTS a00_cf_invitation_no_truncate ON public.platform_org_admin_invites;
 CREATE TRIGGER a00_cf_invitation_no_truncate BEFORE TRUNCATE
 ON public.platform_org_admin_invites FOR EACH STATEMENT

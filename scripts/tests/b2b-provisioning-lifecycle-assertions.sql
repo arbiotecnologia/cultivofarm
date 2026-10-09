@@ -84,7 +84,7 @@ SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE service_role;
 SELECT pg_temp.denied('revoked iat after claim with service uid null',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='three';
 RESET ROLE;
-SELECT pg_temp.assert_true('revocation does not touch profile stamp',(SELECT updated_at FROM original_stamp)=(SELECT updated_at FROM public.profiles WHERE user_id='44444444-4444-4444-8444-444444444444'));
+SELECT pg_temp.assert_true('revocation advances existing profile stamp',(SELECT updated_at FROM original_stamp)<(SELECT updated_at FROM public.profiles WHERE user_id='44444444-4444-4444-8444-444444444444'));
 UPDATE public.platform_org_admin_invites SET access_valid_after=NULL,access_operation_status='processing';
 SET LOCAL ROLE service_role;
 SELECT pg_temp.denied('invitation operation after claim denied',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='three';
