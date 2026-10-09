@@ -1,0 +1,33 @@
+# Fase focal UI wizard + GPS — 2026-10-09 21:19 UTC
+
+## Escopo e entrega local
+- Sem banco, papéis, RLS, novas fixtures, Auth, envios, fiscal ou publicação. Gates B2B false, Executivo19 e emailv9 preservados.
+- GPS: extração do util já existente em CheckinCard para `src/lib/geo.ts`; WizardCheckinStep usa hook abortável. Observação ativa até **8.000ms**, `watchPosition`, `enableHighAccuracy:true`, `maximumAge:0`, menor accuracy, término antecipado **<=30m**. Timeout global começa antes do pedido ao navegador, mesmo sem callbacks. ClearWatch, intervalo, deadline e listener de abort são liberados em sucesso/prazo/erro/cancelamento; recaptura e unmount cercam callbacks antigos.
+- Captura do wizard não grava check-in automaticamente. Exibe tempo restante/melhor precisão e baixa precisão >30m. Fix válido não é substituído por amostra pior nem apagado por erro transitório; sem fix ao terminar, justificativa sem GPS continua disponível. Valores não finitos/fora dos limites físicos são ignorados sem fabricar localização. Precisão depende do dispositivo: esperar não garante melhora.
+- CheckinCard reutiliza o mesmo util; ação explícita existente de registrar check-in, filas e RPC preservadas. Cancelamento legado desse card não foi redesenhado. Seu unmount deixa de prosseguir em persistência após captura cancelada.
+- Diagnóstico: select com dez categorias tipadas pelo contrato canônico, severidade `baixo/medio/alto/severo`, urgência `baixa/media/alta/critica`. RPC histórica confirma casts para `categoria_problema_consultor`, `nivel_pressao` e `urgencia_consultor`. Legado inválido permanece intacto e visível com erro recuperável; exige seleção humana, sem converter para `outro`. Erro da RPC marca pendência sync_error; upload/offline/RPC sem substituição.
+- Após sucesso, check-in/campo/diagnóstico invalidam a flag correspondente e workspace autoritativo. Não alteram permissões localmente.
+- Campo: autosave e salvar passam por uma fila local de snapshots completos; versão é lida quando cada escrita começa e atualizada imediatamente com o retorno. Salvar limpa debounce, bloqueia reentrada e aguarda fila; falha online/local não avança, conserva pendência. Offline autorizado conserva rascunho e avanço existentes. Fila local não é idempotência distribuída nem prova de concorrência com o worker offline/outra aba.
+
+## Outras capturas avaliadas, sem expansão desta fase
+Inventário local: `PresencaCheckoutButton`, `EvidenciasTabs` (três chamadas), `MobileCheckin`, `MobileRegistrarOcorrencia`, `MobileAplicacoes` (duas), `AplicacaoFormDialog`; Fazendas/Talhoes/TalhoesFazendaTab usam `geo.getCurrentPosition`.
+Essas chamadas simples não compartilham o deadline ativo novo e permanecem **UNVERIFIED para o contrato 8s/cleanup**. Não houve migração em massa de checkout, evidências, aplicação ou cadastro, evitando alterar efeitos/fluxos não pedidos. O util extraído é a fonte compartilhada disponível para revisão futura; não foi criado fluxo de persistência paralelo.
+
+## Evidências independentes recebidas (não reexecutadas)
+- Consultor autorizou localização real na fixture AR, check-in **35cc6812-f845-47c2-8130-6e82d707dec2**, visita **098fa34f-1cce-4820-af52-7b22a07a49b7**, precisão relatada **4116m**. Nenhuma coordenada copiada para código/documentos; nenhum check-in novo criado por esta execução.
+- Campo **031d8f12-ea00-4b09-a142-5f44ef6d039f**, diagnóstico **aac6ca1d-d106-4917-87de-6c0a495e75db** preservados. Diagnóstico novo corrigido manualmente para `outro` salvou segundo relato. Não prova pós-fix desta UI.
+- **Oito culturas** agora existentes/autorizadas; dropdown consultor **PASS focal relatado**, sem inserts nesta execução. Seed `user_clientes` anterior permanece preparação autorizada, não certificação de atribuição pela UI.
+- Migration **20261009210536_technical_approval_tenant_fence**, aplicada independentemente pelo conector canônico **swzpzcwiasxmjutrmvkm**, foi apenas arquivada em `scripts/rbac-audit/20261009210536_technical_approval_tenant_fence.sql` com o **texto exato fornecido**, sem reaplicar e sem leitura/escrita remota nesta fase. Não alegamos paridade independente com o ledger nesta chamada.
+- Antes: FSF `rpc_reprovar` atingia `status_invalido` na fixture AR. Depois: reprovar/reabrir/ajuste retornaram `forbidden_visita`. **7 retestes claims SQL rollback e 29 testes frontend PASS relatados**, não testes Lovable desta rodada nem JWT FSF; não somar aos testes locais. Backup local da definição antiga informado pelo solicitante, não inspecionado/inventado aqui.
+
+## Verificação própria e limites
+- **33/33 testes em sete arquivos PASS**: GPS (9), hook recaptura/unmount (1), enums/legado (4), invalidação de etapas (3), campo online/offline/armazenamento/corrida versões (4), workspace (8), fila offline (4). Amostras são fictícias, geolocation/timers/SDK/IndexedDB mockados conforme teste; nenhuma localização real consultada.
+- Lint dos nove arquivos novos/util compartilhado **PASS**. Lint ampliado às telas/card alterados **FAIL: 17 erros any e 2 avisos** remanescentes de código legado; não declarar lint focal total/global PASS.
+- Scanner disponível `fiscal-secrets-scan.sh` **PASS**, nenhum segredo real. Diff-check PASS. Build automático da prévia **OK 21:22:38 UTC**, após corrigir duas incompatibilidades de tipagem em mocks de GPS apontadas pelo harness.
+- Typechecks app/node como comandos separados **NOT RUN**: proibidos manualmente pelo ambiente. Resultado automático não é evidência desses comandos separados.
+- Browser autenticado do wizard, GPS do dispositivo, upload real, RPC/JWT pós-fix, worker offline concorrente/outra aba e writers automáticos/DEFINER globais **UNVERIFIED**. Não alegar E2E, melhora de precisão real ou auditoria integral PASS.
+
+## Rollback e decisão
+Rollback da UI: reverter somente util/hook, seletores/invalidações e serialização deste recorte, sem excluir pendências/fixtures; se isso restaurar valores inválidos ou avanço em falha, preferir fechamento/forward-fix em vez de reabrir o defeito.
+Arquivo SQL é arquivo documental, não instrução de reaplicação. Não executar definição antiga globalmente vulnerável; rollback remoto exige revisão própria, jamais restaurar vazamento de status. Candidato completo anterior com triggers excluídos permanece histórico, não certificado pelo subset aplicado.
+**PASS focal local (testes), sem certificação de UI/GPS reais; NO-GO integral/fases maiores.** Publicação não realizada.

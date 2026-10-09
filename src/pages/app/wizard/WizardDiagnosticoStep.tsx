@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil, ChevronRight, WifiOff, Lock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { CATEGORIAS, SEVERIDADES, URGENCIAS, diagnosticoValidationError } from "@/lib/visita/diagnosticoOptions";
+import { invalidateWizardProgress } from "@/lib/visita/invalidateWizardProgress";
 import {
   savePendingDiagnostico,
   getPendingDiagnosticosByRegistro,
@@ -114,6 +116,8 @@ export default function WizardDiagnosticoStep({
   const openEdit = (row: Row) => { setEditing(row); setForm(row.payload); setDialogOpen(true); };
 
   const save = async () => {
+    const validationError = diagnosticoValidationError(form);
+    if (validationError) { toast.error(validationError); return; }
     if (!form.problema && !form.descricao) {
       toast.error("Informe ao menos problema ou descrição");
       return;
@@ -144,6 +148,7 @@ export default function WizardDiagnosticoStep({
         if (error) throw error;
         await removePendingDiagnostico(clientUuid);
       } catch (err: any) {
+        await updatePendingDiagnostico(clientUuid, { syncStatus: "sync_error", lastSyncError: err?.message || "Falha ao salvar" });
         toast.error(err?.message || "Falha ao salvar; ficou pendente de sincronização");
       }
     }
@@ -151,7 +156,7 @@ export default function WizardDiagnosticoStep({
     setDialogOpen(false);
     await reloadPending();
     await refetch();
-    queryClient.invalidateQueries({ queryKey: ["wizard-diag-flag", remoteRegistroId] });
+    if (remoteRegistroId) await invalidateWizardProgress(queryClient, remoteRegistroId, "diag");
   };
 
   const remove = async (row: Row) => {
@@ -235,13 +240,14 @@ export default function WizardDiagnosticoStep({
                         pendente
                       </span>
                     )}
-                    {r.payload.severidade === "alta" && (
+                    {(r.payload.severidade === "alto" || r.payload.severidade === "severo") && (
                       <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
                     {r.payload.categoria || "—"} · sev {r.payload.severidade || "—"} · inc {r.payload.incidencia ?? "—"}%
                   </div>
+                  {diagnosticoValidationError(r.payload) && <p role="alert" className="text-xs text-destructive whitespace-normal">{diagnosticoValidationError(r.payload)}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(r)} aria-label="Editar">
@@ -272,14 +278,14 @@ export default function WizardDiagnosticoStep({
             <DialogTitle>{editing ? "Editar diagnóstico" : "Novo diagnóstico"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {diagnosticoValidationError(form) && <p role="alert" className="text-sm text-destructive">{diagnosticoValidationError(form)}</p>}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label>Categoria</Label>
-                <Input
-                  value={form.categoria ?? ""}
-                  onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                  placeholder="Praga, doença…"
-                />
+                <Label htmlFor="diag-categoria">Categoria</Label>
+                <Select value={form.categoria || undefined} onValueChange={(categoria) => setForm({ ...form, categoria })}>
+                  <SelectTrigger id="diag-categoria"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{CATEGORIAS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label>Localização</Label>
@@ -318,9 +324,7 @@ export default function WizardDiagnosticoStep({
                 >
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="baixa">Baixa</SelectItem>
-                    <SelectItem value="media">Média</SelectItem>
-                    <SelectItem value="alta">Alta</SelectItem>
+                    {SEVERIDADES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -332,10 +336,7 @@ export default function WizardDiagnosticoStep({
                 >
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="baixa">Baixa</SelectItem>
-                    <SelectItem value="media">Média</SelectItem>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="critica">Crítica</SelectItem>
+                    {URGENCIAS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

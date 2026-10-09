@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { buildTenantStoragePath } from "@/lib/tenantStoragePath";
+import { useGpsCapture } from "@/hooks/useGpsCapture";
+import { invalidateWizardProgress } from "@/lib/visita/invalidateWizardProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
@@ -20,11 +22,7 @@ import { savePendingCheckin } from "@/lib/offlineDb";
 import PresencaCheckoutButton from "@/components/visita/PresencaCheckoutButton";
 import { EquipeVisitaCard } from "@/components/visita/EquipeVisitaCard";
 
-type GpsState =
-  | { status: "idle" }
-  | { status: "getting" }
-  | { status: "ok"; lat: number; lng: number; accuracy: number }
-  | { status: "error"; message: string };
+
 
 interface Props {
   registroId: string;
@@ -44,7 +42,8 @@ export default function WizardCheckinStep({
   const queryClient = useQueryClient();
   const { registrarCheckin } = useFluxoVisitaTecnica();
 
-  const [gps, setGps] = useState<GpsState>({ status: "idle" });
+  const { gps, captureGps, cancelGps } = useGpsCapture();
+  const submitLock = useRef(false);
   const [tipoCheckin, setTipoCheckin] = useState<"chegada_fazenda" | "inicio_visita">("chegada_fazenda");
   const [observacoes, setObservacoes] = useState("");
   const [justificativaSemGps, setJustificativaSemGps] = useState("");
@@ -61,7 +60,7 @@ export default function WizardCheckinStep({
     enabled: !!registroId && !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("can_manage_technical_visit" as any, {
-        p_user_id: user!.id,
+        p_user_id: user?.id,
         p_registro_id: registroId,
       });
       if (error) return false;
@@ -87,25 +86,10 @@ export default function WizardCheckinStep({
   });
 
   useEffect(() => {
-    if (existing || locked) return;
-    captureGps();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existing, locked]);
-
-  const captureGps = () => {
-    if (!navigator.geolocation) {
-      setGps({ status: "error", message: "GPS não suportado neste dispositivo" });
-      return;
-    }
-    setGps({ status: "getting" });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setGps({
-        status: "ok", lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy,
-      }),
-      (err) => setGps({ status: "error", message: err.message }),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
+    if (isLoading || existing || locked) return;
+    void captureGps();
+    return cancelGps;
+  }, [isLoading, existing, locked, captureGps, cancelGps]);
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -124,11 +108,12 @@ export default function WizardCheckinStep({
   };
 
   const handleSubmit = async () => {
-    if (!user || locked) return;
+    if (!user || locked || submitLock.current || gps.status === "getting") return;
     if (gps.status !== "ok" && !justificativaSemGps.trim()) {
       toast.error("Sem GPS: justifique para continuar");
       return;
     }
+    submitLock.current = true;
     setSubmitting(true);
     try {
       const clientUuid = crypto.randomUUID();
@@ -195,10 +180,12 @@ export default function WizardCheckinStep({
 
       toast.success("Check-in registrado!");
       await queryClient.invalidateQueries({ queryKey: ["wizard-checkin", registroId] });
+      await invalidateWizardProgress(queryClient, registroId, "checkin");
       onDone();
     } catch (err: any) {
       toast.error(err?.message || "Erro ao registrar check-in");
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };
@@ -274,17 +261,17 @@ export default function WizardCheckinStep({
             <MapPin className="h-5 w-5 text-primary" />
             <span className="font-medium">Localização</span>
           </div>
-          <Button size="sm" variant="ghost" onClick={captureGps} disabled={gps.status === "getting"}>
+          <Button size="sm" variant="ghost" onClick={captureGps} disabled={submitting}>
             {gps.status === "getting" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Atualizar"}
           </Button>
         </div>
         {gps.status === "getting" && (
-          <p className="text-sm text-muted-foreground">Obtendo coordenadas...</p>
+          <p role="status" aria-live="polite" className="text-sm text-muted-foreground">Melhorando localização… {gps.secondsLeft}s restantes{gps.bestAcc !== null ? ` · melhor precisão ±${gps.bestAcc.toFixed(0)}m` : ""}</p>
         )}
         {gps.status === "ok" && (
           <div className="space-y-1">
             <p className="text-sm font-mono">{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</p>
-            <p className="text-xs text-muted-foreground">Precisão: ±{gps.accuracy.toFixed(0)}m</p>
+            <p className="text-xs text-muted-foreground">Precisão: ±{gps.accuracy.toFixed(0)}m{gps.accuracy > 30 ? " · Baixa precisão" : " · Localização precisa"}</p>
           </div>
         )}
         {gps.status === "error" && (
@@ -378,7 +365,7 @@ export default function WizardCheckinStep({
 
       <Button
         onClick={handleSubmit}
-        disabled={submitting || (gps.status !== "ok" && !justificativaSemGps.trim())}
+        disabled={submitting || gps.status === "getting" || (gps.status !== "ok" && !justificativaSemGps.trim())}
         className="w-full h-12 text-base font-semibold"
       >
         {submitting ? (

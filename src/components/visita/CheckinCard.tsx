@@ -25,7 +25,7 @@ import { savePendingCheckin } from "@/lib/offlineDb";
 import PresencaCheckoutButton from "@/components/visita/PresencaCheckoutButton";
 import { usePendingCheckinsSync } from "@/hooks/usePendingCheckinsSync";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getGoogleMapsUrl, getWazeUrl } from "@/lib/geo";
+import { getGoogleMapsUrl, getWazeUrl, captureHighAccuracyPosition, GPS_MAX_DURATION_MS } from "@/lib/geo";
 
 interface CheckinCardProps {
   registroId: string;
@@ -51,10 +51,6 @@ interface Checkin {
 
 type TipoCheckin = "chegada_fazenda";
 
-// GPS tuning
-const GPS_MAX_DURATION_MS = 8000;
-const GPS_TARGET_ACCURACY_M = 10;
-
 function precisionLabel(p: number | null, justification?: string | null) {
   if (justification === "Coordenadas manuais")
     return { label: "Manual (Entrada do consultor)", variant: "secondary" as const };
@@ -68,85 +64,6 @@ interface CaptureState {
   tipo: TipoCheckin;
   secondsLeft: number;
   bestAcc: number | null;
-}
-
-/**
- * Captura posição com alta precisão usando watchPosition durante até maxDuration,
- * mantendo a melhor leitura. Encerra antes se atingir targetAccuracy.
- */
-function captureHighAccuracyPosition(
-  onProgress: (bestAcc: number | null, secondsLeft: number) => void,
-  abortSignal: AbortSignal,
-  opts: { maxDuration: number; targetAccuracy: number } = {
-    maxDuration: GPS_MAX_DURATION_MS,
-    targetAccuracy: GPS_TARGET_ACCURACY_M,
-  }
-): Promise<{ lat: number; lng: number; acc: number }> {
-  return new Promise((resolve, reject) => {
-    if (!("geolocation" in navigator)) {
-      reject(new Error("Geolocalização não disponível neste dispositivo."));
-      return;
-    }
-    let best: { lat: number; lng: number; acc: number } | null = null;
-    let watchId: number | null = null;
-    let tickId: ReturnType<typeof setInterval> | null = null;
-    let finished = false;
-
-    const startedAt = Date.now();
-
-    const cleanup = () => {
-      if (watchId != null) navigator.geolocation.clearWatch(watchId);
-      if (tickId != null) clearInterval(tickId);
-    };
-
-    const finish = (error?: Error) => {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      if (error) reject(error);
-      else if (best) resolve(best);
-      else reject(new Error("Não foi possível obter coordenadas. Tente novamente."));
-    };
-
-    // Handle manual abort
-    abortSignal.addEventListener("abort", () => {
-      finish(new Error("Captura cancelada pelo usuário."));
-    });
-
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const reading = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          acc: pos.coords.accuracy,
-        };
-        if (!best || reading.acc < best.acc) {
-          best = reading;
-          const elapsed = Date.now() - startedAt;
-          const secondsLeft = Math.max(0, Math.ceil((opts.maxDuration - elapsed) / 1000));
-          onProgress(best.acc, secondsLeft);
-        }
-        if (best && best.acc <= opts.targetAccuracy) finish();
-      },
-      (err) => {
-        // Erro de permissão / indisponível — só rejeita se não temos nenhuma leitura
-        if (!best) {
-          finished = true;
-          cleanup();
-          reject(new Error(err.message || "Permissão negada ou GPS indisponível."));
-        }
-      },
-      { enableHighAccuracy: true, timeout: opts.maxDuration, maximumAge: 0 }
-    );
-
-    // Tick para countdown
-    tickId = setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const secondsLeft = Math.max(0, Math.ceil((opts.maxDuration - elapsed) / 1000));
-      onProgress(best?.acc ?? null, secondsLeft);
-      if (elapsed >= opts.maxDuration) finish();
-    }, 250);
-  });
 }
 
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
@@ -203,6 +120,7 @@ export function CheckinCard({ registroId, disabled, obs = "", onObsConsumed, che
         abortController.signal
       );
 
+      if (!mountedRef.current || abortControllerRef.current !== abortController) return;
       const payload = {
         registro_consultor_id: registroId,
         consultor_id: user.id,
@@ -246,6 +164,7 @@ export function CheckinCard({ registroId, disabled, obs = "", onObsConsumed, che
       queryClient.invalidateQueries({ queryKey: ["visita-checkins", registroId] });
       onObsConsumed?.();
     } catch (err: any) {
+      if (!mountedRef.current) return;
       if (err?.message === "Captura cancelada pelo usuário.") {
         // Registra o evento mesmo sem GPS após cancelamento manual
         const payload = {

@@ -2,6 +2,66 @@
  * Helpers para geolocalização e integração com mapas
  */
 
+export const GPS_MAX_DURATION_MS = 8000;
+export const GPS_TARGET_ACCURACY_M = 30;
+
+/** Observation only: callers decide whether/when to persist. */
+export function captureHighAccuracyPosition(
+  onProgress: (bestAcc: number | null, secondsLeft: number) => void,
+  signal: AbortSignal,
+  opts = { maxDuration: GPS_MAX_DURATION_MS, targetAccuracy: GPS_TARGET_ACCURACY_M },
+): Promise<{ lat: number; lng: number; acc: number }> {
+  return new Promise((resolve, reject) => {
+    const geo = navigator.geolocation;
+    if (!geo) { reject(new Error("Geolocalização não disponível neste dispositivo.")); return; }
+    let best: { lat: number; lng: number; acc: number } | null = null;
+    let watchId: number | null = null;
+    let finished = false;
+    let lastError: string | null = null;
+    const startedAt = Date.now();
+    const finish = (error?: Error) => {
+      if (finished) return;
+      finished = true;
+      if (watchId !== null) geo.clearWatch(watchId);
+      clearTimeout(deadline);
+      clearInterval(tick);
+      signal.removeEventListener("abort", abort);
+      if (error) reject(error);
+      else if (best) resolve(best);
+      else reject(new Error(lastError || "Não foi possível obter coordenadas em 8 segundos. Tente novamente ou justifique sem GPS."));
+    };
+    const abort = () => finish(new Error("Captura cancelada pelo usuário."));
+    // Start the global deadline BEFORE asking the browser (permission dialog included).
+    const deadline = setTimeout(() => finish(), opts.maxDuration);
+    const tick = setInterval(() => {
+      if (!finished) onProgress(best?.acc ?? null, Math.max(0, Math.ceil((opts.maxDuration - (Date.now() - startedAt)) / 1000)));
+    }, 250);
+    signal.addEventListener("abort", abort, { once: true });
+    if (signal.aborted) { abort(); return; }
+    onProgress(null, Math.ceil(opts.maxDuration / 1000));
+    try {
+      watchId = geo.watchPosition((pos) => {
+        if (finished) return;
+        if (Date.now() - startedAt >= opts.maxDuration) { finish(); return; }
+        const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
+        if (![lat, lng, acc].every(Number.isFinite) || acc < 0 || Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
+        if (!best || acc < best.acc) best = { lat, lng, acc };
+        onProgress(best.acc, Math.max(0, Math.ceil((opts.maxDuration - (Date.now() - startedAt)) / 1000)));
+        if (best.acc <= opts.targetAccuracy) finish();
+      }, (err) => {
+        if (finished) return;
+        lastError = err.code === 1 ? "Permissão de localização negada. Justifique para continuar sem GPS." : "GPS indisponível. Tente novamente ou justifique sem GPS.";
+        if (err.code === 1) finish();
+        // Transient errors may recover; never discard a valid fix.
+      }, { enableHighAccuracy: true, maximumAge: 0, timeout: opts.maxDuration });
+      // A synchronous fake/browser callback may finish before the watch ID is returned.
+      if (finished) geo.clearWatch(watchId);
+    } catch {
+      finish(new Error("Não foi possível iniciar o GPS. Justifique para continuar sem GPS."));
+    }
+  });
+}
+
 /**
  * Obtém a posição atual do dispositivo
  */
