@@ -3,11 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  rpc: vi.fn(),
+  rpc: vi.fn(), from: vi.fn(),
   auth: { user: { id: "actor-fake" }, profile: { user_id: "actor-fake", ativo: true, organization_id: "org-fake" }, roles: ["administrador"], role: "administrador", loading: false },
   workspace: { status: "enviado_aprovacao", version: 5, permissions: { can_approve: true } },
 }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc, from: mocks.from } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
 import { TechnicalDecisionActions, VisitaStatusBanner } from "@/components/visita/VisitaStatusBanner";
@@ -35,6 +35,27 @@ const decisions = [
   ["Solicitar ajuste", "rpc_solicitar_ajuste_visita", true],
   ["Reprovar recomendação", "rpc_reprovar_visita", true],
 ] as const;
+
+it.each(decisions)("Sheet existente executa %s sem writes diretos", async (label, rpc, reason) => {
+  mocks.from.mockImplementation((table: string) => {
+    const builder = {
+      select: () => builder, eq: () => builder,
+      order: async () => ({ error: null, data: table === "registros_consultor" ? [{
+        id: "visit-fake", status: "enviado_aprovacao", clientes: { nome: "Cliente fictício" },
+        fazendas: { nome: "Fazenda fictícia" }, talhoes: { nome: "Talhão fictício" },
+      }] : [] }),
+    };
+    return builder;
+  });
+  mount(<FluxoTecnico />);
+  fireEvent.click(await screen.findByRole("button", { name: "Revisar" }));
+  fireEvent.click(await screen.findByRole("button", { name: label }));
+  if (reason) fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "Motivo no Sheet" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar decisão" }));
+  await waitFor(() => expect(mocks.rpc.mock.calls.filter(([name]) => name === rpc)).toHaveLength(1));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(screen.queryByText("Revisão Técnica")).toBeNull();
+});
 
 it.each(decisions)("confirma %s via RPC canônica e invalida somente após sucesso", async (label, rpc, reason) => {
   const { client, invalidate } = mount();
