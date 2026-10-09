@@ -1,5 +1,9 @@
 # P1 técnico — candidato local sobre 85eeb6c
 
+## Adendo focal UI/GPS — 2026-10-09 21:19 UTC
+Continuação em `visita-wizard-gps-20261009.md`: GPS ativo8s/melhorfix, enums diagnóstico, flags/workspace e campo serializado;33/33tests locais, sem fixtures/banco/publicação. Check-in35cc6812-f845-47c2-8130-6e82d707dec2 com precisão4116m, campo031d8f12-ea00-4b09-a142-5f44ef6d039f e diagnósticoaac6ca1d-d106-4917-87de-6c0a495e75db são persistências independentes relatadas, preservadas sem coordenadas nos artefatos.
+Migration20261009210536 approval tenant fence aplicada independentemente no canônico foi arquivada pelo SQL exato fornecido, **sem reaplicar**. FSF reprovar passou de status_invalido para forbidden_visita; reabrir/ajuste forbidden_visita.7claimsSQLrollback/29frontendPASS independentes não equivalem JWTFSF, não somados a testes Lovable. Culturas8/dropdown consultorPASSfocal relatado, sem inserts. Writers automáticos/DEFINERglobais e NO-GOintegral permanecem.
+
 ## Adendo supersedente — aplicação independente 2026-10-09 20:46 UTC
 **Contenção RPC/helper/RLS aplicada independentemente; PASS focal SQL relatado. Auditoria global de writers e fases maiores continuam NO-GO/UNVERIFIED.** As seções anteriores abaixo descrevem o estado histórico anterior à aplicação, não o estado remoto atual.
 
