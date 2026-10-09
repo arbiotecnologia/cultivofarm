@@ -46,7 +46,7 @@ beforeEach(() => {
     : { items: [{ id: "fake-visit", status: mocks.status }], total: 1 }, error: null }));
   mocks.from.mockImplementation((table: string) => {
     const result = { data: table === "registros_consultor" ? { id: "fake-visit", status: mocks.status, objetivo_visita: mocks.objective, cultura_id: "fake-crop" } : [], error: null };
-    const builder = { select: () => builder, eq: () => builder, limit: () => builder, order: () => Promise.resolve(result), maybeSingle: () => builder, abortSignal: () => Promise.resolve(result), then: (resolve: (v: typeof result) => unknown) => Promise.resolve(result).then(resolve) };
+    const builder = { select: () => builder, eq: () => builder, limit: () => builder, order: () => Promise.resolve(result), maybeSingle: () => Promise.resolve(result), abortSignal: () => builder, then: (resolve: (v: typeof result) => unknown) => Promise.resolve(result).then(resolve) };
     return builder;
   });
 });
