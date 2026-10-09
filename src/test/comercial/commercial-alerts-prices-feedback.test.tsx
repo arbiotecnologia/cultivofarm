@@ -11,7 +11,8 @@ vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQue
 vi.mock("sonner", () => ({ toast: { success: mocks.success, info: mocks.info, error: mocks.error } }));
 vi.mock("@/hooks/usePartnerPrices", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/hooks/usePartnerPrices")>();
-  return { ...original, usePartnerPrices: () => ({ data: [], isLoading: false }), useSavePartnerPrices: () => ({ mutate: vi.fn(), isPending: false }) };
+  const data: import("@/hooks/usePartnerPrices").PartnerPriceRow[] = [];
+  return { ...original, usePartnerPrices: () => ({ data, isLoading: false }), useSavePartnerPrices: () => ({ mutate: vi.fn(), isPending: false }) };
 });
 import AlertasComerciais from "@/pages/comercial/AlertasComerciais";
 import { ParceiroPrecosTab } from "@/components/comercial/ParceiroPrecosTab";
