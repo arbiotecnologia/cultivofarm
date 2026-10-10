@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { execFileSync } from "node:child_process";
+import * as XLSX from "xlsx";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../../../supabase/functions/_shared/comunicacao/cors";
 
-// Real entrypoint; SDK, env and renderers injected locally. No network or Storage bytes.
+// Real entrypoint; SDK/env/PDF mocked, XLSX serializes and reads real local bytes. No network.
 const source = readFileSync("supabase/functions/generate-financial-report/index.ts", "utf8")
   .replace(/^import .*;\s*/gm, "").replace(/^export /gm, "");
 const javascript = ts.transpileModule(source, {
@@ -21,7 +22,7 @@ function deferred() {
   const promise = new Promise<Result>((done) => { resolve = done; });
   return { promise, resolve };
 }
-function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, throws?: string, options: { rows?: Record<string, unknown>[]; fontFailure?: boolean; pdfBytes?: Uint8Array } = {}) {
+function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, throws?: string, options: { rows?: unknown[]; fontFailure?: boolean; pdfBytes?: Uint8Array; xlsxBytes?: Uint8Array } = {}) {
   const effects: string[] = [];
   const rpc = vi.fn(async (name: string, _args?: Record<string, unknown>) => {
     effects.push(name); if (throws === name) throw new Error(sentinel);
@@ -60,7 +61,7 @@ function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, th
     addPage: () => { const page = { drawText: vi.fn() }; pages.push(page); return page; },
     save: async () => options.pdfBytes ?? new Uint8Array([1]),
   }) };
-  const XLSX = { utils: { json_to_sheet: vi.fn(), book_new: vi.fn(), book_append_sheet: vi.fn() }, write: () => [1] };
+  const spreadsheet = options.xlsxBytes ? { ...XLSX, write: () => options.xlsxBytes } : XLSX;
   new Function("Deno", "createClient", "PDFDocument", "StandardFonts", "rgb", "XLSX", "corsHeadersFor", "handlePreflight", "isTrustedOrigin", "console", javascript)(
     deno, createClient, PDFDocument, { Helvetica: "font", HelveticaBold: "bold" }, () => ({}), XLSX, corsHeadersFor, handlePreflight, isTrustedOrigin, { error: log, log, warn: log },
   );
@@ -191,7 +192,7 @@ describe("generate-financial-report — handler real isolado", () => {
     expect(returned).toBe(false); expect(s.effects.indexOf("sign")).toBeLessThan(s.effects.indexOf("register_financial_report_export"));
     pending.resolve({ data: auditId, error: null }); expect((await (await response).json()).url).toBe("signed-file-fixture");
   });
-  const parseCSV = (s: ReturnType<typeof setup>): string[][] => JSON.parse(execFileSync("python3", ["-c", "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.read(),newline='')))))"], { input: s.upload.mock.calls[0][1], encoding: "utf8" }));
+  const parseCSV = (s: ReturnType<typeof setup>): string[][] => JSON.parse(execFileSync(process.env.PYTHON ?? "python3", ["-c", "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.read(),newline='')))))"], { input: s.upload.mock.calls[0][1], encoding: "utf8" }));
   it("CSV roundtrip preserva aspas, vírgulas, quebras reais, objetos/arrays e união de colunas", async () => {
     const s = setup(undefined, undefined, undefined, { rows: [{ 'a,"b': 'texto,"aspas"\nlinha\r\nfinal', nested: { x: [1, "dois"] } }, { later: [false, null, 3], 'a,"b': "" }] });
     expect((await s.invoke(valid)).status).toBe(200);
@@ -260,4 +261,63 @@ describe("generate-financial-report — handler real isolado", () => {
     const s = setup(undefined, undefined, undefined, { rows: [{ text: "x".repeat(1024 * 1024 + 1) }] });
     await failureResponse(await s.invoke(valid), 500); expect(s.upload).not.toHaveBeenCalled();
   });
+  const readXLSX = (s: ReturnType<typeof setup>) => XLSX.read(s.upload.mock.calls[0][1], { type: "array" });
+  it("XLSX real serialize/read preserva primitivos/JSON, união e cabeçalhos adversos sem fórmulas", async () => {
+    const rows = [JSON.parse('{"__proto__":"=1+1","constructor":"+cmd","=header":"@cmd","valor":{"f":"1+1","t":"n"},"periodo":{"from":"2026-10-01","to":"2026-10-09"},"number":-42.5,"boolean":true,"empty":null,"array":[1,{"f":"2+2"}]}'), { last: "ULTIMO" }];
+    const s = setup(undefined, undefined, undefined, { rows });
+    expect((await s.invoke({ ...valid, format: "XLSX" })).status).toBe(200);
+    const wb = readXLSX(s), ws = wb.Sheets[wb.SheetNames[0]];
+    expect(XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })).toEqual([
+      ["__proto__", "constructor", "=header", "valor", "periodo", "number", "boolean", "empty", "array", "last"],
+      ["=1+1", "+cmd", "@cmd", '{"f":"1+1","t":"n"}', '{"from":"2026-10-01","to":"2026-10-09"}', -42.5, true, null, '[1,{"f":"2+2"}]', null],
+      [null, null, null, null, null, null, null, null, null, "ULTIMO"],
+    ]);
+    expect(ws.F2).toMatchObject({ t: "n", v: -42.5 }); expect(ws.G2).toMatchObject({ t: "b", v: true });
+    for (const [address, cell] of Object.entries(ws)) if (!address.startsWith("!")) expect(cell).not.toHaveProperty("f");
+    for (const address of ["A1", "B1", "C1", "A2", "B2", "C2", "D2", "E2", "I2"]) expect(ws[address].t).toBe("s");
+    expect(Object.prototype).not.toHaveProperty("f");
+  });
+  it.each(["=1+1", "+SUM(1)", "-1+2", "@cmd", "  =1+1", "\ttext", "\rtext", "\ntext"])("XLSX real mantém string literal %j", async (text) => {
+    const s = setup(undefined, undefined, undefined, { rows: [{ [text]: text }] });
+    expect((await s.invoke({ ...valid, format: "XLSX" })).status).toBe(200);
+    const wb = readXLSX(s), ws = wb.Sheets[wb.SheetNames[0]];
+    expect(ws.A1).toMatchObject({ t: "s", v: text }); expect(ws.A2).toMatchObject({ t: "s", v: text });
+    expect(ws.A1).not.toHaveProperty("f"); expect(ws.A2).not.toHaveProperty("f");
+  });
+  it.each(["[]:*?/\\", "", "'", "'Mensal'", "x".repeat(255), "Mensal válido"])("XLSX real usa nome de aba seguro %j", async (title) => {
+    const s = setup(); expect((await s.invoke({ ...valid, format: "XLSX", title })).status).toBe(200);
+    const name = readXLSX(s).SheetNames[0];
+    expect(name.length).toBeGreaterThan(0); expect(name.length).toBeLessThanOrEqual(31);
+    expect(name).not.toMatch(/[\[\]:*?/\\\x00-\x1f]/); expect(name).not.toMatch(/^'|'$/);
+    if (["[]:*?/\\", "", "'"].includes(title)) expect(name).toBe("Relatorio");
+  });
+  it.each([null, 42, "text", []])("XLSX rejeita linha inválida %j antes da união de colunas", async (row) => {
+    const s = setup(undefined, undefined, undefined, { rows: [row] });
+    await failureResponse(await s.invoke({ ...valid, format: "XLSX" }), 500); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it.each([NaN, Infinity, -Infinity])("XLSX rejeita número não finito %s", async (number) => {
+    const s = setup(undefined, undefined, undefined, { rows: [{ number }] });
+    await failureResponse(await s.invoke({ ...valid, format: "XLSX" }), 500); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it("XLSX real aceita1000 registros e última coluna/registro", async () => {
+    const rows = Array.from({ length: 1000 }, (_, i) => i === 999 ? { item: i, last: "ULTIMO" } : { item: i });
+    const s = setup(undefined, undefined, undefined, { rows }); expect((await s.invoke({ ...valid, format: "XLSX" })).status).toBe(200);
+    const wb = readXLSX(s), ws = wb.Sheets[wb.SheetNames[0]];
+    expect(ws["!ref"]).toBe("A1:B1001"); expect(ws.B1001).toMatchObject({ t: "s", v: "ULTIMO" });
+  });
+  it("XLSX real vazio sem registro fictício", async () => {
+    const s = setup(undefined, undefined, undefined, { rows: [] }); const response = await s.invoke({ ...valid, format: "XLSX" });
+    expect(response.status).toBe(200); expect((await response.json()).row_count).toBe(0);
+    const wb = readXLSX(s); expect(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])).toEqual([]);
+  });
+  it.each(["rows", "content", "bytes"])("XLSX limite %s impede upload/assinatura/histórico", async (limit) => {
+    const s = setup(undefined, undefined, undefined, {
+      rows: limit === "rows" ? Array.from({ length: 1001 }, () => ({ item: 1 })) : [{ text: limit === "content" ? "x".repeat(1024 * 1024 + 1) : "ok" }],
+      ...(limit === "bytes" ? { xlsxBytes: new Uint8Array(5 * 1024 * 1024 + 1) } : {}),
+    });
+    await failureResponse(await s.invoke({ ...valid, format: "XLSX" }), 500);
+    expect(s.upload).not.toHaveBeenCalled(); expect(s.createSignedUrl).not.toHaveBeenCalled();
+    expect(s.effects).not.toContain("register_financial_report_export");
+  });
+
 });
