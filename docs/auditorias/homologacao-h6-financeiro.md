@@ -1,5 +1,28 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — P1 categorias financeiras globais / consulta operacional — 2026-10-10 02:35 UTC
+
+### Evidência externa e migration já aplicada
+
+- Codex autorizado externamente ao Lovable confirmou **AdminFSF UPDATE name=name afetando 1 linha** de categoria fictícia compartilhada em **ROLLBACK**. `financial_categories` não tem organization_id e possuía RLS ALL financialstaff; **AGENTS exige Platform Superadmin para escrita de catálogo global**. Baseline SQL externo não reexecutado pelo agente.
+- **`20261010023433 financial_category_platform_write_guard` JÁ APLICADA** pelo Codex no Supabase canônico **`swzpzcwiasxmjutrmvkm`**. SQL literal arquivado em **`scripts/rbac-audit/applied-20261010023433-financial-category-platform-write-guard.sql`**, sem executar/reaplicar. Trigger abrange INSERT/UPDATE/DELETE inclusive writers SECURITY DEFINER, com auth.uid/has_role superadmin, sem ampliar ACL; não reescreve categorias/histórico.
+- **Reteste SQL externo autenticado/iat atual:** FinanceiroAR/AdminAR/AdminFSF **leem 1 categoria**, mas **INSERT/UPDATE/DELETE/rpc_desativar todos negados — 12/12**, transação ROLLBACK. Não reexecutado pelo Lovable nem equivalente a sessões HTTP reais.
+
+### Contenção focal da página operacional
+
+- **Somente `src/pages/financeiro/Categorias.tsx` e teste focal**, além de arquivo SQL/documentação. Removidos formulários, mutations e controles criar/editar/desativar; lista, tipo, Grupo DRE e status mantidos. Consulta tipada pelo schema existente com **id, name, type, dre_group, active**, sem SELECT * ou novos any. Erro de leitura seguro distinto de vazio.
+- Texto solicitado: **“Catálogo compartilhado. A gestão das categorias é feita pela administração da plataforma.”** Nenhuma rota paralela de Superadmin ou abertura de grants criada.
+- **Baseline própria antes do fix: 4/4 FAIL**, em `src/test/financeiro/categorias.readOnly.test.tsx`, QueryClient real e Supabase mockado, `/tmp/categorias-baseline.log`. Validações finais abaixo; não somar com testes SQL externos ou checkpoints anteriores.
+- **UI histórica FinanceiroAR agora PASS 9 eventos**, conforme evidência externa recebida neste adendo, supersedendo somente a pendência UI desse perfil na contenção de audit log anterior; **outros HTTP UNVERIFIED**. Não teste UI executado pelo Lovable nem certificação integral.
+
+### Risco, limites e rollback substitutivo
+
+- **Gestão plataforma das categorias UNVERIFIED/NO-GO**: nenhum fluxo homologado por esta contenção; ausência de controles operacionais não certifica gestão Superadmin nem sua ACL/entitlement/UX. Não criado fluxo substituto nesta rodada.
+- **Rollback seguro:** preservar trigger/restrição e containment, com correção substitutiva revisada; não restaurar escrita global por tenant financialstaff nem vazamento do histórico. Dados/logs e fixture +40/-40 preservados.
+- **Financeiro global/exportação/B2B/OS/fiscal/Faturamento NO-GO**; demais HTTP e matrizes pendentes. Sem AGENTS/Edge/outros módulos, banco/SQL remoto/grants/deploy/publicação ou alteração de dados pelo Lovable. Nenhuma nova fase iniciada.
+
+---
+
 ## Adendo vigente — P1 leitura de auditoria por origem/tenant — 2026-10-10 02:31 UTC
 
 **Escopo exclusivamente documental:** dois SQLs fornecidos arquivados literalmente, roadmap e este relatório. As migrations foram **JÁ APLICADAS pelo Codex autorizado externamente ao Lovable** no Supabase canônico **`swzpzcwiasxmjutrmvkm`**, conforme evidência recebida. Nenhum SQL/consulta remota, reaplicação, rollback remoto, mudança de código/AGENTS/grants/Edge/frontend/gates/dados ou publicação pelo Lovable nesta rodada.
