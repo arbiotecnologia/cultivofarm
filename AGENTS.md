@@ -39,5 +39,3 @@
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
 - Wizard uses persisted prerequisites, not attachments; review uses controlled AlertDialog and a shared synchronous ref lock — prevents blocked navigation and duplicate submissions.
-
-- Product/composition saves confirm minimal returned IDs and cardinality before continuing; compensation remains best-effort and inconclusive reversal is critical — prevents false success without implying transactionality.

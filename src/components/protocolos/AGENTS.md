@@ -1,0 +1,1 @@
+- Product/composition saves confirm minimal returned IDs and cardinality before continuing; compensation remains best-effort and inconclusive reversal is critical — prevents false success without implying transactionality.
