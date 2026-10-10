@@ -53,6 +53,7 @@ BEGIN
   IF OLD.operation='update_global_product_metadata' OR NEW.operation='update_global_product_metadata' THEN
     RAISE EXCEPTION USING ERRCODE='42501', MESSAGE='catalog_metadata_audit_immutable';
   END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
   RETURN NEW;
 END;
 $$;
@@ -179,6 +180,11 @@ BEGIN
       RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_metadata_confirmation_failed';
     END IF;
     v_after:=v_after || pg_catalog.jsonb_build_object(v_field,pg_catalog.to_jsonb(v_new)->v_field);
+  END LOOP;
+  FOREACH v_field IN ARRAY v_fields LOOP
+    IF NOT (v_patch?v_field) AND pg_catalog.to_jsonb(v_old)->v_field IS DISTINCT FROM pg_catalog.to_jsonb(v_new)->v_field THEN
+      RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_metadata_confirmation_failed';
+    END IF;
   END LOOP;
   v_audit:=pg_catalog.gen_random_uuid();
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'updated_at',v_new.updated_at,

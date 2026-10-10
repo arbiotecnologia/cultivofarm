@@ -12,6 +12,20 @@ export const metadataDetailSchema = metadataValuesSchema.extend({
 }).strict();
 export type MetadataDetail = z.infer<typeof metadataDetailSchema>;
 export type MetadataValues = z.infer<typeof metadataValuesSchema>;
+// Scope-bound bounded retry keys survive editor remounts; no automatic retry.
+const retryKeys = new Map<string, string>();
+export function metadataRetryKey(scope: string, fingerprint: string) {
+  const scoped = JSON.stringify([scope, fingerprint]);
+  const existing = retryKeys.get(scoped);
+  if (existing) return existing;
+  const key = crypto.randomUUID();
+  retryKeys.set(scoped, key);
+  if (retryKeys.size > 100) {
+    const oldest = retryKeys.keys().next().value;
+    if (oldest !== undefined) retryKeys.delete(oldest);
+  }
+  return key;
+}
 export const metadataPatchSchema = metadataValuesSchema.partial().strict().refine((p) => Object.keys(p).length > 0);
 const receiptSchema = z.object({ id: z.string().uuid(), updated_at: z.string().datetime({ offset: true }),
   idempotency_key: z.string().uuid(), idempotent: z.boolean(), audit_id: z.string().uuid() }).strict();

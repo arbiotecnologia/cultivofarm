@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformCatalogMetadataDialog";
-import { metadataPatchSchema, metadataValuesSchema, updateMetadata, type MetadataDetail } from "@/lib/catalogo/platformCatalogMetadata";
+import { metadataPatchSchema, metadataRetryKey, metadataValuesSchema, updateMetadata, type MetadataDetail } from "@/lib/catalogo/platformCatalogMetadata";
 import { platformCatalogAccess, type PlatformCatalogActor } from "@/lib/catalogo/platformCatalogRead";
 const mocks = vi.hoisted(() => ({ actor: {} as PlatformCatalogActor, request: vi.fn(), rpc: vi.fn(), saved: vi.fn(), close: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.actor }));
@@ -30,6 +30,23 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe("edição global de metadados", () => {
+  it("chave sobrevive remount mas não atravessa identidade ou conteúdo", () => {
+    const key = metadataRetryKey("scope-a", "pedido-exato");
+    expect(metadataRetryKey("scope-a", "pedido-exato")).toBe(key);
+    expect(metadataRetryKey("scope-b", "pedido-exato")).not.toBe(key);
+    expect(metadataRetryKey("scope-a", "outro-pedido")).not.toBe(key);
+  });
+  it.each(["descricao", "modo_acao", "funcao_completa", "modo_aplicacao"])("aceita null e limita %s a 10000 caracteres", (field) => {
+    expect(metadataPatchSchema.safeParse({ [field]: null }).success).toBe(true);
+    expect(metadataPatchSchema.safeParse({ [field]: "x".repeat(10000) }).success).toBe(true);
+    expect(metadataPatchSchema.safeParse({ [field]: "x".repeat(10001) }).success).toBe(false);
+  });
+  it("nome exige 1 a 500 caracteres e patch não pode ser vazio", () => {
+    expect(metadataPatchSchema.safeParse({ nome: " " }).success).toBe(false);
+    expect(metadataPatchSchema.safeParse({ nome: "x".repeat(500) }).success).toBe(true);
+    expect(metadataPatchSchema.safeParse({ nome: "x".repeat(501) }).success).toBe(false);
+    expect(metadataPatchSchema.safeParse({}).success).toBe(false);
+  });
   it("envia somente campo alterado/versão/motivo e confirma recibo antes de sucesso", async () => {
     setup(); await fill(); fireEvent.click(screen.getByRole("button", { name: "Salvar alteração" }));
     await waitFor(() => expect(mocks.saved).toHaveBeenCalledTimes(1));

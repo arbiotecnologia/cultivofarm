@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
-import { metadataFields, metadataValuesSchema, readMetadata, updateMetadata, type MetadataDetail, type MetadataValues } from "@/lib/catalogo/platformCatalogMetadata";
+import { metadataFields, metadataRetryKey, metadataValuesSchema, readMetadata, updateMetadata, type MetadataDetail, type MetadataValues } from "@/lib/catalogo/platformCatalogMetadata";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,6 @@ export function PlatformCatalogMetadataDialog({ id, scope, onClose, onSaved }: {
   current.current = access.ready && access.scope === scope;
   const mounted = useRef(true);
   const lock = useRef(false);
-  const pending = useRef<{ fingerprint: string; key: string }>();
   const requests = useRef(new Set<AbortController>());
   const [detail, setDetail] = useState<MetadataDetail>();
   const [values, setValues] = useState<MetadataValues>();
@@ -44,10 +43,10 @@ export function PlatformCatalogMetadataDialog({ id, scope, onClose, onSaved }: {
     if (lock.current || !mounted.current || !current.current || !detail || !values || !valid || !changed) return;
     lock.current = true; setBusy(true); setError("");
     const fingerprint = JSON.stringify([id, detail.updated_at, values, reason.trim()]);
-    if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, key: crypto.randomUUID() };
+    const key = metadataRetryKey(scope, fingerprint);
     const controller = new AbortController(); requests.current.add(controller);
     try {
-      await updateMetadata(detail, values, reason, pending.current.key, controller.signal);
+      await updateMetadata(detail, values, reason, key, controller.signal);
       if (mounted.current && current.current && !controller.signal.aborted) onSaved();
     } catch (failure) {
       if (mounted.current && current.current && !controller.signal.aborted)
