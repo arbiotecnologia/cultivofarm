@@ -1,5 +1,14 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — fechamento documental externo 4717ff86 — 2026-10-10 02:42 UTC
+
+- **Codex autorizado externamente ao Lovable revisou diff de 5 arquivos e SQL em igualdade exata**, conforme relato recebido. **4/4 testes, typecheck app/node, lint 2 arquivos, scanner3862/zero e build30.86s PASS**, com avisos legados. Não checks reexecutados nesta rodada nem soma aos checkpoints anteriores.
+- **Publicação feita externamente via UI**, confirmação **“Seu site foi atualizado”**. Reload em **`app.cultivofarm.com.br/financeiro/categorias`**, sessão **real FinanceiroAR**: **2 categorias**, aviso de catálogo compartilhado/somente consulta, **sem controles de mutação**; histórico **9 eventos**. **PASS focal externo da consulta operacional/UI desse perfil**; não publicação/browser/SQL executados pelo Lovable. SQL anterior leu 1 categoria; UI atual 2, evidências distintas, sem inferir alteração de dados pelo agente.
+- Supersede somente pendência de revisão/publicação/UI Categorias FinanceiroAR do recorte anterior; **outros HTTP UNVERIFIED**, **gestão plataforma das categorias UNVERIFIED/NO-GO**. Containment não homologa gestão Superadmin, Financeiro global nem exportação/B2B/OS/fiscal/Faturamento; gates e histórico preservados.
+- Próximo pedido registrado **somente para auditoria de dependências e planejamento da expansão do catálogo de produtos**; nenhum código funcional, banco, grant, Edge, dependência, dado ou publicação nesta rodada. Não nova implementação ampla nem doses/recomendações fictícias.
+
+---
+
 ## Adendo vigente — P1 categorias financeiras globais / consulta operacional — 2026-10-10 02:35 UTC
 
 ### Evidência externa e migration já aplicada
