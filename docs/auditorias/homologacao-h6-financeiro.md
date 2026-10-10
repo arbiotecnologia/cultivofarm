@@ -1,5 +1,15 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — parser CSV Windows e QA PDF externo — 2026-10-10 02:20 UTC
+
+- **Revisão independente67d3a432 recebida:** Codex relatou **175total/173PASS/2FAIL** no Windows; `sys.stdin.read()` normalizava CR/CRLF antes de csv.reader. Não falha do gerador nem motivo para adaptar expectativas. Resultado independente preservado, distinto do PASS Linux anterior.
+- **Única alteração de teste:** parser usa `sys.stdin.buffer.read().decode('utf-8')` dentro de `StringIO(newline='')`, preservando bytes/quebras originais; `process.env.PYTHON ?? "python3"` e todas as expectativas permanecem iguais. Nenhuma alteração de PDF/CSV/XLSX/handler/biblioteca/lock/AGENTS.
+- **Rerun próprio local:175/175 PASS (126handler+37shell+8scope+4storage)**, `/tmp/financial-csv-parser-rerun.log`, início02:21:33UTC. Lint do teste e diff-check PASS. **Rerun independente Windows PENDENTE**, não certificado pelo resultado local. Typechecks separados/scanner/Deno NOT RUN nesta rodada.
+- **QA PDF real externo Codex:** pdf-lib1.17.1 bundled gerou fixture com100registros, texto longo e última coluna; **10páginas,100marcadores, último campo/fim do texto/rodapés todos PASS**. Extração com pypdf e **10páginas renderizadas e inspecionadas sem cortes**, conforme evidência recebida, não execução própria do Lovable. SDK/Auth/Storage foram simulados localmente. Supersede pendência de bytes/extração/QA **dessa fixture local** nos checkpoints anteriores; não PASS UI/produção/upload/download/runtimeEdge/volume máximo.
+- **Sem deploy, banco/grants, frontend ou Storage real. Exportação/Financeiroglobal/B2B/OS/fiscal/Faturamento NO-GO**; limites anteriores à consulta/paginaçãoRPC, runtime/volume e serviços reais permanecem pendentes. Entrega teste/documentação para revisão; nenhum gate aberto.
+
+---
+
 ## Adendo vigente — revisão a6787c35 / XLSX focal — 2026-10-10
 
 - **Escopo:** mesmo index.ts/teste existente e documentação; sem alteração de AGENTS, biblioteca/lock, frontend, DB/grants/gates, deploy/publicação, Storage real ou histórico financeiro. CSV/PDF e ordem upload→assinatura→registro→URL preservados. CSV teste passa a usar `process.env.PYTHON ?? "python3"`.

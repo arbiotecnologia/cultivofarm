@@ -192,7 +192,7 @@ describe("generate-financial-report — handler real isolado", () => {
     expect(returned).toBe(false); expect(s.effects.indexOf("sign")).toBeLessThan(s.effects.indexOf("register_financial_report_export"));
     pending.resolve({ data: auditId, error: null }); expect((await (await response).json()).url).toBe("signed-file-fixture");
   });
-  const parseCSV = (s: ReturnType<typeof setup>): string[][] => JSON.parse(execFileSync(process.env.PYTHON ?? "python3", ["-c", "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.read(),newline='')))))"], { input: s.upload.mock.calls[0][1], encoding: "utf8" }));
+  const parseCSV = (s: ReturnType<typeof setup>): string[][] => JSON.parse(execFileSync(process.env.PYTHON ?? "python3", ["-c", "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.buffer.read().decode('utf-8'),newline='')))))"], { input: s.upload.mock.calls[0][1], encoding: "utf8" }));
   it("CSV roundtrip preserva aspas, vírgulas, quebras reais, objetos/arrays e união de colunas", async () => {
     const s = setup(undefined, undefined, undefined, { rows: [{ 'a,"b': 'texto,"aspas"\nlinha\r\nfinal', nested: { x: [1, "dois"] } }, { later: [false, null, 3], 'a,"b': "" }] });
     expect((await s.invoke(valid)).status).toBe(200);
