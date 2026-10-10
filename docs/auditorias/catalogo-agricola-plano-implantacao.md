@@ -2,7 +2,7 @@
 Data: 09/10/2026, America/Sao_Paulo. Estado: planejamento; nenhuma nova aba agrícola publicada.
 Escopo vigente: três abas separadas — Biológicos, Químicos e Fertilizantes / Adubos. Sementes e Tratamento de sementes ficam para uma etapa futura, fora dos dados, telas, integrações e testes desta implantação.
 
-Substituição documental registrada em 10/10/2026 03:01 UTC por solicitação expressa. Este é o único plano agrícola vigente; `.lovable/plan.md` é seu resumo, não outro plano. O planejamento anterior e suas aprovações não são restaurados; sua história Git permanece preservada. Revert `143253d6f758831a82f0f9ddfd8a2766821f2daa` e igualdade versus `4717ff865440c3506169d82cdeb308954bd54d21` são relatos externos Codex, não execução própria. Nesta rodada não executar fases A–F, DDL, código ou publicação.
+Substituição documental registrada em 10/10/2026 03:01 UTC por solicitação expressa. Este é o único plano agrícola vigente; `.lovable/plan.md` é seu resumo, não outro plano. O planejamento anterior e suas aprovações não são restaurados; sua história Git permanece preservada. Revert `143253d6f758831a82f0f9ddfd8a2766821f2daa` e igualdade versus `4717ff865440c3506169d82cdeb308954bd54d21` são relatos externos Codex, não execução própria. Checkpoint de substituição: não executou fases A–F, DDL, código ou publicação. Continuidade autorizada 03:08 UTC: Fase A local concluída em `catalogo-agricola-fase-a-contrato.md`, com SQL candidato NÃO aplicado e plano rollback; fases B–F não executadas.
 
 ## 1. Funcionalidade
 Evolução do catálogo existente em /base-tecnica, preservando aliases, ProdutosTab, catálogo técnico e identidades dos produtos.
@@ -92,7 +92,7 @@ E — Operação por família/unidade: pedidos → estoque → entrega → finan
 F — Implantação gradual: publicação após testes, conferência com contas reais, monitoramento de erros e rollback pronto.
 A auditoria financeira ampla permanece aberta. Planejamento agrícola pode avançar; implantação agrícola não deve ser apresentada como encerramento da auditoria nem atropelar P0/P1 pendentes do recorte em execução.
 
-**Gate desta rodada:** apenas registrar a substituição já solicitada, sem pedir aprovação novamente nem chamar plan.show. Nenhuma fase A–F funcional iniciada. DDL, mudanças funcionais, permissões, dependências e publicação futuras exigem autorização específica; não recuperar aprovações do plano removido. Se nova tabela pública for necessária futuramente, a migration autorizada deve conter CREATE → GRANT mínimo → ENABLE RLS → POLICY; não criar SQL agora.
+**Gate atualizado da Fase A:** inventário/contrato local e SQL candidato para revisão Codex entregues, sem pedir aprovação documental nem chamar plan.show. Nenhuma fase B–F funcional iniciada. DDL, mudanças funcionais, permissões, dependências e publicação futuras exigem autorização específica; não recuperar aprovações do plano removido. Se nova tabela pública for necessária futuramente, a migration autorizada deve conter CREATE → GRANT mínimo → ENABLE RLS → POLICY; somente SQL candidato em scripts/rbac-audit nesta Fase A, jamais aplicado como migration.
 
 ## 17. Prompt final pronto para Lovable
 Evolua o catálogo existente em fases A–F deste plano. Primeiro audite schema/RPCs/componentes/rotas, classificações e contratos de unidades; entregue inventário e delta antes de DDL. Reutilize produtos, IDs, cadastro e catálogo técnico, sem fluxo/tabela paralela de produtos.
