@@ -63,7 +63,7 @@ function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, th
   }) };
   const spreadsheet = options.xlsxBytes ? { ...XLSX, write: () => options.xlsxBytes } : XLSX;
   new Function("Deno", "createClient", "PDFDocument", "StandardFonts", "rgb", "XLSX", "corsHeadersFor", "handlePreflight", "isTrustedOrigin", "console", javascript)(
-    deno, createClient, PDFDocument, { Helvetica: "font", HelveticaBold: "bold" }, () => ({}), XLSX, corsHeadersFor, handlePreflight, isTrustedOrigin, { error: log, log, warn: log },
+    deno, createClient, PDFDocument, { Helvetica: "font", HelveticaBold: "bold" }, () => ({}), spreadsheet, corsHeadersFor, handlePreflight, isTrustedOrigin, { error: log, log, warn: log },
   );
   if (!handler) throw new Error("handler_not_registered");
   const invoke = (body: unknown = {}, method = "POST", origin = "https://app.cultivofarm.com.br", raw?: string) => handler(new Request("https://isolated.invalid", {
@@ -288,7 +288,7 @@ describe("generate-financial-report — handler real isolado", () => {
     const s = setup(); expect((await s.invoke({ ...valid, format: "XLSX", title })).status).toBe(200);
     const name = readXLSX(s).SheetNames[0];
     expect(name.length).toBeGreaterThan(0); expect(name.length).toBeLessThanOrEqual(31);
-    expect(name).not.toMatch(/[\[\]:*?/\\\x00-\x1f]/); expect(name).not.toMatch(/^'|'$/);
+    expect([...name].some((char) => char.charCodeAt(0) < 32 || "[]:*?/\\".includes(char))).toBe(false); expect(name).not.toMatch(/^'|'$/);
     if (["[]:*?/\\", "", "'"].includes(title)) expect(name).toBe("Relatorio");
   });
   it.each([null, 42, "text", []])("XLSX rejeita linha inválida %j antes da união de colunas", async (row) => {

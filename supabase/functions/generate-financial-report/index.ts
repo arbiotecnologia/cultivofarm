@@ -182,7 +182,8 @@ Deno.serve(async (req) => {
         )))] : [];
       const ws = XLSX.utils.aoa_to_sheet(matrix);
       const wb = XLSX.utils.book_new();
-      const sheetName = title.replace(/[\[\]:*?/\\\x00-\x1f]/g, "").trim().slice(0, 31).replace(/^'+|'+$/g, "").trim() || "Relatorio";
+      const sheetName = [...title].filter((char) => char.charCodeAt(0) >= 32 && !"[]:*?/\\".includes(char))
+        .join("").trim().slice(0, 31).replace(/^'+|'+$/g, "").trim() || "Relatorio";
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
       fileBytes = new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
       contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
