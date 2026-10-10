@@ -30,7 +30,7 @@ afterEach(cleanup);
 describe("contenção da edição B2B da ficha global", () => {
   it("gestor comercial consulta o texto B2B sem escrita ou oferta de salvar", () => {
     render(tree());
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "B2B", exact: true }), { button: 0, ctrlKey: false });
+    fireEvent.mouseDown(screen.getByRole("tab", { name: /^B2B$/ }), { button: 0, ctrlKey: false });
     expect(screen.getByRole("textbox", { name: "Linguagem para parceiro B2B" })).toHaveProperty("readOnly", true);
     expect(screen.queryByRole("button", { name: /Salvar|Enviar para revisão|Arquivar|Aprovar ficha/ })).toBeNull();
     expect(mocks.upsert).not.toHaveBeenCalled();
