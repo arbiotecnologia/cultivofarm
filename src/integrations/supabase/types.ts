@@ -16844,6 +16844,7 @@ export type Database = {
           next_adjustment_date: string | null
           next_generation_date: string
           notes: string | null
+          organization_id: string | null
           paused_at: string | null
           payment_method_id: string | null
           recurrence_frequency: string
@@ -16877,6 +16878,7 @@ export type Database = {
           next_adjustment_date?: string | null
           next_generation_date: string
           notes?: string | null
+          organization_id?: string | null
           paused_at?: string | null
           payment_method_id?: string | null
           recurrence_frequency: string
@@ -16910,6 +16912,7 @@ export type Database = {
           next_adjustment_date?: string | null
           next_generation_date?: string
           notes?: string | null
+          organization_id?: string | null
           paused_at?: string | null
           payment_method_id?: string | null
           recurrence_frequency?: string
