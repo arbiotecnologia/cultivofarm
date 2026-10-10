@@ -1,9 +1,10 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReportShell } from "@/components/financeiro/relatorios/ReportShell";
+import RelatorioMensal from "@/pages/financeiro/relatorios/RelatorioMensal";
 
 const state = vi.hoisted(() => ({
-  auth: { user: { id: "A", email: "" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["financeiro"], loading: false },
+  auth: { user: { id: "A", email: "" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["financeiro"], loading: false, error: null as string | null },
   rpc: vi.fn(), invoke: vi.fn(), error: vi.fn(), success: vi.fn(), warning: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
@@ -25,23 +26,24 @@ function change(kind: string) {
   if (kind === "identity") { state.auth.user.id = "B"; state.auth.profile.user_id = "B"; }
   if (kind === "tenant" || kind === "aba") state.auth.profile.organization_id = "OB";
   if (kind === "readiness") state.auth.loading = true;
+  if (kind === "authError") state.auth.error = "falha interna de autenticação";
 }
 beforeEach(() => {
-  Object.assign(state.auth, { user: { id: "A", email: "" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["financeiro"], loading: false });
+  Object.assign(state.auth, { user: { id: "A", email: "" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["financeiro"], loading: false, error: null });
   vi.clearAllMocks(); state.rpc.mockReset(); state.invoke.mockReset();
   state.rpc.mockResolvedValue({ data: ["PREVIA-A"], error: null });
   state.invoke.mockResolvedValue({ data: null, error: null });
   vi.spyOn(window, "print").mockImplementation(() => {});
   vi.spyOn(window, "open").mockImplementation(() => null);
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 async function settle(pending: ReturnType<typeof deferred>, response: Response) {
   await act(async () => { pending.resolve(response); await pending.promise; });
 }
 async function generate() { await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Gerar prévia" })); }); }
 
 describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
-  for (const kind of ["identity", "tenant", "aba", "readiness", "reportType"]) {
+  for (const kind of ["identity", "tenant", "aba", "readiness", "authError", "reportType"]) {
     it(`descarta resultado tardio e filtros sensíveis em ${kind}`, async () => {
       const pending = deferred(); state.rpc.mockReturnValueOnce(pending.promise);
       const view = render(element());
@@ -61,13 +63,14 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
       expect(screen.queryByText(/PREVIA-A/)).toBeNull();
     });
   }
-  for (const kind of ["identity", "tenant", "aba", "readiness", "reportType"]) {
+  for (const kind of ["identity", "tenant", "aba", "readiness", "authError", "reportType"]) {
     it(`exportação tardia não abre arquivo nem libera pedido novo em ${kind}`, async () => {
       const old = deferred(), next = deferred(); state.invoke.mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
       const view = render(element()); fireEvent.click(screen.getByRole("button", { name: "PDF" }));
       change(kind); view.rerender(element(kind === "reportType" ? "payables" : "monthly"));
       if (kind === "aba") { state.auth.profile.organization_id = "OA"; view.rerender(element()); }
       if (kind === "readiness") { state.auth.loading = false; view.rerender(element()); }
+      if (kind === "authError") { state.auth.error = null; view.rerender(element()); }
       fireEvent.click(screen.getByRole("button", { name: "Excel" }));
       expect(state.invoke).toHaveBeenCalledTimes(2);
       await settle(old, { data: { url: "arquivo-ficticio" }, error: null });
@@ -97,9 +100,14 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
     expect(state.invoke.mock.calls[0][1].body.filters.customer_id).toBe("EDITADO");
   });
   it("erro atual remove prévia/metadados anteriores e permite repetir", async () => {
-    render(element()); await generate(); state.rpc.mockResolvedValueOnce({ data: null, error: { message: "Acesso negado" } });
+    const raw = "permission denied for private_tenant_table sensitive-id";
+    render(element()); await generate(); state.rpc.mockResolvedValueOnce({ data: null, error: { message: raw } });
     await generate(); expect(screen.queryByText(/PREVIA-A/)).toBeNull(); expect(screen.queryByText(/Gerado em:/)).toBeNull();
-    expect(screen.getByRole("alert")).toHaveTextContent("Acesso negado"); expect(screen.getByRole("button", { name: "Imprimir" })).toBeDisabled();
+    const safe = "Não foi possível gerar a prévia. Verifique seu acesso e tente novamente.";
+    expect(screen.getByRole("alert")).toHaveTextContent(safe);
+    expect(state.error).toHaveBeenCalledWith(safe);
+    expect(screen.queryByText(raw)).toBeNull(); expect(state.error).not.toHaveBeenCalledWith(raw);
+    expect(screen.getByRole("button", { name: "Imprimir" })).toBeDisabled();
     await generate(); expect(screen.getByText(/PREVIA-A/)).toBeTruthy(); expect(screen.queryByRole("alert")).toBeNull();
   });
   it("mostra loading e vazio como estados distintos", async () => {
@@ -108,7 +116,7 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
     await settle(pending, { data: [], error: null }); expect(screen.getByRole("status")).toHaveTextContent(/Nenhum/);
     expect(screen.getByRole("button", { name: "Imprimir" })).toBeDisabled();
   });
-  for (const loss of ["loading", "inactive", "mismatch", "roles", "tenant"]) {
+  for (const loss of ["loading", "inactive", "mismatch", "roles", "tenant", "authError"]) {
     it(`bloqueia gerar/exportar/imprimir com sessão inapta ${loss}`, async () => {
       const view = render(element()); await generate();
       if (loss === "loading") state.auth.loading = true;
@@ -116,6 +124,7 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
       if (loss === "mismatch") state.auth.profile.user_id = "OUTRO";
       if (loss === "roles") state.auth.roles = [];
       if (loss === "tenant") state.auth.profile.organization_id = "";
+      if (loss === "authError") state.auth.error = "erro auth com perfil anterior persistente";
       view.rerender(element());
       for (const name of ["Gerar prévia", "PDF", "Excel", "CSV", "Imprimir"]) {
         const button = screen.getByRole("button", { name }); expect(button).toBeDisabled(); fireEvent.click(button);
@@ -144,7 +153,57 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
   });
   it("rejeição atual não prende lock e mantém erro explícito", async () => {
     state.rpc.mockRejectedValueOnce(new Error("rede indisponível")); render(element()); await generate();
-    expect(screen.getByRole("alert")).toHaveTextContent("rede indisponível"); await generate();
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível gerar a prévia. Verifique seu acesso e tente novamente.");
+    expect(state.error).not.toHaveBeenCalledWith("rede indisponível"); await generate();
     expect(screen.getByText(/PREVIA-A/)).toBeTruthy();
+  });
+  it("recuperação de auth.error não revive resultado nem finally anterior", async () => {
+    const old = deferred(), next = deferred();
+    state.rpc.mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
+    const view = render(element());
+    fireEvent.change(screen.getByLabelText("Cliente filtro"), { target: { value: "SENSIVEL" } });
+    await generate(); state.auth.error = "auth falhou"; view.rerender(element());
+    expect(screen.getByRole("status")).toHaveTextContent("Sessão indisponível");
+    state.auth.error = null; view.rerender(element());
+    expect(screen.getByLabelText("Cliente filtro")).toHaveValue("");
+    await generate(); await settle(old, { data: ["ANTIGO-ERROR"], error: null });
+    expect(screen.queryByText(/ANTIGO-ERROR/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Gerar prévia" })).toBeDisabled();
+    await settle(next, { data: ["RECUPERADO"], error: null });
+    expect(screen.getByText(/RECUPERADO/)).toBeTruthy();
+  });
+  it("recuperação de auth.error exige nova geração após limpar prévia concluída", async () => {
+    const view = render(element()); await generate();
+    state.auth.error = "auth falhou"; view.rerender(element());
+    state.auth.error = null; view.rerender(element());
+    expect(screen.queryByText(/PREVIA-A/)).toBeNull();
+    expect(screen.queryByText(/Gerado em:/)).toBeNull();
+    expect(screen.queryByText(/Filtros aplicados:/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Imprimir" })).toBeDisabled();
+    await generate(); expect(screen.getByText(/PREVIA-A/)).toBeTruthy();
+  });
+});
+
+describe("RelatorioMensal concreto — datas civis e contrato RPC mockado", () => {
+  it.each([
+    ["2026-10-10T01:44:00Z", "2026-10-01", "2026-10-09"],
+    ["2026-11-01T01:00:00Z", "2026-10-01", "2026-10-31"],
+    ["2026-11-01T03:00:00Z", "2026-11-01", "2026-11-01"],
+  ])("usa dia São Paulo em %s", async (instant, from, to) => {
+    vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date(instant));
+    render(<RelatorioMensal />);
+    expect(screen.getByLabelText("De *")).toHaveValue(from);
+    expect(screen.getByLabelText("Até *")).toHaveValue(to);
+    await generate();
+    expect(state.rpc).toHaveBeenCalledWith("get_report_monthly_financial", { _from: from, _to: to });
+  });
+  it("edição gera e exporta somente _from/_to sem chaves divergentes", async () => {
+    render(<RelatorioMensal />);
+    fireEvent.change(screen.getByLabelText("De *"), { target: { value: "2026-09-02" } });
+    fireEvent.change(screen.getByLabelText("Até *"), { target: { value: "2026-09-28" } });
+    await generate();
+    expect(state.rpc).toHaveBeenCalledWith("get_report_monthly_financial", { _from: "2026-09-02", _to: "2026-09-28" });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "CSV" })); });
+    expect(state.invoke.mock.calls[0][1].body.filters).toEqual({ _from: "2026-09-02", _to: "2026-09-28" });
   });
 });
