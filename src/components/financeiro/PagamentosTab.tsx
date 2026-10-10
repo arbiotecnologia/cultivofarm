@@ -25,6 +25,7 @@ export function PagamentosTab({ kind, contaId }: Props) {
     role === "administrador" || role === "gestor" || role === "financeiro");
 
   useEffect(() => {
+    setSelection(null);
     const predicate = (query: { queryKey: readonly unknown[] }) =>
       query.queryKey[0] === "fin-payments" && query.queryKey[1] === kind &&
       query.queryKey[2] === contaId && query.queryKey.at(-1) !== fence.scope;

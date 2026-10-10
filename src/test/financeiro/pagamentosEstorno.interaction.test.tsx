@@ -148,6 +148,17 @@ describe("EstornoDialog — decisões locais, sem escrita real", () => {
     const close = vi.fn(); setup(<EstornoDialog open onClose={close} kind="payable" payment={payment} />);
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" })); expect(close).toHaveBeenCalledOnce(); expect(state.rpc).not.toHaveBeenCalled();
   });
+  it("retry mantém intenção idêntica para replay do servidor sem duplicar lançamento local", async () => {
+    state.rpc.mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce({ data: "REV-EXISTENTE", error: null });
+    const close = vi.fn(); setup(<EstornoDialog open onClose={close} kind="payable" payment={payment} />);
+    fireEvent.change(screen.getByLabelText("Motivo do estorno *"), { target: { value: "teste auditoria" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar estorno" })); await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar estorno" }));
+    await waitFor(() => expect(close).toHaveBeenCalledOnce());
+    expect(state.rpc).toHaveBeenCalledTimes(2);
+    expect(state.rpc.mock.calls[0]).toEqual(state.rpc.mock.calls[1]);
+    expect(state.success).toHaveBeenCalledOnce();
+  });
   for (const failure of ["error", "null", "reject"] as const) {
     it(`falha ${failure} mantém motivo e não invalida/sinaliza sucesso`, async () => {
       if (failure === "reject") state.rpc.mockRejectedValue(new Error("network"));
