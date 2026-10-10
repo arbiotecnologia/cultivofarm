@@ -110,7 +110,7 @@ describe("PagamentosTab — interação e sessão, servidor mockado", () => {
         state.payments = loss === "missing" ? [] : [payment, { ...payment, id: "REV", is_reversal: true, reversed_payment_id: "P" }];
         await act(async () => { await view.client.refetchQueries({ queryKey: ["fin-payments"] }); });
       }
-      expect(screen.queryByRole("dialog")).toBeNull();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       state.auth.roles = ["financeiro"]; state.payments = [payment];
       view.update(<PagamentosTab kind="receivable" contaId="C" />);
       await act(async () => { await view.client.refetchQueries({ queryKey: ["fin-payments"] }); });
