@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
 import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
-import { platformCatalogAccess, type PlatformCatalogActor } from "@/lib/catalogo/platformCatalogRead";
+import { platformCatalogAccess, platformCatalogPageSchema, type PlatformCatalogActor } from "@/lib/catalogo/platformCatalogRead";
 
 const mocks = vi.hoisted(() => ({ actor: {} as PlatformCatalogActor,
   request: vi.fn(), rpc: vi.fn() }));
@@ -39,9 +39,36 @@ describe("consulta global da plataforma", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 0 });
   });
   it("preserva tipo antigo e descarta campos extras sem preço no resultado exibido", async () => {
-    mocks.request.mockResolvedValue(page([{ ...product, nome: "Produto sem preço" }]));
-    setup(); await screen.findByText("Produto sem preço");
+    const parsed = platformCatalogPageSchema.parse({ items: [{ ...product, valor_litro_brl: 12345, composicao: "restrita" }], has_more: false });
+    expect(parsed.items[0]).not.toHaveProperty("valor_litro_brl");
+    expect(parsed.items[0]).not.toHaveProperty("composicao");
+    mocks.request.mockResolvedValue({ data: parsed, error: null });
+    setup(); await screen.findByText(product.nome);
     expect(screen.getByText("solo")).toBeTruthy();
+  });
+  it("contrato não aceita mais de 50 produtos", () => {
+    expect(platformCatalogPageSchema.safeParse({ items: Array(51).fill(product), has_more: true }).success).toBe(false);
+    expect(platformCatalogPageSchema.safeParse({ items: Array(50).fill(product), has_more: true }).success).toBe(true);
+  });
+  it("contrato não inventa família a partir de tipo inválido", () => {
+    expect(platformCatalogPageSchema.safeParse({ items: [{ ...product, tipo: "quimico" }], has_more: false }).success).toBe(false);
+    expect(platformCatalogPageSchema.safeParse({ items: [{ ...product, tipo: null }], has_more: false }).success).toBe(true);
+  });
+  it("perfil com mesmo usuário mas identidade de perfil nova não retém dados", async () => {
+    const view = setup(); await screen.findByText(product.nome);
+    mocks.request.mockImplementation(() => new Promise(() => {}));
+    mocks.actor = { ...actor(), profile: { id: "novo-perfil", user_id: "actor-a", ativo: true, senha_provisoria: false } };
+    view.rerender(); expect(screen.queryByText(product.nome)).toBeNull();
+    await waitFor(() => expect(mocks.request).toHaveBeenCalledTimes(2));
+  });
+  it("retorno da paginação usa offset anterior validado", async () => {
+    mocks.request.mockResolvedValue(page([product], true));
+    setup(); await screen.findByText("Produto sem preço");
+    fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 50 }));
+    await screen.findByText(product.nome);
+    fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 0 }));
   });
   it("distingue vazio de erro", async () => {
     mocks.request.mockResolvedValue(page([])); setup();
