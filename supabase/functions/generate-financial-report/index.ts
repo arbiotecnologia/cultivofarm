@@ -23,34 +23,60 @@ const RPC_MAP: Record<string, string> = {
   dre: "get_financial_dre_summary",
 };
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+function hasTenantArgument(value: Record<string, unknown>): boolean {
+  return Object.prototype.hasOwnProperty.call(value, "organization_id") ||
+    Object.prototype.hasOwnProperty.call(value, "tenant_id");
+}
+
+function isBody(value: unknown): value is Body {
+  return isObject(value) && !hasTenantArgument(value) &&
+    typeof value.report_type === "string" && Object.prototype.hasOwnProperty.call(RPC_MAP, value.report_type) &&
+    (value.format === "PDF" || value.format === "XLSX" || value.format === "CSV") &&
+    isObject(value.filters) && !hasTenantArgument(value.filters) &&
+    (value.title === undefined || (typeof value.title === "string" && value.title.length <= 255));
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
   if (req.method === "OPTIONS") return handlePreflight(req);
   const corsHeaders = corsHeadersFor(origin);
+  const respond = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), {
+    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
   if (origin && !isTrustedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers: corsHeaders });
+    return respond({ error: "origin_not_allowed" }, 403);
   }
+  if (req.method !== "POST") return respond({ error: "method_not_allowed" }, 405);
+  let body: unknown;
+  try { body = await req.json(); } catch { return respond({ error: "invalid_request" }, 400); }
+  if (!isBody(body)) return respond({ error: "invalid_request" }, 400);
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
+    const url = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (url !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !anonKey) {
+      return respond({ error: "financial_report_unavailable" }, 500);
+    }
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      url,
+      anonKey,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    if (authError || !userData?.user?.id) {
+      return respond({ error: "Unauthorized" }, 401);
     }
 
     const { data: organizationId, error: organizationError } = await supabase.rpc("h15_actor_organization");
-    if (organizationError || !organizationId) {
-      return new Response(JSON.stringify({ error: "tenant_context_required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (organizationError || typeof organizationId !== "string" || !organizationId.trim()) {
+      return respond({ error: "tenant_context_required" }, 403);
     }
 
-    const body = (await req.json()) as Body;
     const rpcName = RPC_MAP[body.report_type];
-    if (!rpcName) throw new Error(`Tipo de relatório inválido: ${body.report_type}`);
 
     // Call the RPC with filters as params
     const { data, error } = await supabase.rpc(rpcName, body.filters as never);
@@ -111,17 +137,25 @@ Deno.serve(async (req) => {
     const { error: upErr } = await supabase.storage.from("financial-reports").upload(path, fileBytes, { contentType, upsert: true });
     if (upErr) throw upErr;
 
-    await supabase.rpc("register_financial_report_export", {
+    // Keep the signed URL private in memory until the history write is confirmed.
+    // Failure may leave a private orphan; never delete automatically or relax grants.
+    const { data: signed, error: signError } = await supabase.storage.from("financial-reports").createSignedUrl(path, 60 * 60);
+    if (signError || typeof signed?.signedUrl !== "string" || !signed.signedUrl.trim()) {
+      throw new Error("financial_report_unavailable");
+    }
+
+    const { data: exportId, error: registerError } = await supabase.rpc("register_financial_report_export", {
       p_report_type: body.report_type,
       p_report_title: title,
-      p_filters: body.filters as any,
+      p_filters: body.filters,
       p_file_format: body.format,
       p_storage_path: path,
       p_status: "SUCCESS",
       p_error_message: null,
     });
-
-    const { data: signed } = await supabase.storage.from("financial-reports").createSignedUrl(path, 60 * 60);
+    if (registerError || typeof exportId !== "string" || !exportId.trim()) {
+      throw new Error("financial_report_unavailable");
+    }
 
     return new Response(JSON.stringify({ url: signed?.signedUrl, path, row_count: rows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
