@@ -12,9 +12,9 @@ Estado: planejamento; nenhuma nova aba agrícola publicada. Plano anterior revog
 - Preservar Todos os produtos e Pendentes de classificação; reutilizar /base-tecnica, aliases, ProdutosTab, cadastro, catálogo técnico e IDs/SKUs/saldos únicos.
 
 ## Regras e detalhes técnicos
-Família, classe e finalidade são eixos distintos, com dupla função avaliada sem duplicar produtos. Não sobrecarregar produtos.tipo, inferir natureza por nome ou classificar legados automaticamente. Novos nomes de campos/tabelas apenas após verificar estruturas existentes. Classificação pendente/revisada, autoria/data/motivo e unidade comercial explícita; opcionais no legado, obrigatórios no fluxo novo revisado.
+Família e classes são eixos distintos; finalidade futura não cria coluna vazia agora, com dupla função avaliada sem duplicar produtos. Não sobrecarregar produtos.tipo, inferir natureza por nome ou classificar legados automaticamente. Novos nomes de campos/tabelas apenas após verificar estruturas existentes. Classificação pendente/revisada, autoria/data/motivo e unidade comercial explícita; opcionais no legado, obrigatórios no fluxo novo revisado.
 Unidade/formulação, não família, orientam cálculos; sólidos biológicos/químicos também existem. Conversões explícitas compatíveis com a dimensão, sem kg→L implícito nem preçoL aplicado a kg/saco. Preservar snapshots históricos e preço canônico. Canal incompatível permanece bloqueado até aceite independente.
-Escrita global somente Platform Superadmin validado no servidor. Preservar RLS, guards, entitlements, vínculos, cache por identidade/tenant/escopo/filtros e portais técnicos sem preços indevidos. Supabase exclusivo swzpzcwiasxmjutrmvkm; nenhum uso de Cloud/outros refs.
+Escrita global somente ator ativo/ready e Platform Superadmin validados no servidor. Preservar RLS, guards, entitlements, vínculos, cache por identidade/tenant/escopo/filtros e portais técnicos sem preços indevidos. Supabase exclusivo swzpzcwiasxmjutrmvkm; nenhum uso de Cloud/outros refs.
 
 ## Fases A–F futuras
 A. Concluída localmente: inventário/contrato em docs/auditorias/catalogo-agricola-fase-a-contrato.md e candidato NÃO aplicado scripts/rbac-audit/proposed-catalog-classification.sql; assertions rollback para revisão Codex, sem prova runtime.
@@ -30,3 +30,7 @@ Rollback desliga abas/canais e retorna interface anterior preservando dados/clas
 
 ## Limites desta solicitação
 Continuidade 03:08 UTC autorizou a Fase A: investigação local, contrato e SQL candidato NÃO aplicado. Nenhum DDL remoto/código funcional/grant aplicado/AGENTS/dependência/gate/publicação; fases B–F não iniciadas. Não chamar plan.show; não reutilizar aprovações antigas. Inventário integral/ACL/RLS atuais/HTTP/JWT/unidades dos canais permanecem UNVERIFIED. Financeiro amplo permanece aberto; fechamento externo 4717ff86 no H6/roadmap não é certificação global. A implementação depende de solicitações focais posteriores.
+
+## Delta de revisão 10/10/2026 03:17 UTC
+Base eebdab69ba03ee0eb30fab7ee26936fbde0b0ece. B1 aditivo separado de B2 não executável/não promovido; tipo NOT NULL preservado em B1. Legado classificado preserva ativo/canais; revisão não muda autoria por campos alheios. numeric(18,6) arredonda antes do trigger. Fonte/exclusão/revínculo e consumidores nullable seguem bloqueios. admin-catalogo não existe como endpoint.
+P1 externo Codex já contido por 20261010031113, SQL exato arquivado sem reaplicar; quatro INSERT diretos negados com claims, positivo owner/trigger, não HTTP; rollback, 0 fichas/logs teste. Inventário externo9produtos/26FKs/19colunas/0fichas/0fontes. Advisors15INFO/2+366+1WARN sem PASS global. Rollback não restaura escrita livre. Detalhes e riscos no contrato e plano17seções; nenhum DDL remoto/alteração funcional/publicação nesta revisão.

@@ -11,6 +11,7 @@ Evolução do catálogo existente em /base-tecnica, preservando aliases, Produto
 Organizar navegação, classificação, fichas e unidades sem duplicar produtos nem alterar documentos históricos.
 
 ## 3. Diagnóstico atual
+Delta externo Codex 03:17 UTC: 9 produtos, 26 FKs, 19 colunas, 0 fichas/0 fontes. Não consulta própria; inventário integral e consumidor nullable ainda pendentes. B1 mantém tipo NOT NULL; B2 está em arquivo separado sem DDL ativo, não promovido.
 A inspeção encontrou produtos.tipo obrigatório (inseticida, fungicida, solo, inoculante, solubilizador), campos dose_ml_ha/valor_litro_brl e composição em volume. Isso não distingue natureza biológica/química e não atende todas as unidades de produtos sólidos e adubos. Consumidores incluem Protocolos.tsx, ProdutosTab.tsx, useCatalogoUnificado.ts, usePartnerCatalog.ts, usePartnerCatalogTecnico.ts e NovoPedido.tsx. Este último contém pressupostos de litro/dose100mL. A auditoria de todos os consumidores ainda não terminou.
 
 **Inventário útil preservado, não aprovação do plano removido:**
@@ -22,7 +23,7 @@ A inspeção encontrou produtos.tipo obrigatório (inseticida, fungicida, solo, 
 **UNVERIFIED:** paridade atual de schema/RPCs/grants/RLS no servidor, inventário integral de consumidores incluindo localização/contrato completo de NovoPedido.tsx, comportamento HTTP/JWT dos canais agrícolas e compatibilidade de todas as unidades. Apontamentos do inventário estático anterior e evidência externa não equivalem a nova auditoria funcional, nem confirmam segurança viva. Confirmar o ref exclusivo `swzpzcwiasxmjutrmvkm` antes de qualquer operação de banco autorizada; Cloud/outros refs proibidos.
 
 ## 4. Estrutura de dados
-Reutilizar produtos e seu ID. Modelar separadamente família (biológico/químico/fertilizante-adubo), classe agronômica e finalidade de uso, com vocabulários controlados. Avaliar associação de múltiplas classes/finalidades para produtos de dupla função. Nomes de novos campos/tabelas só serão fechados após verificar estruturas existentes.
+Reutilizar produtos e seu ID. Modelar separadamente família (biológico/químico/fertilizante-adubo) e classes multivaloradas controladas em produtos. Finalidade continua conceito futuro, sem coluna vazia/campo obrigatório nesta implantação. Contrato concreto e deltas em catalogo-agricola-fase-a-contrato.md.
 Adicionar estado de classificação (pendente/revisado), autoria/data/motivo e unidade comercial explícita com precisão/conversões compatíveis. Não substituir enum tipo_produto nem preencher classificação por nome. Legados permanecem íntegros até revisão. Novos campos inicialmente opcionais para legado; obrigatórios no fluxo revisado de novos cadastros.
 
 ## 5. Regras de negócio
@@ -38,12 +39,12 @@ Dentro de Produtos/Catálogo, três abas irmãs:
 - Químicos: subabas Todos, Herbicidas, Fungicidas, Inseticidas.
 - Fertilizantes / Adubos: filtros por classificação/formulação, sem inventar taxonomia antes do inventário.
 Manter acesso Todos os produtos e fila administrativa Pendentes de classificação para que legados não desapareçam.
-Fluxo cadastro: identidade → família/classes/finalidades → apresentação/unidade → ficha técnica → revisão → liberação de canais. Reutilizar formulário e cadastro existentes.
+Fluxo cadastro: identidade → família/classes → apresentação/unidade → ficha técnica → revisão → liberação de canais. Reutilizar formulário e cadastro existentes.
 Produtos, Microrganismos, Catálogo Técnico, Culturas e Problemas continuam agrupamentos existentes; evitar oito ou mais abas principais amontoadas no mesmo nível.
 
 ## 7. Permissões e RLS
-Preservar escrita global por Platform Superadmin validado no servidor; tenant admin não passa a editar catálogo global. Consultor, parceiro e produtor recebem somente conteúdo permitido por vínculos, aprovação, ativo e canal. Verificar regras atuais antes de alterar qualquer gate.
-Validar combinação classificação/unidade no servidor, inclusive RPCs e chamadas diretas. Cache deve conter identidade/tenant/escopo/família/finalidade/filtros relevantes; troca de contexto invalida resultados.
+Preservar escrita global por ator ativo/ready e Platform Superadmin validados no servidor; tenant admin não passa a editar catálogo global. Consultor, parceiro e produtor recebem somente conteúdo permitido por vínculos, aprovação, ativo e canal. Verificar regras atuais antes de alterar qualquer gate.
+Validar combinação classificação/unidade no servidor, inclusive RPCs e chamadas diretas. Cache deve conter identidade/tenant/escopo/família/classes/filtros relevantes; troca de contexto invalida resultados.
 Teste obrigatório com AR e FSF, e roles reais disponíveis. Claims SQL não equivalem a login real.
 
 ## 8. Impactos no sistema existente
@@ -56,6 +57,7 @@ Dependências locais a confirmar na fase A: `fn_resolve_commercial_price`, `fn_r
 Filtrar e paginar no servidor; buscar apenas colunas necessárias. Índices orientados por consultas reais (família, ativo, canal e associações), avaliados com plano de execução. Não fazer uma carga completa por aba nem gerar N+1 de fichas.
 
 ## 10. Auditoria e histórico
+P1 externo: Consultor inseria audit com usuario_id Admin. Codex já aplicou 20261010031113 catalog_technical_audit_server_writes_only no canônico; SQL exato arquivado em scripts/rbac-audit/applied-20261010031113-catalog-technical-audit-server-writes-only.sql, NÃO REAPLICADO. SELECT/histórico preservados; produção de logs só servidor. Autoria de revisão muda somente no recorte classificação, não por preço/nome/updated_at.
 Registrar anterior/novo, autor, data, motivo, origem e produto para classificação/unidade/liberação. Não recalcular preços, quantidades ou conversões de documentos antigos. Relatório de migração com contagens, ambiguidades e pendências; nenhuma classificação automática ambígua.
 
 ## 11. UI/UX mobile e desktop
@@ -67,6 +69,7 @@ Tratar carregando, vazio, erro e sem permissão. Ausência de itens é estado re
 Adaptar o contrato de unidades antes de liberar famílias em pedidos/estoque/fiscal; preservar RPCs seguras e isolamento de preço do catálogo técnico. Não ligar emissão fiscal, mensageria ou cobrança durante testes de navegação/classificação.
 
 ## 13. Riscos e prevenção
+P1 audit direto externo contido, sem PASS global. P1 potencial: ator inativo, fonte excluída/revinculada e abertura de canal incompatível. B2/nullable risco alto bloqueado; numeric(18,6) arredonda antes do trigger, não garante rejeitar >6 casas. Legado ativo pode ser classificado preservando flags; sem desativação compulsória. Fence/versionamento de fonte é pendência real, 0 fontes não permite fabricar revisão.
 Principais riscos: classificar biológico como químico; duplicar cadastro ou estoque entre classificações; converter sólido para líquido; expor preço interno; ocultar legado; alterar cálculo histórico.
 Rollback por fase: desligar exposição das novas abas/canais preservando classificações e histórico; retornar interface anterior sem DROP de dados. Migrações aditivas e retrocompatíveis; nenhuma reversão deve restaurar falha de autorização já corrigida.
 
@@ -75,6 +78,8 @@ Três abas distintas; biofungicidas e fungicidas nunca misturados por inferênci
 PASS de navegação/classificação não significa PASS de pedidos/estoque/faturamento. Cada canal tem decisão independente.
 
 ## 15. Plano de testes
+EXTERNO Codex: 4 INSERT diretos negados com claims AdminAR/AdminFSF/ConsultorAR/Superadmin. Trigger de ficha produziu log sob owner/servidor, não UI/HTTP; primeiro positivo falhou sem ficha, segundo rascunho vazio transacional. Tudo rollback, 0 fichas/0 logs de teste depois. Advisors:15INFO RLS sem política,2WARN defineranon,366WARN definerauthenticated,1WARN proteção senha. Não PASS global nem testes próprios.
+Futuros: B1 BEGIN/ROLLBACK, B2 não executar; testar ativo/inativo/readiness, flags de legado preservadas, autoria alheia estável, precisão armazenada e fonte/revínculo/exclusão. Rollback parte do baseline contido, nunca restaura escrita livre.
 Banco: constraints, classificações incompatíveis, alteração direta/RPC, concorrência e histórico.
 Interface: abas/subabas/busca/paginação, vazio/erro, URL direta, voltar, desktop/mobile, leitor de tela/teclado.
 Segurança: roles reais, dois tenants, identificadores forjados, cache após troca de identidade e gates de plano.
@@ -85,7 +90,7 @@ Testes de schema devem usar validação apropriada; regras temporais dependentes
 
 ## 16. Fases de implementação
 A — Inventário e contratos: fechar mapa de campos/RPCs/unidades, classificação existente e canais suportados. Sem alteração comercial.
-B — Dados e validação: migração aditiva, regras server-side, auditoria e revisão controlada dos legados; sem liberar venda nova.
+B — Dados e validação: B1 aditivo candidato mantém NOT NULL; B2 separado não executável/não promovido aguarda consumidores nullable.  regras server-side, auditoria e revisão controlada dos legados; sem liberar venda nova.
 C — Navegação e cadastro: três abas, subabas, filtros e campos condicionais no fluxo existente, acessibilidade e testes.
 D — Fichas e canais de consulta: catálogo técnico, mobile e portais conforme permissões; preservar preços restritos.
 E — Operação por família/unidade: pedidos → estoque → entrega → financeiro/fiscal, cada recorte com aceite próprio; liberar somente fluxos compatíveis com a família e unidade homologadas.
@@ -97,7 +102,7 @@ A auditoria financeira ampla permanece aberta. Planejamento agrícola pode avan�
 ## 17. Prompt final pronto para Lovable
 Evolua o catálogo existente em fases A–F deste plano. Primeiro audite schema/RPCs/componentes/rotas, classificações e contratos de unidades; entregue inventário e delta antes de DDL. Reutilize produtos, IDs, cadastro e catálogo técnico, sem fluxo/tabela paralela de produtos.
 Implemente somente três abas irmãs dentro do catálogo: Biológicos, Químicos e Fertilizantes/Adubos. Biológicos deve ter Biofungicidas/Bioinseticidas e demais classes confirmadas; Químicos deve ter Herbicidas/Fungicidas/Inseticidas. Preserve Todos e pendentes de classificação.
-Não sobrecarregue produtos.tipo nem classifique legado por nome. Use migrações aditivas, validação server-side, auditoria e rollback sem perda. Considere unidades sólidas e líquidas, sem conversões implícitas ou extrapolação de dose100mL. Preserve RLS, guards, entitlements, canais e snapshots; escrita global somente pela plataforma.
+Não sobrecarregue produtos.tipo nem classifique legado por nome. Use B1 aditivo com B2 bloqueado separado, validação de ator ativo server-side, auditoria e rollback sem perda. Considere unidades sólidas e líquidas, sem conversões implícitas ou extrapolação de dose100mL. Preserve RLS, guards, entitlements, canais e snapshots; escrita global somente pela plataforma.
 Entregue cada fase com arquivos/migrations/RPCs/RLS alterados, testes focados/typecheck/lint/scanner/build, evidências por perfil/tenant, riscos, rollback e decisão PASS/FAIL/UNVERIFIED. Não invente dados técnicos nem libere canais transacionais sem aceite específico.
 
 Este prompt é material para uma solicitação futura, não instrução de implementação neste job. O fechamento financeiro externo está exclusivamente registrado no H6/roadmap; não certifica catálogo agrícola ou Financeiro global.

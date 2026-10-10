@@ -2,13 +2,15 @@
 -- Destino exclusivo: swzpzcwiasxmjutrmvkm, validado externamente ANTES de executar.
 -- Nenhuma nova tabela/RPC/GRANT/policy; nenhum backfill, seed ou canal liberado.
 -- Requer pg_get_functiondef/ACL/RLS/triggers atuais e contrato audit confirmado.
--- B1: preparar classificação; B2 nullable condicionado dentro da mesma revisão abaixo.
+-- B1 ADITIVO SOMENTE. B2 separado e NÃO EXECUTÁVEL/NÃO PROMOVIDO.
+-- Promoção bloqueada: ator ativo/helper, fonte/exclusão, triggers e ACL vivos.
 BEGIN;
 DO $preflight$
 BEGIN
   IF to_regclass('public.produtos') IS NULL
      OR to_regclass('public.catalog_technical_audit_logs') IS NULL
-     OR to_regprocedure('public.is_platform_superadmin(uuid)') IS NULL THEN
+     OR to_regprocedure('public.is_platform_superadmin(uuid)') IS NULL
+     OR to_regprocedure('public.has_role(uuid,public.app_role)') IS NULL THEN
     RAISE EXCEPTION 'catalog_preflight_missing';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public'
@@ -22,18 +24,15 @@ END $preflight$;
 ALTER TABLE public.produtos
   ADD COLUMN IF NOT EXISTS familia_catalogo text,
   ADD COLUMN IF NOT EXISTS classes_catalogo text[],
-  ADD COLUMN IF NOT EXISTS finalidades_catalogo text[],
   ADD COLUMN IF NOT EXISTS classificacao_estado text,
   ADD COLUMN IF NOT EXISTS classificacao_motivo text,
   ADD COLUMN IF NOT EXISTS classificacao_fonte_id uuid,
   ADD COLUMN IF NOT EXISTS classificacao_revisada_por uuid,
   ADD COLUMN IF NOT EXISTS classificacao_revisada_em timestamptz,
   ADD COLUMN IF NOT EXISTS unidade_comercial text,
+  -- numeric(18,6) arredonda ANTES do trigger; não rejeita casas extras.
   ADD COLUMN IF NOT EXISTS conteudo_apresentacao numeric(18,6),
   ADD COLUMN IF NOT EXISTS unidade_conteudo text;
--- B2 compatibilidade EXPLÍCITA: enum preservado, nenhum dado antigo reescrito.
--- Promover este trecho somente após revisão Codex dos consumidores nullable.
-ALTER TABLE public.produtos ALTER COLUMN tipo DROP NOT NULL;
 -- Sem defaults: legado NULL = pendente, não biológico implícito.
 -- Sem FK especulativa: fonte deve existir em catalog_technical_sources e corresponder
 -- a produto ou ficha do MESMO produto; validação abaixo.
@@ -46,7 +45,7 @@ DECLARE
 BEGIN
   -- Só cerca novas escritas classificadas; legacy writes continuam sob fences existentes.
   IF NEW.familia_catalogo IS NULL AND NEW.classes_catalogo IS NULL
-    AND NEW.finalidades_catalogo IS NULL AND NEW.classificacao_estado IS NULL
+    AND NEW.classificacao_estado IS NULL
     AND NEW.unidade_comercial IS NULL AND NEW.unidade_conteudo IS NULL
     AND NEW.conteudo_apresentacao IS NULL AND NEW.classificacao_fonte_id IS NULL
     AND NEW.classificacao_motivo IS NULL AND NEW.classificacao_revisada_por IS NULL
@@ -59,16 +58,19 @@ BEGIN
     END IF;
     RETURN NEW;
   END IF;
-  IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
+  -- has_role canônico inclui profiles.ativo e readiness/fencing (SQL local 20261007155703).
+  -- Definição/ACL atuais devem ser comprovadas antes da promoção; sem fallback.
+  IF auth.uid() IS NULL
+    OR public.has_role(auth.uid(),'superadmin'::public.app_role) IS DISTINCT FROM true
+    OR public.is_platform_superadmin(auth.uid()) IS DISTINCT FROM true THEN
     RAISE EXCEPTION 'catalog_platform_required' USING ERRCODE='42501';
   END IF;
   IF TG_OP='UPDATE' AND (NEW.tipo IS DISTINCT FROM OLD.tipo OR NEW.codigo IS DISTINCT FROM OLD.codigo) THEN
     RAISE EXCEPTION 'catalog_legacy_identity_immutable';
   END IF;
-  -- Tipo ausente é ausência real, não valor fictício. set_codigo_produto existente
-  -- aceita código manual; sem código o próprio trigger anterior nega NULL tipo.
-  IF NEW.tipo IS NULL AND (NEW.codigo IS NULL OR btrim(NEW.codigo)='') THEN
-    RAISE EXCEPTION 'catalog_reviewed_manual_code_required';
+  -- B1 mantém NOT NULL, sem caminho nullable ou tipo fictício.
+  IF NEW.tipo IS NULL THEN
+    RAISE EXCEPTION 'catalog_b1_type_required';
   END IF;
   IF NEW.familia_catalogo IS NULL OR NEW.familia_catalogo NOT IN
     ('biologico','quimico','fertilizante_adubo')
@@ -88,10 +90,6 @@ BEGIN
     OR (NEW.familia_catalogo <> 'fertilizante_adubo' AND cardinality(NEW.classes_catalogo)=0) THEN
     RAISE EXCEPTION 'catalog_classes_invalid';
   END IF;
-  -- Sem vocabulário de finalidade confirmado: apenas [] agora; ampliar após inventário.
-  IF NEW.finalidades_catalogo IS NULL OR cardinality(NEW.finalidades_catalogo)<>0 THEN
-    RAISE EXCEPTION 'catalog_purpose_not_reviewed';
-  END IF;
   IF NEW.unidade_comercial IS NULL OR NEW.unidade_comercial NOT IN ('L','mL','kg','g','un')
     OR NEW.unidade_conteudo IS NULL OR NEW.unidade_conteudo NOT IN ('L','mL','kg','g','un')
     OR NEW.conteudo_apresentacao IS NULL OR NEW.conteudo_apresentacao<=0
@@ -106,8 +104,16 @@ BEGIN
        NEW.conteudo_apresentacao<>trunc(NEW.conteudo_apresentacao)) THEN
     RAISE EXCEPTION 'catalog_dimension_invalid';
   END IF;
-  IF NEW.b2b_enabled IS DISTINCT FROM false OR NEW.ativo IS DISTINCT FROM false THEN
-    RAISE EXCEPTION 'catalog_channels_not_homologated';
+  -- Inserts fechados; UPDATE legado preserva canais inclusive ativo=true.
+  -- Classificação não exige desativação nem homologa canal novo.
+  IF TG_OP='INSERT' THEN
+    IF NEW.b2b_enabled IS DISTINCT FROM false OR NEW.ativo IS DISTINCT FROM false THEN
+      RAISE EXCEPTION 'catalog_channels_not_homologated';
+    END IF;
+  ELSE
+    IF NEW.b2b_enabled IS DISTINCT FROM OLD.b2b_enabled OR NEW.ativo IS DISTINCT FROM OLD.ativo THEN
+      RAISE EXCEPTION 'catalog_channels_immutable_in_classification';
+    END IF;
   END IF;
   IF NEW.unidade_conteudo NOT IN ('L','mL') AND
     (NEW.dose_ml_ha IS NOT NULL OR NEW.valor_litro_brl IS NOT NULL
@@ -127,10 +133,12 @@ BEGIN
   IF (NEW.classificacao_estado='revisado' OR NEW.classificacao_fonte_id IS NOT NULL) AND NOT source_ok THEN
     RAISE EXCEPTION 'catalog_review_source_required';
   END IF;
-  -- Metadados de autoria nunca aceitos do payload.
+  -- Autoria só muda no recorte classificatório, nunca por nome/preço/updated_at.
   IF NEW.classificacao_estado='revisado' THEN
-    IF TG_OP='INSERT' OR to_jsonb(NEW)-ARRAY['updated_at','classificacao_revisada_por','classificacao_revisada_em']
-      IS DISTINCT FROM to_jsonb(OLD)-ARRAY['updated_at','classificacao_revisada_por','classificacao_revisada_em'] THEN
+    IF TG_OP='INSERT' OR ROW(NEW.familia_catalogo,NEW.classes_catalogo,NEW.classificacao_estado,NEW.classificacao_motivo,
+        NEW.classificacao_fonte_id,NEW.unidade_comercial,NEW.conteudo_apresentacao,NEW.unidade_conteudo)
+      IS DISTINCT FROM ROW(OLD.familia_catalogo,OLD.classes_catalogo,OLD.classificacao_estado,OLD.classificacao_motivo,
+        OLD.classificacao_fonte_id,OLD.unidade_comercial,OLD.conteudo_apresentacao,OLD.unidade_conteudo) THEN
       NEW.classificacao_revisada_por:=auth.uid(); NEW.classificacao_revisada_em:=pg_catalog.now();
     ELSE
       NEW.classificacao_revisada_por:=OLD.classificacao_revisada_por;
@@ -152,7 +160,7 @@ FOR EACH ROW EXECUTE FUNCTION public.catalog_classification_guard_candidate();
 CREATE OR REPLACE FUNCTION public.catalog_classification_audit_candidate()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $fn$
 DECLARE old_data jsonb; new_data jsonb;
-  keys text[] := ARRAY['familia_catalogo','classes_catalogo','finalidades_catalogo',
+  keys text[] := ARRAY['familia_catalogo','classes_catalogo',
     'classificacao_estado','classificacao_motivo','classificacao_fonte_id',
     'classificacao_revisada_por','classificacao_revisada_em','unidade_comercial',
     'conteudo_apresentacao','unidade_conteudo'];
@@ -164,7 +172,9 @@ BEGIN
   IF (TG_OP='INSERT' AND NEW.familia_catalogo IS NULL) OR new_data IS NOT DISTINCT FROM old_data THEN
     RETURN NEW;
   END IF;
-  IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
+  IF auth.uid() IS NULL
+    OR public.has_role(auth.uid(),'superadmin'::public.app_role) IS DISTINCT FROM true
+    OR public.is_platform_superadmin(auth.uid()) IS DISTINCT FROM true THEN
     RAISE EXCEPTION 'catalog_platform_required' USING ERRCODE='42501';
   END IF;
   INSERT INTO public.catalog_technical_audit_logs
@@ -177,11 +187,10 @@ DROP TRIGGER IF EXISTS trg_catalog_classification_audit_candidate ON public.prod
 CREATE TRIGGER trg_catalog_classification_audit_candidate AFTER INSERT OR UPDATE ON public.produtos
 FOR EACH ROW EXECUTE FUNCTION public.catalog_classification_audit_candidate();
 -- Sem DROP de fences/auditorias existentes. Confirmar ledger immutable/ACL antes promoção.
-ROLLBACK; -- arquivo de REVISÃO: nada persiste mesmo se rodado literalmente.
+ROLLBACK; -- revisão transacional, NÃO autorização: não executar neste job.
 
--- Promoção B1 pode excluir DROP NOT NULL: então herbicida/adubo sem tipo representável
--- permanece impossível, não preencher 'solo'. B2 deste candidato é implementável
--- somente com guard instalado E consumidores nullable revisados, código manual único
--- sob índice existente comprovado no preflight externo. Não há extensão automática
--- de prefixo/gerador neste recorte. Nenhuma autorização para cadastro runtime agora.
--- Não reaproveitar wipe como upsert. Cadastro permanece saveProdutoComCompensacao/admin-catalogo.
+-- B1 preserva NOT NULL físico, enum e valores de tipo. Novos produtos sem tipo
+-- representável NÃO podem ser cadastrados em B1; nunca preencher solo artificial.
+-- B2: ver proposed-catalog-classification-b2-not-executable.sql (comentários apenas).
+-- Cadastro: /base-tecnica?tab=produtos, ProdutosTab/saveProdutoComCompensacao.
+-- Nenhum endpoint admin-catalogo existe. Não reaproveitar wipe como upsert.
