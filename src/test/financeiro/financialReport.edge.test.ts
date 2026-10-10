@@ -96,6 +96,14 @@ describe("generate-financial-report — handler real isolado", () => {
   it("JSON malformado retorna400 sem efeitos", async () => {
     const s = setup(); await failureResponse(await s.invoke(valid, "POST", undefined, "{"), 400); expect(s.rpc).not.toHaveBeenCalled();
   });
+  it.each([undefined, "https://wrong-project.invalid"])("fail-closed se ref canônico ausente/divergente %s", async (url) => {
+    const s = setup(); s.env.mockImplementation((name: string) => name === "SUPABASE_URL" ? url : "mock-public-key");
+    await failureResponse(await s.invoke(valid), 500); expect(s.createClient).not.toHaveBeenCalled(); expect(s.rpc).not.toHaveBeenCalled();
+  });
+  it("sem chave anon não cria cliente ou efeitos", async () => {
+    const s = setup(); s.env.mockImplementation((name: string) => name === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : undefined);
+    await failureResponse(await s.invoke(valid), 500); expect(s.createClient).not.toHaveBeenCalled();
+  });
   it("preserva CORS confiável e bloqueia origem estranha/preflight", async () => {
     const s = setup(); const preflight = await s.invoke({}, "OPTIONS"); expect(preflight.status).toBe(204);
     expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe("https://app.cultivofarm.com.br");
