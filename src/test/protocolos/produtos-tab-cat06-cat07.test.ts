@@ -213,6 +213,27 @@ describe("confirmação de linhas e compensação", () => {
       ? { data: [{ id: "f2", produto_id: "outro" }], error: null } : baseline(c));
     expect(out.status).toBe("error");
   });
+  it("restauração da composição com zero linhas é crítica", async () => {
+    const { out } = await run(c => c.op === "insert" ? { data: [], error: null } : baseline(c));
+    expect(out.status).toBe("critical");
+  });
+  it("UPDATE com compensação ID divergente é crítico", async () => {
+    const { out } = await run(c => {
+      if (c.op === "update" && c.payload === ANTERIOR) return { data: [{ id: "outro" }], error: null };
+      if (c.op === "insert") return { data: [], error: null };
+      return baseline(c);
+    });
+    expect(out.status).toBe("critical");
+  });
+  it("composição vazia aceita DELETE de zero linhas quando snapshot também vazio", async () => {
+    const { client } = makeClient(c => {
+      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
+      if (c.table === "produtos") return { data: [{ id: "p1" }], error: null };
+      return { data: [], error: null };
+    });
+    expect(await saveProdutoComCompensacao({ client, produtoId: "p1", payload: PAYLOAD, buildFormulacoes: () => [] }))
+      .toEqual({ status: "ok", produtoId: "p1" });
+  });
   it("DELETE compensatório do novo produto zero linhas é crítico", async () => {
     const { out } = await run(c => {
       if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
