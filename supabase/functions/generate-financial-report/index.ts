@@ -27,12 +27,26 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 function hasTenantArgument(value: Record<string, unknown>): boolean {
-  return Object.prototype.hasOwnProperty.call(value, "organization_id") ||
-    Object.prototype.hasOwnProperty.call(value, "tenant_id");
+  // Iterative and fail-closed: never skip an uninspected subtree on budget exhaustion.
+  const pending: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
+  let remaining = 10000;
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current) break;
+    if (--remaining < 0 || current.depth > 64) return true;
+    if (typeof current.value !== "object" || current.value === null) continue;
+    if (Object.prototype.hasOwnProperty.call(current.value, "organization_id") ||
+      Object.prototype.hasOwnProperty.call(current.value, "tenant_id")) return true;
+    const children = Object.values(current.value);
+    if (children.length + pending.length > remaining) return true;
+    for (const child of children) pending.push({ value: child, depth: current.depth + 1 });
+  }
+  return false;
 }
 
 function isBody(value: unknown): value is Body {
-  return isObject(value) && !hasTenantArgument(value) &&
+  return isObject(value) && !Object.prototype.hasOwnProperty.call(value, "organization_id") &&
+    !Object.prototype.hasOwnProperty.call(value, "tenant_id") &&
     typeof value.report_type === "string" && Object.prototype.hasOwnProperty.call(RPC_MAP, value.report_type) &&
     (value.format === "PDF" || value.format === "XLSX" || value.format === "CSV") &&
     isObject(value.filters) && !hasTenantArgument(value.filters) &&
@@ -134,8 +148,8 @@ Deno.serve(async (req) => {
     }
 
     const path = `${organizationId}/${userData.user.id}/${filename}`;
-    const { error: upErr } = await supabase.storage.from("financial-reports").upload(path, fileBytes, { contentType, upsert: true });
-    if (upErr) throw upErr;
+    const { data: uploaded, error: upErr } = await supabase.storage.from("financial-reports").upload(path, fileBytes, { contentType, upsert: true });
+    if (upErr || uploaded?.path !== path) throw new Error("financial_report_unavailable");
 
     // Keep the signed URL private in memory until the history write is confirmed.
     // Failure may leave a private orphan; never delete automatically or relax grants.

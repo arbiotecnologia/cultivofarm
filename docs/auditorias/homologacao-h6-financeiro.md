@@ -1,5 +1,28 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — revisão focal611af508 antes de deploy — 2026-10-10
+
+**Escopo:** somente `supabase/functions/generate-financial-report/index.ts`, teste existente `src/test/financeiro/financialReport.edge.test.ts`, roadmap e este relatório. Revisão independente aprovou focalmente ordem e saneamento, conforme relato Codex autorizado externamente ao Lovable. Sem frontend/banco/grants/RLS/gates/geradores/AGENTS, service_role, deploy/publicação, Storage real ou alteração do histórico +40/-40.
+
+### Duas lacunas contidas e provas próprias
+
+- Upload confirma **ausência de error E `data.path === path`**. Retorno data ausente, path ausente/divergente ou error (mesmo com path correto) retorna erro seguro500, sem URL/path/log cru, assinatura ou registro. Mocks de sucesso agora devolvem o path efetivamente solicitado.
+- `hasTenantArgument` inspeciona **objetos e arrays aninhados** de filters, inclusive `_filters`/`_scope`, recusando chaves próprias `organization_id`/`tenant_id` em qualquer ramo. Travessia **iterativa**, sem recursão, limitada a **64 níveis e orçamento de10000 valores**; excesso é400 fail-closed antes de Auth/RPC/Storage, sem ignorar subárvore nem apagar campos. Validação top-level permanece explícita; demais contratos não foram alterados.
+- Contratos válidos `_filters`/`_scope`, arrays, valores nulos, texto contendo nome de chave e aninhamento válido profundo são enviados **sem normalização** ao RPC e ao histórico. Testes com objetos/arrays alternados cobrem forja profunda, excesso de profundidade e largura.
+- **Baseline própria antes da alteração funcional:72 testes,15FAIL/57PASS**, log `/tmp/financial-edge-review-baseline.log`; reproduziu as lacunas com o entrypoint real sob SDK/Auth/renderers injetados, sem rede ou efeitos reais. **Final72/72 handler PASS; regressão117/117 PASS (72handler+37ReportShell/mensal+8scope)**, log `/tmp/financial-edge-review-final.log`. Não somar checkpoints repetidos nem baseline Codex.
+- **Lint dois arquivos e diff-check PASS; build automático OK2026-10-10T02:05:01Z**. Typechecks app/node separados, scanner e Deno/Edge check **NOT RUN**; build app não certifica runtime/deploy Edge. PASS mocks não é PASS UI/JWT/RLS/upload/download/assinatura/ledger remoto.
+
+### Evidência externa Codex e precisão sobre tenant
+
+- Harness **baselinev69**, independente: **cinco cenários auditerror/noid/signerror/nourl/formatoEXE retornaram200:5FAIL**, sem efeitos reais. Evidência recebida, não execução do Lovable e distinta das baselines próprias.
+- Catálogo externo: **10RPCs de dados + `register_financial_report_export` todas SECURITY DEFINER, `authenticated EXECUTE=false` e `anon EXECUTE=false`**. Gates deliberados preservados; nenhum grant aberto ou SQL executado nesta rodada.
+- Trigger existente **`guard_tenant_organization_id` preenche organização no INSERT e impede forja**, conforme evidência Codex. A ausência de org explícita nos argumentos do registro **não deve ser classificada como ledger órfão sem tenant**. Isso é distinto do **possível blob privado de Storage sem registro confirmado** após upload e falha subsequente; reconciliação futura explícita/auditada segue pendente, sem exclusão automática.
+- Proveniência de consulta externa: fonte **.md do changelog falhou**; **HTML e documentação Storage consultados** pelo executor conforme relato, não consulta própria nem certificação remota pelo agente.
+
+**Entrega local para revisão, NÃO deploy/publicar.** Ordem upload confirmado→assinatura em memória→registro SUCCESS com ID→URL preservada. Exportação e geradores integrais (PDF truncamento, CSV escaping/formula injection) **NO-GO**; mensal real/Financeiroglobal/B2B/OS/fiscal/Faturamento, Storage/planos e matriz integral continuam pendentes. Rollback seguro mantém canal fechado e contenção substitutiva, sem reabrir falso sucesso/grants ou remover histórico/blobs automaticamente. Nenhuma outra fase iniciada.
+
+---
+
 ## Adendo vigente — contenção local da Edge generate-financial-report — 2026-10-10 02:02 UTC
 
 **Base informada:** `93ee82a7`. **P1 — falso sucesso na exportação:** evidência remota Codex autorizado indica v69 com ANON+caller/getUser/h15org, mas sem verificar erros/resultados de registro/assinatura. `monthly` e `register_financial_report_export` permanecem com `authenticated EXECUTE=false`; **não abrir grants**. Esta rodada leu AGENTS/código e alterou somente handler existente, teste local e documentação; sem frontend, banco/RLS/grants/gates/service_role, deploy/publicação, Storage real ou mutação de fixture. AGENTS SHA256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244` preservado.
