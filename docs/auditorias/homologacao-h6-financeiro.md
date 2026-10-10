@@ -1,6 +1,46 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
-## Adendo documental vigente — datas Financeiro — 2026-10-10 01:29 UTC
+## Adendo documental vigente — relatórios legados/RLS/datas — 2026-10-10 01:36 UTC
+
+**Base e proveniência:** `3c685c397e37a1ddbf2628ca94643ee213bff8f4`. P1, aplicação da migration e retestes foram executados pelo **Codex autorizado externamente ao Lovable**, conforme evidências recebidas; **não pelo humano manualmente nem por este agente Lovable**. Destino informado: Supabase canônico exclusivo `swzpzcwiasxmjutrmvkm`. Apenas SQL fornecido arquivado e roadmap/relatório atualizados nesta rodada; nenhuma execução SQL, alteração remota, frontend, publicação, gate ou fixture pelo agente.
+
+### P1 confirmado externamente — três RPCs legadas bypassavam RLS
+
+Com claims SQL **Admin FSF**, `SELECT accounts_receivable` retornava **zero**, mas:
+
+| Canal legado antes do DDL | Evidência externa recebida |
+|---|---|
+| `fn_fin_aging` / RECEIVABLE | **2 linhas / total R$150** |
+| `fn_fin_dashboard_kpis` | Recebíveis previstos **R$100**, inadimplência **R$150**, pagar vencidas **R$50** |
+| `fn_fin_inadimplencia` | **2 linhas** |
+
+As três RPCs eram **SECURITY DEFINER**, com `authenticated EXECUTE=true`, bypassando RLS segundo a prova externa. Não é somente falha de menu, nem certificação integral de todos os canais.
+
+### Migration já aplicada e arquivamento literal
+
+- **`20261010013431 financial_legacy_reports_rls_civil_dates`**, aplicada pelo Codex autorizado no destino canônico informado. SQL literal arquivado em `scripts/rbac-audit/applied-20261010013431-financial-legacy-reports-rls-civil-dates.sql`; **não reaplicar**.
+- Total **cinco definições**: `fn_fin_aging`, `fn_fin_dashboard_kpis` e `fn_fin_inadimplencia` passam a **SECURITY INVOKER** e substituem `CURRENT_DATE` pelo dia civil São Paulo.
+- `get_financial_dashboard_summary` e `get_top_financial_rankings` já eram INVOKER; somente expressão de data alterada para **`(pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::date`**. O SQL fornecido mantém INVOKER implícito nessas duas definições, sem adicionar cláusula ao arquivo literal.
+- Sem abertura de grants, nova RPC, mudança frontend/gates ou reescrita do histórico **+R$40/-R$40**. O arquivo é evidência documental das definições fornecidas, não execução pelo Lovable.
+
+### Retestes externos — SQL/claims, temporários revertidos
+
+- Pós-DDL **Admin FSF: zero nos canais RPC**; **Financeiro AR: próprio R$100, A vencer, inadimplência R$0, líquido R$0 (+40/-40)**, conforme relato. O status histórico OVERDUE/data10/10 da fixture não foi reescrito; critérios por data civil nos relatórios não constituem mutação do histórico.
+- Teste SQL em **ROLLBACK** criou temporariamente **AR R$37 vencido ontem** e **AP R$23 vencido ontem**, verificando as **cinco RPCs** em fusos de sessão **UTC/Kiritimati/PagoPago**.
+- **PASS relatado em todos**: valores de atrasados **R$37/R$23**, vencimento hoje excluído dos atrasados, FSF zero, Consultor e Superadmin negados. Dados temporários revertidos, nenhum novo dado persistido pelos testes relatados.
+- São provas **SQL com claims**, não novo login/UI, JWT/browser ou auditoria integral. Nenhum desses testes foi reexecutado pelo Lovable.
+
+### Canal mensal bloqueado, pendências e NO-GO
+
+- `get_report_monthly_financial` permanece **SECURITY DEFINER**, mas **`authenticated EXECUTE=false`** pelo gate existente. **NÃO abrir grant** nem corrigir permissão sem auditoria/autorização específica.
+- `ReportShell` invoca esse canal bloqueado: **prévia mensal UNVERIFIED/bloqueada**. `ReportShell.generate` ainda exige auditoria de **cache/troca de identidade e tratamento de erro**; não certificado nem alterado neste recorte.
+- **Outros relatórios/B2B/recorrência/Storage/planos NO-GO**; **Financeiro global/OS/fiscal/Faturamento NO-GO** e **payable UI integral UNVERIFIED** preservados. P2 de datas apenas parcialmente contido nas funções centrais e cinco definições atuais, não encerramento integral nem nova grande fase.
+- Checks externos **TS/typecheck, lint, scanner e build EM CURSO**; sem PASS inventado ou soma de checkpoints anteriores. Aguardar resultados externos e auditorias autorizadas das pendências, sem operação financeira real.
+- **AGENTS e gates preservados**, sem frontend/banco/reaplicação/publicação/fixtures ou alteração do histórico pelo agente.
+
+---
+
+## Adendo documental anterior — datas Financeiro — 2026-10-10 01:29 UTC
 
 **Escopo e proveniência:** referência externa `1a6fa340`. Baseline SQL, aplicação da migration e retestes foram executados pelo **Codex autorizado externamente ao Lovable**, conforme relato recebido; **não pelo humano manualmente nem por este agente Lovable**. Destino informado: Supabase canônico exclusivo `swzpzcwiasxmjutrmvkm`. Esta rodada somente arquiva o SQL literal fornecido e atualiza roadmap/relatório; nenhuma consulta remota, execução/reaplicação de DDL, frontend, publicação ou operação financeira.
 
@@ -22,7 +62,7 @@
 
 ### P2 parcialmente contido e limites
 
-**P2 NÃO totalmente fechado:** contenção relatada somente nas sete funções centrais. **Relatórios, dashboard, recorrência e B2B ainda usam `CURRENT_DATE`**; contratos de outros fusos e consistência integral continuam pendentes de auditoria e autorização específica. A divergência histórica documentada às01:23 não foi apagada nem retroativamente corrigida.
+**P2 NÃO totalmente fechado:** no checkpoint01:29 a contenção relatada cobria somente as sete funções centrais e relatórios/dashboard/recorrência/B2B ainda tinham `CURRENT_DATE`. O adendo01:36 acima amplia focalmente cinco definições de relatórios/dashboard; **outros relatórios, recorrência, B2B, contratos de outros fusos e consistência integral continuam pendentes** de auditoria/autorização específica. A divergência histórica documentada às01:23 não foi apagada nem retroativamente corrigida.
 
 - Checks externos **TS/typecheck, build e scanner EM EXECUÇÃO** no relato atual; nenhum PASS presumido. Checkpoints anteriores permanecem históricos, sem somar suítes repetidas.
 - Nenhum novo teste UI pós-DDL comprovado nesta rodada; PASS focal receivable UI anterior preservado com sua proveniência, **payable UI integral UNVERIFIED**.
