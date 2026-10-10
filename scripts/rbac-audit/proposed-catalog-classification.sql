@@ -2,7 +2,7 @@
 -- Destino exclusivo: swzpzcwiasxmjutrmvkm, validado externamente ANTES de executar.
 -- Nenhuma nova tabela/RPC/GRANT/policy; nenhum backfill, seed ou canal liberado.
 -- Requer pg_get_functiondef/ACL/RLS/triggers atuais e contrato audit confirmado.
--- B1: preparar classificação no produto existente. Não cadastrar tipo não representável.
+-- B1: preparar classificação; B2 nullable condicionado dentro da mesma revisão abaixo.
 BEGIN;
 DO $preflight$
 BEGIN
@@ -31,6 +31,9 @@ ALTER TABLE public.produtos
   ADD COLUMN IF NOT EXISTS unidade_comercial text,
   ADD COLUMN IF NOT EXISTS conteudo_apresentacao numeric(18,6),
   ADD COLUMN IF NOT EXISTS unidade_conteudo text;
+-- B2 compatibilidade EXPLÍCITA: enum preservado, nenhum dado antigo reescrito.
+-- Promover este trecho somente após revisão Codex dos consumidores nullable.
+ALTER TABLE public.produtos ALTER COLUMN tipo DROP NOT NULL;
 -- Sem defaults: legado NULL = pendente, não biológico implícito.
 -- Sem FK especulativa: fonte deve existir em catalog_technical_sources e corresponder
 -- a produto ou ficha do MESMO produto; validação abaixo.
@@ -51,10 +54,21 @@ BEGIN
     IF TG_OP='UPDATE' AND OLD.familia_catalogo IS NOT NULL THEN
       RAISE EXCEPTION 'catalog_classification_cannot_be_erased';
     END IF;
+    IF NEW.tipo IS NULL THEN
+      RAISE EXCEPTION 'catalog_legacy_type_required';
+    END IF;
     RETURN NEW;
   END IF;
   IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
     RAISE EXCEPTION 'catalog_platform_required' USING ERRCODE='42501';
+  END IF;
+  IF TG_OP='UPDATE' AND (NEW.tipo IS DISTINCT FROM OLD.tipo OR NEW.codigo IS DISTINCT FROM OLD.codigo) THEN
+    RAISE EXCEPTION 'catalog_legacy_identity_immutable';
+  END IF;
+  -- Tipo ausente é ausência real, não valor fictício. set_codigo_produto existente
+  -- aceita código manual; sem código o próprio trigger anterior nega NULL tipo.
+  IF NEW.tipo IS NULL AND (NEW.codigo IS NULL OR btrim(NEW.codigo)='') THEN
+    RAISE EXCEPTION 'catalog_reviewed_manual_code_required';
   END IF;
   IF NEW.familia_catalogo IS NULL OR NEW.familia_catalogo NOT IN
     ('biologico','quimico','fertilizante_adubo')
@@ -67,6 +81,7 @@ BEGIN
     WHEN 'quimico' THEN ARRAY['herbicida','fungicida','inseticida']
     ELSE ARRAY[]::text[] END;
   IF NEW.classes_catalogo IS NULL
+    OR coalesce(array_ndims(NEW.classes_catalogo),1)<>1
     OR array_position(NEW.classes_catalogo,NULL) IS NOT NULL
     OR NOT (NEW.classes_catalogo <@ allowed)
     OR cardinality(NEW.classes_catalogo) <> (SELECT count(DISTINCT x) FROM unnest(NEW.classes_catalogo) x)
@@ -83,11 +98,12 @@ BEGIN
     OR NEW.conteudo_apresentacao::text IN ('NaN','Infinity','-Infinity') THEN
     RAISE EXCEPTION 'catalog_units_invalid';
   END IF;
-  -- Não autorizar conversão massa/volume/contagem por relação de apresentação.
+-- 'un' + conteúdo kg/L é apresentação explícita, não conversão automática.
+-- Conversão só L/mL ou kg/g; embalagem por un não entra no motor de volume.
   IF (NEW.unidade_comercial IN ('L','mL') AND NEW.unidade_conteudo NOT IN ('L','mL'))
     OR (NEW.unidade_comercial IN ('kg','g') AND NEW.unidade_conteudo NOT IN ('kg','g'))
-    OR (NEW.unidade_comercial='un' AND (NEW.unidade_conteudo<>'un'
-       OR NEW.conteudo_apresentacao<>trunc(NEW.conteudo_apresentacao))) THEN
+    OR (NEW.unidade_conteudo='un' AND
+       NEW.conteudo_apresentacao<>trunc(NEW.conteudo_apresentacao)) THEN
     RAISE EXCEPTION 'catalog_dimension_invalid';
   END IF;
   IF NEW.b2b_enabled IS DISTINCT FROM false OR NEW.ativo IS DISTINCT FROM false THEN
@@ -108,7 +124,7 @@ BEGIN
       (s.entidade_tipo='ficha_produto' AND EXISTS (
         SELECT 1 FROM public.product_technical_profiles p
         WHERE p.id=s.entidade_id AND p.produto_id=NEW.id)))) INTO source_ok;
-  IF NEW.classificacao_estado='revisado' AND NOT source_ok THEN
+  IF (NEW.classificacao_estado='revisado' OR NEW.classificacao_fonte_id IS NOT NULL) AND NOT source_ok THEN
     RAISE EXCEPTION 'catalog_review_source_required';
   END IF;
   -- Metadados de autoria nunca aceitos do payload.
@@ -163,11 +179,9 @@ FOR EACH ROW EXECUTE FUNCTION public.catalog_classification_audit_candidate();
 -- Sem DROP de fences/auditorias existentes. Confirmar ledger immutable/ACL antes promoção.
 ROLLBACK; -- arquivo de REVISÃO: nada persiste mesmo se rodado literalmente.
 
--- B2 SEPARADO, NÃO EXECUTÁVEL NESTE ARQUIVO: compatibilidade para tipo não representável.
--- ALTER TABLE public.produtos ALTER COLUMN tipo DROP NOT NULL;
--- Substituir obrigação física por guard: NULL somente se família explícita, pendente/revisado,
--- ativo=false/b2b_enabled=false, codigo manual único validado; legado INSERT sem classificação
--- continua exigindo tipo. UPDATE de tipo/codigo legado proibido nessa revisão classificatória.
--- Preservar enum e valores antigos; não criar tipo 'solo' falso. Consumidores nullable revisados
--- e extensão de set_codigo_produto/proximo_codigo somente após definições atuais verificadas.
+-- Promoção B1 pode excluir DROP NOT NULL: então herbicida/adubo sem tipo representável
+-- permanece impossível, não preencher 'solo'. B2 deste candidato é implementável
+-- somente com guard instalado E consumidores nullable revisados, código manual único
+-- sob índice existente comprovado no preflight externo. Não há extensão automática
+-- de prefixo/gerador neste recorte. Nenhuma autorização para cadastro runtime agora.
 -- Não reaproveitar wipe como upsert. Cadastro permanece saveProdutoComCompensacao/admin-catalogo.
