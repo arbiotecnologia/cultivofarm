@@ -57,7 +57,7 @@ export function PagamentosTab({ kind, contaId }: Props) {
       if (insts.error) throw insts.error;
       const ids = (insts.data ?? []).map((inst) => inst.id);
       if (!ids.length) return [];
-      const columns = "id,installment_id,organization_id,payment_date,is_reversal,reversed_payment_id,payment_methods(name),bank_accounts(name)";
+      const columns = "id,installment_id,organization_id,payment_date,is_reversal,reversed_payment_id,bank_account_id,payment_methods(name)";
       const result = kind === "receivable"
         ? await supabase.from("receivable_payments").select(`${columns},amount_received`)
           .filter("organization_id", "eq", org).in("installment_id", ids)
@@ -112,7 +112,7 @@ export function PagamentosTab({ kind, contaId }: Props) {
                   <TableCell>{fmtDate(p.payment_date)}</TableCell>
                   <TableCell className={p.is_reversal ? "text-destructive font-medium" : ""}>{brl(kind === "receivable" ? p.amount_received : p.amount_paid)}</TableCell>
                   <TableCell className="text-sm">{p.payment_methods?.name ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{p.bank_accounts?.name ?? "—"}</TableCell>
+                  <TableCell className="text-sm">{p.bank_account_id ? "Conta vinculada (dados restritos)" : "—"}</TableCell>
                   <TableCell>
                     {p.is_reversal ? <Badge variant="destructive">Estorno</Badge>
                       : wasReversed ? <Badge variant="outline">Estornado</Badge>

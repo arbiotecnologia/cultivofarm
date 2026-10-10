@@ -20,7 +20,7 @@ export type FinancialPayment = CommonPayment & {
   amount_received?: number;
   amount_paid?: number;
   payment_methods?: { name: string } | null;
-  bank_accounts?: { name: string } | null;
+  bank_account_id?: Tables<"receivable_payments">["bank_account_id"];
 };
 interface Props {
   open: boolean;

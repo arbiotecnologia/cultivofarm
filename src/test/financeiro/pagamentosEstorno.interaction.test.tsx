@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
   instError: false, payError: false, pending: false,
   payments: [] as FinancialPayment[],
   resolvers: [] as Array<(value: unknown) => void>,
-  rpc: vi.fn(), success: vi.fn(), from: vi.fn(),
+  rpc: vi.fn(), success: vi.fn(), from: vi.fn(), select: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("sonner", () => ({ toast: { success: state.success } }));
@@ -20,11 +20,15 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   from: (table: string) => {
     state.from(table);
     const chain: Record<string, unknown> = {};
-    for (const method of ["select", "eq", "filter", "in", "order", "abortSignal", "returns"]) chain[method] = () => chain;
+    let projection = "";
+    chain.select = (columns: string) => { projection = columns; state.select(table, columns); return chain; };
+    for (const method of ["eq", "filter", "in", "order", "abortSignal", "returns"]) chain[method] = () => chain;
     chain.then = (resolve: (value: unknown) => void) => {
       const inst = table.includes("installments");
       const value = { data: inst ? [{ id: "I" }] : state.payments,
-        error: (inst ? state.instError : state.payError) ? { message: "denied" } : null };
+        error: projection.includes("bank_accounts")
+          ? { code: "42501", message: "permission denied for table bank_accounts" }
+          : (inst ? state.instError : state.payError) ? { message: "denied" } : null };
       if (state.pending) state.resolvers.push(resolve); else resolve(value);
     };
     return chain;
@@ -32,7 +36,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 } }));
 
 const payment: FinancialPayment = { id: "P", installment_id: "I", organization_id: "OA", payment_date: "2026-10-09",
-  is_reversal: false, reversed_payment_id: null, amount_received: 40, amount_paid: 40 };
+  is_reversal: false, reversed_payment_id: null, bank_account_id: null, amount_received: 40, amount_paid: 40 };
 const clients: QueryClient[] = [];
 function setup(element: React.ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -45,12 +49,33 @@ beforeEach(() => {
   Object.assign(state.auth, { user: { id: "A" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
     roles: ["financeiro"], loading: false, error: null });
   state.instError = false; state.payError = false; state.pending = false; state.resolvers = [];
-  state.payments = [payment]; state.rpc.mockReset(); state.success.mockClear(); state.from.mockClear();
+  state.payments = [payment]; state.rpc.mockReset(); state.success.mockClear(); state.from.mockClear(); state.select.mockClear();
   state.rpc.mockResolvedValue({ data: "REV", error: null });
 });
 afterEach(() => { cleanup(); clients.splice(0).forEach((client) => client.clear()); });
 
 describe("PagamentosTab — interação e sessão, servidor mockado", () => {
+  for (const kind of ["receivable", "payable"] as const) {
+    for (const bankId of [null, "BANK-RESTRICTED"]) {
+      it(`${kind}: projeção mínima sem join bancário, vínculo ${bankId ?? "nulo"}`, async () => {
+        state.payments = [{ ...payment, bank_account_id: bankId, payment_methods: { name: "Forma autorizada" } }];
+        setup(<PagamentosTab kind={kind} contaId="C" />);
+        await screen.findByText("Baixa");
+        const table = kind === "receivable" ? "receivable_payments" : "payable_payments";
+        const amount = kind === "receivable" ? "amount_received" : "amount_paid";
+        expect(state.select).toHaveBeenCalledWith(table,
+          `id,installment_id,organization_id,payment_date,is_reversal,reversed_payment_id,bank_account_id,payment_methods(name),${amount}`);
+        expect(state.select.mock.calls.some(([, columns]) => columns.includes("bank_accounts") || columns.includes("*"))).toBe(false);
+        expect(state.from).not.toHaveBeenCalledWith("bank_accounts");
+        expect(screen.getByText("Baixa").closest("tr")?.children[3]).toHaveTextContent(
+          bankId ? "Conta vinculada (dados restritos)" : "—");
+        expect(screen.getByText("Forma autorizada")).toBeTruthy();
+        expect(screen.queryByText("BANK-RESTRICTED")).toBeNull();
+        expect(screen.queryByRole("alert")).toBeNull();
+        expect(state.rpc).not.toHaveBeenCalled();
+      });
+    }
+  }
   for (const kind of ["receivable", "payable"] as const) {
     for (const role of ["financeiro", "administrador", "gestor"]) {
       it(`${kind}: ${role} pode abrir estorno original`, async () => {
