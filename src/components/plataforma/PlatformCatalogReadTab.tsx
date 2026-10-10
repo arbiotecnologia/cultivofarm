@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformCatalogMetadataDialog";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
   PLATFORM_CATALOG_MAX_OFFSET, PLATFORM_CATALOG_SEARCH_LIMIT } from "@/lib/catalogo/platformCatalogRead";
 
-// Narrow bridge for the unapplied candidate; never replace generated DB types or the canonical client.
+// Narrow bridge for the externally applied reader; preserve canonical client and generated types.
 type CatalogReadRpc = (name: "platform_read_global_product_catalog", args: {
   p_search: string; p_limit: number; p_offset: number;
 }) => { abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
@@ -28,6 +29,8 @@ function CatalogReadPage({ scope }: { scope: string }) {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
+  const [editing, setEditing] = useState<string>();
+  const [saved, setSaved] = useState(false);
   const queryClient = useQueryClient();
   const active = useRef(true);
   useEffect(() => {
@@ -61,6 +64,12 @@ function CatalogReadPage({ scope }: { scope: string }) {
   const rows = !query.isFetching && !query.isError ? query.data?.items : undefined;
   return <section aria-labelledby="platform-catalog-title" className="space-y-4">
     <h2 id="platform-catalog-title" className="text-base font-semibold">Consulta do catálogo global</h2>
+    {saved && <p role="status">Alteração confirmada.</p>}
+    {editing && <PlatformCatalogMetadataDialog key={editing} id={editing} scope={scope}
+      onClose={() => setEditing(undefined)} onSaved={() => {
+        setEditing(undefined); setSaved(true);
+        void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
+      }} />}
     <form className="flex flex-wrap items-end gap-2" onSubmit={(event) => {
       event.preventDefault(); setSearch(input.trim()); setOffset(0);
     }}>
@@ -78,13 +87,15 @@ function CatalogReadPage({ scope }: { scope: string }) {
     </div>}
     {rows?.length === 0 && <p role="status" className="py-6 text-muted-foreground">Nenhum produto encontrado.</p>}
     {!!rows?.length && <Table>
-      <TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Produto</TableHead><TableHead>Tipo</TableHead><TableHead>Situação</TableHead><TableHead>B2B</TableHead></TableRow></TableHeader>
+      <TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Produto</TableHead><TableHead>Tipo</TableHead><TableHead>Situação</TableHead><TableHead>B2B</TableHead><TableHead><span className="sr-only">Ações</span></TableHead></TableRow></TableHeader>
       <TableBody>{rows.map((product) => <TableRow key={product.id}>
         <TableCell className="break-words">{product.codigo ?? "—"}</TableCell>
         <TableCell className="min-w-40 break-words font-medium">{product.nome}</TableCell>
         <TableCell>{product.tipo ?? "—"}</TableCell>
         <TableCell><Badge variant={product.ativo ? "secondary" : "outline"}>{product.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
         <TableCell>{product.b2b_enabled ? "Sim" : "Não"}</TableCell>
+        <TableCell><Button variant="outline" size="sm" aria-label={`Editar ${product.nome}`} disabled={!product.updated_at}
+          onClick={() => { setSaved(false); setEditing(product.id); }}>Editar</Button></TableCell>
       </TableRow>)}</TableBody>
     </Table>}
     <nav aria-label="Paginação do catálogo" className="flex flex-wrap items-center justify-between gap-2">
