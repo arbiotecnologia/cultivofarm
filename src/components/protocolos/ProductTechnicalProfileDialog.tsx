@@ -70,8 +70,6 @@ const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecn
 export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, origem = "protocolos" }: Props) {
   const { role } = useAuth();
   const canEditFull = role ? TECH_ROLES.includes(role) : false;
-  const canEditB2BOnly = role === "gestor_comercial";
-  const canEdit = canEditFull || canEditB2BOnly;
   const canSeeAudit = role ? ADMIN_ROLES.includes(role) : false;
   const canSeeSources = role ? SOURCE_VIEW_ROLES.includes(role) : false;
   const canEditSources = canEditFull;
@@ -135,54 +133,6 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   };
 
 
-  const doSave = async () => {
-    try {
-      if (canEditB2BOnly && !canEditFull) {
-        if (!data?.profile?.id) {
-          toast.error("Ficha ainda não criada — peça ao time técnico para iniciar a ficha.");
-          return;
-        }
-        const { error } = await supabase.rpc("update_product_b2b_description" as any, {
-          p_profile_id: data.profile.id,
-          p_explicacao_b2b: form.explicacao_b2b,
-        });
-        if (error) throw error;
-        toast.success("Texto B2B atualizado");
-        refetch();
-        return;
-      }
-      const payload: any = { produto_id: produto.id, ...form };
-      await upsert.mutateAsync(payload);
-      if (form.status_validacao === "aprovado" && produto.b2b_enabled && !form.explicacao_b2b.trim()) {
-        toast.warning("Aprovado tecnicamente, porém sem texto B2B.");
-      } else {
-        toast.success("Ficha técnica salva");
-      }
-      refetch();
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao salvar ficha");
-    }
-  };
-
-  const save = async () => {
-    if (canEditFull && form.status_validacao === "aprovado") {
-      const missing = validateApproval();
-      if (missing.length > 0) {
-        toast.error("Preencha antes de aprovar: " + missing.join(", "));
-        return;
-      }
-      if (!hasSources) {
-        if (!isAdminOrGestor) {
-          toast.error("Esta ficha não possui fonte técnica vinculada. Cadastre ao menos uma fonte antes da aprovação.");
-          return;
-        }
-        setConfirmNoSourceOpen(true);
-        return;
-      }
-    }
-    await doSave();
-  };
-
   const handleSaveWithStatus = async (status: "rascunho" | "em_revisao" | "arquivado") => {
     if (!canEditFull) return;
     try {
@@ -224,11 +174,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
     toast.success("Resumo B2B copiado");
   };
 
-  const ehReadOnly = (field: "b2b" | "full") => {
-    if (canEditFull) return false;
-    if (canEditB2BOnly && field === "b2b") return false;
-    return true;
-  };
+  const ehReadOnly = (_field: "b2b" | "full") => !canEditFull;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -325,9 +271,6 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             <TabsContent value="b2b" className="space-y-3 pt-3 min-w-0">
               <ProfileFieldAI label="Linguagem para parceiro B2B" rows={8} value={form.explicacao_b2b} readOnly={ehReadOnly("b2b")} onChange={(v) => setForm({ ...form, explicacao_b2b: v })}
                 entidadeTipo="produto" entidadeId={produto.id} campo="explicacao_b2b" canGenerateAI={canEditFull} />
-              {canEditB2BOnly && !canEditFull && (
-                <p className="text-[10px] text-muted-foreground italic">Você pode editar apenas a explicação B2B.</p>
-              )}
             </TabsContent>
 
 
@@ -379,9 +322,6 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
             <Button variant="outline" size="sm" onClick={copyResumoB2B}>Copiar resumo B2B</Button>
             {!isError && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
-            )}
-            {!isError && canEditB2BOnly && !canEditFull && (
-              <Button size="sm" onClick={save} disabled={upsert.isPending}>Salvar texto B2B</Button>
             )}
             {!isError && canEditFull && (
               <>

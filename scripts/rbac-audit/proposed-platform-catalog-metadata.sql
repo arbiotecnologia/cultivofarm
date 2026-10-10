@@ -1,3 +1,6 @@
+-- HISTORICAL CANDIDATE — APPLIED externally by Codex as platform_global_catalog_metadata
+-- to swzpzcwiasxmjutrmvkm (reported 2026-10-10 14:46 UTC). DO NOT REAPPLY.
+-- Body/preflight/reviewer harness below preserved as historical evidence.
 -- CANDIDATE ONLY — NOT APPLIED. Canonical ref swzpzcwiasxmjutrmvkm must be
 -- independently proved by the reviewer before any remote operation.
 -- Local functional base db8f29b; documentation base 6ff0a70b.

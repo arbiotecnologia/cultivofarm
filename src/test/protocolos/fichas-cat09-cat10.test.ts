@@ -167,7 +167,9 @@ describe("CAT-10 · erro bloqueia escrita e oferece retry", () => {
       expect(acoes.every((a) => a.includes("!isError"))).toBe(true);
       // formulário/IA só renderizam no ramo sem erro
       expect(src.indexOf("{isError ? (")).toBeLessThan(src.indexOf("<ProfileFieldAI"));
-      expect(src).toContain("{!isError && canEditB2BOnly && !canEditFull && (");
+      if (nome === "microrganismo") {
+        expect(src).toContain("{!isError && canEditB2BOnly && !canEditFull && (");
+      }
 
     });
 
