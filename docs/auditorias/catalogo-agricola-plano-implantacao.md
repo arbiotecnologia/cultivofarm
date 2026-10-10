@@ -11,6 +11,7 @@ Evolução do catálogo existente em /base-tecnica, preservando aliases, Produto
 Organizar navegação, classificação, fichas e unidades sem duplicar produtos nem alterar documentos históricos.
 
 ## 3. Diagnóstico atual
+Pós-publicação externo a5702d2f, 10/10/2026 14:09 UTC: usuário publicou; produção build-mv1u4bb9/entry index-DPcujB0c.js observados. Financeiro AR e Superadmin autenticados foram de /base-tecnica?tab=produtos para /sem-permissao; /plataforma abriu ao Superadmin sem catálogo. Abas comuns compartilharam troca de identidade, não sessões independentes; nenhum save UI. Bloqueio não valida writer. Próximo recorte é integrar gestão à /plataforma existente, não abrir rota operacional. Contrato restrito e bloqueios na seção10 do contrato Fase A.
 Delta externo Codex 03:17 UTC: 9 produtos, 26 FKs, 19 colunas, 0 fichas/0 fontes. Não consulta própria; inventário integral e consumidor nullable ainda pendentes. B1 mantém tipo NOT NULL; B2 está em arquivo separado sem DDL ativo, não promovido.
 A inspeção encontrou produtos.tipo obrigatório (inseticida, fungicida, solo, inoculante, solubilizador), campos dose_ml_ha/valor_litro_brl e composição em volume. Isso não distingue natureza biológica/química e não atende todas as unidades de produtos sólidos e adubos. Consumidores incluem Protocolos.tsx, ProdutosTab.tsx, useCatalogoUnificado.ts, usePartnerCatalog.ts, usePartnerCatalogTecnico.ts e NovoPedido.tsx. Este último contém pressupostos de litro/dose100mL. A auditoria de todos os consumidores ainda não terminou.
 
@@ -43,6 +44,7 @@ Fluxo cadastro: identidade → família/classes → apresentação/unidade → f
 Produtos, Microrganismos, Catálogo Técnico, Culturas e Problemas continuam agrupamentos existentes; evitar oito ou mais abas principais amontoadas no mesmo nível.
 
 ## 7. Permissões e RLS
+Contrato futuro: leitura/escrita global exige auth.uid(), perfil ativo/readiness canônica e Platform Superadmin no servidor; is_platform_superadmin isolado não basta. Fonte mínima de gestão e equivalente de writer devem ser investigados antes de qualquer RPC nova; preservar policy ALL, sem autorizar tenants operacionalmente nem expor preços em portais técnicos. Nesta rodada nenhuma permissão alterada.
 Preservar escrita global por ator ativo/ready e Platform Superadmin validados no servidor; tenant admin não passa a editar catálogo global. Consultor, parceiro e produtor recebem somente conteúdo permitido por vínculos, aprovação, ativo e canal. Verificar regras atuais antes de alterar qualquer gate.
 Validar combinação classificação/unidade no servidor, inclusive RPCs e chamadas diretas. Cache deve conter identidade/tenant/escopo/família/classes/filtros relevantes; troca de contexto invalida resultados.
 Teste obrigatório com AR e FSF, e roles reais disponíveis. Claims SQL não equivalem a login real.
@@ -57,6 +59,7 @@ Dependências locais a confirmar na fase A: `fn_resolve_commercial_price`, `fn_r
 Filtrar e paginar no servidor; buscar apenas colunas necessárias. Índices orientados por consultas reais (família, ativo, canal e associações), avaliados com plano de execução. Não fazer uma carga completa por aba nem gerar N+1 de fichas.
 
 ## 10. Auditoria e histórico
+P1 externo novo já contido por Codex no canônico: migration20261010140830 catalog_price_sync_internal_only revogou EXECUTE client de fn_catalogo_sync_mestre_preco(uuid,uuid). SQL literal em scripts/rbac-audit/applied-20261010140830-catalog-price-sync-internal-only.sql, sem reaplicar. Função DEFINER sem check ator tinha alcance global/set_config; Financeiro chamou NULL sem mutação, amostra sem produto com tier ativo. Corpo/trigger preservados, zero preços alterados relatados, não exploração comprovada. Writer futuro deve reutilizar auditoria servidor existente na mesma transação, sem INSERT client de logs.
 P1 externo: Consultor inseria audit com usuario_id Admin. Codex já aplicou 20261010031113 catalog_technical_audit_server_writes_only no canônico; SQL exato arquivado em scripts/rbac-audit/applied-20261010031113-catalog-technical-audit-server-writes-only.sql, NÃO REAPLICADO. SELECT/histórico preservados; produção de logs só servidor. Autoria de revisão muda somente no recorte classificação, não por preço/nome/updated_at.
 Registrar anterior/novo, autor, data, motivo, origem e produto para classificação/unidade/liberação. Não recalcular preços, quantidades ou conversões de documentos antigos. Relatório de migração com contagens, ambiguidades e pendências; nenhuma classificação automática ambígua.
 
@@ -69,15 +72,18 @@ Tratar carregando, vazio, erro e sem permissão. Ausência de itens é estado re
 Adaptar o contrato de unidades antes de liberar famílias em pedidos/estoque/fiscal; preservar RPCs seguras e isolamento de preço do catálogo técnico. Não ligar emissão fiscal, mensageria ou cobrança durante testes de navegação/classificação.
 
 ## 13. Riscos e prevenção
+P1 de EXECUTE global contido externamente; producer/trigger com dados ainda UNVERIFIED. Rollback nunca restaura EXECUTE PUBLIC/anon/authenticated; eventual regressão interna exige forward-fix autorizado mantendo client fechado. Gestão global runtime NO-GO: bloqueio UI e owner NULL não são positivos. Fonte polimórfica sem FK permanece risco de integridade; guard B1 bloqueia flags também fora da classificação e exige futura transição canônica, nunca desativação de legado como contorno.
 P1 audit direto externo contido, sem PASS global. P1 potencial: ator inativo, fonte excluída/revinculada e abertura de canal incompatível. B2/nullable risco alto bloqueado; numeric(18,6) arredonda antes do trigger, não garante rejeitar >6 casas. Legado ativo pode ser classificado preservando flags; sem desativação compulsória. Fence/versionamento de fonte é pendência real, 0 fontes não permite fabricar revisão.
 Principais riscos: classificar biológico como químico; duplicar cadastro ou estoque entre classificações; converter sólido para líquido; expor preço interno; ocultar legado; alterar cálculo histórico.
 Rollback por fase: desligar exposição das novas abas/canais preservando classificações e histórico; retornar interface anterior sem DROP de dados. Migrações aditivas e retrocompatíveis; nenhuma reversão deve restaurar falha de autorização já corrigida.
 
 ## 14. Critérios de aceite
+Gestão global futura só aceita positivo Superadmin ativo/ready em sessão real e negativas dos demais perfis, sem permissão operacional tenant. Produto/composição/audit/recibo idempotente devem confirmar mesma transação, CAS por expected_updated_at e conflito/replay seguros; ausência de writer equivalente deve ser confirmada antes de criá-lo. Não implementado nem homologado aqui.
 Três abas distintas; biofungicidas e fungicidas nunca misturados por inferência; cadastro único sem duplicação; legados acessíveis; estados/URLs corretos; unidade explícita; proibição de cálculos incompatíveis; controles server-side preservados.
 PASS de navegação/classificação não significa PASS de pedidos/estoque/faturamento. Cada canal tem decisão independente.
 
 ## 15. Plano de testes
+EXTERNO Codex pós-contenção preço: Financeiro/AdminAR/AdminFSF/ConsultorAR/Superadmin cinco chamadas SQL negadas; owner NULL funciona; anon/auth EXECUTE=false, service=true. Não prova trigger com dados nem HTTP, zero preços alterados. Checks independentes anteriores38/38PASS, typecheckapp/nodePASS, build29sPASS, scanner3863zero; lint42any/2avisos FAIL, não todos legados sem comparação. Sem rerun próprio neste job. Futuros testes autorizados de writer: ator inativo/not-ready, projeção mínima, CAS, idempotência igual/divergente/concorrente e rollback integral após falha composição/audit, SQL e browser isolados; manter baseline contido e snapshots.
 EXTERNO Codex: 4 INSERT diretos negados com claims AdminAR/AdminFSF/ConsultorAR/Superadmin. Trigger de ficha produziu log sob owner/servidor, não UI/HTTP; primeiro positivo falhou sem ficha, segundo rascunho vazio transacional. Tudo rollback, 0 fichas/0 logs de teste depois. Advisors:15INFO RLS sem política,2WARN defineranon,366WARN definerauthenticated,1WARN proteção senha. Não PASS global nem testes próprios.
 Futuros: B1 BEGIN/ROLLBACK, B2 não executar; testar ativo/inativo/readiness, flags de legado preservadas, autoria alheia estável, precisão armazenada e fonte/revínculo/exclusão. Rollback parte do baseline contido, nunca restaura escrita livre.
 Banco: constraints, classificações incompatíveis, alteração direta/RPC, concorrência e histórico.
@@ -89,6 +95,7 @@ Regressão dos biológicos e fluxos existentes; testes focados, typecheck, lint,
 Testes de schema devem usar validação apropriada; regras temporais dependentes de agora exigem triggers, não CHECK temporal. Nenhuma fixture/conta/dado agrícola criada neste registro. Nenhum teste funcional reexecutado aqui; evidências históricas não são PASS das novas abas.
 
 ## 16. Fases de implementação
+Próximo recorte pequeno necessário, ainda não autorizado funcionalmente: investigar fonte global e writer equivalente, depois integrar gestão na /plataforma existente reaproveitando componentes; writer transacional somente se ausência confirmada. Contrato de leitura/escrita ativa/ready, escopo mínimo, updated_at/idempotência/auditoria na seção10 do contrato Fase A. Não implementar RPC/DDL/frontend/publicar neste job documental; B1/B2 não aplicados.
 A — Inventário e contratos: fechar mapa de campos/RPCs/unidades, classificação existente e canais suportados. Sem alteração comercial.
 B — Dados e validação: B1 aditivo candidato mantém NOT NULL; B2 separado não executável/não promovido aguarda consumidores nullable.  regras server-side, auditoria e revisão controlada dos legados; sem liberar venda nova.
 C — Navegação e cadastro: três abas, subabas, filtros e campos condicionais no fluxo existente, acessibilidade e testes.

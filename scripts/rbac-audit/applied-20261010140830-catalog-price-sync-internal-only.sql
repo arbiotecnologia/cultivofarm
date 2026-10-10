@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.fn_catalogo_sync_mestre_preco(uuid, uuid) FROM PUBLIC, anon, authenticated;
