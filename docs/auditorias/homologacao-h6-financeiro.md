@@ -1,6 +1,32 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
-## Adendo vigente — revisão focal d784380 — 2026-10-10 01:46 UTC
+## Adendo vigente — revisão independente e publicação externa — 2026-10-10 01:53 UTC
+
+**Referência:** `5a5ad9e6edf48b8f5b8a6de57a9caa9f1f310c29`. Evidências de revisão, checks, publicação e browser recebidas do **Codex autorizado externamente ao Lovable**, não executadas pelo humano manualmente nem por este agente. Revisão independente concluída e publicação **JÁ realizada externamente**; UI confirmou **“Seu site foi atualizado”**. Supersede somente a pendência de revisão/publicação deste recorte nos checkpoints abaixo, preservados como histórico.
+
+### Checks externos e baseline independente
+
+- **45/45 testes locais PASS**: **37 ReportShell/mensal + 8 scope**; **typecheck app/node, lint de três arquivos PASS**, **scanner3857/zero**, **build PASS em30.24s**.
+- Avisos legados relatados: **bundle5.73MB, imports mistos e Browserslist**; não tratados nesta rodada documental.
+- Baseline independente anterior: **27 testes, 26FAIL/1PASS**. É distinta da baseline/intermediária Lovable registrada abaixo; **não somar baselines, checkpoints ou testes repetidos**. Os **35/35 históricos** e **45/45 próprios anteriores** permanecem com sua proveniência, não representam novas execuções neste adendo.
+
+### Browser real externo — PASS apenas de filtros e erro seguro
+
+- **FinanceiroAR**, após reload no site publicado, mostrou no mensal **De01/10/2026 e Até09/10/2026**.
+- **Gerar prévia** retornou explicitamente **“Não foi possível gerar a prévia. Verifique seu acesso e tente novamente.”**; **Imprimir desabilitado, sem dados**.
+- **PASS focal de filtros/erro, NÃO PASS de geração**. SQL prévio confirma `get_report_monthly_financial authenticated EXECUTE=false`; gate deliberado preservado, sem abertura de grants.
+- **Sem exportação, upload ou mutação de dados**. **Mobile UNVERIFIED**: viewport override externo ineficaz e restaurado, sem certificação mobile.
+- Proveniência documental local informada pelo executor: **`previa-relatorios-relatorio.md`**, com evidência **`report-shell-mensal-publicado.jpg`**. Referências recebidas, não arquivos/browser inspecionados pelo agente nesta rodada.
+
+### Exportação e limites ainda NO-GO
+
+- Segundo revisão externa Codex, **Edge generate-financial-report v69 ignora erro de `register_financial_report_export`**, cujo `authenticated EXECUTE=false` permanece, **e erro de `createSignedUrl`; PDF trunca**. **Exportação NO-GO**, sem abrir grants nem corrigir Edge/Storage neste adendo.
+- **Mensal real/geração, exportação, Financeiro global/B2B/OS/fiscal/Faturamento NO-GO**; matriz integral, demais relatórios/recorrência/Storage/planos, upload/download/bytes e payable UI integral permanecem pendentes/UNVERIFIED. Nenhuma nova fase iniciada.
+- Esta rodada alterou **somente roadmap.md e este relatório**; sem código, AGENTS, banco, grants, Edge/Storage, publicação pelo agente ou alteração de gates/fixture. Histórico +40/-40 preservado.
+
+---
+
+## Adendo histórico — revisão focal d784380 — 2026-10-10 01:46 UTC
 
 **Escopo:** somente `ReportShell.tsx`, `RelatorioMensal.tsx`, teste focal existente e documentação. Sem publicação automática: entrega para revisão. AGENTS SHA256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244` intacto; nenhum hook global, outro relatório, rota, grant, banco, migration, Edge/Storage, gate ou fixture alterado. Histórico +40/-40 preservado.
 
