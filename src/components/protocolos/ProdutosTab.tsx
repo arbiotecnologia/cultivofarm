@@ -96,11 +96,29 @@ export type SaveProdutoOutcome =
 const MSG_CRITICO =
   "Falha crítica: a reversão automática não foi concluída. NÃO repita a operação e contate o suporte imediatamente.";
 
-/**
- * CAT-06 — grava produto + composição com compensação best-effort.
- * Nunca reporta sucesso quando alguma etapa falha; sinaliza `critical`
- * quando a própria reversão falha.
- */
+const MSG_NAO_CONFIRMADO = "Não foi possível confirmar o salvamento do produto. A composição não foi alterada.";
+const MSG_COMPOSICAO = "Não foi possível confirmar a alteração da composição.";
+
+type MutationRow = { id: string; produto_id?: string };
+function confirmedRows(data: unknown, count: number, produtoId?: string): data is MutationRow[] {
+  if (!Array.isArray(data) || data.length !== count) return false;
+  const ids = new Set<string>();
+  for (const row of data) {
+    if (!row || typeof row.id !== "string" || !row.id.trim() || ids.has(row.id)
+      || (produtoId !== undefined && row.produto_id !== produtoId)) return false;
+    ids.add(row.id);
+  }
+  return true;
+}
+function confirmedProduct(data: unknown, expectedId?: string): data is MutationRow[] {
+  return confirmedRows(data, 1) && (expectedId === undefined || data[0].id === expectedId);
+}
+function confirmedDeleted(data: unknown, expected: MutationRow[], produtoId: string): boolean {
+  return confirmedRows(data, expected.length, produtoId)
+    && data.every(row => expected.some(previous => previous.id === row.id));
+}
+
+/** Compensação best-effort entre chamadas: não é transação nem proteção contra concorrência. */
 export async function saveProdutoComCompensacao(opts: {
   client: any;
   produtoId: string | null;
@@ -108,74 +126,83 @@ export async function saveProdutoComCompensacao(opts: {
   buildFormulacoes: (produtoId: string) => any[];
 }): Promise<SaveProdutoOutcome> {
   const { client, produtoId, payload, buildFormulacoes } = opts;
-
   if (produtoId) {
-    // 1) snapshot ANTES de qualquer escrita
-    const snapProduto = await client
-      .from("produtos")
-      .select(PRODUTO_SNAPSHOT_COLUMNS)
-      .eq("id", produtoId)
-      .maybeSingle();
+    const snapProduto = await client.from("produtos").select(PRODUTO_SNAPSHOT_COLUMNS)
+      .eq("id", produtoId).maybeSingle();
     if (snapProduto.error || !snapProduto.data) {
-      return {
-        status: "error",
-        message: snapProduto.error?.message || "Não foi possível ler o estado atual do produto.",
-      };
+      return { status: "error", message: "Não foi possível ler o estado atual do produto." };
     }
-    const snapFormulacoes = await client
-      .from("formulacoes")
-      .select(FORMULACAO_SNAPSHOT_COLUMNS)
-      .eq("produto_id", produtoId);
-    if (snapFormulacoes.error) {
-      return { status: "error", message: snapFormulacoes.error.message };
+    // IDs permitem conferir exclusão e restaurar a identidade da composição anterior.
+    const snapFormulacoes = await client.from("formulacoes")
+      .select(`id, ${FORMULACAO_SNAPSHOT_COLUMNS}`).eq("produto_id", produtoId);
+    if (snapFormulacoes.error || !Array.isArray(snapFormulacoes.data)
+      || !confirmedRows(snapFormulacoes.data, snapFormulacoes.data.length, produtoId)) {
+      return { status: "error", message: MSG_COMPOSICAO };
     }
-    const formulacoesAnteriores = (snapFormulacoes.data ?? []) as any[];
-
+    const formulacoesAnteriores = snapFormulacoes.data;
     const compensar = async (motivo: string): Promise<SaveProdutoOutcome> => {
-      const falhas: string[] = [];
-      const upd = await client.from("produtos").update(snapProduto.data).eq("id", produtoId);
-      if (upd?.error) falhas.push(upd.error.message);
-      const del = await client.from("formulacoes").delete().eq("produto_id", produtoId);
-      if (del?.error) falhas.push(del.error.message);
-      if (!del?.error && formulacoesAnteriores.length > 0) {
-        const ins = await client.from("formulacoes").insert(formulacoesAnteriores);
-        if (ins?.error) falhas.push(ins.error.message);
+      try {
+        const upd = await client.from("produtos").update(snapProduto.data).eq("id", produtoId).select("id");
+        // Não tocar composição se a restauração do produto não foi confirmada.
+        if (upd.error || !confirmedProduct(upd.data, produtoId)) return { status: "critical", message: MSG_CRITICO };
+        const atuais = await client.from("formulacoes").select("id, produto_id").eq("produto_id", produtoId);
+        if (atuais.error || !Array.isArray(atuais.data)
+          || !confirmedRows(atuais.data, atuais.data.length, produtoId)) return { status: "critical", message: MSG_CRITICO };
+        const del = await client.from("formulacoes").delete().eq("produto_id", produtoId).select("id, produto_id");
+        if (del.error || !confirmedDeleted(del.data, atuais.data, produtoId)) return { status: "critical", message: MSG_CRITICO };
+        if (formulacoesAnteriores.length > 0) {
+          const ins = await client.from("formulacoes").insert(formulacoesAnteriores).select("id, produto_id");
+          if (ins.error || !confirmedDeleted(ins.data, formulacoesAnteriores, produtoId)) return { status: "critical", message: MSG_CRITICO };
+        }
+        return { status: "error", message: motivo };
+      } catch {
+        return { status: "critical", message: MSG_CRITICO };
       }
-      if (falhas.length > 0) return { status: "critical", message: MSG_CRITICO };
-      return { status: "error", message: motivo };
     };
-
-    // 2) fluxo atual
-    const upd = await client.from("produtos").update(payload).eq("id", produtoId);
-    if (upd?.error) return { status: "error", message: upd.error.message };
-
-    const formulacoesPayload = buildFormulacoes(produtoId);
-
-    const del = await client.from("formulacoes").delete().eq("produto_id", produtoId);
-    if (del?.error) return await compensar(del.error.message);
-
+    const upd = await client.from("produtos").update(payload).eq("id", produtoId).select("id");
+    if (upd.error || !confirmedProduct(upd.data, produtoId)) return { status: "error", message: MSG_NAO_CONFIRMADO };
+    try {
+      const formulacoesPayload = buildFormulacoes(produtoId);
+      if (formulacoesPayload.some(row => row.produto_id !== produtoId)) return await compensar(MSG_COMPOSICAO);
+      const del = await client.from("formulacoes").delete().eq("produto_id", produtoId).select("id, produto_id");
+      if (del.error || !confirmedDeleted(del.data, formulacoesAnteriores, produtoId)) return await compensar(MSG_COMPOSICAO);
+      if (formulacoesPayload.length > 0) {
+        const ins = await client.from("formulacoes").insert(formulacoesPayload).select("id, produto_id");
+        if (ins.error || !confirmedRows(ins.data, formulacoesPayload.length, produtoId)) return await compensar(MSG_COMPOSICAO);
+      }
+      return { status: "ok", produtoId };
+    } catch {
+      return await compensar(MSG_COMPOSICAO);
+    }
+  }
+  const criado = await client.from("produtos").insert([payload]).select("id");
+  if (criado.error) return { status: "error", message: "Não foi possível salvar o produto." };
+  // Sem ID confiável não há alvo seguro para compensação; não tentar adivinhá-lo.
+  if (!confirmedProduct(criado.data, typeof payload.id === "string" ? payload.id : undefined)) {
+    return { status: "critical", message: MSG_CRITICO };
+  }
+  const novoId = criado.data[0].id;
+  const removerNovo = async (): Promise<SaveProdutoOutcome> => {
+    try {
+      const del = await client.from("produtos").delete().eq("id", novoId).select("id");
+      return del.error || !confirmedProduct(del.data, novoId)
+        ? { status: "critical", message: MSG_CRITICO }
+        : { status: "error", message: MSG_COMPOSICAO };
+    } catch {
+      return { status: "critical", message: MSG_CRITICO };
+    }
+  };
+  try {
+    const formulacoesPayload = buildFormulacoes(novoId);
+    if (formulacoesPayload.some(row => row.produto_id !== novoId)) return await removerNovo();
     if (formulacoesPayload.length > 0) {
-      const ins = await client.from("formulacoes").insert(formulacoesPayload);
-      if (ins?.error) return await compensar(ins.error.message);
+      const ins = await client.from("formulacoes").insert(formulacoesPayload).select("id, produto_id");
+      if (ins.error || !confirmedRows(ins.data, formulacoesPayload.length, novoId)) return await removerNovo();
     }
-    return { status: "ok", produtoId };
+    return { status: "ok", produtoId: novoId };
+  } catch {
+    return await removerNovo();
   }
-
-  // Produto novo
-  const criado = await client.from("produtos").insert([payload]).select();
-  if (criado?.error) return { status: "error", message: criado.error.message };
-  const novoId = criado?.data?.[0]?.id as string;
-
-  const formulacoesPayload = buildFormulacoes(novoId);
-  if (formulacoesPayload.length > 0) {
-    const ins = await client.from("formulacoes").insert(formulacoesPayload);
-    if (ins?.error) {
-      const delProduto = await client.from("produtos").delete().eq("id", novoId);
-      if (delProduto?.error) return { status: "critical", message: MSG_CRITICO };
-      return { status: "error", message: ins.error.message };
-    }
-  }
-  return { status: "ok", produtoId: novoId };
 }
 
 /**
