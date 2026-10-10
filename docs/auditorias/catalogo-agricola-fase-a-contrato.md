@@ -53,7 +53,7 @@ Writer client existente: `handleSave` → **`saveProdutoComCompensacao`** → cl
 
 | Perfil/superfície | Fonte a reutilizar | Condição de integração |
 |---|---|---|
-| Plataforma/cadastro global | ProdutosTab e SELECT direto sob is_platform_superadmin | Mantém RESTRICTIVE ALL; página/guard plataforma precisa confirmação JWT. |
+| Plataforma/consulta global | platform_read_global_product_catalog na /plataforma; aplicada externamente como 20261010141924 | Projeção mínima sete campos sem preços, Superadmin ativo/readiness; PASS SQL focal externo, browser/JWT pendente. ProdutosTab/SELECT direto não são fallback nem writer comprovado. |
 | B2B comercial | get_partner_catalog_secure | Última definição deve provar actor/partner/client/tenant+feature e motor canônico; preservar ABI/preços. |
 | B2B técnico | get_partner_catalog_tecnico_secure | Última definição, papel exclusivo, ficha aprovado/ativo/canal; colunas financeiras NULL (e nenhuma derivação local), nenhuma consulta de preço. |
 | Interno técnico/consultor | useCatalogoUnificado tem projeção price-free mas SELECT direto cercado | **Bloqueio real de contrato:** não há fonte interna alternativa segura comprovada no inventário. Não mudar policy nem reutilizar RPC comercial/B2B para role inexistente; Codex deve identificar projeção/RPC atual antes de C/D. |
@@ -196,6 +196,8 @@ Base documental observada: `a5702d2f157c0b88a1e44201da58a5b43f05eae9`. Publicaç
 
 ## 11. Implementação focal de consulta — 10/10/2026 14:13 UTC
 
+**Estado atual, fechamento externo 14:22 UTC:** o checkpoint de candidato não aplicado abaixo é histórico e foi supersedido pela revisão/aplicação Codex da migration 20261010141924, conforme fechamento ao fim desta seção. Não reaplicar o harness; SQL focal externo comprovado, browser/mobile/nova publicação pendentes.
+
 Base `ad714a952e2321b3ca1b010114f2e98605ad1c7e`. Autorização nova supersede o limite documental da seção10 **apenas para leitura local da plataforma e SQL candidato**; sem cadastro/mutação/classificação, DDL remoto, publicação, deps/secrets/AGENTS/subagentes ou B1/B2. Não é início de implantação agrícola comercial.
 
 **Inspeção própria local:** PlataformaHome usa Tabs/Table/Input/Button/Badge do design system; ProdutosTab agrega composição/preços e ações de escrita, por isso não é montado neste leitor mínimo. Reutilizados UI e superfície existentes, não importado o writer operacional. Busca em migrations, `cultivofarm.types.ts` e `usePlataformaSaaS.ts` não encontrou leitor global equivalente paginado: RPCs `get_partner_catalog_secure`/`get_partner_catalog_tecnico_secure` são de parceiro e não substituem este contrato; wipe é mutação. Ausência confirmada no acervo local, **ausência viva UNVERIFIED**. A ferramenta de leitura disponível não oferece parâmetro/ref verificável; não foi usada contra destino não comprovado. Antes de promover, Codex deve reconfirmar equivalentes/ACLs no ref canônico; candidato usa CREATE sem OR REPLACE para falhar em colisão, não substituir função existente.
@@ -216,3 +218,16 @@ Base `ad714a952e2321b3ca1b010114f2e98605ad1c7e`. Autorização nova supersede o 
 
 **Validação própria:** resultados finais registrados no plano17seções/roadmap; testes são mockados e build é automático. Typechecks app/node separados não executados manualmente por restrição deste ambiente; não declarar PASS separado. Nenhuma publicação ou operação de banco/Auth.
 Fechamento14:17UTC:37/37Vitest PASS (23consulta+14regressão), lint estrito5arquivos PASS, scanner focal9arquivos0achados, diff-check PASS; build automático14:17:03UTC OK. Comparação byte a byte com base: AGENTS raiz/protocolos, B1/B2, duas contenções e package.json intactos; 17seções preservadas. Avisos ReactRouter future flags nos testes, não falhas. Browser autenticado/visualmobile/SQL/runtime NOT RUN; ausência de leitor equivalente viva exige revisão Codex. **GO local da entrega / NO-GO runtime e publicação não realizada.**
+
+### Fechamento externo Codex — 10/10/2026 14:22 UTC
+
+Referência `db8f29b02bb246ff426e9fdb9f981e226e645241`. SQL revisto e **JÁ APLICADO** no canônico `swzpzcwiasxmjutrmvkm` como migration **20261010141924 platform_catalog_read_only**, conforme evidência externa fornecida; nenhuma consulta ou aplicação remota pelo Lovable. Arquivo `scripts/rbac-audit/applied-20261010141924-platform-catalog-read-only.sql` arquiva literalmente o intervalo do candidato de `CREATE FUNCTION platform_private` até imediatamente antes de `-- Reviewer test plan`, sem BEGIN/ROLLBACK/cabeçalho inicial. Candidato mantém o corpo e harness anteriores, com aviso de histórico aplicado e NÃO REAPLICAR. Não atribuir ao Lovable revisão/execução SQL ou prova viva de equivalentes não detalhada no relato.
+
+- **SQL negativo externo:** quatro atores reais FinanceiroAR/AdminAR/AdminFSF/ConsultorAR negados inclusive `user_metadata.role=superadmin`; limit51/offset-1 e iat0 negados; anon EXECUTE=false.
+- **SQL positivo externo:** Superadmin ativo corrente retorna 9 produtos/exatamente 7 chaves sem preços; página de 2 itens, offset2 e página vazia em offset1000000. Sem dados alterados. SQL não HTTP/browser; demais casos planejados (incluindo busca literal, ator inativo/iat malformado e limites adicionais) não recebem PASS por inferência.
+- **Checks locais externos Codex:** 51/51 PASS (23 novos + 25 CAT + 3 independentes); typecheck app/node PASS; lint5arquivos PASS; scanner3867arquivos/zero achados; build35.39s PASS, avisos legados. Resultados não reexecutados pelo Lovable, não somados aos checkpoints históricos.
+- **Advisors:** permanecem INFO RLS sem policy e WARN DEFINER anon/authenticated e proteção de senha; sem novas contagens informadas, sem PASS global.
+- **Pendências/gate:** leitura SQL focal comprovada externamente; browser/JWT independente, mobile, performance e nova publicação UNVERIFIED/pendentes. B1/B2/classificação/escritor/transações/fonte polimórfica/fence de fonte e trava flagsB1 continuam pendentes, sem habilitar canais. Não se exige reaplicação SQL como próximo passo.
+- **Rollback seguro:** somente desabilitar exposição da consulta ou fechar sua RPC sob autorização específica, preservando produtos/histórico e sem abrir SELECT de tabelas. Nunca restaurar EXECUTE client de fn_catalogo_sync_mestre_preco nem escrita livre de catalog_technical_audit_logs. Contenções 20261010140830/20261010031113 preservadas; nenhum rollback executado.
+
+Neste job apenas arquivo literal, aviso histórico e documentação: frontend/guard/AGENTS/SQL funcional/B1/B2/dependências intactos; nenhum banco remoto, Auth, publicação ou subagente. **PASS somente do recorte SQL/checks externos relatados; sem homologação global/browser/mobile/produção nova.**

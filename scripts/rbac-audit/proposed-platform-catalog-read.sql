@@ -1,3 +1,11 @@
+-- HISTORICAL APPLICATION: Codex reports this function/ACL body reviewed and ALREADY
+-- APPLIED on swzpzcwiasxmjutrmvkm as 20261010141924 platform_catalog_read_only
+-- (external evidence for db8f29b02bb246ff426e9fdb9f981e226e645241, 2026-10-10).
+-- DO NOT REAPPLY this historical review harness. BEGIN/ROLLBACK and the original
+-- candidate/test-plan comments below describe the pre-application checkpoint only.
+-- Exact applied body archived in applied-20261010141924-platform-catalog-read-only.sql.
+-- External SQL proof is not HTTP/browser/mobile or a new publication proof.
+
 -- CANDIDATE ONLY, NOT APPLIED. Reviewer must independently prove canonical ref
 -- swzpzcwiasxmjutrmvkm BEFORE execution; SQL cannot establish its own project ref.
 -- Review live equivalent readers/ownership/readiness first. No table grants/policies.
