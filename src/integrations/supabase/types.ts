@@ -22519,6 +22519,10 @@ export type Database = {
         }
         Returns: string
       }
+      platform_read_global_product_catalog: {
+        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: Json
+      }
       platform_register_org_admin: {
         Args: {
           p_actor_id: string
