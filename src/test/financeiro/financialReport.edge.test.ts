@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import { execFileSync } from "node:child_process";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../../../supabase/functions/_shared/comunicacao/cors";
 
 // Real entrypoint; SDK, env and renderers injected locally. No network or Storage bytes.
@@ -20,15 +21,15 @@ function deferred() {
   const promise = new Promise<Result>((done) => { resolve = done; });
   return { promise, resolve };
 }
-function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, throws?: string) {
+function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, throws?: string, options: { rows?: Record<string, unknown>[]; fontFailure?: boolean; pdfBytes?: Uint8Array } = {}) {
   const effects: string[] = [];
   const rpc = vi.fn(async (name: string, _args?: Record<string, unknown>) => {
     effects.push(name); if (throws === name) throw new Error(sentinel);
     if (name === "h15_actor_organization") return { data: failure === "noOrg" ? null : org, error: failure === "org" ? sentinel : null };
     if (name === "register_financial_report_export") return auditPending?.promise ?? { data: failure === "noId" ? null : auditId, error: failure === "audit" ? sentinel : null };
-    return { data: [{ amount: 40 }], error: failure === "rpc" ? sentinel : null };
+    return { data: options.rows ?? [{ amount: 40 }], error: failure === "rpc" ? sentinel : null };
   });
-  const upload = vi.fn(async (path: string) => {
+  const upload = vi.fn(async (path: string, _bytes: Uint8Array) => {
     effects.push("upload"); if (throws === "upload") throw new Error(sentinel);
     return {
       data: failure === "noUploadData" ? null : failure === "noUploadPath" ? {} : { path: failure === "wrongUploadPath" ? "different-private-path" : path },
@@ -49,8 +50,16 @@ function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, th
   const env = vi.fn((name: string): string | undefined => name === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : name === "SUPABASE_ANON_KEY" ? "mock-public-key" : undefined);
   const deno = { env: { get: env }, serve: (fn: typeof handler) => { handler = fn; } };
   const log = vi.fn();
-  const page = { drawText: vi.fn() };
-  const PDFDocument = { create: async () => ({ embedFont: async () => ({}), addPage: () => page, save: async () => new Uint8Array([1]) }) };
+  const pages: Array<{ drawText: ReturnType<typeof vi.fn> }> = [];
+  const widthOfTextAtSize = vi.fn((text: string, size: number) => {
+    if (options.fontFailure || text.includes("🧪")) throw new Error(sentinel);
+    return [...text].reduce((width, char) => width + (char === "W" ? size : size / 2), 0);
+  });
+  const PDFDocument = { create: async () => ({
+    embedFont: async () => ({ widthOfTextAtSize }),
+    addPage: () => { const page = { drawText: vi.fn() }; pages.push(page); return page; },
+    save: async () => options.pdfBytes ?? new Uint8Array([1]),
+  }) };
   const XLSX = { utils: { json_to_sheet: vi.fn(), book_new: vi.fn(), book_append_sheet: vi.fn() }, write: () => [1] };
   new Function("Deno", "createClient", "PDFDocument", "StandardFonts", "rgb", "XLSX", "corsHeadersFor", "handlePreflight", "isTrustedOrigin", "console", javascript)(
     deno, createClient, PDFDocument, { Helvetica: "font", HelveticaBold: "bold" }, () => ({}), XLSX, corsHeadersFor, handlePreflight, isTrustedOrigin, { error: log, log, warn: log },
@@ -60,7 +69,7 @@ function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, th
     method, headers: { Origin: origin, Authorization: "Bearer mock-caller", "Content-Type": "application/json" },
     ...(method === "GET" || method === "OPTIONS" ? {} : { body: raw ?? JSON.stringify(body) }),
   }));
-  return { invoke, rpc, upload, createSignedUrl, remove, effects, createClient, env, log };
+  return { invoke, rpc, upload, createSignedUrl, remove, effects, createClient, env, log, pages, widthOfTextAtSize };
 }
 const valid = { report_type: "monthly", filters: { _from: "2026-10-01", _to: "2026-10-09" }, format: "CSV", title: "Mensal" };
 async function failureResponse(response: Response, status: number) {
@@ -181,5 +190,61 @@ describe("generate-financial-report — handler real isolado", () => {
     await vi.waitFor(() => expect(s.effects).toContain("register_financial_report_export"));
     expect(returned).toBe(false); expect(s.effects.indexOf("sign")).toBeLessThan(s.effects.indexOf("register_financial_report_export"));
     pending.resolve({ data: auditId, error: null }); expect((await (await response).json()).url).toBe("signed-file-fixture");
+  });
+  const parseCSV = (s: ReturnType<typeof setup>): string[][] => JSON.parse(execFileSync("python3", ["-c", "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.read(),newline='')))))"], { input: s.upload.mock.calls[0][1], encoding: "utf8" }));
+  it("CSV roundtrip preserva aspas, vírgulas, quebras reais, objetos/arrays e união de colunas", async () => {
+    const s = setup(undefined, undefined, undefined, { rows: [{ 'a,"b': 'texto,"aspas"\nlinha\r\nfinal', nested: { x: [1, "dois"] } }, { later: [false, null, 3], 'a,"b': "" }] });
+    expect((await s.invoke(valid)).status).toBe(200);
+    expect(parseCSV(s)).toEqual([['a,"b', "nested", "later"], ['texto,"aspas"\nlinha\r\nfinal', '{"x":[1,"dois"]}', ""], ["", "", '[false,null,3]']]);
+  });
+  it.each(["=1+1", "+SUM(1)", "-1+2", "@cmd", "\ttext", "\rtext", "\ntext", "  =1+1", "  \ttext", " \n=1"])("CSV neutraliza string e cabeçalho %j", async (value) => {
+    const s = setup(undefined, undefined, undefined, { rows: [{ [value]: value, numeric: -42.5 }] });
+    expect((await s.invoke(valid)).status).toBe(200);
+    expect(parseCSV(s)).toEqual([["'" + value, "numeric"], ["'" + value, "-42.5"]]);
+  });
+  it("PDF100 registros inclui último e todos os campos em páginas numeradas", async () => {
+    const rows = Array.from({ length: 100 }, (_, i) => ({ item: `ITEM-${i + 1}`, ...(i === 99 ? { extra: { last: "ULTIMO" } } : {}) }));
+    const s = setup(undefined, undefined, undefined, { rows });
+    expect((await s.invoke({ ...valid, format: "PDF" })).status).toBe(200);
+    const texts = s.pages.flatMap((p) => p.drawText.mock.calls.map(([text]) => String(text)));
+    expect(texts).toContain("item: ITEM-100"); expect(texts).toContain('extra: {"last":"ULTIMO"}');
+    expect(texts.filter((t) => /^Registro \d+ de 100$/.test(t))).toHaveLength(100);
+    expect(s.pages.length).toBeGreaterThan(1);
+    s.pages.forEach((p, i) => expect(p.drawText.mock.calls.some(([text]) => text === `AR Bio • 100 registro(s) • Página ${i + 1} de ${s.pages.length}`)).toBe(true));
+  });
+  it("PDF quebra texto pela largura da fonte sem perder caracteres ou quebras", async () => {
+    const value = "W".repeat(400) + "\nsegunda linha", s = setup(undefined, undefined, undefined, { rows: [{ field: value }] });
+    expect((await s.invoke({ ...valid, format: "PDF" })).status).toBe(200);
+    const calls = s.pages.flatMap((p) => p.drawText.mock.calls);
+    const start = calls.findIndex(([text]) => String(text).startsWith("field: "));
+    const content = calls.slice(start).filter(([text]) => !String(text).startsWith("AR Bio"));
+    expect(content.map(([text]) => text).join("")).toBe("field: " + value.replace("\n", ""));
+    for (const [text, style] of calls) expect(s.widthOfTextAtSize(String(text), style.size)).toBeLessThanOrEqual(515);
+  });
+  it.each(["CSV", "PDF"])("%s vazio tem contagem verdadeira", async (format) => {
+    const s = setup(undefined, undefined, undefined, { rows: [] });
+    const response = await s.invoke({ ...valid, format }); expect(response.status).toBe(200); expect((await response.json()).row_count).toBe(0);
+    if (format === "CSV") expect(parseCSV(s)).toEqual([]);
+    else expect(s.pages[0].drawText.mock.calls.some(([text]) => text === "Nenhum dado encontrado.")).toBe(true);
+  });
+  it.each([true, false])("PDF fonte falha/char incompatível bloqueia upload %s", async (fontFailure) => {
+    const s = setup(undefined, undefined, undefined, { fontFailure, rows: [{ text: "🧪" }] });
+    await failureResponse(await s.invoke({ ...valid, format: "PDF" }), 500); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it.each(["CSV", "PDF"])("%s limita1000 registros sem truncar/upload", async (format) => {
+    const s = setup(undefined, undefined, undefined, { rows: Array.from({ length: 1001 }, () => ({ amount: 1 })) });
+    await failureResponse(await s.invoke({ ...valid, format }), 500); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it("PDF limita100 páginas sem upload", async () => {
+    const s = setup(undefined, undefined, undefined, { rows: [{ text: "line\n".repeat(6000) }] });
+    await failureResponse(await s.invoke({ ...valid, format: "PDF" }), 500); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it("PDF limita5MiB de bytes finais antes upload", async () => {
+    const s = setup(undefined, undefined, undefined, { pdfBytes: new Uint8Array(5 * 1024 * 1024 + 1) });
+    await failureResponse(await s.invoke({ ...valid, format: "PDF" }), 500); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it("CSV limita conteúdo UTF8 antes upload", async () => {
+    const s = setup(undefined, undefined, undefined, { rows: [{ text: "x".repeat(1024 * 1024 + 1) }] });
+    await failureResponse(await s.invoke(valid), 500); expect(s.upload).not.toHaveBeenCalled();
   });
 });
