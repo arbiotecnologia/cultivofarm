@@ -93,7 +93,8 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
     const label = screen.getByText(/Filtros aplicados:/); expect(label).toHaveTextContent("APLICADO"); expect(label).not.toHaveTextContent("EDITADO");
     expect(state.rpc.mock.calls[0][1].customer_id).toBe("APLICADO");
     fireEvent.click(screen.getByRole("button", { name: "Imprimir" })); expect(window.print).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "CSV" })); expect(state.invoke.mock.calls[0][1].body.filters.customer_id).toBe("EDITADO");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "CSV" })); });
+    expect(state.invoke.mock.calls[0][1].body.filters.customer_id).toBe("EDITADO");
   });
   it("erro atual remove prévia/metadados anteriores e permite repetir", async () => {
     render(element()); await generate(); state.rpc.mockResolvedValueOnce({ data: null, error: { message: "Acesso negado" } });
@@ -131,5 +132,19 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
     const exp = deferred(); state.invoke.mockReturnValueOnce(exp.promise);
     act(() => { fireEvent.click(screen.getByRole("button", { name: "CSV" })); fireEvent.click(screen.getByRole("button", { name: "PDF" })); fireEvent.click(button); });
     expect(state.invoke).toHaveBeenCalledTimes(1); expect(state.rpc).toHaveBeenCalledTimes(1);
+  });
+  it("desmontagem descarta respostas de geração e exportação", async () => {
+    const old = deferred(); state.rpc.mockReturnValueOnce(old.promise);
+    const view = render(element()); await generate(); view.unmount();
+    await settle(old, { data: ["ANTIGO"], error: null });
+    const exp = deferred(); state.invoke.mockReturnValueOnce(exp.promise);
+    const next = render(element()); fireEvent.click(screen.getByRole("button", { name: "PDF" })); next.unmount();
+    await settle(exp, { data: { url: "arquivo-ficticio" }, error: null });
+    expect(window.open).not.toHaveBeenCalled(); expect(state.success).not.toHaveBeenCalled();
+  });
+  it("rejeição atual não prende lock e mantém erro explícito", async () => {
+    state.rpc.mockRejectedValueOnce(new Error("rede indisponível")); render(element()); await generate();
+    expect(screen.getByRole("alert")).toHaveTextContent("rede indisponível"); await generate();
+    expect(screen.getByText(/PREVIA-A/)).toBeTruthy();
   });
 });
