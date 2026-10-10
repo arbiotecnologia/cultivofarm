@@ -243,6 +243,19 @@ describe("generate-financial-report — handler real isolado", () => {
     const s = setup(undefined, undefined, undefined, { pdfBytes: new Uint8Array(5 * 1024 * 1024 + 1) });
     await failureResponse(await s.invoke({ ...valid, format: "PDF" }), 500); expect(s.upload).not.toHaveBeenCalled();
   });
+  it.each(["CSV", "PDF"])("%s aceita exatamente1000 registros sem omitir último", async (format) => {
+    const s = setup(undefined, undefined, undefined, { rows: Array.from({ length: 1000 }, (_, i) => ({ item: `ID-${i + 1}` })) });
+    const response = await s.invoke({ ...valid, format }); expect(response.status).toBe(200);
+    expect((await response.json()).row_count).toBe(1000);
+    if (format === "CSV") expect(parseCSV(s).at(-1)).toEqual(["ID-1000"]);
+    else expect(s.pages.flatMap((p) => p.drawText.mock.calls.map(([text]) => text))).toContain("item: ID-1000");
+  });
+  it.each(["title", "header", "nested"])("PDF caractere incompatível em %s impede upload", async (where) => {
+    const rows = where === "header" ? [{ "🧪": 1 }] : where === "nested" ? [{ nested: { text: "🧪" } }] : [{ item: 1 }];
+    const s = setup(undefined, undefined, undefined, { rows });
+    await failureResponse(await s.invoke({ ...valid, format: "PDF", ...(where === "title" ? { title: "🧪" } : {}) }), 500);
+    expect(s.upload).not.toHaveBeenCalled(); expect(s.createSignedUrl).not.toHaveBeenCalled();
+  });
   it("CSV limita conteúdo UTF8 antes upload", async () => {
     const s = setup(undefined, undefined, undefined, { rows: [{ text: "x".repeat(1024 * 1024 + 1) }] });
     await failureResponse(await s.invoke(valid), 500); expect(s.upload).not.toHaveBeenCalled();

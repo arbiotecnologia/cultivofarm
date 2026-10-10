@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       // No substitution, substring cutoff or omitted records on overflow.
       const write = (text: string, size = 9, selectedFont = font) => {
         for (const paragraph of text.split(/\r\n|\r|\n/)) {
-          let line = "", width = 0;
+          let line = "";
           const drawLine = () => {
             if (y < 60) { page = addPage(); y = 800; }
             page.drawText(line, { x: 40, y, size, font: selectedFont });
@@ -142,8 +142,8 @@ Deno.serve(async (req) => {
           for (const char of paragraph) {
             const charWidth = selectedFont.widthOfTextAtSize(char, size);
             if (!Number.isFinite(charWidth) || charWidth > 515) throw new Error("financial_report_unavailable");
-            if (width + charWidth > 515) { drawLine(); line = ""; width = 0; }
-            line += char; width += charWidth;
+            if (selectedFont.widthOfTextAtSize(line + char, size) > 515) { drawLine(); line = ""; }
+            line += char;
           }
           drawLine();
         }
