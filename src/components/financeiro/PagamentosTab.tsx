@@ -26,10 +26,11 @@ export function PagamentosTab({ kind, contaId }: Props) {
 
   useEffect(() => {
     const predicate = (query: { queryKey: readonly unknown[] }) =>
-      query.queryKey[0] === "fin-payments" && query.queryKey.at(-1) !== fence.scope;
+      query.queryKey[0] === "fin-payments" && query.queryKey[1] === kind &&
+      query.queryKey[2] === contaId && query.queryKey.at(-1) !== fence.scope;
     void qc.cancelQueries({ predicate });
     qc.removeQueries({ predicate });
-  }, [qc, fence.scope]);
+  }, [qc, fence.scope, kind, contaId]);
 
   const query = useQuery<FinancialPayment[]>({
     queryKey: ["fin-payments", kind, contaId, fence.scope],
@@ -48,9 +49,9 @@ export function PagamentosTab({ kind, contaId }: Props) {
       if (!contaId || !org) throw new Error("Sessão indisponível.");
       const insts = kind === "receivable"
         ? await supabase.from("accounts_receivable_installments").select("id")
-          .eq("receivable_id", contaId).eq("organization_id", org).abortSignal(signal)
+          .eq("receivable_id", contaId).filter("organization_id", "eq", org).abortSignal(signal)
         : await supabase.from("accounts_payable_installments").select("id")
-          .eq("payable_id", contaId).eq("organization_id", org).abortSignal(signal);
+          .eq("payable_id", contaId).filter("organization_id", "eq", org).abortSignal(signal);
       assertCurrent();
       if (insts.error) throw insts.error;
       const ids = (insts.data ?? []).map((inst) => inst.id);
@@ -58,10 +59,10 @@ export function PagamentosTab({ kind, contaId }: Props) {
       const columns = "id,installment_id,organization_id,payment_date,is_reversal,reversed_payment_id,payment_methods(name),bank_accounts(name)";
       const result = kind === "receivable"
         ? await supabase.from("receivable_payments").select(`${columns},amount_received`)
-          .eq("organization_id", org).in("installment_id", ids)
+          .filter("organization_id", "eq", org).in("installment_id", ids)
           .order("payment_date", { ascending: false }).abortSignal(signal).returns<FinancialPayment[]>()
         : await supabase.from("payable_payments").select(`${columns},amount_paid`)
-          .eq("organization_id", org).in("installment_id", ids)
+          .filter("organization_id", "eq", org).in("installment_id", ids)
           .order("payment_date", { ascending: false }).abortSignal(signal).returns<FinancialPayment[]>();
       assertCurrent();
       if (result.error) throw result.error;

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,7 +85,10 @@ function EstornoForm({ open, onClose, kind, payment, wasReversed = false }: Prop
     <Dialog open={open} onOpenChange={(value) => { if (!value && !lock.current) onClose(); }}>
       <DialogContent className="max-w-md" onEscapeKeyDown={(event) => { if (lock.current) event.preventDefault(); }}
         onPointerDownOutside={(event) => { if (lock.current) event.preventDefault(); }}>
-        <DialogHeader><DialogTitle>Estornar baixa</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Estornar baixa</DialogTitle>
+          <DialogDescription>Confirme o motivo do estorno.</DialogDescription>
+        </DialogHeader>
         {payment && <div className="rounded-md bg-muted p-3 text-sm">
           <p>Data: {formatDateDisplay(payment.payment_date + "T12:00:00")}</p>
           <p>Valor: <strong>{brl(amount)}</strong></p>

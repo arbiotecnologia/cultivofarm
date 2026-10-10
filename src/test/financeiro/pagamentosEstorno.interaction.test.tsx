@@ -20,7 +20,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   from: (table: string) => {
     state.from(table);
     const chain: Record<string, unknown> = {};
-    for (const method of ["select", "eq", "in", "order", "abortSignal", "returns"]) chain[method] = () => chain;
+    for (const method of ["select", "eq", "filter", "in", "order", "abortSignal", "returns"]) chain[method] = () => chain;
     chain.then = (resolve: (value: unknown) => void) => {
       const inst = table.includes("installments");
       const value = { data: inst ? [{ id: "I" }] : state.payments,
@@ -160,14 +160,15 @@ describe("EstornoDialog — decisões locais, sem escrita real", () => {
       expect(close).not.toHaveBeenCalled(); expect(invalidation).not.toHaveBeenCalled(); expect(state.success).not.toHaveBeenCalled();
     });
   }
-  it("troca identidade durante RPC suprime efeitos tardios e apaga motivo antigo", async () => {
+  for (const change of ["identity", "tenant"] as const) it(`troca ${change} durante RPC suprime efeitos tardios e apaga motivo antigo`, async () => {
     let resolve: (value: unknown) => void = () => {};
     state.rpc.mockImplementation(() => new Promise((done) => { resolve = done; }));
     const close = vi.fn(); const element = <EstornoDialog open onClose={close} kind="receivable" payment={payment} />;
     const view = setup(element); const invalidation = vi.spyOn(view.client, "invalidateQueries");
     fireEvent.change(screen.getByLabelText("Motivo do estorno *"), { target: { value: "teste auditoria" } });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar estorno" }));
-    state.auth.user.id = "B"; state.auth.profile.user_id = "B";
+    if (change === "identity") { state.auth.user.id = "B"; state.auth.profile.user_id = "B"; }
+    else state.auth.profile.organization_id = "OB";
     view.update(<EstornoDialog open onClose={close} kind="receivable" payment={payment} />);
     expect(screen.getByLabelText("Motivo do estorno *")).toHaveValue("");
     await act(async () => resolve({ data: "REV", error: null }));
