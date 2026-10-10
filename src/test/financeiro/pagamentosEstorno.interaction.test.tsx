@@ -77,6 +77,47 @@ describe("PagamentosTab — interação e sessão, servidor mockado", () => {
     state.pending = true; setup(<PagamentosTab kind="payable" contaId="C" />);
     expect(screen.getByRole("status")).toBeTruthy(); expect(screen.queryByText("Nenhum lançamento")).toBeNull();
   });
+  for (const kind of ["receivable", "payable"] as const) {
+    it(`${kind}: refetch em segundo plano preserva motivo e bloqueia novas aberturas`, async () => {
+      const view = setup(<PagamentosTab kind={kind} contaId="C" />);
+      fireEvent.click(await screen.findByRole("button", { name: "Estornar" }));
+      fireEvent.change(screen.getByLabelText("Motivo do estorno *"), { target: { value: "motivo preservado" } });
+      const originalForm = screen.getByLabelText("Motivo do estorno *");
+      state.pending = true;
+      let refresh: Promise<void> = Promise.resolve();
+      act(() => { refresh = view.client.refetchQueries({ queryKey: ["fin-payments"] }); });
+      await waitFor(() => expect(state.resolvers.length).toBe(1));
+      expect(screen.getByLabelText("Motivo do estorno *")).toBe(originalForm);
+      expect(originalForm).toHaveValue("motivo preservado");
+      expect(screen.getByRole("button", { name: "Estornar", hidden: true })).toBeDisabled();
+      state.pending = false;
+      state.payments = [{ ...payment }];
+      await act(async () => { state.resolvers[0]({ data: [{ id: "I" }], error: null }); await refresh; });
+      expect(screen.getByLabelText("Motivo do estorno *")).toBe(originalForm);
+      expect(originalForm).toHaveValue("motivo preservado");
+      expect(state.rpc).not.toHaveBeenCalled();
+    });
+  }
+  for (const loss of ["role", "reversed", "missing"] as const) {
+    it(`encerra seleção por perda de elegibilidade ${loss}, sem reabrir ao restaurar`, async () => {
+      const view = setup(<PagamentosTab kind="receivable" contaId="C" />);
+      fireEvent.click(await screen.findByRole("button", { name: "Estornar" }));
+      fireEvent.change(screen.getByLabelText("Motivo do estorno *"), { target: { value: "motivo antigo" } });
+      if (loss === "role") {
+        state.auth.roles = ["consultor_tecnico"];
+        view.update(<PagamentosTab kind="receivable" contaId="C" />);
+      } else {
+        state.payments = loss === "missing" ? [] : [payment, { ...payment, id: "REV", is_reversal: true, reversed_payment_id: "P" }];
+        await act(async () => { await view.client.refetchQueries({ queryKey: ["fin-payments"] }); });
+      }
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      state.auth.roles = ["financeiro"]; state.payments = [payment];
+      view.update(<PagamentosTab kind="receivable" contaId="C" />);
+      await act(async () => { await view.client.refetchQueries({ queryKey: ["fin-payments"] }); });
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(state.rpc).not.toHaveBeenCalled();
+    });
+  }
   for (const source of ["inst", "pay"] as const) {
     it(`erro de ${source} não representa vazio e permite reconsulta`, async () => {
       state.instError = source === "inst"; state.payError = source === "pay";

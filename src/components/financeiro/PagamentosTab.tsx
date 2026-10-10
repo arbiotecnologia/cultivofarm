@@ -72,9 +72,13 @@ export function PagamentosTab({ kind, contaId }: Props) {
   });
   const payments = fence.ready && !authError && !query.isError ? query.data ?? [] : [];
   const reversedIds = new Set(payments.filter((p) => p.reversed_payment_id).map((p) => p.reversed_payment_id));
-  const estorno = selection?.scope === fence.scope && canReverse && !query.isFetching
+  const estorno = selection?.scope === fence.scope && canReverse
     ? payments.find((p) => p.id === selection.payment.id && !p.is_reversal &&
+      p.organization_id === profile?.organization_id &&
       !p.reversed_payment_id && !reversedIds.has(p.id)) ?? null : null;
+  useEffect(() => {
+    if (selection && !estorno) setSelection(null);
+  }, [selection, estorno]);
   const waiting = loading || (fence.ready && !!contaId && query.isPending && !authError);
 
   return (
