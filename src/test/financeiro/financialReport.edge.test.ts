@@ -22,7 +22,7 @@ function deferred() {
 }
 function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, throws?: string) {
   const effects: string[] = [];
-  const rpc = vi.fn(async (name: string) => {
+  const rpc = vi.fn(async (name: string, _args?: Record<string, unknown>) => {
     effects.push(name); if (throws === name) throw new Error(sentinel);
     if (name === "h15_actor_organization") return { data: failure === "noOrg" ? null : org, error: failure === "org" ? sentinel : null };
     if (name === "register_financial_report_export") return auditPending?.promise ?? { data: failure === "noId" ? null : auditId, error: failure === "audit" ? sentinel : null };
@@ -40,7 +40,7 @@ function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, th
   });
   const createClient = vi.fn(() => ({ auth: { getUser }, rpc, storage: { from: vi.fn(() => ({ upload, createSignedUrl, remove })) } }));
   let handler: ((req: Request) => Promise<Response>) | undefined;
-  const env = vi.fn((name: string) => name === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : name === "SUPABASE_ANON_KEY" ? "mock-public-key" : undefined);
+  const env = vi.fn((name: string): string | undefined => name === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : name === "SUPABASE_ANON_KEY" ? "mock-public-key" : undefined);
   const deno = { env: { get: env }, serve: (fn: typeof handler) => { handler = fn; } };
   const log = vi.fn();
   const page = { drawText: vi.fn() };
