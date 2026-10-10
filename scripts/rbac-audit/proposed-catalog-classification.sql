@@ -9,7 +9,8 @@ DO $preflight$
 BEGIN
   IF to_regclass('public.produtos') IS NULL
      OR to_regclass('public.catalog_technical_audit_logs') IS NULL
-     OR to_regprocedure('public.is_platform_superadmin(uuid)') IS NULL THEN
+     OR to_regprocedure('public.is_platform_superadmin(uuid)') IS NULL
+     OR to_regprocedure('public.has_role(uuid,public.app_role)') IS NULL THEN
     RAISE EXCEPTION 'catalog_preflight_missing';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public'
@@ -57,16 +58,19 @@ BEGIN
     END IF;
     RETURN NEW;
   END IF;
-  IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
+  -- has_role canônico inclui profiles.ativo e readiness/fencing (SQL local 20261007155703).
+  -- Definição/ACL atuais devem ser comprovadas antes da promoção; sem fallback.
+  IF auth.uid() IS NULL
+    OR public.has_role(auth.uid(),'superadmin'::public.app_role) IS DISTINCT FROM true
+    OR public.is_platform_superadmin(auth.uid()) IS DISTINCT FROM true THEN
     RAISE EXCEPTION 'catalog_platform_required' USING ERRCODE='42501';
   END IF;
   IF TG_OP='UPDATE' AND (NEW.tipo IS DISTINCT FROM OLD.tipo OR NEW.codigo IS DISTINCT FROM OLD.codigo) THEN
     RAISE EXCEPTION 'catalog_legacy_identity_immutable';
   END IF;
-  -- Tipo ausente é ausência real, não valor fictício. set_codigo_produto existente
-  -- aceita código manual; sem código o próprio trigger anterior nega NULL tipo.
-  IF NEW.tipo IS NULL AND (NEW.codigo IS NULL OR btrim(NEW.codigo)='') THEN
-    RAISE EXCEPTION 'catalog_reviewed_manual_code_required';
+  -- B1 mantém NOT NULL, sem caminho nullable ou tipo fictício.
+  IF NEW.tipo IS NULL THEN
+    RAISE EXCEPTION 'catalog_b1_type_required';
   END IF;
   IF NEW.familia_catalogo IS NULL OR NEW.familia_catalogo NOT IN
     ('biologico','quimico','fertilizante_adubo')
@@ -168,7 +172,9 @@ BEGIN
   IF (TG_OP='INSERT' AND NEW.familia_catalogo IS NULL) OR new_data IS NOT DISTINCT FROM old_data THEN
     RETURN NEW;
   END IF;
-  IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
+  IF auth.uid() IS NULL
+    OR public.has_role(auth.uid(),'superadmin'::public.app_role) IS DISTINCT FROM true
+    OR public.is_platform_superadmin(auth.uid()) IS DISTINCT FROM true THEN
     RAISE EXCEPTION 'catalog_platform_required' USING ERRCODE='42501';
   END IF;
   INSERT INTO public.catalog_technical_audit_logs
