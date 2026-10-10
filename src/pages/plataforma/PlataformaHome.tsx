@@ -5,10 +5,11 @@
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
 import { useState } from "react";
-import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare } from "lucide-react";
+import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare, Package } from "lucide-react";
 import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import PlataformaAdmins from "./PlataformaAdmins";
 import PlataformaEmpresas from "./PlataformaEmpresas";
+import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
 import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
 import { VersaoComercialEditor } from "@/components/plataforma/VersaoComercialEditor";
 import { Button } from "@/components/ui/button";
@@ -179,7 +180,12 @@ export default function PlataformaHome() {
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
             </TabsTrigger>
+            <TabsTrigger value="catalogo">
+              <Package className="mr-2 h-4 w-4" aria-hidden="true" />
+              Catálogo
+            </TabsTrigger>
           </TabsList>
+          <TabsContent value="catalogo"><PlatformCatalogReadTab /></TabsContent>
 
           {/* PLANOS ------------------------------------------------------- */}
           <TabsContent value="planos" className="space-y-4">
