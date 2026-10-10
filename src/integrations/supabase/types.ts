@@ -22523,6 +22523,10 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
       }
+      platform_read_global_product_metadata: {
+        Args: { p_id: string }
+        Returns: Json
+      }
       platform_register_org_admin: {
         Args: {
           p_actor_id: string
@@ -22600,6 +22604,16 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_update_global_product_metadata: {
+        Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_patch: Json
+          p_reason: string
+        }
+        Returns: Json
       }
       platform_update_org_admin: {
         Args: {
