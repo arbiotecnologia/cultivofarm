@@ -1,6 +1,6 @@
-# Fase A — inventário e contrato agrícola implementável
+# Fase A — inventário e contrato agrícola revisável
 
-Base: `eee9fcdfbb4ffcbf0dff7abfed0d0d550abac575`. Autorização: 10/10/2026 03:08 UTC. Deriva exclusivamente do plano vigente de 17 seções `catalogo-agricola-plano-implantacao.md`; não o substitui por um plano concorrente.
+Base inicial: `eee9fcdfbb4ffcbf0dff7abfed0d0d550abac575`. Revisão Codex solicitada 10/10/2026 03:17 UTC a partir de `eebdab69ba03ee0eb30fab7ee26936fbde0b0ece`. Autorização: 10/10/2026 03:08 UTC. Deriva exclusivamente do plano vigente de 17 seções `catalogo-agricola-plano-implantacao.md`; não o substitui por um plano concorrente.
 
 ## 1. Resultado e evidência
 
@@ -12,7 +12,7 @@ Base: `eee9fcdfbb4ffcbf0dff7abfed0d0d550abac575`. Autorização: 10/10/2026 03:0
 
 ## 2. Cadastro global único — achado, não rota inventada
 
-Busca literal em `src`/Edges não encontrou rota, arquivo ou RPC com nome **admin-catalogo**. Esse nome é tratado como designação funcional do cadastro global existente, **não endpoint a criar**.
+Busca literal em `src`/Edges não encontrou rota, arquivo ou RPC com nome **admin-catalogo**. **Não existe endpoint admin-catalogo**; não usar esse nome como cadastro/RPC real.
 
 Caminho real: `src/App.tsx:537` `/base-tecnica` → `RoleGuard` → `src/pages/Protocolos.tsx:495–524` → `?tab=produtos` → `src/components/protocolos/ProdutosTab.tsx`. `/protocolos` redireciona preservando query/hash; `/comercial/catalogo` aponta a `?tab=catalogo-tecnico` (App538/601). Mobile real: `/app/catalogo` (App446), não `/app/MobileCatalogoTecnico` sugerido em inventário secundário.
 
@@ -59,7 +59,7 @@ Writer real: `handleSave` (309–371) → **`saveProdutoComCompensacao` (104–1
 | Interno técnico/consultor | useCatalogoUnificado tem projeção price-free mas SELECT direto cercado | **Bloqueio real de contrato:** não há fonte interna alternativa segura comprovada no inventário. Não mudar policy nem reutilizar RPC comercial/B2B para role inexistente; Codex deve identificar projeção/RPC atual antes de C/D. |
 | Produtor/mobile | MobileCatalogoTecnico e caminhos autorizados existentes | Vínculo/entitlement/cache e payload só técnico ainda **UNVERIFIED HTTP**. Não criar fonte universal. |
 
-Proposta de ABI sem nova RPC: preservar campos de cada fonte existente e adicionar metadados **sem preço** (familia_catalogo, classes_catalogo, finalidades_catalogo, unidade_comercial, conteudo_apresentacao, unidade_conteudo) na própria projeção autorizada. RETURNS TABLE exigirá plano de compatibilidade/consumidores/dependências antes de substituir função; não executar DROP agora. Não remover rows do legado por família NULL; classificacao_estado NULL = pendente na leitura, não classificação inferida. Técnicos nunca recebem motivo interno/autor/revisão financeira.
+Proposta de ABI sem nova RPC: preservar campos de cada fonte existente e adicionar metadados **sem preço** (familia_catalogo, classes_catalogo, unidade_comercial, conteudo_apresentacao, unidade_conteudo) na própria projeção autorizada. RETURNS TABLE exigirá plano de compatibilidade/consumidores/dependências antes de substituir função; não executar DROP agora. Não remover rows do legado por família NULL; classificacao_estado NULL = pendente na leitura, não classificação inferida. Técnicos nunca recebem motivo interno/autor/revisão financeira.
 
 ## 5. Contrato de classificação B revisável
 
@@ -69,14 +69,13 @@ Sem nova tabela de produtos, relacionamento ou catálogo paralelo. Reutilizar **
 |---|---|
 | familia_catalogo | text NULL legado; exatamente 1 família por produto classificado: biologico/quimico/fertilizante_adubo |
 | classes_catalogo | text[] NULL legado, único vetor1D sem NULL/duplicados; 1..4 biológico,1..3 químico,0 fertilizante até taxonomia comprovada |
-| finalidades_catalogo | text[] NULL legado; 0..N futuras finalidades controladas; **[] apenas em B inicial** porque não há vocabulário de finalidade inventariado/aprovado; não confundir modo_aplicacao livre com enum finalidade |
 | classificacao_estado | text NULL legado → pendente lógico; classificado exige pendente/revisado |
 | classificacao_motivo | text10..500, revisão explícita; valores regra candidatados, não regra já implantada |
 | classificacao_fonte_id | uuid de catalog_technical_sources; entidade produto ou ficha_produto do mesmo produto; fonte não garante verdade por existência, revisão técnica necessária |
 | classificacao_revisada_por/em | uuid/timestamptz servidor auth.uid()/now; nunca payload privilegiado |
 | unidade_comercial | text L/mL/kg/g/un explícito; embalagem vendida por un é apresentação, não preço/L |
 | conteudo_apresentacao | numeric(18,6) finito>0; quantidade de conteúdo por unidade/apresentação, não dose/receita |
-| unidade_conteudo | L/mL/kg/g/un; contagem integral se un; precisão6 proposta, tolerância/arredondamento de preço separados |
+| unidade_conteudo | L/mL/kg/g/un; contagem integral se un; escala de armazenamento 6: numeric(18,6) arredonda antes do trigger; não rejeita entrada >6 casas. Rejeição estrita exigiria numeric sem typmod + scale validado ou payload textual/numérico validado antes do cast, em revisão separada |
 
 Classes exatas: biológico `[biofungicida,bioinseticida,inoculante,solubilizador]`; químico `[herbicida,fungicida,inseticida]`. Dupla função é array com mais de um membro do vocabulário da mesma família, **um ID, um SKU, um saldo**. Não forçar classe única nem criar um produto por subaba. Fertilizante/adubo é família, [] classe por ora, sem taxonomia fabricada. Formas/formulações posteriores usam ficha/fonte existente, não microrganismo fictício.
 
@@ -84,53 +83,73 @@ Conversões apenas L↔mL fator1000 e kg↔g fator1000, precisão decimal. `un` 
 
 ### Resolver tipo NOT NULL sem solo falso
 
-É impossível inserir herbicida sem função representável mantendo NOT NULL do enum atual e sem inventar valor. Família separada sozinha não resolve. **Delta explícito B2 escolhido para revisão:** manter `tipo_produto` inalterado, remover NOT NULL físico de `produtos.tipo` e reinstalar obrigação condicional em trigger: produto sem classificação continua exigindo tipo; novo classificado com tipo NULL só com ativo=false/b2b_enabled=false, código manual não vazio/único e unidades válidas. Tipo NULL = não representável no enum legado, não 'solo'. Update classificatório não muda tipo/código legado. Não colocar famílias no enum nem acrescentar categoria genérica que altere significado de tipo.
+É impossível inserir produto sem função representável mantendo NOT NULL e sem inventar tipo. **B1** mantém NOT NULL e valores/enum legados; só classifica produtos com tipo semanticamente fiel, sem solo falso. **B2** está fisicamente em `scripts/rbac-audit/proposed-catalog-classification-b2-not-executable.sql`: BEGIN/ROLLBACK e DDL apenas comentado, **não executável/não promovido**. Remover NOT NULL é alternativa futura condicionada a guard legado e auditoria integral; nenhuma aprovação implícita.
 
-`set_codigo_produto` histórico admite código manual (106–108); com tipo NULL e código automático ausente recusa por prefixo NULL. Logo **cadastro manual no mesmo formulário**, sem novo gerador/RPC. Promover B2 exige índice de unicidade codigo e corpo real do trigger comprovados; casos de corrida e conflito testados. Prefixos novos/automação de código ficam fora desse delta. Interface atual usa tipo='solo'/preçoL: **não pode cadastrar NULL até C corrigir campos condicionais e leitores nullable**. B1 opcional só instala metadados e mantém NOT NULL; B2 é alteração de compatibilidade claramente marcada, não vendida como apenas coluna aditiva.
+Consumidores nullable pendentes: `ProdutosTab.tsx` (resetForm solo, writer/snapshot compensatório, formulacoes/volume), `src/lib/protocolos/autoCodigo.ts` e `set_codigo_produto` (prefixo/code unique/corrida), `src/hooks/useCatalogoUnificado.ts` (tipo/subtítulo/filtros), `src/lib/pdf/fichaTecnicaProdutoPdf.ts` (tipo exibido), `usePartnerCatalog.ts`, `usePartnerCatalogTecnico.ts` e RPCs/RETURNS TABLE, catálogo técnico/mobile e mapas de rótulos, tipos canônicos gerados `cultivofarm.types.ts`. Inventário não integral: todos devem tratar NULL como não representável, nunca solo/0. Não editar tipos gerenciados nesta fase. Migração histórica de e_insumo por tipo não deve ser reaplicada como classificação. Código manual histórico não é prova suficiente de cadastro NULL seguro; trigger/unique/consumidores vivos ainda UNVERIFIED.
 
 ## 6. Auditoria e guards do candidato
 
-SQL proposto: `scripts/rbac-audit/proposed-catalog-classification.sql`, **fora de supabase/migrations**, termina **ROLLBACK**, nunca aplicado. Colunas nullable sem defaults/backfill; triggers internos (não RPC caller) `catalog_classification_guard_candidate()` e `catalog_classification_audit_candidate()` com search_path vazio, auth.uid e is_platform_superadmin, EXECUTE revogado de PUBLIC/anon/authenticated. Nenhuma tabela pública nova; portanto nenhum novo GRANT necessário. Não abre grants/RLS existentes.
+SQL proposto: `scripts/rbac-audit/proposed-catalog-classification.sql`, **fora de supabase/migrations**, termina **ROLLBACK**, nunca aplicado. Colunas nullable sem defaults/backfill; triggers internos (não RPC caller) `catalog_classification_guard_candidate()` e `catalog_classification_audit_candidate()` com search_path vazio, auth.uid, has_role(auth.uid(),superadmin) e is_platform_superadmin, EXECUTE revogado de PUBLIC/anon/authenticated. Nenhuma tabela pública nova; portanto nenhum novo GRANT necessário. Não abre grants/RLS existentes.
 
 Ledger escolhido: `catalog_technical_audit_logs(entidade_tipo,entidade_id,acao,dados_anteriores,dados_novos,usuario_id,created_at)`, action `classificacao_catalogo`, produto original, snapshots **apenas campos classificatórios sem preço**. Helper interno insere no ledger na mesma transação; falha audit aborta UPDATE. Não reusar `catalog_audit_log` genérico diretamente: esse captura linha inteira e poderia armazenar preços em ledger com leitores técnicos/tenant. Não duplicar tabela audit.
 
-`catalog_platform_admin_audit` NÃO escolhido: SQL histórico `20261005210852_...:12` limita operation='wipe_global_products', status completed, correlation_id unique e counts, incompatível com revisão de produto. Não relaxar constraint para simular compatibilidade. Ledger técnico atual ACL/policies, validação de action e imutabilidade devem ser confirmados pelo Codex; políticas históricas de INSERT amplo não significam que hoje estejam abertas. Se origin/amendments não contidos, **B bloqueada**, não abrir grant para passar teste.
+`catalog_platform_admin_audit` NÃO escolhido: SQL histórico `20261005210852_...:12` limita operation='wipe_global_products', status completed, correlation_id unique e counts, incompatível com revisão de produto. Não relaxar constraint para simular compatibilidade. P1 de INSERT amplo confirmado EXTERNAMENTE e já contido pelo Codex (delta abaixo). Não reabrir ACL para passar teste; SELECT preservado não certifica escopo de leitores nem imutabilidade contra owner. Action/trigger owner/ACL atuais continuam gate B.
 
-Guard candidato classificado exige ativo=false/b2b_enabled=false. Isto é **mais restritivo** e impede revisão em produto ativo nessa pequena B: não desativar legado automaticamente. Revisão de legados ativos exige recorte específico de preservação de canal/CAS após prova; manter pendentes por ora. Classificação não é homologação comercial. Nenhum novo produto sólido/calculado pode usar dose_ml_ha/preçoL/dose/ha, guard posterior ao sync; nome zz depende da ordem real BEFORE confirmada. Se outro trigger posterior criar preço, promoção bloqueada. Formulacoes/volumes/estoque ainda NÃO têm novos guards dimensionais: B não libera esses canais; E precisa guard dentro cores existentes, não apenas na UI.
+**Ator ativo:** `is_platform_superadmin` isolado não verifica atividade. B1 combina `auth.uid()`, `public.has_role(auth.uid(),'superadmin'::public.app_role) IS TRUE` e `is_platform_superadmin IS TRUE`, sem fallback. SQL local `20261007155703_7e6f0323-4d33-488f-8cdd-e091c104108d.sql:19–38` mostra has_role → platform_private.has_role → profiles.ativo/readiness/senha/fencing; definição/ACL viva precisam comprovação. Helper dedicado superadmin em `20260922160736_29af83f9-2f0d-4770-91d4-264de788ccc5.sql:11–28` intencionalmente ignora ativo.
+
+**Preservação do legado:** UPDATE classificatório mantém ativo/b2b_enabled originais, inclusive true, sem exigir desativar produto. INSERT classificado exige ambos false explícitos (default b2b true falha fechado). Não libera nova família/unidade em canal; compatibilidade de família/unidade com canal ativo precisa prova antes da classificação, ainda sem resolver instalado. Guard não homologa motores. Autoria/data são calculadas só na alteração de família/classes/estado/motivo/fonte/unidades/conteúdo; mudança de nome/preço/updated_at preserva revisão e não gera log classificatório. Payload forjado é substituído/restaurado pelo servidor.
+
+**Fonte vinculada/exclusão:** proposta usa `classificacao_fonte_id` → `catalog_technical_sources.id` com produto direto ou ficha do mesmo produto. Fonte polimórfica não tem FK física para alvo no SQL histórico; ficha tem produto_id ON DELETE CASCADE. Fonte existente não prova validade/procedência. Com 0 fichas/0 fontes no inventário externo, revisado não pode ser fabricado; pendente admite fonte NULL. Antes de B: confirmar enum/colunas atuais; decidir FK da classificação→fonte ON DELETE RESTRICT e bloquear revínculo/deleção/alteração relevante da fonte/ficha revisada, ou versionar snapshot e invalidar revisão via fluxo autorizado/auditado. Candidato só verifica vínculo no write de produto; **não implementa fence de DELETE/revínculo**, nem CAS/release; promoção bloqueada. Não usar SET NULL/cascade para apagar evidência silenciosamente. Legado/snapshots preservados.
+
+Sólidos com dose/preço líquido continuam rejeitados; não limpar valores históricos para passar. Ordem real sync/preço/guard e formulacoes/volumes/estoque ainda pendentes. Precisão: numeric(18,6) arredonda antes do trigger; 1.1234567 pode virar 1.123457, e un fracionário próximo de inteiro pode arredondar. Não prometer rejeição da entrada original; contrato atual valida valor armazenado. Rejeição estrita antes de cast é decisão pendente.
+
+### Delta externo P1 — contenção já aplicada, não reaplicada
+Codex relatou no canônico `swzpzcwiasxmjutrmvkm`: Consultor conseguia INSERT em `catalog_technical_audit_logs` com usuario_id de Admin. Migration **20261010031113 catalog_technical_audit_server_writes_only JÁ APLICADA**. SQL exato arquivado, não executado aqui, em `scripts/rbac-audit/applied-20261010031113-catalog-technical-audit-server-writes-only.sql`. Revoga INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER de PUBLIC/anon/authenticated; não remove histórico, preserva SELECT. Não adicionar BEGIN/ROLLBACK ao arquivo literal aplicado.
+
+**Teste SQL externo transacional com claims reais:** AdminAR, AdminFSF, ConsultorAR e Superadmin: 4 INSERT diretos negados; produtor servidor via trigger de ficha continuou gerando log. Positivo owner/servidor, **não sessão UI/HTTP**. Primeiro positivo falhou por ausência de ficha; segundo usou rascunho vazio transacional. Tudo rollback; 0 fichas/0 logs de teste depois. Não inferir login/Auth HTTP. Inventário externo: **9 produtos, 26 FKs, 19 colunas, 0 fichas, 0 fontes**. Não consulta própria.
+
+Advisors externos: **15 INFO RLS sem política; 2 WARN definer anon; 366 WARN definer authenticated; 1 WARN proteção senha**. Não PASS global; cada ocorrência exige triagem própria sem ampliar este job. Contenção P1 não certifica origem de todos os logs, SELECT, writers ou catálogo.
 
 ## 7. Plano concreto de teste SQL com rollback (Codex, não executado)
 
-Executar SOMENTE após autorização específica e ref exato comprovado, sem escolher usuário por acaso/service_role como caller. `BEGIN;` instalar candidato sem seu encerramento; SAVEPOINT por caso; `SET LOCAL ROLE authenticated` com claims de atores existentes + iat atual, actor/tenant server-derived; restaurar role entre setup/asserts; **ROLLBACK final** de DDL, dados e logs. Classificação usa produto inativo existente autorizado ou registro abstrato explicitamente autorizado; nada de produto/dose/recomendação inventados ou tocar fixture financeira. Contagem do produto/audit/pedidos/estoque antes/depois.
+Executar SOMENTE após autorização específica e ref exato comprovado, sem escolher usuário por acaso/service_role como caller. `BEGIN;` testar B1 somente; não executar nem descomentar B2; instalar candidato sem seu encerramento; SAVEPOINT por caso; `SET LOCAL ROLE authenticated` com claims de atores existentes + iat atual, actor/tenant server-derived; restaurar role entre setup/asserts; **ROLLBACK final** de DDL, dados e logs. Classificação usa produto existente explicitamente autorizado, preservando ativo/canais ou registro abstrato explicitamente autorizado; nada de produto/dose/recomendação inventados ou tocar fixture financeira. Contagem do produto/audit/pedidos/estoque antes/depois.
 
 | ID | Assert concreta que pode falhar |
 |---|---|
-| A01 | NOT NULL físico removido somente B2; legacy INSERT tipo NULL sem família rejeitado, enum labels inalterados. |
-| A02 | Insert químico/herbicida com tipo NULL/código manual único/pendente, ativo=false/b2b=false e kg passa; sem tipo='solo'. |
+| A01 | B1 preserva NOT NULL físico/enum/9 legados; INSERT tipo NULL rejeitado. B2 não executado. |
+| A02 | B1 não permite novo produto sem tipo fiel; nenhuma inserção com solo falso. Cenário NULL aguarda B2 autorizado. |
 | A03 | biologico+classes biofungicida,bioinseticida no mesmo ID passa; consulta por qualquer classe devolve mesmo ID, estoque/saldo sem novo registro. |
 | A04 | biologico+fungicida ou quimico+biofungicida rejeitados; fertilizante com classe não inventariada rejeitado. |
 | A05 | classes NULL/multidimensional/null-member/duplicada ou vazia para biológico/químico rejeitadas; fertilizante [] passa. |
-| A06 | finalidade arbitrária rejeitada; [] passa; nenhuma integração específica adiada. |
+| A06 | B1 não cria coluna finalidade; nenhuma finalidade/taxonomia futura exigida. |
 | A07 | unidade kg com conteúdo L rejeitada; L/mL e kg/g aceitas; un com conteúdo kg é apresentação e canal fica false. |
-| A08 | conteúdo0/negativo/NaN/Infinity rejeitados; un fracionário rejeitado; limites numeric18,6 verificados sem arredondamento oculto acima da precisão contratada. |
+| A08 | conteúdo0/negativo/NaN/Infinity rejeitados; un fracionário rejeitado; limites numeric18,6 e arredondamento pré-trigger explicitamente observados, sem promessa de rejeição >6 casas. |
 | A09 | sólido com dose_ml_ha/valor_litro_brl/valor_dose_brl/valor_ha_brl rejeitado inclusive valor criado por sync. |
-| A10 | classificado ativo=true ou b2b_enabled=true (inclui default omitido true) rejeitado, nenhum pedido/recebível/OS criado. |
-| A11 | autoria/data forjadas substituídas pelo ator/tempo servidor; pendente tem revisão NULL. |
+| A10 | UPDATE legado ativo/b2b true preserva flags e classifica sem desativação; alteração de flags rejeitada. INSERT true/default true rejeitado; nenhum pedido/recebível/OS criado. |
+| A11 | revisão mudada usa ator/tempo servidor; alteração só nome/preço/updated_at mantém autoria/data e não gera audit; payload forjado restaurado; pendente revisão NULL. |
 | A12 | fonte de outro produto/ficha rejeitada; revisado sem fonte rejeitado; fonte mesma entidade aceita após procedência revisada. |
 | A13 | UPDATE classificação sem mudança não duplica audit; com mudança cria1 action/snapshot sem preço; falha audit aborta produto. |
 | A14 | tentativa de apagar classificação previamente atribuída rejeitada; tipo/código legado não mudam durante revisão. |
-| A15 | AdminAR/AdminFSF/FinanceiroAR/Consultor/B2B/Produtor não escrevem; superadmin ativo autorizado passa; forja claims de tenant não concede papel; RLS ALL preservada. |
+| A15 | AdminAR/AdminFSF/FinanceiroAR/Consultor/B2B/Produtor não escrevem; superadmin ativo/ready autorizado passa, inativo/provisório/JWT anterior ao fence negados; forja claims de tenant não concede papel; RLS ALL preservada. |
 | A16 | has_function_privilege anon/authenticated nas2helpers false; chamadas diretas sem trigger negadas. Sem novo GRANT/policy. |
 | A17 | preflight verifica codigo unique e todos os triggers; dois códigos manuais iguais/concorrentes negados pela unicidade, snapshots antes/depois iguais após rollback. |
 | A18 | SELECT direto tenant continua baseline restrito; RPC técnico mantém preços NULL; RPC comercial passa só ator elegível, não broaden por família. |
 | A19 | fonte excluída após revisão não pode continuar promovendo conteúdo aprovado: definir imutabilidade/versionamento ou bloquear release em D; candidato não implanta fence de exclusão fonte. |
-| A20 | rollback integral devolve coluna/schema/dados/policies/grants/histórico exatos ao baseline; no rollout real rollback é substitutivo, nunca DROP de classificação persistida. |
+| A20 | rollback B1 devolve schema/dados ao baseline JÁ CONTIDO 20261010031113; quatro INSERT diretos continuam negados, SELECT preservado, sem restaurar escrita livre; no rollout real rollback é substitutivo, nunca DROP de classificação persistida. |
 
 Concorrência real A17 requer duas sessões e alvo autorizado: rollback SQL de uma sessão não prova lock/CAS distribuído. A18/negações HTTP/JWT precisam login/browser separados, não inferir de claims. Projeções técnicas/AR/FSF e troca A→B→A/cache, testes do formulário, typechecks/lint/scanner/build futuros em C/D; testes SQL ainda NOT RUN.
 
 ## 8. Bloqueios, próxima mudança pequena e decisão
 
-**B1 próxima proposta:** revisar colunas e ledger, manter policy ALL, preparar classificação inativa em produto existente com tipos já representáveis; sem consumidor público/pedido/preço novo. **B2 separada:** compatibilidade tipo NULL + código manual único + leitores/formulário nullable; sem desativar/renumerar históricos, sem ampliar enum. C/D só após descobrir source interna realmente autorizada, não redefinir RLS para ocultar lacuna.
+**B1 próxima proposta:** revisar colunas e ledger, manter policy ALL, classificar legado com tipo fiel e flags preservadas; sem desativação obrigatória; sem consumidor público/pedido/preço novo. **B2 separada NÃO EXECUTÁVEL/NÃO PROMOVIDA:** alternativa tipo NULL + código manual único + leitores/formulário nullable; sem desativar/renumerar históricos, sem ampliar enum. C/D só após descobrir source interna realmente autorizada, não redefinir RLS para ocultar lacuna.
 
-Bloqueios para aplicação: definições atuais trigger de preço mestre/código, unicidade real de codigo, policies/ACL ledger técnico/imutabilidade, últimas RPCs com actor/partner corretos, fonte interna/produção/mobile e leitura das19colunas atuais. Corpo de RPC histórico usa org.partner e não prova modelo atual; não reaplicar. Não recomendar hook universal técnico/comercial, view nova readiness ou RPC paralelo sugeridos na investigação secundária: não necessários ao delta e poderiam ampliar acesso.
+Bloqueios para aplicação: definições atuais trigger de preço mestre/código, unicidade real de codigo, paridade pós-contenção/owner/imutabilidade do ledger técnico, fence fonte/exclusão e readiness do ator, últimas RPCs com actor/partner corretos, fonte interna/produção/mobile e leitura das19colunas atuais. Corpo de RPC histórico usa org.partner e não prova modelo atual; não reaplicar. Não recomendar hook universal técnico/comercial, view nova readiness ou RPC paralelo sugeridos na investigação secundária: não necessários ao delta e poderiam ampliar acesso.
 
-**PASS local documental/estrutural:** inventário com caminhos, contrato multiclasse, solução explícita para NOT NULL, candidato rollback e matriz de assertions entregues. **UNVERIFIED:** compilação/execução SQL, RLS runtime/JWT, Edge implantada, UI real, banco paridade e performance. **NO-GO:** aplicação B sem revisão/autorização, cadastro novo frontend, comercial/estoque/produção/entrega/fiscal novos e qualquer alteração Financeiro. Sementes/tratamento fora do contrato/SQL/testes específicos desta implantação.
+**PASS local documental/estrutural:** inventário com caminhos, contrato multiclasse, separação B1 NOT NULL/B2 alternativa bloqueada, candidato rollback e matriz de assertions entregues. **UNVERIFIED:** compilação/execução SQL, RLS runtime/JWT, Edge implantada, UI real, banco paridade e performance. **NO-GO:** aplicação B sem revisão/autorização, cadastro novo frontend, comercial/estoque/produção/entrega/fiscal novos e qualquer alteração Financeiro. Sementes/tratamento fora do contrato/SQL/testes específicos desta implantação.
+
+### Classificação de riscos da revisão
+- **P1 externo contido:** forja de INSERT direto audit; não reabrir grants, preservar SQL aplicado/histórico.
+- **P1 potencial de promoção:** ator inativo, fonte removida/revinculada, abertura de canais incompatíveis/preços; candidatos não promovidos até provas.
+- **Compatibilidade alta/B2 NO-GO:** nullable, prefixos/unique/CAS, ABI/tipos e consumidores ainda sem auditoria integral.
+- **Integridade média:** precisão pré-cast e autoria incidental corrigida no desenho, execução SQL NOT RUN.
+- **Rollback seguro:** testes futuros partem do baseline pós-contenção; ROLLBACK não desfaz migration externa já aplicada. Em implantação real, desativar exposição nova/usar forward-fix, não DROP de histórico, não GRANT de escrita livre, não SET NOT NULL com NULL existentes.
