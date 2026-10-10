@@ -1,5 +1,5 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,12 @@ interface ReportShellProps<TData = unknown> {
   requiresCustomer?: boolean;
 }
 
-export function ReportShell<TData = unknown>({
+export function ReportShell<TData = unknown>(props: ReportShellProps<TData>) {
+  const access = useStorageAccessScope(`report:${props.reportType}`);
+  return <ScopedReportShell<TData> key={access.scope} {...props} />;
+}
+
+function ScopedReportShell<TData = unknown>({
   title,
   description,
   reportType,
@@ -33,9 +38,12 @@ export function ReportShell<TData = unknown>({
 }: ReportShellProps<TData>) {
   const { user } = useAuth();
   const access = useStorageAccessScope(`report:${reportType}`);
-  const [filters, setFilters] = useState<Record<string, unknown>>(defaultFilters);
+  const [filters, setFilters] = useState<Record<string, unknown>>(() => structuredClone(defaultFilters));
   const [data, setData] = useState<TData | null>(null);
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
+  const [appliedFilters, setAppliedFilters] = useState<Record<string, unknown> | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const operation = useRef<symbol | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
 
@@ -59,7 +67,16 @@ export function ReportShell<TData = unknown>({
   };
 
   const generate = async () => {
-    if (!validate()) return;
+    if (!access.ready || operation.current || !validate()) return;
+    const current = access.capture();
+    const request = Symbol();
+    operation.current = request;
+    const snapshot = structuredClone(filters);
+    const isCurrent = () => current() && operation.current === request;
+    setData(null);
+    setGeneratedAt(null);
+    setAppliedFilters(null);
+    setPreviewError(null);
     setLoading(true);
     try {
       const rpcMap: Record<string, string> = {
@@ -73,54 +90,70 @@ export function ReportShell<TData = unknown>({
         accountability: "get_report_accountability",
       };
       const fn = rpcMap[reportType];
+      if (!fn) throw new Error("Tipo de relatório indisponível");
       const rpc = supabase.rpc as unknown as (
         name: string,
         args: Record<string, unknown>,
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
-      const { data: result, error } = await rpc(fn, filters);
+      const { data: result, error } = await rpc(fn, snapshot);
+      if (!isCurrent()) return;
       if (error) throw error;
       setData(result as TData);
       setGeneratedAt(new Date());
+      setAppliedFilters(snapshot);
       const rows = Array.isArray(result) ? result.length : 0;
       if (rows > 1000) {
         toast.warning(`Prévia com ${rows} linhas. Recomendamos exportar em Excel ou CSV.`);
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Erro ao gerar relatório");
+      if (!isCurrent()) return;
+      const message = e instanceof Error ? e.message :
+        typeof e === "object" && e !== null && "message" in e && typeof e.message === "string" ? e.message : "Erro ao gerar relatório";
+      setPreviewError(message);
+      toast.error(message);
     } finally {
-      setLoading(false);
+      if (isCurrent()) { operation.current = null; setLoading(false); }
     }
   };
 
   const exportFormat = async (format: "PDF" | "XLSX" | "CSV") => {
-    if (!access.ready || !validate()) return;
+    if (!access.ready || operation.current || !validate()) return;
     const current = access.capture();
+    const request = Symbol();
+    operation.current = request;
+    const isCurrent = () => current() && operation.current === request;
+    const snapshot = structuredClone(filters);
     setExporting(format);
     try {
       const { data: res, error } = await supabase.functions.invoke("generate-financial-report", {
-        body: { report_type: reportType, filters, format, title },
+        body: { report_type: reportType, filters: snapshot, format, title },
       });
-      if (!current()) return;
+      if (!isCurrent()) return;
       if (error) throw error;
       const url = (res as { url?: string } | null | undefined)?.url;
+      if (!url) throw new Error("Exportação indisponível");
       if (url) {
         window.open(url, "_blank", "noopener,noreferrer");
         toast.success(`${format} gerado`);
       }
     } catch (e: unknown) {
-      if (!current()) return;
+      if (!isCurrent()) return;
       toast.error(e instanceof Error ? e.message : "Erro ao exportar");
     } finally {
-      setExporting(null);
+      if (isCurrent()) { operation.current = null; setExporting(null); }
     }
   };
 
+  const empty = data == null || (Array.isArray(data) && data.length === 0);
+  const busy = loading || exporting !== null;
   const print = () => {
-    if (!data) {
+    if (!access.ready || operation.current) return;
+    const current = access.capture();
+    if (empty) {
       toast.error("Gere a prévia antes de imprimir");
       return;
     }
-    window.print();
+    if (current()) window.print();
   };
 
   return (
@@ -139,9 +172,9 @@ export function ReportShell<TData = unknown>({
             {user && <p>Usuário: {user.email ?? user.id.substring(0, 8)}</p>}
           </div>
         </div>
-        {Object.keys(filters).length > 0 && (
+        {appliedFilters && Object.keys(appliedFilters).length > 0 && (
           <p className="mt-2 text-xs text-muted-foreground break-words">
-            Filtros aplicados: <span className="font-mono">{JSON.stringify(filters)}</span>
+            Filtros aplicados: <span className="font-mono">{JSON.stringify(appliedFilters)}</span>
           </p>
         )}
       </header>
@@ -156,11 +189,11 @@ export function ReportShell<TData = unknown>({
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={generate} disabled={loading}>{loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Gerar prévia</Button>
-            <Button variant="outline" onClick={() => exportFormat("PDF")} disabled={!!exporting}><FileText className="w-4 h-4 mr-2" />PDF</Button>
-            <Button variant="outline" onClick={() => exportFormat("XLSX")} disabled={!!exporting}><FileSpreadsheet className="w-4 h-4 mr-2" />Excel</Button>
-            <Button variant="outline" onClick={() => exportFormat("CSV")} disabled={!!exporting}><FileDown className="w-4 h-4 mr-2" />CSV</Button>
-            <Button variant="outline" onClick={print}><Printer className="w-4 h-4 mr-2" />Imprimir</Button>
+            <Button onClick={generate} disabled={!access.ready || busy}>{loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Gerar prévia</Button>
+            <Button variant="outline" onClick={() => exportFormat("PDF")} disabled={!access.ready || busy}><FileText className="w-4 h-4 mr-2" />PDF</Button>
+            <Button variant="outline" onClick={() => exportFormat("XLSX")} disabled={!access.ready || busy}><FileSpreadsheet className="w-4 h-4 mr-2" />Excel</Button>
+            <Button variant="outline" onClick={() => exportFormat("CSV")} disabled={!access.ready || busy}><FileDown className="w-4 h-4 mr-2" />CSV</Button>
+            <Button variant="outline" onClick={print} disabled={!access.ready || busy || empty}><Printer className="w-4 h-4 mr-2" />Imprimir</Button>
           </div>
         </CardContent>
       </Card>
@@ -168,7 +201,15 @@ export function ReportShell<TData = unknown>({
       <Card>
         <CardHeader className="print:hidden"><CardTitle className="text-base">Prévia</CardTitle></CardHeader>
         <CardContent>
-          {data == null ? (
+          {!access.ready ? (
+            <p role="status" className="text-sm text-muted-foreground">Sessão indisponível para relatórios.</p>
+          ) : loading ? (
+            <p role="status" className="text-sm text-muted-foreground">Gerando prévia…</p>
+          ) : previewError ? (
+            <p role="alert" className="text-sm text-destructive">{previewError}</p>
+          ) : appliedFilters && empty ? (
+            <p role="status" className="text-sm text-muted-foreground">Nenhum registro no período selecionado.</p>
+          ) : data == null ? (
             <p className="text-sm text-muted-foreground">Gere a prévia para visualizar os dados.</p>
           ) : renderPreview ? renderPreview(data as TData) : (
             <pre className="text-xs overflow-auto max-h-[60vh] bg-muted p-3 rounded">{JSON.stringify(data, null, 2)}</pre>

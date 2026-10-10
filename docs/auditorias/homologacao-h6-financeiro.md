@@ -1,6 +1,33 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
-## Adendo documental vigente — relatórios legados/RLS/datas — 2026-10-10 01:36 UTC
+## Adendo vigente — contenção focal ReportShell — 2026-10-10 01:40 UTC
+
+**Base informada:** `7bd7ba7b`. Escopo: somente componente existente `ReportShell.tsx`, testes focais e documentação. AGENTS, props, rotas, permissões/grants, backend, Edge, Storage e gates preservados. Nenhuma consulta/mutação remota, publicação/deploy ou operação financeira. Fixture histórica +40/-40 intacta.
+
+### Reprodução baseline própria, antes do fix
+
+Executado `bun run test src/test/financeiro/reportShell.session.test.tsx` contra o componente original: **25/25 cenários FAIL**, antes da alteração funcional. Uso do contrato real `useStorageAccessScope` com Auth simulado e RPC/Edge mockados; sem URLs reais. Falhas concretas: prévia concluída permanece após mudança de escopo, resultados/filtros tardios não descartados, pedido novo fica preso por exportação antiga, erro mantém prévia anterior, filtros editados rotulam resultado antigo, sessão inapta mantém ações habilitadas e clique duplicado chama RPC duas vezes. Não é evidência de novo login/UI publicada ou banco.
+
+### Correção focal e contratos preservados
+
+- `ReportShell` remonta seu conteúdo por **`access.scope`**, derivado exclusivamente do contrato existente; readiness/identidade/tenant/papéis/reportType invalidam a instância anterior, inclusive A→B→A. Sem novo contexto ou permissão inventada.
+- Gerar/exportar capturam **`access.capture()`** e token de operação, com lock síncrono compartilhado; resultados, erros e `finally` antigos não modificam operação/instância nova. Desmontagem também invalida capturas.
+- Troca de escopo limpa prévia, data de geração, filtros aplicados, filtros sensíveis editados e erros. Cada solicitação clona filtros; a prévia mostra o **snapshot aplicado ao resultado**, não os filtros editados depois. Exportação continua usando seu próprio snapshot dos filtros atuais (UX existente); impressão usa apenas a prévia atual do escopo.
+- Gerar começa retirando a prévia/metadados anteriores; erro explícito não deixa relatório antigo parecendo atual. Carregamento, erro, vazio e sessão indisponível são distintos. Sessão inapta ou operação pendente bloqueia gerar/exportar/imprimir; impressão sem resultado não habilitada.
+- **Gate mensal deliberado preservado:** `get_report_monthly_financial` continua sem EXECUTE para authenticated. Tratamento de erro local não abre o canal nem certifica prévia mensal. A chamada Edge existente permanece, sem alteração/deploy da Edge ou Storage e sem nova URL/RPC.
+
+### Evidências próprias e limites
+
+- Primeira rodada pós-fix: **33/33 PASS** (25 ReportShell + 8 contrato de escopo), lint dos dois arquivos PASS, build automático **OK01:41:49UTC**. Aviso de `act` em um teste resolvido na revisão do teste; rodada final abaixo substitui esse checkpoint sem somar totais.
+- Rodada final própria **35/35 PASS** (27 ReportShell + 8 contrato de escopo), sem avisos `act`; lint dos dois arquivos e diff-check PASS, build automático **OK01:42:23UTC**. AGENTS SHA256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244` intacto. Commit gerenciado observado **`6c29325a5378eed8ffdd90c689631c4c15df2772`** antes deste fechamento documental; não é publicação nem hash final prometido após documentação.
+- Testes finais incluem respostas adiadas em identidade/tenant/A→B→A/readiness/reportType, nova geração/exportação antes de finally antigo, filtros, erro/rejeição, loading/vazio, sessão inapta, desmontagem e cliques duplicados. **PASS mock não equivale a UI real, JWT/RLS, exportação/bytes Storage ou concorrência remota**.
+- Typecheck app/node separados **NOT RUN**: execução manual de builds/typechecks proibida pelo ambiente; build automático não substitui alegação de comandos separados. Sem PASS externo inventado.
+- **Mensal UI real bloqueada/UNVERIFIED; demais relatórios/Edge/Storage/planos e Financeiro global/B2B/OS/fiscal/Faturamento NO-GO integral**, payable UI integral UNVERIFIED. A contenção local de cache/erros não certifica canais remotos.
+- Publicação autorizada **somente após revisão deste delta**; aguardar revisão, sem publicar/deploy nesta rodada. Sem nova grande fase.
+
+---
+
+## Adendo documental anterior — relatórios legados/RLS/datas — 2026-10-10 01:36 UTC
 
 **Base e proveniência:** `3c685c397e37a1ddbf2628ca94643ee213bff8f4`. P1, aplicação da migration e retestes foram executados pelo **Codex autorizado externamente ao Lovable**, conforme evidências recebidas; **não pelo humano manualmente nem por este agente Lovable**. Destino informado: Supabase canônico exclusivo `swzpzcwiasxmjutrmvkm`. Apenas SQL fornecido arquivado e roadmap/relatório atualizados nesta rodada; nenhuma execução SQL, alteração remota, frontend, publicação, gate ou fixture pelo agente.
 
