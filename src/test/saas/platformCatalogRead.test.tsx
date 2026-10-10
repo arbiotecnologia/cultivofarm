@@ -63,7 +63,7 @@ describe("consulta global da plataforma", () => {
   });
   it("retorno da paginação usa offset anterior validado", async () => {
     mocks.request.mockResolvedValue(page([product], true));
-    setup(); await screen.findByText("Produto sem preço");
+    setup(); await screen.findByText(product.nome);
     fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
     await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 50 }));
     await screen.findByText(product.nome);
