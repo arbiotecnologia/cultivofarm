@@ -13,7 +13,7 @@ const sentinel = "private-error-path-sentinel";
 const org = "11111111-1111-4111-8111-111111111111";
 const actor = "22222222-2222-4222-8222-222222222222";
 const auditId = "33333333-3333-4333-8333-333333333333";
-type Failure = "auth" | "noUser" | "org" | "noOrg" | "rpc" | "upload" | "sign" | "noUrl" | "audit" | "noId";
+type Failure = "auth" | "noUser" | "org" | "noOrg" | "rpc" | "upload" | "noUploadData" | "noUploadPath" | "wrongUploadPath" | "sign" | "noUrl" | "audit" | "noId";
 type Result = { data?: unknown; error: unknown };
 function deferred() {
   let resolve: (value: Result) => void = () => {};
@@ -28,7 +28,13 @@ function setup(failure?: Failure, auditPending?: ReturnType<typeof deferred>, th
     if (name === "register_financial_report_export") return auditPending?.promise ?? { data: failure === "noId" ? null : auditId, error: failure === "audit" ? sentinel : null };
     return { data: [{ amount: 40 }], error: failure === "rpc" ? sentinel : null };
   });
-  const upload = vi.fn(async () => { effects.push("upload"); if (throws === "upload") throw new Error(sentinel); return { error: failure === "upload" ? sentinel : null }; });
+  const upload = vi.fn(async (path: string) => {
+    effects.push("upload"); if (throws === "upload") throw new Error(sentinel);
+    return {
+      data: failure === "noUploadData" ? null : failure === "noUploadPath" ? {} : { path: failure === "wrongUploadPath" ? "different-private-path" : path },
+      error: failure === "upload" ? sentinel : null,
+    };
+  });
   const createSignedUrl = vi.fn(async () => {
     effects.push("sign"); if (throws === "sign") throw new Error(sentinel);
     return { data: failure === "noUrl" ? {} : { signedUrl: "signed-file-fixture" }, error: failure === "sign" ? sentinel : null };
@@ -66,12 +72,15 @@ async function failureResponse(response: Response, status: number) {
   expect(JSON.stringify(body)).not.toContain("signed-file-fixture");
 }
 describe("generate-financial-report — handler real isolado", () => {
-  for (const failure of ["auth", "noUser", "org", "noOrg", "rpc", "upload", "sign", "noUrl", "audit", "noId"] as const) {
+  for (const failure of ["auth", "noUser", "org", "noOrg", "rpc", "upload", "noUploadData", "noUploadPath", "wrongUploadPath", "sign", "noUrl", "audit", "noId"] as const) {
     it(`nega sucesso em ${failure} e interrompe efeitos`, async () => {
       const s = setup(failure); await failureResponse(await s.invoke(valid), ["auth", "noUser"].includes(failure) ? 401 : ["org", "noOrg"].includes(failure) ? 403 : 500);
       expect(s.remove).not.toHaveBeenCalled();
       if (["auth", "noUser", "org", "noOrg", "rpc"].includes(failure)) expect(s.upload).not.toHaveBeenCalled();
-      if (failure === "upload") expect(s.createSignedUrl).not.toHaveBeenCalled();
+      if (["upload", "noUploadData", "noUploadPath", "wrongUploadPath"].includes(failure)) {
+        expect(s.createSignedUrl).not.toHaveBeenCalled();
+        expect(s.rpc.mock.calls.some(([name]) => name === "register_financial_report_export")).toBe(false);
+      }
       if (["sign", "noUrl"].includes(failure)) expect(s.rpc.mock.calls.some(([name]) => name === "register_financial_report_export")).toBe(false);
       expect(s.log).not.toHaveBeenCalled();
     });
@@ -95,6 +104,52 @@ describe("generate-financial-report — handler real isolado", () => {
   });
   it("JSON malformado retorna400 sem efeitos", async () => {
     const s = setup(); await failureResponse(await s.invoke(valid, "POST", undefined, "{"), 400); expect(s.rpc).not.toHaveBeenCalled();
+  });
+  for (const key of ["organization_id", "tenant_id"]) {
+    for (const container of ["_filters", "_scope"]) {
+      for (const inArray of [false, true]) {
+        it(`rejeita ${key} aninhado em ${container}, array=${inArray}`, async () => {
+          const nested = { branch: { [key]: org } };
+          const s = setup();
+          await failureResponse(await s.invoke({ ...valid, filters: { [container]: inArray ? [{ safe: 1 }, nested] : nested } }), 400);
+          expect(s.rpc).not.toHaveBeenCalled(); expect(s.upload).not.toHaveBeenCalled();
+        });
+      }
+    }
+    it(`rejeita ${key} profundamente aninhado entre objetos/arrays`, async () => {
+      let nested: unknown = { [key]: org };
+      for (let i = 0; i < 50; i++) nested = i % 2 ? { branch: nested } : [nested];
+      const s = setup();
+      await failureResponse(await s.invoke({ ...valid, filters: { _filters: nested } }), 400);
+      expect(s.rpc).not.toHaveBeenCalled(); expect(s.upload).not.toHaveBeenCalled();
+    });
+  }
+  it("limita profundidade excessiva sem recursão ou efeitos", async () => {
+    let nested: unknown = { safe: true };
+    for (let i = 0; i < 1000; i++) nested = [nested];
+    const s = setup();
+    await failureResponse(await s.invoke({ ...valid, filters: { _scope: nested } }), 400);
+    expect(s.rpc).not.toHaveBeenCalled(); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it("limita orçamento de travessia ampla antes de efeitos", async () => {
+    const s = setup();
+    await failureResponse(await s.invoke({ ...valid, filters: { _filters: Array.from({ length: 10001 }, () => null) } }), 400);
+    expect(s.rpc).not.toHaveBeenCalled(); expect(s.upload).not.toHaveBeenCalled();
+  });
+  it.each(["_filters", "_scope"])("preserva contrato válido %s no RPC e histórico", async (container) => {
+    const filters = { ...valid.filters, [container]: { branches: [{ active: true, ids: ["fixture-1", "fixture-2"] }, null], label: "tenant_id não é chave" } };
+    const s = setup(); const response = await s.invoke({ ...valid, filters });
+    expect(response.status).toBe(200);
+    expect(s.rpc).toHaveBeenNthCalledWith(2, "get_report_monthly_financial", filters);
+    expect(s.rpc.mock.calls[2][1]).toMatchObject({ p_filters: filters });
+  });
+  it("preserva filtro válido com objetos/arrays dentro do limite de profundidade", async () => {
+    let nested: unknown = { safe: true };
+    for (let i = 0; i < 60; i++) nested = i % 2 ? { branch: nested } : [nested];
+    const filters = { _scope: nested }, s = setup();
+    expect((await s.invoke({ ...valid, filters })).status).toBe(200);
+    expect(s.rpc).toHaveBeenNthCalledWith(2, "get_report_monthly_financial", filters);
+    expect(s.rpc.mock.calls[2][1]).toMatchObject({ p_filters: filters });
   });
   it.each([undefined, "https://wrong-project.invalid"])("fail-closed se ref canônico ausente/divergente %s", async (url) => {
     const s = setup(); s.env.mockImplementation((name: string) => name === "SUPABASE_URL" ? url : "mock-public-key");
