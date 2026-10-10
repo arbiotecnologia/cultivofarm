@@ -1,5 +1,19 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — revisão a6787c35 / XLSX focal — 2026-10-10
+
+- **Escopo:** mesmo index.ts/teste existente e documentação; sem alteração de AGENTS, biblioteca/lock, frontend, DB/grants/gates, deploy/publicação, Storage real ou histórico financeiro. CSV/PDF e ordem upload→assinatura→registro→URL preservados. CSV teste passa a usar `process.env.PYTHON ?? "python3"`.
+- **Baseline externa recebida:** `json_to_sheet` aceita `{f:"1+1",t:"n"}` como definição de célula/fórmula e objeto período como célula inválida. **Reproduzido independentemente localmente com SheetJS0.20.2 já instalado:** A2f=1+1, B2objeto inválido. Runtime Edge continua usando versão0.18.5 existente, não substituída nem certificada pelo teste local0.20.2.
+- **Correção XLSX:** matriz AOA com união de colunas; somente strings, números finitos, booleans e null. Objetos/arrays serializados JSONtexto, nunca encaminhados como definição de célula; strings inclusive `=,+,-,@,TAB/CR/LF` e cabeçalhos permanecem tipo string sem `f`, não fórmulas. Números negativos legítimos preservados. Busca own-property impede herança de `constructor`/`__proto__`, sem atribuição em objeto por chave adversa. null/undefined e campos ausentes vazios; vazio sem registro fictício.
+- **Nome da aba:** remove `[]:*?/\` e controles, elimina apóstrofos de borda, limita31caracteres, fallback não vazio `Relatorio`.
+- **Limites:** rows validadas antes de Object.keys/união de colunas em todos formatos. XLSX também recusa mais de1000registros, mais de1MiB UTF8 do conteúdoJSON(rows/title/filters), mais de5MiBbytes finais; erro seguro antes upload/assinatura/histórico, sem truncar. Números não finitos e linhas null/primitivas/array recusados. Limites são **pós-RPC**, não paginação nem contenção de volume antes consulta; essa dívida permanece aberta.
+- **Baseline própria126casos14FAIL/112PASS**, `/tmp/financial-xlsx-baseline.log`; **final126/126handler e175/175regressão (126+37shell+8scope+4storage) PASS**, `/tmp/financial-xlsx-regression.log`. Não somar checkpoints históricos. **XLSX serialize/read REAL**, usando biblioteca instalada, inspeciona tipos e ausência de fórmula, nestedobjects/arrays, strings/cabeçalhos adversos, -42.5/boolean/null, última coluna no1000ºregistro, nomeaba, vazio/inválidos/limites. SDK/Auth/Storage continuam mocks, limite5MiBbytes usa injeção controlada; não prova upload/download/Excel visual/runtimeEdge/volume máximo real.
+- **Lint dois arquivos, diff-check PASS; build automático OK02:17:19UTC.** Typechecks app/node separados, scanner e Deno check NOT RUN. AGENTS SHA25687175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244 intacto.
+- **PDF externo:** Codex informou pdf-lib1.17.1 real bundled e baselinearquivo1página55/100; fará QA real do patch local. Não indisponibilidade global da biblioteca, nem PASS final baseado apenas em mocks; **bytesPDFreal/extração/QA final pendentes de evidência externa**, sem execução própria desta rodada. CSV/PDF não reescritos neste adendo.
+- **Entrega local sem deploy. Exportação/Financeiroglobal/B2B/OS/fiscal/Faturamento NO-GO**, grants permanecem fechados. Histórico XLSX não auditado das rodadas anteriores mantido como passado; prova local focal acima não certifica produção. Rollback deve manter canal fechado e contenção substitutiva, sem restaurar injeção/falso sucesso nem abrir grants. Nenhuma nova grande fase.
+
+---
+
 ## Adendo vigente — fechamento externo da contenção e geradores locais — 2026-10-10
 
 ### Contenção implantada externamente — proveniência Codex
