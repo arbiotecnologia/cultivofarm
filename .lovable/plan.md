@@ -17,7 +17,7 @@ Unidade/formulação, não família, orientam cálculos; sólidos biológicos/qu
 Escrita global somente Platform Superadmin validado no servidor. Preservar RLS, guards, entitlements, vínculos, cache por identidade/tenant/escopo/filtros e portais técnicos sem preços indevidos. Supabase exclusivo swzpzcwiasxmjutrmvkm; nenhum uso de Cloud/outros refs.
 
 ## Fases A–F futuras
-A. Inventário de campos/RPCs/unidades/classificações/canais; entregar delta antes de DDL.
+A. Concluída localmente: inventário/contrato em docs/auditorias/catalogo-agricola-fase-a-contrato.md e candidato NÃO aplicado scripts/rbac-audit/proposed-catalog-classification.sql; assertions rollback para revisão Codex, sem prova runtime.
 B. Dados aditivos, validação server-side, auditoria e revisão controlada; sem liberar venda nova.
 C. Três abas/subabas/filtros e cadastro existente, URL/voltar e acessibilidade.
 D. Fichas, técnico, mobile e portais conforme permissões.
@@ -29,4 +29,4 @@ Testes focados/schema/RPCs, UI desktop/mobile, teclado/leitor de tela, dois tena
 Rollback desliga abas/canais e retorna interface anterior preservando dados/classificações/histórico, sem DROP ou restauração de vazamento. Sem dados técnicos fictícios, doses/recomendações inventadas, cobrança, mensageria ou emissão fiscal.
 
 ## Limites desta solicitação
-Somente substituição documental já autorizada, resumo e roadmap; nenhum DDL/código/grant/AGENTS/dependência/gate/publicação ou fase funcional neste job. Não chamar plan.show; não reutilizar aprovações antigas. Inventário integral/ACL/RLS atuais/HTTP/JWT/unidades dos canais permanecem UNVERIFIED. Financeiro amplo permanece aberto; fechamento externo 4717ff86 no H6/roadmap não é certificação global. A implementação depende de solicitações focais posteriores.
+Continuidade 03:08 UTC autorizou a Fase A: investigação local, contrato e SQL candidato NÃO aplicado. Nenhum DDL remoto/código funcional/grant aplicado/AGENTS/dependência/gate/publicação; fases B–F não iniciadas. Não chamar plan.show; não reutilizar aprovações antigas. Inventário integral/ACL/RLS atuais/HTTP/JWT/unidades dos canais permanecem UNVERIFIED. Financeiro amplo permanece aberto; fechamento externo 4717ff86 no H6/roadmap não é certificação global. A implementação depende de solicitações focais posteriores.
