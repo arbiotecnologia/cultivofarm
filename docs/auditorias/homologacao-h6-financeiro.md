@@ -1,5 +1,38 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — contenção local da Edge generate-financial-report — 2026-10-10 02:02 UTC
+
+**Base informada:** `93ee82a7`. **P1 — falso sucesso na exportação:** evidência remota Codex autorizado indica v69 com ANON+caller/getUser/h15org, mas sem verificar erros/resultados de registro/assinatura. `monthly` e `register_financial_report_export` permanecem com `authenticated EXECUTE=false`; **não abrir grants**. Esta rodada leu AGENTS/código e alterou somente handler existente, teste local e documentação; sem frontend, banco/RLS/grants/gates/service_role, deploy/publicação, Storage real ou mutação de fixture. AGENTS SHA256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244` preservado.
+
+### Baseline própria antes do fix e arquivos
+
+- `src/test/financeiro/financialReport.edge.test.ts` executa **entrypoint real** `supabase/functions/generate-financial-report/index.ts` com SDK/env/Auth/renderers injetados localmente, seguindo padrão existente de testes de handler; sem fluxo paralelo, rede, URLs reais ou bytes Storage.
+- **Baseline própria:51 testes,38FAIL/13PASS**, ANTES do fix (`/tmp/financial-edge-baseline.log`). Reproduziu sucesso indevido com erro de Auth mantendo usuário, erro/ausência de URL ou ID de registro, método/payload/formato/tenant/prototype inválidos aceitos, ordem registro antes assinatura. Não somar com baselines anteriores de ReportShell ou independentes Codex.
+- Arquivos funcionais: **`supabase/functions/generate-financial-report/index.ts`** e **`src/test/financeiro/financialReport.edge.test.ts`**; mais roadmap e este relatório. Não reescritos PDF/CSV/XLSX, não criada RPC/tabela/rota/core paralelo.
+
+### Contenção e contrato
+
+- Validação antes RPC/Storage: somente **POST**, JSON objeto não array; `report_type` com **own-property** na allowlist existente (constructor/toString/__proto__ negados); formatos exatamente **PDF/XLSX/CSV**; filters objeto não array; title opcional texto até **255 caracteres**. `organization_id`/`tenant_id` no topo ou como args filters **rejeitados**, não normalizados; demais filtros preservados.
+- Origem confiável/preflight/CORS existentes preservados. Cliente somente **ANON com bearer caller**, `getUser` exige ausência de erro e usuário/ID; organização deriva de **h15_actor_organization** com erro/ausência negados. URL de ambiente deve ser exatamente canônica e chave anon presente antes de criar cliente; não cliente frontend paralelo nem service_role.
+- Ordem obrigatória: **upload → assinatura em memória → registro SUCCESS confirmado com ID → devolver URL**. Upload com erro interrompe; assinatura com erro OU URL ausente/vazia interrompe antes do registro; registro com erro OU ID ausente/vazio interrompe antes de resposta de sucesso. Exceções também ficam contidas.
+- Falhas retornam somente erro público fixo (`financial_report_unavailable` para operações), **sem URL/path/detalhes crus nem logs de erros**; payload/método/auth/tenant têm códigos explícitos seguros. Sucesso mantém contrato existente somente depois de todas as etapas.
+- **Sem exclusão automática.** Falha depois do upload pode deixar **órfão privado**; assinatura gerada permanece apenas em memória e não é devolvida após falha do registro. Registro e Storage não são transação atômica: futura reconciliação requer autorização, inventário e auditoria, sem ampliar permissões ou remover fences. Upload/upsert existente preservado; concorrência remota/idempotência não certificadas.
+
+### Validações próprias e limites
+
+- Primeira rodada pós-fix **51/51 PASS**; final ampliada **54/54 handler PASS**, incluindo env canônico ausente/divergente/chave ausente. Regressão **99/99 PASS** (**54handler +37ReportShell/mensal +8scope**); não somar repetições. Nova rodada handler após correção da tipagem dos mocks **54/54 PASS**.
+- Testes cobrem erros/ausências Auth/org/RPC/upload/assinatura/audit, exceções, URL/ID ausentes, efeitos interrompidos, formatos inválidos/prototype/tenant forjado, JSON/métodos/origem, caller sem service_role, ordem de efeitos, audit pendente sem resposta e sucesso PDF/XLSX/CSV apenas após todas as etapas. **PASS mocks não prova JWT/RLS, runtime Deno, UI ou upload/download real.**
+- **Lint dos dois arquivos PASS e diff-check PASS**. Harness detectou dois erros de tipagem nos mocks, corrigidos; **build automático OK2026-10-10T02:01:52Z** após correção. Typecheck app/node separados e Deno/Edge check **NOT RUN**; build app não equivale a check/deploy da Edge.
+- Produção **v69 não foi alterada/deployada pelo Lovable nesta rodada**; delta local entregue para revisão. Nenhum teste remoto, SQL, upload, assinatura, registro ou exportação real executado pelo agente.
+
+### NO-GO e rollback seguro
+
+- **Exportação NO-GO**, pois grants deliberados continuam fechados e runtime/Storage/UI não certificados. **PDF truncamento, CSV escaping/formula injection e geradores integrais permanecem NO-GO**, sem reescrita neste recorte.
+- Mensal real/geração, matriz integral, demais relatórios/recorrência/Storage/planos, Financeiroglobal/B2B/OS/fiscal/Faturamento NO-GO; Mobile/payable UI integral UNVERIFIED preservados. Histórico +40/-40 intacto.
+- **NÃO deploy/publicar automaticamente**; aguardar revisão. Rollback nunca deve reabrir falso sucesso ou grants: manter canal fechado e exigir contenção substitutiva revisada, sem excluir órfãos/histórico por conta própria. Nenhuma nova grande fase iniciada.
+
+---
+
 ## Adendo vigente — revisão independente e publicação externa — 2026-10-10 01:53 UTC
 
 **Referência:** `5a5ad9e6edf48b8f5b8a6de57a9caa9f1f310c29`. Evidências de revisão, checks, publicação e browser recebidas do **Codex autorizado externamente ao Lovable**, não executadas pelo humano manualmente nem por este agente. Revisão independente concluída e publicação **JÁ realizada externamente**; UI confirmou **“Seu site foi atualizado”**. Supersede somente a pendência de revisão/publicação deste recorte nos checkpoints abaixo, preservados como histórico.
