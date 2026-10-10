@@ -1,5 +1,32 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — fechamento externo da contenção e geradores locais — 2026-10-10
+
+### Contenção implantada externamente — proveniência Codex
+
+- **`f78d2a4` revisado** pelo Codex autorizado externamente ao Lovable: **121/121 PASS (72handler+37shell+8scope+4storage)**, typecheck app/node, lint2, scanner3858/zero, build30.82sPASS, conforme evidência recebida. Não nova execução própria nem soma de checkpoints repetidos.
+- Codex implantou **Edge72 ACTIVE**, `verify_jwt=false` com **getUser preservado**, e recuperou **dois arquivos com igualdade exata**, conforme relato. **Baselinev69 capturada; origem das versões70/71 NÃO inferida. Deno typecheck NOT RUN.** Supersede pendência de deploy da contenção anterior, preservando os checkpoints históricos; não implantação dos geradores alterados nesta rodada.
+- **UI FinanceiroAR CSV→HTTP500 observado viaCDP**, contagens AR **reportobjects0/history0 antes/depois**, grants monthly/registerfalse. **NÃO PASStoast, geração ou download**; nenhuma operação remota, upload ou mutação executada pelo Lovable.
+
+### Baseline e correção focal dos geradores existentes
+
+- Baseline independente externa: PDF100linhas→55drawTextrows/rodapé100/última ausente; CSV com backslash nas aspas e `\\n` em vez de quebras reais, `=1+1` ativo. Recebida do Codex, não análise de bytes própria.
+- **Baseline própria antes do fix:94 casos,20FAIL/74PASS**, `/tmp/financial-generators-baseline.log`, entrypoint real com SDK/renderers injetados. **Final99/99handler PASS; regressão148/148 (99handler+37shell+8scope+4storage)**, `/tmp/financial-generators-regression.log`. Não somar baseline nem repetição intermediária94/94.
+- **CSV:** campos entre aspas, aspas internas dobradas, separador de registrosCRLF e newlines reais dentro dos campos; cabeçalhos do conjunto união de colunas. Arrays/objetos serializados em JSON preservando valores. Neutralização por apóstrofo **antes do conteúdo original** para strings/cabeçalhos iniciando `=,+,-,@` ou TAB/CR/LF, inclusive espaços iniciais; **números legítimos negativos permanecem numéricos**, sem prefixo. Testes fazem **parse roundtrip real via Python csv**, aspas/vírgulas/quebras/cabeçalhos, aninhados e injeção; não certificam Excel/LibreOffice real.
+- **PDF:** apresentação por registro/campos dentro do gerador existente, união de colunas, valores aninhadosJSON; sem slice/substrings/break silenciosos de dados. Quebra cada parágrafo por largura medida na **fonte efetivamente embutida**, inclusive palavra longa; paginação A4 com margens e rodapé verdadeiro `total registros / PáginaN de total`. Todos100registros e último campo verificados, além de exatamente1000registros dentro dos limites locais.
+- **Fonte:** Helvetica existente preservada; medição/draw com caractere incompatível ou erro de fonte aborta antes upload, com erro público seguro. **Nenhuma substituição silenciosa** por caractere alternativo. Testes cobrem valor, título, cabeçalho e nestedobject incompatíveis.
+- **Limites prudentes locais PDF/CSV:** até **1000registros**, **100páginas PDF**, **1MiB UTF8 do conteúdo JSON (rows/title/filters)** e **5MiB de bytes finais**. Ultrapassar qualquer limite retorna erro seguro500 **antes upload**, em vez de omitir registros/campos; testes de excesso/limite de linhas, páginas, conteúdo e bytesPDF. Não constituem homologação de volume real. XLSX não alterado; suas limitações/injeção/volume seguem fora deste recorte e não certificados.
+
+### Validações, limites e entrega
+
+- **Lint dois arquivos, diff-check PASS; build automático OK2026-10-10T02:13:34Z.** Typechecks app/node separados, scanner e Deno check **NOT RUN nesta rodada**; checks Codex anteriores têm proveniência externa separada. AGENTS SHA256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244` intacto.
+- **pdf-lib local indisponível** em dependências/node_modules/cache inspecionados. Sem rede ou instalação autorizada: **fixture bytesPDFreal, extração e QA visual NOT RUN**. Renderers simulados e drawText não provam bytesPDF, fonte real, ausência de sobreposição ou leitura integral em visualizador. Não gerado PDF por biblioteca substituta. Orientações da **skill PDF** usadas para exigir QA visual quando bytes reais estiverem disponíveis; sem alegar essa validação como concluída.
+- Alterados somente **`supabase/functions/generate-financial-report/index.ts`**, **`src/test/financeiro/financialReport.edge.test.ts`**, roadmap e este relatório. Proteções upload→assinatura→registro→URL, ANON/caller/getUser/h15org/CORS/saneamento/tenant/grants/gates preservadas. Sem frontend/banco/Storagereal/AGENTS/service_role/deploy/publicação ou alteração do histórico+40/-40.
+- **Entrega local para revisão, sem deploy. Exportação permanece NO-GO** por RPCs bloqueadas, volume/runtime/bytesPDFreal/QA visual pendentes e XLSX não auditado. Financeiroglobal/B2B/OS/fiscal/Faturamento e matriz integral seguem NO-GO. Reconciliação de blobs privados segue pendente, sem exclusão automática; trigger do ledger autoritativo continua distinto de blob sem registro.
+- **Rollback:** manter exportação fechada, sem abrir grants nem restaurar falso sucesso/truncamento/injeção; correção substitutiva revisada antes de eventual reversão. Nenhuma nova grande fase iniciada.
+
+---
+
 ## Adendo vigente — revisão focal611af508 antes de deploy — 2026-10-10
 
 **Escopo:** somente `supabase/functions/generate-financial-report/index.ts`, teste existente `src/test/financeiro/financialReport.edge.test.ts`, roadmap e este relatório. Revisão independente aprovou focalmente ordem e saneamento, conforme relato Codex autorizado externamente ao Lovable. Sem frontend/banco/grants/RLS/gates/geradores/AGENTS, service_role, deploy/publicação, Storage real ou alteração do histórico +40/-40.

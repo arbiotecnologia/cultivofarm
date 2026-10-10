@@ -107,31 +107,62 @@ Deno.serve(async (req) => {
     const filename = `${body.report_type}_${ts}.${body.format.toLowerCase()}`;
     let fileBytes: Uint8Array;
     let contentType: string;
+    const maxRows = 1000, maxPages = 100, maxContentBytes = 1024 * 1024, maxFileBytes = 5 * 1024 * 1024;
+    const encoder = new TextEncoder();
+    const valueText = (value: unknown): string => value === undefined || value === null
+      ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
+    const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+    if (body.format === "PDF" || body.format === "CSV") {
+      if (rows.length > maxRows || rows.some((row) => !isObject(row)) ||
+        encoder.encode(JSON.stringify({ rows, title, filters: body.filters })).byteLength > maxContentBytes) {
+        throw new Error("financial_report_unavailable");
+      }
+    }
 
     if (body.format === "PDF") {
       const pdf = await PDFDocument.create();
       const font = await pdf.embedFont(StandardFonts.Helvetica);
       const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-      const page = pdf.addPage([595, 842]);
-      page.drawText("AR Bio On-Farm Manager", { x: 40, y: 800, size: 14, font: bold, color: rgb(0.1,0.4,0.2) });
-      page.drawText(title, { x: 40, y: 780, size: 18, font: bold });
-      page.drawText(`Gerado em ${new Date().toLocaleString("pt-BR")}`, { x: 40, y: 762, size: 9, font });
-      page.drawText(`Filtros: ${JSON.stringify(body.filters)}`, { x: 40, y: 748, size: 8, font, color: rgb(0.3,0.3,0.3) });
-      let y = 720;
-      if (rows.length > 0) {
-        const cols = Object.keys(rows[0]);
-        page.drawText(cols.join(" | "), { x: 40, y, size: 8, font: bold });
-        y -= 14;
-        for (const row of rows.slice(0, 60)) {
-          const line = cols.map((c) => String(row[c] ?? "")).join(" | ");
-          page.drawText(line.substring(0, 110), { x: 40, y, size: 7, font });
-          y -= 12;
-          if (y < 50) break;
+      const pages: ReturnType<typeof pdf.addPage>[] = [];
+      const addPage = () => {
+        if (pages.length >= maxPages) throw new Error("financial_report_unavailable");
+        const next = pdf.addPage([595, 842]); pages.push(next); return next;
+      };
+      let page = addPage(), y = 800;
+      // Measure every code point with the actual embedded font; unsupported glyphs throw.
+      // No substitution, substring cutoff or omitted records on overflow.
+      const write = (text: string, size = 9, selectedFont = font) => {
+        for (const paragraph of text.split(/\r\n|\r|\n/)) {
+          let line = "";
+          const drawLine = () => {
+            if (y < 60) { page = addPage(); y = 800; }
+            page.drawText(line, { x: 40, y, size, font: selectedFont });
+            y -= size + 4;
+          };
+          for (const char of paragraph) {
+            const charWidth = selectedFont.widthOfTextAtSize(char, size);
+            if (!Number.isFinite(charWidth) || charWidth > 515) throw new Error("financial_report_unavailable");
+            if (selectedFont.widthOfTextAtSize(line + char, size) > 515) { drawLine(); line = ""; }
+            line += char;
+          }
+          drawLine();
         }
-      } else {
-        page.drawText("Nenhum dado encontrado.", { x: 40, y, size: 10, font });
+      };
+      write("AR Bio On-Farm Manager", 14, bold);
+      write(title, 18, bold);
+      write(`Gerado em ${new Date().toLocaleString("pt-BR")}`);
+      write(`Filtros: ${JSON.stringify(body.filters)}`, 8);
+      if (!rows.length) write("Nenhum dado encontrado.", 10);
+      for (let i = 0; i < rows.length; i++) {
+        write(`Registro ${i + 1} de ${rows.length}`, 10, bold);
+        for (const column of columns) write(`${column}: ${valueText(rows[i][column])}`);
+        y -= 6;
       }
-      page.drawText(`AR Bio • ${rows.length} registro(s)`, { x: 40, y: 30, size: 8, font, color: rgb(0.4,0.4,0.4) });
+      pages.forEach((printedPage, i) => {
+        const footer = `AR Bio • ${rows.length} registro(s) • Página ${i + 1} de ${pages.length}`;
+        if (font.widthOfTextAtSize(footer, 8) > 515) throw new Error("financial_report_unavailable");
+        printedPage.drawText(footer, { x: 40, y: 30, size: 8, font, color: rgb(0.4,0.4,0.4) });
+      });
       fileBytes = await pdf.save();
       contentType = "application/pdf";
     } else if (body.format === "XLSX") {
@@ -141,10 +172,18 @@ Deno.serve(async (req) => {
       fileBytes = new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
       contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     } else {
-      const cols = rows.length ? Object.keys(rows[0]) : [];
-      const csv = [cols.join(","), ...rows.map((r) => cols.map((c) => JSON.stringify(r[c] ?? "")).join(","))].join("\n");
-      fileBytes = new TextEncoder().encode(csv);
+      const csvField = (value: unknown): string => {
+        let text = valueText(value);
+        // Prefix outside all leading whitespace; preserve legitimate numeric negatives.
+        if (typeof value === "string" && /^(?:\s*[=+\-@]|[^\S\r\n\t]*[\t\r\n])/.test(text)) text = "'" + text;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      const csv = columns.length ? [columns.map(csvField).join(","), ...rows.map((row) => columns.map((column) => csvField(row[column])).join(","))].join("\r\n") : "";
+      fileBytes = encoder.encode(csv);
       contentType = "text/csv";
+    }
+    if ((body.format === "PDF" || body.format === "CSV") && fileBytes.byteLength > maxFileBytes) {
+      throw new Error("financial_report_unavailable");
     }
 
     const path = `${organizationId}/${userData.user.id}/${filename}`;
