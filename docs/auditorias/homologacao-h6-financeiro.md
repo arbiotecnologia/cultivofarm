@@ -1,5 +1,35 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo documental vigente — 2026-10-10 01:23 UTC
+
+**Escopo e proveniência:** evidências externas recebidas do usuário, sem UI ou SQL executados por este agente nesta rodada. Fonte `44fa80f4f474f032fb71c6bef416d39b632ef017` publicada, com confirmação UI “Seu site foi atualizado”, conforme relato. Ambiente canônico atual exclusivo: Supabase `swzpzcwiasxmjutrmvkm` e site `https://app.cultivofarm.com.br`. Os ambientes e aceites H6/H7 nas seções antigas abaixo são históricos: não autorizam uso de outros refs nem certificam o Financeiro atual.
+
+### PASS focal — estorno receivable pela sessão real Financeiro AR
+
+- Recebimentos carregou a baixa fictícia de **R$40** após a correção da projeção sem embed bancário. O usuário abriu **Estornar**; **Confirmar** estava desabilitado sem motivo, preencheu o motivo e confirmou **uma vez**.
+- Motivo literal: **TESTE AUDITORIA — reversão da baixa fictícia de R$40; sem transferência ou cobrança real.**
+- Estorno `827122e4-9b3c-4b25-a1b6-9dad2df6ba8d`, valor **-R$40**, vinculado à baixa original `1586ae07-c74e-4448-85a0-a0e5d6a7d799` de **+R$40**; organização AR `007bb519-cba0-4704-be2c-cb93ad010048`, autoria Financeiro `e19fb370-904b-4342-9d3f-f7983c85ed45`.
+- UI mostrou original **Estornado** e negativo **Estorno**, sem botões **Estornar** ou **Emitir recibo** nesses dois lançamentos. Resumo: **recebido R$0 / saldo R$100**. Histórico: **Estorno criado**, com motivo, em **09/10/2026 22:22**.
+- SELECT independente relatado confirmou **duas linhas +40/-40**, `received_amount=0` e log `PAYMENT_REVERSAL_CREATED` com autoria e motivo. É evidência SQL externa distinta da UI real externa; não foi reexecutada pelo agente.
+- Fixture: título `c898dd90-6303-4bd6-8335-fd155915abaf` / parcela `a88154c0-308d-4366-9f1d-dfcefb730238`, agora **OVERDUE**, não PARTIAL. A baixa R$40 / saldo R$60 / PARTIAL permanece como estado **passado**, anterior ao estorno, sem apagar ou reescrever histórico.
+- Alçada **Administrador/Gestor/Financeiro** já definida; não há decisão de alçada pendente. Uma confirmação UI e dois lançamentos não constituem prova nova de concorrência distribuída integral.
+
+### P2 confirmado — inconsistência da data civil / vencimento
+
+Evidência recebida: servidor UTC com `current_date=2026-10-10`, enquanto São Paulo ainda estava em **2026-10-09**; `fn_reverse_payment` usa `current_date`. UI **“Vence hoje”** e KPI **vencido 0** conflitam com status **Vencido/OVERDUE** e data do estorno **10/10**; histórico exibe **09/10/2026 22:22**. **Pendente definição da regra e auditoria de consistência de datas.** Nenhuma correção de timezone, alteração de rotina ou mudança de históricos autorizada neste fechamento.
+
+### Checks e limites de aceite
+
+- Checks finais externos relatados: **47/47 testes de interação do delta PASS**, typecheck app, lint dos dois componentes e teste, scanner **3854 arquivos / zero achados** e build PASS. Typecheck node passou no checkpoint anterior, sem alteração node; não é nova execução nesta rodada.
+- **70/70 anteriores = 43 interação + 27 outros**; os 47 atuais incluem os testes de interação anteriores. Não somar checkpoints ou repetir totais como cobertura independente.
+- SQLs rollback AR/AP e fences passaram conforme relatos anteriores; mantida distinção entre rollback, testes locais e UI publicada. Não reaplicados nesta rodada.
+- **PASS focal receivable UI**; **payable UI integral UNVERIFIED**. **Financeiro global / B2B / OS / fiscal / Faturamento NO-GO**; cadastros globais, recorrências e vínculos, hard-delete legado, mutações integrais, Storage, cache/mobile/planos, valoração e demais cadeias seguem sem certificação global.
+- Apenas este relatório e `roadmap.md` atualizados. Código, banco, AGENTS, fixtures, migrations e gates preservados; nenhuma publicação pelo agente nesta rodada. Nenhuma transferência, cobrança, nota fiscal ou mensagem real.
+
+---
+
+## Registro histórico H6/H6b — não constitui aceite do ambiente atual
+
 Ambiente: **staging `ikaauvsflpmamgxmkhoq`**. Produção `navfzbwgwzruipouyfnk` **não foi tocada**
 (guard duro em `apply-h6b.sh` e no runner concorrente). H7 **não iniciada**.
 
