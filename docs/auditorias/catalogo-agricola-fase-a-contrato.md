@@ -25,7 +25,7 @@ Writer real: `handleSave` (309–371) → **`saveProdutoComCompensacao` (104–1
 | Arquivo/função/tabela | Contrato observado | Efeito e delta mínimo futuro |
 |---|---|---|
 | ProdutosTab `carregarCatalogoProdutos`184–199 | produtos.select('*'), formulacoes, microrganismos com preço, product_technical_profiles | Carga inteira global só plataforma; não reutilizar payload para técnico. Paginador/projeção em C. |
-| `src/lib/protocolos/autoCodigo.ts` e SQL `20260624025738_...:19–29,91–109` | prefixo_para_produto(tipo), set_codigo_produto() → proximo_codigo(prefixo,'produtos') | Sem prefixo para herbicida/adubo; código manual existente permite NULL tipo após B2; não renumerar legado. |
+| `src/lib/protocolos/autoCodigo.ts` e SQL `20260624025738_...:19–29,91–109` | prefixo_para_produto(tipo), set_codigo_produto() → proximo_codigo(prefixo,'produtos') | Sem prefixo para herbicida/adubo; hipótese código manual/NULL depende de B2 e auditoria integral, não cadastro seguro comprovado; não renumerar legado. |
 | SQL `20260619152712_...:77–132` sync_product_pricing | preço100mL↔L↔ha e dose_ml_ha | Unidade nova não condiciona trigger antigo; guard final recusa campos líquidos no sólido, revisão do motor separada. |
 | `trg_mestre_guard_preco_canonico()` | Nome confirmado por Codex e REVOKE em `20260904130758_h7n_p1_trigger_execute.sql:28` | Corpo completo atual não encontrado nesta investigação; **UNVERIFIED**, obter definição antes de promover B. |
 | `src/hooks/useCatalogoUnificado.ts:112–128` | oito consultas diretas; key ['catalogo-unificado',scope]; PRODUTOS_SELECT sem preço | SELECT produto pode ser negado/zero pelo RESTRICTIVE ALL para interno tenant; não fallback elevado. Fonte interna precisa prova atual. |
@@ -123,7 +123,7 @@ Executar SOMENTE após autorização específica e ref exato comprovado, sem esc
 | A05 | classes NULL/multidimensional/null-member/duplicada ou vazia para biológico/químico rejeitadas; fertilizante [] passa. |
 | A06 | B1 não cria coluna finalidade; nenhuma finalidade/taxonomia futura exigida. |
 | A07 | unidade kg com conteúdo L rejeitada; L/mL e kg/g aceitas; un com conteúdo kg é apresentação e canal fica false. |
-| A08 | conteúdo0/negativo/NaN/Infinity rejeitados; un fracionário rejeitado; limites numeric18,6 e arredondamento pré-trigger explicitamente observados, sem promessa de rejeição >6 casas. |
+| A08 | conteúdo armazenado0/negativo/NaN/Infinity rejeitados; un armazenado fracionário rejeitado; limites numeric18,6 e arredondamento pré-trigger explicitamente observados, sem promessa de rejeição >6 casas ou da fração original arredondada. |
 | A09 | sólido com dose_ml_ha/valor_litro_brl/valor_dose_brl/valor_ha_brl rejeitado inclusive valor criado por sync. |
 | A10 | UPDATE legado ativo/b2b true preserva flags e classifica sem desativação; alteração de flags rejeitada. INSERT true/default true rejeitado; nenhum pedido/recebível/OS criado. |
 | A11 | revisão mudada usa ator/tempo servidor; alteração só nome/preço/updated_at mantém autoria/data e não gera audit; payload forjado restaurado; pendente revisão NULL. |
