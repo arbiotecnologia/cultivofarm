@@ -1,6 +1,36 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
-## Adendo documental vigente — 2026-10-10 01:23 UTC
+## Adendo documental vigente — datas Financeiro — 2026-10-10 01:29 UTC
+
+**Escopo e proveniência:** referência externa `1a6fa340`. Baseline SQL, aplicação da migration e retestes foram executados pelo **Codex autorizado externamente ao Lovable**, conforme relato recebido; **não pelo humano manualmente nem por este agente Lovable**. Destino informado: Supabase canônico exclusivo `swzpzcwiasxmjutrmvkm`. Esta rodada somente arquiva o SQL literal fornecido e atualiza roadmap/relatório; nenhuma consulta remota, execução/reaplicação de DDL, frontend, publicação ou operação financeira.
+
+### Contrato existente, baseline e DDL aplicado externamente
+
+- `src/lib/financeiro/contasReceber.ts` e `contasPagar.ts` já definem o dia civil **America/Sao_Paulo**, segundo a evidência recebida; os cadastros de AR e FSF confirmaram esse fuso. Não é uma nova regra inventada neste arquivamento.
+- Baseline Financeiro em SQL/ROLLBACK falhou **`BAD_DEFAULT_ISSUE_DATE`**: emissão default receivable **2026-10-10**, quando o dia civil São Paulo ainda era **2026-10-09**.
+- Migration **`20261010012827 financial_core_civil_dates_sao_paulo`**, já aplicada externamente pelo Codex autorizado. Arquivo literal: `scripts/rbac-audit/applied-20261010012827-financial-core-civil-dates-sao-paulo.sql`; arquivo documental, **não reaplicar**.
+- Escopo informado: apenas substituição de `CURRENT_DATE` por **`(pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::date`** em sete funções: `fn_recalc_payable_installment`, `fn_recalc_receivable_installment`, `rpc_register_payable_payment`, `rpc_register_receivable_payment`, `fn_reverse_payment`, `fn_mark_financial_overdue`, `rpc_create_financial_title`.
+- Corpos restantes, assinaturas, grants, RLS, locks e fences preservados conforme relato. `fn_mark_financial_overdue` continua SECURITY DEFINER tenant-scoped. Sem nova relação, papel, privilégio ou reescrita de dados históricos. O arquivo contém as definições integrais fornecidas, não uma reaplicação pelo Lovable.
+
+### Evidência externa pós-DDL — SQL/claims, tudo ROLLBACK
+
+- Financeiro AR em **três fusos de sessão: UTC, Kiritimati e PagoPago**: PASS relatado para emissão default, baixa default e data do estorno usando o dia civil São Paulo independentemente do fuso da sessão.
+- Vencimento no dia civil atual mantém **OPEN** após estorno e rotina overdue, conforme reteste externo.
+- Replay e conflito negativo, forja de `organization_id`/`tenant_id`, acessos FSF e Consultor: negações/PASS relatados; histórico com **duas linhas e saldo líquido dos lançamentos zero**.
+- Todos esses testes SQL foram revertidos por **ROLLBACK**, sem novos dados persistidos. Claims SQL não equivalem a JWT/browser; não houve UI ou SQL executados pelo Lovable nesta rodada.
+- Fixture histórica das **22:22** permanece intacta: original `1586ae07-c74e-4448-85a0-a0e5d6a7d799` **+R$40**, estorno `827122e4-9b3c-4b25-a1b6-9dad2df6ba8d` **-R$40**, título `c898dd90-6303-4bd6-8335-fd155915abaf` / parcela `a88154c0-308d-4366-9f1d-dfcefb730238`, ainda **OVERDUE / data do estorno 10/10**, recebido **R$0 / saldo do título R$100**. Não confundir saldo líquido dos dois lançamentos com saldo devedor do título; o DDL não reescreveu histórico, status ou datas preexistentes.
+
+### P2 parcialmente contido e limites
+
+**P2 NÃO totalmente fechado:** contenção relatada somente nas sete funções centrais. **Relatórios, dashboard, recorrência e B2B ainda usam `CURRENT_DATE`**; contratos de outros fusos e consistência integral continuam pendentes de auditoria e autorização específica. A divergência histórica documentada às01:23 não foi apagada nem retroativamente corrigida.
+
+- Checks externos **TS/typecheck, build e scanner EM EXECUÇÃO** no relato atual; nenhum PASS presumido. Checkpoints anteriores permanecem históricos, sem somar suítes repetidas.
+- Nenhum novo teste UI pós-DDL comprovado nesta rodada; PASS focal receivable UI anterior preservado com sua proveniência, **payable UI integral UNVERIFIED**.
+- **Financeiro global / B2B / OS / fiscal / Faturamento NO-GO**. AGENTS, gates, fixtures e histórico preservados; sem outra fase implementada, baixa, estorno, transferência, cobrança, emissão fiscal ou mensagem real.
+
+---
+
+## Adendo documental anterior — 2026-10-10 01:23 UTC
 
 **Escopo e proveniência:** evidências externas recebidas do usuário, sem UI ou SQL executados por este agente nesta rodada. Fonte `44fa80f4f474f032fb71c6bef416d39b632ef017` publicada, com confirmação UI “Seu site foi atualizado”, conforme relato. Ambiente canônico atual exclusivo: Supabase `swzpzcwiasxmjutrmvkm` e site `https://app.cultivofarm.com.br`. Os ambientes e aceites H6/H7 nas seções antigas abaixo são históricos: não autorizam uso de outros refs nem certificam o Financeiro atual.
 
@@ -16,7 +46,7 @@
 
 ### P2 confirmado — inconsistência da data civil / vencimento
 
-Evidência recebida: servidor UTC com `current_date=2026-10-10`, enquanto São Paulo ainda estava em **2026-10-09**; `fn_reverse_payment` usa `current_date`. UI **“Vence hoje”** e KPI **vencido 0** conflitam com status **Vencido/OVERDUE** e data do estorno **10/10**; histórico exibe **09/10/2026 22:22**. **Pendente definição da regra e auditoria de consistência de datas.** Nenhuma correção de timezone, alteração de rotina ou mudança de históricos autorizada neste fechamento.
+Evidência recebida naquele checkpoint: servidor UTC com `current_date=2026-10-10`, enquanto São Paulo ainda estava em **2026-10-09**; `fn_reverse_payment` então usava `current_date`. UI **“Vence hoje”** e KPI **vencido 0** conflitavam com status **Vencido/OVERDUE** e data do estorno **10/10**; histórico exibe **09/10/2026 22:22**. A pendência de identificação da regra foi supersedida pelo contrato existente e DDL central externo do adendo01:29 acima; **auditoria global de consistência continua pendente**. Nenhuma correção de timezone, alteração de rotina ou mudança de históricos foi executada por este agente no fechamento01:23 ou no arquivamento atual.
 
 ### Checks e limites de aceite
 
