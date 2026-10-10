@@ -26,7 +26,7 @@ function makeClient(handler: (c: Call & { index: number }) => any) {
       current = { table, op, payload };
       return builder;
     };
-    builder.select = (_c?: any) => (current.op === "insert" ? builder : setOp("select"));
+    builder.select = (_c?: any) => builder;
     builder.insert = (p: any) => setOp("insert", p);
     builder.update = (p: any) => setOp("update", p);
     builder.delete = () => setOp("delete");
@@ -39,10 +39,16 @@ function makeClient(handler: (c: Call & { index: number }) => any) {
   return { client: { from }, calls };
 }
 
+function successfulMutation(c: Call) {
+  if (c.table === "produtos") return { data: [{ id: c.op === "delete" ? "novo-1" : "p1" }], error: null };
+  if (c.op === "insert") return { data: c.payload.map((row: any, i: number) => ({ id: row.id ?? `new-${i}`, produto_id: row.produto_id })), error: null };
+  return { data: [{ id: "f1", produto_id: "p1" }], error: null };
+}
+
 const PAYLOAD = { nome: "Produto X" };
 const ANTERIOR = { nome: "Produto Antigo" };
 const FORMULACOES_ANTERIORES = [
-  { produto_id: "p1", microrganismo_id: "m1", component_insumo_id: null, volume_ml: 100, proporcao: 1, e_volume_fixo: false },
+  { id: "f1", produto_id: "p1", microrganismo_id: "m1", component_insumo_id: null, volume_ml: 100, proporcao: 1, e_volume_fixo: false },
 ];
 const NOVAS = [{ produto_id: "p1", microrganismo_id: "m2", volume_ml: 200 }];
 
@@ -53,7 +59,7 @@ describe("CAT-06 · integridade na edição de produto", () => {
       if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
       if (c.table === "formulacoes" && c.op === "insert" && c.payload === NOVAS)
         return { data: null, error: { message: "insert falhou" } };
-      return { data: null, error: null };
+      return successfulMutation(c);
     });
 
     const out = await saveProdutoComCompensacao({
@@ -64,7 +70,7 @@ describe("CAT-06 · integridade na edição de produto", () => {
     });
 
     expect(out.status).toBe("error");
-    expect((out as any).message).toBe("insert falhou");
+    expect((out as any).message).toMatch(/composição/);
     // restaurou o produto anterior
     expect(calls.some((c) => c.table === "produtos" && c.op === "update" && c.payload === ANTERIOR)).toBe(true);
     // removeu composição parcial e reinseriu o snapshot anterior
@@ -82,7 +88,7 @@ describe("CAT-06 · integridade na edição de produto", () => {
       if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
       if (c.table === "produtos" && c.op === "update" && c.payload === ANTERIOR)
         return { data: null, error: { message: "rollback falhou" } };
-      return { data: null, error: null };
+      return successfulMutation(c);
     });
 
     const out = await saveProdutoComCompensacao({
@@ -99,7 +105,7 @@ describe("CAT-06 · integridade na edição de produto", () => {
   it("não escreve nada quando o snapshot inicial falha", async () => {
     const { client, calls } = makeClient((c) => {
       if (c.table === "produtos" && c.op === "select") return { data: null, error: { message: "sem leitura" } };
-      return { data: null, error: null };
+      return successfulMutation(c);
     });
     const out = await saveProdutoComCompensacao({
       client,
@@ -115,13 +121,13 @@ describe("CAT-06 · integridade na edição de produto", () => {
     const { client, calls } = makeClient((c) => {
       if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
       if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
-      return { data: null, error: null };
+      return successfulMutation(c);
     });
     const out = await saveProdutoComCompensacao({
       client,
       produtoId: null,
       payload: PAYLOAD,
-      buildFormulacoes: () => NOVAS,
+      buildFormulacoes: id => NOVAS.map(row => ({ ...row, produto_id: id })),
     });
     expect(out.status).toBe("error");
     expect(calls.some((c) => c.table === "produtos" && c.op === "delete")).toBe(true);
@@ -132,13 +138,13 @@ describe("CAT-06 · integridade na edição de produto", () => {
       if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
       if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
       if (c.table === "produtos" && c.op === "delete") return { data: null, error: { message: "delete falhou" } };
-      return { data: null, error: null };
+      return successfulMutation(c);
     });
     const out = await saveProdutoComCompensacao({
       client,
       produtoId: null,
       payload: PAYLOAD,
-      buildFormulacoes: () => NOVAS,
+      buildFormulacoes: id => NOVAS.map(row => ({ ...row, produto_id: id })),
     });
     expect(out.status).toBe("critical");
   });
@@ -147,7 +153,7 @@ describe("CAT-06 · integridade na edição de produto", () => {
     const { client } = makeClient((c) => {
       if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
       if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
-      return { data: null, error: null };
+      return successfulMutation(c);
     });
     const out = await saveProdutoComCompensacao({
       client,
@@ -156,6 +162,84 @@ describe("CAT-06 · integridade na edição de produto", () => {
       buildFormulacoes: () => NOVAS,
     });
     expect(out).toEqual({ status: "ok", produtoId: "p1" });
+  });
+});
+
+describe("confirmação de linhas e compensação", () => {
+  const run = async (handler: (c: Call & { index: number }) => any, novo = false) => {
+    const { client, calls } = makeClient(handler);
+    const build = vi.fn(id => [{ produto_id: id, volume_ml: 100 }]);
+    const out = await saveProdutoComCompensacao({ client, produtoId: novo ? null : "p1", payload: PAYLOAD, buildFormulacoes: build });
+    return { out, calls, build };
+  };
+  const baseline = (c: Call) => {
+    if (c.op === "select" && c.table === "produtos") return { data: ANTERIOR, error: null };
+    if (c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
+    return successfulMutation(c);
+  };
+  it.each([[], [{ id: "outro" }], [{}], [{ id: "p1" }, { id: "p1" }]])("UPDATE sem linha/ID exato interrompe antes da composição: %j", async data => {
+    const { out, calls, build } = await run(c => c.op === "update" ? { data, error: null } : baseline(c));
+    expect(out.status).toBe("error");
+    expect(build).not.toHaveBeenCalled();
+    expect(calls.filter(c => c.table === "formulacoes" && c.op !== "select")).toHaveLength(0);
+  });
+  it.each([[], [{}], [{ id: "" }], [{ id: "a" }, { id: "b" }]])("INSERT sem ID/cardinalidade confiável é crítico: %j", async data => {
+    const { out, calls, build } = await run(() => ({ data, error: null }), true);
+    expect(out.status).toBe("critical");
+    expect(build).not.toHaveBeenCalled();
+    expect(calls).toHaveLength(1);
+  });
+  it("compensação UPDATE zero linhas é crítica sem nova exclusão da composição", async () => {
+    const { out, calls } = await run(c => {
+      if (c.op === "update" && c.payload === ANTERIOR) return { data: [], error: null };
+      if (c.op === "insert" && c.table === "formulacoes") return { data: [], error: null };
+      return baseline(c);
+    });
+    expect(out.status).toBe("critical");
+    expect(calls.filter(c => c.op === "delete")).toHaveLength(1);
+  });
+  it("DELETE composição zero quando snapshot tem uma linha não confirma sucesso", async () => {
+    const { out } = await run(c => c.op === "delete" ? { data: [], error: null } : baseline(c));
+    expect(out.status).toBe("critical");
+  });
+  it("compensação confiável restaura IDs e devolve erro, nunca ok", async () => {
+    const { out, calls } = await run(c => c.op === "insert" && c.payload !== FORMULACOES_ANTERIORES
+      ? { data: [], error: null } : baseline(c));
+    expect(out.status).toBe("error");
+    expect(calls.some(c => c.op === "insert" && c.payload === FORMULACOES_ANTERIORES)).toBe(true);
+  });
+  it("INSERT composição com produto divergente não confirma sucesso", async () => {
+    const { out } = await run(c => c.op === "insert" && c.payload !== FORMULACOES_ANTERIORES
+      ? { data: [{ id: "f2", produto_id: "outro" }], error: null } : baseline(c));
+    expect(out.status).toBe("error");
+  });
+  it("restauração da composição com zero linhas é crítica", async () => {
+    const { out } = await run(c => c.op === "insert" ? { data: [], error: null } : baseline(c));
+    expect(out.status).toBe("critical");
+  });
+  it("UPDATE com compensação ID divergente é crítico", async () => {
+    const { out } = await run(c => {
+      if (c.op === "update" && c.payload === ANTERIOR) return { data: [{ id: "outro" }], error: null };
+      if (c.op === "insert") return { data: [], error: null };
+      return baseline(c);
+    });
+    expect(out.status).toBe("critical");
+  });
+  it("composição vazia aceita DELETE de zero linhas quando snapshot também vazio", async () => {
+    const { client } = makeClient(c => {
+      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
+      if (c.table === "produtos") return { data: [{ id: "p1" }], error: null };
+      return { data: [], error: null };
+    });
+    expect(await saveProdutoComCompensacao({ client, produtoId: "p1", payload: PAYLOAD, buildFormulacoes: () => [] }))
+      .toEqual({ status: "ok", produtoId: "p1" });
+  });
+  it("DELETE compensatório do novo produto zero linhas é crítico", async () => {
+    const { out } = await run(c => {
+      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
+      return { data: [], error: null };
+    }, true);
+    expect(out.status).toBe("critical");
   });
 });
 
