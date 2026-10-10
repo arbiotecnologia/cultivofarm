@@ -9,9 +9,11 @@
  */
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
 
 export function PlataformaGuard() {
-  const { user, roles, loading } = useAuth();
+  const actor = useAuth();
+  const { user, roles, loading } = actor;
 
   if (loading) {
     return (
@@ -26,6 +28,7 @@ export function PlataformaGuard() {
 
   if (!user) return <Navigate to="/auth" replace />;
   if (!roles.includes("superadmin")) return <Navigate to="/sem-permissao" replace />;
+  if (!platformCatalogAccess(actor).ready) return <Navigate to="/sem-permissao" replace />;
 
   return <Outlet />;
 }
