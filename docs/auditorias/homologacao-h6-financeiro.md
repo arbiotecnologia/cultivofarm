@@ -1,5 +1,30 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — fechamento externo dos geradores67d3a432 / testedbec675 — 2026-10-10 02:23 UTC
+
+**Escopo desta rodada: exclusivamente roadmap e este relatório.** Evidências abaixo recebidas do **Codex autorizado externamente ao Lovable**, sem reexecução própria de testes, SQL, UI ou implantação; sem código/AGENTS/deploy/banco/grants/migration/frontend/nova fase ou alteração de dados financeiros/gates.
+
+### Revisão, verificações e implantação externas
+
+- **Rerun Windows175/175 PASS após parser binário**, para fechamento dos geradores `67d3a432` e teste `dbec675`; supersede a pendência de rerun independente dos checkpoints anteriores, preservando o histórico173PASS/2FAIL e o resultado Linux separado. Não somar checkpoints.
+- **Typecheck app/node, lint, scanner3858/zero e build31.64s PASS**, com avisos legados, conforme relato externo. Não comandos executados nesta rodada pelo Lovable nem prova Deno typecheck.
+- Codex implantou **`generate-financial-report` versão75 ACTIVE**, **referência implantada `67d3a432`**, `verify_jwt=false` com **getUser preservado**; recuperou **index/CORS com igualdade exata**, conforme provas externas. Supersede pendências históricas de revisão/implantação dos geradores; nenhum deploy realizado pelo Lovable neste fechamento.
+
+### PASS de conteúdo real/local não é PASS de exportação em produção
+
+- **PDF real/local:** baseline **1página/55 de100registros** versus novo **10páginas/100 de100**, com texto longo, última coluna/fim do texto e rodapés todos PASS. pdf-lib1.17.1 real bundled; extração pypdf e10páginas renderizadas/inspecionadas sem cortes, conforme QA externo. Pendência de QA dessa fixture supersedida, não homologação de volume máximo ou runtime remoto.
+- **XLSX bytes serialize/read roundtrip e CSV parser real PASS**, conforme provas locais/externas registradas. Conteúdo dos arquivos validado no recorte; **SDK/Auth/Storage simulados localmente**. Não upload/download/assinatura/histórico real nem certificação integral da exportação.
+- **UI real externa FinanceiroAR, CSV mensal:** preflight **204→HTTP500**, corpo exato **`{"error":"financial_report_unavailable"}`**, **sem URL/path**. **Toast não observado; NÃO afirmar UX PASS**, geração PASS ou download PASS.
+- **SQL posterior externo:0reportobjects/0historyAR**; `monthly` e `register` mantêm **authenticated EXECUTE=false**. Nenhum dado financeiro, grant, migration ou frontend alterado, conforme relato; nenhuma consulta remota própria nesta rodada.
+
+### Pendências e NO-GO preservados
+
+- **Geração/download em produção e exportação NO-GO**, apesar do PASS focal de conteúdo arquivo real/local e da versão75 implantada externamente. **RPCs de dados SECURITY DEFINER/ACL fechada**, RLS internas, entitlement, StorageHTTP, volume/limites antes consultaRPC, idempotência e reconciliação de órfãos continuam pendentes; sem abrir grants ou excluir blobs automaticamente.
+- **P2 documentados, sem correção:** cabeçalho PDF legado ARBio e registro dividido entre páginas. PASS de ausência de cortes não significa eliminação dessas pendências de apresentação.
+- Financeiroglobal/B2B/OS/fiscal/Faturamento, demais matrizes e gates permanecem **NO-GO**. Histórico +40/-40 preservado. Nenhuma nova fase iniciada; somente fechamento documental. Rollback mantém canal fechado e contenção substitutiva, sem restaurar injeção/truncamento/falso sucesso.
+
+---
+
 ## Adendo vigente — parser CSV Windows e QA PDF externo — 2026-10-10 02:20 UTC
 
 - **Revisão independente67d3a432 recebida:** Codex relatou **175total/173PASS/2FAIL** no Windows; `sys.stdin.read()` normalizava CR/CRLF antes de csv.reader. Não falha do gerador nem motivo para adaptar expectativas. Resultado independente preservado, distinto do PASS Linux anterior.
