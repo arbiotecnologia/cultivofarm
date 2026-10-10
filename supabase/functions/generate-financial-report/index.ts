@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase.rpc(rpcName, body.filters as never);
     if (error) throw error;
 
-    const rows: Array<Record<string, unknown>> = Array.isArray(data)
+    const rows: unknown[] = Array.isArray(data)
       ? data
       : data && typeof data === "object"
         ? [data as Record<string, unknown>]
@@ -111,13 +111,12 @@ Deno.serve(async (req) => {
     const encoder = new TextEncoder();
     const valueText = (value: unknown): string => value === undefined || value === null
       ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
-    const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
-    if (body.format === "PDF" || body.format === "CSV") {
-      if (rows.length > maxRows || rows.some((row) => !isObject(row)) ||
-        encoder.encode(JSON.stringify({ rows, title, filters: body.filters })).byteLength > maxContentBytes) {
-        throw new Error("financial_report_unavailable");
-      }
+    // Validate the RPC result before enumerating columns for any renderer.
+    if (rows.length > maxRows || !rows.every(isObject) ||
+      encoder.encode(JSON.stringify({ rows, title, filters: body.filters })).byteLength > maxContentBytes) {
+      throw new Error("financial_report_unavailable");
     }
+    const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
 
     if (body.format === "PDF") {
       const pdf = await PDFDocument.create();
@@ -166,9 +165,25 @@ Deno.serve(async (req) => {
       fileBytes = await pdf.save();
       contentType = "application/pdf";
     } else if (body.format === "XLSX") {
-      const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ info: "Nenhum dado" }]);
+      // Only primitive AOA values reach SheetJS; an RPC object is never a cell definition.
+      const spreadsheetValue = (value: unknown): string | number | boolean | null => {
+        if (value === undefined || value === null) return null;
+        if (typeof value === "number") {
+          if (!Number.isFinite(value)) throw new Error("financial_report_unavailable");
+          return value;
+        }
+        if (typeof value === "string" || typeof value === "boolean") return value;
+        if (typeof value === "object") return JSON.stringify(value);
+        throw new Error("financial_report_unavailable");
+      };
+      const matrix: Array<Array<string | number | boolean | null>> = columns.length
+        ? [columns, ...rows.map((row) => columns.map((column) => spreadsheetValue(
+          Object.prototype.hasOwnProperty.call(row, column) ? row[column] : null,
+        )))] : [];
+      const ws = XLSX.utils.aoa_to_sheet(matrix);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, title.substring(0, 28));
+      const sheetName = title.replace(/[\[\]:*?/\\\x00-\x1f]/g, "").trim().slice(0, 31).replace(/^'+|'+$/g, "").trim() || "Relatorio";
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
       fileBytes = new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
       contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     } else {
@@ -182,7 +197,7 @@ Deno.serve(async (req) => {
       fileBytes = encoder.encode(csv);
       contentType = "text/csv";
     }
-    if ((body.format === "PDF" || body.format === "CSV") && fileBytes.byteLength > maxFileBytes) {
+    if (fileBytes.byteLength > maxFileBytes) {
       throw new Error("financial_report_unavailable");
     }
 
