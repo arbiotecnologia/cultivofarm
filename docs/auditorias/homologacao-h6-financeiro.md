@@ -1,5 +1,37 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — P1 leitura de auditoria por origem/tenant — 2026-10-10 02:31 UTC
+
+**Escopo exclusivamente documental:** dois SQLs fornecidos arquivados literalmente, roadmap e este relatório. As migrations foram **JÁ APLICADAS pelo Codex autorizado externamente ao Lovable** no Supabase canônico **`swzpzcwiasxmjutrmvkm`**, conforme evidência recebida. Nenhum SQL/consulta remota, reaplicação, rollback remoto, mudança de código/AGENTS/grants/Edge/frontend/gates/dados ou publicação pelo Lovable nesta rodada.
+
+### Baseline externa e arquivos aplicados
+
+- **P1 baseline Admin FSF:** não lê o título AR, mas consegue ler **9 logs por IDs** em `financial_audit_log`. Evidência externa de isolamento insuficiente da leitura do ledger, não falha meramente visual.
+- **`20261010022629 financial_audit_source_tenant_scope`:** SQL literal em `scripts/rbac-audit/applied-20261010022629-financial-audit-source-tenant-scope.sql`. Política **RESTRICTIVE FOR SELECT TO authenticated** exige organização autoritativa de `h15_actor_organization()` e origem comprovada no tenant atual; a política existente de alçada financeira continua aplicável. Sem novo grant, escrita ou reescrita de histórico.
+- A primeira versão escondia **1 evento legítimo**: `rpc_create_financial_title` grava **`FINANCIAL_INSTALLMENTS_CUSTOMIZED`** com `entity_type` de installments, mas `entity_id` do **título pai**, não da parcela.
+- **`20261010023037 financial_audit_installment_parent_compatibility`:** SQL literal em `scripts/rbac-audit/applied-20261010023037-financial-audit-installment-parent-compatibility.sql`. Altera a mesma política e resolve **somente** action `FINANCIAL_INSTALLMENTS_CUSTOMIZED` + tipo `accounts_receivable_installments`/`accounts_payable_installments` pelo respectivo título pai **no tenant autoritativo correto**. Não generaliza aliases nem infere ownership; demais verificações de origem permanecem.
+- **Aliases desconhecidos, fontes deletadas ou sem origem/tenant comprovados permanecem ocultos (fail-closed)** até reconciliação individual autorizada; **logs preservados**, sem apagar ou modificar histórico.
+
+### Reteste externo — SQL/claims, não sessões HTTP
+
+| Perfil no reteste final relatado | Logs AR visíveis |
+|---|---:|
+| Financeiro AR | 9 |
+| Admin AR | 9 |
+| Admin FSF | 0 |
+| Consultor | 0 |
+| Superadmin | 0 |
+
+Provas executadas externamente em **`SET LOCAL ROLE authenticated`**, com **claims tenant forjadas**, em **transação ROLLBACK**. Resultado focal relatado como PASS; não reexecutado pelo Lovable. **Claims SQL não equivalem a autenticação/JWT nem sessões HTTP/browser reais**, e não certificam todos os aliases, origens ou o Financeiro integral.
+
+### Limites, UI pendente e rollback seguro
+
+- **UI/HTTP deste recorte pendentes — UNVERIFIED.** Não alegar PASS de sessões reais, homologação global ou liberação de gates a partir dos contadores SQL.
+- **Rollback seguro:** manter restrição/containment e exigir correção substitutiva revisada; **não remover a cerca ou restaurar o vazamento**. Fontes não comprovadas continuam invisíveis; nenhuma reconciliação automática ou backfill autorizado.
+- **Financeiro global/exportação/B2B/OS/fiscal/Faturamento NO-GO**, pendências anteriores, AGENTS, gates e histórico +40/-40 preservados. Checks de código/build não reexecutados neste arquivamento; nenhum PASS novo inventado. Nenhuma nova fase iniciada.
+
+---
+
 ## Adendo vigente — fechamento externo dos geradores67d3a432 / testedbec675 — 2026-10-10 02:23 UTC
 
 **Escopo desta rodada: exclusivamente roadmap e este relatório.** Evidências abaixo recebidas do **Codex autorizado externamente ao Lovable**, sem reexecução própria de testes, SQL, UI ou implantação; sem código/AGENTS/deploy/banco/grants/migration/frontend/nova fase ou alteração de dados financeiros/gates.
