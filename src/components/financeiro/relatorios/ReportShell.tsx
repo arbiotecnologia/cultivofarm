@@ -24,7 +24,8 @@ interface ReportShellProps<TData = unknown> {
 
 export function ReportShell<TData = unknown>(props: ReportShellProps<TData>) {
   const access = useStorageAccessScope(`report:${props.reportType}`);
-  return <ScopedReportShell<TData> key={access.scope} {...props} />;
+  const { error } = useAuth();
+  return <ScopedReportShell<TData> key={JSON.stringify([access.scope, !!error])} {...props} />;
 }
 
 function ScopedReportShell<TData = unknown>({
@@ -36,8 +37,9 @@ function ScopedReportShell<TData = unknown>({
   renderPreview,
   requiresCustomer,
 }: ReportShellProps<TData>) {
-  const { user } = useAuth();
+  const { user, error: authError } = useAuth();
   const access = useStorageAccessScope(`report:${reportType}`);
+  const ready = access.ready && !authError;
   const [filters, setFilters] = useState<Record<string, unknown>>(() => structuredClone(defaultFilters));
   const [data, setData] = useState<TData | null>(null);
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
@@ -67,7 +69,7 @@ function ScopedReportShell<TData = unknown>({
   };
 
   const generate = async () => {
-    if (!access.ready || operation.current || !validate()) return;
+    if (!ready || operation.current || !validate()) return;
     const current = access.capture();
     const request = Symbol();
     operation.current = request;
@@ -105,10 +107,9 @@ function ScopedReportShell<TData = unknown>({
       if (rows > 1000) {
         toast.warning(`Prévia com ${rows} linhas. Recomendamos exportar em Excel ou CSV.`);
       }
-    } catch (e: unknown) {
+    } catch {
       if (!isCurrent()) return;
-      const message = e instanceof Error ? e.message :
-        typeof e === "object" && e !== null && "message" in e && typeof e.message === "string" ? e.message : "Erro ao gerar relatório";
+      const message = "Não foi possível gerar a prévia. Verifique seu acesso e tente novamente.";
       setPreviewError(message);
       toast.error(message);
     } finally {
@@ -117,7 +118,7 @@ function ScopedReportShell<TData = unknown>({
   };
 
   const exportFormat = async (format: "PDF" | "XLSX" | "CSV") => {
-    if (!access.ready || operation.current || !validate()) return;
+    if (!ready || operation.current || !validate()) return;
     const current = access.capture();
     const request = Symbol();
     operation.current = request;
@@ -147,7 +148,7 @@ function ScopedReportShell<TData = unknown>({
   const empty = data == null || (Array.isArray(data) && data.length === 0);
   const busy = loading || exporting !== null;
   const print = () => {
-    if (!access.ready || operation.current) return;
+    if (!ready || operation.current) return;
     const current = access.capture();
     if (empty) {
       toast.error("Gere a prévia antes de imprimir");
@@ -189,11 +190,11 @@ function ScopedReportShell<TData = unknown>({
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={generate} disabled={!access.ready || busy}>{loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Gerar prévia</Button>
-            <Button variant="outline" onClick={() => exportFormat("PDF")} disabled={!access.ready || busy}><FileText className="w-4 h-4 mr-2" />PDF</Button>
-            <Button variant="outline" onClick={() => exportFormat("XLSX")} disabled={!access.ready || busy}><FileSpreadsheet className="w-4 h-4 mr-2" />Excel</Button>
-            <Button variant="outline" onClick={() => exportFormat("CSV")} disabled={!access.ready || busy}><FileDown className="w-4 h-4 mr-2" />CSV</Button>
-            <Button variant="outline" onClick={print} disabled={!access.ready || busy || empty}><Printer className="w-4 h-4 mr-2" />Imprimir</Button>
+            <Button onClick={generate} disabled={!ready || busy}>{loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Gerar prévia</Button>
+            <Button variant="outline" onClick={() => exportFormat("PDF")} disabled={!ready || busy}><FileText className="w-4 h-4 mr-2" />PDF</Button>
+            <Button variant="outline" onClick={() => exportFormat("XLSX")} disabled={!ready || busy}><FileSpreadsheet className="w-4 h-4 mr-2" />Excel</Button>
+            <Button variant="outline" onClick={() => exportFormat("CSV")} disabled={!ready || busy}><FileDown className="w-4 h-4 mr-2" />CSV</Button>
+            <Button variant="outline" onClick={print} disabled={!ready || busy || empty}><Printer className="w-4 h-4 mr-2" />Imprimir</Button>
           </div>
         </CardContent>
       </Card>
@@ -201,7 +202,7 @@ function ScopedReportShell<TData = unknown>({
       <Card>
         <CardHeader className="print:hidden"><CardTitle className="text-base">Prévia</CardTitle></CardHeader>
         <CardContent>
-          {!access.ready ? (
+          {!ready ? (
             <p role="status" className="text-sm text-muted-foreground">Sessão indisponível para relatórios.</p>
           ) : loading ? (
             <p role="status" className="text-sm text-muted-foreground">Gerando prévia…</p>

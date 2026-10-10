@@ -1,5 +1,32 @@
 # H6/H6b — Homologação do Financeiro AR Bio
 
+## Adendo vigente — revisão focal d784380 — 2026-10-10 01:46 UTC
+
+**Escopo:** somente `ReportShell.tsx`, `RelatorioMensal.tsx`, teste focal existente e documentação. Sem publicação automática: entrega para revisão. AGENTS SHA256 `87175b23cd098b666096675144414ae09791cca353a67fd1fe4d43f41a42b244` intacto; nenhum hook global, outro relatório, rota, grant, banco, migration, Edge/Storage, gate ou fixture alterado. Histórico +40/-40 preservado.
+
+### Três correções focais
+
+1. **Erro seguro de geração:** RPC retornando erro ou promise rejeitada mostra explicitamente, em prévia e toast, somente **“Não foi possível gerar a prévia. Verifique seu acesso e tente novamente.”**. Mensagem crua do servidor não é exibida; prévia/metadados anteriores continuam removidos e lock liberado apenas para a operação atual. Testes verificam tanto mensagem segura quanto ausência do texto cru.
+2. **Erro Auth local invalida sessão:** guard do componente combina `access.ready` com ausência de `auth.error`; chave de remount combina o escopo existente com presença de erro. Perda/recuperação do erro limpa filtros sensíveis/prévia/metadados, mesmo com perfil/papéis anteriores persistentes. Capturas da instância desmontada descartam resultados/finally anteriores, inclusive quando nova operação começa após recuperação. Gerar/exportar/imprimir ficam bloqueados durante erro; `useStorageAccessScope` global permanece intacto.
+3. **Mensal concreto:** `renderFilters` específico no `RelatorioMensal` associa Labels aos inputs e edita apenas **`_from`/`_to`**. Default usa **`hojeSaoPaulo` já reexportado por `contasReceber`**, em vez de `toISOString()` UTC; primeiro dia calculado a partir do mesmo dia civil. Contratos dos demais relatórios preservados. Testes do componente concreto inspecionam argumentos RPC e filtros da chamada Edge mockada, sem chaves `from`/`to`, e datas na virada UTC: `2026-10-10T01:44Z` → `2026-10-09`; `2026-11-01T01:00Z` → `2026-10-31`; `2026-11-01T03:00Z` → `2026-11-01`.
+
+### Validações próprias e histórico
+
+- **45/45 PASS** em `bun run test src/test/financeiro/reportShell.session.test.tsx src/test/equipe-tecnica/storageAccessScope.test.tsx`: **37** ReportShell/mensal + **8** contrato real do hook, com Auth/RPC/Edge mockados e sem URLs reais. Inclui perda/recuperação de auth.error com perfil persistente, resultados/exportação/finally tardios, operação nova, ações bloqueadas, mensagem segura e argumentos mensais exclusivos.
+- Primeira execução desta revisão selecionou caminho inexistente para teste do hook: somente **37/37** executados; rodada final acima usa caminho correto e substitui o checkpoint, sem soma.
+- **Lint dos três arquivos funcionais/teste PASS**, **diff-check PASS**; build automático registrado **OK 2026-10-10T01:45:38Z**. Typecheck app/node e scanner separados **NOT RUN** nesta rodada; não inferir PASS a partir de build automático.
+- **35/35 anteriores preservados como histórico** no adendo abaixo; não somar repetições. Nenhum novo teste UI autenticado/produção ou SQL executado pelo agente. **PASS mock não certifica geração mensal real, exportação, upload/download ou bytes Storage.**
+
+### Evidência externa Codex recebida, não reexecutada pelo Lovable
+
+- Edge **`generate-financial-report` v69** implantada confere com `index` local; **`getUser` + ANON caller**, segundo adendo do Codex autorizado externamente.
+- Bucket **`financial-reports` privado, limite20MiB**; helper Storage **FinanceiroAR com path próprio PASS**, **FSF/Consultor/Superadmin negados**, paths malformados e tenant forjado negados, conforme evidência externa recebida.
+- **Nenhum upload/download certificado.** Não houve deploy, leitura remota nem alteração Edge/Storage pelo agente nesta revisão; o adendo não é login/browser nem prova de geração UI.
+- **`get_report_monthly_financial authenticated EXECUTE=false` confirmado por SQL externo**, gate deliberado preservado: não habilitar RPC. Prévia mensal real **bloqueada/UNVERIFIED**.
+- **Financeiro global/B2B/OS/fiscal/Faturamento NO-GO**; demais relatórios/recorrência/Storage/planos e payable UI integral permanecem pendentes/UNVERIFIED. Aguardar revisão do delta antes de qualquer publicação; nenhuma nova grande fase.
+
+---
+
 ## Adendo vigente — contenção focal ReportShell — 2026-10-10 01:40 UTC
 
 **Base informada:** `7bd7ba7b`. Escopo: somente componente existente `ReportShell.tsx`, testes focais e documentação. AGENTS, props, rotas, permissões/grants, backend, Edge, Storage e gates preservados. Nenhuma consulta/mutação remota, publicação/deploy ou operação financeira. Fixture histórica +40/-40 intacta.
