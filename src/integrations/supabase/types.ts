@@ -22547,6 +22547,10 @@ export type Database = {
         }
         Returns: string
       }
+      platform_read_global_b2b_state: {
+        Args: { p_id: string; p_item_tipo: string }
+        Returns: Json
+      }
       platform_read_global_culture_detail: {
         Args: { p_id: string }
         Returns: Json
@@ -22643,6 +22647,17 @@ export type Database = {
             }
             Returns: string
           }
+      platform_set_global_b2b_enabled: {
+        Args: {
+          p_b2b_enabled: boolean
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_item_tipo: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_set_global_culture_status: {
         Args: {
           p_ativo: boolean

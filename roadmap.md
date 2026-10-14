@@ -642,11 +642,18 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] SQL candidato + rollback + runtime rollback (`proposed-platform-global-b2b-enabled.sql`)
 - [x] UI Liberar/Retirar B2B (produtos e microrganismos) com confirmação, motivo e recibo validado
 - [x] Lista recarrega após Apresentações; botão "Confirmando…" não fica preso
-- [ ] Aplicar SQL e rodar runtime — aguarda revisão independente
+- [x] SQL APLICADO 20261014212642 platform_global_b2b_enabled (Codex, SQL a7b076) — NÃO REAPLICAR; runtime 61 PASS/0 FAIL rollback + integração Bombarbio 4 PASS; publicado 55a23c (evidência externa)
 - [x] Bombarbio ativo via UI (21:09:04 UTC, audit 92721354…); B2B segue false
 - [x] Candidato: trigger `update_produtos_updated_at` → `catalog_touch_version` (preflight/rollback); diálogo B2B com fence de época
-- [ ] Liberar Bombarbio para B2B — aguarda aplicação do SQL
+- [x] Bombarbio liberado via UI SA real 21:32:52 UTC: ativo/b2b true, 180/L, dose 18, ha NULL (evidência externa)
 - [ ] Ficha técnica/dose/regulatório do Bombarbio — aguarda dados reais
 
-## Próxima fase (após B2B) — não iniciada
-- [ ] Quatro abas globais nesta ordem: Produtos Químicos, Produtos Biológicos, Microrganismos, Fertilizantes/Adubos; Culturas como apoio; sementes/tratamento fora
+## Catálogo global — quatro abas e família (2026-10-14)
+- [x] UI local: abas Produtos Químicos, Produtos Biológicos, Microrganismos (painel existente), Fertilizantes/Adubos; Culturas em "Cadastros de apoio"; `?catalogo=`/`?revisao=` preservando demais parâmetros
+- [x] Filtro Todos (família + pendentes) / Pendentes; legados sem família visíveis como "Pendente" em todas as abas de produtos
+- [x] Diálogo Classificar (família + rótulo coerente, motivo, confirmação, recibo validado); criação legada preservada com classificação posterior
+- [x] SQL candidato + rollback + runtime rollback (`proposed-platform-global-product-family.sql`) — NÃO aplicado
+- [ ] Aplicar SQL/runtime (revisão independente); até lá as abas de produtos mostram erro seguro — não publicar antes
+- [ ] Classificar Bombarbio como Biológico/Biofungicida pela UI (usuário)
+- [ ] Cadastro novo de fertilizantes/adubos e herbicidas (tipo/unidade) — pendente
+- [ ] Sementes/tratamento, tenant show/hide e itens próprios — fora desta fase

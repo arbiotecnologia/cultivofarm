@@ -102,7 +102,8 @@ const moeda = (valor: number | null, currency: string | null) => valor === null 
 
 export default function PlataformaHome() {
   const { signOut } = useAuth();
-  const [aba, setAba] = useState("planos");
+  // `?catalogo=` (estado das abas do catálogo global) reabre a aba Catálogo; sem rota nova.
+  const [aba, setAba] = useState(() => new URLSearchParams(window.location.search).has("catalogo") ? "catalogo" : "planos");
   const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
   const planos = usePlanosSaaS();
   const versoes = useVersoesPlanosSaaS();

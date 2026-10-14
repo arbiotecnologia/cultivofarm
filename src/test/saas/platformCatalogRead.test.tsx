@@ -21,7 +21,7 @@ function actor(id = "actor-a"): PlatformCatalogActor {
 }
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const tree = () => <QueryClientProvider client={client}><PlatformCatalogReadTab /></QueryClientProvider>;
+  const tree = () => <MemoryRouter><QueryClientProvider client={client}><PlatformCatalogReadTab /></QueryClientProvider></MemoryRouter>;
   const view = render(tree());
   return { client, rerender: () => view.rerender(tree()) };
 }
@@ -36,7 +36,7 @@ describe("consulta global da plataforma", () => {
   it("consulta apenas a RPC mínima com limite concreto 50 e offset zero", async () => {
     setup();
     await screen.findByText(product.nome);
-    expect(mocks.rpc).toHaveBeenCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 0 });
+    expect(mocks.rpc).toHaveBeenCalledWith("platform_read_global_product_catalog_by_family", { p_familia: "quimico", p_revisao: "todos", p_search: "", p_limit: 50, p_offset: 0 });
   });
   it("preserva tipo antigo e descarta campos extras sem preço no resultado exibido", async () => {
     const parsed = platformCatalogPageSchema.parse({ items: [{ ...product, valor_litro_brl: 12345, composicao: "restrita" }], has_more: false });
@@ -65,10 +65,10 @@ describe("consulta global da plataforma", () => {
     mocks.request.mockResolvedValue(page([product], true));
     setup(); await screen.findByText(product.nome);
     fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
-    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 50 }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog_by_family", { p_familia: "quimico", p_revisao: "todos", p_search: "", p_limit: 50, p_offset: 50 }));
     await screen.findByText(product.nome);
     fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
-    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 0 }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog_by_family", { p_familia: "quimico", p_revisao: "todos", p_search: "", p_limit: 50, p_offset: 0 }));
   });
   it("distingue vazio de erro", async () => {
     mocks.request.mockResolvedValue(page([])); setup();
@@ -93,11 +93,11 @@ describe("consulta global da plataforma", () => {
   it("pagina no servidor e busca retorna à primeira página sem filtrar localmente", async () => {
     mocks.request.mockResolvedValue(page([product], true)); setup(); await screen.findByText(product.nome);
     fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
-    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "", p_limit: 50, p_offset: 50 }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog_by_family", { p_familia: "quimico", p_revisao: "todos", p_search: "", p_limit: 50, p_offset: 50 }));
     await screen.findByText(product.nome);
     fireEvent.change(screen.getByLabelText("Buscar por nome ou código"), { target: { value: " %_x " } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
-    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog", { p_search: "%_x", p_limit: 50, p_offset: 0 }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_product_catalog_by_family", { p_familia: "quimico", p_revisao: "todos", p_search: "%_x", p_limit: 50, p_offset: 0 }));
   });
   it("mantém loading sem mostrar resultado anterior durante busca", async () => {
     const { rerender } = setup(); await screen.findByText(product.nome);
