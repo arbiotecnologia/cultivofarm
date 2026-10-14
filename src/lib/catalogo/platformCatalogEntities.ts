@@ -100,7 +100,7 @@ function confirm(data: unknown, key: string, check: (r: z.infer<typeof receiptSc
 
 export async function createEntity(kind: EntityKind, values: EntityValues, reason: string, key: string, signal: AbortSignal) {
   const body = valuesSchema[kind].parse(values);
-  if (kind === "micro" && typeof body.producao_on_farm !== "boolean") throw new Error("Informe se há produção on farm.");
+  if (kind === "micro" && typeof (body as EntityValues).producao_on_farm !== "boolean") throw new Error("Informe se há produção on farm.");
   const { data, error } = await rpc()(rpcNames[kind].create, { p_payload: body, p_reason: reasonSchema.parse(reason), p_idempotency_key: key })
     .abortSignal(signal);
   if (signal.aborted) throw new Error("Solicitação encerrada.");
