@@ -176,6 +176,24 @@ describe("diálogo B2B global", () => {
     expect(signalUsed.aborted).toBe(true);
     expect(mocks.saved).not.toHaveBeenCalled();
   });
+  it("troca de escopo com leitura pendente (live mantido): resposta tardia de A descartada e nova leitura de B", async () => {
+    const scopeA = platformCatalogAccess(mocks.actor).scope;
+    let resolveA!: (v: unknown) => void;
+    mocks.request.mockImplementation((n) => n === "platform_read_global_b2b_state"
+      ? new Promise((r) => { resolveA = () => r({ data: st({ nome: "TardioA" }), error: null }); })
+      : Promise.resolve(receipt({})));
+    const view = render(<PlatformCatalogB2BDialog tipo="produto" itemId={ID} scope={scopeA} onClose={mocks.close} onSaved={mocks.saved} />);
+    await screen.findByText("Carregando…");
+    mocks.actor = actor("actor-b");
+    const scopeB = platformCatalogAccess(mocks.actor).scope;
+    mocks.request.mockImplementation((n) => n === "platform_read_global_b2b_state"
+      ? Promise.resolve({ data: st({ nome: "AtualB" }), error: null }) : Promise.resolve(receipt({})));
+    view.rerender(<PlatformCatalogB2BDialog tipo="produto" itemId={ID} scope={scopeB} onClose={mocks.close} onSaved={mocks.saved} />);
+    resolveA();
+    expect(await screen.findByText("AtualB (FUNG-2)")).toBeInTheDocument();
+    expect(screen.queryByText(/TardioA/)).not.toBeInTheDocument();
+    expect(mocks.request.mock.calls.filter(([n]) => n === "platform_read_global_b2b_state")).toHaveLength(2);
+  });
 });
 
 describe("SQL candidato B2B — versão monotônica de produtos", () => {
