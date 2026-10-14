@@ -602,7 +602,10 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Fechamento — matriz RLS/Storage/RPC, provas A/B/C, desktop/mobile, testes, verificações automáticas, scanner/advisors e relatório GO/NO-GO; decisões contábeis não inferidas.
 - [x] Catálogo global — criação atômica e arquivar/reativar: UI local + SQL candidato `proposed-platform-catalog-global-lifecycle.sql` (não aplicado), 63/63 testes.
 - [x] Catálogo global — correções da revisão Codex no SQL candidato e cerca de identidade por época (65 + 5 testes locais).
-- [ ] Catálogo global — revisão/aplicação do SQL de ciclo de vida + preflight de triggers de preço (bloqueio: revisão externa e autorização de DDL).
-- [ ] Catálogo global — leitor Superadmin de microrganismos e seleção de composição na tela (bloqueio: nova RPC candidata/schema ativo).
+- [x] Catálogo global — SQL de ciclo de vida aplicado externamente (Codex, SQL rollback PASS; não UI PASS) e arquivado.
+- [ ] Catálogo global — preflight de triggers de preço e prova UI real da criação (bloqueio: execução externa autorizada).
+- [x] Catálogo global — seleção de composição na tela (local, 80/80 testes) + SQL incremental `proposed-platform-catalog-composition-reader.sql`.
+- [ ] Catálogo global — revisão/aplicação do leitor de microrganismos e da revalidação de ativo (bloqueio: revisão Codex/DDL).
+- [ ] Catálogo global — composição de produtos existentes e insumos (bloqueio: contrato a definir).
 - [ ] Catálogo global — famílias novas via B1, seleção/edição de composição e insumos (bloqueio: B1 não aplicado).
 - [ ] Catálogo tenant — exibir/ocultar globais e próprios (bloqueio: fase posterior autorizada).
