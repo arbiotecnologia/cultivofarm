@@ -53,17 +53,22 @@ DECLARE r jsonb; r2 jsonb; k uuid; v_pid uuid; v_ver timestamptz; v_before jsonb
 BEGIN
   r:=public.platform_create_global_product('{"nome":"RT familia produto rollback 0001","tipo":"fungicida"}','Teste runtime familia rollback',gen_random_uuid());
   v_pid:=(r->>'id')::uuid; INSERT INTO rt_ctx VALUES ('produto_novo',v_pid::text);
-  -- Leitor: novo produto aparece como pendente em TODAS as famílias (legado nunca oculto).
+  -- Leitor: padrão 'familia' NUNCA traz NULL; pendente só aparece em revisão 'pendentes'/'todos'.
   FOR t IN SELECT * FROM (VALUES ('biologico'),('quimico'),('fertilizante_adubo')) x(f) LOOP
-    pg:=public.platform_read_global_product_catalog_by_family(t.f,'pendentes','RT familia produto rollback 0001',50,0);
-    PERFORM pg_temp.ok('sa.read.pendente.'||t.f, jsonb_array_length(pg->'items')=1 AND pg->'items'->0->>'familia_catalogo' IS NULL);
+    pg:=public.platform_read_global_product_catalog_by_family(t.f,'familia','RT familia produto rollback 0001',50,0);
+    PERFORM pg_temp.ok('sa.read.familia_sem_pendente.'||t.f, jsonb_array_length(pg->'items')=0);
+    pg:=public.platform_read_global_product_catalog_by_family(t.f,'familia','',50,0);
+    PERFORM pg_temp.ok('sa.read.familia_exclusiva.'||t.f, NOT EXISTS (SELECT 1 FROM jsonb_array_elements(pg->'items') e
+      WHERE e->>'familia_catalogo' IS DISTINCT FROM t.f));
   END LOOP;
-  pg:=public.platform_read_global_product_catalog_by_family('quimico','todos','',50,0);
+  pg:=public.platform_read_global_product_catalog_by_family(NULL,'pendentes','RT familia produto rollback 0001',50,0);
+  PERFORM pg_temp.ok('sa.read.pendentes', jsonb_array_length(pg->'items')=1 AND pg->'items'->0->>'familia_catalogo' IS NULL);
+  pg:=public.platform_read_global_product_catalog_by_family(NULL,'pendentes','',50,0);
+  PERFORM pg_temp.ok('sa.read.pendentes_somente_null', NOT EXISTS (SELECT 1 FROM jsonb_array_elements(pg->'items') e WHERE e->>'familia_catalogo' IS NOT NULL));
+  pg:=public.platform_read_global_product_catalog_by_family(NULL,'todos','',50,0);
   PERFORM pg_temp.ok('sa.read.projecao_minima', (SELECT array_agg(x ORDER BY x) FROM jsonb_object_keys(pg->'items'->0) x)
     = ARRAY['ativo','b2b_enabled','classe_catalogo','codigo','familia_catalogo','id','nome','tipo','updated_at']);
-  PERFORM pg_temp.ok('sa.read.legados_visiveis', (SELECT count(*) FROM jsonb_array_elements(
-    public.platform_read_global_product_catalog_by_family('biologico','todos','',50,0)->'items'))
-    = LEAST(50,(SELECT count(*) FROM public.produtos WHERE familia_catalogo IS NULL OR familia_catalogo='biologico')));
+  PERFORM pg_temp.ok('sa.read.todos_inclui_null', jsonb_array_length(pg->'items') = LEAST(50,(SELECT count(*) FROM public.produtos)));
 
   SELECT to_jsonb(p) INTO v_before FROM public.produtos p WHERE id=v_pid; v_ver:=(v_before->>'updated_at')::timestamptz;
   k:=gen_random_uuid();
@@ -73,10 +78,17 @@ BEGIN
     AND (r->>'updated_at')::timestamptz > v_ver AND (r->>'idempotent')::boolean=false);
   PERFORM pg_temp.ok('sa.invariante_demais_colunas', (v_before - ARRAY['familia_catalogo','classe_catalogo','updated_at'])
     = (v_after - ARRAY['familia_catalogo','classe_catalogo','updated_at']));
-  -- Filtros: aparece em biológico/todos, some de pendentes e de químico.
-  PERFORM pg_temp.ok('sa.filtro.biologico', jsonb_array_length(public.platform_read_global_product_catalog_by_family('biologico','todos','RT familia produto rollback 0001',50,0)->'items')=1);
-  PERFORM pg_temp.ok('sa.filtro.fora_pendentes', jsonb_array_length(public.platform_read_global_product_catalog_by_family('biologico','pendentes','RT familia produto rollback 0001',50,0)->'items')=0);
-  PERFORM pg_temp.ok('sa.filtro.fora_quimico', jsonb_array_length(public.platform_read_global_product_catalog_by_family('quimico','todos','RT familia produto rollback 0001',50,0)->'items')=0);
+  -- Isolamento: aparece só em biológico/familia e em todos; some de pendentes e das outras famílias.
+  PERFORM pg_temp.ok('sa.filtro.biologico', jsonb_array_length(public.platform_read_global_product_catalog_by_family('biologico','familia','RT familia produto rollback 0001',50,0)->'items')=1);
+  PERFORM pg_temp.ok('sa.filtro.todos', jsonb_array_length(public.platform_read_global_product_catalog_by_family(NULL,'todos','RT familia produto rollback 0001',50,0)->'items')=1);
+  PERFORM pg_temp.ok('sa.filtro.fora_pendentes', jsonb_array_length(public.platform_read_global_product_catalog_by_family(NULL,'pendentes','RT familia produto rollback 0001',50,0)->'items')=0);
+  PERFORM pg_temp.ok('sa.filtro.fora_quimico', jsonb_array_length(public.platform_read_global_product_catalog_by_family('quimico','familia','RT familia produto rollback 0001',50,0)->'items')=0);
+  PERFORM pg_temp.ok('sa.filtro.fora_fertilizante', jsonb_array_length(public.platform_read_global_product_catalog_by_family('fertilizante_adubo','familia','RT familia produto rollback 0001',50,0)->'items')=0);
+  -- Versão não finita rejeitada antes do CAS.
+  FOR t IN SELECT * FROM (VALUES ('infinity'::timestamptz),('-infinity'::timestamptz)) x(v) LOOP
+    BEGIN PERFORM public.platform_set_global_product_family(v_pid,t.v,'quimico',NULL,'Motivo valido de teste',gen_random_uuid());
+      PERFORM pg_temp.ok('sa.valida.versao_'||t.v::text,false); EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.valida.versao_'||t.v::text,SQLERRM='catalog_family_invalid'); END;
+  END LOOP;
   -- Replay idêntico.
   r2:=public.platform_set_global_product_family(v_pid,v_ver,'biologico','biofungicida','Teste runtime familia rollback',k);
   PERFORM pg_temp.ok('sa.replay', (r2->>'idempotent')::boolean AND r2->>'audit_id'=r->>'audit_id');
@@ -110,10 +122,11 @@ BEGIN
   BEGIN PERFORM public.platform_set_global_product_family(gen_random_uuid(),v_ver,'quimico',NULL,'Motivo valido de teste',gen_random_uuid());
     PERFORM pg_temp.ok('sa.valida.id_inexistente',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('sa.valida.id_inexistente',true); END;
   -- Leitor: parâmetros inválidos.
-  FOR t IN SELECT * FROM (VALUES ('semente','todos',50,0),('quimico','x',50,0),('quimico','todos',51,0),('quimico','todos',50,-1)) x(f,rv,l,o) LOOP
+  FOR t IN SELECT * FROM (VALUES ('semente','familia',50,0),(NULL,'familia',50,0),('quimico','todos',50,0),('quimico','pendentes',50,0),
+      ('quimico','x',50,0),('quimico','familia',51,0),('quimico','familia',50,-1)) x(f,rv,l,o) LOOP
     BEGIN PERFORM public.platform_read_global_product_catalog_by_family(t.f,t.rv,'',t.l,t.o);
-      PERFORM pg_temp.ok('sa.read.invalido.'||t.f||'.'||t.rv||'.'||t.l||'.'||t.o,false);
-      EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.read.invalido.'||t.f||'.'||t.rv||'.'||t.l||'.'||t.o,true); END;
+      PERFORM pg_temp.ok('sa.read.invalido.'||coalesce(t.f,'null')||'.'||t.rv||'.'||t.l||'.'||t.o,false);
+      EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.read.invalido.'||coalesce(t.f,'null')||'.'||t.rv||'.'||t.l||'.'||t.o,true); END;
   END LOOP;
   -- Writers anteriores continuam funcionando com a coluna nova (status/B2B preservam família).
   r:=public.platform_set_global_product_status(v_pid,v_ver,true,'Teste runtime familia rollback',gen_random_uuid());
@@ -133,13 +146,36 @@ DO $$ BEGIN
     PERFORM pg_temp.ok('ledger.imutavel_update',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('ledger.imutavel_update',true); END;
 END $$;
 
+-- ============================================================ 1b) CHECKs diretamente (owner, dentro do ROLLBACK; cada caso em subtransação)
+DO $$
+DECLARE v_pid uuid:=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto_novo'); t record;
+BEGIN
+  FOR t IN SELECT * FROM (VALUES
+      ('null_familia_com_classe',NULL,'biofungicida'), ('null_familia_classe_quimica',NULL,'herbicida'),
+      ('null_familia_classe_arbitraria',NULL,'xyz'),
+      ('quimico_biofungicida','quimico','biofungicida'), ('quimico_inoculante','quimico','inoculante'),
+      ('biologico_fungicida','biologico','fungicida'), ('biologico_herbicida','biologico','herbicida'),
+      ('fertilizante_fungicida','fertilizante_adubo','fungicida'), ('fertilizante_biofungicida','fertilizante_adubo','biofungicida'),
+      ('familia_invalida','semente',NULL), ('classe_vazia','quimico','')) x(nome,f,c) LOOP
+    BEGIN UPDATE public.produtos SET familia_catalogo=t.f, classe_catalogo=t.c WHERE id=v_pid;
+      PERFORM pg_temp.ok('check.nega.'||t.nome,false);
+      EXCEPTION WHEN check_violation THEN PERFORM pg_temp.ok('check.nega.'||t.nome,true); END;
+  END LOOP;
+  FOR t IN SELECT * FROM (VALUES ('nulos',NULL,NULL),('quimico_sem_classe','quimico',NULL),('biologico_biofungicida','biologico','biofungicida'),
+      ('quimico_herbicida','quimico','herbicida'),('fertilizante_sem_classe','fertilizante_adubo',NULL)) x(nome,f,c) LOOP
+    BEGIN UPDATE public.produtos SET familia_catalogo=t.f, classe_catalogo=t.c WHERE id=v_pid;
+      PERFORM pg_temp.ok('check.aceita.'||t.nome,true);
+      EXCEPTION WHEN check_violation THEN PERFORM pg_temp.ok('check.aceita.'||t.nome,false); END;
+  END LOOP;
+END $$;
+
 -- ============================================================ 2) Atores tenant: leitor/writer/DML negados
 DO $$
 DECLARE r record; v_pid uuid:=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto_novo');
 BEGIN
   FOR r IN SELECT rt_ctx.k, rt_ctx.v::uuid u FROM rt_ctx WHERE rt_ctx.k IN ('admin_ar','admin_fsf','financeiro_ar','consultor_ar') LOOP
     PERFORM pg_temp.claims(r.u); SET LOCAL ROLE authenticated;
-    BEGIN PERFORM public.platform_read_global_product_catalog_by_family('quimico','todos','',50,0); PERFORM pg_temp.ok(r.k||'.reader',false);
+    BEGIN PERFORM public.platform_read_global_product_catalog_by_family('quimico','familia','',50,0); PERFORM pg_temp.ok(r.k||'.reader',false);
       EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok(r.k||'.reader',true); END;
     BEGIN PERFORM public.platform_set_global_product_family(v_pid,now(),'quimico',NULL,'Tentativa tenant negada',gen_random_uuid()); PERFORM pg_temp.ok(r.k||'.writer',false);
       EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok(r.k||'.writer',true); END;
@@ -165,7 +201,7 @@ BEGIN
   SET LOCAL ROLE anon;
   BEGIN PERFORM public.platform_set_global_product_family(v_pid,now(),'quimico',NULL,'Tentativa anon negada',gen_random_uuid());
     PERFORM pg_temp.ok('anon.writer',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('anon.writer',true); END;
-  BEGIN PERFORM public.platform_read_global_product_catalog_by_family('quimico','todos','',50,0); PERFORM pg_temp.ok('anon.reader',false);
+  BEGIN PERFORM public.platform_read_global_product_catalog_by_family('quimico','familia','',50,0); PERFORM pg_temp.ok('anon.reader',false);
     EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('anon.reader',true); END;
   RESET ROLE;
 END $$;
