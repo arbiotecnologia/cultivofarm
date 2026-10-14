@@ -667,3 +667,5 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Composição: revisão independente + aplicação do SQL + runtime rollback (aguarda usuário).
 - [ ] Composição: publicar e testar o painel na UI real somente após o SQL aplicado (aguarda usuário).
 - [ ] Composição: exibir declarações em ficha/PDF/B2B (fase futura); cadastro novo químicos/fertilizantes (tipo/unidade) pendente; bug P2 composicaoSync insumo sem micro.
+- [x] 2026-10-14 23:55UTC composição global (base 5c1018e5): testes painel 49→50/recusa51 e `:disabled` com fieldset corrigidos; runtime SQL com SKIP separado, CONSTRAINT_NAME em fixture biológico, duplicidade entre tipos, concentração declarada válida, cores privados tenant/anon, JWT inválidos, CAS/replay. Local: 781/781 saas, typecheck app/node, lint focal, scanner, build 21,73s PASS. SQL NÃO aplicado/publicado; runtime NÃO executado.
+- [ ] Composição global: revisão independente + aplicação do candidato e execução do runtime (bloqueio: revisão do usuário).
