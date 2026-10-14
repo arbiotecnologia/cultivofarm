@@ -600,3 +600,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Fase 3 — rascunho NF-e idempotente vinculado ao fluxo canônico e gate seguro de expedição, sem emissão real.
 - [ ] Fase 4 — documentação de transporte, CT-e recebido e decisão MDF-e fail-closed; emissão própria CT-e desligada.
 - [ ] Fechamento — matriz RLS/Storage/RPC, provas A/B/C, desktop/mobile, testes, verificações automáticas, scanner/advisors e relatório GO/NO-GO; decisões contábeis não inferidas.
+- [x] Catálogo global — criação atômica e arquivar/reativar: UI local + SQL candidato `proposed-platform-catalog-global-lifecycle.sql` (não aplicado), 63/63 testes.
+- [ ] Catálogo global — revisão Codex/aplicação do SQL de ciclo de vida + preflight de triggers de preço (bloqueio: revisão externa).
+- [ ] Catálogo global — famílias novas via B1, seleção/edição de composição e insumos (bloqueio: B1 não aplicado).
+- [ ] Catálogo tenant — exibir/ocultar globais e próprios (bloqueio: fase posterior autorizada).
