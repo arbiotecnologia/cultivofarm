@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
 import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
-import { createGlobalProduct, createPayloadSchema, legacyProductTypes, MICRO_PAGE_LIMIT, parseDecimal, readActiveMicroorganisms, setGlobalProductStatus, type CreatePayload, type MicroPage } from "@/lib/catalogo/platformCatalogLifecycle";
+import { createGlobalProduct, createPayloadSchema, legacyProductTypes, MICRO_PAGE_LIMIT, parseDecimal, proporcaoSchema, readActiveMicroorganisms, volumeSchema, setGlobalProductStatus, type CreatePayload, type MicroPage } from "@/lib/catalogo/platformCatalogLifecycle";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -189,8 +189,8 @@ function CompositionEditor({ rows, onChange }: { rows: CompRow[]; onChange: (row
     {rows.length === 0 && <p className="text-xs text-muted-foreground">Nenhum microrganismo adicionado.</p>}
     {rows.map((row) => {
       const vol = parseDecimal(row.volume); const prop = parseDecimal(row.proporcao);
-      const volBad = vol === null || Number.isNaN(vol) || !createPayloadSchema.shape.composicao.element.shape.volume_ml.safeParse(vol).success;
-      const propBad = prop !== null && !createPayloadSchema.shape.composicao.element.shape.proporcao.safeParse(prop).success;
+      const volBad = vol === null || Number.isNaN(vol) || !volumeSchema.safeParse(vol).success;
+      const propBad = prop !== null && !proporcaoSchema.safeParse(prop).success;
       return <div key={row.id} className="grid gap-2 border-b pb-2 sm:grid-cols-[1fr_7rem_7rem_auto] sm:items-end">
         <p className="break-words text-sm font-medium">{row.nome}{row.codigo ? ` (${row.codigo})` : ""}</p>
         <div className="space-y-1"><Label htmlFor={`vol-${row.id}`}>Volume (mL) de {row.nome}</Label>

@@ -13,13 +13,16 @@ export function hasMaxSixDecimals(n: number) {
   return dot < 0 || text.length - dot - 1 <= 6;
 }
 const positive = z.number().finite().positive().max(1_000_000).refine(hasMaxSixDecimals);
+export const volumeSchema = positive;
+export const proporcaoSchema = z.number().finite().positive().max(100).refine(hasMaxSixDecimals);
+export const compositionItemSchema = z.object({ microrganismo_id: z.string().uuid(), volume_ml: volumeSchema,
+  proporcao: proporcaoSchema.nullable() }).strict();
 export const createPayloadSchema = z.object({
   nome: z.string().trim().min(1).max(500),
   tipo: z.enum(legacyProductTypes),
   descricao: optionalText, modo_acao: optionalText, funcao_completa: optionalText, modo_aplicacao: optionalText,
   dose_ml_ha: positive.nullable(),
-  composicao: z.array(z.object({ microrganismo_id: z.string().uuid(), volume_ml: positive,
-    proporcao: z.number().finite().positive().max(100).refine(hasMaxSixDecimals).nullable() }).strict()).max(50)
+  composicao: z.array(compositionItemSchema).max(50)
     .refine((items) => new Set(items.map((i) => i.microrganismo_id)).size === items.length),
 }).strict();
 export type CreatePayload = z.infer<typeof createPayloadSchema>;
