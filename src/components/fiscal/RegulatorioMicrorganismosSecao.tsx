@@ -14,12 +14,8 @@ import { useMemo, useState } from "react";
 import {
   useMicroorganismRegulatoryOverview,
   useRegulatoryDossierDetail,
-  useRegulatoryActions,
   CHECKLIST_LABELS,
-  REGULATORY_CATEGORY_OPTIONS,
-  MAPA_STATUS_OPTIONS,
   type ChecklistKey,
-  type ChecklistState,
   type RegulatoryOverviewRow,
   type DossierStatus,
 } from "@/hooks/useMicroorganismRegulatory";
@@ -27,19 +23,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { toast } from "@/hooks/use-toast";
 import { Loader2, ShieldOff, FileWarning } from "lucide-react";
 
 const NOT_INFORMED = "não informado";
@@ -122,7 +111,7 @@ export function RegulatorioMicrorganismosSecao() {
   const overview = useMicroorganismRegulatoryOverview();
   const [selected, setSelected] = useState<RegulatoryOverviewRow | null>(null);
 
-  const rows = overview.data ?? [];
+  const rows = useMemo(() => overview.data ?? [], [overview.data]);
   const resumo = useMemo(() => {
     const total = rows.length;
     const validados = rows.filter((r) => r.dossier_status === "VALIDATED").length;
@@ -291,12 +280,15 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
   const detail = useRegulatoryDossierDetail(microId, { enabled: open });
 
 
-  const dossier = detail.data?.dossier ?? null;
-  const checklist = detail.data?.checklist ?? [];
-  const presentations = detail.data?.presentations ?? [];
-  const candidates = detail.data?.ncm_candidates ?? [];
-  const documents = detail.data?.documents ?? [];
-  const snapshots = detail.data?.snapshots ?? [];
+  // Erro (inclusive permissão) nunca é tratado como ausência; dados em cache ficam ocultos durante erro.
+  const failed = detail.isError;
+  const denied = failed && detail.error instanceof Error && detail.error.message === "permission_denied";
+  const dossier = failed ? null : detail.data?.dossier ?? null;
+  const checklist = (failed ? undefined : detail.data?.checklist) ?? [];
+  const presentations = (failed ? undefined : detail.data?.presentations) ?? [];
+  const candidates = (failed ? undefined : detail.data?.ncm_candidates) ?? [];
+  const documents = (failed ? undefined : detail.data?.documents) ?? [];
+  const snapshots = (failed ? undefined : detail.data?.snapshots) ?? [];
 
 
   return (
@@ -305,8 +297,9 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
         <SheetHeader>
           <SheetTitle>{row?.nome ?? "Dossiê regulatório"}</SheetTitle>
           <SheetDescription>
-            {dossier
-              ? `Versão ${dossier.version} · ${DOSSIER_STATUS_LABEL[dossier.status]}`
+            {detail.isLoading ? "Carregando dossiê…"
+              : failed ? (denied ? "Sem permissão para consultar este dossiê." : "Não foi possível consultar o dossiê.")
+              : dossier ? `Versão ${dossier.version} · ${DOSSIER_STATUS_LABEL[dossier.status]}`
               : "Nenhum dossiê existente para este microrganismo."}
           </SheetDescription>
         </SheetHeader>
@@ -321,7 +314,16 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
           </div>
         )}
 
-        {!detail.isLoading && !dossier && (
+        {failed && (
+          <Alert variant="destructive" className="mt-4" data-testid="regulatorio-dossie-erro">
+            <AlertTitle>{denied ? "Sem permissão" : "Erro ao consultar"}</AlertTitle>
+            <AlertDescription>{denied
+              ? "Seu perfil não tem acesso a este dossiê regulatório."
+              : "Não foi possível carregar o dossiê. Tente novamente mais tarde."}</AlertDescription>
+          </Alert>
+        )}
+
+        {!detail.isLoading && !failed && !dossier && (
           <div className="py-6 space-y-3">
             <p className="text-sm text-muted-foreground">
               Nenhum dossiê registrado. Modo consulta: o cadastro regulatório global
