@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Cultura {
@@ -15,12 +15,12 @@ export function useCulturas() {
   return useQuery({
     queryKey: CULTURAS_QUERY_KEY,
     queryFn: async (): Promise<Cultura[]> => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("culturas")
         .select("id, nome, descricao, ativo, desativada_em")
         .order("nome");
       if (error) throw error;
-      return (data ?? []) as any[];
+      return (data ?? []) as Cultura[];
     },
     staleTime: 60 * 1000,
   });
@@ -41,39 +41,27 @@ export function mapCulturaError(error: { message?: string; code?: string } | nul
   return error?.message || "Erro inesperado ao salvar a cultura.";
 }
 
+/**
+ * Escrita de culturas pelo cliente foi revogada (migration
+ * global_culturas_client_write_containment). Não há writer servidor auditado;
+ * estas mutações falham explicitamente, sem chamar o banco, para nunca
+ * reportar sucesso com 0 linhas.
+ */
+export const CULTURAS_WRITE_BLOCKED_MESSAGE =
+  "Culturas são um cadastro global somente para consulta. Alterações não estão disponíveis.";
+
 export function useSaveCultura() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id?: string; nome: string; descricao: string | null }) => {
-      const payload = { nome: input.nome.trim(), descricao: input.descricao };
-      if (input.id) {
-        const { error } = await (supabase as any).from("culturas").update(payload).eq("id", input.id);
-        if (error) throw new Error(mapCulturaError(error));
-      } else {
-        const { error } = await (supabase as any).from("culturas").insert([payload]);
-        if (error) throw new Error(mapCulturaError(error));
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: CULTURAS_QUERY_KEY });
-      qc.invalidateQueries({ queryKey: ["culturas-options"] });
+    mutationFn: async (_input: { id?: string; nome: string; descricao: string | null }): Promise<void> => {
+      throw new Error(CULTURAS_WRITE_BLOCKED_MESSAGE);
     },
   });
 }
 
 export function useToggleCulturaAtivo() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; ativo: boolean }) => {
-      const { error } = await (supabase as any)
-        .from("culturas")
-        .update({ ativo: input.ativo })
-        .eq("id", input.id);
-      if (error) throw new Error(mapCulturaError(error));
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: CULTURAS_QUERY_KEY });
-      qc.invalidateQueries({ queryKey: ["culturas-options"] });
+    mutationFn: async (_input: { id: string; ativo: boolean }): Promise<void> => {
+      throw new Error(CULTURAS_WRITE_BLOCKED_MESSAGE);
     },
   });
 }

@@ -23,74 +23,18 @@ import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloBu
 import { useCulturas, useSaveCultura, useToggleCulturaAtivo, type Cultura } from "@/hooks/useCulturas";
 
 // --- Culturas ---
+// Culturas são base GLOBAL. Escrita de cliente foi revogada no banco
+// (global_culturas_client_write_containment); não existe writer servidor
+// auditado. Esta aba é somente consulta para todos os perfis.
 function CulturasTab() {
   const { data: items, isLoading, isError, error, refetch, isFetching } = useCulturas();
-  const saveCultura = useSaveCultura();
-  const toggleAtivo = useToggleCulturaAtivo();
-  const [open, setOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Cultura | null>(null);
-  const [form, setForm] = useState({ nome: "", descricao: "" });
-
-  const resetForm = () => {
-    setForm({ nome: "", descricao: "" });
-    setEditingItem(null);
-  };
-
-  const handleOpenChange = (v: boolean) => {
-    setOpen(v);
-    if (!v) resetForm();
-  };
-
-  const handleEdit = (c: Cultura) => {
-    setEditingItem(c);
-    setForm({ nome: c.nome, descricao: c.descricao || "" });
-    setOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await saveCultura.mutateAsync({
-        id: editingItem?.id,
-        nome: form.nome,
-        descricao: form.descricao || null,
-      });
-      toast.success(editingItem ? "Cultura atualizada!" : "Cultura cadastrada!");
-      handleOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao salvar cultura");
-    }
-  };
-
-  const handleToggleAtivo = async (c: Cultura) => {
-    try {
-      await toggleAtivo.mutateAsync({ id: c.id, ativo: !c.ativo });
-      toast.success(c.ativo ? "Cultura desativada" : "Cultura reativada");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao alterar situação da cultura");
-    }
-  };
-
   const rows = items ?? [];
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild><Button size="sm" onClick={resetForm}><Plus className="h-4 w-4 mr-1" />Nova Cultura</Button></DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{editingItem ? "Editar Cultura" : "Nova Cultura"}</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="form-spacing-mobile pt-2">
-              <div className="space-y-2"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} required /></div>
-              <div className="space-y-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => setForm({...form, descricao: e.target.value})} rows={2} /></div>
-              <Button type="submit" className="w-full h-12 sm:h-10 font-bold" disabled={saveCultura.isPending}>
-                {saveCultura.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-            </form>
-          </DialogContent>
-
-        </Dialog>
-      </div>
+      <p className="text-sm text-muted-foreground" data-testid="culturas-readonly-notice">
+        Culturas são um cadastro global, disponível somente para consulta.
+      </p>
 
       {isLoading ? (
         <div className="py-8 text-center text-muted-foreground" role="status">Carregando culturas...</div>
@@ -112,45 +56,27 @@ function CulturasTab() {
             rows.map((c) => (
               <MobileCard
                 key={c.id}
-                onClick={() => handleEdit(c)}
-                ariaLabel={`Editar ${c.nome}`}
                 title={c.nome}
                 content={[
                   { label: "Descrição", value: c.descricao || "—" },
                   { label: "Situação", value: c.ativo ? "Ativa" : "Inativa" },
                 ]}
-                actions={
-                  <div onClick={stopRowClick} className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleToggleAtivo(c)} disabled={toggleAtivo.isPending}>
-                      {c.ativo ? "Desativar" : "Reativar"}
-                    </Button>
-                    <DeleteProtocoloButton table="culturas" id={c.id} label={c.nome} itemLabel="cultura" onDeleted={() => refetch()} />
-                  </div>
-                }
               />
             ))
           )
         }
       >
         <Table>
-          <TableHeader><TableRow><TableHead>Cultura</TableHead><TableHead>Descrição</TableHead><TableHead>Situação</TableHead><TableHead className="w-[160px]"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Cultura</TableHead><TableHead>Descrição</TableHead><TableHead>Situação</TableHead></TableRow></TableHeader>
           <TableBody>
             {rows.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
+              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
             ) : rows.map((c) => (
-              <TableRow key={c.id} {...rowClickProps(() => handleEdit(c))}>
+              <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.nome}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{c.descricao || "—"}</TableCell>
                 <TableCell>
                   <Badge variant={c.ativo ? "default" : "secondary"}>{c.ativo ? "Ativa" : "Inativa"}</Badge>
-                </TableCell>
-                <TableCell className="text-right" onClick={stopRowClick}>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleToggleAtivo(c)} disabled={toggleAtivo.isPending}>
-                      {c.ativo ? "Desativar" : "Reativar"}
-                    </Button>
-                    <DeleteProtocoloButton table="culturas" id={c.id} label={c.nome} itemLabel="cultura" onDeleted={() => refetch()} />
-                  </div>
                 </TableCell>
               </TableRow>
             ))}

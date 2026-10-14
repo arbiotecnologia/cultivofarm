@@ -1,3 +1,4 @@
+-- HISTÓRICO: aplicado como 20261014181510 (ver applied-20261014181510-*). NÃO REAPLICAR.
 -- CANDIDATO INCREMENTAL NÃO APLICADO — revisão Codex antes de DDL. Ref exclusivo swzpzcwiasxmjutrmvkm.
 -- (1) Leitor mínimo Superadmin de microrganismos (id/codigo/nome/ativo), busca limitada e paginação.
 -- (2) create_global_product_core passa a exigir microrganismo ativo, com FOR SHARE.
