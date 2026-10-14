@@ -7,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PlatformCatalogVolumesDialog } from "@/components/plataforma/PlatformCatalogVolumesDialog";
 import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
 import { createEntity, entityFields, ENTITY_PAGE_LIMIT, microTypes, parseUfc, readEntityDetail, readEntityPage, setEntityStatus, updateEntity,
   type EntityDetail, type EntityKind, type EntityValues } from "@/lib/catalogo/platformCatalogEntities";
 
-const labels: Record<EntityKind, { one: string; many: string }> = {
-  micro: { one: "microrganismo", many: "microrganismos" },
-  cultura: { one: "cultura", many: "culturas" },
+const labels: Record<EntityKind, { one: string; many: string; novo: string }> = {
+  micro: { one: "microrganismo", many: "microrganismos", novo: "Novo" },
+  cultura: { one: "cultura", many: "culturas", novo: "Nova" },
 };
 type Mode = { type: "create" } | { type: "edit"; id: string } | { type: "status"; id: string; ativo: boolean };
 
@@ -25,6 +26,7 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
   const [offset, setOffset] = useState(0);
   const [mode, setMode] = useState<Mode>();
   const [saved, setSaved] = useState(false);
+  const [volumesOf, setVolumesOf] = useState<{ id: string; nome: string }>();
   const base = `platform-catalog-${kind}`;
   useEffect(() => {
     const other = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === base && q.queryKey[1] !== scope;
@@ -39,7 +41,9 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
   return <section aria-label={`Gestão global de ${l.many}`} className="space-y-4">
     {saved && <p role="status">Alteração confirmada.</p>}
     {mode && <EntityDialog key={JSON.stringify(mode)} kind={kind} scope={scope} mode={mode} onClose={() => setMode(undefined)} onSaved={done} />}
-    <div className="flex justify-end"><Button className="min-h-10" onClick={() => { setSaved(false); setMode({ type: "create" }); }}>Novo {l.one} global</Button></div>
+    {volumesOf && <PlatformCatalogVolumesDialog tipo="microrganismo" itemId={volumesOf.id} nome={volumesOf.nome} scope={scope}
+      onClose={() => setVolumesOf(undefined)} />}
+    <div className="flex justify-end"><Button className="min-h-10" onClick={() => { setSaved(false); setMode({ type: "create" }); }}>{l.novo} {l.one} global</Button></div>
     <form className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={(e) => { e.preventDefault(); setSearch(input.trim()); setOffset(0); }}>
       <div className="min-w-0 space-y-2">
         <Label htmlFor={`${base}-search`}>Buscar {l.many}</Label>
@@ -64,6 +68,8 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
           onClick={() => { setSaved(false); setMode({ type: "edit", id: row.id }); }}>Editar</Button>
         <Button variant="ghost" size="sm" className="min-h-10" aria-label={`${row.ativo ? "Arquivar" : "Reativar"} ${row.nome}`}
           onClick={() => { setSaved(false); setMode({ type: "status", id: row.id, ativo: !row.ativo }); }}>{row.ativo ? "Arquivar" : "Reativar"}</Button>
+        {kind === "micro" && <Button variant="ghost" size="sm" className="min-h-10" aria-label={`Apresentações de ${row.nome}`}
+          onClick={() => setVolumesOf({ id: row.id, nome: row.nome })}>Apresentações</Button>}
       </div>
     </li>)}</ul>}
     <nav aria-label={`Paginação de ${l.many}`} className="flex items-center justify-between gap-2">
@@ -101,7 +107,7 @@ function EntityDialog({ kind, scope, mode, onClose, onSaved }: { kind: EntityKin
     return () => c.abort();
   }, [kind, id]);
   const l = labels[kind];
-  const title = mode.type === "create" ? `Novo ${l.one} global` : mode.type === "edit" ? `Editar ${l.one} global` : `${mode.ativo ? "Reativar" : "Arquivar"} ${l.one} global`;
+  const title = mode.type === "create" ? `${l.novo} ${l.one} global` : mode.type === "edit" ? `Editar ${l.one} global` : `${mode.ativo ? "Reativar" : "Arquivar"} ${l.one} global`;
   const loading = !!id && !detail && !error;
   const submit = async () => {
     if (lock.current || !controller.current) return;
@@ -154,7 +160,7 @@ function EntityDialog({ kind, scope, mode, onClose, onSaved }: { kind: EntityKin
               const t = e.target.value; setNumText((n) => ({ ...n, [f.name]: t }));
               setValues((v) => ({ ...v, [f.name]: parseUfc(t) }));
             }} />
-            <p id={`${fid}-hint`} className="text-xs text-muted-foreground">Número inteiro até 9007199254740991, com até 2 casas decimais.</p>
+            <p id={`${fid}-hint`} className="text-xs text-muted-foreground">Valor positivo até 9007199254740991, com até 2 casas decimais.</p>
           </div>;
           const Comp = f.kind === "longtext" ? Textarea : Input;
           return <div key={f.name} className="space-y-1">

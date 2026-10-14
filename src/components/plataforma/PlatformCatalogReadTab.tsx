@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlatformCatalogEntityPanel } from "@/components/plataforma/PlatformCatalogEntityPanel";
+import { PlatformCatalogVolumesDialog } from "@/components/plataforma/PlatformCatalogVolumesDialog";
 import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformCatalogMetadataDialog";
 import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
@@ -44,6 +45,7 @@ function CatalogReadPage({ scope }: { scope: string }) {
   const [editing, setEditing] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [volumesOf, setVolumesOf] = useState<{ id: string; nome: string }>();
   const [statusOf, setStatusOf] = useState<{ id: string; nome: string; ativo: boolean; updated_at: string }>();
   const done = () => {
     setEditing(undefined); setCreating(false); setStatusOf(undefined); setSaved(true);
@@ -88,6 +90,8 @@ function CatalogReadPage({ scope }: { scope: string }) {
         setEditing(undefined); setSaved(true);
         void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
       }} />}
+    {volumesOf && <PlatformCatalogVolumesDialog tipo="produto" itemId={volumesOf.id} nome={volumesOf.nome} scope={scope}
+      onClose={() => setVolumesOf(undefined)} />}
     {creating && <PlatformCatalogCreateDialog scope={scope} onClose={() => setCreating(false)} onSaved={done} />}
     {statusOf && <PlatformCatalogStatusDialog key={statusOf.id} scope={scope} product={statusOf}
       onClose={() => setStatusOf(undefined)} onSaved={done} />}
@@ -120,7 +124,9 @@ function CatalogReadPage({ scope }: { scope: string }) {
           onClick={() => { setSaved(false); setEditing(product.id); }}>Editar</Button>
           <Button variant="ghost" size="sm" className="ml-1" aria-label={`${product.ativo ? "Arquivar" : "Reativar"} ${product.nome}`} disabled={!product.updated_at}
             onClick={() => { setSaved(false); if (product.updated_at) setStatusOf({ id: product.id, nome: product.nome, ativo: product.ativo, updated_at: product.updated_at }); }}>
-            {product.ativo ? "Arquivar" : "Reativar"}</Button></TableCell>
+            {product.ativo ? "Arquivar" : "Reativar"}</Button>
+          <Button variant="ghost" size="sm" className="ml-1" aria-label={`Apresentações de ${product.nome}`}
+            onClick={() => setVolumesOf({ id: product.id, nome: product.nome })}>Apresentações</Button></TableCell>
       </TableRow>)}</TableBody>
     </Table>}
     <nav aria-label="Paginação do catálogo" className="flex flex-wrap items-center justify-between gap-2">
