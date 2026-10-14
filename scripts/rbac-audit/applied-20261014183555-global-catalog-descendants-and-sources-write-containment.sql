@@ -1,7 +1,7 @@
 -- REGISTRO HISTÓRICO — NÃO REAPLICAR.
 -- Aplicado externamente pelo Codex no canônico swzpzcwiasxmjutrmvkm:
 --   20261014183555 global_catalog_descendants_write_containment
---   global_catalog_sources_versions_write_containment (versão não informada)
+--   20261014183838 global_catalog_sources_versions_write_containment
 -- ATENÇÃO: conteúdo RECONSTITUÍDO do relato do usuário (statements informados),
 -- não cópia literal do arquivo de migration. Conferir contra o histórico remoto.
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON
@@ -18,7 +18,7 @@ REVOKE EXECUTE ON FUNCTION
   public.return_catalog_profile_to_review(text, uuid, text),
   public.update_microorganism_b2b_description(uuid, text)
   FROM PUBLIC, anon, authenticated;
--- global_catalog_sources_versions_write_containment
+-- 20261014183838 global_catalog_sources_versions_write_containment
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON
   public.microorganism_targets, public.microorganism_crop_recommendations,
   public.catalog_technical_sources, public.ficha_tecnica_versoes

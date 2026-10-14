@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -50,7 +51,9 @@ const EMPTY = {
 
 export default function ParametrosCQPage() {
   const { role } = useAuth();
-  const canEdit = role === "administrador" || role === "gestor" || role === "producao";
+  // Contenção global: parâmetros de CQ globais são somente consulta.
+  void role;
+  const canEdit: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);

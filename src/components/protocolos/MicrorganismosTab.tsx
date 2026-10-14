@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -164,6 +165,7 @@ export function MicrorganismosTab() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!TENANT_CAN_EDIT_GLOBAL_CATALOG) { toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE); return; }
     if (savingRef.current) return;
 
     await runExclusive(savingRef, async () => {
@@ -361,12 +363,14 @@ export function MicrorganismosTab() {
           </Button>
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
+            {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Novo Microrganismo
               </Button>
             </DialogTrigger>
+            )}
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} Microrganismo</DialogTitle>
@@ -590,7 +594,7 @@ export function MicrorganismosTab() {
                 </TableCell>
               </TableRow>
             ) : filteredItems.map((m) => (
-              <TableRow key={m.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleEdit(m)}>
+              <TableRow key={m.id} className="hover:bg-muted/50" onClick={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => handleEdit(m) : undefined}>
                 <TableCell>
                   {m.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{m.codigo}</div>
@@ -618,7 +622,7 @@ export function MicrorganismosTab() {
                 <TableCell>
                   <VolumesChips
                     volumes={volumesCat?.porMicrorganismoId.get(m.id) ?? []}
-                    onAdd={() => setVolumesEdit(m)}
+                    onAdd={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => setVolumesEdit(m) : undefined}
                   />
                 </TableCell>
                 <TableCell className="text-right font-mono-data">
@@ -688,6 +692,7 @@ export function MicrorganismosTab() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
                     <DeleteProtocoloButton
                       table="microrganismos"
                       id={m.id}
@@ -695,6 +700,7 @@ export function MicrorganismosTab() {
                       itemLabel="microrganismo"
                       onDeleted={fetch}
                     />
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

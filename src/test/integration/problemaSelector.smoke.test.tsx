@@ -38,9 +38,10 @@ describe("ProblemaSelector (catálogo de problemas)", () => {
     expect(onSelect.mock.calls[0][0]).toMatchObject({ id: "p1", nome: "Lagarta-do-cartucho" });
   });
 
-  it("oferece opção de cadastrar novo problema (CTA visível)", async () => {
+  it("não oferece cadastro de problema global (contenção: somente consulta)", async () => {
     renderWithProviders(<ProblemaSelector value="" onSelect={vi.fn()} />);
     fireEvent.click(await screen.findByRole("combobox"));
-    expect(await screen.findByText(/Cadastrar novo problema/i)).toBeInTheDocument();
+    await screen.findByPlaceholderText(/Buscar problema/i);
+    expect(screen.queryByText(/Cadastrar novo problema/i)).toBeNull();
   });
 });

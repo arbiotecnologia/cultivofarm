@@ -1,4 +1,4 @@
-import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
+import { assertGlobalCatalogWriteBlocked, TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,7 @@ const CATEGORIA_LABELS: Record<string, string> = {
   outro: "Outros",
 };
 
-function ProblemasTab() {
+export function ProblemasTab() {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -185,6 +185,7 @@ function ProblemasTab() {
   };
 
   const handleEdit = (item: any) => {
+    if (!TENANT_CAN_EDIT_GLOBAL_CATALOG) return;
     setEditingItem(item);
     setFormData({
       nome: item.nome,
@@ -246,9 +247,11 @@ function ProblemasTab() {
             </Select>
           </div>
         </div>
+        {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
         <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
           <Plus className="h-4 w-4 mr-1" /> Novo Problema
         </Button>
+        )}
       </div>
 
       <ResponsiveTable
@@ -261,8 +264,7 @@ function ProblemasTab() {
             filtered.map((p: any) => (
               <MobileCard
                 key={p.id}
-                onClick={() => handleEdit(p)}
-                ariaLabel={`Editar ${p.nome}`}
+                ariaLabel={p.nome}
                 title={p.nome}
                 subtitle={p.nome_cientifico}
                 status={
@@ -279,7 +281,7 @@ function ProblemasTab() {
                   </Badge>
                 }
                 content={[{ label: "Categoria", value: CATEGORIA_LABELS[p.categoria] || p.categoria }]}
-                actions={
+                actions={!TENANT_CAN_EDIT_GLOBAL_CATALOG ? undefined :
                   <div className="flex w-full gap-2" onClick={stopRowClick}>
                     <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(p)}>
                       <Pencil className="h-4 w-4 mr-2" /> Editar
@@ -319,7 +321,7 @@ function ProblemasTab() {
               <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhum problema cadastrado</TableCell></TableRow>
             ) : (
               filtered.map((p: any) => (
-                <TableRow key={p.id} {...rowClickProps(() => handleEdit(p))}>
+                <TableRow key={p.id} {...(TENANT_CAN_EDIT_GLOBAL_CATALOG ? rowClickProps(() => handleEdit(p)) : {})}>
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{p.nome}</span>
@@ -339,6 +341,7 @@ function ProblemasTab() {
                     )}
                   </TableCell>
                   <TableCell className="text-right space-x-2" onClick={stopRowClick}>
+                    {TENANT_CAN_EDIT_GLOBAL_CATALOG && (<>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}>
                       <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
@@ -349,6 +352,7 @@ function ProblemasTab() {
                     >
                       {p.ativo ? <XCircle className="h-4 w-4 text-destructive" /> : <CheckCircle2 className="h-4 w-4 text-primary" />}
                     </Button>
+                    </>)}
                   </TableCell>
                 </TableRow>
               ))
