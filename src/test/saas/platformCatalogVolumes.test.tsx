@@ -100,7 +100,7 @@ describe("diálogo de apresentações", () => {
   });
   it("troca de identidade descarta cache do escopo anterior", async () => {
     const { client, rerender } = mount("s-a");
-    (await screen.findAllByText(/R\$ 123,45\/L/))[0];
+    await screen.findAllByText(/R\$ 123,45\/L/));
     rerender("s-b");
     await waitFor(() => expect(client.getQueryCache().findAll({ queryKey: ["platform-catalog-volumes", "s-a"] })).toHaveLength(0));
   });
