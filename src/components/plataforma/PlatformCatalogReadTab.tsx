@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformCatalogMetadataDialog";
+import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
   PLATFORM_CATALOG_MAX_OFFSET, PLATFORM_CATALOG_SEARCH_LIMIT } from "@/lib/catalogo/platformCatalogRead";
 
@@ -31,6 +32,12 @@ function CatalogReadPage({ scope }: { scope: string }) {
   const [offset, setOffset] = useState(0);
   const [editing, setEditing] = useState<string>();
   const [saved, setSaved] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [statusOf, setStatusOf] = useState<{ id: string; nome: string; ativo: boolean; updated_at: string }>();
+  const done = () => {
+    setEditing(undefined); setCreating(false); setStatusOf(undefined); setSaved(true);
+    void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
+  };
   const queryClient = useQueryClient();
   const active = useRef(true);
   useEffect(() => {
@@ -70,6 +77,10 @@ function CatalogReadPage({ scope }: { scope: string }) {
         setEditing(undefined); setSaved(true);
         void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
       }} />}
+    {creating && <PlatformCatalogCreateDialog scope={scope} onClose={() => setCreating(false)} onSaved={done} />}
+    {statusOf && <PlatformCatalogStatusDialog key={statusOf.id} scope={scope} product={statusOf}
+      onClose={() => setStatusOf(undefined)} onSaved={done} />}
+    <div className="flex justify-end"><Button onClick={() => { setSaved(false); setCreating(true); }}>Novo produto global</Button></div>
     <form className="flex flex-wrap items-end gap-2" onSubmit={(event) => {
       event.preventDefault(); setSearch(input.trim()); setOffset(0);
     }}>
@@ -95,7 +106,10 @@ function CatalogReadPage({ scope }: { scope: string }) {
         <TableCell><Badge variant={product.ativo ? "secondary" : "outline"}>{product.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
         <TableCell>{product.b2b_enabled ? "Sim" : "Não"}</TableCell>
         <TableCell><Button variant="outline" size="sm" aria-label={`Editar ${product.nome}`} disabled={!product.updated_at}
-          onClick={() => { setSaved(false); setEditing(product.id); }}>Editar</Button></TableCell>
+          onClick={() => { setSaved(false); setEditing(product.id); }}>Editar</Button>
+          <Button variant="ghost" size="sm" className="ml-1" aria-label={`${product.ativo ? "Arquivar" : "Reativar"} ${product.nome}`} disabled={!product.updated_at}
+            onClick={() => { setSaved(false); if (product.updated_at) setStatusOf({ id: product.id, nome: product.nome, ativo: product.ativo, updated_at: product.updated_at }); }}>
+            {product.ativo ? "Arquivar" : "Reativar"}</Button></TableCell>
       </TableRow>)}</TableBody>
     </Table>}
     <nav aria-label="Paginação do catálogo" className="flex flex-wrap items-center justify-between gap-2">

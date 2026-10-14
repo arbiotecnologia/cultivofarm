@@ -5,8 +5,8 @@ import { metadataError } from "@/lib/catalogo/platformCatalogMetadata";
 /** Tipos legados de aplicação realmente suportados pelo enum `tipo_produto`. Famílias novas dependem de B1. */
 export const legacyProductTypes = ["inseticida", "fungicida", "solo", "inoculante", "solubilizador"] as const;
 const optionalText = z.string().max(10000).nullable();
-const positive = z.number().finite().positive().max(1_000_000)
-  .refine((n) => Number.isInteger(Math.round(n * 1e6)) && Math.abs(n * 1e6 - Math.round(n * 1e6)) < 1e-6);
+// Escala (<= 6 casas) é revalidada no servidor; aqui só finito e positivo.
+const positive = z.number().finite().positive().max(1_000_000);
 export const createPayloadSchema = z.object({
   nome: z.string().trim().min(1).max(500),
   tipo: z.enum(legacyProductTypes),
