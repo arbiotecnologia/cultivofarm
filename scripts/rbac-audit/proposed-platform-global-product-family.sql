@@ -1,5 +1,7 @@
 -- =====================================================================================
--- CANDIDATO — NÃO APLICAR AUTOMATICAMENTE. Revisão independente aplicará no canônico
+-- SQL APLICADO — NÃO REAPLICAR. Aplicado externamente (Codex, a partir de 5c78f665) como migration
+-- 20261014215550 platform_global_product_family no canônico swzpzcwiasxmjutrmvkm. Arquivo mantido só como registro.
+-- (Texto original:) Revisão independente aplicaria no canônico
 -- swzpzcwiasxmjutrmvkm. Este arquivo NÃO faz backfill nem altera dados de produtos:
 -- todos os produtos existentes ficam com família NULL ("pendente de classificação").
 --

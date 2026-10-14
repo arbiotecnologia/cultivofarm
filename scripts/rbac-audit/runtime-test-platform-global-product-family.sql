@@ -1,5 +1,9 @@
--- RUNTIME TEST (rollback total) — executar SOMENTE após aplicar proposed-platform-global-product-family.sql,
--- pela revisão independente, no canônico swzpzcwiasxmjutrmvkm. Nada persiste: ROLLBACK ao final.
+-- RUNTIME TEST (rollback total) — SQL proposto JÁ APLICADO externamente (Codex, a partir de 5c78f665) como
+-- migration 20261014215550 platform_global_product_family: NÃO REAPLICAR o proposto. Este runtime só valida, no
+-- canônico swzpzcwiasxmjutrmvkm. Nada persiste: ROLLBACK ao final.
+-- Harness (revisão 2026-10-14): RPCs sob teste SEMPRE como `authenticated` com claims do ator; SELECT direto em
+-- produtos como SA retorna 0 pela RLS (por design, NÃO ampliar), então snapshots/invariantes são lidos pelo owner
+-- (RESET ROLE) apenas como oráculo de teste. Execução independente do harness corrigido: 87 PASS / 0 FAIL (externo).
 -- Produto de teste é criado DENTRO da transação pelo writer auditado existente; nenhum produto real é classificado.
 -- Resultado NULL conta como FAIL.
 --
@@ -24,6 +28,7 @@ BEGIN
   END LOOP;
   INSERT INTO rt_ctx SELECT 'volumes_antes', md5(coalesce(string_agg(to_jsonb(v)::text, ',' ORDER BY id),'')) FROM public.catalogo_volumes v;
   INSERT INTO rt_ctx SELECT 'formulacoes_antes', md5(coalesce(string_agg(to_jsonb(f)::text, ',' ORDER BY id),'')) FROM public.formulacoes f;
+  INSERT INTO rt_ctx SELECT 'product_count', count(*)::text FROM public.produtos;
   INSERT INTO rt_ctx SELECT 'snapshot_antes', md5(string_agg(pg_catalog.to_jsonb(p)::text, ',' ORDER BY id)) FROM public.produtos p;
 END $$;
 
@@ -51,7 +56,7 @@ GRANT EXECUTE ON FUNCTION pg_temp.claims(uuid,int,int), pg_temp.ok(text,boolean,
 SELECT pg_temp.claims((SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='sa'));
 SET LOCAL ROLE authenticated;
 DO $$
-DECLARE r jsonb; r2 jsonb; k uuid; v_pid uuid; v_ver timestamptz; v_before jsonb; v_after jsonb; pg jsonb; t record;
+DECLARE r jsonb; r2 jsonb; v_key uuid; v_pid uuid; v_ver timestamptz; v_before jsonb; v_after jsonb; pg jsonb; t record;
 BEGIN
   r:=public.platform_create_global_product('{"nome":"RT familia produto rollback 0001","tipo":"fungicida"}','Teste runtime familia rollback',gen_random_uuid());
   v_pid:=(r->>'id')::uuid; INSERT INTO rt_ctx VALUES ('produto_novo',v_pid::text);
@@ -70,12 +75,14 @@ BEGIN
   pg:=public.platform_read_global_product_catalog_by_family(NULL,'todos','',50,0);
   PERFORM pg_temp.ok('sa.read.projecao_minima', (SELECT array_agg(x ORDER BY x) FROM jsonb_object_keys(pg->'items'->0) x)
     = ARRAY['ativo','b2b_enabled','classe_catalogo','codigo','familia_catalogo','id','nome','tipo','updated_at']);
-  PERFORM pg_temp.ok('sa.read.todos_inclui_null', jsonb_array_length(pg->'items') = LEAST(50,(SELECT count(*) FROM public.produtos)));
+  PERFORM pg_temp.ok('sa.read.todos_inclui_null', jsonb_array_length(pg->'items') = LEAST(50,(SELECT rt_ctx.v::int+1 FROM rt_ctx WHERE rt_ctx.k='product_count')));
 
-  SELECT to_jsonb(p) INTO v_before FROM public.produtos p WHERE id=v_pid; v_ver:=(v_before->>'updated_at')::timestamptz;
-  k:=gen_random_uuid();
-  r:=public.platform_set_global_product_family(v_pid,v_ver,'biologico','biofungicida','Teste runtime familia rollback',k);
-  SELECT to_jsonb(p) INTO v_after FROM public.produtos p WHERE id=v_pid;
+  RESET ROLE; SELECT to_jsonb(p) INTO v_before FROM public.produtos p WHERE p.id=v_pid; SET LOCAL ROLE authenticated;
+  PERFORM pg_temp.ok('harness.owner_snapshot', v_before IS NOT NULL);
+  v_ver:=(v_before->>'updated_at')::timestamptz;
+  v_key:=gen_random_uuid();
+  r:=public.platform_set_global_product_family(v_pid,v_ver,'biologico','biofungicida','Teste runtime familia rollback',v_key);
+  RESET ROLE; SELECT to_jsonb(p) INTO v_after FROM public.produtos p WHERE p.id=v_pid; SET LOCAL ROLE authenticated;
   PERFORM pg_temp.ok('sa.classificar', r->>'familia_catalogo'='biologico' AND r->>'classe_catalogo'='biofungicida'
     AND (r->>'updated_at')::timestamptz > v_ver AND (r->>'idempotent')::boolean=false);
   PERFORM pg_temp.ok('sa.invariante_demais_colunas', (v_before - ARRAY['familia_catalogo','classe_catalogo','updated_at'])
@@ -92,10 +99,10 @@ BEGIN
       PERFORM pg_temp.ok('sa.valida.versao_'||t.v::text,false); EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.valida.versao_'||t.v::text,SQLERRM='catalog_family_invalid'); END;
   END LOOP;
   -- Replay idêntico.
-  r2:=public.platform_set_global_product_family(v_pid,v_ver,'biologico','biofungicida','Teste runtime familia rollback',k);
+  r2:=public.platform_set_global_product_family(v_pid,v_ver,'biologico','biofungicida','Teste runtime familia rollback',v_key);
   PERFORM pg_temp.ok('sa.replay', (r2->>'idempotent')::boolean AND r2->>'audit_id'=r->>'audit_id');
   -- Replay divergente.
-  BEGIN PERFORM public.platform_set_global_product_family(v_pid,v_ver,'quimico','fungicida','Teste runtime familia rollback',k);
+  BEGIN PERFORM public.platform_set_global_product_family(v_pid,v_ver,'quimico','fungicida','Teste runtime familia rollback',v_key);
     PERFORM pg_temp.ok('sa.replay_divergente',false); EXCEPTION WHEN serialization_failure THEN PERFORM pg_temp.ok('sa.replay_divergente',true); END;
   -- CAS stale.
   BEGIN PERFORM public.platform_set_global_product_family(v_pid,v_ver,'quimico','fungicida','Teste runtime familia rollback',gen_random_uuid());
@@ -132,11 +139,16 @@ BEGIN
   END LOOP;
   -- Writers anteriores continuam funcionando com a coluna nova (status/B2B preservam família).
   r:=public.platform_set_global_product_status(v_pid,v_ver,true,'Teste runtime familia rollback',gen_random_uuid());
-  PERFORM pg_temp.ok('sa.regressao.status_preserva_familia', (SELECT familia_catalogo='quimico' AND classe_catalogo='fungicida' AND ativo FROM public.produtos WHERE id=v_pid));
+  RESET ROLE;
+  PERFORM pg_temp.ok('sa.regressao.status_preserva_familia', (SELECT p.familia_catalogo='quimico' AND p.classe_catalogo='fungicida' AND p.ativo FROM public.produtos p WHERE p.id=v_pid));
+  SET LOCAL ROLE authenticated;
+  -- Produto novo nasce b2b_enabled=false; writer B2B sob authenticated com true literal.
   r2:=public.platform_set_global_b2b_enabled('produto',v_pid,(r->>'updated_at')::timestamptz,
-    NOT (SELECT b2b_enabled FROM public.produtos WHERE id=v_pid),'Teste runtime familia rollback',gen_random_uuid());
-  PERFORM pg_temp.ok('sa.regressao.b2b_preserva_familia', (SELECT familia_catalogo='quimico' FROM public.produtos WHERE id=v_pid));
-  -- Ledger.
+    true,'Teste runtime familia rollback',gen_random_uuid());
+  RESET ROLE;
+  PERFORM pg_temp.ok('sa.regressao.b2b_preserva_familia', (SELECT p.familia_catalogo='quimico' AND p.classe_catalogo='fungicida' AND p.b2b_enabled FROM public.produtos p WHERE p.id=v_pid));
+  SET LOCAL ROLE authenticated;
+  -- Ledger (lido como SA authenticated).
   PERFORM pg_temp.ok('sa.ledger', (SELECT count(*) FROM public.catalog_platform_admin_audit WHERE operation='set_global_product_family'
     AND counts_after->'after'->>'id'=v_pid::text)=2);
 END $$;

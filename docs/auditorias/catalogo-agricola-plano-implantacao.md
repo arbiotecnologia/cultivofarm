@@ -331,3 +331,11 @@ UI: `PlatformCatalogVolumesDialog.tsx` + `platformCatalogVolumes.ts`, botão Apr
 - AGENTS.md revertido ao texto anterior (regra de família não acrescentada).
 - Limitação: cadastro novo de químicos com unidades/herbicidas e fertilizantes não está completo; criação existente gera produto pendente.
 - Local: 744/744 testes saas/plataforma (19 de família), typecheck app/node, lint focal, scanner fiscal e build 23,24s PASS. SQL/runtime, JWT, browser e produção UNVERIFIED.
+
+### Registro de aplicação — família (2026-10-14, evidência externa)
+- SQL APLICADO / NÃO REAPLICAR: migration `20261014215550 platform_global_product_family`, aplicada externamente (Codex) a partir de `5c78f665`. Rollback preservado, sem execução.
+- Runtime local anterior FALHOU com `catalog_family_invalid`: SELECT direto em `produtos` como SA (authenticated) retorna 0 linhas pela RLS, por isso `v_before`/`v_ver` vinham NULL. É defeito do harness, não do servidor. A RLS NÃO foi ampliada.
+- Harness corrigido: contagem inicial `rt_ctx('product_count')` capturada pelo owner (depois de criar, soma 1); `RESET ROLE` só para snapshots e invariantes SELECT; `SET LOCAL ROLE authenticated` com claims do ator antes de cada RPC sob teste; asserts de status/B2B/família lidos pelo owner; writer B2B com `true` literal (produto novo nasce false); ledger lido como SA; variável `k` renomeada para `v_key` e `rt_ctx.k/v` qualificados. O owner é só oráculo de teste.
+- Evidência externa independente: runtime corrigido 87 PASS / 0 FAIL em rollback; estado final com 10 produtos e 0 classificados; Bombarbio ativo e com B2B true, R$180/L, versão 21:32:52 intacta, sem fixtures. Frontend: 159 testes em 7 arquivos, typecheck app/node, lint 7, scanner 3909 zero PASS; build ainda em conclusão quando foi reportado. A versão local do harness corrigido não foi executada por mim.
+- UI publicada das quatro abas e classificação do Bombarbio: NÃO testadas (sem PASS de UI). Próximo passo: teste da UI publicada e classificação do Bombarbio pela UI.
+- Composição de produtos (todas as famílias): requisito registrado para o próximo recorte; NÃO iniciado. Sólidos/químicos/fertilizantes novos continuam sem liberação.

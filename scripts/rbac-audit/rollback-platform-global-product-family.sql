@@ -1,3 +1,4 @@
+-- Migration 20261014215550 APLICADA: rollback preservado, NÃO executar sem autorização específica e export prévio.
 -- ROLLBACK do candidato proposed-platform-global-product-family.sql (somente se aplicado).
 -- Remove funções/policy/trigger/colunas novas. ATENÇÃO: descartar as colunas apaga as
 -- classificações feitas pela UI; exportar antes (SELECT id, familia_catalogo, classe_catalogo
