@@ -623,6 +623,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Ocultar controles de mutação Produtos/Micro/Problemas/CQ/Volumes/ProblemaSelector (render tests).
 - [x] Revoke `rejeitar_ficha_versao` — aplicado Codex 20261014184906.
 - [x] Leitura do catálogo para empresas restaurada (20261014185551, policies só de escrita; sem RPC paralela).
-- [ ] Confirmar na UI publicada a ausência dos controles de mutação — UNVERIFIED (bundle antigo na prévia).
+- [x] Confirmar na UI publicada a ausência dos controles de mutação — PASS externo Codex 2026-10-14 19:11UTC, site publicado app.cultivofarm.com.br (bundle index-Dhv5PeNR.js), login Administrador AR: Produtos 9 sem Novo/Excluir/adicionar; ficha BioFungicida sem salvar/aprovar/arquivar/IA; Microrganismos 25 sem criar/excluir/adicionar; ficha Bacillus amyloliquefaciens só consulta/cópia; Volumes sem controles de escrita (vazio; leitura preenchida UNVERIFIED); Culturas 8 consulta desktop e cards mobile 390 PASS; Problemas vazio sem Novo; CQ /configuracoes/parametros-cq vazio sem criação/edição/exclusão (controles PASS, registros preenchidos UNVERIFIED); /plataforma por URL direta nega acesso. Sem persistir dados nem chamar IA; viewport restaurado. P2 aberto: texto de Volumes ainda diz "cadastre" em modo consulta. Não é auditoria integral.
 - [ ] Edges IA com JWT válido via HTTP — UNVERIFIED.
 - [ ] Regulatórios e Storage do catálogo — UNVERIFIED.
+- [ ] P2 texto Volumes ("cadastre" em modo consulta) — correção de copy pendente, sem impacto de autorização.
