@@ -97,7 +97,7 @@ describe("decimais sem perda de precisão", () => {
       "00000000-0000-4000-8000-000000000194", new AbortController().signal)).resolves.toBeTruthy();
     // sem token o servidor nunca pode ter reprecificado
     handler = (_n, a) => receipt(a, { repriced: true });
-    await expect(setVolumeStatus(row, true, null, true, "Motivo válido aqui", "00000000-0000-4000-8000-000000000193",
+    await expect(setVolumeStatus(row, false, null, true, "Motivo válido aqui", "00000000-0000-4000-8000-000000000193",
       new AbortController().signal)).rejects.toThrow();
   });
   it("overflow de preço vira mensagem acionável", () => {

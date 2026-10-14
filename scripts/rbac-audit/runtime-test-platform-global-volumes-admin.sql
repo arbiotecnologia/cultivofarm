@@ -147,16 +147,21 @@ BEGIN
   PERFORM pg_temp.ok('sa.arquivar_ultima_preserva', (r->>'ativo')::boolean=false
     AND (public.platform_read_global_item_volumes('produto',p,20,0)->'item'->'pricing'->>'valor_litro_brl')::numeric=123.45);
   -- microrganismo: criação inativa e leitura
-  -- alta precisão nos limites: 999999999.98 / 0.003 mL => 333333333326666.67/L, exibido como string exata
+  -- Overflow de domínio (revisão 3): 999999999.98 / 0.003 mL => 333333333326666.67/L cabe na linha (numeric sem typmod),
+  -- mas NÃO cabe em microrganismos.valor_dose_brl numeric(10,2). Ativar deve falhar 22003 catalog_volume_price_out_of_range
+  -- de forma atômica: linha continua inativa com a mesma versão, preços do pai iguais (via leitor autorizado), ledger sem registro.
   r:=public.platform_create_global_volume('microrganismo',m,'{"volume_ml":"0.003","preco_brl":"999999999.98"}','Teste runtime com rollback',gen_random_uuid());
   v3:=(r->>'id')::uuid; d:=public.platform_read_global_volume_detail(v3);
   PERFORM pg_temp.ok('sa.precisao.linha', d->>'preco_litro_brl'='333333333326666.67', d->>'preco_litro_brl');
+  INSERT INTO rt_ctx VALUES ('v3',v3::text),('micro_pricing_antes',(public.platform_read_global_item_volumes('microrganismo',m,20,0)->'item'->'pricing')::text);
   BEGIN PERFORM public.platform_set_global_volume_status(v3,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
-    PERFORM pg_temp.ok('sa.precisao.previa',false);
-  EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
-    PERFORM pg_temp.ok('sa.precisao.previa', det::jsonb->'parent_after'->>'valor_litro_brl'='333333333326666.67'
-      AND jsonb_typeof(det::jsonb->'parent_after'->'valor_litro_brl')='string', det);
-    WHEN numeric_value_out_of_range THEN PERFORM pg_temp.ok('sa.precisao.previa',false,'coluna do pai não comporta o limite: revisar limites'); END;
+    PERFORM pg_temp.ok('sa.overflow.rejeitado',false,'sem erro');
+  EXCEPTION WHEN numeric_value_out_of_range THEN GET STACKED DIAGNOSTICS det = MESSAGE_TEXT;
+      PERFORM pg_temp.ok('sa.overflow.rejeitado', det='catalog_volume_price_out_of_range', det);
+    WHEN object_not_in_prerequisite_state THEN PERFORM pg_temp.ok('sa.overflow.rejeitado',false,'prévia emitida apesar do overflow'); END;
+  PERFORM pg_temp.ok('sa.overflow.linha_intacta', public.platform_read_global_volume_detail(v3) = d);
+  PERFORM pg_temp.ok('sa.overflow.pai_intacto', (public.platform_read_global_item_volumes('microrganismo',m,20,0)->'item'->'pricing')
+    = (SELECT v::jsonb FROM rt_ctx WHERE k='micro_pricing_antes'));
   r:=public.platform_create_global_volume('microrganismo',m,'{"volume_ml":"1000","preco_brl":"10"}','Teste runtime com rollback',gen_random_uuid());
   PERFORM pg_temp.ok('sa.micro.create', public.platform_read_global_volume_detail((r->>'id')::uuid)->>'item_tipo'='microrganismo');
   BEGIN PERFORM public.platform_read_global_item_volumes('produto',p,51,0); PERFORM pg_temp.ok('sa.read.limite',false);
@@ -176,6 +181,12 @@ BEGIN
   PERFORM pg_temp.ok('pg.ledger.registrou', (SELECT count(*) FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume')
     >= 9 AND NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume'
       AND (counts_before ? 'parent') IS NOT TRUE));
+  PERFORM pg_temp.ok('pg.overflow.ledger_sem_registro', NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit
+    WHERE operation='set_global_volume_status' AND counts_after->'request'->>'id'=(SELECT v FROM rt_ctx WHERE k='v3')));
+  -- Serialização exata (independe de caber nas colunas): helper privado com numeric JSON de alta precisão => strings idênticas.
+  a:=platform_private.catalog_volume_pricing('{"valor_litro_brl":333333333326666.67,"valor_dose_brl":33333333332666.67,"valor_ha_brl":null}'::jsonb);
+  PERFORM pg_temp.ok('pg.precisao.serializacao_exata', a->>'valor_litro_brl'='333333333326666.67' AND jsonb_typeof(a->'valor_litro_brl')='string'
+    AND a->>'valor_dose_brl'='33333333332666.67' AND jsonb_typeof(a->'valor_dose_brl')='string' AND a->'valor_ha_brl'='null'::jsonb, a::text);
   BEGIN UPDATE public.catalog_platform_admin_audit SET reason='x' WHERE operation='create_global_volume';
     PERFORM pg_temp.ok('pg.ledger.imutavel',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('pg.ledger.imutavel',true); END;
 END $$;
