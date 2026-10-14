@@ -1,3 +1,5 @@
+-- HISTÓRICO: APLICADO pelo Codex como migration platform_global_catalog_lifecycle (14/10).
+-- NÃO REAPLICAR. Corpo aplicado arquivado em applied-platform-global-catalog-lifecycle.sql.
 -- CANDIDATO NÃO APLICADO — revisão Codex obrigatória antes de qualquer DDL.
 -- Projeto canônico exclusivo: swzpzcwiasxmjutrmvkm. Não executar em outro ref.
 -- Escopo: criação global (produto + composição de microrganismos, atômica) e

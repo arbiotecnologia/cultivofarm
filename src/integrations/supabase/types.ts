@@ -22385,6 +22385,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      platform_create_global_product: {
+        Args: { p_idempotency_key: string; p_payload: Json; p_reason: string }
+        Returns: Json
+      }
       platform_create_organization: {
         Args: {
           _cnpj: string
@@ -22581,6 +22585,16 @@ export type Database = {
             }
             Returns: string
           }
+      platform_set_global_product_status: {
+        Args: {
+          p_ativo: boolean
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_set_org_principal_admin: {
         Args: {
           _expected_responsavel: string

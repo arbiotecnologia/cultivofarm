@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
 import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
-import { createGlobalProduct, createPayloadSchema, legacyProductTypes, setGlobalProductStatus, type CreatePayload } from "@/lib/catalogo/platformCatalogLifecycle";
+import { createGlobalProduct, createPayloadSchema, legacyProductTypes, MICRO_PAGE_LIMIT, parseDecimal, proporcaoSchema, readActiveMicroorganisms, volumeSchema, setGlobalProductStatus, type CreatePayload, type MicroPage } from "@/lib/catalogo/platformCatalogLifecycle";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -72,11 +72,13 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
   const [dose, setDose] = useState("");
   const [reason, setReason] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [rows, setRows] = useState<CompRow[]>([]);
   if (!visible) return null;
-  const doseNum = dose.trim() === "" ? null : Number(dose.replace(",", "."));
+  const doseNum = parseDecimal(dose);
+  const composicao = rows.map((row) => ({ microrganismo_id: row.id, volume_ml: parseDecimal(row.volume) ?? NaN, proporcao: parseDecimal(row.proporcao) }));
   const payload: CreatePayload | null = (() => {
     const parsed = createPayloadSchema.safeParse({ nome, tipo, descricao: descricao || null, modo_acao: null,
-      funcao_completa: null, modo_aplicacao: null, dose_ml_ha: doseNum, composicao: [] });
+      funcao_completa: null, modo_aplicacao: null, dose_ml_ha: doseNum, composicao });
     return parsed.success ? parsed.data : null;
   })();
   const valid = !!payload && reason.trim().length >= 10 && reason.trim().length <= 500;
@@ -88,7 +90,7 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto" aria-busy={busy}>
       <DialogHeader><DialogTitle>Novo produto global</DialogTitle>
-        <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui. A composição de microrganismos ainda não é cadastrada por esta tela.</DialogDescription>
+        <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui. Outros textos podem ser completados depois em Editar.</DialogDescription>
       </DialogHeader>
       {error && <p role="alert">{error}</p>}
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setConfirming(true); }}>
@@ -106,6 +108,7 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
             <Input id="create-dose" inputMode="decimal" value={dose} onChange={(e) => setDose(e.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="create-descricao">Descrição</Label>
             <Textarea id="create-descricao" rows={2} maxLength={10000} value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
+          <CompositionEditor rows={rows} onChange={setRows} />
           <div className="space-y-1.5"><Label htmlFor="create-reason">Motivo (10 a 500 caracteres)</Label>
             <Textarea id="create-reason" required rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
         </fieldset>
@@ -113,7 +116,7 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={!valid}>Revisar criação</Button>
         </div> : <div role="group" aria-label="Confirmar criação" className="space-y-2">
-          <p>Confirmar criação de “{payload?.nome}”?</p>
+          <p>Confirmar criação de “{payload?.nome}” com {rows.length} microrganismo(s) na composição?</p>
           <div className="flex flex-wrap justify-end gap-2">
             <Button type="button" variant="outline" disabled={busy} onClick={() => setConfirming(false)}>Voltar</Button>
             <Button type="button" disabled={busy} onClick={submit}>{busy ? "Confirmando…" : "Confirmar criação"}</Button>
@@ -159,4 +162,67 @@ function StatusForm({ scope, product, onClose, onSaved }: {
       </form>
     </DialogContent>
   </Dialog>;
+}
+
+type CompRow = { id: string; nome: string; codigo: string | null; volume: string; proporcao: string };
+
+/** Seleção de microrganismos ATIVOS via leitor mínimo; descarta respostas tardias por sequência. */
+function CompositionEditor({ rows, onChange }: { rows: CompRow[]; onChange: (rows: CompRow[]) => void }) {
+  const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [page, setPage] = useState<MicroPage>();
+  const [state, setState] = useState<"loading" | "error" | "ready">("loading");
+  const seq = useRef(0);
+  useEffect(() => {
+    const id = ++seq.current; const controller = new AbortController();
+    setState("loading"); setPage(undefined);
+    readActiveMicroorganisms(search, offset, controller.signal)
+      .then((data) => { if (id === seq.current && !controller.signal.aborted) { setPage(data); setState("ready"); } })
+      .catch(() => { if (id === seq.current && !controller.signal.aborted) setState("error"); });
+    return () => controller.abort();
+  }, [search, offset]);
+  const chosen = new Set(rows.map((r) => r.id));
+  const update = (id: string, patch: Partial<CompRow>) => onChange(rows.map((r) => r.id === id ? { ...r, ...patch } : r));
+  return <fieldset className="space-y-2 rounded-md border p-3">
+    <legend className="px-1 text-sm font-medium">Composição (microrganismos ativos)</legend>
+    {rows.length === 0 && <p className="text-xs text-muted-foreground">Nenhum microrganismo adicionado.</p>}
+    {rows.map((row) => {
+      const vol = parseDecimal(row.volume); const prop = parseDecimal(row.proporcao);
+      const volBad = vol === null || Number.isNaN(vol) || !volumeSchema.safeParse(vol).success;
+      const propBad = prop !== null && !proporcaoSchema.safeParse(prop).success;
+      return <div key={row.id} className="grid gap-2 border-b pb-2 sm:grid-cols-[1fr_7rem_7rem_auto] sm:items-end">
+        <p className="break-words text-sm font-medium">{row.nome}{row.codigo ? ` (${row.codigo})` : ""}</p>
+        <div className="space-y-1"><Label htmlFor={`vol-${row.id}`}>Volume (mL) de {row.nome}</Label>
+          <Input id={`vol-${row.id}`} inputMode="decimal" required aria-invalid={volBad} value={row.volume} onChange={(e) => update(row.id, { volume: e.target.value })} /></div>
+        <div className="space-y-1"><Label htmlFor={`prop-${row.id}`}>Proporção (%) de {row.nome}</Label>
+          <Input id={`prop-${row.id}`} inputMode="decimal" aria-invalid={propBad} value={row.proporcao} onChange={(e) => update(row.id, { proporcao: e.target.value })} /></div>
+        <Button type="button" variant="ghost" size="sm" onClick={() => onChange(rows.filter((r) => r.id !== row.id))}>Remover {row.nome}</Button>
+        {volBad && <p className="text-xs text-destructive sm:col-span-4">Informe volume positivo com até 6 casas decimais.</p>}
+        {propBad && <p className="text-xs text-destructive sm:col-span-4">Proporção deve ser maior que 0 e até 100, com até 6 casas.</p>}
+      </div>;
+    })}
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="min-w-0 flex-1 space-y-1"><Label htmlFor="micro-search">Buscar microrganismo</Label>
+        <Input id="micro-search" maxLength={120} value={input} onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setSearch(input.trim()); setOffset(0); } }} /></div>
+      <Button type="button" variant="outline" onClick={() => { setSearch(input.trim()); setOffset(0); }}>Buscar microrganismo</Button>
+    </div>
+    {state === "loading" && <p role="status" className="text-sm text-muted-foreground">Carregando microrganismos…</p>}
+    {state === "error" && <p role="alert" className="text-sm">Não foi possível consultar os microrganismos.</p>}
+    {state === "ready" && page?.items.length === 0 && <p role="status" className="text-sm text-muted-foreground">Nenhum microrganismo ativo encontrado.</p>}
+    {state === "ready" && !!page?.items.length && <ul className="space-y-1">{page.items.map((m) =>
+      <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="break-words">{m.nome}{m.codigo ? ` (${m.codigo})` : ""}</span>
+        <Button type="button" size="sm" variant="outline" disabled={chosen.has(m.id) || rows.length >= 50}
+          onClick={() => onChange([...rows, { id: m.id, nome: m.nome, codigo: m.codigo, volume: "", proporcao: "" }])}>
+          {chosen.has(m.id) ? `${m.nome} adicionado` : `Adicionar ${m.nome}`}</Button>
+      </li>)}</ul>}
+    <nav aria-label="Paginação de microrganismos" className="flex items-center justify-between gap-2">
+      <Button type="button" variant="outline" size="sm" disabled={state !== "ready" || offset === 0}
+        onClick={() => setOffset((o) => Math.max(0, o - MICRO_PAGE_LIMIT))}>Microrganismos anteriores</Button>
+      <Button type="button" variant="outline" size="sm" disabled={state !== "ready" || !page?.has_more}
+        onClick={() => setOffset((o) => o + MICRO_PAGE_LIMIT)}>Próximos microrganismos</Button>
+    </nav>
+  </fieldset>;
 }
