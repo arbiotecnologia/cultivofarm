@@ -601,6 +601,8 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Fase 4 — documentação de transporte, CT-e recebido e decisão MDF-e fail-closed; emissão própria CT-e desligada.
 - [ ] Fechamento — matriz RLS/Storage/RPC, provas A/B/C, desktop/mobile, testes, verificações automáticas, scanner/advisors e relatório GO/NO-GO; decisões contábeis não inferidas.
 - [x] Catálogo global — criação atômica e arquivar/reativar: UI local + SQL candidato `proposed-platform-catalog-global-lifecycle.sql` (não aplicado), 63/63 testes.
-- [ ] Catálogo global — revisão Codex/aplicação do SQL de ciclo de vida + preflight de triggers de preço (bloqueio: revisão externa).
+- [x] Catálogo global — correções da revisão Codex no SQL candidato e cerca de identidade por época (65 + 5 testes locais).
+- [ ] Catálogo global — revisão/aplicação do SQL de ciclo de vida + preflight de triggers de preço (bloqueio: revisão externa e autorização de DDL).
+- [ ] Catálogo global — leitor Superadmin de microrganismos e seleção de composição na tela (bloqueio: nova RPC candidata/schema ativo).
 - [ ] Catálogo global — famílias novas via B1, seleção/edição de composição e insumos (bloqueio: B1 não aplicado).
 - [ ] Catálogo tenant — exibir/ocultar globais e próprios (bloqueio: fase posterior autorizada).
