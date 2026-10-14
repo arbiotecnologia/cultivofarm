@@ -4743,6 +4743,7 @@ export type Database = {
           descricao: string | null
           id: string
           nome: string
+          updated_at: string
         }
         Insert: {
           ativo?: boolean
@@ -4752,6 +4753,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome: string
+          updated_at?: string
         }
         Update: {
           ativo?: boolean
@@ -4761,6 +4763,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -11233,6 +11236,7 @@ export type Database = {
           product_id: string | null
           safra_referencia: string | null
           tipo: Database["public"]["Enums"]["tipo_microrganismo"]
+          updated_at: string
           valor_dose_brl: number | null
           valor_litro_brl: number | null
         }
@@ -11257,6 +11261,7 @@ export type Database = {
           product_id?: string | null
           safra_referencia?: string | null
           tipo: Database["public"]["Enums"]["tipo_microrganismo"]
+          updated_at?: string
           valor_dose_brl?: number | null
           valor_litro_brl?: number | null
         }
@@ -11281,6 +11286,7 @@ export type Database = {
           product_id?: string | null
           safra_referencia?: string | null
           tipo?: Database["public"]["Enums"]["tipo_microrganismo"]
+          updated_at?: string
           valor_dose_brl?: number | null
           valor_litro_brl?: number | null
         }
@@ -22385,6 +22391,14 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      platform_create_global_culture: {
+        Args: { p_idempotency_key: string; p_payload: Json; p_reason: string }
+        Returns: Json
+      }
+      platform_create_global_microorganism: {
+        Args: { p_idempotency_key: string; p_payload: Json; p_reason: string }
+        Returns: Json
+      }
       platform_create_global_product: {
         Args: { p_idempotency_key: string; p_payload: Json; p_reason: string }
         Returns: Json
@@ -22523,6 +22537,18 @@ export type Database = {
         }
         Returns: string
       }
+      platform_read_global_culture_detail: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      platform_read_global_cultures: {
+        Args: { p_limit: number; p_offset: number; p_search: string }
+        Returns: Json
+      }
+      platform_read_global_microorganism_detail: {
+        Args: { p_id: string }
+        Returns: Json
+      }
       platform_read_global_microorganisms: {
         Args: {
           p_limit: number
@@ -22594,6 +22620,26 @@ export type Database = {
             }
             Returns: string
           }
+      platform_set_global_culture_status: {
+        Args: {
+          p_ativo: boolean
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      platform_set_global_microorganism_status: {
+        Args: {
+          p_ativo: boolean
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_set_global_product_status: {
         Args: {
           p_ativo: boolean
@@ -22627,6 +22673,26 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_update_global_culture: {
+        Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_patch: Json
+          p_reason: string
+        }
+        Returns: Json
+      }
+      platform_update_global_microorganism: {
+        Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_patch: Json
+          p_reason: string
+        }
+        Returns: Json
       }
       platform_update_global_product_metadata: {
         Args: {
