@@ -184,3 +184,9 @@ Este prompt é material para uma solicitação futura, não instrução de imple
 - P1 culturas: AdminAR conseguia UPDATE global (1 linha, rollback). Contenção `global_culturas_client_write_containment` aplicada externamente (REVOKE INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER de PUBLIC/anon/authenticated); arquivada em `applied-global-culturas-client-write-containment.sql`. Rollback: nunca restaurar grants de escrita do cliente.
 - UI: `src/pages/Protocolos.tsx` aba Culturas somente consulta; `src/hooks/useCulturas.ts` mutações bloqueadas explicitamente (sem sucesso com 0 linhas). Teste `src/test/protocolos/culturas.readonly.test.tsx`.
 - Pendente: writer SA auditado de culturas; `catalogo_alvos`/`catalogo_problemas`/`cq_parametros_referencia` com escrita técnica — risco aberto, UNVERIFIED, sem PASS de segurança. Tenant e famílias não avançados. Browser/produção da contenção UNVERIFIED.
+
+## Adendo 2026-10-14 18:30 — overflow do editor de composição
+- Migrations aplicadas externamente: `20261014180951` lifecycle, `20261014181510` composition reader, `20261014181851` global_culturas_client_write_containment. Não reaplicar.
+- Evidência externa Codex (prod daf041, SA): leitor real, bloqueio volume vazio/7 casas, duplicata, busca BAC-2=1; FAIL visual de overflow horizontal (desktop 559→673, mobile 388→486). Codex: 78 testes, scanner 3879 zero, TS app/node, build 35.52s PASS.
+- Correção local em `PlatformCatalogLifecycleDialogs.tsx` (quebra de texto, grid encolhível, 2 colunas máx., paginação com wrap, largura do diálogo limitada à viewport) sem ocultar conteúdo. Teste estrutural em `platformCatalogLifecycle.test.tsx`. Medição real em navegador: UNVERIFIED até nova publicação.
+- Lint integral de `Protocolos.tsx`: FAIL (7 `any` preexistentes em ProblemasTab).

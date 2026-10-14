@@ -88,13 +88,13 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
     void run((signal) => createGlobalProduct(payload, reason, key, signal), onSaved);
   };
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
-    <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto" aria-busy={busy}>
+    <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto" aria-busy={busy}>
       <DialogHeader><DialogTitle>Novo produto global</DialogTitle>
         <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui. Outros textos podem ser completados depois em Editar.</DialogDescription>
       </DialogHeader>
       {error && <p role="alert">{error}</p>}
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setConfirming(true); }}>
-        <fieldset disabled={busy || confirming} className="space-y-3">
+      <form className="min-w-0 space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setConfirming(true); }}>
+        <fieldset disabled={busy || confirming} className="min-w-0 w-full space-y-3">
           <div className="space-y-1.5"><Label htmlFor="create-nome">Nome</Label>
             <Input id="create-nome" required maxLength={500} value={nome} onChange={(e) => setNome(e.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="create-tipo">Tipo de aplicação</Label>
@@ -184,44 +184,44 @@ function CompositionEditor({ rows, onChange }: { rows: CompRow[]; onChange: (row
   }, [search, offset]);
   const chosen = new Set(rows.map((r) => r.id));
   const update = (id: string, patch: Partial<CompRow>) => onChange(rows.map((r) => r.id === id ? { ...r, ...patch } : r));
-  return <fieldset className="space-y-2 rounded-md border p-3">
-    <legend className="px-1 text-sm font-medium">Composição (microrganismos ativos)</legend>
+  return <fieldset className="min-w-0 w-full space-y-2 rounded-md border p-3">
+    <legend className="max-w-full px-1 text-sm font-medium [overflow-wrap:anywhere]">Composição (microrganismos ativos)</legend>
     {rows.length === 0 && <p className="text-xs text-muted-foreground">Nenhum microrganismo adicionado.</p>}
     {rows.map((row) => {
       const vol = parseDecimal(row.volume); const prop = parseDecimal(row.proporcao);
       const volBad = vol === null || Number.isNaN(vol) || !volumeSchema.safeParse(vol).success;
       const propBad = prop !== null && !proporcaoSchema.safeParse(prop).success;
-      return <div key={row.id} className="grid gap-2 border-b pb-2 sm:grid-cols-[1fr_7rem_7rem_auto] sm:items-end">
-        <p className="break-words text-sm font-medium">{row.nome}{row.codigo ? ` (${row.codigo})` : ""}</p>
-        <div className="space-y-1"><Label htmlFor={`vol-${row.id}`}>Volume (mL) de {row.nome}</Label>
+      return <div key={row.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 border-b pb-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-end">
+        <p className="min-w-0 break-words text-sm font-medium [overflow-wrap:anywhere] sm:col-span-2">{row.nome}{row.codigo ? ` (${row.codigo})` : ""}</p>
+        <div className="min-w-0 space-y-1"><Label className="block [overflow-wrap:anywhere]" htmlFor={`vol-${row.id}`}>Volume (mL) de {row.nome}</Label>
           <Input id={`vol-${row.id}`} inputMode="decimal" required aria-invalid={volBad} value={row.volume} onChange={(e) => update(row.id, { volume: e.target.value })} /></div>
-        <div className="space-y-1"><Label htmlFor={`prop-${row.id}`}>Proporção (%) de {row.nome}</Label>
+        <div className="min-w-0 space-y-1"><Label className="block [overflow-wrap:anywhere]" htmlFor={`prop-${row.id}`}>Proporção (%) de {row.nome}</Label>
           <Input id={`prop-${row.id}`} inputMode="decimal" aria-invalid={propBad} value={row.proporcao} onChange={(e) => update(row.id, { proporcao: e.target.value })} /></div>
-        <Button type="button" variant="ghost" size="sm" onClick={() => onChange(rows.filter((r) => r.id !== row.id))}>Remover {row.nome}</Button>
-        {volBad && <p className="text-xs text-destructive sm:col-span-4">Informe volume positivo com até 6 casas decimais.</p>}
-        {propBad && <p className="text-xs text-destructive sm:col-span-4">Proporção deve ser maior que 0 e até 100, com até 6 casas.</p>}
+        <Button type="button" variant="ghost" size="sm" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left sm:col-span-2 justify-self-start" onClick={() => onChange(rows.filter((r) => r.id !== row.id))}>Remover {row.nome}</Button>
+        {volBad && <p className="text-xs text-destructive sm:col-span-2">Informe volume positivo com até 6 casas decimais.</p>}
+        {propBad && <p className="text-xs text-destructive sm:col-span-2">Proporção deve ser maior que 0 e até 100, com até 6 casas.</p>}
       </div>;
     })}
     <div className="flex flex-wrap items-end gap-2">
-      <div className="min-w-0 flex-1 space-y-1"><Label htmlFor="micro-search">Buscar microrganismo</Label>
+      <div className="min-w-0 flex-1 space-y-1"><Label className="block [overflow-wrap:anywhere]" htmlFor="micro-search">Buscar microrganismo</Label>
         <Input id="micro-search" maxLength={120} value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setSearch(input.trim()); setOffset(0); } }} /></div>
-      <Button type="button" variant="outline" onClick={() => { setSearch(input.trim()); setOffset(0); }}>Buscar microrganismo</Button>
+      <Button type="button" variant="outline" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" onClick={() => { setSearch(input.trim()); setOffset(0); }}>Buscar microrganismo</Button>
     </div>
     {state === "loading" && <p role="status" className="text-sm text-muted-foreground">Carregando microrganismos…</p>}
     {state === "error" && <p role="alert" className="text-sm">Não foi possível consultar os microrganismos.</p>}
     {state === "ready" && page?.items.length === 0 && <p role="status" className="text-sm text-muted-foreground">Nenhum microrganismo ativo encontrado.</p>}
-    {state === "ready" && !!page?.items.length && <ul className="space-y-1">{page.items.map((m) =>
-      <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="break-words">{m.nome}{m.codigo ? ` (${m.codigo})` : ""}</span>
-        <Button type="button" size="sm" variant="outline" disabled={chosen.has(m.id) || rows.length >= 50}
+    {state === "ready" && !!page?.items.length && <ul className="min-w-0 space-y-1">{page.items.map((m) =>
+      <li key={m.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="min-w-0 break-words [overflow-wrap:anywhere]">{m.nome}{m.codigo ? ` (${m.codigo})` : ""}</span>
+        <Button type="button" size="sm" variant="outline" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={chosen.has(m.id) || rows.length >= 50}
           onClick={() => onChange([...rows, { id: m.id, nome: m.nome, codigo: m.codigo, volume: "", proporcao: "" }])}>
           {chosen.has(m.id) ? `${m.nome} adicionado` : `Adicionar ${m.nome}`}</Button>
       </li>)}</ul>}
-    <nav aria-label="Paginação de microrganismos" className="flex items-center justify-between gap-2">
-      <Button type="button" variant="outline" size="sm" disabled={state !== "ready" || offset === 0}
+    <nav aria-label="Paginação de microrganismos" className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <Button type="button" variant="outline" size="sm" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={state !== "ready" || offset === 0}
         onClick={() => setOffset((o) => Math.max(0, o - MICRO_PAGE_LIMIT))}>Microrganismos anteriores</Button>
-      <Button type="button" variant="outline" size="sm" disabled={state !== "ready" || !page?.has_more}
+      <Button type="button" variant="outline" size="sm" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={state !== "ready" || !page?.has_more}
         onClick={() => setOffset((o) => o + MICRO_PAGE_LIMIT)}>Próximos microrganismos</Button>
     </nav>
   </fieldset>;
