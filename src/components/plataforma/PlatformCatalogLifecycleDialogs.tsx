@@ -197,7 +197,7 @@ function CompositionEditor({ rows, onChange }: { rows: CompRow[]; onChange: (row
           <Input id={`vol-${row.id}`} inputMode="decimal" required aria-invalid={volBad} value={row.volume} onChange={(e) => update(row.id, { volume: e.target.value })} /></div>
         <div className="min-w-0 space-y-1"><Label className="block [overflow-wrap:anywhere]" htmlFor={`prop-${row.id}`}>Proporção (%) de {row.nome}</Label>
           <Input id={`prop-${row.id}`} inputMode="decimal" aria-invalid={propBad} value={row.proporcao} onChange={(e) => update(row.id, { proporcao: e.target.value })} /></div>
-        <Button type="button" variant="ghost" size="sm" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left sm:col-span-2 justify-self-start" onClick={() => onChange(rows.filter((r) => r.id !== row.id))}>Remover {row.nome}</Button>
+        <Button type="button" variant="ghost" size="sm" className="min-h-10 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left sm:col-span-2 justify-self-start" onClick={() => onChange(rows.filter((r) => r.id !== row.id))}>Remover {row.nome}</Button>
         {volBad && <p className="text-xs text-destructive sm:col-span-2">Informe volume positivo com até 6 casas decimais.</p>}
         {propBad && <p className="text-xs text-destructive sm:col-span-2">Proporção deve ser maior que 0 e até 100, com até 6 casas.</p>}
       </div>;
@@ -214,14 +214,14 @@ function CompositionEditor({ rows, onChange }: { rows: CompRow[]; onChange: (row
     {state === "ready" && !!page?.items.length && <ul className="min-w-0 space-y-1">{page.items.map((m) =>
       <li key={m.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm">
         <span className="min-w-0 break-words [overflow-wrap:anywhere]">{m.nome}{m.codigo ? ` (${m.codigo})` : ""}</span>
-        <Button type="button" size="sm" variant="outline" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={chosen.has(m.id) || rows.length >= 50}
+        <Button type="button" size="sm" variant="outline" className="min-h-10 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={chosen.has(m.id) || rows.length >= 50}
           onClick={() => onChange([...rows, { id: m.id, nome: m.nome, codigo: m.codigo, volume: "", proporcao: "" }])}>
           {chosen.has(m.id) ? `${m.nome} adicionado` : `Adicionar ${m.nome}`}</Button>
       </li>)}</ul>}
     <nav aria-label="Paginação de microrganismos" className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-      <Button type="button" variant="outline" size="sm" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={state !== "ready" || offset === 0}
+      <Button type="button" variant="outline" size="sm" className="min-h-10 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={state !== "ready" || offset === 0}
         onClick={() => setOffset((o) => Math.max(0, o - MICRO_PAGE_LIMIT))}>Microrganismos anteriores</Button>
-      <Button type="button" variant="outline" size="sm" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={state !== "ready" || !page?.has_more}
+      <Button type="button" variant="outline" size="sm" className="min-h-10 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" disabled={state !== "ready" || !page?.has_more}
         onClick={() => setOffset((o) => o + MICRO_PAGE_LIMIT)}>Próximos microrganismos</Button>
     </nav>
   </fieldset>;
