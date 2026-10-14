@@ -126,8 +126,8 @@ function VolumeForm({ tipo, itemId, scope, mode, onClose, onSaved }:
       mode.type === "status" ? mode.ativo : null, token, reason.trim()]));
     try {
       if (mode.type === "create") await createVolume(tipo, itemId, values!, reason, key, signal);
-      else if (mode.type === "edit") await updateVolume(mode.row, values!, token, reason, key, signal);
-      else await setVolumeStatus(mode.row, mode.ativo, token, reason, key, signal);
+      else if (mode.type === "edit") await updateVolume(mode.row, values!, token, live?.repriced ?? false, reason, key, signal);
+      else await setVolumeStatus(mode.row, mode.ativo, token, live?.repriced ?? false, reason, key, signal);
       if (!signal.aborted) onSaved();
     } catch (e) {
       if (signal.aborted) return;

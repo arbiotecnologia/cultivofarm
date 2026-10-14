@@ -635,3 +635,4 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Global restante (bloqueia tenant): composição de existentes, fichas/fontes/alvos/problemas/CQ, famílias Biológicos/Químicos/Fertilizantes (sementes futuras), Storage/regulatórios, writer SA de tabelas auxiliares.
 - [ ] Global restante (aberto): composição de existentes; preços/apresentações/B2B; fichas/fontes/alvos/problemas/CQ writers SA; famílias Biológicos/Químicos/Fertilizantes (sementes futuras); Storage/regulatórios.
 - [ ] Fase tenant (exibir/ocultar, itens próprios) — bloqueada até fechar o cadastro global.
+- [ ] Volumes rev.3 (overflow 22003 atômico + repriced no recibo): candidato pronto, aguarda revisão independente/aplicação externa.

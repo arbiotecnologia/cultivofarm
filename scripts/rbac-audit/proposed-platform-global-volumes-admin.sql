@@ -304,6 +304,8 @@ BEGIN
   v_replay:=platform_private.catalog_entity_replay(v_actor,'create_global_volume',v_req,p_reason,p_idempotency_key);
   IF v_replay IS NOT NULL THEN RETURN v_replay; END IF;
   v_before:=platform_private.catalog_volume_parent(p_item_tipo,p_item_id,true);
+  -- Overflow de derivados/preços do pai (p.ex. numeric(10,2) histórico) = rejeição de domínio atômica (sem ampliar tipos).
+  BEGIN
   INSERT INTO public.catalogo_volumes (item_tipo,produto_id,microrganismo_id,volume_ml,rotulo,preco_brl,moeda,ativo,ordem)
   VALUES (p_item_tipo, CASE WHEN p_item_tipo='produto' THEN p_item_id END, CASE WHEN p_item_tipo='microrganismo' THEN p_item_id END,
     (v->>'volume_ml')::numeric, v->>'rotulo', (v->>'preco_brl')::numeric, 'BRL', false, COALESCE((v->>'ordem')::int,0))
@@ -311,6 +313,9 @@ BEGIN
   PERFORM platform_private.catalog_volume_assert_row(v_id,p_item_tipo,p_item_id);
   -- Nasce inativa: qualquer alteração no pai é falha (não apaga preço legado silenciosamente).
   v_settle:=platform_private.catalog_volume_settle(p_item_tipo,p_item_id,v_before,false,false,false,NULL);
+  EXCEPTION WHEN numeric_value_out_of_range THEN
+    RAISE EXCEPTION USING ERRCODE='22003', MESSAGE='catalog_volume_price_out_of_range';
+  END;
   v_row:=platform_private.catalog_volume_row(v_id);
   v_receipt:=pg_catalog.jsonb_build_object('id',v_id,'item_tipo',p_item_tipo,'item_id',p_item_id,'ativo',false,'updated_at',v_row->'updated_at',
     'repriced',false,'idempotency_key',p_idempotency_key,'audit_id',gen_random_uuid(),'idempotent',false);
@@ -353,6 +358,9 @@ BEGIN
   IF p_confirm_token IS NOT NULL AND p_confirm_token IS DISTINCT FROM v_token THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_preview_stale'; END IF;
   v_before:=platform_private.catalog_volume_row(p_id);
+  -- Overflow em derivados ou na coluna de preço do pai (limite depende do tipo do pai e da dose/ha reais) =>
+  -- 22003 de domínio; a transação inteira é revertida (linha, pai e ledger intactos). 55000/40001 passam inalterados.
+  BEGIN
   UPDATE public.catalogo_volumes SET
     volume_ml=CASE WHEN v ? 'volume_ml' THEN (v->>'volume_ml')::numeric ELSE volume_ml END,
     preco_brl=CASE WHEN v ? 'preco_brl' THEN (v->>'preco_brl')::numeric ELSE preco_brl END,
@@ -369,6 +377,9 @@ BEGIN
   -- com token válido (já conferido acima): segue.
   v_settle:=platform_private.catalog_volume_settle(v_tipo,v_item,v_parent,v_old.ativo OR (v_row->>'ativo')::boolean,
     p_confirm_token IS NOT NULL,true,v_token);
+  EXCEPTION WHEN numeric_value_out_of_range THEN
+    RAISE EXCEPTION USING ERRCODE='22003', MESSAGE='catalog_volume_price_out_of_range';
+  END;
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'item_tipo',v_tipo,'item_id',v_item,'ativo',(v_row->>'ativo')::boolean,
     'updated_at',v_row->'updated_at','repriced',v_settle->'repriced','idempotency_key',p_idempotency_key,'audit_id',gen_random_uuid(),'idempotent',false);
   PERFORM platform_private.catalog_entity_audit(v_actor,p_operation,p_reason,p_idempotency_key,v_req,v_receipt,

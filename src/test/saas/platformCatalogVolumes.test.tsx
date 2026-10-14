@@ -81,11 +81,27 @@ describe("decimais sem perda de precisão", () => {
   });
   it("recibo de update/status com item_tipo ou item_id divergente é falha", async () => {
     handler = (_n, a) => receipt(a, { ativo: true, item_id: "00000000-0000-4000-8000-000000000999" });
-    await expect(updateVolume(row, { volume_ml: "1000", preco_brl: "130", rotulo: "1 L", ordem: 0 }, TOK1, "Motivo válido aqui",
+    await expect(updateVolume(row, { volume_ml: "1000", preco_brl: "130", rotulo: "1 L", ordem: 0 }, TOK1, false, "Motivo válido aqui",
       "00000000-0000-4000-8000-000000000197", new AbortController().signal)).rejects.toThrow();
     handler = (_n, a) => receipt(a, { item_tipo: "microrganismo" });
-    await expect(setVolumeStatus(row, false, TOK1, "Motivo válido aqui", "00000000-0000-4000-8000-000000000196",
+    await expect(setVolumeStatus(row, false, TOK1, false, "Motivo válido aqui", "00000000-0000-4000-8000-000000000196",
       new AbortController().signal)).rejects.toThrow();
+  });
+  it("recibo com repriced diferente da prévia é falha; igual é aceito", async () => {
+    const vals = { volume_ml: "1000", preco_brl: "130", rotulo: "1 L", ordem: 0 };
+    handler = (_n, a) => receipt(a, { ativo: true, repriced: false });
+    await expect(updateVolume({ ...row, ativo: true }, vals, TOK1, true, "Motivo válido aqui",
+      "00000000-0000-4000-8000-000000000195", new AbortController().signal)).rejects.toThrow();
+    handler = (_n, a) => receipt(a, { ativo: true, repriced: true });
+    await expect(updateVolume({ ...row, ativo: true }, vals, TOK1, true, "Motivo válido aqui",
+      "00000000-0000-4000-8000-000000000194", new AbortController().signal)).resolves.toBeTruthy();
+    // sem token o servidor nunca pode ter reprecificado
+    handler = (_n, a) => receipt(a, { repriced: true });
+    await expect(setVolumeStatus(row, false, null, true, "Motivo válido aqui", "00000000-0000-4000-8000-000000000193",
+      new AbortController().signal)).rejects.toThrow();
+  });
+  it("overflow de preço vira mensagem acionável", () => {
+    expect(volumeError({ code: "22003", message: "catalog_volume_price_out_of_range" }).message).toMatch(/excede o limite/);
   });
 });
 
@@ -95,7 +111,7 @@ describe("diálogo de apresentações", () => {
     expect((await screen.findAllByText(/R\$ 123,45\/L/))[0]).toBeTruthy();
   });
   it("primeira ação em ativa pede prévia sem token e mostra projeção exata antes de confirmar", async () => {
-    handler = (n, a) => n === "platform_read_global_item_volumes" ? { data: page(), error: null } : a.p_confirm_token ? receipt(a) : need();
+    handler = (n, a) => n === "platform_read_global_item_volumes" ? { data: page(), error: null } : a.p_confirm_token ? receipt(a, { repriced: true }) : need();
     mount();
     fireEvent.click(await screen.findByRole("button", { name: "Arquivar 1 L" }));
     expect(screen.queryByLabelText(/Confirmo o efeito comercial/)).toBeNull();
@@ -141,7 +157,7 @@ describe("diálogo de apresentações", () => {
       if (n === 1) return need({ token: TOK1 });
       if (a.p_confirm_token === TOK1) return { data: null, error: { code: "40001", message: "catalog_volume_preview_stale" } };
       if (!a.p_confirm_token) return need({ token: TOK2 });
-      return a.p_confirm_token === TOK2 ? receipt(a) : { data: null, error: { code: "40001", message: "x" } };
+      return a.p_confirm_token === TOK2 ? receipt(a, { repriced: true }) : { data: null, error: { code: "40001", message: "x" } };
     };
     mount();
     fireEvent.click(await screen.findByRole("button", { name: "Arquivar 1 L" }));

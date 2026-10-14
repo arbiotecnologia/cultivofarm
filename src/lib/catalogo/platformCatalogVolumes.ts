@@ -73,6 +73,9 @@ export function volumeError(error: unknown): Error {
     if (p.success) return new VolumeConfirmationRequired(p.data.token, p.data.repriced, p.data.parent_before, p.data.parent_after);
     return new Error("Não foi possível obter a prévia do servidor. Reabra para conferir.");
   }
+  if (e.code === "22003" && e.message === "catalog_volume_price_out_of_range") {
+    return new Error("O preço resultante excede o limite aceito pelo cadastro deste item (preço por litro, dose ou hectare). Revise volume e preço; nada foi alterado.");
+  }
   if (e.code === "40001") return new Error("A apresentação ou o item mudou, ou a solicitação já foi usada. Reabra para conferir.");
   if (e.code === "42501") return new Error("Sem permissão para alterar apresentações globais.");
   if (e.code === "23505") return new Error("Já existe uma apresentação ativa com este volume para o item.");
@@ -122,7 +125,10 @@ export function volumePatch(row: VolumeRow, values: VolumeValues) {
   return patch;
 }
 
-export async function updateVolume(row: VolumeRow, values: VolumeValues, token: string | null, reason: string, key: string, signal: AbortSignal) {
+/** Sem token o servidor só conclui sem reprecificar; com token, o recibo deve repetir o `repriced` da prévia (não recalculado no cliente). */
+const expectRepriced = (token: string | null, previewRepriced: boolean) => (token === null ? false : previewRepriced);
+
+export async function updateVolume(row: VolumeRow, values: VolumeValues, token: string | null, previewRepriced: boolean, reason: string, key: string, signal: AbortSignal) {
   valuesSchema.parse(values);
   const patch = volumePatch(row, values);
   if (Object.keys(patch).length === 0) throw new Error("Nenhuma alteração para salvar.");
@@ -130,15 +136,17 @@ export async function updateVolume(row: VolumeRow, values: VolumeValues, token: 
     p_confirm_token: checkToken(token), p_reason: reasonSchema.parse(reason), p_idempotency_key: key }).abortSignal(signal);
   if (signal.aborted) throw new Error("Solicitação encerrada.");
   if (error) throw volumeError(error);
-  return confirmReceipt(data, key, (r) => sameTarget(r, row) && r.ativo === row.ativo && r.updated_at !== row.updated_at);
+  const rep = expectRepriced(token, previewRepriced);
+  return confirmReceipt(data, key, (r) => sameTarget(r, row) && r.ativo === row.ativo && r.updated_at !== row.updated_at && r.repriced === rep);
 }
 
-export async function setVolumeStatus(row: VolumeRow, ativo: boolean, token: string | null, reason: string, key: string, signal: AbortSignal) {
+export async function setVolumeStatus(row: VolumeRow, ativo: boolean, token: string | null, previewRepriced: boolean, reason: string, key: string, signal: AbortSignal) {
   const { data, error } = await rpc()("platform_set_global_volume_status", { p_id: row.id, p_expected_updated_at: row.updated_at, p_ativo: ativo,
     p_confirm_token: checkToken(token), p_reason: reasonSchema.parse(reason), p_idempotency_key: key }).abortSignal(signal);
   if (signal.aborted) throw new Error("Solicitação encerrada.");
   if (error) throw volumeError(error);
-  return confirmReceipt(data, key, (r) => sameTarget(r, row) && r.ativo === ativo && r.updated_at !== row.updated_at);
+  const rep = expectRepriced(token, previewRepriced);
+  return confirmReceipt(data, key, (r) => sameTarget(r, row) && r.ativo === ativo && r.updated_at !== row.updated_at && r.repriced === rep);
 }
 
 /** Exibe decimal-string em BRL sem converter para float além da formatação. */
