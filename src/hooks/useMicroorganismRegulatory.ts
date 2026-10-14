@@ -12,6 +12,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
 
 
@@ -306,10 +307,21 @@ type RegulatoryRpcClient = {
   }>;
 };
 
+/**
+ * Contenção P1 (migration 20261014195911 global_catalog_regulatory_write_containment):
+ * dossiês regulatórios são catálogo GLOBAL. Somente leituras overview/detail chegam à rede;
+ * qualquer outra RPC falha antes da chamada. Writer SA regulatório auditado é pendente.
+ */
+export const REGULATORY_READ_RPCS: ReadonlySet<string> = new Set([
+  "rpc_microorganism_regulatory_overview",
+  "rpc_regulatory_dossier_detail",
+]);
+
 async function regulatoryRpc<K extends RegulatoryFn>(
   fn: K,
   args: RegulatoryRpcArgs,
 ): Promise<Json | string | null> {
+  if (!REGULATORY_READ_RPCS.has(fn)) assertGlobalCatalogWriteBlocked();
   const rpcClient: RegulatoryRpcClient = supabase as never;
   const { data, error } = await rpcClient.rpc(fn, args);
   if (error) {

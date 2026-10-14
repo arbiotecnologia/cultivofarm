@@ -289,10 +289,7 @@ interface DossierSheetProps {
 function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
   const microId = row?.microorganism_id ?? null;
   const detail = useRegulatoryDossierDetail(microId, { enabled: open });
-  const actions = useRegulatoryActions(microId);
 
-  const [justifications, setJustifications] = useState<Record<string, string>>({});
-  const [reviewNote, setReviewNote] = useState("");
 
   const dossier = detail.data?.dossier ?? null;
   const checklist = detail.data?.checklist ?? [];
@@ -301,42 +298,6 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
   const documents = detail.data?.documents ?? [];
   const snapshots = detail.data?.snapshots ?? [];
 
-  async function run(label: string, fn: () => Promise<unknown>) {
-    try {
-      await fn();
-      toast({ title: label, description: "Registrado com trilha de auditoria." });
-    } catch (err) {
-      toast({
-        title: "Ação recusada pelo servidor",
-        description: errorMessage(err),
-        variant: "destructive",
-      });
-    }
-  }
-
-  async function setChecklistState(
-    itemKey: ChecklistKey,
-    state: ChecklistState,
-  ) {
-    if (!dossier) return;
-    const justification = (justifications[itemKey] ?? "").trim();
-    if (state === "NOT_APPLICABLE" && justification.length === 0) {
-      toast({
-        title: "Justificativa obrigatória",
-        description: "Marcar como não aplicável exige justificativa registrada.",
-        variant: "destructive",
-      });
-      return;
-    }
-    await run("Checklist atualizado", () =>
-      actions.setChecklist.mutateAsync({
-        dossierId: dossier.id,
-        itemKey,
-        state,
-        justification: justification.length > 0 ? justification : null,
-      }),
-    );
-  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -349,6 +310,10 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
               : "Nenhum dossiê existente para este microrganismo."}
           </SheetDescription>
         </SheetHeader>
+        <Alert className="mt-4">
+          <AlertTitle>Modo consulta</AlertTitle>
+          <AlertDescription>Dossiês regulatórios são catálogo global; alterações não estão disponíveis para empresas.</AlertDescription>
+        </Alert>
 
         {detail.isLoading && (
           <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -359,15 +324,9 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
         {!detail.isLoading && !dossier && (
           <div className="py-6 space-y-3">
             <p className="text-sm text-muted-foreground">
-              Nenhum dossiê registrado. Criar rascunho não preenche nenhum dado
-              regulatório — apenas abre a estrutura e o checklist obrigatório.
+              Nenhum dossiê registrado. Modo consulta: o cadastro regulatório global
+              será feito pela gestão da plataforma.
             </p>
-            <Button
-              onClick={() => run("Rascunho criado", () => actions.ensureDraft.mutateAsync())}
-              disabled={actions.ensureDraft.isPending}
-            >
-              Criar rascunho
-            </Button>
           </div>
         )}
 
@@ -385,28 +344,25 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
 
             {/* FATOS ---------------------------------------------------- */}
             <TabsContent value="fatos" className="space-y-3 pt-4">
-              <DraftFactsForm
-                dossierId={dossier.id}
-                editable={dossier.status === "DRAFT" || dossier.status === "PENDING_REVIEW"}
-                initial={{
-                  regulatory_category: dossier.regulatory_category,
-                  strain_code: dossier.strain_code,
-                  strain_name: dossier.strain_name,
-                  formulation: dossier.formulation,
-                  label_guarantee: dossier.label_guarantee,
-                  mapa_status: dossier.mapa_status,
-                  mapa_registration_number: dossier.mapa_registration_number,
-                  mapa_holder: dossier.mapa_holder,
-                  mapa_valid_until: dossier.mapa_valid_until,
-                  mapa_not_applicable_reason: dossier.mapa_not_applicable_reason,
-                }}
-                onSave={(patch) =>
-                  run("Fatos regulatórios atualizados", () =>
-                    actions.updateDraft.mutateAsync({ dossierId: dossier.id, patch }),
-                  )
-                }
-                saving={actions.updateDraft.isPending}
-              />
+              <dl className="grid gap-2 text-sm sm:grid-cols-2" data-testid="regulatorio-fatos-consulta">
+                {([
+                  ["Categoria regulatória", dossier.regulatory_category],
+                  ["Código da cepa", dossier.strain_code],
+                  ["Nome da cepa", dossier.strain_name],
+                  ["Formulação", dossier.formulation],
+                  ["Garantia de rótulo", dossier.label_guarantee],
+                  ["Situação MAPA", dossier.mapa_status],
+                  ["Registro MAPA", dossier.mapa_registration_number],
+                  ["Titular MAPA", dossier.mapa_holder],
+                  ["Validade MAPA", dossier.mapa_valid_until],
+                  ["Motivo de não aplicabilidade MAPA", dossier.mapa_not_applicable_reason],
+                ] as const).map(([k, v]) => (
+                  <div key={k} className="min-w-0 break-words">
+                    <dt className="text-xs text-muted-foreground">{k}</dt>
+                    <dd>{text(v as string | null | undefined)}</dd>
+                  </div>
+                ))}
+              </dl>
             </TabsContent>
 
             {/* CHECKLIST ------------------------------------------------ */}
@@ -434,41 +390,6 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
                       Justificativa: {item.justification}
                     </p>
                   )}
-                  <Textarea
-                    rows={2}
-                    placeholder="Justificativa (obrigatória para 'não aplicável')"
-                    aria-label={`Justificativa para ${CHECKLIST_LABELS[item.item_key] ?? item.item_key}`}
-                    value={justifications[item.item_key] ?? ""}
-                    onChange={(e) =>
-                      setJustifications((p) => ({ ...p, [item.item_key]: e.target.value }))
-                    }
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setChecklistState(item.item_key, "CONFIRMED")}
-                      disabled={actions.setChecklist.isPending}
-                    >
-                      Confirmar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setChecklistState(item.item_key, "NOT_APPLICABLE")}
-                      disabled={actions.setChecklist.isPending}
-                    >
-                      Não aplicável
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setChecklistState(item.item_key, "PENDING")}
-                      disabled={actions.setChecklist.isPending}
-                    >
-                      Reabrir
-                    </Button>
-                  </div>
                 </div>
               ))}
             </TabsContent>
@@ -547,56 +468,8 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
                       antes da definição da finalidade regulatória.
                     </p>
                   )}
-                  {c.status === "PROPOSED" && (
-
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          run("Candidato aprovado", () =>
-                            actions.decideNcmCandidate.mutateAsync({
-                              candidateId: c.id,
-                              approve: true,
-                              reason: reviewNote.trim() || "Aprovado após análise fiscal do dossiê.",
-                            }),
-                          )
-                        }
-                        disabled={
-                          actions.decideNcmCandidate.isPending ||
-                          c.confidence === "CONDITIONAL"
-                        }
-
-                      >
-                        Aprovar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          run("Candidato rejeitado", () =>
-                            actions.decideNcmCandidate.mutateAsync({
-                              candidateId: c.id,
-                              approve: false,
-                              reason: reviewNote.trim() || "Rejeitado após análise fiscal do dossiê.",
-                            }),
-                          )
-                        }
-                        disabled={actions.decideNcmCandidate.isPending}
-                      >
-                        Rejeitar
-                      </Button>
-                    </div>
-                  )}
                 </div>
               ))}
-              <NcmCandidateForm
-                onSubmit={(input) =>
-                  run("Candidato registrado", () =>
-                    actions.addNcmCandidate.mutateAsync({ dossierId: dossier.id, ...input }),
-                  )
-                }
-                pending={actions.addNcmCandidate.isPending}
-              />
             </TabsContent>
 
             {/* DOCUMENTOS ----------------------------------------------- */}
@@ -625,95 +498,6 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
                 <ReviewBadge label="Técnica" value={dossier.technical_review_status} />
                 <ReviewBadge label="Regulatória" value={dossier.regulatory_review_status} />
                 <ReviewBadge label="Fiscal" value={dossier.fiscal_review_status} />
-              </div>
-              <Textarea
-                rows={3}
-                placeholder="Justificativa da decisão (obrigatória)"
-                aria-label="Justificativa da decisão de revisão"
-                value={reviewNote}
-                onChange={(e) => setReviewNote(e.target.value)}
-              />
-              <div className="flex flex-wrap gap-2">
-                {(["TECHNICAL", "REGULATORY", "FISCAL"] as const).map((layer) => (
-                  <div key={layer} className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={reviewNote.trim().length === 0 || actions.reviewDecide.isPending}
-                      onClick={() =>
-                        run("Revisão registrada", () =>
-                          actions.reviewDecide.mutateAsync({
-                            dossierId: dossier.id,
-                            layer,
-                            decision: "APPROVED",
-                            justification: reviewNote.trim(),
-                          }),
-                        )
-                      }
-                    >
-                      Aprovar {layer === "TECHNICAL" ? "técnica" : layer === "REGULATORY" ? "regulatória" : "fiscal"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={reviewNote.trim().length === 0 || actions.reviewDecide.isPending}
-                      onClick={() =>
-                        run("Revisão registrada", () =>
-                          actions.reviewDecide.mutateAsync({
-                            dossierId: dossier.id,
-                            layer,
-                            decision: "REJECTED",
-                            justification: reviewNote.trim(),
-                          }),
-                        )
-                      }
-                    >
-                      Rejeitar
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <Separator />
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={dossier.status !== "DRAFT" || actions.submit.isPending}
-                  onClick={() => run("Dossiê submetido", () => actions.submit.mutateAsync(dossier.id))}
-                >
-                  Submeter para revisão
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={actions.publish.isPending}
-                  onClick={() => run("Dossiê publicado", () => actions.publish.mutateAsync(dossier.id))}
-                >
-                  Publicar (validar)
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={reviewNote.trim().length === 0 || actions.block.isPending}
-                  onClick={() =>
-                    run("Dossiê bloqueado", () =>
-                      actions.block.mutateAsync({ dossierId: dossier.id, reason: reviewNote.trim() }),
-                    )
-                  }
-                >
-                  Bloquear
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={reviewNote.trim().length === 0 || actions.newVersion.isPending}
-                  onClick={() =>
-                    run("Nova versão aberta", () => actions.newVersion.mutateAsync(reviewNote.trim()))
-                  }
-                >
-                  Nova versão
-                </Button>
               </div>
 
               {snapshots.length > 0 && (
@@ -793,145 +577,6 @@ interface DraftFacts {
   mapa_not_applicable_reason: string | null;
 }
 
-function DraftFactsForm({
-  initial, editable, saving, onSave,
-}: {
-  dossierId: string;
-  initial: DraftFacts;
-  editable: boolean;
-  saving: boolean;
-  onSave: (patch: Partial<DraftFacts>) => void;
-}) {
-  const [form, setForm] = useState<DraftFacts>(initial);
-  const set = <K extends keyof DraftFacts>(k: K, v: DraftFacts[K]) =>
-    setForm((p) => ({ ...p, [k]: v }));
-
-  const mapaNotApplicable = form.mapa_status === "NOT_APPLICABLE";
-
-  return (
-    <div className="space-y-3">
-      {!editable && (
-        <Alert>
-          <AlertTitle>Dossiê não editável</AlertTitle>
-          <AlertDescription>
-            Somente rascunhos ou dossiês em revisão aceitam alteração de fatos.
-          </AlertDescription>
-        </Alert>
-      )}
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-categoria">Finalidade regulatória</Label>
-          <Select
-            value={form.regulatory_category ?? ""}
-            onValueChange={(v) => set("regulatory_category", v)}
-            disabled={!editable}
-          >
-            <SelectTrigger id="reg-categoria"><SelectValue placeholder={NOT_INFORMED} /></SelectTrigger>
-            <SelectContent>
-              {REGULATORY_CATEGORY_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-mapa-status">Situação MAPA</Label>
-          <Select
-            value={form.mapa_status ?? ""}
-            onValueChange={(v) => set("mapa_status", v)}
-            disabled={!editable}
-          >
-            <SelectTrigger id="reg-mapa-status"><SelectValue placeholder={NOT_INFORMED} /></SelectTrigger>
-            <SelectContent>
-              {MAPA_STATUS_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-cepa-codigo">Código da cepa</Label>
-          <Input
-            id="reg-cepa-codigo" disabled={!editable}
-            value={form.strain_code ?? ""}
-            onChange={(e) => set("strain_code", e.target.value)}
-          />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-cepa-nome">Nome da cepa</Label>
-          <Input
-            id="reg-cepa-nome" disabled={!editable}
-            value={form.strain_name ?? ""}
-            onChange={(e) => set("strain_name", e.target.value)}
-          />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-formulacao">Formulação</Label>
-          <Input
-            id="reg-formulacao" disabled={!editable}
-            value={form.formulation ?? ""}
-            onChange={(e) => set("formulation", e.target.value)}
-          />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-registro">Nº de registro MAPA</Label>
-          <Input
-            id="reg-registro" disabled={!editable || mapaNotApplicable}
-            value={form.mapa_registration_number ?? ""}
-            onChange={(e) => set("mapa_registration_number", e.target.value)}
-          />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-titular">Titular / fabricante</Label>
-          <Input
-            id="reg-titular" disabled={!editable}
-            value={form.mapa_holder ?? ""}
-            onChange={(e) => set("mapa_holder", e.target.value)}
-          />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-validade">Validade do registro</Label>
-          <Input
-            id="reg-validade" type="date" disabled={!editable || mapaNotApplicable}
-            value={form.mapa_valid_until ?? ""}
-            onChange={(e) => set("mapa_valid_until", e.target.value || null)}
-          />
-        </div>
-      </div>
-
-      <div className="grid min-w-0 content-start gap-1.5">
-        <Label htmlFor="reg-garantia">Composição e garantia de rótulo</Label>
-        <Textarea
-          id="reg-garantia" rows={3} disabled={!editable}
-          value={form.label_guarantee ?? ""}
-          onChange={(e) => set("label_guarantee", e.target.value)}
-        />
-      </div>
-
-      {mapaNotApplicable && (
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="reg-mapa-na">Justificativa de não aplicabilidade do registro</Label>
-          <Textarea
-            id="reg-mapa-na" rows={2} disabled={!editable}
-            value={form.mapa_not_applicable_reason ?? ""}
-            onChange={(e) => set("mapa_not_applicable_reason", e.target.value)}
-          />
-        </div>
-      )}
-
-      <Button
-        disabled={!editable || saving}
-        onClick={() => onSave(form)}
-      >
-        {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />}
-        Salvar fatos
-      </Button>
-    </div>
-  );
-}
-
-const CONFIDENCE_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CONDITIONAL"] as const;
-
 function confidenceLabel(value: string | null | undefined): string {
   switch (value) {
     case "HIGH": return "Confiança alta";
@@ -951,100 +596,6 @@ function confidenceBadgeVariant(
     case "CONDITIONAL": return "destructive";
     default: return "outline";
   }
-}
-
-function NcmCandidateForm({
-  onSubmit, pending,
-}: {
-  onSubmit: (input: {
-    ncm: string; justification: string; cest: string | null; confidence: string;
-    sourceKey: string; sourceUrl: string | null; consultedAt: string | null;
-  }) => void;
-  pending: boolean;
-}) {
-  const [ncm, setNcm] = useState("");
-  const [cest, setCest] = useState("");
-  const [justification, setJustification] = useState("");
-  const [sourceKey, setSourceKey] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [consultedAt, setConsultedAt] = useState("");
-  const [confidence, setConfidence] = useState<string>("LOW");
-
-  const valid =
-    /^\d{8}$/.test(ncm.replace(/\D/g, "")) &&
-    justification.trim().length > 0 &&
-    sourceKey.trim().length > 0 &&
-    CONFIDENCE_OPTIONS.includes(confidence as (typeof CONFIDENCE_OPTIONS)[number]);
-
-
-  return (
-    <div className="border rounded-md p-3 space-y-2">
-      <div className="text-sm font-medium">Registrar candidato de NCM</div>
-      <div className="grid gap-2 md:grid-cols-2">
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="cand-ncm">NCM (8 dígitos)</Label>
-          <Input id="cand-ncm" value={ncm} onChange={(e) => setNcm(e.target.value)} />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="cand-cest">CEST (opcional)</Label>
-          <Input id="cand-cest" value={cest} onChange={(e) => setCest(e.target.value)} />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="cand-fonte">Chave da fonte oficial</Label>
-          <Input id="cand-fonte" value={sourceKey} onChange={(e) => setSourceKey(e.target.value)} />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="cand-url">URL da fonte</Label>
-          <Input id="cand-url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="cand-data">Data da consulta</Label>
-          <Input id="cand-data" type="date" value={consultedAt} onChange={(e) => setConsultedAt(e.target.value)} />
-        </div>
-        <div className="grid min-w-0 content-start gap-1.5">
-          <Label htmlFor="cand-conf">Confiança da classificação</Label>
-          <select
-            id="cand-conf"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={confidence}
-            onChange={(e) => setConfidence(e.target.value)}
-          >
-            {CONFIDENCE_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{confidenceLabel(opt)}</option>
-            ))}
-          </select>
-          {confidence === "CONDITIONAL" && (
-            <p className="text-xs text-muted-foreground">
-              Candidato condicional não pode ser aprovado até a definição da alegação de uso.
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid min-w-0 content-start gap-1.5">
-        <Label htmlFor="cand-just">Justificativa técnica (TIPI / notas explicativas)</Label>
-        <Textarea id="cand-just" rows={3} value={justification} onChange={(e) => setJustification(e.target.value)} />
-      </div>
-      <Button
-        size="sm"
-        disabled={!valid || pending}
-        onClick={() =>
-          onSubmit({
-            ncm: ncm.replace(/\D/g, ""),
-            cest: cest.trim() || null,
-            justification: justification.trim(),
-            sourceKey: sourceKey.trim(),
-            sourceUrl: sourceUrl.trim() || null,
-            consultedAt: consultedAt || null,
-            confidence,
-
-          })
-        }
-      >
-        Registrar candidato
-      </Button>
-    </div>
-  );
 }
 
 export default RegulatorioMicrorganismosSecao;
