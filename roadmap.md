@@ -628,6 +628,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Regulatórios e Storage do catálogo — UNVERIFIED.
 - [x] P2 texto Volumes — corrigido para "modo consulta" (local, aguarda publicação).
 - [x] P1 associação fiscal global de microrganismo — contida externamente (20261014192417) + hook bloqueado e ações ocultas em FiscalProdutos (local, não publicado).
-- [ ] Gestão GLOBAL microrganismos/culturas — revisão ff1ee511 corrigida (preço protegido, preflight, runtime-test ampliado, precisão UFC); UI local + SQL candidato `proposed-platform-global-micro-cultura-admin.sql` e runtime-test NÃO aplicados; aguarda revisão/aplicação Codex.
+- [ ] Gestão GLOBAL microrganismos/culturas — SQL APLICADO pelo Codex no canônico (migration `platform_global_micro_culture_admin`, revisão 113321bf); runtime externo 77 PASS/0 FAIL com ROLLBACK (parâmetros psql→UUIDs de atores existentes, contagem de NULL como FAIL); 34 testes novos/fiscais PASS. HTML inválido corrigido (Badge div→fora de p em PlatformCatalogEntityPanel; 23/23 testes focados + lint PASS). UI ainda NÃO publicada; cadastro global completo e tenant abertos.
 - [ ] Global restante (aberto): composição de existentes; preços/apresentações/B2B; fichas/fontes/alvos/problemas/CQ writers SA; famílias Biológicos/Químicos/Fertilizantes (sementes futuras); Storage/regulatórios.
 - [ ] Fase tenant (exibir/ocultar, itens próprios) — bloqueada até fechar o cadastro global.

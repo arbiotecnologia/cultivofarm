@@ -57,7 +57,7 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
       className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 break-words">
         <p className="font-medium">{row.nome}</p>
-        <p className="text-sm text-muted-foreground">{row.codigo ?? ""} <Badge variant={row.ativo ? "secondary" : "outline"}>{row.ativo ? "Ativo" : "Inativo"}</Badge></p>
+        <div className="text-sm text-muted-foreground">{row.codigo ?? ""} <Badge variant={row.ativo ? "secondary" : "outline"}>{row.ativo ? "Ativo" : "Inativo"}</Badge></div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" className="min-h-10" aria-label={`Editar ${row.nome}`}
