@@ -61,6 +61,7 @@ export function familyError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? (error as { code?: unknown }).code : undefined;
   if (code === "40001") return "O produto mudou ou esta solicitação já foi usada. Reabra para conferir os dados.";
   if (code === "42501") return "Sem permissão para classificar o catálogo global.";
+  if (code === "23514") return "Há declarações de composição incompatíveis com esta família. Ajuste a composição antes de reclassificar.";
   return "Não foi possível confirmar a classificação. Confira os dados antes de tentar novamente.";
 }
 

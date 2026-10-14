@@ -1,6 +1,6 @@
-# Plano — Composição de produtos para todas as famílias (somente análise, PAUSADO)
+# Plano — Composição de produtos para todas as famílias (REFINADO e implementado como candidato local)
 
-Situação: a opção B NÃO foi aprovada. Antes de qualquer implementação ela precisa de refinamento: não duplicar a fonte de verdade, não exigir recadastro do Bombarbio, e o rollback deve preservar os dados (sem DROP por padrão). Este requisito fica guardado para o próximo recorte.
+Atualização 22:05 UTC: o refinamento aprovado mantém `formulacoes` como fonte canônica, sem cópia e sem recadastro, com rollback que só revoga o EXECUTE. Detalhes em docs/auditorias/catalogo-composicao-todas-familias.md. Histórico: a opção B original NÃO foi aprovada. Antes de qualquer implementação ela precisa de refinamento: não duplicar a fonte de verdade, não exigir recadastro do Bombarbio, e o rollback deve preservar os dados (sem DROP por padrão). Este requisito fica guardado para o próximo recorte.
 
 Escopo desta rodada: análise e plano. Nada de código, DDL, dados ou publicação. A revisão/aplicação de 5c78f665 segue separada, feita pelo usuário. Composição completa para as três famílias **não está implementada**.
 
