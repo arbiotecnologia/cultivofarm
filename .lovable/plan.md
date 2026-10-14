@@ -1,16 +1,18 @@
-# Plano — Composição de produtos para todas as famílias (somente análise)
+# Plano — Composição de produtos para todas as famílias (somente análise, PAUSADO)
+
+Situação: a opção B NÃO foi aprovada. Antes de qualquer implementação ela precisa de refinamento: não duplicar a fonte de verdade, não exigir recadastro do Bombarbio, e o rollback deve preservar os dados (sem DROP por padrão). Este requisito fica guardado para o próximo recorte.
 
 Escopo desta rodada: análise e plano. Nada de código, DDL, dados ou publicação. A revisão/aplicação de 5c78f665 segue separada, feita pelo usuário. Composição completa para as três famílias **não está implementada**.
 
 ## 1. Inventário observado (leitura nesta rodada + dados informados pelo usuário)
 
 Confirmado nesta rodada lendo o código:
-- `src/lib/protocolos/composicaoSync.ts`: `ComposicaoItem.microrganismo_id: string | null`. Aceita linha só com `component_insumo_id`, deduplica por micro e fixa `unidade: "mL"`. **Divergência:** segundo o usuário, `formulacoes.microrganismo_id` é NOT NULL, então uma linha só de insumo falharia no banco. Não verificado por SQL nesta rodada.
+- `src/lib/protocolos/composicaoSync.ts`: `ComposicaoItem.microrganismo_id: string | null`. Aceita linha só com `component_insumo_id`, deduplica por micro e fixa `unidade: "mL"`. **Divergência:** o inventário SQL confirmado externamente indica `formulacoes.microrganismo_id` NOT NULL, então uma linha só de insumo falharia no banco.
 - `useProductProfile.ts`: busca `microrganismo_id, component_insumo_id, volume_ml, proporcao` e não traz `concentracao/unidade`.
 - `fichaTecnicaProdutoPdf.ts`: imprime "X mL / Y%" e só para microrganismos (insumo some do PDF).
 - `usePartnerOrders.ts`: traz `proporcao, volume_ml, concentracao, unidade`.
 - Outros consumidores: `useCatalogoUnificado`, `usePartnerSimulations`, `ProdutosTab`, `RevisaoTecnicaPanel`, `PedidoItemProdutoInfo`, `beneficiosCombinados`, `ComposicaoProducaoCard` + `composicaoCalc` (normaliza para litros), `NovoPedido`, `SimuladorComercial`, `PlanejamentoProducaoDetalhe` (usam `volume_ml`), além do seed `seedCatalogoARBioV13`.
-- Informado pelo usuário, a confirmar por SQL: colunas `concentracao, unidade, volume_ml, component_insumo_id (FK produtos), proporcao, e_volume_fixo` e `UNIQUE(produto_id, microrganismo_id)`.
+- Confirmado por inventário SQL externo (não executado por mim nesta rodada): colunas `concentracao, unidade, volume_ml, component_insumo_id (FK produtos), proporcao, e_volume_fixo` e `UNIQUE(produto_id, microrganismo_id)`.
 
 Hoje `formulacoes` faz três papéis ao mesmo tempo: receita de produção (mL por 1 L, usada no planejamento e no cockpit), composição exibida na ficha/PDF/B2B e base de cálculo de pedidos. Por isso uma mudança direta nela tem impacto amplo.
 
@@ -29,7 +31,7 @@ A) **Estender `formulacoes`**: liberar `microrganismo_id` NULL e adicionar campo
 
 B) **Nova tabela `produto_composicao_declarada`** (aditiva), com `formulacoes` intacta como receita.
 - A favor: isolada, reversível com DROP, nenhum consumidor atual muda. Biológicos referenciam `microrganismos.id` sem copiar dados.
-- Contra: a composição de biológicos fica em dois lugares (receita e declaração). Isso se resolve com uma "visão de compatibilidade" de leitura, sem cópia automática.
+- Contra (motivo da pausa): a composição de biológicos fica em dois lugares (receita e declaração), o Bombarbio teria de ser recadastrado e o rollback por DROP apagaria dados. Precisa de refinamento, por exemplo um campo de natureza/unidade explícita sobre a fonte atual, ou uma visão única.
 
 C) **Tabela genérica de componentes + catálogo de substâncias químicas/nutrientes.**
 - Mais completa, mas grande demais para agora. Fica como fase futura.
