@@ -9,7 +9,8 @@
 --   * Tabelas ADITIVAS só para o que a receita não representa (justificativa):
 --       - ingrediente ativo (químicos), nutriente (fertilizantes/adubos), outro componente — sem lugar em
 --         `formulacoes` (microrganismo_id é NOT NULL e component_insumo_id aponta para outro produto);
---       - teor garantido de microrganismo (UFC/mL, UFC/g) — atributo distinto do volume de receita.
+--       - concentração declarada OU teor garantido de microrganismo (UFC/mL, UFC/g), à escolha explícita do
+--         usuário (nenhuma chancela é inferida) — atributo distinto do volume de receita.
 --         Referencia microrganismos.id (sem cópia). Proibido quando a receita já informa concentração para o
 --         mesmo micro (mesma medida) e proibido em mL/L (volume pertence à receita).
 --   * Conjunto por produto com situação `rascunho|completo` (completo ≠ ficha/regulatório aprovado).
@@ -87,7 +88,7 @@ CREATE TABLE public.produto_composicao_declaracoes (
   created_at timestamptz NOT NULL DEFAULT now(),
   -- Identidade: micro por ID (sem nome) OU nome explícito (sem micro). IS TRUE fecha brecha de NULL.
   CONSTRAINT pcd_identidade_check CHECK ((
-    (tipo_componente='microrganismo' AND microrganismo_id IS NOT NULL AND componente_nome IS NULL AND natureza='teor_garantido')
+    (tipo_componente='microrganismo' AND microrganismo_id IS NOT NULL AND componente_nome IS NULL)
     OR (tipo_componente<>'microrganismo' AND microrganismo_id IS NULL AND componente_nome IS NOT NULL
         AND char_length(btrim(componente_nome)) BETWEEN 2 AND 160 AND componente_nome = btrim(componente_nome))) IS TRUE),
   -- Quantidade/unidade/base juntas ou todas NULL (rascunho).
@@ -105,9 +106,11 @@ CREATE TABLE public.produto_composicao_declaracoes (
   CONSTRAINT pcd_ordem_unique UNIQUE (produto_id, ordem)
 );
 CREATE UNIQUE INDEX pcd_micro_unique ON public.produto_composicao_declaracoes (produto_id, microrganismo_id) WHERE microrganismo_id IS NOT NULL;
-CREATE UNIQUE INDEX pcd_nome_unique ON public.produto_composicao_declaracoes (produto_id, tipo_componente, lower(componente_nome)) WHERE componente_nome IS NOT NULL;
+-- Identidade normalizada do nome (btrim+lower, igual ao cliente) independe do tipo: impede o mesmo componente como
+-- ingrediente_ativo e outro (ou nutriente e outro). O CHECK de identidade já exige nome sem espaços nas pontas.
+CREATE UNIQUE INDEX pcd_nome_unique ON public.produto_composicao_declaracoes (produto_id, lower(btrim(componente_nome))) WHERE componente_nome IS NOT NULL;
 CREATE INDEX pcd_microrganismo_idx ON public.produto_composicao_declaracoes (microrganismo_id) WHERE microrganismo_id IS NOT NULL;
-COMMENT ON TABLE public.produto_composicao_declaracoes IS 'Declarações de composição não representadas em formulacoes (ingrediente/nutriente/outro e teor UFC de micro). Não é receita, dose nem aprovação regulatória.';
+COMMENT ON TABLE public.produto_composicao_declaracoes IS 'Declarações de composição não representadas em formulacoes (ingrediente/nutriente/outro e concentração/teor UFC de micro). Não é receita, dose, ficha aprovada nem aprovação regulatória.';
 
 -- Sem DML/SELECT direto de clientes; somente funções DEFINER.
 REVOKE ALL ON public.produto_composicao_conjuntos, public.produto_composicao_declaracoes FROM PUBLIC, anon, authenticated;
@@ -179,12 +182,14 @@ CREATE TRIGGER catalog_composition_audit_immutable BEFORE UPDATE OR DELETE ON pu
 FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_audit_immutable();
 
 -- ---------------------------------------------------------------- leitor unificado (origem explícita)
-CREATE FUNCTION platform_private.read_global_product_composition_core(p_produto_id uuid, p_limit integer, p_offset integer) RETURNS jsonb
+-- Receita paginada (p_receita_offset); declarações SEMPRE completas (máx. 50 por CHECK de ordem) para que o
+-- writer, que substitui o conjunto inteiro, nunca opere sobre lista parcial.
+CREATE FUNCTION platform_private.read_global_product_composition_core(p_produto_id uuid, p_limit integer, p_receita_offset integer) RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_p public.produtos%ROWTYPE; v_result jsonb;
 BEGIN
   PERFORM platform_private.catalog_metadata_require_actor();
-  IF p_produto_id IS NULL OR p_limit IS NULL OR p_limit < 1 OR p_limit > 50 OR p_offset IS NULL OR p_offset < 0 OR p_offset > 10000 THEN
+  IF p_produto_id IS NULL OR p_limit IS NULL OR p_limit < 1 OR p_limit > 50 OR p_receita_offset IS NULL OR p_receita_offset < 0 OR p_receita_offset > 10000 THEN
     RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_composition_invalid_query'; END IF;
   SELECT * INTO v_p FROM public.produtos WHERE id = p_produto_id;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='42501', MESSAGE='catalog_composition_unavailable'; END IF;
@@ -193,21 +198,22 @@ BEGIN
            ip.nome AS insumo_nome, f.volume_ml, f.proporcao, f.concentracao, f.unidade, f.e_volume_fixo
     FROM public.formulacoes f JOIN public.microrganismos m ON m.id = f.microrganismo_id
     LEFT JOIN public.produtos ip ON ip.id = f.component_insumo_id
-    WHERE f.produto_id = p_produto_id ORDER BY f.created_at, f.id LIMIT p_limit + 1 OFFSET p_offset
+    WHERE f.produto_id = p_produto_id ORDER BY f.created_at, f.id LIMIT p_limit + 1 OFFSET p_receita_offset
   ), dec AS MATERIALIZED (
     SELECT d.id, d.ordem::int AS ordem, d.tipo_componente, d.microrganismo_id, m.nome AS micro_nome, m.ativo AS micro_ativo,
            d.componente_nome, d.quantidade, d.unidade, d.base, d.natureza
     FROM public.produto_composicao_declaracoes d LEFT JOIN public.microrganismos m ON m.id = d.microrganismo_id
-    WHERE d.produto_id = p_produto_id ORDER BY d.ordem LIMIT p_limit + 1 OFFSET p_offset
+    WHERE d.produto_id = p_produto_id ORDER BY d.ordem LIMIT 51
   )
   SELECT pg_catalog.jsonb_build_object(
     'produto', pg_catalog.jsonb_build_object('id',v_p.id,'nome',v_p.nome,'familia_catalogo',v_p.familia_catalogo,'updated_at',v_p.updated_at),
     'conjunto', (SELECT pg_catalog.jsonb_build_object('status',c.status,'updated_at',c.updated_at)
                  FROM public.produto_composicao_conjuntos c WHERE c.produto_id = p_produto_id),
     'receita', COALESCE((SELECT pg_catalog.jsonb_agg(pg_catalog.to_jsonb(r)) FROM (SELECT * FROM rec LIMIT p_limit) r), '[]'::jsonb),
-    'declaracoes', COALESCE((SELECT pg_catalog.jsonb_agg(pg_catalog.to_jsonb(x) ORDER BY x.ordem) FROM (SELECT * FROM dec LIMIT p_limit) x), '[]'::jsonb),
+    'receita_offset', p_receita_offset,
+    'declaracoes', COALESCE((SELECT pg_catalog.jsonb_agg(pg_catalog.to_jsonb(x) ORDER BY x.ordem) FROM (SELECT * FROM dec LIMIT 50) x), '[]'::jsonb),
     'receita_has_more', (SELECT pg_catalog.count(*) > p_limit FROM rec),
-    'declaracoes_has_more', (SELECT pg_catalog.count(*) > p_limit FROM dec)) INTO v_result;
+    'declaracoes_has_more', (SELECT pg_catalog.count(*) > 50 FROM dec)) INTO v_result;
   RETURN v_result;
 END;
 $$;
@@ -321,9 +327,9 @@ REVOKE ALL ON FUNCTION platform_private.set_global_product_composition_core(uuid
 GRANT EXECUTE ON FUNCTION platform_private.set_global_product_composition_core(uuid,timestamptz,text,jsonb,text,uuid) TO authenticated;
 
 -- ---------------------------------------------------------------- wrappers INVOKER
-CREATE FUNCTION public.platform_read_global_product_composition(p_produto_id uuid, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS jsonb
+CREATE FUNCTION public.platform_read_global_product_composition(p_produto_id uuid, p_limit integer DEFAULT 50, p_receita_offset integer DEFAULT 0) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS
-$$ SELECT platform_private.read_global_product_composition_core(p_produto_id,p_limit,p_offset) $$;
+$$ SELECT platform_private.read_global_product_composition_core(p_produto_id,p_limit,p_receita_offset) $$;
 CREATE FUNCTION public.platform_set_global_product_composition(p_produto_id uuid, p_expected_updated_at timestamptz,
   p_status text, p_itens jsonb, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS

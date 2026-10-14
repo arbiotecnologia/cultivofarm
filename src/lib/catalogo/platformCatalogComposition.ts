@@ -8,7 +8,8 @@ import type { ProductFamily } from "@/lib/catalogo/platformCatalogFamily";
  *
  * Fonte canônica da receita biológica EXISTENTE: `formulacoes` (somente leitura aqui; editor atual preservado).
  * Declarações cobrem só o que a receita não representa: ingrediente ativo, nutriente, outro componente
- * e teor garantido de microrganismo. Nunca copia volume da receita; sem conversão UFC, kg↔L ou densidade.
+ * e concentração/teor UFC de microrganismo (natureza escolhida pelo usuário, nunca inferida). Nunca copia volume
+ * da receita; sem conversão UFC, kg↔L ou densidade.
  */
 export const COMPOSITION_UNITS = ["mL/L", "g/L", "g/kg", "%m/m", "%m/v", "%v/v", "UFC/mL", "UFC/g"] as const;
 export type CompositionUnit = (typeof COMPOSITION_UNITS)[number];
@@ -25,7 +26,7 @@ export const UNIT_BASE: Record<CompositionUnit, CompositionBase> = {
 export const COMPONENT_TYPES = ["microrganismo", "ingrediente_ativo", "nutriente", "outro"] as const;
 export type ComponentType = (typeof COMPONENT_TYPES)[number];
 export const COMPONENT_LABEL: Record<ComponentType, string> = {
-  microrganismo: "Microrganismo (teor garantido)", ingrediente_ativo: "Ingrediente ativo", nutriente: "Nutriente", outro: "Outro componente",
+  microrganismo: "Microrganismo do catálogo", ingrediente_ativo: "Ingrediente ativo", nutriente: "Nutriente", outro: "Outro componente",
 };
 export const FAMILY_COMPONENTS: Record<ProductFamily, readonly ComponentType[]> = {
   biologico: ["microrganismo", "outro"], quimico: ["ingrediente_ativo", "outro"], fertilizante_adubo: ["nutriente", "outro"],
@@ -34,6 +35,9 @@ export const NATUREZAS = ["teor_garantido", "concentracao_declarada"] as const;
 export type Natureza = (typeof NATUREZAS)[number];
 export const NATUREZA_LABEL: Record<Natureza, string> = { teor_garantido: "Teor garantido", concentracao_declarada: "Concentração declarada" };
 export const COMPOSITION_MAX_ITEMS = 50;
+export const RECIPE_PAGE_LIMIT = 50;
+/** Identidade normalizada do nome (igual ao índice SQL lower(btrim(nome))), independente do tipo. */
+export function normalizeComponentName(name: string | null | undefined) { return (name ?? "").trim().toLowerCase(); }
 export const PERCENT_UNITS: readonly CompositionUnit[] = ["%m/m", "%m/v", "%v/v"];
 export const UFC_UNITS: readonly CompositionUnit[] = ["UFC/mL", "UFC/g"];
 
@@ -71,15 +75,15 @@ export function validateDeclarations(family: ProductFamily | null, status: Compo
       else micros.add(it.microrganismo_id);
       if (it.componente_nome) problems.push(`${n}: microrganismo não aceita nome livre.`);
       if (it.unidade && !UFC_UNITS.includes(it.unidade)) problems.push(`${n}: teor de microrganismo só em UFC/mL ou UFC/g (volume fica na receita).`);
-      if (it.natureza !== "teor_garantido") problems.push(`${n}: microrganismo aceita somente teor garantido.`);
       if (it.microrganismo_id && recipeMicroWithConcentration.has(it.microrganismo_id))
         problems.push(`${n}: a receita já informa a concentração deste microrganismo; não duplique a mesma medida.`);
     } else {
       const name = it.componente_nome?.trim() ?? "";
+      const id = normalizeComponentName(name);
       if (it.microrganismo_id) problems.push(`${n}: apenas microrganismos usam o catálogo de microrganismos.`);
       if (name.length < 2 || name.length > 160) problems.push(`${n}: informe o nome do componente (2 a 160 caracteres).`);
-      else if (names.has(`${it.tipo_componente}|${name.toLowerCase()}`)) problems.push(`${n}: componente repetido.`);
-      else names.add(`${it.tipo_componente}|${name.toLowerCase()}`);
+      else if (names.has(id)) problems.push(`${n}: componente repetido (mesmo nome em outra linha, de qualquer tipo).`);
+      else names.add(id);
       if (it.unidade && UFC_UNITS.includes(it.unidade)) problems.push(`${n}: UFC só se aplica a microrganismos.`);
     }
     const filled = [it.quantidade !== null, it.unidade !== null, it.base !== null];
@@ -112,7 +116,7 @@ export const compositionSchema = z.object({
     updated_at: version }).strict(),
   conjunto: z.object({ status: z.enum(["rascunho", "completo"]), updated_at: version }).strict().nullable(),
   receita: z.array(recipeRowSchema).max(50), declaracoes: z.array(declarationRowSchema).max(50),
-  receita_has_more: z.boolean(), declaracoes_has_more: z.boolean(),
+  receita_offset: z.number().int().min(0), receita_has_more: z.boolean(), declaracoes_has_more: z.boolean(),
 }).strict();
 export type Composition = z.infer<typeof compositionSchema>;
 export const compositionReceiptSchema = z.object({
@@ -134,10 +138,12 @@ export function compositionError(error: unknown) {
 }
 
 /** Leitor unificado: receita (origem `formulacoes`) + declarações, com origem explícita. Sem SELECT direto. */
-export async function readComposition(id: string, signal: AbortSignal): Promise<Composition> {
-  const { data, error } = await rpc()("platform_read_global_product_composition", { p_produto_id: id, p_limit: 50, p_offset: 0 }).abortSignal(signal);
+export async function readComposition(id: string, signal: AbortSignal, recipeOffset = 0): Promise<Composition> {
+  const { data, error } = await rpc()("platform_read_global_product_composition",
+    { p_produto_id: id, p_limit: RECIPE_PAGE_LIMIT, p_receita_offset: recipeOffset }).abortSignal(signal);
   const parsed = compositionSchema.safeParse(data);
-  if (signal.aborted || error || !parsed.success || parsed.data.produto.id !== id) throw new Error("Não foi possível consultar a composição.");
+  if (signal.aborted || error || !parsed.success || parsed.data.produto.id !== id || parsed.data.receita_offset !== recipeOffset)
+    throw new Error("Não foi possível consultar a composição.");
   return parsed.data;
 }
 
@@ -152,6 +158,8 @@ export function toPayload(items: DeclarationDraft[]) {
 
 export async function setComposition(target: Composition, status: CompositionStatus, items: DeclarationDraft[],
   reason: string, key: string, signal: AbortSignal) {
+  // Nunca substituir um conjunto que não foi lido por inteiro.
+  if (target.declaracoes_has_more) throw new Error("As declarações não foram carregadas por inteiro; edição bloqueada.");
   const withConc = new Set(target.receita.filter((r) => r.concentracao !== null).map((r) => r.microrganismo_id));
   const problems = validateDeclarations(target.produto.familia_catalogo, status, items, withConc);
   if (problems.length) throw new Error(problems[0]);
