@@ -15,12 +15,12 @@ export function useCulturas() {
   return useQuery({
     queryKey: CULTURAS_QUERY_KEY,
     queryFn: async (): Promise<Cultura[]> => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("culturas")
         .select("id, nome, descricao, ativo, desativada_em")
         .order("nome");
       if (error) throw error;
-      return (data ?? []) as any[];
+      return (data ?? []) as Cultura[];
     },
     staleTime: 60 * 1000,
   });
