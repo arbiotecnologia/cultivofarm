@@ -1,3 +1,4 @@
+-- APLICADO 20261014212642 platform_global_b2b_enabled (Codex, SQL a7b076) — NÃO REAPLICAR. Runtime 61 PASS/0 FAIL rollback; preflight exige 19 colunas e falha fechado após a migration de família.
 -- =====================================================================================
 -- CANDIDATO — NÃO APLICAR AUTOMATICAMENTE. Revisão independente aplicará no canônico
 -- swzpzcwiasxmjutrmvkm. Nenhum produto/microrganismo é alterado por este arquivo.

@@ -309,3 +309,15 @@ UI: `PlatformCatalogVolumesDialog.tsx` + `platformCatalogVolumes.ts`, botão Apr
 **Próxima fase após B2B (decisão do usuário, NÃO implementada):** quatro abas globais nesta ordem — Produtos Químicos, Produtos Biológicos, Microrganismos, Fertilizantes/Adubos; Culturas como apoio acessível; sementes/tratamento fora.
 
 **Checks locais (rodada anterior):** 135/135 Vitest (B2B + catálogo plataforma), lint dos arquivos tocados, typecheck app e node, scanner fiscal de segredos OK, build 24,10s. SQL/runtime/JWT/browser/produção: **UNVERIFIED** (não aplicado, não publicado).
+
+## Fase — quatro abas globais e família explícita (2026-10-14, local, SQL não aplicado)
+
+**Fechamento B2B (evidência externa):** migration `20261014212642 platform_global_b2b_enabled` aplicada pelo Codex (SQL a7b076), runtime 61 PASS/0 FAIL em rollback + integração Bombarbio 4 PASS; publicado 55a23c; 140 testes, typechecks, lint, scanner 3903/0, build 30s PASS; UI SA liberou Bombarbio 21:32:52 UTC. Cabeçalhos dos SQL aplicados marcados NÃO REAPLICAR.
+
+**Modelo:** `produtos.tipo` permanece enum de finalidade. Novas colunas aditivas nullable `familia_catalogo` (`biologico|quimico|fertilizante_adubo`) e `classe_catalogo` (biológico: biofungicida/bioinseticida/inoculante/solubilizador; químico: fungicida/inseticida/herbicida; fertilizante: nenhuma), CHECK de coerência. Sem backfill; sem inferência por nome/tipo/composição.
+
+**Servidor (candidato):** leitor `platform_read_global_product_catalog_by_family` (família obrigatória, revisão todos/pendentes, busca, limite ≤50, projeção mínima, consulta única) e writer `platform_set_global_product_family` (INVOKER→`platform_private` DEFINER, SA ativo/readiness, motivo, replay, CAS, lock, confirma que só família/classe/versão mudam e apresentações intactas, ledger imutável). Sem DML/grants de tenant/anon.
+
+**Scripts anteriores:** preflights de volumes e B2B exigem 19 colunas e falham fechados após a nova coluna.
+
+**Matriz de evidência:** testes Vitest locais (66 arquivos/735 testes de saas/plataforma), typecheck app/node, lint focal, scanner fiscal, build 28,43s — PASS local. SQL/runtime, JWT, browser, mobile real e produção — UNVERIFIED.

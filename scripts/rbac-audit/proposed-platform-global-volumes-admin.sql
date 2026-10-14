@@ -1,3 +1,4 @@
+-- APLICADO 20261014203909 — NÃO REAPLICAR (preflight exige 19 colunas de produtos; falha fechado após nova coluna).
 -- APLICADO no canônico swzpzcwiasxmjutrmvkm como migration 20261014203909 platform_global_volumes_admin (pelo Codex, a partir do SQL 5c320e). NÃO REAPLICAR. Histórico: candidato revisões 2–3 (prévia por token, preços decimal-string, overflow 22003 atômico) — APRESENTAÇÕES/VOLUMES globais (public.catalogo_volumes) pelo Platform Superadmin.
 -- Alvo exclusivo: swzpzcwiasxmjutrmvkm. Aplicação feita pelo Codex; NÃO executar a partir do Lovable. Rollback documentado ao final permanece válido.
 -- Padrão: public SECURITY INVOKER -> platform_private SECURITY DEFINER; ator via

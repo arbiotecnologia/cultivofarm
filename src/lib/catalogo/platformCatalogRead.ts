@@ -4,6 +4,11 @@ export const PLATFORM_CATALOG_LIMIT = 50;
 export const PLATFORM_CATALOG_MAX_OFFSET = 1_000_000;
 export const PLATFORM_CATALOG_SEARCH_LIMIT = 120;
 
+const COHERENT: Record<"biologico" | "quimico" | "fertilizante_adubo", readonly string[]> = {
+  biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"],
+  quimico: ["fungicida", "inseticida", "herbicida"], fertilizante_adubo: [],
+};
+
 export const platformCatalogPageSchema = z.object({
   items: z.array(z.object({
     id: z.string().uuid(),
@@ -13,7 +18,12 @@ export const platformCatalogPageSchema = z.object({
     ativo: z.boolean(),
     b2b_enabled: z.boolean(),
     updated_at: z.string().nullable(),
-  }).strip()).max(PLATFORM_CATALOG_LIMIT),
+    // Classificação explícita (NULL = pendente). Nunca derivada de `tipo`.
+    familia_catalogo: z.enum(["biologico", "quimico", "fertilizante_adubo"]).nullable().optional().default(null),
+    classe_catalogo: z.enum(["biofungicida", "bioinseticida", "inoculante", "solubilizador", "fungicida", "inseticida", "herbicida"])
+      .nullable().optional().default(null),
+  }).strip().refine((i) => i.classe_catalogo === null || (i.familia_catalogo !== null
+    && COHERENT[i.familia_catalogo].includes(i.classe_catalogo)))).max(PLATFORM_CATALOG_LIMIT),
   has_more: z.boolean(),
 }).strip();
 
