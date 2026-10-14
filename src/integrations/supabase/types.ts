@@ -22403,6 +22403,16 @@ export type Database = {
         Args: { p_idempotency_key: string; p_payload: Json; p_reason: string }
         Returns: Json
       }
+      platform_create_global_volume: {
+        Args: {
+          p_idempotency_key: string
+          p_item_id: string
+          p_item_tipo: string
+          p_payload: Json
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_create_organization: {
         Args: {
           _cnpj: string
@@ -22545,6 +22555,15 @@ export type Database = {
         Args: { p_limit: number; p_offset: number; p_search: string }
         Returns: Json
       }
+      platform_read_global_item_volumes: {
+        Args: {
+          p_item_id: string
+          p_item_tipo: string
+          p_limit: number
+          p_offset: number
+        }
+        Returns: Json
+      }
       platform_read_global_microorganism_detail: {
         Args: { p_id: string }
         Returns: Json
@@ -22563,6 +22582,10 @@ export type Database = {
         Returns: Json
       }
       platform_read_global_product_metadata: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      platform_read_global_volume_detail: {
         Args: { p_id: string }
         Returns: Json
       }
@@ -22650,6 +22673,17 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_set_global_volume_status: {
+        Args: {
+          p_ativo: boolean
+          p_confirm_token: string
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_set_org_principal_admin: {
         Args: {
           _expected_responsavel: string
@@ -22696,6 +22730,17 @@ export type Database = {
       }
       platform_update_global_product_metadata: {
         Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_patch: Json
+          p_reason: string
+        }
+        Returns: Json
+      }
+      platform_update_global_volume: {
+        Args: {
+          p_confirm_token: string
           p_expected_updated_at: string
           p_id: string
           p_idempotency_key: string
