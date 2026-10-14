@@ -178,7 +178,7 @@ describe("diálogo B2B global", () => {
   });
   it("troca de escopo com leitura pendente (live mantido): resposta tardia de A descartada e nova leitura de B", async () => {
     const scopeA = platformCatalogAccess(mocks.actor).scope;
-    let resolveA!: (v: unknown) => void;
+    let resolveA!: () => void;
     mocks.request.mockImplementation((n) => n === "platform_read_global_b2b_state"
       ? new Promise((r) => { resolveA = () => r({ data: st({ nome: "TardioA" }), error: null }); })
       : Promise.resolve(receipt({})));
