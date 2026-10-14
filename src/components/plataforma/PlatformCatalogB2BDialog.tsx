@@ -49,7 +49,7 @@ export function PlatformCatalogB2BDialog({ tipo, itemId, scope, onClose, onSaved
       .then((s) => { if (!controller.signal.aborted) setState(s); })
       .catch(() => { if (!controller.signal.aborted) setLoadError(true); });
     return () => controller.abort();
-  }, [tipo, itemId, live]);
+  }, [tipo, itemId, live, epochN]);
   if (!live) return null;
   const target = state ? !state.b2b_enabled : undefined;
   const reasonOk = reason.trim().length >= 10 && reason.trim().length <= 500;
