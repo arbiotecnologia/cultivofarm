@@ -659,3 +659,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Classificar Bombarbio como Biológico/Biofungicida pela UI (usuário)
 - [ ] Cadastro novo de fertilizantes/adubos e herbicidas (tipo/unidade) — pendente
 - [ ] Sementes/tratamento, tenant show/hide e itens próprios — fora desta fase
+- [x] Família: migration 20261014215550 APLICADA externamente (NÃO REAPLICAR); harness runtime corrigido (owner só oráculo, RPC sob authenticated); externo 87/0.
+- [ ] Testar UI publicada das quatro abas e classificar Bombarbio pela UI (aguarda usuário/publicação).
+- [ ] Próximo recorte (NÃO iniciado): composição para Biológicos/Químicos/Fertilizantes, com vínculo opcional a microrganismos existentes; refinar sem duplicar fonte de verdade, sem recadastro do Bombarbio, e rollback preservando dados (sem DROP por padrão).
