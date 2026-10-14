@@ -13,6 +13,21 @@ const tipoLabels: Record<(typeof legacyProductTypes)[number], string> = {
   inseticida: "Inseticida", fungicida: "Fungicida", solo: "Solo", inoculante: "Inoculante", solubilizador: "Solubilizador",
 };
 
+/**
+ * Visibility fence: every loss of the exact ready scope bumps an epoch, so the inner
+ * form remounts (state cleared, in-flight requests aborted) even if the scope later
+ * returns to the same value.
+ */
+function useScopeEpoch(scope: string) {
+  const access = platformCatalogAccess(useAuth());
+  const visible = access.ready && access.scope === scope;
+  const epoch = useRef(0);
+  const wasVisible = useRef(visible);
+  if (wasVisible.current && !visible) epoch.current += 1;
+  wasVisible.current = visible;
+  return { visible, epoch: epoch.current };
+}
+
 /** Shared fence: identity/scope must stay identical; aborts in-flight on unmount; synchronous lock blocks double click. */
 function useFencedSubmit(scope: string) {
   const access = platformCatalogAccess(useAuth());
@@ -45,7 +60,11 @@ function useFencedSubmit(scope: string) {
   return { visible: current.current, busy, error, run };
 }
 
-export function PlatformCatalogCreateDialog({ scope, onClose, onSaved }: { scope: string; onClose: () => void; onSaved: () => void }) {
+export function PlatformCatalogCreateDialog(props: { scope: string; onClose: () => void; onSaved: () => void }) {
+  const { visible, epoch } = useScopeEpoch(props.scope);
+  return visible ? <CreateForm key={epoch} {...props} /> : null;
+}
+function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () => void; onSaved: () => void }) {
   const { visible, busy, error, run } = useFencedSubmit(scope);
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState<string>("");
@@ -69,7 +88,7 @@ export function PlatformCatalogCreateDialog({ scope, onClose, onSaved }: { scope
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto" aria-busy={busy}>
       <DialogHeader><DialogTitle>Novo produto global</DialogTitle>
-        <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui.</DialogDescription>
+        <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui. A composição de microrganismos ainda não é cadastrada por esta tela.</DialogDescription>
       </DialogHeader>
       {error && <p role="alert">{error}</p>}
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setConfirming(true); }}>
@@ -104,7 +123,13 @@ export function PlatformCatalogCreateDialog({ scope, onClose, onSaved }: { scope
   </Dialog>;
 }
 
-export function PlatformCatalogStatusDialog({ scope, product, onClose, onSaved }: {
+export function PlatformCatalogStatusDialog(props: {
+  scope: string; product: { id: string; nome: string; ativo: boolean; updated_at: string }; onClose: () => void; onSaved: () => void;
+}) {
+  const { visible, epoch } = useScopeEpoch(props.scope);
+  return visible ? <StatusForm key={epoch} {...props} /> : null;
+}
+function StatusForm({ scope, product, onClose, onSaved }: {
   scope: string; product: { id: string; nome: string; ativo: boolean; updated_at: string }; onClose: () => void; onSaved: () => void;
 }) {
   const { visible, busy, error, run } = useFencedSubmit(scope);

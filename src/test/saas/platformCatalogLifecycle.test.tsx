@@ -117,3 +117,22 @@ describe("arquivar/reativar", () => {
     await expect(setGlobalProductStatus(ID, T0, false, "Fora de linha comercial", "00000000-0000-4000-8000-0000000000b0", signal())).rejects.toThrow();
   });
 });
+
+describe("cerca de identidade com retorno ao mesmo escopo", () => {
+  it("perda transitória de readiness aborta a requisição e limpa o formulário", async () => {
+    const signals: AbortSignal[] = [];
+    mocks.request.mockImplementation((_n, _a, s: AbortSignal) => { signals.push(s); return new Promise(() => {}); });
+    const original = mocks.actor;
+    const rerender = renderCreate(); fillCreate(); fireEvent.click(screen.getByRole("button", { name: "Confirmar criação" }));
+    await waitFor(() => expect(signals).toHaveLength(1));
+    mocks.actor = { ...original, profile: { ...original.profile!, ativo: false } }; rerender();
+    mocks.actor = original; rerender();
+    expect(signals[0].aborted).toBe(true);
+    expect(screen.getByLabelText("Nome")).toHaveValue("");
+    expect(mocks.saved).not.toHaveBeenCalled();
+  });
+  it("a tela não anuncia cadastro de composição", () => {
+    renderCreate();
+    expect(screen.getByText(/composição de microrganismos ainda não é cadastrada/)).toBeInTheDocument();
+  });
+});
