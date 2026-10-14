@@ -16400,12 +16400,14 @@ export type Database = {
         Row: {
           ativo: boolean | null
           b2b_enabled: boolean
+          classe_catalogo: string | null
           codigo: string | null
           created_at: string
           descricao: string | null
           dose_ml_ha: number | null
           e_insumo: boolean | null
           estoque_minimo: number | null
+          familia_catalogo: string | null
           funcao_completa: string | null
           id: string
           modo_acao: string | null
@@ -16421,12 +16423,14 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           b2b_enabled?: boolean
+          classe_catalogo?: string | null
           codigo?: string | null
           created_at?: string
           descricao?: string | null
           dose_ml_ha?: number | null
           e_insumo?: boolean | null
           estoque_minimo?: number | null
+          familia_catalogo?: string | null
           funcao_completa?: string | null
           id?: string
           modo_acao?: string | null
@@ -16442,12 +16446,14 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           b2b_enabled?: boolean
+          classe_catalogo?: string | null
           codigo?: string | null
           created_at?: string
           descricao?: string | null
           dose_ml_ha?: number | null
           e_insumo?: boolean | null
           estoque_minimo?: number | null
+          familia_catalogo?: string | null
           funcao_completa?: string | null
           id?: string
           modo_acao?: string | null
@@ -22585,6 +22591,16 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
       }
+      platform_read_global_product_catalog_by_family: {
+        Args: {
+          p_familia: string
+          p_limit?: number
+          p_offset?: number
+          p_revisao?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
       platform_read_global_product_metadata: {
         Args: { p_id: string }
         Returns: Json
@@ -22672,6 +22688,17 @@ export type Database = {
         Args: {
           p_ativo: boolean
           p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      platform_set_global_product_family: {
+        Args: {
+          p_classe: string
+          p_expected_updated_at: string
+          p_familia: string
           p_id: string
           p_idempotency_key: string
           p_reason: string
