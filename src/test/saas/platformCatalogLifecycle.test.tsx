@@ -215,7 +215,7 @@ describe("layout do editor de composição (estrutural; jsdom não mede largura)
   it("linhas, rótulos e botões permitem quebra e encolhimento sem ocultar conteúdo", async () => {
     renderCreate();
     const add = await screen.findByRole("button", { name: "Adicionar Bacillus A" });
-    expect(add.className).toMatch(/whitespace-normal/); expect(add.className).toMatch(/max-w-full/); expect(add.className).toMatch(/h-auto/);
+    expect(add.className).toMatch(/whitespace-normal/); expect(add.className).toMatch(/max-w-full/); expect(add.className).toMatch(/min-h-10/);
     fireEvent.click(add);
     const remove = screen.getByRole("button", { name: "Remover Bacillus A" });
     expect(remove.className).toMatch(/whitespace-normal/);
@@ -227,6 +227,12 @@ describe("layout do editor de composição (estrutural; jsdom não mede largura)
     expect(screen.getByText("Volume (mL) de Bacillus A").className).toMatch(/overflow-wrap:anywhere/);
     const nav = screen.getByRole("navigation", { name: "Paginação de microrganismos" });
     expect(nav.className).toMatch(/flex-wrap/);
+    const searchBtn = screen.getByRole("button", { name: "Buscar microrganismo" });
+    expect(searchBtn.className).toMatch(/min-h-10/);
+    const searchRow = searchBtn.parentElement!;
+    expect(searchRow.className).toMatch(/grid-cols-1/);
+    expect(searchRow.className).toMatch(/sm:grid-cols-\[minmax\(0,1fr\)_auto\]/);
+    expect(screen.getByLabelText("Buscar microrganismo").className).toMatch(/w-full/);
     const dialog = screen.getByRole("dialog");
     expect(dialog.className).toMatch(/w-\[calc\(100%-2rem\)\]/); expect(dialog.className).toMatch(/max-w-xl/);
     expect(dialog.className).not.toMatch(/overflow-x-hidden/);
