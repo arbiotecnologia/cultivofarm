@@ -80,7 +80,7 @@ describe("concentração sem perda de precisão", () => {
 
 describe("painel global de culturas", () => {
   it("criação de cultura não anuncia código gerado", async () => {
-    mount(); fireEvent.click(await screen.findByRole("button", { name: "Novo cultura global" }));
+    mount(); fireEvent.click(await screen.findByRole("button", { name: "Nova cultura global" }));
     expect(await screen.findByText("A cultura nasce inativa.")).toBeInTheDocument();
     expect(screen.queryByText(/código é gerado/i)).toBeNull();
   });
