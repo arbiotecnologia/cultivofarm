@@ -20,7 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
 import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloButton";
-import { useCulturas, useSaveCultura, useToggleCulturaAtivo, type Cultura } from "@/hooks/useCulturas";
+import { useCulturas } from "@/hooks/useCulturas";
 
 // --- Culturas ---
 // Culturas são base GLOBAL. Escrita de cliente foi revogada no banco
