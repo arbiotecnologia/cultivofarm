@@ -154,7 +154,7 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
     const btn = within(row).getByTestId("btn-editar-perfil-micro");
     expect(btn).toHaveTextContent(/Criar perfil fiscal/i);
     // Vínculo opcional continua disponível, sem ser condição para o perfil.
-    expect(within(row).getByTestId("btn-vinculo-opcional")).toBeInTheDocument();
+    expect(within(row).queryByTestId("btn-vinculo-opcional")).not.toBeInTheDocument();
   });
 
   test("usuário somente leitura vê apenas botão 'Ver', sem ação de criar/vincular", () => {
