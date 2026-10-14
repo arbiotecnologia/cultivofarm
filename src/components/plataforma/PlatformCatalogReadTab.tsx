@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlatformCatalogEntityPanel } from "@/components/plataforma/PlatformCatalogEntityPanel";
 import { PlatformCatalogVolumesDialog } from "@/components/plataforma/PlatformCatalogVolumesDialog";
 import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformCatalogMetadataDialog";
+import { PlatformCatalogB2BDialog } from "@/components/plataforma/PlatformCatalogB2BDialog";
 import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
   PLATFORM_CATALOG_MAX_OFFSET, PLATFORM_CATALOG_SEARCH_LIMIT } from "@/lib/catalogo/platformCatalogRead";
@@ -47,8 +48,9 @@ function CatalogReadPage({ scope }: { scope: string }) {
   const [creating, setCreating] = useState(false);
   const [volumesOf, setVolumesOf] = useState<{ id: string; nome: string }>();
   const [statusOf, setStatusOf] = useState<{ id: string; nome: string; ativo: boolean; updated_at: string }>();
+  const [b2bOf, setB2bOf] = useState<string>();
   const done = () => {
-    setEditing(undefined); setCreating(false); setStatusOf(undefined); setSaved(true);
+    setEditing(undefined); setCreating(false); setStatusOf(undefined); setB2bOf(undefined); setSaved(true);
     void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
   };
   const queryClient = useQueryClient();
@@ -91,7 +93,14 @@ function CatalogReadPage({ scope }: { scope: string }) {
         void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
       }} />}
     {volumesOf && <PlatformCatalogVolumesDialog tipo="produto" itemId={volumesOf.id} nome={volumesOf.nome} scope={scope}
-      onClose={() => setVolumesOf(undefined)} />}
+      onClose={() => {
+        // Apresentações ativas podem atualizar o produto pai (preço/versão): recarregar a lista evita
+        // CAS com `updated_at` antigo ao arquivar/reativar/liberar B2B em seguida.
+        setVolumesOf(undefined);
+        void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
+      }} />}
+    {b2bOf && <PlatformCatalogB2BDialog key={b2bOf} tipo="produto" itemId={b2bOf} scope={scope}
+      onClose={() => setB2bOf(undefined)} onSaved={done} />}
     {creating && <PlatformCatalogCreateDialog scope={scope} onClose={() => setCreating(false)} onSaved={done} />}
     {statusOf && <PlatformCatalogStatusDialog key={statusOf.id} scope={scope} product={statusOf}
       onClose={() => setStatusOf(undefined)} onSaved={done} />}
@@ -126,7 +135,9 @@ function CatalogReadPage({ scope }: { scope: string }) {
             onClick={() => { setSaved(false); if (product.updated_at) setStatusOf({ id: product.id, nome: product.nome, ativo: product.ativo, updated_at: product.updated_at }); }}>
             {product.ativo ? "Arquivar" : "Reativar"}</Button>
           <Button variant="ghost" size="sm" className="ml-1" aria-label={`Apresentações de ${product.nome}`}
-            onClick={() => setVolumesOf({ id: product.id, nome: product.nome })}>Apresentações</Button></TableCell>
+            onClick={() => setVolumesOf({ id: product.id, nome: product.nome })}>Apresentações</Button>
+          <Button variant="ghost" size="sm" className="ml-1" aria-label={`Disponibilidade B2B de ${product.nome}`}
+            onClick={() => { setSaved(false); setB2bOf(product.id); }}>{product.b2b_enabled ? "Retirar do B2B" : "Liberar B2B"}</Button></TableCell>
       </TableRow>)}</TableBody>
     </Table>}
     <nav aria-label="Paginação do catálogo" className="flex flex-wrap items-center justify-between gap-2">

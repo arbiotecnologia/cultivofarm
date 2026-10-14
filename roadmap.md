@@ -636,3 +636,12 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Global restante (aberto): composição de existentes; preços/apresentações/B2B; fichas/fontes/alvos/problemas/CQ writers SA; famílias Biológicos/Químicos/Fertilizantes (sementes futuras); Storage/regulatórios.
 - [ ] Fase tenant (exibir/ocultar, itens próprios) — bloqueada até fechar o cadastro global.
 - [x] Volumes: migration 20261014203909 aplicada externamente; runtime 84/0 rollback. Pendente: publicação da UI e prova browser/JWT.
+
+## Catálogo global — disponibilidade B2B (2026-10-14)
+- [x] Auditoria read-only de `b2b_enabled`, catálogos parceiro/técnico e caso Bombarbio
+- [x] SQL candidato + rollback + runtime rollback (`proposed-platform-global-b2b-enabled.sql`)
+- [x] UI Liberar/Retirar B2B (produtos e microrganismos) com confirmação, motivo e recibo validado
+- [x] Lista recarrega após Apresentações; botão "Confirmando…" não fica preso
+- [ ] Aplicar SQL e rodar runtime — aguarda revisão independente
+- [ ] Reativar e liberar Bombarbio — aguarda aplicação
+- [ ] Ficha técnica/dose/regulatório do Bombarbio — aguarda dados reais

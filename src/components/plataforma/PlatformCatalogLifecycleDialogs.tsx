@@ -54,7 +54,9 @@ function useFencedSubmit(scope: string) {
         setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a operação.");
     } finally {
       requests.current.delete(controller); lock.current = false;
-      if (mounted.current && current.current) setBusy(false);
+      // Libera o botão sempre que montado: se o escopo mudou durante a chamada, o resultado é
+      // descartado, mas o formulário não pode ficar preso em "Confirmando…".
+      if (mounted.current) setBusy(false);
     }
   }
   return { visible: current.current, busy, error, run };
