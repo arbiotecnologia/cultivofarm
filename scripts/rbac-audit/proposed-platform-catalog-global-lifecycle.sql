@@ -23,8 +23,8 @@ BEGIN
     AND table_name='formulacoes' AND column_name='microrganismo_id') <> 'NO' THEN
     RAISE EXCEPTION 'lifecycle_composition_contract_requires_review';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.produtos'::regclass
-    AND tgname='trg_set_codigo_produto' AND NOT tgisinternal) THEN
+  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.produtos'::regclass
+    AND tgname IN ('trg_set_codigo_produto_ins','trg_set_codigo_produto_upd') AND NOT tgisinternal) <> 2 THEN
     RAISE EXCEPTION 'lifecycle_code_trigger_requires_review';
   END IF;
 END;
@@ -66,15 +66,16 @@ DECLARE
   v_actor uuid; v_existing public.catalog_platform_admin_audit%ROWTYPE;
   v_new public.produtos%ROWTYPE; v_request jsonb; v_receipt jsonb; v_audit uuid:=gen_random_uuid();
   v_key text; v_item jsonb; v_comp jsonb:='[]'::jsonb; v_ids uuid[]:='{}';
-  v_dose numeric; v_vol numeric; v_prop numeric; v_micro uuid; v_count int;
+  v_snapshot jsonb; v_dose numeric; v_vol numeric; v_prop numeric; v_micro uuid; v_count int;
   v_allowed constant text[]:=ARRAY['nome','tipo','descricao','modo_acao','funcao_completa','modo_aplicacao','dose_ml_ha','composicao'];
 BEGIN
   v_actor:=platform_private.catalog_metadata_require_actor();
   IF p_idempotency_key IS NULL OR p_reason IS NULL
     OR pg_catalog.char_length(pg_catalog.btrim(p_reason)) NOT BETWEEN 10 AND 500
-    OR pg_catalog.jsonb_typeof(p_payload) IS DISTINCT FROM 'object' THEN
+    OR p_payload IS NULL OR pg_catalog.jsonb_typeof(p_payload) IS DISTINCT FROM 'object' THEN
     RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
   END IF;
+  -- Só depois de provar 'object' chamamos jsonb_object_keys (arrays/escalares abortariam com erro genérico).
   FOR v_key IN SELECT pg_catalog.jsonb_object_keys(p_payload) LOOP
     IF NOT (v_key=ANY(v_allowed)) THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid'; END IF;
   END LOOP;
@@ -85,35 +86,44 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
   END IF;
   FOREACH v_key IN ARRAY ARRAY['descricao','modo_acao','funcao_completa','modo_aplicacao'] LOOP
-    IF p_payload ? v_key AND (pg_catalog.jsonb_typeof(p_payload->v_key) NOT IN ('string','null')
+    IF p_payload ? v_key AND (pg_catalog.jsonb_typeof(p_payload->v_key) IS DISTINCT FROM 'string'
+      AND pg_catalog.jsonb_typeof(p_payload->v_key) IS DISTINCT FROM 'null'
       OR pg_catalog.char_length(p_payload->>v_key) > 10000) THEN
       RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
     END IF;
   END LOOP;
   -- Dose: número JSON finito (JSON não representa NaN/Infinity), 0 < d <= 1e6, até 6 casas.
-  IF p_payload ? 'dose_ml_ha' AND pg_catalog.jsonb_typeof(p_payload->'dose_ml_ha') <> 'null' THEN
-    IF pg_catalog.jsonb_typeof(p_payload->'dose_ml_ha') <> 'number' THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid'; END IF;
+  IF p_payload ? 'dose_ml_ha' AND pg_catalog.jsonb_typeof(p_payload->'dose_ml_ha') IS DISTINCT FROM 'null' THEN
+    IF pg_catalog.jsonb_typeof(p_payload->'dose_ml_ha') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid'; END IF;
     v_dose:=(p_payload->>'dose_ml_ha')::numeric;
     IF v_dose <= 0 OR v_dose > 1000000 OR pg_catalog.scale(v_dose) > 6 THEN
       RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
     END IF;
   END IF;
   IF p_payload ? 'composicao' THEN
-    IF pg_catalog.jsonb_typeof(p_payload->'composicao') <> 'array' OR pg_catalog.jsonb_array_length(p_payload->'composicao') > 50 THEN
+    IF pg_catalog.jsonb_typeof(p_payload->'composicao') IS DISTINCT FROM 'array' THEN
+      RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
+    END IF;
+    IF pg_catalog.jsonb_array_length(p_payload->'composicao') > 50 THEN
       RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
     END IF;
     FOR v_item IN SELECT * FROM pg_catalog.jsonb_array_elements(p_payload->'composicao') LOOP
-      IF pg_catalog.jsonb_typeof(v_item) <> 'object'
-        OR EXISTS (SELECT 1 FROM pg_catalog.jsonb_object_keys(v_item) k WHERE k NOT IN ('microrganismo_id','volume_ml','proporcao'))
-        OR pg_catalog.jsonb_typeof(v_item->'microrganismo_id') <> 'string'
-        OR (v_item->>'microrganismo_id') !~ '^[0-9a-fA-F-]{36}$'
-        OR pg_catalog.jsonb_typeof(v_item->'volume_ml') <> 'number'
-        OR (v_item ? 'proporcao' AND pg_catalog.jsonb_typeof(v_item->'proporcao') NOT IN ('number','null')) THEN
+      -- Objeto primeiro (curto-circuito explícito), depois chaves e tipos com IS DISTINCT FROM (NULL/ausente = inválido).
+      IF pg_catalog.jsonb_typeof(v_item) IS DISTINCT FROM 'object' THEN
+        RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
+      END IF;
+      IF EXISTS (SELECT 1 FROM pg_catalog.jsonb_object_keys(v_item) k WHERE k NOT IN ('microrganismo_id','volume_ml','proporcao'))
+        OR pg_catalog.jsonb_typeof(v_item->'microrganismo_id') IS DISTINCT FROM 'string'
+        OR (v_item->>'microrganismo_id') IS NULL
+        OR (v_item->>'microrganismo_id') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        OR pg_catalog.jsonb_typeof(v_item->'volume_ml') IS DISTINCT FROM 'number'
+        OR (v_item ? 'proporcao' AND pg_catalog.jsonb_typeof(v_item->'proporcao') IS DISTINCT FROM 'number'
+            AND pg_catalog.jsonb_typeof(v_item->'proporcao') IS DISTINCT FROM 'null') THEN
         RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
       END IF;
       v_micro:=(v_item->>'microrganismo_id')::uuid; v_vol:=(v_item->>'volume_ml')::numeric;
       v_prop:=CASE WHEN pg_catalog.jsonb_typeof(v_item->'proporcao')='number' THEN (v_item->>'proporcao')::numeric END;
-      IF v_micro=ANY(v_ids) OR v_vol <= 0 OR v_vol > 1000000 OR pg_catalog.scale(v_vol) > 6
+      IF v_vol IS NULL OR v_micro=ANY(v_ids) OR v_vol <= 0 OR v_vol > 1000000 OR pg_catalog.scale(v_vol) > 6
         OR (v_prop IS NOT NULL AND (v_prop <= 0 OR v_prop > 100 OR pg_catalog.scale(v_prop) > 6)) THEN
         RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_create_invalid';
       END IF;
@@ -157,11 +167,22 @@ BEGIN
   IF v_count <> pg_catalog.jsonb_array_length(v_comp) THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_create_confirmation_failed';
   END IF;
+  -- Snapshot canônico relido do banco na mesma transação (produto + formulações com IDs).
+  SELECT pg_catalog.jsonb_build_object('produto',pg_catalog.to_jsonb(p) - ARRAY['created_at'],
+    'formulacoes',COALESCE((SELECT pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id',f.id,'microrganismo_id',f.microrganismo_id,
+      'volume_ml',f.volume_ml,'proporcao',f.proporcao,'e_volume_fixo',f.e_volume_fixo,'unidade',f.unidade) ORDER BY f.id)
+      FROM public.formulacoes f WHERE f.produto_id=p.id),'[]'::jsonb))
+  INTO v_snapshot FROM public.produtos p WHERE p.id=v_new.id;
+  IF v_snapshot IS NULL OR pg_catalog.jsonb_array_length(v_snapshot->'formulacoes') <> v_count
+    OR (v_snapshot->'produto'->>'ativo')::boolean IS DISTINCT FROM false
+    OR (v_snapshot->'produto'->>'b2b_enabled')::boolean IS DISTINCT FROM false THEN
+    RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_create_confirmation_failed';
+  END IF;
   v_receipt:=pg_catalog.jsonb_build_object('id',v_new.id,'codigo',v_new.codigo,'updated_at',v_new.updated_at,
     'composicao_count',v_count,'idempotency_key',p_idempotency_key,'audit_id',v_audit,'idempotent',false);
   INSERT INTO public.catalog_platform_admin_audit (id,operation,actor_id,reason,correlation_id,status,counts_before,counts_after,completed_at)
   VALUES (v_audit,'create_global_product',v_actor,pg_catalog.btrim(p_reason),p_idempotency_key,'completed','{}'::jsonb,
-    pg_catalog.jsonb_build_object('request',v_request,'receipt',v_receipt),pg_catalog.clock_timestamp())
+    pg_catalog.jsonb_build_object('request',v_request,'receipt',v_receipt,'after',v_snapshot),pg_catalog.clock_timestamp());
   RETURN v_receipt;
 END;
 $$;
@@ -203,7 +224,9 @@ BEGIN
   -- b2b_enabled e preços não são tocados aqui.
   UPDATE public.produtos SET ativo=p_ativo, updated_at=pg_catalog.clock_timestamp()
   WHERE id=p_id AND updated_at=p_expected_updated_at RETURNING * INTO v_new;
-  IF NOT FOUND OR (pg_catalog.to_jsonb(v_old)-ARRAY['ativo','updated_at']) IS DISTINCT FROM (pg_catalog.to_jsonb(v_new)-ARRAY['ativo','updated_at']) THEN
+  IF NOT FOUND OR v_new.id IS DISTINCT FROM p_id OR v_new.ativo IS DISTINCT FROM p_ativo
+    OR v_new.updated_at IS NOT DISTINCT FROM v_old.updated_at OR v_new.updated_at <= v_old.updated_at
+    OR (pg_catalog.to_jsonb(v_old)-ARRAY['ativo','updated_at']) IS DISTINCT FROM (pg_catalog.to_jsonb(v_new)-ARRAY['ativo','updated_at']) THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_status_confirmation_failed';
   END IF;
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'ativo',v_new.ativo,'updated_at',v_new.updated_at,
@@ -238,5 +261,9 @@ ROLLBACK;
 -- P4 falha no 2º INSERT de formulacoes (FK forçada) → produto também revertido (atomicidade).
 -- P5 status: arquivar/reativar com updated_at correto; stale → 40001; sem mudança → 22023; demais colunas invariantes.
 -- PREFLIGHT pendente: confirmar que sync_product_pricing/trg_mestre_guard_preco_canonico não preenchem preços no INSERT (senão P1 falha por desenho).
--- Rollback seguro pós-aplicação: DROP das 4 funções novas + policy/trigger novos; restaurar CHECK com os 2 valores anteriores
--- somente se não houver linhas das novas operações (ledger não é apagado).
+-- P6 composição: item array/escalar, sem volume_ml, volume null, microrganismo_id null/maiúsculo/sem hífens → 22023.
+-- P7 payload array/escalar/null → 22023 (não erro genérico de jsonb_object_keys).
+-- P8 ledger 'after' contém produto + IDs de formulacoes iguais aos persistidos.
+-- Rollback de CONTENÇÃO pós-aplicação (preserva histórico): REVOKE EXECUTE das 2 RPCs públicas e dos 2 cores
+-- de authenticated; manter ledger, CHECK ampliado, policy de leitura restrita e trigger de imutabilidade.
+-- Nunca DELETE/UPDATE em catalog_platform_admin_audit; nunca DROP das linhas criadas.
