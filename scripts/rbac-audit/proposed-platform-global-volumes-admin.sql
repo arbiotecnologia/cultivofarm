@@ -164,15 +164,30 @@ BEGIN
   RETURN v;
 END;
 $$;
-CREATE FUNCTION platform_private.catalog_volume_pricing(p_parent jsonb) RETURNS jsonb
+-- Preços do pai SEMPRE como decimal-string ou null (nunca JSON number: JSON.parse arredondaria
+-- p.ex. 333333333326666.67 -> 333333333326666.7). Texto vem do numeric exato do PostgreSQL.
+CREATE FUNCTION platform_private.catalog_volume_dec(p jsonb) RETURNS jsonb
 LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
-  SELECT pg_catalog.jsonb_build_object('valor_litro_brl',p_parent->'valor_litro_brl','valor_dose_brl',p_parent->'valor_dose_brl',
-    'valor_ha_brl',COALESCE(p_parent->'valor_ha_brl','null'::jsonb),'updated_at',p_parent->'updated_at');
+  SELECT CASE WHEN p IS NULL OR pg_catalog.jsonb_typeof(p)='null' THEN 'null'::jsonb
+    WHEN pg_catalog.jsonb_typeof(p)='number' THEN pg_catalog.to_jsonb(p#>>'{}')
+    ELSE NULL END;  -- tipo inesperado => NULL SQL => objeto inválido detectado pelo chamador
+$$;
+CREATE FUNCTION platform_private.catalog_volume_pricing(p_parent jsonb) RETURNS jsonb
+LANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
+DECLARE l jsonb:=platform_private.catalog_volume_dec(p_parent->'valor_litro_brl');
+  d jsonb:=platform_private.catalog_volume_dec(p_parent->'valor_dose_brl');
+  h jsonb:=platform_private.catalog_volume_dec(p_parent->'valor_ha_brl');
+BEGIN
+  IF l IS NULL OR d IS NULL OR h IS NULL THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_pricing_unexpected'; END IF;
+  RETURN pg_catalog.jsonb_build_object('valor_litro_brl',l,'valor_dose_brl',d,'valor_ha_brl',h,'updated_at',p_parent->'updated_at');
+END;
 $$;
 -- Executa a verificação pós-efeito: campos protegidos do pai (B2B, dose, código, nome, tipo, ativo, preco_tabela...)
--- devem ser idênticos; reprecificação exige confirmação, e em criação é sempre proibida.
+-- devem ser idênticos; reprecificação exige confirmação vinculada à prévia (token), e em criação é sempre proibida.
+-- Sem token (p_confirmed=false) e com efeito comercial => 55000 com DETAIL {token, repriced, parent_before, parent_after}
+-- e a transação inteira é revertida (prévia não persiste nada).
 CREATE FUNCTION platform_private.catalog_volume_settle(p_tipo text, p_item uuid, p_before jsonb,
-  p_touches_active boolean, p_confirm boolean, p_allow_reprice boolean) RETURNS jsonb
+  p_touches_active boolean, p_confirmed boolean, p_allow_reprice boolean, p_token text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_after jsonb; v_strip text[]:=ARRAY['valor_litro_brl','valor_dose_brl','valor_ha_brl','updated_at'];
   v_pb jsonb; v_pa jsonb; v_repriced boolean;
@@ -184,9 +199,11 @@ BEGIN
   v_repriced:=(v_pb - 'updated_at') IS DISTINCT FROM (v_pa - 'updated_at');
   IF v_repriced AND NOT p_allow_reprice THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_unexpected_repricing'; END IF;
-  IF (p_touches_active OR v_repriced) AND NOT COALESCE(p_confirm,false) THEN
+  IF (p_touches_active OR v_repriced) AND NOT COALESCE(p_confirmed,false) THEN
+    IF p_token IS NULL THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_confirmation_failed'; END IF;
     RAISE EXCEPTION USING ERRCODE='55000', MESSAGE='catalog_volume_confirmation_required',
-      DETAIL=pg_catalog.jsonb_build_object('repriced',v_repriced,'parent_before',v_pb - 'updated_at','parent_after',v_pa - 'updated_at')::text;
+      DETAIL=pg_catalog.jsonb_build_object('token',p_token,'repriced',v_repriced,
+        'parent_before',v_pb - 'updated_at','parent_after',v_pa - 'updated_at')::text;
   END IF;
   RETURN pg_catalog.jsonb_build_object('repriced',v_repriced,'parent_before',v_pb,'parent_after',v_pa);
 END;
