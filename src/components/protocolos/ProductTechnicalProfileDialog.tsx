@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,11 +70,13 @@ const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecn
 
 export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, origem = "protocolos" }: Props) {
   const { role } = useAuth();
-  const canEditFull = role ? TECH_ROLES.includes(role) : false;
+  // Contrato: catálogo global é somente consulta para perfis de empresa.
+  const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
+  const canSeeHistory = role ? TECH_ROLES.includes(role) : false;
   const canSeeAudit = role ? ADMIN_ROLES.includes(role) : false;
   const canSeeSources = role ? SOURCE_VIEW_ROLES.includes(role) : false;
   const canEditSources = canEditFull;
-  const canDeleteSources = role ? ADMIN_ROLES.includes(role) : false;
+  const canDeleteSources = false;
   const isAdminOrGestor = role ? ADMIN_ROLES.includes(role) : false;
 
   const { data, isLoading, isError, isSuccess, isFetching, refetch } = useProductProfile(produto?.id);
@@ -214,7 +217,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
               <TabsTrigger value="b2b" className="whitespace-nowrap px-2.5 py-1 text-xs">B2B</TabsTrigger>
               <TabsTrigger value="cuidados" className="whitespace-nowrap px-2.5 py-1 text-xs">Cuidados</TabsTrigger>
               {canSeeSources && <TabsTrigger value="fontes" className="whitespace-nowrap px-2.5 py-1 text-xs">Fontes</TabsTrigger>}
-              {canEditFull && <TabsTrigger value="historico" className="whitespace-nowrap px-2.5 py-1 text-xs">Histórico</TabsTrigger>}
+              {canSeeHistory && <TabsTrigger value="historico" className="whitespace-nowrap px-2.5 py-1 text-xs">Histórico</TabsTrigger>}
               {canSeeAudit && <TabsTrigger value="auditoria" className="whitespace-nowrap px-2.5 py-1 text-xs">Auditoria</TabsTrigger>}
             </TabsList>
 
@@ -294,9 +297,9 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
               </TabsContent>
             )}
 
-            {canEditFull && (
+            {canSeeHistory && (
               <TabsContent value="historico" className="pt-3">
-                <VersoesHistoricoTab entidadeTipo="produto" entidadeId={produto.id} canApprove={isAdminOrGestor} />
+                <VersoesHistoricoTab entidadeTipo="produto" entidadeId={produto.id} canApprove={false} />
               </TabsContent>
             )}
 

@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,13 +66,14 @@ const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecn
 
 export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro, origem = "protocolos" }: Props) {
   const { role } = useAuth();
-  const canEditFull = role ? TECH_ROLES.includes(role) : false;
-  const canEditB2BOnly = role === "gestor_comercial";
-  const canEdit = canEditFull || canEditB2BOnly;
+  // Contrato: catálogo global é somente consulta para perfis de empresa.
+  // Caminho B2B-only (update_microorganism_b2b_description) removido: EXECUTE revogado.
+  const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
+  const canSeeHistory = role ? TECH_ROLES.includes(role) : false;
   const canSeeAudit = role ? ADMIN_ROLES.includes(role) : false;
   const canSeeSources = role ? SOURCE_VIEW_ROLES.includes(role) : false;
   const canEditSources = canEditFull;
-  const canDeleteSources = role ? ADMIN_ROLES.includes(role) : false;
+  const canDeleteSources = false;
   const isAdminOrGestor = role ? ADMIN_ROLES.includes(role) : false;
 
   const { data, isLoading, isError, isSuccess, isFetching, refetch } = useMicroorganismProfile(micro?.id);
@@ -133,20 +135,6 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
 
   const doSave = async () => {
     try {
-      if (canEditB2BOnly && !canEditFull) {
-        if (!data?.profile?.id) {
-          toast.error("Ficha ainda não criada — peça ao time técnico para iniciar a ficha.");
-          return;
-        }
-        const { error } = await supabase.rpc("update_microorganism_b2b_description" as any, {
-          p_profile_id: data.profile.id,
-          p_explicacao_b2b: form.explicacao_b2b,
-        });
-        if (error) throw error;
-        toast.success("Texto B2B atualizado");
-        refetch();
-        return;
-      }
       await upsert.mutateAsync({ microrganismo_id: micro.id, ...form });
       if (form.status_validacao === "aprovado" && (micro as any).b2b_enabled && !form.explicacao_b2b.trim()) {
         toast.warning("Aprovado tecnicamente, porém sem texto B2B.");
@@ -248,7 +236,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
               <TabsTrigger value="produtor" className="whitespace-nowrap px-2.5 py-1 text-xs">Produtor</TabsTrigger>
               <TabsTrigger value="b2b" className="whitespace-nowrap px-2.5 py-1 text-xs">B2B</TabsTrigger>
               {canSeeSources && <TabsTrigger value="fontes" className="whitespace-nowrap px-2.5 py-1 text-xs">Fontes</TabsTrigger>}
-              {canEditFull && <TabsTrigger value="historico" className="whitespace-nowrap px-2.5 py-1 text-xs">Histórico</TabsTrigger>}
+              {canSeeHistory && <TabsTrigger value="historico" className="whitespace-nowrap px-2.5 py-1 text-xs">Histórico</TabsTrigger>}
               {canSeeAudit && <TabsTrigger value="auditoria" className="whitespace-nowrap px-2.5 py-1 text-xs">Auditoria</TabsTrigger>}
             </TabsList>
 
@@ -292,21 +280,11 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
                 entidadeTipo="microrganismo" entidadeId={micro.id} campo="explicacao_produtor" canGenerateAI={canEditFull} />
             </TabsContent>
             <TabsContent value="b2b" className="space-y-3 pt-3">
-              {canEditB2BOnly && !canEditFull && !data?.profile?.id && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                  Ficha ainda não criada — peça ao time técnico para iniciar a ficha.
-                </p>
-              )}
-              {canEditB2BOnly && !canEditFull && !(micro as any).b2b_enabled && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                  Microrganismo não está habilitado para B2B.
-                </p>
-              )}
               <ProfileFieldAI
                 label="Linguagem para parceiro B2B"
                 rows={6}
                 value={form.explicacao_b2b}
-                readOnly={!canEditFull && !canEditB2BOnly}
+                readOnly={!canEditFull}
                 onChange={(v: string) => setForm({ ...form, explicacao_b2b: v })}
                 entidadeTipo="microrganismo"
                 entidadeId={micro.id}
@@ -314,9 +292,6 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
                 canGenerateAI={canEditFull}
               />
 
-              {canEditB2BOnly && !canEditFull && (
-                <p className="text-[10px] text-muted-foreground italic">Você pode editar apenas a explicação B2B.</p>
-              )}
             </TabsContent>
 
             {canSeeSources && (
@@ -329,9 +304,9 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
                 />
               </TabsContent>
             )}
-            {canEditFull && (
+            {canSeeHistory && (
               <TabsContent value="historico" className="pt-3">
-                <VersoesHistoricoTab entidadeTipo="microrganismo" entidadeId={micro.id} canApprove={isAdminOrGestor} />
+                <VersoesHistoricoTab entidadeTipo="microrganismo" entidadeId={micro.id} canApprove={false} />
               </TabsContent>
             )}
             {canSeeAudit && (
@@ -356,9 +331,6 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
             <Button variant="outline" size="sm" onClick={copyResumo}>Copiar resumo</Button>
             {!isError && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="micro" profileId={data.profile.id} onDone={refetch} />
-            )}
-            {!isError && canEditB2BOnly && !canEditFull && (
-              <Button size="sm" onClick={save} disabled={upsert.isPending}>Salvar texto B2B</Button>
             )}
             {!isError && canEditFull && (
               <>
