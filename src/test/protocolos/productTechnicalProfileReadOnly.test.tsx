@@ -36,11 +36,11 @@ describe("contenção da edição B2B da ficha global", () => {
     expect(mocks.upsert).not.toHaveBeenCalled();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
-  it("troca de técnico para gestor comercial remove a edição sem promover alçada", () => {
+  it("técnico/admin de empresa só consulta a ficha global; troca de perfil não promove alçada", () => {
     mocks.role = "tecnico_agronomo";
     const view = render(tree());
-    expect(screen.getByRole("textbox", { name: "Resumo curto" })).toHaveProperty("readOnly", false);
-    expect(screen.getByRole("button", { name: "Salvar rascunho" })).toBeEnabled();
+    expect(screen.getByRole("textbox", { name: "Resumo curto" })).toHaveProperty("readOnly", true);
+    expect(screen.queryByRole("button", { name: /Salvar|Enviar para revisão|Arquivar|Aprovar ficha/ })).toBeNull();
     mocks.role = "gestor_comercial"; view.rerender(tree());
     expect(screen.getByRole("textbox", { name: "Resumo curto" })).toHaveProperty("readOnly", true);
     expect(screen.queryByRole("button", { name: "Salvar rascunho" })).toBeNull();

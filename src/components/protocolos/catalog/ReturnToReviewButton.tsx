@@ -1,3 +1,4 @@
+import { GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,8 @@ export function ReturnToReviewButton({ kind, profileId, onDone }: Props) {
 
 
   const submit = async () => {
+    toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE);
+    return;
     if (!profileId) return;
     if (motivo.trim().length < 5) {
       toast.error("Descreva o motivo do retorno (mín. 5 caracteres).");

@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -74,6 +75,7 @@ export function useUpsertMicroProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<MicroProfile> & { microrganismo_id: string }) => {
+      assertGlobalCatalogWriteBlocked();
       const { data, error } = await (supabase as any)
         .from("microorganism_technical_profiles")
         .upsert(payload as any, { onConflict: "microrganismo_id" })

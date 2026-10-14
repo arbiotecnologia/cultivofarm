@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,7 @@ export function ProblemaSelector({ value, onSelect, className, placeholder = "Se
 
   const createMutation = useMutation({
     mutationFn: async (payload: { nome: string; categoria: string }) => {
+      assertGlobalCatalogWriteBlocked();
       const { data, error } = await (supabase as any)
         .from("catalogo_problemas")
         .insert([{ 

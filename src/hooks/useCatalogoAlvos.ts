@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ParentKind } from "@/hooks/useCatalogTargetsCrops";
@@ -45,6 +46,7 @@ export function useBulkInserirAlvos(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (alvos: AlvoInput[]) => {
+      assertGlobalCatalogWriteBlocked();
       const { data, error } = await supabase.rpc("bulk_inserir_alvos" as any, {
         p_kind: kind,
         p_parent_id: parentId,

@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +71,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
 
   const create = useMutation({
     mutationFn: async () => {
+      assertGlobalCatalogWriteBlocked();
       const vol = Number(novo.volume_ml);
       const preco = Number(novo.preco_brl);
       if (!vol || vol <= 0) throw new Error("Volume inválido");
@@ -97,6 +99,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
 
   const update = useMutation({
     mutationFn: async (v: CatalogoVolume) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await supabase
         .from("catalogo_volumes" as any)
         .update({
@@ -115,6 +118,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await supabase.from("catalogo_volumes" as any).delete().eq("id", id);
       if (error) throw error;
     },

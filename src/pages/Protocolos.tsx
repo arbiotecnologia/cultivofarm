@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -138,6 +139,7 @@ function ProblemasTab() {
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
+      assertGlobalCatalogWriteBlocked();
       if (editingItem) {
         const { error } = await supabase
           .from("catalogo_problemas")
@@ -163,6 +165,7 @@ function ProblemasTab() {
 
   const toggleAtivoMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await supabase
         .from("catalogo_problemas")
         .update({ ativo })

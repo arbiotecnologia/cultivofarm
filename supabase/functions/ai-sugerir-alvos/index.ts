@@ -4,11 +4,11 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireActiveCatalogSuperadmin } from '../_shared/catalog-superadmin-guard.ts';
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const TECH_ROLES = ['administrador', 'gestor', 'consultor_tecnico', 'tecnico_agronomo'];
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -17,18 +17,21 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return j({ error: 'Não autenticado' }, 401);
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { data: userRes } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (!authHeader.startsWith('Bearer ')) return j({ error: 'Não autenticado' }, 401);
+    const userClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userRes } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
     const user = userRes?.user;
     if (!user) return j({ error: 'Sessão inválida' }, 401);
 
-    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const userRoles = (roles ?? []).map((r: any) => r.role);
-    if (!userRoles.some((r: string) => TECH_ROLES.includes(r))) {
-      return j({ error: 'Sem permissão' }, 403);
-    }
+    // Superadmin ativo/readiness antes de qualquer leitura privilegiada ou IA.
+    const guard = await requireActiveCatalogSuperadmin(userClient, user.id);
+    if (!guard.ok) return j({ error: guard.error }, guard.status);
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const { entidade_tipo, entidade_id, max = 20 } = await req.json();
+    const { entidade_tipo, entidade_id, max: maxRaw = 20 } = await req.json();
+    const max = Number.isInteger(maxRaw) && maxRaw >= 1 && maxRaw <= 30 ? maxRaw : 20;
     if (!['produto', 'microrganismo'].includes(entidade_tipo)) return j({ error: 'entidade_tipo inválido' }, 400);
     if (typeof entidade_id !== 'string') return j({ error: 'entidade_id ausente' }, 400);
 
@@ -87,7 +90,7 @@ Responda APENAS com JSON: {"alvos":[{"nome":"...","tipo":"praga","prioridade":3,
 
     if (aiRes.status === 429) return j({ error: 'Limite de uso atingido. Tente novamente em instantes.' }, 429);
     if (aiRes.status === 402) return j({ error: 'Créditos de IA esgotados.' }, 402);
-    if (!aiRes.ok) return j({ error: `IA falhou: ${(await aiRes.text()).slice(0, 200)}` }, 500);
+    if (!aiRes.ok) return j({ error: 'IA indisponível no momento' }, 502);
 
     const aiData = await aiRes.json();
     const raw = aiData?.choices?.[0]?.message?.content ?? '{}';
@@ -99,7 +102,8 @@ Responda APENAS com JSON: {"alvos":[{"nome":"...","tipo":"praga","prioridade":3,
     const alvos = Array.isArray(parsed.alvos) ? parsed.alvos : [];
     return j({ alvos });
   } catch (e: any) {
-    return j({ error: e.message || String(e) }, 500);
+    console.error('ai-sugerir-alvos failed');
+    return j({ error: 'Falha ao sugerir alvos' }, 500);
   }
 });
 
