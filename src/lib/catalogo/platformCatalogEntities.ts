@@ -36,7 +36,7 @@ const text = (max: number) => z.string().max(max).nullable();
 const ufc = z.number().finite().positive().max(1e18).nullable();
 export const microValuesSchema = z.object({
   nome: z.string().trim().min(1).max(200), tipo: z.enum(microTypes), nome_cientifico: text(300),
-  concentracao_ufc_ml: ufc, concentracao_label: text(120), fornecedor: text(200), producao_on_farm: z.boolean(),
+  concentracao_ufc_ml: ufc, concentracao_label: text(120), fornecedor: text(200), producao_on_farm: z.boolean().nullable(),
   meio_cultivo: text(5000), funcao_agronomica: text(5000), observacoes: text(5000), descricao: text(5000),
 }).strict();
 export const cultureValuesSchema = z.object({ nome: z.string().trim().min(1).max(120), descricao: text(2000) }).strict();
@@ -46,7 +46,6 @@ export type EntityValues = Record<string, string | number | boolean | null>;
 const version = z.string().datetime({ offset: true });
 export const microDetailSchema = microValuesSchema.extend({
   id: z.string().uuid(), codigo: z.string().nullable(), ativo: z.boolean(), updated_at: version,
-  producao_on_farm: z.boolean().nullable(),
 }).strict();
 export const cultureDetailSchema = cultureValuesSchema.extend({ id: z.string().uuid(), ativo: z.boolean(), updated_at: version }).strict();
 export type EntityDetail = { id: string; ativo: boolean; updated_at: string } & EntityValues;
@@ -101,6 +100,7 @@ function confirm(data: unknown, key: string, check: (r: z.infer<typeof receiptSc
 
 export async function createEntity(kind: EntityKind, values: EntityValues, reason: string, key: string, signal: AbortSignal) {
   const body = valuesSchema[kind].parse(values);
+  if (kind === "micro" && typeof body.producao_on_farm !== "boolean") throw new Error("Informe se há produção on farm.");
   const { data, error } = await rpc()(rpcNames[kind].create, { p_payload: body, p_reason: reasonSchema.parse(reason), p_idempotency_key: key })
     .abortSignal(signal);
   if (signal.aborted) throw new Error("Solicitação encerrada.");
