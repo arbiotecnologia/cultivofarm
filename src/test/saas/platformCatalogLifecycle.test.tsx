@@ -77,16 +77,19 @@ function fillCreate() {
 describe("tela de criação", () => {
   it("exige confirmação explícita e só chama uma vez com clique duplo", async () => {
     renderCreate(); fillCreate();
-    expect(mocks.rpc).not.toHaveBeenCalled();
+    const creates = () => mocks.rpc.mock.calls.filter(([n]) => n === "platform_create_global_product").length;
+    expect(creates()).toBe(0);
     const confirm = screen.getByRole("button", { name: "Confirmar criação" });
     fireEvent.click(confirm); fireEvent.click(confirm);
     await waitFor(() => expect(mocks.saved).toHaveBeenCalledTimes(1));
-    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(creates()).toBe(1);
   });
   it.each(["40001", "42501"])("erro %s mostra mensagem segura e não reporta sucesso", async (code) => {
-    mocks.request.mockResolvedValue({ data: null, error: { code, message: "detalhe privado" } });
+    mocks.request.mockImplementation((name, a) => Promise.resolve(name === "platform_read_global_microorganisms" ? microPage(a)
+      : { data: null, error: { code, message: "detalhe privado" } }));
     renderCreate(); fillCreate(); fireEvent.click(screen.getByRole("button", { name: "Confirmar criação" }));
-    expect(await screen.findByRole("alert")).not.toHaveTextContent("detalhe privado");
+    await waitFor(() => expect(screen.getAllByRole("alert").length).toBeGreaterThan(0));
+    expect(document.body).not.toHaveTextContent("detalhe privado");
     expect(mocks.saved).not.toHaveBeenCalled();
   });
   it("troca de identidade durante a gravação esconde a tela e descarta a resposta", async () => {
@@ -126,7 +129,7 @@ describe("arquivar/reativar", () => {
 describe("cerca de identidade com retorno ao mesmo escopo", () => {
   it("perda transitória de readiness aborta a requisição e limpa o formulário", async () => {
     const signals: AbortSignal[] = [];
-    mocks.request.mockImplementation((_n, _a, s: AbortSignal) => { signals.push(s); return new Promise(() => {}); });
+    mocks.request.mockImplementation((n, a, s: AbortSignal) => { if (n === "platform_read_global_microorganisms") return Promise.resolve(microPage(a)); signals.push(s); return new Promise(() => {}); });
     const original = mocks.actor;
     const rerender = renderCreate(); fillCreate(); fireEvent.click(screen.getByRole("button", { name: "Confirmar criação" }));
     await waitFor(() => expect(signals).toHaveLength(1));
@@ -166,9 +169,9 @@ describe("composição na tela de criação", () => {
   });
   it("paginação e busca são enviadas ao servidor", async () => {
     renderCreate();
-    await screen.findByText("Bacillus A");
+    await screen.findByText(/Bacillus A/);
     fireEvent.click(screen.getByRole("button", { name: "Próximos microrganismos" }));
-    expect(await screen.findByText("Fungo B")).toBeInTheDocument();
+    expect(await screen.findByText(/Fungo B/)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Buscar microrganismo"), { target: { value: " fungo " } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar microrganismo" }));
     await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_microorganisms", expect.objectContaining({ p_search: "fungo", p_offset: 0 })));
