@@ -111,7 +111,7 @@ describe("diálogo de apresentações", () => {
     expect((await screen.findAllByText(/R\$ 123,45\/L/))[0]).toBeTruthy();
   });
   it("primeira ação em ativa pede prévia sem token e mostra projeção exata antes de confirmar", async () => {
-    handler = (n, a) => n === "platform_read_global_item_volumes" ? { data: page(), error: null } : a.p_confirm_token ? receipt(a) : need();
+    handler = (n, a) => n === "platform_read_global_item_volumes" ? { data: page(), error: null } : a.p_confirm_token ? receipt(a, { repriced: true }) : need();
     mount();
     fireEvent.click(await screen.findByRole("button", { name: "Arquivar 1 L" }));
     expect(screen.queryByLabelText(/Confirmo o efeito comercial/)).toBeNull();
@@ -157,7 +157,7 @@ describe("diálogo de apresentações", () => {
       if (n === 1) return need({ token: TOK1 });
       if (a.p_confirm_token === TOK1) return { data: null, error: { code: "40001", message: "catalog_volume_preview_stale" } };
       if (!a.p_confirm_token) return need({ token: TOK2 });
-      return a.p_confirm_token === TOK2 ? receipt(a) : { data: null, error: { code: "40001", message: "x" } };
+      return a.p_confirm_token === TOK2 ? receipt(a, { repriced: true }) : { data: null, error: { code: "40001", message: "x" } };
     };
     mount();
     fireEvent.click(await screen.findByRole("button", { name: "Arquivar 1 L" }));
