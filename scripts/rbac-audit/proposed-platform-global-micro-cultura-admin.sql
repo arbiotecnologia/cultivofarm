@@ -87,7 +87,7 @@ FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_entities_audit_immutable(
 -- ---------------------------------------------------------------- validadores (whitelist explícita)
 -- Retorna objeto normalizado; qualquer chave fora da lista, tipo errado ou limite excedido aborta.
 CREATE FUNCTION platform_private.catalog_micro_normalize(p jsonb, p_create boolean) RETURNS jsonb
-LANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
 DECLARE k text; v_out jsonb:='{}'::jsonb; v_num numeric;
   v_text constant jsonb:='{"nome_cientifico":300,"concentracao_label":120,"fornecedor":200,"meio_cultivo":5000,"funcao_agronomica":5000,"observacoes":5000,"descricao":5000}';
 BEGIN
@@ -130,7 +130,7 @@ BEGIN
 END;
 $$;
 CREATE FUNCTION platform_private.catalog_culture_normalize(p jsonb, p_create boolean) RETURNS jsonb
-LANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
 DECLARE k text; v_out jsonb:='{}'::jsonb;
 BEGIN
   IF p IS NULL OR pg_catalog.jsonb_typeof(p) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_entity_invalid'; END IF;
