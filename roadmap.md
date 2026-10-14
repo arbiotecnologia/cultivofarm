@@ -643,5 +643,10 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] UI Liberar/Retirar B2B (produtos e microrganismos) com confirmação, motivo e recibo validado
 - [x] Lista recarrega após Apresentações; botão "Confirmando…" não fica preso
 - [ ] Aplicar SQL e rodar runtime — aguarda revisão independente
-- [ ] Reativar e liberar Bombarbio — aguarda aplicação
+- [x] Bombarbio ativo via UI (21:09:04 UTC, audit 92721354…); B2B segue false
+- [x] Candidato: trigger `update_produtos_updated_at` → `catalog_touch_version` (preflight/rollback); diálogo B2B com fence de época
+- [ ] Liberar Bombarbio para B2B — aguarda aplicação do SQL
 - [ ] Ficha técnica/dose/regulatório do Bombarbio — aguarda dados reais
+
+## Próxima fase (após B2B) — não iniciada
+- [ ] Quatro abas globais nesta ordem: Produtos Químicos, Produtos Biológicos, Microrganismos, Fertilizantes/Adubos; Culturas como apoio; sementes/tratamento fora
