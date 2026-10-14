@@ -468,6 +468,8 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
                       antes da definição da finalidade regulatória.
                     </p>
                   )}
+                </div>
+              ))}
             </TabsContent>
 
             {/* DOCUMENTOS ----------------------------------------------- */}
