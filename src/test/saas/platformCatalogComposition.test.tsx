@@ -182,14 +182,25 @@ describe("painel de composição", () => {
     fireEvent.change(screen.getByLabelText(/Motivo/), { target: { value: "Outro motivo revisado agora" } });
     expect(screen.getByRole("checkbox").getAttribute("aria-checked")).toBe("false");
   });
-  it("Adicionar limitado a 50 componentes", async () => {
+  it("Adicionar limitado a 50 componentes: 49 lidas → 50 → recusa 51", async () => {
+    const decl = (i: number) => ({ id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, ordem: i, tipo_componente: "ingrediente_ativo" as const,
+      microrganismo_id: null, micro_nome: null, micro_ativo: null, componente_nome: `Ativo ${i}`, quantidade: null, unidade: null, base: null,
+      natureza: "concentracao_declarada" as const });
+    reads[OTHER] = { ...reads[OTHER], conjunto: { status: "rascunho", updated_at: T0 }, declaracoes: Array.from({ length: 49 }, (_, i) => decl(i + 1)) };
     render(dlg());
-    const add = await screen.findByRole("button", { name: "Adicionar componente" });
-    for (let i = 0; i < 52; i++) fireEvent.click(add);
-    expect(screen.getAllByLabelText("Tipo")).toHaveLength(50);
-    expect((add as HTMLButtonElement).disabled).toBe(true);
+    expect(await screen.findByText("Componente 49")).toBeTruthy();
+    expect(screen.queryByText("Componente 50")).toBeNull();
+    const add = screen.getByText("Adicionar componente").closest("button") as HTMLButtonElement;
+    expect(add.disabled).toBe(false);
+    fireEvent.click(add);
+    expect(screen.getByText("Componente 50")).toBeTruthy();
+    expect(add.disabled).toBe(true);
+    fireEvent.click(add);
+    expect(screen.queryByText("Componente 51")).toBeNull();
+    expect(screen.getAllByText(/^Componente \d+$/)).toHaveLength(50);
+    expect(screen.getByText("Limite de 50 componentes.")).toBeTruthy();
   });
-  it("durante salvamento todos os controles editáveis ficam desabilitados", async () => {
+  it("durante salvamento todos os controles editáveis ficam desabilitados (inclui fieldset)", async () => {
     render(dlg(BIO));
     fireEvent.click(await screen.findByRole("button", { name: "Adicionar componente" }));
     fireEvent.click(screen.getByRole("button", { name: "Buscar no catálogo" }));
@@ -199,10 +210,12 @@ describe("painel de composição", () => {
     mocks.request.mockImplementationOnce(() => new Promise(() => {}));
     fireEvent.click(screen.getByRole("button", { name: "Salvar declarações" }));
     await screen.findByRole("button", { name: "Confirmando…" });
+    // :disabled considera fieldset[disabled] ancestral, ao contrário da propriedade .disabled.
     for (const name of ["Adicionar componente", "Buscar no catálogo", "Remover componente"])
-      expect((screen.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
-    for (const label of [/Motivo/, "Situação das declarações", "Buscar microrganismo", "Tipo", "Natureza da informação"])
-      expect((screen.getByLabelText(label) as HTMLInputElement).disabled).toBe(true);
+      expect(screen.getByRole("button", { name }).matches(":disabled")).toBe(true);
+    for (const label of [/Motivo/, "Situação das declarações", "Buscar microrganismo", "Tipo", "Natureza da informação",
+      "Quantidade", "Unidade", "Base", "Escolher do catálogo (ativos)"])
+      expect(screen.getByLabelText(label).matches(":disabled")).toBe(true);
   });
   it("busca de micros: resposta antiga que chega depois da nova é descartada", async () => {
     render(dlg(BIO));
