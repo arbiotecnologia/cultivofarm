@@ -662,3 +662,8 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Família: migration 20261014215550 APLICADA externamente (NÃO REAPLICAR); harness runtime corrigido (owner só oráculo, RPC sob authenticated); externo 87/0.
 - [ ] Testar UI publicada das quatro abas e classificar Bombarbio pela UI (aguarda usuário/publicação).
 - [ ] Próximo recorte (NÃO iniciado): composição para Biológicos/Químicos/Fertilizantes, com vínculo opcional a microrganismos existentes; refinar sem duplicar fonte de verdade, sem recadastro do Bombarbio, e rollback preservando dados (sem DROP por padrão).
+- [x] Classificação por família fechada: 5a8a2f76 publicado; Bombarbio biológico/biofungicida pela UI 22:02:40 UTC (evidência externa).
+- [x] Composição todas as famílias — candidato local (SQL NÃO aplicado): tabelas aditivas só para declarações não representadas em formulacoes, leitor unificado, writer SA, painel Composição, rollback preservando dados. Relatório `docs/auditorias/catalogo-composicao-todas-familias.md`.
+- [ ] Composição: revisão independente + aplicação do SQL + runtime rollback (aguarda usuário).
+- [ ] Composição: publicar e testar o painel na UI real somente após o SQL aplicado (aguarda usuário).
+- [ ] Composição: exibir declarações em ficha/PDF/B2B (fase futura); cadastro novo químicos/fertilizantes (tipo/unidade) pendente; bug P2 composicaoSync insumo sem micro.
