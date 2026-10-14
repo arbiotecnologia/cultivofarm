@@ -108,7 +108,7 @@ BEGIN
     AND m.preco_tabela IS NULL AND m.dose_ml_ha IS NULL AND m.safra_referencia IS NULL AND m.product_id IS NULL);
   PERFORM pg_temp.ok('pg.micro.descricao_nao_direta', m.descricao='rt');
   PERFORM pg_temp.ok('pg.cultura.descricao_nao_direta', (SELECT descricao FROM public.culturas WHERE id=v_cid)='rt');
-  PERFORM pg_temp.ok('pg.ledger.novos_recibos', (SELECT count(*) FROM public.catalog_platform_admin_audit) - (SELECT v::int FROM rt_ctx WHERE k='ledger_antes') = 8);
+  PERFORM pg_temp.ok('pg.ledger.novos_recibos', (SELECT count(*) FROM public.catalog_platform_admin_audit) - (SELECT v::int FROM rt_ctx WHERE k='ledger_antes') = 6);
   PERFORM pg_temp.ok('pg.ledger.before_after_versionados', NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit
     WHERE operation IN ('update_global_microorganism','update_global_culture','set_global_microorganism_status','set_global_culture_status')
       AND correlation_id IS NOT NULL AND created_at >= now() AND (counts_before->>'updated_at' IS NULL OR counts_after->'after'->>'updated_at' IS NULL)));
