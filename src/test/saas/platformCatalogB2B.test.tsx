@@ -121,4 +121,72 @@ describe("diálogo B2B global", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
+  const fill = () => {
+    fireEvent.change(screen.getByLabelText(/Motivo/), { target: { value: "Liberação autorizada pelo responsável" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+  };
+  const pendingWrite = () => {
+    let resolve!: (v: unknown) => void;
+    mocks.request.mockImplementation((n, a) => n === "platform_read_global_b2b_state" ? Promise.resolve({ data: current, error: null })
+      : new Promise((r) => { resolve = () => r(receipt(a)); }));
+    return () => resolve(undefined);
+  };
+  it("alterar o motivo limpa a confirmação", async () => {
+    open();
+    await screen.findByText("Bombarbio (FUNG-2)");
+    fill();
+    expect(screen.getByRole("button", { name: "Liberar para B2B" })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText(/Motivo/), { target: { value: "Liberação autorizada pelo responsável 2" } });
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Liberar para B2B" })).toBeDisabled();
+  });
+  it("troca de item durante a gravação: resposta tardia descartada e estado limpo", async () => {
+    const scope = platformCatalogAccess(mocks.actor).scope;
+    const view = render(<PlatformCatalogB2BDialog tipo="produto" itemId={ID} scope={scope} onClose={mocks.close} onSaved={mocks.saved} />);
+    await screen.findByText("Bombarbio (FUNG-2)");
+    const finish = pendingWrite();
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "Liberar para B2B" }));
+    await screen.findByText("Confirmando…");
+    const ID2 = "00000000-0000-4000-8000-000000000009";
+    current = st({ id: ID2, nome: "Outro" });
+    view.rerender(<PlatformCatalogB2BDialog tipo="produto" itemId={ID2} scope={scope} onClose={mocks.close} onSaved={mocks.saved} />);
+    await screen.findByText("Outro (FUNG-2)");
+    finish();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mocks.saved).not.toHaveBeenCalled();
+    expect(screen.queryByText("Confirmando…")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Motivo/)).toHaveValue("");
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+  it("troca de identidade durante a gravação: aborta e não chama onSaved", async () => {
+    const scope = platformCatalogAccess(mocks.actor).scope;
+    const view = render(<PlatformCatalogB2BDialog tipo="produto" itemId={ID} scope={scope} onClose={mocks.close} onSaved={mocks.saved} />);
+    await screen.findByText("Bombarbio (FUNG-2)");
+    const finish = pendingWrite();
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "Liberar para B2B" }));
+    await screen.findByText("Confirmando…");
+    const signalUsed = writes()[0][2] as AbortSignal;
+    mocks.actor = actor("actor-b");
+    view.rerender(<PlatformCatalogB2BDialog tipo="produto" itemId={ID} scope={scope} onClose={mocks.close} onSaved={mocks.saved} />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    finish();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(signalUsed.aborted).toBe(true);
+    expect(mocks.saved).not.toHaveBeenCalled();
+  });
+});
+
+describe("SQL candidato B2B — versão monotônica de produtos", () => {
+  it("troca só a função do trigger update_produtos_updated_at, com preflight e rollback", async () => {
+    const fs = await import("node:fs");
+    const sql = fs.readFileSync("scripts/rbac-audit/proposed-platform-global-b2b-enabled.sql", "utf8");
+    const rb = fs.readFileSync("scripts/rbac-audit/rollback-platform-global-b2b-enabled.sql", "utf8");
+    expect(sql).toMatch(/tgfoid='public\.update_updated_at_column\(\)'::regprocedure/);
+    expect(sql).toMatch(/DROP TRIGGER update_produtos_updated_at ON public\.produtos;\s*CREATE TRIGGER update_produtos_updated_at BEFORE UPDATE ON public\.produtos\s*FOR EACH ROW EXECUTE FUNCTION platform_private\.catalog_touch_version\(\);/);
+    expect(sql).not.toMatch(/(CREATE OR REPLACE|ALTER|DROP) FUNCTION public\.update_updated_at_column/);
+    expect(rb).toMatch(/EXECUTE FUNCTION public\.update_updated_at_column\(\)/);
+    expect(rb).not.toMatch(/FUNCTION public\.update_updated_at_column\(\) RETURNS/);
+  });
 });
