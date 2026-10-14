@@ -210,3 +210,25 @@ describe("composição na tela de criação", () => {
     expect(createPayloadSchema.safeParse({ ...base, dose_ml_ha: 0.1234567 }).success).toBe(false);
   });
 });
+
+describe("layout do editor de composição (estrutural; jsdom não mede largura)", () => {
+  it("linhas, rótulos e botões permitem quebra e encolhimento sem ocultar conteúdo", async () => {
+    renderCreate();
+    const add = await screen.findByRole("button", { name: "Adicionar Bacillus A" });
+    expect(add.className).toMatch(/whitespace-normal/); expect(add.className).toMatch(/max-w-full/); expect(add.className).toMatch(/h-auto/);
+    fireEvent.click(add);
+    const remove = screen.getByRole("button", { name: "Remover Bacillus A" });
+    expect(remove.className).toMatch(/whitespace-normal/);
+    const row = remove.parentElement!;
+    expect(row.className).toMatch(/grid-cols-\[minmax\(0,1fr\)\]/);
+    expect(row.className).not.toMatch(/grid-cols-\[1fr_7rem_7rem_auto\]/);
+    const fieldset = screen.getByRole("group", { name: /Composição/ });
+    expect(fieldset.className).toMatch(/min-w-0/); expect(fieldset.className).toMatch(/w-full/);
+    expect(screen.getByText("Volume (mL) de Bacillus A").className).toMatch(/overflow-wrap:anywhere/);
+    const nav = screen.getByRole("navigation", { name: "Paginação de microrganismos" });
+    expect(nav.className).toMatch(/flex-wrap/);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/w-\[calc\(100%-2rem\)\]/); expect(dialog.className).toMatch(/max-w-xl/);
+    expect(dialog.className).not.toMatch(/overflow-x-hidden/);
+  });
+});
