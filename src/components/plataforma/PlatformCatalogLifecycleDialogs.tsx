@@ -202,11 +202,11 @@ function CompositionEditor({ rows, onChange }: { rows: CompRow[]; onChange: (row
         {propBad && <p className="text-xs text-destructive sm:col-span-2">Proporção deve ser maior que 0 e até 100, com até 6 casas.</p>}
       </div>;
     })}
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="min-w-0 flex-1 space-y-1"><Label className="block [overflow-wrap:anywhere]" htmlFor="micro-search">Buscar microrganismo</Label>
-        <Input id="micro-search" maxLength={120} value={input} onChange={(e) => setInput(e.target.value)}
+    <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+      <div className="min-w-0 space-y-1"><Label className="block [overflow-wrap:anywhere]" htmlFor="micro-search">Buscar microrganismo</Label>
+        <Input id="micro-search" className="w-full" maxLength={120} value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setSearch(input.trim()); setOffset(0); } }} /></div>
-      <Button type="button" variant="outline" className="h-auto max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" onClick={() => { setSearch(input.trim()); setOffset(0); }}>Buscar microrganismo</Button>
+      <Button type="button" variant="outline" className="min-h-10 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-left" onClick={() => { setSearch(input.trim()); setOffset(0); }}>Buscar microrganismo</Button>
     </div>
     {state === "loading" && <p role="status" className="text-sm text-muted-foreground">Carregando microrganismos…</p>}
     {state === "error" && <p role="alert" className="text-sm">Não foi possível consultar os microrganismos.</p>}
