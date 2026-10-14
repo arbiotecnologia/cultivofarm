@@ -650,10 +650,12 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 
 ## Catálogo global — quatro abas e família (2026-10-14)
 - [x] UI local: abas Produtos Químicos, Produtos Biológicos, Microrganismos (painel existente), Fertilizantes/Adubos; Culturas em "Cadastros de apoio"; `?catalogo=`/`?revisao=` preservando demais parâmetros
-- [x] Filtro Todos (família + pendentes) / Pendentes; legados sem família visíveis como "Pendente" em todas as abas de produtos
+- [x] Padrão de cada aba = EXCLUSIVAMENTE sua família (sem NULL); revisão administrativa secundária: Todos (qualquer família, inclusive NULL) / Pendentes (somente NULL) — revisão 8a78516b
+- [x] CHECK de classe sem brecha de NULL; writer rejeita versão não finita; diálogo com fence de época (item/versão/escopo/vivo)
 - [x] Diálogo Classificar (família + rótulo coerente, motivo, confirmação, recibo validado); criação legada preservada com classificação posterior
 - [x] SQL candidato + rollback + runtime rollback (`proposed-platform-global-product-family.sql`) — NÃO aplicado
 - [ ] Aplicar SQL/runtime (revisão independente); até lá as abas de produtos mostram erro seguro — não publicar antes
+- [ ] Depois da aplicação, os 9 produtos atuais só aparecem em "Revisão: pendentes" até serem classificados
 - [ ] Classificar Bombarbio como Biológico/Biofungicida pela UI (usuário)
 - [ ] Cadastro novo de fertilizantes/adubos e herbicidas (tipo/unidade) — pendente
 - [ ] Sementes/tratamento, tenant show/hide e itens próprios — fora desta fase

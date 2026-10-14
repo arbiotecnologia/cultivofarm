@@ -29,14 +29,15 @@ export const CATALOG_TABS = [
   { value: "fertilizantes", label: "Fertilizantes/Adubos", family: "fertilizante_adubo" as ProductFamily },
 ] as const;
 export type CatalogView = (typeof CATALOG_TABS)[number]["value"] | "culturas";
-export type ReviewFilter = "todos" | "pendentes";
+/** `familia` = padrão da aba (somente a família); `todos`/`pendentes` = revisão administrativa global. */
+export type ReviewFilter = "familia" | "todos" | "pendentes";
 
 export function parseCatalogView(value: string | null): CatalogView {
   if (value === "culturas") return "culturas";
   return CATALOG_TABS.some((t) => t.value === value) ? (value as CatalogView) : "quimicos";
 }
 export function parseReview(value: string | null): ReviewFilter {
-  return value === "pendentes" ? "pendentes" : "todos";
+  return value === "pendentes" || value === "todos" ? value : "familia";
 }
 
 /** Coerência família↔classe (espelho do CHECK do servidor; o servidor decide). */

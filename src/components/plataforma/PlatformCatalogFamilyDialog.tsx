@@ -29,9 +29,23 @@ export function PlatformCatalogFamilyDialog({ product, scope, onClose, onSaved }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const lock = useRef(false);
-  const controller = useRef<AbortController>();
-  useEffect(() => () => controller.current?.abort(), []);
-  useEffect(() => { if (!live) controller.current?.abort(); }, [live]);
+  const requests = useRef(new Set<AbortController>());
+  // Época do contexto (item/versão/escopo/vivo): qualquer mudança aborta pedidos, limpa campos e descarta respostas tardias.
+  const contextKey = JSON.stringify([product.id, product.updated_at, scope, live]);
+  const epoch = useRef({ key: contextKey, n: 0 });
+  if (epoch.current.key !== contextKey) epoch.current = { key: contextKey, n: epoch.current.n + 1 };
+  const epochN = epoch.current.n;
+  useEffect(() => {
+    for (const r of requests.current) r.abort();
+    requests.current.clear();
+    setFamily(product.familia_catalogo ?? ""); setClasse(product.classe_catalogo ?? NO_CLASS);
+    setReason(""); setConfirmed(false); setError(""); setBusy(false); lock.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset somente por troca de época
+  }, [epochN]);
+  useEffect(() => {
+    const set = requests.current;
+    return () => { for (const r of set) r.abort(); set.clear(); };
+  }, []);
   if (!live) return null;
   const classValue = classe === NO_CLASS ? null : classe;
   const changed = family !== "" && (family !== product.familia_catalogo || classValue !== product.classe_catalogo);
@@ -39,15 +53,20 @@ export function PlatformCatalogFamilyDialog({ product, scope, onClose, onSaved }
   const valid = family !== "" && isClassAllowed(family, classValue);
   const submit = async () => {
     if (family === "" || !valid || !changed || !reasonOk || !confirmed || lock.current || !liveRef.current) return;
+    const myEpoch = epoch.current.n;
+    const current = () => epoch.current.n === myEpoch && liveRef.current;
     lock.current = true; setBusy(true); setError("");
-    const c = new AbortController(); controller.current = c;
+    const c = new AbortController(); requests.current.add(c);
     const key = metadataRetryKey(scope, JSON.stringify(["family", product.id, product.updated_at, family, classValue, reason.trim()]));
     try {
       await setProductFamily(product, family, classValue, reason, key, c.signal);
-      if (!c.signal.aborted && liveRef.current) onSaved();
+      if (!c.signal.aborted && current()) onSaved();
     } catch (failure) {
-      if (!c.signal.aborted && liveRef.current) setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a classificação.");
-    } finally { lock.current = false; if (!c.signal.aborted) setBusy(false); }
+      if (!c.signal.aborted && current()) setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a classificação.");
+    } finally {
+      requests.current.delete(c);
+      if (epoch.current.n === myEpoch) { lock.current = false; setBusy(false); }
+    }
   };
   const reset = () => setConfirmed(false);
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>

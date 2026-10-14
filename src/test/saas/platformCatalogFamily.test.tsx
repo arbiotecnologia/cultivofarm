@@ -1,9 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
-import { platformCatalogPageSchema, type PlatformCatalogActor } from "@/lib/catalogo/platformCatalogRead";
+import { PlatformCatalogFamilyDialog } from "@/components/plataforma/PlatformCatalogFamilyDialog";
+import { platformCatalogAccess, platformCatalogPageSchema, type PlatformCatalogActor } from "@/lib/catalogo/platformCatalogRead";
 import { CATALOG_TABS, FAMILY_CLASSES, isClassAllowed, parseCatalogView, parseReview, setProductFamily } from "@/lib/catalogo/platformCatalogFamily";
 
 const mocks = vi.hoisted(() => ({ actor: {} as PlatformCatalogActor, request: vi.fn(), rpc: vi.fn() }));
@@ -41,19 +42,29 @@ describe("abas globais por família", () => {
     expect(within(screen.getByRole("navigation", { name: "Cadastros de apoio" })).getByRole("button", { name: "Culturas" })).toBeTruthy();
     expect(CATALOG_TABS.map((t) => t.value)).toEqual(["quimicos", "biologicos", "microrganismos", "fertilizantes"]);
   });
-  it("query param seleciona aba e filtro de revisão; servidor recebe família/revisão", async () => {
+  it.each([["quimicos", "quimico"], ["biologicos", "biologico"], ["fertilizantes", "fertilizante_adubo"]])(
+    "padrão da aba %s pede EXCLUSIVAMENTE a família %s", async (tab, fam) => {
+      setup(`/plataforma?catalogo=${tab}`); await screen.findByText("Bombarbio");
+      expect(readCalls().at(-1)).toEqual({ p_familia: fam, p_revisao: "familia", p_search: "", p_limit: 50, p_offset: 0 });
+    });
+  it("revisão Todos e Pendentes não filtram família; voltar remove o parâmetro", async () => {
     setup("/plataforma?aba=x&catalogo=biologicos&revisao=pendentes"); await screen.findByText("Bombarbio");
-    expect(readCalls().at(-1)).toEqual({ p_familia: "biologico", p_revisao: "pendentes", p_search: "", p_limit: 50, p_offset: 0 });
-    fireEvent.click(screen.getByRole("button", { name: "Todos (família + pendentes)" }));
-    await waitFor(() => expect(readCalls().at(-1)).toMatchObject({ p_familia: "biologico", p_revisao: "todos" }));
+    expect(readCalls().at(-1)).toEqual({ p_familia: null, p_revisao: "pendentes", p_search: "", p_limit: 50, p_offset: 0 });
+    fireEvent.click(screen.getByRole("button", { name: "Revisão: todos os produtos" }));
+    await waitFor(() => expect(readCalls().at(-1)).toMatchObject({ p_familia: null, p_revisao: "todos" }));
+    expect(lastSearch).toContain("revisao=todos");
+    fireEvent.click(screen.getByRole("button", { name: "Somente Produtos Biológicos" }));
+    await waitFor(() => expect(readCalls().at(-1)).toMatchObject({ p_familia: "biologico", p_revisao: "familia" }));
     expect(lastSearch).toContain("aba=x"); expect(lastSearch).not.toContain("revisao");
   });
-  it("legado sem família aparece como Pendente (não inferido de tipo/nome)", async () => {
-    setup("/plataforma?catalogo=fertilizantes"); await screen.findByText("Bombarbio");
+  it("pendente sem família só é exibido na revisão e como Pendente (não inferido)", async () => {
+    setup("/plataforma?catalogo=fertilizantes&revisao=pendentes"); await screen.findByText("Bombarbio");
     expect(screen.getByText("Pendente")).toBeTruthy();
     expect(screen.queryByText("Produtos Biológicos · Biofungicida")).toBeNull();
-    expect(readCalls().at(-1)).toMatchObject({ p_familia: "fertilizante_adubo", p_revisao: "todos" });
-    expect(screen.getByRole("note").textContent).toMatch(/ainda não está disponível/);
+  });
+  it("aba fertilizantes avisa que cadastro novo não existe", async () => {
+    setup("/plataforma?catalogo=fertilizantes"); await screen.findByText("Bombarbio");
+    expect(screen.getByText(/Cadastro novo de fertilizantes\/adubos ainda não está disponível/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Novo produto global" })).toBeNull();
   });
   it("criação legada continua disponível em químicos/biológicos", async () => {
@@ -62,7 +73,8 @@ describe("abas globais por família", () => {
   });
   it("valores inválidos do query param caem no padrão seguro", () => {
     expect(parseCatalogView("sementes")).toBe("quimicos"); expect(parseCatalogView("culturas")).toBe("culturas");
-    expect(parseReview("x")).toBe("todos");
+    expect(parseReview("x")).toBe("familia"); expect(parseReview(null)).toBe("familia");
+    expect(parseReview("todos")).toBe("todos"); expect(parseReview("pendentes")).toBe("pendentes");
   });
   it("troca de identidade descarta lista e relê no novo escopo", async () => {
     const view = setup(); await screen.findByText("Bombarbio");
@@ -107,7 +119,7 @@ describe("contrato de família", () => {
     await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).rejects.toThrow(/mudou/);
   });
   it("diálogo exige família, motivo e confirmação; salva e relê lista", async () => {
-    setup(); await screen.findByText("Bombarbio");
+    setup("/plataforma?revisao=pendentes"); await screen.findByText("Bombarbio");
     fireEvent.click(screen.getByRole("button", { name: "Classificar família de Bombarbio" }));
     const save = await screen.findByRole("button", { name: "Salvar classificação" });
     expect((save as HTMLButtonElement).disabled).toBe(true);
@@ -125,5 +137,62 @@ describe("contrato de família", () => {
     await screen.findByText("Alteração confirmada.");
     expect(screen.queryByRole("button", { name: "Salvar classificação" })).toBeNull();
     await waitFor(() => expect(readCalls().length).toBeGreaterThan(before));
+  });
+});
+
+describe("fence do diálogo de família", () => {
+  const V2 = "2026-10-14T21:45:00.000000+00:00";
+  const OTHER = "00000000-0000-4000-8000-000000000002";
+  type P = { id: string; updated_at: string; familia_catalogo: null; classe_catalogo: null; nome: string };
+  function mount(initial: P, scope: () => string) {
+    const onSaved = vi.fn(); const onClose = vi.fn();
+    const ui = (p: P) => <PlatformCatalogFamilyDialog product={p} scope={scope()} onClose={onClose} onSaved={onSaved} />;
+    const view = render(ui(initial));
+    return { onSaved, rerender: (p: P) => view.rerender(ui(p)), unmount: view.unmount };
+  }
+  const base: P = { id: ID, updated_at: V1, familia_catalogo: null, classe_catalogo: null, nome: "Bombarbio" };
+  function fill() {
+    fireEvent.change(screen.getByLabelText("Família"), { target: { value: "biologico" } });
+    fireEvent.change(screen.getByLabelText("Motivo (10 a 500 caracteres)"), { target: { value: "Confirmado pelo usuário" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar classificação" }));
+  }
+  let resolve: ((v: unknown) => void) | undefined;
+  beforeEach(() => {
+    mocks.request.mockImplementation((_n: string, args: { p_idempotency_key: string }, signal: AbortSignal) => new Promise((r) => {
+      resolve = () => r({ data: { id: ID, familia_catalogo: "biologico", classe_catalogo: null, updated_at: V2,
+        idempotency_key: args.p_idempotency_key, audit_id: ID, idempotent: false }, error: null });
+      void signal;
+    }));
+  });
+  const scopeOf = () => platformCatalogAccess(mocks.actor).scope;
+  const signal = () => mocks.request.mock.calls.at(-1)?.[2] as AbortSignal;
+  it.each([
+    ["escopo A→B com live=true", () => { mocks.actor = actor("sa-b"); return base; }],
+    ["troca de item", () => ({ ...base, id: OTHER })],
+    ["mesma entidade em nova versão", () => ({ ...base, updated_at: V2 })],
+  ])("%s aborta escrita, limpa campos e ignora resposta tardia", async (_n, change) => {
+    const m = mount(base, scopeOf); fill();
+    await screen.findByText("Confirmando…");
+    const next = change(); m.rerender(next);
+    expect(signal().aborted).toBe(true);
+    expect(screen.queryByText("Confirmando…")).toBeNull();
+    expect((screen.getByLabelText("Motivo (10 a 500 caracteres)") as HTMLTextAreaElement).value).toBe("");
+    expect((screen.getByLabelText("Família") as HTMLSelectElement).value).toBe("");
+    expect(screen.getByRole("checkbox").getAttribute("data-state")).toBe("unchecked");
+    await act(async () => { resolve?.(null); });
+    expect(m.onSaved).not.toHaveBeenCalled(); expect(screen.queryByRole("alert")).toBeNull();
+  });
+  it("fechamento (desmontagem) aborta escrita pendente", async () => {
+    const m = mount(base, scopeOf); fill(); await screen.findByText("Confirmando…");
+    m.unmount(); expect(signal().aborted).toBe(true);
+    await act(async () => { resolve?.(null); }); expect(m.onSaved).not.toHaveBeenCalled();
+  });
+  it("perda de readiness esconde o diálogo e aborta", async () => {
+    const m = mount(base, scopeOf); fill(); await screen.findByText("Confirmando…");
+    const s0 = scopeOf(); mocks.actor = { ...actor(), roles: [] };
+    const view = m; view.rerender(base); void s0;
+    expect(signal().aborted).toBe(true); expect(screen.queryByText("Salvar classificação")).toBeNull();
+    await act(async () => { resolve?.(null); }); expect(m.onSaved).not.toHaveBeenCalled();
   });
 });

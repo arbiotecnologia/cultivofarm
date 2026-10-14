@@ -23,7 +23,7 @@ import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMI
 
 // Narrow bridge for the externally applied reader; preserve canonical client and generated types.
 type CatalogReadRpc = (name: "platform_read_global_product_catalog_by_family", args: {
-  p_familia: ProductFamily; p_revisao: ReviewFilter; p_search: string; p_limit: number; p_offset: number;
+  p_familia: ProductFamily | null; p_revisao: ReviewFilter; p_search: string; p_limit: number; p_offset: number;
 }) => { abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
 
 export function PlatformCatalogReadTab() {
@@ -51,7 +51,7 @@ function CatalogTabs({ scope }: { scope: string }) {
       </TabsList>
       {CATALOG_TABS.map((t) => <TabsContent key={t.value} value={t.value}>
         {"family" in t ? <CatalogReadPage key={t.family} scope={scope} family={t.family} review={review}
-          onReview={(r) => update({ revisao: r === "todos" ? null : r })} />
+          onReview={(r) => update({ revisao: r === "familia" ? null : r })} />
           : <PlatformCatalogEntityPanel kind="micro" scope={scope} />}
       </TabsContent>)}
     </Tabs>
@@ -95,14 +95,14 @@ function CatalogReadPage({ scope, family, review, onReview }:
     };
   }, [queryClient, scope]);
   const query = useQuery({
-    queryKey: ["platform-catalog-read", scope, family, review, search, offset],
+    queryKey: ["platform-catalog-read", scope, review === "familia" ? family : null, review, search, offset],
     gcTime: 0,
     staleTime: 0,
     retry: false,
     queryFn: async ({ signal }) => {
       const rpc = supabase.rpc.bind(supabase) as unknown as CatalogReadRpc;
       const { data, error } = await rpc("platform_read_global_product_catalog_by_family", {
-        p_familia: family, p_revisao: review, p_search: search, p_limit: PLATFORM_CATALOG_LIMIT, p_offset: offset,
+        p_familia: review === "familia" ? family : null, p_revisao: review, p_search: search, p_limit: PLATFORM_CATALOG_LIMIT, p_offset: offset,
       }).abortSignal(signal);
       if (!active.current || signal.aborted || error) throw new Error("catalog_read_unavailable");
       const parsed = platformCatalogPageSchema.safeParse(data);
@@ -112,13 +112,18 @@ function CatalogReadPage({ scope, family, review, onReview }:
   });
   const rows = !query.isFetching && !query.isError ? query.data?.items : undefined;
   return <section aria-labelledby="platform-catalog-title" className="space-y-4">
-    <h2 id="platform-catalog-title" className="text-base font-semibold">{FAMILY_LABEL[family]} — catálogo global</h2>
-    <div role="group" aria-label="Revisão da classificação" className="flex flex-wrap gap-2">
-      {(["todos", "pendentes"] as const).map((r) => <Button key={r} size="sm" className="min-h-10" variant={review === r ? "secondary" : "outline"}
-        aria-pressed={review === r} onClick={() => { setOffset(0); onReview(r); }}>{r === "todos" ? "Todos (família + pendentes)" : "Pendentes de classificação"}</Button>)}
+    <h2 id="platform-catalog-title" className="text-base font-semibold">{review === "familia"
+      ? `${FAMILY_LABEL[family]} — catálogo global` : review === "todos" ? "Revisão administrativa — todos os produtos" : "Revisão administrativa — pendentes de classificação"}</h2>
+    <div role="group" aria-label="Revisão administrativa" className="flex flex-wrap items-center gap-2">
+      <span className="text-sm text-muted-foreground">Exibir:</span>
+      {([["familia", `Somente ${FAMILY_LABEL[family]}`], ["todos", "Revisão: todos os produtos"], ["pendentes", "Revisão: pendentes"]] as const).map(([r, text]) =>
+        <Button key={r} size="sm" className="min-h-10 whitespace-normal" variant={review === r ? "secondary" : "outline"}
+          aria-pressed={review === r} onClick={() => { setOffset(0); onReview(r); }}>{text}</Button>)}
     </div>
-    <p className="text-sm text-muted-foreground">Produtos sem família aparecem como “Pendente” em todas as abas de produtos até serem classificados.</p>
-    {family === "fertilizante_adubo" && <p role="note" className="rounded-md border p-3 text-sm">Cadastro novo de fertilizantes/adubos ainda não está disponível
+    {review === "familia"
+      ? <p className="text-sm text-muted-foreground">Mostra somente produtos classificados nesta família. Produtos sem família ficam em “Revisão: pendentes”.</p>
+      : <p role="note" className="rounded-md border p-3 text-sm">Revisão administrativa: lista produtos de todas as famílias{review === "pendentes" ? " sem classificação" : ", inclusive pendentes"}, igual em qualquer aba de produtos.</p>}
+    {family === "fertilizante_adubo" && review === "familia" && <p role="note" className="rounded-md border p-3 text-sm">Cadastro novo de fertilizantes/adubos ainda não está disponível
       (tipo e unidade próprios pendentes). Nesta fase, classifique aqui produtos já existentes.</p>}
     {saved && <p role="status">Alteração confirmada.</p>}
     {editing && <PlatformCatalogMetadataDialog key={editing} id={editing} scope={scope}
@@ -141,7 +146,7 @@ function CatalogReadPage({ scope, family, review, onReview }:
     {statusOf && <PlatformCatalogStatusDialog key={statusOf.id} scope={scope} product={statusOf}
       onClose={() => setStatusOf(undefined)} onSaved={done} />}
     {family !== "fertilizante_adubo" && <div className="flex flex-wrap items-center justify-end gap-2">
-      <span className="text-sm text-muted-foreground">Após criar, classifique a família em “Pendentes de classificação”.</span>
+      <span className="text-sm text-muted-foreground">O produto criado fica pendente; classifique a família em “Revisão: pendentes”.</span>
       <Button onClick={() => { setSaved(false); setCreating(true); }}>Novo produto global</Button></div>}
     <form className="flex flex-wrap items-end gap-2" onSubmit={(event) => {
       event.preventDefault(); setSearch(input.trim()); setOffset(0);

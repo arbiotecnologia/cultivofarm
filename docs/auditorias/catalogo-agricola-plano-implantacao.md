@@ -321,3 +321,13 @@ UI: `PlatformCatalogVolumesDialog.tsx` + `platformCatalogVolumes.ts`, botão Apr
 **Scripts anteriores:** preflights de volumes e B2B exigem 19 colunas e falham fechados após a nova coluna.
 
 **Matriz de evidência:** testes Vitest locais (66 arquivos/735 testes de saas/plataforma), typecheck app/node, lint focal, scanner fiscal, build 28,43s — PASS local. SQL/runtime, JWT, browser, mobile real e produção — UNVERIFIED.
+
+### Revisão 8a78516b (correções antes de aplicar; SQL não aplicado, nada publicado)
+- Leitor com modos `familia` (padrão; somente a família, nunca NULL), `todos` e `pendentes` (revisão administrativa, `p_familia` deve ser NULL). Consequência honesta: após aplicar, os 9 produtos atuais ficam visíveis apenas em "Revisão: pendentes"/"Revisão: todos" até classificação explícita.
+- CHECK `produtos_classe_catalogo_coerente_check`: `classe IS NULL OR (familia IS NOT NULL AND (...)) IS TRUE` — fecha a brecha família NULL + classe não NULL. Runtime testa o CHECK diretamente (11 combinações negadas, 5 aceitas) em rollback.
+- Writer rejeita `expected_updated_at` ±infinity antes do CAS (`22023 catalog_family_invalid`).
+- Diálogo de família: época por item/versão/escopo/vivo; aborta escrita, limpa campos/consentimento/erro/ocupado e descarta resposta tardia.
+- Runtime ganhou invariantes de apresentações, composições e Bombarbio sem família (sem backfill). Bombarbio, composição 334/333/333, apresentação 1000 mL/R$180, ativo/B2B, preços, `tipo`, rotas e RLS não são tocados.
+- AGENTS.md revertido ao texto anterior (regra de família não acrescentada).
+- Limitação: cadastro novo de químicos com unidades/herbicidas e fertilizantes não está completo; criação existente gera produto pendente.
+- Local: 744/744 testes saas/plataforma (19 de família), typecheck app/node, lint focal, scanner fiscal e build 23,24s PASS. SQL/runtime, JWT, browser e produção UNVERIFIED.
