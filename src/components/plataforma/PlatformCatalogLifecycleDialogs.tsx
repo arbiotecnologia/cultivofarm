@@ -90,7 +90,7 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
     <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto" aria-busy={busy}>
       <DialogHeader><DialogTitle>Novo produto global</DialogTitle>
-        <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui.. Outros textos podem ser completados depois em Editar.</DialogDescription>
+        <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui. Outros textos podem ser completados depois em Editar.</DialogDescription>
       </DialogHeader>
       {error && <p role="alert">{error}</p>}
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) setConfirming(true); }}>
