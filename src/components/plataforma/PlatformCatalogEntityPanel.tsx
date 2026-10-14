@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PlatformCatalogB2BDialog } from "@/components/plataforma/PlatformCatalogB2BDialog";
 import { PlatformCatalogVolumesDialog } from "@/components/plataforma/PlatformCatalogVolumesDialog";
 import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
 import { createEntity, entityFields, ENTITY_PAGE_LIMIT, microTypes, parseUfc, readEntityDetail, readEntityPage, setEntityStatus, updateEntity,
@@ -27,6 +28,7 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
   const [mode, setMode] = useState<Mode>();
   const [saved, setSaved] = useState(false);
   const [volumesOf, setVolumesOf] = useState<{ id: string; nome: string }>();
+  const [b2bOf, setB2bOf] = useState<string>();
   const base = `platform-catalog-${kind}`;
   useEffect(() => {
     const other = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === base && q.queryKey[1] !== scope;
@@ -36,13 +38,15 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
   const query = useQuery({ queryKey: [base, scope, search, offset], gcTime: 0, staleTime: 0, retry: false,
     queryFn: ({ signal }) => readEntityPage(kind, search, offset, signal) });
   const rows = !query.isFetching && !query.isError ? query.data?.items : undefined;
-  const done = () => { setMode(undefined); setSaved(true); void queryClient.invalidateQueries({ queryKey: [base, scope] }); };
+  const done = () => { setMode(undefined); setB2bOf(undefined); setSaved(true); void queryClient.invalidateQueries({ queryKey: [base, scope] }); };
   const l = labels[kind];
   return <section aria-label={`Gestão global de ${l.many}`} className="space-y-4">
     {saved && <p role="status">Alteração confirmada.</p>}
     {mode && <EntityDialog key={JSON.stringify(mode)} kind={kind} scope={scope} mode={mode} onClose={() => setMode(undefined)} onSaved={done} />}
     {volumesOf && <PlatformCatalogVolumesDialog tipo="microrganismo" itemId={volumesOf.id} nome={volumesOf.nome} scope={scope}
-      onClose={() => setVolumesOf(undefined)} />}
+      onClose={() => { setVolumesOf(undefined); void queryClient.invalidateQueries({ queryKey: [base, scope] }); }} />}
+    {kind === "micro" && b2bOf && <PlatformCatalogB2BDialog key={b2bOf} tipo="microrganismo" itemId={b2bOf} scope={scope}
+      onClose={() => setB2bOf(undefined)} onSaved={done} />}
     <div className="flex justify-end"><Button className="min-h-10" onClick={() => { setSaved(false); setMode({ type: "create" }); }}>{l.novo} {l.one} global</Button></div>
     <form className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={(e) => { e.preventDefault(); setSearch(input.trim()); setOffset(0); }}>
       <div className="min-w-0 space-y-2">
@@ -70,6 +74,8 @@ export function PlatformCatalogEntityPanel({ kind, scope }: { kind: EntityKind; 
           onClick={() => { setSaved(false); setMode({ type: "status", id: row.id, ativo: !row.ativo }); }}>{row.ativo ? "Arquivar" : "Reativar"}</Button>
         {kind === "micro" && <Button variant="ghost" size="sm" className="min-h-10" aria-label={`Apresentações de ${row.nome}`}
           onClick={() => setVolumesOf({ id: row.id, nome: row.nome })}>Apresentações</Button>}
+        {kind === "micro" && <Button variant="ghost" size="sm" className="min-h-10" aria-label={`Disponibilidade B2B de ${row.nome}`}
+          onClick={() => { setSaved(false); setB2bOf(row.id); }}>B2B</Button>}
       </div>
     </li>)}</ul>}
     <nav aria-label={`Paginação de ${l.many}`} className="flex items-center justify-between gap-2">

@@ -53,7 +53,7 @@ export function PlatformCatalogMetadataDialog({ id, scope, onClose, onSaved }: {
         setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a alteração.");
     } finally {
       requests.current.delete(controller); lock.current = false;
-      if (mounted.current && current.current) setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   }
   return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
