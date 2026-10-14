@@ -169,9 +169,9 @@ describe("composição na tela de criação", () => {
   });
   it("paginação e busca são enviadas ao servidor", async () => {
     renderCreate();
-    await screen.findByText(/Bacillus A/);
+    await screen.findByRole("button", { name: "Adicionar Bacillus A" });
     fireEvent.click(screen.getByRole("button", { name: "Próximos microrganismos" }));
-    expect(await screen.findByText(/Fungo B/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Adicionar Fungo B" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Buscar microrganismo"), { target: { value: " fungo " } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar microrganismo" }));
     await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("platform_read_global_microorganisms", expect.objectContaining({ p_search: "fungo", p_offset: 0 })));
