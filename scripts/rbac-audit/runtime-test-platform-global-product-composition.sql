@@ -3,13 +3,13 @@
 -- Harness: RPCs sob teste SEMPRE como `authenticated` com claims do ator real parametrizado; o owner
 -- (RESET ROLE) é usado apenas como oráculo (snapshots, invariantes, CHECKs diretos). Produtos de teste são
 -- criados pelo writer auditado DENTRO da transação; nenhum produto real recebe declaração persistente.
--- Resultado NULL conta como FAIL.
+-- Resultado NULL conta como FAIL. SKIP é coluna separada e nunca conta como PASS.
 --
 -- psql -v sa_uid=... -v admin_ar_uid=... -v admin_fsf_uid=... -v financeiro_ar_uid=... -v consultor_ar_uid=... -f este_arquivo.sql
 \set ON_ERROR_STOP on
 BEGIN;
 CREATE TEMP TABLE rt_ctx (k text PRIMARY KEY, v text) ON COMMIT DROP;
-CREATE TEMP TABLE rt_results (n serial, step text, ok boolean, detail text) ON COMMIT DROP;
+CREATE TEMP TABLE rt_results (n serial, step text, ok boolean, detail text, skipped boolean NOT NULL DEFAULT false) ON COMMIT DROP;
 GRANT ALL ON rt_ctx, rt_results TO authenticated, anon;
 GRANT USAGE ON SEQUENCE rt_results_n_seq TO authenticated, anon;
 INSERT INTO rt_ctx VALUES ('sa',:'sa_uid'),('admin_ar',:'admin_ar_uid'),('admin_fsf',:'admin_fsf_uid'),
@@ -21,7 +21,11 @@ $$;
 CREATE FUNCTION pg_temp.ok(p_step text, p_ok boolean, p_detail text DEFAULT NULL) RETURNS void LANGUAGE sql AS $$
   INSERT INTO rt_results(step,ok,detail) VALUES (p_step,COALESCE(p_ok,false),p_detail);
 $$;
-GRANT EXECUTE ON FUNCTION pg_temp.claims(uuid,int,int), pg_temp.ok(text,boolean,text) TO authenticated, anon;
+-- SKIP: ok=false + skipped=true; nunca soma em PASS (nem em FAIL). Sempre exige motivo.
+CREATE FUNCTION pg_temp.skip(p_step text, p_detail text) RETURNS void LANGUAGE sql AS $$
+  INSERT INTO rt_results(step,ok,detail,skipped) VALUES (p_step,false,'SKIP: '||p_detail,true);
+$$;
+GRANT EXECUTE ON FUNCTION pg_temp.claims(uuid,int,int), pg_temp.ok(text,boolean,text), pg_temp.skip(text,text) TO authenticated, anon;
 
 -- ============================================================ 0) oráculo owner: atores e snapshots
 DO $$
@@ -38,6 +42,7 @@ BEGIN
   INSERT INTO rt_ctx SELECT 'produtos_antes', md5(string_agg(to_jsonb(p)::text, ',' ORDER BY id)) FROM public.produtos p;
   INSERT INTO rt_ctx SELECT 'micros_antes', md5(string_agg(to_jsonb(m)::text, ',' ORDER BY id)) FROM public.microrganismos m;
   INSERT INTO rt_ctx SELECT 'micro_ativo', m.id::text FROM public.microrganismos m WHERE m.ativo ORDER BY m.id LIMIT 1;
+  INSERT INTO rt_ctx SELECT 'micro_ativo2', m.id::text FROM public.microrganismos m WHERE m.ativo ORDER BY m.id OFFSET 1 LIMIT 1;
   INSERT INTO rt_ctx SELECT 'micro_inativo', m.id::text FROM public.microrganismos m WHERE NOT m.ativo ORDER BY m.id LIMIT 1;
   -- Par (produto biológico, micro) com concentração na receita, se existir (teste de medida duplicada).
   INSERT INTO rt_ctx SELECT 'dup_produto', f.produto_id::text FROM public.formulacoes f JOIN public.produtos p ON p.id=f.produto_id
@@ -134,7 +139,8 @@ BEGIN
     ('chave_extra','[{"ordem":1,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"X ativo","quantidade":10,"unidade":"g/L","base":"por_volume_produto","natureza":"concentracao_declarada","dose":1}]'::jsonb,'rascunho'),
     ('quantidade_texto','[{"ordem":1,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"X ativo","quantidade":"10","unidade":"g/L","base":"por_volume_produto","natureza":"concentracao_declarada"}]'::jsonb,'rascunho'),
     ('ordem_salto','[{"ordem":2,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"X ativo","quantidade":10,"unidade":"g/L","base":"por_volume_produto","natureza":"concentracao_declarada"}]'::jsonb,'rascunho'),
-    ('nome_duplicado','[{"ordem":1,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"X ativo","quantidade":null,"unidade":null,"base":null,"natureza":"concentracao_declarada"},{"ordem":2,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"x ativo","quantidade":null,"unidade":null,"base":null,"natureza":"concentracao_declarada"}]'::jsonb,'rascunho')
+    ('nome_duplicado','[{"ordem":1,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"X ativo","quantidade":null,"unidade":null,"base":null,"natureza":"concentracao_declarada"},{"ordem":2,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"x ativo","quantidade":null,"unidade":null,"base":null,"natureza":"concentracao_declarada"}]'::jsonb,'rascunho'),
+    ('nome_duplicado_entre_tipos','[{"ordem":1,"tipo_componente":"ingrediente_ativo","microrganismo_id":null,"componente_nome":"X ativo","quantidade":null,"unidade":null,"base":null,"natureza":"concentracao_declarada"},{"ordem":2,"tipo_componente":"outro","microrganismo_id":null,"componente_nome":"x ATIVO","quantidade":null,"unidade":null,"base":null,"natureza":"concentracao_declarada"}]'::jsonb,'rascunho')
   ) x(nome,itens,st) LOOP
     BEGIN PERFORM public.platform_set_global_product_composition(q,v_q,t.st,t.itens,'Teste runtime composicao rollback',gen_random_uuid());
       PERFORM pg_temp.ok('sa.invalido.'||t.nome,false);
@@ -164,6 +170,12 @@ BEGIN
     'microrganismo_id',v_micro,'componente_nome',null,'quantidade',1e9,'unidade','UFC/mL','base','por_volume_produto','natureza','teor_garantido')),
     'Teste runtime composicao rollback',gen_random_uuid());
   PERFORM pg_temp.ok('sa.biologico.teor_micro', r->>'status'='completo'); v_b := (r->>'updated_at')::timestamptz;
+  -- Concentração declarada (sem garantia) de micro é válida e não vira teor garantido.
+  r := public.platform_set_global_product_composition(b,v_b,'completo',jsonb_build_array(jsonb_build_object('ordem',1,'tipo_componente','microrganismo',
+    'microrganismo_id',v_micro,'componente_nome',null,'quantidade',1e9,'unidade','UFC/mL','base','por_volume_produto','natureza','concentracao_declarada')),
+    'Teste runtime composicao rollback',gen_random_uuid());
+  v_b := (r->>'updated_at')::timestamptz; c := public.platform_read_global_product_composition(b,50,0);
+  PERFORM pg_temp.ok('sa.biologico.concentracao_declarada_valida', r->>'status'='completo' AND c->'declaracoes'->0->>'natureza'='concentracao_declarada');
   c := public.platform_read_global_product_composition(b,50,0);
   PERFORM pg_temp.ok('sa.biologico.leitura_micro_ref', c->'declaracoes'->0->>'microrganismo_id'=v_micro::text AND c->'declaracoes'->0->>'micro_nome' IS NOT NULL
     AND c->'declaracoes'->0->>'componente_nome' IS NULL);
@@ -174,6 +186,7 @@ BEGIN
     BEGIN PERFORM public.platform_set_global_product_composition(b,v_b,'rascunho',jsonb_build_array(jsonb_build_object('ordem',1,'tipo_componente','microrganismo',
         'microrganismo_id',v_inativo,'componente_nome',null,'quantidade',null,'unidade',null,'base',null,'natureza','teor_garantido')),'Teste runtime composicao rollback',gen_random_uuid());
       PERFORM pg_temp.ok('sa.biologico.micro_inativo_novo',false); EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.biologico.micro_inativo_novo',SQLERRM='catalog_composition_micro_unavailable'); END;
+  ELSE PERFORM pg_temp.skip('sa.biologico.micro_inativo_novo','sem micro inativo real');
   END IF;
   BEGIN PERFORM public.platform_set_global_product_composition(b,v_b,'rascunho',jsonb_build_array(jsonb_build_object('ordem',1,'tipo_componente','microrganismo',
       'microrganismo_id',gen_random_uuid(),'componente_nome',null,'quantidade',null,'unidade',null,'base',null,'natureza','teor_garantido')),'Teste runtime composicao rollback',gen_random_uuid());
@@ -185,7 +198,7 @@ BEGIN
         'microrganismo_id',(SELECT rt_ctx.v FROM rt_ctx WHERE rt_ctx.k='dup_micro'),'componente_nome',null,'quantidade',1e9,'unidade','UFC/mL','base','por_volume_produto','natureza','teor_garantido')),
         'Teste runtime composicao rollback',gen_random_uuid());
       PERFORM pg_temp.ok('sa.medida_duplicada_receita',false); EXCEPTION WHEN check_violation THEN PERFORM pg_temp.ok('sa.medida_duplicada_receita',SQLERRM='catalog_composition_duplicate_measure'); END;
-  ELSE PERFORM pg_temp.ok('sa.medida_duplicada_receita.sem_par_real', true, 'SKIP-sem par biológico com concentração; não conta como prova');
+  ELSE PERFORM pg_temp.skip('sa.medida_duplicada_receita','sem par biológico com concentração na receita');
   END IF;
   -- Leitor: parâmetros inválidos e produto inexistente.
   BEGIN PERFORM public.platform_read_global_product_composition(q,51,0); PERFORM pg_temp.ok('sa.read.limite',false);
