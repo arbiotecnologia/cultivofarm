@@ -77,7 +77,7 @@ function CatalogReadPage({ scope, family, review, onReview }:
   const [statusOf, setStatusOf] = useState<{ id: string; nome: string; ativo: boolean; updated_at: string }>();
   const [b2bOf, setB2bOf] = useState<string>();
   const [familyOf, setFamilyOf] = useState<FamilyTarget & { nome: string }>();
-  const [compositionOf, setCompositionOf] = useState<{ id: string; nome: string }>();
+  const [compositionOf, setCompositionOf] = useState<{ id: string; nome: string; updated_at: string }>();
   const done = () => {
     setEditing(undefined); setCreating(false); setStatusOf(undefined); setB2bOf(undefined); setFamilyOf(undefined); setSaved(true);
     void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
@@ -145,7 +145,7 @@ function CatalogReadPage({ scope, family, review, onReview }:
     {creating && <PlatformCatalogCreateDialog scope={scope} onClose={() => setCreating(false)} onSaved={done} />}
     {familyOf && <PlatformCatalogFamilyDialog key={familyOf.id} product={familyOf} scope={scope}
       onClose={() => setFamilyOf(undefined)} onSaved={done} />}
-    {compositionOf && <PlatformCatalogCompositionDialog key={compositionOf.id} productId={compositionOf.id} nome={compositionOf.nome} scope={scope}
+    {compositionOf && <PlatformCatalogCompositionDialog key={compositionOf.id} productId={compositionOf.id} updatedAt={compositionOf.updated_at} nome={compositionOf.nome} scope={scope}
       onClose={() => setCompositionOf(undefined)} onSaved={() => { setCompositionOf(undefined); done(); }} />}
     {statusOf && <PlatformCatalogStatusDialog key={statusOf.id} scope={scope} product={statusOf}
       onClose={() => setStatusOf(undefined)} onSaved={done} />}
@@ -189,8 +189,8 @@ function CatalogReadPage({ scope, family, review, onReview }:
               familia_catalogo: product.familia_catalogo, classe_catalogo: product.classe_catalogo }); }}>Classificar</Button>
           <Button variant="ghost" size="sm" className="ml-1" aria-label={`Apresentações de ${product.nome}`}
             onClick={() => setVolumesOf({ id: product.id, nome: product.nome })}>Apresentações</Button>
-          <Button variant="ghost" size="sm" className="ml-1" aria-label={`Composição de ${product.nome}`}
-            onClick={() => { setSaved(false); setCompositionOf({ id: product.id, nome: product.nome }); }}>Composição</Button>
+          <Button variant="ghost" size="sm" className="ml-1" aria-label={`Composição de ${product.nome}`} disabled={!product.updated_at}
+            onClick={() => { setSaved(false); if (product.updated_at) setCompositionOf({ id: product.id, nome: product.nome, updated_at: product.updated_at }); }}>Composição</Button>
           <Button variant="ghost" size="sm" className="ml-1" aria-label={`Disponibilidade B2B de ${product.nome}`}
             onClick={() => { setSaved(false); setB2bOf(product.id); }}>{product.b2b_enabled ? "Retirar do B2B" : "Liberar B2B"}</Button></TableCell>
       </TableRow>)}</TableBody>
