@@ -70,10 +70,12 @@ ALTER TABLE public.produtos ADD COLUMN familia_catalogo text NULL;
 ALTER TABLE public.produtos ADD COLUMN classe_catalogo text NULL;
 ALTER TABLE public.produtos ADD CONSTRAINT produtos_familia_catalogo_check
   CHECK (familia_catalogo IS NULL OR familia_catalogo IN ('biologico','quimico','fertilizante_adubo'));
+-- Sem brecha de NULL: CHECK aceita UNKNOWN, então família NULL + classe não NULL precisa ser FALSE explícito.
 ALTER TABLE public.produtos ADD CONSTRAINT produtos_classe_catalogo_coerente_check CHECK (
   classe_catalogo IS NULL
-  OR (familia_catalogo = 'biologico' AND classe_catalogo IN ('biofungicida','bioinseticida','inoculante','solubilizador'))
-  OR (familia_catalogo = 'quimico'   AND classe_catalogo IN ('fungicida','inseticida','herbicida')));
+  OR (familia_catalogo IS NOT NULL AND (
+       (familia_catalogo = 'biologico' AND classe_catalogo IN ('biofungicida','bioinseticida','inoculante','solubilizador'))
+    OR (familia_catalogo = 'quimico'   AND classe_catalogo IN ('fungicida','inseticida','herbicida'))) IS TRUE));
 COMMENT ON COLUMN public.produtos.familia_catalogo IS 'Família do catálogo global (classificação explícita por Platform Superadmin; NULL = pendente). Não derivar de tipo/nome/composição.';
 COMMENT ON COLUMN public.produtos.classe_catalogo IS 'Rótulo opcional coerente com familia_catalogo; nunca mistura biológico e químico.';
 CREATE INDEX produtos_familia_catalogo_idx ON public.produtos (familia_catalogo, (pg_catalog.lower(nome)), id);
@@ -108,7 +110,10 @@ CREATE TRIGGER catalog_family_audit_immutable BEFORE UPDATE OR DELETE ON public.
 FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_family_audit_immutable();
 
 -- ---------------------------------------------------------------- leitor paginado por família/revisão
--- p_familia obrigatório; p_revisao: 'todos' = família OU pendente (NULL), 'pendentes' = somente NULL.
+-- p_revisao: 'familia' (padrão das abas) = EXCLUSIVAMENTE p_familia, sem NULL;
+--            'todos'   (revisão administrativa) = todos os produtos de qualquer família, inclusive NULL;
+--            'pendentes' (revisão administrativa) = somente família NULL.
+-- p_familia é obrigatório e válido em 'familia'; em 'todos'/'pendentes' deve ser NULL (não é filtro).
 -- Projeção mínima (sem preço/dose/composição/ficha/tenant); uma consulta, sem N+1.
 CREATE FUNCTION platform_private.read_global_product_catalog_by_family_core(
   p_familia text, p_revisao text, p_search text, p_limit integer, p_offset integer) RETURNS jsonb
@@ -116,8 +121,9 @@ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_search text; v_result jsonb;
 BEGIN
   PERFORM platform_private.catalog_metadata_require_actor();
-  IF p_familia IS NULL OR p_familia NOT IN ('biologico','quimico','fertilizante_adubo')
-     OR p_revisao IS NULL OR p_revisao NOT IN ('todos','pendentes')
+  IF p_revisao IS NULL OR p_revisao NOT IN ('familia','todos','pendentes')
+     OR (p_revisao = 'familia' AND (p_familia IS NULL OR p_familia NOT IN ('biologico','quimico','fertilizante_adubo')))
+     OR (p_revisao <> 'familia' AND p_familia IS NOT NULL)
      OR p_limit IS NULL OR p_limit < 1 OR p_limit > 50
      OR p_offset IS NULL OR p_offset < 0 OR p_offset > 1000000
      OR p_search IS NULL OR pg_catalog.char_length(p_search) > 120 THEN
@@ -128,7 +134,9 @@ BEGIN
     SELECT p.id, p.codigo, p.nome, p.tipo, COALESCE(p.ativo,false) AS ativo, p.b2b_enabled, p.updated_at,
            p.familia_catalogo, p.classe_catalogo
     FROM public.produtos p
-    WHERE (p.familia_catalogo IS NULL OR (p_revisao = 'todos' AND p.familia_catalogo = p_familia))
+    WHERE ((p_revisao = 'familia' AND p.familia_catalogo IS NOT NULL AND p.familia_catalogo = p_familia)
+        OR p_revisao = 'todos'
+        OR (p_revisao = 'pendentes' AND p.familia_catalogo IS NULL))
       AND (v_search = ''
        OR pg_catalog.strpos(pg_catalog.lower(p.nome), v_search) > 0
        OR pg_catalog.strpos(pg_catalog.lower(COALESCE(p.codigo, '')), v_search) > 0)
@@ -157,7 +165,7 @@ DECLARE v_actor uuid; v_req jsonb; v_replay jsonb; v_receipt jsonb; v_audit uuid
   v_vols_before jsonb; v_vols_after jsonb; v_classe text := NULLIF(pg_catalog.btrim(COALESCE(p_classe,'')), '');
 BEGIN
   v_actor := platform_private.catalog_metadata_require_actor();
-  IF p_id IS NULL OR p_expected_updated_at IS NULL OR p_idempotency_key IS NULL
+  IF p_id IS NULL OR p_expected_updated_at IS NULL OR NOT pg_catalog.isfinite(p_expected_updated_at) OR p_idempotency_key IS NULL
      OR p_familia IS NULL OR p_familia NOT IN ('biologico','quimico','fertilizante_adubo')
      OR NOT (v_classe IS NULL
        OR (p_familia='biologico' AND v_classe IN ('biofungicida','bioinseticida','inoculante','solubilizador'))
@@ -204,7 +212,7 @@ REVOKE ALL ON FUNCTION platform_private.set_global_product_family_core(uuid,time
 GRANT EXECUTE ON FUNCTION platform_private.set_global_product_family_core(uuid,timestamptz,text,text,text,uuid) TO authenticated;
 
 -- ---------------------------------------------------------------- wrappers INVOKER
-CREATE FUNCTION public.platform_read_global_product_catalog_by_family(p_familia text, p_revisao text DEFAULT 'todos',
+CREATE FUNCTION public.platform_read_global_product_catalog_by_family(p_familia text, p_revisao text DEFAULT 'familia',
   p_search text DEFAULT '', p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS
 $$ SELECT platform_private.read_global_product_catalog_by_family_core(p_familia,p_revisao,p_search,p_limit,p_offset) $$;
