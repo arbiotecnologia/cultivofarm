@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlatformCatalogEntityPanel } from "@/components/plataforma/PlatformCatalogEntityPanel";
 import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformCatalogMetadataDialog";
 import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
@@ -23,7 +25,16 @@ export function PlatformCatalogReadTab() {
   const { ready, scope } = platformCatalogAccess(actor);
   if (actor.loading) return <p role="status">Carregando…</p>;
   if (!ready) return <p role="alert">Sem permissão para consultar o catálogo global.</p>;
-  return <CatalogReadPage key={scope} scope={scope} />;
+  return <Tabs key={scope} defaultValue="produtos" className="space-y-4">
+    <TabsList className="flex h-auto flex-wrap">
+      <TabsTrigger value="produtos" className="min-h-10">Produtos</TabsTrigger>
+      <TabsTrigger value="microrganismos" className="min-h-10">Microrganismos</TabsTrigger>
+      <TabsTrigger value="culturas" className="min-h-10">Culturas</TabsTrigger>
+    </TabsList>
+    <TabsContent value="produtos"><CatalogReadPage scope={scope} /></TabsContent>
+    <TabsContent value="microrganismos"><PlatformCatalogEntityPanel kind="micro" scope={scope} /></TabsContent>
+    <TabsContent value="culturas"><PlatformCatalogEntityPanel kind="cultura" scope={scope} /></TabsContent>
+  </Tabs>;
 }
 
 function CatalogReadPage({ scope }: { scope: string }) {

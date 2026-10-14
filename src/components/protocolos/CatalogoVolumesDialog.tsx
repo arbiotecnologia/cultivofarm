@@ -152,7 +152,9 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
         <DialogHeader>
           <DialogTitle>Volumes do catálogo</DialogTitle>
           <DialogDescription>
-            {itemNome} · cadastre os volumes comerciais com preço — usados para o cliente comparar R$/L. Não confunda com envase (formato de entrega).
+            {TENANT_CAN_EDIT_GLOBAL_CATALOG
+              ? <>{itemNome} · cadastre os volumes comerciais com preço — usados para o cliente comparar R$/L. Não confunda com envase (formato de entrega).</>
+              : <>{itemNome} · modo consulta: volumes comerciais do catálogo global, usados para comparar R$/L. Não confunda com envase (formato de entrega).</>}
           </DialogDescription>
         </DialogHeader>
 
