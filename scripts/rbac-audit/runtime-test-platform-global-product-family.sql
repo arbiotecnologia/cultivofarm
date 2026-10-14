@@ -22,6 +22,8 @@ BEGIN
       RAISE EXCEPTION 'sa não é superadmin ativo'; END IF;
     IF r.k<>'sa' AND (public.has_role(r.u,'superadmin') OR public.is_platform_superadmin(r.u)) THEN RAISE EXCEPTION 'ator tenant é superadmin: %', r.k; END IF;
   END LOOP;
+  INSERT INTO rt_ctx SELECT 'volumes_antes', md5(coalesce(string_agg(to_jsonb(v)::text, ',' ORDER BY id),'')) FROM public.catalogo_volumes v;
+  INSERT INTO rt_ctx SELECT 'formulacoes_antes', md5(coalesce(string_agg(to_jsonb(f)::text, ',' ORDER BY id),'')) FROM public.formulacoes f;
   INSERT INTO rt_ctx SELECT 'snapshot_antes', md5(string_agg(pg_catalog.to_jsonb(p)::text, ',' ORDER BY id)) FROM public.produtos p;
 END $$;
 
@@ -212,6 +214,15 @@ INSERT INTO rt_results(step,ok) SELECT 'invariante.produtos_existentes',
   FROM public.produtos p WHERE id <> (SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto_novo')
   -- snapshot_antes inclui as colunas novas (NULL) pois roda após a migration.
   ;
+
+-- Invariantes: apresentações (ex.: Bombarbio 1000 mL/R$180) e composições (ex.: 334/333/333) intactas; sem backfill.
+INSERT INTO rt_results(step,ok) SELECT 'invariante.volumes', md5(coalesce(string_agg(to_jsonb(v)::text, ',' ORDER BY id),''))
+  = (SELECT rt_ctx.v FROM rt_ctx WHERE rt_ctx.k='volumes_antes') FROM public.catalogo_volumes v;
+INSERT INTO rt_results(step,ok) SELECT 'invariante.formulacoes', md5(coalesce(string_agg(to_jsonb(f)::text, ',' ORDER BY id),''))
+  = (SELECT rt_ctx.v FROM rt_ctx WHERE rt_ctx.k='formulacoes_antes') FROM public.formulacoes f
+  WHERE f.produto_id IS DISTINCT FROM (SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto_novo');
+INSERT INTO rt_results(step,ok) SELECT 'invariante.bombarbio_sem_familia', (SELECT familia_catalogo IS NULL AND classe_catalogo IS NULL
+  FROM public.produtos WHERE id='1875527c-a65a-483b-a6c2-9122d5ec2a51');
 
 SELECT n, step, ok, detail FROM rt_results ORDER BY n;
 SELECT count(*) FILTER (WHERE ok) AS pass, count(*) FILTER (WHERE NOT ok) AS fail, count(*) AS total FROM rt_results;
