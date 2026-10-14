@@ -113,4 +113,14 @@ describe("render do dossiê em modo consulta", () => {
     expect(within(sheet).queryAllByRole("button").filter((b) => WRITE_LABELS.test(b.textContent ?? ""))).toHaveLength(0);
     expect(mocks.rpc.mock.calls.every(([fn]) => String(fn).match(/overview|dossier_detail/))).toBe(true);
   });
+  it("erro de permissão não aparece como ausência e oculta dados", async () => {
+    mocks.rpc.mockImplementation(async (fn: string) =>
+      fn === "rpc_microorganism_regulatory_overview" ? { data: [row], error: null }
+        : { data: null, error: { code: "42501", message: "forbidden" } });
+    const sheet = await openSheet();
+    expect(await within(sheet).findByTestId("regulatorio-dossie-erro")).toBeTruthy();
+    expect(within(sheet).getByText("Sem permissão")).toBeTruthy();
+    expect(within(sheet).queryByText(/Nenhum dossiê/)).toBeNull();
+    expect(within(sheet).queryByText("Cepa teste")).toBeNull();
+  });
 });
