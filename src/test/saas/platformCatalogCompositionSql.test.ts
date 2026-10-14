@@ -50,4 +50,16 @@ describe("SQL candidato de composição (estático)", () => {
     expect(runtime).not.toMatch(/^\s*COMMIT\s*;/m);
     expect(runtime).toMatch(/SET LOCAL ROLE authenticated;\nDO \$\$/);
   });
+  it("runtime separa SKIP de PASS/FAIL e identifica a constraint violada", () => {
+    expect(runtime).toMatch(/skipped boolean NOT NULL DEFAULT false/);
+    expect(runtime).toMatch(/FILTER \(WHERE ok AND NOT skipped\) AS pass/);
+    expect(runtime).not.toMatch(/pg_temp\.ok\([^)]*'SKIP/);
+    expect(runtime).toMatch(/GET STACKED DIAGNOSTICS v_con = CONSTRAINT_NAME/);
+    expect(runtime).toMatch(/fixture biologico ausente/);
+  });
+  it("runtime cobre duplicidade entre tipos, concentração declarada válida, cores privados e JWT inválidos", () => {
+    for (const s of ["nome_duplicado_entre_tipos", "unique.nome_normalizado", "check.micro_concentracao_declarada_valida",
+      "sa.biologico.concentracao_declarada_valida", ".core_writer", "anon.core_reader", "jwt.", "'expirado'", "'iat_futuro'", "sa.replay_divergente", "sa.cas_stale"])
+      expect(runtime).toContain(s);
+  });
 });
