@@ -28,6 +28,14 @@ BEGIN
   INSERT INTO rt_ctx SELECT 'b2b_micro_snapshot_antes', md5(string_agg(id::text||b2b_enabled::text||ativo::text,',' ORDER BY id)) FROM public.microrganismos;
 END $$;
 
+-- Estrutura: trigger de versão de produtos usa catalog_touch_version (mesmo nome, contagem 5).
+INSERT INTO rt_results(step,ok) SELECT 'estrutura.produtos_touch_version',
+  (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.produtos'::regclass AND tgname='update_produtos_updated_at' AND NOT tgisinternal
+     AND tgfoid='platform_private.catalog_touch_version()'::regprocedure)=1
+  AND (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.produtos'::regclass AND NOT tgisinternal)=5
+  AND NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.produtos'::regclass AND NOT tgisinternal
+     AND tgfoid='public.update_updated_at_column()'::regprocedure);
+
 CREATE FUNCTION pg_temp.claims(p_uid uuid, p_iat_offset int DEFAULT -30, p_exp_offset int DEFAULT 600) RETURNS void LANGUAGE sql AS $$
   SELECT set_config('request.jwt.claims', json_build_object('sub',p_uid,'role','authenticated',
     'iat',extract(epoch from now())::bigint+p_iat_offset,'exp',extract(epoch from now())::bigint+p_exp_offset)::text, true);
@@ -116,7 +124,8 @@ BEGIN
   r:=public.platform_set_global_b2b_enabled('microrganismo',v_mid,(r->>'updated_at')::timestamptz,false,'Teste runtime b2b com rollback',gen_random_uuid());
   PERFORM pg_temp.ok('sa.micro.retirar', (r->>'b2b_enabled')::boolean=false);
 
-  -- Caso real negativo: Bombarbio inativo não pode ser liberado (nenhum efeito).
+  -- Bombarbio está ATIVO desde 2026-10-14 21:09:04 UTC (audit 92721354-…); este caso negativo só roda se
+  -- voltar a ficar inativo. Nenhuma liberação real de Bombarbio é feita aqui.
   IF EXISTS (SELECT 1 FROM public.platform_read_global_b2b_state('produto',v_bomb) x WHERE (x->>'ativo')::boolean=false) THEN
     s:=public.platform_read_global_b2b_state('produto',v_bomb);
     BEGIN PERFORM public.platform_set_global_b2b_enabled('produto',v_bomb,(s->>'updated_at')::timestamptz,true,'Teste runtime b2b com rollback',gen_random_uuid());

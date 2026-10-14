@@ -27,6 +27,16 @@ export function PlatformCatalogB2BDialog({ tipo, itemId, scope, onClose, onSaved
   const [error, setError] = useState("");
   const lock = useRef(false);
   const requests = useRef(new Set<AbortController>());
+  // Época do contexto (tipo/item/escopo/vivo): qualquer mudança invalida estado e descarta respostas tardias.
+  const contextKey = `${tipo}|${itemId}|${scope}|${live ? 1 : 0}`;
+  const epoch = useRef({ key: contextKey, n: 0 });
+  if (epoch.current.key !== contextKey) epoch.current = { key: contextKey, n: epoch.current.n + 1 };
+  const epochN = epoch.current.n;
+  useEffect(() => {
+    for (const r of requests.current) r.abort();
+    requests.current.clear();
+    setReason(""); setConfirmed(false); setError(""); setBusy(false); lock.current = false;
+  }, [epochN]);
   useEffect(() => {
     const set = requests.current;
     return () => { for (const r of set) r.abort(); set.clear(); };
@@ -46,19 +56,21 @@ export function PlatformCatalogB2BDialog({ tipo, itemId, scope, onClose, onSaved
   const allowed = !!state && target !== undefined && canRequestB2B(state, target);
   const submit = async () => {
     if (!state || target === undefined || !allowed || !reasonOk || !confirmed || lock.current || !liveRef.current) return;
+    const myEpoch = epoch.current.n;
+    const current = () => epoch.current.n === myEpoch && liveRef.current;
     lock.current = true; setBusy(true); setError("");
     const controller = new AbortController(); requests.current.add(controller);
     const key = metadataRetryKey(scope, JSON.stringify(["b2b", state.item_tipo, state.id, state.updated_at, target, reason.trim()]));
     try {
       await setB2BEnabled(state, target, reason, key, controller.signal);
-      if (!controller.signal.aborted && liveRef.current) onSaved();
+      if (!controller.signal.aborted && current()) onSaved();
     } catch (failure) {
-      if (!controller.signal.aborted && liveRef.current)
+      if (!controller.signal.aborted && current())
         setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a alteração.");
     } finally {
-      requests.current.delete(controller); lock.current = false;
-      // Sempre libera o botão, mesmo se o escopo mudou durante a chamada (evita "Confirmando…" preso).
-      setBusy(false);
+      requests.current.delete(controller);
+      // Só a época dona libera lock/botão; a troca de contexto já resetou ambos (evita "Confirmando…" preso).
+      if (epoch.current.n === myEpoch) { lock.current = false; setBusy(false); }
     }
   };
   const label = tipo === "produto" ? "produto" : "microrganismo";
@@ -80,7 +92,7 @@ export function PlatformCatalogB2BDialog({ tipo, itemId, scope, onClose, onSaved
           resolvido pelas condições comerciais (ou “sob consulta”). No portal técnico ele só aparece depois de ficha técnica aprovada.</p>}
         {target === false && <p className="text-sm text-muted-foreground">Ao retirar, o item deixa de aparecer nos catálogos B2B. Pedidos e históricos são preservados.</p>}
         <Label htmlFor="b2b-reason">Motivo (10 a 500 caracteres)</Label>
-        <Textarea id="b2b-reason" required rows={2} maxLength={500} disabled={busy || !allowed} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <Textarea id="b2b-reason" required rows={2} maxLength={500} disabled={busy || !allowed} value={reason} onChange={(e) => { setReason(e.target.value); setConfirmed(false); }} />
         <div className="flex items-start gap-2">
           <Checkbox id="b2b-confirm" checked={confirmed} disabled={busy || !allowed} onCheckedChange={(v) => setConfirmed(v === true)} />
           <Label htmlFor="b2b-confirm" className="text-sm font-normal break-words">
