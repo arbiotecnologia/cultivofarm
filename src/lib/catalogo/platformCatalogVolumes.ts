@@ -90,7 +90,7 @@ export async function readVolumePage(tipo: VolumeItemTipo, itemId: string, offse
   return parsed.data;
 }
 
-const sameTarget = (r: { id: string; item_tipo: string; item_id: string }, row: VolumeRow) =>
+const sameTarget = (r: { id?: string; item_tipo?: string; item_id?: string }, row: VolumeRow) =>
   r.id === row.id && r.item_tipo === row.item_tipo && r.item_id === row.item_id;
 function checkToken(t: string | null) {
   if (t !== null && !PREVIEW_TOKEN_RE.test(t)) throw new Error("Prévia inválida. Reabra para conferir.");

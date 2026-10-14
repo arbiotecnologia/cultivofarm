@@ -72,7 +72,7 @@ describe("decimais sem perda de precisão", () => {
     expect(volumeError({ code: "55000", message: "catalog_volume_confirmation_required", details: preview({ token: undefined }) }))
       .not.toBeInstanceOf(VolumeConfirmationRequired);
     expect(volumeError({ code: "55000", message: "catalog_volume_confirmation_required",
-      details: preview({ parent_after: { valor_litro_brl: 333333333326666.67, valor_dose_brl: null, valor_ha_brl: null } }) }))
+      details: preview({ parent_after: { valor_litro_brl: Number("333333333326666.67"), valor_dose_brl: null, valor_ha_brl: null } }) }))
       .not.toBeInstanceOf(VolumeConfirmationRequired);
   });
   it("preço do pai em JSON number é rejeitado na leitura", async () => {
