@@ -1,3 +1,4 @@
+import { requireActiveCatalogSuperadmin } from '../_shared/catalog-superadmin-guard.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   MAX_PAYLOAD_BYTES,
@@ -35,9 +36,8 @@ Deno.serve(async (req) => {
     const user = userRes?.user;
     if (!user) return j(origin, { error: 'Sessão inválida' }, 401);
 
-    const { data: isSuperadmin, error: roleError } = await userClient.rpc('is_platform_superadmin', { _user_id: user.id });
-    if (roleError) return j(origin, { error: 'role_check_failed' }, 500);
-    if (!isSuperadmin) return j(origin, { error: 'forbidden' }, 403);
+    const guard = await requireActiveCatalogSuperadmin(userClient, user.id);
+    if (!guard.ok) return j(origin, { error: guard.error }, guard.status);
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const rawBody = await req.text();
