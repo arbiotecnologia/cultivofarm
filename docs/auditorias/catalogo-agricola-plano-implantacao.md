@@ -223,6 +223,21 @@ Este prompt é material para uma solicitação futura, não instrução de imple
 - SQL aplicado (canônico, externo): `20261014184906 global_catalog_rejection_write_containment` (revoga EXECUTE de `rejeitar_ficha_versao(uuid,text)`; arquivo literal) e `20261014185551 global_catalog_restore_read_preserve_write_containment` (resumo honesto em `.md`, sem texto exato): DML/TRUNCATE/REFERENCES/TRIGGER revogados em produtos/microrganismos; RESTRICTIVE ALL substituídas por RESTRICTIVE INSERT/UPDATE/DELETE com has_role superadmin ativo E is_platform_superadmin; SELECT interno/B2B preservado sem nova permissão.
 - Runtime SQL rollback (4 atores FinanceiroAR/AdminAR/AdminFSF/ConsultorAR): leem 9 produtos/25 micros; 12 negações UPDATE/rejeitar; TRUNCATE sem grant; anon 0 linhas. Lifecycle 23 negativas/criação/composição/status/replay/CAS PASS rollback.
 - Edges implantadas pelo Codex: `ai-generate-ficha-campo` v76, `ai-sugerir-alvos` v73 com guard novo; verify_jwt=false preservado com auth manual; 4 HTTP reais anon/token inválido → 401; nenhuma IA chamada. JWT válido via HTTP: UNVERIFIED.
-- Checks Codex: 52 testes focais (44+8), typecheck app/node, build 30,64s, scanner 3884 zero PASS; lint novos PASS; smoke `any` legado FAIL 1.
-- Browser Admin prévia: Culturas 8 consulta PASS; `/plataforma` → `/sem-permissao` PASS; 9 produtos voltaram (PASS via SQL). Bundle antigo persistiu na prévia: ausência final dos controles de mutação na UI permanece UNVERIFIED.
+- Checks Codex: 52 testes focais (44+8) PASS, typecheck app/node, build 30,64s, scanner 3884 zero PASS; lint novos PASS. Correção de registro: o "smoke FAIL" citado antes era LINT de 1 `any` legado no arquivo smoke, não falha de teste — os 52 testes focais passaram.
+- Browser Admin prévia: Culturas 8 consulta PASS; `/plataforma` → `/sem-permissao` PASS; 9 produtos voltaram (PASS via SQL). Bundle antigo persistiu na prévia naquele checkpoint; superseded pelo Delta (4) abaixo.
 - Pendências antigas resolvidas: revoke `rejeitar_ficha_versao`; leitura de empresas zerada pela RESTRICTIVE ALL (resolvida pela troca de policy; RPC de leitura paralela NÃO criada). Abertos: cadastro global completo, writers SA auditados de descendentes/auxiliares, Storage, regulatórios, famílias, tenant.
+
+## Delta 2026-10-14 (4) — validação em produção dos controles de mutação (documental)
+
+- Evidência EXTERNA Codex, site publicado app.cultivofarm.com.br (bundle `index-Dhv5PeNR.js`), login Administrador AR, sem persistir dados nem chamar IA; viewport restaurado ao final:
+  - Produtos: 9 itens, sem Novo/Excluir/adicionar — PASS.
+  - Ficha BioFungicida: sem salvar/aprovar/arquivar/IA — PASS.
+  - Microrganismos: 25 itens, sem criar/excluir/adicionar — PASS; ficha Bacillus amyloliquefaciens só consulta/cópia — PASS.
+  - Volumes: sem controles de escrita — PASS (lista vazia; leitura com registros preenchidos UNVERIFIED).
+  - Culturas: 8 itens, consulta desktop e cards mobile 390 — PASS.
+  - Problemas: vazio, sem Novo — PASS.
+  - CQ `/configuracoes/parametros-cq`: vazio, sem criação/edição/exclusão — controles PASS; registros preenchidos UNVERIFIED.
+  - `/plataforma` por URL direta: acesso negado — PASS.
+- Substitui o UNVERIFIED específico da ausência dos controles de mutação na UI publicada. NÃO é auditoria integral fechada.
+- P2 aberto: texto da aba Volumes ainda diz "cadastre" em modo consulta (copy, sem impacto de autorização).
+- Permanecem abertos/UNVERIFIED: writers SA auditados de descendentes/auxiliares, cadastro global completo, famílias Biológicos/Químicos/Fertilizantes, Storage e regulatórios do catálogo, Edges IA com JWT válido via HTTP, entitlements/isolamento amplo, fase tenant (exibir/ocultar globais e itens próprios).
