@@ -618,6 +618,9 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - Evidência externa Codex 18:33: criação UI form válido/duplicata/busca/paginação 20+5 PASS sem gravar produto teste; arquivar/reativar item real 91b6e26c-c7f2-4384-847c-7121685813f9 SA PASS, restaurado ativo/b2b true, 2 audits SA before/after inversos, 9 produtos mantidos. 28 testes focais, lint 2, build 36.78s PASS; 7 `any` preexistentes Protocolos = dívida mantida.
 - Próximas fases globais (ABERTAS, global NÃO completo): famílias Biológicos/Químicos/Fertilizantes, classificação B1/B2, composição de produtos existentes, insumos, preços/B2B pelo motor canônico, writer SA auditado de culturas, contenção das 3 tabelas auxiliares globais (catalogo_alvos/catalogo_problemas/cq_parametros_referencia). Tenant (exibir/ocultar globais, próprios) só depois. Sementes/tratamento fora.
 
-- [x] Contenção UI/Edge descendentes catálogo global (2026-10-14) — local; deploy Edges/publicação pendentes do usuário.
+- [x] Contenção UI/Edge descendentes catálogo global (2026-10-14) — local; deploy Edges/publicação pendentes da revisão técnica Codex.
 - [ ] Writer SA auditado para fichas/fontes/alvos/culturas/volumes/problemas/CQ — bloqueado: requer SQL revisado Codex.
-- [ ] Avaliar `rejeitar_ficha_versao`, ocultar botões de criação Problemas/CQ, regulatórios e Storage — UNVERIFIED.
+- [x] Ocultar controles de mutação Produtos/Micro/Problemas/CQ/Volumes/ProblemaSelector (render tests).
+- [ ] Revoke `rejeitar_ficha_versao` — com Codex.
+- [ ] Leitura segura do catálogo para empresas (RESTRICTIVE ALL zera SELECT) — contrato proposto, aguarda revisão.
+- [ ] Regulatórios e Storage do catálogo — UNVERIFIED.

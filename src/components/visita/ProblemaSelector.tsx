@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus, Search } from "lucide-react";
@@ -107,6 +108,7 @@ export function ProblemaSelector({ value, onSelect, className, placeholder = "Se
   });
 
   const handleCreateNew = () => {
+    if (!TENANT_CAN_EDIT_GLOBAL_CATALOG) { toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE); return; }
     if (!newNome.trim()) {
       toast.error("Informe o nome do problema");
       return;
@@ -171,6 +173,7 @@ export function ProblemaSelector({ value, onSelect, className, placeholder = "Se
                   ))}
                 </CommandGroup>
               ))}
+              {TENANT_CAN_EDIT_GLOBAL_CATALOG && (<>
               <CommandSeparator />
               <CommandGroup>
                 <CommandItem
@@ -184,6 +187,7 @@ export function ProblemaSelector({ value, onSelect, className, placeholder = "Se
                   Cadastrar novo problema...
                 </CommandItem>
               </CommandGroup>
+              </>)}
             </CommandList>
           </Command>
         </PopoverContent>

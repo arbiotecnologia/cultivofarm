@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -176,12 +177,15 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                 ) : !data || data.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground h-16 italic">Nenhum volume cadastrado.</TableCell></TableRow>
                 ) : data.map((v) => (
-                  <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v.id)} />
+                  TENANT_CAN_EDIT_GLOBAL_CATALOG
+                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v.id)} />
+                    : <ReadOnlyVolumeRow key={v.id} v={v} />
                 ))}
               </TableBody>
             </Table>
           </div>
 
+          {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
           <div className="border rounded-md p-3 space-y-3 bg-muted/30">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Adicionar volume</div>
@@ -239,6 +243,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
               </div>
             )}
           </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -267,6 +272,24 @@ function EditableRow({ v, baseLitro, onSave, onDelete }: { v: CatalogoVolume; ba
           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onDelete}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
         </div>
       </TableCell>
+    </TableRow>
+  );
+}
+
+function ReadOnlyVolumeRow({ v }: { v: CatalogoVolume }) {
+  return (
+    <TableRow>
+      <TableCell className="text-xs">{v.volume_ml}</TableCell>
+      <TableCell className="text-xs">{v.rotulo || fmtL(v.volume_ml)}</TableCell>
+      <TableCell className="text-right text-xs">{brl(Number(v.preco_brl))}</TableCell>
+      <TableCell className="text-right text-[10px] text-muted-foreground leading-tight">
+        <div className="whitespace-nowrap">{formatPrecoLitro(v)}</div>
+        <div className="whitespace-nowrap">{formatDose100ml(v)}</div>
+      </TableCell>
+      <TableCell className="text-right text-[11px] text-muted-foreground">{Math.round(dosesPorVolume(v))}</TableCell>
+      <TableCell className="text-xs">{v.ordem}</TableCell>
+      <TableCell className="text-xs">{v.ativo ? "Ativo" : "Inativo"}</TableCell>
+      <TableCell />
     </TableRow>
   );
 }

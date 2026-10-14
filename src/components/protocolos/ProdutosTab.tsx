@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -335,6 +336,7 @@ export function ProdutosTab() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!TENANT_CAN_EDIT_GLOBAL_CATALOG) { toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE); return; }
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
@@ -647,12 +649,14 @@ export function ProdutosTab() {
 
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+            {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Novo Produto
               </Button>
             </DialogTrigger>
+            )}
             <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} Produto Bioinsumo</DialogTitle>
@@ -1045,7 +1049,7 @@ export function ProdutosTab() {
               const safra: string | null = pAny.safra_referencia ?? null;
               const observacoes: string | null = pAny.observacoes ?? null;
               return (
-              <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={() => handleEdit(p)}>
+              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => handleEdit(p) : undefined}>
                 <TableCell>
                   {p.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
@@ -1118,7 +1122,7 @@ export function ProdutosTab() {
                 <TableCell>
                   <VolumesChips
                     volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
-                    onAdd={() => setVolumesEdit(p)}
+                    onAdd={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => setVolumesEdit(p) : undefined}
                   />
                 </TableCell>
                 <TableCell className="text-right font-mono-data">
@@ -1189,6 +1193,7 @@ export function ProdutosTab() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
                     <DeleteProtocoloButton
                       table="produtos"
                       id={p.id}
@@ -1196,6 +1201,7 @@ export function ProdutosTab() {
                       itemLabel="produto"
                       onDeleted={fetch}
                     />
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
