@@ -64,7 +64,7 @@ CREATE FUNCTION platform_private.create_global_product_core(
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE
   v_actor uuid; v_existing public.catalog_platform_admin_audit%ROWTYPE;
-  v_new public.produtos%ROWTYPE; v_request jsonb; v_receipt jsonb; v_audit uuid;
+  v_new public.produtos%ROWTYPE; v_request jsonb; v_receipt jsonb; v_audit uuid:=gen_random_uuid();
   v_key text; v_item jsonb; v_comp jsonb:='[]'::jsonb; v_ids uuid[]:='{}';
   v_dose numeric; v_vol numeric; v_prop numeric; v_micro uuid; v_count int;
   v_allowed constant text[]:=ARRAY['nome','tipo','descricao','modo_acao','funcao_completa','modo_aplicacao','dose_ml_ha','composicao'];
@@ -158,13 +158,10 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_create_confirmation_failed';
   END IF;
   v_receipt:=pg_catalog.jsonb_build_object('id',v_new.id,'codigo',v_new.codigo,'updated_at',v_new.updated_at,
-    'composicao_count',v_count,'idempotency_key',p_idempotency_key,'idempotent',false);
-  INSERT INTO public.catalog_platform_admin_audit (operation,actor_id,reason,correlation_id,status,counts_before,counts_after,completed_at)
-  VALUES ('create_global_product',v_actor,pg_catalog.btrim(p_reason),p_idempotency_key,'completed','{}'::jsonb,
+    'composicao_count',v_count,'idempotency_key',p_idempotency_key,'audit_id',v_audit,'idempotent',false);
+  INSERT INTO public.catalog_platform_admin_audit (id,operation,actor_id,reason,correlation_id,status,counts_before,counts_after,completed_at)
+  VALUES (v_audit,'create_global_product',v_actor,pg_catalog.btrim(p_reason),p_idempotency_key,'completed','{}'::jsonb,
     pg_catalog.jsonb_build_object('request',v_request,'receipt',v_receipt),pg_catalog.clock_timestamp())
-  RETURNING id INTO v_audit;
-  v_receipt:=v_receipt||pg_catalog.jsonb_build_object('audit_id',v_audit);
-  UPDATE public.catalog_platform_admin_audit SET counts_after=counts_after WHERE false; -- sem mutação pós-insert
   RETURN v_receipt;
 END;
 $$;
@@ -176,10 +173,6 @@ RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
 $$;
 REVOKE ALL ON FUNCTION public.platform_create_global_product(jsonb,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.platform_create_global_product(jsonb,text,uuid) TO authenticated;
--- NOTA REVISÃO: o recibo gravado no ledger não contém audit_id (gerado no INSERT);
--- replay devolve receipt sem audit_id → o cliente aceita audit_id ausente apenas
--- quando idempotent=true. Alternativa: gerar v_audit:=gen_random_uuid() antes.
-
 -- ------------------------------------------------------ ativar/arquivar
 CREATE FUNCTION platform_private.set_global_product_status_core(
   p_id uuid, p_expected_updated_at timestamptz, p_ativo boolean, p_reason text, p_idempotency_key uuid
