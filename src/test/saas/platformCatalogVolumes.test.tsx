@@ -81,11 +81,27 @@ describe("decimais sem perda de precisão", () => {
   });
   it("recibo de update/status com item_tipo ou item_id divergente é falha", async () => {
     handler = (_n, a) => receipt(a, { ativo: true, item_id: "00000000-0000-4000-8000-000000000999" });
-    await expect(updateVolume(row, { volume_ml: "1000", preco_brl: "130", rotulo: "1 L", ordem: 0 }, TOK1, "Motivo válido aqui",
+    await expect(updateVolume(row, { volume_ml: "1000", preco_brl: "130", rotulo: "1 L", ordem: 0 }, TOK1, false, "Motivo válido aqui",
       "00000000-0000-4000-8000-000000000197", new AbortController().signal)).rejects.toThrow();
     handler = (_n, a) => receipt(a, { item_tipo: "microrganismo" });
-    await expect(setVolumeStatus(row, false, TOK1, "Motivo válido aqui", "00000000-0000-4000-8000-000000000196",
+    await expect(setVolumeStatus(row, false, TOK1, false, "Motivo válido aqui", "00000000-0000-4000-8000-000000000196",
       new AbortController().signal)).rejects.toThrow();
+  });
+  it("recibo com repriced diferente da prévia é falha; igual é aceito", async () => {
+    const vals = { volume_ml: "1000", preco_brl: "130", rotulo: "1 L", ordem: 0 };
+    handler = (_n, a) => receipt(a, { ativo: true, repriced: false });
+    await expect(updateVolume({ ...row, ativo: true }, vals, TOK1, true, "Motivo válido aqui",
+      "00000000-0000-4000-8000-000000000195", new AbortController().signal)).rejects.toThrow();
+    handler = (_n, a) => receipt(a, { ativo: true, repriced: true });
+    await expect(updateVolume({ ...row, ativo: true }, vals, TOK1, true, "Motivo válido aqui",
+      "00000000-0000-4000-8000-000000000194", new AbortController().signal)).resolves.toBeTruthy();
+    // sem token o servidor nunca pode ter reprecificado
+    handler = (_n, a) => receipt(a, { repriced: true });
+    await expect(setVolumeStatus(row, true, null, true, "Motivo válido aqui", "00000000-0000-4000-8000-000000000193",
+      new AbortController().signal)).rejects.toThrow();
+  });
+  it("overflow de preço vira mensagem acionável", () => {
+    expect(volumeError({ code: "22003", message: "catalog_volume_price_out_of_range" }).message).toMatch(/excede o limite/);
   });
 });
 
