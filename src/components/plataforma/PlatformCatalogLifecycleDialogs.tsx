@@ -88,7 +88,7 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
     void run((signal) => createGlobalProduct(payload, reason, key, signal), onSaved);
   };
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
-    <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto overflow-x-auto" aria-busy={busy}>
+    <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto" aria-busy={busy}>
       <DialogHeader><DialogTitle>Novo produto global</DialogTitle>
         <DialogDescription>O produto é criado inativo e fora do B2B. O código é gerado pelo servidor; preços seguem o cálculo por volumes e não são informados aqui. Outros textos podem ser completados depois em Editar.</DialogDescription>
       </DialogHeader>
