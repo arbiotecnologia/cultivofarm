@@ -1,4 +1,4 @@
--- RUNTIME TEST (rollback total) — executar SOMENTE após aplicar proposed-platform-global-volumes-admin.sql, pelo Codex,
+-- RUNTIME TEST (rollback total; revisão 2: prévia por token, precisão decimal-string) — executar SOMENTE após aplicar proposed-platform-global-volumes-admin.sql, pelo Codex,
 -- no canônico swzpzcwiasxmjutrmvkm. Atores EXISTENTES via psql (nunca inferidos). Nada persiste: ROLLBACK ao final.
 -- Validação do SA usa SOMENTE leitores autorizados; invariantes do pai (preço/B2B/dose/código) e ledger
 -- são conferidas em bloco como postgres. RLS NÃO é ampliada para o teste.
@@ -45,7 +45,7 @@ SELECT pg_temp.claims((SELECT v::uuid FROM rt_ctx WHERE k='sa'));
 SET LOCAL ROLE authenticated;
 DO $$
 DECLARE r jsonb; d jsonb; l jsonb; k uuid:=gen_random_uuid(); v1 uuid; v2 uuid; p uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='produto');
-  m uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='micro'); pricing0 jsonb; v_p text; st text; det text;
+  m uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='micro'); pricing0 jsonb; v_p text; st text; det text; tk text; tk2 text; kk uuid; r2 jsonb; v3 uuid;
 BEGIN
   l:=public.platform_read_global_item_volumes('produto',p,20,0);
   pricing0:=l->'item'->'pricing';
@@ -75,45 +75,88 @@ BEGIN
     PERFORM pg_temp.ok('sa.pai_inexistente',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('sa.pai_inexistente',true); END;
   -- edição inativa sem confirmação: permitida e sem efeito no pai
   d:=public.platform_read_global_volume_detail(v1);
-  r:=public.platform_update_global_volume(v1,(d->>'updated_at')::timestamptz,'{"rotulo":"RT 1 litro"}',false,'Teste runtime com rollback',gen_random_uuid());
+  r:=public.platform_update_global_volume(v1,(d->>'updated_at')::timestamptz,'{"rotulo":"RT 1 litro"}',NULL,'Teste runtime com rollback',gen_random_uuid());
   PERFORM pg_temp.ok('sa.update.inativa', (r->>'repriced')::boolean=false AND r->>'updated_at'>d->>'updated_at');
-  BEGIN PERFORM public.platform_update_global_volume(v1,(d->>'updated_at')::timestamptz,'{"rotulo":"x"}',false,'Teste runtime com rollback',gen_random_uuid());
+  BEGIN PERFORM public.platform_update_global_volume(v1,(d->>'updated_at')::timestamptz,'{"rotulo":"x"}',NULL,'Teste runtime com rollback',gen_random_uuid());
     PERFORM pg_temp.ok('sa.update.cas',false); EXCEPTION WHEN serialization_failure THEN PERFORM pg_temp.ok('sa.update.cas',true); END;
-  BEGIN PERFORM public.platform_update_global_volume(v1,(r->>'updated_at')::timestamptz,'{"item_tipo":"microrganismo"}',false,'Teste runtime com rollback',gen_random_uuid());
+  BEGIN PERFORM public.platform_update_global_volume(v1,(r->>'updated_at')::timestamptz,'{"item_tipo":"microrganismo"}',NULL,'Teste runtime com rollback',gen_random_uuid());
     PERFORM pg_temp.ok('sa.update.vinculo_imutavel',false); EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.update.vinculo_imutavel',true); END;
   -- ativar sem confirmação => 55000 com projeção; nada persiste
   d:=public.platform_read_global_volume_detail(v1);
-  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,false,'Teste runtime com rollback',gen_random_uuid());
-    PERFORM pg_temp.ok('sa.ativar.sem_confirmacao',false);
+  -- 1ª chamada SEM token = prévia (55000 + token + projeção decimal-string); nada persiste
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.ativar.previa',false);
   EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
-    PERFORM pg_temp.ok('sa.ativar.sem_confirmacao', (det::jsonb->>'repriced')::boolean AND det::jsonb->'parent_after'->>'valor_litro_brl'='123.45', det); END;
+    tk:=det::jsonb->>'token';
+    PERFORM pg_temp.ok('sa.ativar.previa', (det::jsonb->>'repriced')::boolean AND det::jsonb->'parent_after'->>'valor_litro_brl'='123.45'
+      AND jsonb_typeof(det::jsonb->'parent_after'->'valor_litro_brl')='string' AND tk ~ '^[0-9a-f]{64}$', det); END;
+  -- token determinístico: segunda prévia idêntica devolve o mesmo token (sem carimbos de mutação revertida)
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.previa.deterministica',false);
+  EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
+    PERFORM pg_temp.ok('sa.previa.deterministica', det::jsonb->>'token'=tk); END;
+  -- motivo diferente => token diferente (motivo faz parte do estado revisado)
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,tk,'Outro motivo de runtime',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.token.motivo_divergente',false); EXCEPTION WHEN serialization_failure THEN PERFORM pg_temp.ok('sa.token.motivo_divergente',true); END;
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,repeat('c',64),'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.token.forjado',false); EXCEPTION WHEN serialization_failure THEN PERFORM pg_temp.ok('sa.token.forjado',true); END;
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,'true','Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.token.formato',false); EXCEPTION WHEN invalid_parameter_value THEN PERFORM pg_temp.ok('sa.token.formato',true); END;
   PERFORM pg_temp.ok('sa.ativar.sem_confirmacao_rollback', (public.platform_read_global_volume_detail(v1)->>'ativo')::boolean=false
     AND public.platform_read_global_item_volumes('produto',p,20,0)->'item'->'pricing'=pricing0);
-  r:=public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,true,'Teste runtime com rollback',gen_random_uuid());
+  kk:=gen_random_uuid();
+  r:=public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,tk,'Teste runtime com rollback',kk);
+  r2:=public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,tk,'Teste runtime com rollback',kk);
+  PERFORM pg_temp.ok('sa.confirmacao.replay', (r2->>'idempotent')::boolean AND r2->>'id'=r->>'id' AND r2->>'item_id'=p::text);
   l:=public.platform_read_global_item_volumes('produto',p,20,0);
   PERFORM pg_temp.ok('sa.ativar.confirmado_reprecifica', (r->>'repriced')::boolean AND (l->'item'->'pricing'->>'valor_litro_brl')::numeric=123.45
     AND (l->'item'->'pricing'->>'valor_dose_brl')::numeric=12.35);
   -- segunda apresentação inativa com preço/L diferente; ativar sem confirmação bloqueia anulação do pai
   r:=public.platform_create_global_volume('produto',p,'{"volume_ml":"5000","preco_brl":"500"}','Teste runtime com rollback',gen_random_uuid());
   v2:=(r->>'id')::uuid; d:=public.platform_read_global_volume_detail(v2);
-  BEGIN PERFORM public.platform_set_global_volume_status(v2,(d->>'updated_at')::timestamptz,true,false,'Teste runtime com rollback',gen_random_uuid());
+  BEGIN PERFORM public.platform_set_global_volume_status(v2,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
     PERFORM pg_temp.ok('sa.anulacao_exige_confirmacao',false);
   EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
-    PERFORM pg_temp.ok('sa.anulacao_exige_confirmacao', det::jsonb->'parent_after'->>'valor_litro_brl' IS NULL, det); END;
+    PERFORM pg_temp.ok('sa.anulacao_exige_confirmacao', jsonb_typeof(det::jsonb->'parent_after'->'valor_litro_brl')='null', det); END;
   -- duplicidade ativa de mesmo volume
   r:=public.platform_create_global_volume('produto',p,'{"volume_ml":"1000","preco_brl":"123.45","rotulo":"dup"}','Teste runtime com rollback',gen_random_uuid());
   d:=public.platform_read_global_volume_detail((r->>'id')::uuid);
-  BEGIN PERFORM public.platform_set_global_volume_status((r->>'id')::uuid,(d->>'updated_at')::timestamptz,true,true,'Teste runtime com rollback',gen_random_uuid());
+  BEGIN PERFORM public.platform_set_global_volume_status((r->>'id')::uuid,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
     PERFORM pg_temp.ok('sa.duplicidade_ativa',false); EXCEPTION WHEN unique_violation THEN PERFORM pg_temp.ok('sa.duplicidade_ativa',true); END;
   -- status igual = conflito
   d:=public.platform_read_global_volume_detail(v1);
-  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,true,'Teste runtime com rollback',gen_random_uuid());
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
     PERFORM pg_temp.ok('sa.status_igual',false); EXCEPTION WHEN serialization_failure THEN PERFORM pg_temp.ok('sa.status_igual',true); END;
   -- arquivar a última ativa: exige confirmação; pai preserva último preço (contrato canônico)
-  r:=public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,false,true,'Teste runtime com rollback',gen_random_uuid());
+  -- prévia do arquivamento; depois uma IRMÃ (v2, inativa) muda: token antigo deve ser negado; nova prévia aceita
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,false,NULL,'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.arquivar.previa',false);
+  EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
+    tk:=det::jsonb->>'token'; PERFORM pg_temp.ok('sa.arquivar.previa', tk ~ '^[0-9a-f]{64}$', det); END;
+  r2:=public.platform_read_global_volume_detail(v2);
+  PERFORM public.platform_update_global_volume(v2,(r2->>'updated_at')::timestamptz,'{"rotulo":"RT irmã alterada"}',NULL,'Teste runtime com rollback',gen_random_uuid());
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,false,tk,'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.previa.irma_mudou_nega',false); EXCEPTION WHEN serialization_failure THEN PERFORM pg_temp.ok('sa.previa.irma_mudou_nega',true); END;
+  PERFORM pg_temp.ok('sa.previa.irma_mudou_nada_persistiu', (public.platform_read_global_volume_detail(v1)->>'ativo')::boolean);
+  BEGIN PERFORM public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,false,NULL,'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.arquivar.nova_previa',false);
+  EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
+    tk2:=det::jsonb->>'token'; PERFORM pg_temp.ok('sa.arquivar.nova_previa', tk2 ~ '^[0-9a-f]{64}$' AND tk2<>tk, det); END;
+  r:=public.platform_set_global_volume_status(v1,(d->>'updated_at')::timestamptz,false,tk2,'Teste runtime com rollback',gen_random_uuid());
+  PERFORM pg_temp.ok('sa.arquivar.recibo_alvo', r->>'id'=v1::text AND r->>'item_tipo'='produto' AND r->>'item_id'=p::text);
   PERFORM pg_temp.ok('sa.arquivar_ultima_preserva', (r->>'ativo')::boolean=false
     AND (public.platform_read_global_item_volumes('produto',p,20,0)->'item'->'pricing'->>'valor_litro_brl')::numeric=123.45);
   -- microrganismo: criação inativa e leitura
+  -- alta precisão nos limites: 999999999.98 / 0.003 mL => 333333333326666.67/L, exibido como string exata
+  r:=public.platform_create_global_volume('microrganismo',m,'{"volume_ml":"0.003","preco_brl":"999999999.98"}','Teste runtime com rollback',gen_random_uuid());
+  v3:=(r->>'id')::uuid; d:=public.platform_read_global_volume_detail(v3);
+  PERFORM pg_temp.ok('sa.precisao.linha', d->>'preco_litro_brl'='333333333326666.67', d->>'preco_litro_brl');
+  BEGIN PERFORM public.platform_set_global_volume_status(v3,(d->>'updated_at')::timestamptz,true,NULL,'Teste runtime com rollback',gen_random_uuid());
+    PERFORM pg_temp.ok('sa.precisao.previa',false);
+  EXCEPTION WHEN object_not_in_prerequisite_state THEN GET STACKED DIAGNOSTICS det = PG_EXCEPTION_DETAIL;
+    PERFORM pg_temp.ok('sa.precisao.previa', det::jsonb->'parent_after'->>'valor_litro_brl'='333333333326666.67'
+      AND jsonb_typeof(det::jsonb->'parent_after'->'valor_litro_brl')='string', det);
+    WHEN numeric_value_out_of_range THEN PERFORM pg_temp.ok('sa.precisao.previa',false,'coluna do pai não comporta o limite: revisar limites'); END;
   r:=public.platform_create_global_volume('microrganismo',m,'{"volume_ml":"1000","preco_brl":"10"}','Teste runtime com rollback',gen_random_uuid());
   PERFORM pg_temp.ok('sa.micro.create', public.platform_read_global_volume_detail((r->>'id')::uuid)->>'item_tipo'='microrganismo');
   BEGIN PERFORM public.platform_read_global_item_volumes('produto',p,51,0); PERFORM pg_temp.ok('sa.read.limite',false);
@@ -131,7 +174,7 @@ BEGIN
   b:=(SELECT v::jsonb FROM rt_ctx WHERE k='micro_snapshot');
   PERFORM pg_temp.ok('pg.micro.intacto_criacao_inativa', (a - s) = (b - s) AND a->'valor_litro_brl' IS NOT DISTINCT FROM b->'valor_litro_brl');
   PERFORM pg_temp.ok('pg.ledger.registrou', (SELECT count(*) FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume')
-    >= 7 AND NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume'
+    >= 9 AND NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume'
       AND (counts_before ? 'parent') IS NOT TRUE));
   BEGIN UPDATE public.catalog_platform_admin_audit SET reason='x' WHERE operation='create_global_volume';
     PERFORM pg_temp.ok('pg.ledger.imutavel',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('pg.ledger.imutavel',true); END;
@@ -149,8 +192,8 @@ BEGIN
         IF fn='read' THEN PERFORM public.platform_read_global_item_volumes('produto',p,20,0);
         ELSIF fn='detail' THEN PERFORM public.platform_read_global_volume_detail(v1);
         ELSIF fn='create' THEN PERFORM public.platform_create_global_volume('produto',p,'{"volume_ml":"1","preco_brl":"1"}','Teste runtime com rollback',gen_random_uuid());
-        ELSIF fn='update' THEN PERFORM public.platform_update_global_volume(v1,now(),'{"rotulo":"x"}',true,'Teste runtime com rollback',gen_random_uuid());
-        ELSE PERFORM public.platform_set_global_volume_status(v1,now(),true,true,'Teste runtime com rollback',gen_random_uuid()); END IF;
+        ELSIF fn='update' THEN PERFORM public.platform_update_global_volume(v1,now(),'{"rotulo":"x"}',repeat('a',64),'Teste runtime com rollback',gen_random_uuid());
+        ELSE PERFORM public.platform_set_global_volume_status(v1,now(),true,repeat('a',64),'Teste runtime com rollback',gen_random_uuid()); END IF;
         PERFORM pg_temp.ok('tenant.negado.'||a||'.'||fn,false);
       EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('tenant.negado.'||a||'.'||fn,true); END;
     END LOOP;

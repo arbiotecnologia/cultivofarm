@@ -32,7 +32,8 @@ export const volumeRowSchema = z.object({
   updated_at: version,
 }).strict();
 export type VolumeRow = z.infer<typeof volumeRowSchema>;
-const money = z.union([z.number(), z.string()]).nullable();
+/** Preço do pai: SOMENTE decimal-string ou null (JSON number perderia centavos em valores altos). */
+const money = dec.nullable();
 const pricingSchema = z.object({ valor_litro_brl: money, valor_dose_brl: money, valor_ha_brl: money }).strict();
 export type ParentPricing = z.infer<typeof pricingSchema>;
 export const volumePageSchema = z.object({
@@ -51,8 +52,11 @@ const valuesSchema = z.object({ volume_ml: dec, preco_brl: dec, rotulo: z.string
   ordem: z.number().int().min(0).max(9999) }).strict();
 
 /** Erro de confirmação com projeção antes/depois do pai, devolvida pelo servidor (nada persistiu). */
+export const PREVIEW_TOKEN_RE = /^[0-9a-f]{64}$/;
+const previewSchema = z.object({ token: z.string().regex(PREVIEW_TOKEN_RE), repriced: z.boolean(),
+  parent_before: pricingSchema, parent_after: pricingSchema }).strict();
 export class VolumeConfirmationRequired extends Error {
-  constructor(public repriced: boolean, public before: ParentPricing | null, public after: ParentPricing | null) {
+  constructor(public token: string, public repriced: boolean, public before: ParentPricing, public after: ParentPricing) {
     super("Esta alteração afeta uma apresentação ativa ou o preço do item. Confira e confirme explicitamente.");
   }
 }
@@ -63,11 +67,11 @@ const rpc = () => supabase.rpc.bind(supabase) as unknown as Rpc;
 export function volumeError(error: unknown): Error {
   const e = (typeof error === "object" && error !== null ? error : {}) as { code?: string; message?: string; details?: string };
   if (e.code === "55000" && e.message === "catalog_volume_confirmation_required") {
-    try {
-      const d = JSON.parse(e.details ?? "") as { repriced?: unknown; parent_before?: unknown; parent_after?: unknown };
-      const b = pricingSchema.safeParse(d.parent_before); const a = pricingSchema.safeParse(d.parent_after);
-      return new VolumeConfirmationRequired(d.repriced === true, b.success ? b.data : null, a.success ? a.data : null);
-    } catch { return new VolumeConfirmationRequired(false, null, null); }
+    // Prévia sem token/projeção válidos NÃO vira confirmação: falha fechada.
+    let d: unknown; try { d = JSON.parse(e.details ?? ""); } catch { d = undefined; }
+    const p = previewSchema.safeParse(d);
+    if (p.success) return new VolumeConfirmationRequired(p.data.token, p.data.repriced, p.data.parent_before, p.data.parent_after);
+    return new Error("Não foi possível obter a prévia do servidor. Reabra para conferir.");
   }
   if (e.code === "40001") return new Error("A apresentação ou o item mudou, ou a solicitação já foi usada. Reabra para conferir.");
   if (e.code === "42501") return new Error("Sem permissão para alterar apresentações globais.");
@@ -84,6 +88,13 @@ export async function readVolumePage(tipo: VolumeItemTipo, itemId: string, offse
     throw new Error("Não foi possível consultar as apresentações.");
   }
   return parsed.data;
+}
+
+const sameTarget = (r: { id?: string; item_tipo?: string; item_id?: string }, row: VolumeRow) =>
+  r.id === row.id && r.item_tipo === row.item_tipo && r.item_id === row.item_id;
+function checkToken(t: string | null) {
+  if (t !== null && !PREVIEW_TOKEN_RE.test(t)) throw new Error("Prévia inválida. Reabra para conferir.");
+  return t;
 }
 
 function confirmReceipt(data: unknown, key: string, check: (r: z.infer<typeof receiptSchema>) => boolean) {
@@ -111,23 +122,23 @@ export function volumePatch(row: VolumeRow, values: VolumeValues) {
   return patch;
 }
 
-export async function updateVolume(row: VolumeRow, values: VolumeValues, confirm: boolean, reason: string, key: string, signal: AbortSignal) {
+export async function updateVolume(row: VolumeRow, values: VolumeValues, token: string | null, reason: string, key: string, signal: AbortSignal) {
   valuesSchema.parse(values);
   const patch = volumePatch(row, values);
   if (Object.keys(patch).length === 0) throw new Error("Nenhuma alteração para salvar.");
   const { data, error } = await rpc()("platform_update_global_volume", { p_id: row.id, p_expected_updated_at: row.updated_at, p_patch: patch,
-    p_confirm: confirm, p_reason: reasonSchema.parse(reason), p_idempotency_key: key }).abortSignal(signal);
+    p_confirm_token: checkToken(token), p_reason: reasonSchema.parse(reason), p_idempotency_key: key }).abortSignal(signal);
   if (signal.aborted) throw new Error("Solicitação encerrada.");
   if (error) throw volumeError(error);
-  return confirmReceipt(data, key, (r) => r.id === row.id && r.ativo === row.ativo && r.updated_at !== row.updated_at);
+  return confirmReceipt(data, key, (r) => sameTarget(r, row) && r.ativo === row.ativo && r.updated_at !== row.updated_at);
 }
 
-export async function setVolumeStatus(row: VolumeRow, ativo: boolean, confirm: boolean, reason: string, key: string, signal: AbortSignal) {
+export async function setVolumeStatus(row: VolumeRow, ativo: boolean, token: string | null, reason: string, key: string, signal: AbortSignal) {
   const { data, error } = await rpc()("platform_set_global_volume_status", { p_id: row.id, p_expected_updated_at: row.updated_at, p_ativo: ativo,
-    p_confirm: confirm, p_reason: reasonSchema.parse(reason), p_idempotency_key: key }).abortSignal(signal);
+    p_confirm_token: checkToken(token), p_reason: reasonSchema.parse(reason), p_idempotency_key: key }).abortSignal(signal);
   if (signal.aborted) throw new Error("Solicitação encerrada.");
   if (error) throw volumeError(error);
-  return confirmReceipt(data, key, (r) => r.id === row.id && r.ativo === ativo && r.updated_at !== row.updated_at);
+  return confirmReceipt(data, key, (r) => sameTarget(r, row) && r.ativo === ativo && r.updated_at !== row.updated_at);
 }
 
 /** Exibe decimal-string em BRL sem converter para float além da formatação. */

@@ -1,4 +1,4 @@
--- CANDIDATO NÃO APLICADO — APRESENTAÇÕES/VOLUMES globais (public.catalogo_volumes) pelo Platform Superadmin.
+-- CANDIDATO NÃO APLICADO (revisão 2: prévia vinculada por token, preços decimal-string) — APRESENTAÇÕES/VOLUMES globais (public.catalogo_volumes) pelo Platform Superadmin.
 -- Alvo exclusivo: swzpzcwiasxmjutrmvkm. Revisão/aplicação: Codex. NÃO executar a partir do Lovable.
 -- Padrão: public SECURITY INVOKER -> platform_private SECURITY DEFINER; ator via
 -- platform_private.catalog_metadata_require_actor(); ledger existente public.catalog_platform_admin_audit
@@ -13,7 +13,7 @@
 --     1 preço/L distinto (>0) = grava valor_litro/dose(/ha) no pai; >1 preço/L distinto = ANULA preços do pai.
 --   * Portanto: criar INATIVA não altera o pai; ativar/editar/arquivar uma ativa pode reprecificar ou anular o pai.
 --     Este candidato executa, compara o pai antes/depois e ABORTA a transação inteira se houver
---     reprecificação sem confirmação explícita (erro 55000 com projeção antes/depois em DETAIL).
+--     reprecificação/efeito em ativa sem token de prévia (erro 55000 com token + projeção antes/depois em DETAIL).
 --   * Arquivar a última ativa NÃO restaura preço anterior: o pai mantém o último valor sincronizado (contrato preservado).
 -- Volumes existentes no canônico na auditoria: 0. Nenhum valor comercial é criado por este arquivo.
 
@@ -164,15 +164,30 @@ BEGIN
   RETURN v;
 END;
 $$;
-CREATE FUNCTION platform_private.catalog_volume_pricing(p_parent jsonb) RETURNS jsonb
+-- Preços do pai SEMPRE como decimal-string ou null (nunca JSON number: JSON.parse arredondaria
+-- p.ex. 333333333326666.67 -> 333333333326666.7). Texto vem do numeric exato do PostgreSQL.
+CREATE FUNCTION platform_private.catalog_volume_dec(p jsonb) RETURNS jsonb
 LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
-  SELECT pg_catalog.jsonb_build_object('valor_litro_brl',p_parent->'valor_litro_brl','valor_dose_brl',p_parent->'valor_dose_brl',
-    'valor_ha_brl',COALESCE(p_parent->'valor_ha_brl','null'::jsonb),'updated_at',p_parent->'updated_at');
+  SELECT CASE WHEN p IS NULL OR pg_catalog.jsonb_typeof(p)='null' THEN 'null'::jsonb
+    WHEN pg_catalog.jsonb_typeof(p)='number' THEN pg_catalog.to_jsonb(p#>>'{}')
+    ELSE NULL END;  -- tipo inesperado => NULL SQL => objeto inválido detectado pelo chamador
+$$;
+CREATE FUNCTION platform_private.catalog_volume_pricing(p_parent jsonb) RETURNS jsonb
+LANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path='' AS $$
+DECLARE l jsonb:=platform_private.catalog_volume_dec(p_parent->'valor_litro_brl');
+  d jsonb:=platform_private.catalog_volume_dec(p_parent->'valor_dose_brl');
+  h jsonb:=platform_private.catalog_volume_dec(p_parent->'valor_ha_brl');
+BEGIN
+  IF l IS NULL OR d IS NULL OR h IS NULL THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_pricing_unexpected'; END IF;
+  RETURN pg_catalog.jsonb_build_object('valor_litro_brl',l,'valor_dose_brl',d,'valor_ha_brl',h,'updated_at',p_parent->'updated_at');
+END;
 $$;
 -- Executa a verificação pós-efeito: campos protegidos do pai (B2B, dose, código, nome, tipo, ativo, preco_tabela...)
--- devem ser idênticos; reprecificação exige confirmação, e em criação é sempre proibida.
+-- devem ser idênticos; reprecificação exige confirmação vinculada à prévia (token), e em criação é sempre proibida.
+-- Sem token (p_confirmed=false) e com efeito comercial => 55000 com DETAIL {token, repriced, parent_before, parent_after}
+-- e a transação inteira é revertida (prévia não persiste nada).
 CREATE FUNCTION platform_private.catalog_volume_settle(p_tipo text, p_item uuid, p_before jsonb,
-  p_touches_active boolean, p_confirm boolean, p_allow_reprice boolean) RETURNS jsonb
+  p_touches_active boolean, p_confirmed boolean, p_allow_reprice boolean, p_token text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_after jsonb; v_strip text[]:=ARRAY['valor_litro_brl','valor_dose_brl','valor_ha_brl','updated_at'];
   v_pb jsonb; v_pa jsonb; v_repriced boolean;
@@ -184,9 +199,11 @@ BEGIN
   v_repriced:=(v_pb - 'updated_at') IS DISTINCT FROM (v_pa - 'updated_at');
   IF v_repriced AND NOT p_allow_reprice THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_unexpected_repricing'; END IF;
-  IF (p_touches_active OR v_repriced) AND NOT COALESCE(p_confirm,false) THEN
+  IF (p_touches_active OR v_repriced) AND NOT COALESCE(p_confirmed,false) THEN
+    IF p_token IS NULL THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_confirmation_failed'; END IF;
     RAISE EXCEPTION USING ERRCODE='55000', MESSAGE='catalog_volume_confirmation_required',
-      DETAIL=pg_catalog.jsonb_build_object('repriced',v_repriced,'parent_before',v_pb - 'updated_at','parent_after',v_pa - 'updated_at')::text;
+      DETAIL=pg_catalog.jsonb_build_object('token',p_token,'repriced',v_repriced,
+        'parent_before',v_pb - 'updated_at','parent_after',v_pa - 'updated_at')::text;
   END IF;
   RETURN pg_catalog.jsonb_build_object('repriced',v_repriced,'parent_before',v_pb,'parent_after',v_pa);
 END;
@@ -198,6 +215,22 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
     'preco_litro_brl',v.preco_litro_brl::text,'valor_dose_100ml_brl',v.valor_dose_100ml_brl::text,'doses_por_volume',v.doses_por_volume::text,
     'updated_at',v.updated_at)
   FROM public.catalogo_volumes v WHERE v.id=p_id;
+$$;
+-- Token determinístico da prévia: liga a confirmação ao estado REVISADO. Inclui ator, operação, alvo, mudança
+-- normalizada, motivo, versão ORIGINAL da linha alvo, snapshot do pai (inclui updated_at e preços vigentes) e
+-- (id, updated_at, ativo, volume_ml, preco_brl) de todas as apresentações irmãs. Calculado ANTES da mutação,
+-- sob lock do pai: nenhum carimbo gerado por mutação revertida entra no token (estável entre tentativas).
+-- Não é segredo; é impressão digital de estado recalculada pelo servidor na confirmação.
+CREATE FUNCTION platform_private.catalog_volume_preview_token(p_actor uuid, p_operation text, p_id uuid, p_change jsonb,
+  p_reason text, p_row_version timestamptz, p_tipo text, p_item uuid, p_parent jsonb) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+  SELECT pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(pg_catalog.jsonb_build_object(
+    'v',1,'actor',p_actor,'operation',p_operation,'id',p_id,'change',p_change,'reason',pg_catalog.btrim(p_reason),
+    'row_version',p_row_version,'parent',p_parent,
+    'siblings',(SELECT COALESCE(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_array(o.id,o.updated_at,o.ativo,o.volume_ml::text,o.preco_brl::text)
+        ORDER BY o.id),'[]'::jsonb)
+      FROM public.catalogo_volumes o WHERE o.item_tipo=p_tipo AND COALESCE(o.produto_id,o.microrganismo_id)=p_item AND o.id<>p_id)
+  )::text,'UTF8')),'hex');
 $$;
 -- Confirma derivados calculados pelo trigger canônico e moeda/vínculo intactos.
 CREATE FUNCTION platform_private.catalog_volume_assert_row(p_id uuid, p_tipo text, p_item uuid) RETURNS void
@@ -220,8 +253,8 @@ $$;
 DO $$
 DECLARE s text;
 BEGIN
-  FOREACH s IN ARRAY ARRAY['catalog_volume_parent(text,uuid,boolean)','catalog_volume_pricing(jsonb)',
-    'catalog_volume_settle(text,uuid,jsonb,boolean,boolean,boolean)','catalog_volume_row(uuid)','catalog_volume_assert_row(uuid,text,uuid)'] LOOP
+  FOREACH s IN ARRAY ARRAY['catalog_volume_parent(text,uuid,boolean)','catalog_volume_dec(jsonb)','catalog_volume_pricing(jsonb)',
+    'catalog_volume_settle(text,uuid,jsonb,boolean,boolean,boolean,text)','catalog_volume_preview_token(uuid,text,uuid,jsonb,text,timestamptz,text,uuid,jsonb)','catalog_volume_row(uuid)','catalog_volume_assert_row(uuid,text,uuid)'] LOOP
     EXECUTE 'REVOKE ALL ON FUNCTION platform_private.'||s||' FROM PUBLIC,anon,authenticated,service_role';
   END LOOP;
 END;
@@ -277,7 +310,7 @@ BEGIN
   RETURNING id INTO v_id;
   PERFORM platform_private.catalog_volume_assert_row(v_id,p_item_tipo,p_item_id);
   -- Nasce inativa: qualquer alteração no pai é falha (não apaga preço legado silenciosamente).
-  v_settle:=platform_private.catalog_volume_settle(p_item_tipo,p_item_id,v_before,false,false,false);
+  v_settle:=platform_private.catalog_volume_settle(p_item_tipo,p_item_id,v_before,false,false,false,NULL);
   v_row:=platform_private.catalog_volume_row(v_id);
   v_receipt:=pg_catalog.jsonb_build_object('id',v_id,'item_tipo',p_item_tipo,'item_id',p_item_id,'ativo',false,'updated_at',v_row->'updated_at',
     'repriced',false,'idempotency_key',p_idempotency_key,'audit_id',gen_random_uuid(),'idempotent',false);
@@ -289,30 +322,36 @@ END;
 $$;
 
 CREATE FUNCTION platform_private.change_global_volume(p_operation text, p_id uuid, p_expected_updated_at timestamptz,
-  p_patch jsonb, p_ativo boolean, p_confirm boolean, p_reason text, p_idempotency_key uuid) RETURNS jsonb
+  p_patch jsonb, p_ativo boolean, p_confirm_token text, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_actor uuid; v jsonb; v_req jsonb; v_replay jsonb; v_tipo text; v_item uuid; v_parent jsonb;
+DECLARE v_actor uuid; v jsonb; v_req jsonb; v_replay jsonb; v_tipo text; v_item uuid; v_parent jsonb; v_token text;
   v_old public.catalogo_volumes%ROWTYPE; v_before jsonb; v_settle jsonb; v_row jsonb; v_receipt jsonb; v_n int;
 BEGIN
   v_actor:=platform_private.catalog_metadata_require_actor();
-  IF p_id IS NULL OR p_expected_updated_at IS NULL OR NOT pg_catalog.isfinite(p_expected_updated_at) OR p_confirm IS NULL
+  IF p_id IS NULL OR p_expected_updated_at IS NULL OR NOT pg_catalog.isfinite(p_expected_updated_at)
+    OR (p_confirm_token IS NOT NULL AND p_confirm_token !~ '^[0-9a-f]{64}$')
     OR (p_operation='set_global_volume_status' AND p_ativo IS NULL) THEN
     RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_volume_invalid'; END IF;
   IF p_operation='update_global_volume' THEN v:=platform_private.catalog_volume_normalize(p_patch,false);
   ELSIF p_operation='set_global_volume_status' THEN v:=pg_catalog.jsonb_build_object('ativo',p_ativo);
   ELSE RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_volume_invalid'; END IF;
-  v_req:=pg_catalog.jsonb_build_object('id',p_id,'expected_updated_at',p_expected_updated_at,'change',v,'confirm',p_confirm,
+  v_req:=pg_catalog.jsonb_build_object('id',p_id,'expected_updated_at',p_expected_updated_at,'change',v,'confirm_token',p_confirm_token,
     'reason',pg_catalog.btrim(p_reason));
+  -- Replay idempotente (mesma chave + mesmo pedido, incluindo token) devolve o recibo original, mesmo que o estado tenha mudado.
   v_replay:=platform_private.catalog_entity_replay(v_actor,p_operation,v_req,p_reason,p_idempotency_key);
   IF v_replay IS NOT NULL THEN RETURN v_replay; END IF;
   SELECT item_tipo, COALESCE(produto_id,microrganismo_id) INTO v_tipo, v_item FROM public.catalogo_volumes WHERE id=p_id;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='42501', MESSAGE='catalog_volume_unavailable'; END IF;
-  v_parent:=platform_private.catalog_volume_parent(v_tipo,v_item,true);   -- lock do pai antes da linha
+  v_parent:=platform_private.catalog_volume_parent(v_tipo,v_item,true);   -- lock do pai antes da linha (serializa irmãs)
   SELECT * INTO v_old FROM public.catalogo_volumes WHERE id=p_id FOR UPDATE;
   IF NOT FOUND OR v_old.item_tipo IS DISTINCT FROM v_tipo OR COALESCE(v_old.produto_id,v_old.microrganismo_id) IS DISTINCT FROM v_item THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_conflict'; END IF;
   IF v_old.updated_at IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_conflict'; END IF;
   IF p_operation='set_global_volume_status' AND v_old.ativo = p_ativo THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_conflict'; END IF;
+  -- Token recalculado sob lock do pai, ANTES da mutação. Token enviado e divergente => prévia desatualizada.
+  v_token:=platform_private.catalog_volume_preview_token(v_actor,p_operation,p_id,v,p_reason,v_old.updated_at,v_tipo,v_item,v_parent);
+  IF p_confirm_token IS NOT NULL AND p_confirm_token IS DISTINCT FROM v_token THEN
+    RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_preview_stale'; END IF;
   v_before:=platform_private.catalog_volume_row(p_id);
   UPDATE public.catalogo_volumes SET
     volume_ml=CASE WHEN v ? 'volume_ml' THEN (v->>'volume_ml')::numeric ELSE volume_ml END,
@@ -326,8 +365,10 @@ BEGIN
   PERFORM platform_private.catalog_volume_assert_row(p_id,v_tipo,v_item);
   v_row:=platform_private.catalog_volume_row(p_id);
   IF (v_row->>'updated_at')::timestamptz <= v_old.updated_at THEN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_volume_confirmation_failed'; END IF;
-  -- Toca linha ativa (antes ou depois) => confirmação explícita obrigatória; reprecificação do pai => idem, com projeção.
-  v_settle:=platform_private.catalog_volume_settle(v_tipo,v_item,v_parent,v_old.ativo OR (v_row->>'ativo')::boolean,p_confirm,true);
+  -- Toca linha ativa (antes ou depois) ou reprecifica o pai => sem token: 55000 com prévia (rollback integral);
+  -- com token válido (já conferido acima): segue.
+  v_settle:=platform_private.catalog_volume_settle(v_tipo,v_item,v_parent,v_old.ativo OR (v_row->>'ativo')::boolean,
+    p_confirm_token IS NOT NULL,true,v_token);
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'item_tipo',v_tipo,'item_id',v_item,'ativo',(v_row->>'ativo')::boolean,
     'updated_at',v_row->'updated_at','repriced',v_settle->'repriced','idempotency_key',p_idempotency_key,'audit_id',gen_random_uuid(),'idempotent',false);
   PERFORM platform_private.catalog_entity_audit(v_actor,p_operation,p_reason,p_idempotency_key,v_req,v_receipt,
@@ -337,22 +378,22 @@ BEGIN
 END;
 $$;
 CREATE FUNCTION platform_private.update_global_volume_core(p_id uuid, p_expected_updated_at timestamptz, p_patch jsonb,
-  p_confirm boolean, p_reason text, p_idempotency_key uuid) RETURNS jsonb
+  p_confirm_token text, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path='' AS
-$$ SELECT platform_private.change_global_volume('update_global_volume',p_id,p_expected_updated_at,p_patch,NULL,p_confirm,p_reason,p_idempotency_key) $$;
+$$ SELECT platform_private.change_global_volume('update_global_volume',p_id,p_expected_updated_at,p_patch,NULL,p_confirm_token,p_reason,p_idempotency_key) $$;
 CREATE FUNCTION platform_private.set_global_volume_status_core(p_id uuid, p_expected_updated_at timestamptz, p_ativo boolean,
-  p_confirm boolean, p_reason text, p_idempotency_key uuid) RETURNS jsonb
+  p_confirm_token text, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path='' AS
-$$ SELECT platform_private.change_global_volume('set_global_volume_status',p_id,p_expected_updated_at,NULL,p_ativo,p_confirm,p_reason,p_idempotency_key) $$;
-REVOKE ALL ON FUNCTION platform_private.change_global_volume(text,uuid,timestamptz,jsonb,boolean,boolean,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
+$$ SELECT platform_private.change_global_volume('set_global_volume_status',p_id,p_expected_updated_at,NULL,p_ativo,p_confirm_token,p_reason,p_idempotency_key) $$;
+REVOKE ALL ON FUNCTION platform_private.change_global_volume(text,uuid,timestamptz,jsonb,boolean,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
 
 -- ---------------------------------------------------------------- ACL + wrappers INVOKER
 DO $$
 DECLARE s text;
 BEGIN
   FOREACH s IN ARRAY ARRAY['read_global_item_volumes_core(text,uuid,integer,integer)','read_global_volume_detail_core(uuid)',
-    'create_global_volume_core(text,uuid,jsonb,text,uuid)','update_global_volume_core(uuid,timestamptz,jsonb,boolean,text,uuid)',
-    'set_global_volume_status_core(uuid,timestamptz,boolean,boolean,text,uuid)'] LOOP
+    'create_global_volume_core(text,uuid,jsonb,text,uuid)','update_global_volume_core(uuid,timestamptz,jsonb,text,text,uuid)',
+    'set_global_volume_status_core(uuid,timestamptz,boolean,text,text,uuid)'] LOOP
     EXECUTE 'REVOKE ALL ON FUNCTION platform_private.'||s||' FROM PUBLIC,anon,authenticated,service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION platform_private.'||s||' TO authenticated';
   END LOOP;
@@ -367,18 +408,18 @@ $$ SELECT platform_private.read_global_volume_detail_core(p_id) $$;
 CREATE FUNCTION public.platform_create_global_volume(p_item_tipo text, p_item_id uuid, p_payload jsonb, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS
 $$ SELECT platform_private.create_global_volume_core(p_item_tipo,p_item_id,p_payload,p_reason,p_idempotency_key) $$;
-CREATE FUNCTION public.platform_update_global_volume(p_id uuid, p_expected_updated_at timestamptz, p_patch jsonb, p_confirm boolean, p_reason text, p_idempotency_key uuid) RETURNS jsonb
+CREATE FUNCTION public.platform_update_global_volume(p_id uuid, p_expected_updated_at timestamptz, p_patch jsonb, p_confirm_token text, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS
-$$ SELECT platform_private.update_global_volume_core(p_id,p_expected_updated_at,p_patch,p_confirm,p_reason,p_idempotency_key) $$;
-CREATE FUNCTION public.platform_set_global_volume_status(p_id uuid, p_expected_updated_at timestamptz, p_ativo boolean, p_confirm boolean, p_reason text, p_idempotency_key uuid) RETURNS jsonb
+$$ SELECT platform_private.update_global_volume_core(p_id,p_expected_updated_at,p_patch,p_confirm_token,p_reason,p_idempotency_key) $$;
+CREATE FUNCTION public.platform_set_global_volume_status(p_id uuid, p_expected_updated_at timestamptz, p_ativo boolean, p_confirm_token text, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE sql SECURITY INVOKER SET search_path='' AS
-$$ SELECT platform_private.set_global_volume_status_core(p_id,p_expected_updated_at,p_ativo,p_confirm,p_reason,p_idempotency_key) $$;
+$$ SELECT platform_private.set_global_volume_status_core(p_id,p_expected_updated_at,p_ativo,p_confirm_token,p_reason,p_idempotency_key) $$;
 DO $$
 DECLARE s text;
 BEGIN
   FOREACH s IN ARRAY ARRAY['platform_read_global_item_volumes(text,uuid,integer,integer)','platform_read_global_volume_detail(uuid)',
-    'platform_create_global_volume(text,uuid,jsonb,text,uuid)','platform_update_global_volume(uuid,timestamptz,jsonb,boolean,text,uuid)',
-    'platform_set_global_volume_status(uuid,timestamptz,boolean,boolean,text,uuid)'] LOOP
+    'platform_create_global_volume(text,uuid,jsonb,text,uuid)','platform_update_global_volume(uuid,timestamptz,jsonb,text,text,uuid)',
+    'platform_set_global_volume_status(uuid,timestamptz,boolean,text,text,uuid)'] LOOP
     EXECUTE 'REVOKE ALL ON FUNCTION public.'||s||' FROM PUBLIC,anon,authenticated,service_role';
     EXECUTE 'GRANT EXECUTE ON FUNCTION public.'||s||' TO authenticated';
   END LOOP;
@@ -390,14 +431,15 @@ $$;
 -- Linhas de catalogo_volumes criadas pelo SA NÃO são apagadas pelo rollback (seriam dados comerciais auditados).
 -- DO $$ BEGIN
 --   DROP FUNCTION IF EXISTS public.platform_read_global_item_volumes(text,uuid,integer,integer), public.platform_read_global_volume_detail(uuid),
---     public.platform_create_global_volume(text,uuid,jsonb,text,uuid), public.platform_update_global_volume(uuid,timestamptz,jsonb,boolean,text,uuid),
---     public.platform_set_global_volume_status(uuid,timestamptz,boolean,boolean,text,uuid);
---   DROP FUNCTION IF EXISTS platform_private.update_global_volume_core(uuid,timestamptz,jsonb,boolean,text,uuid),
---     platform_private.set_global_volume_status_core(uuid,timestamptz,boolean,boolean,text,uuid),
---     platform_private.change_global_volume(text,uuid,timestamptz,jsonb,boolean,boolean,text,uuid),
+--     public.platform_create_global_volume(text,uuid,jsonb,text,uuid), public.platform_update_global_volume(uuid,timestamptz,jsonb,text,text,uuid),
+--     public.platform_set_global_volume_status(uuid,timestamptz,boolean,text,text,uuid);
+--   DROP FUNCTION IF EXISTS platform_private.update_global_volume_core(uuid,timestamptz,jsonb,text,text,uuid),
+--     platform_private.set_global_volume_status_core(uuid,timestamptz,boolean,text,text,uuid),
+--     platform_private.change_global_volume(text,uuid,timestamptz,jsonb,boolean,text,text,uuid),
 --     platform_private.create_global_volume_core(text,uuid,jsonb,text,uuid), platform_private.read_global_volume_detail_core(uuid),
 --     platform_private.read_global_item_volumes_core(text,uuid,integer,integer), platform_private.catalog_volume_assert_row(uuid,text,uuid),
---     platform_private.catalog_volume_row(uuid), platform_private.catalog_volume_settle(text,uuid,jsonb,boolean,boolean,boolean),
+--     platform_private.catalog_volume_row(uuid), platform_private.catalog_volume_settle(text,uuid,jsonb,boolean,boolean,boolean,text),
+--     platform_private.catalog_volume_preview_token(uuid,text,uuid,jsonb,text,timestamptz,text,uuid,jsonb), platform_private.catalog_volume_dec(jsonb),
 --     platform_private.catalog_volume_pricing(jsonb), platform_private.catalog_volume_parent(text,uuid,boolean),
 --     platform_private.catalog_volume_normalize(jsonb,boolean);
 --   DROP POLICY IF EXISTS catalog_volumes_sa_insert ON public.catalogo_volumes;
