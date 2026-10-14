@@ -38,7 +38,7 @@ export function PlatformCatalogVolumesDialog({ tipo, itemId, nome, scope, onClos
         <DialogDescription>Preço por litro, dose de 100 mL e doses são calculados pelo servidor. Novas apresentações nascem inativas.</DialogDescription>
       </DialogHeader>
       {saved && <p role="status">Alteração confirmada.</p>}
-      {mode && <VolumeForm key={JSON.stringify(mode)} tipo={tipo} itemId={itemId} scope={scope} mode={mode}
+      {mode && <VolumeForm key={JSON.stringify([scope, tipo, itemId, mode])} tipo={tipo} itemId={itemId} scope={scope} mode={mode}
         onClose={() => setMode(undefined)} onSaved={done} />}
       {!mode && <>
         {page && <PricingSummary pricing={page.item.pricing} tipo={tipo} />}
@@ -54,7 +54,7 @@ export function PlatformCatalogVolumesDialog({ tipo, itemId, nome, scope, onClos
           const label = v.rotulo || `${v.volume_ml} mL`;
           return <li key={v.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 break-words text-sm">
-              <p className="font-medium">{label} <Badge variant={v.ativo ? "secondary" : "outline"}>{v.ativo ? "Ativa" : "Inativa"}</Badge></p>
+              <div className="font-medium">{label} <Badge variant={v.ativo ? "secondary" : "outline"}>{v.ativo ? "Ativa" : "Inativa"}</Badge></div>
               <p className="text-muted-foreground">{v.volume_ml} mL · {fmtBrl(v.preco_brl)} · {fmtBrl(v.preco_litro_brl)}/L · {fmtBrl(v.valor_dose_100ml_brl)}/100 mL · {v.doses_por_volume ?? "—"} doses</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -93,15 +93,18 @@ function VolumeForm({ tipo, itemId, scope, mode, onClose, onSaved }:
   const [ordem, setOrdem] = useState(String(row?.ordem ?? 0));
   const [reason, setReason] = useState("");
   const [confirm, setConfirm] = useState(false);
-  const [projection, setProjection] = useState<VolumeConfirmationRequired>();
+  // Prévia do servidor vinculada ao estado revisado (`sig`). Qualquer mudança de campo/motivo/identidade/item a invalida.
+  const [preview, setPreview] = useState<{ p: VolumeConfirmationRequired; sig: string }>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const controller = useRef(new AbortController());
   useEffect(() => () => controller.current.abort(), []);
-  // Toca apresentação ativa (antes ou depois) => confirmação explícita obrigatória.
-  const touchesActive = mode.type !== "create" && (mode.row.ativo || (mode.type === "status" && mode.ativo));
-  const needsConfirm = touchesActive || !!projection;
+  const sig = JSON.stringify([scope, tipo, itemId, mode.type, row?.id, row?.updated_at, mode.type === "status" ? mode.ativo : null,
+    vol, preco, rotulo, ordem, reason]);
+  const live = preview && preview.sig === sig ? preview.p : undefined;
+  useEffect(() => { if (preview && preview.sig !== sig) { setPreview(undefined); setConfirm(false); } }, [preview, sig]);
+  const edit = (set: (v: string) => void) => (e: { target: { value: string } }) => { set(e.target.value); setConfirm(false); };
   const submit = async () => {
     if (lock.current) return;
     setError(undefined);
@@ -114,23 +117,32 @@ function VolumeForm({ tipo, itemId, scope, mode, onClose, onSaved }:
       if (Number.isNaN(o)) { setError("Ordem: número inteiro de 0 a 9999."); return; }
       values = { volume_ml: v, preco_brl: p, rotulo: rotulo.trim() === "" ? null : rotulo.trim().slice(0, 60), ordem: o };
     }
-    if (needsConfirm && !confirm) { setError("Marque a confirmação do efeito comercial para continuar."); return; }
+    // Primeira tentativa: sem token => servidor devolve prévia (nada persiste). Confirmação só com prévia vigente + checkbox.
+    if (live && !confirm) { setError("Marque a confirmação do efeito comercial para continuar."); return; }
+    const token = live ? live.token : null;
     lock.current = true; setBusy(true);
     const signal = controller.current.signal;
     const key = metadataRetryKey(scope, JSON.stringify(["volume", tipo, itemId, mode.type, row?.id, row?.updated_at, values,
-      mode.type === "status" ? mode.ativo : null, confirm, reason.trim()]));
+      mode.type === "status" ? mode.ativo : null, token, reason.trim()]));
     try {
       if (mode.type === "create") await createVolume(tipo, itemId, values!, reason, key, signal);
-      else if (mode.type === "edit") await updateVolume(mode.row, values!, confirm, reason, key, signal);
-      else await setVolumeStatus(mode.row, mode.ativo, confirm, reason, key, signal);
+      else if (mode.type === "edit") await updateVolume(mode.row, values!, token, reason, key, signal);
+      else await setVolumeStatus(mode.row, mode.ativo, token, reason, key, signal);
       if (!signal.aborted) onSaved();
     } catch (e) {
       if (signal.aborted) return;
-      if (e instanceof VolumeConfirmationRequired) { setProjection(e); setConfirm(false); setError(e.message); }
-      else setError(e instanceof Error && !("issues" in e) ? e.message : "Confira os campos e o motivo (10 a 500 caracteres).");
+      setConfirm(false);
+      if (e instanceof VolumeConfirmationRequired) { setPreview({ p: e, sig }); setError(undefined); }
+      else {
+        if (token) setPreview(undefined);
+        setError(e instanceof Error && !("issues" in e) ? e.message : "Confira os campos e o motivo (10 a 500 caracteres).");
+      }
     } finally { lock.current = false; if (!signal.aborted) setBusy(false); }
   };
   const title = mode.type === "create" ? "Nova apresentação" : mode.type === "edit" ? "Editar apresentação" : mode.ativo ? "Ativar apresentação" : "Arquivar apresentação";
+  const action = live ? "Confirmar alteração" : mode.type === "create" ? "Salvar"
+    : mode.type === "edit" ? "Revisar e salvar" : mode.ativo ? "Revisar ativação" : "Revisar arquivamento";
+  const ha = tipo === "produto";
   return <section aria-label={title} className="space-y-3">
     <h3 className="font-semibold">{title}</h3>
     {mode.type === "status" && <p className="text-sm">{mode.ativo
@@ -138,29 +150,30 @@ function VolumeForm({ tipo, itemId, scope, mode, onClose, onSaved }:
       : "Arquivar não exclui. Se for a última ativa, o item mantém o último preço sincronizado."}</p>}
     {mode.type !== "status" && <fieldset disabled={busy} className="grid gap-3 sm:grid-cols-2">
       <div className="min-w-0 space-y-1"><Label htmlFor="vol-ml">Volume (mL)</Label>
-        <Input id="vol-ml" inputMode="decimal" value={vol} onChange={(e) => setVol(e.target.value)} /></div>
+        <Input id="vol-ml" inputMode="decimal" value={vol} onChange={edit(setVol)} /></div>
       <div className="min-w-0 space-y-1"><Label htmlFor="vol-preco">Preço da apresentação (R$)</Label>
-        <Input id="vol-preco" inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></div>
+        <Input id="vol-preco" inputMode="decimal" value={preco} onChange={edit(setPreco)} /></div>
       <div className="min-w-0 space-y-1"><Label htmlFor="vol-rotulo">Rótulo (opcional)</Label>
-        <Input id="vol-rotulo" maxLength={60} value={rotulo} onChange={(e) => setRotulo(e.target.value)} /></div>
+        <Input id="vol-rotulo" maxLength={60} value={rotulo} onChange={edit(setRotulo)} /></div>
       <div className="min-w-0 space-y-1"><Label htmlFor="vol-ordem">Ordem</Label>
-        <Input id="vol-ordem" inputMode="numeric" value={ordem} onChange={(e) => setOrdem(e.target.value)} /></div>
+        <Input id="vol-ordem" inputMode="numeric" value={ordem} onChange={edit(setOrdem)} /></div>
     </fieldset>}
-    {projection && <div role="note" className="break-words rounded-md border p-3 text-sm">
-      <p className="font-medium">{projection.repriced ? "O preço do item será alterado:" : "Alteração em apresentação ativa."}</p>
-      {projection.repriced && <p>Antes: {fmtBrl(projection.before?.valor_litro_brl)}/L · dose {fmtBrl(projection.before?.valor_dose_brl)} — Depois: {fmtBrl(projection.after?.valor_litro_brl)}/L · dose {fmtBrl(projection.after?.valor_dose_brl)}</p>}
+    {live && <div role="note" aria-label="Prévia do servidor" className="break-words rounded-md border p-3 text-sm space-y-1">
+      <p className="font-medium">{live.repriced ? "Prévia: o preço do item será alterado." : "Prévia: alteração em apresentação ativa, sem mudança no preço do item."}</p>
+      <p>Antes: {fmtBrl(live.before.valor_litro_brl)}/L · dose {fmtBrl(live.before.valor_dose_brl)}{ha ? ` · ha ${fmtBrl(live.before.valor_ha_brl)}` : ""}</p>
+      <p>Depois: {fmtBrl(live.after.valor_litro_brl)}/L · dose {fmtBrl(live.after.valor_dose_brl)}{ha ? ` · ha ${fmtBrl(live.after.valor_ha_brl)}` : ""}</p>
+      <p className="text-muted-foreground">Nada foi gravado ainda. Alterar qualquer campo ou o motivo descarta esta prévia.</p>
     </div>}
     <div className="space-y-1"><Label htmlFor="vol-reason">Motivo da alteração (10 a 500 caracteres)</Label>
-      <Textarea id="vol-reason" disabled={busy} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
-    {needsConfirm && <div className="flex items-start gap-2">
+      <Textarea id="vol-reason" disabled={busy} maxLength={500} value={reason} onChange={edit(setReason)} /></div>
+    {live && <div className="flex items-start gap-2">
       <Checkbox id="vol-confirm" disabled={busy} checked={confirm} onCheckedChange={(c) => setConfirm(c === true)} />
       <Label htmlFor="vol-confirm" className="leading-snug">Confirmo o efeito comercial desta alteração no catálogo global.</Label>
     </div>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
     <DialogFooter className="gap-2">
       <Button variant="outline" className="min-h-10" disabled={busy} onClick={onClose}>Voltar</Button>
-      <Button className="min-h-10" disabled={busy} onClick={() => void submit()}>
-        {mode.type === "status" ? (mode.ativo ? "Confirmar ativação" : "Confirmar arquivamento") : "Salvar"}</Button>
+      <Button className="min-h-10" disabled={busy} onClick={() => void submit()}>{action}</Button>
     </DialogFooter>
   </section>;
 }
