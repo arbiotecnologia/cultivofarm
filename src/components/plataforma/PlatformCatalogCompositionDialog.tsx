@@ -74,8 +74,8 @@ export function PlatformCatalogCompositionDialog({ productId, nome, scope, onClo
   const qtyInvalid = rows.some((r) => r.qtyText.trim() !== "" && Number.isNaN(parseDecimal(r.qtyText)));
   const problems = data ? validateDeclarations(family, status, rows, withConc) : [];
   const reasonOk = reason.trim().length >= 10 && reason.trim().length <= 500;
-  const canEdit = !!data && family !== null && !busy;
-  const valid = canEdit && !qtyInvalid && problems.length === 0;
+  const canEdit = !!data && family !== null;
+  const valid = canEdit && !busy && !qtyInvalid && problems.length === 0;
   const reset = () => setConfirmed(false);
   const update = (key: number, patch: Partial<Row>) => { setRows((rs) => rs.map((r) => r.key === key ? { ...r, ...patch } : r)); reset(); };
 
@@ -137,7 +137,7 @@ export function PlatformCatalogCompositionDialog({ productId, nome, scope, onClo
           {family === null && <p role="note" className="rounded-md border p-3 text-sm">Produto sem família: declarações apenas para leitura.
             Classifique a família antes de editar.</p>}
           {rows.length === 0 && <p className="text-sm">Nenhuma declaração.</p>}
-          {rows.map((r, i) => <fieldset key={r.key} className="space-y-2 rounded-md border p-3" disabled={!canEdit}>
+          {rows.map((r, i) => <fieldset key={r.key} className="space-y-2 rounded-md border p-3" disabled={!canEdit || busy}>
             <legend className="px-1 text-sm font-medium">Componente {i + 1}</legend>
             <Label htmlFor={`tipo-${r.key}`}>Tipo</Label>
             <select id={`tipo-${r.key}`} className={selectCls} value={r.tipo_componente}
