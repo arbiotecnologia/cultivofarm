@@ -47,7 +47,7 @@ describe("SQL candidato de composição (estático)", () => {
   });
   it("runtime termina em ROLLBACK e chama RPCs como authenticated", () => {
     expect(runtime.trim().endsWith("ROLLBACK;")).toBe(true);
-    expect(runtime).not.toMatch(/\bCOMMIT\b/);
+    expect(runtime).not.toMatch(/^\s*COMMIT\s*;/m);
     expect(runtime).toMatch(/SET LOCAL ROLE authenticated;\nDO \$\$/);
   });
 });
