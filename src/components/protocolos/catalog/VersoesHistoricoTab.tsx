@@ -1,3 +1,4 @@
+import { GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,8 @@ export function VersoesHistoricoTab({ entidadeTipo, entidadeId, canApprove }: Pr
   useEffect(() => { load(); }, [load]);
 
   const aprovar = async (id: string) => {
+    toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE);
+    return;
     const { error } = await supabase.rpc("aprovar_ficha_versao" as any, { p_versao_id: id });
     if (error) return toast.error(error.message);
     toast.success("Versão aprovada e aplicada");
@@ -56,6 +59,8 @@ export function VersoesHistoricoTab({ entidadeTipo, entidadeId, canApprove }: Pr
   };
 
   const rejeitar = async (id: string) => {
+    toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE);
+    return;
     const obs = window.prompt("Motivo da rejeição (opcional):") ?? null;
     const { error } = await supabase.rpc("rejeitar_ficha_versao" as any, { p_versao_id: id, p_observacao: obs });
     if (error) return toast.error(error.message);

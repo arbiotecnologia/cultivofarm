@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +95,7 @@ export default function ParametrosCQPage() {
 
   const upsert = useMutation({
     mutationFn: async () => {
+      assertGlobalCatalogWriteBlocked();
       if (!form.microrganismo_id) throw new Error("Selecione o microrganismo");
       const payload = {
         microrganismo_id: form.microrganismo_id,
@@ -127,6 +129,7 @@ export default function ParametrosCQPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await supabase.from("cq_parametros_referencia").delete().eq("id", id);
       if (error) throw error;
     },

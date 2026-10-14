@@ -1,3 +1,4 @@
+import { GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertDialog,
@@ -48,6 +49,8 @@ export function ApprovalChecklistDialog({ open, onOpenChange, kind, profileId, i
 
   const confirm = async () => {
     if (!allRequiredChecked) return;
+    toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE);
+    return;
     if (!profileId) {
       toast.error("Ficha ainda não persistida. Salve antes de aprovar.");
       return;

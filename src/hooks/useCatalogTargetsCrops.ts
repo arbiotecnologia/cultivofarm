@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,6 +61,7 @@ export function useUpsertTarget(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<TargetRow> & { alvo_nome: string; alvo_tipo: string }) => {
+      assertGlobalCatalogWriteBlocked();
       const row: any = { ...payload, [parentCol(kind)]: parentId };
       if (payload.id) {
         const { error } = await (supabase as any).from(targetTable(kind) as any).update(row).eq("id", payload.id);
@@ -77,6 +79,7 @@ export function useDeactivateTarget(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await (supabase as any).from(targetTable(kind) as any).update({ ativo: false }).eq("id", id);
       if (error) throw error;
     },
@@ -107,6 +110,7 @@ export function useUpsertCrop(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<CropRow>) => {
+      assertGlobalCatalogWriteBlocked();
       const row: any = { ...payload, [parentCol(kind)]: parentId };
       if (kind === "micro") delete row.dose_recomendada;
       if (payload.id) {
@@ -125,6 +129,7 @@ export function useDeactivateCrop(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await (supabase as any).from(cropTable(kind) as any).update({ ativo: false }).eq("id", id);
       if (error) throw error;
     },

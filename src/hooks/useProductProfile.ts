@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -110,6 +111,7 @@ export function useUpsertProductProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string }) => {
+      assertGlobalCatalogWriteBlocked();
       const { data, error } = await (supabase as any)
         .from("product_technical_profiles")
         .upsert(payload as any, { onConflict: "produto_id" })

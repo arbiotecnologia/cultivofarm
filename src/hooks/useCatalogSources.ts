@@ -1,3 +1,4 @@
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -70,6 +71,7 @@ export function useUpsertCatalogSource(
     mutationFn: async (
       payload: Partial<CatalogSource> & { fonte_titulo: string; fonte_tipo: SourceType },
     ) => {
+      assertGlobalCatalogWriteBlocked();
       const { id, ...rest } = payload;
       const row: any = { ...rest, entidade_tipo: entidadeTipo, entidade_id: entidadeId };
       if (id) {
@@ -98,6 +100,7 @@ export function useDeleteCatalogSource(
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      assertGlobalCatalogWriteBlocked();
       const { error } = await supabase
         .from("catalog_technical_sources" as any)
         .delete()
