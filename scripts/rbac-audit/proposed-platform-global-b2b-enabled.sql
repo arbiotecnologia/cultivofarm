@@ -15,6 +15,10 @@
 --  * sem DML/grant novo para anon/authenticated nas tabelas; sem SQL dinâmico.
 --  * se trigger legado de preço recalcular qualquer coluna durante o UPDATE, a operação
 --    falha fechada (40001 catalog_b2b_confirmation_failed) em vez de gravar drift.
+--  * versão monotônica: o trigger existente update_produtos_updated_at (public.update_updated_at_column,
+--    now() constante na transação) é recriado com o MESMO nome apontando para
+--    platform_private.catalog_touch_version() (já aplicada em micros/culturas). Contagem de triggers (5)
+--    preservada; public.update_updated_at_column NÃO é alterada (uso global).
 -- Rollback: rollback-platform-global-b2b-enabled.sql
 -- =====================================================================================
 
@@ -52,6 +56,13 @@ BEGIN
     OR to_regprocedure('platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)') IS NULL THEN
     RAISE EXCEPTION 'b2b_preflight_helpers_missing';
   END IF;
+  -- Auditoria da função anterior do trigger de versão de produtos (fail-closed se divergir).
+  IF to_regprocedure('platform_private.catalog_touch_version()') IS NULL
+    OR (SELECT count(*) FROM pg_trigger t WHERE t.tgrelid='public.produtos'::regclass AND t.tgname='update_produtos_updated_at'
+         AND NOT t.tgisinternal AND t.tgfoid='public.update_updated_at_column()'::regprocedure
+         AND t.tgtype = 19 /* ROW|BEFORE|UPDATE */ AND t.tgenabled='O') <> 1 THEN
+    RAISE EXCEPTION 'b2b_preflight_produtos_version_trigger_changed';
+  END IF;
   -- Nenhuma grant DML de cliente nas tabelas-alvo (contenção existente preservada).
   IF EXISTS (SELECT 1 FROM information_schema.role_table_grants WHERE table_schema='public'
       AND table_name IN ('produtos','microrganismos') AND grantee IN ('anon','authenticated','PUBLIC')
@@ -60,6 +71,12 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- ---------------------------------------------------------------- versão monotônica de produtos (CAS)
+-- Substitui SOMENTE a função do trigger update_produtos_updated_at; nome, timing e quantidade preservados.
+DROP TRIGGER update_produtos_updated_at ON public.produtos;
+CREATE TRIGGER update_produtos_updated_at BEFORE UPDATE ON public.produtos
+FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_touch_version();
 
 -- ---------------------------------------------------------------- ledger: whitelist + leitura SA + imutável
 ALTER TABLE public.catalog_platform_admin_audit DROP CONSTRAINT catalog_platform_admin_audit_operation_check;

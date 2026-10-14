@@ -24,4 +24,16 @@ BEGIN
     RAISE NOTICE 'ledger set_global_b2b_enabled existente: política, trigger imutável e CHECK preservados';
   END IF;
 END $$;
+-- Restaura a função anterior do trigger de versão de produtos somente se este candidato a trocou.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.produtos'::regclass AND tgname='update_produtos_updated_at'
+      AND NOT tgisinternal AND tgfoid='platform_private.catalog_touch_version()'::regprocedure) THEN
+    DROP TRIGGER update_produtos_updated_at ON public.produtos;
+    CREATE TRIGGER update_produtos_updated_at BEFORE UPDATE ON public.produtos
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  ELSE
+    RAISE NOTICE 'update_produtos_updated_at não usa catalog_touch_version: nada a restaurar';
+  END IF;
+END $$;
 COMMIT;
