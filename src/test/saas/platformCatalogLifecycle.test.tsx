@@ -215,7 +215,7 @@ describe("layout do editor de composição (estrutural; jsdom não mede largura)
   it("linhas, rótulos e botões permitem quebra e encolhimento sem ocultar conteúdo", async () => {
     renderCreate();
     const add = await screen.findByRole("button", { name: "Adicionar Bacillus A" });
-    expect(add.className).toMatch(/whitespace-normal/); expect(add.className).toMatch(/max-w-full/); expect(add.className).toMatch(/h-auto/);
+    expect(add.className).toMatch(/whitespace-normal/); expect(add.className).toMatch(/max-w-full/); expect(add.className).toMatch(/min-h-10/);
     fireEvent.click(add);
     const remove = screen.getByRole("button", { name: "Remover Bacillus A" });
     expect(remove.className).toMatch(/whitespace-normal/);
