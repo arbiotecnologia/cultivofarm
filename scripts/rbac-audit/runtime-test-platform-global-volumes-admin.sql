@@ -1,4 +1,4 @@
--- RUNTIME TEST (rollback total; revisão 2: prévia por token, precisão decimal-string) — executar SOMENTE após aplicar proposed-platform-global-volumes-admin.sql, pelo Codex,
+-- RUNTIME TEST (rev. final: rt_ctx.k/rt_ctx.v qualificados contra 42702; ledger LIKE '%\_global\_volume%' cobre status) (rollback total; revisão 2: prévia por token, precisão decimal-string) — executar SOMENTE após aplicar proposed-platform-global-volumes-admin.sql, pelo Codex,
 -- no canônico swzpzcwiasxmjutrmvkm. Atores EXISTENTES via psql (nunca inferidos). Nada persiste: ROLLBACK ao final.
 -- Validação do SA usa SOMENTE leitores autorizados; invariantes do pai (preço/B2B/dose/código) e ledger
 -- são conferidas em bloco como postgres. RLS NÃO é ampliada para o teste.
@@ -16,7 +16,7 @@ INSERT INTO rt_ctx VALUES ('sa',:'sa_uid'),('admin_ar',:'admin_ar_uid'),('admin_
 DO $$
 DECLARE r record;
 BEGIN
-  FOR r IN SELECT k, v::uuid u FROM rt_ctx LOOP
+  FOR r IN SELECT rt_ctx.k, rt_ctx.v::uuid u FROM rt_ctx LOOP
     IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id=r.u) THEN RAISE EXCEPTION 'ator inexistente: %', r.k; END IF;
     IF r.k='sa' AND NOT (public.has_role(r.u,'superadmin') AND public.is_platform_superadmin(r.u) AND platform_private.platform_actor_access_ready(r.u)) THEN
       RAISE EXCEPTION 'sa não é superadmin ativo'; END IF;
@@ -25,8 +25,8 @@ BEGIN
   -- Pais reais escolhidos deterministicamente; nada é persistido.
   INSERT INTO rt_ctx SELECT 'produto', id::text FROM public.produtos ORDER BY id LIMIT 1;
   INSERT INTO rt_ctx SELECT 'micro', id::text FROM public.microrganismos ORDER BY id LIMIT 1;
-  INSERT INTO rt_ctx SELECT 'produto_snapshot', to_jsonb(p)::text FROM public.produtos p WHERE id=(SELECT v::uuid FROM rt_ctx WHERE k='produto');
-  INSERT INTO rt_ctx SELECT 'micro_snapshot', to_jsonb(m)::text FROM public.microrganismos m WHERE id=(SELECT v::uuid FROM rt_ctx WHERE k='micro');
+  INSERT INTO rt_ctx SELECT 'produto_snapshot', to_jsonb(p)::text FROM public.produtos p WHERE id=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto');
+  INSERT INTO rt_ctx SELECT 'micro_snapshot', to_jsonb(m)::text FROM public.microrganismos m WHERE id=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='micro');
   INSERT INTO rt_ctx SELECT 'ledger_antes', count(*)::text FROM public.catalog_platform_admin_audit;
   INSERT INTO rt_ctx SELECT 'volumes_antes', count(*)::text FROM public.catalogo_volumes;
 END $$;
@@ -41,11 +41,11 @@ $$;
 GRANT EXECUTE ON FUNCTION pg_temp.claims(uuid,int,int), pg_temp.ok(text,boolean,text) TO authenticated, anon;
 
 -- ============================================================ 1) Superadmin: fluxo funcional
-SELECT pg_temp.claims((SELECT v::uuid FROM rt_ctx WHERE k='sa'));
+SELECT pg_temp.claims((SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='sa'));
 SET LOCAL ROLE authenticated;
 DO $$
-DECLARE r jsonb; d jsonb; l jsonb; k uuid:=gen_random_uuid(); v1 uuid; v2 uuid; p uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='produto');
-  m uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='micro'); pricing0 jsonb; v_p text; st text; det text; tk text; tk2 text; kk uuid; r2 jsonb; v3 uuid;
+DECLARE r jsonb; d jsonb; l jsonb; k uuid:=gen_random_uuid(); v1 uuid; v2 uuid; p uuid:=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto');
+  m uuid:=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='micro'); pricing0 jsonb; v_p text; st text; det text; tk text; tk2 text; kk uuid; r2 jsonb; v3 uuid;
 BEGIN
   l:=public.platform_read_global_item_volumes('produto',p,20,0);
   pricing0:=l->'item'->'pricing';
@@ -161,7 +161,7 @@ BEGIN
     WHEN object_not_in_prerequisite_state THEN PERFORM pg_temp.ok('sa.overflow.rejeitado',false,'prévia emitida apesar do overflow'); END;
   PERFORM pg_temp.ok('sa.overflow.linha_intacta', public.platform_read_global_volume_detail(v3) = d);
   PERFORM pg_temp.ok('sa.overflow.pai_intacto', (public.platform_read_global_item_volumes('microrganismo',m,20,0)->'item'->'pricing')
-    = (SELECT v::jsonb FROM rt_ctx WHERE k='micro_pricing_antes'));
+    = (SELECT rt_ctx.v::jsonb FROM rt_ctx WHERE rt_ctx.k='micro_pricing_antes'));
   r:=public.platform_create_global_volume('microrganismo',m,'{"volume_ml":"1000","preco_brl":"10"}','Teste runtime com rollback',gen_random_uuid());
   PERFORM pg_temp.ok('sa.micro.create', public.platform_read_global_volume_detail((r->>'id')::uuid)->>'item_tipo'='microrganismo');
   BEGIN PERFORM public.platform_read_global_item_volumes('produto',p,51,0); PERFORM pg_temp.ok('sa.read.limite',false);
@@ -171,18 +171,18 @@ RESET ROLE;
 
 -- ============================================================ 2) Invariantes protegidas (postgres)
 DO $$
-DECLARE b jsonb:=(SELECT v::jsonb FROM rt_ctx WHERE k='produto_snapshot'); a jsonb; s text[]:=ARRAY['valor_litro_brl','valor_dose_brl','valor_ha_brl','updated_at'];
+DECLARE b jsonb:=(SELECT rt_ctx.v::jsonb FROM rt_ctx WHERE rt_ctx.k='produto_snapshot'); a jsonb; s text[]:=ARRAY['valor_litro_brl','valor_dose_brl','valor_ha_brl','updated_at'];
 BEGIN
   SELECT to_jsonb(p) INTO a FROM public.produtos p WHERE id=(b->>'id')::uuid;
   PERFORM pg_temp.ok('pg.produto.protegidos_intactos', (a - s) = (b - s));
-  SELECT to_jsonb(m) INTO a FROM public.microrganismos m WHERE id=(SELECT v::uuid FROM rt_ctx WHERE k='micro');
-  b:=(SELECT v::jsonb FROM rt_ctx WHERE k='micro_snapshot');
+  SELECT to_jsonb(m) INTO a FROM public.microrganismos m WHERE id=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='micro');
+  b:=(SELECT rt_ctx.v::jsonb FROM rt_ctx WHERE rt_ctx.k='micro_snapshot');
   PERFORM pg_temp.ok('pg.micro.intacto_criacao_inativa', (a - s) = (b - s) AND a->'valor_litro_brl' IS NOT DISTINCT FROM b->'valor_litro_brl');
-  PERFORM pg_temp.ok('pg.ledger.registrou', (SELECT count(*) FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume')
-    >= 9 AND NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume'
+  PERFORM pg_temp.ok('pg.ledger.registrou', (SELECT count(*) FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume%')
+    >= 9 AND NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit WHERE operation LIKE '%\_global\_volume%'
       AND (counts_before ? 'parent') IS NOT TRUE));
   PERFORM pg_temp.ok('pg.overflow.ledger_sem_registro', NOT EXISTS (SELECT 1 FROM public.catalog_platform_admin_audit
-    WHERE operation='set_global_volume_status' AND counts_after->'request'->>'id'=(SELECT v FROM rt_ctx WHERE k='v3')));
+    WHERE operation='set_global_volume_status' AND counts_after->'request'->>'id'=(SELECT rt_ctx.v FROM rt_ctx WHERE rt_ctx.k='v3')));
   -- Serialização exata (independe de caber nas colunas): helper privado com numeric JSON de alta precisão => strings idênticas.
   a:=platform_private.catalog_volume_pricing('{"valor_litro_brl":333333333326666.67,"valor_dose_brl":33333333332666.67,"valor_ha_brl":null}'::jsonb);
   PERFORM pg_temp.ok('pg.precisao.serializacao_exata', a->>'valor_litro_brl'='333333333326666.67' AND jsonb_typeof(a->'valor_litro_brl')='string'
@@ -193,10 +193,10 @@ END $$;
 
 -- ============================================================ 3) Negativas: 4 tenants, anon, claims inválidas
 DO $$
-DECLARE a text; v1 uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='v1'); p uuid:=(SELECT v::uuid FROM rt_ctx WHERE k='produto'); fn text; n int;
+DECLARE a text; v1 uuid:=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='v1'); p uuid:=(SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='produto'); fn text; n int;
 BEGIN
   FOREACH a IN ARRAY ARRAY['admin_ar','admin_fsf','financeiro_ar','consultor_ar'] LOOP
-    PERFORM pg_temp.claims((SELECT v::uuid FROM rt_ctx WHERE k=a));
+    PERFORM pg_temp.claims((SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k=a));
     SET LOCAL ROLE authenticated;
     FOREACH fn IN ARRAY ARRAY['read','detail','create','update','status'] LOOP
       BEGIN
@@ -216,12 +216,12 @@ BEGIN
     RESET ROLE;
   END LOOP;
   -- SA com claims expiradas / futuras
-  PERFORM pg_temp.claims((SELECT v::uuid FROM rt_ctx WHERE k='sa'),-7200,-3600);
+  PERFORM pg_temp.claims((SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='sa'),-7200,-3600);
   SET LOCAL ROLE authenticated;
   BEGIN PERFORM public.platform_read_global_item_volumes('produto',p,20,0); PERFORM pg_temp.ok('sa.claims_expiradas',false);
     EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('sa.claims_expiradas',true); END;
   RESET ROLE;
-  PERFORM pg_temp.claims((SELECT v::uuid FROM rt_ctx WHERE k='sa'),3600,7200);
+  PERFORM pg_temp.claims((SELECT rt_ctx.v::uuid FROM rt_ctx WHERE rt_ctx.k='sa'),3600,7200);
   SET LOCAL ROLE authenticated;
   BEGIN PERFORM public.platform_create_global_volume('produto',p,'{"volume_ml":"1","preco_brl":"1"}','Teste runtime com rollback',gen_random_uuid());
     PERFORM pg_temp.ok('sa.claims_futuras',false); EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('sa.claims_futuras',true); END;

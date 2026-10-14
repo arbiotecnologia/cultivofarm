@@ -1,5 +1,5 @@
--- CANDIDATO NÃO APLICADO (revisão 2: prévia vinculada por token, preços decimal-string) — APRESENTAÇÕES/VOLUMES globais (public.catalogo_volumes) pelo Platform Superadmin.
--- Alvo exclusivo: swzpzcwiasxmjutrmvkm. Revisão/aplicação: Codex. NÃO executar a partir do Lovable.
+-- APLICADO no canônico swzpzcwiasxmjutrmvkm como migration 20261014203909 platform_global_volumes_admin (pelo Codex, a partir do SQL 5c320e). NÃO REAPLICAR. Histórico: candidato revisões 2–3 (prévia por token, preços decimal-string, overflow 22003 atômico) — APRESENTAÇÕES/VOLUMES globais (public.catalogo_volumes) pelo Platform Superadmin.
+-- Alvo exclusivo: swzpzcwiasxmjutrmvkm. Aplicação feita pelo Codex; NÃO executar a partir do Lovable. Rollback documentado ao final permanece válido.
 -- Padrão: public SECURITY INVOKER -> platform_private SECURITY DEFINER; ator via
 -- platform_private.catalog_metadata_require_actor(); ledger existente public.catalog_platform_admin_audit
 -- reaproveitando platform_private.catalog_entity_replay/catalog_entity_audit (aplicados em platform_global_micro_culture_admin).
