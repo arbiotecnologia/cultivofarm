@@ -627,6 +627,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Edges IA com JWT válido via HTTP — UNVERIFIED.
 - [ ] Regulatórios e Storage do catálogo — UNVERIFIED.
 - [x] P2 texto Volumes — corrigido para "modo consulta" (local, aguarda publicação).
-- [ ] Gestão GLOBAL microrganismos/culturas — UI local + SQL candidato `proposed-platform-global-micro-cultura-admin.sql` e runtime-test NÃO aplicados; aguarda revisão/aplicação Codex.
+- [x] P1 associação fiscal global de microrganismo — contida externamente (20261014192417) + hook bloqueado e ações ocultas em FiscalProdutos (local, não publicado).
+- [ ] Gestão GLOBAL microrganismos/culturas — revisão ff1ee511 corrigida (preço protegido, preflight, runtime-test ampliado, precisão UFC); UI local + SQL candidato `proposed-platform-global-micro-cultura-admin.sql` e runtime-test NÃO aplicados; aguarda revisão/aplicação Codex.
 - [ ] Global restante (aberto): composição de existentes; preços/apresentações/B2B; fichas/fontes/alvos/problemas/CQ writers SA; famílias Biológicos/Químicos/Fertilizantes (sementes futuras); Storage/regulatórios.
 - [ ] Fase tenant (exibir/ocultar, itens próprios) — bloqueada até fechar o cadastro global.

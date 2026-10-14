@@ -15,14 +15,17 @@ BEGIN
   END IF;
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
       AND table_name IN ('microrganismos','culturas')
-      AND column_name IN ('updated_at','organization_id','owner_organization_id','familia')) THEN
+      AND column_name IN ('updated_at','organization_id','owner_organization_id','tenant_id','familia')) THEN
     RAISE EXCEPTION 'mc_preflight_columns_changed';
   END IF;
   IF (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='microrganismos') <> 22
     OR (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='culturas') <> 7 THEN
     RAISE EXCEPTION 'mc_preflight_column_count_changed';
   END IF;
-  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.microrganismos'::regclass AND NOT tgisinternal
+  -- Conjunto EXATO: nenhum trigger extra além dos auditados (4 em microrganismos, 2 em culturas).
+  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.microrganismos'::regclass AND NOT tgisinternal) <> 4
+    OR (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.culturas'::regclass AND NOT tgisinternal) <> 2
+    OR (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.microrganismos'::regclass AND NOT tgisinternal
       AND tgname IN ('trg_set_codigo_micro_ins','trg_set_codigo_micro_upd','trg_sync_microorganism_pricing','trg_zz_microrganismos_guard_preco')) <> 4
     OR (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.culturas'::regclass AND NOT tgisinternal
       AND tgname IN ('trg_culturas_block_delete_in_use','trg_culturas_stamp_desativacao')) <> 2 THEN
@@ -111,7 +114,8 @@ BEGIN
       ELSE
         IF pg_catalog.jsonb_typeof(p->k) IS DISTINCT FROM 'number' THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_entity_invalid'; END IF;
         v_num:=(p->>k)::numeric;
-        IF v_num <= 0 OR v_num > 1e18 OR pg_catalog.scale(v_num) > 6 THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_entity_invalid'; END IF;
+        -- Limite alinhado ao front: <= 9007199254740991 (Number.MAX_SAFE_INTEGER) e até 2 casas, sem notação exponencial.
+        IF v_num <= 0 OR v_num > 9007199254740991 OR pg_catalog.scale(v_num) > 2 OR (p->>k) ~* 'e' THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_entity_invalid'; END IF;
         v_out:=v_out||pg_catalog.jsonb_build_object(k,v_num);
       END IF;
     ELSIF v_text ? k THEN
@@ -217,7 +221,8 @@ DECLARE v jsonb;
 BEGIN
   PERFORM platform_private.catalog_metadata_require_actor();
   IF p_id IS NULL THEN RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_entity_invalid'; END IF;
-  SELECT pg_catalog.jsonb_build_object('id',c.id,'nome',c.nome,'descricao',c.descricao,'ativo',c.ativo,'updated_at',c.updated_at)
+  SELECT pg_catalog.jsonb_build_object('id',c.id,'nome',c.nome,'descricao',c.descricao,'ativo',c.ativo,'updated_at',c.updated_at,
+    'desativada_em',c.desativada_em)
   INTO v FROM public.culturas c WHERE c.id=p_id;
   IF v IS NULL THEN RAISE EXCEPTION USING ERRCODE='42501', MESSAGE='catalog_entity_unavailable'; END IF;
   RETURN v;
@@ -246,6 +251,7 @@ BEGIN
   EXCEPTION WHEN unique_violation THEN RAISE EXCEPTION USING ERRCODE='23505', MESSAGE='catalog_entity_duplicate';
   END;
   IF v_new.id IS NULL OR v_new.codigo IS NULL OR v_new.ativo OR v_new.b2b_enabled OR v_new.valor_dose_brl IS NOT NULL
+    OR v_new.dose_ml_ha IS NOT NULL OR v_new.safra_referencia IS NOT NULL
     OR v_new.valor_litro_brl IS NOT NULL OR v_new.preco_tabela IS NOT NULL OR v_new.product_id IS NOT NULL THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_entity_confirmation_failed'; END IF;
   v_after:=platform_private.read_global_microorganism_detail_core(v_new.id);
@@ -289,10 +295,12 @@ BEGIN
     WHERE id=p_id AND updated_at=p_expected_updated_at RETURNING * INTO v_new;
   EXCEPTION WHEN unique_violation THEN RAISE EXCEPTION USING ERRCODE='23505', MESSAGE='catalog_entity_duplicate';
   END;
-  -- Confirma linha/ID/versão e que nenhuma coluna fora da whitelist mudou (preço pode ser recalculado só pelo motor canônico).
+  -- Confirma linha/ID/versão e que NENHUMA coluna fora da whitelist mudou — inclusive preços (valor_dose_brl,
+  -- valor_litro_brl, preco_tabela), dose, B2B, código, produto e ativo. Se algum trigger (ex.: guard de preço
+  -- canônico) recalcular campo protegido, a edição descritiva aborta integralmente (rollback da transação).
   IF NOT FOUND OR v_new.id IS DISTINCT FROM p_id OR v_new.updated_at <= v_old.updated_at
-    OR (pg_catalog.to_jsonb(v_old) - v_keys - ARRAY['updated_at','valor_dose_brl','valor_litro_brl'])
-       IS DISTINCT FROM (pg_catalog.to_jsonb(v_new) - v_keys - ARRAY['updated_at','valor_dose_brl','valor_litro_brl']) THEN
+    OR (pg_catalog.to_jsonb(v_old) - v_keys - 'updated_at')
+       IS DISTINCT FROM (pg_catalog.to_jsonb(v_new) - v_keys - 'updated_at') THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_entity_confirmation_failed'; END IF;
   v_after:=platform_private.read_global_microorganism_detail_core(p_id);
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'ativo',v_new.ativo,'updated_at',v_new.updated_at,
@@ -320,13 +328,14 @@ BEGIN
   -- Arquivar = ativo false; nunca exclui. b2b_enabled/preços não são tocados.
   UPDATE public.microrganismos SET ativo=p_ativo WHERE id=p_id AND updated_at=p_expected_updated_at RETURNING * INTO v_new;
   IF NOT FOUND OR v_new.ativo IS DISTINCT FROM p_ativo OR v_new.updated_at <= v_old.updated_at
-    OR (pg_catalog.to_jsonb(v_old) - ARRAY['ativo','updated_at','valor_dose_brl','valor_litro_brl'])
-       IS DISTINCT FROM (pg_catalog.to_jsonb(v_new) - ARRAY['ativo','updated_at','valor_dose_brl','valor_litro_brl']) THEN
+    OR (pg_catalog.to_jsonb(v_old) - ARRAY['ativo','updated_at'])
+       IS DISTINCT FROM (pg_catalog.to_jsonb(v_new) - ARRAY['ativo','updated_at']) THEN
     RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='catalog_entity_confirmation_failed'; END IF;
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'ativo',v_new.ativo,'updated_at',v_new.updated_at,
     'idempotency_key',p_idempotency_key,'audit_id',gen_random_uuid(),'idempotent',false);
   PERFORM platform_private.catalog_entity_audit(v_actor,'set_global_microorganism_status',p_reason,p_idempotency_key,v_req,v_receipt,
-    pg_catalog.jsonb_build_object('ativo',v_old.ativo),pg_catalog.jsonb_build_object('ativo',v_new.ativo));
+    pg_catalog.jsonb_build_object('ativo',v_old.ativo,'updated_at',v_old.updated_at),
+    pg_catalog.jsonb_build_object('ativo',v_new.ativo,'updated_at',v_new.updated_at));
   RETURN v_receipt;
 END;
 $$;
@@ -416,7 +425,8 @@ BEGIN
   v_receipt:=pg_catalog.jsonb_build_object('id',p_id,'ativo',v_new.ativo,'updated_at',v_new.updated_at,
     'idempotency_key',p_idempotency_key,'audit_id',gen_random_uuid(),'idempotent',false);
   PERFORM platform_private.catalog_entity_audit(v_actor,'set_global_culture_status',p_reason,p_idempotency_key,v_req,v_receipt,
-    pg_catalog.jsonb_build_object('ativo',v_old.ativo),pg_catalog.jsonb_build_object('ativo',v_new.ativo));
+    pg_catalog.jsonb_build_object('ativo',v_old.ativo,'updated_at',v_old.updated_at,'desativada_em',v_old.desativada_em,'desativada_por',v_old.desativada_por),
+    pg_catalog.jsonb_build_object('ativo',v_new.ativo,'updated_at',v_new.updated_at,'desativada_em',v_new.desativada_em,'desativada_por',v_new.desativada_por));
   RETURN v_receipt;
 END;
 $$;

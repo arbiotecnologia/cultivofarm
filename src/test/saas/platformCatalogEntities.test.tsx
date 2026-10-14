@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlatformCatalogEntityPanel } from "@/components/plataforma/PlatformCatalogEntityPanel";
-import { createEntity, entityPatch, microValuesSchema, cultureValuesSchema, type EntityDetail } from "@/lib/catalogo/platformCatalogEntities";
+import { createEntity, entityPatch, parseUfc, isExactUfc, microValuesSchema, cultureValuesSchema, type EntityDetail } from "@/lib/catalogo/platformCatalogEntities";
 
 const mocks = vi.hoisted(() => ({ request: vi.fn(), rpc: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
@@ -10,7 +10,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } 
 const ID = "00000000-0000-4000-8000-000000000011";
 const V1 = "2026-10-14T19:00:00+00:00";
 const V2 = "2026-10-14T19:05:00+00:00";
-const culture: EntityDetail = { id: ID, nome: "Soja", descricao: null, ativo: true, updated_at: V1 };
+const culture: EntityDetail = { id: ID, nome: "Soja", descricao: null, ativo: true, updated_at: V1, desativada_em: null };
 const receipt = (args: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({ data: { id: ID, ativo: true, updated_at: V2,
   idempotency_key: args.p_idempotency_key, audit_id: "00000000-0000-4000-8000-000000000012", idempotent: false, ...extra }, error: null });
 
@@ -63,7 +63,38 @@ describe("contratos de payload", () => {
   });
 });
 
+describe("concentração sem perda de precisão", () => {
+  it("aceita apenas valores exatos dentro do limite comum front/SQL", () => {
+    expect(parseUfc("1000000000")).toBe(1e9);
+    expect(parseUfc("12,5")).toBe(12.5);
+    expect(parseUfc("9007199254740991")).toBe(Number.MAX_SAFE_INTEGER);
+    expect(parseUfc("")).toBeNull();
+  });
+  it.each(["9007199254740993", "1e18", "1000000000000000000", "1.234", "-5", "0", "abc"])("rejeita %s", (t) => {
+    expect(Number.isNaN(parseUfc(t) as number) || parseUfc(t) === null).toBe(true);
+  });
+  it("schema recusa 1e18 arredondado e mais de 2 casas", () => {
+    expect(isExactUfc(1e18)).toBe(false); expect(isExactUfc(1.234)).toBe(false); expect(isExactUfc(10.25)).toBe(true);
+  });
+});
+
 describe("painel global de culturas", () => {
+  it("criação de cultura não anuncia código gerado", async () => {
+    mount(); fireEvent.click(await screen.findByRole("button", { name: "Novo cultura global" }));
+    expect(await screen.findByText("A cultura nasce inativa.")).toBeInTheDocument();
+    expect(screen.queryByText(/código é gerado/i)).toBeNull();
+  });
+  it("campos ficam desabilitados enquanto salva", async () => {
+    mocks.request.mockImplementation((n, a) => n.startsWith("platform_read") ? Promise.resolve(handler(n, a)) : new Promise(() => {}));
+    await openEdit();
+    fireEvent.change(screen.getByLabelText("Nome"), { target: { value: "Outro" } });
+    fireEvent.change(screen.getByLabelText("Motivo da alteração (10 a 500 caracteres)"), { target: { value: "Motivo suficiente" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(screen.getByLabelText("Nome")).toBeDisabled());
+    expect(screen.getByLabelText("Motivo da alteração (10 a 500 caracteres)")).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(writes()).toHaveLength(1);
+  });
   it("edição envia só campo alterado com versão do leitor seguro e motivo", async () => {
     await openEdit();
     fireEvent.change(screen.getByLabelText("Nome"), { target: { value: "Soja safrinha" } });

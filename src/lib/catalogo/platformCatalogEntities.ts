@@ -33,7 +33,25 @@ export const entityFields: Record<EntityKind, EntityField[]> = {
 };
 
 const text = (max: number) => z.string().max(max).nullable();
-const ufc = z.number().finite().positive().max(1e18).nullable();
+/** Alinhado ao SQL: positivo, <= Number.MAX_SAFE_INTEGER e até 2 casas — sem perda de precisão em JS/JSON. */
+export const UFC_MAX = Number.MAX_SAFE_INTEGER;
+export function isExactUfc(n: number) {
+  if (!Number.isFinite(n) || n <= 0 || n > UFC_MAX) return false;
+  const t = String(n);
+  if (/e/i.test(t)) return false;
+  const dot = t.indexOf(".");
+  return dot < 0 || t.length - dot - 1 <= 2;
+}
+/** Converte texto digitado garantindo que o número enviado representa exatamente o texto (sem arredondamento). */
+export function parseUfc(text: string): number | null {
+  const t = text.trim().replace(",", ".");
+  if (t === "") return null;
+  if (!/^\d{1,16}(\.\d{1,2})?$/.test(t)) return NaN;
+  const n = Number(t);
+  const canonical = t.replace(/^0+(?=\d)/, "").replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+  return isExactUfc(n) && String(n) === canonical ? n : NaN;
+}
+const ufc = z.number().refine(isExactUfc).nullable();
 export const microValuesSchema = z.object({
   nome: z.string().trim().min(1).max(200), tipo: z.enum(microTypes), nome_cientifico: text(300),
   concentracao_ufc_ml: ufc, concentracao_label: text(120), fornecedor: text(200), producao_on_farm: z.boolean().nullable(),
@@ -47,7 +65,8 @@ const version = z.string().datetime({ offset: true });
 export const microDetailSchema = microValuesSchema.extend({
   id: z.string().uuid(), codigo: z.string().nullable(), ativo: z.boolean(), updated_at: version,
 }).strict();
-export const cultureDetailSchema = cultureValuesSchema.extend({ id: z.string().uuid(), ativo: z.boolean(), updated_at: version }).strict();
+export const cultureDetailSchema = cultureValuesSchema.extend({ id: z.string().uuid(), ativo: z.boolean(), updated_at: version,
+  desativada_em: z.string().datetime({ offset: true }).nullable() }).strict();
 export type EntityDetail = { id: string; ativo: boolean; updated_at: string } & EntityValues;
 
 export const ENTITY_PAGE_LIMIT = 20;

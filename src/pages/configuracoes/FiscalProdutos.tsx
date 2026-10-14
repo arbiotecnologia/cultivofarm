@@ -1,3 +1,4 @@
+import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
 /**
  * Fase Fiscal 3.21 — Perfis Fiscais unificados: produtos + microrganismos.
  *
@@ -548,7 +549,7 @@ export default function FiscalProdutos() {
         />
       ) : null}
 
-      {associating ? (
+      {TENANT_CAN_EDIT_GLOBAL_CATALOG && associating ? (
         <AssociateDialog
           microorganismId={associating.microorganismId}
           microorganismNome={associating.microorganismNome}
@@ -686,7 +687,8 @@ function renderRow(
             >
               {own ? <Pencil className="h-4 w-4" /> : <><Plus className="h-4 w-4 mr-1" /> Criar perfil fiscal</>}
             </Button>
-            <Button
+            {/* Vínculo product_id é GLOBAL (migration 20261014192417 revogou a RPC): sem ação para empresa. */}
+            {TENANT_CAN_EDIT_GLOBAL_CATALOG && <Button
               variant="ghost" size="sm"
               onClick={() => onLinkOptional(r)}
               aria-label={`Vínculo opcional a produto — ${r.microorganismNome}`}
@@ -694,7 +696,7 @@ function renderRow(
               data-testid="btn-vinculo-opcional"
             >
               {r.linkedProductId ? <Link2Off className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
-            </Button>
+            </Button>}
           </>
         ) : (
           <Button

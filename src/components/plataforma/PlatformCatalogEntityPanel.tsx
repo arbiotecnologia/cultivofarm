@@ -8,8 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
-import { parseDecimal } from "@/lib/catalogo/platformCatalogLifecycle";
-import { createEntity, entityFields, ENTITY_PAGE_LIMIT, microTypes, readEntityDetail, readEntityPage, setEntityStatus, updateEntity,
+import { createEntity, entityFields, ENTITY_PAGE_LIMIT, microTypes, parseUfc, readEntityDetail, readEntityPage, setEntityStatus, updateEntity,
   type EntityDetail, type EntityKind, type EntityValues } from "@/lib/catalogo/platformCatalogEntities";
 
 const labels: Record<EntityKind, { one: string; many: string }> = {
@@ -126,12 +125,12 @@ function EntityDialog({ kind, scope, mode, onClose, onSaved }: { kind: EntityKin
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
-          {mode.type === "create" ? "O item nasce inativo, sem preço e fora do B2B. O código é gerado pelo servidor." :
+          {mode.type === "create" ? (kind === "micro" ? "O item nasce inativo, sem preço e fora do B2B. O código é gerado pelo servidor." : "A cultura nasce inativa.") :
             mode.type === "status" ? "Arquivar não exclui: históricos permanecem preservados." : "Somente os campos permitidos são enviados."}
         </DialogDescription>
       </DialogHeader>
       {loading && <p role="status">Carregando…</p>}
-      {mode.type !== "status" && !loading && (mode.type === "create" || detail) && <div className="grid gap-3">
+      {mode.type !== "status" && !loading && (mode.type === "create" || detail) && <fieldset disabled={busy} className="grid gap-3">
         {entityFields[kind].map((f) => {
           const fid = `entity-${kind}-${f.name}`;
           if (f.kind === "tipo") return <div key={f.name} className="space-y-1">
@@ -151,10 +150,11 @@ function EntityDialog({ kind, scope, mode, onClose, onSaved }: { kind: EntityKin
           </div>;
           if (f.kind === "number") return <div key={f.name} className="space-y-1">
             <Label htmlFor={fid}>{f.label}</Label>
-            <Input id={fid} inputMode="decimal" value={numText[f.name] ?? ""} onChange={(e) => {
+            <Input id={fid} inputMode="decimal" aria-describedby={`${fid}-hint`} value={numText[f.name] ?? ""} onChange={(e) => {
               const t = e.target.value; setNumText((n) => ({ ...n, [f.name]: t }));
-              setValues((v) => ({ ...v, [f.name]: parseDecimal(t) }));
+              setValues((v) => ({ ...v, [f.name]: parseUfc(t) }));
             }} />
+            <p id={`${fid}-hint`} className="text-xs text-muted-foreground">Número inteiro até 9007199254740991, com até 2 casas decimais.</p>
           </div>;
           const Comp = f.kind === "longtext" ? Textarea : Input;
           return <div key={f.name} className="space-y-1">
@@ -165,11 +165,11 @@ function EntityDialog({ kind, scope, mode, onClose, onSaved }: { kind: EntityKin
               }} />
           </div>;
         })}
-      </div>}
+      </fieldset>}
       {mode.type === "status" && detail && <p className="break-words">Item: <strong>{String(detail.nome)}</strong></p>}
       {(mode.type === "create" || detail) && <div className="space-y-1">
         <Label htmlFor={`entity-${kind}-reason`}>Motivo da alteração (10 a 500 caracteres)</Label>
-        <Textarea id={`entity-${kind}-reason`} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <Textarea id={`entity-${kind}-reason`} disabled={busy} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
       </div>}
       {error && <p role="alert" className="text-destructive">{error}</p>}
       <DialogFooter className="gap-2">

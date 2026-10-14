@@ -34,6 +34,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 type MicroorganismRowOfficial =
@@ -136,6 +137,9 @@ export function useAssociateMicroorganism() {
     { microorganismId: string; productId: string | null }
   >({
     mutationFn: async ({ microorganismId, productId }) => {
+      // P1 contido: migration 20261014192417 global_microorganism_fiscal_association_containment
+      // revogou EXECUTE da RPC (alterava product_id GLOBAL). Falha ANTES de qualquer chamada.
+      assertGlobalCatalogWriteBlocked();
       // Boundary narrow: a RPC canônica
       // `rpc_associate_microorganism_fiscal_product` (migration
       // 20260805000000) autoriza `administrador` e `financeiro`
