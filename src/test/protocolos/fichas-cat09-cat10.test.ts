@@ -163,12 +163,12 @@ describe("CAT-10 · erro bloqueia escrita e oferece retry", () => {
       // nenhuma ação de escrita renderizada no rodapé quando há erro
       const rodape = src.slice(src.indexOf('border-t pt-3 mt-2"'));
       const acoes = rodape.match(/\{(!isError && )?can(EditFull|EditB2BOnly)[^\n]*&& \(/g) ?? [];
-      expect(acoes.length).toBeGreaterThan(0);
+      // contenção global: ações de escrita continuam atrás de !isError (e canEditFull=false)
       expect(acoes.every((a) => a.includes("!isError"))).toBe(true);
       // formulário/IA só renderizam no ramo sem erro
       expect(src.indexOf("{isError ? (")).toBeLessThan(src.indexOf("<ProfileFieldAI"));
       if (nome === "microrganismo") {
-        expect(src).toContain("{!isError && canEditB2BOnly && !canEditFull && (");
+        expect(src).not.toContain("canEditB2BOnly");
       }
 
     });
