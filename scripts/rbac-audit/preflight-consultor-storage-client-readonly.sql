@@ -1,6 +1,6 @@
 -- READ-ONLY BASELINE. Canonical destination swzpzcwiasxmjutrmvkm must be verified
 -- externally (supabase/config.toml AND tool binding) before running this query.
--- Run inside the same transaction immediately before candidate DDL.
+-- Audit existing rules only. Storage replacement candidate WITHDRAWN 20:12; no DDL required.
 SELECT 1 / CASE WHEN
  md5(pg_get_functiondef('platform_private.storage1_consultor_core(text,text)'::regprocedure))='5c9e435c51d19d1dcbf5d61a9095daf3'
  AND (SELECT md5(string_agg(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check),E'\n' ORDER BY policyname)) FROM pg_policies WHERE schemaname='storage' AND tablename='objects')='cfbc909356cc3e420d66efac99e69ba6'

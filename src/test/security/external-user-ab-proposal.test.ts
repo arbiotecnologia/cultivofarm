@@ -15,10 +15,10 @@ function proposedSource() {
  }
  output.push(...original.slice(index));return output.join('\n').replace(/^import .*createClient.*;\s*/m,'');
 }
-async function invoke(role:string, extra:Record<string,unknown>={},open=false, retry=false, owned=true, lookupMode='ok') {
+async function invoke(role:string, extra:Record<string,unknown>={},open=false, retry=false, owned=true, lookupMode='ok', failure='') {
  let source=proposedSource();if(open)source=source.replace('B2B_PROVISIONING_CHANNELS_REVIEWED = false','B2B_PROVISIONING_CHANNELS_REVIEWED = true');
- const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:'claimed',acquired:!retry,lease_valid:!retry},error:null}));
- const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async()=>({data:{success:true},error:null}));
+ const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:'claimed',acquired:!retry,lease_valid:!retry},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
+ const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async(_name:string,_args:Record<string,unknown>)=>({data:{success:failure!=='finish'},error:failure==='finish'?{code:'42501'}:null}));
  const actor={rpc,auth:{getClaims:async()=>({data:{claims:{sub:'admin',role:'authenticated',iat:1792093500}},error:null})}};
  const getUserById=vi.fn(async()=>{
   if(lookupMode==='throw')throw new Error('timeout');
@@ -53,5 +53,12 @@ describe('external user review diff — SDK/Auth mocked, no deploy',()=>{
   expect(b.finish).toHaveBeenCalledWith('b2b_finish_provisioning',{p_claim:'claim',p_fence:'fence',p_user:'reserved'});
  });
  it('unrelated receipt cannot reconcile',async()=>{const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,true,'foreign');expect(r.response.status).toBe(409);expect(r.createUser).not.toHaveBeenCalled();expect(r.finish).not.toHaveBeenCalled();});
+ it.each(['claim','finish'])('retry revalidation failure %s never creates or compensates identity',async(failure)=>{
+  const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,true,'ok',failure);
+  expect(r.response.status).toBe(409);expect(r.createUser).not.toHaveBeenCalled();
+  expect(r.finish.mock.calls.every(call=>call[0]==='b2b_finish_provisioning')).toBe(true);
+  if(failure==='claim'){expect(r.getUserById).not.toHaveBeenCalled();expect(r.finish).not.toHaveBeenCalled();}
+  else expect(r.finish).toHaveBeenCalledExactlyOnceWith('b2b_finish_provisioning',{p_claim:'claim',p_fence:'fence',p_user:'reserved'});
+ });
  it.each([{cliente_ids:[]},{cliente_ids:[client,client]},{cliente_ids:[client],roles:['cliente_produtor','gestor']},{cliente_ids:[client],partner_id:partner}])('rejects invalid/exclusive payload %j',async(payload)=>{const r=await invoke('cliente_produtor',payload,true);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();});
 });

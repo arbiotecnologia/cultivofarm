@@ -59,7 +59,7 @@ Hosted SELECT 19:56 encontrou **zero triggers convite** e helpers novos ausentes
 `featureRouteMap.ts`: `/portal/*` não mapeado, nenhum feature `portal_produtor` inventado. `/app/visita` e `/app/checkin` exigem visitas_tecnicas. `AppPortalGuard` e `ProducerFeatureGuard` aceitam papel real cliente_produtor (admin legado); usePortalCliente exige ready actor/profile/tenant/papel. Cadastro não adiciona feature nova; abertura depende auditoria dos canais atuais, não da simples role.
 ## 13. Same-tenant RLS/RPC
 Hosted `get_cliente_ids_for_user` exige fn_authz_uid_scope_ok + user_clientes ativo/revoked/valid_from/valid_until; fallback profile só com vínculo vigente. `can_user_access_cliente(uuid)` usa esse array para produtor; ramo administrativo amplo exige policies restritivas de tenant em cada consumidor. user_clientes SELECT self não filtra atividade e usePortalCliente lê IDs crus/fallback; UI não é autoridade. PortalSolicitacao faz INSERT direto; RPC/policies finais de todos consumidores ainda precisam probes cliente irmão. Não modificar policies nesta rodada.
-## 14. Storage: prioridade seguinte comprovada estruturalmente
+## 14. Storage: diagnóstico corrigido — P1 não comprovado
 Corrigido pela auditoria20:03 abaixo: d516 é ampla isoladamente, mas INTERSECTA quatro policies storage1 RESTRICTIVE já hospedadas. Não concluir acesso efetivo por prefixo sem avaliar o core privado. Entrega-documentos/logo/demais canais continuam em recortes próprios; nenhuma policy alterada.
 ## 15. Validações próprias atuais
 **31 assertions SQL +7 checks adicionais** PASS PostgreSQL descartável; **66 Vitest** PASS (55 handler baseline +11 diff em memória). ESLint focal do teste 0 erros, diff-check/Python compilation PASS. Build automático observado OK 20:00:07. Typecheck/build não executados manualmente (harness automático); sem comprovação typecheck nesta rodada. Scanner EXTERNO OS 3995/0 não equivale scanner global próprio. Sem Auth/browser hospedados.
@@ -77,7 +77,7 @@ Somente candidatos locais Storage/pré-Auth, testes isolados e metadados hosted 
 ## 3. Policies aplicáveis
 Revisadas todas as 33: d516 e storage1 são as únicas expressões específicas desse bucket; demais permissivas condicionam outros buckets, sem policy genérica aberta encontrada. storage1 mantém `USING` e `WITH CHECK` em UPDATE, INSERT check, DELETE/read using. Não remover d516 nem enfraquecer restrições; candidato altera SOMENTE corpo do core, preserva ACL/owner/todas policies e sem objetos novos.
 ## 4. Metadata e path
-Caminho real é tenant/registro/(foto|audio|documento)/arquivo; UUID cast protegido, traversal/%/barra duplicada/ID inexistente/prefixo forjado negados. `storage.objects.metadata`, owner_id, nome original, uploaded_by e claims fornecidos pelo cliente não autorizam. **GAP concreto isolado**: core atual aceita path de visita própria mesmo quando a metadata persistida `registros_consultor_arquivos.arquivo_path` aponta para outra visita, ou não existe. Candidato exige exatamente UMA referência persistida desse path e registro correspondente para Produtor; múltiplas/NULL/órfãs negadas sem reparar/apagar históricos.
+Caminho real é tenant/registro/(foto|audio|documento)/arquivo; UUID cast protegido, traversal/%/barra duplicada/ID inexistente/prefixo forjado negados. `storage.objects.metadata`, owner_id, nome original, uploaded_by e claims fornecidos pelo cliente não autorizam. **Correção 20:12**: o vínculo autorizador atual é path→registro→cliente com tenant e helpers transitivos; metadata de anexo não é fonte de autorização. O ensaio de metadata divergente não demonstrou acesso a visita/cliente não autorizado, portanto não comprova P1. A exigência extra de referência única não foi solicitada e o candidato correspondente foi retirado. Nenhuma regra existente será removida ou substituída.
 ## 5. Cliente e liberação
 Produtor exige role real, h15/readiness, cliente no tenant ativo (`status_cliente=ativo`), vínculo canônico vigente em get_cliente_ids_for_user (ativo/revoked/valid_from/valid_until), visita liberada aprovado/finalizado/convertido_os e escopo child existente. ID de cliente/visita no path não cria vínculo. Revogação/cliente inativo/tenant alterado negam.
 ## 6. Internos e técnicos
@@ -105,3 +105,41 @@ Rodar `python3 scripts/tests/consultor-storage-client-local.py`, `python3 script
 SHA256 candidato Storage `1dce84b31d3f2869e9beb6ef6fd257b5be48a3abbf8e069a1c1602b542a0d48e`; preflight `69b55b6065972c55c90ea755fd3bf2e5deedbcff9204d3c42b8f8154e9f64857`; rollback `9e752f05c474e23877d82976ad268911ce730b2ec80f0adde9aa708fdd082a71`; diff Edge `75ca57e1709b080fe09c611bdaadbb417dadef6bd11116f8aeed096085ee3643`. Baseline ACL exata foi reproduzida no harness; primeiro ensaio do novo assert de rollback identificou ACL local PUBLIC diferente, corrigida somente no setup isolado e retestada75/75, sem mudar candidato para contornar baseline.
 ## 17. Gates e pendências concretas
 GO preparação focal/revisão, **NO-GO aplicação/A+B/liberação operacional OS**. JWT/GoTrue/Storage API/signed URL/fullschema/Edges hospedadas ainda UNVERIFIED; não se trata de falta de credenciais: fixtures AR já autorizadas quando indispensáveis e login titular humano. Nesta rodada NÃO alterar contas reais nem criar fixtures; candidato inexistente remotamente impede end-to-end do after. B2 demais readers/RPC/Storage logo/seleção/cache ainda auditados por recortes pequenos, sem feature portal inventada. Próximo passo revisão independente destes arquivos, depois probes hospedados explicitamente aprovados; não abrir grants/flag automaticamente.
+
+
+# Revisão 20:12 — vigente; supersede o reforço Storage anterior
+
+## 1. Escopo
+Auditoria das regras existentes e regressão pré-Auth; sem app, DDL, grants, conta, email ou publicação.
+## 2. Evidência externa
+Renato confirmou interseção PERMISSIVE/RESTRICTIVE com tenant, registro, cliente e autorização transitiva; d516 isolada não demonstra P1.
+## 3. Baseline próprio hospedado
+Read-only canônico: core `5c9e435c51d19d1dcbf5d61a9095daf3`, 33 policies `cfbc909356cc3e420d66efac99e69ba6`, bucket privado; sem drift.
+## 4. Todas as policies
+Auditoria anterior das 33 preservada: somente d516 oferece ramo permissivo desse bucket; storage1 restringe as quatro ações. Não analisar OR permissivo como autorização final.
+## 5. Cadeia transitiva
+Core usa path estrito→registro→cliente tenant, technical_child_read_scope SELECT; mutações internas can_manage + rascunho/em_andamento. Corpo hospedado child `220b06fa2e634b7ea23df04cbd473c5e` coincide com arquivo versionado; get_cliente_ids `c80d5900692d960f649d0a9f7850fe2c` conferido read-only e reproduzido com fallback dependente de vínculo vigente.
+## 6. Probes efetivos
+Harness agora executa SOMENTE core/policies existentes + corpos técnicos versionados, não candidato; RLS PostgreSQL combina permissiva E restritiva. Dois clientes irmãos, outro tenant, prefixos/IDs forjados, CRUD, revogação/validade, papel/participação/carteira/status/readiness.
+## 7. Referências
+Path/registro/cliente são autoridade existente. Metadata NULL, duplicada ou divergente não cria acesso a cliente irmão; requisito adicional de unicidade retirado. Fazenda cruzada é negada pela cadeia transitiva.
+## 8. Internos
+Admin/Gestor preservados; técnico precisa carteira e responsável/participante para leitura, somente responsável com execute/manage para mutação. Participação revogada e carteira read-only testadas.
+## 9. Retirada do candidato
+`proposed-consultor-storage-client-fence.sql.withdrawn` e `rollback-consultor-storage-client-fence.sql.withdrawn` são histórico NÃO executável como migration, retirados da entrega ativa. Não aplicar rollback de mudança nunca aplicada; nenhuma nova migration Storage necessária pelos probes atuais.
+## 10. API e assinatura
+URL já assinada até expirar e caminho privilegiado continuam limitações da API, não P1 inferido nem motivo para substituir policies. Sem assinatura/download real ou service-role remoto. Bucket privado permanece.
+## 11. Pré-Auth concluído no recorte seguro
+Ausência/erro/timeout da UUID reservada retorna pending 409, mesma solicitação/email. Worker possivelmente vivo não autoriza reset ou segunda criação. Estado pendente explicado é resultado suficiente autorizado, não lacuna de nova identidade.
+## 12. Recuperação
+Se Auth própria surge, retry UUID+receipt→finish revalidado; identidade alheia, claim negado ou finish revogado não criam/deletam/adotam conta. Testes adicionais cobrem falha de revalidação no retry.
+## 13. Concorrência local
+Harness A+B usa duas sessões PostgreSQL para mesma receipt e revogação sob locks; hooks/cascatas reduzidos continuam distinguidos de GoTrue real.
+## 14. Diagnóstico final corrigido
+Não há P1 comprovado de acesso Storage por d516 isolada nem pelo requisito de metadata adicional. Preservar integralmente helpers/policies existentes. Os probes efetivos passaram no modelo isolado; não equivalem a Storage API/JWT hospedados.
+## 15. Validações
+82 assertions Storage nas regras EXISTENTES PASS; 31 assertions +7 checks A+B PASS (incluem duas sessões concorrentes e revogação sob lock); 77 Vitest PASS, SDK/Auth simulados. ESLint focal, Python compile e diff-check PASS. Build/typecheck automático final20:16:00 OK após corrigir tipagem do mock de finish; erro intermediário não omitido. Nenhum teste próprio JWT/Storage API/fullschema, lint global ou auditoria integral. Sem app modificado.
+## 16. Pendências reais A+B
+Hook/Auth fullschema, timeout de compensação, demais canais de portal B2 e seleção/cache continuam requisitos de abertura, não novo diagnóstico Storage. A+B flag/entrypoint/deploy/grants continuam fechados; não é falta de credencial.
+## 17. Rollback e OS
+Sem mudança hospedada, nenhum rollback Storage a executar. A+B inverso restritivo existente preservado; proteção OS aplicada não alterada e liberação operacional separada.
