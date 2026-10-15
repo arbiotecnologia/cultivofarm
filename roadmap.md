@@ -1,14 +1,24 @@
-## PRIORIDADE P1 17:45 — contenção externa aplicada; candidato h7n rebaseado
+## RECORTE DOCUMENTAL 17:53 — helper corrigido externamente, leitura ainda NO-GO
+- [x] Arquivar SQL exato de schema_migrations 20261015175232_h_cockpit_helper_tenant_fence_closed, sem BEGIN/COMMIT externos; NÃO REAPLICAR. Revisor aplicou helper2bff, preflight/pós-condições hospedados PASS externo, 19 asserts PGlite PASS externo com Auth/schema simulados e sem fullpreflight.
+- [x] Metadados próprios somente leitura: prosrc6dc6de9ce046847310973b5666249177, definiçãoe690611cd0967e7697cdbecb8c40e984, helperanon/authEXECUTEfalse, viewauthSELECTfalse, RPCauthEXECUTEfalse, conversorb112888 intacto. P1 corrigido internamente e contido; não prova leitura funcional.
+- [x] Registrar evidência externa UIAdminAR: VT-2026-0002/1995fdfa-2976-42a7-8a2b-0324497f76d2 aprovada; recomendacao_liberada version6 enviado_aprovacao→aprovado, autoriaa7d45277-6dec-413d-bf6b-86620c1ef39f, zeroOS; sem reprodução própria/alteração de dados.
+- [ ] Leitura funcional Cockpit/freshness/descendentes/microprojeção/cache NO-GO, dependem de auditoria/revisão e autorização específica; não reabrir helper/view/RPC nem operações. Ownership OFF, fabricação e diagnóstico separados.
+
+## NOVO PEDIDO EXPLÍCITO — investigar CNPJ no novo cadastro de parceiro
+- [x] Registrar pedido de Renato nesta rodada exclusivamente documental, sem presumir causa nem executar cadastro de teste.
+- [ ] Investigar ParceiroB2BFormDialog: relato do código usa BrasilAPI direto com timeout12s; conferir CNPJ/máscara/dígitos, redes/CORS/status/limites, timeout, preservação de campos manuais, duplicidade e logs sem segredos. Backlog ainda não investigado; aguarda recorte próprio, sem parceiro real/contas/dados para teste.
+
+## HISTÓRICO P1 17:45 — contenção externa aplicada; candidato h7n rebaseado
 - [x] Registrar 20261015173622 aplicada externamente: revoga helper/view de PUBLIC/anon/authenticated; sem alterar corpo/dados/MV/operações. Arquivo exato de schema_migrations, NÃO REAPLICAR.
 - [x] Metadados próprios canônicos confirmam ledger/hash e ACL fechada; FSF 42501 é evidência SQL externa, não browser/prova própria.
 - [x] Rebase candidato somente h7n exigindo ledger e ACL contida; NULL/cliente não resolvido nunca são escopo global. Preparar before/containment/after isolados e pós-aplicação read-only.
-- [ ] Revisão/aplicação do candidato pelo revisor e pós-teste hospedado pendentes; nenhum DDL remoto/publicação pelo agente. ACL fechada não certifica filtro tenant. Freshness/descendentes bloqueiam abertura da leitura.
+- [x] Revisão/aplicação e preflight/pós-condições hospedados informados externamente em 17:53 (migration20261015175232); nenhum DDL remoto/publicação pelo agente. ACL fechada não certifica filtro tenant. Freshness/descendentes bloqueiam abertura da leitura.
 
 ## HISTÓRICO P1 17:41 — contenção h7n somente, RPC fechado
 - [x] Registrar leitura EXTERNA Renato: FSF Admin autenticado/iat/exp leu 2 linhas; MV 2 linhas/1 tenant. Não browser FSF nem prova própria.
 - [x] Metadados próprios subsequentes: corpo vulnerável permanece, mas authenticated EXECUTE h7n=false e SELECT view=false; autoria/momento então desconhecidos, esclarecidos pelo ledger 20261015173622 acima. Não restaurar ACL.
 - [x] Substituir candidato anterior que reabria RPC por correção atômica SOMENTE h7n com tenant/readiness/vínculo ativo, hashes e ACL preservada.
-- [ ] Revisão independente e teste hospedado pós-aplicação aguardam revisor; nenhuma aplicação remota autorizada. Freshness/descendentes, fabricação, diagnóstico e ownership permanecem nos gates anteriores.
+- [x] Revisão/aplicação e preflight/pós-condições externos registrados no recorte17:53; leitura funcional/freshness/descendentes, fabricação, diagnóstico e ownership permanecem nos gates anteriores.
 
 ## RECORTE ANTERIOR — leitura Cockpit (candidato substituído no P1 17:41)
 - [x] Registrar evidência EXTERNA relatada por Renato pós-deploy eb33bc: OS-2026-000003, uma programação aguardando/NULL e commercial_completed=false; Ordens/Fluxo Técnico PASS externo. Consultor: financeiro negado, catálogo/rascunho próprio disponíveis, cabeçalho visita Admin legível mas workspace/conversão negados e recomendações zero.
