@@ -29,6 +29,17 @@ DO $$ DECLARE t text; BEGIN
 END $$;
 DROP FUNCTION IF EXISTS platform_private.catalog_block_uncertified_private_reference();
 
+DROP TRIGGER IF EXISTS trg_catalog_owner_micro_product ON public.microrganismos;
+DROP FUNCTION IF EXISTS platform_private.catalog_owner_guard_micro_product();
+DROP TRIGGER IF EXISTS trg_catalog_composition_owner_guard ON public.produto_composicao_conjuntos;
+DROP TRIGGER IF EXISTS trg_catalog_composition_owner_guard ON public.produto_composicao_declaracoes;
+DROP POLICY IF EXISTS catalog_composition_parent_scope ON public.produto_composicao_conjuntos;
+DROP POLICY IF EXISTS catalog_composition_declaration_parent_scope ON public.produto_composicao_declaracoes;
+DROP FUNCTION IF EXISTS platform_private.catalog_composition_owner_guard();
+DROP FUNCTION IF EXISTS platform_private.catalog_composition_parent_owner(uuid);
+DROP FUNCTION IF EXISTS public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid);
+DROP FUNCTION IF EXISTS platform_private.catalog_owned_presentation_mutate_core(text,uuid,uuid,timestamptz,jsonb,text,uuid);
+
 DO $$
 DECLARE v_private boolean; v_readers boolean; t text;
 BEGIN

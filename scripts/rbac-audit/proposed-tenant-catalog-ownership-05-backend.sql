@@ -1,5 +1,6 @@
 -- CANDIDATO 05 — NÃO APLICAR. Requer 01–04; gate permanece OFF.
--- Definições completas de writers SA e RPCs tenant de apresentações/preços.
+-- Definições completas dos 12 writers SA manifestados e RPC tenant de apresentações/preços.
+-- Wipe, leitores operacionais e views seguem em candidato posterior; este arquivo não fecha o gate.
 -- Sem publicação. ACLs públicas existentes são preservadas.
 BEGIN;
 DO $$ DECLARE r record; BEGIN
