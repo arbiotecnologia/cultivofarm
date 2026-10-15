@@ -23286,6 +23286,10 @@ export type Database = {
         Returns: Json
       }
       rpc_aplicar_sla_alertas: { Args: never; Returns: Json }
+      rpc_aprovar_os_v1: {
+        Args: { p_origem: string; p_os_id: string }
+        Returns: Json
+      }
       rpc_archive_communication_template: {
         Args: { p_template_id: string }
         Returns: Json
