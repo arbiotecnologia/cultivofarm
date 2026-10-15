@@ -1,3 +1,9 @@
+## RECORTE 17:13 UTC — ajuste textual 4fdcb aplicado, sem publicação
+- [x] Corrigir somente dois textos: banner `convertido_os` e sucesso novo do hook; mensagem de replay preservada; sem lógica/SQL/dados/ACL/flags/dependências.
+- [x] Substituir dois testes obsoletos (flag agora true com guards; coluna `origem` inexistente derivada de `registro_consultor_id`); focais **112/112 PASS** em 5 arquivos.
+- [x] Build/typecheck automático OK 17:15:10 UTC após corrigir import ausente no teste; commit interno da plataforma 2ac35c1a; manifesto/relatório atualizados.
+- [ ] Publicação/browser real, volume/fabricação e diagnóstico permanecem pendentes/NO-GO; ownership OFF.
+
 ## RECORTE 17:04 UTC — UI OS autorizada no código real, sem publicação
 - [x] Incorporar diff aprovado OS/query no código real; PDF null-safe preservado; diagnóstico/DDL/dados intactos.
 - [x] Proteger identidade/unmount; implementação real81/81, scanner e lint controles/testes PASS; lint global FAIL3295/126 e hook/pages sem delta comprovado; build automático17:09:27OK, typecheck separado sem evidência.
