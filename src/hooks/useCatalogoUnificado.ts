@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { consultarCatalogo } from "@/lib/catalogoQueries";
+import { useTenantHiddenIds, type TenantHiddenState } from "@/hooks/useTenantCatalogVisibility";
+import { postgrestInList, TenantVisibilityError } from "@/lib/catalogo/tenantCatalogVisibility";
 
 export interface CatalogoUnificadoRow {
   id: string;
@@ -109,16 +111,46 @@ function buildIndexMap(rows: any[] | null | undefined, keyField: string) {
   return map;
 }
 
+/**
+ * Ocultação por empresa vale para os catálogos NOVOS internos (`admin`/`interno`) e é aplicada no servidor
+ * (filtro `not in` na consulta). O escopo B2B ainda NÃO aplica: a empresa fornecedora precisa vir do vínculo
+ * comercial validado (recorte pendente). Sem empresa (plataforma) → catálogo global sem filtro de empresa.
+ */
+export function catalogoAppliesTenantVisibility(scope: CatalogoScope): boolean {
+  return scope !== "b2b";
+}
+
+function hiddenKey(h: TenantHiddenState): string | null {
+  if (h.status === "global") return "global";
+  if (h.status === "ready") return `${h.scope.organizationId}|${h.scope.userId}|${h.ids.join(",")}`;
+  return null;
+}
+
+/** Aplica exclusão no servidor; sem IDs, consulta inalterada. */
+export function catalogoExcludeHidden<Q extends { not: (c: string, op: string, v: string) => Q }>(q: Q, ids: readonly string[]): Q {
+  return ids.length ? q.not("id", "in", postgrestInList(ids)) : q;
+}
+
 export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
-  return useQuery({
-    queryKey: ["catalogo-unificado", scope],
+  const applies = catalogoAppliesTenantVisibility(scope);
+  const hp = useTenantHiddenIds("produto", applies);
+  const hm = useTenantHiddenIds("microrganismo", applies);
+  const kp = hiddenKey(hp);
+  const km = hiddenKey(hm);
+  const hiddenError = hp.status === "error" ? hp.message : hm.status === "error" ? hm.message : null;
+  const ready = kp !== null && km !== null;
+  const hiddenProd = hp.status === "ready" ? hp.ids : [];
+  const hiddenMicro = hm.status === "ready" ? hm.ids : [];
+  const query = useQuery({
+    queryKey: ["catalogo-unificado", scope, kp, km],
+    enabled: ready,
     staleTime: CATALOGO_UNIFICADO_STALE_TIME,
     gcTime: CATALOGO_UNIFICADO_GC_TIME,
     refetchOnWindowFocus: false,
     queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
       const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await consultarCatalogo([
-        (supabase as any).from("produtos").select(PRODUTOS_SELECT).order("nome"),
-        (supabase as any).from("microrganismos").select(MICROORGANISMOS_SELECT).order("nome"),
+        catalogoExcludeHidden((supabase as any).from("produtos").select(PRODUTOS_SELECT), hiddenProd).order("nome"),
+        catalogoExcludeHidden((supabase as any).from("microrganismos").select(MICROORGANISMOS_SELECT), hiddenMicro).order("nome"),
         (supabase as any).from("product_technical_profiles").select(PRODUCT_PROFILES_SELECT),
         (supabase as any).from("microorganism_technical_profiles").select(MICRO_PROFILES_SELECT),
         (supabase as any).from("formulacoes").select(FORMULACOES_SELECT),
@@ -190,6 +222,12 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
       return all;
     },
   });
+  if (hiddenError) {
+    // Fail-closed: sem preferências da empresa não listamos catálogo "sem filtro".
+    return { ...query, data: undefined, isLoading: false, isError: true, error: new TenantVisibilityError(`Preferências da empresa indisponíveis: ${hiddenError}`) } as typeof query;
+  }
+  if (!ready) return { ...query, data: undefined, isLoading: true } as typeof query;
+  return query;
 }
 
 export function catalogoRevisionPending(r: CatalogoUnificadoRow): string[] {
