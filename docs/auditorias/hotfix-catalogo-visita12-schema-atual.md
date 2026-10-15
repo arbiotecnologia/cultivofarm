@@ -1,4 +1,6 @@
-# Hotfix independente SQL12 — candidato local, não aplicado
+# Hotfix independente SQL12 — APLICADO pelo revisor, NÃO REAPLICAR
+
+Atualização 16:28 UTC: versão real `20261015162631_h_catalog_visit_selection_current_schema`, conteúdo exato arquivado em `scripts/rbac-audit/applied-20261015162631-h_catalog_visit_selection_current_schema.sql`. SHA-256 coincide com o candidato `0f9276ae0047845880a54d8448a6ea3c1c1011e871767857aa53b53eeb66327f`. Evidência externa: Bombarbio voltou no seletor publicado Admin AR e recomendação com encaminhar_para_os=true foi salva; não é reprodução própria. Seções abaixo registram o ensaio anterior, não autorização de reaplicação. Gerador agora é read-only e usa iat no momento da execução/exp+3600.
 
 ## Entrega
 - Corpo completo: `scripts/rbac-audit/proposed-hotfix-catalog-visit12-current-schema.sql`.
@@ -33,4 +35,4 @@ Visita teste `f19c8343-6205-487a-a237-df4d8ee06471` preservada. Leitura confirmo
 Correção futura focal deverá preservar identidade remota no contrato de edição, não inventar chave para registro legado como se fosse criação, e impedir persistência automática de diagnóstico vazio sem intenção. Sem backfill/delete da visita teste. Achado permanece **FAIL / correção separada pendente**, não confundido com hotfix do catálogo.
 
 ## Gate
-GO somente para revisão independente do candidato. Aplicação/runtime hospedado **NO-GO/UNVERIFIED** até ensaio autorizado e validação real. Ownership01–13 gate OFF; laboratório07 separado sob condução do revisor. Não publicar pacote ownership.
+Hotfix e laboratório07 já aplicados externamente nas versões reais registradas; não executar candidatos antigos. Ownership01–13 continua gate OFF/não aplicado. Fluxo completo/produção física não certificado. Correções de diagnóstico/PDF são diff local não aplicado enquanto o revisor finaliza. Não publicar pacote ownership.
