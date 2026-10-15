@@ -1,5 +1,20 @@
 {
-  "state": "LIVE_SOURCE_CANDIDATE_NOT_APPLIED_ACL_CLOSED_NO_GO",
+  "state": "LIVE_SOURCE_APPLIED_EXTERNALLY_UI_CONSULTATION_PREPARED_ACL_CLOSED",
+  "consultation_round": {
+    "baseline_head": "46583eefdc95e83bfee202fa699c3fcaada49cbc",
+    "report": "docs/auditorias/cockpit-consulta-isolada-20261015.md",
+    "list_query_gate": true,
+    "all_other_readers_gate": false,
+    "workspace_children_mounted": false,
+    "vitest": "71/71_FIVE_FILES_AUTH_TRANSPORT_SIMULATED",
+    "lint_focal": "PASS_0",
+    "remote_ddl_grants_publication": "NONE",
+    "hosted_auth_browser": "UNVERIFIED_EXTERNAL_UNMANAGED",
+    "helper_definition": "bad38b5200629cc887767e62b7a46e40",
+    "rpc_definition": "c51739eb0d9f91470fa6700d1c19763d",
+    "archive_md5": {"20261015182119":"f2f668d113977d9ca14a7b7f57540766","20261015182209":"a53219694ca5ba953a543548d4ea90e2","20261015183119":"24d91d2a1f69e9905a49c4ae6a271186"},
+    "external_evidence": "REVIEWER_PGLITE61_SIMULATED_PASS_HOSTED_FULL_PREFLIGHT_POSTCONDITIONS_PASS_ADMIN_AR2_FSF0_CONSULTOR0_FINANCEIRO0_PRIVILEGED_EXECUTOR_NOT_AUTH_RLS_PROOF"
+  },
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "candidate": "scripts/rbac-audit/proposed-cockpit-live-source-closed.sql",
   "report": "docs/auditorias/cockpit-fonte-atual-candidato-20261015.md",
@@ -16,7 +31,10 @@
     "20261015175232",
     "20261015180956",
     "20261015181119",
-    "20261015181542"
+    "20261015181542",
+    "20261015182119",
+    "20261015182209",
+    "20261015183119"
   ],
   "external_evidence": {
     "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
