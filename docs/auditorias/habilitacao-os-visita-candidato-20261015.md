@@ -3,6 +3,7 @@
 ## Resultado e entrega
 **CANDIDATO PARA REVISÃO. Não aplicado ao app/banco, não publicado.**
 Diff: `scripts/rbac-audit/proposed-enable-visit-os-ui.patch`.
+**Atualização 16:53 UTC:** autorizado e aplicado ao código-fonte real somente o trecho PDF null-safe de `VisitaTecnica.tsx` (dose e volume). UI de geração OS e correção da query permanecem candidatas, sem publicação. Nenhuma migration, RPC, dado ou diagnóstico aplicado nesta rodada.
 Preflight somente leitura: `scripts/rbac-audit/preflight-enable-visit-os-readonly.sql`.
 Cópias executáveis para testes: `scripts/rbac-audit/os-enable-candidate/` (não importadas pelo app).
 
@@ -18,7 +19,8 @@ Migrations 20261015161648 e 20261015162631 já aplicadas: **NÃO REAPLICAR**; ar
 - Confirmação explícita, cancelamento sem escrita, lock síncrono por instância; controles indisponíveis durante leitura/erro. Hook reconsulta workspace antes da RPC, aceita convertido_os exclusivamente para replay manual; nunca auto-retry de escrita. Backend continua responsável por concorrência entre abas.
 - Erros técnicos e mensagem arbitrária remota não são exibidos; códigos conhecidos recebem mensagem focal. Falha deixa diálogo aberto e reconsulta workspace. Resposta incompleta/alheia não certifica sucesso. Epoch de identidade impede resposta tardia inclusive AR→FSF→AR; sem navegação automática pós-escrita.
 - Sucesso invalida workspace/timeline/status/listas técnicas/OS/cockpit/PCP, sem limpar cache global. UI lê novo workspace e retira botão após convertido_os. Status é **encaminhamento**, não execução física/conclusão de comerciais. Texto antigo de OS Multi-Produto/reserva-expedição substituído apenas no banner.
-- Nenhuma mudança no diagnóstico/PDF candidato anterior; precisa revisão separada. Nenhum outro RPC/gate operacional, decisão do produtor, ACL, guard, índice ou histórico alterado.
+- PDF null-safe aplicado separadamente após revisão c812: NULL/ausente não gera volume/dose nem exceção; valores informados preservam as unidades e conversão existentes. `proposed-diagnostic-and-pdf-ui.patch` permanece artefato histórico misto: seu trecho PDF já foi incorporado, **não reaplicar o arquivo integral**. Diagnóstico NÃO aplicado, separado da habilitação OS. Nenhum outro RPC/gate operacional, decisão do produtor, ACL, guard, índice ou histórico alterado.
+- Diagnóstico segue NO-GO: revalidar `can_manage_technical_visit`/`is_active_visit_participant` **após o lock** (scope/editável não substituem autorização de mutação), provar adoção remota com PK, versões, replay, erro e esquema real. Script 10/10 é simulado. Branch wizard não corrige nem certifica o DELETE/INSERT/diagnóstico vazio desktop. Dados históricos/teste preservados.
 
 ## Volume NULL — dependência operacional
 Conversor aplicado não grava volume_total_ml/dose. Trigger gera programação aguardando com volume_necessario NULL; isto é demanda, **não fabricação**. Teste executável confirma ambos NULL.
@@ -27,6 +29,8 @@ Conversor aplicado não grava volume_total_ml/dose. Trigger gera programação a
 Não identificado fluxo existente auditado para definir volume solicitado antes de fabricar. **NO-GO fabricação** até revisão focal do caminho existente de definição explícita, autorização/CAS/idempotência e unidade canônica. Não criado fluxo paralelo.
 
 ## Evidência própria
+- Rodada PDF 16:55 UTC: **43/43 Vitest PASS** em três arquivos: 9 PDF/claims (8 executam o corpo completo `buildPdfData` extraído por AST do código real e 1 claims), 32 interação OS candidato e 2 query/error-state candidato. Não testa string de patch; somente dependências do closure usam fixtures locais. NULL/ausente, dose NULL, zeros, 999/1000/1250mL e visita ausente cobertos. Não prova PDF baixado em sessão real nem Auth/RLS hospedados.
+- Build automático observado **OK em 16:55:16 UTC**; typecheck separado não executado manualmente (validação automática do ambiente). `git diff --check` sem erro. Conferência `git apply --check` indisponível por bloqueio da ferramenta; não contornada. SHA-256 do patch OS permanece `300138d3a0722aff1e393abcefb08af536cdb69088b71dc5e9f1b78778d8fb9b`.
 - Schema canônico read-only: ref confirmado; `origem_columns=0`; `authenticated` possui leitura; consulta mínima `id,numero_os,status,created_at,registro_consultor_id,cliente_id,fazenda_id LIMIT 0` compilou; FKs explícitas e únicas para `clientes` e `fazendas`. Nenhuma linha/dado foi lido ou alterado.
 - Frontend candidato: teste garante que o SELECT não contém `origem`, mantém `registro_consultor_id` e, em falha, mostra erro/tentativa novamente com KPIs `—`, sem converter falha em zero/estado vazio.
 - Evidência externa relatada por Renato em ROLLBACK: conversão autenticada com `iat/exp` gerou Bombarbio, replayou a mesma OS e uma programação aguardando; ambos os volumes permaneceram NULL. Rollback preservou visita aprovada/zero OS; sequências 001/002 consumidas são histórico normal e não serão renumeradas. Isto não substitui prova pelo navegador.
@@ -44,4 +48,4 @@ Não identificado fluxo existente auditado para definir volume solicitado antes 
 4. Reconsultar visita/OS pela UI; retry/reentrada não duplicam. FSF/sem papel/SA sem tenant não veem ação; loading/erro não habilitam botão. **Não executar conversão por SQL direto para contornar gate**.
 5. Não programar, gerar lote, publicar planejamento, decidir pelo produtor, fabricar, cobrar ou emitir fiscal. Comerciais preservados.
 
-**GO candidato local para revisão; NO-GO habilitação/publicação nesta rodada; UNVERIFIED conversão JWT/browser próprio; NO-GO fabricação/volume.**
+**GO local PDF null-safe aplicado/testado; GO candidato OS/query para revisão; NO-GO habilitação/publicação nesta rodada; UNVERIFIED conversão JWT/browser próprio e PDF baixado real; NO-GO fabricação/volume e diagnóstico.**
