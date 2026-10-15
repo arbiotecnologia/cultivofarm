@@ -176,7 +176,9 @@ BEGIN
  THEN
   RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  IF r.status='completed' THEN
-  IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=r.user_id AND organization_id=r.organization_id AND ativo IS TRUE)
+  IF NOT EXISTS(SELECT 1 FROM auth.users u WHERE u.id=r.user_id AND lower(u.email)=r.email
+   AND u.raw_app_meta_data->>'b2b_provisioning_receipt'=r.id::text)
+  OR NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=r.user_id AND organization_id=r.organization_id AND ativo IS TRUE)
   OR (SELECT count(*) FROM public.user_roles WHERE user_id=r.user_id)<>1
   OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=r.user_id AND role=r.external_role)
   OR (SELECT count(*) FROM public.partner_users WHERE user_id=r.user_id)<>(CASE WHEN r.partner_id IS NULL THEN 0 ELSE 1 END)

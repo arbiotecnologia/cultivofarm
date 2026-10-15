@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
@@ -59,9 +60,13 @@ const mapUnidadeMedida = (u: UnidadePedido): string => {
 
 export function useCreatePartnerOrder() {
   const qc = useQueryClient();
+  const scope = useStorageAccessScope("partner-order-mutation");
 
   return useMutation({
+    onMutate: () => ({ current: scope.capture() }),
     mutationFn: async (input: CreateOrderInput) => {
+      const current = scope.capture();
+      if (!current()) throw new Error("Contexto indisponível.");
       if (!input.items.length) throw new Error("Carrinho vazio");
       if (!input.expected_cart_hash) throw new Error("cart_hash_required");
       if (!input.idempotency_key) throw new Error("idempotency_key_required");
@@ -88,15 +93,18 @@ export function useCreatePartnerOrder() {
           p_idempotency_key: input.idempotency_key,
         },
       );
+      if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
       return data as { id: string; numero: string; total: number };
     },
 
-    onSuccess: () => {
+    onSuccess: (_data, _variables, context) => {
+      if (!context?.current()) return;
       qc.invalidateQueries({ queryKey: ["partner-orders"] });
       toast.success("Pedido enviado para análise comercial!");
     },
-    onError: (err: any) => {
+    onError: (err: any, _variables, context) => {
+      if (!context?.current()) return;
       const msg = err?.message ?? "";
       if (msg.includes("forbidden_partner")) toast.error("Você não tem permissão para este parceiro");
       else if (msg.includes("payment_plan_required") || msg.includes("payment_terms_not_defined")) toast.error("Este pedido não possui condição comercial definida.");

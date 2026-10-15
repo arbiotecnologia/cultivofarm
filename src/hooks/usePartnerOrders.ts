@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PartnerOrder {
@@ -19,17 +19,18 @@ export interface PartnerOrder {
 }
 
 export function usePartnerOrders(partnerId: string | null | undefined, status?: string) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-orders", partnerId, status],
     enabled: !!partnerId,
-    queryFn: async (): Promise<PartnerOrder[]> => {
+    queryFn: async (signal): Promise<PartnerOrder[]> => {
+      if (!partnerId) throw new Error("portal_context_unavailable");
       let q = (supabase as any)
         .from("partner_orders")
         .select("*")
-        .eq("partner_id", partnerId!)
-        .order("created_at", { ascending: false });
+        .eq("partner_id", partnerId)
+        .order("created_at", { ascending: false }).abortSignal(signal);
       if (status) q = q.eq("status", status as any);
-      const { data, error } = await q;
+      const { data, error } = await q.abortSignal(signal);
       if (error) throw error;
       return (data ?? []) as any[];
     },
@@ -37,10 +38,10 @@ export function usePartnerOrders(partnerId: string | null | undefined, status?: 
 }
 
 export function usePartnerOrderItems(orderId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-order-items", orderId],
     enabled: !!orderId,
-    queryFn: async () => {
+    queryFn: async (signal) => {
       const { data, error } = await (supabase as any)
         .from("partner_order_items")
         .select(`
@@ -54,7 +55,7 @@ export function usePartnerOrderItems(orderId: string | null | undefined) {
           ),
           microrganismos:microrganismo_id (nome, codigo, tipo, nome_cientifico, concentracao_label, funcao_agronomica, dose_ml_ha)
         `)
-        .eq("order_id", orderId!);
+        .eq("order_id", orderId).abortSignal(signal);
       if (error) throw error;
       return data ?? [];
     },

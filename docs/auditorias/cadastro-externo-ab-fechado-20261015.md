@@ -143,3 +143,41 @@ Não há P1 comprovado de acesso Storage por d516 isolada nem pelo requisito de 
 Hook/Auth fullschema, timeout de compensação, demais canais de portal B2 e seleção/cache continuam requisitos de abertura, não novo diagnóstico Storage. A+B flag/entrypoint/deploy/grants continuam fechados; não é falta de credencial.
 ## 17. Rollback e OS
 Sem mudança hospedada, nenhum rollback Storage a executar. A+B inverso restritivo existente preservado; proteção OS aplicada não alterada e liberação operacional separada.
+
+
+# Entrega 20:40 — integração existente e pacote fechado, vigente
+
+## 1. Escopo
+Continuação autorizada de 9db5706; UI no código existente, candidatos SQL/diff Edge locais. Nenhum DDL/grant/deploy/publicação/Auth real/email executado. OS20261015194058 e Storage core/policies preservados; .withdrawn fora da entrega.
+## 2. Usuários
+Configuracoes mantém interno e acrescenta B2B gestor/Produtor, vínculos paginados20 e principal explícito; Técnico negado. Sem tenant/senha em payload externo. Submit externo desabilitado por EXTERNAL_USER_ACTIVATION_REVIEWED=false, também negado na mutation. Contexto muda: formulário/diálogo reset, query cancel/eviction. Callbacks recebem fence POR REQUEST, não ref compartilhada. Campos opcionais internos não são oferecidos ao externo quando não transportados.
+## 3. Validação
+externalUserDraft valida papéis exclusivos, UUID, clientes1–100 sem duplicatas e principal pertencente; senha externa proibida. O validador interno continua exigindo senha. Testes atuais demonstram rascunho externo sem senha válido; suspeita de bug herdado de senha não se confirmou (erro password removido no contrato externo).
+## 4. Auth inventário fullschema
+Read-only hosted inventariou constraints/triggers profiles/user_roles/user_clientes/partner_users/auth e handle_new_user6f3c5072. Perfil sem role; Auth cascade profile/roles, NÃO partner_users/user_clientes. Guards de gate/status/tenant/sensitive/profile timestamp e sync_user_cliente_principal50392a57 identificados. Harness inclui sync real e gatilhos de links, mais primitiva profile real; NÃO é reprodução integral GoTrue/fullschema.
+## 5. Compensação concluída no candidato
+Diff create-user existente retoma receipt compensating; prepare lê estado locked, completed retorna sem lookup/delete. UUID/email/app_metadata exatos antes delete; timeout/erro delete/cleanup→503 pending. Auth404 após delete apenas chama complete SQL, que exige ausência Auth/profile/roles e links exatos. Lookup incerto/foreign não deleta. Retry claimed pré-Auth permanece409 pending seguro aceito; nunca segundo Auth/email/reset/lease como autoridade.
+## 6. Replay
+Finish completed agora também exige Auth UUID/email/receipt além perfil/role/links. Nenhuma conta completed é compensada. Claim/finish revalidam ator/tenant/links locks; gate impede concorrência entre finish e prepare participantes. Não afirmar fencing distribuído de serviços externos não inventariados.
+## 7. Concorrência e falha encontrada no ensaio
+38 checks A+B locais (31 SQL+7 checks incluindo duas conexões), PASS. Uma reexecução concorrente falhou: stub auth.jwt criava iat via now() em cada transação; corrigido ENSAIO para mesmo iat atual nas duas sessões, sem flexibilizar candidato. Same key→uma UUID/um acquired; organização revogada após espera negada. Snapshot/iat diferente continua conflito seguro.
+## 8. Seleção do Produtor
+usePortalCliente usa get_cliente_ids_for_user ativo/vigente/revoked e resolve cliente ativo no tenant, sem IDs crus/fallback como autoridade. user_clientes principal serve somente preferência. AbortSignal/epoch/scope e refresh focus eliminam late results; provisória/loading desabilitam. Preferência scoped é limpa no logout sem apagar keys alheias.
+## 9. Cache/mutações
+useScopedPortalQuery usa user/org/roles/readiness, AbortSignal, fence, eviction; orders/items/list/detail e consumidores comerciais reutilizam wrapper (sem mudar RBAC). Mutações create_partner_order/actions ignoram callbacks/toasts/invalidation stale. RPC/RLS continuam autoridade, sem retry de writes automático.
+## 10. Workspace Produtor
+PortalLayout contador scoped/abort/fence realtime; troca user/tenant/client/revoke/loading desmonta Outlet e fecha picker, evitando formulário/filhos antigos. Prova com página/QueryClient reais e sessão mock. Não certifica cada cache agrícola interno; inventário viu chaves antigas em Fazenda/Talhão/Recomendacoes, pendência técnica explícita antes abertura geral.
+## 11. P1 estrutural distinto do Storage
+Quatro get_portal_cliente_b2b_* SECURITY DEFINER authenticated EXECUTE=true usam _portal_cliente_user_has_link cru, sem revogação/atividade/vigência. Esta é lacuna concreta de autorização estrutural, NÃO exploração JWT provada. Candidato producer-commercial-read separado: role/readiness/cliente ativo/link vigente+tenant+partner commercial_owner, IDs detalhes alheios/inexistentes mesmo erro, ACL fechada. Helper compartilhado de notificações e Storage intocados.
+## 12. Provas dos readers
+17 assertions PostgreSQL descartável com QUATRO corpos efetivos candidatos: próprio, irmão, outro tenant,NULL, lists/details, revogado/expirado/inativo/técnico, parceiro cruzado, anon e ACL fechada. Tables/Auth/helpers reduzidos; preflight hosted não roda no stub, explicitamente retirado SOMENTE no ensaio. Não prova RLS/JWT real nem inventário total de descendentes catálogo privado; ownership OFF.
+## 13. Entitlement/contexto
+Nenhuma feature portal_produtor criada: mapa /portal sem key; App/Producer guards papel real. get_my_available_portal_contexts sem produtor NÃO é isoladamente bloqueio: AuthRoute produtor usa fluxo legado /app porque hasPortalRole exclui produtor. Sem rotas/permissões alteradas. Solicitações têm restritiva technical_request_tenant_isolation e leitura/mutação linked; criador também permissivo, requer ensaio efetivo completo antes certificar revogação de todas APIs.
+## 14. Artefatos/preflight/rollback
+SQL A+B, diff create-user, preflight/rollback existentes; novo proposed/preflight/rollback-producer-commercial-read; contrato external-user-ab-activation-contract.md. Baseline readers atômico no candidato; quatro hashes, owner/ACL assertados. Contrato grants mínimo DOCUMENTAL, nenhum grant executado. Rollback fecha, não restaura leitor vulnerável, não remove dados.
+## 15. QA
+208/208 Vitest16arquivos PASS, 38 A+B PostgreSQL e17reader PASS; Auth/transporte simulados. Lint novo/focal10arquivos0; arquivos legados Configuracoes/order hooks/validation apresentam no-explicit-any e demais erros anteriores, NÃO lint global PASS. Scanner focal0/diff-checkPASS. Build automático20:40:09 OK; erros TS intermediários de colunas corrigidos via filter. Nenhum typecheck/build manual executado; newest harness build OK, typecheck separado sem saída de sucesso explícita — não alegar certificação própria independente.
+## 16. Limites e intervenção real
+external_unmanaged confirmado: ferramenta não oferece sessão autenticada end-to-end deste projeto, não pedir credenciais. Nenhuma fixture Auth criada: pacote precisa revisão antes instalação e testes do after. Não é autorização para emails, fabricar, cobrança ou liberar gates. Auth fullschema real/GoTrue/canais agrícolas ainda não certificados; pacote revisável entregue, ativação NÃO apta automática.
+## 17. Resultado
+GO para revisão local dos artefatos e UI fechada; aplicação/ativação aguarda revisão expressa. Bloqueios concretos: candidato ausente hosted, Auth/GoTrue completo não executado e matriz dos canais agrícolas remanescente. Sem novo fluxo paralelo, sem decisão humana comercial inventada. SHA256 atuais em manifesto de entrega, recalcular ao revisar.

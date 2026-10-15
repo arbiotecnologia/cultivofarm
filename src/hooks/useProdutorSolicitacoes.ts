@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ProdutorPedidoResumo {
@@ -26,14 +26,15 @@ export interface ProdutorSimulacaoResumo {
 
 
 export function useProdutorPedidos(clienteId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["produtor-pedidos", clienteId],
     enabled: !!clienteId,
-    queryFn: async (): Promise<ProdutorPedidoResumo[]> => {
+    queryFn: async (signal): Promise<ProdutorPedidoResumo[]> => {
+      if (!clienteId) throw new Error("portal_context_unavailable");
       const { data, error } = await (supabase as any).rpc(
         "get_portal_cliente_b2b_orders_secure",
-        { p_cliente_id: clienteId! },
-      );
+        { p_cliente_id: clienteId },
+      ).abortSignal(signal);
       if (error) throw error;
       return (data ?? []).map((r: any) => ({
         id: r.id,
@@ -51,14 +52,15 @@ export function useProdutorPedidos(clienteId: string | null | undefined) {
 }
 
 export function useProdutorSimulacoes(clienteId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["produtor-simulacoes", clienteId],
     enabled: !!clienteId,
-    queryFn: async (): Promise<ProdutorSimulacaoResumo[]> => {
+    queryFn: async (signal): Promise<ProdutorSimulacaoResumo[]> => {
+      if (!clienteId) throw new Error("portal_context_unavailable");
       const { data, error } = await (supabase as any).rpc(
         "get_portal_cliente_b2b_simulations_secure",
-        { p_cliente_id: clienteId! },
-      );
+        { p_cliente_id: clienteId },
+      ).abortSignal(signal);
       if (error) throw error;
       return (data ?? []).map((r: any) => ({
         id: r.id,
@@ -76,9 +78,9 @@ export function useProdutorSimulacoes(clienteId: string | null | undefined) {
 }
 
 export function useComercialSimulacoesAll() {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["comercial-simulacoes-all"],
-    queryFn: async (): Promise<
+    queryFn: async (signal): Promise<
       (ProdutorSimulacaoResumo & {
         cliente_id: string | null;
         cliente_nome: string | null;
@@ -92,7 +94,7 @@ export function useComercialSimulacoesAll() {
           "id, status, titulo, total_cheio, created_at, partner_id, cliente_id, cliente_nome_snapshot, converted_order_id, created_by, partner_accounts:partner_id(razao_social, nome_fantasia), clientes:cliente_id(razao_social, nome)",
         )
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(500).abortSignal(signal);
       if (error) throw error;
       const rows = (data ?? []) as any[];
       const userIds = Array.from(
@@ -102,7 +104,7 @@ export function useComercialSimulacoesAll() {
         ? await supabase
             .from("profiles")
             .select("user_id, nome_completo, email")
-            .in("user_id", userIds)
+            .in("user_id", userIds).abortSignal(signal)
         : ({ data: [] } as any);
       const profMap = new Map<string, any>(
         ((profs as any).data ?? []).map((p: any) => [p.user_id, p]),
@@ -133,17 +135,17 @@ export function useComercialSimulacoesAll() {
 }
 
 export function usePartnerSimulationsWithClient(partnerId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-simulations-with-client", partnerId],
     enabled: !!partnerId,
-    queryFn: async () => {
+    queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("partner_simulations" as any)
         .select(
           "id, status, titulo, total_cheio, created_at, cliente_id, cliente_nome_snapshot, created_by, converted_order_id, clientes:cliente_id(razao_social, nome)",
         )
-        .eq("partner_id", partnerId!)
-        .order("created_at", { ascending: false });
+        .eq("partner_id", partnerId)
+        .order("created_at", { ascending: false }).abortSignal(signal);
       if (error) throw error;
       const rows = (data ?? []) as any[];
 
@@ -157,10 +159,10 @@ export function usePartnerSimulationsWithClient(partnerId: string | null | undef
           ? supabase
               .from("profiles")
               .select("user_id, nome_completo, email")
-              .in("user_id", userIds)
+              .in("user_id", userIds).abortSignal(signal)
           : Promise.resolve({ data: [] as any[] } as any),
         orderIds.length
-          ? supabase.from("partner_orders").select("id, numero").in("id", orderIds)
+          ? supabase.from("partner_orders").select("id, numero").in("id", orderIds).abortSignal(signal)
           : Promise.resolve({ data: [] as any[] } as any),
       ]);
       const profMap = new Map<string, any>(

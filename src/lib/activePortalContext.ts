@@ -35,8 +35,11 @@ export function getActivePortalContext(): ActivePortalContext | null {
 export function clearActivePortalContext(): void {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PORTAL_CLIENT_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
+  } catch { /* Session storage may be unavailable independently. */ }
+  try {
+    const keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index));
+    for (const key of keys) {
+      if (key === PORTAL_CLIENT_STORAGE_KEY || key?.startsWith(`${PORTAL_CLIENT_STORAGE_KEY}:`)) localStorage.removeItem(key);
+    }
+  } catch { /* Browser-local selection is not authorization. */ }
 }
