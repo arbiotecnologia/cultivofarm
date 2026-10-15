@@ -248,8 +248,8 @@ BEGIN
     ('micro_com_nome','microrganismo',m2,'Xy',NULL,NULL,NULL,'teor_garantido','pcd_identidade_check'),
     ('outro_com_micro_id','outro',m2,'Nome ok',NULL,NULL,NULL,'teor_garantido','pcd_identidade_check'),
     ('nome_com_espacos','outro',NULL,' Nome ok',NULL,NULL,NULL,'teor_garantido','pcd_identidade_check'),
-    ('quantidade_sem_unidade','outro',NULL,'Nome ok',10,NULL,'por_massa_produto','teor_garantido','pcd_medida_conjunta_check'),
-    ('base_null_unidade','outro',NULL,'Nome ok',10,'%m/m',NULL,'teor_garantido','pcd_medida_conjunta_check'),
+    ('quantidade_sem_unidade','outro',NULL,'Nome ok',10,NULL,'por_massa_produto','teor_garantido','pcd_medida_check'),
+    ('base_null_unidade','outro',NULL,'Nome ok',10,'%m/m',NULL,'teor_garantido','pcd_medida_check'),
     ('nan','outro',NULL,'Nome ok','NaN','%m/m','por_massa_produto','teor_garantido','pcd_medida_check'),
     ('negativo','outro',NULL,'Nome ok',-1,'%m/m','por_massa_produto','teor_garantido','pcd_medida_check'),
     ('ufc_em_outro','outro',NULL,'Nome ok',10,'UFC/mL','por_volume_produto','teor_garantido','pcd_medida_check'),
@@ -320,6 +320,46 @@ BEGIN
     EXCEPTION WHEN insufficient_privilege THEN PERFORM pg_temp.ok('anon.core_writer',true); END;
   RESET ROLE;
 END $$;
+
+-- ============================================================ 3b) fixtures artificiais revertidas
+-- Nota: em check.quantidade_sem_unidade e check.base_null_unidade a constraint efetivamente violada é
+-- pcd_medida_check (avaliada antes de pcd_medida_conjunta_check, também rejeita medida parcial). Sobreposição
+-- documentada; nenhuma constraint relaxada.
+-- Fixtures artificiais somente em subtransações revertidas; nenhum dado técnico persiste.
+DO $fixture$
+DECLARE b uuid := (SELECT v::uuid FROM rt_ctx WHERE k='prod_b');
+m uuid; ver timestamptz; denied boolean; sa uuid := (SELECT v::uuid FROM rt_ctx WHERE k='sa');
+BEGIN
+SELECT id INTO m FROM public.microrganismos WHERE ativo AND id NOT IN
+(SELECT microrganismo_id FROM public.produto_composicao_declaracoes WHERE produto_id=b AND microrganismo_id IS NOT NULL) ORDER BY id LIMIT 1;
+IF m IS NULL THEN RAISE EXCEPTION 'fixture precisa micro ativo sem vinculo'; END IF;
+SELECT updated_at INTO ver FROM public.produtos WHERE id=b;
+PERFORM pg_temp.claims(sa);
+denied:=false;
+BEGIN
+UPDATE public.microrganismos SET ativo=false WHERE id=m;
+SET LOCAL ROLE authenticated;
+BEGIN
+PERFORM public.platform_set_global_product_composition(b,ver,'rascunho',jsonb_build_array(jsonb_build_object('ordem',1,'tipo_componente','microrganismo','microrganismo_id',m,'componente_nome',null,'quantidade',null,'unidade',null,'base',null,'natureza','concentracao_declarada')),'Fixture inativo rollback',gen_random_uuid());
+EXCEPTION WHEN invalid_parameter_value THEN denied:=SQLERRM='catalog_composition_micro_unavailable'; END;
+RAISE EXCEPTION USING ERRCODE='ZX001',MESSAGE='rollback fixture inativo';
+EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL;
+END;
+RESET ROLE;
+PERFORM pg_temp.ok('fixture.micro_inativo_novo',denied);
+denied:=false;
+BEGIN
+INSERT INTO public.formulacoes(produto_id,microrganismo_id,concentracao,unidade,volume_ml) VALUES(b,m,1000000000,'UFC/mL',1);
+SET LOCAL ROLE authenticated;
+BEGIN
+PERFORM public.platform_set_global_product_composition(b,ver,'completo',jsonb_build_array(jsonb_build_object('ordem',1,'tipo_componente','microrganismo','microrganismo_id',m,'componente_nome',null,'quantidade',1000000000,'unidade','UFC/mL','base','por_volume_produto','natureza','concentracao_declarada')),'Fixture duplicidade rollback',gen_random_uuid());
+EXCEPTION WHEN check_violation THEN denied:=SQLERRM='catalog_composition_duplicate_measure'; END;
+RAISE EXCEPTION USING ERRCODE='ZX001',MESSAGE='rollback fixture concentracao';
+EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL;
+END;
+RESET ROLE;
+PERFORM pg_temp.ok('fixture.medida_duplicada_receita',denied);
+END $fixture$;
 
 -- ============================================================ 4) invariantes finais (owner)
 INSERT INTO rt_results(step,ok) SELECT 'final.formulacoes_intactas',
