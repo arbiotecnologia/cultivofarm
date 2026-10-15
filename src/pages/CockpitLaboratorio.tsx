@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ResponsiveHelpers";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { COCKPIT_QUERY_PREFIXES, useCockpitQuery, useCockpitScope } from "@/hooks/useCockpitQuery";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { useAuth } from "@/hooks/useAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -109,6 +110,20 @@ const STAGES: { id: KanbanStage; title: string; icon: any; color: string; mobile
 
 
 export default function CockpitLaboratorio() {
+  const session = useCockpitScope("cockpit-laboratorio");
+  const client = useQueryClient();
+  useEffect(() => {
+    const predicate = (query: { queryKey: readonly unknown[] }) =>
+      COCKPIT_QUERY_PREFIXES.some(prefix => query.queryKey[0] === prefix) &&
+      (!session.ready || query.queryKey.at(-1) !== session.cacheScope);
+    void client.cancelQueries({ predicate });
+    client.removeQueries({ predicate });
+  }, [client, session.ready, session.cacheScope]);
+  return <CockpitWorkspace key={session.scope} />;
+}
+
+function CockpitWorkspace() {
+  const session = useCockpitScope("cockpit-laboratorio");
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -147,18 +162,21 @@ export default function CockpitLaboratorio() {
   const [limit, setLimit] = useState(100);
   // Alertas reconhecidos são persistidos por usuário no banco: marcar como
   // "analisado" sobrevive ao recarregamento da página.
-  const { data: analyzedAlerts = [] } = useQuery({
+  const { data: analyzedAlerts = [] } = useCockpitQuery({
     queryKey: ["cockpit-alertas-reconhecidos"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data, error } = await supabase
         .from("cockpit_alertas_reconhecidos" as any)
-        .select("alerta_key");
+        .select("alerta_key")
+        .eq("usuario_id", profile?.user_id ?? "")
+        .abortSignal(signal);
       if (error) throw error;
       return (data ?? []).map((r: any) => r.alerta_key as string);
     },
   });
 
   const reconhecerAlerta = async (alertaKey: string, osId?: string) => {
+    if (!session.ready) return;
     const { error } = await supabase
       .from("cockpit_alertas_reconhecidos" as any)
       .insert({ alerta_key: alertaKey, usuario_id: profile?.user_id ?? undefined, os_id: osId ?? null } as any);
@@ -180,14 +198,14 @@ export default function CockpitLaboratorio() {
     [search, filterOrigem, filterPrioridade],
   );
 
-  const { data: listaEsteira, isLoading, isError, isFetching, refetch } = useQuery({
+  const { data: listaEsteira, isLoading, isError, isFetching, refetch } = useCockpitQuery({
     queryKey: ["cockpit-laboratorio", listaFiltros, limit],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_listar_esteira_v1", {
         ...listaFiltros,
         p_limit: limit,
         p_offset: 0,
-      });
+      }).abortSignal(signal);
       if (error) throw error;
       if (!data || !Array.isArray(data.items)) throw new Error("Resposta inválida da esteira.");
       return { items: deduplicarEsteira<any>(data.items), total_count: data.total_count };
@@ -254,21 +272,22 @@ export default function CockpitLaboratorio() {
   const totalFiltrado = Number(listaEsteira?.total_count ?? items.length);
 
 
-  const { data: history = [], isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useQuery({
+  const { data: history = [], isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useCockpitQuery({
     queryKey: ["esteira-history", selectedItem?.os_id, selectedItem?.status_esteira_oficial],
     enabled: !!selectedItem,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data, error } = await supabase
         .from("laboratorio_esteira_eventos")
         .select("*")
         .eq("os_id", selectedItem?.os_id)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .abortSignal(signal);
       if (error) throw error;
       return data;
     }
   });
 
-  const { laboratorio: metricasReal } = useMetricasOperacionais();
+  const { laboratorio: metricasReal } = useMetricasOperacionais({ visitas: false });
   const performance = metricasReal.data?.temposMedios || { 
     osAteProgramacao: null, 
     programacaoAteLote: null, 
@@ -563,6 +582,13 @@ export default function CockpitLaboratorio() {
         )}
       </CardContent>
     </Card>
+  );
+
+  if (!session.ready) return (
+    <div className="space-y-6">
+      <PageHeader title="Cockpit Operacional" />
+      <p role="alert">Leitura do Cockpit indisponível. Fabricação permanece bloqueada.</p>
+    </div>
   );
 
   return (

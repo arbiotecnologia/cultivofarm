@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCockpitQuery } from "@/hooks/useCockpitQuery";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -72,21 +73,23 @@ export function useEsteiraLaboratorio() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const { data: profiles = [] } = useQuery({
+  const { data: profiles = [] } = useCockpitQuery({
     queryKey: ["profiles-esteira"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const ROLES_PRODUCAO = ["administrador", "gestor", "operador_onfarm", "producao"];
       const { data: roles, error: rolesErr } = await (supabase as any)
         .from("user_roles")
         .select("user_id")
-        .in("role", ROLES_PRODUCAO as any);
+        .in("role", ROLES_PRODUCAO as any)
+        .abortSignal(signal);
       if (rolesErr) throw rolesErr;
       const userIds = Array.from(new Set((roles ?? []).map((r: any) => r.user_id)));
       if (userIds.length === 0) return [];
       const { data, error } = await (supabase as any)
         .from("profiles")
         .select("id, nome, email, ativo, user_id")
-        .in("user_id", userIds);
+        .in("user_id", userIds)
+        .abortSignal(signal);
       if (error) throw error;
       return (data ?? [])
         .filter((p: any) => p.ativo !== false)
