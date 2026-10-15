@@ -11,7 +11,8 @@
   "applied_migrations_do_not_reapply": [
     "20261015161648",
     "20261015162631",
-    "20261015163930"
+    "20261015163930",
+    "20261015173622"
   ],
   "external_evidence": {
     "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
@@ -23,12 +24,12 @@
     "commercial_completed": false
   },
   "local_tests": {
-    "postgres_assertions": 14,
+    "postgres_assertions": 19,
     "vitest_passed": 17,
     "vitest_files": 3,
     "auth_rbac_entitlement": "STUBBED_ACTIVE_LINK_AND_SQL_NULL",
     "schema": "REDUCED_NOT_HOSTED",
-    "full_preflight_and_acl": "HOSTED_UNVERIFIED_LOCAL_BODY_WITH_SQL_ROLES",
+    "full_preflight_and_acl": "HOSTED_UNVERIFIED_LOCAL_BEFORE_CONTAINMENT_AFTER_SQL_ROLES_HASH_SUBSTITUTION",
     "concurrency": "UNVERIFIED",
     "diff_check": "PASS"
   },
@@ -49,13 +50,26 @@
   "current_acl_observation": {
     "h7n_authenticated_execute": false,
     "view_authenticated_select": false,
-    "attribution": "UNKNOWN_NO_AGENT_WRITES"
+    "mv_authenticated_select": false,
+    "rpc_authenticated_execute": false,
+    "attribution": "EXTERNAL_APPLIED_20261015173622_CONFIRMED_CANONICAL_LEDGER_NO_AGENT_WRITES"
   },
   "external_p1": {
     "source": "RENATO_EXTERNAL_SQL_NOT_BROWSER_NOT_AGENT_PROOF",
     "fsf_view_rows": 2,
     "mv_rows": 2,
-    "mv_tenants": 1
+    "mv_resolved_ar_rows": 1,
+    "mv_unresolved_client_rows": 1,
+    "after_fsf_view_sqlstate": "42501",
+    "after_source": "RENATO_EXTERNAL_SQL_NOT_BROWSER"
+  },
+  "containment_archive": {
+    "version": "20261015173622",
+    "name": "h_cockpit_contain_cross_tenant_read",
+    "file": "scripts/rbac-audit/applied-20261015173622_h_cockpit_contain_cross_tenant_read.sql",
+    "ledger_serialization_md5": "23baa516fcc2f9b7e7f1a985be25eeb3",
+    "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY",
+    "candidate_requires_ledger_and_closed_acl": true
   },
   "rpc_cockpit": "CLOSED_NO_BODY_OR_ACL_CHANGE"
 }
