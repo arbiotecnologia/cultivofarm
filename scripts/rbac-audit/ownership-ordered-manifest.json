@@ -57,6 +57,14 @@
       "order": 11,
       "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-12-visit-selection.sql",
       "sha256": "9238b893d0de2ab7c0743c7a05f5f2e8285f1ce5f3afa865d583f08d78f6d1ac"
+    },
+    {
+      "order": 12,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-13-visibility-target.sql",
+      "sha256": "52c0fe63c903475f92bf0a98cf4ab58caf23cb7c85c84df5e5ad2bcc21309066",
+      "hash_before_live": "806751acb0477165ed863320ab24c6d0",
+      "runtime_local": "check-ownership13-pglite.mjs",
+      "rollback": "operacional existente preserva filtros; não restaurar before"
     }
   ],
   "separate_phase": {

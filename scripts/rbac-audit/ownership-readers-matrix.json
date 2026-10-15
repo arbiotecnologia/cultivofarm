@@ -29,10 +29,10 @@
     {
       "function": "platform_private.catalog_tenant_set_visibility_core",
       "identity_arguments": "p_entity_type text, p_entity_id uuid, p_hidden boolean, p_expected_version integer, p_reason text, p_idempotency_key uuid",
-      "classification": "core autorizado com alvo protegido antes de leitura/replay",
-      "proof": "catalog_tenant_visibility roots: trigger global-only 01 + referências 04; recibo ator/org/chave existente",
-      "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato catalog_tenant_visibility roots: trigger global-only 01 + referências 04; recibo ator/org/chave existente"
+      "classification": "replay scoped ator/org/chave; consulta de alvo explicitamente global-only antes de no_change",
+      "proof": "13: owner_organization_id IS NULL nas três raízes; locks e replay originais preservados. 01/04 triggers não protegiam leitura prévia",
+      "status": "P1 reproduzido before; candidato corrigido local; hospedado UNVERIFIED",
+      "test": "check-ownership13-pglite.mjs 108/108 PASS com corpos before/after, Auth/schema stubs; não prova Auth/RLS real"
     },
     {
       "function": "platform_private.catalog_volume_assert_row",

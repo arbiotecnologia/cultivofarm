@@ -328,7 +328,7 @@ describe("ownership — rollback e runtime", () => {
   it("achado F: runtime não fabrica PASS com qualquer exceção em casos de autorização", () => {
     expect(runtime).not.toMatch(/WHEN OTHERS THEN INSERT INTO _r VALUES\('[a-z_]+',true/);
     expect(runtime).toMatch(/norm_/);
-    expect(runtime).toMatch(/proporcao_/);
+    expect(runtime).toMatch(/percentual_/);
     expect(runtime).toMatch(/global_child_update/);
   });
 });
