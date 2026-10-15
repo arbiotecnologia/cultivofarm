@@ -19,6 +19,8 @@ CREATE TABLE microrganismos(LIKE produtos INCLUDING ALL, product_id uuid);
 CREATE TABLE partner_accounts(id uuid,desconto_padrao numeric,ativo boolean,deleted_at timestamptz);
 CREATE TABLE partner_product_prices(partner_id uuid,product_id uuid,microrganismo_id uuid,preco_tabela numeric,desconto_percentual numeric,preco_final numeric,ativo boolean,is_current boolean,valid_from date,valid_until date);
 CREATE UNIQUE INDEX ppp ON partner_product_prices(partner_id,product_id) WHERE product_id IS NOT NULL;
+CREATE TABLE partner_user_clients(cliente_id uuid,user_id uuid,partner_id uuid,active boolean);
+CREATE TABLE partner_technician_clients(cliente_id uuid,technician_user_id uuid,partner_id uuid,active boolean);
 CREATE TABLE partner_simulations(id uuid DEFAULT gen_random_uuid(),partner_id uuid,created_by uuid,titulo text,observacoes text,cultura text,area_total_ha numeric,objetivo_tecnico text,status text,total_cheio numeric,valid_until date,cliente_id uuid);
 CREATE TABLE partner_simulation_items(simulation_id uuid,item_tipo text,item_id uuid,nome text,quantidade numeric,valor_unitario_cheio numeric,subtotal numeric,unidade_medida text,volume_ml numeric,area_ha numeric);
 CREATE TABLE fiscal_invoices(id uuid);
