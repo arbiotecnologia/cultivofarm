@@ -1,0 +1,37 @@
+{
+  "state": "CANDIDATE_ONLY_NOT_APPLIED_NOT_PUBLISHED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "applied_dependencies": [
+    "20261015161648",
+    "20261015162631"
+  ],
+  "converter_md5": "66e8072f7aefbe18c1417240121147a5",
+  "ownership_gate": "OFF",
+  "manufacturing": "NO_GO_REQUESTED_VOLUME_FLOW_UNVERIFIED",
+  "operational_acl": "PRESERVE_CLOSED_NO_GRANTS",
+  "vitest": {
+    "candidate": 32,
+    "regression_total": 72,
+    "auth": "MOCKED"
+  },
+  "pglite": {
+    "passed": 31,
+    "auth": "STUBBED",
+    "concurrency": "SERIALIZED_QUEUE_NOT_SEPARATE_SESSIONS"
+  },
+  "hosted_browser": "UNVERIFIED_EXTERNAL_UNMANAGED",
+  "files": [
+    {
+      "path": "scripts/rbac-audit/proposed-enable-visit-os-ui.patch",
+      "sha256": "8bfa29b0555bcb1f9214fb0fe7f18d7be7ca460b2223f678b7eacfdc444d590a"
+    },
+    {
+      "path": "scripts/rbac-audit/preflight-enable-visit-os-readonly.sql",
+      "sha256": "a60ef485324105b7deaac79b5ce8040b256f85bb0bbe978addbb032d73a26e95"
+    },
+    {
+      "path": "scripts/rbac-audit/check-applied-visit-os-pglite.mjs",
+      "sha256": "84bf34a623b5cdf46edf8d713eb34d39b2d5560730e3e45924bbf75ba59beaa7"
+    }
+  ]
+}
