@@ -230,9 +230,17 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
     expect(r.deleteUser).not.toHaveBeenCalled();
     expect(r.body).toEqual({ success: true, user_id: "created-user", first_access_pending: true });
   });
-  it.each([{ claimFailure: true }, { acquired: false }, { claimStatus: "compensating" }])("claim conflict/busy prevents Auth: %j", async scenario => {
+  it.each([{ claimFailure: true }, { claimStatus: "compensating" }])("claim conflict/busy prevents Auth: %j", async scenario => {
     const r = await invoke({ b2bOpen: true, ...scenario }, b2bPayload);
     expect(r.response.status).toBe(409); expect(r.createUser).not.toHaveBeenCalled();
+  });
+  it("occupied receipt reconciles its exact reserved UUID without creating Auth", async () => {
+    const r = await invoke({ b2bOpen: true, acquired: false }, b2bPayload);
+    expect(r.response.status).toBe(200);
+    expect(r.body.replay).toBe(true);
+    expect(r.createUser).not.toHaveBeenCalled();
+    expect(r.deleteUser).not.toHaveBeenCalled();
+    expect(r.elevatedRpc).toHaveBeenCalledExactlyOnceWith("b2b_finish_provisioning", { p_claim: "receipt", p_fence: "fence", p_user: "created-user" });
   });
   it("completed idempotent replay never creates Auth again", async () => {
     const r = await invoke({ b2bOpen: true, claimStatus: "completed" }, b2bPayload);

@@ -221,12 +221,12 @@ export default function Configuracoes() {
 
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const initialNewUser = {
+  const initialNewUser = useMemo(() => ({
     nome: "", email: "", password: "",
     roles: ["administrativo"] as string[],
     partner_id: "" as string,
     telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
-  };
+  }), []);
   const [newUser, setNewUser] = useState(initialNewUser);
   const [registrationKind, setRegistrationKind] = useState<UserRegistrationKind>("internal");
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
@@ -244,7 +244,7 @@ export default function Configuracoes() {
   useEffect(() => {
     setCreateOpen(false); setSelectedClients([]); setPrimaryClient(null); setNewUser(initialNewUser); setCreateResumo(null); setCreateErros({});
     requestKey.current = crypto.randomUUID();
-  }, [createFence.scope]);
+  }, [createFence.scope, initialNewUser]);
   const links = useQuery({
     queryKey: ["external-user-link-options", createFence.scope, registrationKind, linkTerm, linkPage],
     enabled: createOpen && createFence.ready && isAdmin && registrationKind !== "internal",
