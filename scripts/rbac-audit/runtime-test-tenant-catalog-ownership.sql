@@ -96,10 +96,11 @@ DO $$ BEGIN INSERT INTO public.formulacoes(produto_id, microrganismo_id, volume_
   INSERT INTO _r VALUES('crossref',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('crossref',SQLERRM='catalog_cross_owner_reference',SQLERRM); END $$;
 
 -- 5. Global inativo: duplicata orienta solicitar ativação (requer fixture inativo temporário).
-UPDATE public.culturas SET ativo=false WHERE id=(SELECT id FROM public.culturas WHERE owner_organization_id IS NULL ORDER BY nome LIMIT 1)
-  RETURNING nome INTO TEMP _inativa;
+DO $$ DECLARE n text; BEGIN
+  UPDATE public.culturas SET ativo=false WHERE id=(SELECT id FROM public.culturas WHERE owner_organization_id IS NULL AND ativo ORDER BY nome LIMIT 1)
+   RETURNING nome INTO n; PERFORM set_config('rt.inativa', n, true); END $$;
 SELECT pg_temp.as_user(:'ar_admin');
-DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,jsonb_build_object('nome',upper((SELECT nome FROM _inativa))),'dup inativa runtime',gen_random_uuid());
+DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,jsonb_build_object('nome',upper(current_setting('rt.inativa'))),'dup inativa runtime',gen_random_uuid());
   INSERT INTO _r VALUES('dup_global_inactive',false,''); EXCEPTION WHEN unique_violation THEN INSERT INTO _r VALUES('dup_global_inactive',SQLERRM='catalog_owned_duplicate_global_inactive',SQLERRM); END $$;
 RESET role;
 
