@@ -47,6 +47,19 @@ export function useTenantVisibilityMap(entity: TenantCatalogEntity, ids: readonl
   });
 }
 
+/**
+ * Só chaves `catalogo-unificado` dos escopos internos (admin/interno) cuja parte de ocultos pertence EXATAMENTE
+ * à empresa+usuário de origem. Nunca B2B, "global" nem caches de outra sessão/empresa.
+ */
+export function catalogoKeyMatchesScope(scope: TenantCatalogScope) {
+  const prefix = `${scope.organizationId}|${scope.userId}|`;
+  return (query: { queryKey: readonly unknown[] }) => {
+    const [root, kind, kp, km] = query.queryKey;
+    if (root !== "catalogo-unificado" || (kind !== "admin" && kind !== "interno")) return false;
+    return (typeof kp === "string" && kp.startsWith(prefix)) || (typeof km === "string" && km.startsWith(prefix));
+  };
+}
+
 export function useSetTenantVisibility(entity: TenantCatalogEntity) {
   const qc = useQueryClient();
   const scope = useTenantCatalogScope();
@@ -68,7 +81,7 @@ export function useSetTenantVisibility(entity: TenantCatalogEntity) {
       //    inclusive inativos (refetchType "all") — evita depender de refetchOnMount.
       await Promise.all([
         qc.invalidateQueries({ queryKey: tenantCatalogKeys.scope(v.scopeAtStart), refetchType: "all" }),
-        qc.invalidateQueries({ queryKey: ["catalogo-unificado"], refetchType: "all" }),
+        qc.invalidateQueries({ queryKey: ["catalogo-unificado"], refetchType: "all", predicate: catalogoKeyMatchesScope(v.scopeAtStart) }),
       ]);
     },
   });
@@ -108,8 +121,9 @@ export function useTenantHiddenIds(entity: TenantCatalogEntity, enabled = true):
   const q = useQuery({
     queryKey: scope ? tenantCatalogKeys.hiddenIds(scope, entity) : ["tenant-catalog", "unscoped", "hidden-ids", entity],
     enabled: enabled && !!scope,
-    staleTime: 0,
-    refetchOnMount: "always",
+    // Sem refetch forçado por observer: vários observers (pai+filho) não podem disparar releitura em cadeia.
+    // Dados obsoletos pós-mutação são resolvidos por cancel+reset+invalidate no onSettled.
+    staleTime: 30_000,
     retry: false,
     refetchOnWindowFocus: false,
     queryFn: ({ signal }) => fetchTenantHiddenIds(supabase, entity, signal),
@@ -118,8 +132,6 @@ export function useTenantHiddenIds(entity: TenantCatalogEntity, enabled = true):
   if (loading || !user || profile?.user_id !== user.id) return { status: "loading" };
   if (!profile?.organization_id) return { status: "global" };
   if (!scope || q.isLoading) return { status: "loading" };
-  // Relendo (montagem/invalidação): nunca usar a lista anterior para montar catálogo.
-  if (q.isFetching) return { status: "loading" };
   if (q.isError) return { status: "error", message: (q.error as Error).message };
   if (!q.isSuccess) return { status: "loading" };
   return { status: "ready", ids: q.data, scope };
