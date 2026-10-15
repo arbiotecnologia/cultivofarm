@@ -32,7 +32,6 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 REVOKE ALL ON FUNCTION private.h7n_esteira_laboratorio() FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION private.h7n_esteira_laboratorio() TO authenticated;
 SET ROLE authenticated;
-CREATE TABLE public.fiscal_environment_marker(project_ref text);
 DO $t$
 DECLARE n int; j jsonb; ar text:='aaaaaaaa-0000-0000-0000-000000000000'; u text:='11111111-0000-0000-0000-000000000000';
 PROCEDURE_ok boolean;
