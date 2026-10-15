@@ -1,7 +1,7 @@
 ## RECORTE 18:32 — consulta Cockpit isolada (preparação autorizada, sem grant/publicação)
 - [x] HEAD46583eef conferido; arquivar SQL exato182119/182209/183119 JÁ APLICADO EXTERNAMENTE, NÃO REAPLICAR. Ledger/hashes/ACL read-only canônicos, conversorb112 intacto.
 - [x] Página existente monta somente consulta/listRPC via scope/fence; workspace/filhos/métricas/fontes alternativas não montados; gate global false. Filtros/estágios/paginação existentes da RPC, NULL sem inventar volume.
-- [x] 71/71 focais5arquivos com página/QueryClient reais e Auth/transporte simulados; lint focal0. Relatório/rollback em docs/auditorias/cockpit-consulta-isolada-20261015.md.
+- [x] 71/71 focais5arquivos com página/QueryClient reais e Auth/transporte simulados; lint focal0, página11/1 antes/depois; scanner0/diff-checkPASS, typecheck automático exit0/buildOK18:37:34. Relatório/rollback/arquivos/commits em docs/auditorias/cockpit-consulta-isolada-20261015.md.
 - [ ] Revisão de Renato para publicação/grant mínimo e prova JWT/RLS/browser real de leitura; acesso remoto ainda42501. Fabricação/programar/lote/publish/ownership/diagnóstico fechados, sem operações remotas.
 
 ## RECORTE 18:18 — candidato SQL Cockpit atual (autorizado, ACL fechada)
