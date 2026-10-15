@@ -1,6 +1,7 @@
 ## AJUSTE SOLICITADO — 2026-10-15 15:14 UTC
-- [ ] Após conferir integridade do pacote, integrar seletor de recomendação global paginado/visível por identidade e família, preservar histórico; candidato server-side sem gate/DDL/publicação.
-- [ ] Testes comportamentais de identidade, ocultos, não biológicos e histórico; Auth/RLS hospedado permanece UNVERIFIED.
+- [x] Integridade SHA-256 de 01–06/08–11, runtime e rollback conferida antes da integração. SQL12/selector preparado: autorização da visita, globais visíveis, famílias comerciais, histórico preservado, cache/fence org+usuário.
+- [x] Vitest 20/20 (3 arquivos); SQL12 integral PGlite 17/17 (Auth/helpers stubs e hash stub no preflight). Scanner zero, build automático OK; lint focal 5 erros preexistentes no wizard, arquivos novos 0.
+- [ ] SQL12 revisão/aplicação independente; Auth/RLS hospedado/browser/concurrency UNVERIFIED. RPC ainda ausente: nova seleção falha fechada até implantação autorizada; leitura histórica segue separada. SQL07 reconstruído exige comparação detalhada com live, não é certificado aplicável.
 
 ## COMPLEMENTO INDEPENDENTE — 2026-10-15 15:12 UTC
 - [x] Corrigida nomenclatura do inventário: 84 candidatos por substring; strings, NEW/OLD, payload puro, delegadores, consultas e SQL dinâmico triados sem excluir indiretos.

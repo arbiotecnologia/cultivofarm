@@ -3,6 +3,20 @@
 Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownership e cadastro próprio da empresa ficam fora desta rodada.
 
 
+
+## Integração solicitada — 2026-10-15 15:14 UTC
+Antes de integrar, SHA-256 do conjunto 01–06/08–11, runtime e rollback conferidos, sem drift local. **SQL12 candidato, NÃO aplicado**, acrescentado após 11; independente da fabricação07. A proteção operacional04 continua bloqueando itens próprios.
+
+- Leitura canônica: `rpc_upsert_recomendacao_visita(uuid,uuid,jsonb,integer)` hash `42f87a90cb7d1be324b43bb3867b3a28`. Preserva autorização/CAS/lock originais. Triggers live: `technical_content_editable` valida estado da visita e `update_updated_at_column`; nenhum valida família/ocultação. Logo, proteção live de visibilidade em gravação NÃO comprovada.
+- SQL12: RPC paginada usa `catalog_tenant_actor('read_prefs')` (tenant ativo/claims/SA negado), mais `can_view_technical_visit`; não depende do gate comercial `catalogo_precos`. Reutiliza `catalog_tenant_visibility` via anti-join, roots `owner_organization_id IS NULL`. Não oferece privados AR/FSF e não infere família NULL.
+- Guard no banco preserva `_assert_visita_editavel`, valida somente IDs novos/alterados (inclusive mudança de visita), ativo/global/visível; IDs históricos inalterados sobrevivem. Não restringe químicos/fertilizantes na recomendação. Fabricação continua somente na fase07 separada. O upsert live não foi reescrito, nem grants existentes ampliados.
+- Wizard: Produto sugerido, família identificável, busca/páginas de 50 no servidor, cache org+usuário+geração; AbortSignal e fence inclusive AR→FSF→AR/unmount. Diálogo fecha/limpa ao mudar identidade. Histórico por ID continua sem filtro de ativo/ocultação; campo legado `produto_biologico_sugerido_id` preservado.
+- **Limite funcional atual:** RPC12 inexistente no hospedado até revisão/aplicação; nova seleção mostra erro e fica desabilitada, sem fallback ao catálogo inteiro. Visita sem ID remoto não recebe seleção nova; registros vinculados continuam legíveis. Não é implantação funcional certificada.
+- Provas locais: SQL12 inteiro PGlite **17/17**, com schema/Auth/tenant/permissões stubs e hash do stub substituindo apenas preflight; Vitest **20/20**, três arquivos (13 CRUD/atomicidade existentes + 5 helper + 2 componente real/QueryClient). Negativos oculto/privados, não biológicos, histórico e corrida de identidade. Não somar com provas independentes anteriores.
+- Scanner focal zero, diff-check PASS, build automático OK; lint novos arquivos 0/0, wizard 5 `no-explicit-any` (baseline atual capturado também 5; harness versiona automaticamente, comparação histórica independente não certificada). Auth/RLS real, browser de sessão real, concorrência e revisão12 UNVERIFIED.
+- SQL07: corpos explícitos existem e testes locais passam, mas reconstruções históricas não são snapshots live exatos; comparação detalhada dos efeitos/Auth/status antes/depois segue obrigatória. Não chamar pacote07 aplicável/certificado.
+- Rollback ownership operacional permanece intacto: fecha gate/revoga fachadas de CRUD; **não remove** guard12, RLS, leitores, ledger ou dados.
+
 ## Complemento independente — 2026-10-15 15:12 UTC
 **Nomenclatura corrigida:** inventário de **84 candidatos por substring**, não 83 consultas diretas + 1 histórico. Triagem por corpo/caminho: `_entrega_seed_checklist` tem apenas string “Conferir produtos”; `sync_product_pricing` usa NEW/OLD; `fn_fiscal_item_profile_gate_eval` é payload puro; `set_codigo_*` delegam a `proximo_codigo`; `trg_mestre_guard` delega preço canônico; `rpc_get_comprovante_entrega_data` delega comprovante; readiness delega regulatório; wipe usa SQL dinâmico. Todos permanecem na matriz; nenhum indireto descartado. As divergências históricas de busca abaixo não são a classificação vigente.
 
