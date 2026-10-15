@@ -1,6 +1,6 @@
 ## P1 VISIBILIDADE — 2026-10-15 15:21 UTC
-- [ ] SQL13: três roots global-only antes de no_change; replay/locks/CAS preservados. Matriz anterior incorreta corrigida.
-- [ ] PGlite ativo/inativo/arquivado AR/FSF versus inexistente, hide/show/global/CAS/idempotência; ajustar expectativa percentual_, validar manifesto e registrar limites.
+- [x] SQL13: três roots global-only antes de no_change; replay/locks/CAS preservados. Matriz anterior incorreta corrigida.
+- [x] PGlite 108/108 (inclui reprodução before), três entidades, ativo/inativo/arquivado AR/FSF versus inexistente; hide/show/global/CAS/replay. Vitest 41/41, lint focal 0/0, build automático OK; expectativa percentual_ alinhada.
 - [ ] Revisão/aplicação independente e Auth real; gate OFF, nenhuma aplicação/publicação.
 
 ## AJUSTE SOLICITADO — 2026-10-15 15:14 UTC

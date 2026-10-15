@@ -4,6 +4,17 @@ Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownersh
 
 
 
+## P1 leitura de visibilidade — 2026-10-15 15:21 UTC
+**SQL13 candidato NÃO aplicado; gate OFF; sem publicação.** A classificação anterior da matriz era incorreta: triggers01/04 não interceptavam o SHOW de privado ativo sem preferência, que retornava `22023 catalog_visibility_no_change`; inexistente retornava `P0002 catalog_visibility_item_not_found`. Oráculo reproduzido localmente antes da correção.
+
+- Snapshot live canônico somente leitura: `platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)`, md5 `806751acb0477165ed863320ab24c6d0`. Before integral arquivado em `live-defs/platform_private.catalog_tenant_set_visibility_core-ownership13-before.sql`; o hash calculado PGlite coincide exatamente, sem substituição do preflight nesta prova.
+- SQL13 altera exclusivamente os três predicados das consultas de alvo para `owner_organization_id IS NULL`. Não substitui autorização, não amplia grants, não move locks nem replay, não altera hash do payload, CAS, versões ou ledger. Preflight exige gate OFF e hash live exato; drift aborta.
+- Replay permanece **antes** da consulta de alvo: recibo da mesma chave exige ator+empresa+hash exatos, inclui entidade/ID no hash. Alterar intenção ou alvo usando chave anterior continua `catalog_visibility_idempotency_conflict`; FSF não recebe recibo AR. Recibo global válido continua reproduzível após inativação, sem reativar ou consultar privados. Ownership01 imutável impede transformar o alvo global em privado. Não se afirma “alvo protegido antes de replay”.
+- `check-ownership13-pglite.mjs`: **108/108 PASS local**, inclui duas reproduções before, e após SQL13 integral três entidades × dois owners × três estados × dois atores × hide/show, todos privados iguais ao inexistente. Globais: no-op, hide/show v1/v2, inativo, CAS, retry exato/ledger estável, chave-intenção/ID conflitantes, isolamento do replay, nenhum recibo/preferência privada. Schema/Auth/tenant são stubs; sem concorrência de duas conexões ou Auth/RLS hospedado.
+- Vitest `tenant-catalog-ownership.test.ts` **41/41 PASS**, corrigida apenas expectativa estática antiga de `/proporcao_/` para `/percentual_/`; não substitui runtime. Lint dos dois arquivos JS/TS afetados **0 erros/0 warnings**, diff-check PASS e build automático OK. Typechecks não repetidos (sem alteração de aplicação ou tipos).
+- Evidências independentes informadas: suíte local **627 PASS**, teste estático **40 PASS/1 FAIL** anterior e **41/41** após ajuste independente; laboratório07 `b6b28860` **36/36** com stubs, revisão dos corpos/hashes ainda em andamento. Não somar às provas locais desta rodada.
+- Manifesto e matriz nominal atualizados. Rollback operacional existente preserva função/filtros, guards, políticas, ledger e dados: **não restaurar o before vulnerável**. Aplicação/revisão SQL13, Auth/RLS real, browser e concorrência seguem UNVERIFIED/NO-GO; laboratório07 separado e sem execução remota.
+
 ## Integração solicitada — 2026-10-15 15:14 UTC
 Antes de integrar, SHA-256 do conjunto 01–06/08–11, runtime e rollback conferidos, sem drift local. **SQL12 candidato, NÃO aplicado**, acrescentado após 11; independente da fabricação07. A proteção operacional04 continua bloqueando itens próprios.
 
