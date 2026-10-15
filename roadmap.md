@@ -2,6 +2,7 @@
 - [x] Diff aprovado integrado ao entrypoint existente; harness executa fonte aplicada, sem módulo paralelo. Técnico negado, flags false e UUID/receipt/pending409 preservados.
 - [x] Novo aviso de hook initialNewUser corrigido; dois avisos legados usersPage preservados, sem alegar lint global PASS.
 - [x] Migrations externas 20261015205713/20261015205954 reconhecidas como APLICADAS, SQL/hash exatos arquivados; nenhuma reaplicação/DDL/grant/deploy/conta/email/publicação.
+- [x] QA153/153+60/60 Vitest (26 sobrepostos),56 P1/26 financeiro/harness cadastro local PASS; scanner/lint testes0/diff-check/build automáticoOK; typechecks independentes são evidência externa.
 - [x] Contrato pós-instalação atualizado: não rodar preflight antigo de ausência; próximos passos controlados pelo auditor, sessão Admin AR dele disponível.
 - [ ] Revisão final/deploy controlado/grants e ativação: ações expressamente reservadas ao auditor, não executar nesta entrega.
 - [ ] P1 portal_solicitacoes: pacote concluído e testado; aplicação pendente da conferência do auditor.
