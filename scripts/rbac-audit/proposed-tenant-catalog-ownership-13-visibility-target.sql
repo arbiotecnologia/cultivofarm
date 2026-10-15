@@ -8,9 +8,12 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)'::regprocedure)) <> '806751acb0477165ed863320ab24c6d0' THEN
   RAISE EXCEPTION 'ownership13_visibility_core_drift'; END IF;
 END $$;
-CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_set_visibility_core(
-  p_entity_type text, p_entity_id uuid, p_hidden boolean, p_expected_version integer, p_reason text, p_idempotency_key uuid)
-RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_set_visibility_core(p_entity_type text, p_entity_id uuid, p_hidden boolean, p_expected_version integer, p_reason text, p_idempotency_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_org uuid;
@@ -84,6 +87,6 @@ BEGIN
     CASE WHEN v_prev.id IS NULL THEN NULL ELSE jsonb_build_object('hidden',v_prev.hidden,'version',v_prev.version) END,
     jsonb_build_object('hidden',p_hidden,'version',v_new_version),v_reason,v_result);
   RETURN v_result;
-END; $$;
+END; $function$;
 -- CREATE OR REPLACE preserva os grants existentes; nenhum grant adicional.
 COMMIT;
