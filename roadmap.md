@@ -1,6 +1,7 @@
 ## RECORTE 19:19 — corrigir GAP INSERT do candidato ec4fcc1 (sem aplicação)
 - [x] Registrar evidência EXTERNA: revisor46 assertions PGlite/Auth-schema simulados PASS; probe adicional INSERT programada sem aprovar_os comprovou GAP, candidato anterior NÃO apto à aplicação.
-- [ ] Fechar criação normal exclusivamente aberta nas duas OS; testar todos estados avançados/NULL/unknown sem eventos, revisar produtores SQL/Edge/importação/serviço e documentar bloqueadores sem whitelist/GUC.
+- [x] Guard candidato nega INSERT distinto de aberta (NULL inclusive), sem whitelist/GUC;96 assertions PostgreSQL isolado PASS, before antigo FAIL programada reproduzido;43programar+19Vitest PASS. Relatório/hash/rollback atualizados; frontend/catálogo/lote intocados.
+- [x] Produtores revisados: manual default aberta/conversor b112 aberta preservados; B2B generate_production_orders_from_partner hash8f7acca4 insere aprovada, authEXEC=true atual. Guard candidato o bloqueará; aplicação NO-GO até contrato específico, nenhuma ACL alterada. Serviços/importadores externos UNVERIFIED.
 - [x] Demanda paralela cadastro B2B/Produtor registrada somente para planejamento posterior; NÃO implementar neste recorte.
 - [ ] Aprovação/programação/fabricação permanecem NO-GO até revisão independente e contratos/dependências resolvidos; sem frontend/catálogo/lote/DDL/grants/publicação/dados reais.
 
