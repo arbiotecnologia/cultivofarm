@@ -1,3 +1,8 @@
+## P1 VISIBILIDADE — 2026-10-15 15:21 UTC
+- [ ] SQL13: três roots global-only antes de no_change; replay/locks/CAS preservados. Matriz anterior incorreta corrigida.
+- [ ] PGlite ativo/inativo/arquivado AR/FSF versus inexistente, hide/show/global/CAS/idempotência; ajustar expectativa percentual_, validar manifesto e registrar limites.
+- [ ] Revisão/aplicação independente e Auth real; gate OFF, nenhuma aplicação/publicação.
+
 ## AJUSTE SOLICITADO — 2026-10-15 15:14 UTC
 - [x] Integridade SHA-256 de 01–06/08–11, runtime e rollback conferida antes da integração. SQL12/selector preparado: autorização da visita, globais visíveis, famílias comerciais, histórico preservado, cache/fence org+usuário.
 - [x] Vitest 20/20 (3 arquivos); SQL12 integral PGlite 17/17 (Auth/helpers stubs e hash stub no preflight). Scanner zero, build automático OK; lint focal 5 erros preexistentes no wizard, arquivos novos 0.
