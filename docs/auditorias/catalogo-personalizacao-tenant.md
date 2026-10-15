@@ -485,9 +485,9 @@ Candidato `proposed-lab-biological-only-07.sql`: elegibilidade por `familia_cata
 - SQL05 e SQL07 ainda aguardam a execução independente anunciada. Nenhum resultado está antecipado como PASS.
 
 ### Inventário live reconciliado (somente leitura)
-- Consulta canônica nesta rodada encontrou **68 funções diretas** em `public|platform_private|private` que referenciam textualmente os cinco roots e **60 FKs** para esses roots. O número 84 informado inclui funções indiretas/chamadores do inventário independente; portanto a matriz nominal anexada deve distinguir 68 diretas + 16 chamadores/derivações, sem fingir que a busca textual isolada prova 84 diretas.
+- Consulta canônica nesta rodada encontrou **83 funções nominais** em `public|platform_private|private` que referenciam os cinco roots, sendo 32 `platform_private`, 2 `private` (`h7n`) e 49 `public`, além de **60 FKs**. Uma busca mais estrita por nomes qualificados encontrou 68; as outras 15 usam nomes não qualificados. O total live diverge em uma função das 84 informadas no snapshot independente e a diferença permanece explicitamente UNVERIFIED, sem inventar a 84ª entrada.
 - As 60 FKs live substituem a contagem anterior de 59: a diferença inclui relações criadas após o snapshot original, especialmente declarações/apresentações. O manifesto 04 continua fail-closed para novas referências privadas; cada relação não listada deve ser adicionada antes de qualquer row privada.
-- Artefatos read-only desta rodada registraram nome, assinatura, ACL, SECURITY DEFINER e hash das 68 funções, além da lista nominal das 60 FKs. Classificação permitida: pura; sem EXECUTE autenticado; trigger; pai bloqueado pelo 04; registro autorizado; ou leitor que requer filtro explícito. ACL sem `authenticated` não foi tratada automaticamente como prova: chamadores foram considerados.
+- Artefatos read-only desta rodada registraram nome, assinatura, ACL, SECURITY DEFINER e hash das 83 funções, além da lista nominal das 60 FKs. Classificação permitida: pura; sem EXECUTE autenticado; trigger; pai bloqueado pelo 04; registro autorizado; ou leitor que requer filtro explícito. ACL sem `authenticated` não foi tratada automaticamente como prova: chamadores foram considerados.
 
 ### Sete views originais
 | View original | Estado candidato | Prova/limite |

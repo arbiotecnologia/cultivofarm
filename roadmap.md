@@ -745,7 +745,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 
 ## Catálogo por empresa — fechamento local ownership (15/10/2026 13:49 UTC)
 - [x] Incorporar evidência externa SQL01 PGlite 27/27, sem promovê-la a prova de Auth/RLS real.
-- [x] Reconciliar snapshot live read-only: 68 funções diretas textuais e 60 FKs; 84 inclui chamadores/derivações e requer matriz separada.
+- [x] Reconciliar snapshot live read-only: 83 funções nominais (32 platform_private + 2 private + 49 public) e 60 FKs; divergência de uma função contra as 84 informadas segue UNVERIFIED.
 - [x] Classificar as 7 views originais; SQL06 anterior tinha três views adicionais que não substituíam `vw_os_integridade_esteira` e `_src_vw_fluxo_visita_tecnica`.
 - [x] Integrar handlers/formulários CRUD próprio na `/base-tecnica` para produtos, microrganismos e culturas, com globais imutáveis.
 - [x] Integrar composição declarativa e apresentações próprias por RPC transacional, cache org+usuário e escopo congelado.
