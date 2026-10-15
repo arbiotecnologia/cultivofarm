@@ -1,7 +1,8 @@
 ## RECORTE 18:08 — cache Cockpit (autorizado, sem abertura de leitura)
-- [ ] Auditar HEAD real e todos filhos/métricas; aplicar fence user/tenant/roles/readiness, AbortSignal e cleanup/reset local, mantendo Cockpit fechado.
-- [ ] Testar troca A→B tardia, logout, revogação/readiness/disabled e limpeza; registrar validações locais e limites sem prova Auth real.
-- [ ] Documentar MV/frescor, origem onfarm/micro, tenant descendentes, rollback, arquivos e commit; nenhum DDL/dados/publicação.
+- [x] HEAD inicial13fb4833 auditado; fence técnico user/tenant/roles/readiness, AbortSignal e eviction aplicados. Workspace com key desmonta/reset filhos, filtros e dialogs; gate local leitura false, nenhum RPC/ACL aberto.
+- [x] 105/105 focais (6 arquivos); QueryClient/página reais, Auth/requests simulados. A→B tardia/ABA/logout/loading/inativo/tenant/roles/disabled e cleanup testados. Lint novo0, tocados107erros1warning iguais à base; global3294/126 FAIL; scanner zero; build/typecheck automáticos OK18:15:15.
+- [x] Relatório docs/auditorias/cockpit-cache-identidade-20261015.md contém dependências SQL não executado, rollback, arquivos/commits e limites. Nenhum DDL/dados/publicação.
+- [ ] Cockpit funcional/Auth/JWT/browser, MV/frescor/descendentes/micro permanecem NO-GO: ACL fechada e sessão external_unmanaged; exigem auditoria/revisão/autorização própria.
 
 ## RECORTE DOCUMENTAL 18:04 — workspace alinhado e conversão externa Consultor AR
 - [x] Arquivar literalmente schema_migrations20261015175859_h_visit_workspace_conversion_manage_gate; JÁ APLICADA EXTERNAMENTE/NÃO REAPLICAR. Alinha can_convert_os a manage IS TRUE + aprovado, sem modificar aprovação consultor/ACL/owner/conversor. MD5 histórico898b4dab4d0b722d47e6572a932e2e57; conversorb112888 confirmado read-only.
