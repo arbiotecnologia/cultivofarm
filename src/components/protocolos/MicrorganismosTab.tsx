@@ -570,6 +570,8 @@ export function MicrorganismosTab() {
         </div>
       </div>
 
+      <TenantVisibilityBar v={tenantVis} />
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -653,7 +655,7 @@ export function MicrorganismosTab() {
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
                     <TenantHiddenBadge state={tenantVis.map?.get(m.id)} />
                     {canManageVis && (
-                      <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: (m as any).ativo !== false }}
+                      <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: m.ativo }}
                         state={tenantVis.map?.get(m.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
                     )}
                     <Button
