@@ -1,4 +1,32 @@
-# Cockpit — consulta isolada preparada, sem liberação remota
+# Cockpit — consulta Admin AR validada externamente; operações NO-GO
+
+## Atualização documental — 2026-10-15 18:47 UTC
+
+HEAD conferido nesta rodada: `b1b6fb63a992132e0d8391ea9b673c2914be4dfe` (b1b). Somente documentação/arquivamento pelo agente: sem alteração de código, DDL, dados, permissões, testes operacionais ou publicação; nenhuma próxima fase implementada.
+
+**Evidência externa fornecida por Renato, não reproduzida pelo agente:**
+- Consulta b1b publicada e validada por Admin AR real: 2 OS, `OS-2026-000003` e `OS-2026-000004`; busca `000004` retorna 1, limpar retorna 2. Desktop e mobile `390×844` validados.
+- 36 testes independentes, typecheck, lint focal e build PASS; scanner 3986/0 informado. Lint global legado permanece pendente; não declarar lint global PASS.
+- SQL hospedado com `SET LOCAL ROLE authenticated`, claims existentes e `iat`: Admin AR 2, FSF 0, Consultor 0, Financeiro 0, SA com readiness=false 0; anon recebe `42501`. Primeira simulação sem `iat` retornou 0 por proteção esperada, não defeito. Evidência SQL por ROLE/claims não equivale a browser FSF nem prova de troca de identidade.
+- Fonte atual `20261015183119` já aplicada; 61+10 assertions isolados PASS não equivalem a produção nem prova completa de Auth/RLS.
+
+**Migration externa JÁ APLICADA — NÃO REAPLICAR:** `20261015184433_h_cockpit_enable_scoped_read_only`, arquivada literalmente do SQL fornecido na mensagem em `scripts/rbac-audit/applied-20261015184433_h_cockpit_enable_scoped_read_only.sql`, sem comentários/wrappers adicionais. Não consultado ledger remoto nesta rodada. Preflight preserva helper definition `bad38b5200629cc887767e62b7a46e40`, RPC definition `c51739eb0d9f91470fa6700d1c19763d`, exige migration183119 e ausência de USAGE authenticated no schema private.
+
+Liberação externa restrita a três privilégios authenticated: EXECUTE helper, EXECUTE RPC de lista e SELECT view. PUBLIC/anon continuam sem leitores; MV/eventos/idempotência e seis mutações listadas no pós-teste seguem contidos. Não autoriza workspace, filhos operacionais, outras fontes ou ampliação de papéis.
+
+**Gates atuais:** consulta Admin AR **PASS restrito**, segundo prova externa; FSF browser/troca de identidade **PENDENTES**, dependem de login e recorte autorizado. Produção/fabricação/mutações/programar/lote/publish **NO-GO**; volume NULL continua sem autorização de fabricação. Ownership OFF e diagnóstico separados. Não é auditoria integral.
+
+**Rollback documental, NÃO EXECUTADO:** revogar somente os três privilégios liberados de authenticated, mantendo todas as contenções, corpos/guards e demais ACL:
+```sql
+REVOKE EXECUTE ON FUNCTION private.h7n_esteira_laboratorio() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer) FROM authenticated;
+REVOKE SELECT ON public.vw_esteira_laboratorio FROM authenticated;
+```
+Não conceder USAGE no schema private, não remontar workspace e não restaurar grants antigos. Rollback remoto exige autorização própria.
+
+Arquivos desta rodada: arquivo SQL184433 acima, este relatório, `roadmap.md` e `scripts/rbac-audit/cockpit-read-candidate-manifest.json`; memória de restrições sincronizada. Commits automáticos da plataforma; nenhum commit Git manual.
+
+## Histórico da preparação 18:32–18:37 (estado anterior, superado somente para consulta)
 
 HEAD inicial real: `46583eefdc95e83bfee202fa699c3fcaada49cbc`. Escopo autorizado18:32: app existente somente consulta da RPC de lista. Não publicado; nenhum DDL/grant/dado/Auth ou operação de laboratório executado.
 
@@ -21,7 +49,7 @@ Serialização literal do ledger, sem inserir comentários ou wrappers; MD5 desc
 - Testes assertivos carga/refresh/filtro/página somente RPC de lista, nenhum `.from` nem mount operacional, A→B tardia abortada/invisível, troca identidade limpa filtros/cache, logout/loading/inativo/tenant/roles, opt-in com chave errada e refetch fechado, erro42501 sem fallback.
 
 ## Gates, dependências e rollback
-GO somente preparação local. Publicação e grant mínimo de leitura aguardam revisão de Renato; ACL de todas superfícies permanece fechada. A RPC preparada atualmente deve mostrar erro seguro42501, não lista vazia como sucesso. Provas de schema afetado/grants preservadas: nenhum SQL foi executado, apenas arquivado.
+Estado histórico 18:37: GO somente preparação local; publicação/grant aguardavam revisão e RPC retornava42501. Atualização18:47 acima registra liberação externa somente da consulta; demais superfícies permanecem contidas. Nesta rodada documental nenhum SQL foi executado, apenas arquivado.
 
 Fonte atual e tenant/descendentes foram corrigidos externamente; isto não certifica outros leitores MV, cache de outros módulos, performance/EXPLAIN, paginação concorrente ou contratos técnicos. Micro somente isolado, nenhuma OS micro real; programação/cliente sem organização preservados e excluídos pelo helper. Fabricação/volume, programar/lote/publish, ownership e diagnóstico seguem NO-GO/OFF. Não usar executor privilegiado como prova de autorização.
 

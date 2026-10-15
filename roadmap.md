@@ -1,8 +1,15 @@
-## RECORTE 18:32 — consulta Cockpit isolada (preparação autorizada, sem grant/publicação)
+## RECORTE DOCUMENTAL 18:47 — consulta b1b validada externamente; sem próxima fase
+- [x] HEAD real b1b6fb63 conferido; arquivar SQL EXATO fornecido20261015184433_h_cockpit_enable_scoped_read_only JÁ APLICADO EXTERNAMENTE/NÃO REAPLICAR; nenhum código/DDL/dado/permissão/publicação pelo agente.
+- [x] Registrar evidência externa Admin AR real:2 OS000003/000004, busca000004=1/limpar=2; desktop/mobile390x844.36 testes independentes/typecheck/lintfocal/buildPASS, scanner3986/0 informado; lintgloballegadopendente.
+- [x] Registrar SQL externo SET LOCAL ROLE authenticated +claims existentes/iat:AdminAR2/FSF0/Consultor0/Financeiro0/SAreadyfalse0;anon42501. Semiat0 é proteção esperada. Fonte183119 aplicada;61+10 assertions isolados não provam produção.
+- [x] Relatório/manifesto atualizados: consulta AdminAR PASS restrito externo; rollback documental revoga3grants authenticated e mantém contenções. Produção/mutações/programar/lote/publish NO-GO; ownership OFF.
+- [ ] Browser FSF/trocaidentidade pendentes login e recorte próprio; sem alegar prova integral ou implementar outra fase.
+
+## HISTÓRICO 18:32 — consulta Cockpit isolada (preparação autorizada, sem grant/publicação)
 - [x] HEAD46583eef conferido; arquivar SQL exato182119/182209/183119 JÁ APLICADO EXTERNAMENTE, NÃO REAPLICAR. Ledger/hashes/ACL read-only canônicos, conversorb112 intacto.
 - [x] Página existente monta somente consulta/listRPC via scope/fence; workspace/filhos/métricas/fontes alternativas não montados; gate global false. Filtros/estágios/paginação existentes da RPC, NULL sem inventar volume.
 - [x] 71/71 focais5arquivos com página/QueryClient reais e Auth/transporte simulados; lint focal0, página11/1 antes/depois; scanner0/diff-checkPASS, typecheck automático exit0/buildOK18:37:34. Relatório/rollback/arquivos/commits em docs/auditorias/cockpit-consulta-isolada-20261015.md.
-- [ ] Revisão de Renato para publicação/grant mínimo e prova JWT/RLS/browser real de leitura; acesso remoto ainda42501. Fabricação/programar/lote/publish/ownership/diagnóstico fechados, sem operações remotas.
+- [x] Revisão/publicação b1b/grant mínimo184433 externos registrados18:47; AdminAR browser PASS restrito, FSF/trocaidentidade pendentes. Fabricação/programar/lote/publish/ownership/diagnóstico fechados, sem operações remotas do agente.
 
 ## RECORTE 18:18 — candidato SQL Cockpit atual (autorizado, ACL fechada)
 - [x] Arquivar literalmente migrations externas 20261015180956/181119/181542; hashes locais sem LF final coincidem com ledger, NÃO REAPLICAR.
@@ -14,7 +21,7 @@
 - [x] HEAD inicial13fb4833 auditado; fence técnico user/tenant/roles/readiness, AbortSignal e eviction aplicados. Workspace com key desmonta/reset filhos, filtros e dialogs; gate local leitura false, nenhum RPC/ACL aberto.
 - [x] 105/105 focais (6 arquivos); QueryClient/página reais, Auth/requests simulados. A→B tardia/ABA/logout/loading/inativo/tenant/roles/disabled e cleanup testados. Lint novo0, tocados107erros1warning iguais à base; global3294/126 FAIL; scanner zero; build/typecheck automáticos OK18:15:15.
 - [x] Relatório docs/auditorias/cockpit-cache-identidade-20261015.md contém dependências SQL não executado, rollback, arquivos/commits e limites. Nenhum DDL/dados/publicação.
-- [ ] Cockpit funcional/Auth/JWT/browser, MV/frescor/descendentes/micro permanecem NO-GO: ACL fechada e sessão external_unmanaged; exigem auditoria/revisão/autorização própria.
+- [x] Gate histórico de cache atualizado18:47: consulta AdminAR PASS restrito externo; FSF/trocaidentidade e outros leitores/MV/frescor/descendentes/micro sem certificação integral. Pendências atuais no recorte18:47; operações NO-GO.
 
 ## RECORTE DOCUMENTAL 18:04 — workspace alinhado e conversão externa Consultor AR
 - [x] Arquivar literalmente schema_migrations20261015175859_h_visit_workspace_conversion_manage_gate; JÁ APLICADA EXTERNAMENTE/NÃO REAPLICAR. Alinha can_convert_os a manage IS TRUE + aprovado, sem modificar aprovação consultor/ACL/owner/conversor. MD5 histórico898b4dab4d0b722d47e6572a932e2e57; conversorb112888 confirmado read-only.

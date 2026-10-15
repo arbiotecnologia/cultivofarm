@@ -1,5 +1,5 @@
 {
-  "state": "LIVE_SOURCE_APPLIED_EXTERNALLY_UI_CONSULTATION_PREPARED_ACL_CLOSED",
+  "state": "CONSULTATION_PUBLISHED_EXTERNALLY_ADMIN_AR_PASS_RESTRICTED_OPERATIONS_NO_GO",
   "consultation_round": {
     "baseline_head": "46583eefdc95e83bfee202fa699c3fcaada49cbc",
     "report": "docs/auditorias/cockpit-consulta-isolada-20261015.md",
@@ -9,11 +9,16 @@
     "vitest": "71/71_FIVE_FILES_AUTH_TRANSPORT_SIMULATED",
     "lint_focal": "PASS_0",
     "remote_ddl_grants_publication": "NONE",
-    "hosted_auth_browser": "UNVERIFIED_EXTERNAL_UNMANAGED",
+    "hosted_auth_browser": "ADMIN_AR_PASS_EXTERNAL_RESTRICTED_FSF_IDENTITY_SWITCH_PENDING",
     "helper_definition": "bad38b5200629cc887767e62b7a46e40",
     "rpc_definition": "c51739eb0d9f91470fa6700d1c19763d",
-    "archive_md5": {"20261015182119":"f2f668d113977d9ca14a7b7f57540766","20261015182209":"a53219694ca5ba953a543548d4ea90e2","20261015183119":"24d91d2a1f69e9905a49c4ae6a271186"},
-    "external_evidence": "REVIEWER_PGLITE61_SIMULATED_PASS_HOSTED_FULL_PREFLIGHT_POSTCONDITIONS_PASS_ADMIN_AR2_FSF0_CONSULTOR0_FINANCEIRO0_PRIVILEGED_EXECUTOR_NOT_AUTH_RLS_PROOF"
+    "archive_md5": {
+      "20261015182119": "f2f668d113977d9ca14a7b7f57540766",
+      "20261015182209": "a53219694ca5ba953a543548d4ea90e2",
+      "20261015183119": "24d91d2a1f69e9905a49c4ae6a271186"
+    },
+    "external_evidence": "REVIEWER_PGLITE61_SIMULATED_PASS_HOSTED_FULL_PREFLIGHT_POSTCONDITIONS_PASS_ADMIN_AR2_FSF0_CONSULTOR0_FINANCEIRO0_PRIVILEGED_EXECUTOR_NOT_AUTH_RLS_PROOF",
+    "status": "HISTORICAL_PREPARATION_SUPERSEDED_BY_EXTERNAL_184433_RESTRICTED_READ"
   },
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "candidate": "scripts/rbac-audit/proposed-cockpit-live-source-closed.sql",
@@ -34,7 +39,8 @@
     "20261015181542",
     "20261015182119",
     "20261015182209",
-    "20261015183119"
+    "20261015183119",
+    "20261015184433"
   ],
   "external_evidence": {
     "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
@@ -56,26 +62,26 @@
     "diff_check": "PASS"
   },
   "blockers": [
-    "INDEPENDENT_REVIEW_AND_HOSTED_FULL_SCHEMA_PREFLIGHT",
-    "HOSTED_JWT_RLS_BROWSER",
+    "FSF_BROWSER_AND_IDENTITY_SWITCH_PENDING_LOGIN",
     "PERFORMANCE_CONCURRENCY_AND_ORIGIN_ALIASES",
-    "OTHER_MV_READERS_DESCENDANTS_AND_TECHNICAL_ROLE_CONTRACTS",
-    "CACHE_C556_INDEPENDENT_REVIEW"
+    "OTHER_READERS_MV_DESCENDANTS_MICRO_NOT_GLOBALLY_CERTIFIED",
+    "GLOBAL_LEGACY_LINT_PENDING"
   ],
   "ownership_gate": "OFF",
   "manufacturing": "NO_GO_VOLUME_NULL",
   "programar_lote_publish": "NO_ACL_CHANGE",
   "legacy_diagnostic": "NOT_APPLIED",
-  "publication": "NOT_PERFORMED",
+  "publication": "B1B_PUBLISHED_EXTERNALLY_NOT_BY_AGENT",
   "h7n_after_prosrc_md5": "6dc6de9ce046847310973b5666249177",
   "postapply": "scripts/rbac-audit/postapply-h7n-containment-readonly.sql",
   "current_acl_observation": {
-    "h7n_authenticated_execute": false,
-    "view_authenticated_select": false,
+    "h7n_authenticated_execute": true,
+    "view_authenticated_select": true,
+    "rpc_authenticated_execute": true,
     "mv_authenticated_select": false,
-    "rpc_authenticated_execute": false,
     "h7n_anon_execute": false,
-    "attribution": "EXTERNAL_APPLIED_20261015175232_CONFIRMED_CANONICAL_LEDGER_NO_AGENT_WRITES"
+    "private_authenticated_usage": false,
+    "attribution": "RENATO_EXTERNAL_APPLIED_20261015184433_NOT_RECHECKED_BY_AGENT_THIS_ROUND"
   },
   "external_p1": {
     "source": "RENATO_EXTERNAL_SQL_NOT_BROWSER_NOT_AGENT_PROOF",
@@ -118,7 +124,7 @@
     "os_count": 0
   },
   "new_request_backlog": "INVESTIGATE_PARTNER_CNPJ_NO_ASSUMED_CAUSE_NO_REAL_PARTNER_TEST_DOCUMENTATION_ONLY_NOW",
-  "rpc_cockpit": "CANDIDATE_BODY_ONLY_CLOSED_NO_GRANTS",
+  "rpc_cockpit": "SCOPED_LIST_READ_ENABLED_EXTERNALLY_ONLY",
   "live_source_round": {
     "baseline_head": "c5566e68379c728f803d5a94c5013c63a956a22b",
     "sql_sha256": "e3f792ba36a6866d06f49be6cb6981ad764d07584bf522f2c2d881e13855c31d",
@@ -135,7 +141,8 @@
     "scanner": "PASS_FOCAL",
     "typecheck": "SEPARATE_UNVERIFIED_NO_MANUAL_RUN",
     "automatic_build": "OK_18:25:29",
-    "external_evidence": "RENATO_SQL_CLAIMS_10_EVENTS_UNRESOLVED_1_IDEM_5_DENIALS_42501_MICRO10_PGLITE_0_REAL_MICRO_OS_SOURCE_MV3_NO_DIFF"
+    "external_evidence": "RENATO_SQL_CLAIMS_10_EVENTS_UNRESOLVED_1_IDEM_5_DENIALS_42501_MICRO10_PGLITE_0_REAL_MICRO_OS_SOURCE_MV3_NO_DIFF",
+    "external_application": "20261015183119_APPLIED_EXTERNALLY_FULL_PREFLIGHT_POSTCONDITIONS_PASS_NOT_AGENT_PROOF"
   },
   "new_exact_archives": [
     {
@@ -156,5 +163,51 @@
       "ledger_md5": "9e260c759499a8a68a1eeadac34207ce",
       "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY"
     }
-  ]
+  ],
+  "documentation_round_1847": {
+    "baseline_head": "b1b6fb63a992132e0d8391ea9b673c2914be4dfe",
+    "scope": "DOCUMENTATION_ARCHIVE_ONLY_NO_CODE_DDL_DATA_PERMISSIONS_PUBLICATION_NEXT_PHASE",
+    "version": "20261015184433",
+    "name": "h_cockpit_enable_scoped_read_only",
+    "archive": "scripts/rbac-audit/applied-20261015184433_h_cockpit_enable_scoped_read_only.sql",
+    "archive_sha256": "b317daec75beefdaaf22a53b0884840e69b5d60afd82bffea7854a4fd452de3f",
+    "archive_md5": "43f6d9983439fae6c26e524292c164ed",
+    "archive_source": "EXACT_USER_SUPPLIED_SQL_NOT_REMOTE_LEDGER_READ_THIS_ROUND",
+    "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY",
+    "external_browser": {
+      "admin_ar": "PASS_RESTRICTED",
+      "os_numbers": [
+        "OS-2026-000003",
+        "OS-2026-000004"
+      ],
+      "initial_rows": 2,
+      "search_000004_rows": 1,
+      "cleared_rows": 2,
+      "desktop": "PASS",
+      "mobile": "390x844_PASS",
+      "fsf_identity_switch": "PENDING_LOGIN"
+    },
+    "external_role_claims_iat": {
+      "admin_ar": 2,
+      "fsf": 0,
+      "consultor": 0,
+      "financeiro": 0,
+      "sa_ready_false": 0,
+      "anon_sqlstate": "42501",
+      "without_iat": 0,
+      "without_iat_reason": "EXPECTED_PROTECTION",
+      "execution": "SET_LOCAL_ROLE_AUTHENTICATED_NOT_BROWSER_FSF"
+    },
+    "external_checks": {
+      "independent_tests": 36,
+      "typecheck": "PASS",
+      "lint_focal": "PASS",
+      "build": "PASS",
+      "scanner": "3986/0_REPORTED",
+      "lint_global_legacy": "PENDING",
+      "live_source_isolated_assertions": "61+10_SIMULATED_NOT_PRODUCTION_PROOF"
+    },
+    "rollback": "REVOKE_AUTHENTICATED_EXECUTE_H7N_EXECUTE_LIST_RPC_SELECT_VIEW_KEEP_ALL_CONTAINMENTS_NOT_EXECUTED",
+    "own_verification": "ARCHIVE_AND_DOCUMENTS_ONLY_NOT_HOSTED_AUTH_RLS_BROWSER"
+  }
 }
