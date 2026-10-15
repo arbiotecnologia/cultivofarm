@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useCockpitQuery } from "@/hooks/useCockpitQuery";
+import { useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MetricasLaboratorio {
@@ -37,13 +39,15 @@ export interface MetricasVisitaTecnica {
   };
 }
 
-export function useMetricasOperacionais() {
-  const laboratorio = useQuery({
+export function useMetricasOperacionais(options: { visitas?: boolean } = {}) {
+  const session = useTechnicalQuerySession("metricas-visita-tecnica");
+  const laboratorio = useCockpitQuery({
     queryKey: ["metricas-laboratorio"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data, error } = await (supabase as any)
         .from("vw_esteira_laboratorio")
-        .select("*");
+        .select("*")
+        .abortSignal(signal);
       
       if (error) throw error;
 
@@ -111,11 +115,16 @@ export function useMetricasOperacionais() {
   });
 
   const visitas = useQuery({
-    queryKey: ["metricas-visita-tecnica"],
-    queryFn: async () => {
+    queryKey: ["metricas-visita-tecnica", session.scope],
+    enabled: session.ready && options.visitas !== false,
+    queryFn: async ({ signal }) => {
+      const assertCurrent = session.fence();
+      assertCurrent(signal);
       const { data, error } = await (supabase as any)
         .from("vw_fluxo_visita_tecnica")
-        .select("*");
+        .select("*")
+        .abortSignal(signal);
+      assertCurrent(signal);
 
       if (error) throw error;
 
@@ -190,7 +199,7 @@ export function useMetricasOperacionais() {
       error: laboratorio.error,
     },
     visitas: {
-      data: visitas.data,
+      data: session.ready && options.visitas !== false ? visitas.data : undefined,
       isLoading: visitas.isLoading,
       error: visitas.error,
     },

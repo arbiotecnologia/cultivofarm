@@ -1,5 +1,6 @@
+import { useCockpitQuery } from "@/hooks/useCockpitQuery";
 import { useMemo, useRef, useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -48,16 +49,18 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
   const idempotencyKeyRef = useRef<string>("");
 
 
-  const { data: itens = [], isLoading, error: queryError } = useQuery({
-    queryKey: ["estoque-disponivel-lote", target?.lote_id],
+  const { data: itens = [], isLoading, error: queryError, available } = useCockpitQuery({
+    queryKey: ["estoque-disponivel-lote", target?.lote_id, target?.os_id],
     enabled: open && !!target?.lote_id,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      if (!target?.lote_id || !target.os_id) return [];
       const { data, error } = await supabase
         .from("estoque_produto")
         .select("id, quantidade, volume_total, validade, status, produto_id, microrganismo_id, lote_id, envase_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote), produtos(nome), microrganismos(nome)")
-        .eq("lote_id", target!.lote_id)
-        .or(`status.eq.disponivel,and(status.eq.reservado,reservado_para_os_id.eq.${target!.os_id})`)
-        .order("created_at", { ascending: false });
+        .eq("lote_id", target.lote_id)
+        .or(`status.eq.disponivel,and(status.eq.reservado,reservado_para_os_id.eq.${target.os_id})`)
+        .order("created_at", { ascending: false })
+        .abortSignal(signal);
       if (error) throw error;
       return data || [];
     },
@@ -106,7 +109,7 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
   const invalidIds = findInvalidIds(selectedItems as any, qtys);
   const hasInvalid = invalidIds.length > 0;
 
-  if (!target) return null;
+  if (!target || !available) return null;
 
 
   const handleConfirm = async () => {

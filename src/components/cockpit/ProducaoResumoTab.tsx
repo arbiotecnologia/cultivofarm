@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useCockpitQuery } from "@/hooks/useCockpitQuery";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,16 +29,17 @@ interface AggRow {
 }
 
 export function ProducaoResumoTab() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, available } = useCockpitQuery({
     queryKey: ["cockpit-producao-resumo"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data: lotes, error: lotesErr } = await supabase
         .from("lotes")
         .select(
           `id, codigo_lote, volume_produzido, produto_id, microrganismo_id,
            produtos(nome), microrganismos(nome_cientifico, nome)`,
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .abortSignal(signal);
       if (lotesErr) throw lotesErr;
 
       const loteIds = (lotes ?? []).map((l: any) => l.id);
@@ -48,7 +50,8 @@ export function ProducaoResumoTab() {
           .select(
             "lote_id, volume_total, validade, reservado_para_os_id, quantidade_reservada, expedido_em, status",
           )
-          .in("lote_id", loteIds);
+          .in("lote_id", loteIds)
+          .abortSignal(signal);
         if (eErr) throw eErr;
         estoques = e ?? [];
       }
@@ -145,6 +148,7 @@ export function ProducaoResumoTab() {
     staleTime: 30_000,
   });
 
+  if (!available) return <p role="alert">Resumo indisponível.</p>;
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando resumo...</p>;
   if (!data) return null;
 

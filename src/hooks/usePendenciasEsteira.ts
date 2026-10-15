@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useCockpitQuery } from "@/hooks/useCockpitQuery";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 
@@ -20,13 +21,14 @@ export interface Inconsistencia {
 }
 
 export function usePendenciasEsteira() {
-  const { data: rawItems = [], isLoading, isError, refetch } = useQuery({
+  const { data: rawItems = [], isLoading, isError, refetch } = useCockpitQuery({
     queryKey: ["pendencias-esteira"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data, error } = await (supabase as any)
         .from("vw_esteira_laboratorio")
         .select("*")
-        .neq("status_os" as any, "finalizada");
+        .neq("status_os" as any, "finalizada")
+        .abortSignal(signal);
       if (error) throw error;
       return data || [];
     },
