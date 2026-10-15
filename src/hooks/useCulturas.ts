@@ -9,6 +9,7 @@ export interface Cultura {
   desativada_em: string | null;
   owner_organization_id?: string | null;
   archived_at?: string | null;
+  updated_at?: string | null;
 }
 
 export const CULTURAS_QUERY_KEY = ["culturas-admin"] as const;
@@ -19,7 +20,7 @@ export function useCulturas() {
     queryFn: async (): Promise<Cultura[]> => {
       const { data, error } = await supabase
         .from("culturas")
-        .select("id, nome, descricao, ativo, desativada_em")
+        .select("id, nome, descricao, ativo, desativada_em, owner_organization_id, archived_at, updated_at")
         .order("nome");
       if (error) throw error;
       return (data ?? []) as Cultura[];

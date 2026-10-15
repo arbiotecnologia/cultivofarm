@@ -45,7 +45,7 @@ export interface OwnedMutation {
 /** Espelho da whitelist do servidor (catalog_owned_allowed_keys); o servidor decide. */
 export function ownedAllowedKeys(entity: TenantCatalogEntity, op: OwnedOperation): readonly string[] {
   if (op === "archive" || op === "restore") return [];
-  if (op === "composition") return entity === "produto" ? ["itens"] : [];
+  if (op === "composition") return entity === "produto" ? ["status", "itens"] : [];
   if (entity === "produto") return [...(op === "create" ? ["tipo"] : []), "nome", "descricao", "modo_acao", "funcao_completa", "modo_aplicacao", "familia_catalogo", "classe_catalogo"];
   if (entity === "microrganismo") return [...(op === "create" ? ["tipo"] : []), "nome", "nome_cientifico", "descricao"];
   return ["nome", "descricao"];
@@ -91,8 +91,8 @@ export function ownedCatalogError(error: unknown, entity: TenantCatalogEntity): 
   return new OwnedCatalogError("unknown", "Não foi possível confirmar a alteração. Confira os dados antes de tentar novamente.");
 }
 
-export async function mutateOwnedItem(client: RpcClient, m: OwnedMutation, signal?: AbortSignal) {
-  if (!TENANT_OWNED_CATALOG_ENABLED) throw new OwnedCatalogError("disabled", "Cadastro de itens próprios ainda não está disponível.");
+export async function mutateOwnedItem(client: RpcClient, m: OwnedMutation, signal?: AbortSignal, enabled = TENANT_OWNED_CATALOG_ENABLED) {
+  if (!enabled) throw new OwnedCatalogError("disabled", "Cadastro de itens próprios ainda não está disponível.");
   const allowed = ownedAllowedKeys(m.entity, m.operation);
   if (Object.keys(m.payload).some((k) => !allowed.includes(k)))
     throw new OwnedCatalogError("invalid", "Dados inválidos.");
@@ -109,6 +109,40 @@ export async function mutateOwnedItem(client: RpcClient, m: OwnedMutation, signa
   if (!data || data.id == null || data.idempotency_key !== m.idempotencyKey || data.origin !== "proprio")
     throw ownedCatalogError(null, m.entity);
   return data as { id: string; updated_at: string; replayed: boolean };
+}
+
+export interface OwnedPresentationMutation {
+  operation: "create" | "update" | "archive" | "restore";
+  parentId: string;
+  presentationId: string | null;
+  expectedUpdatedAt: string | null;
+  payload: { volume_ml?: number; rotulo?: string | null; preco_brl?: number; ordem?: number };
+  reason: string;
+  idempotencyKey: string;
+}
+
+/** Apresentações próprias de produto usam o RPC transacional; nunca fazem DML direto. */
+export async function mutateOwnedPresentation(client: RpcClient, m: OwnedPresentationMutation, signal?: AbortSignal, enabled = TENANT_OWNED_CATALOG_ENABLED) {
+  if (!enabled) throw new OwnedCatalogError("disabled", "Cadastro de apresentações próprias ainda não está disponível.");
+  const reason = m.reason.trim();
+  if (reason.length < 10 || reason.length > 500) throw new OwnedCatalogError("invalid", "Informe um motivo entre 10 e 500 caracteres.");
+  let q = client.rpc("tenant_catalog_owned_presentation_mutate", {
+    p_operation: m.operation,
+    p_parent_id: m.parentId,
+    p_presentation_id: m.presentationId,
+    p_expected_updated_at: m.expectedUpdatedAt,
+    p_payload: m.payload,
+    p_reason: reason,
+    p_idempotency_key: m.idempotencyKey,
+  });
+  if (signal && q?.abortSignal) q = q.abortSignal(signal);
+  const { data, error } = await q;
+  if (signal?.aborted) throw new OwnedCatalogError("aborted", "Solicitação encerrada.");
+  if (error) throw ownedCatalogError(error, "produto");
+  if (!data || data.id == null || data.parent_id !== m.parentId || typeof data.updated_at !== "string") {
+    throw ownedCatalogError(null, "produto");
+  }
+  return data as { id: string; parent_id: string; updated_at: string; replayed: boolean };
 }
 
 export const ownedCatalogKeys = {

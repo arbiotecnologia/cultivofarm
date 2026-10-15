@@ -31,7 +31,11 @@ import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib
 import { buildFormulacoesPayload } from "@/lib/protocolos/composicaoSync";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
-import { CatalogOriginBadge } from "./OwnedCatalogItemControls";
+import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
+import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
+import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
+import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
@@ -80,6 +84,11 @@ interface Produto {
   b2b_enabled: boolean;
   e_insumo: boolean;
   estoque_minimo: number | null;
+  descricao?: string | null;
+  modo_acao?: string | null;
+  familia_catalogo?: string | null;
+  classe_catalogo?: string | null;
+  updated_at?: string | null;
   owner_organization_id?: string | null;
   archived_at?: string | null;
   formulacoes?: Formulacao[];
@@ -278,6 +287,9 @@ export function ProdutosTab() {
   const [filterTipo, setFilterTipo] = useState("todos");
   const tenantVis = useManagedVisibility("produto", filteredItems);
   const canManageVis = useCanManageTenantVisibility();
+  const ownedCapability = useOwnedCatalogCapability();
+  const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Produto | null }>({ open: false, item: null });
+  const [ownedConfirm, setOwnedConfirm] = useState<{ item: Produto; operation: "archive" | "restore" } | null>(null);
 
   const [form, setForm] = useState({
     id: "",
@@ -648,6 +660,12 @@ export function ProdutosTab() {
             <FileDown className="h-4 w-4 mr-1" />
             Exportar PDF
           </Button>
+
+          {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
+            <Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}>
+              <Plus className="h-4 w-4 mr-1" />Produto próprio
+            </Button>
+          )}
 
 
 
@@ -1207,6 +1225,14 @@ export function ProdutosTab() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    <OwnedCatalogItemControls
+                      item={p}
+                      actorOrganizationId={ownedCapability.scope?.organizationId}
+                      canManage={ownedCapability.canManage}
+                      onEdit={() => setOwnedDialog({ open: true, item: p })}
+                      onArchive={() => setOwnedConfirm({ item: p, operation: "archive" })}
+                      onRestore={() => setOwnedConfirm({ item: p, operation: "restore" })}
+                    />
                     {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
                     <DeleteProtocoloButton
                       table="produtos"
@@ -1240,8 +1266,31 @@ export function ProdutosTab() {
           itemTipo="produto"
           itemNome={volumesEdit.nome}
           valorLitroBase={volumesEdit.valor_litro_brl ?? (volumesEdit.valor_dose_brl != null ? volumesEdit.valor_dose_brl * 10 : null)}
+          owned={!!volumesEdit.owner_organization_id}
+          parentUpdatedAt={volumesEdit.updated_at ?? null}
         />
       )}
+
+      <OwnedCatalogItemDialog
+        open={ownedDialog.open}
+        onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
+        entity="produto"
+        item={ownedDialog.item}
+        microorganisms={microrganismos}
+        onApplied={fetch}
+        onLocateGlobal={(id) => {
+          tenantVis.setShowHidden(true);
+          const match = items.find((row) => row.id === id);
+          setSearch(match?.nome ?? "");
+        }}
+      />
+      <OwnedCatalogConfirmDialog
+        item={ownedConfirm?.item ?? null}
+        entity="produto"
+        operation={ownedConfirm?.operation ?? "archive"}
+        onOpenChange={(open) => !open && setOwnedConfirm(null)}
+        onApplied={fetch}
+      />
 
       <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-4">
         <span>As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.</span>

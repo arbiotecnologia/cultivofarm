@@ -23,7 +23,11 @@ import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
 import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloButton";
 import { useCulturas } from "@/hooks/useCulturas";
-import { CatalogOriginBadge } from "@/components/protocolos/OwnedCatalogItemControls";
+import { CatalogOriginBadge, OwnedCatalogItemControls } from "@/components/protocolos/OwnedCatalogItemControls";
+import { OwnedCatalogItemDialog } from "@/components/protocolos/OwnedCatalogItemDialog";
+import { OwnedCatalogConfirmDialog } from "@/components/protocolos/OwnedCatalogConfirmDialog";
+import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 
 // --- Culturas ---
 // Culturas são base GLOBAL. Escrita de cliente foi revogada no banco
@@ -35,12 +39,18 @@ function CulturasTab() {
   const tenantVis = useManagedVisibility("cultura", allRows);
   const canManageVis = useCanManageTenantVisibility();
   const rows = tenantVis.displayed;
+  const ownedCapability = useOwnedCatalogCapability();
+  const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: (typeof allRows)[number] | null }>({ open: false, item: null });
+  const [ownedConfirm, setOwnedConfirm] = useState<{ item: (typeof allRows)[number]; operation: "archive" | "restore" } | null>(null);
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground" data-testid="culturas-readonly-notice">
         Culturas são um cadastro global, disponível somente para consulta.
       </p>
+      {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
+        <div><Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}><Plus className="mr-1 h-4 w-4" />Cultura própria</Button></div>
+      )}
       <TenantVisibilityBar v={tenantVis} />
 
       {isLoading ? (
@@ -91,8 +101,14 @@ function CulturasTab() {
                 </TableCell>
                 {canManageVis && (
                   <TableCell className="text-right">
-                    <TenantVisibilityToggle entity="cultura" item={{ id: c.id, nome: c.nome, ativo: c.ativo }}
-                      state={tenantVis.map?.get(c.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
+                    <div className="flex justify-end gap-1">
+                      <TenantVisibilityToggle entity="cultura" item={{ id: c.id, nome: c.nome, ativo: c.ativo }}
+                        state={tenantVis.map?.get(c.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
+                      <OwnedCatalogItemControls item={c} actorOrganizationId={ownedCapability.scope?.organizationId} canManage={ownedCapability.canManage}
+                        onEdit={() => setOwnedDialog({ open: true, item: c })}
+                        onArchive={() => setOwnedConfirm({ item: c, operation: "archive" })}
+                        onRestore={() => setOwnedConfirm({ item: c, operation: "restore" })} />
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
@@ -101,6 +117,11 @@ function CulturasTab() {
         </Table>
       </ResponsiveTable>
       )}
+      <OwnedCatalogItemDialog open={ownedDialog.open} onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
+        entity="cultura" item={ownedDialog.item} onApplied={() => refetch()}
+        onLocateGlobal={(id) => { tenantVis.setShowHidden(true); const match = allRows.find((row) => row.id === id); if (match) toast.info(`Item global localizado: ${match.nome}`); }} />
+      <OwnedCatalogConfirmDialog item={ownedConfirm?.item ?? null} entity="cultura" operation={ownedConfirm?.operation ?? "archive"}
+        onOpenChange={(open) => !open && setOwnedConfirm(null)} onApplied={() => refetch()} />
     </div>
   );
 }
