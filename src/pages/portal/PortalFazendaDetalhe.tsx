@@ -54,7 +54,7 @@ export default function PortalFazendaDetalhe() {
       const { data, error } = await supabase
         .from("fazendas")
         .select("*")
-        .eq("id", id!).eq("cliente_id", clienteId!)
+        .eq("id", id ?? "").eq("cliente_id", clienteId ?? "")
         .abortSignal(signal)
         .single();
       if (error) throw error;
@@ -63,15 +63,15 @@ export default function PortalFazendaDetalhe() {
     enabled: !!id && !!clienteId,
   });
 
-  const { data: talhoes = [] } = useQuery({
-    queryKey: ["portal-fazenda-talhoes", id],
-    queryFn: async () => {
+  const { data: talhoes = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-talhoes", clienteId, id],
+    queryFn: async (signal) => {
       const { data: talhoesBase } = await supabase
         .from("talhoes")
         .select("*")
-        .eq("fazenda_id", id!)
+        .eq("fazenda_id", id ?? "")
         .eq("ativo", true)
-        .order("nome");
+        .order("nome").abortSignal(signal);
       if (!talhoesBase?.length) return [];
 
       const talhaoIds = talhoesBase.map((t) => t.id);
@@ -79,9 +79,9 @@ export default function PortalFazendaDetalhe() {
 
       const [culturasRes, safrasRes] = await Promise.all([
         culturaIds.length
-          ? supabase.from("culturas").select("id, nome").in("id", culturaIds)
+          ? supabase.from("culturas").select("id, nome").in("id", culturaIds).abortSignal(signal)
           : Promise.resolve({ data: [] as any[] } as any),
-        supabase.from("talhao_safras").select("*").in("talhao_id", talhaoIds),
+        supabase.from("talhao_safras").select("*").in("talhao_id", talhaoIds).abortSignal(signal),
       ]);
 
       const culturasMap = new Map((culturasRes.data || []).map((c: any) => [c.id, c]));
@@ -98,93 +98,93 @@ export default function PortalFazendaDetalhe() {
         talhao_safras: safrasMap.get(t.id) || [],
       }));
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!fazenda,
   });
 
-  const { data: ordensServico = [] } = useQuery({
-    queryKey: ["portal-fazenda-os", id],
-    queryFn: async () => {
+  const { data: ordensServico = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-os", clienteId, id],
+    queryFn: async (signal) => {
       const { data } = await supabase
         .from("ordens_servico")
         .select("*, talhoes(nome)")
-        .eq("fazenda_id", id!)
+        .eq("fazenda_id", id ?? "")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(50).abortSignal(signal);
       return data || [];
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!fazenda,
   });
 
-  const { data: registros = [] } = useQuery({
-    queryKey: ["portal-fazenda-registros", id],
-    queryFn: async () => {
+  const { data: registros = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-registros", clienteId, id],
+    queryFn: async (signal) => {
       const { data } = await supabase
         .from("registros_consultor")
         .select("id, data_vistoria, problema_principal, consultor_responsavel, status, talhao_id, talhoes(nome), created_at")
-        .eq("fazenda_id", id!)
+        .eq("fazenda_id", id ?? "")
         .order("data_vistoria", { ascending: false })
-        .limit(50);
+        .limit(50).abortSignal(signal);
       return data || [];
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!fazenda,
   });
 
-  const { data: recomendacoes = [] } = useQuery({
-    queryKey: ["portal-fazenda-recomendacoes", id, registros.map((r: any) => r.id).join(",")],
-    enabled: !!id && registros.length > 0,
-    queryFn: async () => {
+  const { data: recomendacoes = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-recomendacoes", clienteId, id, registros.map((r: any) => r.id).join(",")],
+    enabled: !!clienteId && !!fazenda && registros.length > 0,
+    queryFn: async (signal) => {
       const registroIds = registros.map((r: any) => r.id);
       const { data } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("*, produtos:produto_biologico_sugerido_id(nome), microrganismos:microrganismo_id(nome)")
         .in("registro_consultor_id", registroIds)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }).abortSignal(signal);
       return data || [];
     },
   });
 
-  const { data: aplicacoes = [] } = useQuery({
-    queryKey: ["portal-fazenda-aplicacoes", id, ordensServico.map((o: any) => o.id).join(",")],
-    enabled: !!id && ordensServico.length > 0,
-    queryFn: async () => {
+  const { data: aplicacoes = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-aplicacoes", clienteId, id, ordensServico.map((o: any) => o.id).join(",")],
+    enabled: !!clienteId && !!fazenda && ordensServico.length > 0,
+    queryFn: async (signal) => {
       const osIds = ordensServico.map((o: any) => o.id);
       const { data } = await supabase
         .from("aplicacoes")
         .select("*, ordens_servico(numero_os, talhao_id, talhoes(nome))")
         .in("ordem_servico_id", osIds)
         .order("data_aplicacao", { ascending: false })
-        .limit(50);
+        .limit(50).abortSignal(signal);
       return data || [];
     },
   });
 
-  const { data: alertas = [] } = useQuery({
-    queryKey: ["portal-fazenda-alertas", id],
-    queryFn: async () => {
+  const { data: alertas = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-alertas", clienteId, id],
+    queryFn: async (signal) => {
       const { data } = await supabase
         .from("alertas_agronomicos")
         .select("*, talhoes(nome)")
-        .eq("fazenda_id", id!)
-        .eq("status", "ativo");
+        .eq("fazenda_id", id ?? "")
+        .eq("status", "ativo").abortSignal(signal);
       return data || [];
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!fazenda,
   });
 
-  const { data: clima = [] } = useQuery({
-    queryKey: ["portal-fazenda-clima", id],
-    queryFn: async () => {
+  const { data: clima = [] } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-clima", clienteId, id],
+    queryFn: async (signal) => {
       const desde = new Date();
       desde.setDate(desde.getDate() - 14);
       const { data } = await supabase
         .from("clima_dados")
         .select("data_hora, temperatura, chuva_mm, umidade")
-        .eq("fazenda_id", id!)
+        .eq("fazenda_id", id ?? "")
         .gte("data_hora", desde.toISOString())
-        .order("data_hora", { ascending: true });
+        .order("data_hora", { ascending: true }).abortSignal(signal);
       return data || [];
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!fazenda,
   });
 
   if (clienteLoading || loadingFazenda)

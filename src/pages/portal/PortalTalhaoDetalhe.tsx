@@ -44,8 +44,8 @@ export default function PortalTalhaoDetalhe() {
     queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("talhoes")
-        .select("*, fazendas(nome, cliente_id), culturas(nome)")
-        .eq("id", id!).eq("fazendas.cliente_id", clienteId!)
+        .select("*, fazendas!inner(nome, cliente_id), culturas(nome)")
+        .eq("id", id ?? "").eq("fazendas.cliente_id", clienteId ?? "")
         .abortSignal(signal)
         .single();
       if (error) throw error;
@@ -54,36 +54,36 @@ export default function PortalTalhaoDetalhe() {
     enabled: !!id && !!clienteId,
   });
 
-  const { data: safras = [] } = useQuery({
-    queryKey: ["portal-talhao-safras", id],
-    queryFn: async () => {
+  const { data: safras = [] } = useScopedPortalQuery({
+    queryKey: ["portal-talhao-safras", clienteId, id],
+    queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("talhao_safras")
         .select("*, culturas(nome)")
-        .eq("talhao_id", id!)
-        .order("safra", { ascending: false });
+        .eq("talhao_id", id ?? "")
+        .order("safra", { ascending: false }).abortSignal(signal);
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!talhao,
   });
 
-  const { data: atividades = [] } = useQuery({
-    queryKey: ["portal-talhao-atividades", id],
-    queryFn: async () => {
+  const { data: atividades = [] } = useScopedPortalQuery({
+    queryKey: ["portal-talhao-atividades", clienteId, id],
+    queryFn: async (signal) => {
       // 1) Recomendações/visitas do talhão
       const recsPromise = supabase
         .from("registros_consultor")
         .select("*, fazendas(nome), talhoes(nome)")
-        .eq("talhao_id", id!)
+        .eq("talhao_id", id ?? "")
         .limit(20)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }).abortSignal(signal);
 
       // 2) Aplicações DO TALHÃO: buscar OS deste talhão e filtrar aplicações por essas OS
       const osDoTalhaoPromise = supabase
         .from("ordens_servico")
         .select("id")
-        .eq("talhao_id", id!);
+        .eq("talhao_id", id ?? "").abortSignal(signal);
 
       const [recs, osDoTalhao] = await Promise.all([recsPromise, osDoTalhaoPromise]);
       const osIds = (osDoTalhao.data || []).map((o: any) => o.id);
@@ -94,7 +94,7 @@ export default function PortalTalhaoDetalhe() {
             .select("*, ordens_servico(id, talhao_id, numero_os)")
             .in("ordem_servico_id", osIds)
             .order("data_aplicacao", { ascending: false })
-            .limit(20)
+            .limit(20).abortSignal(signal)
         : { data: [] as any[] };
 
       const combined = [
@@ -104,21 +104,21 @@ export default function PortalTalhaoDetalhe() {
 
       return combined;
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!talhao,
   });
 
-  const { data: alertas = [] } = useQuery({
-    queryKey: ["portal-talhao-alertas", id],
-    queryFn: async () => {
+  const { data: alertas = [] } = useScopedPortalQuery({
+    queryKey: ["portal-talhao-alertas", clienteId, id],
+    queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("alertas_agronomicos")
         .select("*")
-        .eq("talhao_id", id!)
-        .eq("status", "ativo");
+        .eq("talhao_id", id ?? "")
+        .eq("status", "ativo").abortSignal(signal);
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId && !!talhao,
   });
 
   if (clienteLoading || loadingTalhao) return <div className="p-8"><Skeleton className="h-12 w-1/3 mb-4"/><Skeleton className="h-64 w-full"/></div>;
