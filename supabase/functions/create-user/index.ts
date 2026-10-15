@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
 
     // Existing entrypoint, actor-scoped preflight. Never authorize this branch
     // with the elevated SDK or turn a partner role into a cumulative staff role.
-    if (rolesArr.some((r) => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico")) {
+    if (rolesArr.some((r) => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(r))) {
       if (Deno.env.get("SUPABASE_URL") !== "https://swzpzcwiasxmjutrmvkm.supabase.co" ||
         typeof callerId !== "string" || !callerId || claimsData.claims.role !== "authenticated" ||
         !Number.isSafeInteger(claimsData.claims.iat)) {
@@ -101,23 +101,29 @@ Deno.serve(async (req) => {
       }
       const dedicatedRole = rolesArr[0];
       const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
-      if (dedicatedRole !== "parceiro_b2b" || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
-        (role && role !== dedicatedRole) || typeof partner_id !== "string" ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(partner_id) ||
-        (partner_papel != null && partner_papel !== expectedPapel) ||
-        cliente_id || principal_cliente_id || (Array.isArray(cliente_ids) && cliente_ids.length > 0)) {
+      const isProducer = dedicatedRole === "cliente_produtor";
+      const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+      const clients = Array.isArray(cliente_ids) ? cliente_ids : cliente_id ? [cliente_id] : [];
+      const primary = principal_cliente_id ?? clients[0] ?? null;
+      if (!["parceiro_b2b", "cliente_produtor"].includes(dedicatedRole) || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
+        (role && role !== dedicatedRole) || (!isProducer && (!uuid(partner_id) || clients.length || primary ||
+        (partner_papel != null && partner_papel !== expectedPapel))) ||
+        (isProducer && (partner_id != null || partner_papel != null || clients.length < 1 || clients.length > 100 ||
+        !clients.every(uuid) || new Set(clients).size !== clients.length || !clients.includes(primary)))) {
         return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const { data: preflight, error: preflightError } = await anonClient.rpc("b2b_provisioning_preflight", {
-        p_partner: partner_id, p_role: dedicatedRole, p_papel: expectedPapel,
-      });
-      if (preflightError || preflight?.organization_id !== actorOrganizationId ||
-        preflight?.partner_id !== partner_id || preflight?.role !== dedicatedRole || preflight?.papel !== expectedPapel) {
-        return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (!isProducer) {
+        const { data: preflight, error: preflightError } = await anonClient.rpc("b2b_provisioning_preflight", {
+          p_partner: partner_id, p_role: dedicatedRole, p_papel: expectedPapel,
         });
+        if (preflightError || preflight?.organization_id !== actorOrganizationId ||
+          preflight?.partner_id !== partner_id || preflight?.role !== dedicatedRole || preflight?.papel !== expectedPapel) {
+          return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
       const reply = (value: unknown, status: number) => new Response(JSON.stringify(value), {
         status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
@@ -135,19 +141,12 @@ Deno.serve(async (req) => {
         return reply({ error: "b2b_provisioning_invalid" }, 400);
       }
       const { data: claim, error: claimError } = await anonClient.rpc("b2b_claim_provisioning", {
-        p_partner: partner_id, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
+        p_partner: isProducer ? null : partner_id, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
+        p_role: dedicatedRole, p_clients: clients, p_primary: primary,
       });
       if (claimError || !claim?.claim_id || !claim?.fence || !claim?.user_id ||
         claim.organization_id !== actorOrganizationId) return reply({ error: "b2b_provisioning_conflict" }, 409);
       const receiptArgs = { p_claim: claim.claim_id, p_fence: claim.fence, p_user: claim.user_id };
-      if (claim.status === "completed") {
-        const { data, error } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
-        return !error && data?.success === true ? reply({ success: true, user_id: claim.user_id, replay: true }, 200)
-          : reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
-      }
-      if (claim.status !== "claimed" || claim.lease_valid !== true || claim.acquired !== true) {
-        return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
-      }
       const reconcileOrCompensate = async () => {
         const { data: state, error } = await adminClient.rpc("b2b_prepare_provisioning_compensation", receiptArgs);
         if (error || !["completed", "compensating", "aborted"].includes(state)) {
@@ -155,7 +154,14 @@ Deno.serve(async (req) => {
         }
         if (state === "completed") return reply({ success: true, user_id: claim.user_id, replay: true }, 200);
         if (state === "aborted") return reply({ error: "b2b_provisioning_aborted" }, 409);
+        try {
         const { data: owned, error: ownedError } = await adminClient.auth.admin.getUserById(claim.user_id);
+        if (!owned?.user && ownedError?.status === 404) {
+          // Only complete under SQL receipt+absence checks; no delete on uncertain lookup.
+          const { data: done, error: doneError } = await adminClient.rpc("b2b_complete_provisioning_compensation", receiptArgs);
+          return !doneError && done === true ? reply({ error: "b2b_provisioning_aborted" }, 409)
+            : reply({ error: "b2b_provisioning_compensation_pending" }, 503);
+        }
         if (ownedError || owned?.user?.id !== claim.user_id ||
           owned.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
           owned.user.app_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
@@ -166,7 +172,41 @@ Deno.serve(async (req) => {
         const { data: done, error: doneError } = await adminClient.rpc("b2b_complete_provisioning_compensation", receiptArgs);
         return !doneError && done === true ? reply({ error: "b2b_provisioning_aborted" }, 409)
           : reply({ error: "b2b_provisioning_compensation_pending" }, 503);
+        } catch {
+          return reply({ error: "b2b_provisioning_compensation_pending" }, 503);
+        }
       };
+      if (claim.status === "completed") {
+        const { data, error } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
+        return !error && data?.success === true ? reply({ success: true, user_id: claim.user_id, replay: true }, 200)
+          : reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+      }
+      if (claim.status === "compensating") return await reconcileOrCompensate();
+      if (claim.status === "aborted") return reply({ error: "b2b_provisioning_aborted" }, 409);
+      if (claim.status === "claimed" && claim.acquired !== true) {
+        // Only reconcile the already reserved UUID. No Auth create/delete on retry.
+        const pending = () => reply({ error: "b2b_provisioning_auth_pending", status: "pending",
+          recovery_required: true, retry_same_request: true,
+          message: "Cadastro pendente de verificação. Preserve a mesma solicitação e o mesmo email; a recuperação controlada não cria outra identidade." }, 409);
+        let lookup;
+        try { lookup = await adminClient.auth.admin.getUserById(claim.user_id); }
+        catch { return pending(); }
+        const { data: owned, error: ownedError } = lookup;
+        // Absence (even 404) is not proof the first worker cannot still create.
+        // No reset, reacquire, lease authority, delete, second UUID or new email.
+        if (ownedError || !owned?.user) return pending();
+        if (owned.user.id !== claim.user_id ||
+          owned.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
+          owned.user.app_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
+          return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+        }
+        const { data, error } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
+        return !error && data?.success === true ? reply({ success: true, user_id: claim.user_id, replay: true }, 200)
+          : reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+      }
+      if (claim.status !== "claimed" || claim.lease_valid !== true || claim.acquired !== true) {
+        return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
+      }
       try {
         // Reserved ID makes concurrent/retried creates converge, never email-based
         // adoption of an existing user. Metadata is provenance, not authorization.

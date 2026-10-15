@@ -2,21 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
-// Apply actual review diff in memory; never edits/deploys the Edge entrypoint.
-function proposedSource() {
- const original=readFileSync('supabase/functions/create-user/index.ts','utf8').split('\n');
- const patch=readFileSync('scripts/rbac-audit/proposed-create-user-external-ab.patch','utf8').split('\n');
- const output:string[]=[];let index=0;
- for(let i=2;i<patch.length;i++) {
-  const line=patch[i];const h=line.match(/^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@/);
-  if(h){const start=Number(h[1])-1;output.push(...original.slice(index,start));index=start;continue;}
-  if(line.startsWith('-')||line.startsWith(' ')){if(original[index]!==line.slice(1))throw new Error('proposal drift');if(line[0]===' ')output.push(original[index]);index++;}
-  else if(line.startsWith('+'))output.push(line.slice(1));
- }
- output.push(...original.slice(index));return output.join('\n').replace(/^import .*createClient.*;\s*/m,'');
+// Execute the applied production entrypoint; SDK/Auth remain isolated mocks.
+function appliedSource() {
+ return readFileSync('supabase/functions/create-user/index.ts','utf8').replace(/^import .*createClient.*;\s*/m,'');
 }
 async function invoke(role:string, extra:Record<string,unknown>={},open=false, retry=false, owned=true, lookupMode='ok', failure='', recoveryState='') {
- let source=proposedSource();if(open)source=source.replace('B2B_PROVISIONING_CHANNELS_REVIEWED = false','B2B_PROVISIONING_CHANNELS_REVIEWED = true');
+ let source=appliedSource();if(open)source=source.replace('B2B_PROVISIONING_CHANNELS_REVIEWED = false','B2B_PROVISIONING_CHANNELS_REVIEWED = true');
  const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:recoveryState?'compensating':'claimed',acquired:!retry,lease_valid:!retry},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
  const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async(_name:string,_args:Record<string,unknown>)=>{
   if(_name==='b2b_prepare_provisioning_compensation')return {data:recoveryState,error:null};
@@ -37,7 +28,7 @@ async function invoke(role:string, extra:Record<string,unknown>={},open=false, r
  return {response,rpc,createUser,finish,getUserById,deleteUser};
 }
 const client='11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa';const partner='11111111-1111-4111-8111-111111111111';
-describe('external user review diff — SDK/Auth mocked, no deploy',()=>{
+describe('external user applied entrypoint — SDK/Auth mocked, no deploy',()=>{
  it('completed during compensation never looks up or deletes Auth',async()=>{
   const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,true,'ok','','completed');
   expect(r.response.status).toBe(200);expect(r.deleteUser).not.toHaveBeenCalled();expect(r.getUserById).not.toHaveBeenCalled();expect(r.createUser).not.toHaveBeenCalled();
