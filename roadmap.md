@@ -750,9 +750,15 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Classificar as 7 views originais; SQL06 anterior tinha três views adicionais que não substituíam `vw_os_integridade_esteira` e `_src_vw_fluxo_visita_tecnica`.
 - [x] Integrar handlers/formulários candidatos na `/base-tecnica` para produtos, microrganismos e culturas, com globais imutáveis.
 - [x] Integrar chamadas candidatas de composição declarativa e apresentações próprias por RPC, cache org+usuário e escopo congelado.
-- [ ] Completar leitura/listagem própria nas três abas e detalhes editáveis seguros; bloqueado porque `tenant_catalog_owned_list` ainda é resumido e os itens próprios não são mesclados às listas atuais.
+- [x] Preparar SQL08 de lista/detalhe próprios, paginado e derivado do ator, e integrar Produtos/Microrganismos/Culturas às listas existentes, com origem Global/Próprio, arquivados, reabertura, cache org+usuário e descarte de resposta antiga.
+- [x] Exercitar UI local com QueryClient real: criar→aparecer→reabrir/editar→arquivar→filtrar→restaurar, negativos global/FSF/perfil sem gestão e troca de empresa; 89/89 testes focados PASS. Isso não certifica Auth/RLS real.
+- [x] Executar SQL08 completo em PGlite 0.5.10 isolado: 18/18 PASS (paginação, detalhe, declaração/apresentação, outra empresa/global/inexistente, SA/anon/service-role); identidade Auth e normalização são stubs, explicitamente UNVERIFIED.
+- [x] Atualizar manifesto 04 com quatro FKs live omitidas: três preferências de visibilidade e `microorganism_regulatory_presentations→catalogo_volumes`; total live nominal permanece 60.
+- [x] Preparar candidato 09 com corpo/hash live de `rpc_cc_validate_matrix`, restringindo a enumeração aos roots globais; gate OFF e ACL preservada.
+- [ ] Revisar/aplicar SQL01–06/08/09 em ordem e provar Auth/RLS real — bloqueado por revisão independente e pela proibição de DDL remoto nesta rodada.
 - [ ] Abrir gate — bloqueado até revisão/aplicação controlada, SQL05 runtime, Auth/RLS real e fechamento de todos os leitores/refs negativos.
 - [ ] Edge service-role — patch documental aguarda schema aplicado com gate OFF e deve entrar antes de qualquer row privada.
+- [ ] Produção 07, B2B/pedidos/integrações operacionais e CRUD real hospedado continuam NO-GO; o gate cliente/servidor permanece OFF e nada foi publicado.
 
 ## Laboratório exclusivamente biológico — continuidade separada
 - [x] Registrar live: 1 biológico + 9 sem família e históricos sem família; sem backfill/reclassificação.
