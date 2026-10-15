@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { RPC_GERACAO_OS_DISPONIVEL } from "@/lib/fluxo-tecnico/fluxo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
@@ -26,6 +26,7 @@ export function useFluxoVisitaTecnica() {
   const conversionActor = JSON.stringify([loading, user?.id, profile?.user_id, profile?.ativo, profile?.organization_id, [...roles].sort()]);
   const conversionFence = useRef({ actor: conversionActor, epoch: 0 });
   if (conversionFence.current.actor !== conversionActor) conversionFence.current = { actor: conversionActor, epoch: conversionFence.current.epoch + 1 };
+  useEffect(() => () => { conversionFence.current.epoch += 1; }, []);
   const actorScope = `${user?.id ?? ""}:${profile?.organization_id ?? ""}:${roles.join(",")}`;
   const currentActor = useRef(actorScope);
   currentActor.current = actorScope;
@@ -304,8 +305,8 @@ export function useFluxoVisitaTecnica() {
     try {
       const { data: wsData, error: wsError } = await supabase.rpc("rpc_get_visita_workspace", { p_registro_id: registroId });
       if (wsError) throw wsError;
-      const ws = wsData as { status?: string; permissions?: { can_convert_os?: boolean } } | null;
-      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch) || ws?.permissions?.can_convert_os !== true || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
+      const ws = wsData as { status?: string; permissions?: { can_convert_os?: boolean; can_manage?: boolean } } | null;
+      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch) || ws?.permissions?.can_manage !== true || ws.permissions.can_convert_os !== true || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
         return { success: false, message: "Esta visita não está disponível para encaminhamento laboratorial." };
       }
       // Retry manual por visita: o servidor faz lock/replay. Nunca repetir escrita automaticamente.
@@ -329,9 +330,10 @@ export function useFluxoVisitaTecnica() {
         return { success: false, message: "Não foi possível confirmar a OS. Reconsulte a visita antes de tentar novamente." };
       }
       await invalidateDecision(registroId);
-      await Promise.all(["ordens-servico", "cockpit-laboratorio", "pcp-kanban"].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
       if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch)) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
-      return { success: true, message: res.already_exists ? "Encaminhamento já registrado para esta visita." : "Recomendação encaminhada à OS laboratorial. Fabricação não iniciada; volume pendente de definição.",
+      await Promise.all(["ordens-servico", "os-onfarm", "cockpit-laboratorio", "pcp-kanban"].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
+      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch)) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
+      return { success: true, message: res.already_exists ? "Encaminhamento já registrado para esta visita." : "OS e programação pendente criadas. Fabricação não iniciada; volume pendente de definição.",
         os_id: res.os_id, numero_os: res.numero_os, already_exists: res.already_exists, data: res };
     } catch (error: unknown) {
       return { success: false, message: mensagemAmigavelVisita(error, "Não foi possível confirmar o encaminhamento. Reconsulte a visita antes de tentar novamente.") };

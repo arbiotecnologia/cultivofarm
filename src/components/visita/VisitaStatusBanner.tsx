@@ -1,5 +1,5 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
 import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
@@ -293,8 +293,9 @@ export function LaboratoryConversionAction({ registroId }: { registroId: string 
   const actor = JSON.stringify([loading, user?.id, profile?.user_id, profile?.ativo, profile?.organization_id, [...roles].sort(), registroId]);
   const current = useRef({ actor, epoch: 0 });
   if (current.current.actor !== actor) current.current = { actor, epoch: current.current.epoch + 1 };
+  useEffect(() => () => { current.current.epoch += 1; }, []);
   const ready = !loading && !!user && profile?.user_id === user.id && profile.ativo === true && !!profile.organization_id
-    && !workspace.isFetching && !workspace.isError && ws?.permissions.can_convert_os === true
+    && !workspace.isFetching && !workspace.isError && ws?.permissions.can_manage === true && ws.permissions.can_convert_os === true
     && roles.some(role => ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo"].includes(role));
   const existing = (ws?.ordens_servico?.length ?? 0) > 0;
   const allowed = ready && ws?.status === "aprovado" && !existing;
@@ -311,17 +312,21 @@ export function LaboratoryConversionAction({ registroId }: { registroId: string 
       setOpen(false);
     } catch {
       if (current.current.epoch === epoch) setError("Não foi possível confirmar o encaminhamento. Reconsulte a visita.");
-    } finally { lock.current = false; setBusy(false); }
+    } finally {
+      lock.current = false;
+      if (current.current.epoch === epoch) setBusy(false);
+    }
   };
   return <>
-    {allowed && <Button size="sm" className="gap-2" onClick={() => {
-      dialogActor.current = { actor, epoch: current.current.epoch }; setError(""); setOpen(true);
+    {allowed && <Button size="sm" disabled={lock.current} className="gap-2" onClick={() => {
+      if (lock.current) return;
+      dialogActor.current = { actor, epoch: current.current.epoch }; setBusy(false); setError(""); setOpen(true);
     }}><PackageCheck className="h-4 w-4" />Gerar OS laboratorial</Button>}
     <AlertDialog open={open && sameDialog} onOpenChange={value => { if (!lock.current) setOpen(value); }}>
       <AlertDialogContent onEscapeKeyDown={event => { if (lock.current) event.preventDefault(); }}>
         <AlertDialogHeader>
           <AlertDialogTitle>Encaminhar recomendação ao laboratório?</AlertDialogTitle>
-          <AlertDialogDescription>Será encaminhada uma única recomendação marcada para produção: produto biológico ou microrganismo. As recomendações comerciais não serão concluídas. Volume não informado exige definição antes de fabricar; esta ação não inicia fabricação.</AlertDialogDescription>
+          <AlertDialogDescription>Uma única recomendação marcada, com produto biológico ou microrganismo, criará OS e programação pendente. As recomendações comerciais não serão concluídas. Volume não informado exige definição antes de fabricar; esta ação não inicia fabricação.</AlertDialogDescription>
         </AlertDialogHeader>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>

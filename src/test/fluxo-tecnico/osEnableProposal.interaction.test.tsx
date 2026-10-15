@@ -3,15 +3,16 @@ import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@t
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({
-  rpc: vi.fn(), from: vi.fn(),
+  rpc: vi.fn(), from: vi.fn(), navigate: vi.fn(), toast: vi.fn(),
   auth: { user: { id: 'AR-actor' }, profile: { user_id: 'AR-actor', ativo: true, organization_id: 'AR' }, roles: ['administrador'], loading: false },
-  ws: { status: 'aprovado', version: 9, permissions: { can_convert_os: true }, ordens_servico: [] as unknown[] },
+  ws: { status: 'aprovado', version: 9, permissions: { can_convert_os: true, can_manage: true }, ordens_servico: [] as unknown[] },
 }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { rpc: m.rpc, from: m.from } }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => m.auth }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
-import { LaboratoryConversionAction } from '../../../scripts/rbac-audit/os-enable-candidate/VisitaStatusBanner';
-import { useFluxoVisitaTecnica } from '../../../scripts/rbac-audit/os-enable-candidate/useFluxoVisitaTecnica';
+vi.mock('react-router-dom', () => ({ useNavigate: () => m.navigate }));
+vi.mock('sonner', () => ({ toast: { success: m.toast, info: m.toast, error: m.toast } }));
+import { LaboratoryConversionAction } from '@/components/visita/VisitaStatusBanner';
+import { useFluxoVisitaTecnica } from '@/hooks/useFluxoVisitaTecnica';
 const clients: QueryClient[] = [];
 function wrapper() {
  const c = new QueryClient({ defaultOptions: { queries: { retry: false } } }); clients.push(c);
@@ -19,7 +20,7 @@ function wrapper() {
 }
 beforeEach(() => {
  vi.clearAllMocks(); m.auth.roles = ['administrador']; m.auth.loading = false; m.auth.profile.ativo = true; m.auth.profile.organization_id = 'AR';
- m.ws = { status: 'aprovado', version: 9, permissions: { can_convert_os: true }, ordens_servico: [] };
+ m.ws = { status: 'aprovado', version: 9, permissions: { can_convert_os: true, can_manage: true }, ordens_servico: [] };
  m.rpc.mockImplementation(async name => name === 'rpc_get_visita_workspace' ? { data: m.ws, error: null } : { data: { success: true, os_id: 'os-one', registro_id: 'visit', already_exists: false }, error: null });
 });
 afterEach(() => { cleanup(); clients.splice(0).forEach(c => c.clear()); });
@@ -101,4 +102,32 @@ it('late conversion after identity change cannot publish success or invalidate',
 it('workspace loading never mounts actionable button',async()=>{
  m.rpc.mockImplementation(()=>new Promise(()=>{})); const {Wrapper}=wrapper();render(<Wrapper><LaboratoryConversionAction registroId="visit" /></Wrapper>);
  expect(screen.queryByRole('button',{name:'Gerar OS laboratorial'})).toBeNull(); expect(calls()).toHaveLength(0);
+});
+it('read-only consultant cannot call conversion even with stale convert permission',async()=>{
+ m.auth.roles=['consultor_tecnico']; m.ws.permissions.can_manage=false;
+ const {Wrapper}=wrapper(); const {result}=renderHook(useFluxoVisitaTecnica,{wrapper:Wrapper});
+ expect((await result.current.converterRecomendacaoEmOS('visit')).success).toBe(false); expect(calls()).toHaveLength(0);
+ render(<Wrapper><LaboratoryConversionAction registroId="visit" /></Wrapper>);
+ await waitFor(()=>expect(m.rpc).toHaveBeenCalled());expect(screen.queryByRole('button',{name:'Gerar OS laboratorial'})).toBeNull();
+});
+it('unmount while conversion is pending cannot invalidate, toast or navigate',async()=>{
+ let finish: ((v:unknown)=>void)|undefined;const original=m.rpc.getMockImplementation();
+ m.rpc.mockImplementation((name,args)=>name==='rpc_converter_visita_em_os'?new Promise(resolve=>{finish=resolve}):original?.(name,args));
+ const {client,Wrapper}=wrapper();const invalidate=vi.spyOn(client,'invalidateQueries');const {result,unmount}=renderHook(useFluxoVisitaTecnica,{wrapper:Wrapper});
+ const pending=result.current.converterRecomendacaoEmOS('visit');await waitFor(()=>expect(calls()).toHaveLength(1));unmount();
+ finish?.({data:{success:true,os_id:'os-one',registro_id:'visit'},error:null});expect((await pending).success).toBe(false);
+ expect(invalidate).not.toHaveBeenCalled();expect(m.toast).not.toHaveBeenCalled();expect(m.navigate).not.toHaveBeenCalled();
+});
+it('dialog identity change ignores late error and releases lock without stale state',async()=>{
+ let finish: ((v:unknown)=>void)|undefined;const original=m.rpc.getMockImplementation();
+ m.rpc.mockImplementation((name,args)=>name==='rpc_converter_visita_em_os'?new Promise(resolve=>{finish=resolve}):original?.(name,args));
+ const {Wrapper}=wrapper();const {rerender}=render(<Wrapper><LaboratoryConversionAction registroId="visit" /></Wrapper>);
+ fireEvent.click(await screen.findByRole('button',{name:'Gerar OS laboratorial'}));fireEvent.click(screen.getByRole('button',{name:'Confirmar encaminhamento'}));
+ await waitFor(()=>expect(calls()).toHaveLength(1));expect(screen.getByRole('button',{name:'Cancelar'})).toBeDisabled();
+ act(()=>{m.auth.profile.organization_id='FSF';rerender(<Wrapper><LaboratoryConversionAction registroId="visit" /></Wrapper>)});
+ expect(screen.queryByRole('alertdialog')).toBeNull();
+ await act(async()=>{finish?.({data:{success:false,code:'LAB_VISIT_CONVERSION_FAILED'},error:null});});
+ expect(screen.queryByRole('alert')).toBeNull();expect(m.toast).not.toHaveBeenCalled();expect(m.navigate).not.toHaveBeenCalled();
+ fireEvent.click(await screen.findByRole('button',{name:'Gerar OS laboratorial'}));
+ expect(screen.getByRole('button',{name:'Confirmar encaminhamento'})).toBeEnabled();
 });

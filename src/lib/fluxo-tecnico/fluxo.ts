@@ -136,8 +136,8 @@ export function podeDecidirPorPapel(role: string | null | undefined): boolean {
 export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = true;
 
 /**
- * Conversão singular auditada na migration 20261015161648.
- * Este gate libera somente encaminhamento; não programa nem fabrica.
+ * Conversão singular: base 20261015161648 e hardening manage 20261015163930.
+ * Cria OS/programação pendente; não inicia fabricação.
  * Workspace e RPC preservam autorização, lock e replay por visita.
  */
 export const RPC_GERACAO_OS_DISPONIVEL = true;

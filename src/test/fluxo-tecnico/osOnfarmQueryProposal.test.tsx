@@ -30,7 +30,7 @@ vi.mock("@/components/visita/OSFlowTimeline", () => ({ OSFlowTimeline: () => nul
 vi.mock("@/components/visita/VisitaStatusBanner", () => ({ TechnicalDecisionActions: () => null }));
 vi.mock("@/components/shared/RecomendacaoChat", () => ({ RecomendacaoChat: () => null }));
 
-import FluxoTecnico from "../../../scripts/rbac-audit/os-enable-candidate/FluxoTecnico";
+import FluxoTecnico from "@/pages/FluxoTecnico";
 
 afterEach(() => {
   cleanup();
