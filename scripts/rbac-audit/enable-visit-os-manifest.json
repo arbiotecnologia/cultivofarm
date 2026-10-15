@@ -15,7 +15,8 @@
     "real_query": 2,
     "real_pdf_claims": 9,
     "existing_decisions": 35,
-    "regression_total": 81,
+    "fluxo_static": 31,
+    "regression_total": 112,
     "auth": "MOCKED",
     "query_rerun_after_lint_fix": 2
   },
@@ -106,11 +107,15 @@
     },
     {
       "path": "src/hooks/useFluxoVisitaTecnica.ts",
-      "sha256": "10c79685a14f0d62d101db73f9f2bafbdff88a064921d4e9ce2a7f01248bee01"
+      "sha256": "b25b181a38df6d0ff7c3eddb631836bbac5e668bddd955a1054bec126322f54d"
     },
     {
       "path": "src/components/visita/VisitaStatusBanner.tsx",
-      "sha256": "81804f00d8d00bdb4893b4896bf18c00e3d111645b35b86e6fd0c9eea11fed2d"
+      "sha256": "8bea1be8391979a928b5127bb7a8bc2cc74cbbbe781b1174d5fbfb33a840c50c"
+    },
+    {
+      "path": "src/test/fluxo-tecnico/fluxo.test.ts",
+      "sha256": "10406e3d7e1e99df673e9e7323069919298a5c3fe2ef48efc6e7ce677fed63e3"
     },
     {
       "path": "src/pages/FluxoTecnico.tsx",
@@ -138,14 +143,27 @@
     }
   ],
   "validation": {
-    "build": "AUTOMATIC_OK_2026_10_15_17_09_27_UTC",
-    "typecheck": "NO_SEPARATE_EVIDENCE_AUTOMATIC_HARNESS_ONLY",
+    "build": "AUTOMATIC_OK_2026_10_15_17_15_10_UTC",
+    "typecheck": "AUTOMATIC_HARNESS_OK_17_15_10_AFTER_17_14_53_IMPORT_FIX",
     "lint_controls_tests": "PASS_ZERO",
     "lint_global": "FAIL_3295_ERRORS_126_WARNINGS",
     "lint_hook_pages": "FAIL_BASELINE_DELTA_UNVERIFIED",
     "secrets_scanner": "FOCAL_PASS",
     "git_diff_check": "PASS",
-    "git_commit": "PLATFORM_MANAGED_NOT_EXECUTED"
+    "git_commit": "PLATFORM_MANAGED_2ac35c1a_NOT_MANUAL"
+  },
+  "textual_4fdcb": {
+    "state": "APPLIED_REAL_SOURCE_NOT_PUBLISHED",
+    "scope": "COPY_ONLY_NO_LOGIC_SQL_DATA_ACL_FLAGS_DEPS",
+    "banner_convertido_os": "Uma recomendação foi encaminhada à OS. O encaminhamento não confirma início da fabricação nem conclusão comercial; consulte a OS para acompanhar a produção.",
+    "hook_new_success": "OS e programação pendente criadas. Consulte a OS para validar o volume antes de fabricar.",
+    "hook_replay_message": "PRESERVED_Encaminhamento já registrado para esta visita.",
+    "stale_tests_updated": [
+      "RPC_GERACAO_OS_DISPONIVEL agora true com guards preservados",
+      "coluna origem inexistente substituída por registro_consultor_id"
+    ],
+    "focused_tests": "112/112 em 5 arquivos",
+    "browser_published_copy": "UNVERIFIED_EXTERNAL_UNMANAGED"
   },
   "historical_patch": "ALREADY_INCORPORATED_DO_NOT_REAPPLY"
 }
