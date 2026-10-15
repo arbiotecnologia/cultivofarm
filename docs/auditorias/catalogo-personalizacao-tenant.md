@@ -2,6 +2,15 @@
 
 Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownership e cadastro próprio da empresa ficam fora desta rodada.
 
+
+## Atualização 2026-10-15 15:10 UTC — matriz, roteiro e fase 07
+- Matriz: `docs/auditorias/catalogo-ownership-matriz-nominal.md` e `scripts/rbac-audit/ownership-readers-matrix.json`; 83 diretas + 1 histórico/transitivo, sete views originais e 60 FKs. É inventário/prova estrutural, não Auth real.
+- Ordem candidata: `scripts/rbac-audit/ownership-ordered-manifest.json` (01–06/08–11). Fase 07 separada, sem aplicação.
+- Runtime ownership: revisado para atores reais via variáveis, gate OFF obrigatório e falha se qualquer caso não passar. Não executado contra banco hospedado.
+- Fase 07: OS manual/B2B/On-Farm, programação e lote validam família biológica ou micro; químico, fertilizante, família NULL e duas referências falham. Pedido misto preserva linhas não fabricáveis e não é marcado produzido; históricos não são reclassificados. `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` preservado, inclusive no replay da publicação.
+- Prova local: `scripts/rbac-audit/check-lab07-pglite.mjs` 36/36 PASS, executando o SQL07 sem o preflight live. Auth, permissões, schema e helpers são simulados.
+- NO-GO hospedado: revisão/aplicação independente, preflight real, Auth/RLS, duas conexões, browser e Edge patch.
+
 ## 1. Funcionalidade
 Cada empresa pode ocultar e voltar a exibir produtos, microrganismos e culturas **globais** na sua gestão e nas novas seleções integradas.
 

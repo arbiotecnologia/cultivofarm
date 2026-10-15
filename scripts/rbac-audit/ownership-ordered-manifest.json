@@ -54,7 +54,13 @@
       "sha256": "288a0645f1559b977217ca6282ead94bce6d99dd129e05b9d0274586670abc96"
     }
   ],
-  "separate_phase": "proposed-lab-biological-only-07.sql",
+  "separate_phase": {
+    "path": "scripts/rbac-audit/proposed-lab-biological-only-07.sql",
+    "sha256": "6c68e356ce6381f309249d42cf456ed6254a52be839ce79fff7ed7a42d32329a",
+    "apply_authorized": false
+  },
   "rollback": "rollback-tenant-catalog-ownership.sql",
-  "runtime": "runtime-test-tenant-catalog-ownership.sql"
+  "runtime": "runtime-test-tenant-catalog-ownership.sql",
+  "runtime_sha256": "f07b0206336d5d85842e0c73537310412e0bccdba4ee6dd5fc25a6ea68c1255c",
+  "rollback_sha256": "9ca4c1f0e0b9b0260692f10c33eacf2330dc74a878484c8f269ced80b7e1cb99"
 }

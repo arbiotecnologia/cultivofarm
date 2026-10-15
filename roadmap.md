@@ -1,3 +1,10 @@
+## CONTINUAÇÃO — MATRIZ, RUNTIME E SQL07 — 2026-10-15 15:10 UTC
+- [x] Matriz nominal: 83 funções diretas + `rpc_partner_commercial_history` transitiva, identidades confirmadas em leitura canônica; sete views originais com md5/prova individual. Inventário completo, certificação hospedada UNVERIFIED.
+- [x] Conjunto ordenado 01–06/08–11 com SHA-256; rollback operacional preserva colunas, RLS, guards, leitores, ledger e dados.
+- [x] Roteiro runtime revisado: RESET ROLE explícito, gate OFF obrigatório antes, sem helpers privados como authenticated, composição declarativa real e casos AR/FSF/SA/Financeiro/Consultor. Não executado com atores reais.
+- [x] SQL07 completo: seis corpos explícitos com hashes live; OS/programação/lote/On-Farm aceitam só biológico ou micro; família NULL e duas referências bloqueadas; pedido misto não é marcado produzido por OS biológicas; replay preservado. PGlite 36/36 PASS com stubs; preflights live e Auth real UNVERIFIED.
+- [ ] Revisão/aplicação independente, Auth/RLS hospedado, duas conexões, browser e Edge patch. Gate OFF; sem DDL/publicação.
+
 ## CONTINUAÇÃO AUTORIZADA — 2026-10-15 14:55 UTC
 - [ ] Matriz nominal 83 diretas + histórico, sete views originais, conjunto ordenado 01–06/08–11 e runtime corrigido; gate OFF.
 - [ ] SQL07 separado: corpos completos, conversões automáticas/mistas, famílias explícitas, histórico preservado e testes SQL executáveis.
