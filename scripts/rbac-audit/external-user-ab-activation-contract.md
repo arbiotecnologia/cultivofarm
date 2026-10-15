@@ -1,4 +1,13 @@
-# A+B — contrato exato de ativação 21:13 (execução posterior controlada)
+# A+B — contrato exato de ativação (estado externo atualizado21:20)
+
+## Estado vigente21:20 — evidência externa do auditor, NÃO reaplicar
+- Pacote `0ab8c87`:100/100 Vitest e lint focal PASS independentes; grants mínimos exercitados no harness31 independente.
+- Preflight original FALHOU realmente no hospedado com SQL42601 na expressão `p.proconfig IS DISTINCT FROM CASE WHEN ... END` dentro IF. Não foi PASS de execução integral.
+- Auditor corrigiu os dois scripts com `p.proconfig IS DISTINCT FROM (CASE WHEN ... END)`, sem alterar lógica; preflight corrigido PASS hospedado informado externamente. Correção agora espelhada nos arquivos locais.
+- `h_external_user_activation_minimal_grants` APLICADA pelo auditor no canônico; create-user v81 implantada com flag true e verify_jwt=true. Versão numérica/SQL do ledger não fornecidos nesta atualização; não inventar hash hospedado nem reaplicar.
+- Publicação SOLICITADA pelo auditor, deployment `d9d0d96b-2b4e-45a8-b1cd-d1eb3c04a6a4`; conclusão não verificada pelo agente. Nenhuma publicação adicional nesta entrega.
+- Cadastro/login das contas autorizadas serão testados pelo auditor na sessão Admin AR disponível; agente não cria contas/envia emails. GoTrue/JWT/RLS/Storage reais de externos continuam sem resultado informado.
+- Sequência21:13 abaixo é histórico do contrato, não instrução para reaplicar grants ou reimplantar. O preflight local exige ACL pré-ativação fechada: depois dos grants, não é verificador do estado ativo. Rollback restritivo continua disponível, sem execução nesta entrega.
 
 Destino exclusivo `swzpzcwiasxmjutrmvkm`. Esta entrega não executa DDL/grants/deploy/contas/email/publicação.
 
@@ -7,7 +16,7 @@ Destino exclusivo `swzpzcwiasxmjutrmvkm`. Esta entrega não executa DDL/grants/d
 - `20261015205954_h_external_user_provisioning_closed`: preflight+SQL atômicos; MD5 `eed40456ee9b22b78a3322d543c86694`,24636 bytes. Sete assinaturas sem EXECUTE anon/authenticated/service, receipt RLS vazia e três triggers convite: evidência externa; sete ACL confirmadas read-only nesta entrega.
 - Arquivos arquivados em supabase/migrations reproduzem exatamente os hashes do ledger. Não executar preflight antigo que exige ausência de receipt: instalação já concluída.
 
-## Fonte integrada e sequência posterior
+## Histórico21:13 — fonte integrada e sequência então posterior
 1. `supabase/functions/create-user/index.ts` contém o diff aprovado. `B2B_PROVISIONING_CHANNELS_REVIEWED=true` e `EXTERNAL_USER_ACTIVATION_REVIEWED=true` estão habilitadas SOMENTE no código revisável desta rodada; requests/env/preflight não abrem flags. Técnico B2B é negado mesmo com flag aberta.
 2. create-user v79 verify_jwt=true/flag false foi implantada EXTERNAMENTE pelo auditor; agente não implanta esta revisão ativa. P1 portal_solicitacoes20261015210732 e readers20261015210837 JÁ APLICADOS pelo auditor, sem reaplicação; seis triggers e quatro interfaces authenticated preservados, helper fechado.
 3. Grants mínimos futuros, SOMENTE após revisão e verificação de hashes/owner: authenticated EXECUTE em `public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid)` E `platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid)` (wrapper INVOKER). Serviço EXECUTE somente em `public.b2b_finish_provisioning(uuid,uuid,uuid)`, `public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid)` e `public.b2b_complete_provisioning_compensation(uuid,uuid,uuid)`. Core external_provisioning_scope permanece privado sem grant cliente; overload público quatro args não é usado pelo entrypoint integrado. Não conceder DML Auth/roles/receipts, leitura de receipts ou acesso amplo partner_users. Preflight B2B existente preservado.
@@ -19,7 +28,7 @@ Destino exclusivo `swzpzcwiasxmjutrmvkm`. Esta entrega não executa DDL/grants/d
 ## Rollback e limites
 Fechar flags/RPCs; usar rollback restritivo versionado quando necessário, nunca restaurar brecha/leitor vulnerável. Preservar dados/receipts/contas e Storage/guard OS `20261015194058`. Financeiro links/schedule/terms e rpc_portal_partner_financial não são liberados por duas policies de recebíveis. Nenhuma ausência de migrations já aplicadas é bloqueio. GoTrue/JWT de externos, Storage assinado e efeitos reais pós-deploy ainda não foram executados pelo agente; auditor executará próximos passos após conferência final.
 
-## SQL focal desta entrega (não executar automaticamente)
+## SQL focal arquivado (grants já aplicados externamente; NÃO executar novamente)
 - `preflight-external-user-activation-postinstall.sql`: hashes/owners/search_path/ACL atuais, receipt RLS vazia sem DML/leitura, seis triggers solicitações e três convites; aborta drift. Search_path public dos quatro readers EXISTENTES preservado, demais vazio. Schema usage authenticated já existente conferido.
 - `proposed-external-user-activation-grants.sql`: BEGIN + preflight embutido + EXATAMENTE cinco GRANTs do item3 + pós-condições + COMMIT; nenhum corpo/policy/dado alterado. Preflight exige estado fechado inicial, repetição após ativação aborta sem efeitos.
 - `rollback-external-user-activation-grants.sql`: REVOKE das cinco entradas e overload4/helper scope; mantém seis triggers solicitações, três convite, leitores corrigidos e receipts. Fechar também ambas flags no código e reimplantar controladamente se necessário. NÃO usar rollback de instalação que remove triggers convite.

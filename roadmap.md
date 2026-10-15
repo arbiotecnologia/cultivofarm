@@ -1,10 +1,19 @@
-## RECORTE 21:13 — ativação focal autorizada, SEM execução remota
+## RECORTE DOCUMENTAL 21:20 — ativação aplicada externamente, NÃO reaplicar
+- [x] Pacote0ab8c87:100/100 Vitest, lint focal e harness31 dos grants PASS independentes, informados pelo auditor.
+- [x] Falha REAL do preflight original hospedado: SQL42601 em `p.proconfig IS DISTINCT FROM CASE WHEN ... END` dentro IF; não registrar o original como PASS.
+- [x] Corrigir SOMENTE parênteses nos dois scripts: `IS DISTINCT FROM (CASE WHEN ... END)`; sem mudança lógica. Preflight corrigido hospedado PASS EXTERNO.
+- [x] Auditor aplicou `h_external_user_activation_minimal_grants` no canônico e implantou create-user v81, flag true/verify_jwt=true; NÃO reaplicar grants/DDL. Versão numérica/ledger não informados nesta atualização.
+- [x] Publicação solicitada externamente: deployment `d9d0d96b-2b4e-45a8-b1cd-d1eb3c04a6a4`; conclusão não confirmada pelo agente, sem nova publicação.
+- [x] Contrato/relatório e manifesto SHA-256 atualizados; runtime, contas e emails intocados.
+- [ ] Auditor: testar contas autorizadas e login B2B gestor/ClienteProdutor na sessão Admin AR disponível; resultados JWT/GoTrue/RLS/Storage reais ainda não informados. Agente não cria contas nem envia emails.
+
+## HISTÓRICO 21:13 — ativação focal autorizada, SEM execução remota pelo agente
 - [x] Fonte existente com duas flags true revisáveis; Auth/tenant/RBAC/receipt autoritativos e Técnico negado.
 - [x] Org/tenant forjado e alias cliente conflitante negados antes claim/Auth; senha operador ausente e primeiro acesso separado.
 - [x] Candidato grants claim7 public/private authenticated; finish/prepare/complete service_role somente. Preflight pós-instalação/hashes/owners/ACL e rollback restritivo sem DROP entregues.
 - [x] Estado REAL: create-user v79 verify_jwt=true/flag false implantada externamente; migrations20261015210732 e20261015210837 aplicadas pelo auditor. NÃO reaplicar; seis triggers solicitações/quatro readers ativos/helper fechado.
 - [x] QA108 Vitest cadastro/entrypoint/RBAC +91 portais/saas PASS; PostgreSQL isolado21 ACL+17 rollback e concorrência/revogação/replay PASS; Auth/transporte simulados.
-- [ ] Auditor: conferência final e aplicação dos cinco grants/implantação controlada da fonte ativa (ações proibidas ao agente nesta entrega).
+- [x] Auditor: conferência final/aplicação dos cinco grants e implantação controlada concluídas externamente conforme atualização21:20 (v81); nenhuma execução pelo agente.
 - [ ] Auditor: criação nominal das duas contas autorizadas e JWT/GoTrue/RLS/Storage reais pós-deploy; nenhuma conta/email criada pelo agente.
 
 ## RECORTE 21:05 — integração real create-user fechada
@@ -13,7 +22,7 @@
 - [x] Migrations externas 20261015205713/20261015205954 reconhecidas como APLICADAS, SQL/hash exatos arquivados; nenhuma reaplicação/DDL/grant/deploy/conta/email/publicação.
 - [x] QA153/153+60/60 Vitest (26 sobrepostos),56 P1/26 financeiro/harness cadastro local PASS; scanner/lint testes0/diff-check/build automáticoOK; typechecks independentes são evidência externa.
 - [x] Contrato pós-instalação atualizado: não rodar preflight antigo de ausência; próximos passos controlados pelo auditor, sessão Admin AR dele disponível.
-- [ ] Revisão final/deploy controlado/grants e ativação: ações expressamente reservadas ao auditor, não executar nesta entrega.
+- [x] Revisão final/deploy controlado/grants e ativação realizados externamente conforme atualização21:20; não executar novamente.
 - [x] P1 portal_solicitacoes aplicado externamente20261015210732;56assertions independentes PASS.
 - [ ] GoTrue/JWT externos e Storage API pós-deploy: identidades futuras autorizadas, não criar agora; prova Admin não substitui B2B/Produtor exclusivo.
 
@@ -21,7 +30,7 @@
 - [x] Falsificação INSERT/UPDATE e notificação estrangeira reproduzidas em PostgreSQL/RLS descartável: 26 campos,6 constraints,9 policies,5 triggers reais (Auth/publisher reduzidos).
 - [x] Guard candidato antes dos efeitos preserva criação/confirmar/remarcar/replay; nega autoria/status/consultor/ref forjados, revogação e destinatário estrangeiro.56 assertions PASS; preflight/rollback restritivo/manifesto entregues, sem DDL remoto.
 - [x] Regressão da rodada:53 Vitest páginas/cache/Edge mock;26 assertions financeiro B2B; lint focal0/scanner0/diff-checkPASS/build automáticoOK. Relatório atualizado; sem certificação JWT/GoTrue/fullschema banco inteiro.
-- [ ] Aplicação/ativação e JWT Produtor real: aguardam revisão solicitada e login titular após implantação; não criar contas/DDL/grants nesta rodada.
+- [x] Guard aplicado externamente20261015210732 e ativação realizada pelo auditor21:20; não reaplicar. JWT Produtor real pendente no recorte vigente, sem contas pelo agente.
 
 ## RECORTE 20:50 — financeiro B2B, diagnóstico efetivo e candidato revisável
 - [x] Policies canônicas completas: títulos/parcelas com restritiva tenant e partner_users admin-only; ensaio authenticated reproduz contexto válido e zero títulos/parcelas.

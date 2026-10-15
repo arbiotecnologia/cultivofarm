@@ -23,7 +23,7 @@ BEGIN
   IF p.oid IS NULL OR md5(pg_get_functiondef(p.oid)) IS DISTINCT FROM e.hash
    OR pg_get_userbyid(p.proowner) IS DISTINCT FROM 'postgres'
    OR p.prosecdef IS DISTINCT FROM e.definer
-   OR p.proconfig IS DISTINCT FROM CASE WHEN e.authexec THEN ARRAY['search_path=public']::text[] ELSE ARRAY['search_path=""']::text[] END
+   OR p.proconfig IS DISTINCT FROM (CASE WHEN e.authexec THEN ARRAY['search_path=public']::text[] ELSE ARRAY['search_path=""']::text[] END)
    OR has_function_privilege('authenticated',p.oid,'EXECUTE') IS DISTINCT FROM e.authexec
    OR has_function_privilege('anon',p.oid,'EXECUTE')
    OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE')
