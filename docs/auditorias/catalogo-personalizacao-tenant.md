@@ -339,3 +339,28 @@ Fecha gate, limpa certificação e revoga as quatro funções. Se houver privado
 | Testes ownership 17 + catálogo completo 627/627 | PASS local |
 | typecheck app/node, lint arquivos novos (0/0), scanner, build 26.11s | PASS local |
 | Aplicação 01/02, runtime 40+ casos, concorrência | **UNVERIFIED** |
+
+---
+
+## FASE 3 — Revisão 3 (após 110c9c41, 15/10/2026) — candidatos 01+02 corrigidos, 03 novo. NÃO aplicado, gate OFF.
+
+| Achado | Correção | Prova |
+|---|---|---|
+| A `normalize(...,NFD)` qualificado → 42703 | literal `'NFD'`; autoteste no DDL ampliado | erro reproduzido e expressão EXATA testada read-only no canônico: Açúcar→acucar, Único/U+0301→unico, 26 maiúsculas e 28 minúsculas acentuadas OK, '   '→NULL |
+| B proporção invertida | `(x BETWEEN 0.000001 AND 100) IS FALSE`; NULL aceito; escala ≤6 | SELECT real: 50/100/0.000001 aceitos; 101/-1/0 rejeitados |
+| C trigger compartilhado | dois triggers separados (formulações/volumes) sem campo alheio + autoteste UPDATE em linha global no DDL | estrutural; runtime `global_child_update` UNVERIFIED |
+| D pós varrendo pg_proc | pós confere só as funções do manifesto (02: 16, 03: 6) | estrutural |
+| E SA writers/preview | 03: `catalog_volume_parent/row/assert_row/preview_token` só globais → `change_global_volume`, `create_global_volume_core` e leitores de volume ficam indisponíveis para privado antes de qualquer leitura/token/replay | md5 fixado; runtime UNVERIFIED |
+| F runtime | casos de autorização exigem SQLSTATE/mensagem específicos; normalização, limites de proporção e nomes iguais AR/FSF adicionados | estrutural |
+
+**03 B2B:** `get_partner_catalog_secure` e `get_partner_catalog_tecnico_secure` filtram global + itens do fornecedor (`partner_accounts.commercial_owner_organization_id` do parceiro já autorizado, conferido contra `b2b_commercial_context()`); interno só se a empresa do ator for o fornecedor; SA só global. ACL das funções de preço (`fn_b2b_resolve_base_unit_price`, `fn_resolve_commercial_price`, `rpc_commercial_simulator`) preservada e conferida no pós. Item próprio nasce `b2b_enabled=false` e não há caminho tenant para ligar — B2B privado fica inerte por desenho.
+
+**Edge:** filtros preparados em `scripts/rbac-audit/edge-global-filter-ownership.patch.md`, propositalmente NÃO aplicados em `supabase/functions` (implantação automática quebraria antes do DDL).
+
+**Ainda pendente antes de abrir o gate (bloqueia):** SA writers não-volume (`set_global_product_composition_core`, `set_global_product_family/status_core`, `set_global_b2b_enabled_core`, `update_global_*_core`, `set_global_*_status_core`) — leitura prévia/replay a filtrar; simulação/pedidos B2B (`b2b_save_technical_simulation`, `get_portal_cliente_b2b_*`, `generate_production_orders_from_partner`); fiscal; produção/entrega/etiquetas; visita; regulatório; `proximo_codigo`; 7 views (incl. `v_microorganism_fiscal_readiness`, `vw_bi_*`); RLS de descendentes; UI própria em `/base-tecnica` (desligada); composição química/fertilizantes, apresentações, doses e preços próprios.
+
+| Evidência | Resultado |
+|---|---|
+| Expressões SQL A/B (read-only real) | PASS |
+| Testes catálogo 632/632, typecheck app/node, lint novos 0/0, scanner, build 28.84s | PASS local |
+| Aplicação 01–03, runtime, concorrência | UNVERIFIED |
