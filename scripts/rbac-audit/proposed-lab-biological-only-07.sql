@@ -4,7 +4,8 @@
 BEGIN;
 DO $$ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'CANONICAL_REF_REQUIRED'; END IF;
-  IF md5(pg_get_functiondef('public.generate_production_orders_from_partner(uuid)'::regprocedure)) <> '68ca411c80fb9a191fdd55f65e171fc8' THEN RAISE EXCEPTION 'lab07_generate_orders_drift'; END IF;
+  -- Hash live de 15/10/2026 após o hardening que inclui B2B_INTERNAL_DOWNSTREAM_UNVERIFIED.
+  IF md5(pg_get_functiondef('public.generate_production_orders_from_partner(uuid)'::regprocedure)) <> 'ad584fa71bd7cc2bb00f4887e5b3706b' THEN RAISE EXCEPTION 'lab07_generate_orders_drift'; END IF;
   IF md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure)) <> '3e7479b964f0927a36442770c25e8562' THEN RAISE EXCEPTION 'lab07_programar_drift'; END IF;
   IF md5(pg_get_functiondef('public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)'::regprocedure)) IS NULL THEN RAISE EXCEPTION 'lab07_lote_missing'; END IF;
   IF to_regprocedure('public.rpc_planejamento_publicar_v1(uuid,text)') IS NULL OR to_regprocedure('public.publish_planning_to_lab(uuid)') IS NULL THEN RAISE EXCEPTION 'lab07_publish_missing'; END IF;
@@ -13,8 +14,11 @@ END $$;
 CREATE FUNCTION platform_private.lab_item_is_manufacturable(p_product_id uuid,p_microorganism_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
   SELECT CASE
-    WHEN p_microorganism_id IS NOT NULL THEN EXISTS(SELECT 1 FROM public.microrganismos m WHERE m.id=p_microorganism_id)
+    -- Duas referências na mesma linha são ambíguas e falham fechadas. Isso impede que
+    -- um microrganismo válido transforme produto químico/fertilizante em fabricável.
+    WHEN p_product_id IS NOT NULL AND p_microorganism_id IS NOT NULL THEN false
     WHEN p_product_id IS NOT NULL THEN EXISTS(SELECT 1 FROM public.produtos p WHERE p.id=p_product_id AND p.familia_catalogo='biologico')
+    WHEN p_microorganism_id IS NOT NULL THEN EXISTS(SELECT 1 FROM public.microrganismos m WHERE m.id=p_microorganism_id)
     ELSE false END
 $$;
 REVOKE ALL ON FUNCTION platform_private.lab_item_is_manufacturable(uuid,uuid) FROM PUBLIC,anon,authenticated;

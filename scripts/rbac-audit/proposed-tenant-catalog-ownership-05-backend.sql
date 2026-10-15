@@ -772,7 +772,12 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
   IF NEW.microrganismo_id IS NOT NULL THEN
     SELECT owner_organization_id INTO v_micro_owner FROM public.microrganismos WHERE id=NEW.microrganismo_id FOR KEY SHARE;
-    IF NOT FOUND OR v_micro_owner IS DISTINCT FROM v_owner THEN
+    -- Matriz do contrato 01:
+    -- global→global: permitido; global→privado: negado;
+    -- privado→global: permitido; privado→mesmo owner: permitido; privado→outro owner: negado.
+    IF NOT FOUND
+       OR (v_owner IS NULL AND v_micro_owner IS NOT NULL)
+       OR (v_owner IS NOT NULL AND v_micro_owner IS NOT NULL AND v_micro_owner IS DISTINCT FROM v_owner) THEN
       RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
   END IF;
   RETURN NEW;
