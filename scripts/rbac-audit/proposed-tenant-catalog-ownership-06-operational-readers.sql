@@ -361,7 +361,12 @@ DO $$ DECLARE r record; BEGIN FOR r IN SELECT * FROM (VALUES
  ('vw_bi_estoque_produto','054a615aa894d8c6771efffa70e30248'),
  ('vw_bi_movimentacoes','4530d450cf23994637f6eccd137287b9'),
  ('v_product_fiscal_readiness','af802dc9f89a108b25ad07856b6cb30c')
- ) v(n,h) LOOP SELECT viewname,md5(definition) INTO r FROM pg_views WHERE schemaname='public' AND viewname=r.n; IF r.md5 IS DISTINCT FROM r.h THEN RAISE EXCEPTION 'ownership06_view_drift: %',r.n; END IF; END LOOP; END $$;
+ ) v(n,h) LOOP
+   IF (SELECT md5(definition) FROM pg_views WHERE schemaname='public' AND viewname=r.n) IS DISTINCT FROM r.h THEN
+     RAISE EXCEPTION 'ownership06_view_drift: %',r.n;
+   END IF;
+ END LOOP;
+END $$;
 
 CREATE OR REPLACE VIEW public.v_product_fiscal_readiness WITH (security_invoker=true) AS
 SELECT sel.product_id,sel.id profile_id,sel.profile_status,sel.is_active profile_is_active,
@@ -384,7 +389,7 @@ WHERE m.owner_organization_id IS NULL;
 CREATE OR REPLACE VIEW public.vw_bi_commercial_revenue WITH (security_invoker=on) AS SELECT date_trunc('month',po.created_at)::date mes,pa.id partner_id,pa.razao_social,pa.commercial_region,pa.partner_type,count(po.id) qtd_pedidos,coalesce(sum(po.total),0) receita_total,coalesce(sum(po.total) FILTER(WHERE po.status::text IN ('aprovado','em_producao','pronto_entrega','entregue','faturado')),0) receita_aprovada,coalesce(sum(po.total) FILTER(WHERE po.status::text='faturado'),0) receita_faturada FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id GROUP BY 1,2,3,4,5;
 CREATE OR REPLACE VIEW public.vw_bi_commercial_engagement WITH (security_invoker=on) AS SELECT pa.id partner_id,pa.razao_social,pa.partner_type,pa.commercial_region,pem.ultima_compra,pem.dias_sem_compra,pem.pedidos_30d,pem.pedidos_90d FROM public.partner_accounts pa LEFT JOIN public.partner_engagement_metrics pem ON pem.partner_id=pa.id;
 CREATE OR REPLACE VIEW public.vw_bi_commercial_campaigns WITH (security_invoker=on) AS SELECT c.id,c.nome,c.data_inicio,c.data_fim,c.ativa,(SELECT count(*) FROM public.commercial_campaign_partners cp WHERE cp.campaign_id=c.id) qtd_parceiros,(SELECT count(*) FROM public.commercial_campaign_products cpp JOIN public.produtos p ON p.id=cpp.product_id AND p.owner_organization_id IS NULL WHERE cpp.campaign_id=c.id) qtd_produtos FROM public.commercial_campaigns c;
-CREATE OR REPLACE VIEW public.vw_bi_estoque_produto WITH (security_invoker=true) AS SELECT ep.id,ep.produto_id,l.microrganismo_id,p.nome nome_produto,m.nome nome_microrganismo,coalesce(ep.volume_total,0) volume_total,round(coalesce(ep.volume_total,0)/1000.0,4) volume_total_l,ep.updated_at FROM public.estoque_produto ep LEFT JOIN public.produtos p ON ep.produto_id=p.id AND p.owner_organization_id IS NULL LEFT JOIN public.lotes l ON ep.lote_id=l.id LEFT JOIN public.microrganismos m ON l.microrganismo_id=m.id AND m.owner_organization_id IS NULL;
+CREATE OR REPLACE VIEW public.vw_bi_estoque_produto WITH (security_invoker=true) AS SELECT ep.id,ep.produto_id,l.microrganismo_id,p.nome nome_produto,m.nome nome_microrganismo,coalesce(ep.volume_total,0) volume_total,round(coalesce(ep.volume_total,0)/1000.0,4) volume_total_l,ep.updated_at FROM public.estoque_produto ep LEFT JOIN public.produtos p ON ep.produto_id=p.id AND p.owner_organization_id IS NULL LEFT JOIN public.lotes l ON ep.lote_id=l.id LEFT JOIN public.microrganismos m ON l.microrganismo_id=m.id AND m.owner_organization_id IS NULL WHERE (ep.produto_id IS NULL OR p.id IS NOT NULL) AND (l.microrganismo_id IS NULL OR m.id IS NOT NULL);
 CREATE OR REPLACE VIEW public.vw_bi_movimentacoes WITH (security_invoker=true) AS SELECT em.id,em.estoque_produto_id,em.acao tipo_movimentacao,em.quantidade volume_alteracao,em.status_anterior volume_anterior,em.status_novo volume_novo,em.observacao motivo,em.created_at,ep.produto_id,l.microrganismo_id FROM public.estoque_movimentacoes em LEFT JOIN public.estoque_produto ep ON em.estoque_produto_id=ep.id LEFT JOIN public.produtos p ON p.id=ep.produto_id AND p.owner_organization_id IS NULL LEFT JOIN public.lotes l ON ep.lote_id=l.id LEFT JOIN public.microrganismos m ON m.id=l.microrganismo_id AND m.owner_organization_id IS NULL WHERE (ep.produto_id IS NULL OR p.id IS NOT NULL) AND (l.microrganismo_id IS NULL OR m.id IS NOT NULL);
 
 DO $$ BEGIN IF platform_private.catalog_ownership_enabled() THEN RAISE EXCEPTION 'ownership06_gate_must_remain_off'; END IF; END $$;

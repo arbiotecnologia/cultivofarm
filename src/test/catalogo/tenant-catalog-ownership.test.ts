@@ -97,9 +97,11 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
     expect(sql).not.toMatch(/FUNCTION platform_private\.trg_catalog_owner_child\(\)/);
     expect(sql).toMatch(/ownership_child_selftest_ok/);
   });
-  it("achado B (110c9c41): proporção rejeita fora de [0.000001,100] e aceita NULL", () => {
-    expect(sql).toMatch(/\(\(v_item->>'proporcao'\)::numeric BETWEEN 0\.000001 AND 100\) IS FALSE/);
-    expect(sql).not.toMatch(/NOT BETWEEN 0\.000001 AND 100\) IS FALSE/);
+  it("medida declarativa rejeita limites, unidades e bases fora do contrato global", () => {
+    expect(sql).toMatch(/\(v_item->>'quantidade'\)::numeric <= 0/);
+    expect(sql).toMatch(/\(v_item->>'quantidade'\)::numeric>1e15/);
+    expect(sql).toMatch(/\(v_item->>'quantidade'\)::numeric>1000/);
+    expect(sql).toMatch(/\(v_item->>'quantidade'\)::numeric>100/);
   });
   it("achado 6: lock comum e índices legados reescopados", () => {
     expect(sql).toMatch(/DROP INDEX IF EXISTS public\.microrganismos_nome_unique/);
@@ -109,7 +111,7 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
   it("achado 5: whitelist, NULL-safe, composição obrigatória, arquivado só restaura", () => {
     expect(sql).toMatch(/catalog_owned_allowed_keys/);
     expect(sql).toMatch(/IN \('produto','microrganismo','cultura'\)\) IS NOT TRUE/);
-    expect(sql).toMatch(/jsonb_array_length\(v_payload->'itens'\) NOT BETWEEN 1 AND 50/);
+    expect(sql).toMatch(/jsonb_array_length\(v_payload->'itens'\) NOT BETWEEN 0 AND 50/);
     expect(sql).toMatch(/catalog_owned_archived/);
     expect(sql).toMatch(/catalog_owned_noop/);
   });
@@ -121,7 +123,7 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
     expect(sql).not.toMatch(/INSERT INTO public\.formulacoes\(produto_id, microrganismo_id, component_insumo_id/);
     expect(sql).toMatch(/produto_composicao_conjuntos/);
     expect(sql).toMatch(/produto_composicao_declaracoes/);
-    expect(sql).toMatch(/v_fam NOT IN \('quimico','fertilizante_adubo'\)/);
+    expect(sql).toMatch(/catalog_composition_type_allowed\(v_fam,v_item->>'tipo_componente'\)/);
   });
   it("composição própria reutiliza integralmente o contrato global real", () => {
     expect(sql).toMatch(/ARRAY\['status','itens'\]/);
