@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { TenantCatalogScope } from "@/lib/catalogo/tenantCatalogVisibility";
 import { EyeOff, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,15 +14,14 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useSetTenantVisibility, useTenantCatalogScope, useTenantVisibilityMap } from "@/hooks/useTenantCatalogVisibility";
 import {
-  TENANT_VISIBILITY_REASON_MAX, TENANT_VISIBILITY_REASON_MIN, applyManagementVisibility,
+  TENANT_VISIBILITY_COMMON_NOTE, TENANT_VISIBILITY_REASON_MAX, TENANT_VISIBILITY_REASON_MIN, TENANT_VISIBILITY_SCOPE_NOTES, applyManagementVisibility,
   type TenantCatalogEntity, type VisibilityState,
 } from "@/lib/catalogo/tenantCatalogVisibility";
 
-/** Onde a ocultação vale nesta fase — texto honesto exibido ao gestor. */
-export const TENANT_VISIBILITY_SCOPE_NOTE =
-  "Vale só para esta empresa: some desta lista e do seletor de cultura da visita no celular. "
-  + "Não exclui o item, não altera o catálogo global nem outras empresas, e históricos continuam visíveis. "
-  + "Outros seletores e o portal B2B ainda não aplicam esta preferência.";
+/** Texto honesto, por entidade, de onde a ocultação vale nesta fase. */
+export function tenantVisibilityScopeNote(entity: TenantCatalogEntity): string {
+  return `${TENANT_VISIBILITY_SCOPE_NOTES[entity]} ${TENANT_VISIBILITY_COMMON_NOTE}`;
+}
 
 /** Papel de gestão (dica de UI). A autorização real é feita no servidor. */
 export function useCanManageTenantVisibility(): boolean {
@@ -52,35 +52,66 @@ export function TenantVisibilityToggle({ entity, item, state, disabledReason }: 
 }) {
   const scope = useTenantCatalogScope();
   const mutation = useSetTenantVisibility(entity);
-  const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const lock = useRef(false);
-  const keyRef = useRef<string | null>(null);
   const hidden = !!state?.hidden;
   const version = state?.version ?? 0;
-  const nextHidden = !hidden;
-  // Exibir item inativo não é permitido (a preferência não reativa itens).
-  const blocked = disabledReason ?? (!scope ? "Sessão da empresa não carregada." : (!item.ativo && !nextHidden ? "Item global inativo." : null));
+  const contextKey = scope ? `${scope.organizationId}|${scope.userId}|${entity}|${item.id}|${version}|${hidden}|${item.ativo}` : null;
 
-  // Nova chave de idempotência por abertura; a mesma é reusada em reenvio do mesmo diálogo.
-  useEffect(() => { if (open) { keyRef.current = crypto.randomUUID(); setReason(""); } }, [open]);
+  /** Intenção congelada na ABERTURA do diálogo; nunca relida do contexto no submit. */
+  const [snap, setSnap] = useState<{ contextKey: string; scope: TenantCatalogScope; itemId: string; nextHidden: boolean; version: number } | null>(null);
+  const open = snap !== null;
+  /** Geração: muda ao abrir/fechar/mudar contexto/desmontar. Respostas de gerações antigas são ignoradas. */
+  const gen = useRef(0);
+  const lock = useRef(false);
+  /** Tentativa: payload congelado + chave. Mesmo payload reusa a chave (retry); payload novo gera chave nova. */
+  const attempt = useRef<{ payload: string; key: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Exibir item inativo não é permitido (a preferência não reativa itens).
+  const blocked = disabledReason ?? (!scope ? "Sessão da empresa não carregada." : (!item.ativo && hidden ? "Item global inativo." : null));
+
+  const close = () => { gen.current += 1; lock.current = false; attempt.current = null; setSubmitting(false); setSnap(null); setReason(""); };
+  const openDialog = () => {
+    if (!scope || !contextKey || blocked) return;
+    gen.current += 1; attempt.current = null; setReason("");
+    setSnap({ contextKey, scope, itemId: item.id, nextHidden: !hidden, version });
+  };
+
+  // Contexto (identidade/empresa/item/versão/estado) mudou com o diálogo aberto → invalida a intenção.
+  useEffect(() => {
+    if (snap && snap.contextKey !== contextKey) {
+      close();
+      toast.info("Os dados mudaram enquanto o diálogo estava aberto. Revise e tente de novo.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextKey, snap]);
+  useEffect(() => () => { gen.current += 1; }, []);
 
   const reasonOk = reason.trim().length >= TENANT_VISIBILITY_REASON_MIN && reason.trim().length <= TENANT_VISIBILITY_REASON_MAX;
-  const busy = mutation.isPending;
+  const busy = submitting || mutation.isPending;
+  const nextHidden = snap?.nextHidden ?? !hidden;
 
   const submit = async () => {
-    if (lock.current || !scope || !keyRef.current || !reasonOk) return;
+    if (lock.current || !snap || !reasonOk) return;
+    const payload = JSON.stringify([snap.contextKey, snap.nextHidden, snap.version, reason.trim()]);
+    if (!attempt.current || attempt.current.payload !== payload) attempt.current = { payload, key: crypto.randomUUID() };
+    const myGen = gen.current;
+    const frozen = { snap, key: attempt.current.key, reason: reason.trim() };
     lock.current = true;
+    setSubmitting(true);
     try {
       const r = await mutation.mutateAsync({
-        entityId: item.id, hidden: nextHidden, expectedVersion: version, reason, idempotencyKey: keyRef.current, scopeAtStart: scope,
+        entityId: frozen.snap.itemId, hidden: frozen.snap.nextHidden, expectedVersion: frozen.snap.version,
+        reason: frozen.reason, idempotencyKey: frozen.key, scopeAtStart: frozen.snap.scope,
       });
+      if (myGen !== gen.current) return; // conclusão tardia: sem toast/setState
       toast.success(r.hidden ? "Item oculto nesta empresa." : "Item exibido novamente nesta empresa.");
-      setOpen(false);
+      close();
     } catch (e) {
+      if (myGen !== gen.current) return;
       toast.error((e as Error).message);
     } finally {
-      lock.current = false;
+      if (myGen === gen.current) { lock.current = false; setSubmitting(false); }
     }
   };
 
@@ -90,16 +121,16 @@ export function TenantVisibilityToggle({ entity, item, state, disabledReason }: 
         size="sm" variant="outline" className="h-7 px-2"
         disabled={!!blocked || busy}
         title={blocked ?? (hidden ? "Exibir nesta empresa" : "Ocultar nesta empresa")}
-        onClick={() => setOpen(true)}
+        onClick={openDialog}
       >
         {hidden ? <Eye className="h-3.5 w-3.5 mr-1" /> : <EyeOff className="h-3.5 w-3.5 mr-1" />}
         {hidden ? "Exibir" : "Ocultar"}
       </Button>
-      <AlertDialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
+      <AlertDialog open={open} onOpenChange={(v) => { if (!v && !busy) close(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{nextHidden ? "Ocultar" : "Exibir"} “{item.nome}” nesta empresa?</AlertDialogTitle>
-            <AlertDialogDescription>{TENANT_VISIBILITY_SCOPE_NOTE}</AlertDialogDescription>
+            <AlertDialogDescription>{tenantVisibilityScopeNote(entity)}</AlertDialogDescription>
           </AlertDialogHeader>
           <fieldset disabled={busy} className="space-y-1.5">
             <Label htmlFor="tenant-visibility-reason">Motivo</Label>
