@@ -4,6 +4,7 @@
 DO $preflight$
 DECLARE e record; p record;
 BEGIN
+ IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN RAISE EXCEPTION 'EXTERNAL_SCHEMA_USAGE_DRIFT'; END IF;
  FOR e IN SELECT * FROM (VALUES
  ('public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid)','a230865d20627d169db7e8398874d234',false,false),
  ('platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid)','fd44d88fe696f99b339a9f97c74d2911',true,false),
@@ -22,7 +23,7 @@ BEGIN
   IF p.oid IS NULL OR md5(pg_get_functiondef(p.oid)) IS DISTINCT FROM e.hash
    OR pg_get_userbyid(p.proowner) IS DISTINCT FROM 'postgres'
    OR p.prosecdef IS DISTINCT FROM e.definer
-   OR p.proconfig IS DISTINCT FROM ARRAY['search_path=""']::text[]
+   OR p.proconfig IS DISTINCT FROM CASE WHEN e.authexec THEN ARRAY['search_path=public']::text[] ELSE ARRAY['search_path=""']::text[] END
    OR has_function_privilege('authenticated',p.oid,'EXECUTE') IS DISTINCT FROM e.authexec
    OR has_function_privilege('anon',p.oid,'EXECUTE')
    OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE')
