@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const state = vi.hoisted(() => ({ scope: { organizationId: "AR", userId: "ar" },
+  historicalProduct: "hidden", forward: false,
   deferred: null as Promise<void> | null, calls: [] as Record<string, unknown>[] }));
 vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantCatalogScope: () => state.scope }));
 vi.mock("@/hooks/useOfflineSync", () => ({ useOnlineStatus: () => true }));
@@ -23,14 +24,14 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   },
   from: (table: string) => {
     const b = { select: () => b, eq: () => b, order: () => b, in: () => b, abortSignal: () => b,
-      then: (ok: (value: unknown) => unknown) => Promise.resolve({ error: null, data: table === "registros_consultor_recomendacoes" ? [{ id: "rec", recomendacao_tecnica: "Histórico", produto_biologico_sugerido_id: "hidden", versao: 1 }] :
+      then: (ok: (value: unknown) => unknown) => Promise.resolve({ error: null, data: table === "registros_consultor_recomendacoes" ? [{ id: "rec", recomendacao_tecnica: "Histórico", produto_biologico_sugerido_id: state.historicalProduct, encaminhar_para_os: state.forward, versao: 1 }] :
         table === "produtos" ? [{ id: "hidden", nome: "Global oculto", familia_catalogo: "biologico" }] : [] }).then(ok) };
     return b;
   },
 } }));
 import Wizard from "@/pages/app/wizard/WizardRecomendacaoStep";
 describe("seleção de recomendação por identidade", () => {
-  beforeEach(() => { state.scope = { organizationId: "AR", userId: "ar" }; state.deferred = null; state.calls = []; });
+  beforeEach(() => { state.scope = { organizationId: "AR", userId: "ar" }; state.deferred = null; state.calls = []; state.historicalProduct = "hidden"; state.forward = false; });
   function setup() {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const tree = () => <QueryClientProvider client={qc}><Wizard localRegistroId="local" remoteRegistroId="visit" locked={false} onDone={() => {}} /></QueryClientProvider>;
@@ -55,5 +56,17 @@ describe("seleção de recomendação por identidade", () => {
     await act(async () => { resolve(); });
     expect(screen.queryByRole("option", { name: /AR Químico/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+  it("não permite encaminhar sem referência fabricável", async () => {
+    setup(); fireEvent.click(screen.getByRole("button", { name: "Nova" }));
+    expect(screen.getByRole("switch", { name: "Encaminhar à produção" })).toBeDisabled();
+  });
+  it("flag químico legado pode ser desmarcado sem reparo automático", async () => {
+    state.historicalProduct = "AR-chemical"; state.forward = true;
+    setup(); fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    await screen.findByRole("option", { name: /AR Químico/ });
+    const toggle = screen.getByRole("switch", { name: "Encaminhar à produção" });
+    expect(toggle).toBeChecked(); expect(toggle).not.toBeDisabled();
+    fireEvent.click(toggle); expect(toggle).not.toBeChecked(); expect(toggle).toBeDisabled();
   });
 });
