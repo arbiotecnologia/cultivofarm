@@ -39,4 +39,4 @@
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
 - Wizard uses persisted prerequisites and locked confirmation — prevents duplicate submissions.
-- Cockpit read candidates reuse h7n/view/RPC and live source with current lineage checks, keeping ACL closed — prevents stale authorization.
+- Cockpit consultation mounts only the scoped list RPC; operations, child readers and ACL stay closed — prevents secondary reads and mutations.
