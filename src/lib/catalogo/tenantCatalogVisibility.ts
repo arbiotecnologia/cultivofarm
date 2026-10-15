@@ -37,6 +37,7 @@ export const tenantCatalogKeys = {
   /** Todos os inputs do leitor entram na chave (inclusive limit). */
   selection: (s: TenantCatalogScope, entity: TenantCatalogEntity, search: string, offset: number, limit: number, include: readonly string[]) =>
     ["tenant-catalog", s.organizationId, s.userId, "selection", entity, search, offset, limit, [...include].sort().join(",")] as const,
+  hiddenScope: (s: TenantCatalogScope) => ["tenant-catalog", s.organizationId, s.userId, "hidden-ids"] as const,
   hiddenIds: (s: TenantCatalogScope, entity: TenantCatalogEntity) =>
     ["tenant-catalog", s.organizationId, s.userId, "hidden-ids", entity] as const,
 };
