@@ -722,8 +722,9 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Filtrar dono em todos os leitores do mapa (SA/B2B/preço/fiscal/produção/visita) — bloqueado: nova rodada.
 - [ ] Apresentações próprias, triggers em descendentes comerciais/fiscais, UI CRUD em /base-tecnica — após gate.
 - [x] Revisão 2 (achados 1–8 de 0fe35743) no candidato 01 + candidato 02 de leitores SA/visibilidade/h7n/preço com md5 fixado.
-- [ ] Rodada B2B/fiscal/produção/visita/regulatório/views/Edge service_role — bloqueado: próxima rodada autorizada.
+- [x] Recorte 04 autorizado: manifesto/trigger fail-closed contém novas referências privadas em B2B/fiscal/produção/visita/regulatório ainda não certificados; Edge continua apenas com patch preparado.
 - [ ] Aplicar 01+02 e rodar runtime/concorrência — bloqueado: revisão independente.
 - [x] Revisão 3 (A–F de 110c9c41) + candidato 03 (helpers SA de volume, catálogos B2B por fornecedor) + patch Edge preparado.
-- [ ] SA writers não-volume, B2B simulação/pedidos, fiscal, produção, visita, regulatório, views, RLS descendentes — próxima rodada.
-- [ ] UI própria (desligada), química/fertilizantes, apresentações/doses/preços próprios — após SQL fechado.
+- [ ] SA writers não-volume e leitores/views/BI com definições completas e md5 antes/depois — ainda bloqueiam abrir o gate.
+- [x] UI própria preparada na rota existente com origem Global/Próprio e controles reutilizáveis desmontados pelo gate OFF; química/fertilizantes candidata reutiliza conjuntos/declarações.
+- [ ] Criar/editar/arquivar/restaurar, apresentações/doses/preços próprios e integrações operacionais completas permanecem desligados até aplicação/revisão/runtime real.

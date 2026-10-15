@@ -25,6 +25,7 @@ DO $$ DECLARE t text; BEGIN
     EXECUTE format('DROP TRIGGER IF EXISTS trg_catalog_private_ref_guard ON public.%I',t);
   END LOOP;
 END $$;
+DROP FUNCTION IF EXISTS platform_private.catalog_block_uncertified_private_reference();
 
 DO $$
 DECLARE v_private boolean; v_readers boolean; t text;

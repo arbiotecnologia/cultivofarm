@@ -57,7 +57,7 @@ DECLARE spec jsonb; col_name text; root_name text; item_id uuid; owner_id uuid;
 BEGIN
   FOR spec IN SELECT value FROM jsonb_array_elements(TG_ARGV[0]::jsonb) LOOP
     col_name:=spec->>'column'; root_name:=spec->>'root';
-    EXECUTE format('SELECT ($1).%I::uuid',col_name) INTO item_id USING NEW;
+    item_id:=NULLIF(to_jsonb(NEW)->>col_name,'')::uuid;
     IF item_id IS NULL THEN CONTINUE; END IF;
     EXECUTE format('SELECT owner_organization_id FROM public.%I WHERE id=$1',root_name) INTO owner_id USING item_id;
     IF owner_id IS NOT NULL THEN
