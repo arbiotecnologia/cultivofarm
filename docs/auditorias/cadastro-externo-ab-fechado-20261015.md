@@ -196,6 +196,8 @@ QA final deste recorte:82/82 Vitest em9arquivos PASS; scanner de secrets PASS, c
 
 # Recorte 20:50 — títulos e parcelas B2B (candidato, NÃO aplicado)
 
+**Atualização focal 20:55–21:04 — solicitações Produtor:** pacote adicional em `docs/auditorias/produtor-solicitacoes-mutacoes-20261015.md`. Falsificação de autoria/status/consultor e notificação estrangeira reproduzidas em PostgreSQL descartável com tabela completa e cinco triggers reais.56 assertions after PASS; guard/preflight/rollback restritivo preparados, sem aplicação. Criação e confirmação/remarcação preservadas; nenhuma alteração Storage/OS/notificações existentes.53 Vitest de páginas/cache/cadastro mock e26 assertions financeiro reexecutados PASS. JWT/GoTrue pós-implantação permanece dependente da revisão e login titular, não da sessão Admin.
+
 ## Diagnóstico confirmado e proveniência
 Inspeção read-only exclusivamente no ref canônico confirmou todas as policies de accounts_receivable, accounts_receivable_installments, partner_users e links financeiros. Títulos/parcelas têm permissivas próprias e restritiva tenant_isolation_d51_5; partner_users tem somente SELECT admin via is_tenant_admin_for_user, que exige administrador. Ensaio PostgreSQL DESCARTÁVEL com SET ROLE authenticated, predicates efetivos e contexto coerente existente demonstrou: vínculo próprio invisível; contexto B2B não NULL; zero títulos e zero parcelas. É falha funcional reproduzida LOCALMENTE, não vazamento nem JWT B2B hospedado comprovados.
 

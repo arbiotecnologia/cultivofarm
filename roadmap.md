@@ -1,6 +1,8 @@
 ## RECORTE 20:55 — mutações de solicitações Produtor
-- [ ] Reproduzir falsificação com tabela completa, constraints, policies e cinco triggers reais; preparar guard/preflight/rollback sem DDL remoto.
-- [ ] Preservar criação e confirmação/remarcação, negar autoria/status/atribuição forjados; relatório e regressões reproduzíveis.
+- [x] Falsificação INSERT/UPDATE e notificação estrangeira reproduzidas em PostgreSQL/RLS descartável: 26 campos,6 constraints,9 policies,5 triggers reais (Auth/publisher reduzidos).
+- [x] Guard candidato antes dos efeitos preserva criação/confirmar/remarcar/replay; nega autoria/status/consultor/ref forjados, revogação e destinatário estrangeiro.56 assertions PASS; preflight/rollback restritivo/manifesto entregues, sem DDL remoto.
+- [x] Regressão da rodada:53 Vitest páginas/cache/Edge mock;26 assertions financeiro B2B; lint focal0/scanner0/diff-checkPASS/build automáticoOK. Relatório atualizado; sem certificação JWT/GoTrue/fullschema banco inteiro.
+- [ ] Aplicação/ativação e JWT Produtor real: aguardam revisão solicitada e login titular após implantação; não criar contas/DDL/grants nesta rodada.
 
 ## RECORTE 20:50 — financeiro B2B, diagnóstico efetivo e candidato revisável
 - [x] Policies canônicas completas: títulos/parcelas com restritiva tenant e partner_users admin-only; ensaio authenticated reproduz contexto válido e zero títulos/parcelas.
