@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 const { PGlite } = await import(pathToFileURL(process.argv[2]).href);
 const db = new PGlite();
-await db.exec(`CREATE SCHEMA platform_private; CREATE SCHEMA auth;
+await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA platform_private; CREATE SCHEMA auth;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT '11111111-1111-4111-8111-111111111111'::uuid $$;
 CREATE FUNCTION public.fn_regulatory_can_prepare() RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
 CREATE FUNCTION public.fn_gtin_is_valid(text) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
