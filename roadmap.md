@@ -1,3 +1,9 @@
+## RECORTE 18:18 — candidato SQL Cockpit atual (autorizado, ACL fechada)
+- [ ] Arquivar literalmente migrations externas 20261015180956/181119/181542; conferir hashes do ledger, NÃO REAPLICAR.
+- [ ] Preparar helper/view/RPC existentes com fonte atual, identidade/feature/interseção RBAC e validação integral de referências/descendentes; nenhuma concessão de ACL.
+- [ ] Executar ensaio isolado AR/FSF, tenant alterado, filhos cruzados, NULL/órfãos, revogação/inativo, micro e paginação; relatório de 17 itens, hashes/rollback.
+- [ ] Revisão independente e prova hospedada positiva pendentes; leitura/fabricação continuam NO-GO, nenhuma aplicação remota/publicação autorizada.
+
 ## RECORTE 18:08 — cache Cockpit (autorizado, sem abertura de leitura)
 - [x] HEAD inicial13fb4833 auditado; fence técnico user/tenant/roles/readiness, AbortSignal e eviction aplicados. Workspace com key desmonta/reset filhos, filtros e dialogs; gate local leitura false, nenhum RPC/ACL aberto.
 - [x] 105/105 focais (6 arquivos); QueryClient/página reais, Auth/requests simulados. A→B tardia/ABA/logout/loading/inativo/tenant/roles/disabled e cleanup testados. Lint novo0, tocados107erros1warning iguais à base; global3294/126 FAIL; scanner zero; build/typecheck automáticos OK18:15:15.
