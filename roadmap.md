@@ -3,8 +3,8 @@
 - [x] Atividade organização checada sob FOR SHARE; revogação concorrente e same receipt duas sessões PASS local.
 - [x] Retry UUID+receipt existente sem segundo Auth; expiração não autoriza finish; compensação de links próprios sem FK Auth preparada/testada.
 - [x] Preflight baseline assertivo/occupied schema negado + rollback exato baseline zero triggers convite; relatório 17 seções.
-- [x] 31 assertions PG+6 checks locais e66 Vitest PASS; OS107/EXACTMATCH/scanner3995/0 registrados EXTERNOS.
-- [ ] A2: crash antes Auth/fullschema/timeout compensação e rollback executado; sem criação real/GoTrue/JWT autorizado, abertura bloqueada.
+- [x] 31 assertions PG+7 checks locais e66 Vitest PASS; OS107/EXACTMATCH/scanner3995/0 registrados EXTERNOS.
+- [ ] A2: crash antes Auth/fullschema/timeout compensação ; rollback local executado PASS, sem criação real/GoTrue/JWT autorizado, abertura bloqueada.
 - [ ] B1: Storage consultor-arquivos permite Produtor por tenant sem prova cliente individual; preparar contenção focal/probes irmãos antes abertura.
 - [ ] B2: demais canais Produtor RLS/RPC/cache/seleção; resolver atual sem feature portal inventada. Sem deploy/grants/email nesta fase.
 
