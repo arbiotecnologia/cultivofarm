@@ -15908,6 +15908,102 @@ export type Database = {
           },
         ]
       }
+      produto_composicao_conjuntos: {
+        Row: {
+          created_at: string
+          produto_id: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          created_at?: string
+          produto_id: string
+          status: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          created_at?: string
+          produto_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_composicao_conjuntos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_composicao_declaracoes: {
+        Row: {
+          base: string | null
+          componente_nome: string | null
+          created_at: string
+          id: string
+          microrganismo_id: string | null
+          natureza: string
+          ordem: number
+          produto_id: string
+          quantidade: number | null
+          tipo_componente: string
+          unidade: string | null
+        }
+        Insert: {
+          base?: string | null
+          componente_nome?: string | null
+          created_at?: string
+          id?: string
+          microrganismo_id?: string | null
+          natureza: string
+          ordem: number
+          produto_id: string
+          quantidade?: number | null
+          tipo_componente: string
+          unidade?: string | null
+        }
+        Update: {
+          base?: string | null
+          componente_nome?: string | null
+          created_at?: string
+          id?: string
+          microrganismo_id?: string | null
+          natureza?: string
+          ordem?: number
+          produto_id?: string
+          quantidade?: number | null
+          tipo_componente?: string
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_composicao_declaracoes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_composicao_declaracoes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
+            foreignKeyName: "produto_composicao_declaracoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto_composicao_conjuntos"
+            referencedColumns: ["produto_id"]
+          },
+        ]
+      }
       produto_conformidade_perfis: {
         Row: {
           advertencias: string[]
@@ -22601,6 +22697,14 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_read_global_product_composition: {
+        Args: {
+          p_limit?: number
+          p_produto_id: string
+          p_receita_offset?: number
+        }
+        Returns: Json
+      }
       platform_read_global_product_metadata: {
         Args: { p_id: string }
         Returns: Json
@@ -22691,6 +22795,17 @@ export type Database = {
           p_id: string
           p_idempotency_key: string
           p_reason: string
+        }
+        Returns: Json
+      }
+      platform_set_global_product_composition: {
+        Args: {
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_itens: Json
+          p_produto_id: string
+          p_reason: string
+          p_status: string
         }
         Returns: Json
       }

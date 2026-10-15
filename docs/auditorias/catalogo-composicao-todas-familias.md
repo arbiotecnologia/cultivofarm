@@ -79,8 +79,16 @@ Arquivo `rollback-platform-global-product-composition.sql`. O padrão revoga o E
 Limitações do runtime: em 3 casos de CHECK direto com tipo `microrganismo` sobre um produto fertilizante, o guard de linha (23514) dispara antes do CHECK; ambos dão `check_violation`, mas a prova isolada do CHECK nesses casos fica pendente. O teste de medida duplicada depende de existir um par real biológico com concentração; sem esse par, é registrado como SKIP (não é prova).
 
 ## 18. Rodada 2026-10-14 23:55 UTC (base 5c1018e5) — resultados executados neste sandbox
-- Candidato SQL **NÃO aplicado** e **NÃO publicado**; tabelas `produto_composicao_*` continuam inexistentes em produção. "Completo" ≠ aprovação técnica/regulatória.
+- SQL aplicado no canônico via apply_migration após revisão independente autorizada (**APLICADO / NÃO REAPLICAR**). UI navegador/publicação pendentes, a cargo do usuário. "Completo" ≠ aprovação técnica/regulatória.
 - Testes do painel corrigidos: limite parte de 49 declarações lidas, encontra "Adicionar componente" por texto, confere legendas 49→50 e recusa 51; bloqueio durante salvamento usa `matches(':disabled')` (considera `fieldset[disabled]`).
 - Runtime SQL (não executado): coluna `skipped` separada — SKIP não soma em PASS nem em FAIL; CHECKs diretos movidos para fixture biológico transacional com `GET STACKED DIAGNOSTICS CONSTRAINT_NAME` (erro de família/unique não mascara constraint); novos casos: nome normalizado duplicado entre tipos (writer e índice `pcd_nome_unique`), concentração declarada de micro válida (writer e owner), cores `platform_private.*_core` negados a 4 tenants e anônimo, 7 JWT inválidos (expirado, iat futuro, sem iat, iat texto, sem sub, sub inexistente, vazio), CAS/replay mantidos. Caso antigo que esperava falha para concentração declarada foi removido (contradizia o requisito).
 - Executado localmente: 781/781 testes `src/test/saas` (68 arquivos), typecheck app/node PASS, lint dos 3 arquivos focais PASS, scanner fiscal OK, build 21,73s PASS.
 - NÃO executado: runtime SQL, JWT/browser real, produção. Os 198 testes/10 arquivos relatados externamente não foram reexecutados aqui com esse recorte e não são atribuídos a esta rodada.
+
+
+## Atualização 2026-10-15 03:03 UTC — aplicação e runtime real (evidência externa)
+- Revisão independente concluída e SQL candidato aplicado no Supabase canônico via apply_migration. **NÃO REAPLICAR DDL.**
+- Runtime real sob `authenticated`: 113 total, 111 PASS / 0 FAIL / 2 SKIP. Os 2 SKIP (dados reais) continuam honestos; os mesmos comportamentos são cobertos por `fixture.micro_inativo_novo` e `fixture.medida_duplicada_receita` em subtransações revertidas (bloco 3b do runtime). Invariantes finais PASS, Bombarbio intacto, nenhuma fixture persistiu.
+- Correção de harness: `check.quantidade_sem_unidade` e `check.base_null_unidade` esperam agora `pcd_medida_check`, avaliada antes de `pcd_medida_conjunta_check` e que também rejeita medida parcial. Sobreposição documentada; constraints não relaxadas.
+- Evidência independente frontend: 200/200 em 10 arquivos; scanner de segredos 3917 arquivos, zero achados. Os 781 testes saas/typecheck/lint/build desta conversa são evidência separada, não somada.
+- Pendentes (usuário): teste UI em navegador e publicação. Esta rodada alterou somente runtime de teste e docs; nenhuma funcionalidade, dado ou publicação.
