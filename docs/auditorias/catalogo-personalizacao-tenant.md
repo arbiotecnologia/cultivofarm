@@ -413,7 +413,10 @@ O arquivo `proposed-tenant-catalog-ownership-04-operational-containment.sql` fix
 - `microrganismos.product_id` passou a exigir produto do mesmo owner; global não aponta para privado e privado não cruza empresa.
 - `produto_composicao_conjuntos/declaracoes` receberam guard de pai/crossref e leitura hereditária global+empresa do ator, sem grant de escrita ao cliente.
 - RPC própria de apresentações/preços/doses: empresa derivada no servidor, admin/gestor+`catalogo_precos`, CAS, idempotência, auditoria no ledger, cálculo pelos triggers existentes e nenhuma compensação best-effort.
-- O trigger 04 agora ignora UPDATE que não altera a coluna de referência, preservando manutenção de históricos; rollback dos bloqueios só é seguro antes de privados persistirem e permanece parcial/fail-closed depois disso.
+- O trigger 04 agora ignora UPDATE que não altera a coluna de referência, preservando manutenção de históricos.
+- **Correção P1 de rollback (15/10/2026 14:02 UTC):** a versão anterior era insegura porque removia guards de referências, o guard `microrganismos.product_id` e as policies hereditárias de composição antes de calcular se havia privados/leitores; o `RETURN` posterior não revertia esses `DROP`s. Essa versão está rejeitada e não deve ser aplicada.
+- O rollback operacional candidato agora é estritamente não destrutivo: somente fecha o gate e revoga as fachadas/cores mutáveis de ownership e apresentações. Preserva todas as colunas, policies/RLS, guards/triggers, leitores, índices, ledger e dados; portanto itens e declarações privadas continuam isolados. Remoção estrutural saiu desta fase e, se um dia necessária, deverá estar em arquivo separado que aborte antes de qualquer `DROP` ao detectar privados ou dependências.
+- `runtime-test-tenant-catalog-ownership-rollback.sql` cria produto e declaração privados em transação, executa o espelho integral da contenção, exige leitura pela empresa dona, negação do produto e da declaração para outra empresa, mutação revogada, gate OFF e policies/guards ainda presentes; termina em `ROLLBACK`. É candidato executável ainda **NÃO RODADO** contra PostgreSQL/Auth real.
 
 ### Matriz de fechamento desta rodada
 | Superfície | Status 05 | Evidência/limite |
