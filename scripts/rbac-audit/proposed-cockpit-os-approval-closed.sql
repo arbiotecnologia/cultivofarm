@@ -1,4 +1,4 @@
--- CANDIDATO LOCAL 19:04. NÃO APLICADO / SEM LIBERAÇÃO.
+-- CANDIDATO LOCAL 19:19 (corrige GAP INSERT ec4fcc1). NÃO APLICADO / SEM LIBERAÇÃO.
 -- Transação única após revisão independente; sem GRANT, sem mudanças de RLS.
 -- NÃO aplicar programar juntamente: suas lacunas continuam bloqueadoras.
 CREATE TEMP TABLE approval_existing_baseline ON COMMIT DROP AS
@@ -80,8 +80,10 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $func
 DECLARE v_origin text; v_org uuid;
 BEGIN
  IF TG_OP='INSERT' THEN
- -- Evita aprovação embutida na criação; INSERT aberta e demais regras existentes preservados.
- IF NEW.status::text='aprovada' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Criação normal exclusivamente aberta, inclusive pelo serviço/DEFINER.
+ -- NULL e qualquer estado avançado não podem saltar a aprovação humana.
+ -- Sem whitelist service_role, flags GUC ou reparo de históricos.
+ IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  RETURN NEW;
  END IF;
  IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;
