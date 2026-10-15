@@ -24,7 +24,7 @@ describe("laboratório exclusivamente biológico — candidato 07", () => {
   it("protege programação e lote sem bloquear update histórico irrelevante", () => {
     expect(sql).toMatch(/BEFORE INSERT OR UPDATE OF produto_id,microrganismo_id ON public\.programacao_producao/);
     expect(sql).toMatch(/BEFORE INSERT OR UPDATE OF produto_id,microrganismo_id ON public\.lotes/);
-    expect(sql.match(/NEW\.produto_id IS NOT DISTINCT FROM OLD\.produto_id/g)?.length).toBe(2);
+    expect(sql.match(/NEW\.produto_id IS NOT DISTINCT FROM OLD\.produto_id/g)?.length).toBe(3);
   });
   it("permanece candidato sem grants, publicação ou módulo paralelo", () => {
     expect(sql).not.toMatch(/\bGRANT\b/);

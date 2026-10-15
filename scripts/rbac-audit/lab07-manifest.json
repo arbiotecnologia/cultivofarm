@@ -1,0 +1,38 @@
+[
+  {
+    "function": "public.generate_production_orders_from_partner",
+    "after_definition_text_md5": "7064f438bcc2b8b32600fdc2100c1d53",
+    "runtime": "UNVERIFIED until local harness runs",
+    "hosted": "UNVERIFIED"
+  },
+  {
+    "function": "public.publish_planning_to_lab",
+    "after_definition_text_md5": "b54ee2d667a8a3bd6b3db36122f62670",
+    "runtime": "UNVERIFIED until local harness runs",
+    "hosted": "UNVERIFIED"
+  },
+  {
+    "function": "public.rpc_programar_os_v1",
+    "after_definition_text_md5": "8e6e1781ab027043a5b5bf14583c4d95",
+    "runtime": "UNVERIFIED until local harness runs",
+    "hosted": "UNVERIFIED"
+  },
+  {
+    "function": "public.rpc_planejamento_publicar_v1",
+    "after_definition_text_md5": "00cd12c75e8c75cf09ec08932ffc9355",
+    "runtime": "UNVERIFIED until local harness runs",
+    "hosted": "UNVERIFIED"
+  },
+  {
+    "function": "public.rpc_cockpit_gerar_lote_v1",
+    "after_definition_text_md5": "cbfbd473f1237946f4e3e3b582bba056",
+    "runtime": "UNVERIFIED until local harness runs",
+    "hosted": "UNVERIFIED"
+  },
+  {
+    "function": "public.trg_os_sync_partner_order_fn",
+    "after_definition_text_md5": "338cfe962bee11edf81e3f14d449b368",
+    "runtime": "UNVERIFIED until local harness runs",
+    "hosted": "UNVERIFIED"
+  }
+]

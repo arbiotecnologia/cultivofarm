@@ -1,3 +1,17 @@
+## CONTINUAÇÃO — MATRIZ, RUNTIME E SQL07 — 2026-10-15 15:10 UTC
+- [x] Matriz nominal: 83 funções diretas + `rpc_partner_commercial_history` transitiva, identidades confirmadas em leitura canônica; sete views originais com md5/prova individual. Inventário completo, certificação hospedada UNVERIFIED.
+- [x] Conjunto ordenado 01–06/08–11 com SHA-256; rollback operacional preserva colunas, RLS, guards, leitores, ledger e dados.
+- [x] Roteiro runtime revisado: RESET ROLE explícito, gate OFF obrigatório antes, sem helpers privados como authenticated, composição declarativa real e casos AR/FSF/SA/Financeiro/Consultor. Não executado com atores reais.
+- [x] SQL07 completo: seis corpos explícitos com hashes live; OS/programação/lote/On-Farm aceitam só biológico ou micro; família NULL e duas referências bloqueadas; pedido misto não é marcado produzido por OS biológicas; replay preservado. PGlite 36/36 PASS com stubs; preflights live e Auth real UNVERIFIED.
+- [x] Verificações locais: Vitest focal 18/18, PGlite 36/36, tipos app/node PASS, lint focal 0/0, scanner zero e build automático OK; lint global FAIL 3236 erros/127 warnings, baseline delta não comprovado.
+- [ ] Revisão/aplicação independente, Auth/RLS hospedado, duas conexões, browser e Edge patch. Gate OFF; sem DDL/publicação.
+
+## CONTINUAÇÃO AUTORIZADA — 2026-10-15 14:55 UTC
+- [x] Matriz, sete views originais, ordem 01–06/08–11 e roteiro runtime preparados localmente; certificação hospedada UNVERIFIED.
+- [x] SQL07 separado com corpos completos e testes SQL locais.
+- [ ] Auth hospedado/browser e concorrência real bloqueados por revisão/aplicação independente; sem DDL/publicação nesta etapa.
+- [x] Evidência independente recebida: atomic13 51/51; identity+owned-flow 13/13; SQL10/preflight/harness 26/26. PGlite com stubs, não ambiente real.
+
 ## FASE 3 OWNERSHIP — RECORTE 11 — 2026-10-15 14:55 UTC
 - [x] FK 60ª reconciliada (`microorganism_regulatory_presentations.catalog_volume_id`, SET NULL); candidato 11 com helper/trigger por dono derivado do volume, do pai e do dossiê, writer com hash live; PGlite 14/14 PASS (stubs, não Auth real).
 - [x] Teste da corrida AR pendente → FSF: `onApplied` 0 vezes, sem invalidação; fluxo 13/13 PASS.

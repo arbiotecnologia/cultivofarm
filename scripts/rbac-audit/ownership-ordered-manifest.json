@@ -1,0 +1,66 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "gate": "OFF",
+  "apply_authorized": false,
+  "files": [
+    {
+      "order": 1,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership.sql",
+      "sha256": "c80f2dde30d7c0579c5da94afd44e62c3ad77b79d03be13c44d98013bfbbf5cd"
+    },
+    {
+      "order": 2,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql",
+      "sha256": "68bb6e110b0320763832174b647c12174ee4d3edccc61c433aa690f1f2d1c57c"
+    },
+    {
+      "order": 3,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
+      "sha256": "56c6a0dd5311d89d8a6cb520ea924fba5616c75a757999d2343f9e38534cd2a1"
+    },
+    {
+      "order": 4,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql",
+      "sha256": "ccd735c5da2b77b620c4479887571e9b27e16930335df3b024520e71809c0c95"
+    },
+    {
+      "order": 5,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-05-backend.sql",
+      "sha256": "7f7a6651e26c79c4ee5a5752e9a7d36304e8afe4fcbc8cbaf00a33ccd615acbf"
+    },
+    {
+      "order": 6,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-06-operational-readers.sql",
+      "sha256": "98de5e5009b410f0d34a08b49bd078f3b41715632f5b3c88cbf6811c7d18bb2e"
+    },
+    {
+      "order": 7,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-08-owned-read.sql",
+      "sha256": "b7d9c2ac2c296476fa4788c14ddbad953653b7d907bf0bb7b01149f7c1e80d7f"
+    },
+    {
+      "order": 8,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-09-commercial-matrix.sql",
+      "sha256": "7daafeb8f4e70f0342d0c53e40c176a2084003710c6288649f39e66aff03eea6"
+    },
+    {
+      "order": 9,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-10-global-roots.sql",
+      "sha256": "4c0ee9fe64dbfb518e77f144fda82f8ae95bffeeecc3cf7c248ef771076e1c48"
+    },
+    {
+      "order": 10,
+      "path": "scripts/rbac-audit/proposed-tenant-catalog-ownership-11-regulatory-presentations.sql",
+      "sha256": "288a0645f1559b977217ca6282ead94bce6d99dd129e05b9d0274586670abc96"
+    }
+  ],
+  "separate_phase": {
+    "path": "scripts/rbac-audit/proposed-lab-biological-only-07.sql",
+    "sha256": "6c68e356ce6381f309249d42cf456ed6254a52be839ce79fff7ed7a42d32329a",
+    "apply_authorized": false
+  },
+  "rollback": "rollback-tenant-catalog-ownership.sql",
+  "runtime": "runtime-test-tenant-catalog-ownership.sql",
+  "runtime_sha256": "f07b0206336d5d85842e0c73537310412e0bccdba4ee6dd5fc25a6ea68c1255c",
+  "rollback_sha256": "9ca4c1f0e0b9b0260692f10c33eacf2330dc74a878484c8f269ced80b7e1cb99"
+}
