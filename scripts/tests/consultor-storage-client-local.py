@@ -53,6 +53,8 @@ INSERT INTO user_clientes VALUES('{U}','{C1}',true,NULL,NULL,NULL);
   m=(ROOT/'supabase/migrations/20261008141326_7df733a3-5535-4203-9b23-928271394c19.sql').read_text()
   schema+=m.split('CREATE OR REPLACE FUNCTION public.storage1_delivery_allowed',1)[0]
   schema+=(ROOT/'scripts/rbac-audit/applied-20261009221311-technical-storage-release-scope.sql').read_text()+';'
+  # Match hosted core ACL (historical body archive intentionally omits grants).
+  schema+='REVOKE ALL ON FUNCTION platform_private.storage1_consultor_core(text,text) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION platform_private.storage1_consultor_core(text,text) TO authenticated,service_role;'
   permissive=(ROOT/'supabase/migrations/20261005221945_5a892019-9ef5-4ffb-abf7-2984e58c3ede.sql').read_text().split('REVOKE ALL ON FUNCTION public.consultor_storage_path_allowed')[0]
   schema+=permissive
   for cmd in ['SELECT','INSERT','UPDATE','DELETE']:
