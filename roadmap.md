@@ -1,3 +1,9 @@
+## PRIORIDADE P1 17:41 — contenção h7n somente, RPC fechado
+- [x] Registrar leitura EXTERNA Renato: FSF Admin autenticado/iat/exp leu 2 linhas; MV 2 linhas/1 tenant. Não browser FSF nem prova própria.
+- [x] Metadados próprios subsequentes: corpo vulnerável permanece, mas authenticated EXECUTE h7n=false e SELECT view=false; autoria/momento da contenção desconhecidos. Não restaurar ACL.
+- [x] Substituir candidato anterior que reabria RPC por correção atômica SOMENTE h7n com tenant/readiness/vínculo ativo, hashes e ACL preservada.
+- [ ] Revisão independente e teste hospedado pós-aplicação aguardam revisor; nenhuma aplicação remota autorizada. Freshness/descendentes, fabricação, diagnóstico e ownership permanecem nos gates anteriores.
+
 ## RECORTE ATUAL — leitura Cockpit candidata, sem aplicação/publicação
 - [x] Registrar evidência EXTERNA relatada por Renato pós-deploy eb33bc: OS-2026-000003, uma programação aguardando/NULL e commercial_completed=false; Ordens/Fluxo Técnico PASS externo. Consultor: financeiro negado, catálogo/rascunho próprio disponíveis, cabeçalho visita Admin legível mas workspace/conversão negados e recomendações zero.
 - [x] Auditar metadados canônicos: RPC INVOKER EXECUTE fechado; view invoker sobre h7n DEFINER/MV sem filtro de empresa — P1 estrutural, não exploração comprovada.
