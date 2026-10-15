@@ -1,0 +1,5 @@
+dea18263e721a0ba464bb22515dced5b5beaf2340f64e9474895c320be2a1899  scripts/rbac-audit/proposed-external-user-ab-closed.sql
+b1f0eb9c36615a7068e908c6ab9718c274280ee9ef1170e587ca249c0ff1b5a7  scripts/rbac-audit/proposed-create-user-external-ab.patch
+aaa95d5407dd575b145fb59ac3f896857c0aff21e98f64bedb0c3765fedd77ca  scripts/rbac-audit/proposed-producer-commercial-read-closed.sql
+94dfcf1bc5d98c05a6e29b2e57c72b46b8e070342ee35bad3293cb58e9b32633  scripts/rbac-audit/preflight-producer-commercial-read-readonly.sql
+f661f8973620a728f9ac3f4792ea9d4adbf957e0f397d79c32f57537b5dd2321  scripts/rbac-audit/rollback-producer-commercial-read-closed.sql

@@ -1,4 +1,4 @@
-import {act,render,screen,waitFor} from '@testing-library/react';
+import {act,render,screen,waitFor,fireEvent} from '@testing-library/react';
 import {MemoryRouter,Routes,Route} from 'react-router-dom';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {beforeEach,describe,it,expect,vi} from 'vitest';
@@ -19,6 +19,7 @@ describe('existing producer workspace context reset',()=>{
  it.each(['switch','logout','revoke','client'])('%s removes stale children and late badge',async mode=>{
  const qc=new QueryClient();const tree=()=> <QueryClientProvider client={qc}><MemoryRouter><Routes><Route element={<PortalLayout/>}><Route path="*" element={<Child/>}/></Route></Routes></MemoryRouter></QueryClientProvider>;
  const h=render(tree());await waitFor(()=>expect(s.signals).toHaveLength(1));const old=s.callback;const pending=s.resolve;
+ fireEvent.change(screen.getByLabelText('workspace'),{target:{value:'previous-private-draft'}});expect(screen.getByLabelText('workspace')).toHaveValue('previous-private-draft');
  if(mode==='switch'){s.auth.user={id:'B'};s.auth.profile={...s.auth.profile,user_id:'B',organization_id:'OB'};}else if(mode==='logout')s.auth.user=null;else if(mode==='revoke')s.auth.profile.ativo=false;else s.client='D';
  h.rerender(tree());await act(async()=>{pending?.({count:99,error:null});old?.();});expect(s.signals[0].aborted).toBe(true);expect(s.removed).toHaveBeenCalled();
  if(mode==='logout'||mode==='revoke')expect(screen.queryByLabelText('workspace')).toBeNull();else expect(screen.getByLabelText('workspace')).toHaveValue('');
