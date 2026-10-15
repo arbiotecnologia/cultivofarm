@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  fetchTenantSelectionPage, readTenantVisibility, setTenantVisibility, tenantCatalogKeys, tenantScopeReady,
+  fetchTenantHiddenIds, fetchTenantSelectionPage, readTenantVisibility, setTenantVisibility, tenantCatalogKeys, tenantScopeReady,
   type TenantCatalogEntity, type TenantCatalogScope,
 } from "@/lib/catalogo/tenantCatalogVisibility";
 
@@ -70,12 +70,44 @@ export function useTenantSelection(entity: TenantCatalogEntity, opts: { search?:
   const search = (opts.search ?? "").trim();
   const offset = opts.offset ?? 0;
   const include = opts.include ?? [];
+  const limit = opts.limit ?? 50;
   return useQuery({
-    queryKey: scope ? tenantCatalogKeys.selection(scope, entity, search, offset, include) : ["tenant-catalog", "unscoped", "selection", entity],
+    queryKey: scope ? tenantCatalogKeys.selection(scope, entity, search, offset, limit, include) : ["tenant-catalog", "unscoped", "selection", entity],
     enabled: !!scope && (opts.enabled ?? true),
     staleTime: 60_000,
     retry: false,
     refetchOnWindowFocus: false,
-    queryFn: ({ signal }) => fetchTenantSelectionPage(supabase, { entity, search, offset, limit: opts.limit ?? 100, include, signal }),
+    queryFn: ({ signal }) => fetchTenantSelectionPage(supabase, { entity, search, offset, limit, include, signal }),
   });
+}
+
+/**
+ * Ocultos da empresa para catálogos NOVOS. Estados:
+ *  - `global`: sessão sem empresa (ex.: equipe da plataforma) → catálogo global sem filtro de empresa;
+ *  - `loading`/`error`: o consumidor NÃO deve listar (sem fallback silencioso);
+ *  - `ready`: lista de IDs a excluir no servidor.
+ */
+export type TenantHiddenState =
+  | { status: "loading" } | { status: "global" } | { status: "error"; message: string }
+  | { status: "ready"; ids: string[]; scope: TenantCatalogScope };
+
+export function useTenantHiddenIds(entity: TenantCatalogEntity, enabled = true): TenantHiddenState {
+  const { user, profile, loading } = useAuth();
+  const scope = useTenantCatalogScope();
+  useTenantCatalogScopeFence(scope);
+  const q = useQuery({
+    queryKey: scope ? tenantCatalogKeys.hiddenIds(scope, entity) : ["tenant-catalog", "unscoped", "hidden-ids", entity],
+    enabled: enabled && !!scope,
+    staleTime: 30_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    queryFn: ({ signal }) => fetchTenantHiddenIds(supabase, entity, signal),
+  });
+  if (!enabled) return { status: "global" };
+  if (loading || !user || profile?.user_id !== user.id) return { status: "loading" };
+  if (!profile?.organization_id) return { status: "global" };
+  if (!scope || q.isLoading) return { status: "loading" };
+  if (q.isError) return { status: "error", message: (q.error as Error).message };
+  if (!q.isSuccess) return { status: "loading" };
+  return { status: "ready", ids: q.data, scope };
 }
