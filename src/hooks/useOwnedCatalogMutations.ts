@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,17 +21,47 @@ export function useOwnedCatalogCapability() {
   return useMemo(() => ({ scope, canManage: !!scope && canManage }), [scope, canManage]);
 }
 
+function useMutationFence(capability: ReturnType<typeof useOwnedCatalogCapability>) {
+  const identity = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}|${capability.canManage}` : "";
+  const state = useRef({ identity, generation: 0, controllers: new Set<AbortController>() });
+  if (state.current.identity !== identity) {
+    state.current.controllers.forEach((controller) => controller.abort());
+    state.current.controllers.clear(); state.current.identity = identity; state.current.generation += 1;
+  }
+  useEffect(() => () => {
+    state.current.generation += 1;
+    state.current.controllers.forEach((controller) => controller.abort());
+    state.current.controllers.clear();
+  }, []);
+  return (scopeKey: string) => {
+    const scope = capability.scope;
+    if (!capability.canManage || !scope || `${scope.organizationId}|${scope.userId}` !== scopeKey)
+      throw new Error("A sessão ou a empresa mudou. Reabra o cadastro.");
+    const generation = state.current.generation;
+    const controller = new AbortController(); state.current.controllers.add(controller);
+    return {
+      signal: controller.signal,
+      active: () => !controller.signal.aborted && state.current.generation === generation,
+      finish: () => state.current.controllers.delete(controller),
+    };
+  };
+}
+
 export function useOwnedCatalogMutation(entity: TenantCatalogEntity, onApplied?: () => Promise<void> | void) {
   const qc = useQueryClient();
   const capability = useOwnedCatalogCapability();
-  const currentRef = useRef(capability); currentRef.current = capability;
+  const begin = useMutationFence(capability);
   return useMutation({
     mutationFn: async (input: OwnedMutation & { scopeKey: string }) => {
-      const current = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}` : "";
-      if (!capability.canManage || current !== input.scopeKey) throw new Error("A sessão ou a empresa mudou. Reabra o cadastro.");
-      return mutateOwnedItem(supabase, input, undefined, TENANT_OWNED_CATALOG_ENABLED);
+      const fence = begin(input.scopeKey);
+      try {
+        const data = await mutateOwnedItem(supabase, input, fence.signal, TENANT_OWNED_CATALOG_ENABLED);
+        if (!fence.active()) throw new Error("Solicitação encerrada.");
+        return { ...data, active: fence.active };
+      } finally { fence.finish(); }
     },
-    onSuccess: async (_data, input) => {
+    onSuccess: async (data, input) => {
+      if (!data.active()) return;
       const [organizationId, userId] = input.scopeKey.split("|");
       const origin = { organizationId, userId };
       await qc.cancelQueries({ queryKey: [...tenantCatalogKeys.scope(origin), "owned", entity] });
@@ -40,8 +70,7 @@ export function useOwnedCatalogMutation(entity: TenantCatalogEntity, onApplied?:
         qc.invalidateQueries({ queryKey: tenantCatalogKeys.scope(origin), refetchType: "all" }),
         qc.invalidateQueries({ queryKey: ["catalogo-unificado"], predicate: catalogoKeyMatchesScope(origin), refetchType: "all" }),
       ]);
-      const now = currentRef.current.scope;
-      if (now?.organizationId === organizationId && now.userId === userId) await onApplied?.();
+      if (data.active()) await onApplied?.();
     },
   });
 }
@@ -49,20 +78,23 @@ export function useOwnedCatalogMutation(entity: TenantCatalogEntity, onApplied?:
 export function useOwnedPresentationMutation(onApplied?: () => Promise<void> | void) {
   const qc = useQueryClient();
   const capability = useOwnedCatalogCapability();
-  const currentRef = useRef(capability); currentRef.current = capability;
+  const begin = useMutationFence(capability);
   return useMutation({
     mutationFn: async (input: OwnedPresentationMutation & { scopeKey: string }) => {
-      const current = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}` : "";
-      if (!capability.canManage || current !== input.scopeKey) throw new Error("A sessão ou a empresa mudou. Reabra as apresentações.");
-      return mutateOwnedPresentation(supabase, input, undefined, TENANT_OWNED_CATALOG_ENABLED);
+      const fence = begin(input.scopeKey);
+      try {
+        const data = await mutateOwnedPresentation(supabase, input, fence.signal, TENANT_OWNED_CATALOG_ENABLED);
+        if (!fence.active()) throw new Error("Solicitação encerrada.");
+        return { ...data, active: fence.active };
+      } finally { fence.finish(); }
     },
-    onSuccess: async (_data, input) => {
+    onSuccess: async (data, input) => {
+      if (!data.active()) return;
       const [organizationId, userId] = input.scopeKey.split("|");
       const origin = { organizationId, userId };
       await qc.cancelQueries({ queryKey: [...tenantCatalogKeys.scope(origin), "owned", "produto"] });
       await qc.invalidateQueries({ queryKey: [...tenantCatalogKeys.scope(origin), "owned", "produto"], refetchType: "all" });
-      const now = currentRef.current.scope;
-      if (now?.organizationId === organizationId && now.userId === userId) await onApplied?.();
+      if (data.active()) await onApplied?.();
     },
   });
 }
