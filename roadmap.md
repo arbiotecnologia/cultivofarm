@@ -1,3 +1,9 @@
+## SMTP-T1 — fundação multiprovedor por empresa (22:34)
+- [ ] Auditar HEAD e banco canônico somente leitura; inventariar ACL/RLS/worker sem ler segredos.
+- [ ] Preparar configuração tenant draft write-only Vault, UI existente e migrations aditivas revisáveis fora da pasta gerenciada; envios OFF.
+- [ ] Testes locais negativos A/B/RBAC, validação/UI mobile e QA; relatório/rollback e revisão pelo auditor antes de aplicação.
+- [ ] Próximas fases bloqueadas: remetente/teste controlado/roteamento tenant/quotas/recibos dependem de autorização e auditoria.
+
 ## RECORTE 21:51 — autorização focal de alteração administrativa de senha
 - [x] has_role e admin_can_update_user_password_server usam anonClient/JWT getUser validado; erro RPC500/código seguro distinto de negação403, sem grants/DDL.
 - [x] Admin/tenant/readiness/alvo não-superadmin permanecem nos guards existentes; password-only sem confirmar email/limpar flag; senha8–128 letra+número backend/frontend, auditoria sem senha e UI segura.
