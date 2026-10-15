@@ -1,5 +1,5 @@
 {
-  "state": "LOCAL_CANDIDATE_NOT_APPLIED_REVIEW_BLOCKED",
+  "state": "P1_HELPER_ONLY_CANDIDATE_NOT_APPLIED",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "candidate": "scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql",
   "report": "docs/auditorias/cockpit-leitura-recorte-20261015.md",
@@ -8,7 +8,11 @@
   "h7n_before_md5": "6a3e2b6e2d594af67cf6727c5b03c2b1",
   "reader_before_md5": "53c9fdb94780b9666ca9b602ad95a813",
   "view_md5": "d72d5df7bacffdf8f4fc4282b804ab90",
-  "applied_migrations_do_not_reapply": ["20261015161648", "20261015162631", "20261015163930"],
+  "applied_migrations_do_not_reapply": [
+    "20261015161648",
+    "20261015162631",
+    "20261015163930"
+  ],
   "external_evidence": {
     "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
     "deploy": "eb33bc",
@@ -22,9 +26,9 @@
     "postgres_assertions": 14,
     "vitest_passed": 17,
     "vitest_files": 3,
-    "auth_rbac_entitlement": "STUBBED",
+    "auth_rbac_entitlement": "STUBBED_ACTIVE_LINK_AND_SQL_NULL",
     "schema": "REDUCED_NOT_HOSTED",
-    "full_preflight_and_acl": "UNVERIFIED",
+    "full_preflight_and_acl": "HOSTED_UNVERIFIED_LOCAL_BODY_WITH_SQL_ROLES",
     "concurrency": "UNVERIFIED",
     "diff_check": "PASS"
   },
@@ -39,5 +43,19 @@
   "manufacturing": "NO_GO_VOLUME_NULL",
   "programar_lote_publish": "NO_ACL_CHANGE",
   "legacy_diagnostic": "NOT_APPLIED",
-  "publication": "NOT_PERFORMED"
+  "publication": "NOT_PERFORMED",
+  "h7n_after_prosrc_md5": "6dc6de9ce046847310973b5666249177",
+  "postapply": "scripts/rbac-audit/postapply-h7n-containment-readonly.sql",
+  "current_acl_observation": {
+    "h7n_authenticated_execute": false,
+    "view_authenticated_select": false,
+    "attribution": "UNKNOWN_NO_AGENT_WRITES"
+  },
+  "external_p1": {
+    "source": "RENATO_EXTERNAL_SQL_NOT_BROWSER_NOT_AGENT_PROOF",
+    "fsf_view_rows": 2,
+    "mv_rows": 2,
+    "mv_tenants": 1
+  },
+  "rpc_cockpit": "CLOSED_NO_BODY_OR_ACL_CHANGE"
 }
