@@ -1,7 +1,7 @@
 ## RECORTE 18:18 — candidato SQL Cockpit atual (autorizado, ACL fechada)
-- [ ] Arquivar literalmente migrations externas 20261015180956/181119/181542; conferir hashes do ledger, NÃO REAPLICAR.
-- [ ] Preparar helper/view/RPC existentes com fonte atual, identidade/feature/interseção RBAC e validação integral de referências/descendentes; nenhuma concessão de ACL.
-- [ ] Executar ensaio isolado AR/FSF, tenant alterado, filhos cruzados, NULL/órfãos, revogação/inativo, micro e paginação; relatório de 17 itens, hashes/rollback.
+- [x] Arquivar literalmente migrations externas 20261015180956/181119/181542; hashes locais sem LF final coincidem com ledger, NÃO REAPLICAR.
+- [x] Preparar h7n/view existente/RPC com fonte atual, identidade/feature/interseção RBAC e referências/descendentes; nenhuma concessão de ACL. Candidato não homologado.
+- [x] PostgreSQL isolado61 asserts novos +19 históricos; Vitest20/20 em3 arquivos (18 cache); Auth/fonte/schema reduzidos simulados. Relatório17itens, hashes/rollback preparados.
 - [ ] Revisão independente e prova hospedada positiva pendentes; leitura/fabricação continuam NO-GO, nenhuma aplicação remota/publicação autorizada.
 
 ## RECORTE 18:08 — cache Cockpit (autorizado, sem abertura de leitura)
