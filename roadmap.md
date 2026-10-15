@@ -1,3 +1,8 @@
+## RECORTE 18:08 — cache Cockpit (autorizado, sem abertura de leitura)
+- [ ] Auditar HEAD real e todos filhos/métricas; aplicar fence user/tenant/roles/readiness, AbortSignal e cleanup/reset local, mantendo Cockpit fechado.
+- [ ] Testar troca A→B tardia, logout, revogação/readiness/disabled e limpeza; registrar validações locais e limites sem prova Auth real.
+- [ ] Documentar MV/frescor, origem onfarm/micro, tenant descendentes, rollback, arquivos e commit; nenhum DDL/dados/publicação.
+
 ## RECORTE DOCUMENTAL 18:04 — workspace alinhado e conversão externa Consultor AR
 - [x] Arquivar literalmente schema_migrations20261015175859_h_visit_workspace_conversion_manage_gate; JÁ APLICADA EXTERNAMENTE/NÃO REAPLICAR. Alinha can_convert_os a manage IS TRUE + aprovado, sem modificar aprovação consultor/ACL/owner/conversor. MD5 histórico898b4dab4d0b722d47e6572a932e2e57; conversorb112888 confirmado read-only.
 - [x] Registrar UI real EXTERNA Renato: após aprovação Admin, Consultor AR encaminhou VT-2026-0002/1995fdfa-2976-42a7-8a2b-0324497f76d2; OS-2026-000004/75b8b2ac-dc5c-4f9b-ac9b-07f67569d404 única, programaçãodbc725cc-f618-46af-a3d8-6b70b0760c2e aguardando/Bombarbio/volumeNULL, commercial_completed=false. Workspace após conversão convert/approve/edit=false; NovaOS desabilitada, base faturamento não configurada.
