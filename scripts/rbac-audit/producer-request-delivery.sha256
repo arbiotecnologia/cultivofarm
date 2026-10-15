@@ -1,0 +1,5 @@
+de61183c002361585d0a80b9b884476be91d2dbe45fb59faf9781cda9f77eb43  scripts/rbac-audit/proposed-producer-request-mutations.sql
+8ac6a220e58bcda7565a265e600cabd13ffb047716700619c08bbe611c3ac30f  scripts/rbac-audit/preflight-producer-request-mutations.sql
+8f2355107126a52570fbdd6569ce7df0509d237b3eb15585eed59ac77c26a8d9  scripts/rbac-audit/rollback-producer-request-mutations.sql
+16d38097eca45157e2fdfa1ae74b596ca3fc31829b6465b84dc2b1b07cf75fe1  scripts/tests/producer-request-mutations-local.py
+a8cf84fffcab2d2282b317d485605a5ed78f1d4377398d0979944824cd77a075  docs/auditorias/produtor-solicitacoes-mutacoes-20261015.md

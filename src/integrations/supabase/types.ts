@@ -20993,6 +20993,36 @@ export type Database = {
         Args: { p_horas?: number }
         Returns: number
       }
+      b2b_claim_provisioning:
+        | {
+            Args: {
+              p_email: string
+              p_key: string
+              p_nome: string
+              p_partner: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_clients: string[]
+              p_email: string
+              p_key: string
+              p_nome: string
+              p_partner: string
+              p_primary: string
+              p_role: Database["public"]["Enums"]["app_role"]
+            }
+            Returns: Json
+          }
+      b2b_complete_provisioning_compensation: {
+        Args: { p_claim: string; p_fence: string; p_user: string }
+        Returns: boolean
+      }
+      b2b_finish_provisioning: {
+        Args: { p_claim: string; p_fence: string; p_user: string }
+        Returns: Json
+      }
       b2b_phase1_order_visible: { Args: { p_order: string }; Returns: boolean }
       b2b_phase1_partner_visible: {
         Args: { p_partner: string; p_technical?: boolean }
@@ -21001,6 +21031,10 @@ export type Database = {
       b2b_phase1_simulation_visible: {
         Args: { p_sim: string }
         Returns: boolean
+      }
+      b2b_prepare_provisioning_compensation: {
+        Args: { p_claim: string; p_fence: string; p_user: string }
+        Returns: string
       }
       b2b_provisioning_preflight: {
         Args: { p_papel: string; p_partner: string; p_role: string }
