@@ -4,7 +4,7 @@
 - [x] Substituir candidato anterior que reabria RPC por correção atômica SOMENTE h7n com tenant/readiness/vínculo ativo, hashes e ACL preservada.
 - [ ] Revisão independente e teste hospedado pós-aplicação aguardam revisor; nenhuma aplicação remota autorizada. Freshness/descendentes, fabricação, diagnóstico e ownership permanecem nos gates anteriores.
 
-## RECORTE ATUAL — leitura Cockpit candidata, sem aplicação/publicação
+## RECORTE ANTERIOR — leitura Cockpit (candidato substituído no P1 17:41)
 - [x] Registrar evidência EXTERNA relatada por Renato pós-deploy eb33bc: OS-2026-000003, uma programação aguardando/NULL e commercial_completed=false; Ordens/Fluxo Técnico PASS externo. Consultor: financeiro negado, catálogo/rascunho próprio disponíveis, cabeçalho visita Admin legível mas workspace/conversão negados e recomendações zero.
 - [x] Auditar metadados canônicos: RPC INVOKER EXECUTE fechado; view invoker sobre h7n DEFINER/MV sem filtro de empresa — P1 estrutural, não exploração comprovada.
 - [x] Preparar scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql e teste PostgreSQL isolado14/14 (helpers simulados); documentar diferença cabeçalho/workspace como dívida de contrato, sem mudar policies.
