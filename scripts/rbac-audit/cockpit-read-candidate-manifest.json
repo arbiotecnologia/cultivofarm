@@ -1,0 +1,43 @@
+{
+  "state": "LOCAL_CANDIDATE_NOT_APPLIED_REVIEW_BLOCKED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "candidate": "scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql",
+  "report": "docs/auditorias/cockpit-leitura-recorte-20261015.md",
+  "remote_operations": "READ_ONLY_METADATA_NO_OPERATIONAL_ROWS",
+  "converter_md5": "b112888e28d8a5727df713e0ae7bcd1b",
+  "h7n_before_md5": "6a3e2b6e2d594af67cf6727c5b03c2b1",
+  "reader_before_md5": "53c9fdb94780b9666ca9b602ad95a813",
+  "view_md5": "d72d5df7bacffdf8f4fc4282b804ab90",
+  "applied_migrations_do_not_reapply": ["20261015161648", "20261015162631", "20261015163930"],
+  "external_evidence": {
+    "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
+    "deploy": "eb33bc",
+    "os": "9d2e58ac-15f6-477b-bebd-55e440e71018",
+    "programacao": "da5b7239-384c-48a5-8714-082967b90dd1",
+    "status": "aguardando",
+    "volume": null,
+    "commercial_completed": false
+  },
+  "local_tests": {
+    "postgres_assertions": 14,
+    "vitest_passed": 17,
+    "vitest_files": 3,
+    "auth_rbac_entitlement": "STUBBED",
+    "schema": "REDUCED_NOT_HOSTED",
+    "full_preflight_and_acl": "UNVERIFIED",
+    "concurrency": "UNVERIFIED",
+    "diff_check": "PASS"
+  },
+  "blockers": [
+    "MATERIALIZED_SNAPSHOT_FRESHNESS_AND_DESCENDANT_SCOPE_NOT_PROVEN",
+    "ONFARM_MICRO_ID_PROJECTED_NULL_IN_EXISTING_VIEW",
+    "ONFARM_ROUTE_SOURCE_SCOPE_MISMATCH_NOT_WIDENED",
+    "CONSUMER_IDENTITY_CACHE_REVIEW_PENDING",
+    "HOSTED_AUTH_RLS_BROWSER_UNVERIFIED"
+  ],
+  "ownership_gate": "OFF",
+  "manufacturing": "NO_GO_VOLUME_NULL",
+  "programar_lote_publish": "NO_ACL_CHANGE",
+  "legacy_diagnostic": "NOT_APPLIED",
+  "publication": "NOT_PERFORMED"
+}

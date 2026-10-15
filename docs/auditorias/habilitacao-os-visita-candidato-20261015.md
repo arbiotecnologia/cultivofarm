@@ -1,5 +1,10 @@
 # Fase atual — candidato de habilitação focal OS (16:37 UTC)
 
+## Adendo atual — pós-deploy eb33bc, proveniência externa
+Renato relatou teste real publicado: Admin AR gerou via UI OS-2026-000003 (`9d2e58ac-15f6-477b-bebd-55e440e71018`) da visita `f19c8343-6205-487a-a237-df4d8ee06471`; programação `da5b7239-384c-48a5-8714-082967b90dd1` aguardando/volume NULL, log `commercial_completed=false`. Ordens e Fluxo Técnico PASS **externo**, não navegador/JWT próprio do agente. Não efetuada publicação ou operação remota nesta rodada.
+Consultor AR real: financeiro URL negado, Bombarbio visível, rascunho próprio `1995fdfa-2976-42a7-8a2b-0324497f76d2` editável; cabeçalho visita Admin visível, workspace/conversão negados e recomendações RLS zero. Dados preservados. A divergência de leitura é dívida de contrato/UX sob análise, não justificativa para apertar RLS ou ampliar acesso.
+Nova continuação focal somente leitura/preparação Cockpit: `docs/auditorias/cockpit-leitura-recorte-20261015.md`, candidato não aplicado. RPC fechado e view invoker sobre fonte DEFINER sem filtro de empresa exigem correção conjunta, nunca grant isolado. Volume/fabricação/diagnóstico NO-GO, ownership OFF; conversor b112888 e três migrations intactos. As declarações abaixo de publicação pendente são **histórico de rodadas anteriores**; o deploy atual é relato externo, sem prova própria.
+
 ## Resultado e entrega
 **APLICADO AO CÓDIGO-FONTE REAL POR AUTORIZAÇÃO. NÃO PUBLICADO. Nenhuma mudança remota de banco/dados.**
 Diff: `scripts/rbac-audit/proposed-enable-visit-os-ui.patch`.
