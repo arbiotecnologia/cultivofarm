@@ -502,12 +502,13 @@ Candidato `proposed-lab-biological-only-07.sql`: elegibilidade por `familia_cata
 
 O SQL06 anterior continha sete views, mas três (`vw_bi_commercial_revenue`, `vw_bi_commercial_engagement`, `vw_bi_movimentacoes`) não pertenciam ao conjunto original pedido. Permanecem como hardening adicional candidato; não substituem a prova das duas primeiras views acima.
 
-### UI CRUD próprio ligada ao contrato
-- `/base-tecnica` agora tem handlers e formulários próprios para produto, microrganismo e cultura: criar, editar, arquivar e restaurar chamam exclusivamente `tenant_catalog_owned_mutate`; globais continuam sem edição/exclusão tenant.
+### UI CRUD próprio ligada ao contrato — parcial, gate OFF
+- `/base-tecnica` agora tem handlers e formulários candidatos para produto, microrganismo e cultura: criar, editar, arquivar e restaurar chamam exclusivamente `tenant_catalog_owned_mutate`; globais continuam sem edição/exclusão tenant.
 - Produto próprio suporta família/classe explícitas e composição declarativa estruturada; nenhuma receita é inferida nem `formulacoes` é substituída. Microrganismo global ativo pode ser referenciado; o servidor continua responsável pela negação cross-tenant.
 - Apresentações próprias usam exclusivamente `tenant_catalog_owned_presentation_mutate`, com CAS, motivo, idempotência e invalidação de cache; o caminho global direto não foi reutilizado.
 - Duplicata global ativa oferece “Localizar”; se oculto, a lista abre ocultos para permitir “Exibir”. Global inativo orienta solicitar ativação à plataforma.
 - Escopo de mutação é congelado por empresa+usuário; troca de identidade/empresa rejeita a tentativa e invalida caches por org+usuário. UI é dica: autorização permanece integralmente no servidor.
+- **Limite bloqueante:** as listas atuais ainda não consomem/mesclam `tenant_catalog_owned_list`, cujo retorno também não contém todos os detalhes editáveis. Portanto um item próprio salvo não está comprovadamente visível/editável na mesma tela, e o CRUD não é funcionalmente completo. O gate continua OFF até existir leitura detalhada segura, integração das três listas e teste comportamental com QueryClient.
 - O gate client/server permanece OFF; os handlers estão integrados e testáveis, mas não montam controles mutáveis no ambiente atual.
 
 ### Laboratório — fase 07 separada
