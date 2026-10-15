@@ -188,3 +188,36 @@ Dois testes independentes de rerender/resposta tardia falharam contra 6c0a1bc5 (
 1. **Sem refetch forçado por observer.** Removidos `staleTime 0`, `refetchOnMount "always"` e "carregando enquanto relê" do leitor de ocultos (risco de loop pai+filho: CatalogoTecnicoTab só monta CatalogoCardsGrid quando não carrega, e ambos usam o mesmo hook). Dado obsoleto pós-mutação resolvido apenas por cancel+reset dos ocultos do escopo e invalidação aguardada no `onSettled`. Teste com árvore pai+filho e dois observers: após estabilizar, 2 leituras de ocultos (produto+micro) e 1 do catálogo, sem novas chamadas em 200 ms.
 2. **Invalidação restrita.** `catalogo-unificado` só é invalidado/relido para chaves `admin`/`interno` cuja parte de ocultos começa exatamente com `empresa|usuário|` do escopo de origem. Teste com cache semeado de outro usuário da mesma empresa, outra empresa, B2B e global: nenhuma queryFn chamada e nenhuma chave invalidada.
 Integração 6/6 (inclui ocultar/exibir com troca de aba, releitura atrasada e resposta em voo). Status permanece FAIL real até prova em navegador após publicação pelo revisor.
+
+---
+
+## FECHAMENTO PARCIAL — prova externa final (15/10/2026, 04:18 UTC)
+
+**Migração e publicação (externas, não deste agente):**
+- Migração `20261015035122` tenant_catalog_visibility APLICADA no canônico `swzpzcwiasxmjutrmvkm` (candidato 05c21b13). **NÃO REAPLICAR.**
+- `a78b6919` NÃO publicado: teste independente reproduziu 13 RPCs em 12 ciclos (risco de loop pai+filho); corrigido em `5f9a38bc`.
+- `5f9a38bc0265d0cd0f16bb9151ae40f8f2b91bc6` PUBLICADO pelo agente revisor com confirmação "Seu site foi atualizado".
+
+**Runtime e checks independentes (evidência externa, não reexecução própria):**
+- Runtime SQL: 49 PASS / 0 FAIL / 2 SKIP; fixture inativo em rollback separada. SKIP honestos: ator real sem `catalogo_precos` e produto inativo real (cenário coberto pela fixture). Concorrência com 2 conexões: UNVERIFIED.
+- Frontend independente: 612 testes em 26 arquivos PASS, incluindo os 2 de race e 1 de loop criados por este agente. Os 613 remotos são evidência separada — não somar.
+- Scanner final: 3932 arquivos, zero achados. Typecheck app/node PASS. Build 35,05 s PASS.
+- Lint dos arquivos novos: 0 erros (warnings de fast-refresh). Lint ampliado da versão anterior: 82 erros/8 warnings, mantido como dívida. As 3 falhas legadas de `etapasVisita.test.ts` permanecem como dívida legada confirmada na base.
+
+**UI real Admin AR (segundo ciclo, sem reload entre ações):**
+- Ocultar Bombarbio (v3) → Catálogo Técnico com 9 produtos sem o item → Mostrar ocultos/Exibir (v4) → Catálogo Técnico com 10 produtos com Bombarbio, **sem recarregar a página**.
+- O FAIL real de cache da publicação `de7d5cc5` está **corrigido e PASS** neste cenário.
+- Diálogo de Exibir diz "volta a aparecer": PASS.
+- Mobile 390: documento 390 / diálogo 390 / scroll 388, sem overflow; override removido.
+- Isolamento: FSF via SQL manteve Bombarbio selecionável enquanto AR ocultava e segue com 0 preferências; UI FSF UNVERIFIED.
+- Invariantes globais intactas: Bombarbio ativo/B2B R$180/L, `updated_at 2026-10-14T22:02:40.521334Z`, receita 334/333/333.
+- Ledger: 4 eventos reais dos dois ciclos; produto VISÍVEL restaurado.
+- Advisors: 19 INFO RLS sem policies (+2 novas tabelas intencionalmente sem grant direto), 2 anon DEFINER / 341 authenticated DEFINER / 1 aviso de senha — legados inalterados.
+
+**Fechamento PARCIAL do recorte:** visibilidade de produto comprovada em UI real Admin AR; micro/cultura e demais roles comprovados por SQL. NÃO é auditoria integral.
+
+**Pendentes (não iniciar nova fase sem autorização):**
+- B2B (empresa fornecedora via vínculo comercial), pedidos/produção e demais seletores (cultura desktop, etapa Recomendação).
+- Dívida P2 de escalabilidade: `hidden_ids` + `NOT IN` até 300 ocultos; acima disso indisponibilidade explícita. Próxima fase precisa de anti-join no servidor e paginação no leitor completo.
+- Testes de UI com outros roles, fluxo mobile integral e concorrência real.
+- Ownership/CRUD próprio (fase futura, após contenção de leitores DEFINER e descendentes).
