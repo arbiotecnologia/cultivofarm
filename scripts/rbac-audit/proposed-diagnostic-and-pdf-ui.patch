@@ -1,0 +1,85 @@
+--- a/src/pages/app/wizard/WizardDiagnosticoStep.tsx
++++ b/src/pages/app/wizard/WizardDiagnosticoStep.tsx
+@@ -1,4 +1,4 @@
+-import { useEffect, useMemo, useState } from "react";
++import { useEffect, useMemo, useRef, useState } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { TECHNICAL_STALE_REVALIDATION } from "@/hooks/useVisitaWorkspace";
+@@ -57,6 +57,9 @@
+ }: Props) {
+   const isOnline = useOnlineStatus();
+   const queryClient = useQueryClient();
++  const saveLock = useRef(false);
++  const legacyAttempt = useRef<{ remoteId: string; key: string } | null>(null);
++  const [saving, setSaving] = useState(false);
+   const [dialogOpen, setDialogOpen] = useState(false);
+   const [editing, setEditing] = useState<Row | null>(null);
+   const [form, setForm] = useState<Form>(EMPTY_FORM);
+@@ -115,9 +118,10 @@
+   }, [remoteRows, pendingRows]);
+ 
+   const openNew = () => { setEditing(null); setForm(EMPTY_FORM); setDialogOpen(true); };
+-  const openEdit = (row: Row) => { setEditing(row); setForm(row.payload); setDialogOpen(true); };
++  const openEdit = (row: Row) => { legacyAttempt.current = null; setEditing(row); setForm(row.payload); setDialogOpen(true); };
+ 
+   const save = async () => {
++    if (locked || saveLock.current) return;
+     const validationError = diagnosticoValidationError(form);
+     if (validationError) { toast.error(validationError); return; }
+     if (!form.problema && !form.descricao) {
+@@ -125,6 +129,31 @@
+       return;
+     }
+ 
++    // Legado remoto nunca entra na fila de criação offline.
++    if (editing?.remoteId && !editing.clientUuid) {
++      if (!isOnline || !remoteRegistroId) {
++        toast.error("Conecte-se para editar este diagnóstico já registrado."); return;
++      }
++      const remoteId = editing.remoteId;
++      const attempt = legacyAttempt.current?.remoteId === remoteId
++        ? legacyAttempt.current : { remoteId, key: crypto.randomUUID() };
++      legacyAttempt.current = attempt;
++      saveLock.current = true; setSaving(true);
++      try {
++        const { error } = await supabase.rpc("rpc_upsert_diagnostico_visita" as any, {
++          p_registro_id: remoteRegistroId, p_client_uuid: attempt.key,
++          p_payload: { ...form, _remote_id: remoteId } as any,
++          p_expected_versao: editing.versao + 1,
++        });
++        if (error) throw error;
++        setDialogOpen(false);
++        await refetch();
++        await invalidateWizardProgress(queryClient, remoteRegistroId, "diag");
++      } catch {
++        toast.error("Não foi possível atualizar. Revise a versão antes de tentar novamente.");
++      } finally { saveLock.current = false; setSaving(false); }
++      return;
++    }
+     const clientUuid = editing?.clientUuid ?? crypto.randomUUID();
+     const versao = (editing?.versao ?? 0) + 1;
+     const entry: PendingDiagnostico = {
+@@ -375,7 +404,7 @@
+           </div>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+-            <Button onClick={save}>Salvar</Button>
++            <Button onClick={save} disabled={saving}>{saving ? "Salvando…" : "Salvar"}</Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+--- a/src/pages/VisitaTecnica.tsx
++++ b/src/pages/VisitaTecnica.tsx
+@@ -934,9 +934,9 @@
+     const osVinculadas = ordensConsolidado.map(os => ({
+       numeroOs: formatOS(os as any),
+       produto: (os as any).produtos?.nome || "—",
+-      dose: `${os.dose_ml_ha} mL/ha`,
++      dose: os.dose_ml_ha == null ? "Não informado" : `${os.dose_ml_ha} mL/ha`,
+       area: `${os.area_hectares} ha`,
+-      volumeTotal: `${os.volume_total_ml >= 1000 ? (os.volume_total_ml / 1000).toFixed(2) + ' L' : os.volume_total_ml.toFixed(0) + ' mL'}`,
++      volumeTotal: os.volume_total_ml == null ? "Não informado" : (os.volume_total_ml >= 1000 ? (os.volume_total_ml / 1000).toFixed(2) + " L" : os.volume_total_ml.toFixed(0) + " mL"),
+       modoAplicacao: os.modo_aplicacao || "—",
+       dataProgramada: os.data_recomendada ? formatDateDisplay(os.data_recomendada) : "—",
+       status: os.status,
