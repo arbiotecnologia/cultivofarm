@@ -8,6 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  REC_MICRO_SELECT, REC_PRODUTO_SELECT, recCatalogErrorMessage, recMicroLabel, recProdutoLabel, recReferencedIds, recSelectOptions,
+  type RecMicro, type RecProduto,
+} from "@/lib/visita/recomendacaoCatalogo";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -83,29 +87,29 @@ export default function WizardRecomendacaoStep({
     },
   });
 
-  const { data: microrganismos = [] } = useQuery({
-    queryKey: ["wizard-rec-microrganismos"],
-    queryFn: async () => {
+  // Nova seleção: somente itens ativos (colunas reais). Ocultação por empresa NÃO integrada aqui.
+  const microSel = useQuery({
+    queryKey: ["wizard-rec-microrganismos-ativos"],
+    retry: false,
+    queryFn: async (): Promise<RecMicro[]> => {
       const { data, error } = await supabase
-        .from("microrganismos")
-        .select("id, nome_comum, nome_cientifico")
-        .order("nome_comum");
+        .from("microrganismos").select(REC_MICRO_SELECT).eq("ativo", true).order("nome");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as RecMicro[];
     },
   });
-
-  const { data: produtos = [] } = useQuery({
-    queryKey: ["wizard-rec-produtos"],
-    queryFn: async () => {
+  const prodSel = useQuery({
+    queryKey: ["wizard-rec-produtos-ativos"],
+    retry: false,
+    queryFn: async (): Promise<RecProduto[]> => {
       const { data, error } = await supabase
-        .from("produtos")
-        .select("id, nome_comercial")
-        .order("nome_comercial");
+        .from("produtos").select(REC_PRODUTO_SELECT).eq("ativo", true).order("nome");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as RecProduto[];
     },
   });
+  const microrganismos = microSel.data ?? [];
+  const produtos = prodSel.data ?? [];
 
   const reloadPending = async () => {
     setPendingRows(await getPendingRecomendacoesByRegistro(localRegistroId));
@@ -208,10 +212,39 @@ export default function WizardRecomendacaoStep({
     await refetch();
   };
 
+  // Visualização de itens vinculados/históricos: por ID referenciado, sem filtro de ativo.
+  const refIds = useMemo(() => recReferencedIds([
+    ...rows.map((r) => r.payload),
+    { microrganismo_id: form.microrganismo_id, produto_biologico_sugerido_id: form.produto_biologico_sugerido_id },
+  ]), [rows, form.microrganismo_id, form.produto_biologico_sugerido_id]);
+  const microHist = useQuery({
+    queryKey: ["wizard-rec-micro-hist", refIds.micro.join(",")],
+    enabled: refIds.micro.length > 0,
+    retry: false,
+    queryFn: async (): Promise<RecMicro[]> => {
+      const { data, error } = await supabase.from("microrganismos").select(REC_MICRO_SELECT).in("id", refIds.micro);
+      if (error) throw error;
+      return (data ?? []) as RecMicro[];
+    },
+  });
+  const prodHist = useQuery({
+    queryKey: ["wizard-rec-prod-hist", refIds.prod.join(",")],
+    enabled: refIds.prod.length > 0,
+    retry: false,
+    queryFn: async (): Promise<RecProduto[]> => {
+      const { data, error } = await supabase.from("produtos").select(REC_PRODUTO_SELECT).in("id", refIds.prod);
+      if (error) throw error;
+      return (data ?? []) as RecProduto[];
+    },
+  });
+  const microMap = useMemo(() => new Map((microHist.data ?? []).map((m) => [m.id, m])), [microHist.data]);
+  const prodMap = useMemo(() => new Map((prodHist.data ?? []).map((p) => [p.id, p])), [prodHist.data]);
   const microNome = (id: string | null | undefined) =>
-    (microrganismos as any[]).find((m) => m.id === id)?.nome_comum || "—";
+    id ? (microMap.get(id) ? recMicroLabel(microMap.get(id)) : microHist.isError ? "Nome indisponível" : "—") : "—";
   const prodNome = (id: string | null | undefined) =>
-    (produtos as any[]).find((p) => p.id === id)?.nome_comercial || "—";
+    id ? (prodMap.get(id) ? recProdutoLabel(prodMap.get(id)) : prodHist.isError ? "Nome indisponível" : "—") : "—";
+  const microOpts = recSelectOptions(microrganismos, form.microrganismo_id, microMap);
+  const prodOpts = recSelectOptions(produtos, form.produto_biologico_sugerido_id, prodMap);
 
   if (locked) {
     return (
@@ -341,30 +374,38 @@ export default function WizardRecomendacaoStep({
               <Label>Microrganismo</Label>
               <Select
                 value={form.microrganismo_id ?? undefined}
-                onValueChange={(v) => setForm({ ...form, microrganismo_id: v })}
+                disabled={!microSel.isSuccess}
+                onValueChange={(v) => { if (microrganismos.some((m) => m.id === v)) setForm({ ...form, microrganismo_id: v }); }}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={microSel.isLoading ? "Carregando…" : "Selecione"} /></SelectTrigger>
                 <SelectContent>
-                  {(microrganismos as any[]).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.nome_comum}</SelectItem>
+                  {microOpts.map(({ item, selectable }) => (
+                    <SelectItem key={item.id} value={item.id} disabled={!selectable}>
+                      {recMicroLabel(item)}{!selectable ? " (indisponível para nova seleção)" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {microSel.isError && <p role="alert" className="text-xs text-destructive">{recCatalogErrorMessage(microSel.error)}</p>}
             </div>
 
             <div className="space-y-1">
               <Label>Produto biológico sugerido</Label>
               <Select
                 value={form.produto_biologico_sugerido_id ?? undefined}
-                onValueChange={(v) => setForm({ ...form, produto_biologico_sugerido_id: v })}
+                disabled={!prodSel.isSuccess}
+                onValueChange={(v) => { if (produtos.some((p) => p.id === v)) setForm({ ...form, produto_biologico_sugerido_id: v }); }}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={prodSel.isLoading ? "Carregando…" : "Selecione"} /></SelectTrigger>
                 <SelectContent>
-                  {(produtos as any[]).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.nome_comercial}</SelectItem>
+                  {prodOpts.map(({ item, selectable }) => (
+                    <SelectItem key={item.id} value={item.id} disabled={!selectable}>
+                      {recProdutoLabel(item)}{!selectable ? " (indisponível para nova seleção)" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {prodSel.isError && <p role="alert" className="text-xs text-destructive">{recCatalogErrorMessage(prodSel.error)}</p>}
             </div>
 
             <div className="grid grid-cols-3 gap-2">
