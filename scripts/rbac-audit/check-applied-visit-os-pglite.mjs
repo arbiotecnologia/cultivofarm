@@ -17,9 +17,13 @@ CREATE TYPE status_registro_consultor AS ENUM('rascunho','em_andamento','finaliz
 CREATE TYPE modo_aplicacao_consultor AS ENUM('foliar','aplicacao_no_colo_da_planta','via_solo','tratamento_semente','sulco_plantio','jato_dirigido','outro');
 ALTER TABLE produtos ADD ativo boolean DEFAULT true, ADD owner_organization_id uuid;
 ALTER TABLE microrganismos ADD ativo boolean DEFAULT true, ADD owner_organization_id uuid;
-CREATE FUNCTION has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$SELECT has_role($1,$2::text)$$;
+CREATE FUNCTION has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND current_setting('test.role',true)=$2::text$$;
 CREATE TABLE registros_consultor(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),organization_id uuid,consultor_responsavel uuid,status status_registro_consultor DEFAULT 'aprovado',cliente_id uuid DEFAULT gen_random_uuid(),fazenda_id uuid DEFAULT gen_random_uuid(),talhao_id uuid DEFAULT gen_random_uuid(),area_hectares numeric,cultura_id uuid,fase_fenologica text,problema_principal text,solicitacao_id uuid,hora_inicio timestamptz,updated_at timestamptz);
 CREATE FUNCTION can_view_technical_visit(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT EXISTS(SELECT 1 FROM registros_consultor WHERE id=$2 AND organization_id=h15_actor_organization() AND $1=auth.uid())$$;
+CREATE FUNCTION technical_actor_ready(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND h15_actor_organization() IS NOT NULL AND coalesce(current_setting('test.active',true),'true')<>'false'$$;
+CREATE FUNCTION technical_refs_in_actor_tenant(uuid,uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT EXISTS(SELECT 1 FROM registros_consultor WHERE cliente_id=$1 AND fazenda_id=$2 AND talhao_id=$3 AND organization_id=h15_actor_organization())$$;
+CREATE FUNCTION technical_client_link(uuid,uuid,text[]) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND coalesce(current_setting('test.link',true),'')=ANY($3)$$;
+CREATE FUNCTION is_visit_responsible(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT EXISTS(SELECT 1 FROM registros_consultor WHERE id=$2 AND consultor_responsavel=$1)$$;
 CREATE TABLE registros_consultor_recomendacoes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),registro_consultor_id uuid REFERENCES registros_consultor(id),produto_biologico_sugerido_id uuid,microrganismo_id uuid,encaminhar_para_os boolean DEFAULT false,recomendacao_tecnica text,observacoes_finais text,estrategia_manejo estrategia_manejo,modo_aplicacao modo_aplicacao_consultor,versao integer NOT NULL DEFAULT 1,created_at timestamptz DEFAULT now());
 ALTER TABLE ordens_servico_onfarm ADD registro_consultor_id uuid,ADD solicitacao_id uuid,ADD consultor_responsavel uuid,ADD cultura_id uuid,ADD fase_fenologica text,ADD problema_principal text,ADD diagnostico text,ADD recomendacao_tecnica text,ADD observacoes_adicionais text,ADD created_by uuid,ADD modo_aplicacao modo_aplicacao_consultor,ADD data_recomendada date;
 CREATE UNIQUE INDEX idx_unique_os_onfarm_registro_consultor ON public.ordens_servico_onfarm USING btree(registro_consultor_id) WHERE registro_consultor_id IS NOT NULL;
@@ -104,6 +108,11 @@ const applied=readFileSync('scripts/rbac-audit/applied-20261015161648-h_catalog_
 const offset=applied.indexOf('CREATE OR REPLACE FUNCTION platform_private.lab_visit_recommendation_lock()');
 assert.ok(offset>0); await db.exec(applied.slice(offset).replace(/COMMIT;\s*$/, ''));
 assert.equal((await scalar("SELECT md5(pg_get_functiondef('public.rpc_converter_visita_em_os(uuid,text)'::regprocedure)) hash")).hash,'66e8072f7aefbe18c1417240121147a5');
+await db.exec(readFileSync('scripts/rbac-audit/live-defs/public.can_manage_technical_visit-applied.sql','utf8'));
+assert.equal((await scalar("SELECT md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure)) hash")).hash,'d95c2c2b34af117d467d7d4b2b775002');
+// Execute the exact new applied migration, including canonical/two-hash preflight, locally ONLY.
+await db.exec(readFileSync('scripts/rbac-audit/applied-20261015163930-h_catalog_visit_conversion_requires_manage.sql','utf8'));
+assert.equal((await scalar("SELECT md5(pg_get_functiondef('public.rpc_converter_visita_em_os(uuid,text)'::regprocedure)) hash")).hash,'b112888e28d8a5727df713e0ae7bcd1b');
 let passes=0;
 async function check(name,fn){await fn();passes++;console.log('PASS',name);}
 const q=async(sql,p=[])=>(await db.query(sql,p)).rows;
@@ -134,6 +143,28 @@ for(const [name,p,m] of [['bio',bio,null],['micro',null,micro]]){
 }
 await check('mixed preserves all lines and never concludes request',async()=>{const v=await visit();const r=await rec(v,bio,null);await rec(v,chem,null,false);await rec(v,fert,null,false);const before=await q('SELECT * FROM registros_consultor_recomendacoes WHERE registro_consultor_id=$1 ORDER BY id',[v]);const a=await convert(v);assert.equal(a.recomendacao_id,r);assert.equal(a.remaining_recommendations,2);assert.equal(a.commercial_completed,false);assert.deepEqual(await q('SELECT * FROM registros_consultor_recomendacoes WHERE registro_consultor_id=$1 ORDER BY id',[v]),before);assert.equal((await scalar('SELECT s.status FROM portal_solicitacoes s JOIN registros_consultor v ON v.solicitacao_id=s.id WHERE v.id=$1',[v])).status,'aguardando_os');});
 await check('FSF existing and missing identical including replay',async()=>{const v=await visit();await rec(v,bio,null);await convert(v);await q("SELECT set_config('test.org',$1,false)",[FSF]);assert.deepEqual(await convert(v),await convert(missing));await q("SELECT set_config('test.org',$1,false)",[AR]);});
+await check('responsible read-only consultant denied before writes and replay',async()=>{
+ const v=await visit();await rec(v,bio,null);await q("SELECT set_config('test.role','consultor_tecnico',false),set_config('test.link','read',false)");
+ assert.equal((await scalar('SELECT can_view_technical_visit($1,$2) ok',[actor,v])).ok,true);
+ assert.equal((await scalar('SELECT can_manage_technical_visit($1,$2) ok',[actor,v])).ok,false);
+ assert.deepEqual(await convert(v),await convert(missing));assert.deepEqual(await counts(v),{os:0,logs:0});
+ await q("SELECT set_config('test.role','administrador',false)");assert.equal((await convert(v)).success,true);
+ await q("SELECT set_config('test.role','consultor_tecnico',false)");assert.deepEqual(await convert(v),await convert(missing));assert.deepEqual(await counts(v),{os:1,logs:1});
+ await q("SELECT set_config('test.role','administrador',false)");
+});
+for(const role of ['consultor_tecnico','tecnico_agronomo']) for(const link of ['execute','manage']){
+ await check(`${role} responsible ${link} permitted with singular replay`,async()=>{
+  const v=await visit();await rec(v,bio,null);await q("SELECT set_config('test.role',$1,false),set_config('test.link',$2,false)",[role,link]);
+  assert.equal((await scalar('SELECT can_manage_technical_visit($1,$2) ok',[actor,v])).ok,true);
+  const a=await convert(v),b=await convert(v);assert.equal(a.success,true);assert.equal(b.already_exists,true);assert.equal(a.os_id,b.os_id);assert.deepEqual(await counts(v),{os:1,logs:1});
+  await q('UPDATE registros_consultor SET consultor_responsavel=$1 WHERE id=$2',[missing,v]);assert.equal((await convert(v)).success,false);
+  await q("SELECT set_config('test.role','administrador',false)");
+ });
+}
+await check('converter ACL unchanged after manage replacement',async()=>{
+ assert.equal((await scalar("SELECT has_function_privilege('authenticated','rpc_converter_visita_em_os(uuid,text)','EXECUTE') ok")).ok,true);
+ assert.equal((await scalar("SELECT has_function_privilege('anon','rpc_converter_visita_em_os(uuid,text)','EXECUTE') ok")).ok,false);
+});
 await check('empty explicit recommendation denied',async()=>{const v=await visit();const r=await rec(v,bio,null,true,'');await q('UPDATE registros_consultor_recomendacoes SET estrategia_manejo=NULL WHERE id=$1',[r]);assert.equal((await convert(v)).code,'LAB_VISIT_EMPTY_RECOMMENDATION');});
 await check('enum-only recommendation uses cast fallback',async()=>{const v=await visit();await rec(v,bio,null,true,null);const a=await convert(v);assert.equal(a.success,true);assert.equal((await scalar('SELECT recomendacao_tecnica FROM ordens_servico_onfarm WHERE id=$1',[a.os_id])).recomendacao_tecnica,'biologico');});
 await check('queue replay (not independent sessions) returns same singular OS',async()=>{const v=await visit();await rec(v,bio,null);const [a,b]=await Promise.all([convert(v),convert(v)]);assert.equal(a.os_id,b.os_id);assert.equal([a,b].filter(r=>r.already_exists===false).length,1);assert.deepEqual(await counts(v),{os:1,logs:1});});
@@ -166,5 +197,5 @@ if(usePostgres){
  await a.end();await b.end();
 }
 await check('conversion preserves NULL requested volume, never invents dose',async()=>{const v=await visit();await rec(v,bio,null);const out=await convert(v);assert.equal(out.success,true);assert.equal((await scalar('SELECT volume_total_ml FROM ordens_servico_onfarm WHERE id=$1',[out.os_id])).volume_total_ml,null);assert.equal((await scalar('SELECT volume_necessario FROM programacao_producao WHERE ordem_servico_onfarm_id=$1',[out.os_id])).volume_necessario,null);});
-console.log(JSON.stringify({passes,failed:0,visitPreflight:'NOT repeated: exact applied converter hash 66e807 verified; schema fixture',basePreflight:'EXCLUDED',hosted:'UNVERIFIED',concurrency:usePostgres?'Two independent local PostgreSQL sessions with observed lock wait':'PGlite serialized queue only, NOT independent sessions',stubs:'Auth/RBAC/tenant/schema/other base helpers'}));
+console.log(JSON.stringify({passes,failed:0,visitPreflight:'Manage migration canonical/two-hash preflight executed locally; converter b112888 and exact manage d95c2c verified',basePreflight:'EXCLUDED',hosted:'UNVERIFIED',concurrency:usePostgres?'Two independent local PostgreSQL sessions with observed lock wait':'PGlite serialized queue only, NOT independent sessions',stubs:'Auth/RBAC/tenant/schema/technical_client_link/readiness/responsibility dependencies; can_manage body exact'}));
 await db.close();
