@@ -1,7 +1,7 @@
 import { validarNovoUsuario, type ErrosNovoUsuario, type NovoUsuarioInput } from "./usuariosValidation";
 
 // Review gate only; the existing Edge/server/RLS remain authoritative.
-export const EXTERNAL_USER_ACTIVATION_REVIEWED = false;
+export const EXTERNAL_USER_ACTIVATION_REVIEWED = true;
 export type UserRegistrationKind = "internal" | "b2b" | "producer";
 export interface ExternalUserDraft extends NovoUsuarioInput {
   principal_cliente_id?: string | null;

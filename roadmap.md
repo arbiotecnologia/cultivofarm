@@ -1,3 +1,12 @@
+## RECORTE 21:13 — ativação focal autorizada, SEM execução remota
+- [x] Fonte existente com duas flags true revisáveis; Auth/tenant/RBAC/receipt autoritativos e Técnico negado.
+- [x] Org/tenant forjado e alias cliente conflitante negados antes claim/Auth; senha operador ausente e primeiro acesso separado.
+- [x] Candidato grants claim7 public/private authenticated; finish/prepare/complete service_role somente. Preflight pós-instalação/hashes/owners/ACL e rollback restritivo sem DROP entregues.
+- [x] Estado REAL: create-user v79 verify_jwt=true/flag false implantada externamente; migrations20261015210732 e20261015210837 aplicadas pelo auditor. NÃO reaplicar; seis triggers solicitações/quatro readers ativos/helper fechado.
+- [x] QA108 Vitest cadastro/entrypoint/RBAC +91 portais/saas PASS; PostgreSQL isolado21 ACL+17 rollback e concorrência/revogação/replay PASS; Auth/transporte simulados.
+- [ ] Auditor: conferência final e aplicação dos cinco grants/implantação controlada da fonte ativa (ações proibidas ao agente nesta entrega).
+- [ ] Auditor: criação nominal das duas contas autorizadas e JWT/GoTrue/RLS/Storage reais pós-deploy; nenhuma conta/email criada pelo agente.
+
 ## RECORTE 21:05 — integração real create-user fechada
 - [x] Diff aprovado integrado ao entrypoint existente; harness executa fonte aplicada, sem módulo paralelo. Técnico negado, flags false e UUID/receipt/pending409 preservados.
 - [x] Novo aviso de hook initialNewUser corrigido; dois avisos legados usersPage preservados, sem alegar lint global PASS.
@@ -5,7 +14,7 @@
 - [x] QA153/153+60/60 Vitest (26 sobrepostos),56 P1/26 financeiro/harness cadastro local PASS; scanner/lint testes0/diff-check/build automáticoOK; typechecks independentes são evidência externa.
 - [x] Contrato pós-instalação atualizado: não rodar preflight antigo de ausência; próximos passos controlados pelo auditor, sessão Admin AR dele disponível.
 - [ ] Revisão final/deploy controlado/grants e ativação: ações expressamente reservadas ao auditor, não executar nesta entrega.
-- [ ] P1 portal_solicitacoes: pacote concluído e testado; aplicação pendente da conferência do auditor.
+- [x] P1 portal_solicitacoes aplicado externamente20261015210732;56assertions independentes PASS.
 - [ ] GoTrue/JWT externos e Storage API pós-deploy: identidades futuras autorizadas, não criar agora; prova Admin não substitui B2B/Produtor exclusivo.
 
 ## RECORTE 20:55 — mutações de solicitações Produtor
