@@ -1,3 +1,8 @@
+## RECORTE 19:44 — OS aplicada externamente; cadastro A+B fechado
+- [x] Ledger 20261015194058 recuperado read-only e arquivado exato; não reaplicar. Aprovação/programação operacionais NO-GO (CAS/concorrência/cadeia B2B).
+- [ ] Preparar cadastro externo exclusivo no fluxo existente, candidatos SQL e diff Edge sem deploy/grants/UI/contas/emails reais.
+- [ ] Executar testes isolados tenant/irmãos/retry/compensação/revogação e documentar rollback/limitações.
+
 ## RECORTE 19:35 — compatibilidade OS aberta, candidato combinado
 - [x] Registrar96assertions0ef9b2a/PGlite/Auth-schema simulados e preflight hospedado read-only PASS EXTERNOS Renato; não reaplicar.
 - [x] Gerador real hash8f7acca4 compatibilizado somente dois INSERT aberta; locks/links/volumes/snapshots/NULL/ACLowner preservados. Mesmo candidato atômico guards+gerador, preflight dependências/índices/publicadores; padrão ROLLBACK, sem DDL remoto/grants/UI/dados/fabricação.
