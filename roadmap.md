@@ -3,6 +3,8 @@
 - [x] Guard candidato nega INSERT distinto de aberta (NULL inclusive), sem whitelist/GUC;96 assertions PostgreSQL isolado PASS, before antigo FAIL programada reproduzido;43programar+19Vitest PASS. Relatório/hash/rollback atualizados; frontend/catálogo/lote intocados.
 - [x] Produtores revisados: manual default aberta/conversor b112 aberta preservados; B2B generate_production_orders_from_partner hash8f7acca4 insere aprovada, authEXEC=true atual. Guard candidato o bloqueará; aplicação NO-GO até contrato específico, nenhuma ACL alterada. Serviços/importadores externos UNVERIFIED.
 - [x] Demanda paralela cadastro B2B/Produtor registrada somente para planejamento posterior; NÃO implementar neste recorte.
+- [x] 19:32: consolidado na mesma entrega (sem objetos duplicados). Compatibilidade externa registrada: gerador B2B e rpc_planejamento_publicar_v1 EXECUTE authenticated, publish_planning_to_lab fechado; candidato não aplicável isoladamente.
+- [ ] Plano B2B/Produtor autorizado somente após avanço da OS; não iniciado.
 - [ ] Aprovação/programação/fabricação permanecem NO-GO até revisão independente e contratos/dependências resolvidos; sem frontend/catálogo/lote/DDL/grants/publicação/dados reais.
 
 ## RECORTE 19:04 — aprovação separada, preparação fechada
