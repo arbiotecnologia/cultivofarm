@@ -43,7 +43,21 @@ GRANT ALL ON storage.objects TO authenticated,anon,service_role;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.actor',true),'')::uuid $$;
 CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $$;
 CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() AND ativo AND current_setting('request.ready',true)='true' $$;
-CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT ARRAY(SELECT cliente_id FROM public.user_clientes WHERE user_id=$1 AND $1=auth.uid() AND is_active AND revoked_at IS NULL AND (valid_from IS NULL OR valid_from<=now()) AND (valid_until IS NULL OR valid_until>=now())) $$;
+CREATE FUNCTION public.fn_authz_uid_scope_ok(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT $1=auth.uid() AND public.h15_actor_organization() IS NOT NULL $$;
+-- Hosted c80d5900692d960f649d0a9f7850fe2c; only fn_authz boundary reduced.
+CREATE OR REPLACE FUNCTION public.get_cliente_ids_for_user(_user_id uuid)
+ RETURNS uuid[] LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+ SELECT CASE WHEN public.fn_authz_uid_scope_ok(_user_id) THEN ARRAY(
+ SELECT uc.cliente_id FROM public.user_clientes uc WHERE uc.user_id=_user_id
+ AND uc.is_active=true AND uc.revoked_at IS NULL
+ AND (uc.valid_from IS NULL OR uc.valid_from<=now()) AND (uc.valid_until IS NULL OR uc.valid_until>=now())
+ UNION SELECT pr.cliente_id FROM public.profiles pr WHERE pr.user_id=_user_id AND pr.cliente_id IS NOT NULL
+ AND EXISTS(SELECT 1 FROM public.user_clientes uc2 WHERE uc2.user_id=pr.user_id AND uc2.cliente_id=pr.cliente_id
+ AND uc2.is_active=true AND uc2.revoked_at IS NULL AND (uc2.valid_from IS NULL OR uc2.valid_from<=now())
+ AND (uc2.valid_until IS NULL OR uc2.valid_until>=now()))
+ ) ELSE ARRAY[]::uuid[] END;
+$function$;
 CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT jsonb_build_object('iat',extract(epoch from now())::bigint) $$;
 CREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT public.h15_actor_organization() $$;
 CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT $1=auth.uid() AND public.h15_actor_organization() IS NOT NULL $$;
@@ -104,11 +118,23 @@ INSERT INTO user_clientes VALUES('{U}','{C1}',true,NULL,NULL,NULL,'manage');
   check(f"WITH changed AS (UPDATE storage.objects SET metadata='{{}}' WHERE name='{path}' RETURNING 1) SELECT count(*) FROM changed;",'0')
   check(f"WITH changed AS (DELETE FROM storage.objects WHERE name='{path}' RETURNING 1) SELECT count(*) FROM changed;",'0')
   for update,undo in [("is_active=false","is_active=true"),("revoked_at=now()","revoked_at=NULL"),("valid_from=now()+interval '1 day'","valid_from=NULL"),("valid_until=now()-interval '1 day'","valid_until=NULL")]:
-   run('UPDATE user_clientes SET '+update);check('SELECT count(*) FROM storage.objects;','0');run('UPDATE user_clientes SET '+undo)
+   run(f"UPDATE user_clientes SET {update} WHERE cliente_id='{C1}'");check('SELECT count(*) FROM storage.objects;','0');run(f"UPDATE user_clientes SET {undo} WHERE cliente_id='{C1}'")
   for update,undo in [(f"organization_id='{OTHER}'",f"organization_id='{ORG}'")]:
    run(f"UPDATE clientes SET {update} WHERE id='{C1}';");check('SELECT count(*) FROM storage.objects;','0');run(f"UPDATE clientes SET {undo} WHERE id='{C1}';")
   run(f"INSERT INTO registros_consultor_arquivos(registro_consultor_id,arquivo_path) VALUES('{V1}','{path}');");check('SELECT count(*) FROM storage.objects;','1')
   run(f"DELETE FROM registros_consultor_arquivos WHERE id=(SELECT id FROM registros_consultor_arquivos WHERE arquivo_path='{path}' LIMIT 1);")
+  # Profile fallback cannot restore revoked client membership.
+  run(f"UPDATE profiles SET cliente_id='{C2}' WHERE user_id='{U}';")
+  check(f"SELECT platform_private.storage1_consultor_core('{sibling}','select');",'f')
+  run(f"INSERT INTO user_clientes VALUES('{U}','{C2}',false,now(),NULL,NULL,'read');")
+  check(f"SELECT platform_private.storage1_consultor_core('{sibling}','select');",'f')
+  run(f"UPDATE profiles SET cliente_id=NULL WHERE user_id='{U}';")
+  run(f"INSERT INTO fazendas VALUES('{V3}','{C3}','{OTHER}'); UPDATE registros_consultor SET fazenda_id='{V3}' WHERE id='{V1}';")
+  check('SELECT count(*) FROM storage.objects;','0')
+  run(f"UPDATE registros_consultor SET fazenda_id=NULL WHERE id='{V1}';")
+  for status in ['finalizado','convertido_os','aprovado']:
+   run(f"UPDATE registros_consultor SET status='{status}' WHERE id='{V1}';")
+   check(f"SELECT platform_private.storage1_consultor_core('{path}','select');",'t')
   for role in ['administrador','gestor','consultor_tecnico','tecnico_agronomo']:
    run(f"UPDATE user_roles SET role='{role}'; UPDATE registros_consultor SET status='rascunho' WHERE id='{V1}';")
    check(f"SELECT platform_private.storage1_consultor_core('{path}','insert');",'t')

@@ -1,9 +1,16 @@
+## RECORTE 20:12 — regras Storage existentes preservadas
+- [x] Evidência read-only baseline core/policies/bucket sem drift; d516 isolada NÃO comprova P1.
+- [x] Retirar candidato e rollback Storage da entrega ativa, preservando histórico; nenhuma migration necessária pelos probes efetivos.
+- [x] Harness executa policies/core existentes e helpers técnicos transitivos, com RLS PostgreSQL; limites Auth/readiness/schema explícitos.
+- [x] Pré-Auth pending seguro suficiente: mesma UUID/receipt/email; ausência incerta não permite reset/segunda identidade; retry revalida claim/finish.
+- [ ] A+B abertura aguarda auditoria demais canais B2, hook/cascata fullschema e compensação timeout; sem contas/grants/deploy nesta fase.
+
 ## RECORTE 20:03 — revisão 0be49f, Storage e pré-Auth fechados
 - [x] Auditar 33 policies storage.objects e cadeia restritiva hospedada: d516 permissivas amplas INTERSECTAM storage1 restritivas/core5c9e; acesso efetivo por mero tenant NÃO confirmado. Corrigir diagnóstico anterior.
 - [x] Candidato mínimo preserva policies/ACL/core interno; Produtor exige cliente ativo+vínculo vigente+visita liberada+metadata persistida única/path exato; sem mutações Produtor. Baseline/read-only e rollback deny-Produtor preparados, nenhuma aplicação.
 - [x] Pré-Auth: mesma receipt/UUID/email fica pending quando ausência/lookup incerto; retry só reconcilia identidade própria existente. Sem segundo Auth, takeover, lease como autoridade ou credenciais.
 - [x] 75 assertions Storage PostgreSQL isolado e75 Vitest PASS; regressão cadastro31+7 PASS; preflight hosted read-only1; rollback restritivo com ACL real PASS, lint focal0/scanner6arquivos0/build automáticoOK. Relatório17seções atualizado.
-- [ ] Storage API URL assinada/GoTrue/JWT/fullschema/Edges hospedadas não executados; after candidato ausente remotamente, aguarda revisão/aplicação autorizada, sem contas reais.
+- [ ] Storage API URL assinada/GoTrue/JWT/fullschema/Edges hospedadas não executados; não são provas hospedadas; candidato retirado20:12, sem justificativa de aplicação Storage.
 - [ ] A+B abertura permanece bloqueada por review, canais B2 e Auth/hook/compensação fullschema; nenhuma implantação/grant/envio/publicação.
 
 ## RECORTE 19:55 — revisão f0f450d, candidato A+B sem implantação
