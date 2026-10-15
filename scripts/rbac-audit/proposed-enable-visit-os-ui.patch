@@ -25,7 +25,23 @@
  export function podeDecidir(
 --- src/hooks/useFluxoVisitaTecnica.ts
 +++ src/hooks/useFluxoVisitaTecnica.ts
-@@ -286,43 +286,50 @@
+@@ -1,4 +1,5 @@
+ import { useRef } from "react";
++import { RPC_GERACAO_OS_DISPONIVEL } from "@/lib/fluxo-tecnico/fluxo";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "./useAuth";
+ import { useNavigate } from "react-router-dom";
+@@ -22,6 +23,9 @@
+   const queryClient = useQueryClient();
+ 
+   const decisionLock = useRef(false);
++  const conversionActor = JSON.stringify([loading, user?.id, profile?.user_id, profile?.ativo, profile?.organization_id, [...roles].sort()]);
++  const conversionFence = useRef({ actor: conversionActor, epoch: 0 });
++  if (conversionFence.current.actor !== conversionActor) conversionFence.current = { actor: conversionActor, epoch: conversionFence.current.epoch + 1 };
+   const actorScope = `${user?.id ?? ""}:${profile?.organization_id ?? ""}:${roles.join(",")}`;
+   const currentActor = useRef(actorScope);
+   currentActor.current = actorScope;
+@@ -286,43 +290,52 @@
      executeDecision(registroId, "aprovar");
  
    const converterRecomendacaoEmOS = async (registroId: string, observacao?: string): Promise<FluxoResponse> => {
@@ -66,6 +82,7 @@
 -      toast.error(error.message || "Erro ao converter para OS");
 -      return { success: false, message: "Erro ao converter para OS", error: error.message };
 -    }
++    if (!RPC_GERACAO_OS_DISPONIVEL) return { success: false, message: "Encaminhamento indisponível nesta fase." };
 +    if (loading || !user || profile?.user_id !== user.id || profile.ativo !== true || !profile.organization_id) {
 +      return { success: false, message: "Sessão indisponível. Entre novamente para continuar." };
 +    }
@@ -75,11 +92,12 @@
 +    if (decisionLock.current) return { success: false, message: "Uma operação já está em andamento." };
 +    decisionLock.current = true;
 +    const scope = actorScope;
++    const epoch = conversionFence.current.epoch;
 +    try {
 +      const { data: wsData, error: wsError } = await supabase.rpc("rpc_get_visita_workspace", { p_registro_id: registroId });
 +      if (wsError) throw wsError;
 +      const ws = wsData as { status?: string; permissions?: { can_convert_os?: boolean } } | null;
-+      if (scope !== currentActor.current || !ws?.permissions?.can_convert_os || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
++      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch) || !ws?.permissions?.can_convert_os || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
 +        return { success: false, message: "Esta visita não está disponível para encaminhamento laboratorial." };
 +      }
 +      // Retry manual por visita: o servidor faz lock/replay. Nunca repetir escrita automaticamente.
@@ -87,7 +105,7 @@
 +        p_registro_id: registroId, p_observacao: observacao?.trim() || null,
 +      });
 +      if (error) throw error;
-+      if (scope !== currentActor.current) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
++      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch)) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
 +      const res = data as { success?: boolean; os_id?: string; registro_id?: string; already_exists?: boolean; numero_os?: string; code?: string } | null;
 +      if (res?.success !== true) {
 +        const messages: Record<string, string> = {
@@ -104,7 +122,7 @@
 +      }
 +      await invalidateDecision(registroId);
 +      await Promise.all(["ordens-servico", "cockpit-laboratorio", "pcp-kanban"].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
-+      if (scope !== currentActor.current) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
++      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch)) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
 +      return { success: true, message: res.already_exists ? "Encaminhamento já registrado para esta visita." : "Recomendação encaminhada à OS laboratorial. Fabricação não iniciada; volume pendente de definição.",
 +        os_id: res.os_id, numero_os: res.numero_os, already_exists: res.already_exists, data: res };
 +    } catch (error: unknown) {
