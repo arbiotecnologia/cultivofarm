@@ -1,0 +1,47 @@
+[
+ {
+  "function": "public.partner_apply_default_discount",
+  "hash_before": "c33a667463b7f34840237ad9ba676761",
+  "patches": 1
+ },
+ {
+  "function": "public.rpc_commercial_simulator",
+  "hash_before": "4e324b1711f06bb556f050d8ea1aa8f0",
+  "patches": 3
+ },
+ {
+  "function": "public.fn_resolve_commercial_price",
+  "hash_before": "0df0d9005d46b667db4433d3eae59e27",
+  "patches": 1
+ },
+ {
+  "function": "public.fn_b2b_resolve_base_unit_price",
+  "hash_before": "60651fe823452436d807b9b175c3865c",
+  "patches": 1
+ },
+ {
+  "function": "public.fn_resolve_b2b_cart",
+  "hash_before": "c8b4584475698835b786dacdf1e0fc14",
+  "patches": 2
+ },
+ {
+  "function": "platform_private.b2b_save_technical_simulation",
+  "hash_before": "daad3c1554f370bb0456b4ea3afdeea7",
+  "patches": 2
+ },
+ {
+  "function": "public.rpc_associate_microorganism_fiscal_product",
+  "hash_before": "da0d679779e9d57558a3a203219b4afc",
+  "patches": 3
+ },
+ {
+  "function": "public.rpc_regulatory_dossier_ensure_draft",
+  "hash_before": "56076bccafd27aa8c95473ac38e73422",
+  "patches": 1
+ },
+ {
+  "function": "public.rpc_fiscal_draft_save",
+  "hash_before": "5e364c8f67c92fb31ff9568310eb876c",
+  "patches": 1
+ }
+]
