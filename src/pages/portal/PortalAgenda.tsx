@@ -1,6 +1,8 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,39 +15,29 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function PortalAgenda() {
   const { clienteId, loading: clLoading } = usePortalCliente();
-  const [retornos, setRetornos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const fence = useStorageAccessScope(`producer-agenda:${clienteId}`);
   const isMobile = useIsMobile();
-
-  const fetchRetornos = async () => {
-    if (!clienteId) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("portal_solicitacoes")
-      .select("*, fazendas(nome), talhoes(nome)")
-      .eq("cliente_id", clienteId)
-      .eq("tipo_demanda", "retorno_tecnico")
-      .order("data_prevista_atendimento", { ascending: true });
-
-    if (error) {
-      toast.error("Erro ao carregar agenda");
-    } else {
-      setRetornos(data || []);
+  const { data: retornos = [], isLoading: loading, refetch: fetchRetornos } = useScopedPortalQuery({
+    queryKey: ["portal-agenda", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
+      const { data, error } = await supabase.from("portal_solicitacoes")
+        .select("*, fazendas(nome), talhoes(nome)").eq("cliente_id", clienteId ?? "")
+        .eq("tipo_demanda", "retorno_tecnico").order("data_prevista_atendimento", { ascending: true }).abortSignal(signal);
+      if (error) throw error;
+      return data || [];
     }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchRetornos();
-  }, [clienteId]);
+  });
 
   const handleConfirmar = async (id: string) => {
+    if (!clienteId || !fence.ready || !retornos.some(r => r.id === id)) return;
+    const current = fence.capture();
     const { error } = await supabase
       .from("portal_solicitacoes")
       .update({ confirmacao_produtor: "confirmada" })
       .eq("id", id)
       .eq("cliente_id", clienteId); // Segurança adicional
 
+    if (!current()) return;
     if (error) {
       toast.error("Erro ao confirmar visita");
     } else {
@@ -55,12 +47,15 @@ export default function PortalAgenda() {
   };
 
   const handleRemarcar = async (id: string) => {
+    if (!clienteId || !fence.ready || !retornos.some(r => r.id === id)) return;
+    const current = fence.capture();
     const { error } = await supabase
       .from("portal_solicitacoes")
       .update({ confirmacao_produtor: "remarcacao_solicitada" })
       .eq("id", id)
       .eq("cliente_id", clienteId); // Segurança adicional
 
+    if (!current()) return;
     if (error) {
       toast.error("Erro ao solicitar remarcação");
     } else {
