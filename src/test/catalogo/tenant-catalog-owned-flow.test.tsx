@@ -249,4 +249,26 @@ describe("salvamento único de identificação/composição", () => {
     await act(async () => release());
     expect(toastFns.success).not.toHaveBeenCalled(); expect(toastFns.error).not.toHaveBeenCalled();
   });
+  it("recibo antigo de AR resolvido após rerender FSF não chama onApplied nem invalida FSF", async () => {
+    const { renderHook } = await import("@testing-library/react");
+    const { useOwnedCatalogMutation } = await import("@/hooks/useOwnedCatalogMutations");
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const onApplied = vi.fn();
+    let release: () => void = () => {};
+    db.writeDelay = new Promise<void>((resolve) => { release = resolve; });
+    const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const hook = renderHook(() => useOwnedCatalogMutation("cultura", onApplied), { wrapper });
+    let pending: Promise<unknown> = Promise.resolve();
+    act(() => {
+      pending = hook.result.current.mutateAsync({ scopeKey: `${AR}|u-ar`, entityType: "cultura", operation: "create", payload: { nome: "AR pendente" },
+        reason: "motivo suficiente", idempotencyKey: "k-ar-pendente" } as never).catch(() => undefined);
+    });
+    await waitFor(() => expect(db.writes).toHaveLength(1));
+    auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" };
+    hook.rerender();
+    await act(async () => { release(); await pending; });
+    expect(onApplied).toHaveBeenCalledTimes(0);
+    expect(invalidate).not.toHaveBeenCalled();
+  });
 });
