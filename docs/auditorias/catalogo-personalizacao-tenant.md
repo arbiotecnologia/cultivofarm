@@ -430,7 +430,7 @@ Não há alegação de fechamento integral: enquanto wipe, leitores e views acim
 
 ---
 
-## FASE 3 — Candidato 06 leitores operacionais (15/10/2026 13:55 UTC)
+## FASE 3 — Candidato 06 parcial de leitores operacionais (15/10/2026 13:55 UTC)
 
 **Estado: NÃO aplicado, NÃO publicado, gate OFF.** A execução PGlite 26 PASS/1 FAIL foi evidência externa isolada; o FAIL 23514 revelou literais incompatíveis e foi corrigido no candidato 01, sem transformar stubs em prova de Auth/RLS real.
 
@@ -459,4 +459,5 @@ As duas views públicas `vw_catalogo_ficha_*` não entram nas sete: são wrapper
 ### Limites reais
 - SQL06 possui definições completas e preflight de hash, mas não foi aplicado nem executado contra Auth real. Hash antes não prova hash depois nem semântica de RLS.
 - O parser gramatical e os testes estáticos não substituem compilação PL/pgSQL/PGlite completa; esta permanece pendente para o SQL06.
+- O inventário live por referência textual aos cinco roots ainda enumera leitores operacionais fora do SQL06, incluindo B2B/pedidos/simulações, produção, entrega, visita, fiscal e regulatório. Logo, esta matriz não é TOTAL e não autoriza rows privadas.
 - Gate, UI mutável e publicação permanecem desligados até revisão independente, aplicação controlada, runtime negativo/positivo e concorrência.
