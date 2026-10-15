@@ -474,3 +474,43 @@ Os testes estáticos não certificam o SQL. Evidência externa informada: labora
 
 ## Regra separada: laboratório somente biológico
 Candidato `proposed-lab-biological-only-07.sql`: elegibilidade por `familia_catalogo='biologico'` ou microrganismo; triggers protegem novas programações/lotes e não bloqueiam updates históricos irrelevantes. Ainda NO-GO: faltam corpos completos com hash após alteração das cinco entradas e prova de pedido misto.
+
+
+## FASE 3 — Fechamento local de ownership e integração UI (15/10/2026 13:49 UTC)
+
+**Estado: candidato local; sem DDL remoto, sem publicação, gate OFF.**
+
+### Evidência independente incorporada
+- SQL01 de `0add`: **27/27 PASS no PostgreSQL PGlite independente**, com CHECKs reais e stubs de Auth explicitamente não equivalentes ao Auth/RLS canônico. Cobriu composição biológica/química e preservação da receita.
+- SQL05 e SQL07 ainda aguardam a execução independente anunciada. Nenhum resultado está antecipado como PASS.
+
+### Inventário live reconciliado (somente leitura)
+- Consulta canônica nesta rodada encontrou **68 funções diretas** em `public|platform_private|private` que referenciam textualmente os cinco roots e **60 FKs** para esses roots. O número 84 informado inclui funções indiretas/chamadores do inventário independente; portanto a matriz nominal anexada deve distinguir 68 diretas + 16 chamadores/derivações, sem fingir que a busca textual isolada prova 84 diretas.
+- As 60 FKs live substituem a contagem anterior de 59: a diferença inclui relações criadas após o snapshot original, especialmente declarações/apresentações. O manifesto 04 continua fail-closed para novas referências privadas; cada relação não listada deve ser adicionada antes de qualquer row privada.
+- Artefatos read-only desta rodada registraram nome, assinatura, ACL, SECURITY DEFINER e hash das 68 funções, além da lista nominal das 60 FKs. Classificação permitida: pura; sem EXECUTE autenticado; trigger; pai bloqueado pelo 04; registro autorizado; ou leitor que requer filtro explícito. ACL sem `authenticated` não foi tratada automaticamente como prova: chamadores foram considerados.
+
+### Sete views originais
+| View original | Estado candidato | Prova/limite |
+|---|---|---|
+| `vw_os_integridade_esteira` | preservada | projeta histórico de OS/lote; novas refs privadas permanecem bloqueadas no 04; não é catálogo de seleção |
+| `_src_vw_fluxo_visita_tecnica` | preservada | projeta registro autorizado e histórico; 04 bloqueia nova referência privada ainda não certificada |
+| `v_microorganism_fiscal_readiness` | corrigida no 06 | filtro explícito `owner IS NULL` |
+| `vw_bi_commercial_campaigns` | corrigida no 06 | contagem só de produto global |
+| `vw_bi_estoque_produto` | corrigida no 06 | roots globais; histórico prévio preservado |
+| `vw_catalogo_ficha_microrganismos` | fechada no 02 | wrapper de `private.h7n_catalogo_ficha_microrganismos` com filtro global |
+| `vw_catalogo_ficha_produtos` | fechada no 02 | wrapper de `private.h7n_catalogo_ficha_produtos` com filtro global |
+
+O SQL06 anterior continha sete views, mas três (`vw_bi_commercial_revenue`, `vw_bi_commercial_engagement`, `vw_bi_movimentacoes`) não pertenciam ao conjunto original pedido. Permanecem como hardening adicional candidato; não substituem a prova das duas primeiras views acima.
+
+### UI CRUD próprio ligada ao contrato
+- `/base-tecnica` agora tem handlers e formulários próprios para produto, microrganismo e cultura: criar, editar, arquivar e restaurar chamam exclusivamente `tenant_catalog_owned_mutate`; globais continuam sem edição/exclusão tenant.
+- Produto próprio suporta família/classe explícitas e composição declarativa estruturada; nenhuma receita é inferida nem `formulacoes` é substituída. Microrganismo global ativo pode ser referenciado; o servidor continua responsável pela negação cross-tenant.
+- Apresentações próprias usam exclusivamente `tenant_catalog_owned_presentation_mutate`, com CAS, motivo, idempotência e invalidação de cache; o caminho global direto não foi reutilizado.
+- Duplicata global ativa oferece “Localizar”; se oculto, a lista abre ocultos para permitir “Exibir”. Global inativo orienta solicitar ativação à plataforma.
+- Escopo de mutação é congelado por empresa+usuário; troca de identidade/empresa rejeita a tentativa e invalida caches por org+usuário. UI é dica: autorização permanece integralmente no servidor.
+- O gate client/server permanece OFF; os handlers estão integrados e testáveis, mas não montam controles mutáveis no ambiente atual.
+
+### Laboratório — fase 07 separada
+- Live informado: 10 produtos (1 biológico, 9 `familia_catalogo NULL`) e 1 OS/1 programação/1 lote históricos ligados a produto sem família. Não há backfill nem reclassificação automática.
+- Guardas candidatos preservam updates históricos que não trocam produto/microrganismo; novas entradas exigem família explícita e somente `biologico`/microrganismo.
+- Conversões de pedido misto/solicitação e mensagens continuam pendentes. SQL07 permanece NO-GO e separado da migração ownership.

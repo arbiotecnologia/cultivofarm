@@ -741,3 +741,19 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Candidato SQL inicial com helper, triggers de programação/lote e runtime de casos.
 - [ ] Anexar corpos completos/hash-after de `rpc_planejamento_publicar_v1`, `publish_planning_to_lab`, `generate_production_orders_from_partner`, `rpc_programar_os_v1` e `rpc_cockpit_gerar_lote_v1`, incluindo pedido misto — bloqueado: leitura live completa e revisão.
 - [ ] Aplicação/publicação — bloqueado: revisão independente.
+
+
+## Catálogo por empresa — fechamento local ownership (15/10/2026 13:49 UTC)
+- [x] Incorporar evidência externa SQL01 PGlite 27/27, sem promovê-la a prova de Auth/RLS real.
+- [x] Reconciliar snapshot live read-only: 68 funções diretas textuais e 60 FKs; 84 inclui chamadores/derivações e requer matriz separada.
+- [x] Classificar as 7 views originais; SQL06 anterior tinha três views adicionais que não substituíam `vw_os_integridade_esteira` e `_src_vw_fluxo_visita_tecnica`.
+- [x] Integrar handlers/formulários CRUD próprio na `/base-tecnica` para produtos, microrganismos e culturas, com globais imutáveis.
+- [x] Integrar composição declarativa e apresentações próprias por RPC transacional, cache org+usuário e escopo congelado.
+- [ ] Abrir gate — bloqueado até revisão/aplicação controlada, SQL05 runtime, Auth/RLS real e fechamento de todos os leitores/refs negativos.
+- [ ] Edge service-role — patch documental aguarda schema aplicado com gate OFF e deve entrar antes de qualquer row privada.
+
+## Laboratório exclusivamente biológico — continuidade separada
+- [x] Registrar live: 1 biológico + 9 sem família e históricos sem família; sem backfill/reclassificação.
+- [x] Preservar updates históricos irrelevantes nos guardas candidatos.
+- [ ] Fechar conversões de pedido misto/solicitação e mensagens nas cinco entradas com corpos/hashes completos.
+- [ ] Aplicação/publicação — proibidas nesta rodada.
