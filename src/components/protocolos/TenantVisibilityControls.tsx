@@ -14,13 +14,13 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useSetTenantVisibility, useTenantCatalogScope, useTenantVisibilityMap } from "@/hooks/useTenantCatalogVisibility";
 import {
-  TENANT_VISIBILITY_COMMON_NOTE, TENANT_VISIBILITY_REASON_MAX, TENANT_VISIBILITY_REASON_MIN, TENANT_VISIBILITY_SCOPE_NOTES, applyManagementVisibility,
+  TENANT_VISIBILITY_COMMON_NOTE, TENANT_VISIBILITY_REASON_MAX, TENANT_VISIBILITY_REASON_MIN, tenantVisibilityActionNote, applyManagementVisibility,
   type TenantCatalogEntity, type VisibilityState,
 } from "@/lib/catalogo/tenantCatalogVisibility";
 
 /** Texto honesto, por entidade, de onde a ocultação vale nesta fase. */
-export function tenantVisibilityScopeNote(entity: TenantCatalogEntity): string {
-  return `${TENANT_VISIBILITY_SCOPE_NOTES[entity]} ${TENANT_VISIBILITY_COMMON_NOTE}`;
+export function tenantVisibilityScopeNote(entity: TenantCatalogEntity, nextHidden = true): string {
+  return `${tenantVisibilityActionNote(entity, nextHidden)} ${TENANT_VISIBILITY_COMMON_NOTE}`;
 }
 
 /** Papel de gestão (dica de UI). A autorização real é feita no servidor. */
@@ -130,7 +130,7 @@ export function TenantVisibilityToggle({ entity, item, state, disabledReason }: 
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{nextHidden ? "Ocultar" : "Exibir"} “{item.nome}” nesta empresa?</AlertDialogTitle>
-            <AlertDialogDescription>{tenantVisibilityScopeNote(entity)}</AlertDialogDescription>
+            <AlertDialogDescription>{tenantVisibilityScopeNote(entity, nextHidden)}</AlertDialogDescription>
           </AlertDialogHeader>
           <fieldset disabled={busy} className="space-y-1.5">
             <Label htmlFor="tenant-visibility-reason">Motivo</Label>

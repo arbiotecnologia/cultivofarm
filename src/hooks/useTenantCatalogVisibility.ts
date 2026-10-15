@@ -57,9 +57,19 @@ export function useSetTenantVisibility(entity: TenantCatalogEntity) {
       }
       return setTenantVisibility(supabase, { entityType: entity, ...v });
     },
-    onSettled: (_d, _e, v) => {
-      // Invalida somente o escopo em que a mutação começou.
-      if (v) qc.invalidateQueries({ queryKey: tenantCatalogKeys.scope(v.scopeAtStart) });
+    onSettled: async (_d, _e, v) => {
+      if (!v) return;
+      // Somente o escopo (empresa+usuário) em que a mutação começou; outras empresas não são tocadas.
+      // 1) Ocultos: reset (descarta dado anterior, inclusive de observadores desmontados e respostas em voo)
+      //    para que nenhum catálogo seja montado com a lista antiga ao voltar à aba.
+      await qc.cancelQueries({ queryKey: tenantCatalogKeys.hiddenScope(v.scopeAtStart) });
+      await qc.resetQueries({ queryKey: tenantCatalogKeys.hiddenScope(v.scopeAtStart) });
+      // 2) Demais leituras do escopo (gestão, seletores) e catálogos novos dependentes: stale + refetch,
+      //    inclusive inativos (refetchType "all") — evita depender de refetchOnMount.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: tenantCatalogKeys.scope(v.scopeAtStart), refetchType: "all" }),
+        qc.invalidateQueries({ queryKey: ["catalogo-unificado"], refetchType: "all" }),
+      ]);
     },
   });
 }
@@ -98,7 +108,8 @@ export function useTenantHiddenIds(entity: TenantCatalogEntity, enabled = true):
   const q = useQuery({
     queryKey: scope ? tenantCatalogKeys.hiddenIds(scope, entity) : ["tenant-catalog", "unscoped", "hidden-ids", entity],
     enabled: enabled && !!scope,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
     retry: false,
     refetchOnWindowFocus: false,
     queryFn: ({ signal }) => fetchTenantHiddenIds(supabase, entity, signal),
@@ -107,6 +118,8 @@ export function useTenantHiddenIds(entity: TenantCatalogEntity, enabled = true):
   if (loading || !user || profile?.user_id !== user.id) return { status: "loading" };
   if (!profile?.organization_id) return { status: "global" };
   if (!scope || q.isLoading) return { status: "loading" };
+  // Relendo (montagem/invalidação): nunca usar a lista anterior para montar catálogo.
+  if (q.isFetching) return { status: "loading" };
   if (q.isError) return { status: "error", message: (q.error as Error).message };
   if (!q.isSuccess) return { status: "loading" };
   return { status: "ready", ids: q.data, scope };

@@ -165,3 +165,13 @@ describe("catálogo novo exclui ocultos no servidor", () => {
     expect(catalogoAppliesTenantVisibility("admin")).toBe(true);
   });
 });
+
+import { tenantVisibilityActionNote } from "@/lib/catalogo/tenantCatalogVisibility";
+describe("texto conforme a ação", () => {
+  it("ocultar diz 'deixa de aparecer'; exibir diz 'volta a aparecer'", () => {
+    expect(tenantVisibilityActionNote("produto", true)).toMatch(/deixa de aparecer/);
+    expect(tenantVisibilityActionNote("produto", false)).toMatch(/volta a aparecer/);
+    expect(tenantVisibilityActionNote("produto", false)).not.toMatch(/deixa de aparecer/);
+    expect(tenantVisibilityActionNote("cultura", false)).toMatch(/^Nesta empresa, a cultura volta a aparecer/);
+  });
+});
