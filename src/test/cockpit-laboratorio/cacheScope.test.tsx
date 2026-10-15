@@ -2,7 +2,7 @@ import { act, render, renderHook, screen, waitFor } from "@testing-library/react
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { COCKPIT_QUERY_PREFIXES, useCockpitQuery, useCockpitScope } from "@/hooks/useCockpitQuery";
+import { COCKPIT_LIST_RPC, COCKPIT_QUERY_PREFIXES, useCockpitQuery, useCockpitScope } from "@/hooks/useCockpitQuery";
 import { MemoryRouter } from "react-router-dom";
 import CockpitLaboratorio from "@/pages/CockpitLaboratorio";
 
@@ -19,17 +19,19 @@ function setup() {
 }
 describe("Cockpit scopes: real QueryClient, simulated Auth", () => {
   beforeEach(() => { auth.current = actor(); vi.clearAllMocks(); });
-  it("real Cockpit never mounts querying/dialog children and purges legacy caches while contained", async () => {
+  it("real Cockpit executes only list RPC and purges legacy caches; never mounts operational children", async () => {
+    rpc.mockImplementation(() => ({ abortSignal: async () => ({ data: { items: [], total_count: 0 }, error: null }) }));
     const { client } = setup();
     for (const prefix of COCKPIT_QUERY_PREFIXES) client.setQueryData([prefix], [{ id: "A-secret" }]);
     const view = () => <QueryClientProvider client={client}><MemoryRouter><CockpitLaboratorio /></MemoryRouter></QueryClientProvider>;
     const mounted = render(view());
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    await waitFor(() => expect(client.getQueryCache().getAll().filter(q => COCKPIT_QUERY_PREFIXES.some(p => p === q.queryKey[0]))).toHaveLength(0));
+    await waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
+    expect(client.getQueryCache().getAll().filter(q => COCKPIT_QUERY_PREFIXES.some(p => p === q.queryKey[0]) && q.queryKey[1] !== COCKPIT_LIST_RPC)).toHaveLength(0);
     auth.current = actor("B", "FSF"); mounted.rerender(view());
     auth.current = { user: null, profile: null, roles: [], loading: false }; mounted.rerender(view());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(from).not.toHaveBeenCalled(); expect(rpc).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+    expect(rpc.mock.calls.every(call => call[0] === COCKPIT_LIST_RPC)).toBe(true);
     mounted.unmount(); client.clear();
   });
   it.each(COCKPIT_QUERY_PREFIXES)("closed reader %s never executes, including refetch", async prefix => {
