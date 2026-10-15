@@ -71,6 +71,9 @@ rows=await page('produto',null,1,0,[id(1)]); check('include never duplicates',ro
 rows=await page('produto',null,1,0,[id(7)]);check('unlinked include cannot expose off-page',rows.length===1);
 rows=await page('microrganismo',null,50,0,[id(21),id(22)]);check('micro visible plus disabled historical',rows.length===3&&rows.filter(r=>r.id!==id(20)).every(r=>!r.selectable));
 rows=await page('produto',null,1,1);check('pagination count and offset',rows.length===1&&Number(rows[0].total)===5&&rows[0].nome==='Adubo');
+await db.exec('SET ROLE authenticated');
+check('authenticated RPC reaches definer',(await page()).length===5);
+await db.exec('RESET ROLE');
 check('injection literal no match',(await page('produto',"'; DROP TABLE produtos;--")).length===0);
 check('percent literal',(await page('produto','%')).length===1);
 check('underscore literal',(await page('produto','_')).length===1);
@@ -85,6 +88,7 @@ for (const n of [1,2,3,4]){await insert(200+n,id(n));check('write family '+n,tru
 await insert(220,null,id(20));check('write micro',true);
 for (const n of [5,6,999]) await denied('reject hidden/inactive/missing '+n,()=>insert(300+n,id(n)),'42501');
 await denied('write micro hidden',()=>insert(321,null,id(21)),'42501');
+await denied('write micro inactive',()=>insert(322,null,id(22)),'42501');
 await denied('write foreign parent before lookup',()=>insert(390,id(1),null,id(93)),'42501');
 await db.query("UPDATE registros_consultor_recomendacoes SET recomendacao_tecnica='Texto editado' WHERE id=$1",[id(101)]);check('historical unchanged reference survives',true);
 await db.exec('ALTER TABLE produtos ADD COLUMN owner_organization_id uuid; ALTER TABLE microrganismos ADD COLUMN owner_organization_id uuid');

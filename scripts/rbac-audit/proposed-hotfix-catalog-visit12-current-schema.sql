@@ -88,6 +88,8 @@ BEGIN
   AND NOT COALESCE(public.can_view_technical_visit(auth.uid(),OLD.registro_consultor_id),false) THEN
   RAISE EXCEPTION 'sem_permissao' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.registros_consultor WHERE id=NEW.registro_consultor_id FOR UPDATE;
+ IF NOT COALESCE(public.can_view_technical_visit(auth.uid(),NEW.registro_consultor_id),false) THEN
+  RAISE EXCEPTION 'sem_permissao' USING ERRCODE='42501'; END IF;
  PERFORM public._assert_visita_editavel(NEW.registro_consultor_id);
  FOR v_col IN SELECT unnest(ARRAY['produto_biologico_sugerido_id','microrganismo_id']) LOOP
   IF TG_OP='UPDATE' AND NEW.registro_consultor_id=OLD.registro_consultor_id
@@ -109,5 +111,14 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.catalog_visit_reference_guard_current12() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER trg_catalog_visit_reference_guard_current12 BEFORE INSERT OR UPDATE ON public.registros_consultor_recomendacoes
  FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_visit_reference_guard_current12();
+
+-- Postflight: entradas novas fechadas para anon/PUBLIC; nenhuma ACL existente alterada.
+DO $postflight$
+BEGIN
+ IF has_function_privilege('anon','public.tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])','EXECUTE')
+ OR NOT has_function_privilege('authenticated','public.tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])','EXECUTE')
+ OR has_function_privilege('authenticated','platform_private.catalog_visit_reference_guard_current12()','EXECUTE') THEN
+  RAISE EXCEPTION 'CATALOG12_POSTFLIGHT_ACL_FAILED'; END IF;
+END $postflight$;
 
 COMMIT;
