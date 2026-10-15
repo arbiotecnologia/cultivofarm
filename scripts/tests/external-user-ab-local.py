@@ -24,7 +24,7 @@ def main():
   sql+='ROLLBACK;'
   r=subprocess.run(['psql','-X','-h',str(tmp),'-p','55489','-U','postgres','-v','ON_ERROR_STOP=1'],input=sql,text=True,capture_output=True)
   print(r.stderr);assert r.returncode==0,'candidate failed'
-  base=['psql','-X','-h',str(tmp),'-p','55489','-U','postgres','-v','ON_ERROR_STOP=1','-At']
+  base=['psql','-X','-h',str(tmp),'-p','55489','-U','postgres','-v','ON_ERROR_STOP=1','-qAt']
   def run(statement):
    result=subprocess.run(base,input=statement,text=True,capture_output=True)
    assert result.returncode==0,result.stderr
