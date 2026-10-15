@@ -1,10 +1,11 @@
 {
-  "state": "APPLIED_REAL_SOURCE_NOT_PUBLISHED",
+  "state": "REAL_SOURCE_DEPLOYED_EXTERNALLY_WORKSPACE_P2_APPLIED_EXTERNALLY_DOCUMENTATION_ONLY_NOW",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "applied_dependencies": [
     "20261015161648",
     "20261015162631",
-    "20261015163930"
+    "20261015163930",
+    "20261015175859"
   ],
   "converter_md5": "b112888e28d8a5727df713e0ae7bcd1b",
   "ownership_gate": "OFF",
@@ -95,7 +96,7 @@
     "harness": "37/37 exact converter/helper; dependencies stubbed",
     "responsible_read_only": "DENIED_BEFORE_WRITES_AND_REPLAY",
     "execute_manage": "RESPONSIBLE_CONSULTANT_AND_TECHNICIAN_PERMITTED_IN_HARNESS",
-    "workspace": "can_convert_os remains admin/org-manager only; no widening",
+    "workspace": "20261015175859 APPLIED_EXTERNALLY: can_convert_os = v_can_manage IS TRUE AND status aprovado; can_approve consultant remains false",
     "reviewer_claims": "AR manage true; FSF denied; external evidence not own JWT/browser proof",
     "frontend_regression": "43/43 mocked",
     "post_lock": "Exact second can_manage preserved; independent-session permission-change race UNVERIFIED"
@@ -164,6 +165,46 @@
     ],
     "focused_tests": "112/112 em 5 arquivos",
     "browser_published_copy": "UNVERIFIED_EXTERNAL_UNMANAGED"
+  },
+  "workspace_manage_gate_archive": {
+    "version": "20261015175859",
+    "name": "h_visit_workspace_conversion_manage_gate",
+    "path": "scripts/rbac-audit/applied-20261015175859_h_visit_workspace_conversion_manage_gate.sql",
+    "statement_md5_without_final_newline": "898b4dab4d0b722d47e6572a932e2e57",
+    "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY",
+    "own_evidence": "CANONICAL_LEDGER_AND_CONVERTER_METADATA_ONLY",
+    "scope": "P2_WORKSPACE_GATE_ONLY_ACL_OWNER_CONVERTER_PRESERVED"
+  },
+  "consultant_conversion_external_1804": {
+    "source": "RENATO_REAL_UI_EXTERNAL_NOT_AGENT_PROOF",
+    "visit_id": "1995fdfa-2976-42a7-8a2b-0324497f76d2",
+    "visit_number": "VT-2026-0002",
+    "os_number": "OS-2026-000004",
+    "os_id": "75b8b2ac-dc5c-4f9b-ac9b-07f67569d404",
+    "os_count": 1,
+    "programacao_id": "dbc725cc-f618-46af-a3d8-6b70b0760c2e",
+    "programacao_status": "aguardando",
+    "tenant_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "product": "Bombarbio",
+    "volume": null,
+    "event": "os_gerada",
+    "actor_id": "6b8afdf7-6d49-43e7-b5e5-5e40edecb82e",
+    "recommendation_snapshot_id": "4007908d-d1d4-4658-bdf0-a93f4299d896",
+    "snapshot_version": 1,
+    "commercial_completed": false,
+    "ui_forwarded_and_os_list_confirmed": true,
+    "new_os_enabled": false,
+    "billing_base_configured": false,
+    "workspace_after": { "can_convert_os": false, "can_approve": false, "can_edit": false }
+  },
+  "documentation_round_1804": {
+    "base_commit_observed": "bf17231c",
+    "new_commit": "PLATFORM_MANAGED_HASH_NOT_ASSUMED",
+    "application_changes": false,
+    "remote_ddl_or_writes": false,
+    "publication": false,
+    "lint": "NOT_RUN_NO_PASS_CLAIM",
+    "cockpit": "CONTAINED_NO_GO_FRESHNESS_DESCENDANTS_MICRO_CACHE_NO_ACL_REOPEN"
   },
   "historical_patch": "ALREADY_INCORPORATED_DO_NOT_REAPPLY"
 }

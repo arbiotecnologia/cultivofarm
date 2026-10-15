@@ -1,5 +1,23 @@
 # Fase atual — candidato de habilitação focal OS (16:37 UTC)
 
+## Estado vigente18:04 UTC — arquivamento P2 e UI externa Consultor AR
+**Correção P2 UI/RPC aplicada EXTERNAMENTE. Recorte do agente somente documental; não reaplicar nem reabrir permissões.** Declarações abaixo de workspace exclusivo Admin/Gestor, visita0002 rascunho ou ausência de prova UI são históricas e supersedidas apenas pelos fatos focais deste adendo.
+
+Arquivo SQL literal: `scripts/rbac-audit/applied-20261015175859_h_visit_workspace_conversion_manage_gate.sql`, recuperado de `supabase_migrations.schema_migrations`, versão20261015175859, nomeh_visit_workspace_conversion_manage_gate. Hash do statement sem newline final: **898b4dab4d0b722d47e6572a932e2e57**. **JÁ APLICADA EXTERNAMENTE / NÃO REAPLICAR.** Altera somente `rpc_get_visita_workspace` para `can_convert_os = (v_can_manage IS TRUE AND v_reg.status::text = 'aprovado')`; não altera can_approve consultor (false), ACL/owner ou conversor. Preflight exige workspace-beforea7aae6129f13b63907ef9bb8fe6454e6 e conversorb112888; preservação ACL/owner e ocorrência única verificadas no SQL aplicado.
+
+**Prova própria:** consulta somente leitura ao ledger canônico com marcador swzpzcwiasxmjutrmvkm; conteúdo/versão/nome/hash recuperados e conversor **b112888e28d8a5727df713e0ae7bcd1b** confirmado. Não executado o SQL arquivado, não consultados registros da visita/OS/log, não realizado browser próprio ou teste de alteração de papéis.
+
+**Evidência REAL externa relatada por Renato, não execução do agente:**
+- Consultor AR encaminhou pela UI VT-2026-0002 (`1995fdfa-2976-42a7-8a2b-0324497f76d2`) após aprovação Admin.
+- Resultado único: **OS-2026-000004**, id`75b8b2ac-dc5c-4f9b-ac9b-07f67569d404`; programação`dbc725cc-f618-46af-a3d8-6b70b0760c2e`, statusaguardando; tenant`007bb519-cba0-4704-be2c-cb93ad010048`; Bombarbio, volumeNULL.
+- Log`os_gerada`, ator`6b8afdf7-6d49-43e7-b5e5-5e40edecb82e`; snapshot recomendação`4007908d-d1d4-4658-bdf0-a93f4299d896`, versão1; `commercial_completed=false`.
+- UI confirma encaminhada, lista de OS mostra000004; **Nova OS desabilitada**, base de faturamento não configurada. Workspace pós-conversão: **can_convert_os=false, can_approve=false, can_edit=false**.
+
+O estado zeroOS do adendo17:53 é histórico anterior à conversão e não deve ser apresentado como atual. Encaminhamento singular confirmado externamente não certifica concorrência, todos os papéis ou módulos, PDF, fabricação ou cobrança. VolumeNULL permanece pendente, sem dose/unidade inferidas. Cockpit corrigido internamente/contido pelas migrations20261015173622/20261015175232, mas leitura funcional/frescorMV/descendentes/microprojeção/cache **NO-GO**; nenhuma reabertura de ACL, programar/lote/publish ou fabricação/cobrança. OwnershipOFF; diagnóstico e investigação CNPJ separados. Não declarar auditoria completa nem lintPASS; nenhum lint/typecheck/build/teste do aplicativo executado nesta rodada de documentação.
+
+### Arquivos e versionamento deste recorte
+Arquivado SQL aplicado; atualizados este relatório, `roadmap.md` e `scripts/rbac-audit/enable-visit-os-manifest.json`. Commit-base observado: **bf17231c** (`Arquivou correção tenant-fence`); novo commit é gerenciado pela plataforma, sem comando Git de escrita ou hash presumido. Conferência documental de hash/JSON/diff não equivale a testes Auth/RLS/UI.
+
 ## Adendo atual — pós-deploy eb33bc, proveniência externa
 Renato relatou teste real publicado: Admin AR gerou via UI OS-2026-000003 (`9d2e58ac-15f6-477b-bebd-55e440e71018`) da visita `f19c8343-6205-487a-a237-df4d8ee06471`; programação `da5b7239-384c-48a5-8714-082967b90dd1` aguardando/volume NULL, log `commercial_completed=false`. Ordens e Fluxo Técnico PASS **externo**, não navegador/JWT próprio do agente. Não efetuada publicação ou operação remota nesta rodada.
 Consultor AR real: financeiro URL negado, Bombarbio visível, rascunho próprio `1995fdfa-2976-42a7-8a2b-0324497f76d2` editável; cabeçalho visita Admin visível, workspace/conversão negados e recomendações RLS zero. Dados preservados. A divergência de leitura é dívida de contrato/UX sob análise, não justificativa para apertar RLS ou ampliar acesso.
