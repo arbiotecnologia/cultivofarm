@@ -33,6 +33,7 @@ export function getActivePortalContext(): ActivePortalContext | null {
 }
 
 export function clearActivePortalContext(): void {
+  window.dispatchEvent(new Event("portal-client-preferences-cleared"));
   try {
     sessionStorage.removeItem(STORAGE_KEY);
   } catch { /* Session storage may be unavailable independently. */ }

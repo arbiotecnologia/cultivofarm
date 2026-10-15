@@ -12,6 +12,10 @@ const STORAGE_KEY = "portal_active_cliente_id";
 // Same-tab selection only, never an authorization cache. Every instance validates membership.
 const selections = new Map<string, string | null>();
 const listeners = new Set<() => void>();
+window.addEventListener("portal-client-preferences-cleared", () => {
+  selections.clear();
+  listeners.forEach(listener => listener());
+});
 const subscribeSelection = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 function publishSelection(scope: string, id: string | null) {
   if (selections.get(scope) === id) return;
