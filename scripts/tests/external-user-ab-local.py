@@ -77,6 +77,11 @@ def main():
   failed=subprocess.run(base,input=(ROOT/'scripts/rbac-audit/proposed-external-user-ab-closed.sql').read_text(),text=True,capture_output=True)
   assert failed.returncode!=0 and 'external_provisioning_baseline_mismatch' in failed.stderr
   print('PASS occupied candidate baseline rejected')
+  run((ROOT/'scripts/rbac-audit/rollback-external-user-ab-closed.sql').read_text())
+  assert run("SELECT count(*) FROM pg_trigger WHERE tgrelid='public.platform_org_admin_invites'::regclass AND NOT tgisinternal;")=='0'
+  assert run("SELECT count(*) FROM platform_private.b2b_provisioning_receipts;")=='1'
+  assert run("SELECT has_function_privilege('authenticated','public.b2b_claim_provisioning(uuid,uuid,text,text)','EXECUTE');")=='f'
+  print('PASS rollback exact zero invitation triggers preserves receipt and closes ACL')
  finally:
   subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True);shutil.rmtree(tmp)
 if __name__=='__main__': main()
