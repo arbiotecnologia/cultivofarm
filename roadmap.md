@@ -1,3 +1,8 @@
+## RECORTE 19:04 — aprovação separada, preparação fechada
+- [x] Decisão humana: somente Administrador/Gestor aprova; Produção somente programa OS previamente aprovada. HEAD inicial557ee0e1, candidato programação não aplicado.
+- [ ] Auditar aprovação existente, UPDATE direto/RLS, check_os_status_transition e dependências; entregar candidato/hashes/testes/rollback sem DDL remoto/grants/UI/publicação/dados/fabricação. Lote fora de escopo.
+- [ ] Liberação operacional depende de revisão independente e resolução das lacunas de programação; permanece NO-GO.
+
 ## RECORTE 18:51 — programação candidata, sem liberação
 - [x] Registrar evidência EXTERNA Renato: sessão real Admin FSF/Fagner Cockpit0OS; buscaOS-2026-000004 AR=0, limpar/recargaURLdireta=0, nenhum residual AR observado. Transição durante login NÃO gravada: somente estado pós-troca + testes locais de resposta atrasada.
 - [x] Sete funções contidas auth/anonEXECfalse informadas externamente: programar/lote/avancar/replan/refresh/alertas/resumoBI. Não reabrir.
