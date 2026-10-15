@@ -20,6 +20,27 @@
     "concurrency": "SERIALIZED_QUEUE_NOT_SEPARATE_SESSIONS"
   },
   "hosted_browser": "UNVERIFIED_EXTERNAL_UNMANAGED",
+  "pdf_null_safe": {
+    "state": "APPLIED_SOURCE_ONLY_NOT_PUBLISHED",
+    "source_path": "src/pages/VisitaTecnica.tsx",
+    "source_sha256": "f481fa1843aa889bd87999a8cfaf11b875377b5f53bb97d687576f9cc89f856e",
+    "test_path": "src/test/visita/diagnosticPdfProposal.test.ts",
+    "test_sha256": "930f256743e6ee69006265c85e85f134672169338c10f22dfc508786a4ff1d20",
+    "effective_buildPdfData_tests": 8,
+    "focused_regression_passed": 43,
+    "build": "AUTOMATIC_OK_2026_10_15_16_55_16_UTC",
+    "typecheck": "NOT_RUN_MANUALLY_AUTOMATIC_HARNESS",
+    "real_pdf_download": "UNVERIFIED",
+    "combined_diagnostic_pdf_patch": "HISTORICAL_PDF_ALREADY_INCORPORATED_DO_NOT_APPLY_WHOLE_PATCH"
+  },
+  "diagnostic": {
+    "state": "SEPARATE_CANDIDATE_NOT_APPLIED",
+    "blockers": [
+      "MUTATION_AUTHORIZATION_RECHECK_AFTER_LOCK",
+      "REMOTE_PK_ADOPTION_VERSION_REPLAY_ERROR_REAL_SCHEMA",
+      "DESKTOP_DELETE_INSERT_AND_EMPTY_DIAGNOSTIC_NOT_FIXED_BY_WIZARD_BRANCH"
+    ]
+  },
   "files": [
     {
       "path": "scripts/rbac-audit/proposed-enable-visit-os-ui.patch",
