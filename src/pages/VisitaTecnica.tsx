@@ -934,9 +934,9 @@ export default function VisitaTecnica() {
     const osVinculadas = ordensConsolidado.map(os => ({
       numeroOs: formatOS(os as any),
       produto: (os as any).produtos?.nome || "—",
-      dose: `${os.dose_ml_ha} mL/ha`,
+      dose: os.dose_ml_ha == null ? "Não informado" : `${os.dose_ml_ha} mL/ha`,
       area: `${os.area_hectares} ha`,
-      volumeTotal: `${os.volume_total_ml >= 1000 ? (os.volume_total_ml / 1000).toFixed(2) + ' L' : os.volume_total_ml.toFixed(0) + ' mL'}`,
+      volumeTotal: os.volume_total_ml == null ? "Não informado" : (os.volume_total_ml >= 1000 ? (os.volume_total_ml / 1000).toFixed(2) + " L" : os.volume_total_ml.toFixed(0) + " mL"),
       modoAplicacao: os.modo_aplicacao || "—",
       dataProgramada: os.data_recomendada ? formatDateDisplay(os.data_recomendada) : "—",
       status: os.status,

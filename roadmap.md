@@ -1,3 +1,9 @@
+## RECORTE 16:53 UTC — aplicação PDF null-safe autorizada
+- [x] Aplicar somente dose/volume NULL-safe em VisitaTecnica.tsx; preservar demais funcionalidades, visita/dados, AGENTS e migrations.
+- [ ] Executar teste do corpo efetivo buildPdfData e regressões dos candidatos OS/query; verificar patch OS ainda aplicável.
+- [ ] Atualizar evidências/manifesto após testes; nenhuma publicação ou operação remota autorizada.
+- [ ] Diagnóstico separado NÃO aplicado: faltam autorização mutação revalidada após lock, adoção PK/versões/replay/erro/schema real e correção desktop DELETE/INSERT/vazio; aguarda revisão/autorização focal.
+
 ## RECORTE 16:37 UTC — habilitação OS somente candidata
 - [x] Integrar achado `ordens_servico_onfarm.origem` inexistente: candidato remove coluna, usa `registro_consultor_id` como vínculo explícito e preserva erro/KPIs indisponíveis; sem coluna ou origem inventada.
 - [x] Auditar irmãos: OrdensServico discrimina pela tabela e rótulo candidato usa vínculo; MobileOrdens lê somente OS tradicional e não usa origem. Schema canônico LIMIT 0/FKs/grant confirmados read-only.
