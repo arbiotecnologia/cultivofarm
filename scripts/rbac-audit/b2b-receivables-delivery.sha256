@@ -1,0 +1,3 @@
+37143e6fa24abcf23333099647c0e4e5fce13504d492d49421f6dd4760fcd765  scripts/rbac-audit/proposed-b2b-receivables-read.sql
+bfb10e2a57eb30a8651c101d72bfe7705242f56081193d0ea00393c4ae216414  scripts/rbac-audit/rollback-b2b-receivables-read.sql
+9c9a7d81fd0402579fd17b6aea307f5a96eb61f83fb276f1746ebb1f038b082e  scripts/tests/b2b-receivables-rls-local.py
