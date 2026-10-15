@@ -1,0 +1,56 @@
+[
+ {
+  "function": "public.partner_apply_default_discount(uuid)",
+  "hash_before": "c33a667463b7f34840237ad9ba676761",
+  "definition_after_md5_text": "9997d750c641165c46be30425124ff50",
+  "patches": 1
+ },
+ {
+  "function": "public.rpc_commercial_simulator(uuid, uuid, numeric, numeric)",
+  "hash_before": "4e324b1711f06bb556f050d8ea1aa8f0",
+  "definition_after_md5_text": "67d29e19fa843de3a63b818cee089e87",
+  "patches": 3
+ },
+ {
+  "function": "public.fn_resolve_commercial_price(text, uuid, uuid, uuid, uuid, uuid, text, numeric, date, numeric)",
+  "hash_before": "0df0d9005d46b667db4433d3eae59e27",
+  "definition_after_md5_text": "d2f66e3985c15e2b1e9e7230b162ae6c",
+  "patches": 1
+ },
+ {
+  "function": "public.fn_b2b_resolve_base_unit_price(uuid, uuid, uuid, text, numeric, date)",
+  "hash_before": "60651fe823452436d807b9b175c3865c",
+  "definition_after_md5_text": "57a3913f30941ab4faf0c57dd0b53463",
+  "patches": 1
+ },
+ {
+  "function": "public.fn_resolve_b2b_cart(uuid, uuid, jsonb, date)",
+  "hash_before": "c8b4584475698835b786dacdf1e0fc14",
+  "definition_after_md5_text": "057ddf13b2316981fd53c3dbd202b6b5",
+  "patches": 2
+ },
+ {
+  "function": "platform_private.b2b_save_technical_simulation(jsonb)",
+  "hash_before": "daad3c1554f370bb0456b4ea3afdeea7",
+  "definition_after_md5_text": "166871bc0269a448105b63c87e18091c",
+  "patches": 2
+ },
+ {
+  "function": "public.rpc_associate_microorganism_fiscal_product(uuid, uuid)",
+  "hash_before": "da0d679779e9d57558a3a203219b4afc",
+  "definition_after_md5_text": "113f2696feb385415e97a8a843c24743",
+  "patches": 3
+ },
+ {
+  "function": "public.rpc_regulatory_dossier_ensure_draft(uuid)",
+  "hash_before": "56076bccafd27aa8c95473ac38e73422",
+  "definition_after_md5_text": "4bb9cf20edfae490668010326fa31f28",
+  "patches": 1
+ },
+ {
+  "function": "public.rpc_fiscal_draft_save(uuid, jsonb, jsonb, integer)",
+  "hash_before": "5e364c8f67c92fb31ff9568310eb876c",
+  "definition_after_md5_text": "cffd197f38d11e74d8cf614cc56d5cab",
+  "patches": 1
+ }
+]
