@@ -1,11 +1,13 @@
 ## ATUALIZAÇÃO 15:43 UTC — visita07
-- [ ] Ler hash/schema_migrations do hotfix enum_text já aplicado; registrar sem reaplicar e preservar ambos casts com enum real no harness.
-- [ ] Concretizar recorte explícito, testes, manifesto e relatório; corrigir any herdados e DialogDescription somente no wizard alterado.
+- [x] Hotfix externo enum_text 20261015154248 confirmado read-only; snapshot separado/hash 89a904d232b32c57c24931a007f6d728, NÃO reaplicar. Tenant guard e dois casts preservados.
+- [x] Candidato visita07 concreto: uma flag explícita, XOR bio/micro, lock/replay/índice/API singular, snapshot e linhas comerciais preservados. Corrigidos candidatos dos efeitos de conclusão automática e programação micro-only; sem aplicação remota.
+- [x] PGlite 30/30; PostgreSQL isolado 32/32 (duas sessões com espera de lock observada); Vitest 22/22. Auth/tenant/schema/helpers simulados, não prova hospedada. UI focal e manifesto/relatório atualizados.
+- [ ] Revisão independente, compatibilidade integral dos triggers/consumidores e Auth/RLS/browser reais aguardam autorização de aplicação/fixtures; NO-GO hospedado, ownership gate OFF. Nenhuma próxima fase iniciada.
 
 ## REGISTRO P1 VISITA — 2026-10-15 15:29 UTC
 - [x] Migration externa 20261015152726 arquivada com corpo atual; hash-after e152db390d27e7d21934451cf10bcad7 e ACL confirmados read-only. NÃO reaplicar. Evidência revisor 6/6 + reteste SQL read-only, nenhum dado/OS alterado.
 - [x] Análise visita→lab: LIMIT1 de última recomendação e INSERT só produto; índice UNIQUE registro_consultor_id confirma uma OS/visita. Micro-only/múltiplas linhas não certificados; solução integrada documentada sem remover índice/API/guard tenant.
-- [ ] Fase07 visita→lab exige recorte revisado de cardinalidade/idempotência e testes reais; ownership/SQL13/07 NÃO aplicados. Sem publicação.
+- [x] Recorte visita07 concretizado localmente na atualização acima, sem mudar cardinalidade; certificação real continua pendente. Ownership/SQL13/07 NÃO aplicados. Sem publicação.
 
 ## AUTORIZAÇÃO FASE07 — 2026-10-15 15:24 UTC
 - [x] Inspeção live: duas entradas authenticated DEFINER sem vínculo comercial; risco P1 estrutural, não exploração confirmada. Guards B2B portal não provam mandato da empresa fornecedora.
