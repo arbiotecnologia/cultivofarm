@@ -42,4 +42,4 @@
 - Cockpit consultation mounts only the scoped list RPC; operations, child readers and ACL stay closed — prevents secondary reads and mutations.
 
 - OS approval and generator open INSERT guards stay atomic; preserve links/snapshots, deny unresolved B2B approval — prevents bypass.
-- External-user candidates reuse create-user receipts and admin_provision_user_profile_v1; keep gates/ACL closed — avoids parallel provisioning.
+- External users reuse create-user receipts/admin_provision_user_profile_v1 with closed ACL — no parallel flow.
