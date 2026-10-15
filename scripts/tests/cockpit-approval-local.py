@@ -84,6 +84,24 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     check('audit actor before after',f"EXISTS(SELECT 1 FROM laboratorio_esteira_eventos WHERE acao='aprovar_os' AND usuario_id={U} AND observacao::jsonb->'before'->>'status'='aberta' AND observacao::jsonb->'after'->>'status'='aprovada' AND observacao::jsonb->>'manufacturing_started'='false')")
     check('production programs approved only',f"(SELECT status FROM ordens_servico WHERE id={O})='programada'",f"SELECT set_config('t.role','producao',false); SELECT public.rpc_programar_os_v1({O},'manual','2026-10-20');")
     check('closed RPC auth anon',"NOT has_function_privilege('authenticated','public.rpc_aprovar_os_v1(uuid,text)','EXECUTE') AND NOT has_function_privilege('anon','public.rpc_aprovar_os_v1(uuid,text)','EXECUTE') AND NOT has_function_privilege('authenticated','public.rpc_programar_os_v1(uuid,text,date)','EXECUTE')")
+    sql+=f"SELECT set_config('t.role','administrador',false); INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(35)},{C},{P},{A}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({f.q(55)},{A},{f.q(35)},{P});"
+    check('admin direct approval',f"(SELECT status FROM ordens_servico WHERE id={f.q(35)})='aprovada'",f"UPDATE ordens_servico SET status='aprovada' WHERE id={f.q(35)};")
+    check('direct audited once',"(SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='aprovar_os')=3")
+    deny('INSERT approved bypass',f"INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id,status) VALUES({f.q(36)},{C},{P},{A},'aprovada')")
+    # Real local ROLE/RLS evaluation, reduced policies only; not hosted RLS equivalence.
+    sql+='''GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated;
+GRANT SELECT,UPDATE ON ordens_servico TO authenticated;
+ALTER TABLE ordens_servico ENABLE ROW LEVEL SECURITY;
+CREATE POLICY local_read ON ordens_servico FOR SELECT TO authenticated USING(true);
+CREATE POLICY local_write ON ordens_servico FOR UPDATE TO authenticated USING(public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor'));
+CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authenticated USING(organization_id=platform_private.h15_actor_organization()) WITH CHECK(organization_id=platform_private.h15_actor_organization());
+'''
+    sql+=f"SELECT set_config('t.org',{B},false); SET ROLE authenticated;"
+    check('local RLS foreign zero',f"(SELECT count(*) FROM ordens_servico WHERE id={f.q(35)})=0",f"UPDATE ordens_servico SET status='aprovada' WHERE id={f.q(35)};")
+    check('local RLS missing zero',f"(SELECT count(*) FROM ordens_servico WHERE id={f.q(99)})=0",f"UPDATE ordens_servico SET status='aprovada' WHERE id={f.q(99)};")
+    sql+=f"RESET ROLE; SELECT set_config('t.org',{A},false); SET ROLE authenticated;"
+    check('local RLS admin direct replay',f"(SELECT status FROM ordens_servico WHERE id={f.q(35)})='aprovada'",f"UPDATE ordens_servico SET status='aprovada' WHERE id={f.q(35)};")
+    sql+='RESET ROLE;'
     tmp=Path(tempfile.mkdtemp(prefix='approval-local-',dir='/tmp')); tmp.chmod(0o777)
     pre=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []; started=False
     try:
