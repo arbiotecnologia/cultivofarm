@@ -137,3 +137,24 @@ O diálogo informa essas limitações, para não prometer uma ocultação mais a
 **Testes:** `src/test/catalogo/tenant-*.test.ts(x)`
 
 AGENTS não foi alterado.
+
+---
+
+## Revisão independente de 6c0a1bc5 — correções (15/10/2026, SQL NÃO aplicado, NÃO publicado)
+
+Afeta as seções 3 (diagnóstico), 6 (fluxo), 7 (permissões), 8 (impactos), 10 (auditoria), 11 (UI), 13 (riscos), 15 (testes) e 16 (fases).
+
+1. **Diálogo (seção 11).** `TenantVisibilityToggle` congela na ABERTURA a intenção (empresa, usuário, item, versão, estado alvo). Mudança de empresa/usuário/item/versão/estado com o diálogo aberto fecha o diálogo e invalida a intenção (aviso). Geração (`gen`) muda ao abrir/fechar/mudar contexto/desmontar; sucesso ou erro tardio de geração antiga não dispara toast nem altera estado. Teste React com `rerender` + promessa pendente para troca de empresa, de usuário, de item e de versão.
+2. **Idempotência (seção 10).** Chave por tentativa com payload congelado: retry do mesmo payload reusa a chave; alterar o motivo gera chave nova. SQL: lock `ator+empresa+chave` ANTES do lock `empresa+item` (ordem fixa), tornando replay/conflito da mesma chave em itens distintos consistente. Runtime novo `neg.mesma_chave_outro_item`.
+3. **Seletor (seções 6, 9).** Chave de cache inclui `limit` e todos os inputs. Etapa Campo da visita no celular: busca no servidor (debounce 300 ms) e páginas de 50 (Anteriores/Próximas), sem baixar tudo. `include` devolve o item já vinculado mesmo fora da página/busca, sem duplicar a página (`in_page`), e mantém selecionável o item ativo/visível (não rebaixa). Carregando/erro desabilita o seletor; nova escolha só aceita linha selecionável de resposta válida.
+4. **Culturas na visita (seção 7).** Base: a visita lia `culturas` direto, e a RLS `Portal: Ler culturas` é `true` para authenticated (consulta read-only). O candidato anterior exigia `catalogo_precos` também no seletor — regressão. Agora: modo `read_selection_cultura` sem gate comercial (exige empresa ativa, nega SA; é mais estreito que a RLS atual, não mais amplo). Gestão de culturas (`read_management`) e mutação continuam com `catalogo_precos`; mutação continua admin/gestor. Runtime `pos.cultura_sem_gate_comercial` (SKIP honesto se o consultor real tiver o recurso).
+5. **Catálogos novos (seção 8).** Novo RPC `tenant_catalog_hidden_ids` (somente UUIDs da própria empresa, máx. 300; acima disso erro explícito). Exclusão aplicada NO SERVIDOR (`not id in (...)`) em:
+   - `useCatalogoUnificado` escopos `admin` (Catálogo técnico da Base técnica) e `interno` (Simulador comercial) — produtos e microrganismos;
+   - `MobileCatalogoTecnico` — produtos e microrganismos; respostas tardias descartadas.
+   Sessão sem empresa (plataforma) = catálogo global sem filtro. Erro/indisponível = fail-closed com mensagem, sem lista sem filtro. Detalhes de registros vinculados/históricos usam outras consultas e não são filtrados.
+   - `useCulturas`: único consumidor é a gestão em `Protocolos.tsx`, já com sobreposição e "Mostrar ocultos".
+   - **Pendentes explícitos:** portal B2B (`scope b2b`, empresa fornecedora exige vínculo comercial validado), pedidos/produção/recomendações/composição; culturas em `MobileVisitaWizard`, `VisitaTecnica`, `Talhoes`, `SafrasTalhaoDialog`, `ObjetivosVisita`, `BIFiltrosGlobais`, `useCatalogTargetsCrops`. Texto do diálogo agora é por entidade e lista exatamente onde vale.
+6. **Diagnóstico (seção 3).** `useAuth` já executa `queryClient.clear()` na troca de identidade, `TOKEN_REFRESHED`, `USER_UPDATED` e saída; o fence de escopo do catálogo é complementar. O baseline do Dashboard Admin com vários cards "indisponível" segue sem causa determinada e não é atribuído a esta fase.
+7. **Evidência local (seção 15).** Catálogo 602/602 (inclui 20 unit + 9 React do recorte); catálogo+SaaS+multiportal 1473/1473 (base 6c0a1bc5: 1457/1457); visita/fluxo técnico 255 PASS/2 SKIP/3 FAIL — as mesmas 3 falhas de `etapasVisita.test.ts` reproduzidas na base extraída de 6c0a1bc5 (pré-existentes). Typecheck app/node PASS. Lint dos arquivos alterados: novos arquivos 0 erros; arquivos legados com o mesmo número de erros da base (useCatalogoUnificado 21, MobileCatalogoTecnico 11, WizardCampoStep 3). Scanner de segredos OK. Build PASS (30,39 s).
+
+**Limitações honestas.** SQL candidato, rollback e runtime NÃO foram aplicados nem executados no banco; não há PASS de runtime nem login real nesta rodada. Enquanto o SQL não estiver aplicado, catálogo técnico/simulador/catálogo do celular e o seletor de cultura da visita mostram erro explícito para usuários com empresa (fail-closed) — por isso o candidato NÃO deve ser publicado antes da aplicação. Testes React usam mocks e não provam sessão real. Ownership/CRUD próprio fora do escopo.

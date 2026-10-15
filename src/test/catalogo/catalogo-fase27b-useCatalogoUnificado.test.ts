@@ -30,7 +30,7 @@ const row = (over: Partial<CatalogoUnificadoRow> = {}): CatalogoUnificadoRow => 
 
 describe("FASE 27B — configuração de cache e query", () => {
   it("mantém queryKey compatível", () => {
-    expect(src).toContain('queryKey: ["catalogo-unificado", scope]');
+    expect(src).toContain('queryKey: ["catalogo-unificado", scope, kp, km]');
   });
 
   it("define staleTime, gcTime e desliga refetch on focus", () => {

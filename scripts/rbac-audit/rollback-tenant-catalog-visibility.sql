@@ -2,6 +2,8 @@
 -- Revoga somente os NOVOS pontos de entrada. Preserva catalog_tenant_visibility e o ledger (sem DROP, sem DELETE).
 -- NUNCA concede escrita em produtos/microrganismos/culturas/formulacoes/catalogo_volumes.
 -- A UI deve voltar ao commit anterior (sem chamadas tenant_catalog_*) junto com este script.
+REVOKE EXECUTE ON FUNCTION public.tenant_catalog_hidden_ids(text) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION platform_private.catalog_tenant_hidden_ids_core(text) FROM authenticated;
 REVOKE EXECUTE ON FUNCTION public.tenant_catalog_set_visibility(text,uuid,boolean,integer,text,uuid) FROM authenticated;
 REVOKE EXECUTE ON FUNCTION public.tenant_catalog_read_visibility(text,uuid[]) FROM authenticated;
 REVOKE EXECUTE ON FUNCTION public.tenant_catalog_selection_page(text,text,integer,integer,uuid[]) FROM authenticated;

@@ -58,7 +58,8 @@ BEGIN
     RAISE EXCEPTION 'financeiro/consultor não pertencem a AR'; END IF;
   INSERT INTO rt_ctx VALUES ('org_ar',v_org_ar::text),('org_fsf',v_org_fsf::text);
   INSERT INTO rt_ctx VALUES ('feat_ar', public._saas_user_has_feature(pg_temp.ctx('admin_ar')::uuid,'catalogo_precos')::text),
-                            ('feat_fsf', public._saas_user_has_feature(pg_temp.ctx('admin_fsf')::uuid,'catalogo_precos')::text);
+                            ('feat_fsf', public._saas_user_has_feature(pg_temp.ctx('admin_fsf')::uuid,'catalogo_precos')::text),
+                            ('feat_consultor_ar', public._saas_user_has_feature(pg_temp.ctx('consultor_ar')::uuid,'catalogo_precos')::text);
   INSERT INTO rt_ctx SELECT 'prod_ativo', id::text FROM public.produtos WHERE ativo ORDER BY id LIMIT 1;
   INSERT INTO rt_ctx SELECT 'prod_inativo', id::text FROM public.produtos WHERE NOT ativo ORDER BY id LIMIT 1;
   INSERT INTO rt_ctx SELECT 'micro_ativo', id::text FROM public.microrganismos WHERE ativo ORDER BY id LIMIT 1;
@@ -164,6 +165,17 @@ BEGIN
   PERFORM pg_temp.ok('iso.ar_seletor_exclui', e='' AND pg_temp.ctx('last')='0', e);
   e := pg_temp.as_actor(pg_temp.ctx('admin_ar')::uuid, format('SELECT selectable::text FROM public.tenant_catalog_selection_page(%L,NULL,1,0,ARRAY[%L::uuid]) s WHERE s.id=%L::uuid','produto',p,p));
   PERFORM pg_temp.ok('hist.include_ids_marca_nao_selecionavel', e='' AND pg_temp.ctx('last')='false', e);
+  -- mesma chave em OUTRO item: conflito consistente (lock ator+empresa+chave antes do item)
+  e := pg_temp.as_actor(pg_temp.ctx('admin_ar')::uuid, pg_temp.set_sql('microrganismo',pg_temp.ctx('micro_ativo'),true,0,k1));
+  PERFORM pg_temp.ok('neg.mesma_chave_outro_item', e='catalog_visibility_idempotency_conflict', e);
+  -- IDs ocultos: AR vê o produto, FSF não
+  e := pg_temp.as_actor(pg_temp.ctx('admin_ar')::uuid, format('SELECT count(*)::text FROM public.tenant_catalog_hidden_ids(%L) h WHERE h.entity_id=%L::uuid','produto',p));
+  PERFORM pg_temp.ok('pos.hidden_ids_ar', e='' AND pg_temp.ctx('last')='1', e);
+  e := pg_temp.as_actor(pg_temp.ctx('admin_fsf')::uuid, format('SELECT count(*)::text FROM public.tenant_catalog_hidden_ids(%L) h WHERE h.entity_id=%L::uuid','produto',p));
+  PERFORM pg_temp.ok('iso.hidden_ids_fsf_vazio', e='' AND pg_temp.ctx('last')='0', e);
+  -- include de item VISÍVEL fora da página: devolvido, selecionável, sem duplicar
+  e := pg_temp.as_actor(pg_temp.ctx('admin_fsf')::uuid, format('SELECT (count(*)::text || '':'' || bool_and(selectable)::text) FROM public.tenant_catalog_selection_page(%L,%L,1,0,ARRAY[%L::uuid]) s WHERE s.id=%L::uuid','produto','zzzz-sem-match',p,p));
+  PERFORM pg_temp.ok('sel.include_visivel_fora_pagina_selecionavel', e='' AND pg_temp.ctx('last')='1:true', e);
   e := pg_temp.as_actor(pg_temp.ctx('admin_fsf')::uuid, format('SELECT count(*)::text FROM public.tenant_catalog_read_visibility(%L,ARRAY[%L::uuid])','produto',p));
   PERFORM pg_temp.ok('iso.fsf_nao_ve_pref_ar', e='' AND pg_temp.ctx('last')='0', e);
   e := pg_temp.as_actor(pg_temp.ctx('admin_fsf')::uuid, format('SELECT count(*)::text FROM public.tenant_catalog_selection_page(%L,%L,100,0) s WHERE s.id=%L::uuid','produto',
@@ -181,6 +193,12 @@ BEGIN
   -- consultor lê seletor (interseção com permissões atuais)
   e := pg_temp.as_actor(pg_temp.ctx('consultor_ar')::uuid, format('SELECT count(*)::text FROM public.tenant_catalog_selection_page(%L,NULL,5,0)','cultura'));
   PERFORM pg_temp.ok('pos.consultor_le_seletor_cultura', e='', e);
+  -- seletor de cultura NÃO exige catalogo_precos (preserva acesso efetivo da visita); mutação continua exigindo
+  IF pg_temp.ctx('feat_consultor_ar') = 'false' THEN
+    PERFORM pg_temp.ok('pos.cultura_sem_gate_comercial', e='', e);
+  ELSE
+    PERFORM pg_temp.skip('pos.cultura_sem_gate_comercial', 'consultor AR possui catalogo_precos; ausência do gate não demonstrável com ator real');
+  END IF;
   -- micro e cultura
   e := pg_temp.as_actor(pg_temp.ctx('admin_ar')::uuid, pg_temp.set_sql('microrganismo',pg_temp.ctx('micro_ativo'),true,0,gen_random_uuid()));
   PERFORM pg_temp.ok('pos.micro_oculta', e='', e);
@@ -191,7 +209,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN e:=SQLERRM; END;
   PERFORM pg_temp.ok('ledger.imutavel_update', e='catalog_visibility_ledger_immutable', e);
   SELECT count(*) INTO n FROM public.catalog_tenant_visibility_ledger WHERE organization_id=pg_temp.ctx('org_ar')::uuid;
-  PERFORM pg_temp.ok('ledger.registros', n=4, n::text);
+  PERFORM pg_temp.ok('ledger.registros', n=4, n::text); -- conflitos/negativos não gravam ledger
   -- inativo
   IF pg_temp.ctx('prod_inativo') IS NULL THEN
     PERFORM pg_temp.skip('neg.inativo_reexibir', 'sem produto global inativo real');

@@ -94,7 +94,7 @@ describe("FASE 27D — fluxos dos cards preservados", () => {
   });
 
   it("hook mantém contrato de cache da 27B", () => {
-    expect(HOOK).toContain('queryKey: ["catalogo-unificado", scope]');
+    expect(HOOK).toContain('queryKey: ["catalogo-unificado", scope, kp, km]');
     expect(HOOK).toContain("staleTime:");
     expect(HOOK).toContain("gcTime:");
     expect(HOOK).toContain("refetchOnWindowFocus: false");

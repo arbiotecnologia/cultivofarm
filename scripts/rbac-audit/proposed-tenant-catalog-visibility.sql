@@ -9,11 +9,11 @@
 --  * Exibir NÃO reativa item global inativo (rejeitado); seletor nunca devolve inativo.
 --  * Empresa derivada no servidor (h15_actor_organization + organização ativa/status 'ativa'); RPCs NÃO
 --    aceitam parâmetro de empresa. Platform Superadmin é negado (fora da operação de empresa).
---  * Mutação: administrador/gestor + entitlement existente `catalogo_precos`. Leitura: interseção com
---    permissões atuais (can_view_catalog_internal para produtos/micros; ator de empresa para culturas) +
---    mesmo entitlement.
---  * CAS por `version` (inclusive primeira gravação: expected_version=0), lock transacional por
---    empresa+item, idempotência por ator+empresa+chave com hash do payload, motivo obrigatório,
+--  * Mutação: administrador/gestor + entitlement existente `catalogo_precos`. Leitura de gestão: interseção com
+--    permissões atuais + `catalogo_precos`. Seletor de cultura da visita: ator de empresa SEM gate comercial
+--    (preserva o acesso efetivo atual da visita). IDs ocultos: ator de empresa, só UUIDs.
+--  * CAS por `version` (inclusive primeira gravação: expected_version=0), locks transacionais em ordem fixa
+--    ator+empresa+chave e depois empresa+item, idempotência por ator+empresa+chave com hash do payload, motivo obrigatório,
 --    ledger imutável.
 --  * Sem DML direto: tabelas com RLS habilitada, sem policies e sem grants a anon/authenticated.
 --  * SEM ownership, SEM CRUD próprio, SEM backfill, SEM fixture persistente.
@@ -102,7 +102,14 @@ CREATE TRIGGER ctvl_no_truncate BEFORE TRUNCATE ON public.catalog_tenant_visibil
   FOR EACH STATEMENT EXECUTE FUNCTION platform_private.catalog_tenant_visibility_ledger_immutable();
 
 -- ---------------------------------------------------------------- ator de empresa (privado)
--- p_mode: 'mutate' (admin/gestor) | 'read_catalog' (produtos/micros) | 'read_any' (culturas)
+-- p_mode:
+--  'mutate'          admin/gestor + catalogo_precos
+--  'read_catalog'    gestão produtos/micros: can_view_catalog_internal + catalogo_precos
+--  'read_management' gestão de culturas (/base-tecnica): catalogo_precos
+--  'read_selection_cultura' seletor de cultura da VISITA: ator de empresa ativo, SEM gate comercial
+--                    (culturas já são legíveis por qualquer authenticated via RLS 'Portal: Ler culturas';
+--                    aqui é mais estreito: exige empresa ativa e nega SA). Não lê produtos nem muta.
+--  'read_prefs'      IDs ocultos da própria empresa (catálogos novos); só UUIDs, sem conteúdo técnico.
 CREATE FUNCTION platform_private.catalog_tenant_actor(p_mode text) RETURNS uuid
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE
@@ -125,7 +132,7 @@ BEGIN
   IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa') THEN
     RAISE EXCEPTION 'catalog_visibility_tenant_unavailable' USING ERRCODE='42501';
   END IF;
-  IF NOT public._saas_user_has_feature(v_uid, 'catalogo_precos') THEN
+  IF p_mode IN ('mutate','read_catalog','read_management') AND NOT public._saas_user_has_feature(v_uid, 'catalogo_precos') THEN
     RAISE EXCEPTION 'catalog_visibility_feature_unavailable' USING ERRCODE='42501';
   END IF;
   IF p_mode='mutate' THEN
@@ -134,7 +141,7 @@ BEGIN
   ELSIF p_mode='read_catalog' THEN
     IF NOT public.can_view_catalog_internal(v_uid) THEN
       RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;
-  ELSIF p_mode IS DISTINCT FROM 'read_any' THEN
+  ELSIF p_mode NOT IN ('read_management','read_selection_cultura','read_prefs') OR p_mode IS NULL THEN
     RAISE EXCEPTION 'catalog_visibility_mode_invalid' USING ERRCODE='22023';
   END IF;
   RETURN v_org;
@@ -164,7 +171,9 @@ BEGIN
     RAISE EXCEPTION 'catalog_visibility_reason_required' USING ERRCODE='22023'; END IF;
   v_hash := md5(concat_ws('|', p_entity_type, p_entity_id::text, p_hidden::text, p_expected_version::text, v_reason));
 
-  -- Lock por empresa+item (serializa a primeira gravação e o replay).
+  -- Ordem fixa de locks: (1) ator+empresa+chave — serializa replay/conflito da MESMA chave mesmo em itens
+  -- distintos; (2) empresa+item — serializa primeira gravação/CAS. Sempre nesta ordem (sem deadlock cruzado).
+  PERFORM pg_advisory_xact_lock(hashtextextended(concat_ws(':','ctvk',v_uid::text,v_org::text,p_idempotency_key::text),0));
   PERFORM pg_advisory_xact_lock(hashtextextended(concat_ws(':','ctv',v_org::text,p_entity_type,p_entity_id::text),0));
 
   SELECT * INTO v_ledger FROM public.catalog_tenant_visibility_ledger
@@ -229,7 +238,7 @@ DECLARE v_org uuid;
 BEGIN
   IF p_entity_type IS NULL OR p_entity_type NOT IN ('produto','microrganismo','cultura') THEN
     RAISE EXCEPTION 'catalog_visibility_invalid_payload' USING ERRCODE='22023'; END IF;
-  v_org := platform_private.catalog_tenant_actor(CASE WHEN p_entity_type='cultura' THEN 'read_any' ELSE 'read_catalog' END);
+  v_org := platform_private.catalog_tenant_actor(CASE WHEN p_entity_type='cultura' THEN 'read_management' ELSE 'read_catalog' END);
   IF p_ids IS NULL OR cardinality(p_ids) > 500 OR array_position(p_ids, NULL) IS NOT NULL THEN
     RAISE EXCEPTION 'catalog_visibility_invalid_payload' USING ERRCODE='22023'; END IF;
   RETURN QUERY SELECT COALESCE(v.produto_id,v.microrganismo_id,v.cultura_id), v.hidden, v.version, v.updated_at
@@ -241,12 +250,12 @@ REVOKE ALL ON FUNCTION platform_private.catalog_tenant_read_visibility_core(text
 GRANT EXECUTE ON FUNCTION platform_private.catalog_tenant_read_visibility_core(text,uuid[]) TO authenticated;
 
 -- ---------------------------------------------------------------- núcleo do seletor de NOVAS seleções (privado DEFINER)
--- Paginado e filtrado no servidor: somente globais ATIVOS e NÃO ocultos na empresa. p_include_ids devolve
--- itens já vinculados ao formulário (máx. 50) mesmo se ocultos/inativos, marcados, para exibir o valor atual
--- sem permitir nova seleção — nunca serve como leitura de histórico ampla.
+-- Paginado e filtrado no servidor: página = somente globais ATIVOS e NÃO ocultos na empresa (in_page=true).
+-- p_include_ids (máx. 50) devolve o valor já vinculado ao formulário MESMO fora da página/busca, sem duplicar a
+-- página; selectable = ativo E visível (item visível nunca é rebaixado; oculto/inativo aparece só para leitura).
 CREATE FUNCTION platform_private.catalog_tenant_selection_core(
   p_entity_type text, p_search text, p_limit integer, p_offset integer, p_include_ids uuid[])
-RETURNS TABLE(id uuid, nome text, ativo boolean, hidden boolean, selectable boolean, total bigint)
+RETURNS TABLE(id uuid, nome text, ativo boolean, hidden boolean, selectable boolean, in_page boolean, total bigint)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_org uuid; v_q text := NULLIF(btrim(COALESCE(p_search,'')),'');
 BEGIN
@@ -255,7 +264,7 @@ BEGIN
      OR (v_q IS NOT NULL AND char_length(v_q) > 80)
      OR (p_include_ids IS NOT NULL AND (cardinality(p_include_ids) > 50 OR array_position(p_include_ids, NULL) IS NOT NULL)) THEN
     RAISE EXCEPTION 'catalog_visibility_invalid_payload' USING ERRCODE='22023'; END IF;
-  v_org := platform_private.catalog_tenant_actor(CASE WHEN p_entity_type='cultura' THEN 'read_any' ELSE 'read_catalog' END);
+  v_org := platform_private.catalog_tenant_actor(CASE WHEN p_entity_type='cultura' THEN 'read_selection_cultura' ELSE 'read_catalog' END);
   RETURN QUERY
   WITH base AS (
     SELECT p.id, p.nome::text AS nome, p.ativo FROM public.produtos p WHERE p_entity_type='produto'
@@ -271,13 +280,29 @@ BEGIN
        AND (v_q IS NULL OR m.nome ILIKE '%' || replace(replace(replace(v_q,'\','\\'),'%','\%'),'_','\_') || '%')
      ORDER BY m.nome, m.id LIMIT p_limit OFFSET p_offset
   )
-  SELECT pg.id, pg.nome, pg.ativo, pg.hidden, true, pg.total FROM page pg
+  SELECT pg.id, pg.nome, pg.ativo, pg.hidden, true, true, pg.total FROM page pg
   UNION ALL
-  SELECT m.id, m.nome, m.ativo, m.hidden, false, NULL::bigint FROM marked m
-   WHERE p_include_ids IS NOT NULL AND m.id = ANY(p_include_ids) AND NOT (m.ativo IS TRUE AND m.hidden IS FALSE);
+  SELECT m.id, m.nome, m.ativo, m.hidden, (m.ativo IS TRUE AND m.hidden IS FALSE), false, NULL::bigint FROM marked m
+   WHERE p_include_ids IS NOT NULL AND m.id = ANY(p_include_ids) AND m.id NOT IN (SELECT pg2.id FROM page pg2);
 END; $$;
 REVOKE ALL ON FUNCTION platform_private.catalog_tenant_selection_core(text,text,integer,integer,uuid[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION platform_private.catalog_tenant_selection_core(text,text,integer,integer,uuid[]) TO authenticated;
+
+-- ---------------------------------------------------------------- IDs ocultos da empresa (privado DEFINER)
+-- Só UUIDs da própria empresa; consumidores de catálogo NOVO excluem no servidor (filtro da consulta).
+CREATE FUNCTION platform_private.catalog_tenant_hidden_ids_core(p_entity_type text)
+RETURNS TABLE(entity_id uuid) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid;
+BEGIN
+  IF p_entity_type IS NULL OR p_entity_type NOT IN ('produto','microrganismo','cultura') THEN
+    RAISE EXCEPTION 'catalog_visibility_invalid_payload' USING ERRCODE='22023'; END IF;
+  v_org := platform_private.catalog_tenant_actor('read_prefs');
+  RETURN QUERY SELECT COALESCE(v.produto_id,v.microrganismo_id,v.cultura_id) FROM public.catalog_tenant_visibility v
+   WHERE v.organization_id=v_org AND v.entity_type=p_entity_type AND v.hidden
+   ORDER BY 1 LIMIT 301; -- cliente rejeita >300 de forma explícita
+END; $$;
+REVOKE ALL ON FUNCTION platform_private.catalog_tenant_hidden_ids_core(text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.catalog_tenant_hidden_ids_core(text) TO authenticated;
 
 -- ---------------------------------------------------------------- wrappers públicos INVOKER (sem parâmetro de empresa)
 CREATE FUNCTION public.tenant_catalog_set_visibility(
@@ -292,10 +317,16 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
 $$;
 CREATE FUNCTION public.tenant_catalog_selection_page(
   p_entity_type text, p_search text, p_limit integer, p_offset integer, p_include_ids uuid[] DEFAULT NULL)
-RETURNS TABLE(id uuid, nome text, ativo boolean, hidden boolean, selectable boolean, total bigint)
+RETURNS TABLE(id uuid, nome text, ativo boolean, hidden boolean, selectable boolean, in_page boolean, total bigint)
 LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
   SELECT * FROM platform_private.catalog_tenant_selection_core(p_entity_type,p_search,p_limit,p_offset,p_include_ids)
 $$;
+CREATE FUNCTION public.tenant_catalog_hidden_ids(p_entity_type text)
+RETURNS TABLE(entity_id uuid) LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
+  SELECT * FROM platform_private.catalog_tenant_hidden_ids_core(p_entity_type)
+$$;
+REVOKE ALL ON FUNCTION public.tenant_catalog_hidden_ids(text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.tenant_catalog_hidden_ids(text) TO authenticated;
 REVOKE ALL ON FUNCTION public.tenant_catalog_set_visibility(text,uuid,boolean,integer,text,uuid) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.tenant_catalog_read_visibility(text,uuid[]) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.tenant_catalog_selection_page(text,text,integer,integer,uuid[]) FROM PUBLIC,anon;

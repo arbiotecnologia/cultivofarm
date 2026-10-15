@@ -34,8 +34,11 @@ export const tenantCatalogKeys = {
   scope: (s: TenantCatalogScope) => ["tenant-catalog", s.organizationId, s.userId] as const,
   visibility: (s: TenantCatalogScope, entity: TenantCatalogEntity, ids: readonly string[]) =>
     ["tenant-catalog", s.organizationId, s.userId, "visibility", entity, [...ids].sort().join(",")] as const,
-  selection: (s: TenantCatalogScope, entity: TenantCatalogEntity, search: string, offset: number, include: readonly string[]) =>
-    ["tenant-catalog", s.organizationId, s.userId, "selection", entity, search, offset, [...include].sort().join(",")] as const,
+  /** Todos os inputs do leitor entram na chave (inclusive limit). */
+  selection: (s: TenantCatalogScope, entity: TenantCatalogEntity, search: string, offset: number, limit: number, include: readonly string[]) =>
+    ["tenant-catalog", s.organizationId, s.userId, "selection", entity, search, offset, limit, [...include].sort().join(",")] as const,
+  hiddenIds: (s: TenantCatalogScope, entity: TenantCatalogEntity) =>
+    ["tenant-catalog", s.organizationId, s.userId, "hidden-ids", entity] as const,
 };
 
 export interface VisibilityState { hidden: boolean; version: number }
@@ -127,7 +130,10 @@ export async function readTenantVisibility(client: RpcClient, entity: TenantCata
 export interface SelectionRow { id: string; nome: string; selectable: boolean; hidden: boolean; ativo: boolean }
 export interface SelectionPage { rows: SelectionRow[]; total: number; hasMore: boolean }
 
-/** Seletor de NOVAS seleções: paginado e filtrado no servidor. `include` mostra o valor já vinculado sem torná-lo selecionável. */
+/**
+ * Seletor de NOVAS seleções: paginado e filtrado no servidor. `include` devolve o valor já vinculado mesmo fora
+ * da página/busca; ele é selecionável somente se ativo e visível (nunca é rebaixado), e nunca duplica a página.
+ */
 export async function fetchTenantSelectionPage(client: RpcClient, p: {
   entity: TenantCatalogEntity; search?: string; limit: number; offset: number; include?: readonly string[]; signal?: AbortSignal;
 }): Promise<SelectionPage> {
@@ -144,16 +150,67 @@ export async function fetchTenantSelectionPage(client: RpcClient, p: {
   if (error) throw new TenantVisibilityError(mapTenantVisibilityError(error), error);
   if (!Array.isArray(data)) throw new TenantVisibilityError("Resposta do seletor inválida.");
   let total = 0;
-  const rows: SelectionRow[] = (data as Array<Record<string, unknown> | null>).map((r) => {
-    if (!r || typeof r.id !== "string" || typeof r.nome !== "string" || typeof r.selectable !== "boolean") {
+  let pageCount = 0;
+  const seen = new Set<string>();
+  const rows: SelectionRow[] = [];
+  for (const r of data as Array<Record<string, unknown> | null>) {
+    if (!r || typeof r.id !== "string" || typeof r.nome !== "string" || typeof r.selectable !== "boolean"
+      || typeof r.in_page !== "boolean") {
       throw new TenantVisibilityError("Resposta do seletor inválida.");
     }
-    if (r.selectable && r.total != null) total = Number(r.total);
-    return { id: r.id as string, nome: r.nome as string, selectable: r.selectable as boolean, hidden: !!r.hidden, ativo: !!r.ativo };
-  });
-  const selectableCount = rows.filter((r) => r.selectable).length;
-  return { rows, total, hasMore: p.offset + selectableCount < total };
+    if (r.in_page) { pageCount += 1; if (r.total != null) total = Number(r.total); }
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    rows.push({ id: r.id, nome: r.nome, selectable: r.selectable, hidden: !!r.hidden, ativo: !!r.ativo });
+  }
+  if (!Number.isFinite(total) || total < 0) throw new TenantVisibilityError("Resposta do seletor inválida.");
+  return { rows, total, hasMore: p.offset + pageCount < total };
 }
+
+/** Limite de ocultos por entidade que podem ser excluídos no servidor via filtro `not in` (URL segura). */
+export const TENANT_HIDDEN_IDS_MAX = 300;
+
+/**
+ * IDs ocultos pela empresa do ator (derivada no servidor). Usado para excluir no SERVIDOR (filtro da consulta)
+ * os itens de catálogo NOVO. Erro/limite excedido → erro explícito, nunca lista sem filtro silenciosa.
+ */
+export async function fetchTenantHiddenIds(client: RpcClient, entity: TenantCatalogEntity, signal?: AbortSignal): Promise<string[]> {
+  let q = client.rpc("tenant_catalog_hidden_ids", { p_entity_type: entity });
+  if (signal && typeof q?.abortSignal === "function") q = q.abortSignal(signal);
+  const { data, error } = await q;
+  if (error) throw new TenantVisibilityError(mapTenantVisibilityError(error), error);
+  if (!Array.isArray(data)) throw new TenantVisibilityError("Resposta de ocultos inválida.");
+  const ids: string[] = [];
+  for (const r of data as Array<Record<string, unknown> | null>) {
+    if (!r || typeof r.entity_id !== "string" || !UUID_RE.test(r.entity_id)) throw new TenantVisibilityError("Resposta de ocultos inválida.");
+    ids.push(r.entity_id);
+  }
+  if (ids.length > TENANT_HIDDEN_IDS_MAX) {
+    throw new TenantVisibilityError(`Mais de ${TENANT_HIDDEN_IDS_MAX} itens ocultos; o catálogo não pode aplicar o filtro com segurança.`);
+  }
+  return [...new Set(ids)].sort();
+}
+
+/** Literal PostgREST para `.not("id","in", ...)`; somente UUIDs validados. */
+export function postgrestInList(ids: readonly string[]): string {
+  if (ids.some((x) => !UUID_RE.test(x))) throw new TenantVisibilityError("Identificador inválido.");
+  return `(${ids.join(",")})`;
+}
+
+/** Onde a ocultação vale nesta fase, por entidade — texto exibido ao gestor. */
+export const TENANT_VISIBILITY_SCOPE_NOTES: Record<TenantCatalogEntity, string> = {
+  produto: "Nesta empresa, o produto deixa de aparecer nesta lista, no Catálogo técnico da Base técnica, "
+    + "no Simulador comercial e no Catálogo técnico do celular. Ainda NÃO vale para o portal B2B, pedidos, "
+    + "produção, recomendações e demais seletores.",
+  microrganismo: "Nesta empresa, o microrganismo deixa de aparecer nesta lista, no Catálogo técnico da Base técnica "
+    + "e no Catálogo técnico do celular. Ainda NÃO vale para o portal B2B, composição de produtos, produção "
+    + "e demais seletores.",
+  cultura: "Nesta empresa, a cultura deixa de aparecer nesta lista e para nova escolha na etapa Campo da visita "
+    + "no celular. Ainda NÃO vale para o assistente de visita completo, visita no computador, talhões, safras, "
+    + "objetivos de visita e filtros de BI.",
+};
+export const TENANT_VISIBILITY_COMMON_NOTE =
+  "Não exclui o item, não altera o catálogo global nem outras empresas; registros já vinculados e históricos continuam visíveis.";
 
 /** Aplica o filtro de gestão sobre a lista já carregada: ocultos somem por padrão, aparecem com "mostrar ocultos". */
 export function applyManagementVisibility<T extends { id: string }>(

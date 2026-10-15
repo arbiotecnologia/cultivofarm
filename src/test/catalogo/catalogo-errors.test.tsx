@@ -11,6 +11,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: str
   state.calls++;
   const q: any = { select: () => q, order: () => q, eq: () => q, then: (resolve: any) => Promise.resolve(result).then(resolve) }; return q;
 } } }));
+vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantHiddenIds: () => ({ status: "global" }) }));
 vi.mock("@/components/catalogo/CatalogoCardsGrid", () => ({ CatalogoCardsGrid: () => <p>Itens carregados</p> }));
 vi.mock("@/components/protocolos/RevisaoTecnicaPanel", () => ({ RevisaoTecnicaPanel: () => null }));
 afterEach(cleanup);

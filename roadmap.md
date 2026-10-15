@@ -687,3 +687,12 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Consumidores pendentes (B2B, VisitaTecnica desktop, produção, recomendação) — fase 2.
 - [ ] Ownership/CRUD próprio — fase 3.
 - Pré-existente: 3 FAIL em src/test/visita/etapasVisita.test.ts (VisitaTecnica.tsx não alterado).
+
+### Visibilidade por empresa — revisão 6c0a1bc5 (15/10/2026)
+- [x] Diálogo com intenção congelada na abertura, fence de geração e chave por payload.
+- [x] Lock ator+empresa+chave antes do item no SQL candidato.
+- [x] Seletor de cultura da visita paginado/pesquisável; include sem duplicata/rebaixamento; cultura sem gate comercial.
+- [x] Ocultos excluídos no servidor em Catálogo técnico, Simulador e Catálogo do celular.
+- [ ] Aplicar SQL candidato + runtime transacional AR/FSF (feito pelo agente após aprovação técnica).
+- [ ] Prova em navegador com admin AR real; só depois publicar.
+- [ ] Recortes pendentes: B2B, pedidos/produção, demais seletores de cultura, ownership/CRUD próprio.
