@@ -14,7 +14,9 @@ CREATE TYPE partner_order_status AS ENUM('aprovado','em_producao','produzido','e
 CREATE TYPE production_planning_status AS ENUM('aguardando_planejamento','planejado','em_producao','produzido','entregue','replanejar');
 CREATE TABLE produtos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),familia_catalogo text);
 CREATE TABLE microrganismos(id uuid PRIMARY KEY DEFAULT gen_random_uuid());
-CREATE TABLE partner_accounts(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),nome_fantasia text,razao_social text);
+CREATE FUNCTION h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('test.org',true),'')::uuid$$;
+CREATE TABLE clientes(id uuid PRIMARY KEY,organization_id uuid);
+CREATE TABLE partner_accounts(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),nome_fantasia text,razao_social text, commercial_owner_organization_id uuid,ativo boolean DEFAULT true,deleted_at timestamptz,client_id uuid);
 CREATE TABLE partner_orders(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,numero text,status partner_order_status DEFAULT 'aprovado',ready_for_production boolean DEFAULT true,internal_origin_snapshot jsonb,requires_financial_approval boolean DEFAULT false,financial_approval_status text,updated_at timestamptz);
 CREATE TABLE production_planning(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_order_id uuid,partner_id uuid,status production_planning_status DEFAULT 'aguardando_planejamento',planned_start_date date,planned_finish_date date,updated_at timestamptz);
 CREATE TABLE partner_order_items(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),order_id uuid,product_id uuid,microrganismo_id uuid,quantidade numeric,unidade_medida text,preco_tabela_snapshot numeric,preco_unitario numeric,produto_nome_snapshot text,produto_codigo_snapshot text,created_at timestamptz DEFAULT now());
@@ -64,14 +66,29 @@ await check('irrelevant history update preserved',async()=>{await q('UPDATE prog
 const actor='11111111-1111-4111-8111-111111111111';
 await q("SELECT set_config('test.actor',$1,false),set_config('test.role','administrador',false)",[actor]);
 await q('INSERT INTO user_roles VALUES($1,$2)',[actor,'administrador']);
-const partner=await id('partner_accounts','DEFAULT VALUES');
+const AR='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',FSF='ffffffff-ffff-4fff-8fff-ffffffffffff';
+await q("SELECT set_config('test.org',$1,false)",[AR]);
+const partner=await id('partner_accounts','(commercial_owner_organization_id) VALUES($1)',[AR]);
 const order=await id('partner_orders','(partner_id) VALUES($1)',[partner]);
 const planning=await id('production_planning','(partner_order_id,partner_id) VALUES($1,$2)',[order,partner]);
 for(const [p,m] of [[bio,null],[chemical,null],[fert,null],[unclassified,null],[null,micro],[bio,micro]]) await id('partner_order_items','(order_id,product_id,microrganismo_id,quantidade,unidade_medida) VALUES($1,$2,$3,2,$4)',[order,p,m,'litro']);
+const missing='00000000-0000-4000-8000-000000000000';
+const deny=p=>assert.rejects(p,e=>e.code==='42501'&&e.message==='LAB_PARTNER_SCOPE_DENIED');
+const gen=o=>q('SELECT generate_production_orders_from_partner($1)',[o]);
+const pub=p=>q('SELECT rpc_planejamento_publicar_v1($1,$2)',[p,'audit-key-0001']);
+await check('FSF order and nonexistent both denied before status',async()=>{await q("SELECT set_config('test.org',$1,false)",[FSF]);await deny(gen(order));await deny(gen(missing));});
+await check('FSF planning and nonexistent both denied before receipt',async()=>{await deny(pub(planning));await deny(pub(missing));});
+await q("SELECT set_config('test.org',$1,false)",[AR]);
+for(const [name,column,value] of [['NULL owner','commercial_owner_organization_id',null],['inactive','ativo',false],['deleted','deleted_at','2026-10-15'],['foreign client','client_id',missing]]){
+ await check(`partner ${name} denied`,async()=>{await q(`UPDATE partner_accounts SET ${column}=$1 WHERE id=$2`,[value,partner]);await deny(gen(order));await deny(pub(planning));await q('UPDATE partner_accounts SET commercial_owner_organization_id=$1,ativo=true,deleted_at=NULL,client_id=NULL WHERE id=$2',[AR,partner]);});
+}
+await check('actor without proven tenant denied',async()=>{await q("SELECT set_config('test.org','',false)");await deny(gen(order));await deny(pub(planning));await q("SELECT set_config('test.org',$1,false)",[AR]);});
 let result;
 await check('mixed order creates only bio/micro OS',async()=>{result=(await q('SELECT generate_production_orders_from_partner($1) v',[order]))[0].v;assert.equal(result.os_created,2);assert.equal(result.non_lab_items,4);assert.equal((await q('SELECT count(*)::int n FROM partner_order_items WHERE order_id=$1',[order]))[0].n,6);assert.equal((await q('SELECT count(*)::int n FROM production_order_link WHERE partner_order_id=$1',[order]))[0].n,2);});
 await check('generation replay has zero new OS',async()=>{const v=(await q('SELECT generate_production_orders_from_partner($1) v',[order]))[0].v;assert.equal(v.os_created,0);assert.equal((await q('SELECT count(*)::int n FROM ordens_servico WHERE partner_order_id=$1',[order]))[0].n,2);});
 await check('publish and same-key replay preserve nonlab lines',async()=>{const first=(await q('SELECT rpc_planejamento_publicar_v1($1,$2) v',[planning,'audit-key-0001']))[0].v;assert.equal(first.replay,false);const second=(await q('SELECT rpc_planejamento_publicar_v1($1,$2) v',[planning,'audit-key-0001']))[0].v;assert.equal(second.replay,true);assert.equal((await q('SELECT count(*)::int n FROM partner_order_items WHERE order_id=$1',[order]))[0].n,6);});
+await check('FSF cannot replay published AR planning',async()=>{await q("SELECT set_config('test.org',$1,false)",[FSF]);await deny(pub(planning));await deny(gen(order));await q("SELECT set_config('test.org',$1,false)",[AR]);});
+await check('role denied even with correct tenant',async()=>{await q("SELECT set_config('test.role','consultor_tecnico',false)");await deny(gen(order));await assert.rejects(pub(planning),e=>e.code==='42501');await q("SELECT set_config('test.role','administrador',false)");});
 await db.exec('CREATE TRIGGER lab07_sync_test AFTER UPDATE ON ordens_servico FOR EACH ROW EXECUTE FUNCTION trg_os_sync_partner_order_fn();');
 await check('mixed order not marked wholly produced',async()=>{await q("UPDATE ordens_servico SET status='pronto_entrega' WHERE partner_order_id=$1",[order]);assert.notEqual((await q('SELECT status FROM partner_orders WHERE id=$1',[order]))[0].status,'produzido');});
 const os=(await q('SELECT id,produto_id,microrganismo_id FROM ordens_servico WHERE partner_order_id=$1 ORDER BY produto_id NULLS LAST',[order]))[0];
