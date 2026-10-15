@@ -30,6 +30,8 @@ import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItem
 import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
 import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
 import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
+import { OwnedCatalogPagination } from "./OwnedCatalogPagination";
 import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 import { supabase as sbClient } from "@/integrations/supabase/client";
 
@@ -106,6 +108,10 @@ export function MicrorganismosTab() {
   const tenantVis = useManagedVisibility("microrganismo", filteredItems);
   const canManageVis = useCanManageTenantVisibility();
   const ownedCapability = useOwnedCatalogCapability();
+  const [showArchived, setShowArchived] = useState(false);
+  const [ownedOffset, setOwnedOffset] = useState(0);
+  const [search, setSearch] = useState("");
+  const ownedRead = useOwnedCatalogRead("microrganismo", { archived: showArchived, offset: ownedOffset, search });
   const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Microrganismo | null }>({ open: false, item: null });
   const [ownedConfirm, setOwnedConfirm] = useState<{ item: Microrganismo; operation: "archive" | "restore" } | null>(null);
   
@@ -115,7 +121,6 @@ export function MicrorganismosTab() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
-  const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
   const [fichaMicro, setFichaMicro] = useState<Microrganismo | null>(null);
   
@@ -143,22 +148,31 @@ export function MicrorganismosTab() {
   });
 
   const fetch = async () => {
+    const generation = localGeneration.current;
     const result = await carregarMicrorganismosCatalogo(supabase as any);
+    if (generation !== localGeneration.current) return;
     if (!result.ok) {
       toast.error("Erro ao carregar microrganismos");
       return;
     }
     setItems(result.items as Microrganismo[]);
-    setFilteredItems(result.items as Microrganismo[]);
+
     setProfileStatusMap(result.profileStatusMap);
   };
 
+  const localGeneration = useRef(0);
+  const activeScopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
   useEffect(() => {
-    fetch();
-  }, []);
+    localGeneration.current += 1;
+    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
+    void fetch();
+    return () => { localGeneration.current += 1; };
+    // Session-bound legacy global reads; own reads use the scoped QueryClient hook.
+  }, [activeScopeKey]);
 
   useEffect(() => {
-    let result = items;
+    let result = [...items.filter((item) => !item.owner_organization_id), ...((ownedRead.data?.items ?? []) as unknown as Microrganismo[])];
+    result = result.filter((item) => showArchived || !item.archived_at);
     
     if (search) {
       const s = search.toLowerCase();
@@ -175,7 +189,7 @@ export function MicrorganismosTab() {
     }
     
     setFilteredItems(result);
-  }, [search, filterTipo, items]);
+  }, [search, filterTipo, items, ownedRead.data, showArchived]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,7 +346,7 @@ export function MicrorganismosTab() {
           <Input 
             placeholder="Buscar por nome ou função..." 
             value={search} 
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setOwnedOffset(0); }}
             className="pl-9"
           />
         </div>
@@ -588,6 +602,9 @@ export function MicrorganismosTab() {
       </div>
 
       <TenantVisibilityBar v={tenantVis} />
+      {TENANT_OWNED_CATALOG_ENABLED && <OwnedCatalogPagination entity="microrganismo" archived={showArchived} onArchived={setShowArchived}
+        offset={ownedOffset} onOffset={setOwnedOffset} hasMore={ownedRead.data?.has_more ?? false} busy={ownedRead.isFetching}
+        error={ownedRead.isError ? (ownedRead.error as Error).message : null} />}
 
       <div className="rounded-md border">
         <Table>
@@ -671,7 +688,7 @@ export function MicrorganismosTab() {
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
                     <TenantHiddenBadge state={tenantVis.map?.get(m.id)} />
-                    {canManageVis && (
+                    {canManageVis && !m.owner_organization_id && (
                       <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: m.ativo }}
                         state={tenantVis.map?.get(m.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
                     )}
@@ -758,6 +775,7 @@ export function MicrorganismosTab() {
           itemTipo="microrganismo"
           itemNome={volumesEdit.nome}
           valorLitroBase={volumesEdit.valor_litro_brl ?? (volumesEdit.valor_dose_brl != null ? volumesEdit.valor_dose_brl * 10 : null)}
+          owned={!!volumesEdit.owner_organization_id}
         />
       )}
 
@@ -766,8 +784,9 @@ export function MicrorganismosTab() {
         onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
         entity="microrganismo"
         item={ownedDialog.item}
-        onApplied={fetch}
+        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
         onLocateGlobal={(id) => {
+          setOwnedDialog({ open: false, item: null }); setFilterTipo("todos");
           tenantVis.setShowHidden(true);
           const match = items.find((row) => row.id === id);
           setSearch(match?.nome ?? "");
@@ -778,7 +797,7 @@ export function MicrorganismosTab() {
         entity="microrganismo"
         operation={ownedConfirm?.operation ?? "archive"}
         onOpenChange={(open) => !open && setOwnedConfirm(null)}
-        onApplied={fetch}
+        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
       />
 
       <div className="text-[10px] text-muted-foreground text-center">

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useOwnedCatalogCapability, useOwnedCatalogMutation } from "@/hooks/useOwnedCatalogMutations";
+import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
 import { OwnedCatalogError, ownedCatalogError, type OwnedOperation } from "@/lib/catalogo/tenantCatalogOwnership";
 import type { TenantCatalogEntity } from "@/lib/catalogo/tenantCatalogVisibility";
 
@@ -61,6 +62,19 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
   const capability = useOwnedCatalogCapability();
   const mutation = useOwnedCatalogMutation(entity, onApplied);
   const frozenScope = useRef("");
+  const currentScope = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}` : "";
+  const scopeRef = useRef(currentScope); scopeRef.current = currentScope;
+  const lock = useRef(false);
+  const generation = useRef(0);
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const detail = useOwnedCatalogRead(entity, { id: item?.id, enabled: open && !!item });
+  const loadedItem = item ? detail.data?.items[0] : null;
+  const openedVersion = useRef<string | null>(null);
+  const initialPayload = useRef("");
+  const initialComposition = useRef("");
+  const rootReceipt = useRef<{ fingerprint: string; id: string; updated_at: string } | null>(null);
+  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [description, setDescription] = useState("");
@@ -75,17 +89,49 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
   const [declarations, setDeclarations] = useState<CompositionDeclaration[]>([]);
 
   useEffect(() => {
-    if (!open) return;
-    frozenScope.current = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}` : "";
-    setName(item?.nome ?? ""); setType(item?.tipo ?? (entity === "produto" ? "solo" : entity === "microrganismo" ? "bacteria" : ""));
-    setDescription(item?.descricao ?? ""); setScientificName(item?.nome_cientifico ?? "");
-    setFamily(item?.familia_catalogo ?? ""); setCatalogClass(item?.classe_catalogo ?? "");
-    setModeOfAction(item?.modo_acao ?? ""); setFullFunction(item?.funcao_completa ?? ""); setApplicationMode(item?.modo_aplicacao ?? "");
-    setReason(""); setCompositionStatus("rascunho"); setDeclarations([]);
-  }, [open, item, entity, capability.scope]);
+    generation.current += 1; lock.current = false; setBusy(false); setFormError(null);
+    frozenScope.current = currentScope; openedVersion.current = null; rootReceipt.current = null; attempt.current = null;
+    return () => { generation.current += 1; };
+    // Freeze only on opening/item change, never adopt a new actor while editing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item?.id, entity]);
+  useEffect(() => {
+    if (open && frozenScope.current !== currentScope) onOpenChange(false);
+  }, [currentScope, open, onOpenChange]);
+  useEffect(() => {
+    if (!open || (item && !loadedItem)) return;
+    const row = loadedItem;
+    openedVersion.current = row?.updated_at ?? null;
+    setName(row?.nome ?? ""); setType(row?.tipo ?? (entity === "produto" ? "solo" : entity === "microrganismo" ? "bacteria" : ""));
+    setDescription(row?.descricao ?? ""); setScientificName(row?.nome_cientifico ?? "");
+    setFamily(row?.familia_catalogo ?? ""); setCatalogClass(row?.classe_catalogo ?? "");
+    setModeOfAction(row?.modo_acao ?? ""); setFullFunction(row?.funcao_completa ?? ""); setApplicationMode(row?.modo_aplicacao ?? "");
+    setReason(""); setCompositionStatus(row?.composition_status ?? "rascunho");
+    const declarations = (row?.declarations ?? []).map((d) => ({
+      ordem: Number(d.ordem), tipo_componente: d.tipo_componente as CompositionDeclaration["tipo_componente"],
+      microrganismo_id: d.microrganismo_id as string | null, componente_nome: d.componente_nome as string | null,
+      quantidade: d.quantidade == null ? "" : String(d.quantidade),
+      unidade: (d.unidade ?? "g/L") as CompositionDeclaration["unidade"],
+      base: (d.base ?? "por_volume_produto") as CompositionDeclaration["base"],
+      natureza: d.natureza as CompositionDeclaration["natureza"],
+    }));
+    setDeclarations(declarations);
+    initialComposition.current = JSON.stringify([row?.composition_status ?? "rascunho", declarations]);
+    const payload: Record<string, unknown> = { nome: row?.nome ?? "", descricao: row?.descricao ?? null };
+    if (entity === "microrganismo") payload.nome_cientifico = row?.nome_cientifico ?? null;
+    if (entity === "produto") Object.assign(payload, { familia_catalogo: row?.familia_catalogo ?? null,
+      classe_catalogo: row?.classe_catalogo ?? null, modo_acao: row?.modo_acao ?? null,
+      funcao_completa: row?.funcao_completa ?? null, modo_aplicacao: row?.modo_aplicacao ?? null });
+    initialPayload.current = JSON.stringify(payload);
+    // Ignore refetch while editing: the opened version is the CAS version.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item?.id, loadedItem?.id]);
 
   const classes = useMemo(() => FAMILY_CLASSES[family] ?? [], [family]);
   const submit = async () => {
+    if (lock.current || (item && !loadedItem) || frozenScope.current !== scopeRef.current) return;
+    const myGeneration = generation.current;
+    lock.current = true; setBusy(true); setFormError(null);
     const operation: OwnedOperation = item ? "update" : "create";
     const payload: Record<string, unknown> = { nome: name.trim(), descricao: description.trim() || null };
     if (!item && entity !== "cultura") payload.tipo = type;
@@ -95,13 +141,19 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
       modo_acao: modeOfAction.trim() || null, funcao_completa: fullFunction.trim() || null,
       modo_aplicacao: applicationMode.trim() || null,
     });
-    const idempotencyKey = crypto.randomUUID();
+    const fingerprint = JSON.stringify([payload, reason.trim()]);
+    if (attempt.current?.fingerprint !== fingerprint) attempt.current = { fingerprint, key: crypto.randomUUID() };
+    const idempotencyKey = attempt.current.key;
     try {
-      const saved = await mutation.mutateAsync({
-        entity, operation, entityId: item?.id ?? null, expectedUpdatedAt: item?.updated_at ?? null,
+      const rootChanged = !item || JSON.stringify(payload) !== initialPayload.current;
+      const saved = rootReceipt.current?.fingerprint === fingerprint ? rootReceipt.current
+        : rootChanged ? await mutation.mutateAsync({
+        entity, operation, entityId: item?.id ?? null, expectedUpdatedAt: openedVersion.current,
         payload, reason, idempotencyKey, scopeKey: frozenScope.current,
-      });
-      if (entity === "produto" && declarations.length > 0) {
+      }) : { id: loadedItem?.id ?? "", updated_at: openedVersion.current ?? "" };
+      rootReceipt.current = { fingerprint, id: saved.id, updated_at: saved.updated_at };
+      if (myGeneration !== generation.current || frozenScope.current !== scopeRef.current) return;
+      if (entity === "produto" && JSON.stringify([compositionStatus, declarations]) !== initialComposition.current) {
         await mutation.mutateAsync({
           entity, operation: "composition", entityId: saved.id, expectedUpdatedAt: saved.updated_at,
           payload: { status: compositionStatus, itens: declarations.map((d, index) => ({
@@ -113,26 +165,34 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
           reason, idempotencyKey: crypto.randomUUID(), scopeKey: frozenScope.current,
         });
       }
+      if (myGeneration !== generation.current || frozenScope.current !== scopeRef.current) return;
       toast.success(item ? "Item próprio atualizado." : "Item próprio criado.");
       onOpenChange(false);
     } catch (raw) {
+      if (myGeneration !== generation.current || frozenScope.current !== scopeRef.current) return;
       const error = raw instanceof OwnedCatalogError ? raw : ownedCatalogError(raw, entity);
       if (error.code === "duplicate_global_active" && error.globalId && onLocateGlobal) {
         toast.error(error.message, { action: { label: "Localizar", onClick: () => onLocateGlobal(error.globalId as string) } });
       } else toast.error(error.message);
-    }
+      setFormError(error.message);
+    } finally { if (myGeneration === generation.current) { lock.current = false; setBusy(false); } }
+
   };
 
-  return <Dialog open={open} onOpenChange={(next) => !mutation.isPending && onOpenChange(next)}>
-    <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+  return <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+    <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[92vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{item ? "Editar" : "Criar"} {entity === "produto" ? "produto próprio" : entity === "microrganismo" ? "microrganismo próprio" : "cultura própria"}</DialogTitle></DialogHeader>
+      {item && detail.isLoading && <p role="status">Carregando item próprio...</p>}
+      {item && detail.isError && <p role="alert" className="text-destructive">{(detail.error as Error).message}</p>}
+      {formError && <p role="alert" className="text-destructive">{formError}</p>}
+      <fieldset disabled={busy || (!!item && !loadedItem)}>
       <Tabs defaultValue="identificacao">
         <TabsList className={entity === "produto" ? "grid w-full grid-cols-2" : "grid w-full grid-cols-1"}>
           <TabsTrigger value="identificacao">Identificação</TabsTrigger>
           {entity === "produto" && <TabsTrigger value="composicao">Composição declarativa</TabsTrigger>}
         </TabsList>
         <TabsContent value="identificacao" className="space-y-4 pt-4">
-          <div className="space-y-2"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} maxLength={500} /></div>
+          <div className="space-y-2"><Label htmlFor="owned-name">Nome</Label><Input id="owned-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={500} /></div>
           {entity !== "cultura" && <div className="space-y-2"><Label>Tipo</Label><Select value={type} onValueChange={setType} disabled={!!item}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(entity === "produto" ? PRODUCT_TYPES : MICRO_TYPES).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>}
           {entity === "microrganismo" && <div className="space-y-2"><Label>Nome científico</Label><Input value={scientificName} onChange={(e) => setScientificName(e.target.value)} /></div>}
           {entity === "produto" && <>
@@ -144,7 +204,7 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
             <div className="space-y-2"><Label>Função agronômica</Label><Textarea value={fullFunction} onChange={(e) => setFullFunction(e.target.value)} /></div>
             <div className="space-y-2"><Label>Modo de aplicação</Label><Input value={applicationMode} onChange={(e) => setApplicationMode(e.target.value)} /></div>
           </>}
-          <div className="space-y-2"><Label>Descrição</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="owned-description">Descrição</Label><Textarea id="owned-description" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
         </TabsContent>
         {entity === "produto" && <TabsContent value="composicao" className="space-y-4 pt-4">
           <div className="space-y-2"><Label>Situação</Label><Select value={compositionStatus} onValueChange={(v) => setCompositionStatus(v as "rascunho" | "completo")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="rascunho">Rascunho</SelectItem><SelectItem value="completo">Completo</SelectItem></SelectContent></Select></div>
@@ -159,8 +219,9 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
           <p className="text-xs text-muted-foreground">Declarações não alteram a receita de produção existente.</p>
         </TabsContent>}
       </Tabs>
-      <div className="space-y-2"><Label>Motivo</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} minLength={10} maxLength={500} /></div>
-      <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>Cancelar</Button><Button type="button" onClick={() => void submit()} disabled={mutation.isPending || name.trim().length === 0 || reason.trim().length < 10}>{mutation.isPending ? "Salvando..." : "Salvar"}</Button></DialogFooter>
+      <div className="space-y-2"><Label htmlFor="owned-reason">Motivo</Label><Textarea id="owned-reason" value={reason} onChange={(e) => setReason(e.target.value)} minLength={10} maxLength={500} /></div>
+      </fieldset>
+      <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button><Button type="button" onClick={() => void submit()} disabled={busy || (!!item && !loadedItem) || !capability.canManage || name.trim().length === 0 || reason.trim().length < 10}>{busy ? "Salvando..." : "Salvar"}</Button></DialogFooter>
     </DialogContent>
   </Dialog>;
 }

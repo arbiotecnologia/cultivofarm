@@ -68,7 +68,7 @@ describe("ownership — frontend desabilitado", () => {
   });
   it("cache por empresa+usuário e cerca contra resposta tardia", () => {
     const s = { organizationId: "A", userId: "u" };
-    expect(ownedCatalogKeys.list(s, "produto", "", 0, 20)).toEqual(["tenant-catalog", "A", "u", "owned", "produto", "", 0, 20]);
+    expect(ownedCatalogKeys.list(s, "produto", "", 0, 20)).toEqual(["tenant-catalog", "A", "u", "owned", "produto", "list", "", 0, 20, false]);
     const f = createResponseFence();
     const first = f.begin("A|u"); const second = f.begin("A|u");
     expect(first("A|u")).toBe(false);
