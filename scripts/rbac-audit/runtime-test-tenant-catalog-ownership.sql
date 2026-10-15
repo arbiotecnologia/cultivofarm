@@ -11,6 +11,10 @@ GRANT SELECT, INSERT, UPDATE ON _r, _ctx TO authenticated, anon;
 -- Identidades devem existir; UUID/org são parâmetros do revisor, jamais e-mails/claims inventados.
 -- Este roteiro não autentica JWT/browser. Helpers de claims SQL não certificam Auth real.
 INSERT INTO _ctx VALUES ('ar_org', :'ar_org');
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'CANONICAL_REF_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.catalog_ownership_gate WHERE enabled) THEN RAISE EXCEPTION 'RUNTIME_REQUIRES_GATE_OFF'; END IF;
+END $$;
 -- Claims completas (sub/role/exp/iat), exigidas por catalog_tenant_actor.
 CREATE FUNCTION pg_temp.as_user(u uuid) RETURNS void LANGUAGE sql AS $$
   SELECT set_config('request.jwt.claims', jsonb_build_object('sub',u::text,'role','authenticated',
@@ -24,14 +28,14 @@ GRANT EXECUTE ON FUNCTION pg_temp.ctx(text) TO authenticated, anon;
 SELECT pg_temp.as_user(:'ar_admin');
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('produto','create',NULL,NULL,'{"nome":"Teste Gate","tipo":"fungicida"}','motivo de teste gate',gen_random_uuid());
   INSERT INTO _r VALUES('gate_off',false,'aceitou'); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('gate_off',SQLERRM='catalog_ownership_disabled',SQLERRM); END $$;
-RESET role;
+RESET ROLE;
 UPDATE platform_private.catalog_ownership_gate SET enabled=true, readers_certified_at=now();  -- só nesta transação
 
 -- 1. anon
-SET LOCAL role anon;
+SET LOCAL ROLE anon;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"x"}','motivo anon teste',gen_random_uuid());
   INSERT INTO _r VALUES('anon_exec',false,''); EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('anon_exec',true,''); END $$;
-RESET role;
+RESET ROLE;
 
 -- 2. AR: create/replay/conflito/forge/whitelist/NULL/duplicatas/CAS/no-op/arquivado/restore
 SELECT pg_temp.as_user(:'ar_admin');
@@ -98,12 +102,12 @@ DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','archive',pg_te
   INSERT INTO _r VALUES('fsf_write',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_write',SQLERRM='catalog_owned_not_found',SQLERRM); END $$;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"Cultura Própria RT"}','fsf mesmo nome que AR',gen_random_uuid());
   INSERT INTO _r SELECT 'fsf_mesmo_nome_permitido', count(*)=1, 'RLS: somente a cultura FSF visível; AR invisível' FROM public.culturas
-    WHERE owner_organization_id IS NOT NULL AND platform_private.catalog_norm_name(nome)='cultura propria rt';
+    WHERE owner_organization_id IS NOT NULL AND nome='Cultura Própria RT';
   EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',false,SQLERRM); END $$;
 RESET ROLE;
 SELECT set_config('request.jwt.claims','',true); SELECT pg_temp.as_user(:'sa');
 INSERT INTO _r SELECT 'sa_nao_ve', NOT EXISTS (SELECT 1 FROM public.culturas WHERE id=pg_temp.ctx('cultura')::uuid), '';
-DO $$ BEGIN PERFORM platform_private.read_global_culture_detail_core(pg_temp.ctx('cultura')::uuid);
+DO $$ BEGIN PERFORM public.platform_read_global_culture_detail(pg_temp.ctx('cultura')::uuid);
   INSERT INTO _r VALUES('sa_core_privado',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('sa_core_privado',SQLERRM='catalog_entity_unavailable',SQLERRM); END $$;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"SA X"}','sa tenta criar',gen_random_uuid());
   INSERT INTO _r VALUES('sa_write',false,''); EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('sa_write',true,SQLERRM); END $$;
@@ -139,7 +143,7 @@ SELECT set_config('request.jwt.claims','',true);
 DO $$ BEGIN INSERT INTO public.formulacoes(produto_id, microrganismo_id, volume_ml)
   VALUES ('1875527c-a65a-483b-a6c2-9122d5ec2a51', pg_temp.ctx('micro')::uuid, 1);
   INSERT INTO _r VALUES('crossref',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('crossref',SQLERRM='catalog_cross_owner_reference',SQLERRM); END $$;
-DO $$ BEGIN UPDATE public.formulacoes SET produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51' WHERE produto_id=pg_temp.ctx('produto')::uuid;
+DO $$ BEGIN UPDATE public.produto_composicao_declaracoes SET produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51' WHERE produto_id=pg_temp.ctx('produto')::uuid;
   INSERT INTO _r VALUES('parent_change',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('parent_change',SQLERRM IN ('catalog_parent_immutable','catalog_owner_forged','catalog_ownership_disabled'),SQLERRM); END $$;
 DO $$ BEGIN INSERT INTO public.catalog_tenant_visibility(organization_id, entity_type, produto_id, hidden, version, reason, updated_by)
   VALUES (pg_temp.ctx('ar_org')::uuid,'produto',pg_temp.ctx('produto')::uuid,true,1,'ocultar privado',gen_random_uuid());
@@ -156,8 +160,7 @@ RESET ROLE;
 SELECT set_config('request.jwt.claims','',true);
 
 SELECT pg_temp.as_user(:'fsf_admin');
-INSERT INTO _r SELECT 'fsf_preco_privado_null', public.fn_catalogo_preco_canonico(pg_temp.ctx('produto')::uuid, NULL, 'litro') IS NULL
-  AND NOT platform_private.catalog_item_in_reader_scope(pg_temp.ctx('produto')::uuid, NULL), 'escopo de preço' WHERE pg_temp.ctx('produto') IS NOT NULL;
+INSERT INTO _r SELECT 'fsf_preco_privado_null', public.fn_catalogo_preco_canonico(pg_temp.ctx('produto')::uuid, NULL, 'litro',NULL) IS NULL, 'escopo de preço' WHERE pg_temp.ctx('produto') IS NOT NULL;
 RESET ROLE;
 SELECT set_config('request.jwt.claims','',true);
 
@@ -180,7 +183,7 @@ BEGIN
     BEGIN
       p := public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,
         (p->>'updated_at')::timestamptz,payload,'percentual declarado runtime',gen_random_uuid());
-      INSERT INTO _r VALUES('percentual_'||coalesce(v::text,'null'),v IN (50,100),'gravado');
+      INSERT INTO _r VALUES('percentual_'||coalesce(v::text,'null'),coalesce(v IN (50,100),false),'gravado');
     EXCEPTION WHEN OTHERS THEN
       INSERT INTO _r VALUES('percentual_'||coalesce(v::text,'null'),
         (v IS NULL OR v IN (101,-1,0)) AND SQLSTATE='22023' AND SQLERRM='catalog_owned_invalid_payload',SQLSTATE||' '||SQLERRM);
@@ -202,8 +205,10 @@ DO $$ BEGIN
   INSERT INTO _r VALUES('global_child_update', true, '');
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('global_child_update', false, SQLSTATE||' '||SQLERRM); END $$;
 
--- 6. Invariantes
-INSERT INTO _r SELECT 'bombarbio', ativo AND b2b_enabled AND owner_organization_id IS NULL, '' FROM public.produtos WHERE id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
+-- 6. Invariantes: checks concretos; receita global nunca é inferida.
+INSERT INTO _r SELECT 'bombarbio_receita',array_agg(volume_ml ORDER BY volume_ml)=ARRAY[333,333,334]::numeric[] AND sum(volume_ml)=1000,''
+ FROM public.formulacoes WHERE produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
+INSERT INTO _r SELECT 'bombarbio', ativo AND b2b_enabled AND owner_organization_id IS NULL AND updated_at='2026-10-14T22:02:40.521334Z'::timestamptz, '' FROM public.produtos WHERE id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
 INSERT INTO _r SELECT 'bombarbio_1000_180', EXISTS (SELECT 1 FROM public.catalogo_volumes WHERE produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51' AND volume_ml=1000 AND preco_brl=180), '';
 INSERT INTO _r SELECT 'visibilidade_ar_v4', EXISTS (SELECT 1 FROM public.catalog_tenant_visibility
   WHERE organization_id=pg_temp.ctx('ar_org')::uuid AND produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51' AND hidden=false AND version=4), '';

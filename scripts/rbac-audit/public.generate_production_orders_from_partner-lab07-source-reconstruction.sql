@@ -1,3 +1,4 @@
+-- SOURCE RECONSTRUCTION, NOT exact pg_get_functiondef live snapshot; never a before-hash oracle.
 CREATE OR REPLACE FUNCTION public.generate_production_orders_from_partner(p_partner_order_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
