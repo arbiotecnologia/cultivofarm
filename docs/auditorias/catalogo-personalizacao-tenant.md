@@ -401,3 +401,29 @@ O arquivo `proposed-tenant-catalog-ownership-04-operational-containment.sql` fix
 3. Apresentações/preços/doses próprios e editores completos das quatro famílias continuam desligados. A composição química/fertilizante é SQL candidata, sem prova runtime.
 4. Auth real, concorrência de duas conexões, aplicação 01–04, migration remota, browser e produção continuam **UNVERIFIED/NO-GO**.
 5. Bombarbio, visibilidade AR v4/ledger 4 e receita/preço são invariantes do candidato; nenhuma escrita remota ocorreu nesta rodada.
+
+---
+
+## FASE 3 — Candidato 05 backend (15/10/2026 13:17 UTC)
+
+**Estado: NÃO aplicado, NÃO publicado, gate OFF.** A evidência PGlite 26 checks dos candidatos 01–03 é externa e usa stubs Auth; não certifica PostgreSQL/Auth/RLS real.
+
+### Fechado no arquivo 05
+- Manifesto de 12 writers SA com hashes live antes e definições completas depois. Locks, alvos e referências de composição foram limitados a `owner_organization_id IS NULL`; ACLs existentes não foram ampliadas.
+- `microrganismos.product_id` passou a exigir produto do mesmo owner; global não aponta para privado e privado não cruza empresa.
+- `produto_composicao_conjuntos/declaracoes` receberam guard de pai/crossref e leitura hereditária global+empresa do ator, sem grant de escrita ao cliente.
+- RPC própria de apresentações/preços/doses: empresa derivada no servidor, admin/gestor+`catalogo_precos`, CAS, idempotência, auditoria no ledger, cálculo pelos triggers existentes e nenhuma compensação best-effort.
+- O trigger 04 agora ignora UPDATE que não altera a coluna de referência, preservando manutenção de históricos; rollback dos bloqueios só é seguro antes de privados persistirem e permanece parcial/fail-closed depois disso.
+
+### Matriz de fechamento desta rodada
+| Superfície | Status 05 | Evidência/limite |
+|---|---|---|
+| 12 writers SA listados | FECHADO estrutural | hash antes + corpo completo global-only; runtime real UNVERIFIED |
+| `microrganismos.product_id` | FECHADO estrutural | trigger mesmo-owner; runtime UNVERIFIED |
+| composição conjuntos/declarações | FECHADO estrutural | RLS herdada + crossref; runtime UNVERIFIED |
+| apresentação/preço/dose próprio | FECHADO candidato | RPC atômica/auditada; runtime real UNVERIFIED |
+| `platform_wipe_global_product_catalog` | **ABERTO/NO-GO** | definição atual apaga conjunto fixo sem owner; exige patch completo por joins antes do gate |
+| fiscal/regulatório (`rpc_*`, `fn_fiscal_scenario_coverage`) | **ABERTO/NO-GO** | definições live inventariadas; ainda sem corpos 05 global-only |
+| 7 views/BI e demais funções do inventário total | **ABERTO/NO-GO** | não há certificação total nesta rodada; 04 bloqueia novas refs, não filtra leitura |
+
+Não há alegação de fechamento integral: enquanto wipe, leitores e views acima estiverem abertos, o gate não pode ser aberto e nenhuma UI funcional deve ser publicada.
