@@ -10,6 +10,7 @@ def main():
   subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-l',str(tmp/'log'),'-o',f'-k {tmp} -h "" -p 55489','start'],check=True,capture_output=True)
   runner=(ROOT/'scripts/tests/b2b-partner-real-rls-local.py').read_text()
   sql=runner.split('sql = r"""',1)[1].split('"""',1)[0]
+  sql+="CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql AS $$ SELECT 'catalogo_precos'::text $$;"
   sql+='UPDATE public.user_roles SET role=\'administrador\'; DELETE FROM public.partner_users;'
   sql+=(ROOT/'scripts/tests/b2b-provisioning-lifecycle-local.sql').read_text()
   sql+=(ROOT/'scripts/tests/b2b-provisioning-real-triggers.sql').read_text()
