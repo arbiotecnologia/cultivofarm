@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchRecSelection, REC_MICRO_SELECT, REC_PRODUTO_SELECT, recCatalogErrorMessage, recMicroLabel, recProdutoLabel, recReferencedIds, recSelectOptions,
-  type RecMicro, type RecProduto,
+  recCanForwardToLab, type RecMicro, type RecProduto,
 } from "@/lib/visita/recomendacaoCatalogo";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil, ChevronRight, WifiOff, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -147,7 +147,7 @@ export default function WizardRecomendacaoStep({
   const rows: Row[] = useMemo(() => {
     const pendingUuids = new Set(pendingRows.map((p) => p.clientUuid));
     const merged: Row[] = [];
-    for (const r of remoteRows as any[]) {
+    for (const r of remoteRows) {
       if (r.client_uuid && pendingUuids.has(r.client_uuid)) continue;
       merged.push({
         id: r.id, remoteId: r.id, clientUuid: r.client_uuid, isPending: false,
@@ -203,18 +203,18 @@ export default function WizardRecomendacaoStep({
 
     if (isOnline && remoteRegistroId) {
       try {
-        const { error } = await supabase.rpc("rpc_upsert_recomendacao_visita" as any, {
+        const { error } = await supabase.rpc("rpc_upsert_recomendacao_visita", {
           p_registro_id: remoteRegistroId,
           p_client_uuid: clientUuid,
-          p_payload: form as any,
+          p_payload: { ...form },
           p_expected_versao: versao,
         });
         if (error) throw error;
         if (!current()) return;
         await removePendingRecomendacao(clientUuid);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!current()) return;
-        toast.error(err?.message || "Falha ao salvar; ficou pendente de sincronização");
+        toast.error(err instanceof Error ? err.message : "Falha ao salvar; ficou pendente de sincronização");
       }
     }
     if (!current()) return;
@@ -227,7 +227,7 @@ export default function WizardRecomendacaoStep({
   const remove = async (row: Row) => {
     if (!confirm("Remover esta recomendação?")) return;
     if (row.remoteId && isOnline) {
-      const { error } = await supabase.rpc("rpc_delete_recomendacao_visita" as any, { p_id: row.remoteId });
+      const { error } = await supabase.rpc("rpc_delete_recomendacao_visita", { p_id: row.remoteId });
       if (error) { toast.error(error.message); return; }
       if (row.clientUuid) await removePendingRecomendacao(row.clientUuid);
     } else if (row.remoteId) {
@@ -279,6 +279,9 @@ export default function WizardRecomendacaoStep({
     id ? (prodMap.get(id) ? recProdutoLabel(prodMap.get(id)) : prodHist.isError ? "Nome indisponível" : "—") : "—";
   const microOpts = recSelectOptions<RecMicro>(microrganismos, form.microrganismo_id, microMap);
   const prodOpts = recSelectOptions<RecProduto>(produtos, form.produto_biologico_sugerido_id, prodMap);
+  const canForward = recCanForwardToLab(form.produto_biologico_sugerido_id, form.microrganismo_id,
+    produtos.find(p => p.id === form.produto_biologico_sugerido_id) ?? prodMap.get(form.produto_biologico_sugerido_id ?? ""),
+    microrganismos.find(m => m.id === form.microrganismo_id) ?? microMap.get(form.microrganismo_id ?? ""));
 
   if (locked) {
     return (
@@ -373,6 +376,7 @@ export default function WizardRecomendacaoStep({
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar recomendação" : "Nova recomendação"}</DialogTitle>
+            <DialogDescription>Recomendação técnica e encaminhamento para produção.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
@@ -421,6 +425,7 @@ export default function WizardRecomendacaoStep({
                   ))}
                 </SelectContent>
               </Select>
+              {form.microrganismo_id && <Button variant="ghost" size="sm" onClick={() => setForm({ ...form, microrganismo_id: null })}>Limpar microrganismo</Button>}
               <div className="flex justify-between">
                 <Button variant="ghost" size="sm" aria-label="Página anterior de microrganismos" disabled={microOffset === 0 || microSel.isFetching} onClick={() => setMicroOffset(Math.max(0, microOffset - 50))}>Anterior</Button>
                 <Button variant="ghost" size="sm" aria-label="Próxima página de microrganismos" disabled={!microSel.isSuccess || microSel.isFetching || microOffset + 50 >= Number(microSel.data?.find(r => r.in_page)?.total ?? 0)} onClick={() => setMicroOffset(microOffset + 50)}>Próxima</Button>
@@ -445,6 +450,7 @@ export default function WizardRecomendacaoStep({
                   ))}
                 </SelectContent>
               </Select>
+              {form.produto_biologico_sugerido_id && <Button variant="ghost" size="sm" onClick={() => setForm({ ...form, produto_biologico_sugerido_id: null })}>Limpar produto</Button>}
               <div className="flex justify-between">
                 <Button variant="ghost" size="sm" aria-label="Página anterior de produtos" disabled={prodOffset === 0 || prodSel.isFetching} onClick={() => setProdOffset(Math.max(0, prodOffset - 50))}>Anterior</Button>
                 <Button variant="ghost" size="sm" aria-label="Próxima página de produtos" disabled={!prodSel.isSuccess || prodSel.isFetching || prodOffset + 50 >= Number(prodSel.data?.find(r => r.in_page)?.total ?? 0)} onClick={() => setProdOffset(prodOffset + 50)}>Próxima</Button>
@@ -552,12 +558,14 @@ export default function WizardRecomendacaoStep({
 
             <div className="flex items-center justify-between rounded-md border p-2">
               <div>
-                <Label htmlFor="os" className="text-sm">Encaminhar para OS</Label>
-                <p className="text-xs text-muted-foreground">Gera ordem de serviço on-farm</p>
+                <Label htmlFor="os" className="text-sm">Encaminhar à produção</Label>
+                <p className="text-xs text-muted-foreground">Uma recomendação por visita: produto biológico ou microrganismo.</p>
+                {!canForward && <p role="alert" className="text-xs text-destructive">Químicos, adubos, família não informada ou duas referências não podem ser encaminhados. Revise ou desmarque o encaminhamento.</p>}
               </div>
               <Switch
                 id="os"
                 checked={!!form.encaminhar_para_os}
+                disabled={!canForward && !form.encaminhar_para_os}
                 onCheckedChange={(v) => setForm({ ...form, encaminhar_para_os: v })}
               />
             </div>
