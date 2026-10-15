@@ -1,4 +1,7 @@
 ## RECORTE 16:37 UTC — habilitação OS somente candidata
+- [x] Integrar achado `ordens_servico_onfarm.origem` inexistente: candidato remove coluna, usa `registro_consultor_id` como vínculo explícito e preserva erro/KPIs indisponíveis; sem coluna ou origem inventada.
+- [x] Auditar irmãos: OrdensServico discrimina pela tabela e rótulo candidato usa vínculo; MobileOrdens lê somente OS tradicional e não usa origem. Schema canônico LIMIT 0/FKs/grant confirmados read-only.
+- [x] Registrar prova externa de conversão em ROLLBACK/replay/NULL e preservação após rollback; sequência consumida não será renumerada. Browser real continua pendente.
 - [x] Diff focal preparado em proposed-enable-visit-os-ui.patch com workspace, status, confirmação, lock/replay, erros seguros e fence de identidade; app original preservado.
 - [x] Vitest candidato32/32, regressões72/72; corpo aplicado exato PGlite31/31 (hash66e807), NULL preservado. Mocks/stubs/fila serializada não provam Auth/JWT/concorrência hospedada.
 - [x] Dependência de volume documentada: nenhum caminho auditado para definir solicitado; fabricação NO-GO, programar/lote/publish sem regrant; VT-2026-0003 preservada.
