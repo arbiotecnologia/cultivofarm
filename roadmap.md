@@ -1,3 +1,7 @@
+## ATUALIZAÇÃO 15:43 UTC — visita07
+- [ ] Ler hash/schema_migrations do hotfix enum_text já aplicado; registrar sem reaplicar e preservar ambos casts com enum real no harness.
+- [ ] Concretizar recorte explícito, testes, manifesto e relatório; corrigir any herdados e DialogDescription somente no wizard alterado.
+
 ## REGISTRO P1 VISITA — 2026-10-15 15:29 UTC
 - [x] Migration externa 20261015152726 arquivada com corpo atual; hash-after e152db390d27e7d21934451cf10bcad7 e ACL confirmados read-only. NÃO reaplicar. Evidência revisor 6/6 + reteste SQL read-only, nenhum dado/OS alterado.
 - [x] Análise visita→lab: LIMIT1 de última recomendação e INSERT só produto; índice UNIQUE registro_consultor_id confirma uma OS/visita. Micro-only/múltiplas linhas não certificados; solução integrada documentada sem remover índice/API/guard tenant.
