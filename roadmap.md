@@ -1,3 +1,10 @@
+## RECORTE ATUAL — leitura Cockpit candidata, sem aplicação/publicação
+- [x] Registrar evidência EXTERNA relatada por Renato pós-deploy eb33bc: OS-2026-000003, uma programação aguardando/NULL e commercial_completed=false; Ordens/Fluxo Técnico PASS externo. Consultor: financeiro negado, catálogo/rascunho próprio disponíveis, cabeçalho visita Admin legível mas workspace/conversão negados e recomendações zero.
+- [x] Auditar metadados canônicos: RPC INVOKER EXECUTE fechado; view invoker sobre h7n DEFINER/MV sem filtro de empresa — P1 estrutural, não exploração comprovada.
+- [x] Preparar scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql e teste PostgreSQL isolado14/14 (helpers simulados); documentar diferença cabeçalho/workspace como dívida de contrato, sem mudar policies.
+- [ ] Aplicação/leitura hospedada NO-GO: depende de revisão da MV, freshness/referências descendentes, escopo Onfarm e cache de identidade dos consumidores; nenhuma autorização remota nesta rodada.
+- [ ] Fabricação/volume e diagnóstico seguem NO-GO; ownership OFF; programar/lote/publish e migrations aplicadas intactos. Detalhes: docs/auditorias/cockpit-leitura-recorte-20261015.md.
+
 ## RECORTE 17:13 UTC — ajuste textual 4fdcb aplicado, sem publicação
 - [x] Corrigir somente dois textos: banner `convertido_os` e sucesso novo do hook; mensagem de replay preservada; sem lógica/SQL/dados/ACL/flags/dependências.
 - [x] Substituir dois testes obsoletos (flag agora true com guards; coluna `origem` inexistente derivada de `registro_consultor_id`); focais **112/112 PASS** em 5 arquivos.
