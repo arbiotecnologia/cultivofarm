@@ -1,3 +1,7 @@
+## AJUSTE SOLICITADO — 2026-10-15 15:14 UTC
+- [ ] Após conferir integridade do pacote, integrar seletor de recomendação global paginado/visível por identidade e família, preservar histórico; candidato server-side sem gate/DDL/publicação.
+- [ ] Testes comportamentais de identidade, ocultos, não biológicos e histórico; Auth/RLS hospedado permanece UNVERIFIED.
+
 ## COMPLEMENTO INDEPENDENTE — 2026-10-15 15:12 UTC
 - [x] Corrigida nomenclatura do inventário: 84 candidatos por substring; strings, NEW/OLD, payload puro, delegadores, consultas e SQL dinâmico triados sem excluir indiretos.
 - [x] Registradas evidências independentes: SQL11 `0923b7a5` 14/14, hash live `74f45dd67e9435a9876b0e2609e38954` coincidente e 0 apresentações ligadas; candidato04 `35199f39` 52/52 com preflight FK sintético; Biological14 ampliado 57/57. Não somar com provas locais; stubs não Auth real.
