@@ -57,8 +57,8 @@ export default function MobileCatalogoTecnico() {
       setLoading(true);
       setLoadError(null);
       const [prod, micro, pp, mp] = await Promise.all([
-        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true) as any, hiddenProd).order("nome"),
-        catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true) as any, hiddenMicro).order("nome"),
+        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true), hiddenProd).order("nome"),
+        catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true), hiddenMicro).order("nome"),
         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto"),
         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto"),
       ]);
