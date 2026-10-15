@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -9,6 +9,19 @@ interface ClienteVinculado {
 }
 
 const STORAGE_KEY = "portal_active_cliente_id";
+// Same-tab selection only, never an authorization cache. Every instance validates membership.
+const selections = new Map<string, string | null>();
+const listeners = new Set<() => void>();
+window.addEventListener("portal-client-preferences-cleared", () => {
+  selections.clear();
+  listeners.forEach(listener => listener());
+});
+const subscribeSelection = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
+function publishSelection(scope: string, id: string | null) {
+  if (selections.get(scope) === id) return;
+  selections.set(scope, id);
+  listeners.forEach(listener => listener());
+}
 
 export function usePortalCliente() {
   const { user, profile, roles, loading: authLoading } = useAuth();
@@ -18,12 +31,11 @@ export function usePortalCliente() {
   const generation = useRef(0);
   const controller = useRef<AbortController>();
   const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${[...roles].sort().join(",")}:${ready}`;
+  const sharedId = useSyncExternalStore(subscribeSelection, () => selections.get(scope) ?? null, () => null);
   const liveScope = useRef(scope);
   if (liveScope.current !== scope) { liveScope.current = scope; generation.current += 1; controller.current?.abort(); }
   const [resolvedScope, setResolvedScope] = useState("");
   const [clientes, setClientes] = useState<ClienteVinculado[]>([]);
-  const [clienteId, setClienteId] = useState<string | null>(null);
-  const [clienteNome, setClienteNome] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -31,7 +43,7 @@ export function usePortalCliente() {
     controller.current?.abort();
     const abort = new AbortController(); controller.current = abort;
     const current = () => requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted;
-    setClientes([]); setClienteId(null); setClienteNome(null);
+    setClientes([]);
     setResolvedScope("");
     if (!ready || !user || !organizationId) {
       setLoading(false);
@@ -45,15 +57,17 @@ export function usePortalCliente() {
     if (allowedError) { setResolvedScope(scope); setLoading(false); return; }
     const { data: vinculos, error: vinculosError } = await supabase
       .from("user_clientes")
-      .select("cliente_id, principal")
-      .eq("user_id", user.id).abortSignal(abort.signal);
+      .select("cliente_id, principal, is_active, revoked_at, valid_from, valid_until")
+      .eq("user_id", user.id).eq("is_active", true).is("revoked_at", null).abortSignal(abort.signal);
     if (!current()) return;
 
     if (vinculosError) {
       setResolvedScope(scope); setLoading(false); return;
     }
 
-    const vincList = (vinculos ?? []) as Array<{ cliente_id: string; principal: boolean | null }>;
+    const vincList = (vinculos ?? []).filter(v => v.is_active === true && v.revoked_at == null &&
+      (v.valid_from == null || Date.parse(v.valid_from) <= Date.now()) &&
+      (v.valid_until == null || Date.parse(v.valid_until) >= Date.now()));
     const clienteIds = Array.from(new Set(Array.isArray(allowed) ? allowed : []));
 
     let list: ClienteVinculado[] = [];
@@ -93,12 +107,11 @@ export function usePortalCliente() {
     let stored: string | null = null;
     try { stored = window.localStorage.getItem(`${STORAGE_KEY}:${scope}`); } catch { /* Optional preference only. */ }
     const active =
-      list.find((c) => c.id === stored) ||
+      list.find((c) => c.id === selections.get(scope)) || list.find((c) => c.id === stored) ||
       list.find((c) => c.principal) ||
       list[0] ||
       null;
-    setClienteId(active?.id ?? null);
-    setClienteNome(active?.nome ?? null);
+    publishSelection(scope, active?.id ?? null);
     setLoading(false);
   }, [user, organizationId, ready, scope]);
 
@@ -109,12 +122,21 @@ export function usePortalCliente() {
     return () => { generation.current += 1; controller.current?.abort(); window.removeEventListener("focus", refresh); };
   }, [load]);
 
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key !== `${STORAGE_KEY}:${scope}` || !ready || resolvedScope !== scope) return;
+      const found = clientes.find(c => c.id === event.newValue);
+      if (found) publishSelection(scope, found.id);
+    };
+    window.addEventListener("storage", sync);
+    return () => { window.removeEventListener("storage", sync); };
+  }, [scope, ready, resolvedScope, clientes]);
+
   const setClienteAtivo = useCallback(
     (id: string) => {
       const found = clientes.find((c) => c.id === id);
       if (!ready || resolvedScope !== scope || !found) return;
-      setClienteId(found.id);
-      setClienteNome(found.nome);
+      publishSelection(scope, found.id);
       try {
         window.localStorage.setItem(`${STORAGE_KEY}:${scope}`, found.id);
       } catch { /* Selection remains valid in memory if storage is unavailable. */ }
@@ -122,5 +144,6 @@ export function usePortalCliente() {
     [clientes, scope, ready, resolvedScope]
   );
 
-  return { clienteId: ready && resolvedScope === scope ? clienteId : null, clienteNome: ready && resolvedScope === scope ? clienteNome : null, clientes: ready && resolvedScope === scope ? clientes : [], setClienteAtivo, loading: authLoading || (ready && (loading || resolvedScope !== scope)), reload: load };
+  const selected = ready && resolvedScope === scope ? clientes.find(c => c.id === sharedId) : undefined;
+  return { clienteId: selected?.id ?? null, clienteNome: selected?.nome ?? null, clientes: ready && resolvedScope === scope ? clientes : [], setClienteAtivo, loading: authLoading || (ready && (loading || resolvedScope !== scope)), ready, scope, reload: load };
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,38 +41,19 @@ const STATUS_OS_ABERTOS = ["pendente", "em_andamento", "programada", "aguardando
 export default function PortalFazendas() {
   const { clienteId, loading: cl } = usePortalCliente();
   const navigate = useNavigate();
-  const [fazendas, setFazendas] = useState<FazendaEnriquecida[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (cl) return;
-    if (!clienteId) {
-      setFazendas([]);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const run = async () => {
-      setLoading(true);
+  const { data: fazendas = [], isLoading: loading } = useScopedPortalQuery<FazendaEnriquecida[]>({
+    queryKey: ["portal-fazendas", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
       const { data: base } = await supabase
         .from("fazendas")
         .select("id, nome, codigo_referencia, municipio, estado, area_total, talhoes(id, area_hectares, cultura_id)")
-        .eq("cliente_id", clienteId)
+        .eq("cliente_id", clienteId ?? "").abortSignal(signal)
         .order("nome");
 
-      if (cancelled || !base) {
-        setFazendas([]);
-        setLoading(false);
-        return;
-      }
+      if (!base) return [];
 
       const fazendaIds = base.map((f) => f.id);
-      if (fazendaIds.length === 0) {
-        setFazendas([]);
-        setLoading(false);
-        return;
-      }
+      if (fazendaIds.length === 0) return [];
 
       const culturaIds = Array.from(
         new Set(base.flatMap((f) => (f.talhoes || []).map((t: any) => t.cultura_id).filter(Boolean)))
@@ -85,27 +67,26 @@ export default function PortalFazendas() {
         supabase
           .from("alertas_agronomicos")
           .select("fazenda_id, nivel_risco")
-          .in("fazenda_id", fazendaIds)
+          .in("fazenda_id", fazendaIds).abortSignal(signal)
           .eq("status", "ativo"),
         supabase
           .from("ordens_servico")
           .select("id, fazenda_id, status, created_at, talhao_id")
-          .in("fazenda_id", fazendaIds),
+          .in("fazenda_id", fazendaIds).abortSignal(signal),
         supabase
           .from("registros_consultor")
           .select("fazenda_id, data_vistoria, consultor_responsavel, created_at")
-          .in("fazenda_id", fazendaIds)
+          .in("fazenda_id", fazendaIds).abortSignal(signal)
           .order("data_vistoria", { ascending: false }),
         culturaIds.length
-          ? supabase.from("culturas").select("id, nome").in("id", culturaIds)
+          ? supabase.from("culturas").select("id, nome").in("id", culturaIds).abortSignal(signal)
           : Promise.resolve({ data: [] as any[] } as any),
         supabase
           .from("talhao_safras")
           .select("talhao_id, cultura_id, status")
-          .in("talhao_id", base.flatMap((f) => (f.talhoes || []).map((t: any) => t.id))),
+          .in("talhao_id", base.flatMap((f) => (f.talhoes || []).map((t: any) => t.id))).abortSignal(signal),
       ]);
 
-      if (cancelled) return;
 
       // Aplicações dos últimos 30 dias via OS → fazenda
       const osIds = (osRes.data || []).map((o: any) => o.id);
@@ -114,7 +95,7 @@ export default function PortalFazendas() {
         const { data: aplics } = await supabase
           .from("aplicacoes")
           .select("ordem_servico_id, data_aplicacao")
-          .in("ordem_servico_id", osIds)
+          .in("ordem_servico_id", osIds).abortSignal(signal)
           .gte("data_aplicacao", trintaDiasIso.slice(0, 10));
         const osToFazenda = new Map<string, string>(
           (osRes.data || []).map((o: any) => [o.id, o.fazenda_id])
@@ -166,16 +147,9 @@ export default function PortalFazendas() {
         };
       });
 
-      if (!cancelled) {
-        setFazendas(enriched);
-        setLoading(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [clienteId, cl]);
+      return enriched;
+    }
+  });
 
   if (cl || loading)
     return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;

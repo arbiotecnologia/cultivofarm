@@ -1,6 +1,7 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,18 +15,19 @@ export interface PortalEntregasProps {
 
 export default function PortalEntregas({ embedded = false }: PortalEntregasProps = {}) {
   const { clienteId, loading: cl } = usePortalCliente();
-  const [entregas, setEntregas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (!clienteId) return;
-    supabase.from("entregas")
-      .select("*, ordens_servico(numero_os, produtos(nome))")
-      .eq("cliente_id", clienteId)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => { setEntregas(data || []); setLoading(false); });
-  }, [clienteId]);
+  const { data: entregas = [], isLoading: loading } = useScopedPortalQuery({
+    queryKey: ["portal-entregas", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
+      const { data, error } = await supabase.from("entregas")
+        .select("*, ordens_servico(numero_os, produtos(nome))")
+        .eq("cliente_id", clienteId ?? "")
+        .order("created_at", { ascending: false }).abortSignal(signal);
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   if (cl || loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
 
@@ -61,7 +63,7 @@ export default function PortalEntregas({ embedded = false }: PortalEntregasProps
                     <span>Saída: {e.data_saida ? formatDateDisplay(e.data_saida) : "-"}</span>
                     <span>Motorista: {e.motorista || "-"}</span>
                     <span className="col-span-2">Veículo: {e.veiculo || "-"}</span>
-                    {e.observacoes && (
+                    {"observacoes" in e && typeof e.observacoes === "string" && e.observacoes && (
                       <span className="col-span-2 italic">"{e.observacoes}"</span>
                     )}
                   </div>

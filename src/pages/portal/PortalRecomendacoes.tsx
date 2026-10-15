@@ -1,9 +1,11 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { PageHeader } from "@/components/ResponsiveHelpers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -295,6 +297,7 @@ const ABAS_VALIDAS = new Set(Object.keys(ABA_STATUS));
 
 export default function PortalRecomendacoes() {
   const { clienteId, loading: cl } = usePortalCliente();
+  const fence = useStorageAccessScope(`producer-recommendations:${clienteId}`);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const abaParam = searchParams.get("aba");
@@ -308,10 +311,10 @@ export default function PortalRecomendacoes() {
     data: recs = [],
     isLoading: loading,
     refetch,
-  } = useQuery({
+  } = useScopedPortalQuery({
     queryKey: ["portal-recomendacoes-unificado", clienteId],
     enabled: !!clienteId,
-    queryFn: async () => {
+    queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("registros_consultor_recomendacoes")
         .select(
@@ -325,9 +328,9 @@ export default function PortalRecomendacoes() {
              fazendas(id, nome), talhoes(id, nome), culturas(nome)
            )`,
         )
-        .eq("registros_consultor.cliente_id", clienteId!)
+        .eq("registros_consultor.cliente_id", clienteId ?? "")
         .neq("registros_consultor.status", "rascunho")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }).abortSignal(signal);
 
       if (error) throw error;
       return data || [];
@@ -336,7 +339,8 @@ export default function PortalRecomendacoes() {
 
   // Realtime
   useEffect(() => {
-    if (!clienteId) return;
+    if (!clienteId || !fence.ready) return;
+    const current = fence.capture();
     const channel = supabase
       .channel(`portal-recs-realtime-${clienteId}`)
       .on(
@@ -348,6 +352,7 @@ export default function PortalRecomendacoes() {
           filter: `cliente_id=eq.${clienteId}`,
         },
         () => {
+          if (!current()) return;
           refetch();
           queryClient.invalidateQueries({ queryKey: ["portal-fila-aguardando", clienteId] });
         },
@@ -356,7 +361,7 @@ export default function PortalRecomendacoes() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clienteId, refetch, queryClient]);
+  }, [clienteId, refetch, queryClient, fence.scope, fence.ready]);
 
   // Sincroniza ?aba= com URL
   const handleAbaChange = (next: string) => {

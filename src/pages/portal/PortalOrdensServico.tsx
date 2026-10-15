@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,31 +83,28 @@ export default function PortalOrdensServico({
 }: PortalOrdensServicoProps = {}) {
   const { clienteId, loading: cl } = usePortalCliente();
   const navigate = useNavigate();
-  const [ordens, setOrdens] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedLaudo, setSelectedCq] = useState<any | null>(null);
 
-  useEffect(() => {
-    if (!clienteId) return;
-    const fetch = async () => {
+  const { data: ordens = [], isLoading: loading } = useScopedPortalQuery({
+    queryKey: ["portalordensservico", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
       const { data: oManual } = await supabase.from("ordens_servico")
         .select("*, fazendas(nome), talhoes(nome), produtos(nome), programacao_producao(lotes(*, controle_qualidade(*)))")
-        .eq("cliente_id", clienteId);
+        .eq("cliente_id", clienteId ?? "").abortSignal(signal);
 
       const { data: oOnfarm } = await supabase.from("ordens_servico_onfarm")
         .select("*, fazendas(nome), talhoes(nome), produtos(nome), programacao_producao(lotes(*, controle_qualidade(*)))")
-        .eq("cliente_id", clienteId);
+        .eq("cliente_id", clienteId ?? "").abortSignal(signal);
 
       const merged = [
         ...(oManual || []).map((o: any) => ({ ...o, _tipo: "manual" as const })),
         ...(oOnfarm || []).map((o: any) => ({ ...o, _tipo: "onfarm" as const })),
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      setOrdens(merged);
-      setLoading(false);
-    };
-    fetch();
-  }, [clienteId]);
+      return merged;
+
+    }
+  });
 
   if (cl || loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
 

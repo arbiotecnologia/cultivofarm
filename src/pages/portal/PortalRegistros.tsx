@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,18 +22,18 @@ export default function PortalRegistros() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { clienteId, loading: cl } = usePortalCliente();
-  const [registros, setRegistros] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!clienteId) return;
-    supabase.from("registros_consultor")
+  const { data: registros = [], isLoading: loading } = useScopedPortalQuery({
+    queryKey: ["portal-registros", clienteId], enabled: !!clienteId,
+    queryFn: async (signal) => {
+    const { data, error } = await supabase.from("registros_consultor")
       .select("*, fazendas(nome), talhoes(nome)")
-      .eq("cliente_id", clienteId)
+      .eq("cliente_id", clienteId ?? "")
       .neq("status", "rascunho")
-      .order("data_vistoria", { ascending: false })
-      .then(({ data }) => { setRegistros(data || []); setLoading(false); });
-  }, [clienteId]);
+      .order("data_vistoria", { ascending: false }).abortSignal(signal);
+    if (error) throw error;
+    return data || [];
+    }
+  });
 
   if (cl || loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
 
