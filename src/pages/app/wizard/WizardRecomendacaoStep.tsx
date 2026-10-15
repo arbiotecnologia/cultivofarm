@@ -259,7 +259,7 @@ export default function WizardRecomendacaoStep({
       const { data, error } = await supabase.from("produtos").select(REC_PRODUTO_SELECT).in("id", refIds.prod).abortSignal(signal);
       if (error) throw error;
       if (!current()) throw new Error("Sessão alterada");
-      return (data ?? []) as RecProduto[];
+      return (data ?? []) as unknown as RecProduto[];
     },
   });
   const microMap = useMemo(() => new Map((microHist.data ?? []).map((m) => [m.id, m])), [microHist.data]);
@@ -268,8 +268,8 @@ export default function WizardRecomendacaoStep({
     id ? (microMap.get(id) ? recMicroLabel(microMap.get(id)) : microHist.isError ? "Nome indisponível" : "—") : "—";
   const prodNome = (id: string | null | undefined) =>
     id ? (prodMap.get(id) ? recProdutoLabel(prodMap.get(id)) : prodHist.isError ? "Nome indisponível" : "—") : "—";
-  const microOpts = recSelectOptions(microrganismos, form.microrganismo_id, microMap);
-  const prodOpts = recSelectOptions(produtos, form.produto_biologico_sugerido_id, prodMap);
+  const microOpts = recSelectOptions<RecMicro>(microrganismos, form.microrganismo_id, microMap);
+  const prodOpts = recSelectOptions<RecProduto>(produtos, form.produto_biologico_sugerido_id, prodMap);
 
   if (locked) {
     return (
