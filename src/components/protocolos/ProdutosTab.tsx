@@ -35,6 +35,8 @@ import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItem
 import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
 import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
 import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
+import { OwnedCatalogPagination } from "./OwnedCatalogPagination";
 import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
@@ -288,6 +290,9 @@ export function ProdutosTab() {
   const tenantVis = useManagedVisibility("produto", filteredItems);
   const canManageVis = useCanManageTenantVisibility();
   const ownedCapability = useOwnedCatalogCapability();
+  const [showArchived, setShowArchived] = useState(false);
+  const [ownedOffset, setOwnedOffset] = useState(0);
+  const ownedRead = useOwnedCatalogRead("produto", { archived: showArchived, offset: ownedOffset, search });
   const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Produto | null }>({ open: false, item: null });
   const [ownedConfirm, setOwnedConfirm] = useState<{ item: Produto; operation: "archive" | "restore" } | null>(null);
 
@@ -321,7 +326,9 @@ export function ProdutosTab() {
 
 
   const fetch = async () => {
+    const generation = localGeneration.current;
     const result = await carregarCatalogoProdutos(supabase as any);
+    if (generation !== localGeneration.current) return;
     if ("error" in result) {
       toast.error("Erro ao carregar produtos");
       return;
@@ -329,15 +336,22 @@ export function ProdutosTab() {
     setProfileStatusMap(result.profileStatusMap);
     setMicrorganismos(result.microrganismos as Microrganismo[]);
     setItems(result.produtos as unknown as Produto[]);
-    setFilteredItems(result.produtos as unknown as Produto[]);
+
   };
 
+  const localGeneration = useRef(0);
+  const activeScopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
   useEffect(() => {
-    fetch();
-  }, []);
+    localGeneration.current += 1;
+    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
+    void fetch();
+    return () => { localGeneration.current += 1; };
+    // Session-bound legacy global reads; own reads use the scoped QueryClient hook.
+  }, [activeScopeKey]);
 
   useEffect(() => {
-    let result = items;
+    let result = [...items.filter((item) => !item.owner_organization_id), ...((ownedRead.data?.items ?? []) as unknown as Produto[])];
+    result = result.filter((item) => showArchived || !item.archived_at);
     if (search) {
       const s = search.toLowerCase();
       result = result.filter(i => 
@@ -350,7 +364,7 @@ export function ProdutosTab() {
       result = result.filter(i => i.tipo === filterTipo);
     }
     setFilteredItems(result);
-  }, [search, filterTipo, items]);
+  }, [search, filterTipo, items, ownedRead.data, showArchived]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -637,7 +651,7 @@ export function ProdutosTab() {
           <Input 
             placeholder="Buscar por código, nome ou função..." 
             value={search} 
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setOwnedOffset(0); }}
             className="pl-9"
           />
         </div>
@@ -1047,6 +1061,9 @@ export function ProdutosTab() {
       </div>
 
       <TenantVisibilityBar v={tenantVis} />
+      {TENANT_OWNED_CATALOG_ENABLED && <OwnedCatalogPagination entity="produto" archived={showArchived} onArchived={setShowArchived}
+        offset={ownedOffset} onOffset={setOwnedOffset} hasMore={ownedRead.data?.has_more ?? false} busy={ownedRead.isFetching}
+        error={ownedRead.isError ? (ownedRead.error as Error).message : null} />}
 
       <div className="rounded-md border">
         <Table>
@@ -1177,7 +1194,7 @@ export function ProdutosTab() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[p.id] ?? null} />
-                    {canManageVis && (
+                    {canManageVis && !p.owner_organization_id && (
                       <TenantVisibilityToggle entity="produto" item={{ id: p.id, nome: p.nome, ativo: p.ativo }}
                         state={tenantVis.map?.get(p.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
                     )}
@@ -1277,8 +1294,9 @@ export function ProdutosTab() {
         entity="produto"
         item={ownedDialog.item}
         microorganisms={microrganismos}
-        onApplied={fetch}
+        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
         onLocateGlobal={(id) => {
+          setOwnedDialog({ open: false, item: null }); setFilterTipo("todos");
           tenantVis.setShowHidden(true);
           const match = items.find((row) => row.id === id);
           setSearch(match?.nome ?? "");
@@ -1289,7 +1307,7 @@ export function ProdutosTab() {
         entity="produto"
         operation={ownedConfirm?.operation ?? "archive"}
         onOpenChange={(open) => !open && setOwnedConfirm(null)}
-        onApplied={fetch}
+        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
       />
 
       <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-4">

@@ -146,9 +146,40 @@ export async function mutateOwnedPresentation(client: RpcClient, m: OwnedPresent
 }
 
 export const ownedCatalogKeys = {
-  list: (s: TenantCatalogScope, entity: TenantCatalogEntity, search: string, offset: number, limit: number) =>
-    ["tenant-catalog", s.organizationId, s.userId, "owned", entity, search, offset, limit] as const,
+  list: (s: TenantCatalogScope, entity: TenantCatalogEntity, search: string, offset: number, limit: number, archived = false) =>
+    ["tenant-catalog", s.organizationId, s.userId, "owned", entity, "list", search, offset, limit, archived] as const,
+  detail: (s: TenantCatalogScope, entity: TenantCatalogEntity, id: string, offset = 0, limit = 50) =>
+    ["tenant-catalog", s.organizationId, s.userId, "owned", entity, "detail", id, offset, limit] as const,
 };
+
+export interface OwnedCatalogRow {
+  id: string; nome: string; ativo: boolean; owner_organization_id: string; archived_at: string | null;
+  updated_at: string; tipo?: string; descricao?: string | null; nome_cientifico?: string | null;
+  familia_catalogo?: string | null; classe_catalogo?: string | null;
+  modo_acao?: string | null; funcao_completa?: string | null; modo_aplicacao?: string | null;
+  composition_status?: "rascunho" | "completo" | null;
+  declarations?: Array<Record<string, unknown>>;
+}
+
+export async function readOwnedCatalog(client: RpcClient, scope: TenantCatalogScope, entity: TenantCatalogEntity,
+  opts: { search?: string; offset?: number; limit?: number; archived?: boolean; id?: string; signal?: AbortSignal }) {
+  let query = opts.id ? client.rpc("tenant_catalog_owned_detail", {
+    p_entity_type: entity, p_entity_id: opts.id, p_limit: opts.limit ?? 50, p_offset: opts.offset ?? 0,
+  }) : client.rpc("tenant_catalog_owned_list", {
+    p_entity_type: entity, p_search: opts.search ?? "", p_limit: opts.limit ?? 50,
+    p_offset: opts.offset ?? 0, p_include_archived: opts.archived ?? false,
+  });
+  if (opts.signal && query?.abortSignal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (opts.signal?.aborted) throw new OwnedCatalogError("aborted", "Leitura encerrada.");
+  if (error) throw ownedCatalogError(error, entity);
+  const rows: OwnedCatalogRow[] = opts.id ? [data?.item] : data?.items;
+  if (!Array.isArray(rows) || rows.some((row) => !row || row.owner_organization_id !== scope.organizationId
+    || typeof row.id !== "string" || typeof row.updated_at !== "string") || typeof data.has_more !== "boolean") {
+    throw new OwnedCatalogError("invalid_read", "Não foi possível confirmar os dados do catálogo.");
+  }
+  return { items: rows, has_more: data.has_more as boolean, presentations: (data.presentations ?? []) as unknown[] };
+}
 
 /** Guarda de resposta tardia: só aplica se o escopo/geração ainda for o mesmo do disparo. */
 export function createResponseFence() {

@@ -27,15 +27,22 @@ import { CatalogOriginBadge, OwnedCatalogItemControls } from "@/components/proto
 import { OwnedCatalogItemDialog } from "@/components/protocolos/OwnedCatalogItemDialog";
 import { OwnedCatalogConfirmDialog } from "@/components/protocolos/OwnedCatalogConfirmDialog";
 import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
+import { OwnedCatalogPagination } from "@/components/protocolos/OwnedCatalogPagination";
 import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 
 // --- Culturas ---
 // Culturas são base GLOBAL. Escrita de cliente foi revogada no banco
 // (global_culturas_client_write_containment); não existe writer servidor
 // auditado. Esta aba é somente consulta para todos os perfis.
-function CulturasTab() {
+export function CulturasTab() {
+  const [showArchived, setShowArchived] = useState(false);
+  const [ownedOffset, setOwnedOffset] = useState(0);
+  const [search, setSearch] = useState("");
+  const ownedRead = useOwnedCatalogRead("cultura", { archived: showArchived, offset: ownedOffset, search });
   const { data: items, isLoading, isError, error, refetch, isFetching } = useCulturas();
-  const allRows = useMemo(() => items ?? [], [items]);
+  const allRows = useMemo(() => [...(items ?? []).filter((item) => !item.owner_organization_id), ...(ownedRead.data?.items ?? [])]
+    .filter((item) => (showArchived || !item.archived_at) && item.nome.toLowerCase().includes(search.toLowerCase())), [items, ownedRead.data, showArchived, search]);
   const tenantVis = useManagedVisibility("cultura", allRows);
   const canManageVis = useCanManageTenantVisibility();
   const rows = tenantVis.displayed;
@@ -51,7 +58,11 @@ function CulturasTab() {
       {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
         <div><Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}><Plus className="mr-1 h-4 w-4" />Cultura própria</Button></div>
       )}
+      <Input aria-label="Buscar culturas" value={search} onChange={(event) => { setSearch(event.target.value); setOwnedOffset(0); }} placeholder="Buscar culturas" />
       <TenantVisibilityBar v={tenantVis} />
+      {TENANT_OWNED_CATALOG_ENABLED && <OwnedCatalogPagination entity="cultura" archived={showArchived} onArchived={setShowArchived}
+        offset={ownedOffset} onOffset={setOwnedOffset} hasMore={ownedRead.data?.has_more ?? false} busy={ownedRead.isFetching}
+        error={ownedRead.isError ? (ownedRead.error as Error).message : null} />}
 
       {isLoading ? (
         <div className="py-8 text-center text-muted-foreground" role="status">Carregando culturas...</div>
@@ -102,8 +113,8 @@ function CulturasTab() {
                 {canManageVis && (
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <TenantVisibilityToggle entity="cultura" item={{ id: c.id, nome: c.nome, ativo: c.ativo }}
-                        state={tenantVis.map?.get(c.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
+                      {!c.owner_organization_id && <TenantVisibilityToggle entity="cultura" item={{ id: c.id, nome: c.nome, ativo: c.ativo }}
+                        state={tenantVis.map?.get(c.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />} 
                       <OwnedCatalogItemControls item={c} actorOrganizationId={ownedCapability.scope?.organizationId} canManage={ownedCapability.canManage}
                         onEdit={() => setOwnedDialog({ open: true, item: c })}
                         onArchive={() => setOwnedConfirm({ item: c, operation: "archive" })}
@@ -118,10 +129,10 @@ function CulturasTab() {
       </ResponsiveTable>
       )}
       <OwnedCatalogItemDialog open={ownedDialog.open} onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
-        entity="cultura" item={ownedDialog.item} onApplied={async () => { await refetch(); }}
-        onLocateGlobal={(id) => { tenantVis.setShowHidden(true); const match = allRows.find((row) => row.id === id); if (match) toast.info(`Item global localizado: ${match.nome}`); }} />
+        entity="cultura" item={ownedDialog.item} onApplied={async () => { await ownedRead.refetch(); await refetch(); }}
+        onLocateGlobal={(id) => { setOwnedDialog({ open: false, item: null }); tenantVis.setShowHidden(true); const match = allRows.find((row) => row.id === id); if (match) setSearch(match.nome); }} />
       <OwnedCatalogConfirmDialog item={ownedConfirm?.item ?? null} entity="cultura" operation={ownedConfirm?.operation ?? "archive"}
-        onOpenChange={(open) => !open && setOwnedConfirm(null)} onApplied={async () => { await refetch(); }} />
+        onOpenChange={(open) => !open && setOwnedConfirm(null)} onApplied={async () => { await ownedRead.refetch(); await refetch(); }} />
     </div>
   );
 }
