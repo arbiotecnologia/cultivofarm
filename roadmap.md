@@ -1,3 +1,8 @@
+## REGISTRO P1 VISITA — 2026-10-15 15:29 UTC
+- [x] Migration externa 20261015152726 arquivada com corpo atual; hash-after e152db390d27e7d21934451cf10bcad7 e ACL confirmados read-only. NÃO reaplicar. Evidência revisor 6/6 + reteste SQL read-only, nenhum dado/OS alterado.
+- [x] Análise visita→lab: LIMIT1 de última recomendação e INSERT só produto; índice UNIQUE registro_consultor_id confirma uma OS/visita. Micro-only/múltiplas linhas não certificados; solução integrada documentada sem remover índice/API/guard tenant.
+- [ ] Fase07 visita→lab exige recorte revisado de cardinalidade/idempotência e testes reais; ownership/SQL13/07 NÃO aplicados. Sem publicação.
+
 ## AUTORIZAÇÃO FASE07 — 2026-10-15 15:24 UTC
 - [x] Inspeção live: duas entradas authenticated DEFINER sem vínculo comercial; risco P1 estrutural, não exploração confirmada. Guards B2B portal não provam mandato da empresa fornecedora.
 - [x] Candidato07: h15 + owner comercial explícito/ativo/client scope antes de status/replay; interno negado. PGlite 45/45 stubs, Vitest 46/46, lint focal 0/0, build automático OK.
