@@ -87,6 +87,11 @@ RESET ROLE;
             sql+="BEGIN; UPDATE partner_users SET partner_id='22222222-2222-4222-8222-222222222222'; SET LOCAL ROLE authenticated; SELECT pg_temp.check_read('switch sibling own only',ARRAY[2]); ROLLBACK;"
             sql+="BEGIN; UPDATE user_roles SET role='cliente_produtor'; SET LOCAL ROLE authenticated; SELECT pg_temp.check_read('producer separation unchanged',ARRAY[4]); RESET ROLE; UPDATE user_clientes SET is_active=false; SET LOCAL ROLE authenticated; SELECT pg_temp.check_read('producer revoked','{}'); ROLLBACK;"
             sql+="SET ROLE anon; SELECT pg_temp.check_read('anonymous empty','{}'); RESET ROLE;"
+            sql+="BEGIN; UPDATE user_roles SET role='administrador'; SET LOCAL ROLE authenticated; SELECT pg_temp.assert_true('internal admin titles unchanged',(SELECT array_agg(id ORDER BY id) FROM accounts_receivable)=ARRAY[1,2,4]); SELECT pg_temp.assert_true('internal admin tenant links unchanged',(SELECT count(*) FROM partner_users)=1); ROLLBACK;"
+            sql+="BEGIN; UPDATE profiles SET organization_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'; SET LOCAL ROLE authenticated; SELECT pg_temp.check_read('actor tenant changed without coherent link','{}'); ROLLBACK;"
+            sql+="BEGIN; INSERT INTO user_roles VALUES(auth.uid(),'cliente_produtor'); SET LOCAL ROLE authenticated; SELECT pg_temp.assert_true('mixed roles cannot read B2B',NOT EXISTS(SELECT 1 FROM accounts_receivable WHERE origin_type='B2B_ORDER')); ROLLBACK;"
+            sql+=(ROOT/'scripts/rbac-audit/rollback-b2b-receivables-read.sql').read_text()
+            sql+="SET ROLE authenticated; SELECT pg_temp.check_read('rollback B2B closed','{}'); RESET ROLE; UPDATE user_roles SET role='cliente_produtor'; SET ROLE authenticated; SELECT pg_temp.check_read('rollback preserves producer',ARRAY[4]); RESET ROLE;"
         run=subprocess.run(['psql','-X','-h',str(tmp),'-p','55493','-U','postgres','-v','ON_ERROR_STOP=1'],input=sql,text=True,capture_output=True)
         print(run.stderr); assert run.returncode==0
     finally:

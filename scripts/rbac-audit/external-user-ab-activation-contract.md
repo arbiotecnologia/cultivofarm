@@ -14,4 +14,5 @@ Destino obrigatório swzpzcwiasxmjutrmvkm; validar por ferramenta/configuração
 - Pacote candidato ausente hospedado: o after não pode ser exercitado antes da revisão/instalação autorizada.
 - Auth fullschema inventariado, porém harness não executa todos bodies e GoTrue real; reserved UUID+metadata e efeitos transitivos exigem validação após revisão.
 - Quatro readers SECURITY DEFINER atuais usam vínculo cru; candidato separado corrige revogação/tenant, ainda fechado/não aplicado.
-- Portais antigos agrícolas (fazenda/talhão/recomendação/solicitação) ainda precisam matriz completa de cache e mutações; reset do layout contém troca visual, não certifica todos readers.
+- Cache agrícola foi corrigido20:42 com QueryClient/páginas reais e sessão simulada; validação JWT/RLS efetiva continua distinta.
+- Financeiro B2B20:50: proposed-b2b-receivables-read.sql e rollback focal preparados, não aplicados. Corrige duas branches RLS após reprodução efetiva local; não reabre rpc_portal_partner_financial nem grants partner_users. Links/schedule/terms e guards phase1 legados exigem resolução separada antes certificar portal financeiro.
