@@ -259,3 +259,52 @@
 +    </AlertDialog>
 +  </>;
 +}
+--- src/pages/FluxoTecnico.tsx
++++ src/pages/FluxoTecnico.tsx
+@@ -52,7 +52,7 @@
+ 
+ /** Colunas mínimas exibidas na aba de OS de Produção. */
+ const SELECT_OS_ONFARM =
+-  "id, numero_os, status, origem, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
++  "id, numero_os, status, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
+ 
+ export default function FluxoTecnico() {
+   const { role, roles } = useAuth();
+@@ -332,7 +332,7 @@
+                       <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
+                       <TableCell>
+                         <Badge variant="outline">
+-                          {o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"}
++                          {o.registro_consultor_id ? "Visita técnica" : "Sem vínculo de visita"}
+                         </Badge>
+                       </TableCell>
+                       <TableCell>
+@@ -406,7 +406,7 @@
+               <OSFlowTimeline registroId={selectedOS.registro_consultor_id} />
+             ) : (
+               <p className="text-xs text-muted-foreground italic">
+-                Esta OS não tem recomendação técnica de origem, portanto não há linha do tempo de fluxo.
++                Esta OS não tem vínculo de visita registrado, portanto não há linha do tempo de visita.
+               </p>
+             )}
+           </div>
+--- src/pages/OrdensServico.tsx
++++ src/pages/OrdensServico.tsx
+@@ -681,7 +681,7 @@
+                           <div className="flex flex-col items-end gap-1">
+                             <Badge variant={prio.variant} className="text-[10px]">{prio.label}</Badge>
+                             <Badge variant="outline" className={`text-[9px] ${o.origem === "onfarm" ? "border-status-producao text-status-producao" : ""}`}>
+-                              {o.origem === "onfarm" ? "Visita Técnica" : "Manual"}
++                              {o.registro_consultor_id ? "Visita Técnica" : "Sem vínculo de visita"}
+                             </Badge>
+                           </div>
+                         }
+@@ -774,7 +774,7 @@
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="outline" className={`text-[10px] ${o.origem === "onfarm" ? "border-status-producao text-status-producao" : ""}`}>
+-                            {o.origem === "onfarm" ? "Visita Técnica" : "Manual"}
++                            {o.registro_consultor_id ? "Visita Técnica" : "Sem vínculo de visita"}
+                           </Badge>
+                         </TableCell>
+                         <TableCell>{(o.produtos as any)?.nome || (o.microrganismos as any)?.nome || "—"}</TableCell>
