@@ -51,7 +51,7 @@
        }
        const reply = (value: unknown, status: number) => new Response(JSON.stringify(value), {
          status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
-@@ -135,12 +141,25 @@
+@@ -135,12 +141,34 @@
          return reply({ error: "b2b_provisioning_invalid" }, 400);
        }
        const { data: claim, error: claimError } = await anonClient.rpc("b2b_claim_provisioning", {
@@ -69,8 +69,17 @@
 +      }
 +      if (claim.status === "claimed" && claim.acquired !== true) {
 +        // Only reconcile the already reserved UUID. No Auth create/delete on retry.
-+        const { data: owned, error: ownedError } = await adminClient.auth.admin.getUserById(claim.user_id);
-+        if (ownedError || owned?.user?.id !== claim.user_id ||
++        const pending = () => reply({ error: "b2b_provisioning_auth_pending", status: "pending",
++          recovery_required: true, retry_same_request: true,
++          message: "Cadastro pendente de verificação. Preserve a mesma solicitação e o mesmo email; a recuperação controlada não cria outra identidade." }, 409);
++        let lookup;
++        try { lookup = await adminClient.auth.admin.getUserById(claim.user_id); }
++        catch { return pending(); }
++        const { data: owned, error: ownedError } = lookup;
++        // Absence (even 404) is not proof the first worker cannot still create.
++        // No reset, reacquire, lease authority, delete, second UUID or new email.
++        if (ownedError || !owned?.user) return pending();
++        if (owned.user.id !== claim.user_id ||
 +          owned.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
 +          owned.user.app_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
 +          return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
