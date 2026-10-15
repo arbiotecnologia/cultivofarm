@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardList, FlaskConical, Truck, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { formatDateDisplay } from "@/lib/date-utils";
 import PortalOrdensServico from "./PortalOrdensServico";
@@ -37,16 +38,14 @@ type HistoricoItem = {
 
 function HistoricoTab() {
   const { clienteId, loading: cl } = usePortalCliente();
-  const [items, setItems] = useState<HistoricoItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [tipo, setTipo] = useState<string>("todos");
   const [fazenda, setFazenda] = useState<string>("todas");
   const [busca, setBusca] = useState("");
 
-  useEffect(() => {
-    if (!clienteId) return;
-    (async () => {
-      setLoading(true);
+  const { data: items = [], isLoading: loading } = useScopedPortalQuery({
+    queryKey: ["portalacompanhamento", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
+
       const osFinal = Array.from(OS_STATUS_FINAL) as any[];
       const prodFinal = Array.from(PRODUCAO_STATUS_FINAL) as any[];
       const entFinal = Array.from(ENTREGA_STATUS_FINAL) as any[];
@@ -56,17 +55,17 @@ function HistoricoTab() {
         supabase
           .from("ordens_servico")
           .select("id, numero_os, status, updated_at, created_at, fazendas(nome), produtos(nome)")
-          .eq("cliente_id", clienteId)
+          .eq("cliente_id", clienteId ?? "").abortSignal(signal)
           .in("status", osFinal),
         supabase
           .from("ordens_servico_onfarm")
           .select("id, numero_os, status, updated_at, created_at, fazendas(nome), produtos(nome)")
-          .eq("cliente_id", clienteId)
+          .eq("cliente_id", clienteId ?? "").abortSignal(signal)
           .in("status", osFinal),
         supabase
           .from("entregas")
           .select("id, status, data_saida, created_at, ordens_servico(numero_os, produtos(nome))")
-          .eq("cliente_id", clienteId)
+          .eq("cliente_id", clienteId ?? "").abortSignal(signal)
           .in("status", entFinal),
       ]);
 
@@ -81,7 +80,7 @@ function HistoricoTab() {
           .from("programacao_producao")
           .select("id, status, data_programada, created_at, produtos(nome), microrganismos(nome)")
           .or(filters.join(","))
-          .in("status", prodFinal);
+          .in("status", prodFinal).abortSignal(signal);
         producao = data ?? [];
       }
 
@@ -127,10 +126,10 @@ function HistoricoTab() {
       ];
 
       merged.sort((a, b) => new Date(b.data ?? 0).getTime() - new Date(a.data ?? 0).getTime());
-      setItems(merged);
-      setLoading(false);
-    })();
-  }, [clienteId]);
+      return merged;
+
+    }
+  });
 
   const fazendas = Array.from(new Set(items.map((i) => i.fazenda).filter(Boolean))) as string[];
   const filtered = items.filter((i) => {

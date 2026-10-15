@@ -2,6 +2,7 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,18 +24,15 @@ export default function PortalProducao({
 }: PortalProducaoProps = {}) {
   const { clienteId, loading: cl } = usePortalCliente();
   const navigate = useNavigate();
-  const [producao, setProducao] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!clienteId) return;
-    const fetch = async () => {
-      setLoading(true);
+  const { data: producao = [], isLoading: loading } = useScopedPortalQuery({
+    queryKey: ["portalproducao", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
       // Fase 10: buscar OS "manuais" e de Produção separadamente para evitar
       // falso-positivo de IDs cruzados no filtro de programacao_producao.
       const [{ data: osManual }, { data: osOnfarm }] = await Promise.all([
-        supabase.from("ordens_servico").select("id, numero_os").eq("cliente_id", clienteId),
-        supabase.from("ordens_servico_onfarm").select("id, numero_os").eq("cliente_id", clienteId),
+        supabase.from("ordens_servico").select("id, numero_os").eq("cliente_id", clienteId ?? "").abortSignal(signal),
+        supabase.from("ordens_servico_onfarm").select("id, numero_os").eq("cliente_id", clienteId ?? "").abortSignal(signal),
       ]);
 
       const manualMap = new Map((osManual ?? []).map((o: any) => [o.id, o.numero_os]));
@@ -43,10 +41,8 @@ export default function PortalProducao({
       const onfarmIds = Array.from(onfarmMap.keys());
 
       if (manualIds.length === 0 && onfarmIds.length === 0) {
-        setProducao([]);
-        setLoading(false);
-        return;
-      }
+        return [];
+        }
 
       const filters: string[] = [];
       if (manualIds.length) filters.push(`ordem_servico_id.in.(${manualIds.join(",")})`);
@@ -56,7 +52,7 @@ export default function PortalProducao({
         .from("programacao_producao")
         .select("*, produtos(nome), microrganismos(nome, nome_cientifico), lotes(id, controle_qualidade(id))")
         .or(filters.join(","))
-        .order("data_programada", { ascending: false });
+        .order("data_programada", { ascending: false }).abortSignal(signal);
 
       // Fase 10.1: anexar numero_os para exibição e navegação cruzada.
       const enriched = (data ?? []).map((p: any) => ({
@@ -67,11 +63,10 @@ export default function PortalProducao({
           null,
       }));
 
-      setProducao(enriched);
-      setLoading(false);
-    };
-    fetch();
-  }, [clienteId]);
+      return enriched;
+
+    }
+  });
 
   if (cl || loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
 
