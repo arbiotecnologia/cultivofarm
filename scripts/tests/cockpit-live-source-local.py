@@ -103,6 +103,19 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     check('farm cross',count+'=0',f"INSERT INTO fazendas VALUES({q(81)},{B},{CB},true,'FSF farm'); UPDATE ordens_servico SET fazenda_id={q(81)} WHERE id={OA};",f'UPDATE ordens_servico SET fazenda_id=NULL WHERE id={OA};')
     check('field orphan',count+'=0',f'UPDATE ordens_servico SET talhao_id={q(82)} WHERE id={OA};',f'UPDATE ordens_servico SET talhao_id=NULL WHERE id={OA};')
     check('partner orphan',count+'=0',f'UPDATE ordens_servico SET partner_order_id={q(83)} WHERE id={OA};',f'UPDATE ordens_servico SET partner_order_id=NULL WHERE id={OA};')
+    check('partner valid explicit owner',count+'=1',f'INSERT INTO partner_accounts VALUES({q(85)},{CA},{A},true,NULL); INSERT INTO partner_orders VALUES({q(83)},{q(85)},{CA},\'Synthetic\'); INSERT INTO partner_order_items VALUES({q(86)},{q(83)},{P},NULL); UPDATE ordens_servico SET partner_order_id={q(83)},partner_order_item_id={q(86)} WHERE id={OA};')
+    for label,change,undo in [
+        ('partner owner cross',f'UPDATE partner_accounts SET commercial_owner_organization_id={B}',f'UPDATE partner_accounts SET commercial_owner_organization_id={A}'),
+        ('partner inactive', 'UPDATE partner_accounts SET ativo=false','UPDATE partner_accounts SET ativo=true'),
+        ('partner client cross',f'UPDATE partner_accounts SET client_id={CB}',f'UPDATE partner_accounts SET client_id={CA}'),
+        ('partner item cross',f'UPDATE partner_order_items SET product_id={q(99)}',f'UPDATE partner_order_items SET product_id={P}'),
+    ]:
+        check(label,count+'=0',change+';',undo+';')
+    sql+=f'UPDATE ordens_servico SET partner_order_id=NULL,partner_order_item_id=NULL WHERE id={OA};\n'
+    check('field cross',count+'=0',f'INSERT INTO talhoes VALUES({q(82)},{B},{q(81)},true,\'FSF field\'); UPDATE ordens_servico SET talhao_id={q(82)} WHERE id={OA};',f'UPDATE ordens_servico SET talhao_id=NULL WHERE id={OA};')
+    check('reservation cross',count+'=0',f'INSERT INTO estoque_produto(id,lote_id,produto_id,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id) VALUES({q(73)},{L},{P},{OB},\'manual\',{CB});','DELETE FROM estoque_produto;')
+    check('delivery lot orphan',count+'=0',f'INSERT INTO entregas(id,organization_id,cliente_id,ordem_servico_id,lote_id) VALUES({q(74)},{A},{CA},{OA},{q(99)});','DELETE FROM entregas;')
+    check('application parent orphan',count+'=0',f'INSERT INTO aplicacoes(id,organization_id,ordem_servico_id,parent_id) VALUES({q(75)},{A},{OA},{q(99)});','DELETE FROM aplicacoes;')
     check('live name not snapshot',"(SELECT cliente_nome FROM private.h7n_esteira_laboratorio())='AR Atual' AND (SELECT cliente_nome FROM mv_esteira_laboratorio WHERE os_id="+OA+")='AR'",f"UPDATE clientes SET nome='AR Atual' WHERE id={CA};")
     check('pagination scoped total',"(public.rpc_cockpit_listar_esteira_v1(p_limit=>1,p_offset=>1)->>'total_count')::int=1 AND jsonb_array_length(public.rpc_cockpit_listar_esteira_v1(p_limit=>1,p_offset=>1)->'items')=0")
     check('pagination clamp',"(public.rpc_cockpit_listar_esteira_v1(p_limit=>999,p_offset=>-1)->>'limit')::int=200 AND (public.rpc_cockpit_listar_esteira_v1(p_limit=>999,p_offset=>-1)->>'offset')::int=0")
@@ -115,6 +128,8 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
         check(role+' helper ACL closed',f"NOT has_function_privilege('{role}','private.h7n_esteira_laboratorio()','EXECUTE')")
         check(role+' RPC ACL closed',f"NOT has_function_privilege('{role}','public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)','EXECUTE')")
         check(role+' view ACL closed',f"NOT has_table_privilege('{role}','public.vw_esteira_laboratorio','SELECT')")
+        sql+=f"SET ROLE {role}; DO $acl$ BEGIN BEGIN PERFORM count(*) FROM public.vw_esteira_laboratorio; RAISE EXCEPTION 'view reopened'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS {role} actual SQL role 42501'; END; END $acl$; RESET ROLE;\n"
+        labels.append(role+' actual SQL role 42501')
     tmp=Path(tempfile.mkdtemp(prefix='cockpit-live-',dir='/tmp'));tmp.chmod(0o777)
     pre=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
     started=False
