@@ -1,3 +1,5 @@
+-- ARQUIVO HISTÓRICO JÁ APLICADO PELO REVISOR: NÃO EXECUTAR/REAPLICAR.
+-- Versões oficiais: 20261015161648 (lab+visita), 20261015162631 (hotfix12); ver applied-catalog-lab-20261015-manifest.json.
 -- CANDIDATO 07 — NÃO APLICAR/PUBLICAR. Fase separada e revisável.
 -- Laboratório: somente produtos familia_catalogo='biologico' e microrganismos.
 -- Preserva históricos/estoque/entregas; protege apenas NOVAS entradas/conversões.
