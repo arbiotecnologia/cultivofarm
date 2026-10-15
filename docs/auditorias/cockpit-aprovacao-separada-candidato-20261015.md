@@ -1,3 +1,8 @@
+## Atualização 19:44 — proteção APLICADA externamente
+Migration **20261015194058_h_os_separate_approval_guard_and_b2b_open** recuperada do ledger canônico via SELECT, arquivada EXATA em `scripts/rbac-audit/applied-20261015194058_h_os_separate_approval_guard_and_b2b_open.sql`; MD5 do statement **03062d703bb0ae39be08a71cc865067c**. Não reaplicar o candidato. A primeira tentativa syntax error/sem efeitos e segunda sucesso são evidências externas Renato. 96 assertions reproduzidas e protótipo gerador/triggers reais 10 assertions PASS são externos, Auth/schema reduzidos.
+
+Hashes próprios read-only pós-aplicação: gerador **2c75352712438df1558a3f5453e67da0**, aprovação **d65be82dbf38ec429b7377bd6873ba47**, programar **a42d6b07f51e6dacf41096f6cefb8163**. Aprovação/programar auth/anon EXECUTE false. As quatro definições funcionais coincidem byte a byte com o candidato local; diferenças são preflight/pós-condições/ordem/comentários/terminador transacional. Não substituir ledger pelo candidato nem corrigir comentários históricos no arquivo exato. Proteção OS encerrada como aplicada, **aprovação/programação/fabricação operacionais NO-GO** por CAS/concorrência/cadeia B2B. Rollback pós-aplicação somente forward-fix revisado preservando guards; nenhum grant restaurado.
+
 # OS — aprovação separada, candidato fechado (revisão 19:19 UTC)
 
 ## Continuação 19:35 — compatibilidade resolvida no candidato atômico
