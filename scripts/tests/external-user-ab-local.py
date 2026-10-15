@@ -40,8 +40,18 @@ def main():
   # Same JWT in both sessions; now() fallback would invent different iat per transaction.
   issued=run("SELECT extract(epoch FROM clock_timestamp())::bigint;")
   actor="SELECT set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',false); SELECT set_config('request.jwt.claim.iat','"+issued+"',false); SET ROLE authenticated;"
-  claim="SELECT public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','aaaaaaaa-1111-4111-8111-111111111111','race@example.invalid','Race');"
-  run('GRANT EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text),platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid) TO authenticated; GRANT EXECUTE ON FUNCTION public.b2b_finish_provisioning(uuid,uuid,uuid),public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid),public.b2b_complete_provisioning_compensation(uuid,uuid,uuid) TO service_role;')
+  claim="SELECT public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','aaaaaaaa-1111-4111-8111-111111111111','race@example.invalid','Race','parceiro_b2b'::public.app_role,ARRAY[]::uuid[],NULL::uuid);"
+  # Execute the exact delivery grants; production hash preflight cannot run on reduced fixtures.
+  activation=(ROOT/'scripts/rbac-audit/proposed-external-user-activation-grants.sql').read_text()
+  run(activation.split('-- BEGIN EXACT GRANTS\n',1)[1].split('-- END EXACT GRANTS',1)[0])
+  signatures=[('public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid)','authenticated'),('platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid)','authenticated')]+[(f'public.{name}(uuid,uuid,uuid)','service_role') for name in ['b2b_finish_provisioning','b2b_prepare_provisioning_compensation','b2b_complete_provisioning_compensation']]
+  for sig,allowed in signatures:
+   for who in ['anon','authenticated','service_role']:
+    assert run(f"SELECT has_function_privilege('{who}','{sig}','EXECUTE');")==('t' if who==allowed else 'f')
+  for sig in ['public.b2b_claim_provisioning(uuid,uuid,text,text)','platform_private.external_provisioning_scope(uuid,public.app_role,uuid,uuid[],uuid)']:
+   for who in ['anon','authenticated','service_role']:
+    assert run(f"SELECT has_function_privilege('{who}','{sig}','EXECUTE');")=='f'
+  print('PASS 21 exact activation ACL assertions; claim7 used, overload4/helper closed')
   first=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
   first.stdin.write("BEGIN; UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton; SELECT 'READY';\n");first.stdin.flush()
   assert first.stdout.readline().strip()=='READY'
@@ -84,6 +94,13 @@ def main():
   failed=subprocess.run(base,input=(ROOT/'scripts/rbac-audit/proposed-external-user-ab-closed.sql').read_text(),text=True,capture_output=True)
   assert failed.returncode!=0 and 'external_provisioning_baseline_mismatch' in failed.stderr
   print('PASS occupied candidate baseline rejected')
+  run((ROOT/'scripts/rbac-audit/rollback-external-user-activation-grants.sql').read_text())
+  for sig,_ in signatures:
+   for who in ['anon','authenticated','service_role']:
+    assert run(f"SELECT has_function_privilege('{who}','{sig}','EXECUTE');")=='f'
+  assert run("SELECT count(*) FROM pg_trigger WHERE tgrelid='public.platform_org_admin_invites'::regclass AND NOT tgisinternal;")=='3'
+  assert run("SELECT count(*) FROM platform_private.b2b_provisioning_receipts;")=='1'
+  print('PASS 17 restrictive activation rollback assertions; triggers/receipt preserved')
   run((ROOT/'scripts/rbac-audit/rollback-external-user-ab-closed.sql').read_text())
   assert run("SELECT count(*) FROM pg_trigger WHERE tgrelid='public.platform_org_admin_invites'::regclass AND NOT tgisinternal;")=='0'
   assert run("SELECT count(*) FROM platform_private.b2b_provisioning_receipts;")=='1'
