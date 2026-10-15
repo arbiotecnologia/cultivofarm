@@ -1,7 +1,8 @@
 ## RECORTE 19:44 — OS aplicada externamente; cadastro A+B fechado
 - [x] Ledger 20261015194058 recuperado read-only e arquivado exato; não reaplicar. Aprovação/programação operacionais NO-GO (CAS/concorrência/cadeia B2B).
-- [ ] Preparar cadastro externo exclusivo no fluxo existente, candidatos SQL e diff Edge sem deploy/grants/UI/contas/emails reais.
-- [ ] Executar testes isolados tenant/irmãos/retry/compensação/revogação e documentar rollback/limitações.
+- [x] Corpo candidato A+B fechado + diff Edge não aplicado + preflight SELECT/relatório preparados; sem deploy/grants/UI/contas/emails reais.
+- [x] 30 assertions PG isolado +65 Vitest PASS; rollback/limitações documentados.
+- [ ] Liberação A+B bloqueada por reconciliação crash/acquiredfalse, concorrência/fullschema/ABA, entitlement e cadeia portal/Storage dos irmãos, preflight/rollback implantação completos; aguarda revisão, sem contas reais.
 
 ## RECORTE 19:35 — compatibilidade OS aberta, candidato combinado
 - [x] Registrar96assertions0ef9b2a/PGlite/Auth-schema simulados e preflight hospedado read-only PASS EXTERNOS Renato; não reaplicar.
