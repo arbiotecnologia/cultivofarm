@@ -20,9 +20,10 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc:
   const run = async () => {
     db.calls.push(fn);
     if (fn === "tenant_catalog_owned_list") {
+      const scopeAtRead = auth.profile.organization_id;
       if (db.readDelay) await db.readDelay;
       const archived = args.p_include_archived as boolean;
-      return { data: { items: db.rows.filter((r) => r.entity === args.p_entity_type && r.owner_organization_id === auth.profile.organization_id && (archived || !r.archived_at)), has_more: false }, error: null };
+      return { data: { items: db.rows.filter((r) => r.entity === args.p_entity_type && r.owner_organization_id === scopeAtRead && (archived || !r.archived_at)), has_more: false }, error: null };
     }
     if (fn === "tenant_catalog_owned_detail") {
       const item = db.rows.find((r) => r.id === args.p_entity_id && r.owner_organization_id === auth.profile.organization_id);
@@ -52,7 +53,8 @@ import { CulturasTab } from "@/pages/Protocolos";
 function requireRow(node: HTMLElement) { const row = node.closest("tr"); if (!row) throw new Error("Linha não encontrada"); return row; }
 function app(Component = CulturasTab) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}><Component /></QueryClientProvider>);
+  const rendered = render(<QueryClientProvider client={client}><Component /></QueryClientProvider>);
+  return { ...rendered, client, redraw: () => rendered.rerender(<QueryClientProvider client={client}><Component /></QueryClientProvider>) };
 }
 async function submitDialog(name: string, reason = "motivo suficiente") {
   fireEvent.change(await screen.findByLabelText("Nome"), { target: { value: name } });
@@ -117,6 +119,22 @@ describe("culturas próprias na aba existente", () => {
     await screen.findByText("Soja");
     await waitFor(() => expect(db.calls).toContain("tenant_catalog_owned_list"));
     expect(screen.queryByText("FSF privada")).toBeNull();
+  });
+
+  it("leitura antiga não reaparece após troca de empresa e caches não se misturam", async () => {
+    db.rows.push({ id: "ar-only", entity: "cultura", nome: "AR secreta", ativo: true, archived_at: null, owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z" });
+    let release: () => void = () => {};
+    db.readDelay = new Promise<void>((resolve) => { release = resolve; });
+    const view = app();
+    await waitFor(() => expect(db.calls).toContain("tenant_catalog_owned_list"));
+    auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" };
+    db.readDelay = null; view.redraw();
+    await act(async () => release());
+    await screen.findByText("Soja");
+    expect(screen.queryByText("AR secreta")).toBeNull();
+    const fsfData = view.client.getQueryData(["tenant-catalog", FSF, "u-fsf", "owned", "cultura", "list", "", 0, 50, false]) as { items: unknown[] } | undefined;
+    await waitFor(() => expect(view.client.getQueryState(["tenant-catalog", FSF, "u-fsf", "owned", "cultura", "list", "", 0, 50, false])?.status).toBe("success"));
+    expect(fsfData?.items ?? []).toEqual([]);
   });
 
   it("perfil sem gestão vê próprio sem controles de mutação", async () => {
