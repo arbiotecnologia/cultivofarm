@@ -5,11 +5,11 @@
 - Organizations writes require SECURITY DEFINER RPCs issuing platform_private.authz_tickets (txid), enforced by triggers; GUC flags never authorize — prevents bypass.
 
 - Provisioned-admin password links use canonical SMTP and invitation fencing; operator recovery links stay disabled — only holders define passwords.
-- Convites operacionais sempre usam `https://app.cultivofarm.com.br/reset-password` definido no servidor; o `Origin` só autoriza a chamada e nunca compõe o redirect — evita fallback para localhost e open redirect.
+- Operational invites use server-fixed `https://app.cultivofarm.com.br/reset-password`; Origin only authorizes, never builds redirects — prevents localhost fallback/open redirects.
 
 - Global communication settings require server-side `is_platform_superadmin`; tenant admins have no UI/endpoint access; workers use service-role-only RPCs — preserves tenant and secret isolation.
 
-- Frontend version detection compares the production-build meta ID, with entry-script fallback; AuthProvider owns the controls, navigation requires a click, `/sw.js` only cleans up, and push uses `/push-sw.js` without app-shell caching.
+- Version detection compares production meta ID, falling back to entry script; AuthProvider owns controls, navigation needs a click, `/sw.js` cleans up, `/push-sw.js` handles push without app-shell caching — prevents stale shells.
 
 - Organization creation requires an immutable CNPJ lookup/review snapshot and CNPJ re-entry before RPC — blocks stale-tab/autofill bypass of reviewed E01.
 
@@ -22,7 +22,7 @@
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Published versions are immutable; successors start DRAFT. Publishing closes only predecessor `effective_to` under `saas_plan_version_supersede` ticket — preserves snapshots/history.
-- Legal/trade name and email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins retain separate flows — prevents parallel writes.
+- Name/email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins stay separate — prevents parallel writes.
 - Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target checks, Auth confirmation, JWT fencing, expiry/retry audits stay server-side — avoids bypass.
 - Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
 - Auth logout/renewal clears identity/cache; reload runs outside callbacks — avoids stale roles/deadlocks.
