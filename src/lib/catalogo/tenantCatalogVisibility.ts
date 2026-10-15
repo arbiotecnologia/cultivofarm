@@ -6,6 +6,10 @@
  * - A empresa é derivada no servidor. Nenhuma função aqui envia organization_id.
  * - Sem fallback silencioso: RPC ausente/erro/resposta malformada vira erro explícito.
  */
+/** Cliente mínimo (rpc + abortSignal opcional) — RPCs ainda fora dos tipos gerados. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => any };
+
 export type TenantCatalogEntity = "produto" | "microrganismo" | "cultura";
 
 export const TENANT_VISIBILITY_REASON_MIN = 5;
@@ -82,7 +86,7 @@ export function validateVisibilityInput(i: {
 }
 
 /** Mutação: exige resposta coerente com o pedido; nunca trata 0 linhas/resposta vazia como sucesso. */
-export async function setTenantVisibility(client: any, i: {
+export async function setTenantVisibility(client: RpcClient, i: {
   entityType: TenantCatalogEntity; entityId: string; hidden: boolean; expectedVersion: number; reason: string; idempotencyKey: string;
 }): Promise<VisibilityState & { replayed: boolean }> {
   const invalid = validateVisibilityInput(i);
@@ -100,7 +104,7 @@ export async function setTenantVisibility(client: any, i: {
 }
 
 /** Sobreposição para a gestão: lê preferências da empresa para IDs visíveis (lotes de 500). */
-export async function readTenantVisibility(client: any, entity: TenantCatalogEntity, ids: readonly string[], signal?: AbortSignal)
+export async function readTenantVisibility(client: RpcClient, entity: TenantCatalogEntity, ids: readonly string[], signal?: AbortSignal)
 : Promise<Map<string, VisibilityState>> {
   const out = new Map<string, VisibilityState>();
   const unique = [...new Set(ids)].filter((x) => UUID_RE.test(x));
@@ -124,7 +128,7 @@ export interface SelectionRow { id: string; nome: string; selectable: boolean; h
 export interface SelectionPage { rows: SelectionRow[]; total: number; hasMore: boolean }
 
 /** Seletor de NOVAS seleções: paginado e filtrado no servidor. `include` mostra o valor já vinculado sem torná-lo selecionável. */
-export async function fetchTenantSelectionPage(client: any, p: {
+export async function fetchTenantSelectionPage(client: RpcClient, p: {
   entity: TenantCatalogEntity; search?: string; limit: number; offset: number; include?: readonly string[]; signal?: AbortSignal;
 }): Promise<SelectionPage> {
   const limit = Math.trunc(p.limit);
@@ -140,12 +144,12 @@ export async function fetchTenantSelectionPage(client: any, p: {
   if (error) throw new TenantVisibilityError(mapTenantVisibilityError(error), error);
   if (!Array.isArray(data)) throw new TenantVisibilityError("Resposta do seletor inválida.");
   let total = 0;
-  const rows: SelectionRow[] = data.map((r: any) => {
+  const rows: SelectionRow[] = (data as Array<Record<string, unknown> | null>).map((r) => {
     if (!r || typeof r.id !== "string" || typeof r.nome !== "string" || typeof r.selectable !== "boolean") {
       throw new TenantVisibilityError("Resposta do seletor inválida.");
     }
     if (r.selectable && r.total != null) total = Number(r.total);
-    return { id: r.id, nome: r.nome, selectable: r.selectable, hidden: !!r.hidden, ativo: !!r.ativo };
+    return { id: r.id as string, nome: r.nome as string, selectable: r.selectable as boolean, hidden: !!r.hidden, ativo: !!r.ativo };
   });
   const selectableCount = rows.filter((r) => r.selectable).length;
   return { rows, total, hasMore: p.offset + selectableCount < total };

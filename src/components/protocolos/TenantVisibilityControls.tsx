@@ -26,7 +26,7 @@ export const TENANT_VISIBILITY_SCOPE_NOTE =
 /** Papel de gestão (dica de UI). A autorização real é feita no servidor. */
 export function useCanManageTenantVisibility(): boolean {
   const { roles } = useAuth();
-  return roles.includes("administrador" as any) || roles.includes("gestor" as any);
+  return roles.includes("administrador") || roles.includes("gestor");
 }
 
 export function ShowHiddenSwitch({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
@@ -140,7 +140,7 @@ export function useManagedVisibility<T extends { id: string }>(entity: TenantCat
   };
 }
 
-export function TenantVisibilityBar({ v }: { v: ReturnType<typeof useManagedVisibility<any>> }) {
+export function TenantVisibilityBar({ v }: { v: ReturnType<typeof useManagedVisibility<{ id: string }>> }) {
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm" data-testid="tenant-visibility-bar">
       <ShowHiddenSwitch checked={v.showHidden} onChange={v.setShowHidden} disabled={!!v.error || v.loading} />
