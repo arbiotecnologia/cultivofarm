@@ -66,6 +66,7 @@ function CulturasTab() {
                 content={[
                   { label: "Descrição", value: c.descricao || "—" },
                   { label: "Situação", value: c.ativo ? "Ativa" : "Inativa" },
+                  ...(tenantVis.map?.get(c.id)?.hidden ? [{ label: "Empresa", value: "Oculta nesta empresa" }] : []),
                 ]}
               />
             ))

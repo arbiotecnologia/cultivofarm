@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -102,14 +103,10 @@ export default function WizardCampoStep({
     },
   });
 
-  const { data: culturas } = useQuery({
-    queryKey: ["wizard-campo-culturas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("culturas").select("id, nome").order("nome");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  // Nova seleção de cultura: seletor do servidor (ativas e não ocultas na empresa). A cultura já
+  // gravada no formulário vem via include e aparece marcada, sem poder ser escolhida de novo.
+  const culturaSel = useTenantSelection("cultura", { limit: 100, include: form.cultura_id ? [form.cultura_id] : [] });
+  const culturas = culturaSel.data?.rows;
 
   // Hidrata: primeiro tenta remoto, depois rascunho local
   useEffect(() => {
@@ -301,11 +298,21 @@ export default function WizardCampoStep({
         >
           <SelectTrigger id="cultura"><SelectValue placeholder="Selecione a cultura" /></SelectTrigger>
           <SelectContent>
-            {(culturas ?? []).map((c: any) => (
-              <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+            {(culturas ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id} disabled={!c.selectable}>
+                {c.nome}{!c.selectable ? " (indisponível para nova seleção)" : ""}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {culturaSel.isError && (
+          <p role="alert" className="text-xs text-destructive">
+            Não foi possível carregar as culturas: {(culturaSel.error as Error).message}
+          </p>
+        )}
+        {culturaSel.data?.hasMore && (
+          <p className="text-xs text-muted-foreground">Mostrando as primeiras 100 culturas.</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
