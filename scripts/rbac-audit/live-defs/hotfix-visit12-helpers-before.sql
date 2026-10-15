@@ -106,4 +106,5 @@ BEGIN
  END LOOP;
  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
  RETURN NEW;
-END $function$;
+END $function$
+;
