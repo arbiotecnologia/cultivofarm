@@ -1,3 +1,9 @@
+## RECORTE 21:51 — autorização focal de alteração administrativa de senha
+- [x] has_role e admin_can_update_user_password_server usam anonClient/JWT getUser validado; erro RPC500/código seguro distinto de negação403, sem grants/DDL.
+- [x] Admin/tenant/readiness/alvo não-superadmin permanecem nos guards existentes; password-only sem confirmar email/limpar flag; senha8–128 letra+número backend/frontend, auditoria sem senha e UI segura.
+- [x]125/125Vitest8arquivos PASS (29 handler real mock,17contrato,2mutation real e77regressões). Lint focal arquivos novos/testes0; Configuracoes18erros/2avisos iguais ao baseline, sem lint globalPASS. Build automáticoOK21:55:53Z/diff-checkPASS; typechecks manuais não executados. Relatório/rollback docs/auditorias/admin-password-caller-context-20261015.md; snapshot bdf381c4. Sem senha real/email/deploy/publicação; recuperação429 intocada.
+- [ ] Auditor: revisão/implantação controlada e verificação real; sessão Admin AR disponível ao auditor, não executar mutação real nesta entrega.
+
 ## RECORTE 21:45 — recuperação Auth, P2 UX
 - [x] Diagnóstico externo canônico: /recover 21:44:39Z e 21:44:46Z retornaram429/over_email_send_rate_limit; dois envios anteriores bem-sucedidos informados. Não é falha comprovada de cadastro.
 - [x] Códigos de limite/status429 tratados no formulário existente com mensagem neutra e pausa local60s, sem retry automático; sucesso/genérico/redirect/readiness preservados.

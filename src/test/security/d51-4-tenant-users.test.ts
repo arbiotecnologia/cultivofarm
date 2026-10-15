@@ -43,9 +43,9 @@ describe("D51.4 Gate 1 — isolamento de usuários", () => {
   });
 
   it("valida redefinição de senha no contexto autenticado do ator", () => {
-    expect(passwordEdge).toContain("const scopedClient = createClient");
+    expect(passwordEdge).toContain("const anonClient = createClient");
     expect(passwordEdge).toContain("Authorization: authHeader");
-    expect(passwordEdge).toContain('scopedClient.rpc(\n      "admin_can_update_user_password_server"');
+    expect(passwordEdge).toContain('anonClient.rpc(\n      "admin_can_update_user_password_server"');
   });
 
   it("impede que autoedição direta altere tenant ou campos estruturais", () => {

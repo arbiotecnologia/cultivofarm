@@ -68,6 +68,7 @@ import AparenciaTab from "@/components/configuracoes/AparenciaTab";
 import { Link } from "react-router-dom";
 import { History, Wallet } from "lucide-react";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
+import { changeAdminPassword, adminPasswordErrorMessage } from "@/lib/configuracoes/adminPassword";
 
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import { CreditCard } from "lucide-react";
@@ -514,21 +515,17 @@ export default function Configuracoes() {
   const updateUserPassword = useMutation({
     mutationFn: async () => {
       if (!editUser) throw new Error("Usuário não selecionado");
-      if (!senhaForte(newPassword)) throw new Error(REGRA_SENHA);
-      if (newPassword !== confirmPassword) throw new Error("As senhas não coincidem");
-      const { data, error } = await supabase.functions.invoke("admin-update-user-password", {
-        body: { user_id: editUser.user_id, new_password: newPassword },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      await changeAdminPassword(editUser.user_id, newPassword, confirmPassword,
+        (body) => supabase.functions.invoke("admin-update-user-password", { body }),
+        lerCorpoErroFuncao);
     },
     onSuccess: () => {
-      toast({ title: "Senha atualizada com sucesso" });
+      toast({ title: "Senha atualizada com sucesso", description: "A alteração não confirma o email nem conclui o primeiro acesso pelo titular." });
       setNewPassword("");
       setConfirmPassword("");
     },
-    onError: (e: Error) => {
-      toast({ title: "Erro ao alterar senha", description: e.message, variant: "destructive" });
+    onError: (e: unknown) => {
+      toast({ title: "Erro ao alterar senha", description: adminPasswordErrorMessage(e), variant: "destructive" });
     },
   });
 
@@ -1104,7 +1101,7 @@ export default function Configuracoes() {
                         <h4 className="font-semibold text-sm">Alterar Senha</h4>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Defina uma nova senha para este usuário. Ele precisará usar a nova senha no próximo login. {REGRA_SENHA}
+                        A alteração administrativa não confirma o email nem conclui o primeiro acesso. Se houver pendência, o titular deve concluir o fluxo seguro de primeiro acesso ou recuperação; alterar a senha não libera esse acesso. {REGRA_SENHA}
                       </p>
                       <div>
                         <Label>Nova Senha</Label>
