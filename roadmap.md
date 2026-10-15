@@ -1,5 +1,10 @@
+## COMPLEMENTO INDEPENDENTE — 2026-10-15 15:12 UTC
+- [x] Corrigida nomenclatura do inventário: 84 candidatos por substring; strings, NEW/OLD, payload puro, delegadores, consultas e SQL dinâmico triados sem excluir indiretos.
+- [x] Registradas evidências independentes: SQL11 `0923b7a5` 14/14, hash live `74f45dd67e9435a9876b0e2609e38954` coincidente e 0 apresentações ligadas; candidato04 `35199f39` 52/52 com preflight FK sintético; Biological14 ampliado 57/57. Não somar com provas locais; stubs não Auth real.
+- [ ] Revisão para aplicação/publicação, Auth/RLS real, browser, concorrência e patch Edge; gate OFF. Nenhum DDL/FK aplicado/removido nesta rodada.
+
 ## CONTINUAÇÃO — MATRIZ, RUNTIME E SQL07 — 2026-10-15 15:10 UTC
-- [x] Matriz nominal: 83 funções diretas + `rpc_partner_commercial_history` transitiva, identidades confirmadas em leitura canônica; sete views originais com md5/prova individual. Inventário completo, certificação hospedada UNVERIFIED.
+- [x] Matriz nominal: 84 candidatos por substring, classificados por corpo/caminho (não consultas diretas), identidades confirmadas em leitura canônica; sete views originais com md5/prova individual. Inventário completo, certificação hospedada UNVERIFIED.
 - [x] Conjunto ordenado 01–06/08–11 com SHA-256; rollback operacional preserva colunas, RLS, guards, leitores, ledger e dados.
 - [x] Roteiro runtime revisado: RESET ROLE explícito, gate OFF obrigatório antes, sem helpers privados como authenticated, composição declarativa real e casos AR/FSF/SA/Financeiro/Consultor. Não executado com atores reais.
 - [x] SQL07 completo: seis corpos explícitos com hashes live; OS/programação/lote/On-Farm aceitam só biológico ou micro; família NULL e duas referências bloqueadas; pedido misto não é marcado produzido por OS biológicas; replay preservado. PGlite 36/36 PASS com stubs; preflights live e Auth real UNVERIFIED.
