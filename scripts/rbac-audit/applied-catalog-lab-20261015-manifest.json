@@ -1,0 +1,18 @@
+[
+  {
+    "version": "20261015161648",
+    "name": "h_catalog_lab_biological_only_and_visit_explicit",
+    "file": "scripts/rbac-audit/applied-20261015161648-h_catalog_lab_biological_only_and_visit_explicit.sql",
+    "sha256": "3e7441821b78f0cf0a7d7cf3aec0df1ddb3fe7e63a6d8e436a3edcc13a369029",
+    "state": "ALREADY_APPLIED_DO_NOT_REAPPLY",
+    "source": "canonical supabase_migrations.schema_migrations statements read-only"
+  },
+  {
+    "version": "20261015162631",
+    "name": "h_catalog_visit_selection_current_schema",
+    "file": "scripts/rbac-audit/applied-20261015162631-h_catalog_visit_selection_current_schema.sql",
+    "sha256": "0f9276ae0047845880a54d8448a6ea3c1c1011e871767857aa53b53eeb66327f",
+    "state": "ALREADY_APPLIED_DO_NOT_REAPPLY",
+    "source": "canonical supabase_migrations.schema_migrations statements read-only"
+  }
+]

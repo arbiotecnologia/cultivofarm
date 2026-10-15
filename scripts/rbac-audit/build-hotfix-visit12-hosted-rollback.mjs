@@ -7,8 +7,8 @@ if (actors.length !== 3 || actors.some(x => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9
 }
 const candidate = readFileSync('scripts/rbac-audit/proposed-hotfix-catalog-visit12-current-schema.sql','utf8');
 const visit = 'f19c8343-6205-487a-a237-df4d8ee06471';
-let output = '-- REVISÃO/EXECUÇÃO MANUAL AUTORIZADA SOMENTE NO REF swzpzcwiasxmjutrmvkm.\n-- DDL TRANSACIONAL + LEITURAS; NÃO INSERE/ATUALIZA DADOS/AUTH. ROLLBACK OBRIGATÓRIO.\n-- Claims SQL NÃO são JWT/browser. Abortar qualquer erro e executar ROLLBACK.\n' + candidate.replace(/COMMIT;\s*$/, '');
-const claims = uid => `SELECT set_config('request.jwt.claims','${JSON.stringify({sub:uid,role:'authenticated',exp:2100000000})}',true),set_config('request.jwt.claim.sub','${uid}',true),set_config('request.jwt.claim.role','authenticated',true);\nSET LOCAL ROLE authenticated;\n`;
+let output = '-- HOTFIX JÁ APLICADO 20261015162631: NÃO REAPLICAR. ENSAIO SOMENTE LEITURAS.\n-- Destino swzpzcwiasxmjutrmvkm; claims SQL não são JWT/browser.\nBEGIN;\n';
+const claims = uid => `SELECT set_config('request.jwt.claims',jsonb_build_object('sub','${uid}','role','authenticated','iat',extract(epoch FROM clock_timestamp())::bigint,'exp',extract(epoch FROM clock_timestamp())::bigint+3600)::text,true),set_config('request.jwt.claim.sub','${uid}',true),set_config('request.jwt.claim.role','authenticated',true);\nSET LOCAL ROLE authenticated;\n`;
 output += claims(actors[0]);
 output += `DO $$ DECLARE n integer; BEGIN
  SELECT count(*) INTO n FROM public.tenant_catalog_visit_selection_page('${visit}','produto',NULL,50,0,NULL);
@@ -33,6 +33,6 @@ output += `SET LOCAL ROLE anon;
 DO $$ BEGIN BEGIN PERFORM * FROM public.tenant_catalog_visit_selection_page('${visit}','produto',NULL,50,0,NULL); RAISE EXCEPTION 'anon unexpectedly authorized'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'anon denied'; END; END $$;
 RESET ROLE;
 ROLLBACK;
-SELECT to_regprocedure('public.tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])') IS NULL AS candidate_rolled_back;
+SELECT to_regprocedure('public.tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])') IS NOT NULL AS applied_rpc_preserved;
 `;
 process.stdout.write(output);

@@ -1,3 +1,5 @@
+-- ARQUIVO HISTÓRICO JÁ APLICADO PELO REVISOR: NÃO EXECUTAR/REAPLICAR.
+-- Versões oficiais: 20261015161648 (lab+visita), 20261015162631 (hotfix12); ver applied-catalog-lab-20261015-manifest.json.
 -- HOTFIX SQL12 AUTÔNOMO — CANDIDATO NÃO APLICADO. Sem dependência ownership01–13/lab07.
 -- Destino exclusivo swzpzcwiasxmjutrmvkm; sem alteração de Auth/dados/RLS/ACL das tabelas.
 -- Preflight fail-closed: schema atual, hashes live 2026-10-15 e ausência das novas entradas.

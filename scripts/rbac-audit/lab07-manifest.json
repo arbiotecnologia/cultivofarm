@@ -3,42 +3,54 @@
     "function": "public.generate_production_orders_from_partner",
     "after_definition_text_md5": "7064f438bcc2b8b32600fdc2100c1d53",
     "runtime": "UNVERIFIED until local harness runs",
-    "hosted": "UNVERIFIED"
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true
   },
   {
     "function": "public.publish_planning_to_lab",
     "after_definition_text_md5": "b54ee2d667a8a3bd6b3db36122f62670",
     "runtime": "UNVERIFIED until local harness runs",
-    "hosted": "UNVERIFIED"
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true
   },
   {
     "function": "public.rpc_programar_os_v1",
     "after_definition_text_md5": "8e6e1781ab027043a5b5bf14583c4d95",
     "runtime": "UNVERIFIED until local harness runs",
-    "hosted": "UNVERIFIED"
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true
   },
   {
     "function": "public.rpc_planejamento_publicar_v1",
     "after_definition_text_md5": "00cd12c75e8c75cf09ec08932ffc9355",
     "runtime": "UNVERIFIED until local harness runs",
-    "hosted": "UNVERIFIED"
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true
   },
   {
     "function": "public.rpc_cockpit_gerar_lote_v1",
     "after_definition_text_md5": "cbfbd473f1237946f4e3e3b582bba056",
     "runtime": "UNVERIFIED until local harness runs",
-    "hosted": "UNVERIFIED"
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true
   },
   {
     "function": "public.trg_os_sync_partner_order_fn",
     "after_definition_text_md5": "338cfe962bee11edf81e3f14d449b368",
     "runtime": "UNVERIFIED until local harness runs",
-    "hosted": "UNVERIFIED"
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true
   },
   {
     "candidate": "visit07",
     "file": "scripts/rbac-audit/proposed-lab-visit-explicit-07.sql",
-    "sha256": "e37d11336d8aa94f7c17c101cd9b6a4f776b5b632d822a309ad0ee5b6d102eb7",
+    "sha256": "c6cbba75eeb022d4c2e383f5a5aafe5a5d2dbb88bb0995f2275b32b351d32d09",
     "before_conversion_definition_md5": "89a904d232b32c57c24931a007f6d728",
     "before_request_trigger_definition_md5": "b01b3190e09b3da5c401a5ec7dd4377a",
     "before_programming_trigger_definition_md5": "55d57b6e698b48ccf6673978980400b4",
@@ -61,14 +73,17 @@
       }
     ],
     "depends_on": "proposed-lab-biological-only-07.sql; full base preflight required separately",
-    "applied": false,
+    "applied": true,
     "publish_authorized": false,
     "ownership_gate": "OFF",
     "runtime": "PGlite 30/30; isolated PostgreSQL 32/32; Vitest 22/22",
-    "hosted": "UNVERIFIED/NO-GO",
+    "hosted": "APPLIED_EXTERNALLY; reviewer claims/rollback probes; not own browser proof",
     "concurrency": "two independent isolated PostgreSQL sessions, observed lock waits; NOT production",
     "stubs": "Auth/RBAC/tenant/schema/base helpers; visit preflight real hashes/enum/index in fixture",
     "snapshot": "live-defs/public.rpc_converter_visita_em_os-enum-text-applied.sql; ALREADY APPLIED/DO NOT REAPPLY",
-    "rollback": "Never restore vulnerable before definitions; preserve containment and history"
+    "rollback": "Never restore vulnerable before definitions; preserve containment and history",
+    "migration_version": "20261015161648",
+    "do_not_reapply": true,
+    "conversion_live_md5": "66e8072f7aefbe18c1417240121147a5"
   }
 ]

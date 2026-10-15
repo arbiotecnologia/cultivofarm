@@ -1,3 +1,5 @@
+-- ARQUIVO HISTÓRICO JÁ APLICADO PELO REVISOR: NÃO EXECUTAR/REAPLICAR.
+-- Versões oficiais: 20261015161648 (lab+visita), 20261015162631 (hotfix12); ver applied-catalog-lab-20261015-manifest.json.
 -- CANDIDATO VISITA07 — LOCAL, NÃO APLICAR/PUBLICAR; após candidato07-base.
 -- Não sobrescreve os snapshots dos hotfixes já aplicados. Sem tabelas/ACL/índices novos.
 BEGIN;

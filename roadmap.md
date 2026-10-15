@@ -1,4 +1,11 @@
-## HOTFIX SQL12 INDEPENDENTE — 2026-10-15 16:16 UTC
+## ATUALIZAÇÃO EXTERNA 16:28 UTC — NÃO REAPLICAR
+- [x] Arquivar conteúdo exato do histórico canônico das versões 20261015161648 (base07+visita07) e 20261015162631 (hotfix12). Converter live 66e8072f7aefbe18c1417240121147a5 confirmado read-only.
+- [x] Corrigir gerador claims: iat atual/exp+3600; agora ensaio read-only da RPC aplicada, nunca DDL repetida.
+- [x] Preparar contrato candidato/diff diagnóstico legado e PDF NULL, sem aplicar correções nem tocar dados.
+- [x] PGlite diagnóstico 10/10 e hotfix45/45; Vitest proposta5/5+catálogo9/9. Diff encaixa na cópia temporária; build automático OK. Provas locais com stubs, não Auth real.
+- [ ] Revisão/aplicação das correções aguardam o revisor; nenhuma produção física/cobrança/publicação, ownership OFF.
+
+## HOTFIX SQL12 INDEPENDENTE — histórico 2026-10-15 16:16 UTC
 - [x] Preparar candidato autônomo para schema atual sem ownership; preflight/hashes, ACL e referências seguras. Nenhuma aplicação/publicação.
 - [x] Executar testes isolados e fornecer roteiro hospedado com rollback, sem executar DDL em produção; conservar visita f19c8343-6205-487a-a237-df4d8ee06471.
 - [x] Documentar diagnóstico desktop vazio/edição wizard duplicada separadamente, sem modificar dados nem fluxo.

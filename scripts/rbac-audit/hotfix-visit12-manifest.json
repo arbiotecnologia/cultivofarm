@@ -1,6 +1,6 @@
 {
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
-  "status": "CANDIDATE_NOT_APPLIED_NOT_PUBLISHED",
+  "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY",
   "ownership_gate": "OFF",
   "lab07": "SEPARATE",
   "isolated_pglite": {
@@ -16,7 +16,7 @@
   "files": [
     {
       "path": "scripts/rbac-audit/proposed-hotfix-catalog-visit12-current-schema.sql",
-      "sha256": "0f9276ae0047845880a54d8448a6ea3c1c1011e871767857aa53b53eeb66327f"
+      "sha256": "f973038e081270f2858ca58ac15e929d3c3ecf24452cabc0271fc92c40586c60"
     },
     {
       "path": "scripts/rbac-audit/check-hotfix-visit12-current-schema.mjs",
@@ -28,7 +28,10 @@
     },
     {
       "path": "scripts/rbac-audit/build-hotfix-visit12-hosted-rollback.mjs",
-      "sha256": "010278f944d5a56db1c1cfe3119e16c43321c68c77313383ce01bf2299069554"
+      "sha256": "5848b8f48b4121a978e7ca5d3f0ef346dea20f78a2ce25df555ca2233e872df5"
     }
-  ]
+  ],
+  "version": "20261015162631",
+  "external_browser": "Admin AR: Bombarbio selectable and recommendation saved; reported by reviewer",
+  "applied_sql": "scripts/rbac-audit/applied-20261015162631-h_catalog_visit_selection_current_schema.sql"
 }
