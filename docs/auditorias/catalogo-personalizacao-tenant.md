@@ -2,6 +2,36 @@
 
 Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownership e cadastro próprio da empresa ficam fora desta rodada.
 
+## Visita07 — candidato concreto de encaminhamento explícito (2026-10-15)
+
+**GO apenas para testes isolados; NO-GO para aplicação, Auth/RLS e fluxo hospedado.** Ownership gate permanece OFF; candidato07-base e visita07 ficam separados do conjunto ownership01–13. Nenhum SQL remoto, fixture/Auth real, envio, cobrança, emissão fiscal ou publicação nesta rodada. Evidências independentes recebidas: SQL13 108/108, SQL12 17/17 e laboratório `f9857b89` 45/45, todos com stubs; não somar às nossas execuções.
+
+### Baseline aplicada e utilização do campo
+- Além do guard externo `20261015152726`, a leitura canônica confirmou `20261015154248_h_catalog_visit_conversion_enum_text` em schema_migrations e corpo vigente **89a904d232b32c57c24931a007f6d728**. Snapshot separado `live-defs/public.rpc_converter_visita_em_os-enum-text-applied.sql`, JÁ APLICADO/NÃO REAPLICAR. Preserva `btrim(estrategia_manejo::text)` e fallback `estrategia_manejo::text`. O snapshot anterior `e152...` continua histórico, não é baseline vigente.
+- `encaminhar_para_os` já existe, é editado no wizard e persistido pela RPC upsert. A conversora anterior não o consumia: escolhia a última recomendação textual. Nenhuma semântica temporal/histórica foi inferida; flags não são preenchidas/reparadas automaticamente.
+- Índice `idx_unique_os_onfarm_registro_consultor` e resposta `os_id`/`numero_os` singulares preservados. OS admite as duas colunas nullable; candidato grava exatamente produto OU microrganismo.
+
+### Corpo e preflight executáveis
+`scripts/rbac-audit/proposed-lab-visit-explicit-07.sql` é candidato transacional **após07-base**, fora de migrations aplicáveis. Preflight valida marcador do ref canônico, hotfix registrado, três hashes-before reais, helper07, definição exata do índice UNIQUE e ACL auth=true/anon=false; qualquer drift aborta. O preflight07-base continua obrigatório e separado, não foi certificado por este harness.
+
+1. Guard de papel e `can_view_technical_visit` **antes de lookup/status/replay**; rechecagem tenant após lock da visita. Nenhum tenant de payload/GUC é autorização.
+2. Replay sob lock retorna a OS existente, inclusive histórica, sem selecionar novamente ou reescrever logs. Sem OS existente, exatamente **uma** flag TRUE é exigida; zero ou múltiplas (mesmo uma bio e outra química) retornam orientação antes de escrever. Não ordena recomendações por data nem escolhe a última.
+3. Item ativo/global sob lock de catálogo e elegibilidade07 revalidada: produto biológico XOR micro. Químico/adubo/família NULL/dual-ref/sem referência são negados. Item próprio permanece contido. Texto obrigatório usa enum com cast correto.
+4. OS e programação recebem ambos campos, com exatamente um preenchido; seleção/versão/snapshot completo ficam no `visitas_logs` existente. Demais linhas não são alteradas. Falha de trigger/log/constraint desfaz OS, programação, status e logs; conflito UNIQUE alheio não é sucesso falso.
+5. Trigger privado de recomendação adquire lock do pai (pais ordenados se troca), coordenando INSERT/UPDATE/DELETE; visita já encaminhada bloqueia alteração da seleção. Edição de linha que já iniciou antes do lock pode causar deadlock PostgreSQL, tratado como falha sem writes e retry explícito, nunca sucesso arbitrário. Não há retry automático de escrita.
+
+### Efeitos existentes auditados
+- `auto_advance_solicitacao_on_registro()` before **b01b3190e09b3da5c401a5ec7dd4377a** concluía a solicitação quando a visita mudava para convertido_os. O override candidato preserva início/em_visita e remove essa conclusão automática; RPC mantém solicitação não terminal em **aguardando_os**, sem reabrir concluída/cancelada. convertido_os significa apenas encaminhamento singular. Timeline explicita uma recomendação, logs `commercial_completed=false`.
+- `fn_create_programacao_on_os_onfarm_insert()` before **55d57b6e698b48ccf6673978980400b4** ignorava micro-only. Override candidato mantém status/vínculo/volume/data e grava produto OU micro, usando guard07. Demais triggers/ACL/índices não são removidos ou reabertos. Esses overrides afetam seus gatilhos existentes; revisão da integração completa permanece necessária.
+- Wizard continua recomendando químicos/adubos comercialmente. Switch e salvamento bloqueiam encaminhamento incompatível; flag legado conflitante continua marcada até ação humana e pode ser desmarcada. Controles para limpar referências permitem corrigir dual-ref, sem alteração silenciosa. Autorização server-side depende do candidato não aplicado, não do switch.
+
+### Evidências próprias e limites
+- `check-lab-visit07-pglite.mjs`: **30/30 PASS PGlite**, **32/32 PASS PostgreSQL isolado**. Dois casos adicionais com sessões independentes observaram espera real de lock: conversão concorrente retorna mesma OS e INSERT concorrente de flag é rejeitado após conversão. Não é prova de concorrência em produção.
+- Casos: enum antes 42883/42804 e casts válidos; bio/micro com programação e snapshot; químico/adubo/NULL/dual/semrefs; false/NULL/zero flags; múltiplas; misto intacto; vazio/enum-only; privado/inativo; arquivado/status não aprovado/local obrigatório ausente; Auth ausente/papel negado; FSF alheio=inexistente inclusive replay; rollback de falha e UNIQUE não correlato. Auth/RBAC/tenant/schema e helpers secundários são **stubs**. Hashes-before/enum/índice do preflight visita07 são reais dentro do schema fixture; marcador/migration são fixtures, não validação live de toda aplicabilidade.
+- Vitest **22/22 em quatro arquivos**, incluindo oito regras do helper e dois testes novos do switch (sem referência e flag química conflitante desmarcável). Há warnings React `act` no harness de UI, sem falhas; não são browser real. Lint focal e diff-check sem erros; build automático da prévia OK. Não se executou build/typecheck manualmente; typecheck separado não é alegado.
+- Auth/RLS real, wizard autenticado/browser e fluxo integral visita→OS→lote continuam **UNVERIFIED**. SQL12/07 não aplicados impedem prova end-to-end no estado real sem escrita/implantação não autorizada. Sem alterar dados para produzir evidência.
+- Rollback operacional: não restaurar snapshots vulneráveis nem concluir comerciais; manter contenção e bloquear entrada sob revisão. Não adicionar/remover cardinalidade, tabelas, índices ou fazer backfill. AGENTS não alterado, conforme restrição desta frente.
+
 
 
 ## P1 visita aplicado externamente — 2026-10-15 15:29 UTC

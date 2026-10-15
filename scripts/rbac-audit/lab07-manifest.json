@@ -34,5 +34,41 @@
     "after_definition_text_md5": "338cfe962bee11edf81e3f14d449b368",
     "runtime": "UNVERIFIED until local harness runs",
     "hosted": "UNVERIFIED"
+  },
+  {
+    "candidate": "visit07",
+    "file": "scripts/rbac-audit/proposed-lab-visit-explicit-07.sql",
+    "sha256": "e37d11336d8aa94f7c17c101cd9b6a4f776b5b632d822a309ad0ee5b6d102eb7",
+    "before_conversion_definition_md5": "89a904d232b32c57c24931a007f6d728",
+    "before_request_trigger_definition_md5": "b01b3190e09b3da5c401a5ec7dd4377a",
+    "before_programming_trigger_definition_md5": "55d57b6e698b48ccf6673978980400b4",
+    "functions": [
+      {
+        "function": "platform_private.lab_visit_recommendation_lock",
+        "candidate_source_sha256": "e4c7f07cc7643d2b274e320b313d54a162ee6032e2c4873889096add603ffeb4"
+      },
+      {
+        "function": "public.auto_advance_solicitacao_on_registro",
+        "candidate_source_sha256": "bec5a2cd5e57f5513700204ae3fc4eb760518d29d2f6f9ee24d4bf472e91340f"
+      },
+      {
+        "function": "public.fn_create_programacao_on_os_onfarm_insert",
+        "candidate_source_sha256": "4161c05c760d3e9b8555f81e980aff2ded3d6f82b43937d58c07bd2d60ff0074"
+      },
+      {
+        "function": "public.rpc_converter_visita_em_os",
+        "candidate_source_sha256": "32867aacfaec08706f6d2a5d1f4ce930676e404cec7beeed5d88a5be51beba75"
+      }
+    ],
+    "depends_on": "proposed-lab-biological-only-07.sql; full base preflight required separately",
+    "applied": false,
+    "publish_authorized": false,
+    "ownership_gate": "OFF",
+    "runtime": "PGlite 30/30; isolated PostgreSQL 32/32; Vitest 22/22",
+    "hosted": "UNVERIFIED/NO-GO",
+    "concurrency": "two independent isolated PostgreSQL sessions, observed lock waits; NOT production",
+    "stubs": "Auth/RBAC/tenant/schema/base helpers; visit preflight real hashes/enum/index in fixture",
+    "snapshot": "live-defs/public.rpc_converter_visita_em_os-enum-text-applied.sql; ALREADY APPLIED/DO NOT REAPPLY",
+    "rollback": "Never restore vulnerable before definitions; preserve containment and history"
   }
 ]

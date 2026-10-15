@@ -12,6 +12,14 @@ export const REC_PRODUTO_SELECT = "id, nome, familia_catalogo";
 export interface RecMicro { id: string; nome: string; nome_cientifico: string | null }
 export interface RecProduto { id: string; nome: string; familia_catalogo?: string | null }
 
+/** UX somente: o banco revalida seleção, disponibilidade e autorização. */
+export function recCanForwardToLab(productId: string | null | undefined, microId: string | null | undefined,
+  product: RecProduto | undefined, micro: RecMicro | undefined): boolean {
+  if (productId && microId) return false;
+  if (productId) return product?.id === productId && product.familia_catalogo === "biologico";
+  return !!microId && micro?.id === microId;
+}
+
 export function recMicroLabel(m: RecMicro | undefined | null): string {
   if (!m) return "—";
   return m.nome_cientifico && m.nome_cientifico !== m.nome ? `${m.nome} (${m.nome_cientifico})` : m.nome;
