@@ -19,7 +19,8 @@ BEGIN
             OR EXISTS (SELECT 1 FROM public.culturas WHERE owner_organization_id IS NOT NULL)
             OR EXISTS (SELECT 1 FROM public.formulacoes WHERE owner_organization_id IS NOT NULL)
             OR EXISTS (SELECT 1 FROM public.catalogo_volumes WHERE owner_organization_id IS NOT NULL);
-  v_readers := to_regprocedure('platform_private.catalog_item_in_reader_scope(uuid,uuid)') IS NOT NULL;
+  v_readers := to_regprocedure('platform_private.catalog_item_in_reader_scope(uuid,uuid)') IS NOT NULL
+            OR to_regprocedure('platform_private.catalog_b2b_supplier_org(uuid)') IS NOT NULL;
   IF v_private OR v_readers THEN
     RAISE NOTICE 'rollback_partial: gate OFF e fachadas revogadas; estrutura/filtros preservados (privados=% leitores02=%)', v_private, v_readers;
     RETURN;
@@ -36,6 +37,8 @@ BEGIN
   DROP TRIGGER IF EXISTS trg_catalog_owner_root ON public.culturas;
   DROP TRIGGER IF EXISTS trg_catalog_owner_child ON public.formulacoes;
   DROP TRIGGER IF EXISTS trg_catalog_owner_child ON public.catalogo_volumes;
+  DROP FUNCTION IF EXISTS platform_private.trg_catalog_owner_child_formulacoes();
+  DROP FUNCTION IF EXISTS platform_private.trg_catalog_owner_child_volumes();
   DROP FUNCTION IF EXISTS public.tenant_catalog_owned_mutate(text,text,uuid,timestamptz,jsonb,text,uuid);
   DROP FUNCTION IF EXISTS platform_private.catalog_owned_mutate_core(text,text,uuid,timestamptz,jsonb,text,uuid);
   DROP FUNCTION IF EXISTS public.tenant_catalog_owned_list(text,text,integer,integer,boolean);

@@ -717,3 +717,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Revisão 2 (achados 1–8 de 0fe35743) no candidato 01 + candidato 02 de leitores SA/visibilidade/h7n/preço com md5 fixado.
 - [ ] Rodada B2B/fiscal/produção/visita/regulatório/views/Edge service_role — bloqueado: próxima rodada autorizada.
 - [ ] Aplicar 01+02 e rodar runtime/concorrência — bloqueado: revisão independente.
+- [x] Revisão 3 (A–F de 110c9c41) + candidato 03 (helpers SA de volume, catálogos B2B por fornecedor) + patch Edge preparado.
+- [ ] SA writers não-volume, B2B simulação/pedidos, fiscal, produção, visita, regulatório, views, RLS descendentes — próxima rodada.
+- [ ] UI própria (desligada), química/fertilizantes, apresentações/doses/preços próprios — após SQL fechado.
