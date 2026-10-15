@@ -123,6 +123,10 @@ BEGIN
   IF v_registro IS NULL THEN
     RETURN jsonb_build_object('success', false, 'message', 'Sem permissão para converter esta visita.');
   END IF;
+  -- Revalida após aguardar o lock: alteração concorrente de escopo não autoriza replay.
+  IF NOT COALESCE(public.can_view_technical_visit(v_user_id, p_registro_id), false) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Sem permissão para converter esta visita.');
+  END IF;
 
   v_is_consultor_resp := (v_registro.consultor_responsavel = v_user_id);
 
@@ -179,10 +183,6 @@ BEGIN
   END IF;
   SELECT * INTO v_rec FROM public.registros_consultor_recomendacoes
    WHERE id = v_rec_ids[1] AND registro_consultor_id = p_registro_id FOR UPDATE;
-  IF NOT platform_private.lab_item_is_manufacturable(v_rec.produto_biologico_sugerido_id, v_rec.microrganismo_id) THEN
-    RETURN jsonb_build_object('success', false, 'code', 'LAB_VISIT_SELECTION_CONFLICT',
-      'message', 'Revise o encaminhamento: selecione somente um produto biológico ou somente um microrganismo. Químicos, adubos e itens sem família não geram produção.');
-  END IF;
   -- Catálogo próprio continua contido; sem inferência de ownership/família do histórico.
   IF v_rec.produto_biologico_sugerido_id IS NOT NULL THEN
     PERFORM 1 FROM public.produtos p WHERE p.id=v_rec.produto_biologico_sugerido_id
@@ -194,6 +194,11 @@ BEGIN
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'code', 'LAB_VISIT_SELECTION_CONFLICT',
       'message', 'O item encaminhado não está disponível para produção. Revise a recomendação, sem alterar o histórico automaticamente.');
+  END IF;
+  -- Revalida família sob lock do catálogo, não antes dele.
+  IF NOT platform_private.lab_item_is_manufacturable(v_rec.produto_biologico_sugerido_id, v_rec.microrganismo_id) THEN
+    RETURN jsonb_build_object('success', false, 'code', 'LAB_VISIT_SELECTION_CONFLICT',
+      'message', 'Revise o encaminhamento: selecione somente um produto biológico ou somente um microrganismo. Químicos, adubos e itens sem família não geram produção.');
   END IF;
   IF coalesce(btrim(v_rec.recomendacao_tecnica), '') = ''
      AND coalesce(btrim(v_rec.observacoes_finais), '') = ''
