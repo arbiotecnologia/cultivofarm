@@ -1,3 +1,13 @@
+## RECORTE 19:55 — revisão f0f450d, candidato A+B sem implantação
+- [x] Técnico negado mesmo com flag aberta; B2B gestor/Produtor exclusivos.
+- [x] Atividade organização checada sob FOR SHARE; revogação concorrente e same receipt duas sessões PASS local.
+- [x] Retry UUID+receipt existente sem segundo Auth; expiração não autoriza finish; compensação de links próprios sem FK Auth preparada/testada.
+- [x] Preflight baseline assertivo/occupied schema negado + rollback exato baseline zero triggers convite; relatório 17 seções.
+- [x] 31 assertions PG+7 checks locais e66 Vitest PASS; OS107/EXACTMATCH/scanner3995/0 registrados EXTERNOS.
+- [ ] A2: crash antes Auth/fullschema/timeout compensação ; rollback local executado PASS, sem criação real/GoTrue/JWT autorizado, abertura bloqueada.
+- [ ] B1: Storage consultor-arquivos permite Produtor por tenant sem prova cliente individual; preparar contenção focal/probes irmãos antes abertura.
+- [ ] B2: demais canais Produtor RLS/RPC/cache/seleção; resolver atual sem feature portal inventada. Sem deploy/grants/email nesta fase.
+
 ## RECORTE 19:44 — OS aplicada externamente; cadastro A+B fechado
 - [x] Ledger 20261015194058 recuperado read-only e arquivado exato; não reaplicar. Aprovação/programação operacionais NO-GO (CAS/concorrência/cadeia B2B).
 - [x] Corpo candidato A+B fechado + diff Edge não aplicado + preflight SELECT/relatório preparados; sem deploy/grants/UI/contas/emails reais.

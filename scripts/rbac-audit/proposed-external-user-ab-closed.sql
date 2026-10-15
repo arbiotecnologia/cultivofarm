@@ -7,6 +7,17 @@
 -- hold an invitation row before DML: never wait on the gate in that order.
 -- NOWAIT aborts that transaction (55P03), releases its rows and requires an
 -- explicit retry; no automatic email/Auth retry and no second lock registry.
+-- Package order: assertive preflight-external-user-ab-readonly.sql, then this
+-- body in the SAME transaction. This local body also rejects occupied objects.
+DO $baseline$
+BEGIN
+ IF to_regclass('platform_private.b2b_provisioning_receipts') IS NOT NULL
+ OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.platform_org_admin_invites'::regclass AND NOT tgisinternal)
+ OR EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE
+ (n.nspname='cf_user_guards_v1' AND p.proname IN ('acquire_invitation_gate','touch_invitation_profiles'))
+ OR (n.nspname IN ('public','platform_private') AND p.proname IN ('external_provisioning_scope','b2b_claim_provisioning','b2b_finish_provisioning','b2b_prepare_provisioning_compensation','b2b_complete_provisioning_compensation'))) THEN
+ RAISE EXCEPTION 'external_provisioning_baseline_mismatch' USING ERRCODE='55000'; END IF;
+END $baseline$;
 CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_invitation_gate()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $gate$
 BEGIN
@@ -47,7 +58,7 @@ DROP TRIGGER IF EXISTS a00_cf_invitation_no_truncate ON public.platform_org_admi
 CREATE TRIGGER a00_cf_invitation_no_truncate BEFORE TRUNCATE
 ON public.platform_org_admin_invites FOR EACH STATEMENT
 EXECUTE FUNCTION cf_user_guards_v1.block_truncate();
-CREATE TABLE IF NOT EXISTS platform_private.b2b_provisioning_receipts (
+CREATE TABLE platform_private.b2b_provisioning_receipts (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), actor_id uuid NOT NULL,
  organization_id uuid NOT NULL, partner_id uuid,
  external_role public.app_role NOT NULL DEFAULT 'parceiro_b2b', cliente_ids uuid[] NOT NULL DEFAULT ARRAY[]::uuid[], principal_cliente_id uuid, target_snapshot jsonb NOT NULL DEFAULT '{}',
@@ -70,10 +81,11 @@ BEGIN
  SELECT organization_id INTO org FROM public.profiles WHERE user_id=p_actor FOR UPDATE;
  IF p_actor IS NULL OR org IS NULL OR platform_private.platform_actor_access_ready(p_actor) IS NOT TRUE
  OR public.has_role(p_actor,'administrador') IS NOT TRUE OR public.is_platform_superadmin(p_actor) IS TRUE
- OR NOT EXISTS(SELECT 1 FROM public.organizations WHERE id=org AND ativo IS TRUE AND status='ativa') THEN
+ THEN
  RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
- PERFORM 1 FROM public.organizations WHERE id=org FOR SHARE;
- IF p_role IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN
+ PERFORM 1 FROM public.organizations WHERE id=org AND ativo IS TRUE AND status='ativa' FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
+ IF p_role = 'parceiro_b2b' THEN
  IF p_partner IS NULL OR cardinality(p_clients) IS DISTINCT FROM 0 OR p_primary IS NOT NULL
  OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(p_actor) WHERE feature_key='catalogo_precos') THEN
  RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
@@ -105,8 +117,8 @@ BEGIN
  -- Same first lock as live statement triggers: gate → receipt/profile → rows.
  UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
  IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
- IF p_role IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN
- PERFORM public.b2b_provisioning_preflight(p_partner,p_role::text,CASE WHEN p_role='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END); END IF;
+ IF p_role = 'parceiro_b2b' THEN
+ PERFORM public.b2b_provisioning_preflight(p_partner,p_role::text,'gestor'); END IF;
  ctx:=platform_private.external_provisioning_scope(auth.uid(),p_role,p_partner,p_clients,p_primary);
  IF p_key IS NULL OR p_email IS NULL OR p_nome IS NULL OR length(trim(p_nome)) NOT BETWEEN 1 AND 200
  OR length(p_email)>254 OR lower(trim(p_email)) !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' THEN
@@ -168,13 +180,13 @@ BEGIN
   OR (SELECT count(*) FROM public.user_roles WHERE user_id=r.user_id)<>1
   OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=r.user_id AND role=r.external_role)
   OR (SELECT count(*) FROM public.partner_users WHERE user_id=r.user_id)<>(CASE WHEN r.partner_id IS NULL THEN 0 ELSE 1 END)
-  OR (r.partner_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=r.user_id AND partner_id=r.partner_id AND papel=CASE WHEN r.external_role='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END))
+  OR (r.partner_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=r.user_id AND partner_id=r.partner_id AND papel='gestor'))
   OR (SELECT count(*) FROM public.user_clientes WHERE user_id=r.user_id)<>cardinality(r.cliente_ids)
   OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=r.user_id AND (NOT (cliente_id=ANY(r.cliente_ids)) OR is_active IS NOT TRUE OR revoked_at IS NOT NULL OR principal IS DISTINCT FROM (cliente_id=r.principal_cliente_id))) THEN
    RAISE EXCEPTION 'b2b_provisioning_target_conflict' USING ERRCODE='42501'; END IF;
   RETURN jsonb_build_object('success',true,'user_id',r.user_id,'replay',true);
  END IF;
- IF r.status<>'claimed' OR r.lease_until<=clock_timestamp() THEN
+ IF r.status<>'claimed' THEN
   RAISE EXCEPTION 'b2b_provisioning_stale' USING ERRCODE='42501'; END IF;
  SELECT * INTO target FROM public.profiles WHERE user_id=p_user FOR UPDATE;
  IF NOT EXISTS(SELECT 1 FROM auth.users u WHERE u.id=r.user_id AND lower(u.email)=r.email
@@ -187,7 +199,7 @@ BEGIN
   RAISE EXCEPTION 'b2b_provisioning_target_conflict' USING ERRCODE='42501'; END IF;
  -- Existing server-only first-access contract; recovery proof required, no operator password.
  UPDATE public.profiles SET organization_id=r.organization_id,nome=r.nome,ativo=true,senha_provisoria=true WHERE user_id=p_user;
- PERFORM public.admin_provision_user_profile_v1(p_user,r.email,r.nome,ARRAY[r.external_role],r.cliente_ids,r.principal_cliente_id,r.partner_id,CASE WHEN r.partner_id IS NULL THEN NULL WHEN r.external_role='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END);
+ PERFORM public.admin_provision_user_profile_v1(p_user,r.email,r.nome,ARRAY[r.external_role],r.cliente_ids,r.principal_cliente_id,r.partner_id,CASE WHEN r.partner_id IS NULL THEN NULL ELSE 'gestor' END);
  UPDATE public.user_clientes SET is_active=true,assigned_by=r.actor_id WHERE user_id=p_user;
 
  INSERT INTO platform_private.provisional_password_state(user_id,desde,expires_at)
@@ -219,18 +231,29 @@ REVOKE ALL ON FUNCTION public.b2b_prepare_provisioning_compensation(uuid,uuid,uu
 REVOKE ALL ON FUNCTION public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 CREATE OR REPLACE FUNCTION public.b2b_complete_provisioning_compensation(p_claim uuid,p_fence uuid,p_user uuid)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE r platform_private.b2b_provisioning_receipts;
 BEGIN
  PERFORM platform_private.require_service_role();
  -- Acquire before receipt/profile locks, never wait for the trigger gate afterward.
  UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
  IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ SELECT * INTO r FROM platform_private.b2b_provisioning_receipts WHERE id=p_claim FOR UPDATE;
+ IF r.id IS NULL OR r.fence IS DISTINCT FROM p_fence OR r.user_id IS DISTINCT FROM p_user OR r.status<>'compensating' THEN
+ RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  -- Auth deletion's cascades must have completed; never pretend cleanup succeeded.
  IF EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user)
  OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user)
- OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user)
- OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=p_user)
  OR EXISTS(SELECT 1 FROM auth.users WHERE id=p_user) THEN
   RAISE EXCEPTION 'b2b_compensation_pending' USING ERRCODE='42501'; END IF;
+ -- Live schema has NO Auth FK on these two links. Delete only exact receipt
+ -- descendants after proven own Auth removal; unrelated links fail closed.
+ IF EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user AND
+ (r.partner_id IS NULL OR partner_id IS DISTINCT FROM r.partner_id OR papel IS DISTINCT FROM 'gestor'))
+ OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=p_user AND
+ (NOT (cliente_id=ANY(r.cliente_ids)) OR assigned_by IS DISTINCT FROM r.actor_id)) THEN
+ RAISE EXCEPTION 'b2b_compensation_pending' USING ERRCODE='42501'; END IF;
+ DELETE FROM public.partner_users WHERE user_id=r.user_id AND partner_id=r.partner_id AND papel='gestor';
+ DELETE FROM public.user_clientes WHERE user_id=r.user_id AND cliente_id=ANY(r.cliente_ids) AND assigned_by=r.actor_id;
  UPDATE platform_private.b2b_provisioning_receipts SET status='aborted'
  WHERE id=p_claim AND fence=p_fence AND user_id=p_user AND status='compensating';
  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
