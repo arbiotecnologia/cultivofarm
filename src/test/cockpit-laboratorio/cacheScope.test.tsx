@@ -1,11 +1,14 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { COCKPIT_QUERY_PREFIXES, useCockpitQuery, useCockpitScope } from "@/hooks/useCockpitQuery";
+import { MemoryRouter } from "react-router-dom";
+import CockpitLaboratorio from "@/pages/CockpitLaboratorio";
 
-const { auth } = vi.hoisted(() => ({ auth: { current: {} as Record<string, unknown> } }));
+const { auth, from, rpc } = vi.hoisted(() => ({ auth: { current: {} as Record<string, unknown> }, from: vi.fn(), rpc: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth.current }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { from, rpc } }));
 function actor(user = "A", tenant = "AR") {
   return { user: { id: user }, profile: { user_id: user, organization_id: tenant, ativo: true }, roles: ["administrador"], loading: false };
 }
@@ -15,7 +18,20 @@ function setup() {
   return { client, wrapper };
 }
 describe("Cockpit scopes: real QueryClient, simulated Auth", () => {
-  beforeEach(() => { auth.current = actor(); });
+  beforeEach(() => { auth.current = actor(); vi.clearAllMocks(); });
+  it("real Cockpit never mounts querying/dialog children and purges legacy caches while contained", async () => {
+    const { client } = setup();
+    for (const prefix of COCKPIT_QUERY_PREFIXES) client.setQueryData([prefix], [{ id: "A-secret" }]);
+    const view = () => <QueryClientProvider client={client}><MemoryRouter><CockpitLaboratorio /></MemoryRouter></QueryClientProvider>;
+    const mounted = render(view());
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    await waitFor(() => expect(client.getQueryCache().getAll().filter(q => COCKPIT_QUERY_PREFIXES.some(p => p === q.queryKey[0]))).toHaveLength(0));
+    auth.current = actor("B", "FSF"); mounted.rerender(view());
+    auth.current = { user: null, profile: null, roles: [], loading: false }; mounted.rerender(view());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(from).not.toHaveBeenCalled(); expect(rpc).not.toHaveBeenCalled();
+    mounted.unmount(); client.clear();
+  });
   it.each(COCKPIT_QUERY_PREFIXES)("closed reader %s never executes, including refetch", async prefix => {
     const { client, wrapper } = setup();
     const request = vi.fn(async () => ["A-data"]);
