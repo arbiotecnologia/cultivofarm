@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  applyManagementVisibility, fetchTenantSelectionPage, mapTenantVisibilityError, readTenantVisibility,
+  applyManagementVisibility, fetchTenantHiddenIds, fetchTenantSelectionPage, postgrestInList, TENANT_VISIBILITY_SCOPE_NOTES, mapTenantVisibilityError, readTenantVisibility,
   setTenantVisibility, tenantCatalogKeys, tenantScopeReady, TENANT_VISIBILITY_UNAVAILABLE, validateVisibilityInput,
 } from "@/lib/catalogo/tenantCatalogVisibility";
 
@@ -23,7 +23,9 @@ describe("escopo e chaves de cache", () => {
   it("chaves diferem por empresa e por usuário", () => {
     expect(tenantCatalogKeys.visibility(A, "produto", [ID])).not.toEqual(tenantCatalogKeys.visibility(B, "produto", [ID]));
     expect(tenantCatalogKeys.visibility(A, "produto", [ID])).not.toEqual(tenantCatalogKeys.visibility({ ...A, userId: "u-x" }, "produto", [ID]));
-    expect(tenantCatalogKeys.selection(A, "cultura", "", 0, [])).not.toEqual(tenantCatalogKeys.selection(B, "cultura", "", 0, []));
+    expect(tenantCatalogKeys.selection(A, "cultura", "", 0, 50, [])).not.toEqual(tenantCatalogKeys.selection(B, "cultura", "", 0, 50, []));
+    // limit faz parte da chave
+    expect(tenantCatalogKeys.selection(A, "cultura", "", 0, 50, [])).not.toEqual(tenantCatalogKeys.selection(A, "cultura", "", 0, 10, []));
     expect(tenantCatalogKeys.scope(A).slice(0, 3)).toEqual(["tenant-catalog", "org-a", "u-a"]);
   });
 });
@@ -84,8 +86,8 @@ describe("leitura da gestão", () => {
 describe("seletor de novas seleções", () => {
   it("pagina no servidor e marca vinculado não selecionável", async () => {
     const c = client({ data: [
-      { id: ID, nome: "Soja", ativo: true, hidden: false, selectable: true, total: 3 },
-      { id: KEY, nome: "Milho", ativo: true, hidden: true, selectable: false, total: null },
+      { id: ID, nome: "Soja", ativo: true, hidden: false, selectable: true, in_page: true, total: 3 },
+      { id: KEY, nome: "Milho", ativo: true, hidden: true, selectable: false, in_page: false, total: null },
     ] });
     const r = await fetchTenantSelectionPage(c, { entity: "cultura", limit: 1, offset: 0, include: [KEY] });
     expect(c.rpc.mock.calls[0][1]).toMatchObject({ p_limit: 1, p_offset: 0, p_include_ids: [KEY] });
@@ -102,5 +104,49 @@ describe("seletor de novas seleções", () => {
     const c = client({ error: { code: "PGRST202", message: "Could not find the function" } });
     await expect(fetchTenantSelectionPage(c, { entity: "cultura", limit: 10, offset: 0 })).rejects.toThrow(TENANT_VISIBILITY_UNAVAILABLE);
     expect(c.rpc).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("seletor: include e duplicatas", () => {
+  it("include visível fora da página permanece selecionável e não conta na paginação", async () => {
+    const c = client({ data: [{ id: KEY, nome: "Milho", ativo: true, hidden: false, selectable: true, in_page: false, total: null }] });
+    const r = await fetchTenantSelectionPage(c, { entity: "cultura", limit: 10, offset: 0, include: [KEY], search: "x" });
+    expect(r.rows).toEqual([{ id: KEY, nome: "Milho", selectable: true, hidden: false, ativo: true }]);
+    expect(r.total).toBe(0);
+    expect(r.hasMore).toBe(false);
+  });
+  it("descarta duplicata do include já presente na página", async () => {
+    const c = client({ data: [
+      { id: ID, nome: "Soja", ativo: true, hidden: false, selectable: true, in_page: true, total: 1 },
+      { id: ID, nome: "Soja", ativo: true, hidden: false, selectable: true, in_page: false, total: null },
+    ] });
+    const r = await fetchTenantSelectionPage(c, { entity: "cultura", limit: 10, offset: 0, include: [ID] });
+    expect(r.rows).toHaveLength(1);
+  });
+  it("linha sem in_page é resposta inválida", async () => {
+    const c = client({ data: [{ id: ID, nome: "Soja", ativo: true, hidden: false, selectable: true, total: 1 }] });
+    await expect(fetchTenantSelectionPage(c, { entity: "cultura", limit: 10, offset: 0 })).rejects.toThrow();
+  });
+});
+
+describe("IDs ocultos para catálogo novo", () => {
+  it("devolve ordenado e sem duplicatas; erro do RPC não vira lista vazia", async () => {
+    const ok = await fetchTenantHiddenIds(client({ data: [{ entity_id: KEY }, { entity_id: ID }, { entity_id: ID }] }), "produto");
+    expect(ok).toEqual([ID, KEY]);
+    await expect(fetchTenantHiddenIds(client({ error: { message: "catalog_visibility_tenant_unavailable" } }), "produto")).rejects.toThrow("Empresa ativa");
+    await expect(fetchTenantHiddenIds(client({ data: null }), "produto")).rejects.toThrow();
+  });
+  it("acima de 300 falha explicitamente", async () => {
+    const many = Array.from({ length: 301 }, (_, i) => ({ entity_id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}` }));
+    await expect(fetchTenantHiddenIds(client({ data: many }), "produto")).rejects.toThrow("300");
+  });
+  it("lista PostgREST aceita só UUIDs", () => {
+    expect(postgrestInList([ID])).toBe(`(${ID})`);
+    expect(() => postgrestInList(["x),or(1.eq.1"])).toThrow();
+  });
+  it("texto por entidade não promete ocultar produtos no seletor de cultura", () => {
+    expect(TENANT_VISIBILITY_SCOPE_NOTES.cultura).toMatch(/etapa Campo/);
+    expect(TENANT_VISIBILITY_SCOPE_NOTES.cultura).not.toMatch(/produto/i);
+    expect(TENANT_VISIBILITY_SCOPE_NOTES.produto).toMatch(/NÃO vale para o portal B2B/);
   });
 });
