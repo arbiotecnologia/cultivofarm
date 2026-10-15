@@ -174,7 +174,7 @@ export async function readOwnedCatalog(client: RpcClient, scope: TenantCatalogSc
   if (opts.signal?.aborted) throw new OwnedCatalogError("aborted", "Leitura encerrada.");
   if (error) throw ownedCatalogError(error, entity);
   const rows: OwnedCatalogRow[] = opts.id ? [data?.item] : data?.items;
-  if (!Array.isArray(rows) || rows.some((row) => !row || row.owner_organization_id !== scope.organizationId
+  if (!data || (opts.id && data.item?.id !== opts.id) || !Array.isArray(rows) || rows.some((row) => !row || row.owner_organization_id !== scope.organizationId
     || typeof row.id !== "string" || typeof row.updated_at !== "string") || typeof data.has_more !== "boolean") {
     throw new OwnedCatalogError("invalid_read", "Não foi possível confirmar os dados do catálogo.");
   }

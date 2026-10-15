@@ -70,6 +70,7 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
   const [formError, setFormError] = useState<string | null>(null);
   const detail = useOwnedCatalogRead(entity, { id: item?.id, enabled: open && !!item });
   const loadedItem = item ? detail.data?.items[0] : null;
+  const openedVersion = useRef<string | null>(null);
   const initialPayload = useRef("");
   const initialComposition = useRef("");
   const rootReceipt = useRef<{ fingerprint: string; id: string; updated_at: string } | null>(null);
@@ -89,7 +90,7 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
 
   useEffect(() => {
     generation.current += 1; lock.current = false; setBusy(false); setFormError(null);
-    frozenScope.current = currentScope; rootReceipt.current = null; attempt.current = null;
+    frozenScope.current = currentScope; openedVersion.current = null; rootReceipt.current = null; attempt.current = null;
     return () => { generation.current += 1; };
     // Freeze only on opening/item change, never adopt a new actor while editing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,6 +101,7 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
   useEffect(() => {
     if (!open || (item && !loadedItem)) return;
     const row = loadedItem;
+    openedVersion.current = row?.updated_at ?? null;
     setName(row?.nome ?? ""); setType(row?.tipo ?? (entity === "produto" ? "solo" : entity === "microrganismo" ? "bacteria" : ""));
     setDescription(row?.descricao ?? ""); setScientificName(row?.nome_cientifico ?? "");
     setFamily(row?.familia_catalogo ?? ""); setCatalogClass(row?.classe_catalogo ?? "");
@@ -146,9 +148,9 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
       const rootChanged = !item || JSON.stringify(payload) !== initialPayload.current;
       const saved = rootReceipt.current?.fingerprint === fingerprint ? rootReceipt.current
         : rootChanged ? await mutation.mutateAsync({
-        entity, operation, entityId: item?.id ?? null, expectedUpdatedAt: loadedItem?.updated_at ?? null,
+        entity, operation, entityId: item?.id ?? null, expectedUpdatedAt: openedVersion.current,
         payload, reason, idempotencyKey, scopeKey: frozenScope.current,
-      }) : { id: loadedItem?.id ?? "", updated_at: loadedItem?.updated_at ?? "" };
+      }) : { id: loadedItem?.id ?? "", updated_at: openedVersion.current ?? "" };
       rootReceipt.current = { fingerprint, id: saved.id, updated_at: saved.updated_at };
       if (myGeneration !== generation.current || frozenScope.current !== scopeRef.current) return;
       if (entity === "produto" && JSON.stringify([compositionStatus, declarations]) !== initialComposition.current) {
@@ -178,7 +180,7 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
   };
 
   return <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-    <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+    <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[92vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{item ? "Editar" : "Criar"} {entity === "produto" ? "produto próprio" : entity === "microrganismo" ? "microrganismo próprio" : "cultura própria"}</DialogTitle></DialogHeader>
       {item && detail.isLoading && <p role="status">Carregando item próprio...</p>}
       {item && detail.isError && <p role="alert" className="text-destructive">{(detail.error as Error).message}</p>}
