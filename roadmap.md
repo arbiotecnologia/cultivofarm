@@ -1,4 +1,10 @@
-## RECORTE DOCUMENTAL 17:53 — helper corrigido externamente, leitura ainda NO-GO
+## RECORTE DOCUMENTAL 18:04 — workspace alinhado e conversão externa Consultor AR
+- [x] Arquivar literalmente schema_migrations20261015175859_h_visit_workspace_conversion_manage_gate; JÁ APLICADA EXTERNAMENTE/NÃO REAPLICAR. Alinha can_convert_os a manage IS TRUE + aprovado, sem modificar aprovação consultor/ACL/owner/conversor. MD5 histórico898b4dab4d0b722d47e6572a932e2e57; conversorb112888 confirmado read-only.
+- [x] Registrar UI real EXTERNA Renato: após aprovação Admin, Consultor AR encaminhou VT-2026-0002/1995fdfa-2976-42a7-8a2b-0324497f76d2; OS-2026-000004/75b8b2ac-dc5c-4f9b-ac9b-07f67569d404 única, programaçãodbc725cc-f618-46af-a3d8-6b70b0760c2e aguardando/Bombarbio/volumeNULL, commercial_completed=false. Workspace após conversão convert/approve/edit=false; NovaOS desabilitada, base faturamento não configurada.
+- [x] Correção P2 divergência UI/RPC registrada, sem nova mudança do aplicativo/DDL/dados/permissões/publicação ou fabricação/cobrança pelo agente; não é auditoria completa/lintPASS.
+- [ ] Cockpit/frescorMV/descendentes/microprojeção/cache e fabricação/volume seguem NO-GO, dependem de recorte auditado e autorização; diagnóstico e CNPJ permanecem separados/pendentes.
+
+## HISTÓRICO DOCUMENTAL 17:53 — helper corrigido externamente, leitura ainda NO-GO
 - [x] Arquivar SQL exato de schema_migrations 20261015175232_h_cockpit_helper_tenant_fence_closed, sem BEGIN/COMMIT externos; NÃO REAPLICAR. Revisor aplicou helper2bff, preflight/pós-condições hospedados PASS externo, 19 asserts PGlite PASS externo com Auth/schema simulados e sem fullpreflight.
 - [x] Metadados próprios somente leitura: prosrc6dc6de9ce046847310973b5666249177, definiçãoe690611cd0967e7697cdbecb8c40e984, helperanon/authEXECUTEfalse, viewauthSELECTfalse, RPCauthEXECUTEfalse, conversorb112888 intacto. P1 corrigido internamente e contido; não prova leitura funcional.
 - [x] Registrar evidência externa UIAdminAR: VT-2026-0002/1995fdfa-2976-42a7-8a2b-0324497f76d2 aprovada; recomendacao_liberada version6 enviado_aprovacao→aprovado, autoriaa7d45277-6dec-413d-bf6b-86620c1ef39f, zeroOS; sem reprodução própria/alteração de dados.
