@@ -1,3 +1,8 @@
+## RECORTE 16:56 UTC — hardening P1 aplicado externamente
+- [ ] Arquivar exatamente schema_migrations 20261015163930, sem reaplicar; confirmar b112888 e helper d95c2c canônicos, preservar ACL.
+- [ ] Atualizar baseline/preflight OS e executar harness: responsável read negado, execute/manage permitido; nenhuma conta real alterada.
+- [ ] Atualizar manifesto/relatório; UI OS/query continuam candidatas, diagnóstico separado e fabricação/ownership OFF.
+
 ## RECORTE 16:53 UTC — aplicação PDF null-safe autorizada
 - [x] Aplicar somente dose/volume NULL-safe em VisitaTecnica.tsx; preservar demais funcionalidades, visita/dados, AGENTS e migrations.
 - [x] Executar corpo efetivo buildPdfData: 8 casos +1 claims; regressão OS32/query2 total43/43 PASS. Build automático16:55:16OK. Patch OS hash preservado; dry-run bloqueado pela ferramenta, não contornado; typecheck manual não executado.
