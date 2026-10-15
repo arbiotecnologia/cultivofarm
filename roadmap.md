@@ -1,3 +1,9 @@
+## RECORTE 20:50 — financeiro B2B, diagnóstico efetivo e candidato revisável
+- [x] Policies canônicas completas: títulos/parcelas com restritiva tenant e partner_users admin-only; ensaio authenticated reproduz contexto válido e zero títulos/parcelas.
+- [x] Candidato focal de duas policies reutiliza b2b_commercial_context, preserva Produtor/internos/tenant/ACL; sem aplicação/grants/dados.
+- [ ] JWT B2B real after: depende instalação revisada e login titular; Admin AR não representa parceiro exclusivo.
+- [ ] Cadeias financeiras links/schedule/terms: mesmas subqueries cruas mais restritivas phase1 legadas; compatibilidade comercial futura exige ensaio próprio, não abrir isoladamente.
+
 ## RECORTE 20:42 — correção real de seleção e caches Produtor
 - [x] Hook existente sincroniza seleção same-tab; readiness provisória negada, preferência não autoriza e vínculos vigentes server-side.
 - [x] Financeiro/Dashboard/Fazenda/Talhão/Recomendações/Registros/Solicitação/OS/Produção/Entregas/Aplicações/Histórico migram ao wrapper scoped com cancelamento e epoch.
