@@ -77,16 +77,18 @@ export default function WizardRecomendacaoStep({
   const fence = useRef({ identity, generation: 0 });
   if (fence.current.identity !== identity) fence.current = { identity, generation: fence.current.generation + 1 };
   const generation = fence.current.generation;
-  const current = () => fence.current.identity === identity && fence.current.generation === generation;
+  const mounted = useRef(true);
+  const current = () => mounted.current && fence.current.identity === identity && fence.current.generation === generation;
   const cacheScope = [scope?.organizationId, scope?.userId, generation];
   const [microSearch, setMicroSearch] = useState("");
   const [prodSearch, setProdSearch] = useState("");
   const [microOffset, setMicroOffset] = useState(0);
   const [prodOffset, setProdOffset] = useState(0);
   useEffect(() => {
+    mounted.current = true;
     setDialogOpen(false); setEditing(null); setForm(EMPTY_FORM); setPendingRows([]);
     setMicroSearch(""); setProdSearch(""); setMicroOffset(0); setProdOffset(0);
-    return () => { if (fence.current.identity === identity) fence.current.generation += 1; };
+    return () => { mounted.current = false; };
   }, [identity]);
 
   const { data: remoteRows = [], refetch } = useQuery({
