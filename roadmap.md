@@ -699,3 +699,4 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Etapa Recomendação da visita: colunas reais (nome/nome_cientifico; produtos.nome), nova seleção x histórico.
 - [ ] P2: substituir hidden_ids+NOT IN (limite 300) por anti-join + paginação no servidor.
 - [ ] Registrar reexecução independente dos testes do diálogo contra 05c21b13.
+- [ ] FAIL real de cache pós-publicação de7d5cc5 (reexibir não refletia sem reload): correção local feita com teste de integração; aguarda revisão, publicação e prova em navegador real.
