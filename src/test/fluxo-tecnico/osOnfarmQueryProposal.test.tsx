@@ -1,6 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 const seenSelects: string[] = [];
@@ -54,8 +54,11 @@ it("consulta OS on-farm sem coluna origem e mantém o vínculo explícito da vis
 it("falha da consulta não vira KPI zero nem estado vazio", async () => {
   failOnfarm = true;
   mount();
-  expect(await screen.findByText("Não foi possível carregar as ordens de serviço.")).toBeInTheDocument();
   await waitFor(() => expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3));
+  const tab = screen.getByRole("tab", { name: "OS de Produção" });
+  fireEvent.mouseDown(tab);
+  fireEvent.click(tab);
+  expect(await screen.findByText("Não foi possível carregar as ordens de serviço.")).toBeInTheDocument();
   expect(screen.queryByText("Nenhuma OS encontrada.")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeEnabled();
 });
