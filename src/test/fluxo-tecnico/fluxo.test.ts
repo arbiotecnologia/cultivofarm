@@ -17,6 +17,7 @@ import {
   RPC_APROVACAO_TRANSACIONAL_DISPONIVEL,
   RPC_GERACAO_OS_DISPONIVEL,
   MSG_DECISAO_INDISPONIVEL,
+  MSG_GERACAO_OS_INDISPONIVEL,
   podeDecidir,
 } from "@/lib/fluxo-tecnico/fluxo";
 
@@ -101,8 +102,13 @@ describe("fluxo técnico — autorização por papel", () => {
     expect(podeDecidir("administrador", "aprovado")).toBe(false);
   });
 
-  it("geração automática de OS permanece bloqueada sem RPC idempotente", () => {
-    expect(RPC_GERACAO_OS_DISPONIVEL).toBe(false);
+  it("habilita encaminhamento singular somente sob guard de workspace/RPC", () => {
+    expect(RPC_GERACAO_OS_DISPONIVEL).toBe(true);
+    expect(MSG_GERACAO_OS_INDISPONIVEL).toContain("nenhuma fabricação foi autorizada");
+    // a tela não escreve OS nem chama RPC: conversão vive no hook, sob guard de workspace
+    expect(pagina).not.toContain("gerarOSMutation");
+    expect(pagina).not.toContain(".insert");
+    expect(pagina).not.toContain("rpc_converter_visita_em_os");
   });
 });
 
@@ -194,9 +200,13 @@ describe("fluxo técnico — página", () => {
     }
   });
 
-  it("restaura a coluna Origem na aba de OS de Produção", () => {
-    expect(pagina).toContain("origem");
-    expect(pagina).toContain('o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"');
+  it("deriva a origem da OS do vínculo de visita, sem coluna origem", () => {
+    // ordens_servico_onfarm não tem coluna origem: rótulo vem de registro_consultor_id
+    expect(pagina).not.toContain("origem");
+    expect(pagina).toContain(
+      '"id, numero_os, status, created_at, registro_consultor_id, clientes(nome), fazendas(nome)"',
+    );
+    expect(pagina).toContain('o.registro_consultor_id ? "Visita técnica" : "Sem vínculo de visita"');
     expect(pagina).toContain("<TableHead>Origem</TableHead>");
     expect(pagina).not.toContain("colSpan={4}");
     expect(pagina).toContain("colSpan={5}");

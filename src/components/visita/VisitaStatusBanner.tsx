@@ -104,7 +104,7 @@ export function VisitaStatusBanner({
     tone = "violet";
   } else if (status === "convertido_os") {
     titulo = "Recomendação encaminhada ao laboratório";
-    descricao = "Uma recomendação foi encaminhada à OS. As demais recomendações permanecem abertas; fabricação não iniciada e volume pendente de definição.";
+    descricao = "Uma recomendação foi encaminhada à OS. O encaminhamento não confirma início da fabricação nem conclusão comercial; consulte a OS para acompanhar a produção.";
     cta = { label: "Ver Ordens de Serviço", onClick: () => navigate("/ordens-servico") };
     tone = "amber";
   } else if (status === "reprovado") {
