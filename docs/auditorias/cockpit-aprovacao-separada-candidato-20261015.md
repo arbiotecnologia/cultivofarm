@@ -15,7 +15,9 @@ Leitura canônica própria confirmou gerador/ausência candidato e triggers/índ
 
 Arquivos: candidato existente (não objeto paralelo), harness aprovação existente, novo `scripts/tests/cockpit-generator-compat-fixture.py`, relatório, roadmap e regra AGENTS. Rollback integral transacional restaura gerador e guards juntos antes COMMIT; após aplicação não remover guard isoladamente/restaurar gerador aprovado sozinho. Aplicação/grants/UI/fabricação permanecem fechados até revisão independente. Cadastros B2B/Produtor autorizados como próxima fase, não iniciados.
 
-## GAP INSERT ec4fcc1 — corrigido localmente, não aplicado
+Validação final19:42: **19/19 Vitest** (18consultaOnly+1liveSourcePostgres),43programar e107aprovação/compatibilidade PASS. Hash exato trigger INSERT **27b31332** e link **ef6e3fdb** reconstituídos/coincidentes; schema auxiliares continuam simulados. SHA256 candidato **4c786c73d7b81adf4a7ca6f43a2d27e150e68faf578c65f14c4f3c05a45bd698**. Diff-check/scanner literal focal/compilação Python PASS; build automático observado OK19:42:21. Typecheck manual não executado, lint Python não configurado e lint global legado pendente, sem alegar PASS. CLI diagnóstica não atende BYO Supabase; consultas reais concluídas pela ferramenta read_query no ref comprovado, sem bloqueio de entrega. Commit automático observado **07502802** antes deste registro final.
+
+## Histórico 19:19 — GAP INSERT corrigido (bloqueio gerador supersedido acima)
 HEAD inicial **ec4fcc1b**. Evidência externa Renato: 46 assertions PGlite/Auth-schema simulados PASS; probe adicional INSERT programada sem evento aprovar_os comprovou GAP. Candidato anterior **FAIL/NO-GO para aplicação**: testes anteriores não cobriam todos estados de criação.
 
 Guard agora rejeita `NEW.status::text IS DISTINCT FROM 'aberta'` no INSERT das duas OS: todos estados avançados e NULL, sem whitelist service_role/GUC ou reparo de históricos. Unknown é rejeitado pelo enum antes do trigger, não atribuir ao guard. Aprovação explícita/Admin/Gestor/auditoria e UPDATE permanecem preservados. Testes incluem linhas avançadas anteriores à instalação e confirmam preservação.
@@ -88,4 +90,4 @@ Rollback pré-COMMIT: **ROLLBACK integral**. Após eventual aplicação revisada
 
 Regressão programar **43 PASS** (duas conexões locais 1write/1replay); Vitest consultaOnly/liveSource **19/19 PASS**. Python compila, diff-check PASS. ESLint não configura Python: arquivo ignorado com aviso, **não lint PASS**. Nenhum TypeScript alterado; typecheck/build manuais não executados (harness automático), build OK observado19:13:59. Scanner focal textual sem credenciais literais; não scanner global/lint legado PASS.
 
-**Gate:** candidato local revisável; aprovação/programação/fabricação **NO-GO**, revisão independente e lacunas acima bloqueiam liberação. Nenhuma prova hospedada inventada; consulta restrita AR/FSF externa preservada. Commit automático será informado sem operação git commit manual.
+**Gate histórico 19:19 (supersedido pela continuação19:35):** candidato local revisável; aprovação/programação/fabricação **NO-GO**, revisão independente e lacunas acima bloqueiam liberação. Nenhuma prova hospedada inventada; consulta restrita AR/FSF externa preservada. Commit automático será informado sem operação git commit manual.
