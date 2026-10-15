@@ -4,13 +4,14 @@ import { useStorageAccessScope } from "./useStorageAccessScope";
 
 /** Cache isolation only; each existing RPC/RLS must independently authorize. */
 export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }) {
-  const fence = useStorageAccessScope(`portal:${String(options.queryKey[0])}`);
+  const fence = useStorageAccessScope(`portal:${JSON.stringify(options.queryKey)}:${options.enabled !== false}`);
   const client = useQueryClient();
   const prefix = options.queryKey[0];
   useEffect(() => {
     const predicate = (query: { queryKey: readonly unknown[] }) => query.queryKey[0] === prefix && query.queryKey.at(-1) !== fence.scope;
     void client.cancelQueries({ predicate }); client.removeQueries({ predicate });
-    return () => { void client.cancelQueries({ queryKey: [prefix] }); };
+    const queryKey = [...options.queryKey, fence.scope];
+    return () => { void client.cancelQueries({ queryKey, exact: true }); client.removeQueries({ queryKey, exact: true }); };
   }, [client, prefix, fence.scope]);
   const result = useQuery<T, Error>({
     ...options, queryKey: [...options.queryKey, fence.scope], enabled: fence.ready && options.enabled !== false, retry: false,

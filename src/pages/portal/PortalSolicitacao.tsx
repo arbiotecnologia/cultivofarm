@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { useAuth } from "@/hooks/useAuth";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { unmask } from "@/lib/masks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,32 +26,40 @@ const URGENCIAS = [
 export default function PortalSolicitacao() {
   const { clienteId, loading: cl } = usePortalCliente();
   const { user } = useAuth();
+  const fence = useStorageAccessScope(`producer-request:${clienteId}`);
   const { toast } = useToast();
-  const [fazendas, setFazendas] = useState<any[]>([]);
-  const [talhoes, setTalhoes] = useState<any[]>([]);
   const [form, setForm] = useState({
     fazenda_id: "", talhao_id: "", tipo_demanda: "", descricao: "", urgencia: "media",
     solicitante_nome: "", solicitante_contato: "",
   });
   const [saving, setSaving] = useState(false);
 
+  const { data: fazendas = [] } = useScopedPortalQuery({
+    queryKey: ["portal-request-farms", clienteId], enabled: !!clienteId,
+    queryFn: async signal => {
+      const { data, error } = await supabase.from("fazendas").select("id, nome").eq("cliente_id", clienteId ?? "").abortSignal(signal);
+      if (error) throw error; return data || [];
+    }
+  });
+  const { data: talhoes = [] } = useScopedPortalQuery({
+    queryKey: ["portal-request-fields", clienteId, form.fazenda_id],
+    enabled: !!clienteId && fazendas.some(f => f.id === form.fazenda_id),
+    queryFn: async signal => {
+      const { data, error } = await supabase.from("talhoes").select("id, nome").eq("fazenda_id", form.fazenda_id).abortSignal(signal);
+      if (error) throw error; return data || [];
+    }
+  });
   useEffect(() => {
-    if (!clienteId) return;
-    supabase.from("fazendas").select("id, nome").eq("cliente_id", clienteId)
-      .then(({ data }) => setFazendas(data || []));
-  }, [clienteId]);
-
-  useEffect(() => {
-    if (!form.fazenda_id) { setTalhoes([]); return; }
-    // Filtro adicional por fazenda_id já garante o escopo, mas confirmamos via query de fazendas do cliente se necessário.
-    // Como a lista de fazendas já está filtrada por clienteId, o form.fazenda_id selecionado é válido.
-    supabase.from("talhoes").select("id, nome").eq("fazenda_id", form.fazenda_id)
-      .then(({ data }) => setTalhoes(data || []));
-  }, [form.fazenda_id]);
+    setForm({ fazenda_id: "", talhao_id: "", tipo_demanda: "", descricao: "", urgencia: "media", solicitante_nome: "", solicitante_contato: "" });
+    setSaving(false);
+  }, [fence.scope]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clienteId || !user) return;
+    if (!clienteId || !user || !fence.ready || saving) return;
+    if (form.fazenda_id && !fazendas.some(f => f.id === form.fazenda_id)) return;
+    if (form.talhao_id && !talhoes.some(t => t.id === form.talhao_id)) return;
+    const current = fence.capture();
     setSaving(true);
     const { error } = await supabase.from("portal_solicitacoes").insert({
       cliente_id: clienteId,
@@ -62,6 +72,7 @@ export default function PortalSolicitacao() {
       solicitante_nome: form.solicitante_nome || null,
       solicitante_contato: unmask(form.solicitante_contato) || null,
     });
+    if (!current()) return;
     setSaving(false);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
