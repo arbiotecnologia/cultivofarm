@@ -1,6 +1,7 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
 const seenSelects: string[] = [];
@@ -56,8 +57,7 @@ it("falha da consulta não vira KPI zero nem estado vazio", async () => {
   mount();
   await waitFor(() => expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3));
   const tab = screen.getByRole("tab", { name: "OS de Produção" });
-  fireEvent.mouseDown(tab);
-  fireEvent.click(tab);
+  await userEvent.click(tab);
   expect(await screen.findByText("Não foi possível carregar as ordens de serviço.")).toBeInTheDocument();
   expect(screen.queryByText("Nenhuma OS encontrada.")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeEnabled();
