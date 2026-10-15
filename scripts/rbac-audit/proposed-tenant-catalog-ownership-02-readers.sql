@@ -504,8 +504,28 @@ AS $function$
     AND platform_private.catalog_item_in_reader_scope(p_produto_id, p_microrganismo_id); -- [OWNER]
 $function$;
 
--- ACLs inalteradas por CREATE OR REPLACE (preservadas). Pós: Bombarbio preço canônico continua 180/1000mL para staff.
-DO $$ BEGIN
-  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-       WHERE pg_get_functiondef(p.oid) LIKE '%-- [OWNER]%') < 16 THEN RAISE EXCEPTION 'readers_post_marker_missing'; END IF;
+-- ACLs inalteradas por CREATE OR REPLACE (preservadas). Pós: só as 16 funções do manifesto (sem varrer pg_proc).
+DO $$
+DECLARE f text;
+BEGIN
+  FOREACH f IN ARRAY ARRAY[
+    'platform_private.platform_read_global_product_catalog_core(text,integer,integer)',
+    'platform_private.read_global_product_metadata_core(uuid)',
+    'platform_private.read_global_microorganisms_core(text,integer,integer,boolean)',
+    'platform_private.read_global_microorganism_detail_core(uuid)',
+    'platform_private.read_global_cultures_core(text,integer,integer)',
+    'platform_private.read_global_culture_detail_core(uuid)',
+    'platform_private.read_global_item_volumes_core(text,uuid,integer,integer)',
+    'platform_private.read_global_volume_detail_core(uuid)',
+    'platform_private.read_global_b2b_state_core(text,uuid)',
+    'platform_private.read_global_product_catalog_by_family_core(text,text,text,integer,integer)',
+    'platform_private.read_global_product_composition_core(uuid,integer,integer)',
+    'platform_private.catalog_tenant_selection_core(text,text,integer,integer,uuid[])',
+    'private.h7n_catalogo_ficha_produtos()',
+    'private.h7n_catalogo_ficha_microrganismos()',
+    'public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)',
+    'public.fn_catalogo_litro_canonico(uuid,uuid)'] LOOP
+    IF pg_get_functiondef(to_regprocedure(f)) NOT LIKE '%-- [OWNER]%' THEN
+      RAISE EXCEPTION 'readers_post_marker_missing: %', f; END IF;
+  END LOOP;
 END $$;

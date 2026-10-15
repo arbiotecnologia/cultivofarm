@@ -78,7 +78,9 @@ BEGIN
 END $$;
 -- DML direto/ownership change como authenticated
 DO $$ BEGIN UPDATE public.culturas SET owner_organization_id=NULL WHERE id=pg_temp.ctx('cultura')::uuid;
-  INSERT INTO _r VALUES('owner_change_direct', NOT FOUND, 'sem grant/sem linha'); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('owner_change_direct',true,SQLSTATE); END $$;
+  INSERT INTO _r VALUES('owner_change_direct', false, 'UPDATE aceito sem erro');
+  EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('owner_change_direct', SQLSTATE='42501', SQLERRM);
+  WHEN OTHERS THEN INSERT INTO _r VALUES('owner_change_direct', false, 'erro inesperado: '||SQLSTATE||' '||SQLERRM); END $$;
 SELECT pg_temp.as_owner();
 DO $$ BEGIN UPDATE public.culturas SET owner_organization_id=NULL WHERE id=pg_temp.ctx('cultura')::uuid;
   INSERT INTO _r VALUES('owner_change_owner',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('owner_change_owner',SQLERRM='catalog_owner_immutable',SQLERRM); END $$;
@@ -94,7 +96,9 @@ INSERT INTO _r SELECT 'fsf_nao_ve', NOT EXISTS (SELECT 1 FROM public.culturas WH
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','archive',pg_temp.ctx('cultura')::uuid,now(),'{}','fsf tenta arquivar',gen_random_uuid());
   INSERT INTO _r VALUES('fsf_write',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_write',SQLERRM='catalog_owned_not_found',SQLERRM); END $$;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"Cultura Própria RT"}','fsf mesmo nome que AR',gen_random_uuid());
-  INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',true,'sem oráculo'); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',false,SQLERRM); END $$;
+  INSERT INTO _r SELECT 'fsf_mesmo_nome_permitido', count(*)=2, 'AR e FSF com mesmo nome normalizado' FROM public.culturas
+    WHERE owner_organization_id IS NOT NULL AND platform_private.catalog_norm_name(nome)='cultura propria rt';
+  EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',false,SQLERRM); END $$;
 SELECT pg_temp.as_owner(); SELECT pg_temp.as_user(:'sa');
 INSERT INTO _r SELECT 'sa_nao_ve', NOT EXISTS (SELECT 1 FROM public.culturas WHERE id=pg_temp.ctx('cultura')::uuid), '';
 DO $$ BEGIN PERFORM platform_private.read_global_culture_detail_core(pg_temp.ctx('cultura')::uuid);
@@ -148,6 +152,35 @@ SELECT pg_temp.as_user(:'fsf_admin');
 INSERT INTO _r SELECT 'fsf_preco_privado_null', public.fn_catalogo_preco_canonico(pg_temp.ctx('produto')::uuid, NULL, 'litro') IS NULL
   AND NOT platform_private.catalog_item_in_reader_scope(pg_temp.ctx('produto')::uuid, NULL), 'escopo de preço' WHERE pg_temp.ctx('produto') IS NOT NULL;
 SELECT pg_temp.as_owner();
+
+-- 5b. Normalização: expressão EXATA do DDL
+INSERT INTO _r SELECT 'norm_'||k, platform_private.catalog_norm_name(x)=y, x FROM (VALUES
+  ('acucar','Açúcar','acucar'),('unico','Único','unico'),('combinado',E'U\u0301nico','unico'),
+  ('maiusc','ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝ','aaaaaaeeeeiiiiooooouuuucny'),
+  ('minusc','áàâãäåéèêëíìîïóòôõöúùûüçñýÿ','aaaaaaeeeeiiiiooooouuuucnyy')) t(k,x,y);
+-- 5c. Proporção: limites (composição própria com 101/-1/0 rejeitada; 100 aceita)
+SELECT pg_temp.as_user(:'ar_admin');
+DO $$ DECLARE p jsonb; v numeric;
+BEGIN
+  p := public.tenant_catalog_owned_mutate('produto','create',NULL,NULL,'{"nome":"Produto Prop RT","tipo":"inoculante"}','produto proporcao rt',gen_random_uuid());
+  FOREACH v IN ARRAY ARRAY[101,-1,0]::numeric[] LOOP
+    BEGIN
+      PERFORM public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,
+        jsonb_build_object('itens',jsonb_build_array(jsonb_build_object('microrganismo_id',pg_temp.ctx('micro'),'volume_ml',10,'proporcao',v))),'proporcao rt invalida',gen_random_uuid());
+      INSERT INTO _r VALUES('proporcao_'||v,false,'aceitou');
+    EXCEPTION WHEN invalid_parameter_value THEN INSERT INTO _r VALUES('proporcao_'||v, SQLERRM='catalog_owned_invalid_payload', SQLERRM); END;
+  END LOOP;
+  p := public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,
+    jsonb_build_object('itens',jsonb_build_array(jsonb_build_object('microrganismo_id',pg_temp.ctx('micro'),'volume_ml',10,'proporcao',100))),'proporcao rt valida',gen_random_uuid());
+  INSERT INTO _r VALUES('proporcao_100', p->>'id' IS NOT NULL, '');
+END $$;
+SELECT pg_temp.as_owner();
+-- 5d. UPDATE de linhas GLOBAIS existentes nas duas tabelas descendentes (produção atual) continua funcionando
+DO $$ BEGIN
+  UPDATE public.formulacoes SET volume_ml=volume_ml WHERE produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
+  UPDATE public.catalogo_volumes SET ordem=ordem WHERE produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
+  INSERT INTO _r VALUES('global_child_update', true, '');
+EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('global_child_update', false, SQLSTATE||' '||SQLERRM); END $$;
 
 -- 6. Invariantes
 INSERT INTO _r SELECT 'bombarbio', ativo AND b2b_enabled AND owner_organization_id IS NULL, '' FROM public.produtos WHERE id='1875527c-a65a-483b-a6c2-9122d5ec2a51';

@@ -66,18 +66,24 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
 REVOKE ALL ON FUNCTION platform_private.catalog_ownership_enabled() FROM PUBLIC, anon, authenticated;
 
 -- ---------------------------------------------------------------- normalização (NFD + remoção de marcas combinantes)
--- Evidência SQL read-only no canônico (PG 17.6/UTF8): 'Ácido  Úmido'->'acido umido', 'ação'->'acao',
--- 'Ñandu'->'nandu', 'CAFÉ' e 'cafe'+U+0301 -> 'cafe', '  Soja-RR  '->'soja rr', 'Pão/Ç'->'pao c', 'ÿü'->'yu'.
+-- Forma QUALIFICADA exige o literal 'NFD' (a palavra-chave NFD só vale na sintaxe especial não qualificada:
+-- revisão 110c9c41 reproduziu 42703 "column nfd does not exist"). Expressão EXATA abaixo testada read-only no
+-- canônico (PG 17.6/UTF8): Açúcar->acucar, Único e U+0301->unico, ÁÀÂÃÄÅ->aaaaaa, ÉÈÊË->eeee, ÍÌÎÏ->iiii,
+-- ÓÒÔÕÖ->ooooo, ÚÙÛÜ->uuuu, Çç->cc, Ññ->nn, Ýÿ->yy, 28 acentos minúsculos->aaaaaaeeeeiiiiooooouuuucnyy, '   '->NULL.
 CREATE FUNCTION platform_private.catalog_norm_name(p text) RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT SET search_path='' AS $$
   SELECT NULLIF(pg_catalog.btrim(pg_catalog.regexp_replace(
-    pg_catalog.regexp_replace(pg_catalog.normalize(pg_catalog.lower(p), NFD), E'[\\u0300-\\u036f]', '', 'g'),
+    pg_catalog.regexp_replace(pg_catalog.normalize(pg_catalog.lower(p), 'NFD'), E'[\\u0300-\\u036f]', '', 'g'),
     '[^a-z0-9]+', ' ', 'g')), '') $$;
 REVOKE ALL ON FUNCTION platform_private.catalog_norm_name(text) FROM PUBLIC, anon, authenticated;
 DO $$ BEGIN
   IF platform_private.catalog_norm_name('Ácido  Úmido') <> 'acido umido' OR platform_private.catalog_norm_name('ação') <> 'acao'
     OR platform_private.catalog_norm_name('Ñandu') <> 'nandu' OR platform_private.catalog_norm_name(E'cafe\u0301') <> 'cafe'
     OR platform_private.catalog_norm_name('CAFÉ') <> 'cafe' OR platform_private.catalog_norm_name('Pão/Ç') <> 'pao c'
+    OR platform_private.catalog_norm_name('Açúcar') <> 'acucar' OR platform_private.catalog_norm_name('Único') <> 'unico'
+    OR platform_private.catalog_norm_name(E'U\u0301nico') <> 'unico'
+    OR platform_private.catalog_norm_name('ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝ') <> 'aaaaaaeeeeiiiiooooouuuucny'
+    OR platform_private.catalog_norm_name('áàâãäåéèêëíìîïóòôõöúùûüçñýÿ') <> 'aaaaaaeeeeiiiiooooouuuucnyy'
     OR platform_private.catalog_norm_name('  ') IS NOT NULL THEN
     RAISE EXCEPTION 'ownership_norm_selftest_failed'; END IF;
 END $$;
@@ -179,49 +185,86 @@ CREATE TRIGGER trg_catalog_owner_root BEFORE INSERT OR UPDATE OR DELETE ON publi
 CREATE TRIGGER trg_catalog_owner_root BEFORE INSERT OR UPDATE OR DELETE ON public.microrganismos FOR EACH ROW EXECUTE FUNCTION platform_private.trg_catalog_owner_root();
 CREATE TRIGGER trg_catalog_owner_root BEFORE INSERT OR UPDATE OR DELETE ON public.culturas       FOR EACH ROW EXECUTE FUNCTION platform_private.trg_catalog_owner_root();
 
--- ---------------------------------------------------------------- trigger descendente
--- Dono sempre derivado do pai (payload ignorado e conferido); pai e dono imutáveis; refs privadas alheias rejeitadas.
-CREATE FUNCTION platform_private.trg_catalog_owner_child() RETURNS trigger
+-- ---------------------------------------------------------------- triggers descendentes (um por tabela)
+-- Funções separadas: nenhum ramo acessa campo inexistente na outra tabela (revisão 110c9c41, achado C).
+-- Dono sempre derivado do pai; pai e dono imutáveis; refs privadas alheias rejeitadas; globais seguem livres
+-- (somente o caminho já autorizado de SA/produção existente, que nunca toca privados).
+CREATE FUNCTION platform_private.trg_catalog_owner_child_formulacoes() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_parent uuid; v_ref uuid; v_row record;
+DECLARE v_parent uuid; v_ref uuid;
 BEGIN
-  v_row := CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
   IF TG_OP IN ('UPDATE','DELETE') AND OLD.owner_organization_id IS NOT NULL THEN
-    PERFORM platform_private.catalog_assert_owner_actor(OLD.owner_organization_id);
-  END IF;
+    PERFORM platform_private.catalog_assert_owner_actor(OLD.owner_organization_id); END IF;
   IF TG_OP='DELETE' THEN RETURN OLD; END IF;
-  IF TG_OP='UPDATE' AND (NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id
-       OR (TG_TABLE_NAME='formulacoes' AND NEW.component_insumo_id IS DISTINCT FROM OLD.component_insumo_id)
-       OR (TG_TABLE_NAME='catalogo_volumes' AND NEW.item_tipo IS DISTINCT FROM OLD.item_tipo)) THEN
-    RAISE EXCEPTION 'catalog_parent_immutable' USING ERRCODE='42501'; END IF;
+  IF TG_OP='UPDATE' THEN
+    IF NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id
+       OR NEW.component_insumo_id IS DISTINCT FROM OLD.component_insumo_id THEN
+      RAISE EXCEPTION 'catalog_parent_immutable' USING ERRCODE='42501'; END IF;
+    IF NEW.owner_organization_id IS DISTINCT FROM OLD.owner_organization_id THEN
+      RAISE EXCEPTION 'catalog_owner_immutable' USING ERRCODE='42501'; END IF;
+  END IF;
+  SELECT p.owner_organization_id INTO v_parent FROM public.produtos p WHERE p.id=NEW.produto_id;
+  IF TG_OP='INSERT' AND NEW.owner_organization_id IS NOT NULL AND NEW.owner_organization_id IS DISTINCT FROM v_parent THEN
+    RAISE EXCEPTION 'catalog_owner_forged' USING ERRCODE='42501'; END IF;
+  NEW.owner_organization_id := v_parent;
+  IF v_parent IS NOT NULL THEN PERFORM platform_private.catalog_assert_owner_actor(v_parent); END IF;
+  IF NEW.microrganismo_id IS NOT NULL THEN
+    SELECT m.owner_organization_id INTO v_ref FROM public.microrganismos m WHERE m.id=NEW.microrganismo_id;
+    IF v_ref IS NOT NULL AND v_ref IS DISTINCT FROM v_parent THEN
+      RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
+  END IF;
+  IF NEW.component_insumo_id IS NOT NULL THEN
+    SELECT p.owner_organization_id INTO v_ref FROM public.produtos p WHERE p.id=NEW.component_insumo_id;
+    IF v_ref IS NOT NULL AND v_ref IS DISTINCT FROM v_parent THEN
+      RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.trg_catalog_owner_child_formulacoes() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER trg_catalog_owner_child BEFORE INSERT OR UPDATE OR DELETE ON public.formulacoes
+  FOR EACH ROW EXECUTE FUNCTION platform_private.trg_catalog_owner_child_formulacoes();
+
+CREATE FUNCTION platform_private.trg_catalog_owner_child_volumes() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_parent uuid;
+BEGIN
+  IF TG_OP IN ('UPDATE','DELETE') AND OLD.owner_organization_id IS NOT NULL THEN
+    PERFORM platform_private.catalog_assert_owner_actor(OLD.owner_organization_id); END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  IF TG_OP='UPDATE' THEN
+    IF NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id
+       OR NEW.item_tipo IS DISTINCT FROM OLD.item_tipo THEN
+      RAISE EXCEPTION 'catalog_parent_immutable' USING ERRCODE='42501'; END IF;
+    IF NEW.owner_organization_id IS DISTINCT FROM OLD.owner_organization_id THEN
+      RAISE EXCEPTION 'catalog_owner_immutable' USING ERRCODE='42501'; END IF;
+  END IF;
   IF NEW.produto_id IS NOT NULL THEN
     SELECT p.owner_organization_id INTO v_parent FROM public.produtos p WHERE p.id=NEW.produto_id;
-  ELSIF TG_TABLE_NAME='catalogo_volumes' AND NEW.microrganismo_id IS NOT NULL THEN
+  ELSIF NEW.microrganismo_id IS NOT NULL THEN
     SELECT m.owner_organization_id INTO v_parent FROM public.microrganismos m WHERE m.id=NEW.microrganismo_id;
   END IF;
   IF TG_OP='INSERT' AND NEW.owner_organization_id IS NOT NULL AND NEW.owner_organization_id IS DISTINCT FROM v_parent THEN
     RAISE EXCEPTION 'catalog_owner_forged' USING ERRCODE='42501'; END IF;
-  IF TG_OP='UPDATE' AND NEW.owner_organization_id IS DISTINCT FROM OLD.owner_organization_id THEN
-    RAISE EXCEPTION 'catalog_owner_immutable' USING ERRCODE='42501'; END IF;
   NEW.owner_organization_id := v_parent;
   IF v_parent IS NOT NULL THEN PERFORM platform_private.catalog_assert_owner_actor(v_parent); END IF;
-  IF TG_TABLE_NAME='formulacoes' THEN
-    IF NEW.microrganismo_id IS NOT NULL THEN
-      SELECT m.owner_organization_id INTO v_ref FROM public.microrganismos m WHERE m.id=NEW.microrganismo_id;
-      IF v_ref IS NOT NULL AND v_ref IS DISTINCT FROM v_parent THEN
-        RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
-    END IF;
-    IF NEW.component_insumo_id IS NOT NULL THEN
-      SELECT p.owner_organization_id INTO v_ref FROM public.produtos p WHERE p.id=NEW.component_insumo_id;
-      IF v_ref IS NOT NULL AND v_ref IS DISTINCT FROM v_parent THEN
-        RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
-    END IF;
-  END IF;
   RETURN NEW;
 END $$;
-REVOKE ALL ON FUNCTION platform_private.trg_catalog_owner_child() FROM PUBLIC, anon, authenticated;
-CREATE TRIGGER trg_catalog_owner_child BEFORE INSERT OR UPDATE OR DELETE ON public.formulacoes      FOR EACH ROW EXECUTE FUNCTION platform_private.trg_catalog_owner_child();
-CREATE TRIGGER trg_catalog_owner_child BEFORE INSERT OR UPDATE OR DELETE ON public.catalogo_volumes FOR EACH ROW EXECUTE FUNCTION platform_private.trg_catalog_owner_child();
+REVOKE ALL ON FUNCTION platform_private.trg_catalog_owner_child_volumes() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER trg_catalog_owner_child BEFORE INSERT OR UPDATE OR DELETE ON public.catalogo_volumes
+  FOR EACH ROW EXECUTE FUNCTION platform_private.trg_catalog_owner_child_volumes();
+
+-- Regressão obrigatória do achado C (executada no próprio DDL, como owner, desfeita por exceção controlada):
+-- UPDATE no-op de linha GLOBAL existente nas duas tabelas não pode falhar por campo inexistente.
+DO $$
+BEGIN
+  BEGIN
+    UPDATE public.formulacoes SET volume_ml=volume_ml WHERE id=(SELECT id FROM public.formulacoes ORDER BY id LIMIT 1);
+    UPDATE public.catalogo_volumes SET ordem=ordem WHERE id=(SELECT id FROM public.catalogo_volumes ORDER BY id LIMIT 1);
+    RAISE EXCEPTION 'ownership_child_selftest_ok';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM <> 'ownership_child_selftest_ok' THEN RAISE; END IF;
+  END;
+END $$;
 
 -- Visibilidade (Fase 1) só se aplica a GLOBAIS: preferência sobre item privado é rejeitada.
 CREATE FUNCTION platform_private.trg_catalog_visibility_global_only() RETURNS trigger
@@ -451,7 +494,9 @@ BEGIN
            OR jsonb_typeof(v_item->'volume_ml') IS DISTINCT FROM 'number' OR (v_item->>'volume_ml')::numeric <= 0
            OR (v_item->>'volume_ml')::numeric > 1000000 OR scale((v_item->>'volume_ml')::numeric) > 6
            OR (v_item ? 'proporcao' AND jsonb_typeof(v_item->'proporcao') NOT IN ('number','null'))
-           OR ((v_item->>'proporcao')::numeric NOT BETWEEN 0.000001 AND 100) IS FALSE
+           -- NULL/ausente aceito; presente só em [0.000001, 100] (testado: 50/100/0.000001 ok; 101/-1/0 rejeitados)
+           OR ((v_item->>'proporcao')::numeric BETWEEN 0.000001 AND 100) IS FALSE
+           OR (jsonb_typeof(v_item->'proporcao')='number' AND scale((v_item->>'proporcao')::numeric) > 6)
            OR (v_item ? 'microrganismo_id' AND (v_item->>'microrganismo_id') !~ '^[0-9a-f-]{36}$')
            OR (v_item ? 'component_insumo_id' AND (v_item->>'component_insumo_id') !~ '^[0-9a-f-]{36}$') THEN
           RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
