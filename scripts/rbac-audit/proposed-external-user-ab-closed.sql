@@ -92,6 +92,7 @@ BEGIN
  RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  SELECT jsonb_agg(jsonb_build_object('id',id,'updated_at',updated_at) ORDER BY id) INTO snapshot FROM public.clientes WHERE id=ANY(p_clients);
  END IF;
+ IF platform_private.platform_actor_access_ready(p_actor) IS NOT TRUE OR public.has_role(p_actor,'administrador') IS NOT TRUE THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  IF snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  RETURN jsonb_build_object('organization_id',org,'snapshot',snapshot);
 END $scope$;
