@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenantCatalogScope } from "@/hooks/useTenantCatalogVisibility";
 import { TECHNICAL_STALE_REVALIDATION } from "@/hooks/useVisitaWorkspace";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  REC_MICRO_SELECT, REC_PRODUTO_SELECT, recCatalogErrorMessage, recMicroLabel, recProdutoLabel, recReferencedIds, recSelectOptions,
+  fetchRecSelection, REC_MICRO_SELECT, REC_PRODUTO_SELECT, recCatalogErrorMessage, recMicroLabel, recProdutoLabel, recReferencedIds, recSelectOptions,
   type RecMicro, type RecProduto,
 } from "@/lib/visita/recomendacaoCatalogo";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -71,50 +72,77 @@ export default function WizardRecomendacaoStep({
   const [editing, setEditing] = useState<Row | null>(null);
   const [form, setForm] = useState<Form>(EMPTY_FORM);
   const [pendingRows, setPendingRows] = useState<PendingRecomendacao[]>([]);
+  const scope = useTenantCatalogScope();
+  const identity = scope ? `${scope.organizationId}|${scope.userId}|${localRegistroId}|${remoteRegistroId}` : "unready";
+  const fence = useRef({ identity, generation: 0 });
+  if (fence.current.identity !== identity) fence.current = { identity, generation: fence.current.generation + 1 };
+  const generation = fence.current.generation;
+  const mounted = useRef(true);
+  const current = () => mounted.current && fence.current.identity === identity && fence.current.generation === generation;
+  const cacheScope = [scope?.organizationId, scope?.userId, generation];
+  const [microSearch, setMicroSearch] = useState("");
+  const [prodSearch, setProdSearch] = useState("");
+  const [microOffset, setMicroOffset] = useState(0);
+  const [prodOffset, setProdOffset] = useState(0);
+  useEffect(() => {
+    mounted.current = true;
+    setDialogOpen(false); setEditing(null); setForm(EMPTY_FORM); setPendingRows([]);
+    setMicroSearch(""); setProdSearch(""); setMicroOffset(0); setProdOffset(0);
+    return () => { mounted.current = false; };
+  }, [identity]);
 
   const { data: remoteRows = [], refetch } = useQuery({
-    queryKey: ["wizard-rec", remoteRegistroId],
-    enabled: !!remoteRegistroId,
+    queryKey: ["wizard-rec", ...cacheScope, remoteRegistroId],
+    enabled: !!scope && !!remoteRegistroId,
     ...TECHNICAL_STALE_REVALIDATION,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      if (!remoteRegistroId) return [];
       const { data, error } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("*")
-        .eq("registro_consultor_id", remoteRegistroId!)
-        .order("created_at", { ascending: true });
+        .eq("registro_consultor_id", remoteRegistroId)
+        .order("created_at", { ascending: true }).abortSignal(signal);
       if (error) throw error;
+      if (!current()) throw new Error("Sessão alterada");
       return data ?? [];
     },
   });
 
-  // Nova seleção: somente itens ativos (colunas reais). Ocultação por empresa NÃO integrada aqui.
+  // RPC autorizada da visita: globais ativos/visíveis, sem gate comercial de catálogo.
   const microSel = useQuery({
-    queryKey: ["wizard-rec-microrganismos-ativos"],
-    retry: false,
-    queryFn: async (): Promise<RecMicro[]> => {
-      const { data, error } = await supabase
-        .from("microrganismos").select(REC_MICRO_SELECT).eq("ativo", true).order("nome");
-      if (error) throw error;
-      return (data ?? []) as RecMicro[];
+    queryKey: ["tenant-catalog", ...cacheScope.slice(0, 2), "visit-selection", generation, remoteRegistroId, "microrganismo", microSearch, microOffset, 50, form.microrganismo_id],
+    enabled: !!scope && !!remoteRegistroId && dialogOpen, retry: false,
+    queryFn: async ({ signal }) => {
+      if (!remoteRegistroId) return [];
+      const data = await fetchRecSelection(supabase, remoteRegistroId, "microrganismo", microSearch, microOffset, form.microrganismo_id ? [form.microrganismo_id] : [], signal);
+      if (!current()) throw new Error("Sessão alterada");
+      return data;
     },
   });
   const prodSel = useQuery({
-    queryKey: ["wizard-rec-produtos-ativos"],
-    retry: false,
-    queryFn: async (): Promise<RecProduto[]> => {
-      const { data, error } = await supabase
-        .from("produtos").select(REC_PRODUTO_SELECT).eq("ativo", true).order("nome");
-      if (error) throw error;
-      return (data ?? []) as RecProduto[];
+    queryKey: ["tenant-catalog", ...cacheScope.slice(0, 2), "visit-selection", generation, remoteRegistroId, "produto", prodSearch, prodOffset, 50, form.produto_biologico_sugerido_id],
+    enabled: !!scope && !!remoteRegistroId && dialogOpen, retry: false,
+    queryFn: async ({ signal }) => {
+      if (!remoteRegistroId) return [];
+      const data = await fetchRecSelection(supabase, remoteRegistroId, "produto", prodSearch, prodOffset, form.produto_biologico_sugerido_id ? [form.produto_biologico_sugerido_id] : [], signal);
+      if (!current()) throw new Error("Sessão alterada");
+      return data;
     },
   });
-  const microrganismos = microSel.data ?? [];
-  const produtos = prodSel.data ?? [];
+  const microrganismos = (microSel.data ?? []).filter(r => r.selectable).map(r => ({ ...r, nome_cientifico: null }));
+  const produtos = (prodSel.data ?? []).filter(r => r.selectable);
 
   const reloadPending = async () => {
-    setPendingRows(await getPendingRecomendacoesByRegistro(localRegistroId));
+    const data = await getPendingRecomendacoesByRegistro(localRegistroId);
+    if (current()) setPendingRows(data);
   };
-  useEffect(() => { reloadPending(); /* eslint-disable-next-line */ }, [localRegistroId]);
+  useEffect(() => {
+    let active = true;
+    void getPendingRecomendacoesByRegistro(localRegistroId).then(data => { if (active && current()) setPendingRows(data); });
+    return () => { active = false; };
+    // Identity change must invalidate the pending read even if the original actor returns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity, localRegistroId]);
 
   const rows: Row[] = useMemo(() => {
     const pendingUuids = new Set(pendingRows.map((p) => p.clientUuid));
@@ -171,6 +199,7 @@ export default function WizardRecomendacaoStep({
       syncStatus: "pending_sync",
     };
     await savePendingRecomendacao(entry);
+    if (!current()) return;
 
     if (isOnline && remoteRegistroId) {
       try {
@@ -181,11 +210,14 @@ export default function WizardRecomendacaoStep({
           p_expected_versao: versao,
         });
         if (error) throw error;
+        if (!current()) return;
         await removePendingRecomendacao(clientUuid);
       } catch (err: any) {
+        if (!current()) return;
         toast.error(err?.message || "Falha ao salvar; ficou pendente de sincronização");
       }
     }
+    if (!current()) return;
     setDialogOpen(false);
     await reloadPending();
     await refetch();
@@ -218,23 +250,25 @@ export default function WizardRecomendacaoStep({
     { microrganismo_id: form.microrganismo_id, produto_biologico_sugerido_id: form.produto_biologico_sugerido_id },
   ]), [rows, form.microrganismo_id, form.produto_biologico_sugerido_id]);
   const microHist = useQuery({
-    queryKey: ["wizard-rec-micro-hist", refIds.micro.join(",")],
-    enabled: refIds.micro.length > 0,
+    queryKey: ["wizard-rec-micro-hist", ...cacheScope, refIds.micro.join(",")],
+    enabled: !!scope && refIds.micro.length > 0,
     retry: false,
-    queryFn: async (): Promise<RecMicro[]> => {
-      const { data, error } = await supabase.from("microrganismos").select(REC_MICRO_SELECT).in("id", refIds.micro);
+    queryFn: async ({ signal }): Promise<RecMicro[]> => {
+      const { data, error } = await supabase.from("microrganismos").select(REC_MICRO_SELECT).in("id", refIds.micro).abortSignal(signal);
       if (error) throw error;
+      if (!current()) throw new Error("Sessão alterada");
       return (data ?? []) as RecMicro[];
     },
   });
   const prodHist = useQuery({
-    queryKey: ["wizard-rec-prod-hist", refIds.prod.join(",")],
-    enabled: refIds.prod.length > 0,
+    queryKey: ["wizard-rec-prod-hist", ...cacheScope, refIds.prod.join(",")],
+    enabled: !!scope && refIds.prod.length > 0,
     retry: false,
-    queryFn: async (): Promise<RecProduto[]> => {
-      const { data, error } = await supabase.from("produtos").select(REC_PRODUTO_SELECT).in("id", refIds.prod);
+    queryFn: async ({ signal }): Promise<RecProduto[]> => {
+      const { data, error } = await supabase.from("produtos").select(REC_PRODUTO_SELECT).in("id", refIds.prod).abortSignal(signal);
       if (error) throw error;
-      return (data ?? []) as RecProduto[];
+      if (!current()) throw new Error("Sessão alterada");
+      return (data ?? []) as unknown as RecProduto[];
     },
   });
   const microMap = useMemo(() => new Map((microHist.data ?? []).map((m) => [m.id, m])), [microHist.data]);
@@ -243,8 +277,8 @@ export default function WizardRecomendacaoStep({
     id ? (microMap.get(id) ? recMicroLabel(microMap.get(id)) : microHist.isError ? "Nome indisponível" : "—") : "—";
   const prodNome = (id: string | null | undefined) =>
     id ? (prodMap.get(id) ? recProdutoLabel(prodMap.get(id)) : prodHist.isError ? "Nome indisponível" : "—") : "—";
-  const microOpts = recSelectOptions(microrganismos, form.microrganismo_id, microMap);
-  const prodOpts = recSelectOptions(produtos, form.produto_biologico_sugerido_id, prodMap);
+  const microOpts = recSelectOptions<RecMicro>(microrganismos, form.microrganismo_id, microMap);
+  const prodOpts = recSelectOptions<RecProduto>(produtos, form.produto_biologico_sugerido_id, prodMap);
 
   if (locked) {
     return (
@@ -372,9 +406,10 @@ export default function WizardRecomendacaoStep({
 
             <div className="space-y-1">
               <Label>Microrganismo</Label>
+              <Input aria-label="Buscar microrganismo" value={microSearch} onChange={e => { setMicroSearch(e.target.value); setMicroOffset(0); }} />
               <Select
                 value={form.microrganismo_id ?? undefined}
-                disabled={!microSel.isSuccess}
+                disabled={!microSel.isSuccess || microSel.isFetching}
                 onValueChange={(v) => { if (microrganismos.some((m) => m.id === v)) setForm({ ...form, microrganismo_id: v }); }}
               >
                 <SelectTrigger><SelectValue placeholder={microSel.isLoading ? "Carregando…" : "Selecione"} /></SelectTrigger>
@@ -386,14 +421,19 @@ export default function WizardRecomendacaoStep({
                   ))}
                 </SelectContent>
               </Select>
+              <div className="flex justify-between">
+                <Button variant="ghost" size="sm" aria-label="Página anterior de microrganismos" disabled={microOffset === 0 || microSel.isFetching} onClick={() => setMicroOffset(Math.max(0, microOffset - 50))}>Anterior</Button>
+                <Button variant="ghost" size="sm" aria-label="Próxima página de microrganismos" disabled={!microSel.isSuccess || microSel.isFetching || microOffset + 50 >= Number(microSel.data?.find(r => r.in_page)?.total ?? 0)} onClick={() => setMicroOffset(microOffset + 50)}>Próxima</Button>
+              </div>
               {microSel.isError && <p role="alert" className="text-xs text-destructive">{recCatalogErrorMessage(microSel.error)}</p>}
             </div>
 
             <div className="space-y-1">
-              <Label>Produto biológico sugerido</Label>
+              <Label>Produto sugerido</Label>
+              <Input aria-label="Buscar produto" value={prodSearch} onChange={e => { setProdSearch(e.target.value); setProdOffset(0); }} />
               <Select
                 value={form.produto_biologico_sugerido_id ?? undefined}
-                disabled={!prodSel.isSuccess}
+                disabled={!prodSel.isSuccess || prodSel.isFetching}
                 onValueChange={(v) => { if (produtos.some((p) => p.id === v)) setForm({ ...form, produto_biologico_sugerido_id: v }); }}
               >
                 <SelectTrigger><SelectValue placeholder={prodSel.isLoading ? "Carregando…" : "Selecione"} /></SelectTrigger>
@@ -405,6 +445,10 @@ export default function WizardRecomendacaoStep({
                   ))}
                 </SelectContent>
               </Select>
+              <div className="flex justify-between">
+                <Button variant="ghost" size="sm" aria-label="Página anterior de produtos" disabled={prodOffset === 0 || prodSel.isFetching} onClick={() => setProdOffset(Math.max(0, prodOffset - 50))}>Anterior</Button>
+                <Button variant="ghost" size="sm" aria-label="Próxima página de produtos" disabled={!prodSel.isSuccess || prodSel.isFetching || prodOffset + 50 >= Number(prodSel.data?.find(r => r.in_page)?.total ?? 0)} onClick={() => setProdOffset(prodOffset + 50)}>Próxima</Button>
+              </div>
               {prodSel.isError && <p role="alert" className="text-xs text-destructive">{recCatalogErrorMessage(prodSel.error)}</p>}
             </div>
 

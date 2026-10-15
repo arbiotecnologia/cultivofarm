@@ -1,3 +1,8 @@
+## AJUSTE SOLICITADO — 2026-10-15 15:14 UTC
+- [x] Integridade SHA-256 de 01–06/08–11, runtime e rollback conferida antes da integração. SQL12/selector preparado: autorização da visita, globais visíveis, famílias comerciais, histórico preservado, cache/fence org+usuário.
+- [x] Vitest 20/20 (3 arquivos); SQL12 integral PGlite 17/17 (Auth/helpers stubs e hash stub no preflight). Scanner zero, build automático OK; lint focal 5 erros preexistentes no wizard, arquivos novos 0.
+- [ ] SQL12 revisão/aplicação independente; Auth/RLS hospedado/browser/concurrency UNVERIFIED. RPC ainda ausente: nova seleção falha fechada até implantação autorizada; leitura histórica segue separada. SQL07 reconstruído exige comparação detalhada com live, não é certificado aplicável.
+
 ## COMPLEMENTO INDEPENDENTE — 2026-10-15 15:12 UTC
 - [x] Corrigida nomenclatura do inventário: 84 candidatos por substring; strings, NEW/OLD, payload puro, delegadores, consultas e SQL dinâmico triados sem excluir indiretos.
 - [x] Registradas evidências independentes: SQL11 `0923b7a5` 14/14, hash live `74f45dd67e9435a9876b0e2609e38954` coincidente e 0 apresentações ligadas; candidato04 `35199f39` 52/52 com preflight FK sintético; Biological14 ampliado 57/57. Não somar com provas locais; stubs não Auth real.
