@@ -14,6 +14,8 @@ BEGIN
   END IF;
   -- Manifesto exato do live em 15/10/2026: tabela/coluna -> raiz. Drift aborta antes de criar triggers.
   FOR r IN SELECT * FROM (VALUES
+    ('catalog_tenant_visibility','produto_id','produtos'),('catalog_tenant_visibility','microrganismo_id','microrganismos'),('catalog_tenant_visibility','cultura_id','culturas'),
+    ('microorganism_regulatory_presentations','catalog_volume_id','catalogo_volumes'),
     ('commercial_campaign_products','product_id','produtos'),
     ('commercial_condition_item_prices','product_id','produtos'),('commercial_condition_item_prices','microrganismo_id','microrganismos'),
     ('commercial_price_rules','product_id','produtos'),('commercial_price_rules','microrganismo_id','microrganismos'),
@@ -76,6 +78,8 @@ BEGIN
   FOR r IN
     SELECT child_table, jsonb_agg(jsonb_build_object('column',child_column,'root',root_table) ORDER BY child_column) args
     FROM (VALUES
+      ('catalog_tenant_visibility','produto_id','produtos'),('catalog_tenant_visibility','microrganismo_id','microrganismos'),('catalog_tenant_visibility','cultura_id','culturas'),
+      ('microorganism_regulatory_presentations','catalog_volume_id','catalogo_volumes'),
       ('commercial_campaign_products','product_id','produtos'),
       ('commercial_condition_item_prices','product_id','produtos'),('commercial_condition_item_prices','microrganismo_id','microrganismos'),
       ('commercial_price_rules','product_id','produtos'),('commercial_price_rules','microrganismo_id','microrganismos'),

@@ -53,7 +53,7 @@ export function CulturasTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground" data-testid="culturas-readonly-notice">
-        Culturas são um cadastro global, disponível somente para consulta.
+        Culturas globais são disponíveis somente para consulta.
       </p>
       {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
         <div><Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}><Plus className="mr-1 h-4 w-4" />Cultura própria</Button></div>
@@ -84,7 +84,14 @@ export function CulturasTab() {
             rows.map((c) => (
               <MobileCard
                 key={c.id}
-                title={c.nome}
+                title={<div className="flex items-center gap-2">{c.nome}<CatalogOriginBadge item={c} /></div>}
+                actions={<>
+                  {canManageVis && !c.owner_organization_id && <TenantVisibilityToggle entity="cultura" item={{ id: c.id, nome: c.nome, ativo: c.ativo }}
+                    state={tenantVis.map?.get(c.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />}
+                  <OwnedCatalogItemControls item={c} actorOrganizationId={ownedCapability.scope?.organizationId} canManage={ownedCapability.canManage}
+                    onEdit={() => setOwnedDialog({ open: true, item: c })} onArchive={() => setOwnedConfirm({ item: c, operation: "archive" })}
+                    onRestore={() => setOwnedConfirm({ item: c, operation: "restore" })} />
+                </>}
                 content={[
                   { label: "Descrição", value: c.descricao || "—" },
                   { label: "Situação", value: c.ativo ? "Ativa" : "Inativa" },
