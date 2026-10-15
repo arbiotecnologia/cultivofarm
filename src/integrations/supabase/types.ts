@@ -2231,6 +2231,132 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_tenant_visibility: {
+        Row: {
+          created_at: string
+          cultura_id: string | null
+          entity_type: string
+          hidden: boolean
+          id: string
+          microrganismo_id: string | null
+          organization_id: string
+          produto_id: string | null
+          reason: string
+          updated_at: string
+          updated_by: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          cultura_id?: string | null
+          entity_type: string
+          hidden: boolean
+          id?: string
+          microrganismo_id?: string | null
+          organization_id: string
+          produto_id?: string | null
+          reason: string
+          updated_at?: string
+          updated_by: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          cultura_id?: string | null
+          entity_type?: string
+          hidden?: boolean
+          id?: string
+          microrganismo_id?: string | null
+          organization_id?: string
+          produto_id?: string | null
+          reason?: string
+          updated_at?: string
+          updated_by?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_tenant_visibility_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_tenant_visibility_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_tenant_visibility_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
+            foreignKeyName: "catalog_tenant_visibility_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_tenant_visibility_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_tenant_visibility_ledger: {
+        Row: {
+          actor_id: string
+          after_state: Json
+          before_state: Json | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          organization_id: string
+          payload_hash: string
+          reason: string
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          after_state: Json
+          before_state?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          idempotency_key: string
+          organization_id: string
+          payload_hash: string
+          reason: string
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          after_state?: Json
+          before_state?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          idempotency_key?: string
+          organization_id?: string
+          payload_hash?: string
+          reason?: string
+          result?: Json
+        }
+        Relationships: []
+      }
       catalogo_alvos: {
         Row: {
           ativo: boolean
@@ -25581,6 +25707,50 @@ export type Database = {
       }
       tenant_admin_set_user_active: {
         Args: { p_active: boolean; p_user_id: string }
+        Returns: Json
+      }
+      tenant_catalog_hidden_ids: {
+        Args: { p_entity_type: string }
+        Returns: {
+          entity_id: string
+        }[]
+      }
+      tenant_catalog_read_visibility: {
+        Args: { p_entity_type: string; p_ids: string[] }
+        Returns: {
+          entity_id: string
+          hidden: boolean
+          updated_at: string
+          version: number
+        }[]
+      }
+      tenant_catalog_selection_page: {
+        Args: {
+          p_entity_type: string
+          p_include_ids?: string[]
+          p_limit: number
+          p_offset: number
+          p_search: string
+        }
+        Returns: {
+          ativo: boolean
+          hidden: boolean
+          id: string
+          in_page: boolean
+          nome: string
+          selectable: boolean
+          total: number
+        }[]
+      }
+      tenant_catalog_set_visibility: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_expected_version: number
+          p_hidden: boolean
+          p_idempotency_key: string
+          p_reason: string
+        }
         Returns: Json
       }
       unassign_b2b_user_client_secure: {
