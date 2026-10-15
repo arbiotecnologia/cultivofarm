@@ -681,7 +681,7 @@ export default function OrdensServico() {
                           <div className="flex flex-col items-end gap-1">
                             <Badge variant={prio.variant} className="text-[10px]">{prio.label}</Badge>
                             <Badge variant="outline" className={`text-[9px] ${o.origem === "onfarm" ? "border-status-producao text-status-producao" : ""}`}>
-                              {o.origem === "onfarm" ? "Visita Técnica" : "Manual"}
+                              {o.registro_consultor_id ? "Visita Técnica" : "Sem vínculo de visita"}
                             </Badge>
                           </div>
                         }
@@ -774,7 +774,7 @@ export default function OrdensServico() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[10px] ${o.origem === "onfarm" ? "border-status-producao text-status-producao" : ""}`}>
-                            {o.origem === "onfarm" ? "Visita Técnica" : "Manual"}
+                            {o.registro_consultor_id ? "Visita Técnica" : "Sem vínculo de visita"}
                           </Badge>
                         </TableCell>
                         <TableCell>{(o.produtos as any)?.nome || (o.microrganismos as any)?.nome || "—"}</TableCell>

@@ -1,3 +1,8 @@
+## RECORTE 17:04 UTC — UI OS autorizada no código real, sem publicação
+- [ ] Incorporar diff aprovado OS/query; PDF null-safe preservado; diagnóstico/DDL/dados intactos.
+- [ ] Proteger efeitos tardios por identidade e executar testes da implementação real, scanner/lint e validações automáticas.
+- [ ] Entregar diff nominal pronto para revisão final; publicação e browser real aguardam proprietário; fabricação/volume NO-GO.
+
 ## RECORTE 16:56 UTC — hardening P1 aplicado externamente
 - [x] Arquivar exatamente schema_migrations 20261015163930, sem reaplicar; confirmar b112888 e helper d95c2c canônicos, preservar ACL.
 - [x] Atualizar baseline/preflight OS e executar harness37/37 + frontend43/43: responsável read negado, execute/manage permitido; nenhuma conta real alterada.
