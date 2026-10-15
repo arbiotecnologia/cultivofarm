@@ -46,7 +46,7 @@ export interface OwnedMutation {
 export function ownedAllowedKeys(entity: TenantCatalogEntity, op: OwnedOperation): readonly string[] {
   if (op === "archive" || op === "restore") return [];
   if (op === "composition") return entity === "produto" ? ["status", "itens"] : [];
-  if (entity === "produto") return [...(op === "create" ? ["tipo"] : []), "nome", "descricao", "modo_acao", "funcao_completa", "modo_aplicacao", "familia_catalogo", "classe_catalogo"];
+  if (entity === "produto") return [...(op === "create" ? ["tipo"] : []), "nome", "descricao", "modo_acao", "funcao_completa", "modo_aplicacao", "familia_catalogo", "classe_catalogo", "composition"];
   if (entity === "microrganismo") return [...(op === "create" ? ["tipo"] : []), "nome", "nome_cientifico", "descricao"];
   return ["nome", "descricao"];
 }

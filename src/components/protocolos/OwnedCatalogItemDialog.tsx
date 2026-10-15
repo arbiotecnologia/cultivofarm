@@ -73,7 +73,6 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
   const openedVersion = useRef<string | null>(null);
   const initialPayload = useRef("");
   const initialComposition = useRef("");
-  const rootReceipt = useRef<{ fingerprint: string; id: string; updated_at: string } | null>(null);
   const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState("");
@@ -90,13 +89,17 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
 
   useEffect(() => {
     generation.current += 1; lock.current = false; setBusy(false); setFormError(null);
-    frozenScope.current = currentScope; openedVersion.current = null; rootReceipt.current = null; attempt.current = null;
+    frozenScope.current = currentScope; openedVersion.current = null; attempt.current = null;
     return () => { generation.current += 1; };
     // Freeze only on opening/item change, never adopt a new actor while editing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, item?.id, entity]);
   useEffect(() => {
-    if (open && frozenScope.current !== currentScope) onOpenChange(false);
+    if (open && frozenScope.current !== currentScope) {
+      generation.current += 1; lock.current = false; attempt.current = null; openedVersion.current = null;
+      setName(""); setDescription(""); setDeclarations([]); setReason(""); setFormError(null); setBusy(false);
+      onOpenChange(false);
+    }
   }, [currentScope, open, onOpenChange]);
   useEffect(() => {
     if (!open || (item && !loadedItem)) return;
@@ -141,30 +144,25 @@ export function OwnedCatalogItemDialog({ open, onOpenChange, entity, item, micro
       modo_acao: modeOfAction.trim() || null, funcao_completa: fullFunction.trim() || null,
       modo_aplicacao: applicationMode.trim() || null,
     });
-    const fingerprint = JSON.stringify([payload, reason.trim()]);
+    const compositionChanged = entity === "produto" && JSON.stringify([compositionStatus, declarations]) !== initialComposition.current;
+    const rootChanged = !item || JSON.stringify(payload) !== initialPayload.current;
+    const savePayload: Record<string, unknown> = rootChanged ? payload : {};
+    if (compositionChanged) savePayload.composition = {
+      status: compositionStatus, itens: declarations.map((d, index) => ({
+        ...d, ordem: index + 1, componente_nome: d.tipo_componente === "microrganismo" ? null : d.componente_nome?.trim(),
+        microrganismo_id: d.tipo_componente === "microrganismo" ? d.microrganismo_id : null,
+        quantidade: d.quantidade === "" ? null : Number(d.quantidade), unidade: d.quantidade === "" ? null : d.unidade,
+        base: d.quantidade === "" ? null : d.base,
+      })),
+    };
+    const fingerprint = JSON.stringify([operation, item?.id, openedVersion.current, savePayload, reason.trim()]);
     if (attempt.current?.fingerprint !== fingerprint) attempt.current = { fingerprint, key: crypto.randomUUID() };
     const idempotencyKey = attempt.current.key;
     try {
-      const rootChanged = !item || JSON.stringify(payload) !== initialPayload.current;
-      const saved = rootReceipt.current?.fingerprint === fingerprint ? rootReceipt.current
-        : rootChanged ? await mutation.mutateAsync({
+      await mutation.mutateAsync({
         entity, operation, entityId: item?.id ?? null, expectedUpdatedAt: openedVersion.current,
-        payload, reason, idempotencyKey, scopeKey: frozenScope.current,
-      }) : { id: loadedItem?.id ?? "", updated_at: openedVersion.current ?? "" };
-      rootReceipt.current = { fingerprint, id: saved.id, updated_at: saved.updated_at };
-      if (myGeneration !== generation.current || frozenScope.current !== scopeRef.current) return;
-      if (entity === "produto" && JSON.stringify([compositionStatus, declarations]) !== initialComposition.current) {
-        await mutation.mutateAsync({
-          entity, operation: "composition", entityId: saved.id, expectedUpdatedAt: saved.updated_at,
-          payload: { status: compositionStatus, itens: declarations.map((d, index) => ({
-            ...d, ordem: index + 1, componente_nome: d.tipo_componente === "microrganismo" ? null : d.componente_nome?.trim(),
-            microrganismo_id: d.tipo_componente === "microrganismo" ? d.microrganismo_id : null,
-            quantidade: d.quantidade === "" ? null : Number(d.quantidade), unidade: d.quantidade === "" ? null : d.unidade,
-            base: d.quantidade === "" ? null : d.base,
-          })) },
-          reason, idempotencyKey: crypto.randomUUID(), scopeKey: frozenScope.current,
-        });
-      }
+        payload: savePayload, reason, idempotencyKey, scopeKey: frozenScope.current,
+      });
       if (myGeneration !== generation.current || frozenScope.current !== scopeRef.current) return;
       toast.success(item ? "Item próprio atualizado." : "Item próprio criado.");
       onOpenChange(false);
