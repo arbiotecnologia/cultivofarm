@@ -13,6 +13,7 @@ const backend = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownersh
 const operationalReaders = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-06-operational-readers.sql", "utf8");
 const rollback = readFileSync("scripts/rbac-audit/rollback-tenant-catalog-ownership.sql", "utf8");
 const runtime = readFileSync("scripts/rbac-audit/runtime-test-tenant-catalog-ownership.sql", "utf8");
+const rollbackRuntime = readFileSync("scripts/rbac-audit/runtime-test-tenant-catalog-ownership-rollback.sql", "utf8");
 
 const AR = "007bb519-cba0-4704-be2c-cb93ad010048";
 const FSF = "11111111-1111-4111-8111-111111111111";
@@ -299,11 +300,24 @@ describe("ownership — SQL candidato 06 leitores operacionais", () => {
 describe("ownership — rollback e runtime", () => {
   it("rollback não destrói ledger, não reabre grants e preserva filtros", () => {
     expect(rollback).not.toMatch(/DROP TABLE/);
-    expect(rollback).not.toMatch(/catalog_tenant_visibility_ledger/);
+    expect(rollback).not.toMatch(/\b(DROP|ALTER|DELETE)\b/);
     expect(rollback).not.toMatch(/\bGRANT\b/);
-    expect(rollback).toMatch(/rollback_partial/);
-    expect(rollback.indexOf("CREATE UNIQUE INDEX IF NOT EXISTS microrganismos_nome_unique"))
-      .toBeLessThan(rollback.indexOf("microrganismos_nome_global_uq,"));
+    expect(rollback).toMatch(/catalog_ownership_gate SET enabled=false/);
+    expect(rollback).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_mutate/);
+    expect(rollback).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_presentation_mutate/);
+    for (const preserved of ["trg_catalog_private_ref_guard", "trg_catalog_owner_micro_product",
+      "catalog_composition_parent_scope", "catalog_composition_declaration_parent_scope",
+      "catalog_tenant_owned_ledger", "owner_organization_id"]) {
+      expect(rollback).toContain(preserved);
+    }
+  });
+  it("runtime do rollback cria privado e prova leitura cross-tenant negada após contenção", () => {
+    expect(rollbackRuntime).toMatch(/\\ir rollback-tenant-catalog-ownership\.sql/);
+    expect(rollbackRuntime).toMatch(/outra_empresa_nao_le_produto/);
+    expect(rollbackRuntime).toMatch(/outra_empresa_nao_le_declaracao/);
+    expect(rollbackRuntime).toMatch(/protecoes_preservadas/);
+    expect(rollbackRuntime).toMatch(/catalog_composition_parent_scope/);
+    expect(rollbackRuntime.trim().endsWith("ROLLBACK;")).toBe(true);
   });
   it("achado 3: runtime inclui iat, grants em temporárias e termina em ROLLBACK", () => {
     expect(runtime).toMatch(/'iat'/);
