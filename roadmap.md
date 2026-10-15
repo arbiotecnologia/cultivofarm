@@ -1,3 +1,8 @@
+## RECORTE 19:04 — aprovação separada, preparação fechada
+- [x] Decisão humana: somente Administrador/Gestor aprova; Produção somente programa OS previamente aprovada. HEAD inicial557ee0e1, candidato programação não aplicado.
+- [x] Aprovação separada inexistente localizada no inventário: preparar menor RPC fechada + guards UPDATE/INSERT nas duas OS, auditoria transacional e check_os_status_transition byte-preservado. Candidato/hashes/dependências/rollback em docs/auditorias/cockpit-aprovacao-separada-candidato-20261015.md;46 checks PostgreSQL isolado/Auth-schema simulados PASS, ROLE/RLS reduzida não hospedada;19Vitest+43programar PASS. Sem DDL remoto/grants/UI/publicação/dados/fabricação. Lote fora de escopo.
+- [ ] Liberação operacional depende de revisão independente e resolução das lacunas de programação; permanece NO-GO.
+
 ## RECORTE 18:51 — programação candidata, sem liberação
 - [x] Registrar evidência EXTERNA Renato: sessão real Admin FSF/Fagner Cockpit0OS; buscaOS-2026-000004 AR=0, limpar/recargaURLdireta=0, nenhum residual AR observado. Transição durante login NÃO gravada: somente estado pós-troca + testes locais de resposta atrasada.
 - [x] Sete funções contidas auth/anonEXECfalse informadas externamente: programar/lote/avancar/replan/refresh/alertas/resumoBI. Não reabrir.
