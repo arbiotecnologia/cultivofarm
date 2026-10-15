@@ -1,3 +1,9 @@
+## HOTFIX SQL12 INDEPENDENTE — 2026-10-15 16:16 UTC
+- [x] Preparar candidato autônomo para schema atual sem ownership; preflight/hashes, ACL e referências seguras. Nenhuma aplicação/publicação.
+- [x] Executar testes isolados e fornecer roteiro hospedado com rollback, sem executar DDL em produção; conservar visita f19c8343-6205-487a-a237-df4d8ee06471.
+- [x] Documentar diagnóstico desktop vazio/edição wizard duplicada separadamente, sem modificar dados nem fluxo.
+- [ ] Testes hospedados/JWT/browser autenticado dependem da validação/aplicação separada pelo revisor; não certificados nesta rodada.
+
 ## ATUALIZAÇÃO 15:43 UTC — visita07
 - [x] Hotfix externo enum_text 20261015154248 confirmado read-only; snapshot separado/hash 89a904d232b32c57c24931a007f6d728, NÃO reaplicar. Tenant guard e dois casts preservados.
 - [x] Candidato visita07 concreto: uma flag explícita, XOR bio/micro, lock/replay/índice/API singular, snapshot e linhas comerciais preservados. Corrigidos candidatos dos efeitos de conclusão automática e programação micro-only; sem aplicação remota.

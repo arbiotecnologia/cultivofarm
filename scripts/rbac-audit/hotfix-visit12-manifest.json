@@ -1,0 +1,34 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "status": "CANDIDATE_NOT_APPLIED_NOT_PUBLISHED",
+  "ownership_gate": "OFF",
+  "lab07": "SEPARATE",
+  "isolated_pglite": {
+    "passed": 45,
+    "auth": "dependency stubs; live helper bodies; upsert stub"
+  },
+  "vitest": {
+    "passed": 9,
+    "files": 2
+  },
+  "hosted_claims_rollback": "GENERATED_NOT_EXECUTED",
+  "browser_authenticated": "UNVERIFIED_EXTERNAL_UNMANAGED",
+  "files": [
+    {
+      "path": "scripts/rbac-audit/proposed-hotfix-catalog-visit12-current-schema.sql",
+      "sha256": "0f9276ae0047845880a54d8448a6ea3c1c1011e871767857aa53b53eeb66327f"
+    },
+    {
+      "path": "scripts/rbac-audit/check-hotfix-visit12-current-schema.mjs",
+      "sha256": "05ebfc35766abe679e10a1526d0fe0c125c7d682c59c9beb130aae63154112bc"
+    },
+    {
+      "path": "scripts/rbac-audit/live-defs/hotfix-visit12-helpers-before.sql",
+      "sha256": "1f08624650ceae7edc0cc357427832f1475c65309c198d580fb0b139733be175"
+    },
+    {
+      "path": "scripts/rbac-audit/build-hotfix-visit12-hosted-rollback.mjs",
+      "sha256": "010278f944d5a56db1c1cfe3119e16c43321c68c77313383ce01bf2299069554"
+    }
+  ]
+}
