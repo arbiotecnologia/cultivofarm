@@ -75,7 +75,9 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
   });
   it("achado 2: normalização NFD sem translate desalinhado, com autoteste", () => {
     expect(sql).not.toMatch(/translate\(/);
-    expect(sql).toMatch(/normalize\(pg_catalog\.lower\(p\), NFD\)/);
+    expect(sql).toMatch(/normalize\(pg_catalog\.lower\(p\), 'NFD'\)/);
+    expect(sql).not.toMatch(/normalize\([^)]*\), NFD\)/);
+    expect(sql).toMatch(/catalog_norm_name\('Açúcar'\) <> 'acucar'/);
     expect(sql).toMatch(/ownership_norm_selftest_failed/);
   });
   it("achado 7: autorização no trigger pelo ator real, sem GUC", () => {
@@ -83,6 +85,18 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
     expect(sql).not.toMatch(/current_setting\('cultivo\./);
     expect(sql).toMatch(/catalog_tenant_actor\('mutate'\) IS DISTINCT FROM p_owner/);
     expect(sql).toMatch(/catalog_parent_immutable/);
+  });
+  it("achado C (110c9c41): um trigger por tabela descendente, sem campo alheio, com autoteste em linha global", () => {
+    const f = sql.slice(sql.indexOf("trg_catalog_owner_child_formulacoes() RETURNS"), sql.indexOf("trg_catalog_owner_child_volumes() RETURNS"));
+    const v = sql.slice(sql.indexOf("trg_catalog_owner_child_volumes() RETURNS"), sql.indexOf("ownership_child_selftest_ok"));
+    expect(f).not.toMatch(/item_tipo/);
+    expect(v).not.toMatch(/component_insumo_id/);
+    expect(sql).not.toMatch(/FUNCTION platform_private\.trg_catalog_owner_child\(\)/);
+    expect(sql).toMatch(/ownership_child_selftest_ok/);
+  });
+  it("achado B (110c9c41): proporção rejeita fora de [0.000001,100] e aceita NULL", () => {
+    expect(sql).toMatch(/\(\(v_item->>'proporcao'\)::numeric BETWEEN 0\.000001 AND 100\) IS FALSE/);
+    expect(sql).not.toMatch(/NOT BETWEEN 0\.000001 AND 100\) IS FALSE/);
   });
   it("achado 6: lock comum e índices legados reescopados", () => {
     expect(sql).toMatch(/DROP INDEX IF EXISTS public\.microrganismos_nome_unique/);
@@ -119,6 +133,22 @@ describe("ownership — SQL candidato 02 leitores", () => {
   });
 });
 
+describe("ownership — SQL candidato 03 volumes/B2B", () => {
+  const b2b = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-03-volumes-b2b.sql", "utf8");
+  it("preflight fixa 7 md5 reais e pós confere só o manifesto", () => {
+    expect(b2b.match(/'[0-9a-f]{32}'\)/g)?.length).toBe(7);
+    expect(b2b).not.toMatch(/FROM pg_proc/);
+    expect(readers).not.toMatch(/FROM pg_proc/);
+  });
+  it("helpers SA de volume e B2B filtram dono; fornecedor vem do vínculo, nunca do cliente", () => {
+    expect(b2b.match(/-- \[OWNER\]/g)!.length).toBeGreaterThanOrEqual(12);
+    expect(b2b).toMatch(/commercial_owner_organization_id INTO v_owner FROM public\.partner_accounts/);
+    expect(b2b).toMatch(/b2b_commercial_context\(\)/);
+    expect(b2b).not.toMatch(/GRANT EXECUTE/);
+    expect(b2b).toMatch(/b2b_post_price_acl_reopened/);
+  });
+});
+
 describe("ownership — rollback e runtime", () => {
   it("rollback não destrói ledger, não reabre grants e preserva filtros", () => {
     expect(rollback).not.toMatch(/DROP TABLE/);
@@ -134,5 +164,11 @@ describe("ownership — rollback e runtime", () => {
     expect(runtime.trim().endsWith("ROLLBACK;")).toBe(true);
     expect(runtime).not.toMatch(/\bCOMMIT\b/);
     expect(runtime).toMatch(/entity_type='produto' AND entity_id=/);
+  });
+  it("achado F: runtime não fabrica PASS com qualquer exceção em casos de autorização", () => {
+    expect(runtime).not.toMatch(/WHEN OTHERS THEN INSERT INTO _r VALUES\('[a-z_]+',true/);
+    expect(runtime).toMatch(/norm_/);
+    expect(runtime).toMatch(/proporcao_/);
+    expect(runtime).toMatch(/global_child_update/);
   });
 });
