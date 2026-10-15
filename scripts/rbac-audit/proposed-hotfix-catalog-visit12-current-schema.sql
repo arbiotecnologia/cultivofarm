@@ -82,6 +82,12 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_org uuid; v_id uuid; v_col text; v_ok boolean;
 BEGIN
  v_org:=platform_private.catalog_tenant_actor('read_prefs');
+ IF NOT COALESCE(public.can_view_technical_visit(auth.uid(),NEW.registro_consultor_id),false) THEN
+  RAISE EXCEPTION 'sem_permissao' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND OLD.registro_consultor_id IS DISTINCT FROM NEW.registro_consultor_id
+  AND NOT COALESCE(public.can_view_technical_visit(auth.uid(),OLD.registro_consultor_id),false) THEN
+  RAISE EXCEPTION 'sem_permissao' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.registros_consultor WHERE id=NEW.registro_consultor_id FOR UPDATE;
  PERFORM public._assert_visita_editavel(NEW.registro_consultor_id);
  FOR v_col IN SELECT unnest(ARRAY['produto_biologico_sugerido_id','microrganismo_id']) LOOP
   IF TG_OP='UPDATE' AND NEW.registro_consultor_id=OLD.registro_consultor_id
