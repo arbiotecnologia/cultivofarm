@@ -52,7 +52,7 @@ const SELECT_APROVACOES = "id, status_aprovacao, created_at";
 
 /** Colunas mínimas exibidas na aba de OS de Produção. */
 const SELECT_OS_ONFARM =
-  "id, numero_os, status, origem, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
+  "id, numero_os, status, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
 
 export default function FluxoTecnico() {
   const { role, roles } = useAuth();
@@ -332,7 +332,7 @@ export default function FluxoTecnico() {
                       <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"}
+                          {o.registro_consultor_id ? "Visita técnica" : "Sem vínculo de visita"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -406,7 +406,7 @@ export default function FluxoTecnico() {
               <OSFlowTimeline registroId={selectedOS.registro_consultor_id} />
             ) : (
               <p className="text-xs text-muted-foreground italic">
-                Esta OS não tem recomendação técnica de origem, portanto não há linha do tempo de fluxo.
+                Esta OS não tem vínculo de visita registrado, portanto não há linha do tempo de visita.
               </p>
             )}
           </div>

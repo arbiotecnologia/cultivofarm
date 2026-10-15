@@ -1,11 +1,11 @@
 # Fase atual — candidato de habilitação focal OS (16:37 UTC)
 
 ## Resultado e entrega
-**CANDIDATO PARA REVISÃO. Não aplicado ao app/banco, não publicado.**
+**APLICADO AO CÓDIGO-FONTE REAL POR AUTORIZAÇÃO. NÃO PUBLICADO. Nenhuma mudança remota de banco/dados.**
 Diff: `scripts/rbac-audit/proposed-enable-visit-os-ui.patch`.
-**Atualização 16:53 UTC:** autorizado e aplicado ao código-fonte real somente o trecho PDF null-safe de `VisitaTecnica.tsx` (dose e volume). UI de geração OS e correção da query permanecem candidatas, sem publicação. Nenhuma migration, RPC, dado ou diagnóstico aplicado nesta rodada.
+**Atualização 16:53 UTC:** autorizado e aplicado ao código-fonte real somente o trecho PDF null-safe de `VisitaTecnica.tsx` (dose e volume). UI de geração OS e correção da query foram incorporadas ao código real na rodada 17:04 UTC, sem publicação. Nenhuma migration, RPC, dado ou diagnóstico aplicado nesta rodada.
 Preflight somente leitura: `scripts/rbac-audit/preflight-enable-visit-os-readonly.sql`.
-Cópias executáveis para testes: `scripts/rbac-audit/os-enable-candidate/` (não importadas pelo app).
+Cópias históricas: `scripts/rbac-audit/os-enable-candidate/` (não importadas pelo app). Os testes OS/query agora importam a implementação real. O patch histórico já foi incorporado; NÃO reaplicar.
 
 Aprovação de VT-2026-0003 pela fila técnica e visita aprovada no domínio publicado: **evidência externa relatada por Renato**, não nova prova própria. Preservada a visita f19c8343-6205-487a-a237-df4d8ee06471, sem sequer chamar o conversor remoto.
 Migrations 20261015161648, 20261015162631 e 20261015163930 já aplicadas: **NÃO REAPLICAR**; arquivo exato e manifesto aplicado preservados. Ownership01–13 permanece OFF.
@@ -50,9 +50,18 @@ Não identificado fluxo existente auditado para definir volume solicitado antes 
 
 ## Gates e roteiro de revisão
 1. Validar destino canônico antes de qualquer operação de banco. Executar preflight read-only; qualquer drift/ACL operacional aberta mantém NO-GO, sem regrant corretivo automático. Preflight pronto, **não executado remoto** nesta rodada.
-2. Aplicar **somente diff UI** em checkout de revisão autorizado; não SQL12/07/ownership/diagnóstico. Fazer verificações automáticas e testes indicados. Reverter a disponibilidade UI se dependência não confirmada; nunca restaurar conversor vulnerável.
+2. Diff UI já incorporado ao código real; não aplicar SQL12/07/ownership/diagnóstico nem reaplicar o patch histórico. Revisar as evidências locais abaixo. Reverter a disponibilidade UI se dependência não confirmada; nunca restaurar conversor vulnerável.
 3. No domínio publicado após publicação expressamente autorizada pelo proprietário: Admin AR visita aprovada, Gerar OS → abrir/cancelar sem mudança → confirmar uma vez → verificar status convertido_os e mesma OS/uma programação aguardando/volume não informado. Sessão real atual publicada continua com gate OFF até decisão do revisor.
 4. Reconsultar visita/OS pela UI; retry/reentrada não duplicam. FSF/sem papel/SA sem tenant não veem ação; loading/erro não habilitam botão. **Não executar conversão por SQL direto para contornar gate**.
 5. Não programar, gerar lote, publicar planejamento, decidir pelo produtor, fabricar, cobrar ou emitir fiscal. Comerciais preservados.
 
-**GO local PDF null-safe aplicado/testado; GO candidato OS/query para revisão; NO-GO habilitação/publicação nesta rodada; UNVERIFIED conversão JWT/browser próprio e PDF baixado real; NO-GO fabricação/volume e diagnóstico.**
+**GO local: PDF/OS/query aplicados e testados. Publicação aguarda revisão final/autorização. UNVERIFIED: typecheck separado, browser/JWT próprio, PDF baixado e concorrência hospedada. Lint global FAIL (não certificado limpo). Fabricação/volume e diagnóstico NO-GO.**
+
+## Aplicação autorizada ao código real — 17:04–17:10 UTC
+- Flag de conversão habilitada somente no fluxo existente. Workspace exige `can_manage === true` e `can_convert_os === true`; baseline backend b112888 preservado. Confirmação, busy, replay e lock mantidos; epoch/unmount impede efeitos tardios de sessão antiga. Nenhum diagnóstico, DDL, dado, conta, rota, dependência ou ACL alterado.
+- Texto atual: cria OS/programação pendente, não inicia fabricação; volume NULL explicitamente pendente. Programar/lote/publish e decisões do produtor não reabertos.
+- Implementação real: **81/81 Vitest PASS** (35 OS +2 consulta/erro +35 decisões existentes +9 PDF/claims). Após retirar `any` do teste de consulta, reexecução focal **2/2 PASS**. Supabase/Auth mockados; não equivalem a browser autenticado.
+- ESLint dos controles flag/banner e dois testes OS: **0 erros/avisos**. Focal completo ainda acusa 33 erros no hook, 11 em FluxoTecnico e 22/1 em OrdensServico (`no-explicit-any`/deps). Baseline diferencial não comprovado; não declarar lint total PASS. Lint global: **3295 erros/126 avisos**. Sem limpeza ampla fora do recorte.
+- Scanner de segredos focal **PASS**, `git diff --check` PASS. Build automático observado OK em **17:09:27 UTC**. Build/typecheck não rodados manualmente por restrição do ambiente; typecheck separado permanece sem evidência própria.
+- Diff nominal real: `src/lib/fluxo-tecnico/fluxo.ts`, `src/hooks/useFluxoVisitaTecnica.ts`, `src/components/visita/VisitaStatusBanner.tsx`, `src/pages/FluxoTecnico.tsx`, `src/pages/OrdensServico.tsx`; PDF anterior preservado em `src/pages/VisitaTecnica.tsx`. Testes: `src/test/fluxo-tecnico/osEnableProposal.interaction.test.tsx`, `src/test/fluxo-tecnico/osOnfarmQueryProposal.test.tsx`, `src/test/visita/diagnosticPdfProposal.test.ts`. Manifesto/relatório/roteiro atualizados.
+- Não executado commit Git: versionamento é gerenciado pela plataforma. Entrega é código-fonte local pronto para revisão final, não alegação de publicação/certificação integral. Sessão `external_unmanaged` impede prova própria autenticada; validação real aguarda o proprietário.

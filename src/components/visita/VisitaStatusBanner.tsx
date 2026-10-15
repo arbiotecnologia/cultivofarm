@@ -1,5 +1,5 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
 import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
@@ -46,7 +46,7 @@ const ETAPAS_FLUXO: FluxoEtapa[] = [
   { key: "finalizada", label: "Finalizada", icon: ClipboardCheck },
   { key: "aprovacao", label: "Aprovação técnica", icon: UserCheck },
   { key: "produtor", label: "Decisão do produtor", icon: FileSearch },
-  { key: "os", label: "OS / Aplicação", icon: PackageCheck },
+  { key: "os", label: "Encaminhamento laboratorial", icon: PackageCheck },
   { key: "concluida", label: "Concluída", icon: Flag },
 ];
 
@@ -54,7 +54,7 @@ function getEtapaAtiva(status?: string, proximoPasso?: string): string {
   switch (status) {
     case "finalizado": return etapaAtivaFinalizada(proximoPasso);
     case "enviado_aprovacao": return "aprovacao";
-    case "aprovado": return "produtor";
+    case "aprovado": return "aprovacao";
     case "convertido_os": return "os";
     case "arquivado":
     case "reprovado": return "concluida";
@@ -65,8 +65,6 @@ function getEtapaAtiva(status?: string, proximoPasso?: string): string {
 export function VisitaStatusBanner({
   status, proximoPasso, finalizedAt, registroId, osExistenteId,
 }: Props) {
-  const { role } = useAuth();
-  const { converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
   const navigate = useNavigate();
   const geraArtefatoAprovavel = desfechoGeraArtefatoAprovavel(proximoPasso);
 
@@ -95,7 +93,7 @@ export function VisitaStatusBanner({
     descricao = proximoPasso === "emitir_recomendacao"
       ? "A recomendação foi enviada. Um responsável técnico precisa aprovar antes do produtor ser notificado."
       : proximoPasso === "gerar_os"
-        ? "A OS Multi-Produto está aguardando aprovação para liberar o PCP."
+        ? "A recomendação está aguardando aprovação técnica antes do encaminhamento laboratorial."
         : "Aguardando análise do responsável técnico.";
     cta = { label: "Ver fila de aprovação", onClick: () => navigate("/fluxo-tecnico?tab=aprovacoes") };
     tone = "indigo";
@@ -105,8 +103,8 @@ export function VisitaStatusBanner({
     cta = { label: "Acompanhar no Fluxo Técnico", onClick: () => navigate("/fluxo-tecnico?tab=aprovados") };
     tone = "violet";
   } else if (status === "convertido_os") {
-    titulo = "OS gerada — em execução";
-    descricao = "A demanda agora segue pelo pipeline da Ordem de Serviço (reserva → expedição → aplicação).";
+    titulo = "Recomendação encaminhada ao laboratório";
+    descricao = "Uma recomendação foi encaminhada à OS. As demais recomendações permanecem abertas; fabricação não iniciada e volume pendente de definição.";
     cta = { label: "Ver Ordens de Serviço", onClick: () => navigate("/ordens-servico") };
     tone = "amber";
   } else if (status === "reprovado") {
@@ -155,20 +153,8 @@ export function VisitaStatusBanner({
               <TechnicalDecisionActions registroId={registroId} mode={status === "aprovado" ? "reabrir" : "liberar"} />
             )}
             
-            {RPC_GERACAO_OS_DISPONIVEL && registroId && status === "aprovado" && !osExistenteId && (role === "administrador" || role === "gestor" || role === "consultor_tecnico" || role === "tecnico_agronomo") && (
-              <Button 
-                size="sm" 
-                className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm"
-                onClick={async () => {
-                  const res = await converterRecomendacaoEmOS(registroId);
-                  if (res.success) {
-                    navigate(`/ordens-servico`);
-                  }
-                }}
-              >
-                <PackageCheck className="h-4 w-4" /> 
-                Gerar OS de Produção
-              </Button>
+            {RPC_GERACAO_OS_DISPONIVEL && registroId && status === "aprovado" && !osExistenteId && (
+              <LaboratoryConversionAction key={registroId} registroId={registroId} />
             )}
 
             {registroId && status === "aprovado" && osExistenteId && (
@@ -288,6 +274,63 @@ export function TechnicalDecisionActions({ registroId, mode = "decidir", onSucce
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
           <Button disabled={busy || !allowed || (needsReason && !motivo.trim())} onClick={() => { void submit(); }}>Confirmar decisão</Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>;
+}
+
+/** Somente encaminhamento singular; nenhuma ação operacional do laboratório. */
+export function LaboratoryConversionAction({ registroId }: { registroId: string }) {
+  const { roles, loading, user, profile } = useAuth();
+  const workspace = useVisitaWorkspace(registroId);
+  const { converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const lock = useRef(false);
+  const ws = workspace.data;
+  const actor = JSON.stringify([loading, user?.id, profile?.user_id, profile?.ativo, profile?.organization_id, [...roles].sort(), registroId]);
+  const current = useRef({ actor, epoch: 0 });
+  if (current.current.actor !== actor) current.current = { actor, epoch: current.current.epoch + 1 };
+  useEffect(() => () => { current.current.epoch += 1; }, []);
+  const ready = !loading && !!user && profile?.user_id === user.id && profile.ativo === true && !!profile.organization_id
+    && !workspace.isFetching && !workspace.isError && ws?.permissions.can_manage === true && ws.permissions.can_convert_os === true
+    && roles.some(role => ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo"].includes(role));
+  const existing = (ws?.ordens_servico?.length ?? 0) > 0;
+  const allowed = ready && ws?.status === "aprovado" && !existing;
+  const dialogActor = useRef({ actor, epoch: current.current.epoch });
+  const sameDialog = dialogActor.current.actor === actor && dialogActor.current.epoch === current.current.epoch;
+  const submit = async () => {
+    if (lock.current || !allowed || !sameDialog) return;
+    lock.current = true; setBusy(true); setError("");
+    const epoch = current.current.epoch;
+    try {
+      const result = await converterRecomendacaoEmOS(registroId);
+      if (current.current.epoch !== epoch) return;
+      if (!result.success) { setError(result.message); await workspace.refetch(); return; }
+      setOpen(false);
+    } catch {
+      if (current.current.epoch === epoch) setError("Não foi possível confirmar o encaminhamento. Reconsulte a visita.");
+    } finally {
+      lock.current = false;
+      if (current.current.epoch === epoch) setBusy(false);
+    }
+  };
+  return <>
+    {allowed && <Button size="sm" disabled={lock.current} className="gap-2" onClick={() => {
+      if (lock.current) return;
+      dialogActor.current = { actor, epoch: current.current.epoch }; setBusy(false); setError(""); setOpen(true);
+    }}><PackageCheck className="h-4 w-4" />Gerar OS laboratorial</Button>}
+    <AlertDialog open={open && sameDialog} onOpenChange={value => { if (!lock.current) setOpen(value); }}>
+      <AlertDialogContent onEscapeKeyDown={event => { if (lock.current) event.preventDefault(); }}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Encaminhar recomendação ao laboratório?</AlertDialogTitle>
+          <AlertDialogDescription>Uma única recomendação marcada, com produto biológico ou microrganismo, criará OS e programação pendente. As recomendações comerciais não serão concluídas. Volume não informado exige definição antes de fabricar; esta ação não inicia fabricação.</AlertDialogDescription>
+        </AlertDialogHeader>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+          <Button disabled={busy || !allowed} onClick={() => { void submit(); }}>{busy ? "Encaminhando…" : "Confirmar encaminhamento"}</Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

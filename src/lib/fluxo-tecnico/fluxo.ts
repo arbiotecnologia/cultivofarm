@@ -136,17 +136,17 @@ export function podeDecidirPorPapel(role: string | null | undefined): boolean {
 export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = true;
 
 /**
- * Também não existe RPC idempotente para gerar as OS de Produção de uma
- * recomendação aprovada. Geração automática fica bloqueada (evita criação
- * parcial e duplicação em retry).
+ * Conversão singular: base 20261015161648 e hardening manage 20261015163930.
+ * Cria OS/programação pendente; não inicia fabricação.
+ * Workspace e RPC preservam autorização, lock e replay por visita.
  */
-export const RPC_GERACAO_OS_DISPONIVEL = false;
+export const RPC_GERACAO_OS_DISPONIVEL = true;
 
 export const MSG_DECISAO_INDISPONIVEL =
   "Aprovação temporariamente indisponível para proteção da integridade";
 
 export const MSG_GERACAO_OS_INDISPONIVEL =
-  "Geração automática de Ordens de Serviço temporariamente indisponível para proteção da integridade. A recomendação permanece aprovada e deve ser convertida manualmente.";
+  "Encaminhamento laboratorial indisponível nesta fase. A recomendação permanece aprovada; nenhuma fabricação foi autorizada.";
 
 /** Só libera a decisão quando papel, status e contrato de banco permitem. */
 export function podeDecidir(

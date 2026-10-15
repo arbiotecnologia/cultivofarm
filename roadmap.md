@@ -1,3 +1,9 @@
+## RECORTE 17:04 UTC — UI OS autorizada no código real, sem publicação
+- [x] Incorporar diff aprovado OS/query no código real; PDF null-safe preservado; diagnóstico/DDL/dados intactos.
+- [x] Proteger identidade/unmount; implementação real81/81, scanner e lint controles/testes PASS; lint global FAIL3295/126 e hook/pages sem delta comprovado; build automático17:09:27OK, typecheck separado sem evidência.
+- [x] Entregar código real/diff nominal e manifesto para revisão final, sem commit Git manual.
+- [ ] Publicação/browser real aguardam autorização/sessão do proprietário; fabricação/volume e diagnóstico NO-GO; sem próxima fase.
+
 ## RECORTE 16:56 UTC — hardening P1 aplicado externamente
 - [x] Arquivar exatamente schema_migrations 20261015163930, sem reaplicar; confirmar b112888 e helper d95c2c canônicos, preservar ACL.
 - [x] Atualizar baseline/preflight OS e executar harness37/37 + frontend43/43: responsável read negado, execute/manage permitido; nenhuma conta real alterada.
@@ -17,7 +23,7 @@
 - [x] Vitest candidato32/32, regressões72/72; corpo aplicado exato PGlite31/31 (hash66e807), NULL preservado. Mocks/stubs/fila serializada não provam Auth/JWT/concorrência hospedada.
 - [x] Dependência de volume documentada: nenhum caminho auditado para definir solicitado; fabricação NO-GO, programar/lote/publish sem regrant; VT-2026-0003 preservada.
 - [x] Manifesto enable-visit-os e relatório habilitacao-os-visita-candidato-20261015 atualizados; preflight somente leitura pronto, não executado remoto; ownership OFF.
-- [ ] Aplicação do diff/publicação e teste real pela UI dependem da revisão/autorização do proprietário; sessão gerenciada external_unmanaged. Não contornar gate por SQL.
+- [x] Aplicação do diff autorizada/concluída às17:04; publicação e teste UI real continuam pendentes conforme recorte atual. Não contornar gate por SQL.
 
 ## ATUALIZAÇÃO EXTERNA 16:28 UTC — NÃO REAPLICAR
 - [x] Arquivar conteúdo exato do histórico canônico das versões 20261015161648 (base07+visita07) e 20261015162631 (hotfix12). Converter live 66e8072f7aefbe18c1417240121147a5 confirmado read-only.
