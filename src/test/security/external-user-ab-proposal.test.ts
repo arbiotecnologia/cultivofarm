@@ -15,24 +15,45 @@ function proposedSource() {
  }
  output.push(...original.slice(index));return output.join('\n').replace(/^import .*createClient.*;\s*/m,'');
 }
-async function invoke(role:string, extra:Record<string,unknown>={},open=false, retry=false, owned=true, lookupMode='ok', failure='') {
+async function invoke(role:string, extra:Record<string,unknown>={},open=false, retry=false, owned=true, lookupMode='ok', failure='', recoveryState='') {
  let source=proposedSource();if(open)source=source.replace('B2B_PROVISIONING_CHANNELS_REVIEWED = false','B2B_PROVISIONING_CHANNELS_REVIEWED = true');
- const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:'claimed',acquired:!retry,lease_valid:!retry},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
- const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async(_name:string,_args:Record<string,unknown>)=>({data:{success:failure!=='finish'},error:failure==='finish'?{code:'42501'}:null}));
+ const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:recoveryState?'compensating':'claimed',acquired:!retry,lease_valid:!retry},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
+ const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async(_name:string,_args:Record<string,unknown>)=>{
+  if(_name==='b2b_prepare_provisioning_compensation')return {data:recoveryState,error:null};
+  if(_name==='b2b_complete_provisioning_compensation')return {data:failure!=='cleanup',error:failure==='cleanup'?{code:'42501'}:null};
+  return {data:{success:failure!=='finish'},error:failure==='finish'?{code:'42501'}:null};
+ });
  const actor={rpc,auth:{getClaims:async()=>({data:{claims:{sub:'admin',role:'authenticated',iat:1792093500}},error:null})}};
  const getUserById=vi.fn(async()=>{
   if(lookupMode==='throw')throw new Error('timeout');
-  return {data:{user:owned?{id:'reserved',email:'test@example.invalid',app_metadata:{b2b_provisioning_receipt:lookupMode==='foreign'?'unrelated':'claim'}}:null},error:lookupMode==='error'?{status:503}:null};
+  return {data:{user:owned?{id:'reserved',email:'test@example.invalid',app_metadata:{b2b_provisioning_receipt:lookupMode==='foreign'?'unrelated':'claim'}}:null},error:lookupMode==='error'?{status:503}:lookupMode==='absent'?{status:404}:null};
  });
- const server={rpc:finish,auth:{admin:{createUser,getUserById}},from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{organization_id:'org',ativo:true},error:null})})})})};
+ const deleteUser=vi.fn(async()=>{if(failure==='delete-timeout')throw new Error('timeout');return {error:failure==='delete-error'?{status:503}:null};});
+ const server={rpc:finish,auth:{admin:{createUser,getUserById,deleteUser}},from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{organization_id:'org',ativo:true},error:null})})})})};
  let handler:((req:Request)=>Promise<Response>)|undefined;
  new Function('Deno','createClient',ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText)({env:{get:(name:string)=>name==='SUPABASE_URL'?'https://swzpzcwiasxmjutrmvkm.supabase.co':'mock'},serve:(fn:typeof handler)=>{handler=fn;}},(_u:unknown,_k:unknown,opts:unknown)=>opts?actor:server);
  if(!handler)throw new Error('missing handler');
  const response=await handler(new Request('https://isolated.invalid',{method:'POST',headers:{Authorization:'Bearer mock','Content-Type':'application/json'},body:JSON.stringify({role,nome:'Test',email:'test@example.invalid',idempotency_key:'55555555-5555-4555-8555-555555555555',...extra})}));
- return {response,rpc,createUser,finish,getUserById};
+ return {response,rpc,createUser,finish,getUserById,deleteUser};
 }
 const client='11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa';const partner='11111111-1111-4111-8111-111111111111';
 describe('external user review diff — SDK/Auth mocked, no deploy',()=>{
+ it('completed during compensation never looks up or deletes Auth',async()=>{
+  const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,true,'ok','','completed');
+  expect(r.response.status).toBe(200);expect(r.deleteUser).not.toHaveBeenCalled();expect(r.getUserById).not.toHaveBeenCalled();expect(r.createUser).not.toHaveBeenCalled();
+ });
+ it.each(['delete-timeout','delete-error','cleanup'])('compensation %s stays pending fenced',async failure=>{
+  const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,true,'ok',failure,'compensating');
+  expect(r.response.status).toBe(503);expect(await r.response.json()).toMatchObject({error:'b2b_provisioning_compensation_pending'});expect(r.createUser).not.toHaveBeenCalled();expect(r.deleteUser).toHaveBeenCalledExactlyOnceWith('reserved');
+ });
+ it('retry after Auth deletion completes only receipt-owned residuals',async()=>{
+  const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,false,'absent','','compensating');
+  expect(r.response.status).toBe(409);expect(await r.response.json()).toMatchObject({error:'b2b_provisioning_aborted'});expect(r.deleteUser).not.toHaveBeenCalled();expect(r.createUser).not.toHaveBeenCalled();expect(r.finish).toHaveBeenCalledWith('b2b_complete_provisioning_compensation',{p_claim:'claim',p_fence:'fence',p_user:'reserved'});
+ });
+ it.each(['throw','error','foreign'])('uncertain or foreign compensation lookup %s never deletes',async mode=>{
+  const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,true,mode,'','compensating');
+  expect(r.response.status).toBe(503);expect(r.deleteUser).not.toHaveBeenCalled();expect(r.createUser).not.toHaveBeenCalled();expect(r.finish.mock.calls.some(call=>call[0]==='b2b_complete_provisioning_compensation')).toBe(false);
+ });
  it.each(['cliente_produtor','parceiro_b2b'])('gate remains closed %s',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner});expect(r.response.status).toBe(503);expect(r.createUser).not.toHaveBeenCalled();});
  it.each(['cliente_produtor','parceiro_b2b'])('isolated explicit role %s uses claim and finish',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_role:role,p_clients:role==='cliente_produtor'?[client]:[],p_primary:role==='cliente_produtor'?client:null}));expect(r.createUser).toHaveBeenCalledOnce();expect(r.finish).toHaveBeenCalledOnce();});
  it('technical remains denied even with open flag',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner},true);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();});

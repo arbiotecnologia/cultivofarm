@@ -34,6 +34,7 @@
 - Desktop/mobile recovery share one form and the existing canonical redirect policy, with synchronous pending lock and account-neutral states — prevents divergent recovery and local duplicate sends.
 - Storage UI and delayed file openings share an identity/tenant/role/resource generation fence; server authorization remains mandatory — prevents stale-session disclosure.
 - Commercial B2B context is an actor-derived fenced RPC with exclusive role and unique partner link; unreviewed channels remain closed — prevents sibling-partner disclosure.
+- Users external drafts stay review-gated and actor-fenced; server receipt/provisioner owns all grants and authority.
 <!-- LOVABLE:END -->
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.

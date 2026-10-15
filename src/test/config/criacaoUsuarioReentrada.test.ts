@@ -25,10 +25,10 @@ function harness() {
   const primeiro = vi.fn<() => string | null>(() => null);
   const mutation = { isPending: false, mutateAsync: invoke };
   const handler: () => Promise<void> = new Function(
-    "createSubmitLock", "createUser", "newUser", "validarNovoUsuario",
-    "setCreateErros", "primeiroCampoInvalido", "setCreateResumo", "requestAnimationFrame", "campoRefs",
+    "createSubmitLock", "createUser", "newUser", "validateUserDraft",
+    "setCreateErros", "primeiroCampoInvalido", "setCreateResumo", "requestAnimationFrame", "campoRefs", "selectedClients", "primaryClient", "registrationKind", "createFence",
     `${javascript}; return handleCriarUsuario;`,
-  )(lock, mutation, {}, validar, vi.fn(), primeiro, vi.fn(), vi.fn(), { current: {} });
+  )(lock, mutation, {}, validar, vi.fn(), primeiro, vi.fn(), vi.fn(), { current: {} }, [], null, "internal", { capture: () => () => true });
   return { handler, lock, invoke, mutation, primeiro };
 }
 

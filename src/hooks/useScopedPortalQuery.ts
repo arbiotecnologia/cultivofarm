@@ -1,0 +1,26 @@
+import { useEffect } from "react";
+import { useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
+import { useStorageAccessScope } from "./useStorageAccessScope";
+
+/** Cache isolation only; each existing RPC/RLS must independently authorize. */
+export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }) {
+  const fence = useStorageAccessScope(`portal:${String(options.queryKey[0])}`);
+  const client = useQueryClient();
+  const prefix = options.queryKey[0];
+  useEffect(() => {
+    const predicate = (query: { queryKey: readonly unknown[] }) => query.queryKey[0] === prefix && query.queryKey.at(-1) !== fence.scope;
+    void client.cancelQueries({ predicate }); client.removeQueries({ predicate });
+    return () => { void client.cancelQueries({ queryKey: [prefix] }); };
+  }, [client, prefix, fence.scope]);
+  const result = useQuery<T, Error>({
+    ...options, queryKey: [...options.queryKey, fence.scope], enabled: fence.ready && options.enabled !== false, retry: false,
+    queryFn: async ({ signal }) => {
+      const current = fence.capture();
+      if (!current() || signal.aborted) throw new Error("portal_context_unavailable");
+      const data = await options.queryFn(signal);
+      if (!current() || signal.aborted) throw new Error("portal_context_changed");
+      return data;
+    },
+  });
+  return { ...result, data: fence.ready ? result.data : undefined, ready: fence.ready, scope: fence.scope };
+}

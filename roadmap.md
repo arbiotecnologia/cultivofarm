@@ -1,3 +1,13 @@
+## RECORTE 20:21 — entrega A+B fechada (atualizada20:40)
+- [x] Inventário Auth hosted completo de triggers/constraints; harness inclui sync cliente principal e cascatas, limites GoTrue/fullschema reais registrados.
+- [x] Candidato compensação timeout/erro/404 pós-delete/completed/replay UUID+receipt; 26 testes Edge mock e38 checks A+B PASS, duas sessões mesmo iat.
+- [x] Integrar interno/B2B gestor/Produtor em Usuários, Técnico negado, payload sem tenant/senha, fence por request; submit externo fechado até revisão.
+- [x] Seleção/cache orders/details/mutations e layout Produtor scoped/abort/eviction/reset; QueryClient/página reais com sessão simulada.
+- [x] P1 estrutural quatro readers legados raw-link: candidato separado fechado/preflight atômico/rollback,17 assertions PASS; não Storage.
+- [x] Contrato grants mínimo posterior e relatório17seções;208 Vitest PASS, lint novo0/scanner0/build automáticoOK; lint global/typecheck independente não certificados.
+- [ ] Instalação/flags/GoTrue/JWT after: BLOQUEADO pela revisão prévia requerida; nenhuma aplicação/grant/deploy/conta/email/publicação nesta entrega.
+- [ ] Matriz agrícola remanescente Fazenda/Talhão/Recomendação/Solicitação: não certificada; abertura geral depende testes efetivos por vínculo e cache, sem afirmar conclusão integral.
+
 ## RECORTE 20:12 — regras Storage existentes preservadas
 - [x] Evidência read-only baseline core/policies/bucket sem drift; d516 isolada NÃO comprova P1.
 - [x] Retirar candidato e rollback Storage da entrega ativa, preservando histórico; nenhuma migration necessária pelos probes efetivos.

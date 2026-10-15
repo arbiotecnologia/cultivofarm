@@ -15,9 +15,14 @@ def main():
   sql+=(ROOT/'scripts/tests/b2b-provisioning-lifecycle-local.sql').read_text()
   sql+=(ROOT/'scripts/tests/b2b-provisioning-real-triggers.sql').read_text()
   sql+=(ROOT/'scripts/tests/b2b-provisioning-auth-dependencies.sql').read_text()
-  sql+="ALTER TABLE public.profiles ADD COLUMN crea text, ADD COLUMN especialidade text; ALTER TABLE public.clientes ADD COLUMN status_cliente text DEFAULT 'ativo', ADD COLUMN updated_at timestamptz DEFAULT now(); ALTER TABLE public.partner_accounts ADD COLUMN updated_at timestamptz DEFAULT now(); ALTER TABLE public.user_clientes ADD COLUMN principal boolean DEFAULT false, ADD COLUMN is_active boolean DEFAULT true, ADD COLUMN assigned_by uuid, ADD COLUMN revoked_at timestamptz;"
+  sql+="ALTER TABLE public.profiles ADD COLUMN crea text, ADD COLUMN especialidade text; ALTER TABLE public.clientes ADD COLUMN status_cliente text DEFAULT 'ativo', ADD COLUMN updated_at timestamptz DEFAULT now(); ALTER TABLE public.partner_accounts ADD COLUMN updated_at timestamptz DEFAULT now(); ALTER TABLE public.user_clientes ADD COLUMN id uuid DEFAULT gen_random_uuid(), ADD COLUMN created_at timestamptz DEFAULT now(), ADD COLUMN principal boolean DEFAULT false, ADD COLUMN is_active boolean DEFAULT true, ADD COLUMN assigned_by uuid, ADD COLUMN revoked_at timestamptz;"
   m=(ROOT/'supabase/migrations/20260922160218_b19bd8e6-cb90-4d27-805e-c97272039918.sql').read_text()
   sql+='CREATE OR REPLACE FUNCTION public.admin_provision_user_profile_v1'+m.split('CREATE OR REPLACE FUNCTION public.admin_provision_user_profile_v1',1)[1].split('$function$;',1)[0]+'$function$;'
+  # Current full trigger set (bodies from versioned SQL/read-only hosted inventory).
+  principal=(ROOT/'supabase/migrations/20260519155317_951d81f0-fda4-4bf3-ae39-c96edda8df7f.sql').read_text()
+  sql+='CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()'+principal.split('CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()',1)[1].split('$$;',1)[0]+'$$;'
+  sql+="CREATE TRIGGER trg_user_clientes_sync AFTER INSERT OR UPDATE OR DELETE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal(); CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR UPDATE OR DELETE ON public.user_clientes FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate(); CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR UPDATE OR DELETE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles();"
+
   sql+=(ROOT/'scripts/rbac-audit/proposed-external-user-ab-closed.sql').read_text()
   setup=sql
   sql+=(ROOT/'scripts/tests/external-user-ab-assertions.sql').read_text()
@@ -32,7 +37,9 @@ def main():
   run(setup+'COMMIT;')
   # Separate sessions; poll pg_stat_activity to prove blocking, never timing-only.
   import json,time
-  actor="SELECT set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',false); SET ROLE authenticated;"
+  # Same JWT in both sessions; now() fallback would invent different iat per transaction.
+  issued=run("SELECT extract(epoch FROM clock_timestamp())::bigint;")
+  actor="SELECT set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',false); SELECT set_config('request.jwt.claim.iat','"+issued+"',false); SET ROLE authenticated;"
   claim="SELECT public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','aaaaaaaa-1111-4111-8111-111111111111','race@example.invalid','Race');"
   run('GRANT EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text),platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid) TO authenticated; GRANT EXECUTE ON FUNCTION public.b2b_finish_provisioning(uuid,uuid,uuid),public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid),public.b2b_complete_provisioning_compensation(uuid,uuid,uuid) TO service_role;')
   first=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ProdutorDetalheHeader {
@@ -38,14 +38,14 @@ export interface ProdutorDetalhePayload {
 }
 
 export function useProdutorPedidoDetalhe(orderId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["produtor-pedido-detalhe", orderId],
     enabled: !!orderId,
-    queryFn: async (): Promise<ProdutorDetalhePayload> => {
+    queryFn: async (signal): Promise<ProdutorDetalhePayload> => {
       const { data, error } = await (supabase as any).rpc(
         "get_portal_cliente_b2b_order_detail_secure",
-        { p_order_id: orderId! },
-      );
+        { p_order_id: orderId },
+      ).abortSignal(signal);
       if (error) throw error;
       return data as ProdutorDetalhePayload;
     },
@@ -53,14 +53,14 @@ export function useProdutorPedidoDetalhe(orderId: string | null | undefined) {
 }
 
 export function useProdutorSimulacaoDetalhe(simulationId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["produtor-simulacao-detalhe", simulationId],
     enabled: !!simulationId,
-    queryFn: async (): Promise<ProdutorDetalhePayload> => {
+    queryFn: async (signal): Promise<ProdutorDetalhePayload> => {
       const { data, error } = await (supabase as any).rpc(
         "get_portal_cliente_b2b_simulation_detail_secure",
-        { p_simulation_id: simulationId! },
-      );
+        { p_simulation_id: simulationId },
+      ).abortSignal(signal);
       if (error) throw error;
       return data as ProdutorDetalhePayload;
     },

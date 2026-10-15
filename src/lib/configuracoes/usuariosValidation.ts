@@ -110,6 +110,11 @@ const MSG_SEM_PERMISSAO = "Você não tem permissão para cadastrar usuários.";
  * Qualquer outro texto (inclusive vindo do servidor) cai no fallback seguro.
  */
 const MENSAGENS_PERMITIDAS: Record<string, string> = {
+  b2b_provisioning_auth_pending: "Cadastro pendente de verificação. Preserve a mesma solicitação e o mesmo e-mail; não crie outro cadastro.",
+  b2b_provisioning_compensation_pending: "A recuperação do cadastro está pendente. Preserve a mesma solicitação e aguarde a verificação.",
+  b2b_provisioning_reconciliation_required: "Não foi possível concluir a verificação do cadastro. Preserve a mesma solicitação e o mesmo e-mail.",
+  b2b_same_tenant_channels_unverified: "Cadastro externo aguardando liberação após revisão.",
+  b2b_provisioning_forbidden: MSG_SEM_PERMISSAO,
   email_ja_cadastrado: MSG_EMAIL_DUPLICADO,
   email_exists: MSG_EMAIL_DUPLICADO,
   user_already_registered: MSG_EMAIL_DUPLICADO,

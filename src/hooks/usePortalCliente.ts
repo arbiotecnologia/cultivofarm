@@ -14,9 +14,12 @@ export function usePortalCliente() {
   const { user, profile, roles, loading: authLoading } = useAuth();
   const organizationId = profile?.organization_id ?? null;
   const portalRole = roles.some(role => ["cliente_produtor", "administrador", "gestor"].includes(role));
-  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && !!organizationId && portalRole;
+  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && profile.senha_provisoria !== true && !!organizationId && portalRole;
   const generation = useRef(0);
-  const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${roles.join(",")}:${ready}`;
+  const controller = useRef<AbortController>();
+  const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${[...roles].sort().join(",")}:${ready}`;
+  const liveScope = useRef(scope);
+  if (liveScope.current !== scope) { liveScope.current = scope; generation.current += 1; controller.current?.abort(); }
   const [resolvedScope, setResolvedScope] = useState("");
   const [clientes, setClientes] = useState<ClienteVinculado[]>([]);
   const [clienteId, setClienteId] = useState<string | null>(null);
@@ -25,6 +28,9 @@ export function usePortalCliente() {
 
   const load = useCallback(async () => {
     const requestGeneration = ++generation.current;
+    controller.current?.abort();
+    const abort = new AbortController(); controller.current = abort;
+    const current = () => requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted;
     setClientes([]); setClienteId(null); setClienteNome(null);
     setResolvedScope("");
     if (!ready || !user || !organizationId) {
@@ -33,29 +39,22 @@ export function usePortalCliente() {
     }
     setLoading(true);
 
-    // 1) Busca vínculos cru (sem join embutido para não depender de relacionamento PostgREST)
+    // Authoritative active membership, not raw rows or profile fallback.
+    const { data: allowed, error: allowedError } = await supabase.rpc("get_cliente_ids_for_user", { _user_id: user.id }).abortSignal(abort.signal);
+    if (!current()) return;
+    if (allowedError) { setResolvedScope(scope); setLoading(false); return; }
     const { data: vinculos, error: vinculosError } = await supabase
       .from("user_clientes")
       .select("cliente_id, principal")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id).abortSignal(abort.signal);
+    if (!current()) return;
 
     if (vinculosError) {
-      console.error("usePortalCliente: erro ao buscar user_clientes:", vinculosError);
+      setResolvedScope(scope); setLoading(false); return;
     }
 
     const vincList = (vinculos ?? []) as Array<{ cliente_id: string; principal: boolean | null }>;
-    const clienteIds = Array.from(new Set(vincList.map((v) => v.cliente_id).filter(Boolean)));
-
-    // 2) Fallback: profiles.cliente_id (compatibilidade com cadastros antigos)
-    if (clienteIds.length === 0) {
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("cliente_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const cid = prof?.cliente_id;
-      if (cid) clienteIds.push(cid);
-    }
+    const clienteIds = Array.from(new Set(Array.isArray(allowed) ? allowed : []));
 
     let list: ClienteVinculado[] = [];
 
@@ -65,10 +64,11 @@ export function usePortalCliente() {
         .from("clientes")
         .select("id, nome")
         .in("id", clienteIds)
-        .filter("organization_id", "eq", organizationId);
+        .filter("organization_id", "eq", organizationId).eq("status_cliente", "ativo").abortSignal(abort.signal);
+      if (!current()) return;
 
       if (clisError) {
-        console.error("usePortalCliente: erro ao buscar clientes:", clisError);
+        setResolvedScope(scope); setLoading(false); return;
       }
 
       const nomeMap = new Map<string, string>((clis ?? []).map((c) => [c.id, c.nome]));
@@ -85,12 +85,13 @@ export function usePortalCliente() {
         );
     }
 
-    if (requestGeneration !== generation.current) return;
+    if (!current()) return;
     setResolvedScope(scope);
     setClientes(list);
 
     // Selecionar cliente ativo
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(`${STORAGE_KEY}:${scope}`) : null;
+    let stored: string | null = null;
+    try { stored = window.localStorage.getItem(`${STORAGE_KEY}:${scope}`); } catch { /* Optional preference only. */ }
     const active =
       list.find((c) => c.id === stored) ||
       list.find((c) => c.principal) ||
@@ -103,7 +104,9 @@ export function usePortalCliente() {
 
   useEffect(() => {
     void load();
-    return () => { generation.current += 1; };
+    const refresh = () => { void load(); };
+    window.addEventListener("focus", refresh);
+    return () => { generation.current += 1; controller.current?.abort(); window.removeEventListener("focus", refresh); };
   }, [load]);
 
   const setClienteAtivo = useCallback(

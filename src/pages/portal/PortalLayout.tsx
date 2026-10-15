@@ -2,7 +2,9 @@ import { Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccess, getHomeForRole } from "@/lib/permissions";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 
@@ -29,26 +31,32 @@ export default function PortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const fence = useStorageAccessScope("producer-workspace");
   const { clienteId, clienteNome, clientes, setClienteAtivo, loading } = usePortalCliente();
   const brand = usePortalBranding("cliente", clienteId);
 
   // Contagem de recomendações aguardando decisão do produtor
-  const { data: aguardandoCount = 0 } = useQuery({
+  const { data: aguardandoCount = 0 } = useScopedPortalQuery({
     queryKey: ["portal-fila-aguardando", clienteId],
     enabled: !!clienteId,
-    queryFn: async () => {
-      const { count } = await supabase
+    queryFn: async (signal) => {
+      if (!clienteId) throw new Error("portal_context_unavailable");
+      const { count, error } = await supabase
         .from("registros_consultor")
         .select("id", { count: "exact", head: true })
-        .eq("cliente_id", clienteId!)
-        .eq("status", "aprovado");
+        .eq("cliente_id", clienteId)
+        .eq("status", "aprovado").abortSignal(signal);
+      if (error) throw error;
       return count || 0;
     },
   });
 
+  useEffect(() => { setClientePickerOpen(false); }, [fence.scope, clienteId]);
+
   // Atualização em tempo real do contador
   useEffect(() => {
-    if (!clienteId) return;
+    if (!clienteId || !fence.ready) return;
+    const current = fence.capture();
 
     const channel = supabase
       .channel(`portal-badge-${clienteId}`)
@@ -61,6 +69,7 @@ export default function PortalLayout() {
           filter: `cliente_id=eq.${clienteId}`,
         },
         () => {
+          if (!current()) return;
           queryClient.invalidateQueries({ queryKey: ["portal-fila-aguardando", clienteId] });
         }
       )
@@ -69,7 +78,7 @@ export default function PortalLayout() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clienteId, queryClient]);
+  }, [clienteId, queryClient, fence.scope, fence.ready]);
 
   // Filtra o menu pelo perfil do usuário (ACCESS_MAP) — regra inalterada.
   const menuGroups = useMemo(
@@ -180,7 +189,7 @@ export default function PortalLayout() {
 
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <Outlet />
+        {loading || !fence.ready ? <div role="status" className="text-muted-foreground">Carregando…</div> : <Outlet key={`${fence.scope}:${clienteId}`} />}
       </main>
         </div>
       </div>

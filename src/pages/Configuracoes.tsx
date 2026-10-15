@@ -40,6 +40,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -226,6 +228,39 @@ export default function Configuracoes() {
     telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
   };
   const [newUser, setNewUser] = useState(initialNewUser);
+  const [registrationKind, setRegistrationKind] = useState<UserRegistrationKind>("internal");
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [primaryClient, setPrimaryClient] = useState<string | null>(null);
+  const requestKey = useRef(crypto.randomUUID());
+  const createFence = useStorageAccessScope("tenant-user-registration");
+  const [linkSearch, setLinkSearch] = useState("");
+  const linkTerm = useDebounce(linkSearch, 300);
+  const [linkPage, setLinkPage] = useState(0);
+  const changeKind = (kind: UserRegistrationKind) => {
+    setRegistrationKind(kind); setNewUser({ ...initialNewUser, nome: newUser.nome, email: newUser.email, roles: kind === "internal" ? ["administrativo"] : [kind === "b2b" ? "parceiro_b2b" : "cliente_produtor"] });
+    setSelectedClients([]); setPrimaryClient(null); setLinkSearch(""); setLinkPage(0); requestKey.current = crypto.randomUUID();
+  };
+  useEffect(() => { setLinkPage(0); }, [linkTerm, registrationKind]);
+  useEffect(() => {
+    setCreateOpen(false); setSelectedClients([]); setPrimaryClient(null); setNewUser(initialNewUser); setCreateResumo(null); setCreateErros({});
+    requestKey.current = crypto.randomUUID();
+  }, [createFence.scope]);
+  const links = useQuery({
+    queryKey: ["external-user-link-options", createFence.scope, registrationKind, linkTerm, linkPage],
+    enabled: createOpen && createFence.ready && isAdmin && registrationKind !== "internal",
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const current = createFence.capture();
+      const query = registrationKind === "b2b"
+        ? supabase.from("partner_accounts").select("id, razao_social", { count: "exact" }).filter("commercial_owner_organization_id", "eq", profile?.organization_id ?? "").eq("ativo", true).is("deleted_at", null).ilike("razao_social", `%${linkTerm.replace(/[%_]/g, "")}%`).order("razao_social")
+        : supabase.from("clientes").select("id, nome", { count: "exact" }).filter("organization_id", "eq", profile?.organization_id ?? "").eq("status_cliente", "ativo").ilike("nome", `%${linkTerm.replace(/[%_]/g, "")}%`).order("nome");
+      const { data, error, count } = await query.range(linkPage * 20, linkPage * 20 + 19).abortSignal(signal);
+      if (!current()) throw new Error("Contexto alterado.");
+      if (error) throw new Error("Não foi possível consultar os vínculos.");
+      return { items: (data ?? []).map(row => ({ id: row.id, label: "nome" in row ? row.nome : row.razao_social })), total: count ?? 0 };
+    },
+  });
+  useEffect(() => { void queryClient.cancelQueries({ queryKey: ["external-user-link-options"] }); queryClient.removeQueries({ queryKey: ["external-user-link-options"], predicate: query => query.queryKey[1] !== createFence.scope }); }, [createFence.scope, queryClient]);
 
   const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
   const [createResumo, setCreateResumo] = useState<string | null>(null);
@@ -238,8 +273,10 @@ export default function Configuracoes() {
       : ({} as const);
 
   const createUser = useMutation({
-    mutationFn: async () => {
-      const payload: any = {
+    mutationFn: async ({ current }: { current: () => boolean }) => {
+      if (!current() || !isAdmin) throw new Error("Sessão indisponível para cadastro.");
+      if (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED) throw new Error("Cadastro externo aguardando revisão para liberação.");
+      const payload: any = registrationKind !== "internal" ? externalUserPayload({ ...newUser, cliente_ids: selectedClients, principal_cliente_id: primaryClient }, registrationKind, requestKey.current) : {
         ...newUser,
         nome: newUser.nome.trim(),
         email: newUser.email.trim(),
@@ -263,7 +300,8 @@ export default function Configuracoes() {
       }
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, { current }) => {
+      if (!current()) return;
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       toast({ title: "Usuário criado com sucesso" });
@@ -272,7 +310,8 @@ export default function Configuracoes() {
       setCreateErros({});
       setCreateResumo(null);
     },
-    onError: (e: Error) => {
+    onError: (e: Error, { current }) => {
+      if (!current()) return;
       // Não limpamos o formulário: o administrador corrige e reenvia.
       setCreateResumo(e.message || ERRO_GENERICO_CRIACAO);
       toast({ title: "Erro ao criar usuário", description: e.message, variant: "destructive" });
@@ -284,14 +323,14 @@ export default function Configuracoes() {
     // Synchronous, per-form exclusion before any await or React render.
     createSubmitLock.current = true;
     try {
-      const erros = validarNovoUsuario({
+      const erros = validateUserDraft({
         nome: newUser.nome,
         email: newUser.email,
         password: newUser.password,
         roles: newUser.roles,
         partner_id: newUser.partner_id,
-        cliente_ids: [],
-      });
+        cliente_ids: selectedClients, principal_cliente_id: primaryClient,
+      }, registrationKind);
       setCreateErros(erros);
       const primeiro = primeiroCampoInvalido(erros);
       if (primeiro) {
@@ -300,7 +339,7 @@ export default function Configuracoes() {
         return;
       }
       setCreateResumo(null);
-      await createUser.mutateAsync();
+      await createUser.mutateAsync({ current: createFence.capture() });
     } catch {
       // The existing mutation onError owns the safe message; no retry here.
     } finally {
@@ -738,6 +777,27 @@ export default function Configuracoes() {
                               {createResumo}
                             </div>
                           )}
+                          <div><Label>Tipo de cadastro</Label><Select value={registrationKind} onValueChange={value => changeKind(value as UserRegistrationKind)} disabled={createUser.isPending}>
+                            <SelectTrigger aria-label="Tipo de cadastro"><SelectValue /></SelectTrigger><SelectContent>
+                              <SelectItem value="internal">Interno</SelectItem><SelectItem value="b2b">Parceiro B2B — Gestor</SelectItem><SelectItem value="producer">Cliente Produtor</SelectItem>
+                            </SelectContent></Select></div>
+                          {registrationKind !== "internal" && <>
+                            <p role="status" className="text-sm text-muted-foreground">Cadastro externo aguardando revisão para liberação.</p>
+                            <Label htmlFor="buscar-vinculo">{registrationKind === "b2b" ? "Parceiro vinculado" : "Clientes vinculados"}</Label>
+                            <Input id="buscar-vinculo" value={linkSearch} onChange={event => setLinkSearch(event.target.value)} placeholder="Buscar vínculo" />
+                            {links.isLoading ? <p>Carregando…</p> : links.isError ? <p role="alert">Não foi possível consultar os vínculos.</p> : <div className="space-y-2">
+                              {links.data?.items.map(item => <label key={item.id} className="flex items-center gap-2 text-sm">
+                                <Checkbox checked={registrationKind === "b2b" ? newUser.partner_id === item.id : selectedClients.includes(item.id)} onCheckedChange={checked => {
+                                  if (registrationKind === "b2b") setNewUser({ ...newUser, partner_id: checked === true ? item.id : "" });
+                                  else { const next = checked === true ? [...selectedClients, item.id] : selectedClients.filter(id => id !== item.id); setSelectedClients(next); if (!next.includes(primaryClient ?? "")) setPrimaryClient(next[0] ?? null); }
+                                }} />{item.label}
+                                {registrationKind === "producer" && selectedClients.includes(item.id) && <Button size="sm" variant="ghost" onClick={() => setPrimaryClient(item.id)}>{primaryClient === item.id ? "Principal" : "Tornar principal"}</Button>}
+                              </label>)}
+                              {!links.data?.items.length && <p className="text-sm text-muted-foreground">Nenhum vínculo disponível.</p>}
+                            </div>}
+                            <div className="flex justify-between"><Button variant="outline" size="sm" disabled={linkPage === 0} onClick={() => setLinkPage(page => page - 1)}>Anterior</Button><Button variant="outline" size="sm" disabled={(linkPage + 1) * 20 >= (links.data?.total ?? 0)} onClick={() => setLinkPage(page => page + 1)}>Próxima</Button></div>
+                            {createErros.partner_id && <p role="alert" className="text-sm text-destructive">{createErros.partner_id}</p>}{createErros.cliente_ids && <p role="alert" className="text-sm text-destructive">{createErros.cliente_ids}</p>}
+                          </>}
                           <div>
                             <Label htmlFor="novo-nome">Nome *</Label>
                             <Input id="novo-nome" ref={registrarCampo("nome")} value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} {...erroProps("nome")} />
@@ -748,7 +808,7 @@ export default function Configuracoes() {
                             <Input id="novo-email" ref={registrarCampo("email")} type="email" maxLength={254} value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} {...erroProps("email")} />
                             {createErros.email && <p id="erro-email" className="text-xs text-destructive mt-1">{createErros.email}</p>}
                           </div>
-                          <div>
+                          {registrationKind === "internal" && <><div>
                             <Label htmlFor="nova-senha">Senha *</Label>
                             <Input id="nova-senha" ref={registrarCampo("password")} type="password" minLength={SENHA_MIN} maxLength={SENHA_MAX} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} {...erroProps("password")} />
                             <p className="text-xs text-muted-foreground mt-1">{REGRA_SENHA}</p>
@@ -780,9 +840,10 @@ export default function Configuracoes() {
                             <p className="text-xs text-muted-foreground mt-1">{PARTNER_REGISTRATION_UNAVAILABLE}</p>
                             {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
-                           <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
+                           </>}
+                          {registrationKind === "internal" && <><div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
                            <div><Label>Cargo</Label><Input value={newUser.cargo} onChange={e => setNewUser({ ...newUser, cargo: e.target.value })} /></div>
-                           <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div>
+                           <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div></>}
                           {newUser.roles.some(r => r === 'tecnico_agronomo' || r === 'consultor_tecnico') && (
                             <>
                               <div><Label>CREA</Label><Input value={newUser.crea} onChange={e => setNewUser({ ...newUser, crea: e.target.value })} /></div>
@@ -790,7 +851,7 @@ export default function Configuracoes() {
                             </>
                           )}
 
-                          <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending}>
+                          <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending || (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED)}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
                           </Button>
                         </div>
@@ -800,7 +861,7 @@ export default function Configuracoes() {
                 </div>
               </CardHeader>
               <CardContent className={isMobile ? "p-3" : "p-6"}>
-                <p role="status" className="text-sm text-muted-foreground mb-4">{PARTNER_REGISTRATION_UNAVAILABLE} O perfil Produtor também depende de vínculo de cliente comprovado e permanece indisponível nesta tela.</p>
+                <p role="status" className="text-sm text-muted-foreground mb-4">Cadastros externos aguardam revisão para liberação. Técnico B2B permanece indisponível.</p>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <div className="relative flex-1">
