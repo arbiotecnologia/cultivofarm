@@ -90,6 +90,8 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     deny('INSERT approved bypass',f"INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id,status) VALUES({f.q(36)},{C},{P},{A},'aprovada')")
     # Real local ROLE/RLS evaluation, reduced policies only; not hosted RLS equivalence.
     sql+='''GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated;
+ALTER FUNCTION platform_private.h15_actor_organization() SET search_path TO '';
+ALTER FUNCTION public.has_role(uuid,public.app_role) SET search_path TO '';
 GRANT SELECT,UPDATE ON ordens_servico TO authenticated;
 ALTER TABLE ordens_servico ENABLE ROW LEVEL SECURITY;
 CREATE POLICY local_read ON ordens_servico FOR SELECT TO authenticated USING(true);
