@@ -7,6 +7,17 @@
 -- hold an invitation row before DML: never wait on the gate in that order.
 -- NOWAIT aborts that transaction (55P03), releases its rows and requires an
 -- explicit retry; no automatic email/Auth retry and no second lock registry.
+-- Package order: assertive preflight-external-user-ab-readonly.sql, then this
+-- body in the SAME transaction. This local body also rejects occupied objects.
+DO $baseline$
+BEGIN
+ IF to_regclass('platform_private.b2b_provisioning_receipts') IS NOT NULL
+ OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.platform_org_admin_invites'::regclass AND NOT tgisinternal)
+ OR EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE
+ (n.nspname='cf_user_guards_v1' AND p.proname IN ('acquire_invitation_gate','touch_invitation_profiles'))
+ OR (n.nspname IN ('public','platform_private') AND p.proname IN ('external_provisioning_scope','b2b_claim_provisioning','b2b_finish_provisioning','b2b_prepare_provisioning_compensation','b2b_complete_provisioning_compensation'))) THEN
+ RAISE EXCEPTION 'external_provisioning_baseline_mismatch' USING ERRCODE='55000'; END IF;
+END $baseline$;
 CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_invitation_gate()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $gate$
 BEGIN
@@ -220,18 +231,29 @@ REVOKE ALL ON FUNCTION public.b2b_prepare_provisioning_compensation(uuid,uuid,uu
 REVOKE ALL ON FUNCTION public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 CREATE OR REPLACE FUNCTION public.b2b_complete_provisioning_compensation(p_claim uuid,p_fence uuid,p_user uuid)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE r platform_private.b2b_provisioning_receipts;
 BEGIN
  PERFORM platform_private.require_service_role();
  -- Acquire before receipt/profile locks, never wait for the trigger gate afterward.
  UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
  IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ SELECT * INTO r FROM platform_private.b2b_provisioning_receipts WHERE id=p_claim FOR UPDATE;
+ IF r.id IS NULL OR r.fence IS DISTINCT FROM p_fence OR r.user_id IS DISTINCT FROM p_user OR r.status<>'compensating' THEN
+ RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  -- Auth deletion's cascades must have completed; never pretend cleanup succeeded.
  IF EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user)
  OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user)
- OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user)
- OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=p_user)
  OR EXISTS(SELECT 1 FROM auth.users WHERE id=p_user) THEN
   RAISE EXCEPTION 'b2b_compensation_pending' USING ERRCODE='42501'; END IF;
+ -- Live schema has NO Auth FK on these two links. Delete only exact receipt
+ -- descendants after proven own Auth removal; unrelated links fail closed.
+ IF EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user AND
+ (r.partner_id IS NULL OR partner_id IS DISTINCT FROM r.partner_id OR papel IS DISTINCT FROM 'gestor'))
+ OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=p_user AND
+ (NOT (cliente_id=ANY(r.cliente_ids)) OR assigned_by IS DISTINCT FROM r.actor_id)) THEN
+ RAISE EXCEPTION 'b2b_compensation_pending' USING ERRCODE='42501'; END IF;
+ DELETE FROM public.partner_users WHERE user_id=r.user_id AND partner_id=r.partner_id AND papel='gestor';
+ DELETE FROM public.user_clientes WHERE user_id=r.user_id AND cliente_id=ANY(r.cliente_ids) AND assigned_by=r.actor_id;
  UPDATE platform_private.b2b_provisioning_receipts SET status='aborted'
  WHERE id=p_claim AND fence=p_fence AND user_id=p_user AND status='compensating';
  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
