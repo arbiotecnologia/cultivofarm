@@ -1,3 +1,9 @@
+## RECORTE 20:42 — correção real de seleção e caches Produtor
+- [x] Hook existente sincroniza seleção same-tab; readiness provisória negada, preferência não autoriza e vínculos vigentes server-side.
+- [x] Financeiro/Dashboard/Fazenda/Talhão/Recomendações/Registros/Solicitação/OS/Produção/Entregas/Aplicações/Histórico migram ao wrapper scoped com cancelamento e epoch.
+- [ ] Concluir Fazenda/Agenda, regressões de páginas reais e QA; manter candidatos/ativação fechados até revisão.
+- [ ] JWT/GoTrue pós-instalação: depende revisão e login titular, não substituir com claims simuladas.
+
 ## RECORTE 20:21 — entrega A+B fechada (atualizada20:40)
 - [x] Inventário Auth hosted completo de triggers/constraints; harness inclui sync cliente principal e cascatas, limites GoTrue/fullschema reais registrados.
 - [x] Candidato compensação timeout/erro/404 pós-delete/completed/replay UUID+receipt; 26 testes Edge mock e38 checks A+B PASS, duas sessões mesmo iat.

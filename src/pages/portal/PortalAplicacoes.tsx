@@ -16,7 +16,7 @@ export default function PortalAplicacoes() {
         .from("ordens_servico")
         .select("id, fazendas(nome), talhoes(nome), produtos(nome, dose_ml_ha)")
         .eq("cliente_id", clienteId ?? "").abortSignal(signal);
-      if (!osList?.length) { return []; setLoading(false); return; }
+      if (!osList?.length) return [];
       const osMap = Object.fromEntries(osList.map((o: any) => [o.id, o]));
       const { data } = await supabase.from("aplicacoes")
         .select("*")

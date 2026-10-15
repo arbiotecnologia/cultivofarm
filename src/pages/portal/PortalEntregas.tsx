@@ -63,7 +63,7 @@ export default function PortalEntregas({ embedded = false }: PortalEntregasProps
                     <span>Saída: {e.data_saida ? formatDateDisplay(e.data_saida) : "-"}</span>
                     <span>Motorista: {e.motorista || "-"}</span>
                     <span className="col-span-2">Veículo: {e.veiculo || "-"}</span>
-                    {e.observacoes && (
+                    {"observacoes" in e && typeof e.observacoes === "string" && e.observacoes && (
                       <span className="col-span-2 italic">"{e.observacoes}"</span>
                     )}
                   </div>
