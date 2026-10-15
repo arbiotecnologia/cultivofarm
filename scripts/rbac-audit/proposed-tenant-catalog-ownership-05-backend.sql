@@ -742,13 +742,27 @@ REVOKE ALL ON FUNCTION platform_private.catalog_owner_guard_micro_product() FROM
 CREATE TRIGGER trg_catalog_owner_micro_product BEFORE INSERT OR UPDATE OF product_id,owner_organization_id ON public.microrganismos
 FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_owner_guard_micro_product();
 
-CREATE FUNCTION platform_private.catalog_composition_parent_owner(p_product uuid) RETURNS uuid
+CREATE FUNCTION platform_private.catalog_composition_parent_visible(p_product uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
-  SELECT owner_organization_id FROM public.produtos WHERE id=p_product
+  SELECT EXISTS (SELECT 1 FROM public.produtos p WHERE p.id=p_product
+    AND (p.owner_organization_id IS NULL OR p.owner_organization_id=platform_private.catalog_reader_org()))
 $$;
-REVOKE ALL ON FUNCTION platform_private.catalog_composition_parent_owner(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION platform_private.catalog_composition_parent_visible(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION platform_private.catalog_composition_parent_visible(uuid) TO authenticated;
 
-CREATE FUNCTION platform_private.catalog_composition_owner_guard() RETURNS trigger
+CREATE FUNCTION platform_private.catalog_composition_set_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_owner uuid;
+BEGIN
+  IF TG_OP='UPDATE' AND NEW.produto_id IS DISTINCT FROM OLD.produto_id THEN
+    RAISE EXCEPTION 'catalog_parent_immutable' USING ERRCODE='42501'; END IF;
+  SELECT owner_organization_id INTO v_owner FROM public.produtos WHERE id=NEW.produto_id FOR KEY SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.catalog_composition_set_guard() FROM PUBLIC,anon,authenticated;
+
+CREATE FUNCTION platform_private.catalog_composition_declaration_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_owner uuid; v_micro_owner uuid;
 BEGIN
@@ -756,25 +770,23 @@ BEGIN
     RAISE EXCEPTION 'catalog_parent_immutable' USING ERRCODE='42501'; END IF;
   SELECT owner_organization_id INTO v_owner FROM public.produtos WHERE id=NEW.produto_id FOR KEY SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
-  IF TG_TABLE_NAME='produto_composicao_declaracoes' AND NEW.microrganismo_id IS NOT NULL THEN
+  IF NEW.microrganismo_id IS NOT NULL THEN
     SELECT owner_organization_id INTO v_micro_owner FROM public.microrganismos WHERE id=NEW.microrganismo_id FOR KEY SHARE;
     IF NOT FOUND OR v_micro_owner IS DISTINCT FROM v_owner THEN
       RAISE EXCEPTION 'catalog_cross_owner_reference' USING ERRCODE='42501'; END IF;
   END IF;
   RETURN NEW;
 END $$;
-REVOKE ALL ON FUNCTION platform_private.catalog_composition_owner_guard() FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION platform_private.catalog_composition_declaration_guard() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER trg_catalog_composition_owner_guard BEFORE INSERT OR UPDATE OF produto_id ON public.produto_composicao_conjuntos
-FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_owner_guard();
+FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_set_guard();
 CREATE TRIGGER trg_catalog_composition_owner_guard BEFORE INSERT OR UPDATE OF produto_id,microrganismo_id ON public.produto_composicao_declaracoes
-FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_owner_guard();
+FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_declaration_guard();
 
 CREATE POLICY catalog_composition_parent_scope ON public.produto_composicao_conjuntos AS RESTRICTIVE FOR SELECT TO authenticated
-USING (platform_private.catalog_composition_parent_owner(produto_id) IS NOT DISTINCT FROM platform_private.catalog_reader_org()
-       OR platform_private.catalog_composition_parent_owner(produto_id) IS NULL);
+USING (platform_private.catalog_composition_parent_visible(produto_id));
 CREATE POLICY catalog_composition_declaration_parent_scope ON public.produto_composicao_declaracoes AS RESTRICTIVE FOR SELECT TO authenticated
-USING (platform_private.catalog_composition_parent_owner(produto_id) IS NOT DISTINCT FROM platform_private.catalog_reader_org()
-       OR platform_private.catalog_composition_parent_owner(produto_id) IS NULL);
+USING (platform_private.catalog_composition_parent_visible(produto_id));
 
 -- =====================================================================================
 -- Apresentações/dose/preço próprios: uma transação, CAS, idempotência e ledger; sem DML de cliente.
@@ -802,9 +814,12 @@ BEGIN
   END IF;
   SELECT * INTO v_parent FROM public.produtos WHERE id=p_parent_id AND owner_organization_id=v_org FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'catalog_owned_not_found' USING ERRCODE='P0002'; END IF;
+  IF v_parent.archived_at IS NOT NULL OR v_parent.ativo IS NOT TRUE THEN RAISE EXCEPTION 'catalog_owned_archived' USING ERRCODE='55000'; END IF;
   IF p_operation='create' THEN
     IF p_presentation_id IS NOT NULL OR p_expected_updated_at IS NOT NULL OR jsonb_typeof(v_payload->'volume_ml') IS DISTINCT FROM 'number'
-       OR jsonb_typeof(v_payload->'preco_brl') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
+       OR jsonb_typeof(v_payload->'preco_brl') IS DISTINCT FROM 'number'
+       OR (v_payload?'rotulo' AND jsonb_typeof(v_payload->'rotulo') NOT IN ('string','null'))
+       OR (v_payload?'ordem' AND jsonb_typeof(v_payload->'ordem') IS DISTINCT FROM 'number') THEN RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
     v_volume:=(v_payload->>'volume_ml')::numeric; v_price:=(v_payload->>'preco_brl')::numeric;
     IF v_volume<=0 OR v_volume>1000000 OR scale(v_volume)>6 OR v_price<0 OR v_price>1000000000 OR scale(v_price)>2 THEN
       RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
@@ -818,12 +833,20 @@ BEGIN
     IF v_old.updated_at IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'catalog_owned_conflict' USING ERRCODE='40001'; END IF;
     v_before:=to_jsonb(v_old);
     IF p_operation='update' THEN
+      IF v_payload='{}'::jsonb OR (v_payload?'volume_ml' AND jsonb_typeof(v_payload->'volume_ml') IS DISTINCT FROM 'number')
+         OR (v_payload?'preco_brl' AND jsonb_typeof(v_payload->'preco_brl') IS DISTINCT FROM 'number')
+         OR (v_payload?'rotulo' AND jsonb_typeof(v_payload->'rotulo') NOT IN ('string','null'))
+         OR (v_payload?'ordem' AND jsonb_typeof(v_payload->'ordem') IS DISTINCT FROM 'number') THEN
+        RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
       v_volume:=COALESCE((v_payload->>'volume_ml')::numeric,v_old.volume_ml); v_price:=COALESCE((v_payload->>'preco_brl')::numeric,v_old.preco_brl);
       IF v_volume<=0 OR v_volume>1000000 OR scale(v_volume)>6 OR v_price<0 OR v_price>1000000000 OR scale(v_price)>2 THEN RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
       UPDATE public.catalogo_volumes SET volume_ml=v_volume,preco_brl=v_price,
         rotulo=CASE WHEN v_payload?'rotulo' THEN NULLIF(btrim(v_payload->>'rotulo'),'') ELSE rotulo END,
         ordem=CASE WHEN v_payload?'ordem' THEN (v_payload->>'ordem')::int ELSE ordem END
        WHERE id=v_old.id AND owner_organization_id=v_org AND updated_at=p_expected_updated_at RETURNING * INTO v_new;
+      IF (to_jsonb(v_new)-ARRAY['updated_at','preco_litro_brl','valor_dose_100ml_brl'])
+         IS NOT DISTINCT FROM (to_jsonb(v_old)-ARRAY['updated_at','preco_litro_brl','valor_dose_100ml_brl']) THEN
+        RAISE EXCEPTION 'catalog_owned_noop' USING ERRCODE='22023'; END IF;
     ELSE
       IF v_payload<>'{}'::jsonb THEN RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
       UPDATE public.catalogo_volumes SET ativo=(p_operation='restore') WHERE id=v_old.id AND owner_organization_id=v_org AND updated_at=p_expected_updated_at RETURNING * INTO v_new;
@@ -839,8 +862,11 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION platform_private.catalog_owned_presentation_mutate_core(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.catalog_owned_presentation_mutate_core(text,uuid,uuid,timestamptz,jsonb,text,uuid) TO authenticated;
-CREATE FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) RETURNS jsonb
-LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.catalog_owned_presentation_mutate_core($1,$2,$3,$4,$5,$6,$7) $$;
+CREATE FUNCTION public.tenant_catalog_owned_presentation_mutate(
+  p_operation text, p_parent_id uuid, p_presentation_id uuid, p_expected_updated_at timestamptz,
+  p_payload jsonb, p_reason text, p_idempotency_key uuid) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.catalog_owned_presentation_mutate_core(
+  p_operation,p_parent_id,p_presentation_id,p_expected_updated_at,p_payload,p_reason,p_idempotency_key) $$;
 REVOKE ALL ON FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) TO authenticated;
 
