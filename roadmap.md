@@ -1,3 +1,9 @@
+## RECORTE 21:45 — recuperação Auth, P2 UX
+- [x] Diagnóstico externo canônico: /recover 21:44:39Z e 21:44:46Z retornaram429/over_email_send_rate_limit; dois envios anteriores bem-sucedidos informados. Não é falha comprovada de cadastro.
+- [ ] Tratar códigos de limite/status429 no formulário existente com mensagem neutra e pausa local60s, sem retry automático.
+- [ ] Testar comportamentos de limite/genérico/sucesso/duplicidade/cleanup sem email real; registrar QA e rollback focal.
+- [ ] Auditor: revisar/publicar; disponibilidade real depende do serviço de email, sem promessa de prazo nem alteração de configuração pelo agente.
+
 ## RECORTE DOCUMENTAL 21:20 — ativação aplicada externamente, NÃO reaplicar
 - [x] Pacote0ab8c87:100/100 Vitest, lint focal e harness31 dos grants PASS independentes, informados pelo auditor.
 - [x] Falha REAL do preflight original hospedado: SQL42601 em `p.proconfig IS DISTINCT FROM CASE WHEN ... END` dentro IF; não registrar o original como PASS.
