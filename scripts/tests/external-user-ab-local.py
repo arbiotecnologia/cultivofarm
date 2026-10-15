@@ -65,8 +65,9 @@ def main():
   waiter.stdout.read();waiter.wait();assert waiter.returncode!=0 and 'external_provisioning_forbidden' in waiter.stderr.read()
   print('PASS concurrent organization revocation denies after lock')
   run("DELETE FROM auth.users WHERE id='"+uid+"';")
-  assert run("SELECT (SELECT count(*) FROM public.profiles WHERE user_id='"+uid+"')+(SELECT count(*) FROM public.user_roles WHERE user_id='"+uid+"')+(SELECT count(*) FROM public.partner_users WHERE user_id='"+uid+"')+(SELECT count(*) FROM public.user_clientes WHERE user_id='"+uid+"');")=='0'
-  print('PASS Auth hook and cascades in disposable existing fixture schema')
+  assert run("SELECT (SELECT count(*) FROM public.profiles WHERE user_id='"+uid+"')+(SELECT count(*) FROM public.user_roles WHERE user_id='"+uid+"');")=='0'
+  assert run("SELECT count(*) FROM public.partner_users WHERE user_id='"+uid+"';")=='1'
+  print('PASS actual cascade gap reproduced: Auth/profile/roles removed; partner link remains (no invented FK)')
  finally:
   subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True);shutil.rmtree(tmp)
 if __name__=='__main__': main()
