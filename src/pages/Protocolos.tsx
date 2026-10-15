@@ -23,6 +23,7 @@ import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
 import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloButton";
 import { useCulturas } from "@/hooks/useCulturas";
+import { CatalogOriginBadge } from "@/components/protocolos/OwnedCatalogItemControls";
 
 // --- Culturas ---
 // Culturas são base GLOBAL. Escrita de cliente foi revogada no banco
@@ -80,7 +81,7 @@ function CulturasTab() {
               <TableRow><TableCell colSpan={canManageVis ? 4 : 3} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
             ) : rows.map((c) => (
               <TableRow key={c.id}>
-                <TableCell className="font-medium">{c.nome}</TableCell>
+                <TableCell className="font-medium"><div className="flex items-center gap-2 flex-wrap">{c.nome}<CatalogOriginBadge item={c} /></div></TableCell>
                 <TableCell className="text-sm text-muted-foreground">{c.descricao || "—"}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1 flex-wrap">
