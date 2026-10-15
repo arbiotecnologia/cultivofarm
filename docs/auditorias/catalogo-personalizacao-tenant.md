@@ -541,3 +541,20 @@ O SQL06 anterior continha sete views, mas três (`vw_bi_commercial_revenue`, `vw
 - Execução própria SQL10 completo em PostgreSQL PGlite isolado: **26/26 PASS**, nove preflights md5 executados e nove definições registradas; negativos privado AR/FSF/inexistente, global 180, desconto em lote preservado, associação e simulação globais. Schema/identidade/permissões/preço canônico STUBBED; execução integral do payload fiscal, migrações 01–10 combinadas e Auth/RLS real permanecem UNVERIFIED.
 - UI existente: testes reais de componentes/QueryClient **53/53 PASS em dois arquivos** nesta rodada; salvar/reabrir/composição-only/limpeza/retry e troca de identidade. Nenhuma modificação adicional de UI necessária para estes cenários; UI hospedada com gate ON não foi exercitada e continua UNVERIFIED. Gate OFF, sem DDL remoto/publicação; SQL07 laboratório permanece fase separada.
 - Build automático disponível: **build OK 14:35:01 UTC**. Lint do runner novo sem erros; typechecks não executados manualmente nesta rodada (sem alteração TypeScript; harness responsável). Scanner global não reexecutado; não promover baseline antigo a resultado novo. Candidato 10 aguarda revisão independente antes de aplicação.
+
+### Matriz nominal SQL10 (corpos completos e preflight por assinatura)
+
+| Função exata | md5-before live | Prova candidata | Teste |
+|---|---|---|---|
+| `public.partner_apply_default_discount(uuid)` | `c33a667463b7f34840237ad9ba676761` | Produtos globais antes do INSERT em lote | PGlite executável com stubs PASS |
+| `public.rpc_commercial_simulator(uuid, uuid, numeric, numeric)` | `4e324b1711f06bb556f050d8ea1aa8f0` | Produto global antes de campanha/tabela; lookup global | PGlite executável com stubs PASS |
+| `public.fn_resolve_commercial_price(text, uuid, uuid, uuid, uuid, uuid, text, numeric, date, numeric)` | `0df0d9005d46b667db4433d3eae59e27` | Produto/micro global antes de plano/quote/regra/preço | PGlite executável com stubs PASS |
+| `public.fn_b2b_resolve_base_unit_price(uuid, uuid, uuid, text, numeric, date)` | `60651fe823452436d807b9b175c3865c` | Produto/micro global antes de tabela/canônico/fallback | PGlite executável com stubs PASS |
+| `public.fn_resolve_b2b_cart(uuid, uuid, jsonb, date)` | `c8b4584475698835b786dacdf1e0fc14` | Nome/código/status por raiz global antes do preço | PGlite executável com stubs PASS |
+| `platform_private.b2b_save_technical_simulation(jsonb)` | `daad3c1554f370bb0456b4ea3afdeea7` | Raiz global antes de item; falha reverte cabeçalho | PGlite executável com stubs PASS |
+| `public.rpc_associate_microorganism_fiscal_product(uuid, uuid)` | `da0d679779e9d57558a3a203219b4afc` | Micro origem/produto referência/alvo UPDATE globais | PGlite executável com stubs PASS |
+| `public.rpc_regulatory_dossier_ensure_draft(uuid)` | `56076bccafd27aa8c95473ac38e73422` | Micro global antes de draft existente e retorno | PGlite executável com stubs PASS |
+| `public.rpc_fiscal_draft_save(uuid, jsonb, jsonb, integer)` | `5e364c8f67c92fb31ff9568310eb876c` | Source global antes de perfil/mutações | PGlite: definição registrada; mutation fiscal UNVERIFIED |
+
+`public.b2b_save_technical_simulation(jsonb)` permanece wrapper INVOKER (md5 live `7615960c752978e95e865443c277d461`) da função privada acima; sem nova ACL. SQL09 mantém `rpc_cc_validate_matrix(uuid,text,uuid,uuid)` global-only (md5-before `e3b94ad47b93b02c9717a6a694163552`).
+Matriz total função→pai→FK de entrega/OS/visita/histórico ainda em verificação nominal: a afirmação estrutural do revisor não foi promovida a execução runtime. Não fechar auditoria integral nem abrir gate por esta tabela focal.

@@ -774,7 +774,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Corrigir matriz de composição para permitir micro global em produto próprio e negar global→privado/cross-owner.
 - [x] Corrigir bypass de produto químico/fertilizante + microrganismo rejeitando vínculo duplo ambíguo.
 - [x] Atualizar preflight de `generate_production_orders_from_partner` para o hash live pós-hardening, preservando `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED`.
-- [ ] Reexecutar PGlite independente das duas correções e testar tabela+RPC — UNVERIFIED nesta rodada local.
+- [x] Reteste independente recebido: aba8c52c 39/39 PGlite PASS; Auth/RLS real permanece UNVERIFIED.
 
 
 ## Fechamento independente e candidato 10 — 15/10/2026 14:31–14:36 UTC
