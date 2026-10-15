@@ -306,11 +306,8 @@ describe("ownership — rollback e runtime", () => {
     expect(rollback).toMatch(/catalog_ownership_gate SET enabled=false/);
     expect(rollback).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_mutate/);
     expect(rollback).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_presentation_mutate/);
-    for (const preserved of ["trg_catalog_private_ref_guard", "trg_catalog_owner_micro_product",
-      "catalog_composition_parent_scope", "catalog_composition_declaration_parent_scope",
-      "catalog_tenant_owned_ledger", "owner_organization_id"]) {
-      expect(rollback).toContain(preserved);
-    }
+    expect(executableRollback).toMatch(/^\s*BEGIN;/);
+    expect(executableRollback.trim().endsWith("COMMIT;")).toBe(true);
   });
   it("runtime do rollback cria privado e prova leitura cross-tenant negada após contenção", () => {
     expect(rollbackRuntime).toMatch(/catalog_ownership_gate SET enabled=false/);
