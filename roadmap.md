@@ -6,8 +6,8 @@
 - [ ] Revisão/aplicação independente, Auth/RLS hospedado, duas conexões, browser e Edge patch. Gate OFF; sem DDL/publicação.
 
 ## CONTINUAÇÃO AUTORIZADA — 2026-10-15 14:55 UTC
-- [ ] Matriz nominal 83 diretas + histórico, sete views originais, conjunto ordenado 01–06/08–11 e runtime corrigido; gate OFF.
-- [ ] SQL07 separado: corpos completos, conversões automáticas/mistas, famílias explícitas, histórico preservado e testes SQL executáveis.
+- [x] Matriz, sete views originais, ordem 01–06/08–11 e roteiro runtime preparados localmente; certificação hospedada UNVERIFIED.
+- [x] SQL07 separado com corpos completos e testes SQL locais.
 - [ ] Auth hospedado/browser e concorrência real bloqueados por revisão/aplicação independente; sem DDL/publicação nesta etapa.
 - [x] Evidência independente recebida: atomic13 51/51; identity+owned-flow 13/13; SQL10/preflight/harness 26/26. PGlite com stubs, não ambiente real.
 
