@@ -182,3 +182,69 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
     expect(db.rows[0].descricao).toBe("Descrição fornecida");
   });
 });
+
+describe("salvamento único de identificação/composição", () => {
+  beforeEach(() => {
+    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
+    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR }, roles: ["administrador"] });
+    Object.values(toastFns).forEach((fn) => fn.mockReset());
+  });
+  async function openDeclared() {
+    db.rows.push({ id: "declared", entity: "produto", nome: "Produto declarado", tipo: "solo", familia_catalogo: "quimico", classe_catalogo: "fungicida",
+      ativo: true, owner_organization_id: AR, archived_at: null, updated_at: "2026-10-15T00:00:00Z", composition_status: "rascunho",
+      declarations: [{ ordem: 1, tipo_componente: "ingrediente_ativo", microrganismo_id: null, componente_nome: "Fornecido", quantidade: 50,
+        unidade: "g/L", base: "por_volume_produto", natureza: "concentracao_declarada" }] });
+    const view = app(ProdutosTab);
+    await screen.findByText("Produto declarado"); fireEvent.click(screen.getByTitle("Editar item próprio"));
+    await waitFor(() => expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("Produto declarado"));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição declarativa" }), { button: 0 });
+    fireEvent.click(screen.getByRole("tab", { name: "Composição declarativa" }));
+    await screen.findByDisplayValue("Fornecido");
+    return view;
+  }
+  it("reabre declaração real e salva só composição, uma chamada, permitindo limpeza explícita", async () => {
+    await openDeclared();
+    fireEvent.click(screen.getByRole("button", { name: "Remover" }));
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "limpeza consciente" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(toastFns.success).toHaveBeenCalledTimes(1));
+    expect(db.writes).toHaveLength(1);
+    expect(db.writes[0].p_payload).toEqual({ composition: { status: "rascunho", itens: [] } });
+    expect(db.rows[0].declarations).toEqual([]);
+  });
+  it("falha conjunta não grava metadata; retry idêntico conserva chave e edição gera outra", async () => {
+    await openDeclared();
+    fireEvent.click(screen.getByRole("button", { name: "Remover" }));
+    db.failComposition = true;
+    await submitDialog("Identificação alterada");
+    await screen.findByRole("alert"); expect(db.rows[0].nome).toBe("Produto declarado");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(db.writes).toHaveLength(2));
+    expect(db.writes[0].p_idempotency_key).toBe(db.writes[1].p_idempotency_key);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Salvar" })).not.toBeDisabled());
+    db.failComposition = false;
+    await submitDialog("Alteração intencional");
+    await waitFor(() => expect(toastFns.success).toHaveBeenCalled());
+    expect(db.writes[2].p_idempotency_key).not.toBe(db.writes[1].p_idempotency_key);
+  });
+  it("resposta incerta após commit reutiliza recibo sem criar outra raiz", async () => {
+    app(); await screen.findByText("Soja"); fireEvent.click(screen.getByRole("button", { name: /Cultura própria/ }));
+    db.uncertain = true; await submitDialog("Retry seguro"); await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(toastFns.success).toHaveBeenCalledTimes(1));
+    expect(db.rows).toHaveLength(1); expect(db.writes).toHaveLength(2);
+    expect(db.writes[0].p_idempotency_key).toBe(db.writes[1].p_idempotency_key);
+  });
+  it("duplo clique não duplica e resposta antiga não aplica callbacks após AR→FSF→AR", async () => {
+    const view = app(); await screen.findByText("Soja"); fireEvent.click(screen.getByRole("button", { name: /Cultura própria/ }));
+    let release: () => void = () => {};
+    db.writeDelay = new Promise<void>((resolve) => { release = resolve; });
+    await submitDialog("Resposta antiga"); fireEvent.click(screen.getByRole("button", { name: "Salvando..." }));
+    await waitFor(() => expect(db.writes).toHaveLength(1));
+    auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" }; view.redraw();
+    await waitFor(() => expect(screen.queryByText("Criar cultura própria")).toBeNull());
+    auth.profile = { user_id: "u-ar", organization_id: AR }; auth.user = { id: "u-ar" }; view.redraw();
+    await act(async () => release());
+    expect(toastFns.success).not.toHaveBeenCalled(); expect(toastFns.error).not.toHaveBeenCalled();
+  });
+});
