@@ -198,17 +198,31 @@ export function postgrestInList(ids: readonly string[]): string {
   return `(${ids.join(",")})`;
 }
 
-/** Onde a ocultação vale nesta fase, por entidade — texto exibido ao gestor. */
+/** Onde a preferência vale nesta fase, por entidade (lugares + onde ainda NÃO vale). */
+export const TENANT_VISIBILITY_PLACES: Record<TenantCatalogEntity, { artigo: string; nome: string; onde: string; naoVale: string }> = {
+  produto: { artigo: "o", nome: "produto",
+    onde: "nesta lista, no Catálogo técnico da Base técnica, no Simulador comercial e no Catálogo técnico do celular",
+    naoVale: "o portal B2B, pedidos, produção, recomendações e demais seletores" },
+  microrganismo: { artigo: "o", nome: "microrganismo",
+    onde: "nesta lista, no Catálogo técnico da Base técnica e no Catálogo técnico do celular",
+    naoVale: "o portal B2B, composição de produtos, produção e demais seletores" },
+  cultura: { artigo: "a", nome: "cultura",
+    onde: "nesta lista e para nova escolha na etapa Campo da visita no celular",
+    naoVale: "o assistente de visita completo, visita no computador, talhões, safras, objetivos de visita e filtros de BI" },
+};
+
+/** Texto conforme a AÇÃO: ocultar ("deixa de aparecer") ou exibir ("volta a aparecer"). */
+export function tenantVisibilityActionNote(entity: TenantCatalogEntity, nextHidden: boolean): string {
+  const p = TENANT_VISIBILITY_PLACES[entity];
+  const verbo = nextHidden ? "deixa de aparecer" : "volta a aparecer";
+  return `Nesta empresa, ${p.artigo} ${p.nome} ${verbo} ${p.onde}. Esta preferência ainda NÃO vale para ${p.naoVale}.`;
+}
+
+/** Compatibilidade: texto de ocultação por entidade. */
 export const TENANT_VISIBILITY_SCOPE_NOTES: Record<TenantCatalogEntity, string> = {
-  produto: "Nesta empresa, o produto deixa de aparecer nesta lista, no Catálogo técnico da Base técnica, "
-    + "no Simulador comercial e no Catálogo técnico do celular. Ainda NÃO vale para o portal B2B, pedidos, "
-    + "produção, recomendações e demais seletores.",
-  microrganismo: "Nesta empresa, o microrganismo deixa de aparecer nesta lista, no Catálogo técnico da Base técnica "
-    + "e no Catálogo técnico do celular. Ainda NÃO vale para o portal B2B, composição de produtos, produção "
-    + "e demais seletores.",
-  cultura: "Nesta empresa, a cultura deixa de aparecer nesta lista e para nova escolha na etapa Campo da visita "
-    + "no celular. Ainda NÃO vale para o assistente de visita completo, visita no computador, talhões, safras, "
-    + "objetivos de visita e filtros de BI.",
+  produto: tenantVisibilityActionNote("produto", true),
+  microrganismo: tenantVisibilityActionNote("microrganismo", true),
+  cultura: tenantVisibilityActionNote("cultura", true),
 };
 export const TENANT_VISIBILITY_COMMON_NOTE =
   "Não exclui o item, não altera o catálogo global nem outras empresas; registros já vinculados e históricos continuam visíveis.";
