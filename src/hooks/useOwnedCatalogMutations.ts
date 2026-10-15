@@ -65,6 +65,7 @@ export function useOwnedCatalogMutation(entity: TenantCatalogEntity, onApplied?:
       const [organizationId, userId] = input.scopeKey.split("|");
       const origin = { organizationId, userId };
       await qc.cancelQueries({ queryKey: [...tenantCatalogKeys.scope(origin), "owned", entity] });
+      if (!data.active()) return;
       await Promise.all([
         qc.invalidateQueries({ queryKey: ownedCatalogKeys.list(origin, entity, "", 0, 50).slice(0, 5), refetchType: "all" }),
         qc.invalidateQueries({ queryKey: tenantCatalogKeys.scope(origin), refetchType: "all" }),
@@ -93,6 +94,7 @@ export function useOwnedPresentationMutation(onApplied?: () => Promise<void> | v
       const [organizationId, userId] = input.scopeKey.split("|");
       const origin = { organizationId, userId };
       await qc.cancelQueries({ queryKey: [...tenantCatalogKeys.scope(origin), "owned", "produto"] });
+      if (!data.active()) return;
       await qc.invalidateQueries({ queryKey: [...tenantCatalogKeys.scope(origin), "owned", "produto"], refetchType: "all" });
       if (data.active()) await onApplied?.();
     },

@@ -216,6 +216,8 @@ describe("salvamento único de identificação/composição", () => {
     await openDeclared();
     fireEvent.click(screen.getByRole("button", { name: "Remover" }));
     db.failComposition = true;
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0 });
+    fireEvent.click(screen.getByRole("tab", { name: "Identificação" }));
     await submitDialog("Identificação alterada");
     await screen.findByRole("alert"); expect(db.rows[0].nome).toBe("Produto declarado");
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
