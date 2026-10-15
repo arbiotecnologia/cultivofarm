@@ -12,87 +12,62 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const failure = (status: number, code: string) => new Response(JSON.stringify({ code }), {
+      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return failure(401, "ADMIN_PASSWORD_UNAUTHORIZED");
     }
 
+    const url = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !anonKey || !serviceKey) return failure(500, "ADMIN_PASSWORD_INTERNAL_ERROR");
     const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      url,
+      anonKey,
       { global: { headers: { Authorization: authHeader } } }
     );
 
     const { data: { user }, error: authError } = await anonClient.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Token inválido ou expirado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return failure(401, "ADMIN_PASSWORD_UNAUTHORIZED");
     }
 
     const callerId = user.id;
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const { data: isAdmin } = await adminClient.rpc("has_role", {
+    // Authorize with the validated caller JWT, never service_role.
+    const { data: isAdmin, error: roleError } = await anonClient.rpc("has_role", {
       _user_id: callerId,
       _role: "administrador",
     });
 
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Apenas administradores podem alterar senhas" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (roleError) return failure(500, "ADMIN_PASSWORD_AUTHORIZATION_ERROR");
+    if (isAdmin !== true) return failure(403, "ADMIN_PASSWORD_FORBIDDEN");
 
-    const { user_id, new_password } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return failure(400, "ADMIN_PASSWORD_INVALID_INPUT");
+    const { user_id, new_password } = body;
+    if (typeof user_id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user_id)) return failure(400, "ADMIN_PASSWORD_INVALID_INPUT");
+    // Same policy as usuariosValidation.senhaValida; preserve accented letters.
+    if (typeof new_password !== "string" || new_password.length < 8 || new_password.length > 128 || !/[A-Za-zÀ-ÿ]/.test(new_password) || !/[0-9]/.test(new_password)) return failure(400, "ADMIN_PASSWORD_INVALID_PASSWORD");
 
-    if (!user_id || typeof user_id !== "string") {
-      return new Response(JSON.stringify({ error: "user_id é obrigatório" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!new_password || typeof new_password !== "string" || new_password.length < 6) {
-      return new Response(JSON.stringify({ error: "A nova senha deve ter no mínimo 6 caracteres" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const scopedClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: canUpdate, error: scopeError } = await scopedClient.rpc(
+    const { data: canUpdate, error: scopeError } = await anonClient.rpc(
       "admin_can_update_user_password_server",
       { p_actor_id: callerId, p_target_id: user_id },
     );
-    if (scopeError || canUpdate !== true) {
-      return new Response(JSON.stringify({ error: "Usuário fora do escopo permitido" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (scopeError) return failure(500, "ADMIN_PASSWORD_AUTHORIZATION_ERROR");
+    if (canUpdate !== true) return failure(403, "ADMIN_PASSWORD_FORBIDDEN");
 
+    const adminClient = createClient(url, serviceKey);
+    // Password only: no email confirmation, metadata or first-access flag changes.
     const { error: updateError } = await adminClient.auth.admin.updateUserById(user_id, {
       password: new_password,
     });
 
     if (updateError) {
-      return new Response(JSON.stringify({ error: "Não foi possível atualizar a senha" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return failure(500, "ADMIN_PASSWORD_UPDATE_FAILED");
     }
 
     // Registrar na auditoria
@@ -102,7 +77,7 @@ Deno.serve(async (req) => {
     });
 
     if (auditError) {
-      console.error("admin_password_audit_failed", { code: auditError.code });
+      console.error("admin_password_audit_failed");
       // Não bloqueia a resposta de sucesso se a senha foi alterada, mas loga o erro
     }
 
@@ -111,8 +86,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch {
-    return new Response(JSON.stringify({ error: "Falha ao atualizar a senha" }), {
-      status: 400,
+    return new Response(JSON.stringify({ code: "ADMIN_PASSWORD_INTERNAL_ERROR" }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
