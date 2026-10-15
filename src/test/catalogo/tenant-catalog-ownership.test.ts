@@ -9,6 +9,7 @@ const sql = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership.s
 const readers = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql", "utf8");
 const containment = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql", "utf8");
 const backend = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-05-backend.sql", "utf8");
+const operationalReaders = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-06-operational-readers.sql", "utf8");
 const rollback = readFileSync("scripts/rbac-audit/rollback-tenant-catalog-ownership.sql", "utf8");
 const runtime = readFileSync("scripts/rbac-audit/runtime-test-tenant-catalog-ownership.sql", "utf8");
 
@@ -122,6 +123,20 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
     expect(sql).toMatch(/produto_composicao_declaracoes/);
     expect(sql).toMatch(/v_fam NOT IN \('quimico','fertilizante_adubo'\)/);
   });
+  it("composição própria reutiliza integralmente o contrato global real", () => {
+    expect(sql).toMatch(/ARRAY\['status','itens'\]/);
+    expect(sql).toMatch(/NOT IN \('rascunho','completo'\)/);
+    expect(sql).toMatch(/NOT IN \('microrganismo','ingrediente_ativo','nutriente','outro'\)/);
+    expect(sql).toMatch(/NOT IN \('teor_garantido','concentracao_declarada'\)/);
+    expect(sql).toMatch(/NOT IN \('mL\/L','g\/L','g\/kg','%m\/m','%m\/v','%v\/v','UFC\/mL','UFC\/g'\)/);
+    expect(sql).toMatch(/'por_volume_produto'/);
+    expect(sql).toMatch(/'por_massa_produto'/);
+    expect(sql).not.toMatch(/VALUES \(v_id,'draft'/);
+    expect(sql).not.toMatch(/'insumo', p\.nome/);
+    expect(sql).not.toMatch(/'%', 'produto'/);
+    expect(sql).not.toMatch(/THEN 'fertilizante' ELSE 'quimico'/);
+    expect(sql).not.toMatch(/DELETE FROM public\.formulacoes WHERE produto_id=v_id/);
+  });
   it("fachadas INVOKER sem parâmetro de empresa", () => {
     for (const name of ["tenant_catalog_owned_mutate", "tenant_catalog_owned_list"]) {
       const facade = sql.slice(sql.indexOf(`CREATE FUNCTION public.${name}`));
@@ -220,6 +235,27 @@ describe("ownership — SQL candidato 05 backend", () => {
     expect(wipe).toMatch(/DELETE FROM public\.produtos WHERE owner_organization_id IS NULL/);
     expect(wipe).toMatch(/DELETE FROM public\.product_fiscal_profiles x USING public\.produtos p/);
     expect(wipe).not.toMatch(/DELETE FROM public\.%I WHERE id IS NOT NULL/);
+  });
+});
+
+describe("ownership — SQL candidato 06 leitores operacionais", () => {
+  it("fixa hashes live das três funções e sete views", () => {
+    expect(operationalReaders.match(/[0-9a-f]{32}/g)?.length).toBe(10);
+    for (const fn of ["fn_fiscal_scenario_coverage", "rpc_fiscal_nfe_readiness_v1", "rpc_microorganism_regulatory_overview"]) {
+      expect(operationalReaders).toContain(`FUNCTION public.${fn}`);
+    }
+  });
+  it("funções fiscal/regulatória e views de catálogo são global-only", () => {
+    expect(operationalReaders).toMatch(/FROM public\.microrganismos m\s+WHERE m\.owner_organization_id IS NULL/);
+    expect(operationalReaders).toMatch(/WHERE m\.ativo AND m\.owner_organization_id IS NULL/);
+    expect(operationalReaders).toMatch(/JOIN public\.produtos p ON p\.id=pf\.product_id\s+WHERE p\.owner_organization_id IS NULL/);
+    expect(operationalReaders).toMatch(/cpp\.product_id AND p\.owner_organization_id IS NULL/);
+  });
+  it("mantém as três views comerciais sob RLS parent e não amplia ACL", () => {
+    expect(operationalReaders.match(/vw_bi_commercial_/g)?.length).toBeGreaterThanOrEqual(6);
+    expect(operationalReaders).not.toMatch(/\bGRANT\b/);
+    expect(operationalReaders).not.toMatch(/catalog_ownership_gate SET enabled=true/);
+    expect(operationalReaders).toMatch(/ownership06_gate_must_remain_off/);
   });
 });
 

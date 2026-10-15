@@ -427,3 +427,36 @@ O arquivo `proposed-tenant-catalog-ownership-04-operational-containment.sql` fix
 | 7 views/BI e demais funções do inventário total | **ABERTO/NO-GO** | não há certificação total nesta rodada; 04 bloqueia novas refs, não filtra leitura |
 
 Não há alegação de fechamento integral: enquanto wipe, leitores e views acima estiverem abertos, o gate não pode ser aberto e nenhuma UI funcional deve ser publicada.
+
+---
+
+## FASE 3 — Candidato 06 leitores operacionais (15/10/2026 13:55 UTC)
+
+**Estado: NÃO aplicado, NÃO publicado, gate OFF.** A execução PGlite 26 PASS/1 FAIL foi evidência externa isolada; o FAIL 23514 revelou literais incompatíveis e foi corrigido no candidato 01, sem transformar stubs em prova de Auth/RLS real.
+
+### Correção do contrato de composição própria
+- O payload agora exige `status: rascunho|completo` e itens estruturados com as oito chaves do writer global.
+- Tipos aceitos: `microrganismo|ingrediente_ativo|nutriente|outro`; unidades: `mL/L|g/L|g/kg|%m/m|%m/v|%v/v|UFC/mL|UFC/g`; bases: `por_volume_produto|por_massa_produto`; naturezas: `teor_garantido|concentracao_declarada`.
+- Família×tipo, identidade, medida conjunta, limites, UUID, duplicidade e microrganismo global/próprio permitido são validados no servidor. Nada é inferido do nome.
+- `formulacoes` não é apagada nem recebe químicos/fertilizantes; `microrganismo_id NOT NULL` permanece intacto. Declarações usam exclusivamente `produto_composicao_conjuntos/declaracoes`.
+
+### Matriz individual SQL06
+| Superfície | Hash live | Escopo candidato | Prova |
+|---|---|---|---|
+| `fn_fiscal_scenario_coverage()` | `962230c7…` | microrganismos globais | três filtros explícitos de root |
+| `rpc_fiscal_nfe_readiness_v1()` | `75487176…` | herda cobertura global | corpo live completo preservado, inclusive certificado |
+| `rpc_microorganism_regulatory_overview()` | `a5763623…` | microrganismos globais | filtro explícito de root |
+| `v_product_fiscal_readiness` | `af802dc9…` | perfis cujo produto é global | join explícito ao pai global |
+| `v_microorganism_fiscal_readiness` | `be3f247c…` | microrganismos globais | filtro explícito de root |
+| `vw_bi_commercial_campaigns` | `23b08739…` | contagem só de produto global | join explícito ao pai global |
+| `vw_bi_estoque_produto` | `054a615a…` | nomes apenas de roots globais | joins explícitos; histórico preservado |
+| `vw_bi_movimentacoes` | `4530d450…` | movimento com root global ou sem root | joins e predicado explícitos |
+| `vw_bi_commercial_revenue` | `297b9932…` | sem root de catálogo | parent autorizado pelas RLS comerciais, definição preservada |
+| `vw_bi_commercial_engagement` | `48392cff…` | sem root de catálogo | parent autorizado pelas RLS comerciais, definição preservada |
+
+As duas views públicas `vw_catalogo_ficha_*` não entram nas sete: são wrappers das funções `private.h7n_*` já fechadas no candidato 02 com hashes live. Nenhum grant foi ampliado.
+
+### Limites reais
+- SQL06 possui definições completas e preflight de hash, mas não foi aplicado nem executado contra Auth real. Hash antes não prova hash depois nem semântica de RLS.
+- O parser gramatical e os testes estáticos não substituem compilação PL/pgSQL/PGlite completa; esta permanece pendente para o SQL06.
+- Gate, UI mutável e publicação permanecem desligados até revisão independente, aplicação controlada, runtime negativo/positivo e concorrência.
