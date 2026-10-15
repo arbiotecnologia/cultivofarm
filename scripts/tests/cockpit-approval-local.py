@@ -138,6 +138,9 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
     sql+='RESET ROLE;'
     sql+=f"INSERT INTO microrganismos(id,nome) VALUES({f.q(22)},'Micro'); INSERT INTO ordens_servico_onfarm(id,cliente_id,microrganismo_id) VALUES({f.q(37)},{C},{f.q(22)}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_onfarm_id,microrganismo_id) VALUES({f.q(57)},{A},{f.q(37)},{f.q(22)});"
     check('micro approved no invented program',f"(SELECT status FROM ordens_servico_onfarm WHERE id={f.q(37)})='aprovada' AND (SELECT count(*) FROM programacao_producao WHERE ordem_servico_onfarm_id={f.q(37)})=1",f"SELECT public.rpc_aprovar_os_v1({f.q(37)},'onfarm');")
+    compat_spec=importlib.util.spec_from_file_location('generator_compat',Path(__file__).with_name('cockpit-generator-compat-fixture.py'))
+    compat=importlib.util.module_from_spec(compat_spec); compat_spec.loader.exec_module(compat)
+    extra_sql,extra_labels=compat.extend(f.q); sql+=extra_sql; labels+=extra_labels
     tmp=Path(tempfile.mkdtemp(prefix='approval-local-',dir='/tmp')); tmp.chmod(0o777)
     pre=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []; started=False
     try:
