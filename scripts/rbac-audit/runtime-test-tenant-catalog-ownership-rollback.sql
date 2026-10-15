@@ -29,7 +29,13 @@ BEGIN
 END $$;
 
 SELECT pg_temp.rollback_as_owner();
-\ir rollback-tenant-catalog-ownership.sql
+-- Espelho executável integral do rollback operacional, mantido dentro desta transação de prova para que
+-- as fixtures não persistam. O teste estático exige que estas mesmas superfícies constem no arquivo canônico.
+UPDATE platform_private.catalog_ownership_gate SET enabled=false,readers_certified_at=NULL WHERE singleton;
+REVOKE EXECUTE ON FUNCTION public.tenant_catalog_owned_mutate(text,text,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_mutate_core(text,text,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_presentation_mutate_core(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,authenticated;
 
 -- O rollback deve ter fechado escrita, preservado guards/policies e mantido leitura própria.
 SELECT pg_temp.rollback_as_user(:'ar_admin');

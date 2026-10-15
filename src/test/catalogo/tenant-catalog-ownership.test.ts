@@ -299,9 +299,10 @@ describe("ownership — SQL candidato 06 leitores operacionais", () => {
 
 describe("ownership — rollback e runtime", () => {
   it("rollback não destrói ledger, não reabre grants e preserva filtros", () => {
+    const executableRollback = rollback.replace(/^--.*$/gm, "");
     expect(rollback).not.toMatch(/DROP TABLE/);
-    expect(rollback).not.toMatch(/\b(DROP|ALTER|DELETE)\b/);
-    expect(rollback).not.toMatch(/\bGRANT\b/);
+    expect(executableRollback).not.toMatch(/\b(DROP|ALTER|DELETE)\b/);
+    expect(executableRollback).not.toMatch(/\bGRANT\b/);
     expect(rollback).toMatch(/catalog_ownership_gate SET enabled=false/);
     expect(rollback).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_mutate/);
     expect(rollback).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_presentation_mutate/);
@@ -312,7 +313,8 @@ describe("ownership — rollback e runtime", () => {
     }
   });
   it("runtime do rollback cria privado e prova leitura cross-tenant negada após contenção", () => {
-    expect(rollbackRuntime).toMatch(/\\ir rollback-tenant-catalog-ownership\.sql/);
+    expect(rollbackRuntime).toMatch(/catalog_ownership_gate SET enabled=false/);
+    expect(rollbackRuntime).toMatch(/REVOKE EXECUTE ON FUNCTION public\.tenant_catalog_owned_mutate/);
     expect(rollbackRuntime).toMatch(/outra_empresa_nao_le_produto/);
     expect(rollbackRuntime).toMatch(/outra_empresa_nao_le_declaracao/);
     expect(rollbackRuntime).toMatch(/protecoes_preservadas/);

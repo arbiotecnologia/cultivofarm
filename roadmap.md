@@ -1,4 +1,5 @@
 ## FASE 3 OWNERSHIP — RECORTE 04 CANDIDATO — 2026-10-15 13:07 UTC
+- [x] P1 rollback corrigido localmente: o rollback operacional agora somente fecha o gate e revoga fachadas/cores mutáveis; preserva integralmente colunas, RLS/policies, guards/triggers, leitores, índices, ledger e dados. Remoção estrutural retirada desta fase. Novo runtime transacional cria produto+declaração privados e exige leitura própria, negação para outra empresa, mutação revogada e proteções ainda presentes. NÃO executado remotamente; SQL/DDL/publicação ausentes.
 - [x] Candidato 05 backend: 12 writers SA com hashes live e definições completas global-only; cross-owner de `microrganismos.product_id`; RLS/guards hereditários de composição; RPC própria transacional de apresentação/preço/dose. Gate continua OFF.
 - [x] `platform_wipe_global_product_catalog` reescrito no 05 com hash live, roots globais e descendentes limitados por join ao pai global.
 - [ ] Candidato 06 fecha estruturalmente 3 leitores operacionais e 7 views com hashes live; o inventário total live ainda contém leitores operacionais sem definição candidata, portanto backend integral segue aberto/NO-GO.
