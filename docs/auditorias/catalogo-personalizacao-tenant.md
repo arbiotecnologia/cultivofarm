@@ -4,6 +4,25 @@ Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownersh
 
 
 
+## P1 visita aplicado externamente — 2026-10-15 15:29 UTC
+**Única aplicação pontual informada:** migration canônica `20261015152726_h_catalog_visit_conversion_tenant_scope`, aplicada pelo revisor. Arquivo de registro `supabase/migrations/20261015152726_h_catalog_visit_conversion_tenant_scope.sql` contém o corpo atual, com comentário **JÁ APLICADA / NÃO REAPLICAR**; não pretende reproduzir o envelope/preflight original que não foi fornecido. Nenhuma ferramenta de aplicação foi chamada nesta rodada.
+
+- `rpc_converter_visita_em_os(uuid,text)` hash anterior informado `9c4cfd4e1d197f376c5ec15674b6bb31`; hash vigente confirmado por nossa leitura canônica `e152db390d27e7d21934451cf10bcad7`. Hash do corpo arquivado também coincide exatamente em PGlite; apenas CREATE da função local, sem invocar conversão. ACL live authenticated=true/anon=false preservada; arquivo não muda grants.
+- Guard `can_view_technical_visit(v_user_id,p_registro_id)` após papel, antes de H9-D-L4-R2/lookup/status/replay; corpo restante preservado. Evidência **externa independente**: 6/6 testes locais; SQL autenticado READ ONLY FSF alheio=inexistente e AR própria mantém validação de status. Nenhum dado/OS alterado conforme revisor. Não confundir com prova própria de Auth/browser.
+- **Ownership01–06/08–13 e laboratório07 NÃO aplicados nesta rodada.** SQL13 segue candidato local com P1 reproduzido/corrigido 108/108 stubs, aguardando revisão. Sem ativação/publicação.
+
+### Visita→laboratório: limite funcional concreto e solução integrada pendente
+Inspeção do corpo live confirmou seleção da última recomendação textual (`ORDER BY created_at DESC NULLS LAST LIMIT 1`) e INSERT somente de `produto_biologico_sugerido_id` em `produto_id`; `microrganismo_id` não é copiado. Última química/fertilizante/NULL pode ocultar uma recomendação biológica anterior. Sob guard07, micro-only não é fabricável pois a OS perde seu ID. Não declarar fluxo PASS.
+
+Read-only de índices confirmou `idx_unique_os_onfarm_registro_consultor`: UNIQUE(registro_consultor_id) WHERE NOT NULL. Replay procura uma OS via LIMIT1 e resposta/consumidor `useFluxoVisitaTecnica` esperam `os_id`/`numero_os` singulares. Portanto não é seguro substituir LIMIT1 por loop que cria várias OS, remover índice ou marcar toda visita/solicitação convertida silenciosamente. Histórico, recomendações não biológicas, guard tenant recém-aplicado, API e vínculos seguem intactos.
+
+Recorte integrado para revisão futura da fase07, **não implementado/aplicado**:
+1. Preservar guard tenant e fixar o preflight no hash-after `e152...`; autorização antes de lookup/replay também nas alterações futuras. Serializar a visita e garantir replay da seleção persistida, não da última recomendação mutável.
+2. Separar recomendações comerciais de linhas fabricáveis no mesmo fluxo; avaliar produto pela família explícita e micro pelo ID, rejeitar duas refs ambíguas/NULL como novas linhas laboratoriais, sem inferência. Não apagar nem converter recomendações químicas/fertilizantes.
+3. Dentro da cardinalidade atual, suportar **uma única linha fabricável** preservando a resposta singular; copiar produto OU micro correto e rejeitar múltiplas linhas elegíveis com mensagem explícita antes de qualquer escrita. Seleção humana/semântica de supersessão das recomendações precisa revisão: não assumir que toda recomendação antiga continua vigente nem escolher uma arbitrariamente.
+4. Caso necessário fabricar múltiplas linhas, revisar extensão integrada da OS/vínculo de recomendação e idempotência por linha, mantendo API singular compatível e snapshot/auditoria. Nenhum módulo paralelo, DROP de índice ou alteração de histórico nesta etapa.
+5. Testes exigidos antes de certificação: bio, micro-only, química/fertilizante apenas, NULL, duas refs, última química com bio anterior, múltiplas fabricáveis, replay/concorrência, FSF/inexistente, histórico e rollback. Hoje **UNVERIFIED/NO-GO** para visita→lab, mesmo com tenant guard corrigido.
+
 ## Fase07 separada — autorização comercial — 2026-10-15 15:24 UTC
 **Candidato modificado, NÃO aplicado; ownership/SQL13 seguem priorizados e gate OFF.** Revisão independente informada de `b6b28860`: seis hashes-before coincidem live, 36/36 PGlite (stubs). Evidência preservada para a versão anterior; não certifica a nova.
 
