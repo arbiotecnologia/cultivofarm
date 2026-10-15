@@ -3,8 +3,19 @@
 Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownership e cadastro próprio da empresa ficam fora desta rodada.
 
 
+## Complemento independente — 2026-10-15 15:12 UTC
+**Nomenclatura corrigida:** inventário de **84 candidatos por substring**, não 83 consultas diretas + 1 histórico. Triagem por corpo/caminho: `_entrega_seed_checklist` tem apenas string “Conferir produtos”; `sync_product_pricing` usa NEW/OLD; `fn_fiscal_item_profile_gate_eval` é payload puro; `set_codigo_*` delegam a `proximo_codigo`; `trg_mestre_guard` delega preço canônico; `rpc_get_comprovante_entrega_data` delega comprovante; readiness delega regulatório; wipe usa SQL dinâmico. Todos permanecem na matriz; nenhum indireto descartado. As divergências históricas de busca abaixo não são a classificação vigente.
+
+| Evidência independente fornecida | Resultado | Limite |
+|---|---|---|
+| SQL11 `0923b7a5` | 14/14 PGlite PASS; hash live `74f45dd67e9435a9876b0e2609e38954` coincide; 0 apresentações ligadas | Relato independente; sem consulta ou aplicação nova nesta rodada |
+| Candidato04 `35199f39` inteiro, preflight FK, 52 referências sintéticas | 52/52 PASS: global aceito, INSERT/UPDATE privado AR/FSF negado, histórico inalterado preservado | 52 é cobertura sintética, não substitui 60 FKs live |
+| Biological14 ampliado | 57/57 PASS: fertilizante cadastrado não fabricável, NULL família, duas refs, lotes bio/micro, histórico | Local isolado com stubs |
+
+Stubs não certificam Auth/RLS real. Evidências externas separadas das execuções locais, sem soma. SQL11/04/FK não reaplicados nem removidos. Gate OFF; aplicação/publicação dependem de revisão. Auth real, browser, concorrência em duas conexões e patch Edge continuam UNVERIFIED.
+
 ## Atualização 2026-10-15 15:10 UTC — matriz, roteiro e fase 07
-- Matriz: `docs/auditorias/catalogo-ownership-matriz-nominal.md` e `scripts/rbac-audit/ownership-readers-matrix.json`; 83 diretas + 1 histórico/transitivo, sete views originais e 60 FKs. É inventário/prova estrutural, não Auth real.
+- Matriz: `docs/auditorias/catalogo-ownership-matriz-nominal.md` e `scripts/rbac-audit/ownership-readers-matrix.json`; 84 candidatos por substring, triados por corpo/caminho, sete views originais e 60 FKs. É inventário/prova estrutural, não Auth real.
 - Ordem candidata: `scripts/rbac-audit/ownership-ordered-manifest.json` (01–06/08–11). Fase 07 separada, sem aplicação.
 - Runtime ownership: revisado para atores reais via variáveis, gate OFF obrigatório e falha se qualquer caso não passar. Não executado contra banco hospedado.
 - Fase 07: OS manual/B2B/On-Farm, programação e lote validam família biológica ou micro; químico, fertilizante, família NULL e duas referências falham. Pedido misto preserva linhas não fabricáveis e não é marcado produzido; históricos não são reclassificados. `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` preservado, inclusive no replay da publicação.
@@ -500,9 +511,9 @@ Candidato `proposed-lab-biological-only-07.sql`: elegibilidade por `familia_cata
 - FAIL 05 `42501`: micro global em composição de produto próprio era negado. Corrigido localmente para a matriz: global→global permitido; global→privado negado; privado→global permitido; privado→mesmo owner permitido; privado→outro owner negado. Correção ainda requer novo runtime independente.
 - FAIL 07: produto químico junto de microrganismo válido era aceito. O helper agora rejeita qualquer linha com os dois IDs, antes de avaliar cada root isolado. Correção ainda requer novo runtime independente contra tabela e RPC.
 
-### Inventário live reconciliado (somente leitura)
+### Inventário histórico de busca (somente leitura; nomenclatura superada em 15:12 UTC)
 - Consulta canônica nesta rodada encontrou **83 funções nominais** em `public|platform_private|private` que referenciam os cinco roots, sendo 32 `platform_private`, 2 `private` (`h7n`) e 49 `public`, além de **60 FKs**. Uma busca mais estrita por nomes qualificados encontrou 68; as outras 15 usam nomes não qualificados. O total live diverge em uma função das 84 informadas no snapshot independente e a diferença permanece explicitamente UNVERIFIED, sem inventar a 84ª entrada.
-- As 60 FKs live substituem a contagem anterior de 59: a diferença inclui relações criadas após o snapshot original, especialmente declarações/apresentações. O manifesto 04 continua fail-closed para novas referências privadas; cada relação não listada deve ser adicionada antes de qualquer row privada.
+- As 60 FKs live substituem a contagem anterior de 59: a diferença foi depois reconciliada exatamente como UMA FK regulatória: `microorganism_regulatory_presentations.catalog_volume_id → catalogo_volumes(id) ON DELETE SET NULL`; a atribuição genérica anterior a declarações/apresentações é incorreta. O manifesto 04 continua fail-closed para novas referências privadas; cada relação não listada deve ser adicionada antes de qualquer row privada.
 - Artefatos read-only desta rodada registraram nome, assinatura, ACL, SECURITY DEFINER e hash das 83 funções, além da lista nominal das 60 FKs. Classificação permitida: pura; sem EXECUTE autenticado; trigger; pai bloqueado pelo 04; registro autorizado; ou leitor que requer filtro explícito. ACL sem `authenticated` não foi tratada automaticamente como prova: chamadores foram considerados.
 
 ### Sete views originais
@@ -545,7 +556,7 @@ O SQL06 anterior continha sete views, mas três (`vw_bi_commercial_revenue`, `vw
 
 
 ## Fechamento independente e candidato 10 — 15/10/2026 14:31–14:36 UTC
-- Reconciliação fornecida pelo revisor: todos os 82 `public/platform_private` originais existem live. `rpc_partner_commercial_history` entrou por substring JSON `top_produtos`, não leitura direta. Total correto: **83 diretas + 1 histórico/transitivo**, incluindo os dois `private.h7n`. Não desapareceu função. Esta evidência substitui a divergência UNVERIFIED anterior; contagem de FKs segue 60 live/59 anterior, sem identidade adicional inventada.
+- Reconciliação fornecida pelo revisor: todos os 82 `public/platform_private` originais existem live. `rpc_partner_commercial_history` entrou por substring JSON `top_produtos`, não leitura direta. Correção independente 15:12 UTC: **84 candidatos por substring, triados por corpo/caminho**, incluindo os dois `private.h7n`; não é contagem de consultas diretas. Não desapareceu função. Esta evidência substitui a divergência UNVERIFIED anterior; contagem de FKs segue 60 live/59 anterior, sem identidade adicional inventada.
 - Evidência externa separada: `aba8c52c` **39/39 PGlite PASS**, incluindo micro global e bypass 07; rollback `138eee44` **42/42 PASS**, incluindo isolamento de outra empresa após rollback. Stubs Auth NÃO equivalem a Auth/RLS hospedado. Não somar com testes locais nem certificar produção.
 - Novo SQL10 **candidato não aplicado**: nove definições completas antes/depois, snapshot local em `scripts/rbac-audit/live-defs/*-ownership10-before.sql`, manifesto por assinatura exata e md5-before live. `definition_after_md5_text` é hash do texto candidato, não confirmação live após aplicação. Nenhuma ampliação de ACL, regra fiscal/preço ou histórico. RPC pública técnica preservada como wrapper da implementação privada filtrada.
 - `rpc_cc_validate_matrix` já corrigida pelo SQL09: ambos ramos `produtos/microrganismos` globais. SQL10 filtra desconto em lote antes de INSERT; resolvers e simulador recusam privado/inexistente antes de tabela, campanha, preço canônico, quote-only ou regra fixa. Carrinho/simulação técnica filtram raízes explicitamente, sem depender de B2B=false. Associação fiscal filtra origem, referência e alvo; regulatório filtra antes de draft existente; draft fiscal filtra lookup source antes do perfil. Guards 04 permanecem como defesa adicional, sem mutar históricos.

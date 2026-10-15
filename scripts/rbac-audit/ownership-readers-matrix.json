@@ -1,8 +1,6 @@
 {
   "project_ref": "swzpzcwiasxmjutrmvkm",
   "captured_at": "2026-10-15T15:05:01Z",
-  "direct": 83,
-  "historical_transitive": 1,
   "functions": [
     {
       "function": "platform_private.b2b_save_technical_simulation",
@@ -10,7 +8,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -19,7 +16,6 @@
       "classification": "trigger não invocável como RPC",
       "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
     },
     {
@@ -28,7 +24,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -37,7 +32,6 @@
       "classification": "core autorizado com alvo protegido antes de leitura/replay",
       "proof": "catalog_tenant_visibility roots: trigger global-only 01 + referências 04; recibo ator/org/chave existente",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato catalog_tenant_visibility roots: trigger global-only 01 + referências 04; recibo ator/org/chave existente"
     },
     {
@@ -46,7 +40,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-03-volumes-b2b.sql"
     },
     {
@@ -55,7 +48,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-03-volumes-b2b.sql"
     },
     {
@@ -64,7 +56,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-03-volumes-b2b.sql"
     },
     {
@@ -73,7 +64,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-03-volumes-b2b.sql"
     },
     {
@@ -82,7 +72,6 @@
       "classification": "core autorizado com alvo protegido antes de leitura/replay",
       "proof": "03: catalog_volume_parent/row/assert/preview global-only antes leitura/replay; 01 guard do descendente",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 03: catalog_volume_parent/row/assert/preview global-only antes leitura/replay; 01 guard do descendente"
     },
     {
@@ -91,7 +80,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -100,7 +88,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -109,7 +96,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -118,7 +104,6 @@
       "classification": "core autorizado com alvo protegido antes de leitura/replay",
       "proof": "03: catalog_volume_parent global-only + 01 guard; SA validado no core existente",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 03: catalog_volume_parent global-only + 01 guard; SA validado no core existente"
     },
     {
@@ -127,7 +112,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -136,7 +120,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -145,7 +128,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -154,7 +136,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -163,7 +144,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -172,7 +152,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -181,7 +160,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -190,7 +168,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -199,7 +176,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -208,7 +184,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -217,7 +192,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -226,7 +200,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -235,7 +208,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -244,7 +216,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -253,7 +224,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -262,7 +232,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -271,7 +240,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -280,7 +248,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -289,7 +256,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
     },
     {
@@ -298,7 +264,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -307,17 +272,15 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
       "function": "public._entrega_seed_checklist",
       "identity_arguments": "_entrega_id uuid",
-      "classification": "pai operacional bloqueado",
-      "proof": "entregas.produto_id (04); checklist pelo entrega_id; sem catálogo privado operacional",
+      "classification": "ocorrência textual em mensagem de checklist",
+      "proof": "A substring é a string Conferir produtos; não consulta root de catálogo. Manter candidato nominal; autorização do checklist não é certificada aqui.",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato entregas.produto_id (04); checklist pelo entrega_id; sem catálogo privado operacional"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.approve_microorganism_profile_with_audit",
@@ -325,7 +288,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "microorganism_technical_profiles.microrganismo_id (04); EXECUTE fechado",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato microorganism_technical_profiles.microrganismo_id (04); EXECUTE fechado"
     },
     {
@@ -334,7 +296,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "product_technical_profiles.produto_id (04); EXECUTE fechado",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato product_technical_profiles.produto_id (04); EXECUTE fechado"
     },
     {
@@ -343,7 +304,6 @@
       "classification": "trigger não invocável como RPC",
       "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
     },
     {
@@ -352,7 +312,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -361,7 +320,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -370,7 +328,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-02-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-02-readers.sql"
     },
     {
@@ -379,7 +336,6 @@
       "classification": "helper preço interno",
       "proof": "EXECUTE cliente fechado; triggers invocam fn_catalogo_litro_canonico (02) e pai protegido 01/05",
       "status": "ESTRUTURAL; chamadores trigger, sem ACL ampliada",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato EXECUTE cliente fechado; triggers invocam fn_catalogo_litro_canonico (02) e pai protegido 01/05"
     },
     {
@@ -388,7 +344,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "entregas.produto_id (04); recibo pelo pai entrega autorizado",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato entregas.produto_id (04); recibo pelo pai entrega autorizado"
     },
     {
@@ -397,7 +352,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "entregas.produto_id (04), H15/entrega; snapshots históricos imutáveis",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato entregas.produto_id (04), H15/entrega; snapshots históricos imutáveis"
     },
     {
@@ -406,17 +360,15 @@
       "classification": "leitura financeira indireta / RLS e pai operacional",
       "proof": "itens financeiros/OS/entregas referenciam roots globais bloqueados por 04; não classificada como função pura; escopo financeiro próprio NÃO certificado aqui",
       "status": "ESTRUTURAL; não certifica módulos adjacentes",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato INVOKER/RLS financeiro"
     },
     {
       "function": "public.fn_fiscal_item_profile_gate_eval",
       "identity_arguments": "p_scope text, p_crt text, p_is_active boolean, p_profile_status text, p_accounting_validated_at timestamp with time zone, p_accounting_notes text, p_fiscal_description text, p_commercial_unit text, p_taxable_unit text, p_ncm text, p_origin_code text, p_cfop_in_state text, p_cfop_interstate text, p_icms_cst text, p_icms_csosn text, p_pis_cst text, p_cofins_cst text, p_regulatory jsonb",
-      "classification": "sem projeção de root privado",
-      "proof": "avaliador IMMUTABLE de parâmetros",
+      "classification": "avaliador puro de payload",
+      "proof": "Avaliador IMMUTABLE de parâmetros/payload; sem leitura de root. Não certifica quem fornece o payload.",
       "status": "ESTRUTURAL; não certifica módulos adjacentes",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato avaliador IMMUTABLE de parâmetros"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.fn_fiscal_scenario_coverage",
@@ -424,7 +376,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-06-operational-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-06-operational-readers.sql"
     },
     {
@@ -433,7 +384,6 @@
       "classification": "trigger não invocável como RPC",
       "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
     },
     {
@@ -442,7 +392,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -451,7 +400,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -460,7 +408,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "partner_order_items/catalogo_volumes (04), internos B2B negados; regra família em fase07 separada",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato partner_order_items/catalogo_volumes (04), internos B2B negados; regra família em fase07 separada"
     },
     {
@@ -469,7 +416,6 @@
       "classification": "leitura financeira indireta / RLS e pai operacional",
       "proof": "itens financeiros/OS/entregas referenciam roots globais bloqueados por 04; não classificada como função pura; escopo financeiro próprio NÃO certificado aqui",
       "status": "ESTRUTURAL; não certifica módulos adjacentes",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato INVOKER/RLS financeiro"
     },
     {
@@ -478,7 +424,6 @@
       "classification": "leitura financeira indireta / RLS e pai operacional",
       "proof": "itens financeiros/OS/entregas referenciam roots globais bloqueados por 04; não classificada como função pura; escopo financeiro próprio NÃO certificado aqui",
       "status": "ESTRUTURAL; não certifica módulos adjacentes",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato INVOKER/RLS financeiro"
     },
     {
@@ -487,7 +432,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-03-volumes-b2b.sql"
     },
     {
@@ -496,7 +440,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-03-volumes-b2b.sql"
     },
     {
@@ -505,7 +448,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "partner_order_items.product_id/microrganismo_id (04), pedido do parceiro validado",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato partner_order_items.product_id/microrganismo_id (04), pedido do parceiro validado"
     },
     {
@@ -514,7 +456,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "partner_simulation_items.product_id/microrganismo_id (04), simulação validada",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato partner_simulation_items.product_id/microrganismo_id (04), simulação validada"
     },
     {
@@ -523,7 +464,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "production_order_link→ordens_servico.produto_id/microrganismo_id (04)",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato production_order_link→ordens_servico.produto_id/microrganismo_id (04)"
     },
     {
@@ -532,7 +472,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -541,17 +480,15 @@
       "classification": "trigger não invocável como RPC",
       "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
     },
     {
       "function": "public.platform_wipe_global_product_catalog",
       "identity_arguments": "p_actor_id uuid,p_reason text,p_correlation_id uuid",
-      "classification": "filtro explícito / pai global ou escopo canônico",
-      "proof": "proposed-tenant-catalog-ownership-05-backend.sql",
+      "classification": "writer dinâmico de catálogo global",
+      "proof": "SQL dinâmico: examinar alvos e descendentes, não descartar pela ausência de SELECT textual simples. Candidato05 restringe globals e preserva privados/ledger.",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-05-backend.sql"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.proximo_codigo",
@@ -559,7 +496,6 @@
       "classification": "sem projeção de root privado",
       "proof": "sequência/código; retorna código, não linha privada; trigger01 preserva dono",
       "status": "ESTRUTURAL; não certifica módulos adjacentes",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato sequência/código; retorna código, não linha privada; trigger01 preserva dono"
     },
     {
@@ -568,7 +504,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -577,7 +512,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "partner_order_items.product_id (04); EXECUTE fechado; não certifica Executivo global",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato partner_order_items.product_id (04); EXECUTE fechado; não certifica Executivo global"
     },
     {
@@ -586,7 +520,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "partner_order_items.product_id (04); conta links órfãos, não projeta catálogo; diagnóstico global legado não certifica tenant",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato partner_order_items.product_id (04); conta links órfãos, não projeta catálogo; diagnóstico global legado não certifica tenant"
     },
     {
@@ -595,7 +528,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-09-commercial-matrix.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-09-commercial-matrix.sql"
     },
     {
@@ -604,7 +536,6 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
@@ -613,7 +544,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "envase→lotes.produto_id/microrganismo_id (04); ACL fechada preservada",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato envase→lotes.produto_id/microrganismo_id (04); ACL fechada preservada"
     },
     {
@@ -622,7 +552,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "registros_consultor.cultura_id (04) impede novas culturas próprias neste módulo",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato registros_consultor.cultura_id (04) impede novas culturas próprias neste módulo"
     },
     {
@@ -631,17 +560,15 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
       "function": "public.rpc_fiscal_nfe_readiness_v1",
       "identity_arguments": "",
-      "classification": "filtro explícito / pai global ou escopo canônico",
-      "proof": "proposed-tenant-catalog-ownership-06-operational-readers.sql",
+      "classification": "leitura delegada de readiness/regulatório",
+      "proof": "Caminho de readiness delega ao regulatório; filtros06/10 e pais04 preservados. Manter o candidato indireto.",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-06-operational-readers.sql"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.rpc_gerar_etiqueta_produto",
@@ -649,17 +576,15 @@
       "classification": "pai operacional bloqueado",
       "proof": "produto_etiquetas.produto_id (04), lote/envase protegidos; ACL fechada",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato produto_etiquetas.produto_id (04), lote/envase protegidos; ACL fechada"
     },
     {
       "function": "public.rpc_get_comprovante_entrega_data",
       "identity_arguments": "p_entrega_id uuid, p_reemissao boolean",
-      "classification": "pai operacional bloqueado",
-      "proof": "entregas.produto_id (04), H15/pai entrega; ACL fechada",
+      "classification": "RPC delegadora de comprovante",
+      "proof": "Delega à montagem do comprovante; H15/entrega autorizada e refs operacionais04 permanecem no caminho, sem declarar consulta direta.",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato entregas.produto_id (04), H15/pai entrega; ACL fechada"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.rpc_get_visita_workspace",
@@ -667,7 +592,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "registros_consultor.cultura_id e registros_consultor_recomendacoes.* (04), visita autorizada",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato registros_consultor.cultura_id e registros_consultor_recomendacoes.* (04), visita autorizada"
     },
     {
@@ -676,7 +600,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "registros_consultor.cultura_id (04), filas pelo pai H15/visita",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato registros_consultor.cultura_id (04), filas pelo pai H15/visita"
     },
     {
@@ -685,17 +608,15 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-06-operational-readers.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-06-operational-readers.sql"
     },
     {
       "function": "public.rpc_partner_commercial_history",
       "identity_arguments": "p_partner_id uuid, p_from date, p_to date",
-      "classification": "histórico/transitivo",
-      "proof": "substring JSON top_produtos; snapshots de partner_order_items (04), não leitor direto",
+      "classification": "histórico/snapshots incluído por substring",
+      "proof": "Substring JSON top_produtos; caminho de snapshots de partner_order_items protegido04; manter entre os 84 candidatos, sem decompor total em 83 diretas + 1.",
       "status": "RECONCILIADO; runtime hospedado UNVERIFIED",
-      "direct": false,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato substring JSON top_produtos; snapshots de partner_order_items (04), não leitor direto"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.rpc_regulatory_dossier_ensure_draft",
@@ -703,44 +624,39 @@
       "classification": "filtro explícito / pai global ou escopo canônico",
       "proof": "proposed-tenant-catalog-ownership-10-global-roots.sql",
       "status": "CANDIDATO; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato proposed-tenant-catalog-ownership-10-global-roots.sql"
     },
     {
       "function": "public.set_codigo_microrganismo",
       "identity_arguments": "",
-      "classification": "trigger não invocável como RPC",
-      "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
+      "classification": "trigger delegador de código",
+      "proof": "Delega a public.proximo_codigo; manter caminho indireto no inventário, não contar como consulta direta. Guard01 preserva ownership.",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.set_codigo_produto",
       "identity_arguments": "",
-      "classification": "trigger não invocável como RPC",
-      "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
+      "classification": "trigger delegador de código",
+      "proof": "Delega a public.proximo_codigo; manter caminho indireto no inventário, não contar como consulta direta. Guard01 preserva ownership.",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.sync_product_pricing",
       "identity_arguments": "",
-      "classification": "trigger não invocável como RPC",
-      "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
+      "classification": "trigger sobre NEW/OLD, sem consulta direta de root",
+      "proof": "Opera valores NEW/OLD; não contar como consulta direta. Ownership/imutabilidade da linha permanecem protegidos por 01/05.",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.trg_mestre_guard_preco_canonico",
       "identity_arguments": "",
-      "classification": "trigger não invocável como RPC",
-      "proof": "01/04/05: root/pai protegido; receita e preços canônicos preservados",
+      "classification": "trigger delegador de preço canônico",
+      "proof": "Delega ao preço canônico; helpers/chamadores e filtros02 permanecem no caminho. Ausência de consulta direta não dispensa a contenção.",
       "status": "ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
-      "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato 01/04/05: root/pai protegido; receita e preços canônicos preservados"
+      "test": "Triagem independente de corpo/caminho; Auth/RLS hospedado UNVERIFIED"
     },
     {
       "function": "public.update_microorganism_b2b_description",
@@ -748,7 +664,6 @@
       "classification": "pai operacional bloqueado",
       "proof": "microorganism_technical_profiles.microrganismo_id (04); EXECUTE fechado",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato microorganism_technical_profiles.microrganismo_id (04); EXECUTE fechado"
     },
     {
@@ -757,9 +672,10 @@
       "classification": "pai operacional bloqueado",
       "proof": "product_technical_profiles.produto_id (04); EXECUTE fechado",
       "status": "PROVA ESTRUTURAL; runtime hospedado UNVERIFIED",
-      "direct": true,
       "test": "UNVERIFIED Auth/RLS hospedado; prova local conforme candidato product_technical_profiles.produto_id (04); EXECUTE fechado"
     }
   ],
-  "source": "SELECT canônico pg_proc.prokind=f; identidades conferidas em pg_get_function_identity_arguments; 83 diretas + rpc_partner_commercial_history transitiva"
+  "source": "Inventário nominal canônico de 84 candidatos por substring, incluindo 2 private.h7n; triagem por corpo e caminho, corrigida pelo revisor em 2026-10-15 15:12 UTC. Nenhuma função descartada.",
+  "inventory_candidates": 84,
+  "inventory_method": "substring no corpo da função; não equivale a contagem de consultas diretas"
 }
