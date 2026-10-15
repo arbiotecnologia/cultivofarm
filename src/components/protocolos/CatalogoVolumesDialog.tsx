@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { fmtL } from "@/lib/envaseFormat";
 import { formatPrecoLitro, formatDose100ml, dosesPorVolume, type CatalogoVolume } from "@/hooks/useCatalogoVolumes";
+import { useOwnedCatalogCapability, useOwnedPresentationMutation } from "@/hooks/useOwnedCatalogMutations";
+import { TENANT_OWNED_CATALOG_ENABLED, ownedCatalogError } from "@/lib/catalogo/tenantCatalogOwnership";
 
 interface Props {
   open: boolean;
@@ -24,6 +26,9 @@ interface Props {
   itemNome: string;
   /** Valor por litro cadastrado na ficha técnica (R$). Usado para auto-preencher o preço de cada volume. */
   valorLitroBase?: number | null;
+  /** Item próprio: apresentações são gravadas pelo RPC transacional, nunca por DML direto. */
+  owned?: boolean;
+  parentUpdatedAt?: string | null;
 }
 
 const SUGESTOES = [100, 250, 500, 1000, 5000, 20000];
@@ -31,11 +36,16 @@ const SUGESTOES = [100, 250, 500, 1000, 5000, 20000];
 const calcPrecoFromLitro = (volumeMl: number, valorLitro: number) =>
   Number(((volumeMl / 1000) * valorLitro).toFixed(2));
 
-export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, itemNome, valorLitroBase }: Props) {
+export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, itemNome, valorLitroBase, owned = false }: Props) {
   const qc = useQueryClient();
+  const ownedCapability = useOwnedCatalogCapability();
+  const ownedMutation = useOwnedPresentationMutation();
   const baseLitro = valorLitroBase && valorLitroBase > 0 ? Number(valorLitroBase) : 0;
   const [novo, setNovo] = useState({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
   const [precoTocado, setPrecoTocado] = useState(false);
+  const [reason, setReason] = useState("");
+  const ownedWritable = owned && itemTipo === "produto" && TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage;
+  const scopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
 
   const { data, isLoading } = useQuery({
     queryKey: ["catalogo-volumes-item", itemTipo, itemId],
@@ -62,6 +72,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     if (!open) {
       setNovo({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
       setPrecoTocado(false);
+      setReason("");
     }
   }, [open]);
 
@@ -72,7 +83,6 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
 
   const create = useMutation({
     mutationFn: async () => {
-      assertGlobalCatalogWriteBlocked();
       const vol = Number(novo.volume_ml);
       const preco = Number(novo.preco_brl);
       if (!vol || vol <= 0) throw new Error("Volume inválido");
@@ -86,6 +96,13 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
         preco_brl: preco,
         ordem: Number(novo.ordem) || 0,
       };
+      if (owned) {
+        if (!ownedWritable) throw new Error("Apresentações próprias ainda não estão disponíveis.");
+        return ownedMutation.mutateAsync({ operation: "create", parentId: itemId, presentationId: null, expectedUpdatedAt: null,
+          payload: { volume_ml: vol, rotulo: payload.rotulo, preco_brl: preco, ordem: payload.ordem }, reason,
+          idempotencyKey: crypto.randomUUID(), scopeKey });
+      }
+      assertGlobalCatalogWriteBlocked();
       const { error } = await supabase.from("catalogo_volumes" as any).insert(payload);
       if (error) throw error;
     },
@@ -93,13 +110,20 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       toast.success("Volume adicionado");
       setNovo({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
       setPrecoTocado(false);
+      setReason("");
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(owned ? ownedCatalogError(e, "produto").message : e.message),
   });
 
   const update = useMutation({
     mutationFn: async (v: CatalogoVolume) => {
+      if (owned) {
+        if (!ownedWritable || !v.updated_at) throw new Error("Apresentação própria sem versão confirmada.");
+        return ownedMutation.mutateAsync({ operation: "update", parentId: itemId, presentationId: v.id, expectedUpdatedAt: v.updated_at,
+          payload: { volume_ml: v.volume_ml, rotulo: v.rotulo, preco_brl: v.preco_brl, ordem: v.ordem }, reason,
+          idempotencyKey: crypto.randomUUID(), scopeKey });
+      }
       assertGlobalCatalogWriteBlocked();
       const { error } = await supabase
         .from("catalogo_volumes" as any)
@@ -114,17 +138,22 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Atualizado"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(owned ? ownedCatalogError(e, "produto").message : e.message),
   });
 
   const remove = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (volume: CatalogoVolume) => {
+      if (owned) {
+        if (!ownedWritable || !volume.updated_at) throw new Error("Apresentação própria sem versão confirmada.");
+        return ownedMutation.mutateAsync({ operation: "archive", parentId: itemId, presentationId: volume.id, expectedUpdatedAt: volume.updated_at,
+          payload: {}, reason, idempotencyKey: crypto.randomUUID(), scopeKey });
+      }
       assertGlobalCatalogWriteBlocked();
-      const { error } = await supabase.from("catalogo_volumes" as any).delete().eq("id", id);
+      const { error } = await supabase.from("catalogo_volumes" as any).delete().eq("id", volume.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Removido"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(owned ? ownedCatalogError(e, "produto").message : e.message),
   });
 
   const aplicarSugestao = (ml: number) => {
@@ -152,7 +181,9 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
         <DialogHeader>
           <DialogTitle>Volumes do catálogo</DialogTitle>
           <DialogDescription>
-            {TENANT_CAN_EDIT_GLOBAL_CATALOG
+            {owned
+              ? <>{itemNome} · apresentações comerciais próprias, com preço e histórico auditável.</>
+              : TENANT_CAN_EDIT_GLOBAL_CATALOG
               ? <>{itemNome} · cadastre os volumes comerciais com preço — usados para o cliente comparar R$/L. Não confunda com envase (formato de entrega).</>
               : <>{itemNome} · modo consulta: volumes comerciais do catálogo global, usados para comparar R$/L. Não confunda com envase (formato de entrega).</>}
           </DialogDescription>
@@ -179,15 +210,15 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                 ) : !data || data.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground h-16 italic">Nenhum volume cadastrado.</TableCell></TableRow>
                 ) : data.map((v) => (
-                  TENANT_CAN_EDIT_GLOBAL_CATALOG
-                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v.id)} />
+                  (TENANT_CAN_EDIT_GLOBAL_CATALOG || ownedWritable)
+                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v)} />
                     : <ReadOnlyVolumeRow key={v.id} v={v} />
                 ))}
               </TableBody>
             </Table>
           </div>
 
-          {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
+          {(TENANT_CAN_EDIT_GLOBAL_CATALOG || ownedWritable) && (
           <div className="border rounded-md p-3 space-y-3 bg-muted/30">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Adicionar volume</div>
@@ -234,11 +265,12 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                   onChange={(e) => setNovo({ ...novo, ordem: e.target.value })} />
               </div>
               <div className="min-w-[140px]">
-                <Button type="button" className="w-full" onClick={() => create.mutate()} disabled={create.isPending}>
+                <Button type="button" className="w-full" onClick={() => create.mutate()} disabled={create.isPending || (ownedWritable && reason.trim().length < 10)}>
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
                 </Button>
               </div>
             </div>
+            {ownedWritable && <div className="space-y-1"><Label className="text-xs">Motivo</Label><Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="Motivo da alteração" /></div>}
             {novo.volume_ml && novo.preco_brl && Number(novo.volume_ml) > 0 && (
               <div className="text-[11px] text-muted-foreground">
                 Prévia: {fmtL(Number(novo.volume_ml))} — {brl(Number(novo.preco_brl))} · {formatPrecoLitro({ volume_ml: Number(novo.volume_ml), preco_brl: Number(novo.preco_brl) })} · {formatDose100ml({ volume_ml: Number(novo.volume_ml), preco_brl: Number(novo.preco_brl) })} · {dosesPorVolume({ volume_ml: Number(novo.volume_ml) })} doses

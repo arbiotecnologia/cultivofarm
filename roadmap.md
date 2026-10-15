@@ -741,3 +741,20 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Candidato SQL inicial com helper, triggers de programação/lote e runtime de casos.
 - [ ] Anexar corpos completos/hash-after de `rpc_planejamento_publicar_v1`, `publish_planning_to_lab`, `generate_production_orders_from_partner`, `rpc_programar_os_v1` e `rpc_cockpit_gerar_lote_v1`, incluindo pedido misto — bloqueado: leitura live completa e revisão.
 - [ ] Aplicação/publicação — bloqueado: revisão independente.
+
+
+## Catálogo por empresa — fechamento local ownership (15/10/2026 13:49 UTC)
+- [x] Incorporar evidência externa SQL01 PGlite 27/27, sem promovê-la a prova de Auth/RLS real.
+- [x] Reconciliar snapshot live read-only: 83 funções nominais (32 platform_private + 2 private + 49 public) e 60 FKs; divergência de uma função contra as 84 informadas segue UNVERIFIED.
+- [x] Classificar as 7 views originais; SQL06 anterior tinha três views adicionais que não substituíam `vw_os_integridade_esteira` e `_src_vw_fluxo_visita_tecnica`.
+- [x] Integrar handlers/formulários candidatos na `/base-tecnica` para produtos, microrganismos e culturas, com globais imutáveis.
+- [x] Integrar chamadas candidatas de composição declarativa e apresentações próprias por RPC, cache org+usuário e escopo congelado.
+- [ ] Completar leitura/listagem própria nas três abas e detalhes editáveis seguros; bloqueado porque `tenant_catalog_owned_list` ainda é resumido e os itens próprios não são mesclados às listas atuais.
+- [ ] Abrir gate — bloqueado até revisão/aplicação controlada, SQL05 runtime, Auth/RLS real e fechamento de todos os leitores/refs negativos.
+- [ ] Edge service-role — patch documental aguarda schema aplicado com gate OFF e deve entrar antes de qualquer row privada.
+
+## Laboratório exclusivamente biológico — continuidade separada
+- [x] Registrar live: 1 biológico + 9 sem família e históricos sem família; sem backfill/reclassificação.
+- [x] Preservar updates históricos irrelevantes nos guardas candidatos.
+- [ ] Fechar conversões de pedido misto/solicitação e mensagens nas cinco entradas com corpos/hashes completos.
+- [ ] Aplicação/publicação — proibidas nesta rodada.

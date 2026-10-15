@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   TENANT_OWNED_CATALOG_ENABLED, canManageOwnedItem, catalogOrigin, createResponseFence,
   mutateOwnedItem, ownedAllowedKeys, ownedCatalogError, ownedCatalogKeys,
+  mutateOwnedPresentation,
 } from "@/lib/catalogo/tenantCatalogOwnership";
 
 const sql = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership.sql", "utf8");
@@ -38,6 +39,17 @@ describe("ownership — frontend desabilitado", () => {
     expect(ownedAllowedKeys("produto", "update")).not.toContain("tipo");
     expect(ownedAllowedKeys("produto", "archive")).toEqual([]);
     expect(ownedAllowedKeys("cultura", "composition")).toEqual([]);
+    expect(ownedAllowedKeys("produto", "composition")).toEqual(["status", "itens"]);
+  });
+  it("handlers exercitáveis em teste chamam somente RPCs próprias e validam retorno", async () => {
+    const rpc = vi.fn()
+      .mockReturnValueOnce(Promise.resolve({ data: { id: "p1", updated_at: "2026-10-15T00:00:00Z", idempotency_key: "k", origin: "proprio", replayed: false }, error: null }))
+      .mockReturnValueOnce(Promise.resolve({ data: { id: "v1", parent_id: "p1", updated_at: "2026-10-15T00:00:01Z", replayed: false }, error: null }));
+    await expect(mutateOwnedItem({ rpc }, { entity: "produto", operation: "create", entityId: null, expectedUpdatedAt: null,
+      payload: { nome: "Produto próprio", tipo: "solo" }, reason: "cadastro da empresa", idempotencyKey: "k" }, undefined, true)).resolves.toMatchObject({ id: "p1" });
+    await expect(mutateOwnedPresentation({ rpc }, { operation: "create", parentId: "p1", presentationId: null, expectedUpdatedAt: null,
+      payload: { volume_ml: 1000, preco_brl: 180, ordem: 0 }, reason: "apresentação própria", idempotencyKey: "v" }, undefined, true)).resolves.toMatchObject({ id: "v1" });
+    expect(rpc.mock.calls.map(([name]) => name)).toEqual(["tenant_catalog_owned_mutate", "tenant_catalog_owned_presentation_mutate"]);
   });
   it("duplicata global ativa orienta Exibir; inativa orienta solicitar ativação", () => {
     const a = ownedCatalogError({ message: "catalog_owned_duplicate_global_active", code: "23505", details: "1875527c-a65a-483b-a6c2-9122d5ec2a51" }, "produto");

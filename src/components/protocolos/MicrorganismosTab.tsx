@@ -26,7 +26,11 @@ import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
 import { DeleteProtocoloButton } from "./DeleteProtocoloButton";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
-import { CatalogOriginBadge } from "./OwnedCatalogItemControls";
+import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
+import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
+import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
+import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 import { supabase as sbClient } from "@/integrations/supabase/client";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
@@ -93,6 +97,7 @@ interface Microrganismo {
   ativo: boolean;
   owner_organization_id?: string | null;
   archived_at?: string | null;
+  updated_at?: string | null;
 }
 
 export function MicrorganismosTab() {
@@ -100,6 +105,9 @@ export function MicrorganismosTab() {
   const [filteredItems, setFilteredItems] = useState<Microrganismo[]>([]);
   const tenantVis = useManagedVisibility("microrganismo", filteredItems);
   const canManageVis = useCanManageTenantVisibility();
+  const ownedCapability = useOwnedCatalogCapability();
+  const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Microrganismo | null }>({ open: false, item: null });
+  const [ownedConfirm, setOwnedConfirm] = useState<{ item: Microrganismo; operation: "archive" | "restore" } | null>(null);
   
   const { data: volumesCat } = useCatalogoVolumes();
   const [volumesEdit, setVolumesEdit] = useState<Microrganismo | null>(null);
@@ -347,6 +355,12 @@ export function MicrorganismosTab() {
             <FileDown className="h-4 w-4 mr-1" />
             Exportar Lista
           </Button>
+
+          {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
+            <Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}>
+              <Plus className="h-4 w-4 mr-1" />Microrganismo próprio
+            </Button>
+          )}
 
           <Button 
             variant="outline" 
@@ -705,6 +719,14 @@ export function MicrorganismosTab() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    <OwnedCatalogItemControls
+                      item={m}
+                      actorOrganizationId={ownedCapability.scope?.organizationId}
+                      canManage={ownedCapability.canManage}
+                      onEdit={() => setOwnedDialog({ open: true, item: m })}
+                      onArchive={() => setOwnedConfirm({ item: m, operation: "archive" })}
+                      onRestore={() => setOwnedConfirm({ item: m, operation: "restore" })}
+                    />
                     {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
                     <DeleteProtocoloButton
                       table="microrganismos"
@@ -738,6 +760,26 @@ export function MicrorganismosTab() {
           valorLitroBase={volumesEdit.valor_litro_brl ?? (volumesEdit.valor_dose_brl != null ? volumesEdit.valor_dose_brl * 10 : null)}
         />
       )}
+
+      <OwnedCatalogItemDialog
+        open={ownedDialog.open}
+        onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
+        entity="microrganismo"
+        item={ownedDialog.item}
+        onApplied={fetch}
+        onLocateGlobal={(id) => {
+          tenantVis.setShowHidden(true);
+          const match = items.find((row) => row.id === id);
+          setSearch(match?.nome ?? "");
+        }}
+      />
+      <OwnedCatalogConfirmDialog
+        item={ownedConfirm?.item ?? null}
+        entity="microrganismo"
+        operation={ownedConfirm?.operation ?? "archive"}
+        onOpenChange={(open) => !open && setOwnedConfirm(null)}
+        onApplied={fetch}
+      />
 
       <div className="text-[10px] text-muted-foreground text-center">
         As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.

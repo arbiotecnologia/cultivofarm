@@ -14,6 +14,7 @@ export interface CatalogoVolume {
   moeda: string;
   ativo: boolean;
   ordem: number;
+  updated_at?: string | null;
   preco_litro_brl?: number | null;
   valor_dose_100ml_brl?: number | null;
   doses_por_volume?: number | null;
