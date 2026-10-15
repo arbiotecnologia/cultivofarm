@@ -1,3 +1,9 @@
+## RECORTE 16:37 UTC — habilitação OS somente candidata
+- [ ] Preparar diff focal do fluxo existente com permissão de workspace, status, confirmação, loading/lock, replay e erros seguros; não aplicar ao app.
+- [ ] Executar testes isolados por perfil/status/concorrência local e registrar limites de sessão real.
+- [ ] Documentar dependência de volume e manter fabricação/programar/lote/publish bloqueados; preservar VT-2026-0003.
+- [ ] Atualizar manifesto e relatório para revisão, ownership OFF; sem banco/publicação.
+
 ## ATUALIZAÇÃO EXTERNA 16:28 UTC — NÃO REAPLICAR
 - [x] Arquivar conteúdo exato do histórico canônico das versões 20261015161648 (base07+visita07) e 20261015162631 (hotfix12). Converter live 66e8072f7aefbe18c1417240121147a5 confirmado read-only.
 - [x] Corrigir gerador claims: iat atual/exp+3600; agora ensaio read-only da RPC aplicada, nunca DDL repetida.
