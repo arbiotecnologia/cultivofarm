@@ -115,7 +115,7 @@ describe("ownership — SQL candidato 02 leitores", () => {
   it("leitores SA filtram somente global; tenant global+próprio; preço sem oráculo", () => {
     expect(readers.match(/owner_organization_id IS NULL -- \[OWNER\]/g)!.length).toBeGreaterThanOrEqual(6);
     expect(readers).toMatch(/owner_organization_id = v_org AND p\.archived_at IS NULL/);
-    expect(readers).toMatch(/catalog_item_in_reader_scope\(p_product_id, p_microrganismo_id\)\) THEN RETURN NULL/);
+    expect(readers).toMatch(/catalog_item_in_reader_scope\(p_product_id, p_microrganismo_id\) THEN RETURN NULL/);
   });
 });
 
