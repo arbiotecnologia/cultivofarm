@@ -73,9 +73,19 @@ INSERT INTO user_clientes VALUES('{U}','{C1}',true,NULL,NULL,NULL);
   check('SELECT count(*) FROM storage.objects;','1') # Concrete path/reference mismatch accepted before.
   candidate=(ROOT/'scripts/rbac-audit/proposed-consultor-storage-client-fence.sql').read_text().split('CREATE OR REPLACE FUNCTION',1)[1].split('-- Reviewer:',1)[0]
   run('CREATE OR REPLACE FUNCTION'+candidate)
+  candidate_hash=run("SELECT md5(pg_get_functiondef('platform_private.storage1_consultor_core(text,text)'::regprocedure));")
+  print('candidate core MD5',candidate_hash)
   check('SELECT count(*) FROM storage.objects;','0')
   run(f"UPDATE registros_consultor_arquivos SET registro_consultor_id='{V1}' WHERE arquivo_path='{path}';")
   check('SELECT count(*) FROM storage.objects;','1')
+  for action in ['NULL',"'unknown'"]:
+   check(f"SELECT platform_private.storage1_consultor_core('{path}',{action});",'f')
+  run(f"UPDATE registros_consultor_arquivos SET arquivo_path=NULL WHERE arquivo_path='{path}';")
+  check('SELECT count(*) FROM storage.objects;','0')
+  run(f"UPDATE registros_consultor_arquivos SET arquivo_path='{path}' WHERE registro_consultor_id='{V1}';")
+  run(f"UPDATE registros_consultor SET status='rascunho' WHERE id='{V1}';")
+  check('SELECT count(*) FROM storage.objects;','0')
+  run(f"UPDATE registros_consultor SET status='aprovado' WHERE id='{V1}';")
   for p in [sibling,cross,f'{OTHER}/{V1}/foto/a.jpg',f'{ORG}/{V3}/foto/c.jpg',f'{ORG}/00000000-0000-4000-8000-000000000000/foto/a.jpg',f'{ORG}/{V1}/foto/../a.jpg',f'{ORG}/{V1}/foto/%2e.jpg',f'{ORG}//{V1}/foto/a.jpg',f'{ORG}/{V1}/foto/a.jpg/extra']:
    for action in ['select','insert','update','delete']:
     check(f"SELECT platform_private.storage1_consultor_core('{p}','{action}');",'f')
@@ -97,6 +107,10 @@ INSERT INTO user_clientes VALUES('{U}','{C1}',true,NULL,NULL,NULL);
   # Actual RLS old row + new row: forged cross-tenant move denied for internal too.
   run(session(f"UPDATE storage.objects SET name='{OTHER}/{V1}/foto/x.jpg' WHERE name='{path}';"),fail=True);checks+=1
   check(f"WITH changed AS (UPDATE storage.objects SET metadata='{{}}' WHERE name='{path}' RETURNING 1) SELECT count(*) FROM changed;",'1')
+  check(f"SELECT set_config('request.assigned','false',false); SELECT platform_private.storage1_consultor_core('{path}','select');",'f')
+  check(f"SELECT set_config('request.ready','false',false); SELECT platform_private.storage1_consultor_core('{path}','select');",'f')
+  run(session(f"INSERT INTO storage.objects(bucket_id,name) VALUES('consultor-arquivos','{ORG}/{V1}/foto/new.jpg');"));checks+=1
+  run(session(f"DELETE FROM storage.objects WHERE name='{ORG}/{V1}/foto/new.jpg';"))
   check(f"WITH changed AS (DELETE FROM storage.objects WHERE name='{path}' RETURNING 1) SELECT count(*) FROM changed;",'1')
   run("UPDATE profiles SET ativo=false;");check('SELECT count(*) FROM storage.objects;','0');run('UPDATE profiles SET ativo=true;')
   assert run(session('SELECT count(*) FROM storage.objects;','anon')).splitlines()[-1]=='0';checks+=1

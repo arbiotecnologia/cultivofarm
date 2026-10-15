@@ -1,11 +1,18 @@
+## RECORTE 20:03 — revisão 0be49f, Storage e pré-Auth fechados
+- [x] Auditar 33 policies storage.objects e cadeia restritiva hospedada: d516 permissivas amplas INTERSECTAM storage1 restritivas/core5c9e; acesso efetivo por mero tenant NÃO confirmado. Corrigir diagnóstico anterior.
+- [x] Candidato mínimo preserva policies/ACL/core interno; Produtor exige cliente ativo+vínculo vigente+visita liberada+metadata persistida única/path exato; sem mutações Produtor. Baseline/read-only e rollback deny-Produtor preparados, nenhuma aplicação.
+- [x] Pré-Auth: mesma receipt/UUID/email fica pending quando ausência/lookup incerto; retry só reconcilia identidade própria existente. Sem segundo Auth, takeover, lease como autoridade ou credenciais.
+- [ ] Provas isoladas finais e relatório17seções/hashes; Storage API URL assinada/GoTrue/JWT/fullschema não executados, sem contas reais.
+- [ ] A+B abertura permanece bloqueada por review, canais B2 e Auth/hook/compensação fullschema; nenhuma implantação/grant/envio/publicação.
+
 ## RECORTE 19:55 — revisão f0f450d, candidato A+B sem implantação
 - [x] Técnico negado mesmo com flag aberta; B2B gestor/Produtor exclusivos.
 - [x] Atividade organização checada sob FOR SHARE; revogação concorrente e same receipt duas sessões PASS local.
 - [x] Retry UUID+receipt existente sem segundo Auth; expiração não autoriza finish; compensação de links próprios sem FK Auth preparada/testada.
 - [x] Preflight baseline assertivo/occupied schema negado + rollback exato baseline zero triggers convite; relatório 17 seções.
 - [x] 31 assertions PG+7 checks locais e66 Vitest PASS; OS107/EXACTMATCH/scanner3995/0 registrados EXTERNOS.
-- [ ] A2: crash antes Auth/fullschema/timeout compensação ; rollback local executado PASS, sem criação real/GoTrue/JWT autorizado, abertura bloqueada.
-- [ ] B1: Storage consultor-arquivos permite Produtor por tenant sem prova cliente individual; preparar contenção focal/probes irmãos antes abertura.
+- [x] A2 crash antes Auth tratado como pending seguro no recorte20:03; fullschema/timeout compensação/GoTrue continuam pendentes.
+- [x] B1 diagnóstico amplo corrigido20:03: restrições existentes provam cliente/visita; candidato reforça metadata/path sem abrir acesso. API/JWT hospedados pendentes.
 - [ ] B2: demais canais Produtor RLS/RPC/cache/seleção; resolver atual sem feature portal inventada. Sem deploy/grants/email nesta fase.
 
 ## RECORTE 19:44 — OS aplicada externamente; cadastro A+B fechado
