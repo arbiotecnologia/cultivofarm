@@ -92,3 +92,12 @@ Limitações do runtime: em 3 casos de CHECK direto com tipo `microrganismo` sob
 - Correção de harness: `check.quantidade_sem_unidade` e `check.base_null_unidade` esperam agora `pcd_medida_check`, avaliada antes de `pcd_medida_conjunta_check` e que também rejeita medida parcial. Sobreposição documentada; constraints não relaxadas.
 - Evidência independente frontend: 200/200 em 10 arquivos; scanner de segredos 3917 arquivos, zero achados. Os 781 testes saas/typecheck/lint/build desta conversa são evidência separada, não somada.
 - Pendentes (usuário): teste UI em navegador e publicação. Esta rodada alterou somente runtime de teste e docs; nenhuma funcionalidade, dado ou publicação.
+
+## Atualização 2026-10-15 03:08 UTC — publicação e UI real (evidência externa final)
+- Migration `20261015030146` aplicada no canônico (**APLICADA / NÃO REAPLICAR**). Versão `5049477d` publicada pelo agente com confirmação "Seu site foi atualizado". A pendência "publicação a cargo do usuário" está **concluída**.
+- UI real SA em `app.cultivofarm.com.br/plataforma?catalogo=biologicos`: painel Composição do Bombarbio mostra a receita 334 mL subtilis / 333 velezensis / 333 pumilus, zero declarações e catálogo de microrganismos selecionável. Selecionar subtilis + mL/L gerou validação e manteve Salvar desabilitado (volume pertence à receita); edição cancelada e reabertura sem declaração.
+- Mobile 390 px: documento 390, dialog 372, scroll 372 — sem overflow; override de viewport removido após o teste.
+- Pós-UI, SQL confirmou 0 conjuntos / 0 declarações; Bombarbio ativo/B2B true, R$180/L, `updated_at` 2026-10-14T22:02:40.521334Z intacto.
+- Runtime real: 111 PASS / 0 FAIL / 2 SKIP, com 2 fixtures transacionais cobrindo os cenários ausentes. Frontend independente: 200 PASS; os 781 testes remotos são evidência separada, não somada.
+- Advisors: 17 INFO de RLS sem policies (incluindo as 2 novas tabelas, intencionalmente sem grant direto — acesso só via RPCs), 2 anon DEFINER, 341 authenticated DEFINER e 1 senha vazada, todos legados inalterados.
+- **Fechamento PARCIAL do recorte.** UNVERIFIED/pendentes: gravação comercial real pela UI (nenhuma concentração real foi gravada), UI comercial de químicos/fertilizantes, personalização por tenant, ficha/PDF/B2B e criação completa de químicos/fertilizantes. Este relatório não afirma auditoria integral concluída.
