@@ -1,3 +1,9 @@
+## RECORTE 21:45 — recuperação Auth, P2 UX
+- [x] Diagnóstico externo canônico: /recover 21:44:39Z e 21:44:46Z retornaram429/over_email_send_rate_limit; dois envios anteriores bem-sucedidos informados. Não é falha comprovada de cadastro.
+- [x] Códigos de limite/status429 tratados no formulário existente com mensagem neutra e pausa local60s, sem retry automático; sucesso/genérico/redirect/readiness preservados.
+- [x]42/42Vitest3arquivos PASS; lint focal0/diff-checkPASS/build automáticoOK21:47:17Z. Browser público local429 interceptado/60s/zero retry/desktop-mobilePASS; primeira medição com relógio não pausado FAIL instrumental registrada. Sem email real; typecheck separado manual não executado. Relatório/rollback em docs/auditorias/recuperacao-rate-limit-20261015.md; snapshot funcional5876e51c.
+- [ ] Auditor: revisar/publicar; disponibilidade real depende do serviço de email, sem promessa de prazo nem alteração de configuração pelo agente.
+
 ## RECORTE DOCUMENTAL 21:20 — ativação aplicada externamente, NÃO reaplicar
 - [x] Pacote0ab8c87:100/100 Vitest, lint focal e harness31 dos grants PASS independentes, informados pelo auditor.
 - [x] Falha REAL do preflight original hospedado: SQL42601 em `p.proconfig IS DISTINCT FROM CASE WHEN ... END` dentro IF; não registrar o original como PASS.
