@@ -22,8 +22,8 @@ Destino confirmado em configuração e marcador fiscal `swzpzcwiasxmjutrmvkm`. C
 - Hash MV `50e27806080f38e4adbd94f3bdf2db23`, src `c71226f594d27d92833686212415ccec`, integridade `865cd98310a4893ce0d930454300e0ab`. Tabelas operacionais auditadas têm RLS; restritivas de tenant por organização, clientes ou lote. Catálogo global mantém políticas próprias. Joins adicionais do RPC em programação/profiles continuam INVOKER e sujeitos às respectivas policies.
 - Conversor confirmado `b112888e28d8a5727df713e0ae7bcd1b`. Migrations `20261015161648`, `20261015162631`, `20261015163930` preservadas, NÃO REAPLICAR.
 
-## Candidato local e seu limite
-Arquivo: `scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql`.
+## Candidato anterior — SUBSTITUÍDO, NÃO APLICAR
+Descrição histórica abaixo: o arquivo agora contém SOMENTE contenção h7n; abertura de RPC foi removida.
 1. Preflight destino + hashes h7n/RPC/view/conversor e dependências; fail-closed em drift.
 2. H7n preserva papéis existentes e passa a exigir `technical_actor_ready(auth.uid())` e `clientes.organization_id` igual a organização server-side. Cliente NULL/órfão/alheio invisível; nenhum ownership legado inferido. Compartilhado com leitura direta da view.
 3. RPC mantém INVOKER e contrato JSON/paginação/busca parametrizada. Antes de ler exige ator pronto, interseção papéis rota×fonte (Admin/Gestor/Produção/Administrativo) e resolver canônico `_saas_user_has_feature(...,'ordens_producao')`.
@@ -46,3 +46,13 @@ Diferença estrutural confirmada, compatível com relato externo; intenção fun
 Cobertura: Admin AR só próprio; FSF não vê AR; inativo/no-iat simulado; sem tenant; consultor sem carteira/carteira alheia; Onfarm não ampliado; produção própria+clamp200/offset0; busca literal de injeção; RPC nega Financeiro/Consultor/Onfarm, feature ausente e UID ausente. Não cria dados externos nem depende de credenciais.
 Teste persistente Vitest: `src/test/cockpit-laboratorio/tenantFencePostgres.test.ts`; regressões existentes de auditoria/refinamentos executadas junto. Nenhum snapshot/cópia de texto usado como prova de autorização.
 **GO somente preparação local. NO-GO abertura da leitura/fabricação/publicação; Auth/RLS/browser/freshness/descendentes UNVERIFIED.**
+## P1 prioritário — revisão 17:41 UTC
+**Evidência externa SQL, NÃO browser FSF:** Renato informou ROLE authenticated com sub/iat/exp de FSF Admin retornando 2 linhas da view; MV com 2 linhas em 1 tenant. Isso promove o achado anterior estrutural a leitura entre empresas relatada externamente; não foi reproduzido pelo agente.
+
+**Metadados próprios subsequentes:** marcador canônico true, corpo h7n ainda hash `6a3e2b6e2d594af67cf6727c5b03c2b1`, porém ACL agora somente postgres/service_role; authenticated EXECUTE=false e SELECT view=false. Não atribuímos autoria ou horário dessa contenção. O candidato PRESERVA esse fechamento, sem restaurar ACL antiga. Conversor b112888 intacto.
+
+**Candidato atual:** `proposed-cockpit-esteira-read-tenant-fence.sql` substitui apenas h7n atomicamente. Exige readiness IS TRUE, tenant derivado por h15, cliente same-tenant não NULL, papéis antigos e `technical_client_link(...,['read','execute','manage']) IS TRUE` para técnicos. Helper ativo verifica ativo/revogado/janelas e nível; sem fallback por profile/carteira. SA exclusivo não ganha acesso. Não modifica RPC, view, MV, ACL, owner, dados ou operações. Preflight inclui hashes de corpo/dependências/MV/view/RPC/conversor; pós-condição confere corpo e ACL/owner preservados.
+
+**Pós-aplicação preparada:** `postapply-h7n-containment-readonly.sql`, claims atuais/exp+3600 e ROLE authenticated/anon, rollback, sem gravações. Revisor fornece contas existentes validadas para AR/FSF/SA/inativo/vínculo revogado. Com ACL hoje fechada, probes produzem negação de permissão e NÃO certificam filtro tenant/controle positivo AR; nenhuma abertura ou bypass service_role permitido. Filtro só testado localmente enquanto essa ACL estiver fechada.
+
+**Riscos mantidos:** a fence de cliente não certifica freshness nem referências/nome descendentes da MV. Não reabrir leitura até auditoria posterior. Candidato com hash-before não deve ser reaplicado após implantação; não restaurar corpo vulnerável em rollback. GO preparação para revisão independente; NO-GO aplicação autônoma, abertura Cockpit e fabricação. Três migrations aplicadas preservadas; ownership OFF.

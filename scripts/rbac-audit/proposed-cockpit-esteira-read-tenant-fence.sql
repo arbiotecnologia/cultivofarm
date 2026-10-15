@@ -46,6 +46,7 @@ AS $function$
 $function$;
 DO $post$
 BEGIN
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='private.h7n_esteira_laboratorio()'::regprocedure) IS DISTINCT FROM '6dc6de9ce046847310973b5666249177' THEN RAISE EXCEPTION 'H7N_AFTER_BODY_DRIFT'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN h7n_acl_baseline b WHERE p.oid='private.h7n_esteira_laboratorio()'::regprocedure AND (p.proacl IS DISTINCT FROM b.proacl OR p.proowner IS DISTINCT FROM b.proowner)) THEN RAISE EXCEPTION 'H7N_ACL_OWNER_CHANGED'; END IF;
  IF EXISTS(SELECT 1 FROM pg_class c CROSS JOIN h7n_view_baseline b WHERE c.oid='public.vw_esteira_laboratorio'::regclass AND c.relacl IS DISTINCT FROM b.relacl) THEN RAISE EXCEPTION 'VIEW_ACL_CHANGED'; END IF;
  IF md5(pg_get_functiondef('public.rpc_converter_visita_em_os(uuid,text)'::regprocedure)) IS DISTINCT FROM 'b112888e28d8a5727df713e0ae7bcd1b' OR md5(pg_get_functiondef('public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure)) IS DISTINCT FROM '53c9fdb94780b9666ca9b602ad95a813' THEN RAISE EXCEPTION 'UNRELATED_RPC_CHANGED'; END IF;
