@@ -1,7 +1,8 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,19 +46,21 @@ const STATUS_OS_ABERTOS = ["pendente", "em_andamento", "programada", "aguardando
 export default function PortalFazendaDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { clienteId, loading: clienteLoading } = usePortalCliente();
 
-  const { data: fazenda, isLoading: loadingFazenda } = useQuery({
-    queryKey: ["portal-fazenda-detalhe", id],
-    queryFn: async () => {
+  const { data: fazenda, isLoading: loadingFazenda } = useScopedPortalQuery({
+    queryKey: ["portal-fazenda-detalhe", clienteId, id],
+    queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("fazendas")
         .select("*")
-        .eq("id", id!)
+        .eq("id", id!).eq("cliente_id", clienteId!)
+        .abortSignal(signal)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId,
   });
 
   const { data: talhoes = [] } = useQuery({
@@ -184,7 +187,7 @@ export default function PortalFazendaDetalhe() {
     enabled: !!id,
   });
 
-  if (loadingFazenda)
+  if (clienteLoading || loadingFazenda)
     return (
       <div className="p-8 space-y-4">
         <Skeleton className="h-12 w-1/3" />

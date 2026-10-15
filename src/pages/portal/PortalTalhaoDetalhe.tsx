@@ -1,7 +1,8 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,19 +37,21 @@ import { cn } from "@/lib/utils";
 export default function PortalTalhaoDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { clienteId, loading: clienteLoading } = usePortalCliente();
 
-  const { data: talhao, isLoading: loadingTalhao } = useQuery({
-    queryKey: ["portal-talhao", id],
-    queryFn: async () => {
+  const { data: talhao, isLoading: loadingTalhao } = useScopedPortalQuery({
+    queryKey: ["portal-talhao", clienteId, id],
+    queryFn: async (signal) => {
       const { data, error } = await supabase
         .from("talhoes")
         .select("*, fazendas(nome, cliente_id), culturas(nome)")
-        .eq("id", id!)
+        .eq("id", id!).eq("fazendas.cliente_id", clienteId!)
+        .abortSignal(signal)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!clienteId,
   });
 
   const { data: safras = [] } = useQuery({
@@ -118,7 +121,7 @@ export default function PortalTalhaoDetalhe() {
     enabled: !!id,
   });
 
-  if (loadingTalhao) return <div className="p-8"><Skeleton className="h-12 w-1/3 mb-4"/><Skeleton className="h-64 w-full"/></div>;
+  if (clienteLoading || loadingTalhao) return <div className="p-8"><Skeleton className="h-12 w-1/3 mb-4"/><Skeleton className="h-64 w-full"/></div>;
   if (!talhao) return <div className="p-8 text-center">Talhão não encontrado.</div>;
 
   const hasCriticalAlert = alertas.some(a => a.nivel_risco === 'critico');

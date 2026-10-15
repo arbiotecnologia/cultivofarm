@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Grid3X3, AlertTriangle, ClipboardList, Truck, Sprout, Stethoscope, FlaskConical } from "lucide-react";
@@ -11,19 +11,19 @@ import { cn } from "@/lib/utils";
 export default function PortalDashboard() {
   const { clienteId, clienteNome, loading: clienteLoading } = usePortalCliente();
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useScopedPortalQuery({
     queryKey: ["portal-dashboard-stats", clienteId],
     enabled: !!clienteId,
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return null;
 
       // Executa contagens básicas em paralelo
       const [fazRes, osRes, entRes, entRealRes, fazendasData] = await Promise.all([
-        supabase.from("fazendas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId),
-        supabase.from("ordens_servico").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).not("status", "in", '("finalizada","entregue")'),
-        supabase.from("entregas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).neq("status", "entregue"),
-        supabase.from("entregas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).eq("status", "entregue"),
-        supabase.from("fazendas").select("id").eq("cliente_id", clienteId),
+        supabase.from("fazendas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).abortSignal(signal),
+        supabase.from("ordens_servico").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).not("status", "in", '("finalizada","entregue")').abortSignal(signal),
+        supabase.from("entregas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).neq("status", "entregue").abortSignal(signal),
+        supabase.from("entregas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).eq("status", "entregue").abortSignal(signal),
+        supabase.from("fazendas").select("id").eq("cliente_id", clienteId).abortSignal(signal),
       ]);
 
       const fazendaIds = fazendasData.data?.map(f => f.id) || [];
@@ -36,9 +36,9 @@ export default function PortalDashboard() {
 
       if (fazendaIds.length > 0) {
         const [talhoesRes, registrosRes, osIdsRes] = await Promise.all([
-          supabase.from("talhoes").select("id", { count: "exact", head: true }).in("fazenda_id", fazendaIds),
-          supabase.from("registros_consultor").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).neq("status", "rascunho"),
-          supabase.from("ordens_servico").select("id").eq("cliente_id", clienteId),
+          supabase.from("talhoes").select("id", { count: "exact", head: true }).in("fazenda_id", fazendaIds).abortSignal(signal),
+          supabase.from("registros_consultor").select("id", { count: "exact", head: true }).eq("cliente_id", clienteId).neq("status", "rascunho").abortSignal(signal),
+          supabase.from("ordens_servico").select("id").eq("cliente_id", clienteId).abortSignal(signal),
         ]);
 
         talhoesCount = talhoesRes.count || 0;
@@ -47,8 +47,8 @@ export default function PortalDashboard() {
         const osIdList = osIdsRes.data?.map(o => o.id) || [];
         if (osIdList.length > 0) {
           const [aplicacoesRes, prodRes] = await Promise.all([
-            supabase.from("aplicacoes").select("id", { count: "exact", head: true }).in("ordem_servico_id", osIdList),
-            supabase.from("programacao_producao").select("id", { count: "exact", head: true }).in("ordem_servico_id", osIdList).neq("status", "aprovado"),
+            supabase.from("aplicacoes").select("id", { count: "exact", head: true }).in("ordem_servico_id", osIdList).abortSignal(signal),
+            supabase.from("programacao_producao").select("id", { count: "exact", head: true }).in("ordem_servico_id", osIdList).neq("status", "aprovado").abortSignal(signal),
           ]);
           aplicacoesCount = aplicacoesRes.count || 0;
           prodCount = prodRes.count || 0;

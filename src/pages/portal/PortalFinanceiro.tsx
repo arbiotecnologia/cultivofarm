@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,22 +10,24 @@ import { Wallet } from "lucide-react";
 import { brl, fmtDate, STATUS_LABEL } from "@/lib/financial/format";
 
 export default function PortalFinanceiro() {
-  const { clienteId } = usePortalCliente();
+  const { clienteId, loading } = usePortalCliente();
   const [filtro, setFiltro] = useState("ALL");
 
-  const { data: titulos = [], isLoading } = useQuery({
+  const { data: titulos = [], isLoading } = useScopedPortalQuery({
     queryKey: ["portal-ar", clienteId, filtro],
     enabled: !!clienteId,
-    queryFn: async () => {
+    queryFn: async (signal) => {
       let q = supabase.from("accounts_receivable")
         .select("*, accounts_receivable_installments(*)")
         .eq("customer_id", clienteId!)
-        .order("first_due_date", { ascending: false });
+        .order("first_due_date", { ascending: false }).abortSignal(signal);
       if (filtro !== "ALL") q = q.eq("status", filtro);
       const { data, error } = await q;
       if (error) throw error; return data;
     },
   });
+
+  if (loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
 
   const allInst = titulos.flatMap((t: any) => (t.accounts_receivable_installments || []).map((i: any) => ({ ...i, _titulo: t })));
 
