@@ -34,6 +34,6 @@ describe("etapa Recomendação — colunas reais do catálogo", () => {
   it("erro de schema/consulta vira mensagem explícita", () => {
     expect(recCatalogErrorMessage({ message: "column produtos.nome_comercial does not exist" })).toContain("does not exist");
     expect(src).toMatch(/role="alert"[^>]*>\{recCatalogErrorMessage\(microSel\.error\)\}/);
-    expect(src).not.toMatch(/ocult/i); // não promete filtro por empresa neste seletor
+    expect(src.replace(/\/\/.*$/gm, "")).not.toMatch(/ocult/i); // UI não promete filtro por empresa neste seletor
   });
 });

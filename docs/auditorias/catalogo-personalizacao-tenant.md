@@ -158,3 +158,17 @@ Afeta as seções 3 (diagnóstico), 6 (fluxo), 7 (permissões), 8 (impactos), 10
 7. **Evidência local (seção 15).** Catálogo 602/602 (inclui 20 unit + 9 React do recorte); catálogo+SaaS+multiportal 1473/1473 (base 6c0a1bc5: 1457/1457); visita/fluxo técnico 255 PASS/2 SKIP/3 FAIL — as mesmas 3 falhas de `etapasVisita.test.ts` reproduzidas na base extraída de 6c0a1bc5 (pré-existentes). Typecheck app/node PASS. Lint dos arquivos alterados: novos arquivos 0 erros; arquivos legados com o mesmo número de erros da base (useCatalogoUnificado 21, MobileCatalogoTecnico 11, WizardCampoStep 3). Scanner de segredos OK. Build PASS (30,39 s).
 
 **Limitações honestas.** SQL candidato, rollback e runtime NÃO foram aplicados nem executados no banco; não há PASS de runtime nem login real nesta rodada. Enquanto o SQL não estiver aplicado, catálogo técnico/simulador/catálogo do celular e o seletor de cultura da visita mostram erro explícito para usuários com empresa (fail-closed) — por isso o candidato NÃO deve ser publicado antes da aplicação. Testes React usam mocks e não provam sessão real. Ownership/CRUD próprio fora do escopo.
+
+## Correção pontual — etapa Recomendação do assistente de visita (celular)
+- `WizardRecomendacaoStep.tsx` (montado em `MobileVisitaWizard`) consultava colunas inexistentes `microrganismos.nome_comum` e `produtos.nome_comercial` (confirmado pelo usuário no information_schema canônico). Corrigido para `microrganismos(nome, nome_cientifico)` e `produtos(nome)` em consulta, ordenação e rótulos (`src/lib/visita/recomendacaoCatalogo.ts`).
+- Nova seleção: somente itens ativos; erro de consulta/schema aparece explícito e desativa o seletor. Visualização de recomendações vinculadas: nomes lidos pelos IDs referenciados, sem filtro de ativo; valor atual fora dos ativos aparece "indisponível para nova seleção". A ocultação por empresa NÃO é aplicada neste seletor (pendente) e a tela não promete isso.
+- SQL do candidato 05c21b13 inalterado; nada aplicado nem publicado.
+
+## Legado confirmado — etapasVisita.test.ts
+Revisão independente reproduziu 24 PASS / 3 FAIL em `src/test/visita/etapasVisita.test.ts` na base anterior ao candidato; localmente as mesmas 3 falhas aparecem na base extraída de 6c0a1bc5. Classificado como dívida legada, não regressão desta fase.
+
+## Pendência — testes independentes do diálogo
+Dois testes independentes de rerender/resposta tardia falharam contra 6c0a1bc5 (antes das correções do diálogo). Reexecução contra 05c21b13 está em curso pelo revisor; resultado ainda não registrado aqui.
+
+## Dívida P2 — escalabilidade da ocultação
+`tenant_catalog_hidden_ids` + filtro `NOT IN` funciona até 300 ocultos por entidade; acima disso o catálogo fica indisponível com erro explícito. Isso NÃO é paginação do catálogo completo nem solução sem limite. Próxima fase: leitor completo no servidor com anti-join (`NOT EXISTS`) e paginação, substituindo a lista de IDs no cliente.

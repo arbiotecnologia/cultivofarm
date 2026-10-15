@@ -696,3 +696,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Aplicar SQL candidato + runtime transacional AR/FSF (feito pelo agente após aprovação técnica).
 - [ ] Prova em navegador com admin AR real; só depois publicar.
 - [ ] Recortes pendentes: B2B, pedidos/produção, demais seletores de cultura, ownership/CRUD próprio.
+- [x] Etapa Recomendação da visita: colunas reais (nome/nome_cientifico; produtos.nome), nova seleção x histórico.
+- [ ] P2: substituir hidden_ids+NOT IN (limite 300) por anti-join + paginação no servidor.
+- [ ] Registrar reexecução independente dos testes do diálogo contra 05c21b13.
