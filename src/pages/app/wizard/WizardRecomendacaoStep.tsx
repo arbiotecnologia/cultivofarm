@@ -191,6 +191,10 @@ export default function WizardRecomendacaoStep({
       toast.error("Informe a recomendação técnica");
       return;
     }
+    if (form.encaminhar_para_os && !canForward) {
+      toast.error("Revise ou desmarque o encaminhamento: somente um produto biológico ou um microrganismo pode gerar OS.");
+      return;
+    }
     const clientUuid = editing?.clientUuid ?? crypto.randomUUID();
     const versao = (editing?.versao ?? 0) + 1;
     const entry: PendingRecomendacao = {

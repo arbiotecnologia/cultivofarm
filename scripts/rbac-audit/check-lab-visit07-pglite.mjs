@@ -3,8 +3,12 @@ import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
 if(!process.argv[2]) throw Error('Provide isolated PGlite module path');
-const {PGlite}=await import(pathToFileURL(process.argv[2]).href);
-const db=new PGlite();
+const usePostgres=process.argv.includes('--postgres');
+const module=await import(pathToFileURL(process.argv[2]).href);
+const connection={host:'/tmp/lab07-pg/socket',port:55407,user:'lovable',database:'postgres'};
+let pgClient;
+if(usePostgres){pgClient=new module.Client(connection);await pgClient.connect();}
+const db=usePostgres?{exec:sql=>pgClient.query(sql),query:(sql,p)=>pgClient.query(sql,p),close:()=>pgClient.end()}:new module.PGlite();
 const source=readFileSync('scripts/rbac-audit/check-lab07-pglite.mjs','utf8');
 await db.exec(source.slice(source.indexOf('await db.exec(`')+15,source.indexOf('`);')));
 await db.exec(`CREATE TYPE app_role AS ENUM('administrador','gestor','consultor_tecnico','tecnico_agronomo');
@@ -126,7 +130,31 @@ await check('enum-only recommendation uses cast fallback',async()=>{const v=awai
 await check('concurrent queue returns same singular OS',async()=>{const v=await visit();await rec(v,bio,null);const [a,b]=await Promise.all([convert(v),convert(v)]);assert.equal(a.os_id,b.os_id);assert.equal([a,b].filter(r=>r.already_exists===false).length,1);assert.deepEqual(await counts(v),{os:1,logs:1});});
 await check('concurrent queued edit after conversion rejected by parent fence',async()=>{const v=await visit();const r=await rec(v,bio,null);const [a,b]=await Promise.allSettled([convert(v),q('UPDATE registros_consultor_recomendacoes SET encaminhar_para_os=false WHERE id=$1',[r])]);assert.equal(a.status,'fulfilled');assert.equal(b.status,'rejected');assert.equal(b.reason.code,'23514');});
 await check('write failure rolls back OS programming status and logs',async()=>{await db.exec(`CREATE FUNCTION test_fail_log() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'fixture failure'; END$$; CREATE TRIGGER test_fail_log BEFORE INSERT ON visitas_logs FOR EACH ROW EXECUTE FUNCTION test_fail_log();`);const v=await visit();await rec(v,bio,null);assert.equal((await convert(v)).code,'LAB_VISIT_CONVERSION_FAILED');assert.deepEqual(await counts(v),{os:0,logs:0});assert.equal((await scalar('SELECT status FROM registros_consultor WHERE id=$1',[v])).status,'aprovado');assert.equal((await scalar('SELECT count(*)::int n FROM programacao_producao p JOIN ordens_servico_onfarm o ON o.id=p.ordem_servico_onfarm_id WHERE o.registro_consultor_id=$1',[v])).n,0);await db.exec('DROP TRIGGER test_fail_log ON visitas_logs');});
-await check('unrelated unique conflict not fake replay success',async()=>{await db.exec(`CREATE UNIQUE INDEX test_single_log ON visitas_logs(acao);` ).catch(()=>{}); // use isolated explicit trigger to raise same SQLSTATE
+await check('unrelated unique conflict not fake replay success',async()=>{
  await db.exec(`CREATE FUNCTION test_unique() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'unrelated constraint' USING ERRCODE='23505'; END$$;CREATE TRIGGER test_unique BEFORE INSERT ON visitas_logs FOR EACH ROW EXECUTE FUNCTION test_unique();`);const v=await visit();await rec(v,bio,null);assert.equal((await convert(v)).success,false);assert.deepEqual(await counts(v),{os:0,logs:0});await db.exec('DROP TRIGGER test_unique ON visitas_logs');});
-console.log(JSON.stringify({passes,failed:0,visitPreflight:'FULL: real before hashes/index/enum, schema fixture',basePreflight:'EXCLUDED',hosted:'UNVERIFIED',concurrency:'PGlite serialized queue only, NOT independent sessions',stubs:'Auth/RBAC/tenant/schema/other base helpers'}));
+if(usePostgres){
+ const a=new module.Client(connection),b=new module.Client(connection);await a.connect();await b.connect();
+ const claims=c=>c.query("SELECT set_config('test.actor',$1,false),set_config('test.role','administrador',false),set_config('test.org',$2,false)",[actor,AR]);
+ await claims(a);await claims(b);
+ await check('two PostgreSQL sessions lock then replay singular OS',async()=>{
+  const v=await visit();await rec(v,bio,null);await a.query('BEGIN');
+  const first=(await a.query('SELECT rpc_converter_visita_em_os($1,NULL) v',[v])).rows[0].v;
+  let finished=false;const second=b.query('SELECT rpc_converter_visita_em_os($1,NULL) v',[v]).then(r=>{finished=true;return r.rows[0].v;});
+  const state=await pgClient.query("SELECT count(*)::int n FROM pg_stat_activity WHERE pid=$1 AND wait_event_type='Lock'",[b.processID]);
+  // Poll lock state, never use timing alone as success evidence.
+  let blocked=state.rows[0].n===1;for(let i=0;i<100&&!blocked;i++){await new Promise(r=>setTimeout(r,10));blocked=(await pgClient.query("SELECT count(*)::int n FROM pg_stat_activity WHERE pid=$1 AND wait_event_type='Lock'",[b.processID])).rows[0].n===1;}
+  assert.equal(blocked,true);assert.equal(finished,false);await a.query('COMMIT');const replay=await second;
+  assert.equal(first.os_id,replay.os_id);assert.equal(replay.already_exists,true);assert.deepEqual(await counts(v),{os:1,logs:1});
+ });
+ await check('two PostgreSQL sessions insert flag fenced by converted parent',async()=>{
+  const v=await visit();await rec(v,bio,null);await a.query('BEGIN');await a.query('SELECT rpc_converter_visita_em_os($1,NULL)',[v]);
+  const edit=b.query("INSERT INTO registros_consultor_recomendacoes(registro_consultor_id,microrganismo_id,encaminhar_para_os) VALUES($1,$2,true)",[v,micro]);
+  const rejection=assert.rejects(edit,e=>e.code==='23514');let blocked=false;
+  for(let i=0;i<100&&!blocked;i++){await new Promise(r=>setTimeout(r,10));blocked=(await pgClient.query("SELECT count(*)::int n FROM pg_stat_activity WHERE pid=$1 AND wait_event_type='Lock'",[b.processID])).rows[0].n===1;}
+  assert.equal(blocked,true);await a.query('COMMIT');await rejection;
+  assert.equal((await scalar('SELECT count(*)::int n FROM registros_consultor_recomendacoes WHERE registro_consultor_id=$1',[v])).n,1);
+ });
+ await a.end();await b.end();
+}
+console.log(JSON.stringify({passes,failed:0,visitPreflight:'FULL: real before hashes/index/enum, schema fixture',basePreflight:'EXCLUDED',hosted:'UNVERIFIED',concurrency:usePostgres?'Two independent local PostgreSQL sessions with observed lock wait':'PGlite serialized queue only, NOT independent sessions',stubs:'Auth/RBAC/tenant/schema/other base helpers'}));
 await db.close();
