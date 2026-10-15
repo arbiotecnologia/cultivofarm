@@ -48,7 +48,10 @@ await check('trigger bloqueia INSERT direto com volume privado',async()=>assert.
 await check('trigger bloqueia trocar dossiê para micro privado mantendo volume',async()=>assert.rejects(db.query('UPDATE microorganism_regulatory_presentations SET dossier_id=$1 WHERE volume_ml=1000',[id(32)]),e=>e.code==='42501'));
 await check('UPDATE histórico irrelevante não é bloqueado',async()=>{await db.query("UPDATE microorganism_regulatory_presentations SET label='1 litro' WHERE volume_ml=1000")});
 await check('ON DELETE SET NULL preservado (sem remover apresentação)',async()=>{await db.query('DELETE FROM catalogo_volumes WHERE id=$1',[id(21)]);const r=(await db.query('SELECT count(*) n, count(catalog_volume_id) v FROM microorganism_regulatory_presentations')).rows[0];assert.equal(Number(r.n),3);assert.equal(Number(r.v),0)});
-await check('preflight aborta se vínculo privado já existir',async()=>{
-  const d2=new PGlite(); await d2.close?.(); // estrutural: verifica presença do bloco
-  assert.match(sql,/ownership11_private_regulatory_link_present/)});
+await check('preflight real aborta se vínculo privado já existir',async()=>{
+  await db.exec('ALTER TABLE microorganism_regulatory_presentations DISABLE TRIGGER trg_catalog_regulatory_presentation_guard');
+  await db.query('INSERT INTO microorganism_regulatory_presentations(dossier_id,catalog_volume_id,volume_ml,label) VALUES ($1,$2,77,$3)',[id(31),id(22),'forjado']);
+  const pre=sql.match(/DO \$g\$[\s\S]*?END \$g\$;/)[0];
+  await assert.rejects(db.exec(pre),e=>e.message==='ownership11_private_regulatory_link_present');
+});
 console.log(`${pass} PASS`);
