@@ -25,10 +25,10 @@
 - Name/email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins stay separate — prevents parallel writes.
 - Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target/Auth/JWT/expiry/retry checks and audits stay server-side — avoids bypass.
 - Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
-- Auth logout/renewal clears identity/cache; reload runs outside callbacks — avoids stale roles/deadlocks.
+- Logout/renewal clears identity/cache; reload stays outside callbacks — avoids stale roles/deadlocks.
 - B2B credit RPCs use the canonical partner guard before the service-only calculator; financial settings require restrictive active-tenant policies for reads/writes — prevents cross-tenant credit access.
 - B2B keeps tenant policies/private cores; titles reuse installments. Technical writes reuse active actor/partner/client assignments with zero-finance guards; headers/items use price-free RPCs — prevents leakage and duplication.
-- Fixtures require real Auth, delivery OFF and ID cleanup; SQL rollback is not browser proof — avoids false PASS.
+- Fixtures need real Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
 - Desktop/mobile recovery share one form and the existing canonical redirect policy, with synchronous pending lock and account-neutral states — prevents divergent recovery and local duplicate sends.
@@ -38,7 +38,7 @@
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
-- Wizard uses persisted prerequisites and locked confirmation — prevents duplicate submissions.
+- Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.
 - Cockpit consultation mounts only the scoped list RPC; operations, child readers and ACL stay closed — prevents secondary reads and mutations.
 
 - Closed OS approval changes generator INSERT statuses atomically with creation guards; preserve locks/links/snapshots and deny unresolved B2B approval — prevents bypass and producer breakage.
