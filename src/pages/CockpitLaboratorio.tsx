@@ -586,7 +586,7 @@ function CockpitWorkspace() {
 
   if (!session.ready) return (
     <div className="space-y-6">
-      <PageHeader title="Cockpit Operacional" />
+      <PageHeader title="Cockpit Operacional" description="" />
       <p role="alert">Leitura do Cockpit indisponível. Fabricação permanece bloqueada.</p>
     </div>
   );

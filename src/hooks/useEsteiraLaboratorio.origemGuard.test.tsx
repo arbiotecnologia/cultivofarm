@@ -65,7 +65,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "user-teste" } }),
+  useAuth: () => ({ user: { id: "user-teste" }, profile: { user_id: "user-teste", organization_id: "tenant-teste", ativo: true }, roles: ["administrador"], loading: false }),
 }));
 
 vi.mock("sonner", () => ({
