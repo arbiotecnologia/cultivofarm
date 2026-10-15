@@ -1,5 +1,5 @@
 {
-  "state": "CANDIDATE_ONLY_NOT_APPLIED_NOT_PUBLISHED",
+  "state": "APPLIED_REAL_SOURCE_NOT_PUBLISHED",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "applied_dependencies": [
     "20261015161648",
@@ -11,9 +11,13 @@
   "manufacturing": "NO_GO_REQUESTED_VOLUME_FLOW_UNVERIFIED",
   "operational_acl": "PRESERVE_CLOSED_NO_GRANTS",
   "vitest": {
-    "candidate": 32,
-    "regression_total": 72,
-    "auth": "MOCKED"
+    "real_os": 35,
+    "real_query": 2,
+    "real_pdf_claims": 9,
+    "existing_decisions": 35,
+    "regression_total": 81,
+    "auth": "MOCKED",
+    "query_rerun_after_lint_fix": 2
   },
   "pglite": {
     "passed": 37,
@@ -65,11 +69,11 @@
     },
     {
       "path": "src/test/fluxo-tecnico/osOnfarmQueryProposal.test.tsx",
-      "sha256": "692b79f27cbbb9ab92638491373a4735f4199970eea94dae561d2fb9e9cda8f6"
+      "sha256": "6ba50e6e4f6aec94353029a6701d338ad71d69d108db6269825ad696a1befb64"
     }
   ],
   "query_compatibility": {
-    "state": "CANDIDATE_ONLY",
+    "state": "APPLIED_REAL_SOURCE_NOT_PUBLISHED",
     "canonical_schema": "CONFIRMED_READ_ONLY",
     "origem_column": false,
     "authenticated_select": true,
@@ -94,5 +98,54 @@
     "reviewer_claims": "AR manage true; FSF denied; external evidence not own JWT/browser proof",
     "frontend_regression": "43/43 mocked",
     "post_lock": "Exact second can_manage preserved; independent-session permission-change race UNVERIFIED"
-  }
+  },
+  "source_files": [
+    {
+      "path": "src/lib/fluxo-tecnico/fluxo.ts",
+      "sha256": "340152d1ad2c1872eb3e1174637fd64762f07f5884456859047dc8294538b140"
+    },
+    {
+      "path": "src/hooks/useFluxoVisitaTecnica.ts",
+      "sha256": "10c79685a14f0d62d101db73f9f2bafbdff88a064921d4e9ce2a7f01248bee01"
+    },
+    {
+      "path": "src/components/visita/VisitaStatusBanner.tsx",
+      "sha256": "81804f00d8d00bdb4893b4896bf18c00e3d111645b35b86e6fd0c9eea11fed2d"
+    },
+    {
+      "path": "src/pages/FluxoTecnico.tsx",
+      "sha256": "e8198a02fb7503c121036d89b2278fc8f6ad7e7e8df40568667b5b14d4304d56"
+    },
+    {
+      "path": "src/pages/OrdensServico.tsx",
+      "sha256": "5e5936a06e8ed1771dd500ebbe0bff3a8b7b6484d88c5b602d2fba60a419a862"
+    },
+    {
+      "path": "src/pages/VisitaTecnica.tsx",
+      "sha256": "f481fa1843aa889bd87999a8cfaf11b875377b5f53bb97d687576f9cc89f856e"
+    },
+    {
+      "path": "src/test/fluxo-tecnico/osEnableProposal.interaction.test.tsx",
+      "sha256": "dd3adf1b79026660724e004af6cc04e7b9f14fcc78f229c8bfe1200dd399f70b"
+    },
+    {
+      "path": "src/test/fluxo-tecnico/osOnfarmQueryProposal.test.tsx",
+      "sha256": "6ba50e6e4f6aec94353029a6701d338ad71d69d108db6269825ad696a1befb64"
+    },
+    {
+      "path": "src/test/visita/diagnosticPdfProposal.test.ts",
+      "sha256": "930f256743e6ee69006265c85e85f134672169338c10f22dfc508786a4ff1d20"
+    }
+  ],
+  "validation": {
+    "build": "AUTOMATIC_OK_2026_10_15_17_09_27_UTC",
+    "typecheck": "NO_SEPARATE_EVIDENCE_AUTOMATIC_HARNESS_ONLY",
+    "lint_controls_tests": "PASS_ZERO",
+    "lint_global": "FAIL_3295_ERRORS_126_WARNINGS",
+    "lint_hook_pages": "FAIL_BASELINE_DELTA_UNVERIFIED",
+    "secrets_scanner": "FOCAL_PASS",
+    "git_diff_check": "PASS",
+    "git_commit": "PLATFORM_MANAGED_NOT_EXECUTED"
+  },
+  "historical_patch": "ALREADY_INCORPORATED_DO_NOT_REAPPLY"
 }
