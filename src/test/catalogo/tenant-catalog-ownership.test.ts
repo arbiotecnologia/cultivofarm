@@ -8,6 +8,7 @@ import {
 const sql = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership.sql", "utf8");
 const readers = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql", "utf8");
 const containment = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql", "utf8");
+const backend = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-05-backend.sql", "utf8");
 const rollback = readFileSync("scripts/rbac-audit/rollback-tenant-catalog-ownership.sql", "utf8");
 const runtime = readFileSync("scripts/rbac-audit/runtime-test-tenant-catalog-ownership.sql", "utf8");
 
@@ -172,6 +173,53 @@ describe("ownership — SQL candidato 04 contenção operacional", () => {
       expect(containment).toContain(`('${table}'`);
     }
     expect(containment).toMatch(/catalog_private_reference_module_unavailable/);
+  });
+  it("update irrelevante de histórico não é bloqueado pela referência antiga", () => {
+    expect(containment).toMatch(/TG_OP='UPDATE'[\s\S]*to_jsonb\(OLD\)[\s\S]*IS NOT DISTINCT FROM[\s\S]*CONTINUE/);
+  });
+});
+
+describe("ownership — SQL candidato 05 backend", () => {
+  it("fixa os 12 hashes live e traz definições completas dos writers SA", () => {
+    expect(backend.match(/'[0-9a-f]{32}'\)/g)?.length).toBe(12);
+    for (const fn of ["create_global_product_core", "set_global_product_composition_core", "set_global_product_family_core",
+      "set_global_b2b_enabled_core", "update_global_product_metadata_core", "update_global_microorganism_core",
+      "update_global_culture_core", "set_global_microorganism_status_core", "set_global_culture_status_core"]) {
+      expect(backend).toContain(`CREATE OR REPLACE FUNCTION platform_private.${fn}`);
+    }
+  });
+  it("writers SA filtram a raiz global no lock e no alvo", () => {
+    expect(backend).toMatch(/FROM public\.produtos WHERE id=p_id AND owner_organization_id IS NULL FOR UPDATE/);
+    expect(backend).toMatch(/UPDATE public\.produtos SET[\s\S]*WHERE id=p_id AND owner_organization_id IS NULL AND updated_at/);
+    expect(backend).toMatch(/FROM public\.microrganismos WHERE id=p_id AND owner_organization_id IS NULL FOR UPDATE/);
+    expect(backend).toMatch(/FROM public\.culturas WHERE id=p_id AND owner_organization_id IS NULL FOR UPDATE/);
+  });
+  it("micro product_id e tabelas de composição herdam e validam owner", () => {
+    expect(backend).toMatch(/catalog_owner_guard_micro_product/);
+    expect(backend).toMatch(/catalog_composition_owner_guard/);
+    expect(backend).toMatch(/catalog_composition_parent_scope/);
+    expect(backend).toMatch(/catalog_composition_declaration_parent_scope/);
+    expect(backend).toMatch(/catalog_cross_owner_reference/);
+  });
+  it("apresentação própria é RPC transacional com CAS, ledger e sem organization_id do cliente", () => {
+    const body = backend.slice(backend.indexOf("catalog_owned_presentation_mutate_core"));
+    expect(body).toMatch(/catalog_tenant_actor\('mutate'\)/);
+    expect(body).toMatch(/owner_organization_id=v_org FOR UPDATE/);
+    expect(body).toMatch(/updated_at IS DISTINCT FROM p_expected_updated_at/);
+    expect(body).toMatch(/catalog_tenant_owned_ledger/);
+    expect(body.split("CREATE FUNCTION public.tenant_catalog_owned_presentation_mutate")[0]).not.toMatch(/p_organization/);
+  });
+  it("gate permanece OFF e não há client DML nem publicação", () => {
+    expect(backend).toMatch(/ownership05_gate_must_remain_off/);
+    expect(backend).not.toMatch(/UPDATE platform_private\.catalog_ownership_gate SET enabled=true/);
+    expect(backend).not.toMatch(/GRANT (INSERT|UPDATE|DELETE) ON public\./);
+  });
+  it("wipe global usa pai global e preserva linhas próprias", () => {
+    const wipe = backend.slice(backend.indexOf("-- Wipe global"));
+    expect(wipe).toMatch(/ownership05_wipe_drift/);
+    expect(wipe).toMatch(/DELETE FROM public\.produtos WHERE owner_organization_id IS NULL/);
+    expect(wipe).toMatch(/DELETE FROM public\.product_fiscal_profiles x USING public\.produtos p/);
+    expect(wipe).not.toMatch(/DELETE FROM public\.%I WHERE id IS NOT NULL/);
   });
 });
 

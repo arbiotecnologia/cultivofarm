@@ -58,6 +58,8 @@ BEGIN
   FOR spec IN SELECT value FROM jsonb_array_elements(TG_ARGV[0]::jsonb) LOOP
     col_name:=spec->>'column'; root_name:=spec->>'root';
     item_id:=NULLIF(to_jsonb(NEW)->>col_name,'')::uuid;
+    -- UPDATE sem alteração da referência preserva históricos. O bloqueio só atua na nova referência.
+    IF TG_OP='UPDATE' AND (to_jsonb(OLD)->>col_name) IS NOT DISTINCT FROM (to_jsonb(NEW)->>col_name) THEN CONTINUE; END IF;
     IF item_id IS NULL THEN CONTINUE; END IF;
     EXECUTE format('SELECT owner_organization_id FROM public.%I WHERE id=$1',root_name) INTO owner_id USING item_id;
     IF owner_id IS NOT NULL THEN

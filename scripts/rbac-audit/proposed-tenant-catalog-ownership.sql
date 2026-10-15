@@ -305,7 +305,7 @@ CREATE TABLE public.catalog_tenant_owned_ledger (
   actor_id uuid NOT NULL,
   entity_type text NOT NULL CHECK (entity_type IN ('produto','microrganismo','cultura')),
   entity_id uuid NOT NULL,
-  operation text NOT NULL CHECK (operation IN ('create','update','archive','restore','composition')),
+  operation text NOT NULL CHECK (operation IN ('create','update','archive','restore','composition','presentation')),
   idempotency_key uuid NOT NULL,
   payload_hash text NOT NULL,
   reason text NOT NULL CHECK (char_length(btrim(reason)) BETWEEN 10 AND 500),
