@@ -54,6 +54,7 @@ SELECT pg_temp.denied('last write failure',format('SELECT public.b2b_finish_prov
 RESET ROLE;
 SELECT pg_temp.assert_true('atomic rollback no role or tenant',p.organization_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p.user_id)) FROM public.profiles p WHERE email='pending@example.invalid';
 DROP TRIGGER injected ON platform_private.provisional_password_state;
+INSERT INTO auth.users(id,email) VALUES('99999999-9999-4999-8999-999999999999','second-admin@example.invalid'); INSERT INTO public.user_roles(user_id,role) VALUES('99999999-9999-4999-8999-999999999999','administrador');
 UPDATE public.profiles SET ativo=false WHERE user_id='44444444-4444-4444-8444-444444444444';
 SET LOCAL ROLE service_role;
 SELECT pg_temp.denied('actor revoked finish denied',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='pending';
