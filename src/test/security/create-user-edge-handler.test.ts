@@ -87,8 +87,8 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
   let handler: ((req: Request) => Promise<Response>) | undefined;
   const deno = { env: { get: (name: string) => name === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "isolated-value" }, serve: (fn: typeof handler) => { handler = fn; } };
   const errorLog = vi.fn();
-  new Function("Deno", "createClient", "console", scenario.b2bOpen
-    ? javascript.replace("const B2B_PROVISIONING_CHANNELS_REVIEWED = false", "const B2B_PROVISIONING_CHANNELS_REVIEWED = true")
+  new Function("Deno", "createClient", "console", scenario.b2bOpen === false
+    ? javascript.replace("const B2B_PROVISIONING_CHANNELS_REVIEWED = true", "const B2B_PROVISIONING_CHANNELS_REVIEWED = false")
     : javascript)(deno, createClient, { error: errorLog });
   if (!handler) throw new Error("handler_not_registered");
   const token = scenario.oldJwt ? "mock-old-jwt" : "mock-valid-jwt";
@@ -107,7 +107,7 @@ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> 
 describe("create-user — handler real, SDK e Auth isolados", () => {
   const partnerId = "11111111-1111-4111-8111-111111111111";
   it("validates commercial preflight with caller bearer but never opens Auth via a remote flag", async () => {
-    const r = await invoke({}, { role: "parceiro_b2b", partner_id: partnerId, password: undefined });
+    const r = await invoke({ b2bOpen: false }, { role: "parceiro_b2b", partner_id: partnerId, password: undefined });
     expect(r.rpc).toHaveBeenCalledWith("b2b_provisioning_preflight", { p_partner: partnerId, p_role: "parceiro_b2b", p_papel: "gestor" });
     expect(r.response.status).toBe(503);
     expect(r.createUser).not.toHaveBeenCalled();

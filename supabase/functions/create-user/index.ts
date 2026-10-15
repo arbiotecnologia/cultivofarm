@@ -1,8 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Code-reviewed activation gate, not request/env/preflight flags. Keep closed
-// until the complete same-owner channel audit is approved. Tests open locally.
-const B2B_PROVISIONING_CHANNELS_REVIEWED = false;
+// Code-reviewed activation, never request/env authority; server guards still apply.
+const B2B_PROVISIONING_CHANNELS_REVIEWED = true;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,7 +104,11 @@ Deno.serve(async (req) => {
       const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
       const clients = Array.isArray(cliente_ids) ? cliente_ids : cliente_id ? [cliente_id] : [];
       const primary = principal_cliente_id ?? clients[0] ?? null;
-      if (!["parceiro_b2b", "cliente_produtor"].includes(dedicatedRole) || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
+      const forgedScope = ["organization_id", "org_id", "tenant_id", "tenant", "organization", "owner_organization_id"].some(field => Object.prototype.hasOwnProperty.call(body, field));
+      const conflictingClients = (cliente_ids != null && !Array.isArray(cliente_ids)) ||
+        (cliente_id != null && (!uuid(cliente_id) || (Array.isArray(cliente_ids) &&
+          (cliente_ids.length !== 1 || cliente_ids[0] !== cliente_id))));
+      if (forgedScope || conflictingClients || (!["parceiro_b2b", "cliente_produtor"].includes(dedicatedRole)) || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
         (role && role !== dedicatedRole) || (!isProducer && (!uuid(partner_id) || clients.length || primary ||
         (partner_papel != null && partner_papel !== expectedPapel))) ||
         (isProducer && (partner_id != null || partner_papel != null || clients.length < 1 || clients.length > 100 ||
