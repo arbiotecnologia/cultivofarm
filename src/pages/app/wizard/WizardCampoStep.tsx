@@ -19,6 +19,8 @@ import {
   type PendingCampo,
 } from "@/lib/offlineDb";
 
+const CULTURA_PAGE = 50;
+
 type SaveState = "idle" | "saving" | "saved" | "pending_sync" | "error";
 
 interface Props {
@@ -105,8 +107,20 @@ export default function WizardCampoStep({
 
   // Nova seleção de cultura: seletor do servidor (ativas e não ocultas na empresa). A cultura já
   // gravada no formulário vem via include e aparece marcada, sem poder ser escolhida de novo.
-  const culturaSel = useTenantSelection("cultura", { limit: 100, include: form.cultura_id ? [form.cultura_id] : [] });
-  const culturas = culturaSel.data?.rows;
+  // Paginado e pesquisável no servidor (sem baixar o catálogo todo).
+  const [culturaBusca, setCulturaBusca] = useState("");
+  const [culturaBuscaAplicada, setCulturaBuscaAplicada] = useState("");
+  const [culturaOffset, setCulturaOffset] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => { setCulturaBuscaAplicada(culturaBusca.trim()); setCulturaOffset(0); }, 300);
+    return () => clearTimeout(t);
+  }, [culturaBusca]);
+  const culturaSel = useTenantSelection("cultura", {
+    limit: CULTURA_PAGE, offset: culturaOffset, search: culturaBuscaAplicada,
+    include: form.cultura_id ? [form.cultura_id] : [],
+  });
+  const culturas = culturaSel.isSuccess && !culturaSel.isFetching ? culturaSel.data.rows : undefined;
+  const culturaPronta = culturas !== undefined;
 
   // Hidrata: primeiro tenta remoto, depois rascunho local
   useEffect(() => {
@@ -292,11 +306,20 @@ export default function WizardCampoStep({
 
       <div className="space-y-1.5">
         <Label htmlFor="cultura">Cultura</Label>
+        <Input
+          aria-label="Buscar cultura" placeholder="Buscar cultura" value={culturaBusca} maxLength={80}
+          onChange={(e) => setCulturaBusca(e.target.value)}
+        />
         <Select
           value={form.cultura_id || undefined}
-          onValueChange={(v) => patch({ cultura_id: v })}
+          disabled={!culturaPronta}
+          onValueChange={(v) => {
+            // Nova seleção só a partir de resposta válida do servidor e de item selecionável.
+            const row = culturas?.find((c) => c.id === v);
+            if (row?.selectable) patch({ cultura_id: v });
+          }}
         >
-          <SelectTrigger id="cultura"><SelectValue placeholder="Selecione a cultura" /></SelectTrigger>
+          <SelectTrigger id="cultura"><SelectValue placeholder={culturaPronta ? "Selecione a cultura" : "Carregando culturas…"} /></SelectTrigger>
           <SelectContent>
             {(culturas ?? []).map((c) => (
               <SelectItem key={c.id} value={c.id} disabled={!c.selectable}>
@@ -310,8 +333,17 @@ export default function WizardCampoStep({
             Não foi possível carregar as culturas: {(culturaSel.error as Error).message}
           </p>
         )}
-        {culturaSel.data?.hasMore && (
-          <p className="text-xs text-muted-foreground">Mostrando as primeiras 100 culturas.</p>
+        {culturaSel.isSuccess && (culturaOffset > 0 || culturaSel.data.hasMore) && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <Button type="button" size="sm" variant="ghost" disabled={culturaOffset === 0 || culturaSel.isFetching}
+              onClick={() => setCulturaOffset((o) => Math.max(0, o - CULTURA_PAGE))}>Anteriores</Button>
+            <span>{culturaOffset + 1}–{Math.min(culturaOffset + CULTURA_PAGE, culturaSel.data.total)} de {culturaSel.data.total}</span>
+            <Button type="button" size="sm" variant="ghost" disabled={!culturaSel.data.hasMore || culturaSel.isFetching}
+              onClick={() => setCulturaOffset((o) => o + CULTURA_PAGE)}>Próximas</Button>
+          </div>
+        )}
+        {culturaSel.isSuccess && culturaSel.data.total === 0 && (
+          <p className="text-xs text-muted-foreground">Nenhuma cultura disponível{culturaBuscaAplicada ? " para esta busca" : ""}.</p>
         )}
       </div>
 
