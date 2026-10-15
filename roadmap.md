@@ -676,3 +676,14 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Composição global: revisão independente + aplicação do candidato e execução do runtime (bloqueio: revisão do usuário).
 - [x] 2026-10-15 03:03UTC composição global: revisão independente concluída e SQL APLICADO via apply_migration (NÃO REAPLICAR). Runtime real authenticated 111PASS/0FAIL/2SKIP (113); SKIPs cobertos por 2 fixtures em subtransações revertidas; harness: quantidade_sem_unidade/base_null_unidade esperam pcd_medida_check (sobreposição documentada). Frontend independente 200/200, segredos 3917 zero. Somente testes/docs alterados.
 - [ ] Composição global: teste UI navegador e publicação — a cargo do usuário.
+
+## PERSONALIZAÇÃO POR EMPRESA — FASE 1 (VISIBILIDADE) — 2026-10-15
+- [x] Candidato SQL/rollback/runtime de visibilidade de globais (NÃO APLICADO, não publicado).
+- [x] UI de gestão (Produtos, Microrganismos, Culturas) e seletor de cultura do wizard celular; cache por empresa+usuário.
+- [x] Testes locais: novos 22/22; catálogo 586/586; typecheck app/node; lint arquivos novos; scanner segredos; build PASS.
+- [ ] Revisão independente + aplicação do SQL (aguarda usuário) — aplicar ANTES de publicar a UI.
+- [ ] Runtime AR/FSF com rollback (aguarda aplicação e UIDs reais).
+- [ ] Prova browser/JWT real e publicação (aguarda usuário).
+- [ ] Consumidores pendentes (B2B, VisitaTecnica desktop, produção, recomendação) — fase 2.
+- [ ] Ownership/CRUD próprio — fase 3.
+- Pré-existente: 3 FAIL em src/test/visita/etapasVisita.test.ts (VisitaTecnica.tsx não alterado).

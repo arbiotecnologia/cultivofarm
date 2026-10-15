@@ -1,3 +1,4 @@
+import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -272,6 +273,8 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
+  const tenantVis = useManagedVisibility("produto", filteredItems);
+  const canManageVis = useCanManageTenantVisibility();
 
   const [form, setForm] = useState({
     id: "",
@@ -1022,6 +1025,8 @@ export function ProdutosTab() {
         </div>
       </div>
 
+      <TenantVisibilityBar v={tenantVis} />
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -1037,13 +1042,13 @@ export function ProdutosTab() {
           </TableHeader>
 
           <TableBody>
-            {filteredItems.length === 0 ? (
+            {tenantVis.displayed.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                   Nenhum produto encontrado
                 </TableCell>
               </TableRow>
-            ) : filteredItems.map((p) => {
+            ) : tenantVis.displayed.map((p) => {
               const pAny = p as any;
               const fornecedor: string | null = pAny.fornecedor ?? null;
               const safra: string | null = pAny.safra_referencia ?? null;
@@ -1057,6 +1062,7 @@ export function ProdutosTab() {
                   <div className="font-medium flex items-center gap-2 flex-wrap">
                     {p.nome}
                     {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
+                    <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                     {(p.formulacoes?.length || 0) > 0 && (
                       <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>
                     )}
@@ -1149,6 +1155,10 @@ export function ProdutosTab() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[p.id] ?? null} />
+                    {canManageVis && (
+                      <TenantVisibilityToggle entity="produto" item={{ id: p.id, nome: p.nome, ativo: p.ativo }}
+                        state={tenantVis.map?.get(p.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

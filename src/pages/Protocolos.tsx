@@ -1,5 +1,6 @@
 import { assertGlobalCatalogWriteBlocked, TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +30,17 @@ import { useCulturas } from "@/hooks/useCulturas";
 // auditado. Esta aba é somente consulta para todos os perfis.
 function CulturasTab() {
   const { data: items, isLoading, isError, error, refetch, isFetching } = useCulturas();
-  const rows = items ?? [];
+  const allRows = useMemo(() => items ?? [], [items]);
+  const tenantVis = useManagedVisibility("cultura", allRows);
+  const canManageVis = useCanManageTenantVisibility();
+  const rows = tenantVis.displayed;
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground" data-testid="culturas-readonly-notice">
         Culturas são um cadastro global, disponível somente para consulta.
       </p>
+      <TenantVisibilityBar v={tenantVis} />
 
       {isLoading ? (
         <div className="py-8 text-center text-muted-foreground" role="status">Carregando culturas...</div>
@@ -61,6 +66,7 @@ function CulturasTab() {
                 content={[
                   { label: "Descrição", value: c.descricao || "—" },
                   { label: "Situação", value: c.ativo ? "Ativa" : "Inativa" },
+                  ...(tenantVis.map?.get(c.id)?.hidden ? [{ label: "Empresa", value: "Oculta nesta empresa" }] : []),
                 ]}
               />
             ))
@@ -68,17 +74,26 @@ function CulturasTab() {
         }
       >
         <Table>
-          <TableHeader><TableRow><TableHead>Cultura</TableHead><TableHead>Descrição</TableHead><TableHead>Situação</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Cultura</TableHead><TableHead>Descrição</TableHead><TableHead>Situação</TableHead>{canManageVis && <TableHead className="text-right">Empresa</TableHead>}</TableRow></TableHeader>
           <TableBody>
             {rows.length === 0 ? (
-              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canManageVis ? 4 : 3} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
             ) : rows.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.nome}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{c.descricao || "—"}</TableCell>
                 <TableCell>
-                  <Badge variant={c.ativo ? "default" : "secondary"}>{c.ativo ? "Ativa" : "Inativa"}</Badge>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <Badge variant={c.ativo ? "default" : "secondary"}>{c.ativo ? "Ativa" : "Inativa"}</Badge>
+                    <TenantHiddenBadge state={tenantVis.map?.get(c.id)} />
+                  </div>
                 </TableCell>
+                {canManageVis && (
+                  <TableCell className="text-right">
+                    <TenantVisibilityToggle entity="cultura" item={{ id: c.id, nome: c.nome, ativo: c.ativo }}
+                      state={tenantVis.map?.get(c.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
