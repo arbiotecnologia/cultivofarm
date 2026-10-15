@@ -558,3 +558,33 @@ O SQL06 anterior continha sete views, mas três (`vw_bi_commercial_revenue`, `vw
 
 `public.b2b_save_technical_simulation(jsonb)` permanece wrapper INVOKER (md5 live `7615960c752978e95e865443c277d461`) da função privada acima; sem nova ACL. SQL09 mantém `rpc_cc_validate_matrix(uuid,text,uuid,uuid)` global-only (md5-before `e3b94ad47b93b02c9717a6a694163552`).
 Matriz total função→pai→FK de entrega/OS/visita/histórico ainda em verificação nominal: a afirmação estrutural do revisor não foi promovida a execução runtime. Não fechar auditoria integral nem abrir gate por esta tabela focal.
+
+---
+
+## Recorte 11 — FK regulatória adicional e corrida AR→FSF (15/10/2026 14:55 UTC, NÃO aplicado, NÃO publicado)
+
+**Reconciliação FK (evidência externa + leitura própria read-only):** snapshot de 59 FKs + 1 = 60 no live. A adicional é exatamente `microorganism_regulatory_presentations.catalog_volume_id -> catalogo_volumes(id) ON DELETE SET NULL`; nenhuma das 59 desapareceu. Não é atribuída a declarações de composição. Leitura própria confirmou: 60 FKs, `anon`/`authenticated` sem grant direto na tabela, 1 policy SELECT, triggers regulatórios existentes e 0 apresentações com `catalog_volume_id` preenchido.
+
+**Candidato 11** `scripts/rbac-audit/proposed-tenant-catalog-ownership-11-regulatory-presentations.sql` (requer 01–10, gate OFF):
+- Preflight: FK com `ON DELETE SET NULL`, hash live `74f45dd67e9435a9876b0e2609e38954` de `rpc_regulatory_presentation_upsert` e aborto se já existir vínculo com volume privado, volume cujo pai é privado ou dossiê de microrganismo privado.
+- Helper booleano `platform_private.catalog_regulatory_volume_is_global(dossiê, volume)` sem EXECUTE para PUBLIC/anon/authenticated: dono derivado do volume, do pai do volume (produto/microrganismo) e do microrganismo do dossiê — todos globais.
+- Trigger dedicado `trg_catalog_regulatory_presentation_guard` em INSERT/UPDATE de `catalog_volume_id`/`dossier_id`; NULL e o SET NULL da FK passam; updates irrelevantes de históricos não são bloqueados. Complementa o guard genérico do 04 (que só via o volume).
+- Writer `rpc_regulatory_presentation_upsert`: definição live completa + verificação antes do INSERT; inexistente, privado AR/FSF, volume global com pai privado e dossiê privado recebem a mesma mensagem `REGULATORY_CATALOG_VOLUME_NOT_FOUND` (sem revelar existência). Antes salvo em `live-defs/...-ownership11-before.sql`.
+- FK, dossiês e apresentações preservados; nenhuma remoção.
+
+**Leitores transitivos do vínculo (por função):**
+| Função | Leitura | Prova |
+|---|---|---|
+| `rpc_regulatory_presentation_upsert` | escreve `catalog_volume_id` | patch 11 + trigger |
+| `rpc_regulatory_dossier_detail` | `to_jsonb(p)` por `dossier_id` (somente UUID do volume) | estrutural: trigger + preflight garantem só volume global; dossiê de micro privado bloqueado no 04/10 |
+| `rpc_regulatory_dossier_publish` | snapshot `to_jsonb(p)` | idem; snapshots históricos não alterados |
+| `fn_microorganism_regulatory_facts` | apenas contagens por dossiê | não projeta volume |
+| `rpc_microorganism_regulatory_overview`/`v_microorganism_fiscal_readiness` | via facts | fixados no 06 |
+
+**Prova SQL isolada salva:** `scripts/rbac-audit/check-ownership11-pglite.mjs` executa o arquivo 11 inteiro em PGlite (hash do writer coincidiu com o live): **14/14 PASS** — global aceito; AR, FSF, forja por pai privado, volume de micro privado e inexistente recusados sem gravar; dossiê privado recusado; INSERT/UPDATE diretos e troca de dossiê bloqueados pelo trigger; update histórico irrelevante permitido; SET NULL preservado; preflight real aborta com vínculo privado preexistente. Schema/identidade são stubs: **não prova Auth/RLS hospedados**.
+
+**Corrida UI (a6704f58, evidência externa):** `onApplied` era chamado 1 vez quando o recibo AR resolvia após rerender FSF. Novo teste comportamental com QueryClient real, RPC deferred, mutação AR pendente, rerender FSF sem retorno a AR e resolução do recibo antigo: `onApplied` 0 vezes e nenhuma invalidação. Arquivo do fluxo: 13/13 PASS.
+
+**Rollback:** o rollback operacional existente continua só fechando gate/fachadas; o trigger e o helper do 11 devem ser mantidos (não destrutivos). Remoção estrutural só se não houver privados.
+
+**Status:** gate OFF; NO-GO para aplicar/publicar até revisão independente do 11, Auth real e browser. Pendentes: SQL07 laboratorial, matriz nominal histórica integral, concorrência 2 conexões.
