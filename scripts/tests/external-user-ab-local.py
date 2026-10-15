@@ -34,7 +34,7 @@ def main():
   import json,time
   actor="SELECT set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',false); SET ROLE authenticated;"
   claim="SELECT public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','aaaaaaaa-1111-4111-8111-111111111111','race@example.invalid','Race');"
-  run('GRANT EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text),platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid) TO authenticated; GRANT EXECUTE ON FUNCTION public.b2b_finish_provisioning(uuid,uuid,uuid) TO service_role;')
+  run('GRANT EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text),platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid) TO authenticated; GRANT EXECUTE ON FUNCTION public.b2b_finish_provisioning(uuid,uuid,uuid),public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid),public.b2b_complete_provisioning_compensation(uuid,uuid,uuid) TO service_role;')
   first=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
   first.stdin.write("BEGIN; UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton; SELECT 'READY';\n");first.stdin.flush()
   assert first.stdout.readline().strip()=='READY'
@@ -68,6 +68,15 @@ def main():
   assert run("SELECT (SELECT count(*) FROM public.profiles WHERE user_id='"+uid+"')+(SELECT count(*) FROM public.user_roles WHERE user_id='"+uid+"');")=='0'
   assert run("SELECT count(*) FROM public.partner_users WHERE user_id='"+uid+"';")=='1'
   print('PASS actual cascade gap reproduced: Auth/profile/roles removed; partner link remains (no invented FK)')
+  # Dedicated own unfinished receipt models a crash before completion.
+  run("UPDATE platform_private.b2b_provisioning_receipts SET status='compensating' WHERE id='"+rid+"';")
+  assert run("SET ROLE service_role; SELECT public.b2b_complete_provisioning_compensation('"+rid+"','"+fence+"','"+uid+"');").splitlines()[-1]=='t'
+  assert run("SELECT count(*) FROM public.partner_users WHERE user_id='"+uid+"';")=='0'
+  print('PASS exact receipt link compensation after own Auth absence')
+  # Reapplying candidate to occupied schema must fail before any replacement.
+  failed=subprocess.run(base,input=(ROOT/'scripts/rbac-audit/proposed-external-user-ab-closed.sql').read_text(),text=True,capture_output=True)
+  assert failed.returncode!=0 and 'external_provisioning_baseline_mismatch' in failed.stderr
+  print('PASS occupied candidate baseline rejected')
  finally:
   subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True);shutil.rmtree(tmp)
 if __name__=='__main__': main()
