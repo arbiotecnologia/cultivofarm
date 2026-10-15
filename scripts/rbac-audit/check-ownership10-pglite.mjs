@@ -59,5 +59,5 @@ await check('discount bulk operation selects globals, not private (even B2B true
  assert.deepEqual((await db.query('SELECT product_id,preco_final FROM partner_product_prices')).rows,[{product_id:global,preco_final:'162.00'}]);
 });
 await check('technical simulation global succeeds',async()=>{assert.ok(await result('SELECT platform_private.b2b_save_technical_simulation($1::jsonb) v',[JSON.stringify({partner_id:global,items:[{item_id:global,item_tipo:'microrganismo',quantidade:1}]})]));assert.equal((await db.query('SELECT count(*) n FROM partner_simulation_items')).rows[0].n,1)});
-console.log(`${passes}/${passes} PASS. All nine definitions registered; fiscal draft runtime and full migration preflight UNVERIFIED. Auth/roles/schema helpers STUBBED.`);
+console.log(`${passes}/${passes} PASS. All nine definitions registered; fiscal draft mutation runtime UNVERIFIED; complete SQL10 plus nine hash preflights executed. Auth/roles/schema helpers STUBBED.`);
 await db.close();
