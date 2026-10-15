@@ -1,3 +1,5 @@
+> STATUS VIGENTE 21:05: migrations 20261015205713 e20261015205954 APLICADAS externamente; seções anteriores são histórico, NÃO justificam reaplicação nem execução de preflight de ausência. Fonte create-user integrada fechada; contrato atualizado em scripts/rbac-audit/external-user-ab-activation-contract.md.
+
 # Cadastro B2B / Cliente Produtor — A+B fechado, 19:44
 
 ## Estado e evidência
@@ -217,3 +219,12 @@ Portal Parceiro Financeiro usa usePortalPartnerFinancial→rpc_portal_partner_fi
 
 ## Provas e limites
 Runner scripts/tests/b2b-receivables-rls-local.py usa PostgreSQL/RLS real isolado com schema reduzido, Auth/entitlements/readiness/legado e vínculo Produtor SIMULADOS. Corpo comercial existente reutilizado; preflight hospedado removido somente no ensaio. Testa baseline defeituoso, próprios/irmãos/tenant cruzado, IDs de filhos cruzados/NULL/órfãos, vínculo duplicado/revogado, readiness/senha provisória, parceiro inativo/owner inválido, entitlement revogado, técnico, troca cliente/parceiro, Produtor ativo/revogado, anon, internos e rollback. Sessão Admin AR confirmada pelo usuário é evidência EXTERNA e não substitui identidade B2B exclusiva. Ambiente informa external_unmanaged: nenhuma sessão titular foi forjada nem credencial solicitada. Revisão/aplicação e JWT B2B after permanecem gates concretos; GO somente para revisão focal, não abertura do Financeiro. Storage/.withdrawn/OS20261015194058 preservados.
+
+# Entrega 21:05 — integração autorizada ao entrypoint real
+HEAD inicial b5e048ae. Diff aprovado aplicado a create-user existente sem alterar fluxo interno, grants, dados ou flags. Harness external-user-ab-proposal agora lê fonte efetiva, não aplica diff em memória. Regressão antiga acquired=false passou a exigir reconciliação de UUID/receipt próprios sem create/delete Auth. InitialNewUser estabilizado para remover somente aviso NOVO do efeito; usersPage legado não modificado.
+
+Ledger read-only canônico: financeiro2651bytes/MD5ff89f228aa9aa1f28ada1ccb07b194ea; cadastro24636bytes/MD5eed40456ee9b22b78a3322d543c86694. SQL arquivado exatamente por recomposição verificada contra ledger, não executado. Sete assinaturas anon/auth/service EXECUTE=false confirmadas read-only. Receipt RLS/três triggers convite e Admin receber PASS são evidências EXTERNAS do revisor, não testes próprios Auth.
+
+Inventário Auth já examinado: handle_new_user MD5 6f3c5072b776329ac5ff9f8bbf6fd7b2;27 triggers users sem role automática conforme evidência independente. Harness inclui corpos versionados/cascatas/sync cliente principal, Auth e transporte reduzidos. NÃO certifica GoTrue UUID reservado, JWT/RLS hospedados, emails ou URLs assinadas Storage. Admin AR real disponível ao auditor; external_unmanaged é limitação só das ferramentas do agente. Contas futuras autorizadas existem na autorização nominal, estão ausentes Auth conforme revisor; nenhuma criada nesta entrega.108 pacote/39portais/31SQLcadastro/17readers e seleção same-tab2/typechecks/lint/scanner/build independentes PASS: evidência EXTERNA, não reclassificar como execução do agente.
+
+P1 solicitações já concluído em candidato:56 assertions reexecutadas PASS com tabela/policies/cinco triggers reais em PostgreSQL isolado, Auth/publisher reduzidos.26 assertions financeiro reexecutadas PASS. Não aplicar nenhum deles automaticamente. Contrato define sequência futura exata, grants mínimos documentais, flags, payload, pending409, rollback restritivo e canais ainda fechados. Sem novo bloqueio humano genérico: implantação/grants/ativação e provas com contas exclusivas são ações concretas reservadas ao auditor após conferência.

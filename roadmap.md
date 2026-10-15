@@ -1,3 +1,12 @@
+## RECORTE 21:05 — integração real create-user fechada
+- [x] Diff aprovado integrado ao entrypoint existente; harness executa fonte aplicada, sem módulo paralelo. Técnico negado, flags false e UUID/receipt/pending409 preservados.
+- [x] Novo aviso de hook initialNewUser corrigido; dois avisos legados usersPage preservados, sem alegar lint global PASS.
+- [x] Migrations externas 20261015205713/20261015205954 reconhecidas como APLICADAS, SQL/hash exatos arquivados; nenhuma reaplicação/DDL/grant/deploy/conta/email/publicação.
+- [x] Contrato pós-instalação atualizado: não rodar preflight antigo de ausência; próximos passos controlados pelo auditor, sessão Admin AR dele disponível.
+- [ ] Revisão final/deploy controlado/grants e ativação: ações expressamente reservadas ao auditor, não executar nesta entrega.
+- [ ] P1 portal_solicitacoes: pacote concluído e testado; aplicação pendente da conferência do auditor.
+- [ ] GoTrue/JWT externos e Storage API pós-deploy: identidades futuras autorizadas, não criar agora; prova Admin não substitui B2B/Produtor exclusivo.
+
 ## RECORTE 20:55 — mutações de solicitações Produtor
 - [x] Falsificação INSERT/UPDATE e notificação estrangeira reproduzidas em PostgreSQL/RLS descartável: 26 campos,6 constraints,9 policies,5 triggers reais (Auth/publisher reduzidos).
 - [x] Guard candidato antes dos efeitos preserva criação/confirmar/remarcar/replay; nega autoria/status/consultor/ref forjados, revogação e destinatário estrangeiro.56 assertions PASS; preflight/rollback restritivo/manifesto entregues, sem DDL remoto.
@@ -7,7 +16,7 @@
 ## RECORTE 20:50 — financeiro B2B, diagnóstico efetivo e candidato revisável
 - [x] Policies canônicas completas: títulos/parcelas com restritiva tenant e partner_users admin-only; ensaio authenticated reproduz contexto válido e zero títulos/parcelas.
 - [x] Candidato focal de duas policies reutiliza b2b_commercial_context, preserva Produtor/internos/tenant/ACL; sem aplicação/grants/dados.
-- [ ] JWT B2B real after: depende instalação revisada e login titular; Admin AR não representa parceiro exclusivo.
+- [ ] JWT B2B real after: policies instaladas externamente20261015205713; depende login titular exclusivo; Admin AR não representa parceiro exclusivo.
 - [ ] Cadeias financeiras links/schedule/terms: mesmas subqueries cruas mais restritivas phase1 legadas; compatibilidade comercial futura exige ensaio próprio, não abrir isoladamente.
 
 ## RECORTE 20:42 — correção real de seleção e caches Produtor
@@ -23,7 +32,7 @@
 - [x] Seleção/cache orders/details/mutations e layout Produtor scoped/abort/eviction/reset; QueryClient/página reais com sessão simulada.
 - [x] P1 estrutural quatro readers legados raw-link: candidato separado fechado/preflight atômico/rollback,17 assertions PASS; não Storage.
 - [x] Contrato grants mínimo posterior e relatório17seções;208 Vitest PASS, lint novo0/scanner0/build automáticoOK; lint global/typecheck independente não certificados.
-- [ ] Instalação/flags/GoTrue/JWT after: BLOQUEADO pela revisão prévia requerida; nenhuma aplicação/grant/deploy/conta/email/publicação nesta entrega.
+- [ ] SQL cadastro instalado externamente20261015205954; flags/deploy/GoTrue/JWT after reservados ao auditor; nenhuma aplicação/grant/deploy/conta/email/publicação nesta entrega.
 - [x] Cache agrícola corrigido no recorte20:42; testes efetivos hosted RLS/JWT continuam condicionados à instalação revisada/login titular, não ao cache local.
 
 ## RECORTE 20:12 — regras Storage existentes preservadas
