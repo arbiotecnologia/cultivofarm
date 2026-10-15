@@ -1,3 +1,4 @@
+import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +95,8 @@ interface Microrganismo {
 export function MicrorganismosTab() {
   const [items, setItems] = useState<Microrganismo[]>([]);
   const [filteredItems, setFilteredItems] = useState<Microrganismo[]>([]);
+  const tenantVis = useManagedVisibility("microrganismo", filteredItems);
+  const canManageVis = useCanManageTenantVisibility();
   
   const { data: volumesCat } = useCatalogoVolumes();
   const [volumesEdit, setVolumesEdit] = useState<Microrganismo | null>(null);
@@ -587,13 +590,13 @@ export function MicrorganismosTab() {
           </TableHeader>
 
           <TableBody>
-            {filteredItems.length === 0 ? (
+            {tenantVis.displayed.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                   Nenhum microrganismo encontrado
                 </TableCell>
               </TableRow>
-            ) : filteredItems.map((m) => (
+            ) : tenantVis.displayed.map((m) => (
               <TableRow key={m.id} className="hover:bg-muted/50" onClick={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => handleEdit(m) : undefined}>
                 <TableCell>
                   {m.codigo && (
@@ -648,6 +651,11 @@ export function MicrorganismosTab() {
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
+                    <TenantHiddenBadge state={tenantVis.map?.get(m.id)} />
+                    {canManageVis && (
+                      <TenantVisibilityToggle entity="microrganismo" item={{ id: m.id, nome: m.nome, ativo: (m as any).ativo !== false }}
+                        state={tenantVis.map?.get(m.id)} disabledReason={tenantVis.error ?? (tenantVis.map ? null : "Carregando preferências.")} />
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

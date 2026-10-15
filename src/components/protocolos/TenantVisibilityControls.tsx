@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EyeOff, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { useSetTenantVisibility, useTenantCatalogScope } from "@/hooks/useTenantCatalogVisibility";
+import { useSetTenantVisibility, useTenantCatalogScope, useTenantVisibilityMap } from "@/hooks/useTenantCatalogVisibility";
 import {
-  TENANT_VISIBILITY_REASON_MAX, TENANT_VISIBILITY_REASON_MIN,
+  TENANT_VISIBILITY_REASON_MAX, TENANT_VISIBILITY_REASON_MIN, applyManagementVisibility,
   type TenantCatalogEntity, type VisibilityState,
 } from "@/lib/catalogo/tenantCatalogVisibility";
 
@@ -118,5 +118,37 @@ export function TenantVisibilityToggle({ entity, item, state, disabledReason }: 
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+/**
+ * Sobreposição de visibilidade da empresa sobre uma lista de gestão já carregada.
+ * Ocultos saem da lista por padrão; "Mostrar ocultos" permite reexibir. Em erro, a lista NÃO é filtrada
+ * e a barra mostra o erro de forma explícita (sem fingir que a preferência foi aplicada).
+ */
+export function useManagedVisibility<T extends { id: string }>(entity: TenantCatalogEntity, items: readonly T[]) {
+  const ids = useMemo(() => items.map((i) => i.id), [items]);
+  const q = useTenantVisibilityMap(entity, ids);
+  const [showHidden, setShowHidden] = useState(false);
+  const map = q.isSuccess ? q.data : undefined;
+  const displayed = useMemo(() => applyManagementVisibility(items, map, showHidden), [items, map, showHidden]);
+  const hiddenCount = useMemo(() => (map ? [...map.values()].filter((v) => v.hidden).length : 0), [map]);
+  return {
+    displayed, map, showHidden, setShowHidden, hiddenCount,
+    loading: q.isLoading && ids.length > 0,
+    error: q.isError ? (q.error as Error).message : null,
+  };
+}
+
+export function TenantVisibilityBar({ v }: { v: ReturnType<typeof useManagedVisibility<any>> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-sm" data-testid="tenant-visibility-bar">
+      <ShowHiddenSwitch checked={v.showHidden} onChange={v.setShowHidden} disabled={!!v.error || v.loading} />
+      {v.loading && <span role="status" className="text-muted-foreground">Carregando preferências da empresa…</span>}
+      {v.error && <span role="alert" className="text-destructive">Preferências da empresa indisponíveis: {v.error} A lista abaixo mostra todos os itens.</span>}
+      {!v.error && !v.loading && v.hiddenCount > 0 && !v.showHidden && (
+        <span className="text-muted-foreground">{v.hiddenCount} oculto(s) nesta empresa.</span>
+      )}
+    </div>
   );
 }
