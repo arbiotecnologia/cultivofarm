@@ -97,7 +97,7 @@
 +      const { data: wsData, error: wsError } = await supabase.rpc("rpc_get_visita_workspace", { p_registro_id: registroId });
 +      if (wsError) throw wsError;
 +      const ws = wsData as { status?: string; permissions?: { can_convert_os?: boolean } } | null;
-+      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch) || !ws?.permissions?.can_convert_os || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
++      if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch) || ws?.permissions?.can_convert_os !== true || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
 +        return { success: false, message: "Esta visita não está disponível para encaminhamento laboratorial." };
 +      }
 +      // Retry manual por visita: o servidor faz lock/replay. Nunca repetir escrita automaticamente.
