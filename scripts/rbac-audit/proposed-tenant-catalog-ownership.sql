@@ -362,10 +362,19 @@ DECLARE
   v_norm text; v_dup record;
   v_before jsonb; v_after jsonb; v_id uuid; v_owner uuid; v_upd timestamptz; v_archived timestamptz; v_result jsonb;
   v_item jsonb; v_fam text; v_cls text; v_status text; v_order integer := 0;
+  v_composition jsonb; v_composition_result jsonb;
 BEGIN
   IF NOT platform_private.catalog_ownership_enabled() THEN
     RAISE EXCEPTION 'catalog_ownership_disabled' USING ERRCODE='55000'; END IF;
   v_org := platform_private.catalog_tenant_actor('mutate');
+  -- Optional declared composition belongs to the SAME statement/transaction and retry receipt.
+  -- Absence preserves it; an explicit draft/empty array consciously clears it.
+  IF p_entity_type='produto' AND p_operation IN ('create','update') AND v_payload ? 'composition' THEN
+    v_composition := v_payload->'composition';
+    IF jsonb_typeof(v_composition) IS DISTINCT FROM 'object' THEN
+      RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
+    v_payload := v_payload - 'composition';
+  END IF;
   IF (p_entity_type IN ('produto','microrganismo','cultura')) IS NOT TRUE
      OR (p_operation IN ('create','update','archive','restore','composition')) IS NOT TRUE
      OR p_idempotency_key IS NULL OR jsonb_typeof(v_payload) <> 'object'
@@ -385,7 +394,7 @@ BEGIN
   END LOOP;
   IF p_operation='create' AND (NOT v_payload ? 'nome' OR (p_entity_type<>'cultura' AND NOT v_payload ? 'tipo')) THEN
     RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
-  IF p_operation='update' AND v_payload = '{}'::jsonb THEN RAISE EXCEPTION 'catalog_owned_noop' USING ERRCODE='22023'; END IF;
+  IF p_operation='update' AND v_payload = '{}'::jsonb AND v_composition IS NULL THEN RAISE EXCEPTION 'catalog_owned_noop' USING ERRCODE='22023'; END IF;
   IF p_operation='composition' AND (jsonb_typeof(v_payload->'status') IS DISTINCT FROM 'string'
        OR (v_payload->>'status') NOT IN ('rascunho','completo')
        OR jsonb_typeof(v_payload->'itens') IS DISTINCT FROM 'array'
@@ -404,7 +413,7 @@ BEGIN
   IF char_length(v_reason) NOT BETWEEN 10 AND 500 THEN RAISE EXCEPTION 'catalog_owned_reason_required' USING ERRCODE='22023'; END IF;
   v_table := CASE p_entity_type WHEN 'produto' THEN 'produtos' WHEN 'microrganismo' THEN 'microrganismos' ELSE 'culturas' END;
   v_hash := md5(concat_ws('|', p_entity_type, p_operation, COALESCE(p_entity_id::text,''),
-                COALESCE(p_expected_updated_at::text,''), v_payload::text, v_reason));
+                COALESCE(p_expected_updated_at::text,''), p_payload::text, v_reason));
 
   -- Locks: chave do ator -> nome normalizado (comum com SA) -> linha.
   PERFORM pg_advisory_xact_lock(hashtextextended(concat_ws(':','ctok',v_uid::text,v_org::text,p_idempotency_key::text),0));
@@ -490,7 +499,7 @@ BEGIN
         WHERE id=v_id RETURNING to_jsonb(culturas.*) INTO v_after;
       END IF;
       -- No-op coerente: nada mudou além de updated_at => rejeita e a transação desfaz o carimbo.
-      IF (v_after - 'updated_at') = (v_before - 'updated_at') THEN RAISE EXCEPTION 'catalog_owned_noop' USING ERRCODE='22023'; END IF;
+      IF (v_after - 'updated_at') = (v_before - 'updated_at') AND v_composition IS NULL THEN RAISE EXCEPTION 'catalog_owned_noop' USING ERRCODE='22023'; END IF;
     ELSIF p_operation IN ('archive','restore') THEN
       EXECUTE format('UPDATE public.%I SET ativo=$2, archived_at=$3, updated_at=clock_timestamp() WHERE id=$1 RETURNING to_jsonb(%I.*)', v_table, v_table)
         INTO v_after USING v_id, p_operation='restore', CASE WHEN p_operation='archive' THEN clock_timestamp() END;
@@ -563,6 +572,12 @@ BEGIN
     EXECUTE format('SELECT updated_at FROM public.%I WHERE id=$1', v_table) INTO v_upd USING v_id;
   END IF;
 
+  IF v_composition IS NOT NULL THEN
+    v_composition_result := platform_private.catalog_owned_mutate_core('produto','composition',v_id,v_upd,
+      v_composition,v_reason,md5('composition:' || p_idempotency_key::text)::uuid);
+    v_upd := (v_composition_result->>'updated_at')::timestamptz;
+    v_after := v_after || jsonb_build_object('composition_receipt',v_composition_result);
+  END IF;
   v_result := jsonb_build_object('id', v_id, 'entity_type', p_entity_type, 'operation', p_operation,
                                  'updated_at', v_upd, 'origin', 'proprio', 'idempotency_key', p_idempotency_key, 'replayed', false);
   INSERT INTO public.catalog_tenant_owned_ledger(organization_id, actor_id, entity_type, entity_id, operation,
