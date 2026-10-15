@@ -333,7 +333,7 @@ export function useFluxoVisitaTecnica() {
       if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch)) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
       await Promise.all(["ordens-servico", "os-onfarm", "cockpit-laboratorio", "pcp-kanban"].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
       if ((scope !== currentActor.current || epoch !== conversionFence.current.epoch)) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
-      return { success: true, message: res.already_exists ? "Encaminhamento já registrado para esta visita." : "OS e programação pendente criadas. Fabricação não iniciada; volume pendente de definição.",
+      return { success: true, message: res.already_exists ? "Encaminhamento já registrado para esta visita." : "OS e programação pendente criadas. Consulte a OS para validar o volume antes de fabricar.",
         os_id: res.os_id, numero_os: res.numero_os, already_exists: res.already_exists, data: res };
     } catch (error: unknown) {
       return { success: false, message: mensagemAmigavelVisita(error, "Não foi possível confirmar o encaminhamento. Reconsulte a visita antes de tentar novamente.") };
