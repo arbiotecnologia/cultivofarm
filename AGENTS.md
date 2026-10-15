@@ -4,7 +4,7 @@
 
 - Escrita em organizations só por RPCs SECURITY DEFINER que emitem ticket em platform_private.authz_tickets (txid); triggers exigem o ticket — flags GUC não são fronteira de autorização.
 
-- Provisioned-admin password links use the canonical SMTP provider and existing invitation lease/fencing; operator-facing recovery links are disabled — only the account holder defines a permanent password.
+- Provisioned-admin password links use canonical SMTP and invitation fencing; operator recovery links stay disabled — only holders define passwords.
 - Convites operacionais sempre usam `https://app.cultivofarm.com.br/reset-password` definido no servidor; o `Origin` só autoriza a chamada e nunca compõe o redirect — evita fallback para localhost e open redirect.
 
 - Global communication settings require server-side `is_platform_superadmin`; tenant admins have no UI/endpoint access; workers use service-role-only RPCs — preserves tenant and secret isolation.
@@ -38,4 +38,5 @@
 
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 
-- Wizard uses persisted prerequisites, not attachments; review uses controlled AlertDialog and a shared synchronous ref lock — prevents blocked navigation and duplicate submissions.
+- Wizard uses persisted prerequisites and locked confirmation — prevents duplicate submissions.
+- Cockpit read candidates reuse h7n/view/RPC and live source with current lineage checks, keeping ACL closed — prevents stale authorization.

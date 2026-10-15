@@ -1,8 +1,8 @@
 {
-  "state": "P1_HELPER_FIXED_EXTERNALLY_AND_CONTAINED_FUNCTIONAL_READ_NO_GO",
+  "state": "LIVE_SOURCE_CANDIDATE_NOT_APPLIED_ACL_CLOSED_NO_GO",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
-  "candidate": "scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql",
-  "report": "docs/auditorias/cockpit-leitura-recorte-20261015.md",
+  "candidate": "scripts/rbac-audit/proposed-cockpit-live-source-closed.sql",
+  "report": "docs/auditorias/cockpit-fonte-atual-candidato-20261015.md",
   "remote_operations": "READ_ONLY_METADATA_NO_OPERATIONAL_ROWS",
   "converter_md5": "b112888e28d8a5727df713e0ae7bcd1b",
   "h7n_before_md5": "6a3e2b6e2d594af67cf6727c5b03c2b1",
@@ -13,7 +13,10 @@
     "20261015162631",
     "20261015163930",
     "20261015173622",
-    "20261015175232"
+    "20261015175232",
+    "20261015180956",
+    "20261015181119",
+    "20261015181542"
   ],
   "external_evidence": {
     "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
@@ -35,11 +38,11 @@
     "diff_check": "PASS"
   },
   "blockers": [
-    "MATERIALIZED_SNAPSHOT_FRESHNESS_AND_DESCENDANT_SCOPE_NOT_PROVEN",
-    "ONFARM_MICRO_ID_PROJECTED_NULL_IN_EXISTING_VIEW",
-    "ONFARM_ROUTE_SOURCE_SCOPE_MISMATCH_NOT_WIDENED",
-    "CONSUMER_IDENTITY_CACHE_REVIEW_PENDING",
-    "HOSTED_AUTH_RLS_BROWSER_UNVERIFIED"
+    "INDEPENDENT_REVIEW_AND_HOSTED_FULL_SCHEMA_PREFLIGHT",
+    "HOSTED_JWT_RLS_BROWSER",
+    "PERFORMANCE_CONCURRENCY_AND_ORIGIN_ALIASES",
+    "OTHER_MV_READERS_DESCENDANTS_AND_TECHNICAL_ROLE_CONTRACTS",
+    "CACHE_C556_INDEPENDENT_REVIEW"
   ],
   "ownership_gate": "OFF",
   "manufacturing": "NO_GO_VOLUME_NULL",
@@ -97,5 +100,43 @@
     "os_count": 0
   },
   "new_request_backlog": "INVESTIGATE_PARTNER_CNPJ_NO_ASSUMED_CAUSE_NO_REAL_PARTNER_TEST_DOCUMENTATION_ONLY_NOW",
-  "rpc_cockpit": "CLOSED_NO_BODY_OR_ACL_CHANGE"
+  "rpc_cockpit": "CANDIDATE_BODY_ONLY_CLOSED_NO_GRANTS",
+  "live_source_round": {
+    "baseline_head": "c5566e68379c728f803d5a94c5013c63a956a22b",
+    "sql_sha256": "e3f792ba36a6866d06f49be6cb6981ad764d07584bf522f2c2d881e13855c31d",
+    "postgres_assertions": 61,
+    "historical_assertions": 19,
+    "vitest": {
+      "passed": 20,
+      "files": 3
+    },
+    "auth_source_schema": "SIMULATED_REDUCED_NOT_HOSTED",
+    "full_preflight": "NOT_EXECUTED",
+    "lint_new_test": "PASS_0",
+    "global_lint": "PREVIOUS_BASELINE_FAIL_NOT_RERUN",
+    "scanner": "PASS_FOCAL",
+    "typecheck": "SEPARATE_UNVERIFIED_NO_MANUAL_RUN",
+    "automatic_build": "OK_18:25:29",
+    "external_evidence": "RENATO_SQL_CLAIMS_10_EVENTS_UNRESOLVED_1_IDEM_5_DENIALS_42501_MICRO10_PGLITE_0_REAL_MICRO_OS_SOURCE_MV3_NO_DIFF"
+  },
+  "new_exact_archives": [
+    {
+      "version": "20261015180956",
+      "file": "scripts/rbac-audit/applied-20261015180956_h_cockpit_contain_event_idempotency_cross_tenant.sql",
+      "ledger_md5": "a7503391ff26db06a1b7d26f3156a217",
+      "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY"
+    },
+    {
+      "version": "20261015181119",
+      "file": "scripts/rbac-audit/applied-20261015181119_h_cockpit_contain_legacy_mutation_bypass.sql",
+      "ledger_md5": "e2e9c9e96b0533db8c0635d891306052",
+      "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY"
+    },
+    {
+      "version": "20261015181542",
+      "file": "scripts/rbac-audit/applied-20261015181542_h_cockpit_onfarm_micro_projection_closed.sql",
+      "ledger_md5": "9e260c759499a8a68a1eeadac34207ce",
+      "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY"
+    }
+  ]
 }
