@@ -118,10 +118,10 @@ function CulturasTab() {
       </ResponsiveTable>
       )}
       <OwnedCatalogItemDialog open={ownedDialog.open} onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
-        entity="cultura" item={ownedDialog.item} onApplied={() => refetch()}
+        entity="cultura" item={ownedDialog.item} onApplied={async () => { await refetch(); }}
         onLocateGlobal={(id) => { tenantVis.setShowHidden(true); const match = allRows.find((row) => row.id === id); if (match) toast.info(`Item global localizado: ${match.nome}`); }} />
       <OwnedCatalogConfirmDialog item={ownedConfirm?.item ?? null} entity="cultura" operation={ownedConfirm?.operation ?? "archive"}
-        onOpenChange={(open) => !open && setOwnedConfirm(null)} onApplied={() => refetch()} />
+        onOpenChange={(open) => !open && setOwnedConfirm(null)} onApplied={async () => { await refetch(); }} />
     </div>
   );
 }

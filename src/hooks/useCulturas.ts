@@ -20,10 +20,10 @@ export function useCulturas() {
     queryFn: async (): Promise<Cultura[]> => {
       const { data, error } = await supabase
         .from("culturas")
-        .select("id, nome, descricao, ativo, desativada_em, owner_organization_id, archived_at, updated_at")
+        .select("*")
         .order("nome");
       if (error) throw error;
-      return (data ?? []) as Cultura[];
+      return (data ?? []) as unknown as Cultura[];
     },
     staleTime: 60 * 1000,
   });
