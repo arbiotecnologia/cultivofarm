@@ -1,6 +1,10 @@
 -- RESTRICTIVE ROLLBACK ONLY. Do NOT restore broad Producer access.
 -- Preserves internal baseline, all policies and all objects/data.
 BEGIN;
+-- Reject drift before replacing a newer protection. No policy/ACL restoration.
+SELECT 1 / CASE WHEN md5(pg_get_functiondef('platform_private.storage1_consultor_core(text,text)'::regprocedure))='0aee68429a879f5ffc4ef7a87d0ea8e8'
+ AND (SELECT proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' FROM pg_proc WHERE oid='platform_private.storage1_consultor_core(text,text)'::regprocedure)
+ THEN 1 ELSE 0 END AS rollback_baseline;
 CREATE OR REPLACE FUNCTION platform_private.storage1_consultor_core(p_name text, p_action text)
  RETURNS boolean
  LANGUAGE plpgsql
