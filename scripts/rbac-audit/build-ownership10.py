@@ -1,6 +1,7 @@
 """Builds candidate 10 from live definitions captured read-only (2026-10-15 14:31 UTC).
 Each patch: pinned md5-before, literal anchor occurrence counts verified locally AND at apply-time."""
 import re, sys, hashlib, json
+from pathlib import Path
 src = open(sys.argv[1]).read()
 defs = {}
 for m in re.finditer(r'definition:(CREATE OR REPLACE FUNCTION (\w+)\.(\w+)\(.*?)\n hash:([0-9a-f]{32}) proname:(\w+) schema:(\w+)\]', src, re.S):
@@ -44,24 +45,17 @@ for fn, patches in P.items():
     for old, rep, n in patches:
         c = new.count(old); assert c == n, (fn, old, c); new = new.replace(old, rep)
     sig = re.match(r'CREATE OR REPLACE FUNCTION ([\w.]+\(.*?\))\n', body).group(1)
-    pairs = ",\n    ".join(f"ARRAY[{lit(o)},{lit(r)},'{n}']" for o, r, n in patches)
+    identity = re.sub(r'\bp_\w+ ', '', re.sub(r' DEFAULT .*?(?=, p_|\)$)', '', sig))
     out.append(f"""DO $p$
-DECLARE v_oid regprocedure; v_def text; v_pair text[]; v_pairs text[][] := ARRAY[
-    {pairs}];
+DECLARE v_oid regprocedure := '{identity}'::regprocedure; v_def text;
 BEGIN
-  SELECT p.oid::regprocedure INTO v_oid FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-   WHERE n.nspname='{fn.split('.')[0]}' AND p.proname='{fn.split('.')[1]}' AND p.prokind='f';
   v_def := pg_get_functiondef(v_oid);
   IF md5(v_def) <> '{h}' THEN RAISE EXCEPTION 'ownership10_drift:{fn}'; END IF;
-  FOREACH v_pair SLICE 1 IN ARRAY v_pairs LOOP
-    IF (length(v_def)-length(replace(v_def,v_pair[1],'')))/length(v_pair[1]) <> v_pair[3]::int THEN
-      RAISE EXCEPTION 'ownership10_anchor:{fn}'; END IF;
-    v_def := replace(v_def, v_pair[1], v_pair[2]);
-  END LOOP;
-  EXECUTE v_def;
-  RAISE NOTICE 'ownership10 % hash_after=%', '{fn}', md5(pg_get_functiondef(v_oid));
 END $p$;""")
-    manifest.append({"function": fn, "hash_before": h, "patches": len(patches)})
+    out.append(new.rstrip(';') + ';')
+    Path('scripts/rbac-audit/live-defs').mkdir(exist_ok=True)
+    Path(f'scripts/rbac-audit/live-defs/{fn}-ownership10-before.sql').write_text(body + ';\n')
+    manifest.append({"function": identity, "hash_before": h, "definition_after_md5_text": hashlib.md5(new.encode()).hexdigest(), "patches": len(patches)})
 out.append("COMMIT;")
 open("scripts/rbac-audit/proposed-tenant-catalog-ownership-10-global-roots.sql","w").write("\n".join(out)+"\n")
 json.dump(manifest, open("scripts/rbac-audit/ownership10-manifest.json","w"), indent=1)
