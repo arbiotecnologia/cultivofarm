@@ -1,7 +1,7 @@
 ## RECORTE 21:51 — autorização focal de alteração administrativa de senha
-- [ ] Corrigir contexto has_role para JWT validado do chamador; erros RPC fechados e códigos públicos seguros, sem grants/DDL.
-- [ ] Preservar admin/tenant/readiness/alvo não-superadmin/auditoria e primeiro acesso; validar senha 8–128 letra+número no handler real e UI.
-- [ ] Testar handler real com mocks, regressão recuperação429, QA focal e relatório/rollback; sem senhas reais/emails/deploy/publicação.
+- [x] has_role e admin_can_update_user_password_server usam anonClient/JWT getUser validado; erro RPC500/código seguro distinto de negação403, sem grants/DDL.
+- [x] Admin/tenant/readiness/alvo não-superadmin permanecem nos guards existentes; password-only sem confirmar email/limpar flag; senha8–128 letra+número backend/frontend, auditoria sem senha e UI segura.
+- [x]125/125Vitest8arquivos PASS (29 handler real mock,17contrato,2mutation real e77regressões). Lint focal arquivos novos/testes0; Configuracoes18erros/2avisos iguais ao baseline, sem lint globalPASS. Build automáticoOK21:55:53Z/diff-checkPASS; typechecks manuais não executados. Relatório/rollback docs/auditorias/admin-password-caller-context-20261015.md; snapshot bdf381c4. Sem senha real/email/deploy/publicação; recuperação429 intocada.
 - [ ] Auditor: revisão/implantação controlada e verificação real; sessão Admin AR disponível ao auditor, não executar mutação real nesta entrega.
 
 ## RECORTE 21:45 — recuperação Auth, P2 UX

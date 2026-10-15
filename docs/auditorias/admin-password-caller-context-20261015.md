@@ -20,4 +20,6 @@ Primeira bateria7arquivos **123/123 PASS**, incluindo recuperação/regras/guard
 **GO restrito para revisão de fonte; produção pós-fix UNVERIFIED.** Nenhuma senha real, email, conta, SQL, grant, deploy ou publicação executados. Admin AR disponível ao auditor: a limitação desta evidência não implica indisponibilidade da sessão dele. Auditor revisa/implanta e verifica handler no canônico `swzpzcwiasxmjutrmvkm`; não usar outros refs. Versão vigente pós-implantação ainda não informada.
 Rollback de contenção: manter ação administrativa desabilitada na UI e interromper endpoint antes de Auth update, caso o fix apresente regressão; não restaurar chamada service_role de has_role nem validação6caracteres como solução. Recovery429 continua independente e não deve ser revertido. Sem rollback de dados, flags de primeiro acesso ou permissões.
 
-Snapshot funcional de código/testes iniciais: `6d0a155a` (versionamento automático do ambiente; commit manual não executado).
+QA final: **125/125 testes,8arquivos PASS**; lint focal novos arquivos/testes0, diff-checkPASS, build automáticoOK21:55:53Z. Configuracoes18erros/2avisos legados preservados; typechecks manuais não executados. Não houve teste browser/Auth real de mutação nesta entrega por proibição de senha real; mutation da página e handler foram exercitados com mocks.
+
+Snapshot revisável de código/testes/relatório: `bdf381c4` (versionamento automático do ambiente; commit manual não executado).
