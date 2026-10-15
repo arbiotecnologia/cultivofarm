@@ -1,3 +1,10 @@
+## RECORTE 19:35 — compatibilidade OS aberta, candidato combinado
+- [x] Registrar96assertions0ef9b2a/PGlite/Auth-schema simulados e preflight hospedado read-only PASS EXTERNOS Renato; não reaplicar.
+- [x] Gerador real hash8f7acca4 compatibilizado somente dois INSERT aberta; locks/links/volumes/snapshots/NULL/ACLowner preservados. Mesmo candidato atômico guards+gerador, preflight dependências/índices/publicadores; padrão ROLLBACK, sem DDL remoto/grants/UI/dados/fabricação.
+- [x]107assertions próprias PostgreSQL descartável PASS:96+11 gerador/INSERT/recalc/sync reais com schemaAuth reduzidos.43programar regressão PASS. Aprovação B2B negada por mapping não provado, sem cliente inventado. Compatibilidade criação resolvida localmente, não certificação hospedada.
+- [ ] Revisão independente/fullschema/efeitos transitivos/revogação concorrente bloqueiam aplicação/liberação; nenhuma decisão humana adicional necessária neste recorte.
+- [ ] Cadastros B2B/Produtor próxima fase autorizada; não iniciar agora.
+
 ## RECORTE 19:19 — corrigir GAP INSERT do candidato ec4fcc1 (sem aplicação)
 - [x] Registrar evidência EXTERNA: revisor46 assertions PGlite/Auth-schema simulados PASS; probe adicional INSERT programada sem aprovar_os comprovou GAP, candidato anterior NÃO apto à aplicação.
 - [x] Guard candidato nega INSERT distinto de aberta (NULL inclusive), sem whitelist/GUC;96 assertions PostgreSQL isolado PASS, before antigo FAIL programada reproduzido;43programar+19Vitest PASS. Relatório/hash/rollback atualizados; frontend/catálogo/lote intocados.

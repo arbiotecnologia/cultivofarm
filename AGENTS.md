@@ -40,3 +40,5 @@
 
 - Wizard uses persisted prerequisites and locked confirmation — prevents duplicate submissions.
 - Cockpit consultation mounts only the scoped list RPC; operations, child readers and ACL stay closed — prevents secondary reads and mutations.
+
+- The closed OS approval candidate changes generator INSERT statuses atomically with creation guards; preserve generator locks, links and snapshots, and keep unresolved B2B approval denied — avoids approval bypass or breaking authenticated producers.
