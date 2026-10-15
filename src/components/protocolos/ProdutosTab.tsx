@@ -31,6 +31,7 @@ import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib
 import { buildFormulacoesPayload } from "@/lib/protocolos/composicaoSync";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
+import { CatalogOriginBadge } from "./OwnedCatalogItemControls";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
@@ -79,6 +80,8 @@ interface Produto {
   b2b_enabled: boolean;
   e_insumo: boolean;
   estoque_minimo: number | null;
+  owner_organization_id?: string | null;
+  archived_at?: string | null;
   formulacoes?: Formulacao[];
 }
 
@@ -1062,6 +1065,7 @@ export function ProdutosTab() {
                   <div className="font-medium flex items-center gap-2 flex-wrap">
                     {p.nome}
                     {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
+                    <CatalogOriginBadge item={p} />
                     <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                     {(p.formulacoes?.length || 0) > 0 && (
                       <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>

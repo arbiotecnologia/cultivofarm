@@ -7,6 +7,7 @@ import {
 
 const sql = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership.sql", "utf8");
 const readers = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql", "utf8");
+const containment = readFileSync("scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql", "utf8");
 const rollback = readFileSync("scripts/rbac-audit/rollback-tenant-catalog-ownership.sql", "utf8");
 const runtime = readFileSync("scripts/rbac-audit/runtime-test-tenant-catalog-ownership.sql", "utf8");
 
@@ -110,6 +111,16 @@ describe("ownership — SQL candidato 01 (estrutural)", () => {
     expect(sql).toMatch(/catalog_owned_archived/);
     expect(sql).toMatch(/catalog_owned_noop/);
   });
+  it("dada2410: CASE parentetizado compila sem ambiguidade no IF", () => {
+    expect(sql).toMatch(/char_length\(v_val #>> '\{\}'\) > \(CASE WHEN v_key='nome' THEN 500 ELSE 10000 END\) THEN/);
+    expect(sql).not.toMatch(/> CASE WHEN v_key='nome'/);
+  });
+  it("formulacoes mantém micro NOT NULL; química/fertilizante usa declarações existentes", () => {
+    expect(sql).not.toMatch(/INSERT INTO public\.formulacoes\(produto_id, microrganismo_id, component_insumo_id/);
+    expect(sql).toMatch(/produto_composicao_conjuntos/);
+    expect(sql).toMatch(/produto_composicao_declaracoes/);
+    expect(sql).toMatch(/v_fam NOT IN \('quimico','fertilizante_adubo'\)/);
+  });
   it("fachadas INVOKER sem parâmetro de empresa", () => {
     for (const name of ["tenant_catalog_owned_mutate", "tenant_catalog_owned_list"]) {
       const facade = sql.slice(sql.indexOf(`CREATE FUNCTION public.${name}`));
@@ -146,6 +157,21 @@ describe("ownership — SQL candidato 03 volumes/B2B", () => {
     expect(b2b).toMatch(/b2b_commercial_context\(\)/);
     expect(b2b).not.toMatch(/GRANT EXECUTE/);
     expect(b2b).toMatch(/b2b_post_price_acl_reopened/);
+  });
+});
+
+describe("ownership — SQL candidato 04 contenção operacional", () => {
+  it("mantém gate OFF e não amplia grants nem altera históricos", () => {
+    expect(containment).toMatch(/ownership04_gate_must_remain_off/);
+    expect(containment).not.toMatch(/\bGRANT\b/);
+    expect(containment).not.toMatch(/\b(UPDATE|DELETE)\s+public\.(partner_|ordens_|registros_|product_|microorganism_)/);
+  });
+  it("protege descendentes B2B, fiscal, produção, visita e regulatório", () => {
+    for (const table of ["partner_order_items", "partner_simulation_items", "product_fiscal_profiles",
+      "programacao_producao", "registros_consultor_recomendacoes", "microorganism_regulatory_dossiers"]) {
+      expect(containment).toContain(`('${table}'`);
+    }
+    expect(containment).toMatch(/catalog_private_reference_module_unavailable/);
   });
 });
 

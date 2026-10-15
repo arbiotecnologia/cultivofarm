@@ -376,7 +376,7 @@ BEGIN
       RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
     IF v_key IN ('nome','tipo') AND jsonb_typeof(v_val) <> 'string' THEN
       RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
-    IF jsonb_typeof(v_val)='string' AND char_length(v_val #>> '{}') > CASE WHEN v_key='nome' THEN 500 ELSE 10000 END THEN
+    IF jsonb_typeof(v_val)='string' AND char_length(v_val #>> '{}') > (CASE WHEN v_key='nome' THEN 500 ELSE 10000 END) THEN
       RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
   END LOOP;
   IF p_operation='create' AND (NOT v_payload ? 'nome' OR (p_entity_type<>'cultura' AND NOT v_payload ? 'tipo')) THEN
@@ -487,10 +487,12 @@ BEGIN
     ELSIF p_operation IN ('archive','restore') THEN
       EXECUTE format('UPDATE public.%I SET ativo=$2, archived_at=$3, updated_at=clock_timestamp() WHERE id=$1 RETURNING to_jsonb(%I.*)', v_table, v_table)
         INTO v_after USING v_id, p_operation='restore', CASE WHEN p_operation='archive' THEN clock_timestamp() END;
-    ELSE -- composition de produto próprio, itens biológicos (microrganismo) ou insumos (produto)
+    ELSE -- composição própria: receita biológica em formulacoes OU declaração química/fertilizante
+      SELECT p.familia_catalogo INTO v_fam FROM public.produtos p WHERE p.id=v_id;
       FOR v_item IN SELECT value FROM jsonb_array_elements(v_payload->'itens') LOOP
         IF jsonb_typeof(v_item) <> 'object' OR (v_item - ARRAY['microrganismo_id','component_insumo_id','volume_ml','proporcao']) <> '{}'::jsonb
            OR ((v_item ? 'microrganismo_id') = (v_item ? 'component_insumo_id'))
+           OR (v_item ? 'component_insumo_id' AND jsonb_typeof(v_item->'proporcao') IS DISTINCT FROM 'number')
            OR jsonb_typeof(v_item->'volume_ml') IS DISTINCT FROM 'number' OR (v_item->>'volume_ml')::numeric <= 0
            OR (v_item->>'volume_ml')::numeric > 1000000 OR scale((v_item->>'volume_ml')::numeric) > 6
            OR (v_item ? 'proporcao' AND jsonb_typeof(v_item->'proporcao') NOT IN ('number','null'))
@@ -509,14 +511,47 @@ BEGIN
       END LOOP;
       IF (SELECT count(DISTINCT COALESCE(e->>'microrganismo_id', e->>'component_insumo_id')) FROM jsonb_array_elements(v_payload->'itens') e)
          <> jsonb_array_length(v_payload->'itens') THEN RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
-      SELECT jsonb_agg(to_jsonb(f.*) ORDER BY f.id) INTO v_before FROM public.formulacoes f WHERE f.produto_id=v_id;
-      DELETE FROM public.formulacoes WHERE produto_id=v_id;
-      INSERT INTO public.formulacoes(produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao)
-      SELECT v_id, NULLIF(e->>'microrganismo_id','')::uuid, NULLIF(e->>'component_insumo_id','')::uuid,
-             (e->>'volume_ml')::numeric, NULLIF(e->>'proporcao','')::numeric
-        FROM jsonb_array_elements(v_payload->'itens') e;
+      IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_payload->'itens') e WHERE e ? 'microrganismo_id')
+         AND EXISTS (SELECT 1 FROM jsonb_array_elements(v_payload->'itens') e WHERE e ? 'component_insumo_id') THEN
+        RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
+      IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_payload->'itens') e WHERE e ? 'component_insumo_id')
+         AND v_fam NOT IN ('quimico','fertilizante_adubo') THEN
+        RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
+      IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_payload->'itens') e WHERE e ? 'microrganismo_id')
+         AND v_fam IS DISTINCT FROM 'biologico' THEN
+        RAISE EXCEPTION 'catalog_owned_invalid_payload' USING ERRCODE='22023'; END IF;
+      SELECT pg_catalog.jsonb_build_object(
+        'formulacoes', COALESCE((SELECT jsonb_agg(to_jsonb(f.*) ORDER BY f.id) FROM public.formulacoes f WHERE f.produto_id=v_id),'[]'::jsonb),
+        'conjunto', (SELECT to_jsonb(c.*) FROM public.produto_composicao_conjuntos c WHERE c.produto_id=v_id),
+        'declaracoes', COALESCE((SELECT jsonb_agg(to_jsonb(d.*) ORDER BY d.ordem,d.id) FROM public.produto_composicao_declaracoes d WHERE d.produto_id=v_id),'[]'::jsonb)
+      ) INTO v_before;
+      IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_payload->'itens') e WHERE e ? 'component_insumo_id') THEN
+        -- formulacoes.microrganismo_id é NOT NULL no schema real. Químicos/fertilizantes reutilizam o
+        -- modelo global de declarações; nunca se fabrica microrganismo para satisfazer a constraint.
+        DELETE FROM public.formulacoes WHERE produto_id=v_id;
+        INSERT INTO public.produto_composicao_conjuntos(produto_id,status,updated_by)
+          VALUES (v_id,'draft',v_uid)
+          ON CONFLICT (produto_id) DO UPDATE SET status='draft',updated_by=v_uid,updated_at=clock_timestamp();
+        DELETE FROM public.produto_composicao_declaracoes WHERE produto_id=v_id;
+        INSERT INTO public.produto_composicao_declaracoes(produto_id,ordem,tipo_componente,componente_nome,quantidade,unidade,base,natureza)
+        SELECT v_id, row_number() OVER ()::smallint, 'insumo', p.nome, (e->>'proporcao')::numeric,
+               '%', 'produto', CASE WHEN v_fam='fertilizante_adubo' THEN 'fertilizante' ELSE 'quimico' END
+          FROM jsonb_array_elements(v_payload->'itens') e
+          JOIN public.produtos p ON p.id=(e->>'component_insumo_id')::uuid;
+      ELSE
+        DELETE FROM public.produto_composicao_declaracoes WHERE produto_id=v_id;
+        DELETE FROM public.produto_composicao_conjuntos WHERE produto_id=v_id;
+        DELETE FROM public.formulacoes WHERE produto_id=v_id;
+        INSERT INTO public.formulacoes(produto_id, microrganismo_id, volume_ml, proporcao)
+        SELECT v_id, (e->>'microrganismo_id')::uuid, (e->>'volume_ml')::numeric, NULLIF(e->>'proporcao','')::numeric
+          FROM jsonb_array_elements(v_payload->'itens') e;
+      END IF;
       UPDATE public.produtos SET updated_at=clock_timestamp() WHERE id=v_id;
-      SELECT jsonb_agg(to_jsonb(f.*) ORDER BY f.id) INTO v_after FROM public.formulacoes f WHERE f.produto_id=v_id;
+      SELECT pg_catalog.jsonb_build_object(
+        'formulacoes', COALESCE((SELECT jsonb_agg(to_jsonb(f.*) ORDER BY f.id) FROM public.formulacoes f WHERE f.produto_id=v_id),'[]'::jsonb),
+        'conjunto', (SELECT to_jsonb(c.*) FROM public.produto_composicao_conjuntos c WHERE c.produto_id=v_id),
+        'declaracoes', COALESCE((SELECT jsonb_agg(to_jsonb(d.*) ORDER BY d.ordem,d.id) FROM public.produto_composicao_declaracoes d WHERE d.produto_id=v_id),'[]'::jsonb)
+      ) INTO v_after;
     END IF;
     EXECUTE format('SELECT updated_at FROM public.%I WHERE id=$1', v_table) INTO v_upd USING v_id;
   END IF;

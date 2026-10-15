@@ -1,3 +1,10 @@
+## FASE 3 OWNERSHIP — RECORTE 04 CANDIDATO — 2026-10-15 13:07 UTC
+- [x] Integrada correção sintática reproduzida em PGlite 0.5.10: `char_length(...) > (CASE ... END) THEN`. A evidência externa PGlite (fundação compila + 8 checks) é registrada como harness isolado com stubs, **não** certificação do PostgreSQL/Auth/migração real.
+- [x] Confirmado no schema canônico read-only: `formulacoes.microrganismo_id` é NOT NULL. Receita biológica permanece em `formulacoes`; composição química/fertilizante candidata reutiliza `produto_composicao_conjuntos/declaracoes`, sem micro fictício e sem relaxar constraint.
+- [x] Candidato 04 adiciona manifesto fail-closed das referências operacionais e bloqueia novas referências privadas nos descendentes B2B/preço/fiscal/produção/visita/regulatório ainda não certificados; históricos e fluxos globais permanecem intocados. Gate segue OFF, sem DDL remoto/publicação/grants amplos.
+- [x] UI preparada na rota existente `/base-tecnica`: selo Global/Próprio em produtos, microrganismos e culturas; controles próprios reutilizáveis ficam desmontados pelo gate OFF. Nenhuma rota/módulo paralelo e nenhuma escrita global reaberta.
+- [ ] Ainda bloqueiam abertura do gate: definições completas/md5 antes-depois de todos os leitores DEFINER/views/BI e writers SA não-volume; preços/apresentações próprios; simulação/pedidos B2B com fornecedor real certificados; runtime Auth real, concorrência 2 conexões e browser. Candidato não aplicado e não publicado.
+
 ## FECHAMENTO PARCIAL — VISIBILIDADE DE CATÁLOGO POR EMPRESA — 2026-10-15 04:18 UTC
 - [x] Prova externa final: migração `20261015035122` tenant_catalog_visibility APLICADA no canônico (NÃO REAPLICAR); `5f9a38bc0265d0cd0f16bb9151ae40f8f2b91bc6` publicado pelo agente revisor ("Seu site foi atualizado"). `a78b6919` NÃO publicado: teste independente reproduziu 13 RPCs em 12 ciclos (loop pai+filho), corrigido em `5f9a38bc`.
 - [x] Runtime independente 49 PASS/0 FAIL/2 SKIP (fixture inativo em rollback; SKIP ator real sem `catalogo_precos` e produto inativo real coberto por fixture; concorrência 2 conexões UNVERIFIED). Frontend independente 612 testes/26 arquivos PASS incl. 2 race + 1 loop criados pelo agente; 613 remotos separados, não somar. Scanner 3932 arquivos zero; typecheck app/node PASS; build 35,05 s PASS. Lint novos 0 erros; lint ampliado 82 erros/8 warnings mantido como dívida; 3 falhas legadas `etapasVisita.test.ts` confirmadas na base.
@@ -715,8 +722,9 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Filtrar dono em todos os leitores do mapa (SA/B2B/preço/fiscal/produção/visita) — bloqueado: nova rodada.
 - [ ] Apresentações próprias, triggers em descendentes comerciais/fiscais, UI CRUD em /base-tecnica — após gate.
 - [x] Revisão 2 (achados 1–8 de 0fe35743) no candidato 01 + candidato 02 de leitores SA/visibilidade/h7n/preço com md5 fixado.
-- [ ] Rodada B2B/fiscal/produção/visita/regulatório/views/Edge service_role — bloqueado: próxima rodada autorizada.
+- [x] Recorte 04 autorizado: manifesto/trigger fail-closed contém novas referências privadas em B2B/fiscal/produção/visita/regulatório ainda não certificados; Edge continua apenas com patch preparado.
 - [ ] Aplicar 01+02 e rodar runtime/concorrência — bloqueado: revisão independente.
 - [x] Revisão 3 (A–F de 110c9c41) + candidato 03 (helpers SA de volume, catálogos B2B por fornecedor) + patch Edge preparado.
-- [ ] SA writers não-volume, B2B simulação/pedidos, fiscal, produção, visita, regulatório, views, RLS descendentes — próxima rodada.
-- [ ] UI própria (desligada), química/fertilizantes, apresentações/doses/preços próprios — após SQL fechado.
+- [ ] SA writers não-volume e leitores/views/BI com definições completas e md5 antes/depois — ainda bloqueiam abrir o gate.
+- [x] UI própria preparada na rota existente com origem Global/Próprio e controles reutilizáveis desmontados pelo gate OFF; química/fertilizantes candidata reutiliza conjuntos/declarações.
+- [ ] Criar/editar/arquivar/restaurar, apresentações/doses/preços próprios e integrações operacionais completas permanecem desligados até aplicação/revisão/runtime real.

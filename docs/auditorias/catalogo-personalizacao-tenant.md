@@ -364,3 +364,40 @@ Fecha gate, limpa certificação e revoga as quatro funções. Se houver privado
 | Expressões SQL A/B (read-only real) | PASS |
 | Testes catálogo 632/632, typecheck app/node, lint novos 0/0, scanner, build 28.84s | PASS local |
 | Aplicação 01–03, runtime, concorrência | UNVERIFIED |
+
+---
+
+## FASE 3 — Recorte 04 candidato (base dada2410, 15/10/2026 13:07 UTC)
+
+**Estado: 01–04 locais, NÃO aplicados, NÃO publicados, gate OFF.**
+
+### Delta confirmado
+- Correção exata integrada: `char_length(v_val #>> '{}') > (CASE WHEN v_key='nome' THEN 500 ELSE 10000 END) THEN`.
+- PGlite 0.5.10 externo reproduziu as quatro falhas anteriores e, após essa correção, compilou a fundação com 8 checks PASS. PGlite usou colunas reais e stubs de identidade: é evidência de sintaxe/comportamento isolado, não prova de Auth real, PostgreSQL remoto, RLS ou gate.
+- Schema canônico read-only confirmou `formulacoes.microrganismo_id NOT NULL`. O candidato não relaxa a constraint nem cria micro fictício: biológicos usam `formulacoes`; químicos/fertilizantes usam `produto_composicao_conjuntos` e `produto_composicao_declaracoes` já existentes.
+
+### Candidato 04 — referências operacionais
+O arquivo `proposed-tenant-catalog-ownership-04-operational-containment.sql` fixa um manifesto de FKs e instala triggers fail-closed para **novas/alteradas** referências privadas em tabelas ainda sem resolução de owner certificada. O erro público é único (`catalog_private_reference_module_unavailable`) e não revela outro tenant. Não altera linhas históricas, snapshots, grants ou fluxos globais.
+
+| Família | Tabelas contidas | Escopo nesta rodada | Resultado |
+|---|---|---|---|
+| B2B/preço | partner_order_items, partner_product_prices, partner_simulation_items, commercial_* | privados bloqueados até fornecedor/owner completo | estrutural local; runtime UNVERIFIED |
+| Fiscal/regulatório | product_fiscal_profiles, microorganism_fiscal_profiles/dossiers/snapshots/presentations indiretas | privados bloqueados | estrutural local; runtime UNVERIFIED |
+| Produção/estoque/entrega | ordens_servico*, programacao_producao, lotes, estoque_*, entregas, cq_parametros | privados bloqueados | estrutural local; runtime UNVERIFIED |
+| Visita/agronomia | registros_consultor*, talhoes/safras, visitas_campo, recomendações/alvos | privados bloqueados | estrutural local; runtime UNVERIFIED |
+| Fichas/conformidade | *_technical_profiles, produto_conformidade_perfis, produto_etiquetas | privados bloqueados | estrutural local; runtime UNVERIFIED |
+
+`get_partner_catalog_secure` ainda mantém o guard legado `b2b_actor_scope.org_partner`; o filtro candidato usa `commercial_owner_organization_id` validado contra `b2b_commercial_context`. Isso preserva compatibilidade para parceiro-cliente comercial AR sem inferir organização SaaS independente, mas runtime com ator real continua UNVERIFIED. Funções de preço sem EXECUTE cliente continuam fechadas.
+
+### UI preparada, desligada
+- Mesma rota `/base-tecnica`; nenhum menu, rota ou módulo paralelo.
+- Selo `Global`/`Próprio` nas listas existentes de produtos, microrganismos e culturas.
+- Componente focal de editar/arquivar/restaurar próprio existe, mas retorna `null` com `TENANT_OWNED_CATALOG_ENABLED=false`; nenhuma mutação é alcançável.
+- Mensagens de duplicata global permanecem: ativa orienta localizar e **Exibir**; inativa orienta solicitar ativação à plataforma.
+
+### Limites reais / NO-GO
+1. O recorte 04 **contém** referências privadas nos módulos não certificados; não implementa sua integração operacional completa.
+2. Writers SA não-volume, replay/preview, todas as funções DEFINER e sete views/BI ainda exigem definições completas com md5 antes/depois e negativos runtime; não basta marcador textual.
+3. Apresentações/preços/doses próprios e editores completos das quatro famílias continuam desligados. A composição química/fertilizante é SQL candidata, sem prova runtime.
+4. Auth real, concorrência de duas conexões, aplicação 01–04, migration remota, browser e produção continuam **UNVERIFIED/NO-GO**.
+5. Bombarbio, visibilidade AR v4/ledger 4 e receita/preço são invariantes do candidato; nenhuma escrita remota ocorreu nesta rodada.

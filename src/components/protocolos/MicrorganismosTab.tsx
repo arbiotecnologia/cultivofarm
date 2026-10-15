@@ -26,6 +26,7 @@ import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
 import { DeleteProtocoloButton } from "./DeleteProtocoloButton";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
+import { CatalogOriginBadge } from "./OwnedCatalogItemControls";
 import { supabase as sbClient } from "@/integrations/supabase/client";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
@@ -90,6 +91,8 @@ interface Microrganismo {
   preco_tabela: number | null;
   b2b_enabled: boolean;
   ativo: boolean;
+  owner_organization_id?: string | null;
+  archived_at?: string | null;
 }
 
 export function MicrorganismosTab() {
@@ -604,7 +607,7 @@ export function MicrorganismosTab() {
                   {m.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{m.codigo}</div>
                   )}
-                  <div className="font-medium">{m.nome}</div>
+                  <div className="font-medium flex items-center gap-2 flex-wrap">{m.nome}<CatalogOriginBadge item={m} /></div>
                   {m.nome_cientifico && (
                     <div className="text-xs text-muted-foreground italic">{m.nome_cientifico}</div>
                   )}

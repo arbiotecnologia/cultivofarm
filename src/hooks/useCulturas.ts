@@ -7,6 +7,8 @@ export interface Cultura {
   descricao: string | null;
   ativo: boolean;
   desativada_em: string | null;
+  owner_organization_id?: string | null;
+  archived_at?: string | null;
 }
 
 export const CULTURAS_QUERY_KEY = ["culturas-admin"] as const;
