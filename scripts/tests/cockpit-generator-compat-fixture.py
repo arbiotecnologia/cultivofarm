@@ -46,7 +46,9 @@ END $function$;
     sql+=body('supabase/migrations/20260607172213_02d33e11-034d-49be-8b4a-dacd3317f614.sql','fn_create_programacao_on_os_classica_insert')
     for name in ['recalc_partner_order_production','tg_recalc_planning_from_link']:
         sql+=body('supabase/migrations/20260628212900_b86a0bf8-e32a-4dc8-b068-c4ddf9973e87.sql',name)
-    sql+='''CREATE TRIGGER trg_create_programacao_on_os_insert AFTER INSERT ON ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_create_programacao_on_os_classica_insert();
+    sql+=body('supabase/migrations/20260628232538_ee35fa9e-9825-44ee-9838-6836caea9e38.sql','_sync_planning_from_os')
+    sql+='''CREATE TRIGGER trg_sync_planning_from_os AFTER INSERT OR UPDATE OF status ON ordens_servico FOR EACH ROW WHEN (NEW.partner_order_id IS NOT NULL) EXECUTE FUNCTION _sync_planning_from_os();
+CREATE TRIGGER trg_create_programacao_on_os_insert AFTER INSERT ON ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_create_programacao_on_os_classica_insert();
 CREATE TRIGGER trg_recalc_planning_from_link AFTER INSERT ON production_order_link FOR EACH ROW EXECUTE FUNCTION tg_recalc_planning_from_link();
 '''+gen
     A,B,U,C,P,M,PA,PO,PL=[q(i) for i in [1,2,41,11,21,22,180,181,182]]
