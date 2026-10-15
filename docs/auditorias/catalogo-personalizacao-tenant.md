@@ -10,6 +10,8 @@ Base `bc427039`. Candidato local. **SQL NÃO aplicado, nada publicado.** Ownersh
 - Fase 07: OS manual/B2B/On-Farm, programação e lote validam família biológica ou micro; químico, fertilizante, família NULL e duas referências falham. Pedido misto preserva linhas não fabricáveis e não é marcado produzido; históricos não são reclassificados. `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` preservado, inclusive no replay da publicação.
 - Prova local: `scripts/rbac-audit/check-lab07-pglite.mjs` 36/36 PASS, executando o SQL07 sem o preflight live. Auth, permissões, schema e helpers são simulados.
 - NO-GO hospedado: revisão/aplicação independente, preflight real, Auth/RLS, duas conexões, browser e Edge patch.
+- Verificações desta rodada: Vitest focal 18/18 (13 fluxo + 5 estruturais laboratório), PGlite laboratório 36/36; tipos app/node PASS; lint focal 0/0; scanner sem achados; build automático OK em 15:10:09 UTC. Lint repositório inteiro FAIL: 3236 erros/127 warnings, sem comparação de baseline nesta rodada; não atribuir regressão nem declarar lint global PASS.
+- Corpos 07 explícitos e hashes before live conferidos; as duas reconstruções de fontes históricas foram rotuladas como NÃO snapshots exatos. Hash after no manifesto refere texto do candidato, não pg_get_functiondef instalado.
 
 ## 1. Funcionalidade
 Cada empresa pode ocultar e voltar a exibir produtos, microrganismos e culturas **globais** na sua gestão e nas novas seleções integradas.

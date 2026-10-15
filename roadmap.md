@@ -3,6 +3,7 @@
 - [x] Conjunto ordenado 01–06/08–11 com SHA-256; rollback operacional preserva colunas, RLS, guards, leitores, ledger e dados.
 - [x] Roteiro runtime revisado: RESET ROLE explícito, gate OFF obrigatório antes, sem helpers privados como authenticated, composição declarativa real e casos AR/FSF/SA/Financeiro/Consultor. Não executado com atores reais.
 - [x] SQL07 completo: seis corpos explícitos com hashes live; OS/programação/lote/On-Farm aceitam só biológico ou micro; família NULL e duas referências bloqueadas; pedido misto não é marcado produzido por OS biológicas; replay preservado. PGlite 36/36 PASS com stubs; preflights live e Auth real UNVERIFIED.
+- [x] Verificações locais: Vitest focal 18/18, PGlite 36/36, tipos app/node PASS, lint focal 0/0, scanner zero e build automático OK; lint global FAIL 3236 erros/127 warnings, baseline delta não comprovado.
 - [ ] Revisão/aplicação independente, Auth/RLS hospedado, duas conexões, browser e Edge patch. Gate OFF; sem DDL/publicação.
 
 ## CONTINUAÇÃO AUTORIZADA — 2026-10-15 14:55 UTC
