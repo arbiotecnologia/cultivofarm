@@ -782,7 +782,9 @@ export default function Configuracoes() {
                               <SelectItem value="internal">Interno</SelectItem><SelectItem value="b2b">Parceiro B2B — Gestor</SelectItem><SelectItem value="producer">Cliente Produtor</SelectItem>
                             </SelectContent></Select></div>
                           {registrationKind !== "internal" && <>
-                            <p role="status" className="text-sm text-muted-foreground">Cadastro externo aguardando revisão para liberação.</p>
+<p role="status" className="text-sm text-muted-foreground">{EXTERNAL_USER_ACTIVATION_REVIEWED
+                              ? "Cadastro externo liberado: perfil externo exclusivo, vínculo obrigatório com um registro da própria empresa e primeiro acesso definido pelo titular. Técnico B2B permanece indisponível."
+                              : "Cadastro externo aguardando revisão para liberação."}</p>
                             <Label htmlFor="buscar-vinculo">{registrationKind === "b2b" ? "Parceiro vinculado" : "Clientes vinculados"}</Label>
                             <Input id="buscar-vinculo" value={linkSearch} onChange={event => setLinkSearch(event.target.value)} placeholder="Buscar vínculo" />
                             {links.isLoading ? <p>Carregando…</p> : links.isError ? <p role="alert">Não foi possível consultar os vínculos.</p> : <div className="space-y-2">
@@ -837,7 +839,9 @@ export default function Configuracoes() {
                                 );
                               })}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{PARTNER_REGISTRATION_UNAVAILABLE}</p>
+<p className="text-xs text-muted-foreground mt-1">{EXTERNAL_USER_ACTIVATION_REVIEWED
+                                ? "Cadastros externos (Parceiro B2B gestor e Cliente Produtor) usam perfil exclusivo, vínculo obrigatório da própria empresa e primeiro acesso pelo titular. Técnico B2B permanece indisponível."
+                                : PARTNER_REGISTRATION_UNAVAILABLE}</p>
                             {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
                            </>}
@@ -861,7 +865,9 @@ export default function Configuracoes() {
                 </div>
               </CardHeader>
               <CardContent className={isMobile ? "p-3" : "p-6"}>
-                <p role="status" className="text-sm text-muted-foreground mb-4">Cadastros externos aguardam revisão para liberação. Técnico B2B permanece indisponível.</p>
+<p role="status" className="text-sm text-muted-foreground mb-4">{EXTERNAL_USER_ACTIVATION_REVIEWED
+                  ? "Cadastros externos liberados: Parceiro B2B (gestor) e Cliente Produtor com perfil exclusivo, vínculo obrigatório da própria empresa e primeiro acesso definido pelo titular. Técnico B2B permanece indisponível."
+                  : "Cadastros externos aguardam revisão para liberação. Técnico B2B permanece indisponível."}</p>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <div className="relative flex-1">
