@@ -36,12 +36,9 @@ As quatro abas globais ficam em `/plataforma` (`PlatformCatalogReadTab`, entidad
 
 ## 2. Riscos
 
-**P1 confirmados pelas regras de acesso.** Ainda falta prova pelo navegador ou por login real.
-- **P1-a:** um técnico ou gestor de empresa pode inserir, alterar ou excluir `formulacoes` globais. Isso inclui a receita do Bombarbio.
-- **P1-b:** a regra antiga "Admin gestor manage" em `catalogo_volumes` permite ALL a administrador/gestor de empresa em apresentações globais. Ela contorna as regras `catalog_volumes_sa_*`, porque regras permissivas se somam.
-- **P1-c:** `culturas` "Staff manage global catalog" permite ALL a administrador/gestor de empresa.
+**Diagnóstico corrigido (evidência do usuário):** `authenticated` tem somente SELECT em `produtos`, `microrganismos`, `culturas`, `formulacoes` e `catalogo_volumes`. As policies antigas de escrita (`formulacoes` via `can_manage_catalog_tecnico`, "Admin gestor manage" em volumes, "Staff manage global catalog" em culturas) não abrem escrita sem grant. Não há P1 de escrita global; a contenção atual não será refeita nem as permissões restauradas em rollback. Policies antigas ficam registradas como P2 (limpeza futura, sem efeito). `formulacoes` não tem `updated_at`: CAS ali não pode usar essa coluna.
 
-Nos três casos, ainda falta verificar as permissões de tabela (grants) e o efeito real com login. A Fase 0 cuida disso.
+**P1 de leitura a proteger antes de ownership:** funções DEFINER e views descendentes (`vw_catalogo_ficha_*`, leitores B2B/PDF/fiscal) ignoram RLS; antes de existir item próprio por empresa, todas precisam filtrar por empresa, senão vazam itens de outra empresa.
 
 **P1 no app.**
 - **P1-d:** as chaves de cache sem empresa e identidade podem mostrar dados antigos depois de trocar de conta ou de empresa. Isso já é obrigatório para a personalização.
