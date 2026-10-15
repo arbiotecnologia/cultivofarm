@@ -99,7 +99,7 @@ BEGIN
  IF TG_OP <> 'INSERT' THEN v_old := (to_jsonb(OLD)->>TG_ARGV[0])::uuid; END IF;
  IF TG_OP <> 'DELETE' THEN v_new := (to_jsonb(NEW)->>TG_ARGV[0])::uuid; END IF;
  FOR v_id IN SELECT DISTINCT x FROM unnest(ARRAY[v_old,v_new]) x WHERE x IS NOT NULL ORDER BY x LOOP
-  SELECT r.status::text INTO v_status FROM public.registros_consultor r WHERE id=v_id FOR SHARE;
+  SELECT r.status::text INTO v_status FROM public.registros_consultor r WHERE r.id=v_id FOR SHARE;
   IF NOT FOUND OR v_status NOT IN ('rascunho','em_andamento') THEN
    RAISE EXCEPTION 'technical_content_locked: reabra a visita pelo fluxo autorizado antes de alterar seu conteúdo' USING ERRCODE='23514';
   END IF;
