@@ -10,7 +10,7 @@ let failOnfarm = false;
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (table: string) => {
-      const builder: any = {
+      const builder = {
         select: (columns: string) => {
           seenSelects.push(`${table}:${columns}`);
           return builder;
