@@ -67,6 +67,7 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     for key in ['ready','feature']:
         for val in ['false','']:
             deny(key+val,'PERFORM '+call,f"SELECT set_config('t.{key}','{val}',false);",f"SELECT set_config('t.{key}','true',false);")
+            deny(key+val+' direct',f"UPDATE ordens_servico SET status='aprovada' WHERE id={O}",f"SELECT set_config('t.{key}','{val}',false);",f"SELECT set_config('t.{key}','true',false);")
     deny('foreign','PERFORM '+call,f"SELECT set_config('t.org',{B},false);",f"SELECT set_config('t.org',{A},false);")
     deny('missing',f"PERFORM public.rpc_aprovar_os_v1({f.q(99)},'manual')")
     deny('logout','PERFORM '+call,"SELECT set_config('t.uid','',false);",f"SELECT set_config('t.uid',{U},false);")
@@ -74,6 +75,10 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     deny('foreign child','PERFORM '+call,f"UPDATE programacao_producao SET organization_id={B} WHERE id={PP};",f"UPDATE programacao_producao SET organization_id={A} WHERE id={PP};")
     for family in ['quimico','fertilizante']:
         deny(family,'PERFORM '+call,f"UPDATE produtos SET familia_catalogo='{family}' WHERE id={P};",f"UPDATE produtos SET familia_catalogo='biologico' WHERE id={P};")
+    deny('family NULL','PERFORM '+call,f"UPDATE produtos SET familia_catalogo=NULL WHERE id={P};",f"UPDATE produtos SET familia_catalogo='biologico' WHERE id={P};")
+    deny('ambiguous UUID','PERFORM '+call,f"INSERT INTO ordens_servico_onfarm(id,cliente_id,produto_id) VALUES({O},{C},{P});",f"DELETE FROM ordens_servico_onfarm WHERE id={O};")
+    deny('missing program','PERFORM '+call,f"DELETE FROM programacao_producao WHERE id={PP};",f"INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({PP},{A},{O},{P});")
+    deny('B2B stored denied','PERFORM '+call,f"UPDATE ordens_servico SET origem='b2b' WHERE id={O};",f"UPDATE ordens_servico SET origem='agronomica' WHERE id={O};")
     check('open program denied',"(SELECT status FROM ordens_servico WHERE id="+O+")='aberta'",f"DO $x$ BEGIN IF (public.rpc_programar_os_v1({O},'manual','2026-10-20')->>'success')::boolean IS DISTINCT FROM false THEN RAISE EXCEPTION 'autoapproved'; END IF; END $x$;")
     check('admin approves',f"(SELECT status FROM ordens_servico WHERE id={O})='aprovada'",f'SELECT {call};')
     check('audit once',"(SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='aprovar_os')=1")
@@ -104,6 +109,8 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
     sql+=f"RESET ROLE; SELECT set_config('t.org',{A},false); SET ROLE authenticated;"
     check('local RLS admin direct replay',f"(SELECT status FROM ordens_servico WHERE id={f.q(35)})='aprovada'",f"UPDATE ordens_servico SET status='aprovada' WHERE id={f.q(35)};")
     sql+='RESET ROLE;'
+    sql+=f"INSERT INTO microrganismos(id,nome) VALUES({f.q(22)},'Micro'); INSERT INTO ordens_servico_onfarm(id,cliente_id,microrganismo_id) VALUES({f.q(37)},{C},{f.q(22)}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_onfarm_id,microrganismo_id) VALUES({f.q(57)},{A},{f.q(37)},{f.q(22)});"
+    check('micro approved no invented program',f"(SELECT status FROM ordens_servico_onfarm WHERE id={f.q(37)})='aprovada' AND (SELECT count(*) FROM programacao_producao WHERE ordem_servico_onfarm_id={f.q(37)})=1",f"SELECT public.rpc_aprovar_os_v1({f.q(37)},'onfarm');")
     tmp=Path(tempfile.mkdtemp(prefix='approval-local-',dir='/tmp')); tmp.chmod(0o777)
     pre=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []; started=False
     try:
