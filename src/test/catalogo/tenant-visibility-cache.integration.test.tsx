@@ -10,9 +10,11 @@ import { useState } from "react";
 const BOMB = "11111111-1111-4111-8111-111111111111";
 const OUTRO = "22222222-2222-4222-8222-222222222222";
 const db = { hidden: new Set<string>(), version: 0 };
+const calls = { hiddenIds: 0, produtos: 0 };
 let hiddenDelay: Promise<void> | null = null;
 
 function builder(table: string) {
+  if (table === "produtos") calls.produtos += 1;
   const state: { notIn: string[] } = { notIn: [] };
   const rows = () => {
     if (table === "produtos") return [{ id: BOMB, nome: "Bombarbio", ativo: true, b2b_enabled: true }, { id: OUTRO, nome: "Outro", ativo: true, b2b_enabled: true }]
@@ -33,6 +35,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     rpc: (fn: string, args: Record<string, unknown>) => {
       const run = async () => {
         if (fn === "tenant_catalog_hidden_ids") {
+          calls.hiddenIds += 1;
           const snapshot = [...db.hidden];
           if (hiddenDelay) await hiddenDelay;
           return { data: args.p_entity_type === "produto" ? snapshot.map((id) => ({ entity_id: id })) : [], error: null };
@@ -54,7 +57,7 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
-import { useSetTenantVisibility, useTenantCatalogScope } from "@/hooks/useTenantCatalogVisibility";
+import { catalogoKeyMatchesScope, useSetTenantVisibility, useTenantCatalogScope } from "@/hooks/useTenantCatalogVisibility";
 
 function Catalogo() {
   const q = useCatalogoUnificado("admin");
@@ -76,7 +79,7 @@ function App() {
 }
 
 describe("cache da visibilidade com QueryClient real", () => {
-  beforeEach(() => { db.hidden.clear(); db.version = 0; hiddenDelay = null; });
+  beforeEach(() => { db.hidden.clear(); db.version = 0; hiddenDelay = null; calls.hiddenIds = 0; calls.produtos = 0; });
 
   it("ocultar e reexibir em outra aba refletem ao voltar, sem reload", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -121,5 +124,54 @@ describe("cache da visibilidade com QueryClient real", () => {
     act(() => setTab("catalogo"));
     await act(async () => { release(); });
     await waitFor(() => expect(screen.getByTestId("n").textContent).toBe("Outro"));
+  });
+
+  it("pai+filho com o mesmo hook (padrão CatalogoTecnicoTab → CatalogoCardsGrid) não entram em loop", async () => {
+    function Filho() {
+      const q = useCatalogoUnificado("admin");
+      return <p data-testid="filho">{q.data ? q.data.length : "…"}</p>;
+    }
+    function Pai() {
+      const q = useCatalogoUnificado("admin");
+      if (q.isLoading) return <p>carregando</p>;
+      return <><p data-testid="pai">{q.data?.length}</p><Filho /></>;
+    }
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={qc}><Pai /></QueryClientProvider>);
+    await waitFor(() => expect(screen.getByTestId("filho").textContent).toBe("2"));
+    const settled = { ...calls };
+    await act(async () => { await new Promise((r) => setTimeout(r, 200)); });
+    expect(calls).toEqual(settled);
+    // 2 entidades (produto+micro) = 2 leituras de ocultos; 1 leitura do catálogo
+    expect(settled.hiddenIds).toBe(2);
+    expect(settled.produtos).toBe(1);
+    expect(screen.getByTestId("pai").textContent).toBe("2");
+  });
+
+  it("pós-mutação não refaz catálogo de outra sessão, de outra empresa, global nem B2B", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const spies = { outroUser: vi.fn(async () => ["x"]), outraOrg: vi.fn(async () => ["x"]), b2b: vi.fn(async () => ["x"]), global: vi.fn(async () => ["x"]) };
+    const seeds: Array<[readonly unknown[], () => Promise<unknown>]> = [
+      [["catalogo-unificado", "admin", "org-ar|u-outro|", "org-ar|u-outro|"], spies.outroUser],
+      [["catalogo-unificado", "interno", "org-fsf|u-fsf|", "org-fsf|u-fsf|"], spies.outraOrg],
+      [["catalogo-unificado", "b2b", "global", "global"], spies.b2b],
+      [["catalogo-unificado", "admin", "global", "global"], spies.global],
+    ];
+    for (const [key, fn] of seeds) await qc.prefetchQuery({ queryKey: key, queryFn: fn });
+    Object.values(spies).forEach((f) => f.mockClear());
+    render(<QueryClientProvider client={qc}><Gestao /></QueryClientProvider>);
+    await act(async () => { await act$!(true); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    for (const f of Object.values(spies)) expect(f).not.toHaveBeenCalled();
+    for (const [key] of seeds) expect(qc.getQueryState(key)?.isInvalidated).toBe(false);
+  });
+
+  it("predicado aceita só admin/interno do escopo exato", () => {
+    const m = catalogoKeyMatchesScope({ organizationId: "org-ar", userId: "u-ar" });
+    expect(m({ queryKey: ["catalogo-unificado", "admin", "org-ar|u-ar|", "org-ar|u-ar|"] })).toBe(true);
+    expect(m({ queryKey: ["catalogo-unificado", "interno", "org-ar|u-ar|B", "org-ar|u-ar|"] })).toBe(true);
+    expect(m({ queryKey: ["catalogo-unificado", "b2b", "org-ar|u-ar|", "org-ar|u-ar|"] })).toBe(false);
+    expect(m({ queryKey: ["catalogo-unificado", "admin", "org-ar|u-ar2|", "org-ar|u-ar2|"] })).toBe(false);
+    expect(m({ queryKey: ["catalogo-unificado", "admin", "org-arx|u-ar|", "global"] })).toBe(false);
   });
 });
