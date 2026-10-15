@@ -35,8 +35,9 @@ DROP TRIGGER IF EXISTS trg_catalog_composition_owner_guard ON public.produto_com
 DROP TRIGGER IF EXISTS trg_catalog_composition_owner_guard ON public.produto_composicao_declaracoes;
 DROP POLICY IF EXISTS catalog_composition_parent_scope ON public.produto_composicao_conjuntos;
 DROP POLICY IF EXISTS catalog_composition_declaration_parent_scope ON public.produto_composicao_declaracoes;
-DROP FUNCTION IF EXISTS platform_private.catalog_composition_owner_guard();
-DROP FUNCTION IF EXISTS platform_private.catalog_composition_parent_owner(uuid);
+DROP FUNCTION IF EXISTS platform_private.catalog_composition_set_guard();
+DROP FUNCTION IF EXISTS platform_private.catalog_composition_declaration_guard();
+DROP FUNCTION IF EXISTS platform_private.catalog_composition_parent_visible(uuid);
 DROP FUNCTION IF EXISTS public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid);
 DROP FUNCTION IF EXISTS platform_private.catalog_owned_presentation_mutate_core(text,uuid,uuid,timestamptz,jsonb,text,uuid);
 

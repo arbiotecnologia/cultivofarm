@@ -317,6 +317,10 @@ CREATE TABLE public.catalog_tenant_owned_ledger (
 );
 CREATE INDEX catalog_tenant_owned_ledger_org_idx ON public.catalog_tenant_owned_ledger (organization_id, created_at DESC);
 CREATE INDEX catalog_tenant_owned_ledger_entity_idx ON public.catalog_tenant_owned_ledger (organization_id, entity_type, entity_id);
+-- Compatibilidade explícita caso uma revisão anterior tenha criado o CHECK sem `presentation`.
+ALTER TABLE public.catalog_tenant_owned_ledger DROP CONSTRAINT IF EXISTS catalog_tenant_owned_ledger_operation_check;
+ALTER TABLE public.catalog_tenant_owned_ledger ADD CONSTRAINT catalog_tenant_owned_ledger_operation_check
+  CHECK (operation IN ('create','update','archive','restore','composition','presentation'));
 REVOKE ALL ON public.catalog_tenant_owned_ledger FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.catalog_tenant_owned_ledger TO service_role;
 ALTER TABLE public.catalog_tenant_owned_ledger ENABLE ROW LEVEL SECURITY;

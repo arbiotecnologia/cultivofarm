@@ -213,7 +213,11 @@ describe("ownership — SQL candidato 05 backend", () => {
   });
   it("micro product_id e tabelas de composição herdam e validam owner", () => {
     expect(backend).toMatch(/catalog_owner_guard_micro_product/);
-    expect(backend).toMatch(/catalog_composition_owner_guard/);
+    expect(backend).toMatch(/catalog_composition_set_guard/);
+    expect(backend).toMatch(/catalog_composition_declaration_guard/);
+    expect(backend).not.toMatch(/TG_TABLE_NAME='produto_composicao_declaracoes' AND NEW\.microrganismo_id/);
+    expect(backend).toMatch(/catalog_composition_parent_visible/);
+    expect(backend).toMatch(/GRANT EXECUTE ON FUNCTION platform_private\.catalog_composition_parent_visible\(uuid\) TO authenticated/);
     expect(backend).toMatch(/catalog_composition_parent_scope/);
     expect(backend).toMatch(/catalog_composition_declaration_parent_scope/);
     expect(backend).toMatch(/catalog_cross_owner_reference/);
@@ -224,7 +228,15 @@ describe("ownership — SQL candidato 05 backend", () => {
     expect(body).toMatch(/owner_organization_id=v_org FOR UPDATE/);
     expect(body).toMatch(/updated_at IS DISTINCT FROM p_expected_updated_at/);
     expect(body).toMatch(/catalog_tenant_owned_ledger/);
+    expect(body).toMatch(/v_parent\.archived_at IS NOT NULL OR v_parent\.ativo IS NOT TRUE/);
+    expect(body).toMatch(/v_payload='\{\}'::jsonb/);
+    expect(body).toMatch(/catalog_owned_noop/);
+    expect(body).toMatch(/CREATE FUNCTION public\.tenant_catalog_owned_presentation_mutate\(\s*p_operation text/);
     expect(body.split("CREATE FUNCTION public.tenant_catalog_owned_presentation_mutate")[0]).not.toMatch(/p_organization/);
+  });
+  it("ledger aceita apresentação explicitamente", () => {
+    expect(sql).toMatch(/DROP CONSTRAINT IF EXISTS catalog_tenant_owned_ledger_operation_check/);
+    expect(sql).toMatch(/operation IN \('create','update','archive','restore','composition','presentation'\)/);
   });
   it("gate permanece OFF e não há client DML nem publicação", () => {
     expect(backend).toMatch(/ownership05_gate_must_remain_off/);
