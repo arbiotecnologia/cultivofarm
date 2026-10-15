@@ -27,8 +27,8 @@ CREATE TABLE accounts_receivable(id int,organization_id uuid,partner_id uuid,ori
 CREATE TABLE accounts_receivable_installments(id int,organization_id uuid,receivable_id int);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('test.uid',true),'')::uuid $$;
 -- Auth transport, entitlement and producer link dependencies simulated, not JWT evidence.
-CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT current_setting('test.ready',true)='true' AND EXISTS(SELECT 1 FROM profiles WHERE user_id=$1 AND ativo AND NOT senha_provisoria) $$;
-CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM user_roles WHERE user_id=$1 AND role=$2) $$;
+CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT current_setting('test.ready',true)='true' AND EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo AND NOT senha_provisoria) $$;
+CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $$;
 CREATE FUNCTION platform_private.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT public.has_role($1,$2) AND platform_private.platform_actor_access_ready($1) $$;
 CREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id) $$;
 CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT platform_private.h15_actor_organization() $$;
@@ -36,7 +36,7 @@ CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(featu
 CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid,boolean) RETURNS boolean LANGUAGE sql AS $$ SELECT current_setting('test.legacy',true)='true' $$;
 CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql SECURITY DEFINER AS $$ SELECT ARRAY(SELECT cliente_id FROM user_clientes WHERE user_id=$1 AND is_active) $$;
 CREATE FUNCTION public.is_platform_superadmin(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT false $$;
-CREATE FUNCTION platform_private.is_same_tenant_user(uuid) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM profiles WHERE user_id=$1 AND organization_id=platform_private.h15_actor_organization()) $$;
+CREATE FUNCTION platform_private.is_same_tenant_user(uuid) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND organization_id=platform_private.h15_actor_organization()) $$;
 CREATE FUNCTION platform_private.is_tenant_admin_for_user(p_target_user_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT auth.uid() IS NOT NULL AND public.has_role(auth.uid(),'administrador'::public.app_role) AND NOT public.is_platform_superadmin(auth.uid()) AND NOT public.is_platform_superadmin(p_target_user_id) AND platform_private.is_same_tenant_user(p_target_user_id) $$;
 CREATE FUNCTION public.is_financial_staff(uuid) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT platform_private.platform_actor_access_ready($1) AND (has_role($1,'administrador') OR has_role($1,'gestor') OR has_role($1,'financeiro')) $$;
 GRANT SELECT ON partner_users,accounts_receivable,accounts_receivable_installments TO authenticated,anon;
