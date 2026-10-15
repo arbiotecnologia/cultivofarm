@@ -1,7 +1,8 @@
 ## RECORTE 18:51 — programação candidata, sem liberação
 - [x] Registrar evidência EXTERNA Renato: sessão real Admin FSF/Fagner Cockpit0OS; buscaOS-2026-000004 AR=0, limpar/recargaURLdireta=0, nenhum residual AR observado. Transição durante login NÃO gravada: somente estado pós-troca + testes locais de resposta atrasada.
 - [x] Sete funções contidas auth/anonEXECfalse informadas externamente: programar/lote/avancar/replan/refresh/alertas/resumoBI. Não reabrir.
-- [ ] Auditar versão/schema/triggers/dependências SOMENTE rpc_programar_os_v1; preparar candidato fechado reversível, preflight hashes e testes isolados sobre corpos reais. Sem DDL remoto/GRANT/UI/publicação/fabricação/dados reais, sem corrigir lote/outras operações.
+- [x] Auditar versão/schema/triggers/dependências SOMENTE rpc_programar_os_v1; candidato fechado reversível/hashes em scripts/rbac-audit/proposed-cockpit-programar-os-closed.sql e relatório docs/auditorias/cockpit-programar-candidato-20261015.md.43 checks PostgreSQL isolado PASS/Auth-schema simulados; duas conexões local1write1replay. Sem DDL remoto/GRANT/UI/publicação/fabricação/dados reais/lote.
+- [ ] Liberação programação NO-GO: contrato3args sem CAS/key permite retry antigo; concorrência revogação/filhos/fullschema, responsável profiles.id×user_id, refresh e efeitos B2B não homologados. Exige revisão específica, não autoriza fabricar.
 
 ## RECORTE DOCUMENTAL 18:47 — consulta b1b validada externamente; sem próxima fase
 - [x] HEAD real b1b6fb63 conferido; arquivar SQL EXATO fornecido20261015184433_h_cockpit_enable_scoped_read_only JÁ APLICADO EXTERNAMENTE/NÃO REAPLICAR; nenhum código/DDL/dado/permissão/publicação pelo agente.
