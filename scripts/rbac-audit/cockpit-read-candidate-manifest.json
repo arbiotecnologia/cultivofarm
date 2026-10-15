@@ -1,5 +1,5 @@
 {
-  "state": "P1_HELPER_ONLY_CANDIDATE_NOT_APPLIED",
+  "state": "P1_HELPER_FIXED_EXTERNALLY_AND_CONTAINED_FUNCTIONAL_READ_NO_GO",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "candidate": "scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql",
   "report": "docs/auditorias/cockpit-leitura-recorte-20261015.md",
@@ -12,7 +12,8 @@
     "20261015161648",
     "20261015162631",
     "20261015163930",
-    "20261015173622"
+    "20261015173622",
+    "20261015175232"
   ],
   "external_evidence": {
     "source": "RENATO_REPORTED_REAL_BROWSER_NOT_AGENT_PROOF",
@@ -52,7 +53,8 @@
     "view_authenticated_select": false,
     "mv_authenticated_select": false,
     "rpc_authenticated_execute": false,
-    "attribution": "EXTERNAL_APPLIED_20261015173622_CONFIRMED_CANONICAL_LEDGER_NO_AGENT_WRITES"
+    "h7n_anon_execute": false,
+    "attribution": "EXTERNAL_APPLIED_20261015175232_CONFIRMED_CANONICAL_LEDGER_NO_AGENT_WRITES"
   },
   "external_p1": {
     "source": "RENATO_EXTERNAL_SQL_NOT_BROWSER_NOT_AGENT_PROOF",
@@ -71,5 +73,29 @@
     "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY",
     "candidate_requires_ledger_and_closed_acl": true
   },
+  "helper_fix_archive": {
+    "version": "20261015175232",
+    "name": "h_cockpit_helper_tenant_fence_closed",
+    "file": "scripts/rbac-audit/applied-20261015175232_h_cockpit_helper_tenant_fence_closed.sql",
+    "ledger_serialization_md5": "6fd5ddc5ef8f766e816918dde1ac71e7",
+    "status": "APPLIED_EXTERNALLY_DO_NOT_REAPPLY",
+    "external_transaction_wrappers": false,
+    "definition_md5": "e690611cd0967e7697cdbecb8c40e984",
+    "prosrc_md5": "6dc6de9ce046847310973b5666249177",
+    "external_evidence": "RENATO_REVIEWER_19_PGLITE_ASSERTIONS_STUBBED_NO_FULL_PREFLIGHT_PASS_HOSTED_PREFLIGHT_POSTCONDITIONS_PASS",
+    "own_evidence": "CANONICAL_LEDGER_AND_CURRENT_HASH_ACL_METADATA_ONLY"
+  },
+  "visit_0002_external_evidence": {
+    "source": "RENATO_EXTERNAL_UI_ADMIN_AR_NOT_AGENT_PROOF",
+    "visit_id": "1995fdfa-2976-42a7-8a2b-0324497f76d2",
+    "visit_number": "VT-2026-0002",
+    "event": "recomendacao_liberada",
+    "version": 6,
+    "from": "enviado_aprovacao",
+    "to": "aprovado",
+    "actor_id": "a7d45277-6dec-413d-bf6b-86620c1ef39f",
+    "os_count": 0
+  },
+  "new_request_backlog": "INVESTIGATE_PARTNER_CNPJ_NO_ASSUMED_CAUSE_NO_REAL_PARTNER_TEST_DOCUMENTATION_ONLY_NOW",
   "rpc_cockpit": "CLOSED_NO_BODY_OR_ACL_CHANGE"
 }
