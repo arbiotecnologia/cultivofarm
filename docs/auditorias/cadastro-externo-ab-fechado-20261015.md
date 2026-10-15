@@ -138,7 +138,7 @@ Harness A+B usa duas sessões PostgreSQL para mesma receipt e revogação sob lo
 ## 14. Diagnóstico final corrigido
 Não há P1 comprovado de acesso Storage por d516 isolada nem pelo requisito de metadata adicional. Preservar integralmente helpers/policies existentes. Os probes efetivos passaram no modelo isolado; não equivalem a Storage API/JWT hospedados.
 ## 15. Validações
-Resultados finais desta rodada registrados abaixo após execução; não alegar lint/typecheck globais ou auditoria integral. Sem app modificado.
+82 assertions Storage nas regras EXISTENTES PASS; 31 assertions +7 checks A+B PASS (incluem duas sessões concorrentes e revogação sob lock); 77 Vitest PASS, SDK/Auth simulados. ESLint focal, Python compile e diff-check PASS. Build/typecheck automático final20:16:00 OK após corrigir tipagem do mock de finish; erro intermediário não omitido. Nenhum teste próprio JWT/Storage API/fullschema, lint global ou auditoria integral. Sem app modificado.
 ## 16. Pendências reais A+B
 Hook/Auth fullschema, timeout de compensação, demais canais de portal B2 e seleção/cache continuam requisitos de abertura, não novo diagnóstico Storage. A+B flag/entrypoint/deploy/grants continuam fechados; não é falta de credencial.
 ## 17. Rollback e OS
