@@ -1,7 +1,7 @@
 ## RECORTE 16:53 UTC — aplicação PDF null-safe autorizada
 - [x] Aplicar somente dose/volume NULL-safe em VisitaTecnica.tsx; preservar demais funcionalidades, visita/dados, AGENTS e migrations.
-- [ ] Executar teste do corpo efetivo buildPdfData e regressões dos candidatos OS/query; verificar patch OS ainda aplicável.
-- [ ] Atualizar evidências/manifesto após testes; nenhuma publicação ou operação remota autorizada.
+- [x] Executar corpo efetivo buildPdfData: 8 casos +1 claims; regressão OS32/query2 total43/43 PASS. Build automático16:55:16OK. Patch OS hash preservado; dry-run bloqueado pela ferramenta, não contornado; typecheck manual não executado.
+- [x] Atualizar relatório/manifesto e distinguir PDF aplicado do patch misto histórico que NÃO deve ser aplicado integralmente; nenhuma publicação ou operação remota.
 - [ ] Diagnóstico separado NÃO aplicado: faltam autorização mutação revalidada após lock, adoção PK/versões/replay/erro/schema real e correção desktop DELETE/INSERT/vazio; aguarda revisão/autorização focal.
 
 ## RECORTE 16:37 UTC — habilitação OS somente candidata
