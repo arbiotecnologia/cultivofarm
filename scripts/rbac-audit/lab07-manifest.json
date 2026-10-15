@@ -84,6 +84,8 @@
     "rollback": "Never restore vulnerable before definitions; preserve containment and history",
     "migration_version": "20261015161648",
     "do_not_reapply": true,
-    "conversion_live_md5": "66e8072f7aefbe18c1417240121147a5"
+    "conversion_live_md5": "b112888e28d8a5727df713e0ae7bcd1b",
+    "conversion_hardening_version": "20261015163930",
+    "historical_conversion_md5": "66e8072f7aefbe18c1417240121147a5"
   }
 ]

@@ -14,5 +14,17 @@
     "sha256": "0f9276ae0047845880a54d8448a6ea3c1c1011e871767857aa53b53eeb66327f",
     "state": "ALREADY_APPLIED_DO_NOT_REAPPLY",
     "source": "canonical supabase_migrations.schema_migrations statements read-only"
+  },
+  {
+    "version": "20261015163930",
+    "name": "h_catalog_visit_conversion_requires_manage",
+    "file": "scripts/rbac-audit/applied-20261015163930-h_catalog_visit_conversion_requires_manage.sql",
+    "sha256": "d1d2880a0dd38aaafda39b4fcf23af9d53cf5ae927602b3a3640eed440b4c7c9",
+    "statements_md5": "e3d91c53b57a246a4fbb2b4e67675b59",
+    "state": "ALREADY_APPLIED_DO_NOT_REAPPLY",
+    "source": "canonical supabase_migrations.schema_migrations statements read-only; one statement exact MD5 verified",
+    "converter_before_md5": "66e8072f7aefbe18c1417240121147a5",
+    "converter_after_md5": "b112888e28d8a5727df713e0ae7bcd1b",
+    "manage_helper_md5": "d95c2c2b34af117d467d7d4b2b775002"
   }
 ]
