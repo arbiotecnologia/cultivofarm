@@ -23,15 +23,42 @@
   "files": [
     {
       "path": "scripts/rbac-audit/proposed-enable-visit-os-ui.patch",
-      "sha256": "8bfa29b0555bcb1f9214fb0fe7f18d7be7ca460b2223f678b7eacfdc444d590a"
+      "sha256": "300138d3a0722aff1e393abcefb08af536cdb69088b71dc5e9f1b78778d8fb9b"
     },
     {
       "path": "scripts/rbac-audit/preflight-enable-visit-os-readonly.sql",
-      "sha256": "a60ef485324105b7deaac79b5ce8040b256f85bb0bbe978addbb032d73a26e95"
+      "sha256": "6a655870fde061d2c5a1eb858862ea292a9bd040e957e4689d2174ec2a9b8e9a"
     },
     {
       "path": "scripts/rbac-audit/check-applied-visit-os-pglite.mjs",
       "sha256": "84bf34a623b5cdf46edf8d713eb34d39b2d5560730e3e45924bbf75ba59beaa7"
+    },
+    {
+      "path": "scripts/rbac-audit/os-enable-candidate/FluxoTecnico.tsx",
+      "sha256": "e8198a02fb7503c121036d89b2278fc8f6ad7e7e8df40568667b5b14d4304d56"
+    },
+    {
+      "path": "scripts/rbac-audit/os-enable-candidate/OrdensServico.tsx",
+      "sha256": "5e5936a06e8ed1771dd500ebbe0bff3a8b7b6484d88c5b602d2fba60a419a862"
+    },
+    {
+      "path": "src/test/fluxo-tecnico/osOnfarmQueryProposal.test.tsx",
+      "sha256": "692b79f27cbbb9ab92638491373a4735f4199970eea94dae561d2fb9e9cda8f6"
     }
-  ]
+  ],
+  "query_compatibility": {
+    "state": "CANDIDATE_ONLY",
+    "canonical_schema": "CONFIRMED_READ_ONLY",
+    "origem_column": false,
+    "authenticated_select": true,
+    "unique_client_farm_fks": true,
+    "limit0": "PASS_WITH_EXPLICIT_JOINS",
+    "frontend_tests": {
+      "passed": 69,
+      "new_query_error_tests": 2,
+      "auth": "MOCKED"
+    },
+    "hosted_authenticated_postgrest": "UNVERIFIED",
+    "external_rollback": "REPORTED_BY_RENATO_NOT_BROWSER_PROOF"
+  }
 }

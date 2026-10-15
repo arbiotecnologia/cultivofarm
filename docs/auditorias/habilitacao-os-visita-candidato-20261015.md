@@ -10,6 +10,8 @@ Aprovação de VT-2026-0003 pela fila técnica e visita aprovada no domínio pub
 Migrations 20261015161648 e 20261015162631 já aplicadas: **NÃO REAPLICAR**; arquivo exato e manifesto aplicado preservados. Ownership01–13 permanece OFF.
 
 ## Dependências e recorte
+- Achado integrado ao mesmo candidato: `FluxoTecnico` consultava `ordens_servico_onfarm.origem`, coluna inexistente no schema canônico, e por isso os KPIs de OS caíam para `—`. A consulta candidata remove `origem` e deriva o rótulo exclusivamente de `registro_consultor_id`: vínculo presente = visita técnica; ausente = sem vínculo de visita. Não cria coluna nem inventa origem.
+- `OrdensServico` não possui a incompatibilidade: consulta separadamente `ordens_servico` e `ordens_servico_onfarm` e atribui o discriminante local pela tabela de origem do resultado. Seu rótulo on-farm candidato foi estreitado para usar `registro_consultor_id`. `MobileOrdens` consulta somente `ordens_servico` e não lê `origem`; nenhuma mudança necessária.
 - A flag antiga alegava inexistência de conversor idempotente. Corpo arquivado aplicado tem guard de domínio + `can_view_technical_visit` antes de lookup/replay, rechecagem após lock, lock de visita, índice singular e replay pela mesma visita. Hash `66e8072f7aefbe18c1417240121147a5`.
 - Workspace fornece `permissions.can_convert_os`; UI não substitui backend/RLS. Candidato exige permissão literal true + ator ativo/tenant/sessão pronta + papel de domínio + status aprovado + ausência de OS. Consultor/técnico **não ganham acesso**: workspace histórico é admin/gestor; se servidor negar, botão não aparece. SA sem papel de domínio/tenant também negado.
 - Flag global tem somente dois consumidores: banner existente e aviso da fila. Alteração não cria ação de conversão na fila nem reabre rota/entitlements.
@@ -25,6 +27,9 @@ Conversor aplicado não grava volume_total_ml/dose. Trigger gera programação a
 Não identificado fluxo existente auditado para definir volume solicitado antes de fabricar. **NO-GO fabricação** até revisão focal do caminho existente de definição explícita, autorização/CAS/idempotência e unidade canônica. Não criado fluxo paralelo.
 
 ## Evidência própria
+- Schema canônico read-only: ref confirmado; `origem_columns=0`; `authenticated` possui leitura; consulta mínima `id,numero_os,status,created_at,registro_consultor_id,cliente_id,fazenda_id LIMIT 0` compilou; FKs explícitas e únicas para `clientes` e `fazendas`. Nenhuma linha/dado foi lido ou alterado.
+- Frontend candidato: teste garante que o SELECT não contém `origem`, mantém `registro_consultor_id` e, em falha, mostra erro/tentativa novamente com KPIs `—`, sem converter falha em zero/estado vazio.
+- Evidência externa relatada por Renato em ROLLBACK: conversão autenticada com `iat/exp` gerou Bombarbio, replayou a mesma OS e uma programação aguardando; ambos os volumes permaneceram NULL. Rollback preservou visita aprovada/zero OS; sequências 001/002 consumidas são histórico normal e não serão renumeradas. Isto não substitui prova pelo navegador.
 - Vitest candidato: **32/32 PASS** (4 papéis condicionados à permissão, 6 perfis negados, 6 status negados, loading/inativo/sem tenant, FSF/inexistente simulado, confirmação/cancelamento, lock, replay, códigos de erro, resposta inválida, troca de sessão/epoch). QueryClient real, Supabase/Auth **mockados**.
 - Regressão conjunto: **72/72 PASS** (32 candidato +35 decisões existentes +5 PDF/claims candidato anterior).
 - PGlite corpo aplicado exato: **31/31 PASS**, hash converter confirmado, bio/micro/referências/famílias/NULL/misto/sem flag/múltiplos/replay/FSF/inexistente/falhas rollback. Auth/RBAC/tenant/schema/helpers simulados; preflights remotos não executados.
