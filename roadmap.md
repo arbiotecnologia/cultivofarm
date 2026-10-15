@@ -1,8 +1,14 @@
+## RECORTE 18:32 — consulta Cockpit isolada (preparação autorizada, sem grant/publicação)
+- [x] HEAD46583eef conferido; arquivar SQL exato182119/182209/183119 JÁ APLICADO EXTERNAMENTE, NÃO REAPLICAR. Ledger/hashes/ACL read-only canônicos, conversorb112 intacto.
+- [x] Página existente monta somente consulta/listRPC via scope/fence; workspace/filhos/métricas/fontes alternativas não montados; gate global false. Filtros/estágios/paginação existentes da RPC, NULL sem inventar volume.
+- [x] 71/71 focais5arquivos com página/QueryClient reais e Auth/transporte simulados; lint focal0, página11/1 antes/depois; scanner0/diff-checkPASS, typecheck automático exit0/buildOK18:37:34. Relatório/rollback/arquivos/commits em docs/auditorias/cockpit-consulta-isolada-20261015.md.
+- [ ] Revisão de Renato para publicação/grant mínimo e prova JWT/RLS/browser real de leitura; acesso remoto ainda42501. Fabricação/programar/lote/publish/ownership/diagnóstico fechados, sem operações remotas.
+
 ## RECORTE 18:18 — candidato SQL Cockpit atual (autorizado, ACL fechada)
 - [x] Arquivar literalmente migrations externas 20261015180956/181119/181542; hashes locais sem LF final coincidem com ledger, NÃO REAPLICAR.
 - [x] Preparar h7n/view existente/RPC com fonte atual, identidade/feature/interseção RBAC e referências/descendentes; nenhuma concessão de ACL. Candidato não homologado.
 - [x] PostgreSQL isolado61 asserts novos +19 históricos; Vitest20/20 em3 arquivos (18 cache); Auth/fonte/schema reduzidos simulados. Relatório17itens, hashes/rollback preparados.
-- [ ] Revisão independente e prova hospedada positiva pendentes; leitura/fabricação continuam NO-GO, nenhuma aplicação remota/publicação autorizada.
+- [x] Revisão/aplicação183119 externas informadas18:32, ACL fechadas; claims sob executor privilegiado não provam RLS/Auth real. Leitura pública/fabricação NO-GO; nenhum DDL do agente.
 
 ## RECORTE 18:08 — cache Cockpit (autorizado, sem abertura de leitura)
 - [x] HEAD inicial13fb4833 auditado; fence técnico user/tenant/roles/readiness, AbortSignal e eviction aplicados. Workspace com key desmonta/reset filhos, filtros e dialogs; gate local leitura false, nenhum RPC/ACL aberto.

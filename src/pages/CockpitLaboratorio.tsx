@@ -21,7 +21,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { COCKPIT_QUERY_PREFIXES, useCockpitQuery, useCockpitScope } from "@/hooks/useCockpitQuery";
+import { COCKPIT_LIST_QUERY_AVAILABLE, COCKPIT_QUERY_PREFIXES, useCockpitQuery, useCockpitScope } from "@/hooks/useCockpitQuery";
+import { CockpitConsulta } from "@/components/cockpit/CockpitConsulta";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { useAuth } from "@/hooks/useAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -110,7 +111,7 @@ const STAGES: { id: KanbanStage; title: string; icon: any; color: string; mobile
 
 
 export default function CockpitLaboratorio() {
-  const session = useCockpitScope("cockpit-laboratorio");
+  const session = useCockpitScope("cockpit-laboratorio", COCKPIT_LIST_QUERY_AVAILABLE);
   const client = useQueryClient();
   useEffect(() => {
     const predicate = (query: { queryKey: readonly unknown[] }) =>
@@ -119,7 +120,7 @@ export default function CockpitLaboratorio() {
     void client.cancelQueries({ predicate });
     client.removeQueries({ predicate });
   }, [client, session.ready, session.cacheScope]);
-  return <CockpitWorkspace key={session.scope} />;
+  return <CockpitConsulta key={session.scope} />;
 }
 
 function CockpitWorkspace() {

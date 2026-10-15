@@ -1,0 +1,3 @@
+DO $pre$ BEGIN IF md5(pg_get_functiondef('public.rpc_gerar_alertas_operacionais()'::regprocedure))<>'b1a23e47c33f2dfa9743e11711bdbcfd' THEN RAISE EXCEPTION 'FUNCTION_DRIFT'; END IF; END $pre$;
+REVOKE EXECUTE ON FUNCTION public.rpc_gerar_alertas_operacionais() FROM PUBLIC,anon,authenticated;
+DO $post$ BEGIN IF has_function_privilege('authenticated','public.rpc_gerar_alertas_operacionais()','EXECUTE') OR has_function_privilege('anon','public.rpc_gerar_alertas_operacionais()','EXECUTE') OR NOT has_function_privilege('service_role','public.rpc_gerar_alertas_operacionais()','EXECUTE') THEN RAISE EXCEPTION 'ACL_POSTCONDITION'; END IF; END $post$;

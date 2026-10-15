@@ -4,6 +4,8 @@ import { useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 
 // Containment is intentional. Cache isolation never authorizes a reader or writer.
 export const COCKPIT_READ_AVAILABLE = false;
+export const COCKPIT_LIST_QUERY_AVAILABLE = true;
+export const COCKPIT_LIST_RPC = "rpc_cockpit_listar_esteira_v1";
 export const COCKPIT_QUERY_PREFIXES = [
   "cockpit-laboratorio", "profiles-esteira", "cockpit-alertas-reconhecidos",
   "esteira-history", "pendencias-esteira", "cockpit-producao-resumo",
@@ -45,10 +47,13 @@ export function useCockpitScope(prefix: string, enabled = COCKPIT_READ_AVAILABLE
 export function useCockpitQuery<T>(
   options: Omit<UseQueryOptions<T, Error, T, readonly unknown[]>, "queryFn"> & {
     queryFn: (context: { signal: AbortSignal }) => Promise<T>;
+    reader?: "listRPC";
   },
 ) {
   const prefix = String(options.queryKey?.[0]);
-  const session = useCockpitScope(prefix, COCKPIT_READ_AVAILABLE && options.enabled !== false);
+  const listOnly = COCKPIT_LIST_QUERY_AVAILABLE && prefix === "cockpit-laboratorio" &&
+    options.reader === "listRPC" && options.queryKey?.[1] === COCKPIT_LIST_RPC;
+  const session = useCockpitScope(prefix, (listOnly || COCKPIT_READ_AVAILABLE) && options.enabled !== false);
   const result = useQuery<T, Error, T, readonly unknown[]>({
     ...options,
     queryKey: [...(options.queryKey ?? []), session.cacheScope],
