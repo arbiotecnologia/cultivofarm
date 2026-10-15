@@ -13,6 +13,7 @@ Renato informou teste REAL em `app.cultivofarm.com.br`, não executado pelo agen
 Estes fatos não certificam todos os módulos, PDF baixado, concorrência ou produção. Não alterados registros/contas/sequências.
 
 ## Evidência própria: metadados canônicos read-only
+**Baseline histórico anterior à contenção; ACL vigente está na atualização 17:45 abaixo. Não restaurar privilégios descritos neste histórico.**
 Destino confirmado em configuração e marcador fiscal `swzpzcwiasxmjutrmvkm`. Consultadas definições/ACL/policies, não linhas operacionais.
 - RPC `rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)`: SQL STABLE INVOKER, `search_path=public,pg_temp`, hash `53c9fdb94780b9666ca9b602ad95a813`. Authenticated/anon EXECUTE false conforme consulta anterior da rodada. Isso explica a falha relatada, sem prova browser própria.
 - `vw_esteira_laboratorio`: invoker, hash `d72d5df7bacffdf8f4fc4282b804ab90`, SELECT anon/authenticated. **Invoker não assegura RLS da origem**: chama `private.h7n_esteira_laboratorio()` DEFINER.
@@ -42,8 +43,8 @@ Policy SELECT `registros_consultor_select_hardened` permite visita por carteira 
 Diferença estrutural confirmada, compatível com relato externo; intenção funcional de exposição do cabeçalho não comprovada: registrar **dívida de contrato/UX**, não declarar vulnerabilidade nem apertar RLS cegamente. Metadados do cabeçalho ainda são dados: revisar campos/propósito separadamente, sem ampliar workspace/recomendações.
 
 ## Testes e limites
-`python3 scripts/tests/cockpit-esteira-fence-local.py`: **14/14 asserts PASS**, PostgreSQL isolado, executa corpos candidatos h7n/RPC extraídos do arquivo. Auth/RBAC/readiness/entitlement/carteira **simulados**, schema reduzido; NÃO prova JWT hospedado, RLS real, ACL completa/preflight nem duas sessões.
-Cobertura: Admin AR só próprio; FSF não vê AR; inativo/no-iat simulado; sem tenant; consultor sem carteira/carteira alheia; Onfarm não ampliado; produção própria+clamp200/offset0; busca literal de injeção; RPC nega Financeiro/Consultor/Onfarm, feature ausente e UID ausente. Não cria dados externos nem depende de credenciais.
+Resultado histórico 14/14; nesta atualização são **19/19 verificações**, PostgreSQL isolado, executa somente corpo h7n candidato e contenção arquivada. Auth/RBAC/readiness/carteira **simulados**, schema reduzido; NÃO prova JWT hospedado, RLS real, preflight completo nem duas sessões.
+Cobertura atual: before vulnerável, contenção 42501, troca do corpo preservando ACL/owner, Admin AR só próprio; FSF não vê AR; inativo/readiness simulado; sem tenant; consultor sem carteira/carteira alheia; vínculo ativo/revogado/SQL NULL; Onfarm e SA não ampliados, UID ausente, anon negado. Cliente NULL, cliente inexistente e cliente com organização NULL excluídos. Não há teste de paginação/feature do RPC no candidato atual: RPC não é modificado nem liberado.
 Teste persistente Vitest: `src/test/cockpit-laboratorio/tenantFencePostgres.test.ts`; regressões existentes de auditoria/refinamentos executadas junto. Nenhum snapshot/cópia de texto usado como prova de autorização.
 **GO somente preparação local. NO-GO abertura da leitura/fabricação/publicação; Auth/RLS/browser/freshness/descendentes UNVERIFIED.**
 ## P1 prioritário — revisão 17:41 UTC
@@ -56,3 +57,17 @@ Teste persistente Vitest: `src/test/cockpit-laboratorio/tenantFencePostgres.test
 **Pós-aplicação preparada:** `postapply-h7n-containment-readonly.sql`, claims atuais/exp+3600 e ROLE authenticated/anon, rollback, sem gravações. Revisor fornece contas existentes validadas para AR/FSF/SA/inativo/vínculo revogado. Com ACL hoje fechada, probes produzem negação de permissão e NÃO certificam filtro tenant/controle positivo AR; nenhuma abertura ou bypass service_role permitido. Filtro só testado localmente enquanto essa ACL estiver fechada.
 
 **Riscos mantidos:** a fence de cliente não certifica freshness nem referências/nome descendentes da MV. Não reabrir leitura até auditoria posterior. Candidato com hash-before não deve ser reaplicado após implantação; não restaurar corpo vulnerável em rollback. GO preparação para revisão independente; NO-GO aplicação autônoma, abertura Cockpit e fabricação. Três migrations aplicadas preservadas; ownership OFF.
+
+## Atualização canônica 17:45 UTC — contenção aplicada externamente
+Migration **20261015173622_h_cockpit_contain_cross_tenant_read JÁ APLICADA / NÃO REAPLICAR**. Arquivo literal: `scripts/rbac-audit/applied-20261015173622_h_cockpit_contain_cross_tenant_read.sql`, sem cabeçalho acrescentado ao SQL. Extraído de `supabase_migrations.schema_migrations`; hash da serialização `array_to_string(statements,E'\n;\n')`: **23baa516fcc2f9b7e7f1a985be25eeb3**. Esse hash não é o hash de bytes do arquivo com newline final.
+
+- **Prova própria somente metadados/ledger:** marcador canônico confirmado; helper ainda `6a3e2b6e2d594af67cf6727c5b03c2b1`; EXECUTE authenticated=false, SELECT view/MV=false, RPC=false. Conversor **b112888e28d8a5727df713e0ae7bcd1b**, intacto. Nenhuma consulta a linhas operacionais nesta rodada.
+- **Proveniência externa Renato:** aplicação da contenção e FSF view agora **42501**. Antes FSF retornou duas linhas; composição corrigida do relato: MV com **duas linhas, uma de tenant AR e uma sem cliente resolvido**, não duas linhas com tenant comprovado. NÃO browser FSF e NÃO reprodução hospedada pelo agente.
+- Migration só revoga EXECUTE do helper e ALL da view de PUBLIC/anon/authenticated; não muda corpo, dados, MV ou ações. A negação fecha o caminho exposto, mas o corpo vulnerável permanece. Não reabrir grants antigos.
+
+### Candidato rebaseado e validação
+O candidato h7n exige a versão/nome/hash exatos do ledger de contenção, ausência de ACL explícita PUBLIC/anon/authenticated no helper/view e ausência de privilégios efetivos no helper/view/MV. Preserva ACL/owner no replacement e pós-condição impede reabertura. Os hashes-before de corpo/dependências e o conversor continuam obrigatórios; mudança concorrente aborta o candidato.
+
+**17/17 Vitest PASS**, três arquivos, em 17:49 UTC; o harness contém **19/19 verificações PostgreSQL PASS**. Antes: predicado vulnerável simulado permite FSF ler AR e linhas sem escopo; contenção: SQLSTATE 42501 na view/helper; depois do replacement: ACL/owner iguais e view ainda 42501. Só no PostgreSQL descartável os testes permitem executar a função candidata para medir o filtro (AR/FSF/SA/anon/inativo/link revogado/SQL NULL). Nenhum grant remoto, nenhuma conta real. O hash-before da contenção é substituído apenas pelo hash da definição local reduzida: não representa compilação/preflight integral no schema hospedado.
+
+Pós-aplicação `postapply-h7n-containment-readonly.sql` agora exige ledger/hash, corpo candidato e ACL fechada, e falha se leitura retornar até mesmo zero linhas sem 42501. Não executado remotamente: depende da aplicação/revisão pelo revisor e contas validadas; não vale PASS do filtro tenant. Freshness/descendentes e cache seguem não certificados. **GO preparação revisável; NO-GO aplicação pelo agente, abertura RPC/view, fabricação/publicação.** Quatro migrations arquivadas/aplicadas preservadas, ownership OFF, diagnóstico separado. Não há escolha humana necessária para excluir NULL; escopo não provado é sempre invisível.

@@ -1,6 +1,7 @@
 -- CANDIDATO P1 HELPER SOMENTE — NÃO APLICADO. RPC COCKPIT CONTINUA FECHADO.
 -- Preserva ACL/owner/papéis; não modifica MV, dados, view ou operações.
 -- A ACL atual observada está contida: NÃO restaurar authenticated/view SELECT.
+-- BASE OBRIGATÓRIA: 20261015173622 JÁ APLICADA EXTERNAMENTE, NÃO REAPLICAR.
 BEGIN;
 CREATE TEMP TABLE h7n_acl_baseline ON COMMIT DROP AS
  SELECT p.proacl, p.proowner FROM pg_proc p WHERE p.oid='private.h7n_esteira_laboratorio()'::regprocedure;
@@ -9,6 +10,9 @@ CREATE TEMP TABLE h7n_view_baseline ON COMMIT DROP AS
 DO $pre$
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'CANONICAL_REF_REQUIRED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261015173622' AND name='h_cockpit_contain_cross_tenant_read' AND md5(array_to_string(statements,E'\n;\n'))='23baa516fcc2f9b7e7f1a985be25eeb3') THEN RAISE EXCEPTION 'CONTAINMENT_LEDGER_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid='private.h7n_esteira_laboratorio()'::regprocedure AND a.grantee IN (0,(SELECT oid FROM pg_roles WHERE rolname='anon'),(SELECT oid FROM pg_roles WHERE rolname='authenticated'))) OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.vw_esteira_laboratorio'::regclass AND a.grantee IN (0,(SELECT oid FROM pg_roles WHERE rolname='anon'),(SELECT oid FROM pg_roles WHERE rolname='authenticated'))) THEN RAISE EXCEPTION 'CONTAINMENT_ACL_DRIFT'; END IF;
+ IF has_function_privilege('authenticated','private.h7n_esteira_laboratorio()','EXECUTE') OR has_function_privilege('anon','private.h7n_esteira_laboratorio()','EXECUTE') OR has_table_privilege('authenticated','public.vw_esteira_laboratorio','SELECT') OR has_table_privilege('anon','public.vw_esteira_laboratorio','SELECT') OR has_table_privilege('authenticated','public.mv_esteira_laboratorio','SELECT') OR has_table_privilege('anon','public.mv_esteira_laboratorio','SELECT') THEN RAISE EXCEPTION 'CONTAINMENT_EFFECTIVE_ACL_DRIFT'; END IF;
  IF md5(pg_get_functiondef('private.h7n_esteira_laboratorio()'::regprocedure)) IS DISTINCT FROM '6a3e2b6e2d594af67cf6727c5b03c2b1' THEN RAISE EXCEPTION 'H7N_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) IS DISTINCT FROM '64e10608403238a41a9baf92857ca881' THEN RAISE EXCEPTION 'TENANT_HELPER_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.technical_actor_ready(uuid)'::regprocedure)) IS DISTINCT FROM 'b5d0994b6eb976b14122cd2a1ec798cf' THEN RAISE EXCEPTION 'READINESS_DRIFT'; END IF;
@@ -49,6 +53,7 @@ BEGIN
  IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='private.h7n_esteira_laboratorio()'::regprocedure) IS DISTINCT FROM '6dc6de9ce046847310973b5666249177' THEN RAISE EXCEPTION 'H7N_AFTER_BODY_DRIFT'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN h7n_acl_baseline b WHERE p.oid='private.h7n_esteira_laboratorio()'::regprocedure AND (p.proacl IS DISTINCT FROM b.proacl OR p.proowner IS DISTINCT FROM b.proowner)) THEN RAISE EXCEPTION 'H7N_ACL_OWNER_CHANGED'; END IF;
  IF EXISTS(SELECT 1 FROM pg_class c CROSS JOIN h7n_view_baseline b WHERE c.oid='public.vw_esteira_laboratorio'::regclass AND c.relacl IS DISTINCT FROM b.relacl) THEN RAISE EXCEPTION 'VIEW_ACL_CHANGED'; END IF;
+ IF has_function_privilege('authenticated','private.h7n_esteira_laboratorio()','EXECUTE') OR has_function_privilege('anon','private.h7n_esteira_laboratorio()','EXECUTE') OR has_table_privilege('authenticated','public.vw_esteira_laboratorio','SELECT') OR has_table_privilege('anon','public.vw_esteira_laboratorio','SELECT') OR has_table_privilege('authenticated','public.mv_esteira_laboratorio','SELECT') OR has_table_privilege('anon','public.mv_esteira_laboratorio','SELECT') THEN RAISE EXCEPTION 'CONTAINMENT_LOST'; END IF;
  IF md5(pg_get_functiondef('public.rpc_converter_visita_em_os(uuid,text)'::regprocedure)) IS DISTINCT FROM 'b112888e28d8a5727df713e0ae7bcd1b' OR md5(pg_get_functiondef('public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure)) IS DISTINCT FROM '53c9fdb94780b9666ca9b602ad95a813' THEN RAISE EXCEPTION 'UNRELATED_RPC_CHANGED'; END IF;
 END $post$;
 COMMIT;

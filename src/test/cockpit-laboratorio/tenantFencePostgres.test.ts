@@ -11,6 +11,11 @@ describe("Cockpit candidate — isolated PostgreSQL, simulated Auth and reduced 
     expect(output).toContain("PASS revoked link zero");
     expect(output).toContain("PASS SQL NULL readiness zero");
     expect(output).toContain("PASS anon SQL role denied");
-    expect(output.match(/NOTICE: {2}PASS/g)).toHaveLength(14);
+    expect(output).toContain("PASS before FSF leaks AR and unresolved rows");
+    expect(output).toContain("PASS containment FSF view 42501");
+    expect(output).toContain("PASS containment helper 42501");
+    expect(output).toContain("PASS after candidate ACL owner preserved");
+    expect(output).toContain("PASS after candidate view stays 42501");
+    expect(output.match(/NOTICE: {2}PASS/g)).toHaveLength(19);
   }, 60_000);
 });

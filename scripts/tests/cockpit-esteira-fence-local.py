@@ -19,11 +19,13 @@ CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sq
 CREATE FUNCTION public.technical_client_link(uuid,uuid,text[]) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT CASE WHEN current_setting('t.link',true)='null' THEN NULL ELSE coalesce(current_setting('t.link',true),'active')='active' AND $2=ANY(public.get_cliente_ids_for_user($1)) END$$;
 CREATE FUNCTION public._saas_user_has_feature(uuid,text) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT coalesce(current_setting('t.feature',true),'true')='true'$$;
 CREATE FUNCTION public.fn_cockpit_stage(text) RETURNS text LANGUAGE sql IMMUTABLE AS $$SELECT coalesce($1,'aguardando')$$;
-INSERT INTO public.clientes VALUES('a0000000-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000000'),('b0000000-0000-0000-0000-000000000001','bbbbbbbb-0000-0000-0000-000000000000');
+INSERT INTO public.clientes VALUES('a0000000-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000000'),('b0000000-0000-0000-0000-000000000001','bbbbbbbb-0000-0000-0000-000000000000'),('c0000000-0000-0000-0000-000000000001',NULL);
 INSERT INTO public.mv_esteira_laboratorio(os_id,numero_os,cliente_id,status_os,atrasado,created_at) VALUES
  (gen_random_uuid(),'OS-AR','a0000000-0000-0000-0000-000000000001','aberta',false,now()),
  (gen_random_uuid(),'OS-FSF','b0000000-0000-0000-0000-000000000001','aberta',false,now()),
- (gen_random_uuid(),'OS-ORFA',NULL,'aberta',false,now());
+ (gen_random_uuid(),'OS-ORFA',NULL,'aberta',false,now()),
+ (gen_random_uuid(),'OS-SEM-TENANT','c0000000-0000-0000-0000-000000000001','aberta',false,now()),
+ (gen_random_uuid(),'OS-SEM-CLIENTE','d0000000-0000-0000-0000-000000000001','aberta',false,now());
 """
 TESTS=r"""
 CREATE VIEW public.vw_esteira_laboratorio WITH (security_invoker=true) AS SELECT * FROM private.h7n_esteira_laboratorio();
@@ -68,13 +70,68 @@ END $t$;
 def main():
     cand=(ROOT/'scripts/rbac-audit/proposed-cockpit-esteira-read-tenant-fence.sql').read_text()
     h7n=re.search(r'CREATE OR REPLACE FUNCTION private\.h7n_esteira_laboratorio\(\).*?\$function\$;',cand,re.S)[0]
+    archive=(ROOT/'scripts/rbac-audit/applied-20261015173622_h_cockpit_contain_cross_tenant_read.sql').read_text()
+    # Reproduce the observed vulnerable predicate in reduced schema, not hosted Auth.
+    old=h7n[:h7n.index('  select m.*')]+r"""
+  select m.* from public.mv_esteira_laboratorio m
+  where public.has_role(auth.uid(), 'administrador'::public.app_role)
+     or public.has_role(auth.uid(), 'gestor'::public.app_role)
+     or public.has_role(auth.uid(), 'administrativo'::public.app_role)
+     or public.has_role(auth.uid(), 'producao'::public.app_role)
+     or public.has_role(auth.uid(), 'financeiro'::public.app_role)
+     or ((public.has_role(auth.uid(), 'consultor_tecnico'::public.app_role)
+        or public.has_role(auth.uid(), 'tecnico_agronomo'::public.app_role))
+        and m.cliente_id = any(public.get_cliente_ids_for_user(auth.uid())));
+$function$;
+"""
+    before=r"""
+CREATE VIEW public.vw_esteira_laboratorio WITH (security_invoker=true) AS SELECT * FROM private.h7n_esteira_laboratorio();
+GRANT SELECT ON public.vw_esteira_laboratorio TO authenticated;
+GRANT EXECUTE ON FUNCTION private.h7n_esteira_laboratorio() TO authenticated;
+SET ROLE authenticated;
+DO $before$ BEGIN
+ PERFORM set_config('t.uid','11111111-0000-0000-0000-000000000000',true);
+ PERFORM set_config('t.org','bbbbbbbb-0000-0000-0000-000000000000',true);
+ PERFORM set_config('t.role','administrador',true);
+ IF (SELECT count(*) FROM public.vw_esteira_laboratorio)<>5 OR NOT EXISTS(SELECT 1 FROM public.vw_esteira_laboratorio WHERE numero_os='OS-AR') THEN RAISE EXCEPTION 'before reproduction missing'; END IF;
+ RAISE NOTICE 'PASS before FSF leaks AR and unresolved rows';
+END $before$;
+RESET ROLE;
+"""
+    # Execute exact archived statements, substituting ONLY preflight definition hash
+    # for the reduced local schema; this is explicitly NOT hosted preflight proof.
+    archive=archive.replace("'6a3e2b6e2d594af67cf6727c5b03c2b1'", "current_setting('t.before_hash')")
+    baseline=r"""
+SELECT set_config('t.before_hash',md5(pg_get_functiondef('private.h7n_esteira_laboratorio()'::regprocedure)),false);
+"""
+    closed=r"""
+SET ROLE authenticated;
+DO $closed$ BEGIN
+ BEGIN PERFORM count(*) FROM public.vw_esteira_laboratorio; RAISE EXCEPTION 'view reopened'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS containment FSF view 42501'; END;
+ BEGIN PERFORM count(*) FROM private.h7n_esteira_laboratorio(); RAISE EXCEPTION 'helper reopened'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS containment helper 42501'; END;
+END $closed$;
+RESET ROLE;
+CREATE TEMP TABLE acl_saved AS SELECT proacl,proowner FROM pg_proc WHERE oid='private.h7n_esteira_laboratorio()'::regprocedure;
+CREATE TEMP TABLE view_acl_saved AS SELECT relacl FROM pg_class WHERE oid='public.vw_esteira_laboratorio'::regclass;
+"""
+    after=r"""
+DO $after$ BEGIN
+ IF EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN acl_saved b WHERE p.oid='private.h7n_esteira_laboratorio()'::regprocedure AND (p.proacl IS DISTINCT FROM b.proacl OR p.proowner IS DISTINCT FROM b.proowner)) OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN view_acl_saved b WHERE c.oid='public.vw_esteira_laboratorio'::regclass AND c.relacl IS DISTINCT FROM b.relacl) THEN RAISE EXCEPTION 'candidate changed ACL'; END IF;
+ RAISE NOTICE 'PASS after candidate ACL owner preserved';
+END $after$;
+SET ROLE authenticated;
+DO $denied$ BEGIN BEGIN PERFORM count(*) FROM public.vw_esteira_laboratorio; RAISE EXCEPTION 'after view reopened'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS after candidate view stays 42501'; END; END $denied$;
+RESET ROLE;
+DROP VIEW public.vw_esteira_laboratorio;
+"""
     tmp=Path(tempfile.mkdtemp(prefix='cockpit-',dir='/tmp'));tmp.chmod(0o777)
     pre=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
     started=False
     try:
         subprocess.run(pre+['initdb','-D',str(tmp/'d'),'-A','trust','-U','postgres'],check=True,capture_output=True)
         subprocess.run(pre+['pg_ctl','-D',str(tmp/'d'),'-l',str(tmp/'log'),'-o',f'-k {tmp} -h "" -p 55491','start','-w'],check=True,capture_output=True);started=True
-        f=tmp/'t.sql';f.write_text(STUB+h7n+'\n'+TESTS.replace('PROCEDURE_ok boolean;','')+'\n');f.chmod(0o644)
+        # Test-only grants below occur EXCLUSIVELY in disposable PostgreSQL, never remote.
+        f=tmp/'t.sql';f.write_text(STUB+old+before+baseline+archive+closed+h7n+after+'\n'+TESTS.replace('PROCEDURE_ok boolean;','')+'\n');f.chmod(0o644)
         f.write_text(f.read_text()+'''RESET ROLE; SET ROLE anon; DO $anon$ BEGIN BEGIN PERFORM count(*) FROM public.vw_esteira_laboratorio; RAISE EXCEPTION 'anon allowed'; EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS anon SQL role denied'; END; END $anon$;''')
         r=subprocess.run(['psql','-h',str(tmp),'-p','55491','-U','postgres','-v','ON_ERROR_STOP=1','-f',str(f)],capture_output=True,text=True)
         if r.returncode: raise SystemExit(r.stderr[-4000:])
