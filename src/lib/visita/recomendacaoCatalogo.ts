@@ -2,15 +2,15 @@
  * Catálogo da etapa Recomendação do assistente de visita (celular).
  * Colunas REAIS (information_schema canônico): microrganismos(nome, nome_cientifico); produtos(nome).
  *
- * - Nova seleção: somente itens ativos. NÃO aplica a ocultação por empresa (não integrada neste seletor).
+ * - Nova seleção: RPC paginada, global-only e visível no tenant autorizado da visita.
  * - Visualização de recomendação vinculada/histórica: lê os nomes pelos IDs referenciados, sem filtro de ativo,
  *   para nunca apagar o histórico.
  */
 export const REC_MICRO_SELECT = "id, nome, nome_cientifico";
-export const REC_PRODUTO_SELECT = "id, nome";
+export const REC_PRODUTO_SELECT = "id, nome, familia_catalogo";
 
 export interface RecMicro { id: string; nome: string; nome_cientifico: string | null }
-export interface RecProduto { id: string; nome: string }
+export interface RecProduto { id: string; nome: string; familia_catalogo?: string | null }
 
 export function recMicroLabel(m: RecMicro | undefined | null): string {
   if (!m) return "—";
@@ -18,7 +18,9 @@ export function recMicroLabel(m: RecMicro | undefined | null): string {
 }
 
 export function recProdutoLabel(p: RecProduto | undefined | null): string {
-  return p?.nome || "—";
+  if (!p) return "—";
+  const families: Record<string, string> = { biologico: "Biológico", quimico: "Químico", fertilizante: "Fertilizante/Adubo", fertilizante_adubo: "Fertilizante/Adubo" };
+  return `${p.nome} · ${families[p.familia_catalogo ?? ""] ?? "Família não informada"}`;
 }
 
 /** IDs referenciados pelas recomendações já registradas (sem nulos/duplicatas, ordenados para cache). */
@@ -47,4 +49,19 @@ export function recSelectOptions<T extends { id: string }>(active: readonly T[],
 export function recCatalogErrorMessage(err: unknown): string {
   const msg = (err as { message?: string } | null)?.message ?? "";
   return msg ? `Não foi possível carregar o catálogo: ${msg}` : "Não foi possível carregar o catálogo.";
+}
+
+export interface RecSelectionItem extends RecProduto { selectable: boolean; in_page: boolean; total: number | null }
+export async function fetchRecSelection(client: { rpc: (fn: string, args: Record<string, unknown>) => any },
+  registro: string, entity: "produto" | "microrganismo", search: string, offset: number, include: string[], signal: AbortSignal) {
+  let request = client.rpc("tenant_catalog_visit_selection_page", {
+    p_registro_id: registro, p_entity_type: entity, p_search: search.trim() || null,
+    p_limit: 50, p_offset: offset, p_include_ids: include.length ? include : null,
+  });
+  if (typeof request.abortSignal === "function") request = request.abortSignal(signal);
+  const { data, error } = await request;
+  if (error) throw new Error("Não foi possível carregar o catálogo autorizado da visita.");
+  if (!Array.isArray(data) || data.some(r => typeof r.id !== "string" || typeof r.nome !== "string"
+    || typeof r.selectable !== "boolean" || typeof r.in_page !== "boolean")) throw new Error("Resposta do catálogo inválida.");
+  return data as RecSelectionItem[];
 }
