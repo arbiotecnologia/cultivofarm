@@ -17,12 +17,21 @@ export function catalogOrigin(row: { owner_organization_id?: string | null }): C
 }
 export const CATALOG_ORIGIN_LABEL: Record<CatalogOrigin, string> = { global: "Global", proprio: "Próprio" };
 
-/** Globais nunca são editáveis/arquiváveis pela empresa; próprios apenas com gate + permissão. */
-export function canManageOwnedItem(row: { owner_organization_id?: string | null }, canManage: boolean, enabled: boolean = TENANT_OWNED_CATALOG_ENABLED) {
-  return enabled && canManage && catalogOrigin(row) === "proprio";
+/**
+ * Globais nunca são editáveis/arquiváveis pela empresa; próprio só da empresa ATUAL do ator,
+ * com gate + permissão. Visibilidade apenas — o servidor reautoriza.
+ */
+export function canManageOwnedItem(
+  row: { owner_organization_id?: string | null },
+  actorOrganizationId: string | null | undefined,
+  canManage: boolean,
+  enabled: boolean = TENANT_OWNED_CATALOG_ENABLED,
+) {
+  return enabled && canManage && !!actorOrganizationId && !!row.owner_organization_id
+    && row.owner_organization_id === actorOrganizationId;
 }
 
-export type OwnedOperation = "create" | "update" | "archive" | "composition";
+export type OwnedOperation = "create" | "update" | "archive" | "restore" | "composition";
 export interface OwnedMutation {
   entity: TenantCatalogEntity;
   operation: OwnedOperation;
@@ -33,7 +42,14 @@ export interface OwnedMutation {
   idempotencyKey: string;
 }
 
-const FORBIDDEN_KEYS = ["organization_id", "owner_organization_id", "id", "ativo", "b2b_enabled", "codigo"];
+/** Espelho da whitelist do servidor (catalog_owned_allowed_keys); o servidor decide. */
+export function ownedAllowedKeys(entity: TenantCatalogEntity, op: OwnedOperation): readonly string[] {
+  if (op === "archive" || op === "restore") return [];
+  if (op === "composition") return entity === "produto" ? ["itens"] : [];
+  if (entity === "produto") return [...(op === "create" ? ["tipo"] : []), "nome", "descricao", "modo_acao", "funcao_completa", "modo_aplicacao", "familia_catalogo", "classe_catalogo"];
+  if (entity === "microrganismo") return [...(op === "create" ? ["tipo"] : []), "nome", "nome_cientifico", "descricao"];
+  return ["nome", "descricao"];
+}
 
 export class OwnedCatalogError extends Error {
   constructor(public readonly code: string, message: string, public readonly globalId: string | null = null) {
@@ -64,6 +80,10 @@ export function ownedCatalogError(error: unknown, entity: TenantCatalogEntity): 
     return new OwnedCatalogError("stale", "O item mudou desde que foi aberto. Reabra para conferir os dados.");
   if (msg.includes("catalog_owned_idempotency_conflict"))
     return new OwnedCatalogError("idempotency", "Esta solicitação já foi usada com outros dados. Reabra a edição.");
+  if (msg.includes("catalog_owned_archived"))
+    return new OwnedCatalogError("archived", "Item arquivado. Restaure-o antes de editar.");
+  if (msg.includes("catalog_owned_noop"))
+    return new OwnedCatalogError("noop", "Nenhuma alteração para salvar.");
   if (msg.includes("catalog_owned_component_unavailable"))
     return new OwnedCatalogError("component", "Um dos componentes não está disponível para sua empresa.");
   if (e.code === "42501" || msg.includes("catalog_owned_not_found"))
@@ -73,7 +93,8 @@ export function ownedCatalogError(error: unknown, entity: TenantCatalogEntity): 
 
 export async function mutateOwnedItem(client: RpcClient, m: OwnedMutation, signal?: AbortSignal) {
   if (!TENANT_OWNED_CATALOG_ENABLED) throw new OwnedCatalogError("disabled", "Cadastro de itens próprios ainda não está disponível.");
-  if (Object.keys(m.payload).some((k) => FORBIDDEN_KEYS.includes(k)))
+  const allowed = ownedAllowedKeys(m.entity, m.operation);
+  if (Object.keys(m.payload).some((k) => !allowed.includes(k)))
     throw new OwnedCatalogError("invalid", "Dados inválidos.");
   const reason = m.reason.trim();
   if (reason.length < 10 || reason.length > 500) throw new OwnedCatalogError("invalid", "Informe um motivo entre 10 e 500 caracteres.");
