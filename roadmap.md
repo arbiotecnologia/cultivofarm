@@ -764,7 +764,8 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Revisão UI de 15/10 14:27: Salvar usa uma única RPC identificação+composição opcional no SQL01; falha interna desfaz raiz/declaração/ledger, sem compensação delete. Retry incerto conserva chave; composição-only e limpeza explícita suportadas.
 - [x] Fence de geração por identidade e AbortController nos hooks de item/apresentação; diálogos limpam/fecham ao trocar empresa e respostas antigas não aplicam callbacks mesmo com retorno ao ator anterior.
 - [x] Reteste local: 93/93 em 6 arquivos (12 fluxos UI), 8/8 PGlite executando definições reais do núcleo SQL01; schema/identity/gate mínimos stubbed, Auth/RLS hospedado UNVERIFIED. Lint focal 0/0, scanner/diff/build automático PASS.
-- [ ] Typechecks desta revisão e teste hospedado: typecheck manual não executado (harness automático); Auth/RLS real bloqueado por gate OFF e ausência de aplicação autorizada. Evidência externa 14:27 anterior registrada separadamente no relatório.
+- [x] Typechecks app/node desta revisão PASS; evidência externa 14:27 anterior registrada separadamente no relatório.
+- [ ] Teste hospedado/Auth/RLS real bloqueado por gate OFF e ausência de aplicação autorizada.
 - [x] Registrar live: 1 biológico + 9 sem família e históricos sem família; sem backfill/reclassificação.
 - [x] Preservar updates históricos irrelevantes nos guardas candidatos.
 - [ ] Fechar conversões de pedido misto/solicitação e mensagens nas cinco entradas com corpos/hashes completos.
