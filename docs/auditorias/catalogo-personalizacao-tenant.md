@@ -482,7 +482,9 @@ Candidato `proposed-lab-biological-only-07.sql`: elegibilidade por `familia_cata
 
 ### Evidência independente incorporada
 - SQL01 de `0add`: **27/27 PASS no PostgreSQL PGlite independente**, com CHECKs reais e stubs de Auth explicitamente não equivalentes ao Auth/RLS canônico. Cobriu composição biológica/química e preservação da receita.
-- SQL05 e SQL07 ainda aguardam a execução independente anunciada. Nenhum resultado está antecipado como PASS.
+- Reteste independente `c561be33`: **28 PASS / 2 FAIL** em PGlite para SQL01 + trecho 05 + 07 (preflight excluído apenas no laboratório). As três falhas 05 anteriores — trigger do conjunto, EXECUTE do helper RLS e ledger `presentation` — passaram.
+- FAIL 05 `42501`: micro global em composição de produto próprio era negado. Corrigido localmente para a matriz: global→global permitido; global→privado negado; privado→global permitido; privado→mesmo owner permitido; privado→outro owner negado. Correção ainda requer novo runtime independente.
+- FAIL 07: produto químico junto de microrganismo válido era aceito. O helper agora rejeita qualquer linha com os dois IDs, antes de avaliar cada root isolado. Correção ainda requer novo runtime independente contra tabela e RPC.
 
 ### Inventário live reconciliado (somente leitura)
 - Consulta canônica nesta rodada encontrou **83 funções nominais** em `public|platform_private|private` que referenciam os cinco roots, sendo 32 `platform_private`, 2 `private` (`h7n`) e 49 `public`, além de **60 FKs**. Uma busca mais estrita por nomes qualificados encontrou 68; as outras 15 usam nomes não qualificados. O total live diverge em uma função das 84 informadas no snapshot independente e a diferença permanece explicitamente UNVERIFIED, sem inventar a 84ª entrada.
@@ -514,4 +516,6 @@ O SQL06 anterior continha sete views, mas três (`vw_bi_commercial_revenue`, `vw
 ### Laboratório — fase 07 separada
 - Live informado: 10 produtos (1 biológico, 9 `familia_catalogo NULL`) e 1 OS/1 programação/1 lote históricos ligados a produto sem família. Não há backfill nem reclassificação automática.
 - Guardas candidatos preservam updates históricos que não trocam produto/microrganismo; novas entradas exigem família explícita e somente `biologico`/microrganismo.
+- O preflight de `generate_production_orders_from_partner` foi atualizado por leitura canônica para `ad584fa71bd7cc2bb00f4887e5b3706b`; o corpo live contém e deve preservar `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED`, lock concorrente, aprovação financeira e idempotência existentes.
+- O SQL07 continua NO-GO: as cinco conversões ainda estão documentadas em comentários, sem corpos completos revisáveis; pedido misto e mensagens seguem UNVERIFIED. A correção do helper/trigger não autoriza aplicação.
 - Conversões de pedido misto/solicitação e mensagens continuam pendentes. SQL07 permanece NO-GO e separado da migração ownership.

@@ -9,4 +9,8 @@ SELECT CASE WHEN platform_private.lab_item_is_manufacturable(:bio_product::uuid,
 SELECT CASE WHEN platform_private.lab_item_is_manufacturable(NULL,:micro::uuid) THEN 'PASS' ELSE 'FAIL' END;
 SELECT CASE WHEN NOT platform_private.lab_item_is_manufacturable(:chemical_product::uuid,NULL) THEN 'PASS' ELSE 'FAIL' END;
 SELECT CASE WHEN NOT platform_private.lab_item_is_manufacturable(:fertilizer_product::uuid,NULL) THEN 'PASS' ELSE 'FAIL' END;
+-- FAIL fechado: microrganismo válido não pode tornar um produto químico fabricável.
+SELECT CASE WHEN NOT platform_private.lab_item_is_manufacturable(:chemical_product::uuid,:micro::uuid) THEN 'PASS' ELSE 'FAIL' END;
+-- Também rejeita vínculo duplo biológico+micro por ambiguidade; a entrada deve escolher um root.
+SELECT CASE WHEN NOT platform_private.lab_item_is_manufacturable(:bio_product::uuid,:micro::uuid) THEN 'PASS' ELSE 'FAIL' END;
 ROLLBACK;

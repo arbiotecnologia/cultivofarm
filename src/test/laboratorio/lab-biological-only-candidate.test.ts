@@ -8,10 +8,18 @@ describe("laboratório exclusivamente biológico — candidato 07", () => {
     expect(sql).toMatch(/p\.familia_catalogo='biologico'/);
     expect(sql).not.toMatch(/p\.tipo\s*=\s*'fungicida'/);
   });
-  it("aceita microrganismo e bloqueia química/fertilizante no servidor", () => {
-    expect(sql).toMatch(/WHEN p_microorganism_id IS NOT NULL/);
+  it("aceita roots isolados e bloqueia qualquer vínculo ambíguo produto+microrganismo", () => {
+    expect(sql).toMatch(/WHEN p_product_id IS NOT NULL AND p_microorganism_id IS NOT NULL THEN false/);
+    expect(sql.indexOf("p_product_id IS NOT NULL AND p_microorganism_id IS NOT NULL")).toBeLessThan(
+      sql.indexOf("WHEN p_product_id IS NOT NULL THEN EXISTS"),
+    );
     expect(sql).toMatch(/LAB_ITEM_NOT_MANUFACTURABLE/);
     expect(sql).toMatch(/ERRCODE='23514'/);
+  });
+  it("fixa o preflight no corpo live que preserva a contenção B2B", () => {
+    expect(sql).toContain("ad584fa71bd7cc2bb00f4887e5b3706b");
+    expect(sql).toContain("B2B_INTERNAL_DOWNSTREAM_UNVERIFIED");
+    expect(sql).not.toContain("68ca411c80fb9a191fdd55f65e171fc8");
   });
   it("protege programação e lote sem bloquear update histórico irrelevante", () => {
     expect(sql).toMatch(/BEFORE INSERT OR UPDATE OF produto_id,microrganismo_id ON public\.programacao_producao/);

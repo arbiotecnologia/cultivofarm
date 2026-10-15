@@ -234,6 +234,17 @@ describe("ownership — SQL candidato 05 backend", () => {
     expect(backend).toMatch(/catalog_composition_declaration_parent_scope/);
     expect(backend).toMatch(/catalog_cross_owner_reference/);
   });
+  it("composição permite micro global em produto próprio e fecha as quatro combinações de owner", () => {
+    const guard = backend.slice(
+      backend.indexOf("catalog_composition_declaration_guard() RETURNS trigger"),
+      backend.indexOf("REVOKE ALL ON FUNCTION platform_private.catalog_composition_declaration_guard"),
+    );
+    expect(guard).toMatch(/v_owner IS NULL AND v_micro_owner IS NOT NULL/);
+    expect(guard).toMatch(/v_owner IS NOT NULL AND v_micro_owner IS NOT NULL AND v_micro_owner IS DISTINCT FROM v_owner/);
+    expect(guard).not.toMatch(/v_micro_owner IS DISTINCT FROM v_owner THEN/);
+    // global→global e privado→global passam porque nenhuma condição de negação aceita v_micro_owner NULL.
+    expect(guard).not.toMatch(/v_owner IS NOT NULL AND v_micro_owner IS NULL/);
+  });
   it("apresentação própria é RPC transacional com CAS, ledger e sem organization_id do cliente", () => {
     const body = backend.slice(backend.indexOf("catalog_owned_presentation_mutate_core"));
     expect(body).toMatch(/catalog_tenant_actor\('mutate'\)/);
