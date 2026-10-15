@@ -71,7 +71,7 @@ describe("FASE 27C — KPIs", () => {
 
 describe("FASE 27C — 27B certificada", () => {
   it("hook mantém cache e queryKey", () => {
-    expect(HOOK).toContain('queryKey: ["catalogo-unificado", scope]');
+    expect(HOOK).toContain('queryKey: ["catalogo-unificado", scope, kp, km]');
     expect(HOOK).toContain("staleTime:");
     expect(HOOK).toContain("gcTime:");
     expect(HOOK).toContain("refetchOnWindowFocus: false");
