@@ -11,6 +11,21 @@ REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_mutate_core(text,text,
 REVOKE EXECUTE ON FUNCTION public.tenant_catalog_owned_list(text,text,integer,integer,boolean) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_list_core(text,text,integer,integer,boolean) FROM PUBLIC, anon, authenticated;
 
+-- Recorte 04: remover apenas os bloqueios de NOVAS referências. Nenhuma linha histórica é tocada.
+DO $$ DECLARE t text; BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'commercial_campaign_products','commercial_condition_item_prices','commercial_price_rules','cq_parametros_referencia',
+    'entregas','estoque_embalagens','estoque_produto','lotes','microorganism_crop_recommendations',
+    'microorganism_fiscal_profiles','microorganism_regulatory_dossiers','microorganism_regulatory_publication_snapshots',
+    'microorganism_targets','microorganism_technical_profiles','objetivos_visita_sugestoes','ordens_servico',
+    'ordens_servico_onfarm','os_faturamento_base','partner_order_items','partner_product_prices','partner_simulation_items',
+    'product_crop_recommendations','product_fiscal_profiles','product_target_recommendations','product_technical_profiles',
+    'produto_conformidade_perfis','produto_etiquetas','programacao_producao','registros_consultor',
+    'registros_consultor_recomendacoes','talhao_safras','talhoes','visitas_campo'] LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_catalog_private_ref_guard ON public.%I',t);
+  END LOOP;
+END $$;
+
 DO $$
 DECLARE v_private boolean; v_readers boolean; t text;
 BEGIN
