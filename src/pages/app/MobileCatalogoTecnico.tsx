@@ -12,6 +12,8 @@ import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/Mic
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPorItem";
 import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
+import { useTenantHiddenIds } from "@/hooks/useTenantCatalogVisibility";
+import { catalogoExcludeHidden } from "@/hooks/useCatalogoUnificado";
 
 type Tipo = "todos" | "produto" | "microrganismo";
 
@@ -30,6 +32,15 @@ interface Row {
 export default function MobileCatalogoTecnico() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Catálogo NOVO do celular: ocultos da empresa saem no servidor. Fichas abertas a partir de registros
+  // vinculados usam outras consultas e não são afetadas.
+  const hp = useTenantHiddenIds("produto");
+  const hm = useTenantHiddenIds("microrganismo");
+  const hiddenError = hp.status === "error" ? hp.message : hm.status === "error" ? hm.message : null;
+  const hiddenReady = (hp.status === "ready" || hp.status === "global") && (hm.status === "ready" || hm.status === "global");
+  const hpKey = hp.status === "ready" ? `${hp.scope.organizationId}|${hp.scope.userId}|${hp.ids.join(",")}` : hp.status;
+  const hmKey = hm.status === "ready" ? `${hm.scope.organizationId}|${hm.scope.userId}|${hm.ids.join(",")}` : hm.status;
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<Tipo>("todos");
   const [openMicro, setOpenMicro] = useState<any | null>(null);
@@ -38,11 +49,16 @@ export default function MobileCatalogoTecnico() {
   const { data: volumesCat } = useCatalogoVolumes();
 
   useEffect(() => {
+    if (!hiddenReady) { setRows([]); setLoading(!hiddenError); return; }
+    let alive = true;
+    const hiddenProd = hp.status === "ready" ? hp.ids : [];
+    const hiddenMicro = hm.status === "ready" ? hm.ids : [];
     (async () => {
       setLoading(true);
+      setLoadError(null);
       const [prod, micro, pp, mp] = await Promise.all([
-        supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true).order("nome"),
-        supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true).order("nome"),
+        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true) as any, hiddenProd).order("nome"),
+        catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true) as any, hiddenMicro).order("nome"),
         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto"),
         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto"),
       ]);
@@ -60,9 +76,13 @@ export default function MobileCatalogoTecnico() {
           resumo: (mpMap.get(m.id) as any)?.resumo_curto ?? m.descricao ?? null, raw: m,
         })),
       ];
+      if (!alive) return; // resposta tardia de escopo anterior é descartada
+      if (prod.error || micro.error) { setRows([]); setLoadError("Não foi possível carregar o catálogo."); setLoading(false); return; }
       setRows(result); setLoading(false);
     })();
-  }, []);
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hiddenReady, hiddenError, hpKey, hmKey]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -101,7 +121,11 @@ export default function MobileCatalogoTecnico() {
         </TabsList>
       </Tabs>
 
-      {loading ? (
+      {hiddenError || loadError ? (
+        <p role="alert" className="text-sm text-destructive py-6 text-center">
+          {hiddenError ? `Preferências da empresa indisponíveis: ${hiddenError}` : loadError}
+        </p>
+      ) : loading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : filtered.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-6">Nada encontrado.</p>
