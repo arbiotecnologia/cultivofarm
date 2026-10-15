@@ -1,9 +1,15 @@
+## RECORTE 18:51 — programação candidata, sem liberação
+- [x] Registrar evidência EXTERNA Renato: sessão real Admin FSF/Fagner Cockpit0OS; buscaOS-2026-000004 AR=0, limpar/recargaURLdireta=0, nenhum residual AR observado. Transição durante login NÃO gravada: somente estado pós-troca + testes locais de resposta atrasada.
+- [x] Sete funções contidas auth/anonEXECfalse informadas externamente: programar/lote/avancar/replan/refresh/alertas/resumoBI. Não reabrir.
+- [x] Auditar versão/schema/triggers/dependências SOMENTE rpc_programar_os_v1; candidato fechado reversível/hashes em scripts/rbac-audit/proposed-cockpit-programar-os-closed.sql e relatório docs/auditorias/cockpit-programar-candidato-20261015.md.43 checks PostgreSQL isolado PASS/Auth-schema simulados; duas conexões local1write1replay. Sem DDL remoto/GRANT/UI/publicação/fabricação/dados reais/lote.
+- [ ] Liberação programação NO-GO: contrato3args sem CAS/key permite retry antigo; concorrência revogação/filhos/fullschema, responsável profiles.id×user_id, refresh e efeitos B2B não homologados. Exige revisão específica, não autoriza fabricar.
+
 ## RECORTE DOCUMENTAL 18:47 — consulta b1b validada externamente; sem próxima fase
 - [x] HEAD real b1b6fb63 conferido; arquivar SQL EXATO fornecido20261015184433_h_cockpit_enable_scoped_read_only JÁ APLICADO EXTERNAMENTE/NÃO REAPLICAR; nenhum código/DDL/dado/permissão/publicação pelo agente.
 - [x] Registrar evidência externa Admin AR real:2 OS000003/000004, busca000004=1/limpar=2; desktop/mobile390x844.36 testes independentes/typecheck/lintfocal/buildPASS, scanner3986/0 informado; lintgloballegadopendente.
 - [x] Registrar SQL externo SET LOCAL ROLE authenticated +claims existentes/iat:AdminAR2/FSF0/Consultor0/Financeiro0/SAreadyfalse0;anon42501. Semiat0 é proteção esperada. Fonte183119 aplicada;61+10 assertions isolados não provam produção.
 - [x] Relatório/manifesto atualizados: consulta AdminAR PASS restrito externo; rollback documental revoga3grants authenticated e mantém contenções. Produção/mutações/programar/lote/publish NO-GO; ownership OFF.
-- [ ] Browser FSF/trocaidentidade pendentes login e recorte próprio; sem alegar prova integral ou implementar outra fase.
+- [x] Estado browser FSF pós-troca validado EXTERNAMENTE18:51; transição durante login não gravada, sem alegar prova integral.
 
 ## HISTÓRICO 18:32 — consulta Cockpit isolada (preparação autorizada, sem grant/publicação)
 - [x] HEAD46583eef conferido; arquivar SQL exato182119/182209/183119 JÁ APLICADO EXTERNAMENTE, NÃO REAPLICAR. Ledger/hashes/ACL read-only canônicos, conversorb112 intacto.

@@ -1,5 +1,8 @@
 # Cockpit — consulta Admin AR validada externamente; operações NO-GO
 
+## Evidência externa adicional — 2026-10-15 18:51 UTC
+Renato informa sessão real Admin FSF/Fagner: Cockpit0OS, buscaOS-2026-000004 da AR=0, limpar=0 e recarga de URL direta=0; nenhuma OS AR residual observada. Evidência de estado pós-troca, NÃO gravação da transição durante login. Testes locais de resposta atrasada são evidência separada/simulada, não substituem a transição real. Sete funções continuam auth/anon EXECUTE=false segundo relato externo: programar, lote, avançar, replanejar, refresh, alertas e resumoBI. Consulta AdminAR/FSF pós-troca PASS restrito externo; produção/mutações NO-GO. Auditoria autorizada subsequente SOMENTE candidata rpc_programar_os_v1, sem liberação ou fabricação.
+
 ## Atualização documental — 2026-10-15 18:47 UTC
 
 HEAD conferido nesta rodada: `b1b6fb63a992132e0d8391ea9b673c2914be4dfe` (b1b). Somente documentação/arquivamento pelo agente: sem alteração de código, DDL, dados, permissões, testes operacionais ou publicação; nenhuma próxima fase implementada.

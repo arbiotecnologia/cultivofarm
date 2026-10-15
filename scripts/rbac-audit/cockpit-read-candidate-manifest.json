@@ -185,7 +185,7 @@
       "cleared_rows": 2,
       "desktop": "PASS",
       "mobile": "390x844_PASS",
-      "fsf_identity_switch": "PENDING_LOGIN"
+      "fsf_identity_switch": "FSF_POST_LOGIN_PASS_EXTERNAL_TRANSITION_NOT_RECORDED"
     },
     "external_role_claims_iat": {
       "admin_ar": 2,
@@ -209,5 +209,25 @@
     },
     "rollback": "REVOKE_AUTHENTICATED_EXECUTE_H7N_EXECUTE_LIST_RPC_SELECT_VIEW_KEEP_ALL_CONTAINMENTS_NOT_EXECUTED",
     "own_verification": "ARCHIVE_AND_DOCUMENTS_ONLY_NOT_HOSTED_AUTH_RLS_BROWSER"
+  },
+  "programar_round_1851": {
+    "baseline_head": "d3e7ec307c6acc85540eb64c24f5a2157efe1ecb",
+    "candidate": "scripts/rbac-audit/proposed-cockpit-programar-os-closed.sql",
+    "report": "docs/auditorias/cockpit-programar-candidato-20261015.md",
+    "sha256": "03adccb681c648f8b8bb34b44aed823cc1c1db428e05e4ff740fdd59604e5ab5",
+    "baseline_definition_md5": "a42d6b07f51e6dacf41096f6cefb8163",
+    "checks": 43,
+    "environment": "DISPOSABLE_POSTGRES_REDUCED_SCHEMA_SIMULATED_AUTH",
+    "concurrency": "TWO_LOCAL_CONNECTIONS_SAME_TARGET_DATE_ONE_WRITE_ONE_REPLAY",
+    "acl": "CLOSED_UNCHANGED",
+    "remote": "SELECT_METADATA_ONLY_NO_DDL_GRANTS_DATA_UI_PUBLICATION",
+    "gate": "NO_GO",
+    "blockers": [
+      "THREE_ARG_CONTRACT_NO_CAS_OR_REQUEST_KEY",
+      "RESPONSIBLE_PROFILE_ID_VS_USER_ID",
+      "FULL_SCHEMA_REVOCATION_CHILD_CONCURRENCY",
+      "B2B_TRIGGER_EFFECTS_NOT_HOMOLOGATED",
+      "GLOBAL_INTERNAL_REFRESH_DEPENDENCY"
+    ]
   }
 }
