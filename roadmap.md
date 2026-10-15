@@ -1,3 +1,9 @@
+## RECORTE 21:51 — autorização focal de alteração administrativa de senha
+- [ ] Corrigir contexto has_role para JWT validado do chamador; erros RPC fechados e códigos públicos seguros, sem grants/DDL.
+- [ ] Preservar admin/tenant/readiness/alvo não-superadmin/auditoria e primeiro acesso; validar senha 8–128 letra+número no handler real e UI.
+- [ ] Testar handler real com mocks, regressão recuperação429, QA focal e relatório/rollback; sem senhas reais/emails/deploy/publicação.
+- [ ] Auditor: revisão/implantação controlada e verificação real; sessão Admin AR disponível ao auditor, não executar mutação real nesta entrega.
+
 ## RECORTE 21:45 — recuperação Auth, P2 UX
 - [x] Diagnóstico externo canônico: /recover 21:44:39Z e 21:44:46Z retornaram429/over_email_send_rate_limit; dois envios anteriores bem-sucedidos informados. Não é falha comprovada de cadastro.
 - [x] Códigos de limite/status429 tratados no formulário existente com mensagem neutra e pausa local60s, sem retry automático; sucesso/genérico/redirect/readiness preservados.
