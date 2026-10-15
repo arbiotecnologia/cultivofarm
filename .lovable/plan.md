@@ -94,33 +94,24 @@ Itens já vinculados (pedidos, OS, visitas, snapshots) continuam lidos pelas con
 ## 5. Fases (pequenas e reversíveis)
 
 **Fase 0 — diagnóstico somente leitura**
-- Rodar o SQL do anexo.
-- Listar grants, regras e RPCs/Edge que gravam nas cinco tabelas, e confirmar P1-a/b/c.
-- Saída: seção de evidências no relatório.
+- Rodar o SQL do anexo: grants, policies, funções DEFINER e views que leem as cinco tabelas.
+- Saída: seção de evidências no relatório. Sem contenção nova de escrita global.
 
-**Fase 1 — fechar escrita global (P1)**
-- Migration candidata que:
-  - restringe `formulacoes` (inserir, alterar, excluir) a Superadmin, mantendo a leitura;
-  - remove o ALL antigo de `catalogo_volumes` e de `culturas`, mantendo leitura equivalente.
-- O rollback recria as regras anteriores a partir de um snapshot textual, sem apagar dados.
-- Risco operacional: o editor de receita da base técnica (`composicaoSync`, `ProdutosTab`) para de gravar para técnicos. A UI mostra "somente plataforma". **Decisão sem evidência:** confirmar se técnicos editam receitas hoje em produção (há consulta no anexo).
-- Critério para fechar: tentativas negadas com login real de técnico e de gestor; Superadmin continua gravando; Bombarbio intacto.
+**Fase 1 — visibilidade por empresa + cache + consumidores (juntos)**
+- Tabela, RPCs INVOKER/núcleo DEFINER e ledger da visibilidade (CAS por `version` da própria tabela de visibilidade).
+- Leitor unificado aplicado a `useCatalogoUnificado`, `useCulturas`, seletores dos wizards desktop/celular, `ParceiroNovoPedido` e `usePartnerPrices` (somente novas seleções).
+- Chaves de cache `[..., organizationId, userId]`, limpeza no logout/troca de empresa e descarte de respostas atrasadas (epoch/AbortSignal).
+- Ação "Ocultar/Exibir na minha empresa" em `ProdutosTab`, `MicrorganismosTab` e culturas, para admin/gestor.
+- Critério: duas empresas com ocultações independentes; empresa forjada rejeitada; SA negado; histórico, PDF e itens já vinculados continuam legíveis.
 
-**Fase 2 — visibilidade por empresa**
-- Tabela, RPCs e ledger da visibilidade.
-- Integração nas leituras: `useCatalogoUnificado`, `useCulturas`, os seletores dos wizards, `ParceiroNovoPedido` e `usePartnerPrices` (só para novas seleções).
-- Ação "Ocultar/Exibir na minha empresa" em `ProdutosTab`, `MicrorganismosTab` e na aba de culturas, para admin/gestor.
-- Critério para fechar: duas empresas com ocultações independentes; histórico e PDF continuam mostrando o item oculto já vinculado.
+**Fase 2 — proteção dos leitores DEFINER e descendentes**
+- Inventariar e adaptar funções DEFINER, views `vw_catalogo_ficha_*`, leitores B2B/PDF/fiscal para filtrar por empresa antes de existir item próprio.
+- Critério: nenhum leitor devolve item com dono de outra empresa (testado com fixture transacional).
 
-**Fase 3 — itens próprios**
-- `owner_organization_id`, trigger de imutabilidade e RPCs de CRUD.
-- Editor reaproveitado da base técnica, com selo "Próprio".
-- Composição de item próprio reaproveita `formulacoes` ou as declarações, com dono derivado do produto.
-- Critério para fechar: a empresa A não vê nem edita itens da B; dono forjado é rejeitado; arquivar item referenciado preserva o histórico.
-
-**Fase 4 — cache e celular**
-- Chaves `[..., organizationId, userId]` e descarte de respostas atrasadas (epoch/AbortSignal).
-- Celular e B2B com o mesmo leitor.
+**Fase 3 — itens próprios (depois da Fase 2)**
+- `owner_organization_id`, trigger de imutabilidade e RPCs de CRUD; arquivamento lógico quando referenciado.
+- Editor reaproveitado da base técnica, com selo "Próprio"; composição com dono derivado do produto. CAS de receitas não usa `formulacoes.updated_at` (inexistente) — usa versão do produto.
+- Critério: empresa A não vê nem edita itens da B; dono forjado rejeitado; histórico preservado.
 
 As quatro abas do Superadmin continuam como estão, mostrando só o global. Itens próprios não aparecem nelas.
 
