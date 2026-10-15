@@ -844,6 +844,44 @@ LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.c
 REVOKE ALL ON FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) TO authenticated;
 
+
+-- =====================================================================================
+-- Wipe global: preserva privados e limita descendentes pelo pai global.
+DO $$ BEGIN
+  IF md5(pg_get_functiondef('public.platform_wipe_global_product_catalog(uuid,text,uuid)'::regprocedure))
+     <> '05bfc1751e785331e4b64d74a238a495' THEN RAISE EXCEPTION 'ownership05_wipe_drift'; END IF;
+END $$;
+CREATE OR REPLACE FUNCTION public.platform_wipe_global_product_catalog(p_actor_id uuid,p_reason text,p_correlation_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_before jsonb; v_deleted jsonb:='{}'::jsonb; v_existing jsonb; v_count bigint; v_total bigint:=0;
+BEGIN
+  IF p_actor_id IS NULL OR NOT public.is_platform_superadmin(p_actor_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  IF p_correlation_id IS NULL OR p_reason IS NULL OR char_length(btrim(p_reason)) NOT BETWEEN 10 AND 500 THEN RAISE EXCEPTION 'invalid_request' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('platform_wipe_global_product_catalog',0));
+  SELECT jsonb_build_object('ok',true,'idempotent',true,'correlation_id',correlation_id,'deleted',counts_after->'deleted',
+    'total_deleted',COALESCE((counts_after->>'total_deleted')::bigint,0)) INTO v_existing
+   FROM public.catalog_platform_admin_audit WHERE correlation_id=p_correlation_id AND operation='wipe_global_products' AND status='completed';
+  IF v_existing IS NOT NULL THEN RETURN v_existing; END IF;
+  SELECT jsonb_build_object(
+    'catalogo_volumes',(SELECT count(*) FROM public.catalogo_volumes v WHERE v.owner_organization_id IS NULL),
+    'product_crop_recommendations',(SELECT count(*) FROM public.product_crop_recommendations x JOIN public.produtos p ON p.id=x.produto_id WHERE p.owner_organization_id IS NULL),
+    'product_fiscal_profiles',(SELECT count(*) FROM public.product_fiscal_profiles x JOIN public.produtos p ON p.id=x.product_id WHERE p.owner_organization_id IS NULL),
+    'product_target_recommendations',(SELECT count(*) FROM public.product_target_recommendations x JOIN public.produtos p ON p.id=x.produto_id WHERE p.owner_organization_id IS NULL),
+    'product_technical_profiles',(SELECT count(*) FROM public.product_technical_profiles x JOIN public.produtos p ON p.id=x.produto_id WHERE p.owner_organization_id IS NULL),
+    'formulacoes',(SELECT count(*) FROM public.formulacoes f WHERE f.owner_organization_id IS NULL),
+    'produtos',(SELECT count(*) FROM public.produtos p WHERE p.owner_organization_id IS NULL)) INTO v_before;
+  DELETE FROM public.catalogo_volumes WHERE owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('catalogo_volumes',v_count); v_total:=v_total+v_count;
+  DELETE FROM public.product_crop_recommendations x USING public.produtos p WHERE p.id=x.produto_id AND p.owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('product_crop_recommendations',v_count); v_total:=v_total+v_count;
+  DELETE FROM public.product_fiscal_profiles x USING public.produtos p WHERE p.id=x.product_id AND p.owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('product_fiscal_profiles',v_count); v_total:=v_total+v_count;
+  DELETE FROM public.product_target_recommendations x USING public.produtos p WHERE p.id=x.produto_id AND p.owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('product_target_recommendations',v_count); v_total:=v_total+v_count;
+  DELETE FROM public.product_technical_profiles x USING public.produtos p WHERE p.id=x.produto_id AND p.owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('product_technical_profiles',v_count); v_total:=v_total+v_count;
+  DELETE FROM public.formulacoes WHERE owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('formulacoes',v_count); v_total:=v_total+v_count;
+  DELETE FROM public.produtos WHERE owner_organization_id IS NULL; GET DIAGNOSTICS v_count=ROW_COUNT; v_deleted:=v_deleted||jsonb_build_object('produtos',v_count); v_total:=v_total+v_count;
+  INSERT INTO public.catalog_platform_admin_audit(operation,actor_id,reason,correlation_id,status,counts_before,counts_after,completed_at)
+  VALUES('wipe_global_products',p_actor_id,btrim(p_reason),p_correlation_id,'completed',v_before,jsonb_build_object('deleted',v_deleted,'total_deleted',v_total),now());
+  RETURN jsonb_build_object('ok',true,'idempotent',false,'correlation_id',p_correlation_id,'deleted',v_deleted,'total_deleted',v_total);
+END $$;
+
 -- O gate nunca é aberto pelo candidato.
 DO $$ BEGIN IF platform_private.catalog_ownership_enabled() THEN RAISE EXCEPTION 'ownership05_gate_must_remain_off'; END IF; END $$;
 COMMIT;
