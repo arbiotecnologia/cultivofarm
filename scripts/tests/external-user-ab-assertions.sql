@@ -10,7 +10,8 @@ INSERT INTO public.clientes(id,organization_id) VALUES('11111111-aaaa-4aaa-8aaa-
 SELECT set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',true);
 SET LOCAL ROLE authenticated;
 INSERT INTO claims VALUES('manager',public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','55555555-5555-4555-8555-555555555555','manager@example.invalid','Manager'));
-INSERT INTO claims VALUES('tech',public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222','66666666-6666-4666-8666-666666666666','tech@example.invalid','Tech','parceiro_b2b_tecnico',ARRAY[]::uuid[],NULL));
+SELECT pg_temp.denied('technical role explicitly denied',$$SELECT public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222','66666666-6666-4666-8666-666666666666','tech@example.invalid','Tech','parceiro_b2b_tecnico',ARRAY[]::uuid[],NULL)$$);
+INSERT INTO claims VALUES('sibling',public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222','66666666-6666-4666-8666-666666666666','sibling@example.invalid','Sibling'));
 INSERT INTO claims VALUES('producer',public.b2b_claim_provisioning(NULL,'77777777-7777-4777-8777-777777777777','producer@example.invalid','Producer','cliente_produtor',ARRAY['11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa','22222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa']::uuid[],'11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa'));
 SELECT pg_temp.assert_true('retry does not reacquire',public.b2b_claim_provisioning('11111111-1111-4111-8111-111111111111','55555555-5555-4555-8555-555555555555','manager@example.invalid','Manager')->>'acquired'='false');
 SELECT pg_temp.denied('foreign partner',$$SELECT public.b2b_claim_provisioning('33333333-3333-4333-8333-333333333333',gen_random_uuid(),'foreign@example.invalid','Foreign')$$);
@@ -21,14 +22,15 @@ SELECT pg_temp.denied('empty producer',$$SELECT public.b2b_claim_provisioning(NU
 SELECT pg_temp.denied('email no adoption',$$SELECT public.b2b_claim_provisioning('22222222-2222-4222-8222-222222222222',gen_random_uuid(),'manager@example.invalid','Manager')$$);
 RESET ROLE;
 INSERT INTO auth.users(id,email,raw_app_meta_data) SELECT (body->>'user_id')::uuid,label||'@example.invalid',jsonb_build_object('b2b_provisioning_receipt',body->>'claim_id') FROM claims;
+UPDATE platform_private.b2b_provisioning_receipts SET lease_until=clock_timestamp()-interval '1 day';
 SELECT set_config('request.jwt.claim.sub','',true);
 SET LOCAL ROLE service_role;
 SELECT pg_temp.assert_true('finish '||label,public.b2b_finish_provisioning((body->>'claim_id')::uuid,(body->>'fence')::uuid,(body->>'user_id')::uuid)->>'success'='true') FROM claims;
 SELECT pg_temp.assert_true('replay '||label,public.b2b_finish_provisioning((body->>'claim_id')::uuid,(body->>'fence')::uuid,(body->>'user_id')::uuid)->>'replay'='true') FROM claims;
 SELECT pg_temp.assert_true('completed never compensated '||label,public.b2b_prepare_provisioning_compensation((body->>'claim_id')::uuid,(body->>'fence')::uuid,(body->>'user_id')::uuid)='completed') FROM claims;
 RESET ROLE;
-SELECT pg_temp.assert_true('dedicated tech role',count(*)=1 AND min(role::text)='parceiro_b2b_tecnico') FROM public.user_roles WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='tech');
-SELECT pg_temp.assert_true('sibling links exact',count(*)=1 AND min(partner_id::text)='22222222-2222-4222-8222-222222222222') FROM public.partner_users WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='tech');
+SELECT pg_temp.assert_true('dedicated sibling manager role',count(*)=1 AND min(role::text)='parceiro_b2b') FROM public.user_roles WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='sibling');
+SELECT pg_temp.assert_true('sibling links exact',count(*)=1 AND min(partner_id::text)='22222222-2222-4222-8222-222222222222') FROM public.partner_users WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='sibling');
 SELECT pg_temp.assert_true('producer exact clients',count(*)=2 AND count(*) FILTER(WHERE principal)=1 AND bool_and(is_active)) FROM public.user_clientes WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='producer');
 UPDATE public.user_clientes SET is_active=false WHERE user_id=(SELECT (body->>'user_id')::uuid FROM claims WHERE label='producer');
 SET LOCAL ROLE service_role;
@@ -36,7 +38,7 @@ SELECT pg_temp.denied('revoked client replay denied',format('SELECT public.b2b_f
 RESET ROLE;
 UPDATE public.partner_accounts SET commercial_owner_organization_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' WHERE id='22222222-2222-4222-8222-222222222222';
 SET LOCAL ROLE service_role;
-SELECT pg_temp.denied('changed partner denied',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='tech';
+SELECT pg_temp.denied('changed partner denied',format('SELECT public.b2b_finish_provisioning(%L::uuid,%L::uuid,%L::uuid)',body->>'claim_id',body->>'fence',body->>'user_id')) FROM claims WHERE label='sibling';
 RESET ROLE;
 UPDATE public.partner_accounts SET commercial_owner_organization_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' WHERE id='22222222-2222-4222-8222-222222222222';
 UPDATE public.clientes SET status_cliente='inativo' WHERE id='22222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa';

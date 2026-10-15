@@ -22,7 +22,7 @@
 +      const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 +      const clients = Array.isArray(cliente_ids) ? cliente_ids : cliente_id ? [cliente_id] : [];
 +      const primary = principal_cliente_id ?? clients[0] ?? null;
-+      if (rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
++      if (!["parceiro_b2b", "cliente_produtor"].includes(dedicatedRole) || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
 +        (role && role !== dedicatedRole) || (!isProducer && (!uuid(partner_id) || clients.length || primary ||
 +        (partner_papel != null && partner_papel !== expectedPapel))) ||
 +        (isProducer && (partner_id != null || partner_papel != null || clients.length < 1 || clients.length > 100 ||
@@ -51,7 +51,7 @@
        }
        const reply = (value: unknown, status: number) => new Response(JSON.stringify(value), {
          status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
-@@ -135,7 +141,8 @@
+@@ -135,12 +141,25 @@
          return reply({ error: "b2b_provisioning_invalid" }, 400);
        }
        const { data: claim, error: claimError } = await anonClient.rpc("b2b_claim_provisioning", {
@@ -61,3 +61,20 @@
        });
        if (claimError || !claim?.claim_id || !claim?.fence || !claim?.user_id ||
          claim.organization_id !== actorOrganizationId) return reply({ error: "b2b_provisioning_conflict" }, 409);
+       const receiptArgs = { p_claim: claim.claim_id, p_fence: claim.fence, p_user: claim.user_id };
+       if (claim.status === "completed") {
++        const { data, error } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
++        return !error && data?.success === true ? reply({ success: true, user_id: claim.user_id, replay: true }, 200)
++          : reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
++      }
++      if (claim.status === "claimed" && claim.acquired !== true) {
++        // Only reconcile the already reserved UUID. No Auth create/delete on retry.
++        const { data: owned, error: ownedError } = await adminClient.auth.admin.getUserById(claim.user_id);
++        if (ownedError || owned?.user?.id !== claim.user_id ||
++          owned.user.email?.toLowerCase() !== email.trim().toLowerCase() ||
++          owned.user.app_metadata?.b2b_provisioning_receipt !== claim.claim_id) {
++          return reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
++        }
+         const { data, error } = await adminClient.rpc("b2b_finish_provisioning", receiptArgs);
+         return !error && data?.success === true ? reply({ success: true, user_id: claim.user_id, replay: true }, 200)
+           : reply({ error: "b2b_provisioning_reconciliation_required" }, 409);
