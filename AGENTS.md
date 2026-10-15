@@ -7,7 +7,7 @@
 - Provisioned-admin password links use canonical SMTP and invitation fencing; operator recovery links stay disabled — only holders define passwords.
 - Operational invites use server-fixed `https://app.cultivofarm.com.br/reset-password`; Origin only authorizes, never builds redirects — prevents localhost fallback/open redirects.
 
-- Global communication settings require server-side `is_platform_superadmin`; tenant admins have no UI/endpoint access; workers use service-role-only RPCs — preserves tenant and secret isolation.
+- Global communication requires server `is_platform_superadmin`; tenant admins have no UI/endpoint access; workers use service-only RPCs — preserves tenant/secret isolation.
 
 - Version detection compares production meta ID, falling back to entry script; AuthProvider owns controls, navigation needs a click, `/sw.js` cleans up, `/push-sw.js` handles push without app-shell caching — prevents stale shells.
 
@@ -18,12 +18,12 @@
 - Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
 - Executive RPCs deny unproven scopes family-wide; kept reads require h15. UI preserves unavailability/scoped caches and never mounts blocked actions — prevents leaks.
 - Tenant admin derives org server-side; identity/tenant stay immutable, unowned links closed. create-user uses actor bearer, compensation, fixed public Auth codes and mocked tests; ref lock releases in finally — prevents leaks/local reentry, not distributed idempotency.
-- Stock requires h15/RBAC/feature, finite positive quantities (reversal NULL), tenant refs/notices, private txid context and literal keys. Only reviewed motor/batch have client ACL; private actor/tenant/content receipts and sorted locks prevent replay leaks; helpers stay closed.
+- Stock requires h15/RBAC/feature, finite positive quantities (reversal NULL), tenant refs/notices, private txid and literal keys. Only reviewed motor/batch have client ACL; actor/tenant/content receipts and sorted locks prevent replay leaks; helpers stay closed.
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Published versions are immutable; successors start DRAFT. Publishing closes only predecessor `effective_to` under `saas_plan_version_supersede` ticket — preserves snapshots/history.
 - Name/email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins stay separate — prevents parallel writes.
-- Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target checks, Auth confirmation, JWT fencing, expiry/retry audits stay server-side — avoids bypass.
+- Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target/Auth/JWT/expiry/retry checks and audits stay server-side — avoids bypass.
 - Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
 - Auth logout/renewal clears identity/cache; reload runs outside callbacks — avoids stale roles/deadlocks.
 - B2B credit RPCs use the canonical partner guard before the service-only calculator; financial settings require restrictive active-tenant policies for reads/writes — prevents cross-tenant credit access.
