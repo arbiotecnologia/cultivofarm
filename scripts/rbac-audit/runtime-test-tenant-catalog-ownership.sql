@@ -1,4 +1,4 @@
--- RUNTIME (rollback) dos candidatos 01+02 — executar SOMENTE após aplicação revisada, como owner, via psql.
+-- RUNTIME (rollback) dos candidatos 01–06/08–11 — executar SOMENTE após aplicação revisada, como owner, via psql.
 -- Tudo dentro de UMA transação que termina em ROLLBACK: o gate é aberto só aqui dentro e volta a OFF.
 -- Atores reais por variáveis (UUIDs; nunca imprimir e-mail/token):
 --   psql -v ar_admin=... -v fsf_admin=... -v sa=... -v financeiro=... -v consultor=... -v ar_org=... -f este.sql
@@ -8,15 +8,15 @@ BEGIN;
 CREATE TEMP TABLE _r(caso text PRIMARY KEY, ok boolean NOT NULL, obs text);
 CREATE TEMP TABLE _ctx(k text PRIMARY KEY, v text);
 GRANT SELECT, INSERT, UPDATE ON _r, _ctx TO authenticated, anon;
+-- Identidades devem existir; UUID/org são parâmetros do revisor, jamais e-mails/claims inventados.
+-- Este roteiro não autentica JWT/browser. Helpers de claims SQL não certificam Auth real.
 INSERT INTO _ctx VALUES ('ar_org', :'ar_org');
 -- Claims completas (sub/role/exp/iat), exigidas por catalog_tenant_actor.
 CREATE FUNCTION pg_temp.as_user(u uuid) RETURNS void LANGUAGE sql AS $$
   SELECT set_config('request.jwt.claims', jsonb_build_object('sub',u::text,'role','authenticated',
     'iat', extract(epoch FROM now())::bigint - 5, 'exp', extract(epoch FROM now()+interval '5 min')::bigint)::text, true),
          set_config('role','authenticated',true) $$;
-CREATE FUNCTION pg_temp.as_owner() RETURNS void LANGUAGE sql AS $$
-  SELECT set_config('role', current_user, true), set_config('request.jwt.claims','',true) $$;
-GRANT EXECUTE ON FUNCTION pg_temp.as_user(uuid), pg_temp.as_owner() TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION pg_temp.as_user(uuid) TO authenticated, anon;
 CREATE FUNCTION pg_temp.ctx(k text) RETURNS text LANGUAGE sql AS $$ SELECT v FROM _ctx WHERE _ctx.k=$1 $$;
 GRANT EXECUTE ON FUNCTION pg_temp.ctx(text) TO authenticated, anon;
 
@@ -53,7 +53,7 @@ BEGIN
     'nome_vazio|cultura|create|{"nome":"   "}|catalog_owned_invalid_payload|new',
     'dup_own_norm|cultura|create|{"nome":"  cultura   PROPRIA rt "}|catalog_owned_duplicate_own|new',
     'dup_own_combinado|cultura|create|{"nome":"Cultura Propri\u0061\u0301 RT"}|catalog_owned_duplicate_own|new',
-    'dup_global_active|produto|create|{"nome":"BOMBARBIO","tipo":"fungicida"}|catalog_owned_duplicate_global_active|new'] LOOP
+    'dup_global_active|produto|create|{"nome":"BOMBARBIO","tipo":"fungicida","familia_catalogo":"biologico","classe_catalogo":"biofungicida"}|catalog_owned_duplicate_global_active|new'] LOOP
     BEGIN
       PERFORM public.tenant_catalog_owned_mutate(split_part(c,'|',2),split_part(c,'|',3),NULL,NULL,split_part(c,'|',4)::jsonb,
         'motivo runtime caso', CASE split_part(c,'|',6) WHEN 'same' THEN k ELSE gen_random_uuid() END);
@@ -81,7 +81,8 @@ DO $$ BEGIN UPDATE public.culturas SET owner_organization_id=NULL WHERE id=pg_te
   INSERT INTO _r VALUES('owner_change_direct', false, 'UPDATE aceito sem erro');
   EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('owner_change_direct', SQLSTATE='42501', SQLERRM);
   WHEN OTHERS THEN INSERT INTO _r VALUES('owner_change_direct', false, 'erro inesperado: '||SQLSTATE||' '||SQLERRM); END $$;
-SELECT pg_temp.as_owner();
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true);
 DO $$ BEGIN UPDATE public.culturas SET owner_organization_id=NULL WHERE id=pg_temp.ctx('cultura')::uuid;
   INSERT INTO _r VALUES('owner_change_owner',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('owner_change_owner',SQLERRM='catalog_owner_immutable',SQLERRM); END $$;
 DO $$ BEGIN DELETE FROM public.culturas WHERE id=pg_temp.ctx('cultura')::uuid;
@@ -96,22 +97,26 @@ INSERT INTO _r SELECT 'fsf_nao_ve', NOT EXISTS (SELECT 1 FROM public.culturas WH
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','archive',pg_temp.ctx('cultura')::uuid,now(),'{}','fsf tenta arquivar',gen_random_uuid());
   INSERT INTO _r VALUES('fsf_write',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_write',SQLERRM='catalog_owned_not_found',SQLERRM); END $$;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"Cultura Própria RT"}','fsf mesmo nome que AR',gen_random_uuid());
-  INSERT INTO _r SELECT 'fsf_mesmo_nome_permitido', count(*)=2, 'AR e FSF com mesmo nome normalizado' FROM public.culturas
+  INSERT INTO _r SELECT 'fsf_mesmo_nome_permitido', count(*)=1, 'RLS: somente a cultura FSF visível; AR invisível' FROM public.culturas
     WHERE owner_organization_id IS NOT NULL AND platform_private.catalog_norm_name(nome)='cultura propria rt';
   EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',false,SQLERRM); END $$;
-SELECT pg_temp.as_owner(); SELECT pg_temp.as_user(:'sa');
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true); SELECT pg_temp.as_user(:'sa');
 INSERT INTO _r SELECT 'sa_nao_ve', NOT EXISTS (SELECT 1 FROM public.culturas WHERE id=pg_temp.ctx('cultura')::uuid), '';
 DO $$ BEGIN PERFORM platform_private.read_global_culture_detail_core(pg_temp.ctx('cultura')::uuid);
   INSERT INTO _r VALUES('sa_core_privado',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('sa_core_privado',SQLERRM='catalog_entity_unavailable',SQLERRM); END $$;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"SA X"}','sa tenta criar',gen_random_uuid());
   INSERT INTO _r VALUES('sa_write',false,''); EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('sa_write',true,SQLERRM); END $$;
-SELECT pg_temp.as_owner(); SELECT pg_temp.as_user(:'financeiro');
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true); SELECT pg_temp.as_user(:'financeiro');
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"Fin X"}','financeiro tenta',gen_random_uuid());
   INSERT INTO _r VALUES('financeiro_write',false,''); EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('financeiro_write',true,SQLERRM); END $$;
-SELECT pg_temp.as_owner(); SELECT pg_temp.as_user(:'consultor');
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true); SELECT pg_temp.as_user(:'consultor');
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"Cons X"}','consultor tenta',gen_random_uuid());
   INSERT INTO _r VALUES('consultor_write',false,''); EXCEPTION WHEN insufficient_privilege THEN INSERT INTO _r VALUES('consultor_write',true,SQLERRM); END $$;
-SELECT pg_temp.as_owner();
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true);
 
 -- 4. Composição própria + crossref + arquivado preserva histórico
 SELECT pg_temp.as_user(:'ar_admin');
@@ -122,14 +127,15 @@ BEGIN
   BEGIN PERFORM public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,'{}','composição ausente',gen_random_uuid());
     INSERT INTO _r VALUES('composition_missing',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('composition_missing',SQLERRM='catalog_owned_invalid_payload',SQLERRM); END;
   p := public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,
-    jsonb_build_object('itens',jsonb_build_array(jsonb_build_object('microrganismo_id',m->>'id','volume_ml',500))),'composição runtime',gen_random_uuid());
+    jsonb_build_object('status','completo','itens',jsonb_build_array(jsonb_build_object('ordem',1,'tipo_componente','microrganismo','microrganismo_id',m->>'id','componente_nome',NULL,'quantidade',500,'unidade','UFC/mL','base','por_volume_produto','natureza','concentracao_declarada'))),'composição runtime',gen_random_uuid());
   INSERT INTO _r VALUES('composition_own', true, '');
   INSERT INTO _ctx VALUES('micro', m->>'id'), ('produto', p->>'id');
   p := public.tenant_catalog_owned_mutate('produto','archive',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,'{}','arquivar runtime ar',gen_random_uuid());
   INSERT INTO _r SELECT 'archived_history', EXISTS (SELECT 1 FROM public.produtos WHERE id=(p->>'id')::uuid AND NOT ativo AND archived_at IS NOT NULL)
-    AND EXISTS (SELECT 1 FROM public.formulacoes WHERE produto_id=(p->>'id')::uuid), '';
+    AND EXISTS (SELECT 1 FROM public.produto_composicao_declaracoes WHERE produto_id=(p->>'id')::uuid), '';
 END $$;
-SELECT pg_temp.as_owner();
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true);
 DO $$ BEGIN INSERT INTO public.formulacoes(produto_id, microrganismo_id, volume_ml)
   VALUES ('1875527c-a65a-483b-a6c2-9122d5ec2a51', pg_temp.ctx('micro')::uuid, 1);
   INSERT INTO _r VALUES('crossref',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('crossref',SQLERRM='catalog_cross_owner_reference',SQLERRM); END $$;
@@ -146,35 +152,49 @@ DO $$ DECLARE n text; BEGIN
 SELECT pg_temp.as_user(:'ar_admin');
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,jsonb_build_object('nome',upper(pg_temp.ctx('inativa'))),'dup inativa runtime',gen_random_uuid());
   INSERT INTO _r VALUES('dup_global_inactive',false,''); EXCEPTION WHEN unique_violation THEN INSERT INTO _r VALUES('dup_global_inactive',SQLERRM='catalog_owned_duplicate_global_inactive',SQLERRM); END $$;
-SELECT pg_temp.as_owner();
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true);
 
 SELECT pg_temp.as_user(:'fsf_admin');
 INSERT INTO _r SELECT 'fsf_preco_privado_null', public.fn_catalogo_preco_canonico(pg_temp.ctx('produto')::uuid, NULL, 'litro') IS NULL
   AND NOT platform_private.catalog_item_in_reader_scope(pg_temp.ctx('produto')::uuid, NULL), 'escopo de preço' WHERE pg_temp.ctx('produto') IS NOT NULL;
-SELECT pg_temp.as_owner();
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true);
 
 -- 5b. Normalização: expressão EXATA do DDL
 INSERT INTO _r SELECT 'norm_'||k, platform_private.catalog_norm_name(x)=y, x FROM (VALUES
   ('acucar','Açúcar','acucar'),('unico','Único','unico'),('combinado',E'U\u0301nico','unico'),
   ('maiusc','ÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑÝ','aaaaaaeeeeiiiiooooouuuucny'),
   ('minusc','áàâãäåéèêëíìîïóòôõöúùûüçñýÿ','aaaaaaeeeeiiiiooooouuuucnyy')) t(k,x,y);
--- 5c. Proporção: limites (composição própria com 101/-1/0 rejeitada; 100 aceita)
+-- 5c. Contrato declarativo REAL: porcentagens >0 e <=100; nada em formulacoes.
 SELECT pg_temp.as_user(:'ar_admin');
-DO $$ DECLARE p jsonb; v numeric;
+DO $$ DECLARE p jsonb; v numeric; payload jsonb;
 BEGIN
-  p := public.tenant_catalog_owned_mutate('produto','create',NULL,NULL,'{"nome":"Produto Prop RT","tipo":"inoculante"}','produto proporcao rt',gen_random_uuid());
-  FOREACH v IN ARRAY ARRAY[101,-1,0]::numeric[] LOOP
+  p := public.tenant_catalog_owned_mutate('produto','create',NULL,NULL,
+    '{"nome":"Produto Quimico RT","tipo":"fungicida","familia_catalogo":"quimico","classe_catalogo":"fungicida"}',
+    'produto declarativo runtime',gen_random_uuid());
+  FOREACH v IN ARRAY ARRAY[NULL,101,-1,0,50,100]::numeric[] LOOP
+    payload := jsonb_build_object('status','completo','itens',jsonb_build_array(jsonb_build_object(
+      'ordem',1,'tipo_componente','ingrediente_ativo','microrganismo_id',NULL,'componente_nome','Ingrediente declarado',
+      'quantidade',v,'unidade','%m/v','base','por_volume_produto','natureza','concentracao_declarada')));
     BEGIN
-      PERFORM public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,
-        jsonb_build_object('itens',jsonb_build_array(jsonb_build_object('microrganismo_id',pg_temp.ctx('micro'),'volume_ml',10,'proporcao',v))),'proporcao rt invalida',gen_random_uuid());
-      INSERT INTO _r VALUES('proporcao_'||v,false,'aceitou');
-    EXCEPTION WHEN invalid_parameter_value THEN INSERT INTO _r VALUES('proporcao_'||v, SQLERRM='catalog_owned_invalid_payload', SQLERRM); END;
+      p := public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,
+        (p->>'updated_at')::timestamptz,payload,'percentual declarado runtime',gen_random_uuid());
+      INSERT INTO _r VALUES('percentual_'||coalesce(v::text,'null'),v IN (50,100),'gravado');
+    EXCEPTION WHEN OTHERS THEN
+      INSERT INTO _r VALUES('percentual_'||coalesce(v::text,'null'),
+        (v IS NULL OR v IN (101,-1,0)) AND SQLSTATE='22023' AND SQLERRM='catalog_owned_invalid_payload',SQLSTATE||' '||SQLERRM);
+    END;
   END LOOP;
-  p := public.tenant_catalog_owned_mutate('produto','composition',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,
-    jsonb_build_object('itens',jsonb_build_array(jsonb_build_object('microrganismo_id',pg_temp.ctx('micro'),'volume_ml',10,'proporcao',100))),'proporcao rt valida',gen_random_uuid());
-  INSERT INTO _r VALUES('proporcao_100', p->>'id' IS NOT NULL, '');
+  INSERT INTO _r SELECT 'quimico_sem_micro_ficticio',
+    NOT EXISTS(SELECT 1 FROM public.formulacoes WHERE produto_id=(p->>'id')::uuid)
+    AND EXISTS(SELECT 1 FROM public.produto_composicao_conjuntos WHERE produto_id=(p->>'id')::uuid AND status='completo'),'';
+  p := public.tenant_catalog_owned_mutate('produto','update',(p->>'id')::uuid,(p->>'updated_at')::timestamptz,
+    '{"composition":{"status":"rascunho","itens":[]}}','limpeza explicita runtime',gen_random_uuid());
+  INSERT INTO _r SELECT 'composition_only_clear',NOT EXISTS(SELECT 1 FROM public.produto_composicao_declaracoes WHERE produto_id=(p->>'id')::uuid),'';
 END $$;
-SELECT pg_temp.as_owner();
+RESET ROLE;
+SELECT set_config('request.jwt.claims','',true);
 -- 5d. UPDATE de linhas GLOBAIS existentes nas duas tabelas descendentes (produção atual) continua funcionando
 DO $$ BEGIN
   UPDATE public.formulacoes SET volume_ml=volume_ml WHERE produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
@@ -193,4 +213,5 @@ INSERT INTO _r SELECT 'ledger_visibilidade_4', count(*)=4, count(*)::text FROM p
 
 SELECT caso, ok, obs FROM _r ORDER BY caso;
 SELECT count(*) FILTER (WHERE ok) AS pass, count(*) FILTER (WHERE NOT ok) AS fail FROM _r;
+DO $$ BEGIN IF EXISTS(SELECT 1 FROM _r WHERE ok IS NOT TRUE) THEN RAISE EXCEPTION 'OWNERSHIP_RUNTIME_FAILED'; END IF; END $$;
 ROLLBACK;

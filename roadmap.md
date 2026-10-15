@@ -1,3 +1,9 @@
+## CONTINUAÇÃO AUTORIZADA — 2026-10-15 14:55 UTC
+- [ ] Matriz nominal 83 diretas + histórico, sete views originais, conjunto ordenado 01–06/08–11 e runtime corrigido; gate OFF.
+- [ ] SQL07 separado: corpos completos, conversões automáticas/mistas, famílias explícitas, histórico preservado e testes SQL executáveis.
+- [ ] Auth hospedado/browser e concorrência real bloqueados por revisão/aplicação independente; sem DDL/publicação nesta etapa.
+- [x] Evidência independente recebida: atomic13 51/51; identity+owned-flow 13/13; SQL10/preflight/harness 26/26. PGlite com stubs, não ambiente real.
+
 ## FASE 3 OWNERSHIP — RECORTE 11 — 2026-10-15 14:55 UTC
 - [x] FK 60ª reconciliada (`microorganism_regulatory_presentations.catalog_volume_id`, SET NULL); candidato 11 com helper/trigger por dono derivado do volume, do pai e do dossiê, writer com hash live; PGlite 14/14 PASS (stubs, não Auth real).
 - [x] Teste da corrida AR pendente → FSF: `onApplied` 0 vezes, sem invalidação; fluxo 13/13 PASS.
