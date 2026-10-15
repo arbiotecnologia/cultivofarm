@@ -221,3 +221,63 @@ Integração 6/6 (inclui ocultar/exibir com troca de aba, releitura atrasada e r
 - Dívida P2 de escalabilidade: `hidden_ids` + `NOT IN` até 300 ocultos; acima disso indisponibilidade explícita. Próxima fase precisa de anti-join no servidor e paginação no leitor completo.
 - Testes de UI com outros roles, fluxo mobile integral e concorrência real.
 - Ownership/CRUD próprio (fase futura, após contenção de leitores DEFINER e descendentes).
+
+---
+
+## FASE 3 — Ownership e CRUD próprio: CANDIDATO (base 66c0f449, 15/10/2026)
+
+**Estado: fundação segura DESABILITADA. Nada aplicado, nada publicado.** O fechamento abrangente de leitores não coube neste recorte; por isso o CRUD só existe atrás de um gate de servidor que nasce OFF e exige `readers_certified_at`.
+
+Arquivos: `scripts/rbac-audit/proposed-tenant-catalog-ownership.sql`, `rollback-tenant-catalog-ownership.sql`, `runtime-test-tenant-catalog-ownership.sql`; frontend `src/lib/catalogo/tenantCatalogOwnership.ts` (`TENANT_OWNED_CATALOG_ENABLED=false`) + `src/test/catalogo/tenant-catalog-ownership.test.ts`.
+
+### Inventário (leitura SQL própria no canônico, read-only)
+- Schema: nenhuma das 5 tabelas tem dono; grants anon/authenticated = SELECT apenas (preservado).
+- Policies SELECT permissivas por papel SEM filtro de dono (ex.: `culturas` "Portal: Ler culturas" `USING true`; produtos/micros internos e B2B; volumes cliente_produtor/B2B/staff). Policies de escrita legadas existem (Staff manage culturas/volumes, formulações por `can_manage_catalog_tecnico`), inertes por falta de grant.
+- Descendentes por FK: produtos 29 tabelas, microrganismos 22, culturas 8, catalogo_volumes 1 (dossiês regulatórios). Inclui pedidos/simulações/itens B2B, preços (`commercial_*`, `partner_product_prices`), fiscal (`product_fiscal_profiles`, `microorganism_fiscal_profiles`), produção (OS, on-farm, lotes, programação, estoque, embalagens, etiquetas), entregas, visitas/recomendações, talhões/safras.
+- SECURITY DEFINER que leem as tabelas: ~70 (lista abaixo).
+
+### Mapa de leitores DEFINER (precisam filtrar dono ANTES de abrir o gate)
+| Grupo | Funções | Exigência | Status |
+|---|---|---|---|
+| SA/plataforma globais | `platform_private.read_global_*`, `platform_read_global_product_catalog_core`, `read_global_product_composition_core`, `read_global_b2b_state_core`, `set_global_*`, `create_global_*`, `update_global_*`, `catalog_volume_*`, `change_global_volume`, `platform_wipe_global_product_catalog` | `owner_organization_id IS NULL` em leitura e alvo de escrita | UNVERIFIED (não alterado) |
+| Visibilidade Fase 1 | `catalog_tenant_selection_core`, `catalog_tenant_set_visibility_core` | só global (ocultar/exibir) + próprios na seleção | UNVERIFIED |
+| B2B/portal | `get_partner_catalog_secure`, `get_partner_catalog_tecnico_secure`, `b2b_save_technical_simulation`, `get_portal_cliente_b2b_*_detail_secure`, `generate_production_orders_from_partner`, `rpc_b2b_*` | global + privados do FORNECEDOR do vínculo comercial | UNVERIFIED |
+| Preço | `fn_catalogo_preco_canonico`, `fn_catalogo_litro_canonico`, `fn_b2b_resolve_base_unit_price`, `fn_catalogo_sync_mestre_preco`, `rpc_commercial_simulator`, `rpc_cc_validate_matrix`, `trg_mestre_guard_preco_canonico` | escopo de dono do ator/fornecedor | UNVERIFIED |
+| Fiscal | `rpc_fiscal_draft_save`, `rpc_fiscal_nfe_readiness_v1`, `fn_fiscal_scenario_coverage`, `rpc_associate_microorganism_fiscal_product` | itens do emitente | UNVERIFIED |
+| Produção/entrega | `get_production_planning_detail`, `rpc_criar_embalagens_pos_envase`, `rpc_gerar_etiqueta_produto`, `fn_entrega_build_snapshot_v1`, `fn_comprovante_entrega_montar_v1`, `rpc_get_comprovante_entrega_data`, `_entrega_seed_checklist`, `fn_notify_lab_on_programacao` | escopo do tenant da OS | UNVERIFIED |
+| Visita/cultura | `rpc_criar_visita_idempotente`, `rpc_get_visita_workspace`, `rpc_listar_atendimentos_tecnicos_v1` | cultura global ou própria do tenant | UNVERIFIED |
+| Regulatório/fichas | `approve_*_profile_with_audit`, `update_*_b2b_description`, `rpc_microorganism_regulatory_overview`, `rpc_regulatory_dossier_ensure_draft` | só global | UNVERIFIED |
+| Códigos | `proximo_codigo`, `set_codigo_produto`, `set_codigo_microrganismo` | sem vazamento de sequência entre empresas | UNVERIFIED |
+
+Como nenhum privado pode existir com gate OFF, nenhum leitor acima vaza hoje — contenção por ausência de dados, não por filtro.
+
+### O que o candidato faz
+- Coluna `owner_organization_id` (NULL=global, sem backfill) nas 5 tabelas; `archived_at` em produtos/micros.
+- Trigger raiz: dono imutável; dono não-NULL só com gate aberto e vindo do núcleo (impede SA/service_role/DML lateral).
+- Trigger descendente: formulação/volume herdam dono do pai; componente privado de outra empresa → `catalog_cross_owner_reference`.
+- Policies RESTRICTIVE de SELECT: global + empresa do ator; SA/anon só global.
+- Núcleo `catalog_owned_mutate_core` (DEFINER, `search_path=''`) atrás de fachada INVOKER `tenant_catalog_owned_mutate` (sem parâmetro de empresa, sem anon): admin/gestor + `catalogo_precos` (reusa `catalog_tenant_actor('mutate')`, SA negado); create/update/archive lógico/composição; CAS `updated_at`; idempotência ator+empresa+chave com hash; motivo 10–500; ledger imutável antes/depois.
+- Duplicata no servidor: normalização case/acentos/espaços/pontuação, advisory lock por nome, índice único parcial por empresa; global ativo → `duplicate_global_active` (UI orienta localizar e Exibir); global inativo → `duplicate_global_inactive` (orienta solicitar ativação); outra empresa nunca consultada. Identificadores além de nome (código/registro) NÃO conferidos: `codigo` é gerado e não há campo de registro confiável — pendente.
+- Invariantes pré/pós: Bombarbio ativo/B2B, receita 334/333/333, zero privados, gate OFF.
+
+### Rollback
+Fecha gate e revoga EXECUTE; se houver privados, preserva coluna/policies/triggers (não expõe); sem privados, remove estrutura. Ledger e Fase 1 nunca tocados; sem GRANT.
+
+### Evidências
+| Item | Resultado |
+|---|---|
+| Testes novos (9) + catálogo completo 619/619 | PASS local |
+| typecheck app/node | PASS local |
+| lint arquivos novos | 0 erros/0 warnings; baseline ampliado 82 erros/8 warnings mantido como dívida |
+| scanner de segredos | PASS local |
+| build | PASS local (27.93s) |
+| SQL candidato aplicado / runtime | **UNVERIFIED** — não executado; exige revisão e aplicação independentes |
+| Concorrência 2 conexões | UNVERIFIED |
+| UI CRUD / selo Global/Próprio nas telas | NÃO implementado (gate fechado; tipos sem coluna) |
+
+### Pendente (bloqueia abrir o gate)
+1. Filtrar dono em cada leitor do mapa; B2B pelo fornecedor do vínculo comercial existente.
+2. Apresentações (`catalogo_volumes`) próprias: RPC não incluída.
+3. Triggers nos descendentes de pedidos/preço/fiscal/produção rejeitando privado de outra empresa.
+4. UI em `/base-tecnica` (editores atuais, selo, confirmação de arquivamento) após tipos regenerados.
+5. Identificadores além de nome para duplicata; escala NOT IN 300 (P2) herdada.

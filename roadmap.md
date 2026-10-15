@@ -706,3 +706,11 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] P2: substituir hidden_ids+NOT IN (limite 300) por anti-join + paginação no servidor.
 - [ ] Registrar reexecução independente dos testes do diálogo contra 05c21b13.
 - [ ] FAIL real de cache pós-publicação de7d5cc5 (reexibir não refletia sem reload): correção local feita com teste de integração; aguarda revisão, publicação e prova em navegador real.
+
+## Catálogo por empresa — Fase 3 (ownership/CRUD próprio) — CANDIDATO 15/10/2026
+- [x] Inventário schema/policies/~70 DEFINER/descendentes (read-only) e mapa por leitor no relatório.
+- [x] SQL candidato da fundação com gate OFF, rollback seguro e runtime rollback (não aplicados).
+- [x] Helper frontend desabilitado + mensagens de duplicata (Exibir / solicitar ativação) + testes.
+- [ ] Aplicação/runtime independentes — bloqueado: revisão externa.
+- [ ] Filtrar dono em todos os leitores do mapa (SA/B2B/preço/fiscal/produção/visita) — bloqueado: nova rodada.
+- [ ] Apresentações próprias, triggers em descendentes comerciais/fiscais, UI CRUD em /base-tecnica — após gate.
