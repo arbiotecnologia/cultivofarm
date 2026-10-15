@@ -1,6 +1,6 @@
 ## AUTORIZAÇÃO FASE07 — 2026-10-15 15:24 UTC
 - [x] Inspeção live: duas entradas authenticated DEFINER sem vínculo comercial; risco P1 estrutural, não exploração confirmada. Guards B2B portal não provam mandato da empresa fornecedora.
-- [ ] Candidato07: h15 + owner comercial explícito/ativo/client scope antes de status/replay, negação interna preservada; testes locais AR/FSF/inexistente e regressões.
+- [x] Candidato07: h15 + owner comercial explícito/ativo/client scope antes de status/replay; interno negado. PGlite 45/45 stubs, Vitest 46/46, lint focal 0/0, build automático OK.
 - [ ] Revisão independente e runtime com Auth real/fixtures transacionais autorizadas; sem aplicação/publicação. NULL owner fail-closed, sem inferir vínculo. Ownership/SQL13 priorizados; fase07 separada.
 
 ## P1 VISIBILIDADE — 2026-10-15 15:21 UTC

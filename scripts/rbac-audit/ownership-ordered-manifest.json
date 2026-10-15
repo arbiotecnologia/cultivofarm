@@ -69,8 +69,9 @@
   ],
   "separate_phase": {
     "path": "scripts/rbac-audit/proposed-lab-biological-only-07.sql",
-    "sha256": "6c68e356ce6381f309249d42cf456ed6254a52be839ce79fff7ed7a42d32329a",
-    "apply_authorized": false
+    "sha256": "aecc7b8a92e47f65601c7d4488b2ada434e0f2d380f847c3bf289485015d7e21",
+    "apply_authorized": false,
+    "authorization_review": "h15 + explicit commercial owner; no portal mandate inference; local 45/45 stubs, hosted UNVERIFIED"
   },
   "rollback": "rollback-tenant-catalog-ownership.sql",
   "runtime": "runtime-test-tenant-catalog-ownership.sql",
