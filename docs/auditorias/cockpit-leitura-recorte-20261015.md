@@ -1,7 +1,7 @@
 # Cockpit existente — leitura e preparação, 2026-10-15
 
 ## Resultado
-**NO-GO aplicação/publicação. Candidato local revisável; nenhuma mudança remota ou de UI.**
+**P1 corrigido internamente e contido por aplicação EXTERNA. Leitura funcional/publicação NO-GO; nenhum DDL remoto ou mudança de UI pelo agente.** Baseline vigente e evidências na atualização17:53; descrições de candidato abaixo são históricas, NÃO REAPLICAR.
 Não conceder EXECUTE isolado. Ownership OFF; diagnóstico e fabricação permanecem NO-GO. Não iniciado módulo/rota/fase nova.
 
 ## Proveniência externa pós-deploy eb33bc
@@ -71,3 +71,17 @@ O candidato h7n exige a versão/nome/hash exatos do ledger de contenção, ausê
 **17/17 Vitest PASS**, três arquivos, em 17:49 UTC; o harness contém **19/19 verificações PostgreSQL PASS**. Antes: predicado vulnerável simulado permite FSF ler AR e linhas sem escopo; contenção: SQLSTATE 42501 na view/helper; depois do replacement: ACL/owner iguais e view ainda 42501. Só no PostgreSQL descartável os testes permitem executar a função candidata para medir o filtro (AR/FSF/SA/anon/inativo/link revogado/SQL NULL). Nenhum grant remoto, nenhuma conta real. O hash-before da contenção é substituído apenas pelo hash da definição local reduzida: não representa compilação/preflight integral no schema hospedado.
 
 Pós-aplicação `postapply-h7n-containment-readonly.sql` agora exige ledger/hash, corpo candidato e ACL fechada, e falha se leitura retornar até mesmo zero linhas sem 42501. Não executado remotamente: depende da aplicação/revisão pelo revisor e contas validadas; não vale PASS do filtro tenant. Freshness/descendentes e cache seguem não certificados. **GO preparação revisável; NO-GO aplicação pelo agente, abertura RPC/view, fabricação/publicação.** Quatro migrations arquivadas/aplicadas preservadas, ownership OFF, diagnóstico separado. Não há escolha humana necessária para excluir NULL; escopo não provado é sempre invisível.
+
+## Atualização externa 17:53 UTC — correção aplicada, recorte documental encerrado
+**20261015175232_h_cockpit_helper_tenant_fence_closed JÁ APLICADA EXTERNAMENTE / NÃO REAPLICAR / NÃO REABRIR.** Revisor usou apply_migration no helper2bff sem BEGIN/COMMIT externos. SQL literal recuperado de schema_migrations em `scripts/rbac-audit/applied-20261015175232_h_cockpit_helper_tenant_fence_closed.sql`; MD5 da serialização e dos bytes arquivados: **6fd5ddc5ef8f766e816918dde1ac71e7**. Comentários históricos “candidato/não aplicado” pertencem ao SQL aplicado exato e foram preservados; este relatório e manifesto determinam o estado vigente. Arquivo proposed marcado histórico, não reaplicar.
+
+**Proveniência externa Renato/revisor:** 19 assertions do harness2bff em PGlite isolado PASS, Auth/schema simulados, sem fullpreflight; aplicação e preflight completo/pós-condições hospedados PASS. Esses resultados não foram executados pelo agente e não são browser/controle positivo de leitura funcional.
+
+**Evidência própria somente ledger/metadados canônicos:** project_ref swzpzcwiasxmjutrmvkm; versão/nome/conteúdo exatos; prosrc **6dc6de9ce046847310973b5666249177**, definição **e690611cd0967e7697cdbecb8c40e984**; helper anon/authenticated EXECUTE=false; view authenticated SELECT=false; RPC authenticated EXECUTE=false; conversor **b112888e28d8a5727df713e0ae7bcd1b**, intacto. Não lidos registros operacionais nem executado DDL, claims, cadastro ou alteração de contas/dados.
+
+**Visita — evidência externa UIAdminAR:** VT-2026-0002, UUID `1995fdfa-2976-42a7-8a2b-0324497f76d2`, agora aprovada via UI; evento `recomendacao_liberada`, version6, `enviado_aprovacao→aprovado`, autoria `a7d45277-6dec-413d-bf6b-86620c1ef39f`, **zero OS**. Supersede apenas o estado histórico de rascunho; não reproduzido/consultado pelo agente. Não implica conversão/fabricação/conclusão comercial.
+
+**Gate vigente:** P1 do helper corrigido internamente + contido; leitura funcional, freshness da MV, referências descendentes, microprojeção e cache seguem **NO-GO**. Cinco migrations aplicadas preservadas; ownership OFF; diagnóstico separado e fabricação bloqueada. Não reabrir helper/view/RPC, programar/lote/publish. Arquivamento não autoriza aplicação duplicada nem publicação.
+
+### Novo pedido explícito — CNPJ parceiro (backlog, sem diagnóstico presumido)
+Renato solicitou investigar falha ao consultar/buscar CNPJ no novo cadastro de parceiro. Informação de partida relatada: `ParceiroB2BFormDialog` chama BrasilAPI diretamente com timeout12s; **não auditada nesta rodada documental**. Próximo levantamento deve distinguir CNPJ/máscara/dígitos, rede/CORS/status/limites e timeout; verificar preservação de campos manuais, duplicidade e logs sem segredos. Não importar causa antiga da consulta fiscal, não trocar destino canônico, não cadastrar parceiro real só para teste. Pedido registrado no roadmap; investigação/correção não executadas neste recorte.

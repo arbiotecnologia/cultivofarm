@@ -1,4 +1,7 @@
--- CANDIDATO P1 HELPER SOMENTE — NÃO APLICADO. RPC COCKPIT CONTINUA FECHADO.
+-- HISTÓRICO JÁ APLICADO EXTERNAMENTE COMO 20261015175232 — NÃO REAPLICAR ESTE ARQUIVO.
+-- Arquivo exato sem BEGIN/COMMIT externos: applied-20261015175232_h_cockpit_helper_tenant_fence_closed.sql.
+-- O preflight abaixo exige hash-before antigo; baseline vigente é e690611cd0967e7697cdbecb8c40e984.
+-- RPC COCKPIT CONTINUA FECHADO. NÃO RESTAURAR GRANTS.
 -- Preserva ACL/owner/papéis; não modifica MV, dados, view ou operações.
 -- A ACL atual observada está contida: NÃO restaurar authenticated/view SELECT.
 -- BASE OBRIGATÓRIA: 20261015173622 JÁ APLICADA EXTERNAMENTE, NÃO REAPLICAR.

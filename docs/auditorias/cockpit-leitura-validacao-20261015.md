@@ -1,5 +1,7 @@
 # Validação local do recorte Cockpit
 
+**Estado vigente17:53:** helper aplicado externamente como20261015175232, P1 corrigido internamente/contido; trechos “não aplicado” abaixo são históricos. NÃO REAPLICAR. Leitura funcional permanece NO-GO.
+
 Resultado executado nesta rodada: `bun run test -- src/test/cockpit-laboratorio/tenantFencePostgres.test.ts src/test/cockpit-laboratorio/auditoria.test.ts src/test/cockpit-laboratorio/refinamentos.test.tsx`.
 
 - **17/17 Vitest PASS**, 3 arquivos: candidato PostgreSQL 1 (14 verificações internas), auditoria existente 9 e refinamentos existentes 7.
@@ -25,3 +27,10 @@ Relatório principal: `docs/auditorias/cockpit-leitura-recorte-20261015.md`. Man
 - Rodada 17:49 UTC: **17/17 Vitest PASS**, incluindo **19/19 verificações PostgreSQL** (before vulnerável, contenção arquivada, after preservando ACL/owner e matriz de filtro). Auth/tenant/RBAC simulados, hash de preflight da definição reduzida substituído só localmente; não prova schema hospedado ou JWT.
 - Fixtures locais: AR, FSF, cliente NULL, organização NULL e cliente inexistente. A descrição externa vigente da MV é uma linha AR e uma sem cliente resolvido; NULL nunca é global.
 - Nenhum DDL remoto, UI, dados, Auth ou publicação. Revisão/aplicação e pós-teste hospedado aguardam revisor; filtro hospedado UNVERIFIED com ACL fechada. Build/typecheck manual não executados, sem mudanças no aplicativo.
+
+## Atualização17:53 — evidências externas e arquivo exato
+- Revisor independente: harness2bff **19/19 PGlite PASS**, Auth/schema simulados, sem fullpreflight; **preflight completo/pós-condições hospedados PASS** ao aplicar20261015175232. Relatado por Renato, não execução própria, não browser.
+- Agente confirmou somente schema_migrations/metadados no destino canônico: arquivo exato MD5 **6fd5ddc5ef8f766e816918dde1ac71e7**, prosrc6dc6de9ce046847310973b5666249177, definitione690611cd0967e7697cdbecb8c40e984, ACL helper/view/RPC fechada, conversorb112888 preservado.
+- Sem nova execução de testes do aplicativo/typecheck/build nesta rodada documental; testes anteriores mantêm suas limitações. Conferência de arquivo/JSON/diff documental não certifica RLS/Auth ou leitura funcional.
+- VT-2026-0002 aprovada/zeroOS registrada como UI externa; novo pedido de investigação CNPJ registrado em backlog sem causa presumida ou cadastro real de teste.
+- Recorte documental encerrado; freshness/descendentes/microprojeção/cache/leitura funcional NO-GO, sem reaplicação, grant, alteração do aplicativo/dados ou publicação.
