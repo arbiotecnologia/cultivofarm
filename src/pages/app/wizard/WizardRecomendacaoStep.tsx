@@ -86,7 +86,7 @@ export default function WizardRecomendacaoStep({
   useEffect(() => {
     setDialogOpen(false); setEditing(null); setForm(EMPTY_FORM); setPendingRows([]);
     setMicroSearch(""); setProdSearch(""); setMicroOffset(0); setProdOffset(0);
-    return () => { fence.current.generation += 1; };
+    return () => { if (fence.current.identity === identity) fence.current.generation += 1; };
   }, [identity]);
 
   const { data: remoteRows = [], refetch } = useQuery({
@@ -201,8 +201,10 @@ export default function WizardRecomendacaoStep({
           p_expected_versao: versao,
         });
         if (error) throw error;
+        if (!current()) return;
         await removePendingRecomendacao(clientUuid);
       } catch (err: any) {
+        if (!current()) return;
         toast.error(err?.message || "Falha ao salvar; ficou pendente de sincronização");
       }
     }

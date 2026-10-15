@@ -1,5 +1,5 @@
--- CANDIDAT 12 — NON APPLIQUÉ. Après 01–06/08–11; ne dépend pas de 07.
--- Recommandation commerciale != fabrication. Aucun filtre de famille, aucun changement d'ID historique.
+-- CANDIDATO 12 — NÃO APLICAR. Após 01–06/08–11; independente de 07.
+-- Recomendação comercial != fabricação. Sem filtro de família ou alteração dos IDs históricos.
 BEGIN;
 DO $$ BEGIN
  IF platform_private.catalog_ownership_enabled() THEN RAISE EXCEPTION 'ownership12_gate_must_remain_off'; END IF;
