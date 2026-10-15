@@ -26,7 +26,7 @@ export function useOwnedCatalogMutation(entity: TenantCatalogEntity, onApplied?:
     mutationFn: async (input: OwnedMutation & { scopeKey: string }) => {
       const current = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}` : "";
       if (!capability.canManage || current !== input.scopeKey) throw new Error("A sessão ou a empresa mudou. Reabra o cadastro.");
-      return mutateOwnedItem(supabase as any, input);
+      return mutateOwnedItem(supabase, input);
     },
     onSuccess: async () => {
       if (!capability.scope) return;
@@ -46,7 +46,7 @@ export function useOwnedPresentationMutation(onApplied?: () => Promise<void> | v
     mutationFn: async (input: OwnedPresentationMutation & { scopeKey: string }) => {
       const current = capability.scope ? `${capability.scope.organizationId}|${capability.scope.userId}` : "";
       if (!capability.canManage || current !== input.scopeKey) throw new Error("A sessão ou a empresa mudou. Reabra as apresentações.");
-      return mutateOwnedPresentation(supabase as any, input);
+      return mutateOwnedPresentation(supabase, input);
     },
     onSuccess: async () => {
       await Promise.all([
