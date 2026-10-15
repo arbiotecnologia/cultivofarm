@@ -1,7 +1,9 @@
 ## FASE 3 OWNERSHIP — RECORTE 04 CANDIDATO — 2026-10-15 13:07 UTC
 - [x] Candidato 05 backend: 12 writers SA com hashes live e definições completas global-only; cross-owner de `microrganismos.product_id`; RLS/guards hereditários de composição; RPC própria transacional de apresentação/preço/dose. Gate continua OFF.
 - [x] `platform_wipe_global_product_catalog` reescrito no 05 com hash live, roots globais e descendentes limitados por join ao pai global.
-- [ ] Candidato 05 ainda NÃO fecha todos os leitores/views/BI; esses itens bloqueiam aplicação/abertura do gate e seguem NO-GO.
+- [ ] Candidato 06 fecha estruturalmente 3 leitores operacionais e 7 views com hashes live; o inventário total live ainda contém leitores operacionais sem definição candidata, portanto backend integral segue aberto/NO-GO.
+- [x] Contrato de composição própria corrigido para `rascunho|completo`, tipos/unidades/bases/naturezas reais e payload estruturado, sem inferir composição nem tocar `formulacoes`.
+- [ ] Gate permanece OFF: aplicação remota, runtime Auth real, concorrência e revisão independente do SQL06 seguem NO-GO.
 - [x] Integrada correção sintática reproduzida em PGlite 0.5.10: `char_length(...) > (CASE ... END) THEN`. A evidência externa PGlite (fundação compila + 8 checks) é registrada como harness isolado com stubs, **não** certificação do PostgreSQL/Auth/migração real.
 - [x] Confirmado no schema canônico read-only: `formulacoes.microrganismo_id` é NOT NULL. Receita biológica permanece em `formulacoes`; composição química/fertilizante candidata reutiliza `produto_composicao_conjuntos/declaracoes`, sem micro fictício e sem relaxar constraint.
 - [x] Candidato 04 adiciona manifesto fail-closed das referências operacionais e bloqueia novas referências privadas nos descendentes B2B/preço/fiscal/produção/visita/regulatório ainda não certificados; históricos e fluxos globais permanecem intocados. Gate segue OFF, sem DDL remoto/publicação/grants amplos.
@@ -728,6 +730,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Recorte 04 autorizado: manifesto/trigger fail-closed contém novas referências privadas em B2B/fiscal/produção/visita/regulatório ainda não certificados; Edge continua apenas com patch preparado.
 - [ ] Aplicar 01+02 e rodar runtime/concorrência — bloqueado: revisão independente.
 - [x] Revisão 3 (A–F de 110c9c41) + candidato 03 (helpers SA de volume, catálogos B2B por fornecedor) + patch Edge preparado.
-- [ ] SA writers não-volume e leitores/views/BI com definições completas e md5 antes/depois — ainda bloqueiam abrir o gate.
+- [ ] SA writers não-volume no 05 e 3 leitores/7 views no 06 têm corpos candidatos; ainda faltam fechar individualmente leitores B2B/pedidos/simulações, produção, entrega, visita, fiscal e regulatório restantes do inventário live.
 - [x] UI própria preparada na rota existente com origem Global/Próprio e controles reutilizáveis desmontados pelo gate OFF; química/fertilizantes candidata reutiliza conjuntos/declarações.
 - [ ] Criar/editar/arquivar/restaurar, apresentações/doses/preços próprios e integrações operacionais completas permanecem desligados até aplicação/revisão/runtime real.
