@@ -14,6 +14,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor" }, profile: { user_id: "actor", organization_id: "tenant", ativo: true, senha_provisoria: false }, roles: ["cliente_produtor"], loading: false }) }));
 
 // ---------------------------------------------------------------------------
 // Mocks — Supabase, usePortalCliente, react-router navigate
@@ -47,6 +49,7 @@ function makeBuilder(rows: any[] = []) {
     in: vi.fn(() => b),
     or: vi.fn(() => b),
     order: vi.fn(() => b),
+    abortSignal: vi.fn(() => b),
     then: (resolveFn: any) => Promise.resolve({ data: rows, error: null }).then(resolveFn),
   };
   return b;
@@ -71,9 +74,9 @@ describe("Fase 10.1 — /portal/acompanhamento", () => {
       "@/pages/portal/PortalAcompanhamento"
     );
     render(
-      <MemoryRouter initialEntries={["/portal/acompanhamento"]}>
+      <QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={["/portal/acompanhamento"]}>
         <PortalAcompanhamento />
-      </MemoryRouter>,
+      </MemoryRouter></QueryClientProvider>,
     );
     expect(screen.getByRole("heading", { name: /Acompanhamento/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Ordens de Serviço/i })).toBeInTheDocument();

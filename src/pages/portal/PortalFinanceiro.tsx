@@ -19,7 +19,7 @@ export default function PortalFinanceiro() {
     queryFn: async (signal) => {
       let q = supabase.from("accounts_receivable")
         .select("*, accounts_receivable_installments(*)")
-        .eq("customer_id", clienteId!)
+        .eq("customer_id", clienteId ?? "")
         .order("first_due_date", { ascending: false }).abortSignal(signal);
       if (filtro !== "ALL") q = q.eq("status", filtro);
       const { data, error } = await q;
