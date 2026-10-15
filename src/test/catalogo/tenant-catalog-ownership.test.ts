@@ -214,6 +214,13 @@ describe("ownership — SQL candidato 05 backend", () => {
     expect(backend).not.toMatch(/UPDATE platform_private\.catalog_ownership_gate SET enabled=true/);
     expect(backend).not.toMatch(/GRANT (INSERT|UPDATE|DELETE) ON public\./);
   });
+  it("wipe global usa pai global e preserva linhas próprias", () => {
+    const wipe = backend.slice(backend.indexOf("-- Wipe global"));
+    expect(wipe).toMatch(/ownership05_wipe_drift/);
+    expect(wipe).toMatch(/DELETE FROM public\.produtos WHERE owner_organization_id IS NULL/);
+    expect(wipe).toMatch(/DELETE FROM public\.product_fiscal_profiles x USING public\.produtos p/);
+    expect(wipe).not.toMatch(/DELETE FROM public\.%I WHERE id IS NOT NULL/);
+  });
 });
 
 describe("ownership — rollback e runtime", () => {

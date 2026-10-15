@@ -422,7 +422,7 @@ O arquivo `proposed-tenant-catalog-ownership-04-operational-containment.sql` fix
 | `microrganismos.product_id` | FECHADO estrutural | trigger mesmo-owner; runtime UNVERIFIED |
 | composição conjuntos/declarações | FECHADO estrutural | RLS herdada + crossref; runtime UNVERIFIED |
 | apresentação/preço/dose próprio | FECHADO candidato | RPC atômica/auditada; runtime real UNVERIFIED |
-| `platform_wipe_global_product_catalog` | **ABERTO/NO-GO** | definição atual apaga conjunto fixo sem owner; exige patch completo por joins antes do gate |
+| `platform_wipe_global_product_catalog` | FECHADO estrutural no 05 | hash live + corpo completo; roots filtradas e descendentes por join ao pai global; runtime real UNVERIFIED |
 | fiscal/regulatório (`rpc_*`, `fn_fiscal_scenario_coverage`) | **ABERTO/NO-GO** | definições live inventariadas; ainda sem corpos 05 global-only |
 | 7 views/BI e demais funções do inventário total | **ABERTO/NO-GO** | não há certificação total nesta rodada; 04 bloqueia novas refs, não filtra leitura |
 
