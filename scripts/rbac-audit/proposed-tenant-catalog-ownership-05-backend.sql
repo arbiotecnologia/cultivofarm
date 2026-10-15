@@ -838,7 +838,8 @@ BEGIN
          OR (v_payload?'rotulo' AND jsonb_typeof(v_payload->'rotulo') NOT IN ('string','null'))
          OR (v_payload?'ordem' AND jsonb_typeof(v_payload->'ordem') IS DISTINCT FROM 'number') THEN
         RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
-      v_volume:=COALESCE((v_payload->>'volume_ml')::numeric,v_old.volume_ml); v_price:=COALESCE((v_payload->>'preco_brl')::numeric,v_old.preco_brl);
+      v_volume:=CASE WHEN v_payload?'volume_ml' THEN (v_payload->>'volume_ml')::numeric ELSE v_old.volume_ml END;
+      v_price:=CASE WHEN v_payload?'preco_brl' THEN (v_payload->>'preco_brl')::numeric ELSE v_old.preco_brl END;
       IF v_volume<=0 OR v_volume>1000000 OR scale(v_volume)>6 OR v_price<0 OR v_price>1000000000 OR scale(v_price)>2 THEN RAISE EXCEPTION 'catalog_owned_presentation_invalid' USING ERRCODE='22023'; END IF;
       UPDATE public.catalogo_volumes SET volume_ml=v_volume,preco_brl=v_price,
         rotulo=CASE WHEN v_payload?'rotulo' THEN NULLIF(btrim(v_payload->>'rotulo'),'') ELSE rotulo END,
