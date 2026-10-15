@@ -1,0 +1,63 @@
+--- a/supabase/functions/create-user/index.ts
++++ b/supabase/functions/create-user/index.ts
+@@ -91,7 +91,7 @@
+ 
+     // Existing entrypoint, actor-scoped preflight. Never authorize this branch
+     // with the elevated SDK or turn a partner role into a cumulative staff role.
+-    if (rolesArr.some((r) => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico")) {
++    if (rolesArr.some((r) => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(r))) {
+       if (Deno.env.get("SUPABASE_URL") !== "https://swzpzcwiasxmjutrmvkm.supabase.co" ||
+         typeof callerId !== "string" || !callerId || claimsData.claims.role !== "authenticated" ||
+         !Number.isSafeInteger(claimsData.claims.iat)) {
+@@ -101,23 +101,29 @@
+       }
+       const dedicatedRole = rolesArr[0];
+       const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
+-      if (dedicatedRole !== "parceiro_b2b" || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
+-        (role && role !== dedicatedRole) || typeof partner_id !== "string" ||
+-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(partner_id) ||
+-        (partner_papel != null && partner_papel !== expectedPapel) ||
+-        cliente_id || principal_cliente_id || (Array.isArray(cliente_ids) && cliente_ids.length > 0)) {
++      const isProducer = dedicatedRole === "cliente_produtor";
++      const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
++      const clients = Array.isArray(cliente_ids) ? cliente_ids : cliente_id ? [cliente_id] : [];
++      const primary = principal_cliente_id ?? clients[0] ?? null;
++      if (rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
++        (role && role !== dedicatedRole) || (!isProducer && (!uuid(partner_id) || clients.length || primary ||
++        (partner_papel != null && partner_papel !== expectedPapel))) ||
++        (isProducer && (partner_id != null || partner_papel != null || clients.length < 1 || clients.length > 100 ||
++        !clients.every(uuid) || new Set(clients).size !== clients.length || !clients.includes(primary)))) {
+         return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+         });
+       }
+-      const { data: preflight, error: preflightError } = await anonClient.rpc("b2b_provisioning_preflight", {
+-        p_partner: partner_id, p_role: dedicatedRole, p_papel: expectedPapel,
+-      });
+-      if (preflightError || preflight?.organization_id !== actorOrganizationId ||
+-        preflight?.partner_id !== partner_id || preflight?.role !== dedicatedRole || preflight?.papel !== expectedPapel) {
+-        return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
++      if (!isProducer) {
++        const { data: preflight, error: preflightError } = await anonClient.rpc("b2b_provisioning_preflight", {
++          p_partner: partner_id, p_role: dedicatedRole, p_papel: expectedPapel,
+         });
++        if (preflightError || preflight?.organization_id !== actorOrganizationId ||
++          preflight?.partner_id !== partner_id || preflight?.role !== dedicatedRole || preflight?.papel !== expectedPapel) {
++          return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
++            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
++          });
++        }
+       }
+       const reply = (value: unknown, status: number) => new Response(JSON.stringify(value), {
+         status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+@@ -135,7 +141,8 @@
+         return reply({ error: "b2b_provisioning_invalid" }, 400);
+       }
+       const { data: claim, error: claimError } = await anonClient.rpc("b2b_claim_provisioning", {
+-        p_partner: partner_id, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
++        p_partner: isProducer ? null : partner_id, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
++        p_role: dedicatedRole, p_clients: clients, p_primary: primary,
+       });
+       if (claimError || !claim?.claim_id || !claim?.fence || !claim?.user_id ||
+         claim.organization_id !== actorOrganizationId) return reply({ error: "b2b_provisioning_conflict" }, 409);
