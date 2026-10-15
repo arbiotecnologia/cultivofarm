@@ -1,3 +1,10 @@
+## RECORTE 19:19 — corrigir GAP INSERT do candidato ec4fcc1 (sem aplicação)
+- [x] Registrar evidência EXTERNA: revisor46 assertions PGlite/Auth-schema simulados PASS; probe adicional INSERT programada sem aprovar_os comprovou GAP, candidato anterior NÃO apto à aplicação.
+- [x] Guard candidato nega INSERT distinto de aberta (NULL inclusive), sem whitelist/GUC;96 assertions PostgreSQL isolado PASS, before antigo FAIL programada reproduzido;43programar+19Vitest PASS. Relatório/hash/rollback atualizados; frontend/catálogo/lote intocados.
+- [x] Produtores revisados: manual default aberta/conversor b112 aberta preservados; B2B generate_production_orders_from_partner hash8f7acca4 insere aprovada, authEXEC=true atual. Guard candidato o bloqueará; aplicação NO-GO até contrato específico, nenhuma ACL alterada. Serviços/importadores externos UNVERIFIED.
+- [x] Demanda paralela cadastro B2B/Produtor registrada somente para planejamento posterior; NÃO implementar neste recorte.
+- [ ] Aprovação/programação/fabricação permanecem NO-GO até revisão independente e contratos/dependências resolvidos; sem frontend/catálogo/lote/DDL/grants/publicação/dados reais.
+
 ## RECORTE 19:04 — aprovação separada, preparação fechada
 - [x] Decisão humana: somente Administrador/Gestor aprova; Produção somente programa OS previamente aprovada. HEAD inicial557ee0e1, candidato programação não aplicado.
 - [x] Aprovação separada inexistente localizada no inventário: preparar menor RPC fechada + guards UPDATE/INSERT nas duas OS, auditoria transacional e check_os_status_transition byte-preservado. Candidato/hashes/dependências/rollback em docs/auditorias/cockpit-aprovacao-separada-candidato-20261015.md;46 checks PostgreSQL isolado/Auth-schema simulados PASS, ROLE/RLS reduzida não hospedada;19Vitest+43programar PASS. Sem DDL remoto/grants/UI/publicação/dados/fabricação. Lote fora de escopo.

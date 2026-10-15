@@ -36,6 +36,8 @@ ALTER TABLE ordens_servico_onfarm ALTER COLUMN status SET DEFAULT 'aberta';
     sql+='CREATE TRIGGER trg_sync_os_classica_downstream AFTER UPDATE ON ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_sync_os_classica_downstream();\nCREATE TRIGGER trg_sync_os_onfarm_downstream AFTER UPDATE OF status ON ordens_servico_onfarm FOR EACH ROW EXECUTE FUNCTION sync_os_onfarm_downstream();\n'
     live=(ROOT/'scripts/rbac-audit/applied-20261015183119_h_cockpit_live_source_tenant_chain_closed.sql').read_text()
     sql+=re.search(r'CREATE OR REPLACE FUNCTION private\.h7n_esteira_laboratorio\(\).*?\$function\$;',live,re.S).group()
+    # Historical advanced row predates the new guard; no backfill or repair.
+    sql+=f"INSERT INTO ordens_servico(id,status) VALUES({f.q(38)},'programada'); INSERT INTO ordens_servico_onfarm(id,status) VALUES({f.q(39)},'finalizada');"
     candidate=(ROOT/'scripts/rbac-audit/proposed-cockpit-os-approval-closed.sql').read_text()
     sql+=candidate[candidate.index('CREATE OR REPLACE FUNCTION private.assert_os_approval_scope'):candidate.index('DO $post$')]
     program=(ROOT/'scripts/rbac-audit/proposed-cockpit-programar-os-closed.sql').read_text()
@@ -56,6 +58,7 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
         nonlocal sql
         labels.append(label); sql+=action+f"\nDO $t$ BEGIN IF NOT (({expr}) IS TRUE) THEN RAISE EXCEPTION 'FAIL {label}'; END IF; RAISE NOTICE 'PASS {label}'; END $t$;\n"
     call=f"public.rpc_aprovar_os_v1({O},'manual')"
+    check('historical advanced rows preserved',f"(SELECT status::text FROM ordens_servico WHERE id={f.q(38)})='programada' AND (SELECT status::text FROM ordens_servico_onfarm WHERE id={f.q(39)})='finalizada' AND NOT EXISTS(SELECT 1 FROM laboratorio_esteira_eventos WHERE os_id IN ({f.q(38)},{f.q(39)}))")
     def deny(label,statement,change='',undo=''):
         nonlocal sql
         labels.append(label)
@@ -92,7 +95,31 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     sql+=f"SELECT set_config('t.role','administrador',false); INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(35)},{C},{P},{A}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({f.q(55)},{A},{f.q(35)},{P});"
     check('admin direct approval',f"(SELECT status FROM ordens_servico WHERE id={f.q(35)})='aprovada'",f"UPDATE ordens_servico SET status='aprovada' WHERE id={f.q(35)};")
     check('direct audited once',"(SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='aprovar_os')=3")
-    deny('INSERT approved bypass',f"INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id,status) VALUES({f.q(36)},{C},{P},{A},'aprovada')")
+    # Every enum state is concrete: keep the fixture aligned with canonical enums.
+    # Rejected INSERTs must leave neither OS nor approval/audit effects, even as postgres.
+    states=['aprovada','programada','em_producao','em_cq','envase','aguardando_reserva','pronto_entrega','entregue','finalizada']
+    for table,advanced in [('ordens_servico',states),('ordens_servico_onfarm',states+['cancelada'])]:
+        columns='id,cliente_id,produto_id,status'
+        for status in advanced+[None]:
+            label=f'INSERT {table} {status or "NULL"}'
+            value='NULL' if status is None else "'"+status+"'"
+            deny(label,f"INSERT INTO {table}({columns}) VALUES({f.q(36)},{C},{P},{value})")
+            check(label+' no row/event',f"NOT EXISTS(SELECT 1 FROM {table} WHERE id={f.q(36)}) AND NOT EXISTS(SELECT 1 FROM laboratorio_esteira_eventos WHERE os_id={f.q(36)}) AND NOT EXISTS(SELECT 1 FROM programacao_producao WHERE ordem_servico_id={f.q(36)} OR ordem_servico_onfarm_id={f.q(36)})")
+        # Unknown is rejected by the real enum input cast before row triggers run.
+        labels.append(f'INSERT {table} unknown enum')
+        sql+=f"""DO $t$ BEGIN BEGIN
+INSERT INTO {table}({columns}) VALUES({f.q(36)},{C},{P},'unknown');
+RAISE EXCEPTION 'FAIL unknown enum {table}';
+EXCEPTION WHEN invalid_text_representation THEN RAISE NOTICE 'PASS unknown enum {table}'; END; END $t$;"""
+        check(f'INSERT {table} unknown no row/event',f"NOT EXISTS(SELECT 1 FROM {table} WHERE id={f.q(36)}) AND NOT EXISTS(SELECT 1 FROM laboratorio_esteira_eventos WHERE os_id={f.q(36)})")
+        check(f'INSERT {table} explicit aberta allowed',f"(SELECT status::text FROM {table} WHERE id={f.q(36)})='aberta' AND NOT EXISTS(SELECT 1 FROM laboratorio_esteira_eventos WHERE os_id={f.q(36)})",f"INSERT INTO {table}({columns}) VALUES({f.q(36)},{C},{P},'aberta');")
+        sql+=f"DELETE FROM {table} WHERE id={f.q(36)};"
+    # A service role is not an authorization whitelist. GUC flags cannot bypass the guard.
+    sql+='GRANT INSERT,SELECT ON ordens_servico,ordens_servico_onfarm TO service_role;'
+    sql+="SELECT set_config('app.skip_approval','true',false); SET ROLE service_role;"
+    for table in ['ordens_servico','ordens_servico_onfarm']:
+        deny('service no bypass '+table,f"INSERT INTO {table}(id,cliente_id,produto_id,status) VALUES({f.q(36)},{C},{P},'programada')")
+    sql+='RESET ROLE;'
     # Real local ROLE/RLS evaluation, reduced policies only; not hosted RLS equivalence.
     sql+='''GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated;
 ALTER FUNCTION platform_private.h15_actor_organization() SET search_path TO '';

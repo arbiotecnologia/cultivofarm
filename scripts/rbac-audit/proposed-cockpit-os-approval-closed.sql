@@ -1,4 +1,4 @@
--- CANDIDATO LOCAL 19:04. NÃO APLICADO / SEM LIBERAÇÃO.
+-- CANDIDATO LOCAL 19:19 (corrige GAP INSERT ec4fcc1). NÃO APLICADO / SEM LIBERAÇÃO.
 -- Transação única após revisão independente; sem GRANT, sem mudanças de RLS.
 -- NÃO aplicar programar juntamente: suas lacunas continuam bloqueadoras.
 CREATE TEMP TABLE approval_existing_baseline ON COMMIT DROP AS
@@ -12,6 +12,8 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'CANONICAL_REF_REQUIRED'; END IF;
  IF md5(pg_get_functiondef('public.check_os_status_transition()'::regprocedure)) IS DISTINCT FROM '496a214d87fc831a53b2f16d3524ddea'
  OR md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure)) IS DISTINCT FROM 'a42d6b07f51e6dacf41096f6cefb8163'
+ OR md5(pg_get_functiondef('public.rpc_converter_visita_em_os(uuid,text)'::regprocedure)) IS DISTINCT FROM 'b112888e28d8a5727df713e0ae7bcd1b'
+ OR md5(pg_get_functiondef('public.generate_production_orders_from_partner(uuid)'::regprocedure)) IS DISTINCT FROM '8f7acca4a7179ebf6e4e3ea100e8ea90'
  OR md5(pg_get_functiondef('private.h7n_esteira_laboratorio()'::regprocedure)) IS DISTINCT FROM 'bad38b5200629cc887767e62b7a46e40'
  OR md5(pg_get_functiondef('public.fn_sync_os_classica_downstream()'::regprocedure)) IS DISTINCT FROM '06e64b76968f91e19f03b24363ac610a'
  OR md5(pg_get_functiondef('public.sync_os_onfarm_downstream()'::regprocedure)) IS DISTINCT FROM 'f5ba706828f4c157a55a8d594b5c1848'
@@ -24,6 +26,11 @@ BEGIN
  IF (SELECT md5(string_agg(tablename||':'||policyname||':'||permissive||':'||roles::text||':'||cmd||':'||coalesce(qual,'')||':'||coalesce(with_check,''),E'\n' ORDER BY tablename,policyname)) FROM pg_policies WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao')) IS DISTINCT FROM '7d292abeaf7cd90cb82e70b596de0acf' THEN RAISE EXCEPTION 'APPROVAL_RLS_DRIFT'; END IF;
  IF to_regprocedure('public.rpc_aprovar_os_v1(uuid,text)') IS NOT NULL OR to_regprocedure('private.assert_os_approval_scope(uuid,text)') IS NOT NULL OR to_regprocedure('private.guard_os_separate_approval()') IS NOT NULL THEN RAISE EXCEPTION 'APPROVAL_CANDIDATE_ALREADY_PRESENT'; END IF;
  IF has_function_privilege('authenticated','public.rpc_programar_os_v1(uuid,text,date)','EXECUTE') OR has_function_privilege('anon','public.rpc_programar_os_v1(uuid,text,date)','EXECUTE') THEN RAISE EXCEPTION 'PROGRAMAR_NOT_CLOSED'; END IF;
+ -- Dependência B2B revisada: o produtor vigente insere aprovada. Será negado
+ -- pelo guard, sem editar seu corpo/ACL nem converter implicitamente para aberta.
+ -- Aplicação/liberação permanece bloqueada até contrato B2B auditável independente.
+ IF (SELECT string_agg(enumlabel,',' ORDER BY enumsortorder) FROM pg_enum WHERE enumtypid='public.status_os'::regtype) IS DISTINCT FROM 'aberta,aprovada,programada,em_producao,em_cq,envase,aguardando_reserva,pronto_entrega,entregue,finalizada'
+ OR (SELECT string_agg(enumlabel,',' ORDER BY enumsortorder) FROM pg_enum WHERE enumtypid='public.status_os_onfarm'::regtype) IS DISTINCT FROM 'aberta,aprovada,programada,em_producao,em_cq,envase,aguardando_reserva,pronto_entrega,entregue,finalizada,cancelada' THEN RAISE EXCEPTION 'APPROVAL_ENUM_DRIFT'; END IF;
 END $pre$;
 
 CREATE OR REPLACE FUNCTION private.assert_os_approval_scope(p_os_id uuid,p_origin text)
@@ -80,8 +87,10 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $func
 DECLARE v_origin text; v_org uuid;
 BEGIN
  IF TG_OP='INSERT' THEN
- -- Evita aprovação embutida na criação; INSERT aberta e demais regras existentes preservados.
- IF NEW.status::text='aprovada' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Criação normal exclusivamente aberta, inclusive pelo serviço/DEFINER.
+ -- NULL e qualquer estado avançado não podem saltar a aprovação humana.
+ -- Sem whitelist service_role, flags GUC ou reparo de históricos.
+ IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  RETURN NEW;
  END IF;
  IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;
