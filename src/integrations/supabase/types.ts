@@ -25753,6 +25753,24 @@ export type Database = {
         }
         Returns: Json
       }
+      tenant_catalog_visit_selection_page: {
+        Args: {
+          p_entity_type: string
+          p_include_ids: string[]
+          p_limit: number
+          p_offset: number
+          p_registro_id: string
+          p_search: string
+        }
+        Returns: {
+          familia_catalogo: string
+          id: string
+          in_page: boolean
+          nome: string
+          selectable: boolean
+          total: number
+        }[]
+      }
       unassign_b2b_user_client_secure: {
         Args: { p_cliente_id: string; p_reason?: string; p_user_id: string }
         Returns: boolean
