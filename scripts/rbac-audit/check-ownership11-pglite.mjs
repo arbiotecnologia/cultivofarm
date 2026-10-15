@@ -51,7 +51,7 @@ await check('ON DELETE SET NULL preservado (sem remover apresentação)',async()
 await check('preflight real aborta se vínculo privado já existir',async()=>{
   await db.exec('ALTER TABLE microorganism_regulatory_presentations DISABLE TRIGGER trg_catalog_regulatory_presentation_guard');
   await db.query('INSERT INTO microorganism_regulatory_presentations(dossier_id,catalog_volume_id,volume_ml,label) VALUES ($1,$2,77,$3)',[id(31),id(22),'forjado']);
-  const pre=sql.match(/DO \$g\$[\s\S]*?END \$g\$;/)[0];
+  const pre='DO \u0024\u0024 BEGIN '+sql.slice(sql.indexOf('  IF EXISTS (SELECT 1 FROM public.microorganism_regulatory_presentations'),sql.indexOf('END \u0024g\u0024;'))+' END \u0024\u0024;';
   await assert.rejects(db.exec(pre),e=>e.message==='ownership11_private_regulatory_link_present');
 });
 console.log(`${pass} PASS`);
