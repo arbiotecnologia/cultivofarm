@@ -12,7 +12,7 @@ vi.mock("@/lib/catalogo/tenantCatalogOwnership", async (orig) => ({ ...(await or
 
 function query(table: string) {
   const data = table === "culturas" ? [{ id: "g-soja", nome: "Soja", descricao: "global", ativo: true, owner_organization_id: null }] : [];
-  const b: Record<string, unknown> = { select: () => b, order: () => b, eq: () => b, in: () => b, abortSignal: () => b,
+  const b: Record<string, unknown> = { select: () => b, is: () => b, limit: () => b, not: () => b, order: () => b, eq: () => b, in: () => b, abortSignal: () => b,
     then: (ok: (v: unknown) => unknown) => Promise.resolve({ data, error: null }).then(ok) };
   return b;
 }
@@ -22,7 +22,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc:
     if (fn === "tenant_catalog_owned_list") {
       if (db.readDelay) await db.readDelay;
       const archived = args.p_include_archived as boolean;
-      return { data: { items: db.rows.filter((r) => r.owner_organization_id === auth.profile.organization_id && (archived || !r.archived_at)), has_more: false }, error: null };
+      return { data: { items: db.rows.filter((r) => r.entity === args.p_entity_type && r.owner_organization_id === auth.profile.organization_id && (archived || !r.archived_at)), has_more: false }, error: null };
     }
     if (fn === "tenant_catalog_owned_detail") {
       const item = db.rows.find((r) => r.id === args.p_entity_id && r.owner_organization_id === auth.profile.organization_id);
@@ -32,7 +32,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc:
       const payload = args.p_payload as Record<string, unknown>;
       if (payload.nome === "SOJA") return { data: null, error: { message: "catalog_owned_duplicate_global_active", details: "11111111-1111-4111-8111-111111111111" } };
       let row = db.rows.find((r) => r.id === args.p_entity_id);
-      if (args.p_operation === "create") { row = { id: `own-${++db.seq}`, ativo: true, archived_at: null, owner_organization_id: AR, ...payload }; db.rows.push(row); }
+      if (args.p_operation === "create") { row = { id: `own-${++db.seq}`, ativo: true, archived_at: null, owner_organization_id: AR, entity: args.p_entity_type, ...payload }; db.rows.push(row); }
       if (!row || row.owner_organization_id !== auth.profile.organization_id) return { data: null, error: { code: "42501", message: "catalog_owned_not_found" } };
       if (args.p_operation === "update") Object.assign(row, payload);
       if (args.p_operation === "archive") Object.assign(row, { ativo: false, archived_at: "2026-10-15T00:00:00Z" });
@@ -45,12 +45,14 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc:
   const p = run(); return Object.assign(p, { abortSignal: () => p });
 } } }));
 
+import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
+import { MicrorganismosTab } from "@/components/protocolos/MicrorganismosTab";
 import { CulturasTab } from "@/pages/Protocolos";
 
 function requireRow(node: HTMLElement) { const row = node.closest("tr"); if (!row) throw new Error("Linha não encontrada"); return row; }
-function app() {
+function app(Component = CulturasTab) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}><CulturasTab /></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><Component /></QueryClientProvider>);
 }
 async function submitDialog(name: string, reason = "motivo suficiente") {
   fireEvent.change(await screen.findByLabelText("Nome"), { target: { value: name } });
@@ -110,7 +112,7 @@ describe("culturas próprias na aba existente", () => {
   });
 
   it("empresa AR não recebe cultura própria da FSF", async () => {
-    db.rows.push({ id: "own-fsf", nome: "FSF privada", ativo: true, archived_at: null, owner_organization_id: FSF, updated_at: "2026-10-15T00:00:00Z" });
+    db.rows.push({ id: "own-fsf", entity: "cultura", nome: "FSF privada", ativo: true, archived_at: null, owner_organization_id: FSF, updated_at: "2026-10-15T00:00:00Z" });
     app();
     await screen.findByText("Soja");
     await waitFor(() => expect(db.calls).toContain("tenant_catalog_owned_list"));
@@ -118,11 +120,33 @@ describe("culturas próprias na aba existente", () => {
   });
 
   it("perfil sem gestão vê próprio sem controles de mutação", async () => {
-    db.rows.push({ id: "own-1", nome: "Cana Própria", ativo: true, archived_at: null, owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z" });
+    db.rows.push({ id: "own-1", entity: "cultura", nome: "Cana Própria", ativo: true, archived_at: null, owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z" });
     auth.roles = ["financeiro"];
     app();
     expect(await screen.findByText("Cana Própria")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Cultura própria/ })).toBeNull();
     expect(screen.queryByTitle("Editar item próprio")).toBeNull();
+  });
+});
+
+
+describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
+  beforeEach(() => {
+    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null });
+    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR }, roles: ["administrador"] });
+  });
+  it.each([
+    ["produto", ProdutosTab, "Produto Local", { tipo: "solo", familia_catalogo: "biologico", classe_catalogo: "biofungicida" }],
+    ["microrganismo", MicrorganismosTab, "Micro Local", { tipo: "bacteria", nome_cientifico: "Bacillus declarado" }],
+  ] as const)("%s próprio aparece, reabre com detalhe e persiste edição", async (entity, Component, nome, extra) => {
+    db.rows.push({ id: "owned-local", entity, nome, descricao: "Descrição fornecida", ativo: true, archived_at: null,
+      owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z", ...extra });
+    app(Component);
+    expect(await screen.findByText(nome)).toBeTruthy();
+    fireEvent.click(screen.getByTitle("Editar item próprio"));
+    await waitFor(() => expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe(nome));
+    await submitDialog(nome + " editado");
+    expect(await screen.findByText(nome + " editado")).toBeTruthy();
+    expect(db.rows[0].descricao).toBe("Descrição fornecida");
   });
 });
