@@ -1,0 +1,243 @@
+--- src/lib/fluxo-tecnico/fluxo.ts
++++ src/lib/fluxo-tecnico/fluxo.ts
+@@ -136,17 +136,17 @@
+ export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = true;
+ 
+ /**
+- * Também não existe RPC idempotente para gerar as OS de Produção de uma
+- * recomendação aprovada. Geração automática fica bloqueada (evita criação
+- * parcial e duplicação em retry).
++ * Conversão singular auditada na migration 20261015161648.
++ * Este gate libera somente encaminhamento; não programa nem fabrica.
++ * Workspace e RPC preservam autorização, lock e replay por visita.
+  */
+-export const RPC_GERACAO_OS_DISPONIVEL = false;
++export const RPC_GERACAO_OS_DISPONIVEL = true;
+ 
+ export const MSG_DECISAO_INDISPONIVEL =
+   "Aprovação temporariamente indisponível para proteção da integridade";
+ 
+ export const MSG_GERACAO_OS_INDISPONIVEL =
+-  "Geração automática de Ordens de Serviço temporariamente indisponível para proteção da integridade. A recomendação permanece aprovada e deve ser convertida manualmente.";
++  "Encaminhamento laboratorial indisponível nesta fase. A recomendação permanece aprovada; nenhuma fabricação foi autorizada.";
+ 
+ /** Só libera a decisão quando papel, status e contrato de banco permitem. */
+ export function podeDecidir(
+--- src/hooks/useFluxoVisitaTecnica.ts
++++ src/hooks/useFluxoVisitaTecnica.ts
+@@ -286,43 +286,50 @@
+     executeDecision(registroId, "aprovar");
+ 
+   const converterRecomendacaoEmOS = async (registroId: string, observacao?: string): Promise<FluxoResponse> => {
+-    if (!user) return { success: false, message: "Não autenticado" };
+-    try {
+-      const { data, error } = await (supabase as any).rpc("rpc_converter_visita_em_os", {
+-        p_registro_id: registroId,
+-        p_observacao: observacao || null,
+-      });
+-      if (error) throw error;
+-      const res = (data as any) || {};
+-
+-      if (res.success) {
+-        if (res.already_exists) {
+-          toast.info(res.message || "OS já existente para esta visita.");
+-        } else {
+-          toast.success(res.message || "OS de Produção gerada com sucesso.");
+-        }
+-        queryClient.invalidateQueries({ queryKey: ["visita-tecnica", registroId] });
+-        queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
+-        queryClient.invalidateQueries({ queryKey: ["ordens-servico"] });
+-        queryClient.invalidateQueries({ queryKey: ["visitas"] });
+-        queryClient.invalidateQueries({ queryKey: ["inconsistencias-visita"] });
+-      } else {
+-        toast.error(res.message || "Não foi possível converter a visita em OS.");
+-      }
+-
+-      return {
+-        success: !!res.success,
+-        message: res.message || "",
+-        os_id: res.os_id,
+-        numero_os: res.numero_os,
+-        already_exists: res.already_exists,
+-        data: res,
+-      };
+-    } catch (error: any) {
+-      console.error("Erro em converterRecomendacaoEmOS:", error);
+-      toast.error(error.message || "Erro ao converter para OS");
+-      return { success: false, message: "Erro ao converter para OS", error: error.message };
+-    }
++    if (loading || !user || profile?.user_id !== user.id || profile.ativo !== true || !profile.organization_id) {
++      return { success: false, message: "Sessão indisponível. Entre novamente para continuar." };
++    }
++    if (!roles.some(role => ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo"].includes(role))) {
++      return { success: false, message: "Seu perfil não permite este encaminhamento." };
++    }
++    if (decisionLock.current) return { success: false, message: "Uma operação já está em andamento." };
++    decisionLock.current = true;
++    const scope = actorScope;
++    try {
++      const { data: wsData, error: wsError } = await supabase.rpc("rpc_get_visita_workspace", { p_registro_id: registroId });
++      if (wsError) throw wsError;
++      const ws = wsData as { status?: string; permissions?: { can_convert_os?: boolean } } | null;
++      if (scope !== currentActor.current || !ws?.permissions?.can_convert_os || !["aprovado", "convertido_os"].includes(ws.status ?? "")) {
++        return { success: false, message: "Esta visita não está disponível para encaminhamento laboratorial." };
++      }
++      // Retry manual por visita: o servidor faz lock/replay. Nunca repetir escrita automaticamente.
++      const { data, error } = await supabase.rpc("rpc_converter_visita_em_os", {
++        p_registro_id: registroId, p_observacao: observacao?.trim() || null,
++      });
++      if (error) throw error;
++      if (scope !== currentActor.current) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
++      const res = data as { success?: boolean; os_id?: string; registro_id?: string; already_exists?: boolean; numero_os?: string; code?: string } | null;
++      if (res?.success !== true) {
++        const messages: Record<string, string> = {
++          LAB_VISIT_NO_SELECTION: "Revise a visita e marque uma recomendação biológica ou um microrganismo para encaminhar à OS.",
++          LAB_VISIT_MULTIPLE_SELECTIONS: "Revise os encaminhamentos e mantenha apenas uma recomendação para esta visita.",
++          LAB_VISIT_SELECTION_CONFLICT: "O item encaminhado não está disponível para produção. Químicos, adubos e itens sem família não geram produção.",
++          LAB_VISIT_EMPTY_RECOMMENDATION: "Preencha a recomendação técnica encaminhada antes de gerar a OS.",
++          LAB_VISIT_CONVERSION_FAILED: "Não foi possível encaminhar a recomendação. Nenhuma alteração foi mantida; revise a visita.",
++        };
++        return { success: false, message: messages[res?.code ?? ""] ?? "Não foi possível encaminhar esta visita. Reconsulte antes de tentar novamente." };
++      }
++      if (typeof res.os_id !== "string" || !res.os_id || res.registro_id !== registroId) {
++        return { success: false, message: "Não foi possível confirmar a OS. Reconsulte a visita antes de tentar novamente." };
++      }
++      await invalidateDecision(registroId);
++      await Promise.all(["ordens-servico", "cockpit-laboratorio", "pcp-kanban"].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
++      if (scope !== currentActor.current) return { success: false, message: "A sessão mudou. Reconsulte a visita na sessão atual." };
++      return { success: true, message: res.already_exists ? "Encaminhamento já registrado para esta visita." : "Recomendação encaminhada à OS laboratorial. Fabricação não iniciada; volume pendente de definição.",
++        os_id: res.os_id, numero_os: res.numero_os, already_exists: res.already_exists, data: res };
++    } catch (error: unknown) {
++      return { success: false, message: mensagemAmigavelVisita(error, "Não foi possível confirmar o encaminhamento. Reconsulte a visita antes de tentar novamente.") };
++    } finally { decisionLock.current = false; }
+   };
+ 
+   /**
+--- src/components/visita/VisitaStatusBanner.tsx
++++ src/components/visita/VisitaStatusBanner.tsx
+@@ -46,7 +46,7 @@
+   { key: "finalizada", label: "Finalizada", icon: ClipboardCheck },
+   { key: "aprovacao", label: "Aprovação técnica", icon: UserCheck },
+   { key: "produtor", label: "Decisão do produtor", icon: FileSearch },
+-  { key: "os", label: "OS / Aplicação", icon: PackageCheck },
++  { key: "os", label: "Encaminhamento laboratorial", icon: PackageCheck },
+   { key: "concluida", label: "Concluída", icon: Flag },
+ ];
+ 
+@@ -54,7 +54,7 @@
+   switch (status) {
+     case "finalizado": return etapaAtivaFinalizada(proximoPasso);
+     case "enviado_aprovacao": return "aprovacao";
+-    case "aprovado": return "produtor";
++    case "aprovado": return "aprovacao";
+     case "convertido_os": return "os";
+     case "arquivado":
+     case "reprovado": return "concluida";
+@@ -65,8 +65,6 @@
+ export function VisitaStatusBanner({
+   status, proximoPasso, finalizedAt, registroId, osExistenteId,
+ }: Props) {
+-  const { role } = useAuth();
+-  const { converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
+   const navigate = useNavigate();
+   const geraArtefatoAprovavel = desfechoGeraArtefatoAprovavel(proximoPasso);
+ 
+@@ -95,7 +93,7 @@
+     descricao = proximoPasso === "emitir_recomendacao"
+       ? "A recomendação foi enviada. Um responsável técnico precisa aprovar antes do produtor ser notificado."
+       : proximoPasso === "gerar_os"
+-        ? "A OS Multi-Produto está aguardando aprovação para liberar o PCP."
++        ? "A recomendação está aguardando aprovação técnica antes do encaminhamento laboratorial."
+         : "Aguardando análise do responsável técnico.";
+     cta = { label: "Ver fila de aprovação", onClick: () => navigate("/fluxo-tecnico?tab=aprovacoes") };
+     tone = "indigo";
+@@ -105,8 +103,8 @@
+     cta = { label: "Acompanhar no Fluxo Técnico", onClick: () => navigate("/fluxo-tecnico?tab=aprovados") };
+     tone = "violet";
+   } else if (status === "convertido_os") {
+-    titulo = "OS gerada — em execução";
+-    descricao = "A demanda agora segue pelo pipeline da Ordem de Serviço (reserva → expedição → aplicação).";
++    titulo = "Recomendação encaminhada ao laboratório";
++    descricao = "Uma recomendação foi encaminhada à OS. As demais recomendações permanecem abertas; fabricação não iniciada e volume pendente de definição.";
+     cta = { label: "Ver Ordens de Serviço", onClick: () => navigate("/ordens-servico") };
+     tone = "amber";
+   } else if (status === "reprovado") {
+@@ -155,20 +153,8 @@
+               <TechnicalDecisionActions registroId={registroId} mode={status === "aprovado" ? "reabrir" : "liberar"} />
+             )}
+             
+-            {RPC_GERACAO_OS_DISPONIVEL && registroId && status === "aprovado" && !osExistenteId && (role === "administrador" || role === "gestor" || role === "consultor_tecnico" || role === "tecnico_agronomo") && (
+-              <Button 
+-                size="sm" 
+-                className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm"
+-                onClick={async () => {
+-                  const res = await converterRecomendacaoEmOS(registroId);
+-                  if (res.success) {
+-                    navigate(`/ordens-servico`);
+-                  }
+-                }}
+-              >
+-                <PackageCheck className="h-4 w-4" /> 
+-                Gerar OS de Produção
+-              </Button>
++            {RPC_GERACAO_OS_DISPONIVEL && registroId && status === "aprovado" && !osExistenteId && (
++              <LaboratoryConversionAction key={registroId} registroId={registroId} />
+             )}
+ 
+             {registroId && status === "aprovado" && osExistenteId && (
+@@ -293,3 +279,55 @@
+     </AlertDialog>
+   </>;
+ }
++
++/** Somente encaminhamento singular; nenhuma ação operacional do laboratório. */
++export function LaboratoryConversionAction({ registroId }: { registroId: string }) {
++  const { roles, loading, user, profile } = useAuth();
++  const workspace = useVisitaWorkspace(registroId);
++  const { converterRecomendacaoEmOS } = useFluxoVisitaTecnica();
++  const [open, setOpen] = useState(false);
++  const [busy, setBusy] = useState(false);
++  const [error, setError] = useState("");
++  const lock = useRef(false);
++  const ws = workspace.data;
++  const actor = JSON.stringify([loading, user?.id, profile?.user_id, profile?.ativo, profile?.organization_id, [...roles].sort(), registroId]);
++  const current = useRef({ actor, epoch: 0 });
++  if (current.current.actor !== actor) current.current = { actor, epoch: current.current.epoch + 1 };
++  const ready = !loading && !!user && profile?.user_id === user.id && profile.ativo === true && !!profile.organization_id
++    && !workspace.isFetching && !workspace.isError && ws?.permissions.can_convert_os === true
++    && roles.some(role => ["administrador", "gestor", "consultor_tecnico", "tecnico_agronomo"].includes(role));
++  const existing = (ws?.ordens_servico?.length ?? 0) > 0;
++  const allowed = ready && ws?.status === "aprovado" && !existing;
++  const dialogActor = useRef({ actor, epoch: current.current.epoch });
++  const sameDialog = dialogActor.current.actor === actor && dialogActor.current.epoch === current.current.epoch;
++  const submit = async () => {
++    if (lock.current || !allowed || !sameDialog) return;
++    lock.current = true; setBusy(true); setError("");
++    const epoch = current.current.epoch;
++    try {
++      const result = await converterRecomendacaoEmOS(registroId);
++      if (current.current.epoch !== epoch) return;
++      if (!result.success) { setError(result.message); await workspace.refetch(); return; }
++      setOpen(false);
++    } catch {
++      if (current.current.epoch === epoch) setError("Não foi possível confirmar o encaminhamento. Reconsulte a visita.");
++    } finally { lock.current = false; setBusy(false); }
++  };
++  return <>
++    {allowed && <Button size="sm" className="gap-2" onClick={() => {
++      dialogActor.current = { actor, epoch: current.current.epoch }; setError(""); setOpen(true);
++    }}><PackageCheck className="h-4 w-4" />Gerar OS laboratorial</Button>}
++    <AlertDialog open={open && sameDialog} onOpenChange={value => { if (!lock.current) setOpen(value); }}>
++      <AlertDialogContent onEscapeKeyDown={event => { if (lock.current) event.preventDefault(); }}>
++        <AlertDialogHeader>
++          <AlertDialogTitle>Encaminhar recomendação ao laboratório?</AlertDialogTitle>
++          <AlertDialogDescription>Será encaminhada uma única recomendação marcada para produção: produto biológico ou microrganismo. As recomendações comerciais não serão concluídas. Volume não informado exige definição antes de fabricar; esta ação não inicia fabricação.</AlertDialogDescription>
++        </AlertDialogHeader>
++        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
++        <AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
++          <Button disabled={busy || !allowed} onClick={() => { void submit(); }}>{busy ? "Encaminhando…" : "Confirmar encaminhamento"}</Button>
++        </AlertDialogFooter>
++      </AlertDialogContent>
++    </AlertDialog>
++  </>;
++}
