@@ -155,7 +155,7 @@ INSERT INTO _r SELECT 'bombarbio_1000_180', EXISTS (SELECT 1 FROM public.catalog
 INSERT INTO _r SELECT 'visibilidade_ar_v4', EXISTS (SELECT 1 FROM public.catalog_tenant_visibility
   WHERE organization_id=pg_temp.ctx('ar_org')::uuid AND produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51' AND hidden=false AND version=4), '';
 INSERT INTO _r SELECT 'ledger_visibilidade_4', count(*)=4, count(*)::text FROM public.catalog_tenant_visibility_ledger
-  WHERE produto_id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
+  WHERE entity_type='produto' AND entity_id='1875527c-a65a-483b-a6c2-9122d5ec2a51';
 -- Concorrência real (2 conexões): fora deste script; registrar UNVERIFIED até execução separada.
 
 SELECT caso, ok, obs FROM _r ORDER BY caso;
