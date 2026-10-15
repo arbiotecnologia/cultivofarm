@@ -281,3 +281,61 @@ Fecha gate e revoga EXECUTE; se houver privados, preserva coluna/policies/trigge
 3. Triggers nos descendentes de pedidos/preço/fiscal/produção rejeitando privado de outra empresa.
 4. UI em `/base-tecnica` (editores atuais, selo, confirmação de arquivamento) após tipos regenerados.
 5. Identificadores além de nome para duplicata; escala NOT IN 300 (P2) herdada.
+
+---
+
+## FASE 3 — Revisão 2 (após revisão independente de 0fe35743, 15/10/2026)
+
+**Estado: candidato 01 (fundação) + 02 (leitores SA/visibilidade/h7n/preço). NÃO aplicado, NÃO publicado, gate OFF.** Nada abaixo é PASS de banco: runtime não executado.
+
+### Correção dos achados
+| # | Achado | Correção no candidato | Prova |
+|---|---|---|---|
+| 1 | RESTRICTIVE FOR ALL em culturas bloqueava SELECT próprio | policies separadas INSERT/UPDATE/DELETE nas 5 tabelas; SELECT só por `catalog_owner_scope` | teste estrutural; runtime `ar_le_propria` UNVERIFIED |
+| 2 | `translate` desalinhado (ú→o, ç→u, ñ→c) | `normalize(lower(x),NFD)` + remoção U+0300–036F + autoteste no DDL | **SQL read-only real no canônico (PG 17.6/UTF8)**: Ácido Úmido→acido umido, ação→acao, Ñandu→nandu, CAFÉ e cafe+U+0301→cafe, Pão/Ç→pao c, ÿü→yu |
+| 3 | runtime sem `iat`, temporárias sem grant | claims com sub/role/iat/exp; GRANT em `_r/_ctx`/helpers; gate aberto só dentro da transação; termina em ROLLBACK; coluna real do ledger (`entity_type/entity_id`) corrigida após leitura do schema | estrutural; execução UNVERIFIED |
+| 4 | `canManageOwnedItem` sem comparar empresa | assinatura `(row, actorOrganizationId, canManage, enabled)`; teste negativo FSF×AR | PASS local |
+| 5 | campos desconhecidos/NULL/composição vazia | whitelist por entidade/operação (`catalog_owned_allowed_keys`), tipos jsonb, `IS NOT TRUE`, composição exige 1–50 itens únicos e válidos, arquivado só aceita `restore`, no-op rejeitado | estrutural; runtime UNVERIFIED |
+| 6 | concorrência com SA e índices legados | lock consultivo por nome normalizado tomado no **trigger raiz** (vale para SA e tenant); `microrganismos_nome_unique`/`culturas_nome_ci_uidx` substituídos por equivalentes `WHERE owner IS NULL` (criados antes de remover); códigos seguem globais e não aceitos do cliente | estrutural; concorrência 2 conexões UNVERIFIED |
+| 7 | reatribuição via pai, GUC como autorização | sem GUC; trigger exige `catalog_tenant_actor('mutate') = dono` (rejeita SA, service_role, anon, outra empresa); pai/dono imutáveis em descendentes; exclusão física de privado proibida; visibilidade rejeita item privado | estrutural; runtime UNVERIFIED |
+| 8 | famílias/composição química | família/classe opcionais com coerência explícita (NULL=pendente); composição química/fertilizante (`produto_composicao_declaracoes`), doses, preços e apresentações próprias **não implementadas** — não é cadastro completo; quatro abas preservadas | — |
+
+### Matriz leitor → escopo → teste (recorte desta rodada)
+"Antes" = md5 de `pg_get_functiondef` lido no canônico (fixado no preflight do 02; divergência aborta). "Depois" = corpo completo no 02, diferença marcada `-- [OWNER]`.
+| Função | md5 antes | Escopo depois | Teste |
+|---|---|---|---|
+| platform_read_global_product_catalog_core | 473a0996… | só global | estrutural PASS; runtime UNVERIFIED |
+| read_global_product_metadata_core | 5d5fc5ea… | só global | idem |
+| read_global_microorganisms_core | 9f63a20b… | só global | idem |
+| read_global_microorganism_detail_core | 6178944c… | só global | idem |
+| read_global_cultures_core | 3db0904a… | só global | idem |
+| read_global_culture_detail_core | b0902a00… | só global | runtime `sa_core_privado` UNVERIFIED |
+| read_global_item_volumes_core | 6e2f7bfc… | pai e volumes globais | estrutural |
+| read_global_volume_detail_core | 382661e5… | volume global | estrutural |
+| read_global_b2b_state_core | 9f514955… | só global | estrutural |
+| read_global_product_catalog_by_family_core | 799a9655… | só global | estrutural |
+| read_global_product_composition_core | 25422d89… | produto e receita globais | estrutural |
+| catalog_tenant_selection_core | 4bde8390… | global + próprio ativo não arquivado da empresa | estrutural |
+| catalog_tenant_hidden_ids_core / read_visibility_core | — | inalterados (só preferências) | — |
+| catalog_tenant_set_visibility_core | — | inalterado; trigger rejeita item privado | runtime `visibility_private_rejected` UNVERIFIED |
+| private.h7n_catalogo_ficha_produtos (vw_catalogo_ficha_produtos) | 8c335e3c… | global + próprio do ator | estrutural |
+| private.h7n_catalogo_ficha_microrganismos (vw_catalogo_ficha_microrganismos) | 959d28c6… | global + próprio do ator | estrutural |
+| fn_catalogo_preco_canonico | fa5e890d… | NULL fora do escopo do ator | runtime `fsf_preco_privado_null` UNVERIFIED |
+| fn_catalogo_litro_canonico | 96242cde… | vazio fora do escopo | estrutural |
+
+Writers SA (`set_/update_/create_global_*`, volumes, família, composição, B2B, wipe): não reescritos; linhas privadas barradas estruturalmente pelos triggers do 01 (SA não passa em `catalog_tenant_actor`). Edge functions com service_role (`ai-refresh-fichas`, `ai-generate-ficha-campo`, `ai-sugerir-alvos`, `admin-audit-produtos-orfaos`): sem `auth.uid`, `catalog_reader_org()` = NULL ⇒ só global nos leitores filtrados; leitura direta com service_role ignora RLS — **precisam de filtro explícito `owner IS NULL` (pendente, próxima rodada)**. `resolverMicroorganismItem` é puro; o loader que o alimenta não foi auditado.
+
+### Próxima rodada (bloqueia abrir o gate)
+B2B (`get_partner_catalog_*`, simulação, pedidos, `fn_b2b_resolve_base_unit_price`, `rpc_commercial_simulator`, `rpc_cc_validate_matrix`) pelo fornecedor do vínculo; fiscal; produção/entrega/etiquetas; visita/cultura; regulatório; `proximo_codigo`; 7 views; Edge service_role; triggers em descendentes comerciais/fiscais; apresentações próprias; UI em `/base-tecnica`.
+
+### Rollback
+Fecha gate, limpa certificação e revoga as quatro funções. Se houver privados OU o 02 estiver aplicado, preserva colunas/policies/triggers/filtros (não expõe). Caso contrário recria unicidade legada antes de remover índices reescopados e remove a estrutura. Ledger e Fase 1 nunca tocados; sem GRANT.
+
+### Evidências desta rodada
+| Item | Resultado |
+|---|---|
+| Normalização NFD (SQL read-only real) | PASS (valores acima) |
+| Bombarbio 1000mL/R$180 ativo, ledger visibilidade 4 eventos (read-only) | confirmado |
+| Testes ownership 17 + catálogo completo 627/627 | PASS local |
+| typecheck app/node, lint arquivos novos (0/0), scanner, build 26.11s | PASS local |
+| Aplicação 01/02, runtime 40+ casos, concorrência | **UNVERIFIED** |

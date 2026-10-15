@@ -714,3 +714,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Aplicação/runtime independentes — bloqueado: revisão externa.
 - [ ] Filtrar dono em todos os leitores do mapa (SA/B2B/preço/fiscal/produção/visita) — bloqueado: nova rodada.
 - [ ] Apresentações próprias, triggers em descendentes comerciais/fiscais, UI CRUD em /base-tecnica — após gate.
+- [x] Revisão 2 (achados 1–8 de 0fe35743) no candidato 01 + candidato 02 de leitores SA/visibilidade/h7n/preço com md5 fixado.
+- [ ] Rodada B2B/fiscal/produção/visita/regulatório/views/Edge service_role — bloqueado: próxima rodada autorizada.
+- [ ] Aplicar 01+02 e rodar runtime/concorrência — bloqueado: revisão independente.
