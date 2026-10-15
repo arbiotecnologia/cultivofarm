@@ -1,6 +1,12 @@
-## PRIORIDADE P1 17:41 — contenção h7n somente, RPC fechado
+## PRIORIDADE P1 17:45 — contenção externa aplicada; candidato h7n rebaseado
+- [x] Registrar 20261015173622 aplicada externamente: revoga helper/view de PUBLIC/anon/authenticated; sem alterar corpo/dados/MV/operações. Arquivo exato de schema_migrations, NÃO REAPLICAR.
+- [x] Metadados próprios canônicos confirmam ledger/hash e ACL fechada; FSF 42501 é evidência SQL externa, não browser/prova própria.
+- [x] Rebase candidato somente h7n exigindo ledger e ACL contida; NULL/cliente não resolvido nunca são escopo global. Preparar before/containment/after isolados e pós-aplicação read-only.
+- [ ] Revisão/aplicação do candidato pelo revisor e pós-teste hospedado pendentes; nenhum DDL remoto/publicação pelo agente. ACL fechada não certifica filtro tenant. Freshness/descendentes bloqueiam abertura da leitura.
+
+## HISTÓRICO P1 17:41 — contenção h7n somente, RPC fechado
 - [x] Registrar leitura EXTERNA Renato: FSF Admin autenticado/iat/exp leu 2 linhas; MV 2 linhas/1 tenant. Não browser FSF nem prova própria.
-- [x] Metadados próprios subsequentes: corpo vulnerável permanece, mas authenticated EXECUTE h7n=false e SELECT view=false; autoria/momento da contenção desconhecidos. Não restaurar ACL.
+- [x] Metadados próprios subsequentes: corpo vulnerável permanece, mas authenticated EXECUTE h7n=false e SELECT view=false; autoria/momento então desconhecidos, esclarecidos pelo ledger 20261015173622 acima. Não restaurar ACL.
 - [x] Substituir candidato anterior que reabria RPC por correção atômica SOMENTE h7n com tenant/readiness/vínculo ativo, hashes e ACL preservada.
 - [ ] Revisão independente e teste hospedado pós-aplicação aguardam revisor; nenhuma aplicação remota autorizada. Freshness/descendentes, fabricação, diagnóstico e ownership permanecem nos gates anteriores.
 

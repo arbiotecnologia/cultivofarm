@@ -1,0 +1,4 @@
+DO $guard$ BEGIN IF md5(pg_get_functiondef('private.h7n_esteira_laboratorio()'::regprocedure)) <> '6a3e2b6e2d594af67cf6727c5b03c2b1' THEN RAISE EXCEPTION 'Cockpit containment preflight drift'; END IF; END $guard$;
+REVOKE EXECUTE ON FUNCTION private.h7n_esteira_laboratorio() FROM PUBLIC, anon, authenticated;
+REVOKE ALL PRIVILEGES ON TABLE public.vw_esteira_laboratorio FROM PUBLIC, anon, authenticated;
+DO $verify$ BEGIN IF has_function_privilege('authenticated','private.h7n_esteira_laboratorio()','EXECUTE') OR has_function_privilege('anon','private.h7n_esteira_laboratorio()','EXECUTE') OR has_table_privilege('authenticated','public.vw_esteira_laboratorio','SELECT') OR has_table_privilege('anon','public.vw_esteira_laboratorio','SELECT') THEN RAISE EXCEPTION 'Cockpit containment failed'; END IF; END $verify$;
