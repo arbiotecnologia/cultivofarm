@@ -461,3 +461,16 @@ As duas views públicas `vw_catalogo_ficha_*` não entram nas sete: são wrapper
 - O parser gramatical e os testes estáticos não substituem compilação PL/pgSQL/PGlite completa; esta permanece pendente para o SQL06.
 - O inventário live por referência textual aos cinco roots ainda enumera leitores operacionais fora do SQL06, incluindo B2B/pedidos/simulações, produção, entrega, visita, fiscal e regulatório. Logo, esta matriz não é TOTAL e não autoriza rows privadas.
 - Gate, UI mutável e publicação permanecem desligados até revisão independente, aplicação controlada, runtime negativo/positivo e concorrência.
+
+## Correções das falhas PGlite reportadas (15/10/2026)
+| Falha externa | Correção candidata | Estado |
+|---|---|---|
+| Conjunto acessava `NEW.microrganismo_id` | guard de conjunto e guard de declaração separados | UNVERIFIED até nova execução |
+| RLS chamava helper sem EXECUTE | helper booleano `catalog_composition_parent_visible`, sem retornar owner, EXECUTE só authenticated | UNVERIFIED |
+| Ledger rejeitava `presentation` | CHECK explicitamente recriado com `presentation` | UNVERIFIED |
+| Wrapper sem nomes/payload frouxo | argumentos nomeados, pai arquivado bloqueado, tipos estritos, no-op e derivados excluídos do diff | UNVERIFIED |
+
+Os testes estáticos não certificam o SQL. Evidência externa informada: laboratório 20 PASS/4 FAIL antes destas correções.
+
+## Regra separada: laboratório somente biológico
+Candidato `proposed-lab-biological-only-07.sql`: elegibilidade por `familia_catalogo='biologico'` ou microrganismo; triggers protegem novas programações/lotes e não bloqueiam updates históricos irrelevantes. Ainda NO-GO: faltam corpos completos com hash após alteração das cinco entradas e prova de pedido misto.

@@ -733,3 +733,11 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] SA writers não-volume no 05 e 3 leitores/7 views no 06 têm corpos candidatos; ainda faltam fechar individualmente leitores B2B/pedidos/simulações, produção, entrega, visita, fiscal e regulatório restantes do inventário live.
 - [x] UI própria preparada na rota existente com origem Global/Próprio e controles reutilizáveis desmontados pelo gate OFF; química/fertilizantes candidata reutiliza conjuntos/declarações.
 - [ ] Criar/editar/arquivar/restaurar, apresentações/doses/preços próprios e integrações operacionais completas permanecem desligados até aplicação/revisão/runtime real.
+- [x] Correções PGlite reportadas: guards de composição separados, RLS por helper booleano mínimo, ledger com `presentation` explícito e wrapper de apresentação nomeado/estrito.
+- [ ] PGlite/runtime real do 01+05 após essas correções — aguarda revisão independente.
+
+## Laboratório exclusivamente biológico — Fase 07 separada
+- [x] Regra registrada: fabricação somente de `familia_catalogo='biologico'` e microrganismos.
+- [x] Candidato SQL inicial com helper, triggers de programação/lote e runtime de casos.
+- [ ] Anexar corpos completos/hash-after de `rpc_planejamento_publicar_v1`, `publish_planning_to_lab`, `generate_production_orders_from_partner`, `rpc_programar_os_v1` e `rpc_cockpit_gerar_lote_v1`, incluindo pedido misto — bloqueado: leitura live completa e revisão.
+- [ ] Aplicação/publicação — bloqueado: revisão independente.
