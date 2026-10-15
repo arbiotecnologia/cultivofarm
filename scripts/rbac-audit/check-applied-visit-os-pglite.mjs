@@ -17,6 +17,7 @@ CREATE TYPE status_registro_consultor AS ENUM('rascunho','em_andamento','finaliz
 CREATE TYPE modo_aplicacao_consultor AS ENUM('foliar','aplicacao_no_colo_da_planta','via_solo','tratamento_semente','sulco_plantio','jato_dirigido','outro');
 ALTER TABLE produtos ADD ativo boolean DEFAULT true, ADD owner_organization_id uuid;
 ALTER TABLE microrganismos ADD ativo boolean DEFAULT true, ADD owner_organization_id uuid;
+CREATE OR REPLACE FUNCTION has_role(uuid,text) RETURNS boolean LANGUAGE sql SET search_path=public AS $$SELECT $1=auth.uid() AND current_setting('test.role',true)=$2$$;
 CREATE FUNCTION has_role(uuid,app_role) RETURNS boolean LANGUAGE sql SET search_path=public AS $$SELECT $1=auth.uid() AND current_setting('test.role',true)=$2::text$$;
 CREATE TABLE registros_consultor(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),organization_id uuid,consultor_responsavel uuid,status status_registro_consultor DEFAULT 'aprovado',cliente_id uuid DEFAULT gen_random_uuid(),fazenda_id uuid DEFAULT gen_random_uuid(),talhao_id uuid DEFAULT gen_random_uuid(),area_hectares numeric,cultura_id uuid,fase_fenologica text,problema_principal text,solicitacao_id uuid,hora_inicio timestamptz,updated_at timestamptz);
 CREATE FUNCTION can_view_technical_visit(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT EXISTS(SELECT 1 FROM registros_consultor WHERE id=$2 AND organization_id=h15_actor_organization() AND $1=auth.uid())$$;
