@@ -1,3 +1,7 @@
+## RECORTE 20:55 — mutações de solicitações Produtor
+- [ ] Reproduzir falsificação com tabela completa, constraints, policies e cinco triggers reais; preparar guard/preflight/rollback sem DDL remoto.
+- [ ] Preservar criação e confirmação/remarcação, negar autoria/status/atribuição forjados; relatório e regressões reproduzíveis.
+
 ## RECORTE 20:50 — financeiro B2B, diagnóstico efetivo e candidato revisável
 - [x] Policies canônicas completas: títulos/parcelas com restritiva tenant e partner_users admin-only; ensaio authenticated reproduz contexto válido e zero títulos/parcelas.
 - [x] Candidato focal de duas policies reutiliza b2b_commercial_context, preserva Produtor/internos/tenant/ACL; sem aplicação/grants/dados.
