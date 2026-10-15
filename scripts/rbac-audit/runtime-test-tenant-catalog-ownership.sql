@@ -8,6 +8,7 @@ BEGIN;
 CREATE TEMP TABLE _r(caso text PRIMARY KEY, ok boolean NOT NULL, obs text);
 CREATE TEMP TABLE _ctx(k text PRIMARY KEY, v text);
 GRANT SELECT, INSERT, UPDATE ON _r, _ctx TO authenticated, anon;
+INSERT INTO _ctx VALUES ('ar_org', :'ar_org');
 -- Claims completas (sub/role/exp/iat), exigidas por catalog_tenant_actor.
 CREATE FUNCTION pg_temp.as_user(u uuid) RETURNS void LANGUAGE sql AS $$
   SELECT set_config('request.jwt.claims', jsonb_build_object('sub',u::text,'role','authenticated',
@@ -94,7 +95,6 @@ DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','archive',pg_te
   INSERT INTO _r VALUES('fsf_write',false,''); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_write',SQLERRM='catalog_owned_not_found',SQLERRM); END $$;
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,'{"nome":"Cultura Própria RT"}','fsf mesmo nome que AR',gen_random_uuid());
   INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',true,'sem oráculo'); EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES('fsf_mesmo_nome_permitido',false,SQLERRM); END $$;
-INSERT INTO _r SELECT 'fsf_preco_privado_null', public.fn_catalogo_preco_canonico(NULL, NULL, 'litro') IS NULL, 'placeholder: substituir por produto privado AR com volume';
 SELECT pg_temp.as_owner(); SELECT pg_temp.as_user(:'sa');
 INSERT INTO _r SELECT 'sa_nao_ve', NOT EXISTS (SELECT 1 FROM public.culturas WHERE id=pg_temp.ctx('cultura')::uuid), '';
 DO $$ BEGIN PERFORM platform_private.read_global_culture_detail_core(pg_temp.ctx('cultura')::uuid);
@@ -142,6 +142,11 @@ DO $$ DECLARE n text; BEGIN
 SELECT pg_temp.as_user(:'ar_admin');
 DO $$ BEGIN PERFORM public.tenant_catalog_owned_mutate('cultura','create',NULL,NULL,jsonb_build_object('nome',upper(pg_temp.ctx('inativa'))),'dup inativa runtime',gen_random_uuid());
   INSERT INTO _r VALUES('dup_global_inactive',false,''); EXCEPTION WHEN unique_violation THEN INSERT INTO _r VALUES('dup_global_inactive',SQLERRM='catalog_owned_duplicate_global_inactive',SQLERRM); END $$;
+SELECT pg_temp.as_owner();
+
+SELECT pg_temp.as_user(:'fsf_admin');
+INSERT INTO _r SELECT 'fsf_preco_privado_null', public.fn_catalogo_preco_canonico(pg_temp.ctx('produto')::uuid, NULL, 'litro') IS NULL
+  AND NOT platform_private.catalog_item_in_reader_scope(pg_temp.ctx('produto')::uuid, NULL), 'escopo de preço' WHERE pg_temp.ctx('produto') IS NOT NULL;
 SELECT pg_temp.as_owner();
 
 -- 6. Invariantes
