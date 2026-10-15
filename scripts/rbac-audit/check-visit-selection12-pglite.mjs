@@ -24,7 +24,7 @@ const id = n => `bbbbbbbb-bbbb-4bbb-8bbb-${String(n).padStart(12,'0')}`;
 const ar=id(90),fsf=id(91),visit=id(92);
 await db.query(`SELECT set_config('test.org',$1,false)`,[ar]);
 await db.query(`INSERT INTO produtos VALUES ($1,'Bio','biologico',true,NULL),($2,'Químico','quimico',true,NULL),
-($3,'Adubo','fertilizante',true,NULL),($4,'Legado',NULL,true,NULL),($5,'Oculto','biologico',true,NULL),
+($3,'Adubo','fertilizante_adubo',true,NULL),($4,'Legado',NULL,true,NULL),($5,'Oculto','biologico',true,NULL),
 ($6,'Privado AR','biologico',true,$8),($7,'Privado FSF','biologico',true,$9)`,[id(1),id(2),id(3),id(4),id(5),id(6),id(7),ar,fsf]);
 await db.query(`INSERT INTO catalog_tenant_visibility VALUES ($1,'produto',$2,NULL,true)`,[ar,id(5)]);
 let count=0;

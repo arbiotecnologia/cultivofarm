@@ -134,7 +134,13 @@ export default function WizardRecomendacaoStep({
     const data = await getPendingRecomendacoesByRegistro(localRegistroId);
     if (current()) setPendingRows(data);
   };
-  useEffect(() => { reloadPending(); /* eslint-disable-next-line */ }, [localRegistroId]);
+  useEffect(() => {
+    let active = true;
+    void getPendingRecomendacoesByRegistro(localRegistroId).then(data => { if (active && current()) setPendingRows(data); });
+    return () => { active = false; };
+    // Identity change must invalidate the pending read even if the original actor returns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity, localRegistroId]);
 
   const rows: Row[] = useMemo(() => {
     const pendingUuids = new Set(pendingRows.map((p) => p.clientUuid));
@@ -191,6 +197,7 @@ export default function WizardRecomendacaoStep({
       syncStatus: "pending_sync",
     };
     await savePendingRecomendacao(entry);
+    if (!current()) return;
 
     if (isOnline && remoteRegistroId) {
       try {

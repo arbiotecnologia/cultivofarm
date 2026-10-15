@@ -52,7 +52,7 @@ export function recCatalogErrorMessage(err: unknown): string {
 }
 
 export interface RecSelectionItem extends RecProduto { selectable: boolean; in_page: boolean; total: number | null }
-export async function fetchRecSelection(client: { rpc: (fn: string, args: Record<string, unknown>) => any },
+export async function fetchRecSelection(client: import("@/lib/catalogo/tenantCatalogVisibility").RpcClient,
   registro: string, entity: "produto" | "microrganismo", search: string, offset: number, include: string[], signal: AbortSignal) {
   let request = client.rpc("tenant_catalog_visit_selection_page", {
     p_registro_id: registro, p_entity_type: entity, p_search: search.trim() || null,

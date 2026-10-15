@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,22 +8,22 @@ vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantCatalogScope: ()
 vi.mock("@/hooks/useOfflineSync", () => ({ useOnlineStatus: () => true }));
 vi.mock("@/hooks/useVisitaWorkspace", () => ({ TECHNICAL_STALE_REVALIDATION: {} }));
 vi.mock("@/lib/offlineDb", () => ({ getPendingRecomendacoesByRegistro: async () => [], savePendingRecomendacao: vi.fn(), removePendingRecomendacao: vi.fn() }));
-vi.mock("@/components/ui/select", () => ({ Select: ({ children }: any) => <div>{children}</div>, SelectTrigger: ({ children }: any) => <div>{children}</div>,
-  SelectValue: () => null, SelectContent: ({ children }: any) => <div>{children}</div>,
-  SelectItem: ({ children, disabled, value }: any) => <option value={value} disabled={disabled}>{children}</option> }));
+vi.mock("@/components/ui/select", () => ({ Select: ({ children }: { children: ReactNode }) => <div>{children}</div>, SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectValue: () => null, SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children, disabled, value }: { children: ReactNode; disabled?: boolean; value: string }) => <option value={value} disabled={disabled}>{children}</option> }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: (_fn: string, args: Record<string, unknown>) => {
     const org = state.scope.organizationId; const delay = state.deferred; state.calls.push(args);
     const request = (async () => { if (delay) await delay;
       return { error: null, data: args.p_entity_type === "produto" ? [
         { id: `${org}-chemical`, nome: `${org} Químico`, familia_catalogo: "quimico", selectable: true, in_page: true, total: 2 },
-        { id: `${org}-fert`, nome: `${org} Adubo`, familia_catalogo: "fertilizante", selectable: true, in_page: true, total: 2 },
+        { id: `${org}-fert`, nome: `${org} Adubo`, familia_catalogo: "fertilizante_adubo", selectable: true, in_page: true, total: 2 },
       ] : [] };
     })(); return Object.assign(request, { abortSignal: () => request });
   },
   from: (table: string) => {
-    const b: any = { select: () => b, eq: () => b, order: () => b, in: () => b, abortSignal: () => b,
-      then: (ok: any) => Promise.resolve({ error: null, data: table === "registros_consultor_recomendacoes" ? [{ id: "rec", recomendacao_tecnica: "Histórico", produto_biologico_sugerido_id: "hidden", versao: 1 }] :
+    const b = { select: () => b, eq: () => b, order: () => b, in: () => b, abortSignal: () => b,
+      then: (ok: (value: unknown) => unknown) => Promise.resolve({ error: null, data: table === "registros_consultor_recomendacoes" ? [{ id: "rec", recomendacao_tecnica: "Histórico", produto_biologico_sugerido_id: "hidden", versao: 1 }] :
         table === "produtos" ? [{ id: "hidden", nome: "Global oculto", familia_catalogo: "biologico" }] : [] }).then(ok) };
     return b;
   },
