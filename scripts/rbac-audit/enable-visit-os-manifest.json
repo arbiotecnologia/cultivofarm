@@ -3,9 +3,10 @@
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "applied_dependencies": [
     "20261015161648",
-    "20261015162631"
+    "20261015162631",
+    "20261015163930"
   ],
-  "converter_md5": "66e8072f7aefbe18c1417240121147a5",
+  "converter_md5": "b112888e28d8a5727df713e0ae7bcd1b",
   "ownership_gate": "OFF",
   "manufacturing": "NO_GO_REQUESTED_VOLUME_FLOW_UNVERIFIED",
   "operational_acl": "PRESERVE_CLOSED_NO_GRANTS",
@@ -15,7 +16,7 @@
     "auth": "MOCKED"
   },
   "pglite": {
-    "passed": 31,
+    "passed": 37,
     "auth": "STUBBED",
     "concurrency": "SERIALIZED_QUEUE_NOT_SEPARATE_SESSIONS"
   },
@@ -48,11 +49,11 @@
     },
     {
       "path": "scripts/rbac-audit/preflight-enable-visit-os-readonly.sql",
-      "sha256": "6a655870fde061d2c5a1eb858862ea292a9bd040e957e4689d2174ec2a9b8e9a"
+      "sha256": "fb640113913aa75aa6fbfe674431cb6410c30af4dedc4168ff576b63cc5ff6ed"
     },
     {
       "path": "scripts/rbac-audit/check-applied-visit-os-pglite.mjs",
-      "sha256": "84bf34a623b5cdf46edf8d713eb34d39b2d5560730e3e45924bbf75ba59beaa7"
+      "sha256": "546d05e5823724303e9e1bcfff7013a06cc1b7b558aa8fe5da6b95da767f09a8"
     },
     {
       "path": "scripts/rbac-audit/os-enable-candidate/FluxoTecnico.tsx",
@@ -81,5 +82,17 @@
     },
     "hosted_authenticated_postgrest": "UNVERIFIED",
     "external_rollback": "REPORTED_BY_RENATO_NOT_BROWSER_PROOF"
+  },
+  "manage_helper_md5": "d95c2c2b34af117d467d7d4b2b775002",
+  "manage_hardening": {
+    "state": "ALREADY_APPLIED_DO_NOT_REAPPLY",
+    "canonical_readonly": "HASHES_HISTORY_ACL_CONFIRMED",
+    "harness": "37/37 exact converter/helper; dependencies stubbed",
+    "responsible_read_only": "DENIED_BEFORE_WRITES_AND_REPLAY",
+    "execute_manage": "RESPONSIBLE_CONSULTANT_AND_TECHNICIAN_PERMITTED_IN_HARNESS",
+    "workspace": "can_convert_os remains admin/org-manager only; no widening",
+    "reviewer_claims": "AR manage true; FSF denied; external evidence not own JWT/browser proof",
+    "frontend_regression": "43/43 mocked",
+    "post_lock": "Exact second can_manage preserved; independent-session permission-change race UNVERIFIED"
   }
 }
