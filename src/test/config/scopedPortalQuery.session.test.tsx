@@ -6,6 +6,17 @@ vi.mock("@/hooks/useAuth",()=>({useAuth:()=>s}));
 import {useScopedPortalQuery} from "@/hooks/useScopedPortalQuery";
 describe("existing portal QueryClient isolation",()=>{
  beforeEach(()=>{s.user={id:"A"};s.profile={user_id:"A",organization_id:"OA",ativo:true,senha_provisoria:false};s.roles=["cliente_produtor"];s.loading=false;});
+ it("two resources under one prefix do not cancel each other",async()=>{
+  const qc=new QueryClient();const signals:AbortSignal[]=[];
+  const fetch=(signal:AbortSignal)=>{signals.push(signal);return new Promise<string[]>(()=>{});};
+  const h=renderHook(()=>{
+    const a=useScopedPortalQuery({queryKey:["produtor-pedidos","one"],queryFn:fetch});
+    const b=useScopedPortalQuery({queryKey:["produtor-pedidos","two"],queryFn:fetch});
+    return {a,b};
+  },{wrapper:({children})=><QueryClientProvider client={qc}>{children}</QueryClientProvider>});
+  await waitFor(()=>expect(signals).toHaveLength(2));expect(signals.every(signal=>!signal.aborted)).toBe(true);
+  h.unmount();qc.clear();
+ });
  it.each(["switch","logout","revoked","loading","unmount","client","disabled","password"])("late %s evicts old scope and refuses response",async mode=>{
  const qc=new QueryClient();let resolve:((v:string[])=>void)|undefined;const signals:AbortSignal[]=[];
  const fetch=vi.fn((signal:AbortSignal)=>{signals.push(signal);return new Promise<string[]>(r=>{resolve=r;});});

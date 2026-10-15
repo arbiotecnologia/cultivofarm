@@ -12,7 +12,12 @@ export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>,
     const predicate = (query: { queryKey: readonly unknown[] }) => query.queryKey[0] === prefix && query.queryKey.at(-2) !== actor.scope;
     void client.cancelQueries({ predicate }); client.removeQueries({ predicate });
     const queryKey = [...options.queryKey, actor.scope, fence.scope];
-    return () => { void client.cancelQueries({ queryKey, exact: true }); client.removeQueries({ queryKey, exact: true }); };
+    return () => {
+      const query = client.getQueryCache().find({ queryKey, exact: true });
+      // Another mounted consumer of this exact request must not lose its cache.
+      if (query && query.getObserversCount() > 1) return;
+      void client.cancelQueries({ queryKey, exact: true }); client.removeQueries({ queryKey, exact: true });
+    };
   }, [client, prefix, fence.scope, actor.scope]);
   const result = useQuery<T, Error>({
     ...options, queryKey: [...options.queryKey, actor.scope, fence.scope], enabled: fence.ready && options.enabled !== false, retry: false,
