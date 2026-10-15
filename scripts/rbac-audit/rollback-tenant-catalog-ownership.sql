@@ -10,6 +10,8 @@ REVOKE EXECUTE ON FUNCTION public.tenant_catalog_owned_mutate(text,text,uuid,tim
 REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_mutate_core(text,text,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.tenant_catalog_owned_list(text,text,integer,integer,boolean) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_list_core(text,text,integer,integer,boolean) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.tenant_catalog_owned_presentation_mutate(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION platform_private.catalog_owned_presentation_mutate_core(text,uuid,uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon, authenticated;
 
 -- Recorte 04: remover apenas os bloqueios de NOVAS referências. Nenhuma linha histórica é tocada.
 DO $$ DECLARE t text; BEGIN
