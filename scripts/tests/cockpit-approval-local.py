@@ -36,6 +36,8 @@ ALTER TABLE ordens_servico_onfarm ALTER COLUMN status SET DEFAULT 'aberta';
     sql+='CREATE TRIGGER trg_sync_os_classica_downstream AFTER UPDATE ON ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_sync_os_classica_downstream();\nCREATE TRIGGER trg_sync_os_onfarm_downstream AFTER UPDATE OF status ON ordens_servico_onfarm FOR EACH ROW EXECUTE FUNCTION sync_os_onfarm_downstream();\n'
     live=(ROOT/'scripts/rbac-audit/applied-20261015183119_h_cockpit_live_source_tenant_chain_closed.sql').read_text()
     sql+=re.search(r'CREATE OR REPLACE FUNCTION private\.h7n_esteira_laboratorio\(\).*?\$function\$;',live,re.S).group()
+    # Historical advanced row predates the new guard; no backfill or repair.
+    sql+=f"INSERT INTO ordens_servico(id,status) VALUES({f.q(38)},'programada'); INSERT INTO ordens_servico_onfarm(id,status) VALUES({f.q(39)},'finalizada');"
     candidate=(ROOT/'scripts/rbac-audit/proposed-cockpit-os-approval-closed.sql').read_text()
     sql+=candidate[candidate.index('CREATE OR REPLACE FUNCTION private.assert_os_approval_scope'):candidate.index('DO $post$')]
     program=(ROOT/'scripts/rbac-audit/proposed-cockpit-programar-os-closed.sql').read_text()
@@ -56,6 +58,7 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
         nonlocal sql
         labels.append(label); sql+=action+f"\nDO $t$ BEGIN IF NOT (({expr}) IS TRUE) THEN RAISE EXCEPTION 'FAIL {label}'; END IF; RAISE NOTICE 'PASS {label}'; END $t$;\n"
     call=f"public.rpc_aprovar_os_v1({O},'manual')"
+    check('historical advanced rows preserved',f"(SELECT status::text FROM ordens_servico WHERE id={f.q(38)})='programada' AND (SELECT status::text FROM ordens_servico_onfarm WHERE id={f.q(39)})='finalizada' AND NOT EXISTS(SELECT 1 FROM laboratorio_esteira_eventos WHERE os_id IN ({f.q(38)},{f.q(39)}))")
     def deny(label,statement,change='',undo=''):
         nonlocal sql
         labels.append(label)
