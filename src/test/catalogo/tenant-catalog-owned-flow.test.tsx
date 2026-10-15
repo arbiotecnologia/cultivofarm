@@ -132,9 +132,8 @@ describe("culturas próprias na aba existente", () => {
     await act(async () => release());
     await screen.findByText("Soja");
     expect(screen.queryByText("AR secreta")).toBeNull();
-    const fsfData = view.client.getQueryData(["tenant-catalog", FSF, "u-fsf", "owned", "cultura", "list", "", 0, 50, false]) as { items: unknown[] } | undefined;
     await waitFor(() => expect(view.client.getQueryState(["tenant-catalog", FSF, "u-fsf", "owned", "cultura", "list", "", 0, 50, false])?.status).toBe("success"));
-    expect(fsfData?.items ?? []).toEqual([]);
+    expect(view.client.getQueryData(["tenant-catalog", FSF, "u-fsf", "owned", "cultura", "list", "", 0, 50, false])).toMatchObject({ items: [] });
   });
 
   it("perfil sem gestão vê próprio sem controles de mutação", async () => {
