@@ -5,7 +5,6 @@ src = open(sys.argv[1]).read()
 defs = {}
 for m in re.finditer(r'definition:(CREATE OR REPLACE FUNCTION (\w+)\.(\w+)\(.*?)\n hash:([0-9a-f]{32}) proname:(\w+) schema:(\w+)\]', src, re.S):
     defs[f"{m.group(6)}.{m.group(5)}"] = (m.group(1), m.group(4))
-G = " AND {a}.owner_organization_id IS NULL"
 P = {
  "public.partner_apply_default_discount": [("  WHERE p.ativo = true\n", "  WHERE p.ativo = true AND p.owner_organization_id IS NULL\n", 1)],
  "public.rpc_commercial_simulator": [
@@ -41,12 +40,10 @@ out = ["-- CANDIDATO 10 — NÃO APLICADO. Gerado por build-ownership10.py a par
 manifest = []
 for fn, patches in P.items():
     body, h = defs[fn]
-    assert hashlib.md5(body.encode()).hexdigest() == h or True
     new = body
     for old, rep, n in patches:
         c = new.count(old); assert c == n, (fn, old, c); new = new.replace(old, rep)
     sig = re.match(r'CREATE OR REPLACE FUNCTION ([\w.]+\(.*?\))\n', body).group(1)
-    reg = re.sub(r'\b(p_\w+|p_payload) ', '', sig.split(')')[0] + ')')
     pairs = ",\n    ".join(f"ARRAY[{lit(o)},{lit(r)},'{n}']" for o, r, n in patches)
     out.append(f"""DO $p$
 DECLARE v_oid regprocedure; v_def text; v_pair text[]; v_pairs text[][] := ARRAY[
