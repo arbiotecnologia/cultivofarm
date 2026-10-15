@@ -150,3 +150,18 @@ describe("IDs ocultos para catálogo novo", () => {
     expect(TENANT_VISIBILITY_SCOPE_NOTES.produto).toMatch(/NÃO vale para o portal B2B/);
   });
 });
+
+import { catalogoAppliesTenantVisibility, catalogoExcludeHidden } from "@/hooks/useCatalogoUnificado";
+describe("catálogo novo exclui ocultos no servidor", () => {
+  it("adiciona not.in só com IDs; B2B ainda não aplica", () => {
+    const calls: unknown[][] = [];
+    const q = { not: (...a: unknown[]) => { calls.push(a); return q; } };
+    catalogoExcludeHidden(q as never, []);
+    expect(calls).toHaveLength(0);
+    catalogoExcludeHidden(q as never, [ID]);
+    expect(calls[0]).toEqual(["id", "in", `(${ID})`]);
+    expect(catalogoAppliesTenantVisibility("b2b")).toBe(false);
+    expect(catalogoAppliesTenantVisibility("interno")).toBe(true);
+    expect(catalogoAppliesTenantVisibility("admin")).toBe(true);
+  });
+});
