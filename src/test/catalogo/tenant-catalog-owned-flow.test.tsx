@@ -261,8 +261,8 @@ describe("salvamento único de identificação/composição", () => {
     const hook = renderHook(() => useOwnedCatalogMutation("cultura", onApplied), { wrapper });
     let pending: Promise<unknown> = Promise.resolve();
     act(() => {
-      pending = hook.result.current.mutateAsync({ scopeKey: `${AR}|u-ar`, entity: "cultura", operation: "create", entityId: null, payload: { nome: "AR pendente" },
-        reason: "motivo suficiente", idempotencyKey: "k-ar-pendente" } as never).catch(() => undefined);
+      pending = hook.result.current.mutateAsync({ scopeKey: `${AR}|u-ar`, entity: "cultura", operation: "create", entityId: null, expectedUpdatedAt: null, payload: { nome: "AR pendente" },
+        reason: "motivo suficiente", idempotencyKey: "k-ar-pendente" }).catch(() => undefined);
     });
     await waitFor(() => expect(db.writes).toHaveLength(1));
     auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" };

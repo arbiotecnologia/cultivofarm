@@ -19,7 +19,7 @@ CREATE TABLE public.microorganism_regulatory_presentations(id uuid PRIMARY KEY D
  units_confirmed_by uuid, units_confirmed_at timestamptz, gtin_confirmed boolean NOT NULL DEFAULT false, gtin_confirmed_by uuid, gtin_confirmed_at timestamptz,
  created_by uuid, updated_by uuid, UNIQUE(dossier_id, volume_ml));`);
 await db.exec(readFileSync('scripts/rbac-audit/live-defs/public.rpc_regulatory_presentation_upsert-ownership11-before.sql','utf8'));
-const G='aaaaaaaa-aaaa-4aaa-8aaa-000000000001', AR='aaaaaaaa-aaaa-4aaa-8aaa-0000000000a1', FSF='aaaaaaaa-aaaa-4aaa-8aaa-0000000000f1';
+const AR='aaaaaaaa-aaaa-4aaa-8aaa-0000000000a1', FSF='aaaaaaaa-aaaa-4aaa-8aaa-0000000000f1';
 const id=(n)=>`bbbbbbbb-bbbb-4bbb-8bbb-${String(n).padStart(12,'0')}`;
 await db.query('INSERT INTO produtos VALUES ($1,NULL),($2,$4),($3,$5)',[id(1),id(2),id(3),AR,FSF]);
 await db.query('INSERT INTO microrganismos VALUES ($1,NULL),($2,$3)',[id(11),id(12),AR]);
@@ -28,7 +28,6 @@ await db.query('INSERT INTO catalogo_volumes VALUES ($1,$2,NULL,NULL),($3,$4,NUL
 await db.query("INSERT INTO microorganism_regulatory_dossiers VALUES ($1,$2,'DRAFT',NULL),($3,$4,'DRAFT',NULL)",[id(31),id(11),id(32),id(12)]);
 // histórico global pré-existente
 await db.query('INSERT INTO microorganism_regulatory_presentations(dossier_id,catalog_volume_id,volume_ml,label) VALUES ($1,$2,1000,$3)',[id(31),id(21),'1 L']);
-const preflightDef=md5=>md5;
 let sql=readFileSync('scripts/rbac-audit/proposed-tenant-catalog-ownership-11-regulatory-presentations.sql','utf8');
 // pg_constraint.confdeltype e md5 são reais; hash live substituído pelo hash do mesmo texto carregado (PGlite formata igual ao arquivo before?)
 const h=(await db.query(`SELECT md5(pg_get_functiondef('public.rpc_regulatory_presentation_upsert(uuid,integer,jsonb)'::regprocedure)) h`)).rows[0].h;
