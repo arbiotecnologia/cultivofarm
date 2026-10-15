@@ -166,7 +166,7 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=r.user_id AND organization_id=r.organization_id AND ativo IS TRUE)
   OR (SELECT count(*) FROM public.user_roles WHERE user_id=r.user_id)<>1
   OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=r.user_id AND role=r.external_role)
-  OR (SELECT count(*) FROM public.partner_users WHERE user_id=r.user_id)<>CASE WHEN r.partner_id IS NULL THEN 0 ELSE 1 END
+  OR (SELECT count(*) FROM public.partner_users WHERE user_id=r.user_id)<>(CASE WHEN r.partner_id IS NULL THEN 0 ELSE 1 END)
   OR (r.partner_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=r.user_id AND partner_id=r.partner_id AND papel=CASE WHEN r.external_role='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END))
   OR (SELECT count(*) FROM public.user_clientes WHERE user_id=r.user_id)<>cardinality(r.cliente_ids)
   OR EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id=r.user_id AND (NOT (cliente_id=ANY(r.cliente_ids)) OR is_active IS NOT TRUE OR revoked_at IS NOT NULL OR principal IS DISTINCT FROM (cliente_id=r.principal_cliente_id))) THEN
