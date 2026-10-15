@@ -13,6 +13,22 @@ DO $$ BEGIN
   IF md5(pg_get_functiondef('public.trg_os_sync_partner_order_fn()'::regprocedure)) <> '6684080e5556c041e6709543ee7af8e0' THEN RAISE EXCEPTION 'lab07_mixed_sync_drift'; END IF;
 END $$;
 
+-- Autorização laboratorial focada: h15 prova ator ativo/readiness; owner comercial explícito.
+-- b2b_phase1_partner_visible NÃO é mandato comercial: deriva organizations.partner_account_id.
+-- Reutiliza invariantes de b2b_internal_assert_origin (owner/ativo/deleted/client), sem autorizar origem interna.
+CREATE OR REPLACE FUNCTION platform_private.lab_partner_order_authorized(p_order_id uuid)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $auth$
+DECLARE v_uid uuid:=auth.uid(); v_org uuid;
+BEGIN
+ IF v_uid IS NULL OR NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'producao') OR public.has_role(v_uid,'gestor')) THEN RETURN false; END IF;
+ v_org:=public.h15_actor_organization();
+ IF v_org IS NULL THEN RETURN false; END IF;
+ RETURN EXISTS(SELECT 1 FROM public.partner_orders o JOIN public.partner_accounts p ON p.id=o.partner_id
+ WHERE o.id=p_order_id AND p.commercial_owner_organization_id=v_org AND p.ativo IS TRUE AND p.deleted_at IS NULL
+ AND (p.client_id IS NULL OR EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=p.client_id AND c.organization_id=v_org)));
+END $auth$;
+REVOKE ALL ON FUNCTION platform_private.lab_partner_order_authorized(uuid) FROM PUBLIC,anon,authenticated;
+
 CREATE FUNCTION platform_private.lab_item_is_manufacturable(p_product_id uuid,p_microorganism_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
   SELECT CASE
@@ -99,11 +115,9 @@ DECLARE
   v_ids uuid[] := ARRAY[]::uuid[];
   v_anchor_item_id uuid;
 BEGIN
- IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ IF NOT platform_private.lab_partner_order_authorized(p_partner_order_id) THEN
+  RAISE EXCEPTION 'LAB_PARTNER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
-  IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'producao') OR public.has_role(v_uid,'gestor')) THEN
-    RAISE EXCEPTION 'unauthorized';
-  END IF;
 
   -- H5-B01: serializa geração concorrente por pedido (idempotência de resultado)
   PERFORM pg_advisory_xact_lock(hashtext('generate_production_orders_from_partner:' || p_partner_order_id::text));
@@ -425,8 +439,11 @@ BEGIN
  IF p_planning_id IS NULL THEN RAISE EXCEPTION 'planejamento_invalido' USING ERRCODE='22023'; END IF;
  IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key))<8 THEN RAISE EXCEPTION 'chave_idempotencia_obrigatoria' USING ERRCODE='22023'; END IF;
  -- Nunca devolver recibo de origem interna bloqueada, nem em replay.
- SELECT * INTO v_pl FROM public.production_planning WHERE id=p_planning_id FOR UPDATE;
- IF v_pl.id IS NULL THEN RAISE EXCEPTION 'planejamento_nao_encontrado' USING ERRCODE='P0002'; END IF;
+ -- Escopo antes de status/recibo: ID inexistente e cross-tenant dão a mesma negação.
+ IF public.h15_actor_organization() IS NULL THEN RAISE EXCEPTION 'LAB_PARTNER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT pl.* INTO v_pl FROM public.production_planning pl
+ WHERE pl.id=p_planning_id AND platform_private.lab_partner_order_authorized(pl.partner_order_id) FOR UPDATE;
+ IF v_pl.id IS NULL THEN RAISE EXCEPTION 'LAB_PARTNER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=v_pl.partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
  PERFORM pg_advisory_xact_lock(hashtext('planejamento_publicar:'||p_planning_id::text));
  SELECT * INTO v_prev FROM public.production_planning_publications WHERE idempotency_key=btrim(p_idempotency_key);
