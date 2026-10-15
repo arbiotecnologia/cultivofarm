@@ -110,6 +110,7 @@ export function MicrorganismosTab() {
   const ownedCapability = useOwnedCatalogCapability();
   const [showArchived, setShowArchived] = useState(false);
   const [ownedOffset, setOwnedOffset] = useState(0);
+  const [search, setSearch] = useState("");
   const ownedRead = useOwnedCatalogRead("microrganismo", { archived: showArchived, offset: ownedOffset, search });
   const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Microrganismo | null }>({ open: false, item: null });
   const [ownedConfirm, setOwnedConfirm] = useState<{ item: Microrganismo; operation: "archive" | "restore" } | null>(null);
@@ -120,7 +121,6 @@ export function MicrorganismosTab() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
-  const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
   const [fichaMicro, setFichaMicro] = useState<Microrganismo | null>(null);
   
