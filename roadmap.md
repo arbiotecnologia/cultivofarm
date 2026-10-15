@@ -2,7 +2,8 @@
 - [x] Auditar 33 policies storage.objects e cadeia restritiva hospedada: d516 permissivas amplas INTERSECTAM storage1 restritivas/core5c9e; acesso efetivo por mero tenant NÃO confirmado. Corrigir diagnóstico anterior.
 - [x] Candidato mínimo preserva policies/ACL/core interno; Produtor exige cliente ativo+vínculo vigente+visita liberada+metadata persistida única/path exato; sem mutações Produtor. Baseline/read-only e rollback deny-Produtor preparados, nenhuma aplicação.
 - [x] Pré-Auth: mesma receipt/UUID/email fica pending quando ausência/lookup incerto; retry só reconcilia identidade própria existente. Sem segundo Auth, takeover, lease como autoridade ou credenciais.
-- [ ] Provas isoladas finais e relatório17seções/hashes; Storage API URL assinada/GoTrue/JWT/fullschema não executados, sem contas reais.
+- [x] 75 assertions Storage PostgreSQL isolado e75 Vitest PASS; regressão cadastro31+7 PASS; preflight hosted read-only1; rollback restritivo com ACL real PASS, lint focal0/scanner6arquivos0/build automáticoOK. Relatório17seções atualizado.
+- [ ] Storage API URL assinada/GoTrue/JWT/fullschema/Edges hospedadas não executados; after candidato ausente remotamente, aguarda revisão/aplicação autorizada, sem contas reais.
 - [ ] A+B abertura permanece bloqueada por review, canais B2 e Auth/hook/compensação fullschema; nenhuma implantação/grant/envio/publicação.
 
 ## RECORTE 19:55 — revisão f0f450d, candidato A+B sem implantação
