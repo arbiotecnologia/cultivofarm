@@ -58,7 +58,8 @@ BEGIN
     RAISE EXCEPTION 'financeiro/consultor não pertencem a AR'; END IF;
   INSERT INTO rt_ctx VALUES ('org_ar',v_org_ar::text),('org_fsf',v_org_fsf::text);
   INSERT INTO rt_ctx VALUES ('feat_ar', public._saas_user_has_feature(pg_temp.ctx('admin_ar')::uuid,'catalogo_precos')::text),
-                            ('feat_fsf', public._saas_user_has_feature(pg_temp.ctx('admin_fsf')::uuid,'catalogo_precos')::text);
+                            ('feat_fsf', public._saas_user_has_feature(pg_temp.ctx('admin_fsf')::uuid,'catalogo_precos')::text),
+                            ('feat_consultor_ar', public._saas_user_has_feature(pg_temp.ctx('consultor_ar')::uuid,'catalogo_precos')::text);
   INSERT INTO rt_ctx SELECT 'prod_ativo', id::text FROM public.produtos WHERE ativo ORDER BY id LIMIT 1;
   INSERT INTO rt_ctx SELECT 'prod_inativo', id::text FROM public.produtos WHERE NOT ativo ORDER BY id LIMIT 1;
   INSERT INTO rt_ctx SELECT 'micro_ativo', id::text FROM public.microrganismos WHERE ativo ORDER BY id LIMIT 1;
@@ -208,7 +209,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN e:=SQLERRM; END;
   PERFORM pg_temp.ok('ledger.imutavel_update', e='catalog_visibility_ledger_immutable', e);
   SELECT count(*) INTO n FROM public.catalog_tenant_visibility_ledger WHERE organization_id=pg_temp.ctx('org_ar')::uuid;
-  PERFORM pg_temp.ok('ledger.registros', n=4, n::text);
+  PERFORM pg_temp.ok('ledger.registros', n=4, n::text); -- conflitos/negativos não gravam ledger
   -- inativo
   IF pg_temp.ctx('prod_inativo') IS NULL THEN
     PERFORM pg_temp.skip('neg.inativo_reexibir', 'sem produto global inativo real');
