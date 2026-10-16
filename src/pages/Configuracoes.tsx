@@ -172,7 +172,7 @@ export default function Configuracoes() {
     },
   });
 
-  const usersPage = allUsers.items ?? [];
+  const usersPage = useMemo(() => allUsers.items ?? [], [allUsers.items]);
   // Vínculo canônico atual: UMA leitura por página (sem N+1), tenant derivado no servidor.
   const pageUserIds = useMemo(() => (usersPage as LinhaUsuario[]).map((u) => u.user_id).filter((id): id is string => typeof id === "string" && id.length > 0), [usersPage]);
   const vinculos = useQuery({
@@ -442,7 +442,7 @@ export default function Configuracoes() {
       // Segundo envio antes de recarregar é bloqueado (estado da linha é incerto).
       if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
       // Fase 1: externos são somente leitura (servidor também recusa). Nenhuma chamada é feita.
-      if (edicaoBloqueadaPorTipo(tipoAcessoDoUsuario(usersPage.find((u: any) => u.user_id === editUser.user_id)?.roles ?? editUser.roles))) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
+      if (editSomenteLeitura) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
 
 
 
