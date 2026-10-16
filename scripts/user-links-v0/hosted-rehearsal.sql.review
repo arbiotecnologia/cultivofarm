@@ -1,0 +1,34 @@
+-- NÃO EXECUTADO. psql, exclusivamente ref canônico comprovado externamente.
+-- Parâmetros explícitos existentes: actor_id, cliente_id, other_actor_id, campaign_id.
+-- Não criar identidades ou alterar roles/links/perfis reais. Não inserir campanha real.
+-- Carregar candidato SOMENTE em transação descartável pelo auditor, sem COMMIT.
+\set ON_ERROR_STOP on
+BEGIN;
+CREATE TEMP TABLE v0_before AS
+SELECT (SELECT reviewed FROM platform_private.user_edit_f2_gate WHERE singleton) common_gate,
+       (SELECT count(*) FROM platform_private.user_edit_f2_audit) common_audit,
+       (SELECT md5(pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure))) helper_hash;
+\ir candidate.sql.review
+SELECT set_config('request.jwt.claims',jsonb_build_object('sub', :'actor_id', 'role','authenticated','iat',extract(epoch FROM now())::bigint,'exp',extract(epoch FROM now()+interval '1 hour')::bigint)::text,true);
+SET LOCAL ROLE authenticated;
+-- SQL CLAIMS, não JWT HTTP/browser. Resultado factual, sem forçar positivo.
+SELECT public.has_active_user_cliente_access(auth.uid(), :'cliente_id'::uuid) AS actual_helper;
+SELECT :'cliente_id'::uuid=ANY(public.get_cliente_ids_for_user(auth.uid())) AS actual_membership;
+SELECT count(*) AS actual_child_visible FROM public.commercial_campaign_clientes WHERE campaign_id=:'campaign_id'::uuid;
+SELECT count(*) AS actual_campaign_visible FROM public.commercial_campaigns WHERE id=:'campaign_id'::uuid;
+-- UID forjado deve ser negado para ator não Admin; selecionar titular Produtor exclusivo.
+SELECT public.has_active_user_cliente_access(:'other_actor_id'::uuid, :'cliente_id'::uuid) AS forged_uid_must_be_false;
+RESET ROLE;
+-- Capturar estado do link como evidência sem modificá-lo: resultado NULL = sem fixture, NÃO PASS.
+SELECT is_active, revoked_at IS NULL AS not_revoked,
+       valid_from<=now() AS started, valid_until IS NULL OR valid_until>=now() AS not_expired
+FROM public.user_clientes WHERE user_id=:'actor_id'::uuid AND cliente_id=:'cliente_id'::uuid;
+-- Negativos ausentes nos dados reais: usar test-local.py, nunca fabricar hosted PASS.
+SELECT b.common_gate=(SELECT reviewed FROM platform_private.user_edit_f2_gate WHERE singleton) AS common_gate_preserved,
+       b.common_audit=(SELECT count(*) FROM platform_private.user_edit_f2_audit) AS common_audit_preserved
+FROM v0_before b;
+ROLLBACK;
+-- Readback após rollback: hash retorna baseline; gates/ledger preservados.
+SELECT md5(pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure))='e099f51d128620e5a68cc3e9001dd976' AS helper_restored,
+       (SELECT reviewed FROM platform_private.user_edit_f2_gate WHERE singleton) AS common_gate,
+       (SELECT count(*) FROM platform_private.user_edit_f2_audit) AS common_audit;

@@ -2,6 +2,12 @@
 
 Data: 16/10/2026. Estado atual às22:46UTC: **DADOS COMUNS PUBLICADOS / GATES UI E SQL TRUE / TESTES REAIS ADMIN E TITULAR COM RELOAD PASS**, conforme evidência independente abaixo. Nenhuma publicação pelo agente. Seções anteriores à atualização22:46 são histórico datado: gatefalse/audit0/UIpendente não representam mais o estado vigente. Associação/perfil/status permanecem somente consulta; próxima fase é apenas plano técnico revisável, não implementação.
 
+## Delta V0 — 22:59 UTC, plano86ad803b revisado
+
+Preparação focal de leitores históricos autorizada, não gestão de vínculos. Relatório atual: `docs/auditorias/vinculos-externos-v0-20261016.md`; SQL/Edge candidata fora das pastas automáticas em `scripts/user-links-v0/`. Sem SQL/deploy/publicação/contas/roles/associações. Common true/gate SQL true/audit4 preservados. Tabela correta: **public.commercial_campaigns**, policy `campanhas_cliente_select`; predicado sem vigência não prova exposição, pois RLS da filha só permite Admin/Gestor Comercial.
+
+Evidência EXTERNA nova: Produtor real preview /configuracoes e /financeiro redirecionam para /portal; /portal/financeiro mostra título existente sem valor comercial do principal AR. Separadamente SQLclaims/ROLLBACK accounts_receivable uma linha própria, zero outros clientes/tenants. Não confundir UI real com claims nem certificar revogação/cache distribuído.
+
 ## Entrega e recorte
 
 Primeiro recorte: editar **somente dados comuns** de `cliente_produtor` e `parceiro_b2b`, preservando integralmente perfil de acesso e vínculos. **Não é gestão completa**. Técnico B2B, perfis mistos, conversão interno/externo, troca/desassociação, Auth, e-mail de acesso, senha, SMTP e estados permanecem bloqueados. SQL common-only instalada pelo auditor em20261016221926; nenhuma reaplicação/escrita/deploy/publicação pelo agente nesta rodada. Testes transacionais do auditor sem alteração persistente em usuários.
