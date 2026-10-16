@@ -45,6 +45,8 @@ try:
  CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,cliente_id uuid REFERENCES public.clientes(id) ON DELETE CASCADE,
    principal boolean DEFAULT false,created_at timestamptz DEFAULT now(),is_active boolean DEFAULT true,
    revoked_at timestamptz,valid_from timestamptz,valid_until timestamptz,UNIQUE(user_id,cliente_id));
+ CREATE TABLE public.partner_users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,user_id uuid,created_at timestamptz DEFAULT now(),papel text);
+ CREATE TABLE auth.users(id uuid PRIMARY KEY);
  CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY DEFAULT true,revision bigint NOT NULL DEFAULT 0,CHECK(singleton));
  INSERT INTO cf_user_guards_v1.state(singleton) VALUES(true);
  CREATE FUNCTION public.has_role(u uuid,r public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
