@@ -35,4 +35,4 @@
 - Cockpit consultation mounts only the scoped list RPC; operations, child readers and ACL stay closed — prevents secondary reads and mutations.
 - OS approval and generator open INSERT guards stay atomic; preserve links/snapshots, deny unresolved B2B approval — prevents bypass.
 - External users reuse receipts/provisioner, ACL closed — no fork.
-- External edits reuse the existing admin RPC behind independent SQL/UI gates; frozen CAS/receipts and isolated actor/tenant/target generations fence callbacks — prevents stale-dialog effects without changing internal edits or links.
+- External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.

@@ -43,7 +43,7 @@ import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
 import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
-import { ExternalCommonUserEditForm } from "@/components/configuracoes/ExternalCommonUserEditForm";
+import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
@@ -1101,11 +1101,12 @@ export default function Configuracoes() {
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
                     <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[editTipo]}</p></div>
                     <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
-                    {externalCommonCandidate && <ExternalCommonUserEditForm
+                    {externalCommonCandidate && <ExternalCommonUserEditBoundary
                       key={`${externalScope}:${externalGeneration}`}
                       target={editUser} scope={externalScope} actorId={user?.id ?? ''} organizationId={profile?.organization_id ?? ''}
                       ready={canTenantEmail} expectedVersion={vinculos.data?.get(editUser.user_id)?.expected_version}
                       snapshotReady={!vinculos.isFetching && !vinculos.isError}
+                      snapshotError={vinculos.isError}
                       isCurrent={externalCurrent}
                       onSuccess={() => {
                         if (!externalCurrent()) return;

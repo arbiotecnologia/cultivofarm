@@ -22,10 +22,29 @@ type Props = {
   ready: boolean;
   expectedVersion?: string;
   snapshotReady: boolean;
+  snapshotError?: boolean;
   isCurrent: () => boolean;
   onSuccess: () => void;
   onError: (message: string) => void;
 };
+
+/** The screen waits for the first complete snapshot, then retains the draft across refetches. */
+export function ExternalCommonUserEditBoundary(props: Props) {
+  const [initial, setInitial] = useState<{ target: ExternalCommonTarget; version: string } | null>(null);
+  const { target, expectedVersion, ready, snapshotReady, snapshotError } = props;
+  useEffect(() => {
+    if (initial || !ready || !snapshotReady || snapshotError ||
+      typeof expectedVersion !== 'string' || !/^[a-f0-9]{64}$/.test(expectedVersion)) return;
+    setInitial({ target: { ...target, roles: [...target.roles] }, version: expectedVersion });
+  }, [initial, ready, snapshotReady, snapshotError, expectedVersion, target]);
+  if (!initial) {
+    const failed = snapshotError || (snapshotReady && ready);
+    return <p role={failed ? 'alert' : 'status'} className={failed ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>
+      {failed ? 'Não foi possível carregar os dados para edição. Recarregue a lista e tente novamente.' : 'Carregando dados para edição…'}
+    </p>;
+  }
+  return <ExternalCommonUserEditForm {...props} target={initial.target} expectedVersion={initial.version} />;
+}
 
 /** Mounted only through the closed review gate. No identity/role/link/status writes. */
 export function ExternalCommonUserEditForm(props: Props) {
