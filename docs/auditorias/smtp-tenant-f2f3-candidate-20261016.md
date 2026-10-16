@@ -1,5 +1,9 @@
 # SMTP F2/F3 — revisão local, não homologação de produção
 
+### Resultado focal02:14 — integração UI revisável
+205/205 Vitest em5arquivos (14UI,59fundação/transporte,64core/prova,65F23,3topology), SQL descartável47 checks/corrida com service_role e rollback integral, scanner25/25 e deno check --frozen espelho completo PASS. Lint7arquivos focais0; Configuracoes mantém18erros/2avisos, comparação normalizada com03e2355b idêntica exceto linhas. Build automático02:17:12Z OK; checagem efetiva -p tsconfig.app.json **não executada/verificada** por restrição do ambiente, não substituída por build/root.
+Playwright sintético1280×1800/390×844: provaPASS→conexãoPASS→sendCOOLDOWN, três chamadas apenas, confirmação desmarcada/habilitada, envio desabilitado, contador60s/sem overflow; screenshots vistas. Harness inicialmente falhou por import CommonJS/preamble, corrigido sem editar app; warnings de refs do Select no harness registrados, não zero console alegado. UI→Edge→PostgREST autenticado hosted **não exercitado**; auditor coleta usando sessão UI após revisão. Nenhuma leitura JWT/credencial/configreal, AUTH/email/SQL/deploy/publicação remotos. Flags de prova são temporárias e revisáveis; pinning operacional false.
+
 ## 1. Decisão
 HTTPS + Vault vigente; KMS adiado. Candidato conexão e envio controlado, sem aplicação SQL, deploy/publicação ou email real.
 
