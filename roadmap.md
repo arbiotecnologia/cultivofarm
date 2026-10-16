@@ -1172,7 +1172,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
 - [x] Recorte common_preserve_links: SQL/rollback/preflight em scripts/user-links-phase2, fora de supabase/migrations; módulo sem callsite, gate false, diff de tela separado e fechado.
 - [x] CAS perfil+roles+todoslinks/estados persistidos; ator/tenant revalidados no replay, hash payload, motivo e ledger imutável; seletor elegível paginado sem edição de links.
-- [x] QA local: PostgreSQL descartável 28 checks, Vitest 102/102, lint novos 0, scanner sem segredos, build automático OK19:47:50; diff UI aplica em dry-run. Typecheck dedicado final indisponível (harness, sem log separado); não declarar certificado.
+- [x] QA local: PostgreSQL descartável 35 checks, Vitest 102/102, lint novos 0, scanner sem segredos, build automático OK19:49:26; diff UI aplica em dry-run. Typecheck dedicado final indisponível (harness, sem log separado); não declarar certificado.
 - [ ] Auditoria técnica/homologação Auth/RLS real: bloqueio deliberado de aplicação e gate. Não é falta de autorização humana genérica.
 - [ ] Troca de vínculos do mesmo tipo: proposta separada no relatório; histórico B2B e revalidação/cache do titular impedem promoção como gestão completa.
 - [ ] Achados fora deste delta: rpc extraído sem receiver em DocumentosPanel.tsx e financeiro/relatorios/ReportShell.tsx; useMyCommercialOrders correto com call(supabase). Não corrigidos.
