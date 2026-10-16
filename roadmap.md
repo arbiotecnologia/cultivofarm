@@ -1167,6 +1167,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] F2 common-only instalada fechada pelo auditor; nenhuma reaplicação pelo agente. Troca/revogação continua pendente.
 
 ## Vínculos externos — Fase 2 candidata (16/10/2026)
+- [x] P2 loading22:30: boundary usado pela tela aguarda token inicial e preserva rascunho/CAS/receipt no refetch.103VitestPASS (27diálogo), lintnovo0/18legados iguais, buildautomáticoOK22:31:30; sem banco/publicação/gates. Typecheck dedicado e teste autenticado continuam revisão externa; base observada e54b4939, commit do delta gerenciado pelo ambiente.
 - [x] Solicitação inicial histórica: candidata revisável sem aplicação pelo agente; SQL posteriormente instalada fechada pelo auditor, sem publicação/liberação da F2.
 - [x] Evidência independente F1/1613abbf:36VitestPASS/typecheck0/build0/lintnovos0/18legados/scanner4187/0; F1 real publicada PASS confirmada pelo titular na atualização vigente.
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
