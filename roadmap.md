@@ -1,8 +1,9 @@
 ## SMTP-T1 — fundação multiprovedor por empresa (22:34)
-- [ ] Auditar HEAD e banco canônico somente leitura; inventariar ACL/RLS/worker sem ler segredos.
-- [ ] Preparar configuração tenant draft write-only Vault, UI existente e migrations aditivas revisáveis fora da pasta gerenciada; envios OFF.
-- [ ] Testes locais negativos A/B/RBAC, validação/UI mobile e QA; relatório/rollback e revisão pelo auditor antes de aplicação.
-- [ ] Próximas fases bloqueadas: remetente/teste controlado/roteamento tenant/quotas/recibos dependem de autorização e auditoria.
+- [x] HEAD/banco canônico/ACL/RLS inventariados somente leitura, worker local contido; nenhum segredo lido.
+- [x] Pacote tenant DRAFT/Vault write-only/RLS/CAS/audit e UI existente; SQL/Edge candidatos fora de deploy. Frontend, entrypoint e gate privado persistente OFF.
+- [x] QA local: 190 Vitest selecionados PASS; SQL descartável 46 checks PASS; scanner focal9/9; lint focal0 (baseline Configuracoes18/2); build automáticoOK; typecheck separado UNVERIFIED; desktop/mobile formulário simuladoPASS, sem Auth/browser hosted. Relatório docs/auditorias/smtp-tenant-t1-20261016.md e manifesto/rollback entregues.
+- [ ] Auditor: revisar/aplicar/homologar ACL/Auth/Vault/RLS/empacotamento/redaction no canônico; credencial real e envios bloqueados, nenhuma aplicação automática.
+- [ ] Próximas fases bloqueadas: remetente/SSRF-TLS/teste controlado/roteamento tenant/quotas/recibos dependem de autorização e auditoria; nenhuma grande auditoria paralela.
 
 ## RECORTE 21:51 — autorização focal de alteração administrativa de senha
 - [x] has_role e admin_can_update_user_password_server usam anonClient/JWT getUser validado; erro RPC500/código seguro distinto de negação403, sem grants/DDL.
