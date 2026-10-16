@@ -58,6 +58,7 @@ CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()
 AS $function$
 DECLARE
   v_user uuid;
+  v_users uuid[] := '{}';
   v_principal uuid;
   v_marked uuid;
 BEGIN
@@ -67,11 +68,27 @@ BEGIN
 
   -- Reconcilia TODOS os usuários afetados: NEW e OLD (UPDATE de user_id
   -- reconcilia o usuário antigo e o novo; nenhum dado é reatribuído).
-  FOR v_user IN
-    SELECT n.user_id FROM new_rows n
-    UNION
-    SELECT o.user_id FROM old_rows o
-  LOOP
+  -- Coleta por evento: cada trigger statement só executa o branch cuja
+  -- transition table existe (plpgsql planeja cada statement na 1ª execução).
+  IF TG_OP = 'INSERT' THEN
+    FOR v_user IN SELECT DISTINCT n.user_id FROM new_rows n LOOP
+      v_users := v_users || v_user;
+    END LOOP;
+  ELSIF TG_OP = 'DELETE' THEN
+    FOR v_user IN SELECT DISTINCT o.user_id FROM old_rows o LOOP
+      v_users := v_users || v_user;
+    END LOOP;
+  ELSE
+    FOR v_user IN
+      SELECT n.user_id FROM new_rows n
+      UNION
+      SELECT o.user_id FROM old_rows o
+    LOOP
+      v_users := v_users || v_user;
+    END LOOP;
+  END IF;
+
+  FOREACH v_user IN ARRAY v_users LOOP
     -- 1) Rebaixa principais não vigentes (inativo, revogado, futuro, expirado)
     UPDATE public.user_clientes
        SET principal = false
@@ -83,15 +100,19 @@ BEGIN
 
     -- 2) Principal explicitamente marcado e vigente neste comando vence;
     --    desempate determinístico (created_at, id) se houver mais de um
-    SELECT uc.id INTO v_marked
-      FROM new_rows n
-      JOIN public.user_clientes uc ON uc.id = n.id
+    IF TG_OP = 'DELETE' THEN
+      v_marked := NULL;
+    ELSE
+      SELECT uc.id INTO v_marked
+        FROM new_rows n
+        JOIN public.user_clientes uc ON uc.id = n.id
      WHERE n.user_id = v_user AND n.principal
        AND uc.is_active AND uc.revoked_at IS NULL
        AND (uc.valid_from IS NULL OR uc.valid_from <= now())
        AND (uc.valid_until IS NULL OR uc.valid_until >= now())
-     ORDER BY uc.created_at ASC, uc.id ASC
-     LIMIT 1;
+       ORDER BY uc.created_at ASC, uc.id ASC
+       LIMIT 1;
+    END IF;
     IF v_marked IS NOT NULL THEN
       UPDATE public.user_clientes
          SET principal = false
@@ -141,9 +162,18 @@ BEGIN
 END;
 $function$;
 
--- Troca ROW -> STATEMENT com transition tables (mesmo nome, mesmos eventos)
+-- Troca ROW -> STATEMENT. Postgres não aceita transition tables em trigger
+-- multi-evento: um trigger por evento, cada um referenciando só suas tabelas.
 DROP TRIGGER trg_user_clientes_sync ON public.user_clientes;
-CREATE TRIGGER trg_user_clientes_sync
- AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes
+CREATE TRIGGER trg_user_clientes_sync_ins
+ AFTER INSERT ON public.user_clientes
+ REFERENCING NEW TABLE AS new_rows
+ FOR EACH STATEMENT EXECUTE FUNCTION public.sync_user_cliente_principal();
+CREATE TRIGGER trg_user_clientes_sync_upd
+ AFTER UPDATE ON public.user_clientes
  REFERENCING NEW TABLE AS new_rows OLD TABLE AS old_rows
+ FOR EACH STATEMENT EXECUTE FUNCTION public.sync_user_cliente_principal();
+CREATE TRIGGER trg_user_clientes_sync_del
+ AFTER DELETE ON public.user_clientes
+ REFERENCING OLD TABLE AS old_rows
  FOR EACH STATEMENT EXECUTE FUNCTION public.sync_user_cliente_principal();

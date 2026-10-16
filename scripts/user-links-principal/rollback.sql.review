@@ -54,7 +54,10 @@ BEGIN
 END;
 $function$;
 
-DROP TRIGGER trg_user_clientes_sync ON public.user_clientes;
+DROP TRIGGER IF EXISTS trg_user_clientes_sync_ins ON public.user_clientes;
+DROP TRIGGER IF EXISTS trg_user_clientes_sync_upd ON public.user_clientes;
+DROP TRIGGER IF EXISTS trg_user_clientes_sync_del ON public.user_clientes;
+DROP TRIGGER IF EXISTS trg_user_clientes_sync ON public.user_clientes;
 CREATE TRIGGER trg_user_clientes_sync
  AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes
  FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal();
