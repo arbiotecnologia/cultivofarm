@@ -4,6 +4,7 @@ import {
   openAuthenticatedSmtpSession,
   readSmtpResponse,
   writeSmtpCommand,
+  writeSmtpBytes,
   type ProbeConnection,
   type SmtpProbeDeps,
 } from "./smtp-provider-probe.ts";
@@ -35,22 +36,6 @@ function dotStuff(value: string): string {
   return normalizeCrlf(value).split("\r\n").map((line) => line.startsWith(".") ? `.${line}` : line).join("\r\n");
 }
 
-async function writeWithTimeout(connection: ProbeConnection, value: Uint8Array, timeoutMs: number): Promise<number> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      connection.write(value),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new NativeSmtpAdapterFailure("email_send_ambiguous", "ambiguous", "send", "ambiguous")),
-          timeoutMs,
-        );
-      }),
-    ]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
-}
 
 function quotedPrintable(value: string): string {
   const bytes = encoder.encode(normalizeCrlf(value));
@@ -121,7 +106,7 @@ export class NativeSmtpClient implements SmtpLikeClient {
       await expectStatus(this.connection, [354], this.timeoutMs);
       this.bodyStarted = true;
       const payload = `${buildNativeMimeMessage(opts)}\r\n.\r\n`;
-      await writeWithTimeout(this.connection, encoder.encode(payload), this.timeoutMs);
+      await writeSmtpBytes(this.connection, encoder.encode(payload), this.timeoutMs, "auth");
       await expectStatus(this.connection, [250], this.timeoutMs);
     } catch (error) {
       if (error instanceof NativeSmtpAdapterFailure) throw error;
