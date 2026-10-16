@@ -10,7 +10,8 @@
 --               status IN ('pendente','atribuida') (allow-list; schema default 'pendente').
 --   tenant    = public.clientes.organization_id of the solicitation; cliente status_cliente='ativo'.
 --   recipient = the assigned consultant: active profile of the SAME tenant, role consultor_tecnico/tecnico_agronomo,
---               confirmed auth email, not superadmin.
+--               confirmed auth email, not superadmin, current valid user_clientes link to the client (canonical portfolio rule).
+--               The address approved at claim is bound by salted hash; authorize refuses if Auth email changed.
 --   Source + recipient are re-proven at enqueue, at claim (before any IO) and at authorize (after SMTP AUTH,
 --   before MAIL FROM). Cancellation, deletion, reassignment, client/tenant change => job cancelled + audited.
 --   Template/payload = fixed server text; payload limited to numero (sanitized charset), tipo_demanda, urgencia.
@@ -21,7 +22,7 @@ DO $$ BEGIN
  OR to_regprocedure('platform_private.tenant_smtp_f4_verified(uuid)') IS NULL
  OR to_regprocedure('tenant_smtp_executor.tenant_smtp_dispatch_ready(uuid)') IS NULL
  OR to_regclass('platform_private.tenant_smtp_test_insert_tickets') IS NULL
- OR to_regclass('public.comunicacao_outbox') IS NULL OR to_regclass('public.portal_solicitacoes') IS NULL
+ OR to_regclass('public.comunicacao_outbox') IS NULL OR to_regclass('public.portal_solicitacoes') IS NULL OR to_regclass('public.user_clientes') IS NULL
  OR has_schema_privilege('service_role','platform_private','USAGE') THEN
   RAISE EXCEPTION 'SMTP_F4B_PREFLIGHT_FAILED';
  END IF;
@@ -44,10 +45,12 @@ CREATE TABLE IF NOT EXISTS platform_private.tenant_smtp_dispatch_jobs(
  source_id uuid NOT NULL, cliente_id uuid NOT NULL, recipient_user_id uuid NOT NULL, version bigint NOT NULL, activated_by uuid,
  state text NOT NULL CHECK(state IN ('queued','executing','authorized','sent','failed','ambiguous','cancelled','lease_expired')),
  fence uuid, worker text CHECK(worker IS NULL OR length(worker) BETWEEN 1 AND 80), lease_expires_at timestamptz,
+ recipient_hash text CHECK(recipient_hash IS NULL OR recipient_hash ~ '^[0-9a-f]{64}$'),
  result_code text CHECK(result_code IS NULL OR result_code ~ '^[a-z_]{1,60}$'),
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(), started_at timestamptz, authorized_at timestamptz, finished_at timestamptz,
  UNIQUE(contract,source_id,recipient_user_id)
 );
+ALTER TABLE platform_private.tenant_smtp_dispatch_jobs ADD COLUMN IF NOT EXISTS recipient_hash text CHECK(recipient_hash IS NULL OR recipient_hash ~ '^[0-9a-f]{64}$');
 REVOKE ALL ON platform_private.tenant_smtp_dispatch_jobs FROM PUBLIC,anon,authenticated,service_role;
 ALTER TABLE platform_private.tenant_smtp_dispatch_jobs ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS tenant_smtp_dispatch_jobs_queue ON platform_private.tenant_smtp_dispatch_jobs(state,created_at);
@@ -84,6 +87,11 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
 $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_smtp_lane_recipient(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 
+-- Destination binding: per-job salted hash (outbox id) of the normalized address approved at claim. Never plaintext in the ledger.
+CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_lane_recipient_hash(p_outbox uuid,p_email text) RETURNS text
+LANGUAGE sql IMMUTABLE SET search_path='' AS $$ SELECT encode(pg_catalog.sha256(pg_catalog.convert_to(p_outbox::text||':'||lower(btrim(p_email)),'UTF8')),'hex') $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_smtp_lane_recipient_hash(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+
 -- Source proof: NULL = still eligible; otherwise a sanitized reason. Reads the CURRENT source row.
 CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_lane_source_reason(p_source uuid,p_cliente uuid,p_org uuid,p_recipient uuid) RETURNS text
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
@@ -98,6 +106,10 @@ BEGIN
  SELECT organization_id,status_cliente::text AS st INTO c FROM public.clientes WHERE id=p_cliente;
  IF NOT FOUND OR c.organization_id IS DISTINCT FROM p_org THEN RETURN 'client_tenant_changed'; END IF;
  IF c.st IS DISTINCT FROM 'ativo' THEN RETURN 'client_ineligible'; END IF;
+ -- Canonical portfolio link (same predicate as producer_request_mutation_guard / technical_client_link).
+ IF NOT EXISTS(SELECT 1 FROM public.user_clientes uc WHERE uc.user_id=p_recipient AND uc.cliente_id=p_cliente
+  AND uc.is_active IS TRUE AND uc.revoked_at IS NULL AND (uc.valid_from IS NULL OR uc.valid_from<=now())
+  AND (uc.valid_until IS NULL OR uc.valid_until>=now()) AND uc.access_level::text IN ('read','execute','manage')) THEN RETURN 'recipient_portfolio_revoked'; END IF;
  IF platform_private.tenant_smtp_lane_recipient(p_org,p_recipient) IS NULL THEN RETURN 'recipient_unproven'; END IF;
  RETURN NULL;
 END $$;
@@ -287,12 +299,12 @@ DROP TRIGGER IF EXISTS tenant_smtp_lane_solicitacao_atribuida ON public.portal_s
 CREATE TRIGGER tenant_smtp_lane_solicitacao_atribuida AFTER UPDATE OF consultor_atribuido ON public.portal_solicitacoes
  FOR EACH ROW EXECUTE FUNCTION platform_private.tenant_smtp_lane_enqueue_solicitacao();
 
--- Executor claim: returns at most one job. Reconciles expired leases (never re-sent), scans up to 25 queued jobs,
+-- Executor claim: returns at most one job. Reconciles expired leases (never re-sent), scans up to 25 tenants x 5 jobs,
 -- skips busy/over-quota tenants (fairness) and cancels jobs whose source/recipient/tenant is no longer proven — all BEFORE IO.
 CREATE OR REPLACE FUNCTION tenant_smtp_executor.tenant_smtp_lane_claim(p_worker text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE j platform_private.tenant_smtp_dispatch_jobs; s public.communication_tenant_email_settings; v_email text; v_password text; v_fence uuid;
- o public.comunicacao_outbox; v_num text; v_body text; v_reason text; v_skip uuid[]:='{}';
+ o public.comunicacao_outbox; v_num text; v_body text; v_reason text; v_org uuid;
 BEGIN
  IF p_worker IS NULL OR p_worker !~ '^[A-Za-z0-9._-]{1,80}$' THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
  FOR j IN SELECT * FROM platform_private.tenant_smtp_dispatch_jobs WHERE state IN ('executing','authorized') AND lease_expires_at<clock_timestamp() FOR UPDATE SKIP LOCKED LOOP
@@ -311,38 +323,43 @@ BEGIN
  END LOOP;
  IF NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_dispatch_gate WHERE id AND approved) THEN RETURN NULL; END IF;
  INSERT INTO platform_private.tenant_smtp_lane_heartbeat VALUES(true,p_worker,clock_timestamp()) ON CONFLICT(id) DO UPDATE SET worker=EXCLUDED.worker,seen_at=EXCLUDED.seen_at;
- FOR j IN SELECT * FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued' ORDER BY created_at LIMIT 25 FOR UPDATE SKIP LOCKED LOOP
-  CONTINUE WHEN j.organization_id = ANY(v_skip);
-  IF NOT pg_try_advisory_xact_lock(hashtextextended(j.organization_id::text,0)) THEN v_skip:=v_skip||j.organization_id; CONTINUE; END IF;
-  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=j.organization_id FOR SHARE;
-  IF NOT tenant_smtp_executor.tenant_smtp_dispatch_ready(j.organization_id) OR s.version IS DISTINCT FROM j.version THEN
-   PERFORM platform_private.tenant_smtp_lane_cancel(j,'tenant_not_ready',NULL); CONTINUE;
+ -- Fairness: candidates are TENANTS (oldest queued first, at most 25), each with at most 5 of its own jobs.
+ -- A saturated/busy tenant is skipped as a whole, so the scan always reaches the next company.
+ FOR v_org IN SELECT q.organization_id FROM platform_private.tenant_smtp_dispatch_jobs q WHERE q.state='queued'
+  GROUP BY q.organization_id ORDER BY min(q.created_at) LIMIT 25 LOOP
+  IF NOT pg_try_advisory_xact_lock(hashtextextended(v_org::text,0)) THEN CONTINUE; END IF;
+  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=v_org FOR SHARE;
+  IF NOT tenant_smtp_executor.tenant_smtp_dispatch_ready(v_org) THEN
+   PERFORM platform_private.tenant_smtp_lane_cancel_queued(v_org,'tenant_not_ready',NULL); CONTINUE;
   END IF;
-  v_reason:=platform_private.tenant_smtp_lane_source_reason(j.source_id,j.cliente_id,j.organization_id,j.recipient_user_id);
-  IF v_reason IS NOT NULL THEN PERFORM platform_private.tenant_smtp_lane_cancel(j,v_reason,NULL); CONTINUE; END IF;
-  -- Per-tenant send quota (20/hour). Over quota: skip this tenant, keep scanning others.
-  IF (SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE organization_id=j.organization_id
-   AND state IN ('executing','authorized','sent','ambiguous','lease_expired') AND started_at>clock_timestamp()-interval '1 hour')>=20 THEN
-   v_skip:=v_skip||j.organization_id; CONTINUE;
-  END IF;
-  SELECT * INTO o FROM public.comunicacao_outbox WHERE id=j.outbox_id FOR UPDATE;
-  IF o.recipient_user_id IS DISTINCT FROM j.recipient_user_id OR o.status<>'processing' OR o.template_chave<>j.contract OR o.attempts<>0 THEN
-   PERFORM platform_private.tenant_smtp_lane_cancel(j,'outbox_mismatch',NULL); CONTINUE;
-  END IF;
-  v_email:=platform_private.tenant_smtp_lane_recipient(j.organization_id,j.recipient_user_id);
-  SELECT d.decrypted_secret INTO v_password FROM platform_private.communication_tenant_email_secret_refs t JOIN vault.decrypted_secrets d ON d.id=t.secret_id WHERE t.organization_id=j.organization_id;
-  IF v_password IS NULL OR v_email IS NULL THEN v_skip:=v_skip||j.organization_id; CONTINUE; END IF;
-  v_fence:=gen_random_uuid();
-  UPDATE platform_private.tenant_smtp_dispatch_jobs SET state='executing',fence=v_fence,worker=p_worker,lease_expires_at=clock_timestamp()+interval '45 seconds',started_at=clock_timestamp() WHERE outbox_id=j.outbox_id;
-  UPDATE public.comunicacao_outbox SET attempts=1,locked_at=clock_timestamp() WHERE id=j.outbox_id;
-  PERFORM platform_private.tenant_smtp_lane_log(j,'claimed',NULL,NULL);
-  v_num:=coalesce(o.payload_snapshot->>'numero','');
-  v_body:='Uma solicitação técnica foi atribuída a você'||CASE WHEN v_num<>'' THEN ' (nº '||v_num||')' ELSE '' END||'.'||chr(10)||
-   'Tipo: '||coalesce(o.payload_snapshot->>'tipo_demanda','-')||chr(10)||'Urgência: '||coalesce(o.payload_snapshot->>'urgencia','-')||chr(10)||
-   'Acesse o painel Cultivo Farm para ver os detalhes. Esta mensagem é automática.';
-  RETURN jsonb_build_object('outbox_id',j.outbox_id,'fence',v_fence,'version',j.version,'recipient',v_email,
-   'subject',left('Nova solicitação atribuída'||CASE WHEN v_num<>'' THEN ' — nº '||v_num ELSE '' END,200),'text',v_body,
-   'config',s.config,'password',v_password);
+  -- Per-tenant send quota (20/hour). Over quota: skip this tenant entirely.
+  IF (SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE organization_id=v_org
+   AND state IN ('executing','authorized','sent','ambiguous','lease_expired') AND started_at>clock_timestamp()-interval '1 hour')>=20 THEN CONTINUE; END IF;
+  SELECT d.decrypted_secret INTO v_password FROM platform_private.communication_tenant_email_secret_refs t JOIN vault.decrypted_secrets d ON d.id=t.secret_id WHERE t.organization_id=v_org;
+  IF v_password IS NULL THEN CONTINUE; END IF;
+  FOR j IN SELECT * FROM platform_private.tenant_smtp_dispatch_jobs WHERE organization_id=v_org AND state='queued' ORDER BY created_at LIMIT 5 FOR UPDATE SKIP LOCKED LOOP
+   IF s.version IS DISTINCT FROM j.version THEN PERFORM platform_private.tenant_smtp_lane_cancel(j,'tenant_not_ready',NULL); CONTINUE; END IF;
+   v_reason:=platform_private.tenant_smtp_lane_source_reason(j.source_id,j.cliente_id,j.organization_id,j.recipient_user_id);
+   IF v_reason IS NOT NULL THEN PERFORM platform_private.tenant_smtp_lane_cancel(j,v_reason,NULL); CONTINUE; END IF;
+   SELECT * INTO o FROM public.comunicacao_outbox WHERE id=j.outbox_id FOR UPDATE;
+   IF o.recipient_user_id IS DISTINCT FROM j.recipient_user_id OR o.status<>'processing' OR o.template_chave<>j.contract OR o.attempts<>0 THEN
+    PERFORM platform_private.tenant_smtp_lane_cancel(j,'outbox_mismatch',NULL); CONTINUE;
+   END IF;
+   v_email:=platform_private.tenant_smtp_lane_recipient(j.organization_id,j.recipient_user_id);
+   IF v_email IS NULL THEN PERFORM platform_private.tenant_smtp_lane_cancel(j,'recipient_unproven',NULL); CONTINUE; END IF;
+   v_fence:=gen_random_uuid();
+   UPDATE platform_private.tenant_smtp_dispatch_jobs SET state='executing',fence=v_fence,worker=p_worker,lease_expires_at=clock_timestamp()+interval '45 seconds',started_at=clock_timestamp(),
+    recipient_hash=platform_private.tenant_smtp_lane_recipient_hash(j.outbox_id,v_email) WHERE outbox_id=j.outbox_id;
+   UPDATE public.comunicacao_outbox SET attempts=1,locked_at=clock_timestamp() WHERE id=j.outbox_id;
+   PERFORM platform_private.tenant_smtp_lane_log(j,'claimed',NULL,NULL);
+   v_num:=coalesce(o.payload_snapshot->>'numero','');
+   v_body:='Uma solicitação técnica foi atribuída a você'||CASE WHEN v_num<>'' THEN ' (nº '||v_num||')' ELSE '' END||'.'||chr(10)||
+    'Tipo: '||coalesce(o.payload_snapshot->>'tipo_demanda','-')||chr(10)||'Urgência: '||coalesce(o.payload_snapshot->>'urgencia','-')||chr(10)||
+    'Acesse o painel Cultivo Farm para ver os detalhes. Esta mensagem é automática.';
+   RETURN jsonb_build_object('outbox_id',j.outbox_id,'fence',v_fence,'version',j.version,'recipient',v_email,
+    'subject',left('Nova solicitação atribuída'||CASE WHEN v_num<>'' THEN ' — nº '||v_num ELSE '' END,200),'text',v_body,
+    'config',s.config,'password',v_password);
+  END LOOP;
  END LOOP;
  RETURN NULL;
 EXCEPTION WHEN SQLSTATE '22023' THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023';
@@ -356,7 +373,7 @@ GRANT EXECUTE ON FUNCTION tenant_smtp_executor.tenant_smtp_lane_claim(text) TO s
 -- DATA completes (milliseconds, same SMTP session) are not observed; no resend ever follows.
 CREATE OR REPLACE FUNCTION tenant_smtp_executor.tenant_smtp_lane_authorize(p_outbox uuid,p_fence uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE j platform_private.tenant_smtp_dispatch_jobs; s public.communication_tenant_email_settings; v_reason text;
+DECLARE j platform_private.tenant_smtp_dispatch_jobs; s public.communication_tenant_email_settings; v_reason text; v_email text;
 BEGIN
  IF p_outbox IS NULL OR p_fence IS NULL THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
  SELECT * INTO j FROM platform_private.tenant_smtp_dispatch_jobs WHERE outbox_id=p_outbox FOR UPDATE;
@@ -368,6 +385,11 @@ BEGIN
  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=j.organization_id FOR SHARE;
  IF NOT tenant_smtp_executor.tenant_smtp_dispatch_ready(j.organization_id) OR s.version IS DISTINCT FROM j.version THEN v_reason:='tenant_not_ready';
  ELSE v_reason:=platform_private.tenant_smtp_lane_source_reason(j.source_id,j.cliente_id,j.organization_id,j.recipient_user_id); END IF;
+ -- Destination must still be exactly the address approved at claim (hash compare; Auth email change => withheld).
+ IF v_reason IS NULL THEN
+  v_email:=platform_private.tenant_smtp_lane_recipient(j.organization_id,j.recipient_user_id);
+  IF v_email IS NULL OR j.recipient_hash IS NULL OR platform_private.tenant_smtp_lane_recipient_hash(j.outbox_id,v_email)<>j.recipient_hash THEN v_reason:='recipient_changed'; END IF;
+ END IF;
  IF v_reason IS NOT NULL THEN
   PERFORM platform_private.tenant_smtp_lane_cancel(j,v_reason,NULL);
   PERFORM platform_private.tenant_smtp_lane_log(j,'withheld',v_reason,NULL);
