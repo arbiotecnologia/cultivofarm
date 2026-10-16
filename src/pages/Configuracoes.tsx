@@ -447,7 +447,7 @@ export default function Configuracoes() {
       if (!editUser) throw erroLocalEdicao("Nenhum usuário em edição. Reabra o cadastro.");
       // Segundo envio antes de recarregar é bloqueado (estado da linha é incerto).
       if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
-      // Fase 1: externos são somente leitura (servidor também recusa). Nenhuma chamada é feita.
+      // Editor geral não altera externos; dados comuns usam exclusivamente o caminho F2 separado.
       if (editSomenteLeitura) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
 
 

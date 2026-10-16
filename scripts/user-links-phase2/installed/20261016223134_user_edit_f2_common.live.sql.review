@@ -1,0 +1,78 @@
+CREATE OR REPLACE FUNCTION platform_private.user_edit_f2_common(p_user uuid, p_stamp timestamp with time zone, p_profile jsonb, p_roles app_role[], p_clients uuid[], p_primary uuid, p_partner uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid; envelope jsonb:=p_profile->'_external_edit'; common jsonb:=p_profile-'_external_edit';
+ current_roles public.app_role[]; before_version text; after_version text; req_hash text; receipt record;
+ key uuid; reason text; stamp timestamptz; old_common jsonb; new_common jsonb; result jsonb; k text;
+BEGIN
+ -- Reject unauthorized callers before any global or target row lock.
+ -- Repeat full authorization after locks to close concurrent permission changes.
+ IF auth.uid() IS NULL
+ OR platform_private.platform_actor_access_ready(auth.uid()) IS NOT TRUE
+ OR platform_private.is_tenant_admin_for_user(p_user) IS NOT TRUE
+ THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.user_edit_f2_gate WHERE singleton AND reviewed)
+ THEN RAISE EXCEPTION 'user_edit_phase_closed' USING ERRCODE='42501'; END IF;
+ -- Lock order shared with ALL existing identity/link DML (statement trigger).
+ -- NOWAIT prevents reverse-order legacy writers from causing a deadlock; retry is explicit.
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ PERFORM 1 FROM platform_private.user_edit_f2_gate WHERE singleton AND reviewed FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_edit_phase_closed' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id IN (auth.uid(),p_user) ORDER BY user_id FOR UPDATE;
+ org:=platform_private.user_edit_f2_authorize(p_user);
+ PERFORM 1 FROM public.user_roles WHERE user_id IN (auth.uid(),p_user) ORDER BY user_id,id FOR UPDATE;
+ PERFORM 1 FROM public.user_clientes WHERE user_id=p_user ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM public.partner_users WHERE user_id=p_user ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM public.clientes WHERE id IN (SELECT cliente_id FROM public.user_clientes WHERE user_id=p_user) ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN (SELECT partner_id FROM public.partner_users WHERE user_id=p_user) ORDER BY id FOR SHARE;
+ SELECT array_agg(role ORDER BY role::text) INTO current_roles FROM public.user_roles WHERE user_id=p_user;
+ IF current_roles IS NULL OR cardinality(current_roles)<>1 OR current_roles[1] NOT IN ('cliente_produtor','parceiro_b2b')
+ OR p_roles IS DISTINCT FROM current_roles THEN RAISE EXCEPTION 'user_edit_linked_role_unavailable' USING ERRCODE='42501'; END IF;
+ IF cardinality(coalesce(p_clients,'{}'::uuid[]))<>0 OR p_primary IS NOT NULL OR p_partner IS NOT NULL THEN
+  RAISE EXCEPTION 'user_edit_unscoped_links_forbidden' USING ERRCODE='42501'; END IF;
+ -- Common-only path may preserve inactive/revoked links, but never adopt unowned ones.
+ IF EXISTS(SELECT 1 FROM public.user_clientes u LEFT JOIN public.clientes c ON c.id=u.cliente_id WHERE u.user_id=p_user AND c.organization_id IS DISTINCT FROM org)
+ OR EXISTS(SELECT 1 FROM public.partner_users u LEFT JOIN public.partner_accounts p ON p.id=u.partner_id WHERE u.user_id=p_user AND p.commercial_owner_organization_id IS DISTINCT FROM org)
+ THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ IF jsonb_typeof(envelope) IS DISTINCT FROM 'object' OR envelope->>'mode' IS DISTINCT FROM 'common_preserve_links'
+ OR EXISTS(SELECT 1 FROM jsonb_object_keys(envelope) x WHERE x NOT IN ('mode','expected_version','idempotency_key','reason'))
+ OR jsonb_typeof(envelope->'expected_version') IS DISTINCT FROM 'string' OR (envelope->>'expected_version') !~ '^[a-f0-9]{64}$'
+ OR jsonb_typeof(envelope->'idempotency_key') IS DISTINCT FROM 'string' OR (envelope->>'idempotency_key') !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+ OR jsonb_typeof(envelope->'reason') IS DISTINCT FROM 'string' OR char_length(btrim(envelope->>'reason')) NOT BETWEEN 2 AND 500
+ OR p_stamp IS NULL THEN RAISE EXCEPTION 'user_edit_invalid_input' USING ERRCODE='22023'; END IF;
+ key:=(envelope->>'idempotency_key')::uuid; reason:=btrim(envelope->>'reason');
+ -- Exactly these six payload fields are intentional (not a profiles column count).
+ -- Omitting a nullable field must not silently clear it in a whole-form update.
+ IF (SELECT count(*) FROM jsonb_object_keys(common))<>6 OR EXISTS(SELECT 1 FROM jsonb_object_keys(common) x WHERE x NOT IN ('nome','telefone','cargo','cpf_cnpj','crea','especialidade')) THEN
+ RAISE EXCEPTION 'user_edit_invalid_fields' USING ERRCODE='22023'; END IF;
+ FOR k IN SELECT jsonb_object_keys(common) LOOP
+ IF jsonb_typeof(common->k) NOT IN ('string','null') OR char_length(coalesce(common->>k,''))>500 THEN RAISE EXCEPTION 'user_edit_invalid_fields' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ IF jsonb_typeof(common->'nome') IS DISTINCT FROM 'string' OR char_length(btrim(common->>'nome')) NOT BETWEEN 2 AND 150 THEN RAISE EXCEPTION 'user_edit_invalid_name' USING ERRCODE='22023'; END IF;
+ IF nullif(common->>'telefone','') IS NOT NULL AND (common->>'telefone') !~ '^[0-9]{10,11}$' THEN RAISE EXCEPTION 'user_edit_invalid_phone' USING ERRCODE='22023'; END IF;
+ req_hash:=encode(extensions.digest(convert_to(jsonb_build_object('target',p_user,'stamp',p_stamp,'profile',p_profile,'roles',p_roles,'clients',p_clients,'primary',p_primary,'partner',p_partner)::text,'UTF8'),'sha256'),'hex');
+ -- Authorization, target type, ownership and gates were revalidated BEFORE replay.
+ SELECT * INTO receipt FROM platform_private.user_edit_f2_audit WHERE actor_id=auth.uid() AND organization_id=org AND idempotency_key=key;
+ IF FOUND THEN
+  IF receipt.request_hash IS DISTINCT FROM req_hash THEN RAISE EXCEPTION 'user_edit_idempotency_conflict' USING ERRCODE='PT409'; END IF;
+  -- A retry after unrelated target changes must not present a stale result as current.
+  IF receipt.version_after IS DISTINCT FROM platform_private.user_edit_f2_version(p_user) THEN RAISE EXCEPTION 'user_edit_conflict' USING ERRCODE='PT409'; END IF;
+  RETURN receipt.result || jsonb_build_object('replayed',true);
+ END IF;
+ before_version:=platform_private.user_edit_f2_version(p_user);
+ SELECT updated_at,jsonb_build_object('nome',nome,'telefone',telefone,'cargo',cargo,'cpf_cnpj',cpf_cnpj,'crea',crea,'especialidade',especialidade)
+ INTO stamp,old_common FROM public.profiles WHERE user_id=p_user;
+ IF before_version IS DISTINCT FROM envelope->>'expected_version' OR stamp IS DISTINCT FROM p_stamp THEN RAISE EXCEPTION 'user_edit_conflict' USING ERRCODE='PT409'; END IF;
+ UPDATE public.profiles SET nome=btrim(common->>'nome'),telefone=nullif(common->>'telefone',''),cargo=nullif(common->>'cargo',''),cpf_cnpj=nullif(common->>'cpf_cnpj',''),crea=nullif(common->>'crea',''),especialidade=nullif(common->>'especialidade','')
+ WHERE user_id=p_user RETURNING updated_at,jsonb_build_object('nome',nome,'telefone',telefone,'cargo',cargo,'cpf_cnpj',cpf_cnpj,'crea',crea,'especialidade',especialidade) INTO stamp,new_common;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_edit_not_found' USING ERRCODE='P0002'; END IF;
+ after_version:=platform_private.user_edit_f2_version(p_user);
+ result:=jsonb_build_object('success',true,'user_id',p_user,'updated_at',stamp,'version',after_version,'replayed',false,'links_preserved',true);
+ INSERT INTO platform_private.user_edit_f2_audit(actor_id,organization_id,target_id,idempotency_key,request_hash,reason,version_before,version_after,old_common,new_common,result)
+ VALUES(auth.uid(),org,p_user,key,req_hash,reason,before_version,after_version,old_common,new_common,result);
+ RETURN result;
+END $function$

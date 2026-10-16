@@ -1,0 +1,18 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "version": "20261016223134",
+  "name": "user_external_common_preauthorize_before_lock",
+  "statement_count": 1,
+  "sql_length": 7750,
+  "sql_md5": "3044e25460a44a57f48564626c786d9b",
+  "sql_sha256": "9d3572d5af20cefa15db6ea6dfa0f3967fd9e8055b16ae0ecb5aa76ddcb39af9",
+  "live_definition_md5": "d5e006ba09bfe53004971d512fc6cd49",
+  "source": "Hosted schema_migrations and pg_get_functiondef read-only; base64 transport preserves exact bytes",
+  "archive_only": true,
+  "applied_by": "independent auditor; not reapplied by this agent",
+  "readback": {
+    "sql_gate": false,
+    "audit_count": 0,
+    "anon_execute": false
+  }
+}
