@@ -1,5 +1,6 @@
 -- REVIEW ONLY: contain access, preserve rows, audit and Vault. No global changes.
 BEGIN;
+UPDATE platform_private.communication_tenant_email_review_gate SET approved=false WHERE id=true;
 REVOKE ALL ON FUNCTION public.tenant_email_settings_scope() FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION public.tenant_email_settings_get() FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION public.tenant_email_settings_save(bigint,jsonb,text) FROM PUBLIC,anon,authenticated,service_role;

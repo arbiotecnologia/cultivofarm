@@ -53,12 +53,12 @@ REVOKE ALL ON platform_private.communication_tenant_email_secret_refs FROM PUBLI
 ALTER TABLE platform_private.communication_tenant_email_secret_refs ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION platform_private.tenant_email_actor_org()
-RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_org uuid;
 BEGIN
  IF auth.uid() IS NULL OR public.is_platform_superadmin(auth.uid())
- OR NOT platform_private.platform_actor_access_ready(auth.uid())
- OR NOT public.has_role(auth.uid(),'administrador'::public.app_role) THEN
+ OR platform_private.platform_actor_access_ready(auth.uid()) IS DISTINCT FROM true
+ OR public.has_role(auth.uid(),'administrador'::public.app_role) IS DISTINCT FROM true THEN
   RETURN NULL;
  END IF;
  SELECT p.organization_id INTO v_org FROM public.profiles p
@@ -70,7 +70,7 @@ REVOKE ALL ON FUNCTION platform_private.tenant_email_actor_org() FROM PUBLIC, an
 GRANT EXECUTE ON FUNCTION platform_private.tenant_email_actor_org() TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.tenant_email_settings_scope()
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
  SELECT platform_private.tenant_email_actor_org() IS NOT NULL
 $$;
 REVOKE ALL ON FUNCTION public.tenant_email_settings_scope() FROM PUBLIC, anon, service_role;
@@ -143,7 +143,7 @@ CREATE TRIGGER tenant_email_audit_immutable BEFORE UPDATE OR DELETE ON public.co
  FOR EACH ROW EXECUTE FUNCTION platform_private.tenant_email_audit_immutable();
 
 CREATE OR REPLACE FUNCTION public.tenant_email_settings_get()
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_org uuid; v_row public.communication_tenant_email_settings%ROWTYPE;
 BEGIN
  v_org:=platform_private.tenant_email_actor_org();
@@ -196,4 +196,25 @@ EXCEPTION
 END $$;
 REVOKE ALL ON FUNCTION public.tenant_email_settings_save(bigint,jsonb,text) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_email_settings_save(bigint,jsonb,text) TO authenticated;
+-- Separate persistent server fence: UI/Edge review flags alone cannot authorize
+-- direct PostgREST credential submission before telemetry and ACL review.
+CREATE TABLE IF NOT EXISTS platform_private.communication_tenant_email_review_gate (
+ id boolean PRIMARY KEY DEFAULT true,
+ approved boolean NOT NULL DEFAULT false
+);
+REVOKE ALL ON platform_private.communication_tenant_email_review_gate FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.communication_tenant_email_review_gate ENABLE ROW LEVEL SECURITY;
+INSERT INTO platform_private.communication_tenant_email_review_gate(id,approved) VALUES(true,false) ON CONFLICT(id) DO NOTHING;
+CREATE OR REPLACE FUNCTION platform_private.tenant_email_review_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.communication_tenant_email_review_gate WHERE id=true AND approved=true) THEN
+  RAISE EXCEPTION 'SMTP_UNAVAILABLE' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_email_review_fence() FROM PUBLIC,anon,authenticated,service_role;
+DROP TRIGGER IF EXISTS tenant_email_review_fence ON public.communication_tenant_email_settings;
+CREATE TRIGGER tenant_email_review_fence BEFORE INSERT OR UPDATE ON public.communication_tenant_email_settings
+ FOR EACH ROW EXECUTE FUNCTION platform_private.tenant_email_review_fence();
 COMMIT;
