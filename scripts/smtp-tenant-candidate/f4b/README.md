@@ -36,7 +36,7 @@ Gates nascem fechados: `tenant_smtp_dispatch_gate=false` (SQL), `TENANT_SMTP_F4B
 `20261016_smtp_f4b_tenant_dispatch.sql`, `preflight.sql`, `rollback.sql` (não destrutivo; também remove o agendamento opcional), `cron_option.sql.review`, `contract.ts`, `lane.ts`, `worker-index.ts.review` (substitui o index do worker após revisão), `test_sql.py`, `scan_local.py`. Espelho: `f2f3/deploy/supabase/functions/process-communication-outbox/` e `tenant-email-settings/f4b/`.
 
 ## Evidências locais (rev.)
-SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empresas sintéticas configuradas pelo fluxo real, sem rede): 91 PASS no total do harness, sendo 80 específicos F4b. Vitest F4b 29 (inclui fio SMTP simulado: recusa após AUTH sem MAIL/RCPT/DATA) + suíte comunicação 867/867. Typecheck `-p tsconfig.app.json` 0. Lint focal 0. Scanner F4b 33/33, F4 20/20. `deno check` espelho: 0 erros novos (6 preexistentes no worker atual).
+SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empresas sintéticas configuradas pelo fluxo real, sem rede): 91 PASS no total do harness, sendo 90 específicos F4b. Vitest F4b 29 (inclui fio SMTP simulado: recusa após AUTH sem MAIL/RCPT/DATA) + suíte comunicação 867/867. Typecheck `-p tsconfig.app.json` 0. Lint focal 0. Scanner F4b 33/33, F4 20/20. `deno check` espelho: 0 erros novos (6 preexistentes no worker atual).
 
 ## Riscos / limites
 - Ausência de senha/código em logs de infraestrutura (Edge Invocations, PostgREST, statements) NÃO comprovada; TLS em trânsito, Vault em repouso.
