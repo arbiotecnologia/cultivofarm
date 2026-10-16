@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 R=Path(__file__).parent; D=R.parent/'f2f3/deploy/supabase/functions'
-sql=(R/'20261016_smtp_f4b_tenant_dispatch.sql').read_text(); rb=(R/'rollback.sql').read_text()
+sql='\n'.join(l for l in (R/'20261016_smtp_f4b_tenant_dispatch.sql').read_text().splitlines() if not l.lstrip().startswith('--')); rb=(R/'rollback.sql').read_text()
 lane=(R/'lane.ts').read_text(); worker=(R/'worker-index.ts.review').read_text()
 live=Path('supabase/functions/process-communication-outbox/index.ts').read_text()
 ui=Path('src/pages/configuracoes/TenantSenderVerification.tsx').read_text(); lib=Path('src/lib/configuracoes/tenantSmtp.ts').read_text()
