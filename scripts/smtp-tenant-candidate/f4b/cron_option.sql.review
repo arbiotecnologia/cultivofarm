@@ -8,6 +8,7 @@
 --  3. Deploy worker with TENANT_SMTP_LANE_REVIEWED=true and open tenant_smtp_dispatch_gate.
 -- Residual: pg_net keeps request headers in net.http_request_queue until processed (transient) — secret readable by DB
 -- superusers during that window. Alternative without this residue: external scheduler outside the DB.
+-- Worker run is bounded to 3 jobs x 15s and a 50s budget (lane.ts), below the 55s HTTP timeout.
 -- The invoker re-checks the SQL gate each minute and does nothing while closed; URL is fixed server-side (no browser input).
 BEGIN;
 DO $$ BEGIN
@@ -21,7 +22,15 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_secret text;
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_dispatch_gate WHERE id AND approved) THEN RETURN; END IF;
- IF NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued') THEN RETURN; END IF;
+ -- No overlap: a run is in progress while any lease is still live (lease 45s/30s <= worker budget 50s < HTTP timeout 55s).
+ IF EXISTS(SELECT 1 FROM platform_private.tenant_smtp_dispatch_jobs WHERE state IN ('executing','authorized') AND lease_expires_at>clock_timestamp()) THEN RETURN; END IF;
+ -- Invoke when there is work, when expired leases need reconciliation (even with an empty queue), or every ~5 min to keep
+ -- the heartbeat (UI readiness window 10 min) honest. Otherwise do nothing.
+ IF NOT (EXISTS(SELECT 1 FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued')
+  OR EXISTS(SELECT 1 FROM platform_private.tenant_smtp_dispatch_jobs WHERE state IN ('executing','authorized') AND lease_expires_at<=clock_timestamp())
+  OR NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_lane_heartbeat WHERE id AND seen_at>clock_timestamp()-interval '5 minutes')) THEN RETURN; END IF;
+ -- Serialize concurrent cron sessions inside the DB (pg_net itself is async).
+ IF NOT pg_try_advisory_xact_lock(hashtextextended('tenant_smtp_lane_invoke',0)) THEN RETURN; END IF;
  SELECT decrypted_secret INTO v_secret FROM vault.decrypted_secrets WHERE name='tenant_smtp_lane_invoker_secret';
  IF v_secret IS NULL THEN RETURN; END IF;
  PERFORM net.http_post(url:='https://swzpzcwiasxmjutrmvkm.supabase.co/functions/v1/process-communication-outbox?lane=tenant_smtp',

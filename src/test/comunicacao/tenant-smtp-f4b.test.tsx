@@ -94,6 +94,17 @@ describe("F4b worker lane", () => {
   const out = await sendLaneMessage(laneJobSchema.parse(job()), { connectTls: async () => { throw new Error("smtp_dns_blocked"); } } as never, authorize);
   expect(out).toBe("failed"); expect(authorize).not.toHaveBeenCalled();
  });
+ it("run capped at 3 jobs even if caller asks more (3 x 15s within 55s HTTP timeout)", async () => {
+  const r = rpc([job(), job(), job(), job(), job()]); const send = vi.fn(async () => "sent" as const);
+  const s = await runTenantLane(r.client, "w", deps, send, 10); expect(send).toHaveBeenCalledTimes(3); expect(s.stopped).toBe("limit");
+ });
+ it("budget: no new claim when less than one transport deadline remains", async () => {
+  let t = 0; const clock = () => t; const r = rpc([job(), job()]);
+  const send = vi.fn(async () => { t += 36000; return "sent" as const; });
+  const s = await runTenantLane(r.client, "w", deps, send, 3, clock, 50000);
+  expect(s.stopped).toBe("budget"); expect(send).toHaveBeenCalledTimes(1);
+  expect(r.calls.filter(([n]) => n === "tenant_smtp_lane_claim").length).toBe(1);
+ });
 });
 
 function wire(replies: string[]) { const writes: string[] = []; const s = { read: async (b: Uint8Array) => { const line = replies.shift(); if (!line) return null; const d = new TextEncoder().encode(line); b.set(d); return d.length; }, write: async (b: Uint8Array) => { writes.push(new TextDecoder().decode(b)); return b.length; }, close: vi.fn() };
