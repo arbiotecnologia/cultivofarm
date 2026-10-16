@@ -1177,7 +1177,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Evidência independente F1/1613abbf:36VitestPASS/typecheck0/build0/lintnovos0/18legados/scanner4187/0; F1 real publicada PASS confirmada pelo titular na atualização vigente.
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
 - [x] SQL common-only instalada pelo auditor: versão20261016221926 user_external_common_edit_closed_reviewed; arquivo exato arquivado em scripts/user-links-phase2/installed (19280bytes/MD5 coincide com ledger hosted). Nenhuma reaplicação/eligible.
-- [x] UI common-only integrada, gate promovido true22:37 após revisão: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Não publicada; SQL permanece fechado.
+- [x] UI common-only integrada, gate promovido true22:37 após revisão: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Publicada depois pelo auditor, SQLtrue e piloto comum realPASS conforme atualização22:46.
 - [x] CAS perfil+roles+todoslinks/estados persistidos; ator/tenant revalidados no replay, hash payload, motivo e ledger imutável; seletor elegível paginado sem edição de links.
 - [x] QA histórico SQL:35checks PostgreSQL descartável/102Vitest; proposta de diff anterior substituída pela UI isolada, NÃO aplicar novamente.
 - [x] QA UI atual:132/132Vitest em7arquivos (23diálogo realRTL/Radix/7tokenCAS/102regressões), lintnovo0/Configuracoes18legados, scanner0, diff-checkPASS, buildautomáticoOK22:27:24. Typecheck dedicado atual UNVERIFIED.
@@ -1193,6 +1193,8 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 
 ## Vínculos externos — próximo recorte: plano de associação do mesmo tipo (16/10/2026 22:46UTC)
 - [x] Registrar evidência independente de dados comuns publicada PASS, separada das verificações próprias somente leitura.
-- [ ] Elaborar arquivo técnico de auditoria com17itens: schema canônico, leitores RLS/RPC/Edge/Storage, histórico, CAS/replay/locks, seleção paginada, sessão/cache multidispositivo, fase mínima, negativos e rollback.
+- [x] Elaborar arquivo técnico com17itens: `docs/auditorias/vinculos-externos-mesmo-tipo-plano-20261016.md`. Leitura canônica: SQLtrue/audit4/alvos2/anonfalse;47funções diretas/196candidatas transitivas,118políticas direto/um salto/177conservadoras. Seis históricas reconciliadas; resolver get_cliente_ids_for_user correto. Sem DDL/execução de escrita.
+- [x] Registrar lacunas específicas: campanhas_cliente_select vigente sem filtros de revogação, sync_user_cliente_principal histórico, has_active_user_cliente_access sem revoked_at, branding sem valid_from; Consultor/list-portal-users; scope sem revisão; URLs assinadas anteriores. Singletonrevision/stamp existentes avaliados antes de novo mecanismo.
+- [ ] Triagem semântica final/fechamento:196funções/177políticas candidatas, SQL dinâmico/deploys/Storage e carteiras; somente futura implementação revisada pode certificar antigo negado/novo permitido.
 - [ ] Implementação de associações: NÃO autorizada nesta rodada; sem DDL, contas/roles/links ou publicação. TécnicoB2B, perfis novos e conversão interno/externo bloqueados.
 - [ ] Certificação de acesso antigo e retirada de resíduos em duas sessões/dispositivos: depende da futura implementação revisada e provas reais; reload de nome não certifica revogação.

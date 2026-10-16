@@ -1,6 +1,6 @@
 # Vínculos externos — Fase 2 candidata
 
-Data: 16/10/2026. Estado atual: **DADOS COMUNS REVISADOS / GATE UI TRUE / SQL INSTALADA COM GATE FALSE**. Promoção técnica apenas de dados comuns aprovada às22:37; abertura SQL reservada ao auditor após verificar este delta. F1 real publicada PASS conforme confirmação do titular; UI F2 real ainda NÃO certificada. Sem publicação pelo agente.
+Data: 16/10/2026. Estado atual às22:46UTC: **DADOS COMUNS PUBLICADOS / GATES UI E SQL TRUE / TESTES REAIS ADMIN E TITULAR COM RELOAD PASS**, conforme evidência independente abaixo. Nenhuma publicação pelo agente. Seções anteriores à atualização22:46 são histórico datado: gatefalse/audit0/UIpendente não representam mais o estado vigente. Associação/perfil/status permanecem somente consulta; próxima fase é apenas plano técnico revisável, não implementação.
 
 ## Entrega e recorte
 
@@ -15,7 +15,7 @@ Artefatos em `scripts/user-links-phase2/` (fora de `supabase/migrations`):
 - `ui-closed.patch.review` e `build-ui-diff.py`: proposta histórica, substituída pela integração isolada atual; NÃO aplicar sobre a tela atual.
 - `test-local.py`: PostgreSQL descartável via socket `/tmp`, schema/Auth reduzidos; nunca usar conexão remota.
 
-A tela possui callsite para o formulário isolado `ExternalCommonUserEditForm`, com `externalUserEditGate=true` somente para dados comuns de Produtor/B2B Gestor. Perfil de acesso, vínculos e status continuam somente consulta no diálogo. Técnico/mistos seguem bloqueados. O gate SQL independente permanece false; a edição interna e a seção administrativa de senha permanecem intactas.
+A tela possui callsite para o formulário isolado `ExternalCommonUserEditForm`, com `externalUserEditGate=true` somente para dados comuns de Produtor/B2B Gestor. Perfil de acesso, vínculos e status continuam somente consulta no diálogo. Técnico/mistos seguem bloqueados. O gate SQL independente foi aberto pelo auditor após revisão; a edição interna e a seção administrativa de senha permanecem intactas.
 
 ## Contrato e evidência hospedada somente leitura
 
@@ -136,3 +136,15 @@ Quatro regressões RTL usam exatamente o boundary da tela: loading→token→env
 - QA própria inicial:143/143Vitest em5arquivos (27diálogo/14helper/25links/51RPC/26validação), lint gate/helpertest0, scanner0. Resultado final ampliado registrado no roadmap. Typecheck/build manuais não executados por restrição do harness; typecheck0 independente acima, build automático consultado separadamente.
 - Base observada `6af34b43`; commits do delta gerenciados pelo ambiente, sem commit Git manual. Publicação e abertura SQL não executadas. UI F2 real pendente de abertura/verificação do auditor; F1 real publicada PASS já confirmada. Gestão de vínculos e achados de receiver permanecem fora do recorte.
 - QA final: **137/137PASS em7arquivos**, incluindo27diálogo/7parserCAS/14helper; lint focal4arquivos0, Configuracoes18erros legados0warnings; scannersegredos0, diff-checkPASS, build automáticoOK22:40:51UTC. Suíte adicional143/143 inclui26validação e tem sobreposição, não somar. Commit funcional/documental observado `8febc0f1`; registro final de QA recebe commit automático posterior. Não houve teste UI F2 real com escrita, pois gate SQL permanece fechado por determinação do titular.
+
+## Evidência independente vigente — 22:46 UTC / continuação de vínculos
+
+- Commit **ddd5d119** revisado: **137VitestPASS/typecheck0/lintnovos0/scanner4208zero/build0** (evidência externa, não novos testes do agente).
+- Auditor abriu gate SQLtrue e publicou deployment **779765e3-c64d-4e97-bb69-c473e8fc2c9a**. Admin AR no publicado: Produtor nome temporário+restauração e B2B cargo temporário+restauração **PASS**;4ledgerrows,2porconta,autorAdminAR,motivo,old/new; links intactos,nomes originais,cargosnull.
+- Titular Produtor no preview viu atualização/restauração **após reload**; **NÃO houve atualização automática** da sessão aberta. Cache de revogação/multidispositivo NÃO certificado. Não houve troca de associação neste piloto.
+- Readback próprio somente leitura no canônico nesta rodada: gateSQLtrue/audit4/alvos2/anonexecutefalse; helpercommonMD5d5e006ba09bfe53004971d512fc6cd49, wrapperv1MD5a65e2174baa6996b5bfe64eb7a434524. Migrations21926/23134 confirmadas. Não reaplicadas, nenhuma escrita em usuários pelo agente.
+- Próximo recorte entregue **somente como plano técnico de17itens** em `docs/auditorias/vinculos-externos-mesmo-tipo-plano-20261016.md`: escopo/tipos/schema, contrato, paginacao/previews, CAS/locks/replay/ledger, revogacaoProdutor, trocaB2B/historico, RLS/RPC/Edge/Storage, revisão existente, caches/dispositivos, fase mínima/negativas/rollback.
+- Achados live novos: `campanhas_cliente_select` consulta membership histórica sem filtros; `sync_user_cliente_principal` pode eleger principal revogado; `has_active_user_cliente_access` não filtra revoked_at; branding cliente não filtra valid_from. Não confundir com o alerta **descartado** de get_cliente_ids_for_user: resolver live e fallback continuam corretos. Nenhuma dessas funções/políticas foi alterada.
+- Seis políticas históricas reconciliadas: AR/parcelas agora usam contexto comercial, cpr_partner_select_own ausente live; popt/pops/pofl continuam diretas com guardas irmãos. Contagem live direta total8, não6. Captura47funções diretas/196candidatas transitivas,118políticas direto/um salto/177conservadoras transitivas; contagens de candidatos não certificam todos caminhos. Triagem por assinatura/ACL/serviço/SQL dinâmico é pendência real.
+- Mecanismo existente identificado: singletonrevision global e triggers que avançam profiles.updated_at em links/roles. Nenhuma publicação Realtime das quatro tabelas capturadas; fenceuseStorageAccessScope não contém revisão da associação. Proposta prioriza reuso do stamp+fingerprint autorizado e polling/foco antes de criar novo. URLs assinadas anteriores e dados já baixados impedem promessa de revogação instantânea; contrato/solução precisa revisão antes de gate de troca.
+- Sem implementação/DDL/contas/roles/links/publicação desta próxima fase; técnicoB2B, conversões/perfis novos, Auth/SMTP intocados. Nenhuma certificação de gestão completa ou cache revogado foi emitida.
