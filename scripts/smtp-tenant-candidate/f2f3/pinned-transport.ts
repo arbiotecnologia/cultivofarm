@@ -21,6 +21,20 @@ export interface PinnedRuntime {
   tcp(ip: string, port: number): Promise<ProbeConnection>;
   tls(socket: ProbeConnection, hostname: string): Promise<ProbeConnection>;
 }
+export function completeWrites(connection: ProbeConnection): ProbeConnection {
+  return {
+    read:buffer=>connection.read(buffer), close:()=>connection.close(),
+    write:async bytes=>{
+      let offset=0;
+      while(offset<bytes.length){
+        const count=await connection.write(bytes.subarray(offset));
+        if(!Number.isInteger(count) || count<=0 || count>bytes.length-offset)throw new Error('smtp_test_failed');
+        offset+=count;
+      }
+      return offset;
+    },
+  };
+}
 export function pinnedDeps(runtime: PinnedRuntime): SmtpProbeDeps {
   return {
     connect: async () => { throw new Error('SMTP_UNAVAILABLE'); },
@@ -40,7 +54,7 @@ export function pinnedDeps(runtime: PinnedRuntime): SmtpProbeDeps {
         if (expired) { socket.close(); throw new Error('smtp_tls_failed'); }
         secured = await runtime.tls(socket,host); // SNI + original hostname certificate verification
         if (expired) { secured.close(); throw new Error('smtp_tls_failed'); }
-        return secured;
+        return completeWrites(secured);
       };
       try {
         return await Promise.race([open(), new Promise<never>((_,reject) => {
