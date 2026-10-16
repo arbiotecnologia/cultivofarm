@@ -2,7 +2,6 @@ import { openAuthenticatedSmtpSession, type SmtpProbeDeps } from '../../../supab
 import { NativeSmtpClient, NativeSmtpAdapterFailure } from '../../../supabase/functions/_shared/comunicacao/native-smtp-client.ts';
 import type { WorkerEnv } from '../../../supabase/functions/_shared/comunicacao/adapters-types.ts';
 import { testResultSchema, type TestResult } from './contract.ts';
-import { completeWrites } from './pinned-transport.ts';
 // Only receives a single server-authorized job from the service-only executor RPC.
 export async function executeTest(job: {mode:'connection'|'send'; version:number; recipient:string; env:WorkerEnv}, deps:SmtpProbeDeps): Promise<TestResult> {
   let connection: Awaited<ReturnType<typeof openAuthenticatedSmtpSession>> | undefined;
@@ -14,7 +13,7 @@ export async function executeTest(job: {mode:'connection'|'send'; version:number
   const run=async ():Promise<TestResult['code']>=>{
     connection=await openAuthenticatedSmtpSession(job.env,{
       ...deps, connectTls:async(host,port)=>{
-        socket=completeWrites(await deps.connectTls(host,port));
+        socket=await deps.connectTls(host,port);
         if(expired){socket.close();throw new Error('smtp_test_failed');}
         return socket;
       },

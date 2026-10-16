@@ -50,7 +50,6 @@ const MAX_RESPONSE_LINES = 64;
 export const DEFAULT_SMTP_STEP_TIMEOUT_MS = 5_000;
 const DEFAULT_ABSOLUTE_TIMEOUT_MS = 20_000;
 const encoder = new TextEncoder();
-const decoder = new TextDecoder();
 
 /**
  * Erro especializado do Probe. Encapsula o código de erro e a etapa da falha.
@@ -102,37 +101,70 @@ async function withTimeout<T>(
   }
 }
 
+/** Writes one entire buffer under one deadline; never resumes after timeout. */
+export async function writeSmtpBytes(connection: ProbeConnection, bytes: Uint8Array, timeoutMs: number, stage: SmtpProbeStage): Promise<number> {
+  let expired=false;
+  const work=async()=>{
+    let offset=0;
+    while(offset<bytes.length){
+      if(expired)throw createSmtpProbeFailure("smtp_protocol_error",stage);
+      const count=await connection.write(bytes.subarray(offset));
+      if(!Number.isInteger(count) || count<=0 || count>bytes.length-offset)throw createSmtpProbeFailure("smtp_protocol_error",stage);
+      offset+=count;
+    }
+    return offset;
+  };
+  try{return await withTimeout(work(),timeoutMs,stage,()=>{expired=true;connection.close();});}
+  catch(error){expired=true;try{connection.close();}catch{/* best effort */}throw classifyError(error,stage);}
+}
 export async function writeSmtpCommand(connection: ProbeConnection, command: string, timeoutMs: number, stage: SmtpProbeStage) {
-  try {
-    await withTimeout(connection.write(encoder.encode(`${command}\r\n`)), timeoutMs, stage);
-  } catch (error) {
-    throw classifyError(error, stage);
-  }
+  await writeSmtpBytes(connection,encoder.encode(`${command}\r\n`),timeoutMs,stage);
 }
 
-export async function readSmtpResponse(
-  connection: ProbeConnection,
-  timeoutMs: number,
-  stage: SmtpProbeStage,
-): Promise<{ status: number; lines: string[] }> {
-  let raw = "";
-  try {
-    while (encoder.encode(raw).byteLength <= MAX_RESPONSE_BYTES) {
-      const chunk = new Uint8Array(1024);
-      const count = await withTimeout(connection.read(chunk), timeoutMs, stage);
-      if (count === null) throw createSmtpProbeFailure("smtp_protocol_error", stage);
-      raw += decoder.decode(chunk.subarray(0, count), { stream: true });
-      const lines = raw.split(/\r?\n/).filter(Boolean);
-      if (lines.length > MAX_RESPONSE_LINES) throw createSmtpProbeFailure("smtp_protocol_error", stage);
-      const first = lines[0]?.match(/^(\d{3})([- ])/);
-      if (!first) continue;
-      const status = Number(first[1]);
-      if (lines.some((line) => line.startsWith(`${first[1]} `))) return { status, lines };
+const responseRemainders=new WeakMap<ProbeConnection,string>();
+export async function readSmtpResponse(connection: ProbeConnection, timeoutMs: number, stage: SmtpProbeStage): Promise<{status:number;lines:string[]}> {
+  let expired=false;
+  const work=async()=>{
+    let raw=responseRemainders.get(connection) ?? "";
+    responseRemainders.delete(connection);
+    const lines:string[]=[];
+    let status:number|undefined;
+    let total=0;
+    const decode=new TextDecoder("utf-8",{fatal:true});
+    while(!expired){
+      let end:number;
+      while((end=raw.indexOf("\r\n"))>=0){
+        const line=raw.slice(0,end);raw=raw.slice(end+2);
+        total+=encoder.encode(line).byteLength+2;
+        const match=/^([2-5]\d{2})([- ])[^\r\n]*$/.exec(line);
+        if(!match || total>MAX_RESPONSE_BYTES || lines.length>=MAX_RESPONSE_LINES)throw createSmtpProbeFailure("smtp_protocol_error",stage);
+        const next=Number(match[1]);
+        if(status!==undefined && next!==status)throw createSmtpProbeFailure("smtp_protocol_error",stage);
+        status=next;lines.push(line);
+        if(match[2]===" "){
+          if(raw.length)responseRemainders.set(connection,raw);
+          return {status,lines};
+        }
+      }
+      if(total+encoder.encode(raw).byteLength>MAX_RESPONSE_BYTES || /(?<!\r)\n/.test(raw))throw createSmtpProbeFailure("smtp_protocol_error",stage);
+      const chunk=new Uint8Array(1024);
+      const count=await connection.read(chunk);
+      if(expired)throw createSmtpProbeFailure("smtp_protocol_error",stage);
+      if(count===null || !Number.isInteger(count) || count<=0 || count>chunk.length)throw createSmtpProbeFailure("smtp_protocol_error",stage);
+      raw+=decode.decode(chunk.subarray(0,count),{stream:true});
     }
-  } catch (error) {
-    throw classifyError(error, stage);
-  }
-  throw createSmtpProbeFailure("smtp_protocol_error", stage);
+    throw createSmtpProbeFailure("smtp_protocol_error",stage);
+  };
+  try{return await withTimeout(work(),timeoutMs,stage,()=>{expired=true;responseRemainders.delete(connection);connection.close();});}
+  catch(error){expired=true;responseRemainders.delete(connection);try{connection.close();}catch{/* best effort */}throw classifyError(error,stage);}
+}
+
+/** A timed-out connection/upgrade owns and closes any eventual returned socket. */
+async function openBounded(promise:Promise<ProbeConnection>,timeoutMs:number,stage:SmtpProbeStage,prior?:ProbeConnection):Promise<ProbeConnection>{
+  let expired=false;
+  const guarded=promise.then(socket=>{if(expired){try{socket.close();}catch{/* best effort */}throw createSmtpProbeFailure("smtp_connect_timeout",stage);}return socket;});
+  try{return await withTimeout(guarded,timeoutMs,stage,()=>{expired=true;prior?.close();});}
+  catch(error){expired=true;try{prior?.close();}catch{/* best effort */}throw error;}
 }
 
 function capabilities(lines: string[]): Set<string> {
@@ -210,10 +242,10 @@ export async function openAuthenticatedSmtpSession(
   let tls = port === 465;
   onStage?.("connect");
   connection = tls
-    ? await withTimeout(deps.connectTls(hostname, port), timeoutMs, "connect")
-    : await withTimeout(deps.connect(hostname, port), timeoutMs, "connect");
-  onConnection?.(connection);
+    ? await openBounded(deps.connectTls(hostname, port), timeoutMs, "connect")
+    : await openBounded(deps.connect(hostname, port), timeoutMs, "connect");
   try {
+    onConnection?.(connection);
     onStage?.("greeting");
     if ((await readSmtpResponse(connection, timeoutMs, "greeting")).status !== 220) throw createSmtpProbeFailure("smtp_greeting_failed", "greeting");
     onStage?.("ehlo");
@@ -226,7 +258,7 @@ export async function openAuthenticatedSmtpSession(
       if (!hasCapability(caps, "STARTTLS")) throw createSmtpProbeFailure("smtp_starttls_unavailable", "starttls");
       await writeSmtpCommand(connection, "STARTTLS", timeoutMs, "starttls");
       if ((await readSmtpResponse(connection, timeoutMs, "starttls")).status !== 220) throw createSmtpProbeFailure("smtp_starttls_failed", "starttls");
-      connection = await withTimeout(deps.startTls(connection, hostname), timeoutMs, "starttls");
+      connection = await openBounded(deps.startTls(connection, hostname), timeoutMs, "starttls",connection);
       onConnection?.(connection);
       tls = true;
       onStage?.("ehlo");
@@ -266,6 +298,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
   let connection: ProbeConnection | null = null;
   let tls = port === 465;
   let stage: SmtpProbeStage = "connect";
+  let expired=false;
 
   const run = async (): Promise<SmtpProbeResult> => {
     try {
@@ -274,7 +307,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
           env,
           deps,
           (nextStage) => { stage = nextStage; },
-          (openedConnection) => { connection = openedConnection; },
+          (openedConnection) => { connection = openedConnection;if(expired){openedConnection.close();throw createSmtpProbeFailure("smtp_connect_timeout",stage);} },
         );
         connection = session.connection;
         tls = session.tls;
@@ -295,7 +328,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
   };
 
   try {
-    return await withTimeout(run(), absoluteTimeout, () => stage, () => connection?.close());
+    return await withTimeout(run(), absoluteTimeout, () => stage, () => {expired=true;connection?.close();});
   } catch (error) {
     const failure = classifyError(error, stage);
     return {

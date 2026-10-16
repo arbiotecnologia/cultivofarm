@@ -22,6 +22,10 @@ checks={
 'job one attempt':'1,1,\'tenant-smtp-test\'' in sql,
 'no silent reset/reclaim':"state<>'complete'" in sql and 'smtp_send_ambiguous' in sql,
 'no deployed candidate':not Path('supabase/functions/tenant-email-settings/f2f3').exists(),
+'proof fixed target and AR only':all(v in (r/'hosted-proof.ts').read_text() for v in ['007bb519-cba0-4704-be2c-cb93ad010048','smtpi.kinghost.net',"req.body!==null"]),
+'proof no SMTP or credential RPC':not re.search(r'prepare|Vault|AUTH PLAIN|sendEmail|writeSmtp', (r/'hosted-proof.ts').read_text()),
+'mirror closed runtime': 'TENANT_PINNING_PROVEN = false' in (r/'deploy/supabase/functions/tenant-email-settings/f2f3/deno-runtime.ts').read_text(),
+'mirror JWT preserved':'verify_jwt = true' in (r/'deploy/supabase/config.toml').read_text(),
 }
 for label,value in checks.items():print(('PASS ' if value else 'FAIL ')+label)
 assert all(checks.values())

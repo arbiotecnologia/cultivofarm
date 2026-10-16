@@ -1,3 +1,9 @@
+## SMTP F2/F3 — correções da revisão179e84e (02:02 UTC)
+- [x] Corrigidos IPv6/faixas especiais, framing SMTP/short writes compartilhados e deadline único4s/late sockets.
+- [x] Espelho deploy completo/entrypoint/JWTtrue e prova hosted AR fixa sem AUTH/Vault; pinningfalse e configuração real intocada, SQL42501→403.
+- [x] Vitest194/194, Deno15/15, SQL descartável32 checks/corrida, scanner21/21, lint0, deno check frozenPASS e build automático02:08:29OK; manifesto/relatório atualizados, sem aplicação remota.
+- [ ] Auditor: prova hosted fixa e typecheck efetivo -p tsconfig.app.json pendentes; remover/desabilitar prova temporária após coleta, não habilitar runtime antes da evidência.
+
 ## SMTP F2/F3 — candidato revisável sobre c922a18d (01:46 UTC)
 - [x] Preparado candidato conexão TLS+AUTH/envio explícito ao Admin confirmado próprio, sem aplicação/deploy/publicação/credencial real.
 - [x] Núcleo SMTP/outbox reutilizados; prova TLS pinada local e hosted gate false; órfãos/ambiguidade sem reclaim/retry global.
