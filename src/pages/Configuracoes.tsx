@@ -43,6 +43,8 @@ import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
 import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
+import { ExternalCommonUserEditForm } from "@/components/configuracoes/ExternalCommonUserEditForm";
+import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -382,6 +384,14 @@ export default function Configuracoes() {
     : null;
   const editTipo = tipoAcessoDoUsuario(editOrig?.roles);
   const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo);
+  const externalCommonCandidate = EXTERNAL_USER_EDIT_PHASE2_REVIEWED && (editTipo === 'producer' || editTipo === 'b2b');
+  const externalScope = JSON.stringify([tenantEmailScope.scope, editOpen, editUser?.user_id]);
+  const externalDialog = useRef({ scope: externalScope, generation: 0, open: editOpen });
+  if (externalDialog.current.scope !== externalScope) {
+    externalDialog.current = { scope: externalScope, generation: externalDialog.current.generation + 1, open: editOpen };
+  }
+  const externalGeneration = externalDialog.current.generation;
+  const externalCurrent = () => externalDialog.current.open && externalDialog.current.scope === externalScope && externalDialog.current.generation === externalGeneration;
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1069,6 +1079,10 @@ export default function Configuracoes() {
 
             {/* Edit Dialog */}
             <Dialog open={editOpen} onOpenChange={(open) => {
+              if (!open) {
+                externalDialog.current.open = false;
+                externalDialog.current.generation += 1;
+              }
               setEditOpen(open);
               if (!open) {
                 const sp = new URLSearchParams(searchParams);
@@ -1087,8 +1101,29 @@ export default function Configuracoes() {
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
                     <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[editTipo]}</p></div>
                     <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
+                    {externalCommonCandidate && <ExternalCommonUserEditForm
+                      key={`${externalScope}:${externalGeneration}`}
+                      target={editUser} scope={externalScope} actorId={user?.id ?? ''} organizationId={profile?.organization_id ?? ''}
+                      ready={canTenantEmail} expectedVersion={vinculos.data?.get(editUser.user_id)?.expected_version}
+                      snapshotReady={!vinculos.isFetching && !vinculos.isError}
+                      isCurrent={externalCurrent}
+                      onSuccess={() => {
+                        if (!externalCurrent()) return;
+                        queryClient.invalidateQueries({ queryKey: ['admin-users', profile?.organization_id, user?.id] });
+                        queryClient.invalidateQueries({ queryKey: ['admin-user-links', profile?.organization_id, user?.id] });
+                        if (!externalCurrent()) return;
+                        toast({ title: 'Usuário atualizado' });
+                        externalDialog.current.open = false;
+                        externalDialog.current.generation += 1;
+                        setEditOpen(false);
+                      }}
+                      onError={message => {
+                        if (externalCurrent()) toast({ title: 'Erro', description: message, variant: 'destructive' });
+                      }}
+                    />}
+                    {!externalCommonCandidate && <>
                     {editSomenteLeitura && <p role="status" className="text-xs text-muted-foreground border rounded-md p-2">{MSG_EDICAO_EXTERNA_INDISPONIVEL}</p>}
-                    {!editSomenteLeitura && <div>
+                    {editTipo === 'internal' && <div>
                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
                       <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
                       {TENANT_MANAGEABLE_ROLES.map(r => {
@@ -1137,6 +1172,7 @@ export default function Configuracoes() {
                     <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao || editSomenteLeitura}>
                       {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : editSomenteLeitura ? "Edição indisponível para usuário externo" : "Salvar Alterações"}
                     </Button>
+                    </>}
 
 
                     <div className="border-t pt-4 mt-2 space-y-3">

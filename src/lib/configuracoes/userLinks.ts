@@ -51,6 +51,7 @@ export interface VinculoParceiro {
 }
 export interface VinculosUsuario {
   user_id: string;
+  expected_version?: string;
   clientes: VinculoCliente[];
   parceiro: VinculoParceiro | null;
   parceiros_total: number;
@@ -88,7 +89,8 @@ export function parseVinculos(data: unknown): Map<string, VinculosUsuario> {
     }
     const parceiros_total = contagem(it.parceiros_total);
     if ((parceiro ? parceiros_total < 1 : parceiros_total !== 0)) throw new Error(INVALIDA);
-    out.set(user_id, { user_id, clientes, parceiro, parceiros_total, fora_do_alcance: contagem(it.fora_do_alcance) });
+    if (it.expected_version !== undefined && (typeof it.expected_version !== 'string' || !/^[a-f0-9]{64}$/.test(it.expected_version))) throw new Error(INVALIDA);
+    out.set(user_id, { user_id, ...(typeof it.expected_version === 'string' ? { expected_version: it.expected_version } : {}), clientes, parceiro, parceiros_total, fora_do_alcance: contagem(it.fora_do_alcance) });
   }
   return out;
 }

@@ -1,0 +1,12 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "version": "20261016221926",
+  "name": "user_external_common_edit_closed_reviewed",
+  "statement_count": 1,
+  "sql_length": 19280,
+  "sql_md5": "9ed7f2f0d33bb1fb0090703a4d8484a8",
+  "sql_sha256": "708312454670fc37029cf6d00e904a771a7944248c80982f2ce8bdf0fd303cf7",
+  "source": "Hosted schema_migrations read-only; exact match with local candidate bytes",
+  "applied_by": "independent auditor; not reapplied by this agent",
+  "archive_only": true
+}
