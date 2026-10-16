@@ -295,7 +295,7 @@ BEGIN
  UPDATE public.comunicacao_outbox SET status=(CASE p_outcome WHEN 'sent' THEN 'sent' WHEN 'failed' THEN 'failed' ELSE 'dead_letter' END)::public.comunicacao_outbox_status,
   sent_at=CASE WHEN p_outcome='sent' THEN clock_timestamp() END,error_code=CASE WHEN p_outcome='sent' THEN NULL ELSE 'tenant_smtp_'||p_outcome END,locked_by=NULL
   WHERE id=p_outbox;
- INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(j.organization_id,NULL,j.version,'tenant_smtp_lane_'||p_outcome);
+ INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(j.organization_id,'00000000-0000-0000-0000-000000000000'::uuid /* system lane actor */,j.version,'tenant_smtp_lane_'||p_outcome);
  RETURN jsonb_build_object('state',p_outcome,'replay',false);
 END $$;
 REVOKE ALL ON FUNCTION tenant_smtp_executor.tenant_smtp_lane_finish(uuid,uuid,text) FROM PUBLIC,anon,authenticated,service_role;
