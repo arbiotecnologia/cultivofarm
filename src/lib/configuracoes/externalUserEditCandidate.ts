@@ -1,8 +1,10 @@
-import { construirProfilePayload, type ArgsEdicaoUsuario } from './edicaoUsuarioRpc';
+import { construirProfilePayload, edicaoBemSucedida, type ArgsEdicaoUsuario } from './edicaoUsuarioRpc';
 import { tipoAcessoDoUsuario } from './userLinks';
+import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from './externalUserEditGate';
+import { validatePhoneBR } from '@/lib/masks';
+import { NOME_MIN, NOME_MAX } from './usuariosValidation';
 
-// Review artifact support only. No production call site or automatic write retry.
-export const EXTERNAL_USER_EDIT_PHASE2_REVIEWED: boolean = false;
+export { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from './externalUserEditGate';
 export type CommonExternalEdit = {
   userId: string;
   expectedUpdatedAt: string;
@@ -14,6 +16,16 @@ export type CommonExternalEdit = {
 };
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
+export function validateCommonExternalEdit(profile: CommonExternalEdit['profile'], reason: string) {
+  const errors: Partial<Record<'nome' | 'telefone' | 'motivo', string>> = {};
+  const nome = profile.nome?.trim() ?? '';
+  if (nome.length < NOME_MIN || nome.length > NOME_MAX) errors.nome = `Informe o nome completo (de ${NOME_MIN} a ${NOME_MAX} caracteres).`;
+  const phone = validatePhoneBR(profile.telefone, { fieldLabel: 'Telefone' });
+  if (!phone.ok) errors.telefone = phone.error;
+  if (reason.trim().length < 2 || reason.trim().length > 500) errors.motivo = 'Informe o motivo (de 2 a 500 caracteres).';
+  return errors;
+}
+
 export function buildCommonExternalEdit(input: CommonExternalEdit) {
   const kind = tipoAcessoDoUsuario(input.roles);
   if (kind !== 'producer' && kind !== 'b2b') throw new Error('user_edit_linked_role_unavailable');
@@ -22,6 +34,7 @@ export function buildCommonExternalEdit(input: CommonExternalEdit) {
     !/^\d{4}-\d{2}-\d{2}[T ]/.test(input.expectedUpdatedAt) || Number.isNaN(Date.parse(input.expectedUpdatedAt)) ||
     input.reason.trim().length < 2 || input.reason.trim().length > 500)
     throw new Error('user_edit_invalid_input');
+  if (Object.keys(validateCommonExternalEdit(input.profile, input.reason)).length) throw new Error('user_edit_invalid_input');
   return {
     p_user_id: input.userId, p_expected_updated_at: input.expectedUpdatedAt,
     p_profile: { ...construirProfilePayload(input.profile), _external_edit: {
@@ -32,7 +45,7 @@ export function buildCommonExternalEdit(input: CommonExternalEdit) {
   };
 }
 
-type CandidateClient = {
+export type CandidateClient = {
   rpc(name: 'admin_edit_user_profile_v1', args: ReturnType<typeof buildCommonExternalEdit>): {
     abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }>;
   };
@@ -44,9 +57,8 @@ export async function submitCommonExternalEditCandidate(client: CandidateClient,
   if (error) throw error;
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('user_edit_result_unconfirmed');
   const row = data as Record<string, unknown>;
-  if (row.success !== true || row.user_id !== input.userId || row.links_preserved !== true ||
-    typeof row.version !== 'string' || !/^[a-f0-9]{64}$/.test(row.version) ||
-    typeof row.updated_at !== 'string' || Number.isNaN(Date.parse(row.updated_at)))
+  if (!edicaoBemSucedida(row, input.userId) || row.links_preserved !== true ||
+    typeof row.version !== 'string' || !/^[a-f0-9]{64}$/.test(row.version))
     throw new Error('user_edit_result_unconfirmed');
   return row;
 }
