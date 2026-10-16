@@ -1,4 +1,6 @@
-# SMTP-T1 — pacote revisável, NÃO implantado
+# SMTP-T1 — pacote de revisão; fundação fechada aplicada externamente
+
+Atualização informada pelo auditor em 2026-10-16 00:27 UTC: migration `20261016002102_smtp_tenant_t1_draft_foundation` no canônico, Edge tenant-email-settings v1 verify_jwt=true/reviewed=false e UI56be97d com campos bloqueados. **NÃO reaplicar nem publicar**. As instruções abaixo são o procedimento histórico do candidato, não uma ordem de nova instalação. Claims SQL/Vault sintético em ROLLBACK PASS externos não comprovam redaction; credencial real/gates permanecem bloqueados. Protocolo atual: `docs/auditorias/smtp-tenant-t1-redaction-20261016.md`.
 
 Destino obrigatório: `swzpzcwiasxmjutrmvkm`. Não instalar pelo binding de outro projeto.
 

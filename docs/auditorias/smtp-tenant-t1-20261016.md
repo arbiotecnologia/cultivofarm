@@ -1,7 +1,7 @@
 # SMTP-T1 — fundação revisável por empresa
 
 ## Decisão
-**GO para revisão do pacote local; NO-GO para credencial real, implantação automática, conexão ou envio.** Preparação concluída no escopo executado; homologação hosted e aplicação dependem do auditor. Gates comerciais/fiscais continuam inalterados.
+**Fundação fechada aplicada pelo auditor, conforme relato de 2026-10-16 00:27 UTC; NO-GO para credencial real, abertura de gates, implantação pelo agente, conexão ou envio.** A execução local histórica abaixo não é a aplicação remota. Redaction autenticada permanece pendente; gates comerciais/fiscais continuam inalterados.
 
 ## Delta focal após revisão independente c2509c6613553ce9126e420acb6f321c84000d1c
 - Evidência externa recebida em 2026-10-16 00:15 UTC: 104 Vitest PASS, typecheck PASS, lint novos PASS, scanner PASS. Não confundir com QA próprio abaixo nem com homologação integral.
@@ -95,3 +95,20 @@ README contém ordem de instalação, contrato de imports e três gates. Antes d
 3. Verificações locais pós-delta: scanner focal **11/11 PASS**, `git diff --check` PASS, pin confirmado no arquivo. Regressões independentes relatadas pelo auditor (admin-password 29, callback 21, recovery 18, PortalGuard 9) não foram reexecutadas pelo agente.
 
 Escopo preservado: gates OFF, nenhum SQL remoto aplicado, nenhuma publicação, Auth/configuração global/worker intocados. Auditor segue instalação canônica fechada após preflight.
+
+## Atualização externa 2026-10-16 00:27 UTC — instalação fechada, NÃO reaplicar
+Informação recebida do auditor, **não execução nem verificação hospedada própria nesta rodada**:
+- Canônico `swzpzcwiasxmjutrmvkm`: migration `20261016002102_smtp_tenant_t1_draft_foundation` aplicada somente como fundação fechada.
+- Edge `tenant-email-settings` v1, `verify_jwt=true`, `reviewed=false`; UI publicada `56be97d`, observada no Admin AR com campos bloqueados.
+- SQL hosted com claims simulados e identidades reais AR/FSF/Consultor/Financeiro/Superadmin/B2B/Produtor PASS externo. Identidade real com claims simulados não equivale a JWT/browser real de cada perfil.
+- APIs oficiais Vault save/rotate/CAS com marcador sintético em ROLLBACK PASS externo; estado final informado settings/audit/refs=0 e gate=false. ROLLBACK não apaga logs nem prova redaction.
+- Não arquivamos como SQL exato do ledger: o conteúdo integral dessa migration não foi fornecido/lido nesta rodada. Não reaplicar o SQL candidato para reconstruir histórico.
+
+## Revisão de segurança T1 — delta documental desta rodada
+Diagnóstico detalhado e intervenção mínima em [smtp-tenant-t1-redaction-20261016.md](./smtp-tenant-t1-redaction-20261016.md).
+
+A documentação oficial Supabase confirma que **Invocations contém request/response, headers e body**. O contrato recebe `password` na Edge e envia `p_password` ao PostgREST; criptografia Vault em repouso e mensagens seguras não eliminam esses pontos de captura. Não foi demonstrada configuração gerenciada de supressão na origem. Os valores SQL anteriormente observados são históricos e não foram reconsultados.
+
+Com todos os gates false, o transporte da UI não chama a Edge; o handler retorna503 antes de auth/body/RPC. Portanto a prova completa não é executável pelo caminho atual. A recomendação é primeiro obter intervenção/garantia efetiva do proprietário/Supabase sobre logs, e só então revisar uma exceção temporária exclusivamente sintética no mesmo PUT, mantendo auth/RBAC/tenant e gate SQL false. Isso altera a semântica do bloqueio pré-auth e exige autorização específica; **nenhuma exceção foi implementada**. Sem suporte verificável de logs, manter NO-GO, não trocar a arquitetura por conta própria.
+
+Nesta rodada: apenas memória/documentação/roadmap/README e manifesto; nenhum runtime, Auth, identidade, ACL, SQL remoto, secret, envio, publicação ou gate alterado; nenhum subagente, navegador autenticado, HAR, trace ou log remoto com bodies/token acessado. QA documental e regressões locais são registrados no protocolo, sem certificação hospedada.

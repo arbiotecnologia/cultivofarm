@@ -3959,6 +3959,82 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_tenant_email_audit: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          id: number
+          organization_id: string
+          version: number
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          id?: never
+          organization_id: string
+          version: number
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          id?: never
+          organization_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_tenant_email_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_tenant_email_settings: {
+        Row: {
+          config: Json
+          credential_configured: boolean
+          dispatch_enabled: boolean
+          organization_id: string
+          sender_verified: boolean
+          state: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          config: Json
+          credential_configured?: boolean
+          dispatch_enabled?: boolean
+          organization_id: string
+          sender_verified?: boolean
+          state?: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          config?: Json
+          credential_configured?: boolean
+          dispatch_enabled?: boolean
+          organization_id?: string
+          sender_verified?: boolean
+          state?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_tenant_email_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_fiscal_settings: {
         Row: {
           accounting_validated_at: string | null
@@ -25809,6 +25885,16 @@ export type Database = {
           total: number
         }[]
       }
+      tenant_email_settings_get: { Args: never; Returns: Json }
+      tenant_email_settings_save: {
+        Args: {
+          p_config: Json
+          p_expected_version: number
+          p_password?: string
+        }
+        Returns: Json
+      }
+      tenant_email_settings_scope: { Args: never; Returns: boolean }
       unassign_b2b_user_client_secure: {
         Args: { p_cliente_id: string; p_reason?: string; p_user_id: string }
         Returns: boolean
