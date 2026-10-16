@@ -1,0 +1,10 @@
+-- CANDIDATE ONLY. First close server gate; deploy UI with its constant FALSE.
+-- Preserve ledger/history; do not revert legitimate edits or reassociate anyone.
+UPDATE platform_private.user_edit_f2_gate SET reviewed=false WHERE singleton;
+-- In the same coordinated rollback, restore baseline-admin-edit.sql.review exactly.
+-- Restore the F1 private batched reader from the captured definition/known F1 source.
+-- Leave new private functions CLOSED rather than dropping audit/state tables.
+REVOKE ALL ON FUNCTION platform_private.user_edit_f2_common(uuid,timestamptz,jsonb,public.app_role[],uuid[],uuid,uuid) FROM authenticated;
+REVOKE ALL ON FUNCTION public.tenant_admin_user_link_eligible(text,text,integer,integer) FROM authenticated;
+REVOKE ALL ON FUNCTION platform_private.user_edit_f2_eligible(text,text,integer,integer) FROM authenticated;
+-- Original internal RPC ACL stays unchanged. No DROP COLUMN/TABLE or data reversal.

@@ -1,0 +1,29 @@
+-- Read-only selector candidate for the EXISTING dialog. No tenant argument.
+CREATE FUNCTION platform_private.user_edit_f2_eligible(p_kind text,p_search text DEFAULT NULL,p_offset integer DEFAULT 0,p_limit integer DEFAULT 20)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $f$
+DECLARE org uuid; items jsonb; total integer;
+BEGIN
+ -- Self target deliberately reuses the canonical actor/active-tenant check;
+ -- it does not authorize editing the actor or any returned candidate.
+ org:=platform_private.user_edit_f2_authorize(auth.uid());
+ IF p_kind IS NULL OR p_kind NOT IN ('producer','b2b') OR p_offset IS NULL OR p_offset<0 OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100
+ OR char_length(coalesce(p_search,''))>150 THEN RAISE EXCEPTION 'user_edit_invalid_input' USING ERRCODE='22023'; END IF;
+ IF p_kind='producer' THEN
+ SELECT count(*) INTO total FROM public.clientes c WHERE c.organization_id=org AND c.status_cliente='ativo' AND (nullif(btrim(p_search),'') IS NULL OR c.nome ILIKE '%'||btrim(p_search)||'%');
+ SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.nome,x.id),'[]') INTO items FROM
+ (SELECT c.id,c.nome FROM public.clientes c WHERE c.organization_id=org AND c.status_cliente='ativo' AND (nullif(btrim(p_search),'') IS NULL OR c.nome ILIKE '%'||btrim(p_search)||'%') ORDER BY c.nome,c.id OFFSET p_offset LIMIT p_limit) x;
+ ELSE
+ SELECT count(*) INTO total FROM public.partner_accounts p WHERE p.commercial_owner_organization_id=org AND p.ativo IS TRUE AND p.deleted_at IS NULL AND (nullif(btrim(p_search),'') IS NULL OR p.razao_social ILIKE '%'||btrim(p_search)||'%');
+ SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.nome,x.id),'[]') INTO items FROM
+ (SELECT p.id,p.razao_social AS nome FROM public.partner_accounts p WHERE p.commercial_owner_organization_id=org AND p.ativo IS TRUE AND p.deleted_at IS NULL AND (nullif(btrim(p_search),'') IS NULL OR p.razao_social ILIKE '%'||btrim(p_search)||'%') ORDER BY p.razao_social,p.id OFFSET p_offset LIMIT p_limit) x;
+ END IF;
+ RETURN jsonb_build_object('items',items,'total',total);
+END $f$;
+REVOKE ALL ON FUNCTION platform_private.user_edit_f2_eligible(text,text,integer,integer) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.user_edit_f2_eligible(text,text,integer,integer) TO authenticated;
+CREATE FUNCTION public.tenant_admin_user_link_eligible(p_kind text,p_search text DEFAULT NULL,p_offset integer DEFAULT 0,p_limit integer DEFAULT 20)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $f$
+ SELECT platform_private.user_edit_f2_eligible(p_kind,p_search,p_offset,p_limit);
+$f$;
+REVOKE ALL ON FUNCTION public.tenant_admin_user_link_eligible(text,text,integer,integer) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.tenant_admin_user_link_eligible(text,text,integer,integer) TO authenticated;

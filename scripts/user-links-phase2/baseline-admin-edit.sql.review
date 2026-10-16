@@ -1,0 +1,24 @@
+CREATE OR REPLACE FUNCTION public.admin_edit_user_profile_v1(p_user_id uuid,p_expected_updated_at timestamptz,p_profile jsonb,p_roles public.app_role[],p_cliente_ids uuid[],p_principal_cliente_id uuid,p_partner_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+DECLARE caller uuid:=auth.uid(); stamp timestamptz; current_roles public.app_role[]; n integer;
+BEGIN
+ IF caller IS NULL OR NOT platform_private.is_tenant_admin_for_user(p_user_id) THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ IF p_user_id IS NULL OR p_expected_updated_at IS NULL OR p_profile IS NULL OR jsonb_typeof(p_profile)<>'object' THEN RAISE EXCEPTION 'user_edit_invalid_input' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_object_keys(p_profile) k WHERE k NOT IN ('nome','telefone','cargo','cpf_cnpj','crea','especialidade')) THEN RAISE EXCEPTION 'user_edit_invalid_fields' USING ERRCODE='22023'; END IF;
+ IF jsonb_typeof(p_profile->'nome') IS DISTINCT FROM 'string' OR char_length(btrim(coalesce(p_profile->>'nome',''))) NOT BETWEEN 2 AND 150 THEN RAISE EXCEPTION 'user_edit_invalid_name' USING ERRCODE='22023'; END IF;
+ IF nullif(p_profile->>'telefone','') IS NOT NULL AND (p_profile->>'telefone') !~ '^[0-9]{10,11}$' THEN RAISE EXCEPTION 'user_edit_invalid_phone' USING ERRCODE='22023'; END IF;
+ IF p_roles IS NULL OR cardinality(p_roles) NOT BETWEEN 1 AND 13 OR array_position(p_roles,NULL) IS NOT NULL OR cardinality(p_roles)<>(SELECT count(DISTINCT r) FROM unnest(p_roles) r) THEN RAISE EXCEPTION 'user_edit_invalid_roles' USING ERRCODE='22023'; END IF;
+ IF 'superadmin'::public.app_role=ANY(p_roles) OR public.is_platform_superadmin(p_user_id) THEN RAISE EXCEPTION 'user_edit_superadmin_forbidden' USING ERRCODE='42501'; END IF;
+ IF cardinality(coalesce(p_cliente_ids,'{}'::uuid[]))<>0 OR p_principal_cliente_id IS NOT NULL OR p_partner_id IS NOT NULL THEN RAISE EXCEPTION 'user_edit_unscoped_links_forbidden' USING ERRCODE='42501'; END IF;
+ SELECT array_agg(role ORDER BY role::text) INTO current_roles FROM public.user_roles WHERE user_id=p_user_id;
+ IF EXISTS(SELECT 1 FROM unnest(coalesce(current_roles,'{}'::public.app_role[])) r WHERE r IN ('cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico')) OR EXISTS(SELECT 1 FROM unnest(p_roles) r WHERE r IN ('cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico')) THEN RAISE EXCEPTION 'user_edit_linked_role_unavailable' USING ERRCODE='42501'; END IF;
+ IF caller=p_user_id AND NOT ('administrador'=ANY(p_roles)) THEN RAISE EXCEPTION 'user_edit_self_admin_removal' USING ERRCODE='42501'; END IF;
+ SELECT updated_at INTO stamp FROM public.profiles WHERE user_id=p_user_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_edit_not_found' USING ERRCODE='P0002'; END IF;
+ IF stamp IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'user_edit_conflict' USING ERRCODE='PT409'; END IF;
+ INSERT INTO public.user_roles(user_id,role) SELECT p_user_id,r FROM unnest(p_roles) r WHERE NOT EXISTS(SELECT 1 FROM public.user_roles ur WHERE ur.user_id=p_user_id AND ur.role=r);
+ DELETE FROM public.user_roles WHERE user_id=p_user_id AND NOT(role=ANY(p_roles)) AND role<>'superadmin'::public.app_role;
+ UPDATE public.profiles SET nome=btrim(p_profile->>'nome'),telefone=nullif(p_profile->>'telefone',''),cargo=nullif(p_profile->>'cargo',''),cpf_cnpj=nullif(p_profile->>'cpf_cnpj',''),crea=nullif(p_profile->>'crea',''),especialidade=nullif(p_profile->>'especialidade','') WHERE user_id=p_user_id RETURNING updated_at INTO stamp;
+ GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'user_edit_not_found' USING ERRCODE='P0002'; END IF;
+ RETURN jsonb_build_object('success',true,'user_id',p_user_id,'updated_at',stamp);
+END; $$;
