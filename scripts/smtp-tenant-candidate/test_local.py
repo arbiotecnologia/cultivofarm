@@ -26,6 +26,8 @@ CREATE SEQUENCE vault.attempts;
 CREATE TABLE vault.calls(id uuid PRIMARY KEY,rotations int NOT NULL DEFAULT 1);
 CREATE FUNCTION vault.create_secret(text,text,text,uuid DEFAULT NULL) RETURNS uuid LANGUAGE plpgsql AS $$DECLARE v uuid:=gen_random_uuid(); BEGIN PERFORM nextval('vault.attempts'); IF $1='fail-vault' THEN RAISE EXCEPTION 'unsafe provider failure'; END IF; INSERT INTO vault.calls VALUES(v,1); RETURN v;END$$;
 CREATE FUNCTION vault.update_secret(uuid,text,text,text,uuid DEFAULT NULL) RETURNS void LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('vault.attempts'); IF $2='fail-vault' THEN RAISE EXCEPTION 'unsafe provider failure'; END IF;UPDATE vault.calls SET rotations=rotations+1 WHERE id=$1;END$$;
+REVOKE ALL ON FUNCTION vault.create_secret(text,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION vault.update_secret(uuid,text,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
 """
   candidate=(ROOT/'20261016_smtp_t1.sql').read_text()
   # Regression against exact identities: defaults allow 3/4 argument CALLS,
