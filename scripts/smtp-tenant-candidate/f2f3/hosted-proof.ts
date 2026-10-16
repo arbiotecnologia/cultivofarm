@@ -62,7 +62,7 @@ export function createHostedProofHandler(deps:ProofDeps){
    let code='PINNING_PROOF_FAILED';
    try{await Promise.race([run(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>{expired=true;close();reject(new Error('PROOF_FAILED'));},12000);})]);code='PINNING_PROOF_PASS';}
    catch{/* never raw error, AUTH, SMTP envelope or credential access */}
-   finally{expired=true;close();if(timer!==undefined)clearTimeout(timer);busy=false;}
+   finally{expired=true;close();if(timer!==undefined)clearTimeout(timer);busy=false;ownsBusy=false;}
    const after=await actor.rpc('tenant_smtp_test_context');
    if(after.error || JSON.stringify(after.data)!==JSON.stringify(scope.data))return reply(403,'SMTP_FORBIDDEN');
    return reply(200,code,{dns_validated,ipv4_tls,ipv6_tls,hostname_mismatch_rejected});
