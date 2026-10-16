@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { RPC_VINCULOS_USUARIOS, parseVinculos, tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
 import { MaskedInput } from "@/components/ui/masked-input";
@@ -171,6 +172,29 @@ export default function Configuracoes() {
   });
 
   const usersPage = allUsers.items ?? [];
+  // Vínculo canônico atual: UMA leitura por página (sem N+1), tenant derivado no servidor.
+  const pageUserIds = useMemo(() => usersPage.map((u: any) => u.user_id as string).filter(Boolean), [usersPage]);
+  const vinculos = useQuery({
+    queryKey: ["admin-user-links", profile?.organization_id, user?.id, pageUserIds],
+    enabled: isAdmin && pageUserIds.length > 0,
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await (supabase as any).rpc(RPC_VINCULOS_USUARIOS, { p_user_ids: pageUserIds }).abortSignal(signal);
+      if (error) throw new Error("Não foi possível carregar os vínculos.");
+      return parseVinculos(data);
+    },
+  });
+  const vinculoDe = (u: any): EstadoVinculo => estadoVinculo(tipoAcessoDoUsuario(u.roles), vinculos, u.user_id);
+  const renderVinculo = (u: any, detalhado = false) => {
+    const e = vinculoDe(u);
+    if (e.estado === "carregando") return <span className="text-xs text-muted-foreground">Carregando vínculo…</span>;
+    if (e.estado === "erro") return <span role="alert" className="text-xs text-destructive">Vínculo indisponível no momento</span>;
+    if (e.estado === "nao_aplica") return <span className="text-xs text-muted-foreground">Não se aplica</span>;
+    const fora = e.fora_do_alcance > 0 ? <span className="block text-xs text-muted-foreground">{e.fora_do_alcance} vínculo(s) fora do alcance da sua empresa</span> : null;
+    if (e.estado === "sem_vinculo") return <span className="text-xs text-muted-foreground">Sem vínculo{fora}</span>;
+    if (!detalhado) return <span className="text-sm">{e.resumo}{fora}</span>;
+    return <ul className="text-sm space-y-1">{e.detalhes.map((d, i) => <li key={i}>{d}</li>)}{fora && <li>{fora}</li>}</ul>;
+  };
 
   const TENANT_MANAGEABLE_ROLES = ACTIVE_ROLES.filter((candidate) =>
     !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
@@ -409,6 +433,8 @@ export default function Configuracoes() {
       if (!editUser) throw erroLocalEdicao("Nenhum usuário em edição. Reabra o cadastro.");
       // Segundo envio antes de recarregar é bloqueado (estado da linha é incerto).
       if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
+      // Fase 1: externos são somente leitura (servidor também recusa). Nenhuma chamada é feita.
+      if (edicaoBloqueadaPorTipo(tipoAcessoDoUsuario(usersPage.find((u: any) => u.user_id === editUser.user_id)?.roles ?? editUser.roles))) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
 
 
 
@@ -781,7 +807,7 @@ export default function Configuracoes() {
                           )}
                           <div><Label>Tipo de cadastro</Label><Select value={registrationKind} onValueChange={value => changeKind(value as UserRegistrationKind)} disabled={createUser.isPending}>
                             <SelectTrigger aria-label="Tipo de cadastro"><SelectValue /></SelectTrigger><SelectContent>
-                              <SelectItem value="internal">Interno</SelectItem><SelectItem value="b2b">Parceiro B2B — Gestor</SelectItem><SelectItem value="producer">Cliente Produtor</SelectItem>
+                              <SelectItem value="internal">Interno</SelectItem><SelectItem value="b2b">Parceiro B2B — Gestor (cliente comercial da empresa)</SelectItem><SelectItem value="producer">Cliente Produtor</SelectItem>
                             </SelectContent></Select></div>
                           {registrationKind !== "internal" && <>
 <p role="status" className="text-sm text-muted-foreground">{EXTERNAL_USER_ACTIVATION_REVIEWED
@@ -789,7 +815,7 @@ export default function Configuracoes() {
                               : "Cadastro externo aguardando revisão para liberação."}</p>
                             <Label htmlFor="buscar-vinculo">{registrationKind === "b2b" ? "Parceiro vinculado" : "Clientes vinculados"}</Label>
                             <Input id="buscar-vinculo" value={linkSearch} onChange={event => setLinkSearch(event.target.value)} placeholder="Buscar vínculo" />
-                            {links.isLoading ? <p>Carregando…</p> : links.isError ? <p role="alert">Não foi possível consultar os vínculos.</p> : <div className="space-y-2">
+                            {links.isLoading || (links.isFetching && !links.data) ? <p role="status" className="text-sm text-muted-foreground">Carregando opções…</p> : links.isError ? <div role="alert" className="text-sm text-destructive">Não foi possível consultar os vínculos. <Button variant="link" size="sm" onClick={() => links.refetch()}>Tentar novamente</Button></div> : <div className="space-y-2">
                               {links.data?.items.map(item => <label key={item.id} className="flex items-center gap-2 text-sm">
                                 <Checkbox checked={registrationKind === "b2b" ? newUser.partner_id === item.id : selectedClients.includes(item.id)} onCheckedChange={checked => {
                                   if (registrationKind === "b2b") setNewUser({ ...newUser, partner_id: checked === true ? item.id : "" });
@@ -797,7 +823,7 @@ export default function Configuracoes() {
                                 }} />{item.label}
                                 {registrationKind === "producer" && selectedClients.includes(item.id) && <Button size="sm" variant="ghost" onClick={() => setPrimaryClient(item.id)}>{primaryClient === item.id ? "Principal" : "Tornar principal"}</Button>}
                               </label>)}
-                              {!links.data?.items.length && <p className="text-sm text-muted-foreground">Nenhum vínculo disponível.</p>}
+                              {links.data && !links.data.items.length && <p className="text-sm text-muted-foreground">{ajudaSemElegiveis(registrationKind === "b2b" ? "b2b" : "producer", linkSearch)}</p>}
                             </div>}
                             <div className="flex justify-between"><Button variant="outline" size="sm" disabled={linkPage === 0} onClick={() => setLinkPage(page => page - 1)}>Anterior</Button><Button variant="outline" size="sm" disabled={(linkPage + 1) * 20 >= (links.data?.total ?? 0)} onClick={() => setLinkPage(page => page + 1)}>Próxima</Button></div>
                             {createErros.partner_id && <p role="alert" className="text-sm text-destructive">{createErros.partner_id}</p>}{createErros.cliente_ids && <p role="alert" className="text-sm text-destructive">{createErros.cliente_ids}</p>}
@@ -941,6 +967,8 @@ export default function Configuracoes() {
                               ))}
                             </div>
                           )},
+                          { label: "Tipo de acesso", value: ROTULO_TIPO_ACESSO[tipoAcessoDoUsuario(u.roles)] },
+                          { label: "Vínculo", value: renderVinculo(u) },
                           { label: "Identificação", value: formatCpfCnpj(u.cpf_cnpj) || "—" },
                           { label: "Telefone", value: formatTelefone(u.telefone) || "—" },
                           { label: "Cargo", value: u.cargo || "—" },
@@ -962,6 +990,7 @@ export default function Configuracoes() {
                         <TableHead>Nome</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Perfil</TableHead>
+                        <TableHead>Vínculo</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
@@ -969,7 +998,7 @@ export default function Configuracoes() {
                     <TableBody>
                       {usuariosPagina.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : usuariosPagina.map((u: any) => (
                         <TableRow
@@ -987,6 +1016,7 @@ export default function Configuracoes() {
                             ))}
                             {u.roles.length === 0 && <span className="text-muted-foreground text-sm">Sem perfil</span>}
                           </TableCell>
+                          <TableCell>{renderVinculo(u)}</TableCell>
                           <TableCell onClick={stopRowClick}>
                             <div className="flex items-center gap-2">
                               <Switch
@@ -1051,6 +1081,11 @@ export default function Configuracoes() {
                 {editUser && (
                   <div className="space-y-3">
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
+                    {(() => { const orig = usersPage.find((u: any) => u.user_id === editUser.user_id) ?? editUser; const tipo = tipoAcessoDoUsuario(orig.roles); return (<>
+                      <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[tipo]}</p></div>
+                      <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(orig, true)}</div></div>
+                      {edicaoBloqueadaPorTipo(tipo) && <p role="status" className="text-xs text-muted-foreground border rounded-md p-2">{MSG_EDICAO_EXTERNA_INDISPONIVEL}</p>}
+                    </>); })()}
                     <div>
                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
                       <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
@@ -1095,8 +1130,8 @@ export default function Configuracoes() {
                         ))}
                       </ul>
                     )}
-                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao}>
-                      {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : "Salvar Alterações"}
+                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao || edicaoBloqueadaPorTipo(tipoAcessoDoUsuario((usersPage.find((u: any) => u.user_id === editUser.user_id) ?? editUser).roles))}>
+                      {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : edicaoBloqueadaPorTipo(tipoAcessoDoUsuario((usersPage.find((u: any) => u.user_id === editUser.user_id) ?? editUser).roles)) ? "Edição indisponível para usuário externo" : "Salvar Alterações"}
                     </Button>
 
 
