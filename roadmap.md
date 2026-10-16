@@ -1146,3 +1146,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Auditor: revisar, aplicar SQL, deploy Edge/worker, abrir gates e homologar (bloqueio: revisão independente).
 - [x] Credencial dedicada do invocador `TENANT_SMTP_LANE_INVOKER_SECRET` (header `x-tenant-smtp-secret`, só `?lane=tenant_smtp`), worker/espelho/cron/README/rollback; Vitest 895/895, SQL 101, scanner 41/41.
 - [ ] Invocador automático: titular cadastra o mesmo valor dedicado no Edge Secret e no Vault `tenant_smtp_lane_invoker_secret` + habilita pg_net (bloqueio: configuração humana).
+- [x] Promoção F4b: migration, pg_net, cron id 8, deploy worker/Edge, flags revisadas; transporte v1 (base64url) corrigiu 401; chamada vazia 200 e heartbeat comprovados; gate aberto com 0 empresas ativas.
+- [ ] Publicar a interface; Admin AR ativa pela tela; piloto pela origem real (titular).
+- [ ] Vínculos/auditoria (após fechar SMTP).
