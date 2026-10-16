@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 
 const ROOT = resolve(__dirname, "../../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
+const sourcePath = (p: string) => relative(ROOT, p).replaceAll("\\", "/");
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {
