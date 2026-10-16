@@ -44,7 +44,7 @@ try:
  CREATE TYPE public.app_role AS ENUM('administrador','cliente_produtor','consultor_tecnico','superadmin');
  CREATE TABLE public.clientes(id uuid PRIMARY KEY);
  CREATE TABLE public.profiles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid UNIQUE,email text,ativo boolean DEFAULT true,
-   cliente_id uuid REFERENCES public.clientes(id),organization_id uuid,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),
+   cliente_id uuid REFERENCES public.clientes(id) ON DELETE SET NULL,organization_id uuid,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),
    data_admissao date,observacoes_internas text,senha_provisoria boolean);
  CREATE TABLE public.user_roles(user_id uuid,role public.app_role);
  CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,cliente_id uuid REFERENCES public.clientes(id) ON DELETE CASCADE,
