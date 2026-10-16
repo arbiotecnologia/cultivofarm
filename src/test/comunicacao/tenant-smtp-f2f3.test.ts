@@ -42,6 +42,23 @@ describe('actual shared SMTP core via synthetic socket',()=>{
 });
 
 describe('timeouts fail closed',()=>{
+ it('DNS timeout never starts TCP',async()=>{
+  vi.useFakeTimers();
+  try{
+   const tcp=vi.fn();const d=pinnedDeps({proven:true,resolve:()=>new Promise(()=>{}),tcp,tls:vi.fn()});
+   const pending=expect(d.connectTls('provider.test',465)).rejects.toThrow('smtp_dns_blocked');
+   await vi.advanceTimersByTimeAsync(4001);await pending;expect(tcp).not.toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
+ it('AUTH stall closes acquired socket before session completes',async()=>{
+  vi.useFakeTimers();
+  try{
+   const close=vi.fn();let readCount=0;
+   const socket:ProbeConnection={read:async b=>{if(readCount++>0)return new Promise(()=>{});const bytes=new TextEncoder().encode('220 ready\r\n');b.set(bytes);return bytes.length;},write:async b=>b.length,close};
+   const pending=executeTest({mode:'connection',version:1,recipient:'admin@provider.com',env:{DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,SMTP_HOST:'smtp.provider.com',SMTP_PORT:'465',SMTP_USER:'synthetic',SMTP_PASSWORD:'synthetic-only',SMTP_FROM:'sender@provider.com'}},{connectTls:async()=>socket,connect:vi.fn(),startTls:vi.fn()});
+   await vi.advanceTimersByTimeAsync(15001);expect((await pending).code).toBe('smtp_test_failed');expect(close).toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
  it('late pinned connection closes and never upgrades after deadline',async()=>{
   vi.useFakeTimers();
   try {

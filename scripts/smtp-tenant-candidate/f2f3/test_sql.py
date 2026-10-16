@@ -40,6 +40,10 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
   sql+=f"SELECT pg_temp.ok('job in existing outbox',(SELECT count(*) FROM comunicacao_outbox)=1);SELECT pg_temp.ok('no general worker grants',NOT has_function_privilege('authenticated','public.tenant_smtp_test_prepare(uuid,uuid,uuid)','EXECUTE'));"
   prep=f"SELECT public.tenant_smtp_test_prepare((SELECT (v->>'job_id')::uuid FROM work),(SELECT (v->>'fence')::uuid FROM work),'{u}')"
   sql+=err('forged actor',prep.replace(u,v),'42501')
+  sql+=f"INSERT INTO platform_org_admin_invites VALUES('{u}','idle',clock_timestamp()+interval '1 minute');"
+  sql+=err('stale actor invitation fence',prep,'42501')+"DELETE FROM platform_org_admin_invites;"
+  sql+="SELECT pg_temp.ok('global worker cannot reclaim diagnostic',(SELECT bool_and(status='processing' AND lease_expires_at IS NULL AND max_attempts=1) FROM comunicacao_outbox));"
+  sql+="SELECT pg_temp.ok('public executor is invoker',NOT(SELECT prosecdef FROM pg_proc WHERE oid='public.tenant_smtp_test_prepare(uuid,uuid,uuid)'::regprocedure));"
   sql+="SELECT pg_temp.ok('server confirmed recipient',("+prep.replace('SELECT ','',1)+")->>'recipient'='admin@provider.com');"
   sql+=err('executor cannot run twice',prep,'42501')
   finish=f"SELECT public.tenant_smtp_test_finish((SELECT (v->>'job_id')::uuid FROM work),(SELECT (v->>'fence')::uuid FROM work),'{u}','smtp_connection_ok')"
