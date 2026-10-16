@@ -25895,6 +25895,38 @@ export type Database = {
         Returns: Json
       }
       tenant_email_settings_scope: { Args: never; Returns: boolean }
+      tenant_smtp_activation_set: {
+        Args: { p_active: boolean; p_version: number }
+        Returns: Json
+      }
+      tenant_smtp_f4_status: { Args: never; Returns: Json }
+      tenant_smtp_sender_challenge_claim: {
+        Args: { p_key: string; p_version: number }
+        Returns: Json
+      }
+      tenant_smtp_sender_challenge_confirm: {
+        Args: { p_challenge: string; p_code: string; p_version: number }
+        Returns: Json
+      }
+      tenant_smtp_sender_challenge_finish: {
+        Args: {
+          p_actor: string
+          p_challenge: string
+          p_code: string
+          p_fence: string
+        }
+        Returns: Json
+      }
+      tenant_smtp_sender_challenge_prepare: {
+        Args: {
+          p_actor: string
+          p_challenge: string
+          p_fence: string
+          p_hash: string
+          p_salt: string
+        }
+        Returns: Json
+      }
       tenant_smtp_test_claim: {
         Args: {
           p_confirm?: boolean
