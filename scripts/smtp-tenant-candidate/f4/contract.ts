@@ -14,7 +14,7 @@ export const f4StatusSchema=z.object({
  challenge:z.object({id:z.string().uuid(),state:z.enum(challengeStates),expires_at:z.string().nullable(),attempts_left:z.number().int().min(0).max(5)}).strict().nullable(),
 }).strict();
 export type F4Status=z.infer<typeof f4StatusSchema>;
-export const f4Codes=['challenge_sent','challenge_ambiguous','challenge_failed','SENDER_VERIFIED','SENDER_CHALLENGE_MISMATCH','SENDER_CHALLENGE_EXPIRED','SENDER_CHALLENGE_EXHAUSTED','SENDER_CHALLENGE_STALE','SENDER_CHALLENGE_INVALID',
+export const f4Codes=['F4_STATUS','challenge_sent','challenge_ambiguous','challenge_failed','SENDER_VERIFIED','SENDER_CHALLENGE_MISMATCH','SENDER_CHALLENGE_EXPIRED','SENDER_CHALLENGE_EXHAUSTED','SENDER_CHALLENGE_STALE','SENDER_CHALLENGE_INVALID',
  'SMTP_UNAVAILABLE','SMTP_FORBIDDEN','SMTP_CONFLICT','SMTP_COOLDOWN','SMTP_QUOTA','SMTP_BUSY','SMTP_NOT_READY','SMTP_UNAUTHORIZED','SMTP_INVALID','SMTP_INTERNAL'] as const;
 export type F4Code=typeof f4Codes[number];
 export const f4ResultSchema=z.object({code:z.enum(f4Codes),status:f4StatusSchema.optional(),attempts_left:z.number().int().min(0).max(5).optional()}).strict();

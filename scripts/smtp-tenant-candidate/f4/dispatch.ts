@@ -8,12 +8,11 @@ import { sendChallenge, type ChallengeOutcome } from './sender-executor.ts';
 const preparedSchema=z.object({version:z.number().int().positive(),recipient:z.string().email(),config:draftSchema,password:z.string().min(1).max(4096)}).strict();
 type Send=typeof sendChallenge;
 export async function dispatchF4(actor:string,client:ActorClient,service:ActorClient,input:F4Request,deps:SmtpProbeDeps,send:Send=sendChallenge):Promise<F4Result>{
- const status=async():Promise<F4Result>=>{const r=await client.rpc('tenant_smtp_f4_status');if(r.error)return {code:mapRpcError(r.error)};return f4ResultSchema.parse({code:'SENDER_VERIFIED',status:f4StatusSchema.parse(r.data)});};
- if(input.op==='status'){const r=await client.rpc('tenant_smtp_f4_status');if(r.error)return {code:mapRpcError(r.error)};return {code:'SMTP_INVALID',status:f4StatusSchema.parse(r.data)} as F4Result;}
+ if(input.op==='status'){const r=await client.rpc('tenant_smtp_f4_status');if(r.error)return {code:mapRpcError(r.error)};return f4ResultSchema.parse({code:'F4_STATUS',status:f4StatusSchema.parse(r.data)});}
  if(input.op==='activation'){
   const r=await client.rpc('tenant_smtp_activation_set',{p_version:input.expected_version,p_active:input.active});
   if(r.error)return {code:mapRpcError(r.error)};
-  return f4ResultSchema.parse({code:input.active?'SENDER_VERIFIED':'SMTP_UNAVAILABLE',status:f4StatusSchema.parse(r.data)});
+  return f4ResultSchema.parse({code:'F4_STATUS',status:f4StatusSchema.parse(r.data)});
  }
  if(input.op==='confirm'){
   // Code travels only in this POST body → RPC arg; never URL/query/log. Attempts persisted server-side.
@@ -41,6 +40,5 @@ export async function dispatchF4(actor:string,client:ActorClient,service:ActorCl
  finally{job.password='';code='';}
  const finished=await service.rpc('tenant_smtp_sender_challenge_finish',{...args,p_code:outcome});
  if(finished.error)throw new Error('SMTP_INTERNAL'); // uncertain ledger: never retry transport
- void status;
  return {code:outcome};
 }
