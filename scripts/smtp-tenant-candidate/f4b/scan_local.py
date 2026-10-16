@@ -30,6 +30,15 @@ checks={
  'UI activate gated':'activationEnabled && status?.sender_verified && !status.active' in ui,
  'mirror lane equal':(D/'process-communication-outbox/tenant-lane/lane.ts').read_text()==lane.replace('../../../supabase/functions/_shared/','../../_shared/'),
  'mirror worker equal':(D/'process-communication-outbox/index.ts').read_text()==worker,
+ 'source re-proven at claim':"v_reason:=platform_private.tenant_smtp_lane_source_reason(j.source_id,j.cliente_id,j.organization_id,j.recipient_user_id);" in sql,
+ 'authorize re-proves before envelope':sql.count('tenant_smtp_lane_source_reason(j.source_id,j.cliente_id,j.organization_id,j.recipient_user_id)')>=2 and 'lane_authorize' in lane,
+ 'NULL outcome refused':"p_outcome IS NULL OR p_outcome NOT IN" in sql,
+ 'enqueue quota serialized per tenant':"pg_advisory_xact_lock(hashtextextended('tenant_smtp_lane_enqueue:'||v_org::text,0))" in sql,
+ 'no zero actor':'00000000-0000-0000-0000-000000000000' not in sql,
+ 'claim scans for fairness':'LIMIT 25 FOR UPDATE SKIP LOCKED' in sql and 'v_skip:=v_skip||j.organization_id' in sql,
+ 'UI readiness needs lane heartbeat':'tenant_smtp_lane_heartbeat WHERE id AND seen_at' in sql,
+ 'invoker not in candidate SQL':'cron.schedule' not in sql and 'net.http_post' not in sql,
+ 'lane audit no payload columns':all(c not in sql.split('tenant_smtp_lane_audit(',1)[1].split(');',1)[0] for c in ('payload','email','subject','password')),
  'not deployed':not Path('supabase/functions/process-communication-outbox/tenant-lane').exists() and not Path('supabase/functions/tenant-email-settings/f4b').exists(),
 }
 for k,v in checks.items():print(('PASS ' if v else 'FAIL ')+k)
