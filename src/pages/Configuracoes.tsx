@@ -73,6 +73,7 @@ import { changeAdminPassword, adminPasswordErrorMessage } from "@/lib/configurac
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import { CreditCard } from "lucide-react";
 import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
+import TenantEmailSettings from "@/pages/configuracoes/TenantEmailSettings";
 import { useOnboardingState } from "@/hooks/useOrgOnboarding";
 import { FUSOS_BRASIL, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 
@@ -87,6 +88,8 @@ export default function Configuracoes() {
   const { toast } = useToast();
   const isAdmin = role === "administrador";
   const isPlatformSuperadmin = (roles ?? []).includes("superadmin");
+  const tenantEmailScope = useStorageAccessScope("tenant-email-settings");
+  const canTenantEmail = tenantEmailScope.ready && (roles ?? []).includes("administrador") && !isPlatformSuperadmin;
   // Aba "Meu Plano": administradores da empresa (qualquer papel da lista) e o
   // superadmin de plataforma QUANDO vinculado a uma organização. A checagem de
   // vínculo é fail-closed no servidor (RPC/RLS) — aqui é apenas visibilidade.
@@ -681,6 +684,7 @@ export default function Configuracoes() {
                 )}
               </CardContent>
             </Card>
+            {canTenantEmail && <TenantEmailSettings key={tenantEmailScope.scope} scope={tenantEmailScope.scope} />}
           </TabsContent>
         )}
 
