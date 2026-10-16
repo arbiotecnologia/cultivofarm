@@ -1135,3 +1135,10 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] F5 worker/outbox: exige vínculo provado organização/origem/destinatário na outbox (decisão de schema + contrato NOTIF3). Bloqueio NOTIF3 mantido.
 - [x] F4a promoção mínima (revisão 95c10a83): `TENANT_SMTP_F4_PHASE=true`, `TENANT_SMTP_F4_REVIEWED=true` (review+espelho). Migration 20261016131517 aplicada pelo auditor, gate false. Posse do remetente ainda NÃO confirmada; deploy/gate/desafio pelo auditor.
 - [ ] F4b ativação operacional/worker: pendente (contrato da outbox).
+
+## SMTP-T F4b — ativação + via tenant na outbox (candidato, base 600a94f1)
+- [x] SQL candidato `scripts/smtp-tenant-candidate/f4b/` (gate false), rollback não destrutivo, preflight; contrato único `solicitacao_atribuida_consultor_v1`.
+- [x] Worker candidato (`worker-index.ts.review` + espelho) com via `?lane=tenant_smtp`, flag false; NOTIF3 global intacto; worker em produção inalterado.
+- [x] UI ativar/pausar com status real e generation guard atrás de `TENANT_SMTP_F4B_PHASE=false`.
+- [x] QA: SQL descartável 61 PASS; Vitest 21 F4b / 859 comunicação; typecheck app 0; lint focal 0; scanner F4b 24/24, F4 20/20; deno check sem erros novos.
+- [ ] Auditor: revisar, aplicar SQL, deploy Edge/worker, abrir gates e homologar (bloqueio: revisão independente).
