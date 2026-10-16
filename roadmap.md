@@ -1233,3 +1233,12 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] enforce_cliente_id_for_produtor: análise separada (scripts/user-links-v0/principal-analysis.md), não instalada nem misturada.
 - [ ] Cache/sessão multidispositivo e signed URLs: pendentes; troca de associação segue com gates fechados.
 - Relatório: docs/auditorias/vinculos-externos-principal-candidato-20261016.md.
+
+## Cliente principal — candidato v2 após revisão de 29d50c73 (16/10/2026)
+- [x] Ponto 1: preflight com IS DISTINCT FROM, assinatura, trigger enabled/def e UNIQUE por definição real.
+- [x] Ponto 2: UPDATE de user_id reconcilia usuário antigo e novo (transition tables), sem reatribuir dados.
+- [x] Ponto 3: AFTER STATEMENT com transition tables (três triggers por evento; Postgres veda multi-evento); pg_trigger_depth>1; provas multirow (revogar+eleger no mesmo comando, principal=true em duas linhas, INSERT multirow) e concorrência com duas conexões sem erro de tupla.
+- [x] Ponto 4: harness com guards reais (acquire_gate/require_admin/touch/stamp/sensitive/tenant/h15/enforce) e roles; achado: live escreve vínculos em contexto service (wrapper proíbe links, guard de tenant nega cliente_id autenticado); negativos autenticados/anon/último-admin PASS; RLS completa, hosted e superadmin guard UNVERIFIED.
+- [x] Ponto 5: rollback somente com gate de associação fechado; com gate aberto a contenção é o próprio candidato v2.
+- [x] Testes locais: 21/21 checks PASS em PostgreSQL descartável; nenhum PASS live inventado.
+- [ ] Ensaio hosted BEGIN/ROLLBACK pelo auditor; cache same-identity e anexos são o próximo recorte (não misturar runtime).
