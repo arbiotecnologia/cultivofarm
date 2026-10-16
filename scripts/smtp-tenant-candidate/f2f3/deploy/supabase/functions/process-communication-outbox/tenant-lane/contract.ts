@@ -25,6 +25,7 @@ export const laneJobSchema=z.object({
   from_email:z.string().email(),from_name:z.string().max(120).optional(),reply_to:z.string().max(320).optional()}).passthrough(),
  password:z.string().min(1).max(4096),
 }).strict();
-export const laneSkipSchema=z.union([z.null(),z.object({busy:z.literal(true)}).strict(),z.object({quota:z.literal(true)}).strict(),z.object({skipped:z.literal(true)}).strict()]);
+export const laneAuthorizeSchema=z.object({ok:z.boolean(),reason:z.string().regex(/^[a-z_]{1,60}$/).optional()}).strict();
+export const laneFinishSchema=z.object({state:z.enum(['sent','failed','ambiguous','cancelled','lease_expired']),replay:z.boolean(),lost:z.boolean()}).strict();
 export type LaneJob=z.infer<typeof laneJobSchema>;
 export type LaneOutcome='sent'|'failed'|'ambiguous';

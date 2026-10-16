@@ -1141,4 +1141,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Worker candidato (`worker-index.ts.review` + espelho) com via `?lane=tenant_smtp`, flag false; NOTIF3 global intacto; worker em produção inalterado.
 - [x] UI ativar/pausar com status real e generation guard atrás de `TENANT_SMTP_F4B_PHASE=false`.
 - [x] QA: SQL descartável 61 PASS; Vitest 21 F4b / 859 comunicação; typecheck app 0; lint focal 0; scanner F4b 24/24, F4 20/20; deno check sem erros novos.
+- [x] Correções revisão 1cd70701: fonte revalidada (claim/authorize), autorização pós-AUTH antes do envelope, fairness, quota enqueue serializada, finish NULL/conflito/lost, auditoria da via sem ator zero, heartbeat na prontidão da UI, opção de invocador fechada. SQL 90 F4b PASS; Vitest 29 F4b / 867 comunicação; typecheck 0; lint 0; scanner 33/33.
 - [ ] Auditor: revisar, aplicar SQL, deploy Edge/worker, abrir gates e homologar (bloqueio: revisão independente).
+- [ ] Invocador automático da via: requer pg_net + segredo Vault criados pelo titular (opção `cron_option.sql.review`, não aplicada).
