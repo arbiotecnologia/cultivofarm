@@ -13,7 +13,7 @@ INSERT INTO platform_private.tenant_smtp_test_gate VALUES(true,false) ON CONFLIC
 -- Receipts/authority ONLY: all actual jobs remain in existing comunicacao_outbox.
 CREATE TABLE IF NOT EXISTS platform_private.tenant_smtp_test_receipts(
  id uuid PRIMARY KEY, organization_id uuid NOT NULL REFERENCES public.organizations(id), actor_id uuid NOT NULL,
- version bigint NOT NULL, mode text NOT NULL CHECK(mode IN ('connection','send')), request_key uuid NOT NULL,
+ version bigint NOT NULL, actor_iat bigint NOT NULL, mode text NOT NULL CHECK(mode IN ('connection','send')), request_key uuid NOT NULL,
  fence uuid NOT NULL, outbox_id uuid NOT NULL UNIQUE REFERENCES public.comunicacao_outbox(id),
  state text NOT NULL CHECK(state IN ('claimed','executing','complete')), code text,
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(), completed_at timestamptz,
@@ -40,7 +40,7 @@ REVOKE ALL ON FUNCTION platform_private.tenant_smtp_test_actor(uuid) FROM PUBLIC
 CREATE OR REPLACE FUNCTION platform_private.notification_outbox_closed() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 BEGIN
- IF NEW.template_chave='tenant_smtp_diagnostic_v1' AND NEW.status='processing' AND NEW.max_attempts=1
+ IF NEW.template_chave='tenant_smtp_diagnostic_v1' AND NEW.status='processing' AND NEW.max_attempts=1 AND NEW.lease_expires_at IS NULL
  AND NEW.attempts=1 AND NEW.canal='email' AND NEW.recipient_cliente_id IS NULL AND NEW.recipient_hash IS NULL
  AND EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_insert_tickets t
  JOIN public.comunicacao_eventos e ON e.id=NEW.event_id
@@ -83,11 +83,11 @@ BEGIN
  VALUES(v_event,'tenant.smtp.diagnostic','tenant_smtp_diagnostic_v1',v_org,auth.uid(),v_key,'processed',clock_timestamp(),'{}');
  INSERT INTO platform_private.tenant_smtp_test_insert_tickets VALUES(v_out,txid_current(),auth.uid(),v_org);
  INSERT INTO public.comunicacao_outbox(id,event_id,template_chave,template_versao,template_snapshot,canal,recipient_user_id,status,attempts,max_attempts,locked_by,lease_expires_at,idempotency_key)
- VALUES(v_out,v_event,'tenant_smtp_diagnostic_v1',1,'{}','email',auth.uid(),'processing',1,1,'tenant-smtp-test',clock_timestamp()+interval '30 seconds',v_key);
+ VALUES(v_out,v_event,'tenant_smtp_diagnostic_v1',1,'{}','email',auth.uid(),'processing',1,1,'tenant-smtp-test',NULL,v_key);
  IF NOT EXISTS(SELECT 1 FROM public.comunicacao_outbox WHERE id=v_out) THEN RAISE EXCEPTION 'SMTP_UNAVAILABLE'; END IF;
  DELETE FROM platform_private.tenant_smtp_test_insert_tickets WHERE outbox_id=v_out;
- INSERT INTO platform_private.tenant_smtp_test_receipts(id,organization_id,actor_id,version,mode,request_key,fence,outbox_id,state)
- VALUES(v_id,v_org,auth.uid(),p_version,p_mode,p_key,v_fence,v_out,'claimed');
+ INSERT INTO platform_private.tenant_smtp_test_receipts(id,organization_id,actor_id,version,actor_iat,mode,request_key,fence,outbox_id,state)
+ VALUES(v_id,v_org,auth.uid(),p_version,coalesce((auth.jwt()->>'iat')::bigint,0),p_mode,p_key,v_fence,v_out,'claimed');
  INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(v_org,auth.uid(),p_version,'smtp_test_'||p_mode||'_claimed');
  RETURN jsonb_build_object('replay',false,'job_id',v_id,'fence',v_fence);
 END $$;
@@ -108,6 +108,10 @@ BEGIN
  SELECT * INTO r FROM platform_private.tenant_smtp_test_receipts WHERE id=p_job FOR UPDATE;
  IF r.actor_id IS DISTINCT FROM p_actor OR r.fence IS DISTINCT FROM p_fence OR r.state<>'claimed'
  OR platform_private.tenant_smtp_test_actor(p_actor) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ -- Service JWT cannot substitute actor iat. Preserve claim's actual invitation fence.
+ IF r.actor_iat<=0 OR EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_actor
+ AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND to_timestamp(r.actor_iat)<=i.access_valid_after))) THEN
+ RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=v_org FOR UPDATE;
  IF s.version IS DISTINCT FROM r.version THEN RAISE EXCEPTION 'SMTP_CONFLICT' USING ERRCODE='40001'; END IF;
  IF NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_gate WHERE approved AND id) OR s.config->>'port'<>'465'

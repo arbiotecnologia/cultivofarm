@@ -10,7 +10,7 @@ def main():
   subprocess.run(prefix+['initdb','-D',str(t/'data'),'-A','trust','-U','postgres'],check=True,capture_output=True)
   subprocess.run(prefix+['pg_ctl','-D',str(t/'data'),'-l',str(t/'log'),'-o',f'-k {t} -h "" -p 55494','start'],check=True,capture_output=True)
   base=(R.parent/'test_local.py').read_text().split('sql="""',1)[1].split('"""',1)[0]
-  sql=base+"CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,email_confirmed_at timestamptz); CREATE VIEW vault.decrypted_secrets AS SELECT id,'synthetic-only'::text decrypted_secret FROM vault.calls;"
+  sql=base+"CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,email_confirmed_at timestamptz); CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$SELECT jsonb_build_object('iat',extract(epoch FROM now())::bigint)$$; CREATE VIEW vault.decrypted_secrets AS SELECT id,'synthetic-only'::text decrypted_secret FROM vault.calls;"
   sql+=(R.parent/'20261016_smtp_t1.sql').read_text()
   original=Path('supabase/migrations/20260727035656_a798991d-480d-42a1-be84-e61b2d868f82.sql').read_text()
   sql+="CREATE TYPE comunicacao_canal AS ENUM('email','whatsapp','in_app','push'); CREATE TYPE comunicacao_outbox_status AS ENUM('pending','processing','sent','failed','cancelled','skipped','dead_letter'); CREATE TYPE comunicacao_evento_status AS ENUM('received','processed','skipped');"
