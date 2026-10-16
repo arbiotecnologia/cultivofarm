@@ -10,7 +10,7 @@ def harness_setup():
  exec('\n'.join(l[2:] for l in src[start:end+1]),ns)
  return ns
 def main():
- ns=harness_setup();sql=ns['sql'];u,v,a,b=ns['u'],ns['v'],ns['a'],ns['b']
+ ns=harness_setup();sql=ns['sql'];v,u,b,a=ns['u'],ns['v'],ns['a'],ns['b']  # v=configured Admin (org b), u=other tenant
  t=Path(tempfile.mkdtemp(dir='/tmp',prefix='smtp-f4-'));t.chmod(0o777)
  prefix=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
  cmd=['psql','-X','-h',str(t),'-p','55495','-U','postgres','-v','ON_ERROR_STOP=1']
