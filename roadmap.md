@@ -1160,5 +1160,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] RPC `tenant_admin_user_links(uuid[])` (INVOKER público → DEFINER `platform_private`), só Admin da empresa, tenant derivado, ≤100 ids, uma chamada por página; vínculos de outra empresa só contados.
 - [x] Lista/edição: tipo de acesso explícito, vínculo atual com carregando/erro/sem vínculo distintos; externos somente leitura com explicação (sem falso salvar).
 - [x] Cadastro: rótulos de tipo, ajuda quando não há elegíveis vs busca vazia, erro com "tentar novamente".
-- [ ] Revisão independente + publicação.
-- [ ] Fase 2 (proposta em `docs/auditorias/vinculos-externos-fase1.md`): aguardando aprovação antes de qualquer SQL de escrita.
+- [x] Delta a5a8725b: parser estrito do contrato, externos com perfis internos ocultos e dados comuns desabilitados (senha separada mantida), `any` novos removidos; lint legado separado.
+- [ ] Revisão independente do delta + publicação (pelo titular).
+- [ ] Fase 2 candidata (extensão do contrato v1, CAS perfil+vínculos, idempotência com revalidação, locks, revogação server-side): implementação autorizada; nenhuma escrita aplicada antes da revisão independente.
