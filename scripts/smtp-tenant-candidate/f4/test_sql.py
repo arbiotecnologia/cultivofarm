@@ -41,58 +41,74 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_f4_gate SET approved=true;UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"
   sql+=actor(v)+err('no connection PASS',claim(K1),'42501')+err('CAS version',claim(K1,2),'40001')
   sql+=actor(u)+err('cross-tenant actor without settings',claim(K1),'40001')
-  # synthetic connection PASS receipt for v (org b, version 1)
-  sql+=f"RESET ROLE;INSERT INTO comunicacao_eventos(id,event_key,source_type,source_id,created_by,idempotency_key,status,payload) VALUES('{CK}','tenant.smtp.diagnostic','tenant_smtp_diagnostic_v1','{b}','{v}','f4-fixture','processed','{{}}');"
-  sql+="ALTER TABLE comunicacao_outbox DISABLE TRIGGER USER;"
-  sql+=f"INSERT INTO comunicacao_outbox(id,event_id,template_chave,template_versao,template_snapshot,canal,recipient_user_id,status,idempotency_key) VALUES('{CK}','{CK}','t',1,'{{}}','email','{v}','dead_letter','f4-fixture');ALTER TABLE comunicacao_outbox ENABLE TRIGGER USER;"
-  sql+=f"INSERT INTO platform_private.tenant_smtp_test_receipts(id,organization_id,actor_id,version,actor_iat,mode,request_key,fence,outbox_id,state,code,completed_at) VALUES(gen_random_uuid(),'{b}','{v}',1,1,'connection','{CK}',gen_random_uuid(),'{CK}','complete','smtp_connection_ok',clock_timestamp());"
+  # Realistic prerequisites: real F2/F3 claim -> service prepare -> finish (no trigger disabling).
+  def conn(k,key,ver):
+   q=actor(v)+f"INSERT INTO w VALUES('{k}',(SELECT public.tenant_smtp_test_claim('connection',{ver},'{key}',false)));RESET ROLE;SET ROLE service_role;"
+   args=f"(SELECT (v->>'job_id')::uuid FROM w WHERE k='{k}'),(SELECT (v->>'fence')::uuid FROM w WHERE k='{k}'),'{v}'"
+   return q+f"SELECT public.tenant_smtp_test_prepare({args});SELECT public.tenant_smtp_test_finish({args},'smtp_connection_ok');RESET ROLE;"
+  def cargs(k,act=None):return f"(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='{k}'),(SELECT (v->>'fence')::uuid FROM w WHERE k='{k}'),'{act or v}'"
+  def hsql(k,code):return f"encode(sha256(convert_to(repeat('ab',16)||':'||(SELECT v->>'challenge_id' FROM w WHERE k='{k}')||':{code}','UTF8')),'hex')"
+  def cprep(k,code='12345678'):return f"SELECT public.tenant_smtp_sender_challenge_prepare({cargs(k)},repeat('ab',16),{hsql(k,code)})"
+  def cfin(k,c='challenge_sent'):return f"SELECT public.tenant_smtp_sender_challenge_finish({cargs(k)},'{c}')"
+  def flow(k,key,ver,code='12345678',fin=True):
+   return actor(v)+f"INSERT INTO w VALUES('{k}',({claim(key,ver)[7:]}));RESET ROLE;SET ROLE service_role;"+cprep(k,code)+';'+(cfin(k)+';' if fin else '')+'RESET ROLE;'
+  backdate="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=created_at-interval '61 seconds';UPDATE platform_private.tenant_smtp_test_receipts SET created_at=created_at-interval '61 seconds';"
+  sql+=conn('r1','e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1',1)
+  sql+=ok('no trigger disabled',"(SELECT bool_and(tgenabled<>'D') FROM pg_trigger WHERE tgrelid='public.comunicacao_outbox'::regclass)")
   sql+=actor(v)+f"INSERT INTO w VALUES('c1',({claim(K1)[7:]}));"
   sql+=ok('replay same key no new job',f"({claim(K1)[7:]})->>'replay'='true'")+err('concurrent pending',claim(K2),'40001')
-  prep=lambda salt,h,act=v:f"SELECT public.tenant_smtp_sender_challenge_prepare((SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c1'),(SELECT (v->>'fence')::uuid FROM w WHERE k='c1'),'{act}','{salt}','{h}')"
-  sql+="RESET ROLE;SET ROLE service_role;"+err('forged actor prepare',prep('0'*32,'0'*64,u),'42501')+err('bad hash',prep('0'*32,'zz'),'22023')
-  sql+="RESET ROLE;CREATE TEMP TABLE hv(h text);GRANT ALL ON hv TO service_role;"
-  sql+="INSERT INTO hv SELECT encode(sha256(convert_to(repeat('ab',16)||':'||(SELECT v->>'challenge_id' FROM w WHERE k='c1')||':12345678','UTF8')),'hex');GRANT SELECT ON hv TO service_role;"
-  sql+="SET ROLE service_role;"+ok('prepare returns sender as recipient',f"({prep('ab'*16,'X')[7:].replace(chr(39)+'X'+chr(39),'(SELECT h FROM hv)')})->>'recipient'='sender@provider.com'")
-  sql+=err('prepare twice denied',prep('ab'*16,'0'*64),'42501')
-  fin=lambda c:f"SELECT public.tenant_smtp_sender_challenge_finish((SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c1'),(SELECT (v->>'fence')::uuid FROM w WHERE k='c1'),'{v}','{c}')"
-  sql+=fin('challenge_sent')+';'+fin('challenge_sent')+';'+err('finish conflicting code',fin('challenge_failed'),'40001')
-  sql+="RESET ROLE;"+ok('no plaintext code stored',"NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_sender_challenges WHERE row_to_json(tenant_smtp_sender_challenges)::text LIKE '%12345678%')")
+  sql+="RESET ROLE;SET ROLE service_role;"+err('forged actor prepare',f"SELECT public.tenant_smtp_sender_challenge_prepare({cargs('c1',u)},repeat('ab',16),repeat('0',64))",'42501')
+  sql+=err('bad hash',f"SELECT public.tenant_smtp_sender_challenge_prepare({cargs('c1')},repeat('ab',16),'zz')",'22023')
+  sql+=ok('prepare returns sender as recipient',f"({cprep('c1')[7:]})->>'recipient'='sender@provider.com'")
+  sql+=err('prepare twice denied',cprep('c1'),'42501')
+  sql+=cfin('c1')+';'+cfin('c1')+';'+err('finish conflicting code',cfin('c1','challenge_failed'),'40001')
+  sql+="RESET ROLE;"+ok('no plaintext code stored',"NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_sender_challenges x WHERE row_to_json(x)::text LIKE '%12345678%')")
   sql+=ok('audit has no code',"NOT EXISTS(SELECT 1 FROM communication_tenant_email_audit WHERE action LIKE '%12345678%')")
-  conf=lambda code,ver=1:f"SELECT public.tenant_smtp_sender_challenge_confirm((SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c1'),{ver},'{code}')"
+  conf=lambda code,k='c1',ver=1:f"SELECT public.tenant_smtp_sender_challenge_confirm((SELECT (v->>'challenge_id')::uuid FROM w WHERE k='{k}'),{ver},'{code}')"
   sql+=actor(u)+ok('other tenant admin cannot confirm',f"({conf('12345678')[7:]})->>'code'='SENDER_CHALLENGE_INVALID'")
   sql+=actor(v)+err('malformed code',conf('1234'),'22023')
   sql+=ok('mismatch counted',f"({conf('00000000')[7:]})->>'attempts_left'='4'")
-  sql+=err('activation before verify',"SELECT public.tenant_smtp_activation_set(1,true)",'42501')
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_f4_gate SET approved=false;"+actor(v)+err('closed F4 gate blocks confirm',conf('12345678'),'42501')
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_f4_gate SET approved=true;UPDATE platform_private.tenant_smtp_test_gate SET approved=false;"+actor(v)+err('closed F2F3 gate blocks confirm',conf('12345678'),'42501')
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"+ok('closed-gate confirm consumed no attempt',"(SELECT attempts FROM platform_private.tenant_smtp_sender_challenges WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c1'))=1")
+  sql+=actor(v)+err('operational activation refused',"SELECT public.tenant_smtp_activation_set(1,true)",'42501')
   sql+=ok('correct code verifies',f"({conf('12345678')[7:]})->>'code'='SENDER_VERIFIED'")
   sql+=ok('replayed code single use',f"({conf('12345678')[7:]})->>'code'='SENDER_CHALLENGE_INVALID'")
   sql+=ok('status verified',"(public.tenant_smtp_f4_status()->>'sender_verified')::boolean")
-  sql+=ok('activation sets active',"(public.tenant_smtp_activation_set(1,true)->>'active')::boolean")
-  sql+=ok('dispatch remains false',"(public.tenant_smtp_f4_status()->>'dispatch_enabled')='false'")
-  sql+="RESET ROLE;SET ROLE service_role;"+ok('dispatch_ready true for active',f"tenant_smtp_executor.tenant_smtp_dispatch_ready('{b}')")+ok('dispatch_ready false other tenant',f"NOT tenant_smtp_executor.tenant_smtp_dispatch_ready('{a}')")
-  # edit config → invalidation
+  sql+=err('activation refused even verified',"SELECT public.tenant_smtp_activation_set(1,true)",'42501')
+  sql+=ok('status never active',"(public.tenant_smtp_f4_status()->>'active')='false' AND (public.tenant_smtp_f4_status()->>'dispatch_enabled')='false'")
+  sql+=ok('pause allowed',"(public.tenant_smtp_activation_set(1,false)->>'active')='false'")
+  sql+="RESET ROLE;SET ROLE service_role;"+ok('dispatch_ready false in F4a',f"NOT tenant_smtp_executor.tenant_smtp_dispatch_ready('{b}')")
+  # executing challenge invalidated by config change; late finish cannot reopen it
+  sql+=backdate+flow('c2',K3,1,fin=False)
   cfg2=ns['cfg'].replace('sender@provider.com','other@provider.com')
   sql+=actor(v)+f"SELECT public.tenant_email_settings_save(1,'{cfg2}');"
   sql+=ok('edit invalidates verification',"NOT (public.tenant_smtp_f4_status()->>'sender_verified')::boolean")
-  sql+=ok('edit invalidates activation',"NOT (public.tenant_smtp_f4_status()->>'active')::boolean")
-  sql+="RESET ROLE;SET ROLE service_role;"+ok('dispatch_ready false after edit',f"NOT tenant_smtp_executor.tenant_smtp_dispatch_ready('{b}')")
-  sql+=actor(v)+err('stale version activation',"SELECT public.tenant_smtp_activation_set(1,true)",'40001')
-  sql+=ok('pause always allowed',"NOT (public.tenant_smtp_activation_set(2,false)->>'active')::boolean")
-  # exhaustion + expiry on a fresh challenge (version 2)
-  sql+=f"RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=clock_timestamp()-interval '61 seconds';UPDATE platform_private.tenant_smtp_test_receipts SET version=2;"
-  sql+=actor(v)+f"INSERT INTO w VALUES('c2',({claim(K3,2)[7:]}));"
-  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET state='sent',code_salt=repeat('ab',16),code_hash=repeat('0',64),expires_at=clock_timestamp()+interval '1 minute' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c2');"
-  c2=lambda code:f"SELECT public.tenant_smtp_sender_challenge_confirm((SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c2'),2,'{code}')"
-  sql+=actor(v)+''.join(f"SELECT {c2('1111111'+str(i))[7:]};" for i in range(4))
-  sql+=ok('fifth attempt exhausts',f"({c2('22222222')[7:]})->>'code'='SENDER_CHALLENGE_EXHAUSTED'")
-  sql+=ok('exhausted stays closed',f"({c2('22222222')[7:]})->>'code'='SENDER_CHALLENGE_INVALID'")
-  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=clock_timestamp()-interval '61 seconds';"
-  sql+=actor(v)+"INSERT INTO w VALUES('c3',(SELECT public.tenant_smtp_sender_challenge_claim(2,'e5e5e5e5-e5e5-4e5e-8e5e-e5e5e5e5e5e5')));"
-  sql+=err('cooldown 60s',claim('f6f6f6f6-f6f6-4f6f-8f6f-f6f6f6f6f6f6',2),'40001')
-  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET state='sent',code_salt=repeat('ab',16),code_hash=repeat('0',64),expires_at=clock_timestamp()-interval '1 second' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c3');"
-  sql+=actor(v)+ok('expired code rejected',"(public.tenant_smtp_sender_challenge_confirm((SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c3'),2,'12345678'))->>'code'='SENDER_CHALLENGE_EXPIRED'")
-  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=clock_timestamp()-interval '25 hours' WHERE false;"
-  sql+="INSERT INTO platform_private.tenant_smtp_sender_challenges(id,organization_id,actor_id,version,from_email,request_key,fence,actor_iat,state,created_at) SELECT gen_random_uuid(),organization_id,actor_id,2,from_email,gen_random_uuid(),gen_random_uuid(),1,'failed',clock_timestamp()-interval '2 minutes' FROM platform_private.tenant_smtp_sender_challenges LIMIT 2;"
-  sql+=actor(v)+err('daily quota',claim('a7a7a7a7-a7a7-4a7a-8a7a-a7a7a7a7a7a7',2),'40001')
+  sql+="RESET ROLE;"+ok('edit invalidates executing',"(SELECT state FROM platform_private.tenant_smtp_sender_challenges WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c2'))='invalidated'")
+  sql+="SET ROLE service_role;"+cfin('c2')+";RESET ROLE;"+ok('late finish does not reopen',"(SELECT state='invalidated' AND code_hash IS NULL FROM platform_private.tenant_smtp_sender_challenges WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c2'))")
+  sql+=actor(v)+err('stale version pause',"SELECT public.tenant_smtp_activation_set(1,false)",'40001')
+  # orphan: claim without prepare blocks only until reconciliation window
+  sql+=backdate+conn('r2','e2e2e2e2-e2e2-4e2e-8e2e-e2e2e2e2e2e2',2)+backdate
+  sql+=actor(v)+f"INSERT INTO w VALUES('c3',({claim('e5e5e5e5-e5e5-4e5e-8e5e-e5e5e5e5e5e5',2)[7:]}));"+backdate
+  sql+=actor(v)+err('orphan blocks within window',claim('f6f6f6f6-f6f6-4f6f-8f6f-f6f6f6f6f6f6',2),'40001')
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=created_at-interval '3 minutes' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c3');"
+  sql+=actor(v)+f"INSERT INTO w VALUES('c4',({claim('f6f6f6f6-f6f6-4f6f-8f6f-f6f6f6f6f6f6',2)[7:]}));"
+  sql+="RESET ROLE;"+ok('orphan reconciled invalidated, audited',"(SELECT state='invalidated' AND code_hash IS NULL FROM platform_private.tenant_smtp_sender_challenges WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c3')) AND EXISTS(SELECT 1 FROM communication_tenant_email_audit WHERE action='sender_challenge_reconciled')")
+  sql+="SET ROLE service_role;"+err('reconciled orphan never prepared',cprep('c3'),'42501')+"RESET ROLE;"
+  # failed prepare (stale window) leaves no permanent block
+  sql+="UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=created_at-interval '40 seconds' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c4');SET ROLE service_role;"+err('late prepare refused',cprep('c4'),'42501')
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=created_at-interval '3 minutes' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c4');"
+  sql+=flow('c5','a5a5a5a5-a5a5-4a5a-8a5a-a5a5a5a5a5a5',2)
+  sql+=ok('failed prepare not permanent',"(SELECT state FROM platform_private.tenant_smtp_sender_challenges WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c5'))='sent'")
+  sql+=actor(v)+err('cooldown 60s',claim('a6a6a6a6-a6a6-4a6a-8a6a-a6a6a6a6a6a6',2),'40001')
+  sql+=actor(v)+''.join(f"SELECT {conf('1111111'+str(i),'c5',2)[7:]};" for i in range(4))
+  sql+=ok('fifth attempt exhausts',f"({conf('22222222','c5',2)[7:]})->>'code'='SENDER_CHALLENGE_EXHAUSTED'")
+  sql+=ok('exhausted stays closed',f"({conf('12345678','c5',2)[7:]})->>'code'='SENDER_CHALLENGE_INVALID'")
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=created_at-interval '25 hours' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c1');"+backdate+flow('c6','a8a8a8a8-a8a8-4a8a-8a8a-a8a8a8a8a8a8',2)
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET expires_at=clock_timestamp()-interval '1 second' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c6');"
+  sql+=actor(v)+ok('expired code rejected',f"({conf('12345678','c6',2)[7:]})->>'code'='SENDER_CHALLENGE_EXPIRED'")
+  sql+=backdate+actor(v)+err('daily quota (6th in 24h window)',claim('a7a7a7a7-a7a7-4a7a-8a7a-a7a7a7a7a7a7',2),'40001')
+  sql+="RESET ROLE;"+ok('quota count is 6 real claims',"(SELECT count(*) FROM platform_private.tenant_smtp_sender_challenges)=6")
   # rollback
   sql+="RESET ROLE;"+(R/'rollback.sql').read_text()
   sql+=ok('rollback gate false',"NOT (SELECT approved FROM platform_private.tenant_smtp_f4_gate)")+ok('rollback no active',"NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_activation WHERE active)")

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { StrictMode } from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { createHash } from "node:crypto";
 import { f4RequestSchema, mapRpcError } from "../../../scripts/smtp-tenant-candidate/f4/contract";
@@ -7,6 +8,7 @@ import { dispatchF4 } from "../../../scripts/smtp-tenant-candidate/f4/dispatch";
 import { generateCode, hashCode } from "../../../scripts/smtp-tenant-candidate/f4/challenge-code";
 import { TENANT_SMTP_F4_PHASE, tenantSmtpTransport, type F4Result, type F4Status, type F4Request } from "@/lib/configuracoes/tenantSmtp";
 import TenantSenderVerification from "@/pages/configuracoes/TenantSenderVerification";
+import TenantEmailSettings from "@/pages/configuracoes/TenantEmailSettings";
 
 const ID = "11111111-1111-4111-8111-111111111111", FENCE = "22222222-2222-4222-8222-222222222222", KEY = "33333333-3333-4333-8333-333333333333";
 const status = (o: Partial<F4Status> = {}): F4Status => ({ version: 1, sender_verified: false, active: false, dispatch_enabled: false, challenge: null, ...o });
@@ -20,7 +22,9 @@ describe("F4 contract/handler", () => {
  it.each(["organization_id", "tenant", "to", "recipient", "host", "from_email", "password", "actor"])("rejects forged %s", async k => {
   const d = deps(); const r = await createF4Handler(d)(req({ op: "challenge", expected_version: 1, idempotency_key: KEY, [k]: "x" })); expect(r.status).toBe(400); expect(d.execute).not.toHaveBeenCalled(); });
  it("code never accepted in query string", async () => { const d = deps(); expect((await createF4Handler(d)(req({ op: "status" }, "?op=sender&code=12345678"))).status).toBe(400); expect(d.execute).not.toHaveBeenCalled(); });
- it("activation requires explicit confirm", () => { expect(f4RequestSchema.safeParse({ op: "activation", expected_version: 1, active: true }).success).toBe(false); });
+ it("activation requires explicit confirm", () => { expect(f4RequestSchema.safeParse({ op: "activation", expected_version: 1, active: false }).success).toBe(false); });
+ it("operational activation (active=true) rejected by contract", () => { expect(f4RequestSchema.safeParse({ op: "activation", expected_version: 1, active: true, confirm: true }).success).toBe(false); });
+ it("operational not-ready code is safe", () => { expect(mapRpcError({ message: "SMTP_OPERATIONAL_NOT_READY" })).toBe("SMTP_OPERATIONAL_NOT_READY"); });
  it("code must be exactly 8 digits", () => { for (const c of ["1234567", "123456789", "abcdefgh"]) expect(f4RequestSchema.safeParse({ op: "confirm", expected_version: 1, challenge_id: ID, code: c }).success).toBe(false); });
  it("closed review returns 503 before auth", async () => { const d = { ...deps(), reviewed: false }; expect((await createF4Handler(d)(req({ op: "status" }))).status).toBe(503); expect(d.execute).not.toHaveBeenCalled(); });
  it.each(["superadmin", "financeiro", "consultor", "b2b", "produtor"])("scope denied %s", async () => {
@@ -58,7 +62,7 @@ describe("F4 dispatch", () => {
  it("confirm passes code only as RPC arg", async () => { const { client, service } = mk(null, { tenant_smtp_sender_challenge_confirm: { code: "SENDER_CHALLENGE_MISMATCH", attempts_left: 3 } });
   expect(await dispatchF4("actor", client, service, { op: "confirm", expected_version: 1, challenge_id: ID, code: "00000000" }, {} as never)).toEqual({ code: "SENDER_CHALLENGE_MISMATCH", attempts_left: 3 }); expect(service.rpc).not.toHaveBeenCalled(); });
  it("activation status cannot claim dispatch", async () => { const { client, service } = mk(null, { tenant_smtp_activation_set: { ...status({ active: true, sender_verified: true }), dispatch_enabled: true as unknown as false } });
-  await expect(dispatchF4("actor", client, service, { op: "activation", expected_version: 1, active: true, confirm: true }, {} as never)).rejects.toThrow(); });
+  await expect(dispatchF4("actor", client, service, { op: "activation", expected_version: 1, active: false, confirm: true }, {} as never)).rejects.toThrow(); });
 });
 
 describe("F4 UI", () => {
@@ -76,7 +80,34 @@ describe("F4 UI", () => {
   await act(async () => resolve({ code: "F4_STATUS", status: status({ sender_verified: true }) })); expect(screen.queryByText("Remetente verificado")).toBeNull(); });
  it("challenge needs connection pass of same version", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status() }));
   render(<TenantSenderVerification version={1} connectionReady={false} blocked={false} send={send} />); await waitFor(() => expect(screen.getByRole("button", { name: "Enviar código ao remetente" })).toBeDisabled()); });
- it("activation requires verified + checkbox", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ sender_verified: true }) }));
-  render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />); const b = await screen.findByRole("button", { name: "Ativar email da empresa" });
-  await waitFor(() => expect(b).toBeDisabled()); fireEvent.click(screen.getByLabelText("Confirmo a ativação desta configuração")); expect(b).not.toBeDisabled(); });
+ it("verified shows operational unavailable, no activation, no Ativo badge", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ sender_verified: true }) }));
+  render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />);
+  expect(await screen.findByText("Remetente verificado; envio operacional ainda indisponível.")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /Ativar/ })).toBeNull(); expect(screen.queryByText("Ativo")).toBeNull(); });
+ it("StrictMode remount drops first-mount late response", async () => {
+  const pending: Array<(v: F4Result) => void> = []; const send = vi.fn(() => new Promise<F4Result>(r => { pending.push(r); }));
+  render(<StrictMode><TenantSenderVerification version={1} connectionReady blocked={false} send={send} /></StrictMode>);
+  await waitFor(() => expect(pending.length).toBeGreaterThan(0));
+  await act(async () => pending[0]({ code: "F4_STATUS", status: status({ sender_verified: true }) }));
+  expect(screen.queryByText("Remetente verificado")).toBeNull(); });
+ it("version change drops late response and clears code", async () => {
+  let resolve!: (v: F4Result) => void; const send = vi.fn(() => new Promise<F4Result>(r => { resolve = r; }));
+  const { rerender } = render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />);
+  const first = resolve; rerender(<TenantSenderVerification version={2} connectionReady blocked={false} send={send} />);
+  await act(async () => first({ code: "F4_STATUS", status: status({ version: 1, sender_verified: true }) }));
+  expect(screen.queryByText("Remetente verificado")).toBeNull(); });
+ it("blocked prop prevents any request, even status", async () => { const send = vi.fn();
+  render(<TenantSenderVerification version={1} connectionReady blocked send={send} />); await act(async () => {}); expect(send).not.toHaveBeenCalled(); });
+ it("status of other version rejected", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ version: 9, sender_verified: true }) }));
+  render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />); expect(await screen.findByText(/configuração mudou/)).toBeTruthy(); expect(screen.queryByText("Remetente verificado")).toBeNull(); });
+});
+describe("F4 parent status coherence", () => {
+ const view = { ok: true as const, version: 1, config: { host: "smtp.provider.com", port: 465, tls_mode: "implicit_tls" as const, username: "u", from_email: "s@provider.com", reply_to: "", from_name: "X" }, credential_configured: true, state: "DRAFT" as const, sender_verified: false as const, dispatch_enabled: false as const };
+ it("with F4 enabled only one verification badge (F4) renders", async () => {
+  const transport = { load: vi.fn(async () => view), save: vi.fn(), sender: vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ sender_verified: true }) })) };
+  render(<TenantEmailSettings scope="org:a" transport={transport as never} />);
+  expect(await screen.findByText("Remetente verificado")).toBeTruthy(); expect(screen.queryByText("Remetente não verificado")).toBeNull(); });
+ it("without F4 the T1 badge stays", async () => {
+  render(<TenantEmailSettings scope="org:a" transport={{ load: vi.fn(async () => view), save: vi.fn() } as never} />);
+  expect(await screen.findByText("Remetente não verificado")).toBeTruthy(); });
 });

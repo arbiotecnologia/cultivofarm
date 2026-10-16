@@ -21,6 +21,12 @@ checks={
  'route only op=sender':"url.search!=='?op=sender'" in ts['handler.ts'],
  'global worker still contained':'const deliveryContractAvailable = false;' in worker,
  'mirror equal':all((E/'f4'/n).read_text()==v.replace('../../../supabase/functions/_shared/','../../_shared/') for n,v in ts.items()),
+ 'harness never disables triggers':'DISABLE TRIGGER' not in (R/'test_sql.py').read_text(),
+ 'operational activation refused':"IF p_active THEN RAISE EXCEPTION 'SMTP_OPERATIONAL_NOT_READY'" in sql,
+ 'dispatch_ready constant false':"$$ SELECT false $$" in sql,
+ 'invalidation covers executing':"state IN ('claimed','executing','sent','ambiguous')" in sql,
+ 'confirm checks gates':sql.count('Closed gate blocks confirmation')==1,
+ 'UI has no activate action':'Ativar email' not in Path('src/pages/configuracoes/TenantSenderVerification.tsx').read_text(),
  'not deployed':not Path('supabase/functions/tenant-email-settings/f4').exists(),
 }
 for k,v in checks.items():print(('PASS ' if v else 'FAIL ')+k)

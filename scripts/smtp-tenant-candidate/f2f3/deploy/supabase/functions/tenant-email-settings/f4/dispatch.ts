@@ -10,7 +10,7 @@ type Send=typeof sendChallenge;
 export async function dispatchF4(actor:string,client:ActorClient,service:ActorClient,input:F4Request,deps:SmtpProbeDeps,send:Send=sendChallenge):Promise<F4Result>{
  if(input.op==='status'){const r=await client.rpc('tenant_smtp_f4_status');if(r.error)return {code:mapRpcError(r.error)};return f4ResultSchema.parse({code:'F4_STATUS',status:f4StatusSchema.parse(r.data)});}
  if(input.op==='activation'){
-  const r=await client.rpc('tenant_smtp_activation_set',{p_version:input.expected_version,p_active:input.active});
+  const r=await client.rpc('tenant_smtp_activation_set',{p_version:input.expected_version,p_active:false});
   if(r.error)return {code:mapRpcError(r.error)};
   return f4ResultSchema.parse({code:'F4_STATUS',status:f4StatusSchema.parse(r.data)});
  }
