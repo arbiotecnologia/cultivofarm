@@ -83,7 +83,7 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+=assign(3,NOROLE)+"RESET ROLE;"+ok('recipient without technical role not enqueued',f"{job(3)} IS NULL")
   sql+=assign(4,ADM)+"RESET ROLE;"+ok('admin (non consultant) not enqueued',f"{job(4)} IS NULL")
   sql+="RESET ROLE;"+ok('business updates preserved',f"(SELECT count(*) FROM portal_solicitacoes WHERE consultor_atribuido IS NOT NULL)>=5")
-  sql+=svc+f"INSERT INTO public.comunicacao_eventos(id,event_key,source_type,source_id,payload,idempotency_key,status) VALUES('f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0','tenant.smtp.solicitacao_atribuida','portal_solicitacoes','{sol(5)}','{{}}','forged-event-0001','processed');"
+  sql+="RESET ROLE;"+f"INSERT INTO public.comunicacao_eventos(id,event_key,source_type,source_id,payload,idempotency_key,status) VALUES('f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0','tenant.smtp.solicitacao_atribuida','portal_solicitacoes','{sol(5)}','{{}}','forged-event-0001','processed');"
   sql+=f"INSERT INTO public.comunicacao_outbox(id,event_id,template_chave,template_versao,template_snapshot,canal,recipient_user_id,status,attempts,max_attempts,locked_by,idempotency_key) VALUES('f1f1f1f1-f1f1-4f1f-8f1f-f1f1f1f1f1f1','f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0','solicitacao_atribuida_consultor_v1',1,'{{}}','email','{CON}','processing',0,1,'tenant_smtp_lane','forged-outbox-0001');"
   sql+="RESET ROLE;"+ok('forged service insert without ticket dropped',"NOT EXISTS(SELECT 1 FROM comunicacao_outbox WHERE id='f1f1f1f1-f1f1-4f1f-8f1f-f1f1f1f1f1f1')")
   # Claim/finish
