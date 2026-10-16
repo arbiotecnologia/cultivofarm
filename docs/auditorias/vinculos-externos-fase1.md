@@ -15,21 +15,27 @@
 ## Evidências
 - Readback: público INVOKER, privado DEFINER; `anon` sem EXECUTE nos dois.
 - Chamada sem sessão via REST → `42501 permission denied`.
-- Vitest config focal 73/73; typecheck app 0; lint focal 0.
-- **Não verificado**: negativas com sessão real (Admin AR vs FSF, Financeiro, externos). O editor SQL hospedado não permite `SET ROLE authenticated` e não há fixtures autorizadas. Pelo código: Financeiro/externos → `tenant_users_forbidden`; ids de outra empresa → omitidos (a UI mostra "Vínculo indisponível", nunca "sem vínculo").
+- Revisão independente a5a8725b: SQL hospedado com `SET ROLE authenticated` + claims (com `iat`), usando identidades existentes: 2 Admins (AR/FSF) isolados e 5 papéis negados — PASS. (A afirmação anterior de que isso não era possível estava errada.)
+
+## Delta Fase 1 (pós-revisão a5a8725b)
+- `parseVinculos` valida o contrato completo: objetos, UUIDs (usuário, cliente, parceiro), textos, booleanos estritos, contagens inteiras ≥ 0, usuário duplicado e coerência `parceiro`↔`parceiros_total`. Qualquer desvio gera erro (UI: "Vínculo indisponível"), nunca "sem vínculo".
+- Edição de externo: perfis internos ocultos; nome/telefone/cargo/CPF-CNPJ/CREA desabilitados (`fieldset disabled`); salvar desabilitado; seção "Alterar Senha" separada permanece igual.
+- Tipos: removidos os `any` novos (consulta de vínculos, `renderVinculo`, teste, `find` inline); `usersPage` memoizado.
+- Testes: `userLinks.test.ts` 30/30 (15 negativos do parser). Typecheck 0; build OK; scanner F4b 43/43.
+- Lint (sem desligar regras) nos 3 arquivos: `userLinks.ts` 0, `userLinks.test.ts` 0, `Configuracoes.tsx` 18 erros — todos legados, idênticos à versão anterior à Fase 1 (`efe98507`: 18 erros + 2 avisos; `any` antigos, `prefer-const`, `no-empty`). Nenhum novo; avisos de dependência zerados.
 - Pré-existente, fora do escopo: 2 testes estáticos (`canonicalTypesGuard`, `cultivofarm-runtime.static`) falham por imports do `types.ts` legado em 4 arquivos não tocados.
 
 ## Rollback da Fase 1
 `DROP FUNCTION public.tenant_admin_user_links(uuid[]); DROP FUNCTION platform_private.tenant_admin_user_links(uuid[]);` e reverter os arquivos de UI. Sem dados a preservar, pois a função só lê.
 
-## Proposta da Fase 2 (NÃO aplicada; requer aprovação)
-1. `admin_edit_user_profile_v2` — dados comuns de externos, preservando vínculos: aceita somente `nome/telefone/cargo/cpf_cnpj`, papéis **iguais** aos atuais (sem trocar o tipo), CAS por `updated_at`. Não lê nem escreve `user_clientes`/`partner_users`.
-2. `tenant_admin_set_user_links_v1(p_user_id, p_expected_links_version, p_cliente_ids, p_principal, p_partner_id, p_idempotency_key, p_reason)`:
-   - DEFINER privado + wrapper INVOKER; Admin da mesma empresa; alvo com papel externo exclusivo; técnico B2B negado.
-   - CAS: `links_version` = hash determinístico dos vínculos vigentes, lido pela Fase 1 e conferido com `FOR UPDATE` no perfil.
-   - Idempotência: tabela privada `(actor, key) → request_hash, resultado`. Mesma chave com payload diferente = conflito.
-   - Revogação não destrutiva: `is_active=false, revoked_at=now(), revoked_by` (sem DELETE); inserção nova com `assigned_by`. Parceiro: troca 1→1 na mesma empresa, com o vínculo anterior auditado.
-   - Auditoria imutável: antes/depois por id, ator, motivo e chave.
-   - Cache: invalidar `admin-users`, `admin-user-links` e `partner-users-links`; `broadcastPortalEvent roles_updated` para o titular.
-   - Testes SQL: CAS obsoleto, replay, cliente/parceiro de outra empresa, inativo, Financeiro, superadmin, último principal e técnico B2B.
-3. Os guards da v1 permanecem até a v2 ser revisada.
+## Proposta da Fase 2 (candidata; implementação autorizada, sem escrita aplicada até revisão independente)
+Estende o contrato existente em vez de criar `v2` paralelo: `admin_edit_user_profile_v1` ganha parâmetros opcionais (`p_expected_version`, `p_links`, `p_idempotency_key`, `p_reason`); chamadas atuais (sem `p_links`) mantêm comportamento e guards idênticos. Só existirá função separada se a revisão mostrar conflito de assinatura/ACL.
+1. **Versão/CAS única (perfil + vínculos):** `version = sha256` canônico de: campos comuns do perfil, `updated_at`, papéis ordenados e status ativo, e todos os vínculos `user_clientes` (id, cliente, principal, is_active, revoked_at, datas, access_level) e `partner_users` (id, parceiro, papel, ativo). Exposta pela leitura da Fase 1; divergência → `version_conflict` sem escrita.
+2. **Concorrência:** na ordem perfil → vínculos do alvo → clientes/parceiros elegíveis (ids ordenados), `FOR UPDATE`; versão recalculada após os locks.
+3. **Idempotência:** tabela privada `(actor, tenant, key) → request_hash, version_after, resultado`. Replay só após revalidar ator Admin ativo, tenant atual e alvo na mesma empresa; mesmo `request_hash` → resultado gravado; hash diferente → `idempotency_conflict`.
+4. **Elegíveis:** Produtor → `clientes` da empresa, `status_cliente='ativo'`, 1..100 e um principal. Gestor B2B → um `partner_accounts` ativo, não excluído, com `commercial_owner_organization_id` = empresa (cliente comercial, não tenant SaaS). Técnico B2B negado. Troca de tipo de acesso fora do recorte.
+5. **Revogação não destrutiva:** `is_active=false, revoked_at, revoked_by` (sem DELETE); novos vínculos com `assigned_by`.
+6. **Efeito imediato da revogação:** não depende de broadcast da aba do Admin. As leituras/RLS/guards canônicos já revalidam vínculo vigente no servidor a cada requisição; a mutação incrementa a versão e o portal do titular revalida contexto no próximo foco/requisição. O broadcast `roles_updated` é apenas aceleração de UI.
+7. **Auditoria imutável:** antes/depois por id, ator, tenant, motivo, chave e hashes — sem dados sensíveis.
+8. **Testes SQL adversariais:** CAS obsoleto (perfil e vínculo), replay igual/diferente, replay após perda de Admin, cliente/parceiro de outra empresa, inativo/excluído, owner errado, Financeiro, superadmin, técnico B2B, último principal, corrida de dois Admins.
+9. Guards atuais permanecem até a revisão independente aprovar a candidata.

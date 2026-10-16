@@ -42,6 +42,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { RPC_VINCULOS_USUARIOS, parseVinculos, tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
+type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
 import { MaskedInput } from "@/components/ui/masked-input";
@@ -171,21 +172,22 @@ export default function Configuracoes() {
     },
   });
 
-  const usersPage = allUsers.items ?? [];
+  const usersPage = useMemo(() => allUsers.items ?? [], [allUsers.items]);
   // Vínculo canônico atual: UMA leitura por página (sem N+1), tenant derivado no servidor.
-  const pageUserIds = useMemo(() => usersPage.map((u: any) => u.user_id as string).filter(Boolean), [usersPage]);
+  const pageUserIds = useMemo(() => (usersPage as LinhaUsuario[]).map((u) => u.user_id).filter((id): id is string => typeof id === "string" && id.length > 0), [usersPage]);
   const vinculos = useQuery({
     queryKey: ["admin-user-links", profile?.organization_id, user?.id, pageUserIds],
     enabled: isAdmin && pageUserIds.length > 0,
     retry: false,
     queryFn: async ({ signal }) => {
-      const { data, error } = await (supabase as any).rpc(RPC_VINCULOS_USUARIOS, { p_user_ids: pageUserIds }).abortSignal(signal);
+      const rpc = supabase.rpc as unknown as (fn: string, args: { p_user_ids: string[] }) => { abortSignal: (s: AbortSignal) => Promise<{ data: unknown; error: unknown }> };
+      const { data, error } = await rpc(RPC_VINCULOS_USUARIOS, { p_user_ids: pageUserIds }).abortSignal(signal);
       if (error) throw new Error("Não foi possível carregar os vínculos.");
       return parseVinculos(data);
     },
   });
-  const vinculoDe = (u: any): EstadoVinculo => estadoVinculo(tipoAcessoDoUsuario(u.roles), vinculos, u.user_id);
-  const renderVinculo = (u: any, detalhado = false) => {
+  const vinculoDe = (u: LinhaUsuario): EstadoVinculo => estadoVinculo(tipoAcessoDoUsuario(u.roles), vinculos, u.user_id);
+  const renderVinculo = (u: LinhaUsuario, detalhado = false) => {
     const e = vinculoDe(u);
     if (e.estado === "carregando") return <span className="text-xs text-muted-foreground">Carregando vínculo…</span>;
     if (e.estado === "erro") return <span role="alert" className="text-xs text-destructive">Vínculo indisponível no momento</span>;
@@ -379,6 +381,12 @@ export default function Configuracoes() {
   // Edit user dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
+  const editOrig: LinhaUsuario | null = editUser
+    ? ((usersPage as LinhaUsuario[]).find((u) => u.user_id === editUser.user_id) ?? (editUser as LinhaUsuario))
+    : null;
+  const editTipo = tipoAcessoDoUsuario(editOrig?.roles);
+  const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo);
+
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -434,7 +442,7 @@ export default function Configuracoes() {
       // Segundo envio antes de recarregar é bloqueado (estado da linha é incerto).
       if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
       // Fase 1: externos são somente leitura (servidor também recusa). Nenhuma chamada é feita.
-      if (edicaoBloqueadaPorTipo(tipoAcessoDoUsuario(usersPage.find((u: any) => u.user_id === editUser.user_id)?.roles ?? editUser.roles))) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
+      if (editSomenteLeitura) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
 
 
 
@@ -1081,12 +1089,10 @@ export default function Configuracoes() {
                 {editUser && (
                   <div className="space-y-3">
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
-                    {(() => { const orig = usersPage.find((u: any) => u.user_id === editUser.user_id) ?? editUser; const tipo = tipoAcessoDoUsuario(orig.roles); return (<>
-                      <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[tipo]}</p></div>
-                      <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(orig, true)}</div></div>
-                      {edicaoBloqueadaPorTipo(tipo) && <p role="status" className="text-xs text-muted-foreground border rounded-md p-2">{MSG_EDICAO_EXTERNA_INDISPONIVEL}</p>}
-                    </>); })()}
-                    <div>
+                    <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[editTipo]}</p></div>
+                    <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
+                    {editSomenteLeitura && <p role="status" className="text-xs text-muted-foreground border rounded-md p-2">{MSG_EDICAO_EXTERNA_INDISPONIVEL}</p>}
+                    {!editSomenteLeitura && <div>
                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
                       <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
                       {TENANT_MANAGEABLE_ROLES.map(r => {
@@ -1107,7 +1113,8 @@ export default function Configuracoes() {
                           );
                         })}
                       </div>
-                    </div>
+                    </div>}
+                    <fieldset disabled={editSomenteLeitura} className="space-y-3 disabled:opacity-70">
                     <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
                     <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
                     <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
@@ -1118,6 +1125,7 @@ export default function Configuracoes() {
                         <div><Label>Especialidade</Label><Input value={editUser.especialidade || ""} onChange={e => setEditUser({ ...editUser, especialidade: e.target.value })} /></div>
                       </>
                     )}
+                    </fieldset>
                     {editResumo && (
                       <p role="alert" className="text-xs text-destructive border border-destructive/40 rounded-md p-2">
                         {editResumo}
@@ -1130,8 +1138,8 @@ export default function Configuracoes() {
                         ))}
                       </ul>
                     )}
-                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao || edicaoBloqueadaPorTipo(tipoAcessoDoUsuario((usersPage.find((u: any) => u.user_id === editUser.user_id) ?? editUser).roles))}>
-                      {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : edicaoBloqueadaPorTipo(tipoAcessoDoUsuario((usersPage.find((u: any) => u.user_id === editUser.user_id) ?? editUser).roles)) ? "Edição indisponível para usuário externo" : "Salvar Alterações"}
+                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao || editSomenteLeitura}>
+                      {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : editSomenteLeitura ? "Edição indisponível para usuário externo" : "Salvar Alterações"}
                     </Button>
 
 
