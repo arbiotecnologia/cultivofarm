@@ -139,7 +139,7 @@ export default function MobileSolicitar() {
       }
 
       const result = await insertSolicitacaoIdempotente(
-        async (row) => await supabase.from("portal_solicitacoes").insert(row as any),
+        async (row) => await supabase.from("portal_solicitacoes").insert(row as never),
         {
           cliente_id: clienteId,
           user_id: user.id,
@@ -160,8 +160,8 @@ export default function MobileSolicitar() {
       clientUuidRef.current = null;
       toast.success(result === "created" ? "Solicitação enviada com sucesso!" : "Esta solicitação já havia sido enviada.");
       navigate("/app");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao enviar");
+    } catch (err: unknown) {
+      toast.error((err as { message?: string })?.message || "Erro ao enviar");
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
