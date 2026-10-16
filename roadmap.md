@@ -1,4 +1,5 @@
 ## SMTP-T1 — candidato de rascunho HTTPS + Vault (decisão do titular 2026-10-16)
+- [ ] Delta01:32: UI/entry true só rascunho, aviso465/TLS/25/587, testes produção mock vs desabilitado injetado, scanner/manifesto/diff mínimo; auditor promove, sem escrita remota.
 - [x] Base ff98eec comparada sem checkout; fundação canônica auditada read-only: ledger/ACL/RLS/Vault metadata/gatefalse/counts0, separando evidência externa de Edge/UI.
 - [x] Delta revisável de rascunho: fencing de render/IO, no-store, critérios atuais, preflight somente leitura e rollback preservador; nenhuma reaplicação de fundação.
 - [x] SMTP59/59 + topology3/3 PASS; SQL descartável52, lint focal0, scanner15/15, build automáticoOK; browser desktop/mobile mockPASS. Relatório17 tópicos em docs/auditorias/smtp-tenant-t1-draft-candidate-20261016.md com T2–T6 e riscos. Typecheck app novo UNVERIFIED: ambiente proíbe execução manual; não certificado por root/build.

@@ -28,7 +28,7 @@ describe("SMTP-T1 UI real, transport simulated",()=>{
   r.rerender(<TenantEmailSettings scope="B" transport={t}/>);await waitFor(()=>expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeEnabled());resolve?.({...view,version:99});
   await waitFor(()=>expect(screen.getByLabelText("Nova credencial (opcional)")).toHaveValue(""));expect(screen.queryByText(/Rascunho salvo/)).not.toBeInTheDocument();
  });
- it("uninstalled contract blocks actual submission",async()=>{render(<TenantEmailSettings scope="A"/>);await screen.findByRole("alert");expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeDisabled();expect(screen.getByLabelText("Credencial SMTP")).toBeDisabled();});
+ it("injected disabled transport blocks submission independently of production",async()=>{const unavailable=vi.fn(async()=>{throw new Error("SMTP_UNAVAILABLE");});const save=vi.fn();render(<TenantEmailSettings scope="A" transport={{load:unavailable,save}}/>);await screen.findByRole("alert");expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeDisabled();expect(screen.getByLabelText("Credencial SMTP")).toBeDisabled();expect(save).not.toHaveBeenCalled();});
  it("double submit has one in-flight write and clears password",async()=>{
   let resolve:((v:SmtpView)=>void)|undefined;
   const save=vi.fn(()=>new Promise<SmtpView>(r=>{resolve=r;}));render(<TenantEmailSettings scope="A" transport={transport(save)}/>);

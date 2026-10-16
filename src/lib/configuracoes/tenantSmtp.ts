@@ -2,10 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveSchema, viewSchema, type SmtpView } from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 
-// Auditor-only draft activation after ACL/Vault and application-log review.
+// Draft-only promotion authorized by owner; auditor deploys after focused review.
 // HTTPS + Vault accepted by owner; infrastructure log suppression is unverified.
-// Keep OFF: no request, credential submission or global fallback in this delivery.
-export const TENANT_SMTP_REVIEWED = false;
+// Enables draft requests only; server ACL/Vault/review gate remain independent. No global fallback.
+export const TENANT_SMTP_REVIEWED = true;
 export interface TenantSmtpTransport {
   load(): Promise<SmtpView>;
   save(input: unknown): Promise<SmtpView>;
