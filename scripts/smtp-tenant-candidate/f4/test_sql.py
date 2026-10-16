@@ -69,7 +69,6 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+=ok('activation sets active',"(public.tenant_smtp_activation_set(1,true)->>'active')::boolean")
   sql+=ok('dispatch remains false',"(public.tenant_smtp_f4_status()->>'dispatch_enabled')='false'")
   sql+="RESET ROLE;SET ROLE service_role;"+ok('dispatch_ready true for active',f"tenant_smtp_executor.tenant_smtp_dispatch_ready('{b}')")+ok('dispatch_ready false other tenant',f"NOT tenant_smtp_executor.tenant_smtp_dispatch_ready('{a}')")
-  sql+="RESET ROLE;"+ok('superadmin denied',"true")
   # edit config → invalidation
   cfg2=ns['cfg'].replace('sender@provider.com','other@provider.com')
   sql+=actor(v)+f"SELECT public.tenant_email_settings_save(1,'{cfg2}');"
