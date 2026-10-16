@@ -80,7 +80,7 @@ BEGIN
  SELECT * INTO a FROM platform_private.tenant_smtp_activation WHERE organization_id=v_org;
  SELECT * INTO c FROM platform_private.tenant_smtp_sender_challenges WHERE organization_id=v_org AND actor_id=auth.uid() AND version=s.version ORDER BY created_at DESC LIMIT 1;
  RETURN jsonb_build_object('version',coalesce(s.version,0),'sender_verified',v_verified,
-  'active',coalesce(a.active AND a.version=s.version AND a.from_email=lower(s.config->>'from_email') AND v_verified,false),
+  'active',false,
   'dispatch_enabled',false,
   'challenge',CASE WHEN c.id IS NULL THEN NULL ELSE jsonb_build_object('id',c.id,
    'state',CASE WHEN c.state IN ('sent','ambiguous') AND c.expires_at<clock_timestamp() THEN 'expired' ELSE c.state END,
@@ -88,6 +88,21 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_smtp_f4_status() FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.tenant_smtp_f4_status() TO authenticated;
+
+-- Conservative orphan reconciliation: claimed/executing older than 2 min (> 15s deadline + 30s prepare window)
+-- become invalidated, hash/salt cleared, audited. Never re-leased or re-sent.
+CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_f4_reconcile(p_org uuid) RETURNS int
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE r record; n int:=0;
+BEGIN
+ FOR r IN UPDATE platform_private.tenant_smtp_sender_challenges SET state='invalidated',code_hash=NULL,code_salt=NULL,closed_at=clock_timestamp()
+  WHERE organization_id=p_org AND state IN ('claimed','executing') AND created_at<clock_timestamp()-interval '2 minutes' RETURNING actor_id,version LOOP
+  INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(p_org,r.actor_id,r.version,'sender_challenge_reconciled');
+  n:=n+1;
+ END LOOP;
+ RETURN n;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_smtp_f4_reconcile(uuid) FROM PUBLIC,anon,authenticated,service_role;
 
 -- Claim: CAS, gates, fresh connection PASS of same version, cooldown/day quota, one pending per tenant.
 CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_sender_challenge_claim(p_version bigint,p_key uuid) RETURNS jsonb
@@ -98,6 +113,7 @@ BEGIN
  IF p_version IS NULL OR p_version<1 OR p_version>9007199254740991 OR p_key IS NULL THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(v_org::text,0));
  v_org:=platform_private.tenant_smtp_f4_actor_org();
+ PERFORM platform_private.tenant_smtp_f4_reconcile(v_org);
  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=v_org FOR UPDATE;
  IF s.version IS DISTINCT FROM p_version THEN RAISE EXCEPTION 'SMTP_CONFLICT' USING ERRCODE='40001'; END IF;
  SELECT * INTO c FROM platform_private.tenant_smtp_sender_challenges WHERE organization_id=v_org AND actor_id=auth.uid() AND request_key=p_key;
@@ -186,6 +202,10 @@ BEGIN
  v_org:=platform_private.tenant_smtp_f4_actor_org();
  IF p_challenge IS NULL OR p_version IS NULL OR p_code IS NULL OR p_code !~ '^[0-9]{8}$' THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(v_org::text,0));
+ IF platform_private.tenant_smtp_f4_actor_org() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ -- Closed gate blocks confirmation of existing challenges (no attempt consumed).
+ IF NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_f4_gate WHERE id AND approved) OR NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_gate WHERE id AND approved)
+ THEN RAISE EXCEPTION 'SMTP_UNAVAILABLE' USING ERRCODE='42501'; END IF;
  SELECT * INTO c FROM platform_private.tenant_smtp_sender_challenges WHERE id=p_challenge AND organization_id=v_org AND actor_id=auth.uid() FOR UPDATE;
  IF c.id IS NULL OR c.state NOT IN ('sent','ambiguous') OR c.code_hash IS NULL THEN RETURN jsonb_build_object('code','SENDER_CHALLENGE_INVALID'); END IF;
  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=v_org FOR UPDATE;
@@ -218,30 +238,23 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_smtp_sender_challenge_confirm(uuid,bigint,text) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.tenant_smtp_sender_challenge_confirm(uuid,bigint,text) TO authenticated;
 
--- Activation: preconditions re-proven server-side; deactivation always allowed (safe state).
+-- Activation: operational delivery contract (worker/outbox) NOT concluded → p_active=true is refused.
+-- Only the safe pause is available; it never enables anything.
 CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_activation_set(p_version bigint,p_active boolean) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_org uuid; s public.communication_tenant_email_settings; a platform_private.tenant_smtp_activation;
 BEGIN
  v_org:=platform_private.tenant_smtp_f4_actor_org();
  IF p_version IS NULL OR p_active IS NULL THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
+ IF p_active THEN RAISE EXCEPTION 'SMTP_OPERATIONAL_NOT_READY' USING ERRCODE='42501'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(v_org::text,0));
+ IF platform_private.tenant_smtp_f4_actor_org() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
  SELECT * INTO s FROM public.communication_tenant_email_settings WHERE organization_id=v_org FOR UPDATE;
  IF s.version IS DISTINCT FROM p_version THEN RAISE EXCEPTION 'SMTP_CONFLICT' USING ERRCODE='40001'; END IF;
  SELECT * INTO a FROM platform_private.tenant_smtp_activation WHERE organization_id=v_org FOR UPDATE;
- IF p_active THEN
-  IF NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_f4_gate WHERE id AND approved) OR NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_gate WHERE id AND approved)
-  OR s.config->>'port'<>'465' OR s.config->>'tls_mode'<>'implicit_tls' THEN RAISE EXCEPTION 'SMTP_UNAVAILABLE' USING ERRCODE='42501'; END IF;
-  IF NOT platform_private.tenant_smtp_f4_verified(v_org)
-  OR NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_receipts WHERE organization_id=v_org AND version=s.version AND mode='connection' AND code='smtp_connection_ok' AND state='complete')
-  OR EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_receipts WHERE organization_id=v_org AND (state<>'complete' OR code='smtp_send_ambiguous'))
-  THEN RAISE EXCEPTION 'SMTP_NOT_READY' USING ERRCODE='42501'; END IF;
- END IF;
- IF a.organization_id IS NULL OR a.active IS DISTINCT FROM p_active OR a.version<>s.version THEN
-  INSERT INTO platform_private.tenant_smtp_activation(organization_id,active,version,from_email,changed_by,reason)
-  VALUES(v_org,p_active,s.version,lower(s.config->>'from_email'),auth.uid(),CASE WHEN p_active THEN 'admin_activated' ELSE 'admin_paused' END)
-  ON CONFLICT(organization_id) DO UPDATE SET active=EXCLUDED.active,version=EXCLUDED.version,from_email=EXCLUDED.from_email,changed_by=EXCLUDED.changed_by,reason=EXCLUDED.reason,changed_at=clock_timestamp();
-  INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(v_org,auth.uid(),s.version,CASE WHEN p_active THEN 'tenant_smtp_activated' ELSE 'tenant_smtp_paused' END);
+ IF a.organization_id IS NOT NULL AND a.active THEN
+  UPDATE platform_private.tenant_smtp_activation SET active=false,version=s.version,from_email=lower(s.config->>'from_email'),changed_by=auth.uid(),reason='admin_paused',changed_at=clock_timestamp() WHERE organization_id=v_org;
+  INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(v_org,auth.uid(),s.version,'tenant_smtp_paused');
  END IF;
  RETURN platform_private.tenant_smtp_f4_status();
 END $$;
@@ -255,7 +268,7 @@ BEGIN
  IF NEW.version IS DISTINCT FROM OLD.version OR NEW.config IS DISTINCT FROM OLD.config OR NEW.credential_configured IS DISTINCT FROM OLD.credential_configured THEN
   UPDATE platform_private.tenant_smtp_sender_verifications SET invalidated_at=clock_timestamp() WHERE organization_id=NEW.organization_id AND invalidated_at IS NULL;
   UPDATE platform_private.tenant_smtp_sender_challenges SET state='invalidated',code_hash=NULL,code_salt=NULL,closed_at=clock_timestamp()
-   WHERE organization_id=NEW.organization_id AND state IN ('claimed','sent','ambiguous');
+   WHERE organization_id=NEW.organization_id AND state IN ('claimed','executing','sent','ambiguous');
   UPDATE platform_private.tenant_smtp_activation SET active=false,reason='config_changed',changed_by=auth.uid(),changed_at=clock_timestamp()
    WHERE organization_id=NEW.organization_id AND active;
  END IF;
@@ -266,14 +279,9 @@ DROP TRIGGER IF EXISTS tenant_smtp_f4_invalidate ON public.communication_tenant_
 CREATE TRIGGER tenant_smtp_f4_invalidate AFTER UPDATE ON public.communication_tenant_email_settings
  FOR EACH ROW EXECUTE FUNCTION platform_private.tenant_smtp_f4_invalidate();
 
--- Future worker precondition (read-only, no secret). Not wired: NOTIF3 containment kept.
+-- Future worker precondition. F4a: constant false (operational contract pending; NOTIF3 containment kept).
 CREATE OR REPLACE FUNCTION tenant_smtp_executor.tenant_smtp_dispatch_ready(p_org uuid) RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
- SELECT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_activation a JOIN public.communication_tenant_email_settings s ON s.organization_id=a.organization_id
-  WHERE a.organization_id=p_org AND a.active AND a.version=s.version AND a.from_email=lower(s.config->>'from_email'))
-  AND platform_private.tenant_smtp_f4_verified(p_org)
-  AND EXISTS(SELECT 1 FROM platform_private.tenant_smtp_f4_gate WHERE id AND approved)
-$$;
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT false $$;
 REVOKE ALL ON FUNCTION tenant_smtp_executor.tenant_smtp_dispatch_ready(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION tenant_smtp_executor.tenant_smtp_dispatch_ready(uuid) TO service_role;
 
