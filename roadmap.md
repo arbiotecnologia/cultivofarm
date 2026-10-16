@@ -1,13 +1,20 @@
-## SMTP-T1 — fundação multiprovedor por empresa (22:34)
+## SMTP-T1 — candidato de rascunho HTTPS + Vault (decisão do titular 2026-10-16)
+- [x] Base ff98eec comparada sem checkout; fundação canônica auditada read-only: ledger/ACL/RLS/Vault metadata/gatefalse/counts0, separando evidência externa de Edge/UI.
+- [x] Delta revisável de rascunho: fencing de render/IO, no-store, critérios atuais, preflight somente leitura e rollback preservador; nenhuma reaplicação de fundação.
+- [x] SMTP59/59 + topology3/3 PASS; SQL descartável52, lint focal0, scanner15/15, build automáticoOK; browser desktop/mobile mockPASS. Relatório17 tópicos em docs/auditorias/smtp-tenant-t1-draft-candidate-20261016.md com T2–T6 e riscos. Typecheck app novo UNVERIFIED: ambiente proíbe execução manual; não certificado por root/build.
+- [ ] Auditor: executar typecheck efetivo -p tsconfig.app.json e E2E autenticado após promoção autorizada; não há prova app dedicada nem sessão gerenciada externa disponível ao agente.
+- [ ] Auditor: revisar e aplicar candidato/abrir somente gates de rascunho mediante autorização; agente não publica/aplica/envia.
+
+## SMTP-T1 — histórico da fundação multiprovedor por empresa (22:34)
 - [x] Atualização 2026-10-16 00:27 UTC: auditor informou aplicação canônica SOMENTE fechada da migration20261016002102_smtp_tenant_t1_draft_foundation, Edge tenant-email-settings v1 verify_jwt=true/reviewed=false e UI publicada56be97d/AdminAR campos bloqueados. Claims SQL/identidades reais e Vault sintético save/rotate/CAS em ROLLBACK PASS EXTERNOS; settings/audit/refs0 e gatefalse finais informados, não reproduzidos pelo agente. NÃO reaplicar/publicar.
 - [x] Revisão de redaction T1: contrato local e documentação oficial Edge/PostgREST/PostgreSQL examinados; protocolo e intervenção mínima em docs/auditorias/smtp-tenant-t1-redaction-20261016.md. Nenhum runtime/guard/gate modificado; nenhuma sessão/token/corpo remoto inspecionado. QA53/53 Vitest, scanner11/11, manifesto9/9 e diff-checkPASS; build automático00:30:11OK; typecheck da rodadaUNVERIFIED, históricoTS2550 registrado sem mudança Auth.
-- [ ] Bloqueador T1: proprietário/Supabase comprovar supressão na origem de bodies/Authorization nas camadas gerenciadas e configurações efetivas de logs SQL/PostgREST; depois auditor aprovar candidato sintético restrito no MESMO contrato para prova autenticada UI→Edge→PostgREST, sem abrir campos ou gates. Exceção estreita ao bloqueio pré-auth exige revisão explícita; NÃO implementada. Credencial real NO-GO.
+- [x] Critério anterior de garantia absoluta de redaction/KMS substituído pela decisão explícita do titular em 2026-10-16. HTTPS + Vault, revisão ACL/Vault e controles de logs da aplicação; infraestrutura permanece não comprovada, sem alegação de vazamento. Gates remotos OFF nesta entrega.
 - [x] Delta c2509c6: preflight/stubs Vault4/5 com UUID default, gate antes de validação/Vault e após lock + trigger; wrappers INVOKER/cores privados/ACL, get explícito e rollback. SQL local52 checks/53 Vitest PASS; docs/hashes atualizados, nenhuma operação remota; homologação continua pendente auditor.
 - [x] HEAD/banco canônico/ACL/RLS inventariados somente leitura, worker local contido; nenhum segredo lido.
 - [x] Pacote tenant DRAFT/Vault write-only/RLS/CAS/audit e UI existente; SQL/Edge candidatos fora de deploy. Frontend, entrypoint e gate privado persistente OFF.
 - [x] QA local: 190 Vitest selecionados PASS; SQL descartável 46 checks PASS; scanner focal9/9; lint focal0 (baseline Configuracoes18/2); build automáticoOK; typecheck separado UNVERIFIED; desktop/mobile formulário simuladoPASS, sem Auth/browser hosted. Relatório docs/auditorias/smtp-tenant-t1-20261016.md e manifesto/rollback entregues.
 - [x] Aplicação fechada pelo auditor informada00:27; claims SQL/Vault sintético e UI AdminAR restrita PASS EXTERNOS, não prova JWT/API integral. Agente não executou instalação.
-- [ ] Auditor: homologar redaction autenticada UI→Edge→PostgREST/SQL, concorrência/API e demais limites não provados; credencial real e envios bloqueados, nenhuma aplicação automática.
+- [ ] Auditor: revisar ACL/Vault/logs da aplicação e homologar rascunho autenticado UI→Edge→PostgREST, concorrência/API; infraestrutura sem garantia absoluta. Envios bloqueados, nenhuma aplicação automática.
 - [ ] Próximas fases bloqueadas: remetente/SSRF-TLS/teste controlado/roteamento tenant/quotas/recibos dependem de autorização e auditoria; nenhuma grande auditoria paralela.
 
 ## RECORTE 21:51 — autorização focal de alteração administrativa de senha

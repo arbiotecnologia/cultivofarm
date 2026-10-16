@@ -32,4 +32,17 @@ describe("SMTP-T1 contract and real candidate handler — mocked actor RPC, zero
  it("oversized body stops before save",async()=>{const r=await run({body:{expected_version:0,config,password:"a".repeat(40000)}});expect(r.res.status).toBe(400);expect(r.rpc).toHaveBeenCalledTimes(1);});
  it.each([{reviewed:false},{url:"https://invalid.invalid"}])("closed installation gate %j",async options=>{const r=await run(options);expect(r.res.status).toBe(503);expect(r.factory).not.toHaveBeenCalled();});
  it("default UI transport cannot submit or fetch",async()=>{await expect(tenantSmtpTransport.load()).rejects.toThrow("SMTP_UNAVAILABLE");await expect(tenantSmtpTransport.save({expected_version:0,config,password})).rejects.toThrow("SMTP_UNAVAILABLE");});
+ it("CAS and credential reach only caller save; metadata response is no-store",async()=>{
+  const r=await run({body:{expected_version:7,config,password}});
+  expect(r.rpc).toHaveBeenLastCalledWith("tenant_email_settings_save",{p_expected_version:7,p_config:config,p_password:password});
+  expect(r.res.headers.get("Cache-Control")).toBe("no-store");expect(Object.keys(r.body).sort()).toEqual(["ok","version","config","credential_configured","state","sender_verified","dispatch_enabled"].sort());
+ });
+ it("raw thrown failure becomes only safe code without application logging",async()=>{
+  const logs=[vi.spyOn(console,"log"),vi.spyOn(console,"error"),vi.spyOn(console,"warn"),vi.spyOn(console,"info")];
+  try{
+   const handler=createTenantSmtpHandler({canonicalUrl:"https://swzpzcwiasxmjutrmvkm.supabase.co",reviewed:true,client:()=>{throw new Error(password);},trustedOrigin:()=>true,cors:()=>({})});
+   const res=await handler(new Request("https://local.invalid",{headers:{Authorization:"Bearer mock-jwt"}}));
+   expect(res.status).toBe(500);expect(await res.json()).toEqual({code:"SMTP_INTERNAL"});for(const log of logs)expect(log).not.toHaveBeenCalled();
+  }finally{for(const log of logs)log.mockRestore();}
+ });
 });

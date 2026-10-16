@@ -29,4 +29,38 @@ describe("SMTP-T1 UI real, transport simulated",()=>{
   await waitFor(()=>expect(screen.getByLabelText("Nova credencial (opcional)")).toHaveValue(""));expect(screen.queryByText(/Rascunho salvo/)).not.toBeInTheDocument();
  });
  it("uninstalled contract blocks actual submission",async()=>{render(<TenantEmailSettings scope="A"/>);await screen.findByRole("alert");expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeDisabled();expect(screen.getByLabelText("Credencial SMTP")).toBeDisabled();});
+ it("double submit has one in-flight write and clears password",async()=>{
+  let resolve:((v:SmtpView)=>void)|undefined;
+  const save=vi.fn(()=>new Promise<SmtpView>(r=>{resolve=r;}));render(<TenantEmailSettings scope="A" transport={transport(save)}/>);
+  await waitFor(()=>expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeEnabled());
+  fireEvent.change(screen.getByLabelText("Nova credencial (opcional)"),{target:{value:"mock-only-password"}});
+  const form=screen.getByRole("button",{name:"Salvar rascunho"}).closest("form");if(!form)throw new Error("missing form");
+  fireEvent.submit(form);fireEvent.submit(form);expect(save).toHaveBeenCalledOnce();
+  expect(screen.getByLabelText("Nova credencial (opcional)")).toHaveValue("");expect(document.body.textContent).not.toContain("mock-only-password");
+  resolve?.({...view,version:2});await screen.findByRole("status");
+ });
+ it("unknown failure never renders raw payload and never retries",async()=>{
+  const save=vi.fn(async()=>{throw new Error("unsafe provider mock-only-password p_password");});render(<TenantEmailSettings scope="A" transport={transport(save)}/>);
+  await waitFor(()=>expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeEnabled());
+  fireEvent.click(screen.getByRole("button",{name:"Salvar rascunho"}));await screen.findByRole("alert");
+  expect(document.body.textContent).not.toContain("mock-only-password");expect(document.body.textContent).not.toContain("unsafe provider");expect(save).toHaveBeenCalledOnce();
+ });
+ it("identity switch discards delayed read and prior fields",async()=>{
+  let resolveA:((v:SmtpView)=>void)|undefined;
+  const load=vi.fn().mockImplementationOnce(()=>new Promise<SmtpView>(r=>{resolveA=r;})).mockResolvedValueOnce({...EMPTY_VIEW});
+  const save=vi.fn();const t:TenantSmtpTransport={load,save};const r=render(<TenantEmailSettings scope="A" transport={t}/>);
+  r.rerender(<TenantEmailSettings scope="B" transport={t}/>);
+  await waitFor(()=>expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeEnabled());
+  resolveA?.(view);await waitFor(()=>expect(screen.getByLabelText("Host SMTP")).toHaveValue(""));
+  expect(screen.getByLabelText("Credencial SMTP")).toHaveValue("");expect(save).not.toHaveBeenCalled();
+ });
+ it("CAS conflict requires reload and uses read-back version",async()=>{
+  const save=vi.fn().mockRejectedValueOnce(new Error("SMTP_CONFLICT")).mockResolvedValueOnce({...view,version:5});
+  const load=vi.fn().mockResolvedValueOnce(view).mockResolvedValueOnce({...view,version:4});
+  render(<TenantEmailSettings scope="A" transport={{load,save}}/>);
+  await waitFor(()=>expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeEnabled());fireEvent.click(screen.getByRole("button",{name:"Salvar rascunho"}));await screen.findByRole("alert");
+  expect(save).toHaveBeenCalledOnce();fireEvent.click(screen.getByRole("button",{name:"Recarregar"}));
+  await waitFor(()=>expect(screen.getByRole("button",{name:"Salvar rascunho"})).toBeEnabled());fireEvent.click(screen.getByRole("button",{name:"Salvar rascunho"}));
+  await waitFor(()=>expect(save).toHaveBeenCalledTimes(2));expect(save.mock.calls[1][0]).toEqual({expected_version:4,config});
+ });
 });

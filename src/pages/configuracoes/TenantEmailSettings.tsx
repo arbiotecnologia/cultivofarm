@@ -16,16 +16,18 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
  const [reload,setReload]=useState(0);
  const [errors,setErrors]=useState<Record<string,string>>({});
  const generation=useRef(0); const lock=useRef(false);
+ const [loadedContext,setLoadedContext]=useState<{scope:string;transport:TenantSmtpTransport}|null>(null);
+ const currentContext=loadedContext?.scope===scope && loadedContext.transport===transport;
  useEffect(()=>{
   const epoch=++generation.current;lock.current=false;
-  setPassword("");setDraft({...EMPTY_DRAFT});setView(EMPTY_VIEW);setErrors({});setMessage("");setPhase("loading");
+  setLoadedContext({scope,transport});setPassword("");setDraft({...EMPTY_DRAFT});setView(EMPTY_VIEW);setErrors({});setMessage("");setPhase("loading");
   transport.load().then(data=>{if(generation.current!==epoch)return;setView(data);setDraft(data.config ?? {...EMPTY_DRAFT});setPhase("ready");})
    .catch(error=>{if(generation.current!==epoch)return;setMessage(safeSmtpMessage(error instanceof Error ? error.message : undefined));setPhase("blocked");});
   return ()=>{generation.current=epoch+1;lock.current=false;};
  },[scope,transport,reload]);
  const field=(key:keyof SmtpDraft,value:string|number)=>setDraft(prev=>({...prev,[key]:value}));
  const save=async()=>{
-  if(lock.current || phase!=="ready")return;
+  if(!currentContext || lock.current || phase!=="ready")return;
   const parsed=saveSchema.safeParse({expected_version:view.version,config:draft,...(password ? {password}: {})});
   if(!parsed.success){const next:Record<string,string>={};for(const issue of parsed.error.issues)next[String(issue.path[issue.path.length-1])]=issue.path[0]==="password" ? "Credencial inválida." : issue.message;setErrors(next);setPassword("");return;}
   if(!view.credential_configured && !password){setErrors({password:safeSmtpMessage("SMTP_CREDENTIAL_REQUIRED")});return;}
@@ -36,7 +38,8 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
   catch(error){if(generation.current!==epoch)return;const code=error instanceof Error ? error.message : "SMTP_INTERNAL";setMessage(safeSmtpMessage(code));setPhase(code==="SMTP_CONFLICT" ? "conflict" : "blocked");}
   finally {if(generation.current===epoch)lock.current=false;}
  };
- const disabled=phase!=="ready";
+ const disabled=!currentContext || phase!=="ready";
+ if(!currentContext)return <section className="mt-6 border-t pt-6"><p role="status" className="text-sm text-muted-foreground">Carregando configuração…</p></section>;
  return <section className="mt-6 border-t pt-6" aria-labelledby="tenant-email-title">
   <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="tenant-email-title" className="text-lg font-semibold">Email da empresa</h2><Badge variant="secondary">Envio bloqueado</Badge></div>
   <div className="my-3 flex flex-wrap gap-2"><Badge variant="outline">Rascunho</Badge><Badge variant="outline">Remetente não verificado</Badge></div>
