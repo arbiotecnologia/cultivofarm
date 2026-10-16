@@ -88,3 +88,10 @@ Screenshots temporários `/tmp/browser/smtp-t1/saved-390.png`, `blocked-1280.png
 README contém ordem de instalação, contrato de imports e três gates. Antes de aplicar: auditor deve validar ref, APIs Vault, owner/ACL existentes, schema drift, redaction e empacotamento Deno. Após aplicar, revalidar A/B com identidades autorizadas, sem emails; manter operacional OFF. Em rollback fechar UI/entrypoint/gate e revogar acesso com rollback.sql sem apagar histórico/secret. Reaplicar candidato depois de rollback restabeleceria grants: exige nova revisão.
 
 **Nenhuma migration/secret/Edge/publicação/SMTP/Auth/configuração de produção foi alterada remotamente nesta entrega.** Arquivos locais revisáveis entregues; homologação e aplicação controlada aguardam auditor.
+
+## Delta 6d801c — ajustes finais pré-instalação (2026-10-16)
+1. **Pin exato da dependência**: `index.ts.review` agora importa `npm:@supabase/supabase-js@2.110.8` (antes `@2` móvel). SHA256SUMS regenerado para todo o pacote candidato.
+2. **Teste de topologia compatível com Windows**: `src/test/config/authProviderTopology.test.ts` passa a usar `relative(ROOT, p).replaceAll("\\","/")` (helper `sourcePath`) nos filtros `/test/`, nos mapas das duas definições e na comparação do hook canônico. Nenhuma mudança runtime de Auth. Resultado local: 3/3 PASS.
+3. Verificações locais pós-delta: scanner focal **11/11 PASS**, `git diff --check` PASS, pin confirmado no arquivo. Regressões independentes relatadas pelo auditor (admin-password 29, callback 21, recovery 18, PortalGuard 9) não foram reexecutadas pelo agente.
+
+Escopo preservado: gates OFF, nenhum SQL remoto aplicado, nenhuma publicação, Auth/configuração global/worker intocados. Auditor segue instalação canônica fechada após preflight.

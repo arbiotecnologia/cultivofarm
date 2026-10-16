@@ -1075,3 +1075,9 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - Execução própria SQL10 completo em PostgreSQL PGlite isolado: **26/26 PASS**, nove preflights md5 executados e nove definições registradas; negativos privado AR/FSF/inexistente, global 180, desconto em lote preservado, associação e simulação globais. Schema/identidade/permissões/preço canônico STUBBED; execução integral do payload fiscal, migrações 01–10 combinadas e Auth/RLS real permanecem UNVERIFIED.
 - UI existente: testes reais de componentes/QueryClient **53/53 PASS em dois arquivos** nesta rodada; salvar/reabrir/composição-only/limpeza/retry e troca de identidade. Nenhuma modificação adicional de UI necessária para estes cenários; UI hospedada com gate ON não foi exercitada e continua UNVERIFIED. Gate OFF, sem DDL remoto/publicação; SQL07 laboratório permanece fase separada.
 - Build automático disponível: **build OK 14:35:01 UTC**. Lint do runner novo sem erros; typechecks não executados manualmente nesta rodada (sem alteração TypeScript; harness responsável). Scanner global não reexecutado; não promover baseline antigo a resultado novo. Candidato 10 aguarda revisão independente antes de aplicação.
+
+### Delta 6d801c (pré-instalação)
+- [x] Pin `npm:@supabase/supabase-js@2.110.8` no index.ts.review + SHA256SUMS regenerado
+- [x] authProviderTopology.test.ts compatível com Windows (helper sourcePath) — 3/3 PASS local
+- [x] Scanner focal 11/11 PASS e git diff --check PASS pós-delta
+- [ ] Instalação canônica fechada pelo auditor após preflight (bloqueio externo)
