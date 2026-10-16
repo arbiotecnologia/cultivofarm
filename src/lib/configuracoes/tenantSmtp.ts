@@ -7,6 +7,12 @@ import { f4RequestSchema, f4ResultSchema, type F4Request, type F4Result } from "
 export { f4Message, type F4Request, type F4Result, type F4Status } from "../../../scripts/smtp-tenant-candidate/f4/contract";
 // F4a promoted after independent review: sender possession only. Edge/SQL gates stay independent; activation refused, dispatch false.
 export const TENANT_SMTP_F4_PHASE = true;
+import { f4bRequestSchema, f4bResultSchema, type F4bRequest } from "../../../scripts/smtp-tenant-candidate/f4b/contract";
+export type { F4bStatus } from "../../../scripts/smtp-tenant-candidate/f4b/contract";
+// F4b candidate: tenant activation/pause + real readiness. FALSE until independent review; SQL dispatch gate independent.
+export const TENANT_SMTP_F4B_PHASE = false;
+export type SenderRequest = F4Request | F4bRequest;
+export type SenderResult = import("zod").infer<typeof f4bResultSchema>;
 
 // Draft-only promotion authorized by owner; auditor deploys after focused review.
 // HTTPS + Vault accepted by owner; infrastructure log suppression is unverified.
@@ -22,7 +28,7 @@ export interface TenantSmtpTransport {
   save(input: unknown): Promise<SmtpView>;
   test?(input: TestRequest): Promise<TestResult>;
   proof?(): Promise<RuntimeProofResult>;
-  sender?(input: F4Request): Promise<F4Result>;
+  sender?(input: SenderRequest): Promise<SenderResult>;
 }
 async function request(method: "GET" | "PUT", input?: unknown): Promise<SmtpView> {
   if (!TENANT_SMTP_REVIEWED) throw new Error("SMTP_UNAVAILABLE");
@@ -37,12 +43,13 @@ async function request(method: "GET" | "PUT", input?: unknown): Promise<SmtpView
   if (!parsed.success) throw new Error("SMTP_INTERNAL");
   return parsed.data;
 }
-async function senderRequest(input: F4Request): Promise<F4Result> {
+async function senderRequest(input: SenderRequest): Promise<SenderResult> {
  if (!TENANT_SMTP_F4_PHASE) throw new Error("SMTP_UNAVAILABLE");
- // Code only in POST body; `op=sender` is a non-secret route marker.
- const { data, error } = await supabase.functions.invoke("tenant-email-settings?op=sender", { method: "POST", body: f4RequestSchema.parse(input) });
+ // Code only in POST body; `op=sender` is a non-secret route marker. F4b schemas only when its phase is reviewed.
+ const body = TENANT_SMTP_F4B_PHASE ? f4bRequestSchema.parse(input) : f4RequestSchema.parse(input);
+ const { data, error } = await supabase.functions.invoke("tenant-email-settings?op=sender", { method: "POST", body });
  if (error) throw new Error("SMTP_UNAVAILABLE");
- return f4ResultSchema.parse(data);
+ return TENANT_SMTP_F4B_PHASE ? f4bResultSchema.parse(data) : f4ResultSchema.parse(data);
 }
 export const tenantSmtpTransport: TenantSmtpTransport = {
  ...(TENANT_SMTP_F4_PHASE ? { sender: senderRequest } : {}),
