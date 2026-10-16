@@ -5,11 +5,11 @@ import { f4RequestSchema, mapRpcError } from "../../../scripts/smtp-tenant-candi
 import { createF4Handler, type F4Deps } from "../../../scripts/smtp-tenant-candidate/f4/handler";
 import { dispatchF4 } from "../../../scripts/smtp-tenant-candidate/f4/dispatch";
 import { generateCode, hashCode } from "../../../scripts/smtp-tenant-candidate/f4/challenge-code";
-import { TENANT_SMTP_F4_PHASE, tenantSmtpTransport, type F4Result } from "@/lib/configuracoes/tenantSmtp";
+import { TENANT_SMTP_F4_PHASE, tenantSmtpTransport, type F4Result, type F4Status } from "@/lib/configuracoes/tenantSmtp";
 import TenantSenderVerification from "@/pages/configuracoes/TenantSenderVerification";
 
 const ID = "11111111-1111-4111-8111-111111111111", FENCE = "22222222-2222-4222-8222-222222222222", KEY = "33333333-3333-4333-8333-333333333333";
-const status = (o: Record<string, unknown> = {}) => ({ version: 1, sender_verified: false, active: false, dispatch_enabled: false, challenge: null, ...o });
+const status = (o: Partial<F4Status> = {}): F4Status => ({ version: 1, sender_verified: false, active: false, dispatch_enabled: false, challenge: null, ...o });
 const deps = (): F4Deps => ({ canonicalUrl: "https://swzpzcwiasxmjutrmvkm.supabase.co", reviewed: true, transportProven: true,
  client: () => ({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: "actor" } }, error: null })) }, rpc: vi.fn(async () => ({ data: { version: 1 }, error: null })) }),
  trustedOrigin: o => o === "https://app.cultivofarm.com.br", cors: () => ({}), execute: vi.fn(async () => ({ code: "F4_STATUS" as const, status: status() })) });
@@ -57,7 +57,7 @@ describe("F4 dispatch", () => {
   expect((await dispatchF4("actor", client, service, { op: "challenge", expected_version: 1, idempotency_key: KEY }, {} as never, send)).code).toBe("challenge_ambiguous"); expect(send).toHaveBeenCalledTimes(1); });
  it("confirm passes code only as RPC arg", async () => { const { client, service } = mk(null, { tenant_smtp_sender_challenge_confirm: { code: "SENDER_CHALLENGE_MISMATCH", attempts_left: 3 } });
   expect(await dispatchF4("actor", client, service, { op: "confirm", expected_version: 1, challenge_id: ID, code: "00000000" }, {} as never)).toEqual({ code: "SENDER_CHALLENGE_MISMATCH", attempts_left: 3 }); expect(service.rpc).not.toHaveBeenCalled(); });
- it("activation status cannot claim dispatch", async () => { const { client, service } = mk(null, { tenant_smtp_activation_set: { ...status({ active: true, sender_verified: true }), dispatch_enabled: true } });
+ it("activation status cannot claim dispatch", async () => { const { client, service } = mk(null, { tenant_smtp_activation_set: { ...status({ active: true, sender_verified: true }), dispatch_enabled: true as unknown as false } });
   await expect(dispatchF4("actor", client, service, { op: "activation", expected_version: 1, active: true, confirm: true }, {} as never)).rejects.toThrow(); });
 });
 
