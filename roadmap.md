@@ -1149,3 +1149,9 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Promoção F4b: migration, pg_net, cron id 8, deploy worker/Edge, flags revisadas; transporte v1 (base64url) corrigiu 401; chamada vazia 200 e heartbeat comprovados; gate aberto com 0 empresas ativas.
 - [ ] Publicar a interface; Admin AR ativa pela tela; piloto pela origem real (titular).
 - [ ] Vínculos/auditoria (após fechar SMTP).
+
+## Piloto F4b — formulário /app/solicitar (2026-10-16)
+- [x] Coluna opcional `portal_solicitacoes.client_uuid` + índice único `(user_id, client_uuid)` parcial; existentes NULL; RLS/guard/grants intactos.
+- [x] Retry com UUID estável, trava contra duplo clique, 23505 do índice do autor = "já enviada"; demais erros propagados.
+- [ ] Pendente: revisão independente, publicação e repetição do piloto pela sessão real.
+- [ ] Pendente (fora do recorte): uploads com falha são descartados silenciosamente; fila offline de solicitações inexistente.

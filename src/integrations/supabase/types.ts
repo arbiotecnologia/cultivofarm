@@ -15477,6 +15477,7 @@ export type Database = {
         Row: {
           audio_inicial_path: string | null
           audio_inicial_url: string | null
+          client_uuid: string | null
           cliente_id: string
           confirmacao_produtor: string | null
           consultor_atribuido: string | null
@@ -15505,6 +15506,7 @@ export type Database = {
         Insert: {
           audio_inicial_path?: string | null
           audio_inicial_url?: string | null
+          client_uuid?: string | null
           cliente_id: string
           confirmacao_produtor?: string | null
           consultor_atribuido?: string | null
@@ -15533,6 +15535,7 @@ export type Database = {
         Update: {
           audio_inicial_path?: string | null
           audio_inicial_url?: string | null
+          client_uuid?: string | null
           cliente_id?: string
           confirmacao_produtor?: string | null
           consultor_atribuido?: string | null
