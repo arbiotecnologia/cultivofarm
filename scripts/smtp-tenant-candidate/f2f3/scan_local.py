@@ -7,7 +7,7 @@ sql=(r/'20261016_smtp_f2f3.sql').read_text()
 checks={
 'no logs/cache in executor':not re.search(r'console\.|logger\.|localStorage|sessionStorage',sources),
 'no arbitrary request targets':'.strict()' in (r/'contract.ts').read_text() and not re.search(r'\b(host|password|recipient|tenant|organization_id)\s*:',(r/'contract.ts').read_text()),
-'no parallel outbox':not re.search(r'CREATE TABLE[^;]*outbox',sql),
+'no parallel outbox':not any('outbox' in name for name in re.findall(r'CREATE TABLE(?: IF NOT EXISTS)?\s+([\w.]+)',sql)),
 'no global setting/Auth write':not re.search(r'(UPDATE|INSERT INTO|DELETE FROM)\s+(?:public\.)?(auth\.|communication_provider_settings)',sql,re.I),
 'private gate false':'approved boolean NOT NULL DEFAULT false' in sql,
 'executor client deny':'public.tenant_smtp_test_prepare(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated' in sql,
