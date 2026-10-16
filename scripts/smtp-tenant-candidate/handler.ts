@@ -16,7 +16,7 @@ export function createTenantSmtpHandler(deps: HandlerDeps) {
     const origin = req.headers.get("Origin");
     const response = (status:number, body:unknown) => new Response(JSON.stringify(body), {status,headers:{...deps.cors(origin),"Content-Type":"application/json","Cache-Control":"no-store"}});
     if (origin && !deps.trustedOrigin(origin)) return response(403,{code:"SMTP_FORBIDDEN"});
-    if (req.method === "OPTIONS") return new Response(null,{status:204,headers:deps.cors(origin)});
+    if (req.method === "OPTIONS") return new Response(null,{status:204,headers:{...deps.cors(origin),"Cache-Control":"no-store"}});
     if (!["GET","PUT"].includes(req.method)) return response(405,{code:"SMTP_INVALID"});
     if (deps.canonicalUrl !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !deps.reviewed) return response(503,{code:"SMTP_UNAVAILABLE"});
     const auth = req.headers.get("Authorization") ?? "";

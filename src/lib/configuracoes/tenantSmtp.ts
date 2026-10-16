@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveSchema, viewSchema, type SmtpView } from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 
-// Auditor-only activation after reviewed deployment AND telemetry redaction proof.
+// Auditor-only draft activation after ACL/Vault and application-log review.
+// HTTPS + Vault accepted by owner; infrastructure log suppression is unverified.
 // Keep OFF: no request, credential submission or global fallback in this delivery.
 export const TENANT_SMTP_REVIEWED = false;
 export interface TenantSmtpTransport {

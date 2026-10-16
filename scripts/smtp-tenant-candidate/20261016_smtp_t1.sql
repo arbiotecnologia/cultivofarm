@@ -77,7 +77,8 @@ REVOKE ALL ON FUNCTION platform_private.tenant_email_actor_org() FROM PUBLIC, an
 GRANT EXECUTE ON FUNCTION platform_private.tenant_email_actor_org() TO authenticated;
 
 -- Separate persistent server fence: UI/Edge review flags alone cannot authorize
--- direct PostgREST credential submission before telemetry and ACL review.
+-- direct PostgREST credential submission before ACL/Vault/application-log review.
+-- HTTPS + Vault accepted by owner; no infrastructure-log suppression guarantee.
 CREATE TABLE IF NOT EXISTS platform_private.communication_tenant_email_review_gate (
  id boolean PRIMARY KEY DEFAULT true,
  approved boolean NOT NULL DEFAULT false
