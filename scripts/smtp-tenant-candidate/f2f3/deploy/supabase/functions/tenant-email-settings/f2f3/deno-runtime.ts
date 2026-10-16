@@ -1,8 +1,8 @@
 // REVIEW ONLY. Install imports under existing tenant-email-settings after review.
 // Deno API docs + upstream source permit connect(literal IP) -> startTls(original host).
-// Hosted runtime equivalence MUST be proven by auditor before setting proven:true.
+// Auditor reported hosted proof PASS for KingHost/465; controlled tests only, not arbitrary-host certification.
 import { pinnedDeps, type PinnedRuntime } from './pinned-transport.ts';
-export const TENANT_PINNING_PROVEN = false;
+export const TENANT_PINNING_PROVEN = true;
 export const tenantRuntime: PinnedRuntime = {
  proven:TENANT_PINNING_PROVEN,
  resolve:async(host,family)=>{

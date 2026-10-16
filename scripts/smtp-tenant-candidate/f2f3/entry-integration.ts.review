@@ -14,7 +14,7 @@ const draftHandler=createTenantSmtpHandler({...common,reviewed:true});
 const testHandler=createTestHandler({...common,reviewed:true,transportProven:TENANT_PINNING_PROVEN,
  execute:(actor,actorClient,input)=>dispatchTest(actor,actorClient,createClient(url,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",{auth:{persistSession:false,autoRefreshToken:false}}),input,tenantSmtpDeps),
 });
-// Temporary, independently restricted proof; never changes runtime flag or any settings.
-export const HOSTED_PROOF_ENABLED=true;
+// Hosted evidence collected by auditor; temporary proof closed, guards/core preserved.
+export const HOSTED_PROOF_ENABLED=false;
 const proofHandler=createHostedProofHandler({...common,enabled:HOSTED_PROOF_ENABLED,runtime:tenantRuntime});
 Deno.serve(req=>req.method==="POST" && new URL(req.url).searchParams.has("proof")?proofHandler(req):req.method==="POST"?testHandler(req):draftHandler(req));
