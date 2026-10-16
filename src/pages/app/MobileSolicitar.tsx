@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { AudioRecorder } from "@/components/visita/AudioRecorder";
 import { compressImage, type ImageQuality } from "@/lib/mediaCompression";
 import { Switch } from "@/components/ui/switch";
+import { insertSolicitacaoIdempotente } from "@/lib/portal/solicitacaoSubmit";
 
 const TIPOS_DEMANDA = [
   "Vistoria técnica",
@@ -51,6 +52,8 @@ export default function MobileSolicitar() {
   const [fotosPreviews, setFotosPreviews] = useState<string[]>([]);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const clientUuidRef = useRef<string | null>(null);
   const [qualityHD, setQualityHD] = useState(() => localStorage.getItem("media-quality-pref") === "hd");
 
   const { data: fazendas } = useQuery({
@@ -112,9 +115,13 @@ export default function MobileSolicitar() {
   };
 
   const handleSubmit = async () => {
-    if (!clienteId || !tipoDemanda) { toast.error("Preencha os campos obrigatórios"); return; }
+    if (!clienteId || !tipoDemanda || !user?.id) { toast.error("Preencha os campos obrigatórios"); return; }
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
-    const clientUuid = crypto.randomUUID();
+    // UUID estável entre retries da mesma tentativa; renovado só após sucesso.
+    if (!clientUuidRef.current) clientUuidRef.current = crypto.randomUUID();
+    const clientUuid = clientUuidRef.current;
     try {
       // Upload fotos
       const fotoPaths: string[] = [];
@@ -131,28 +138,32 @@ export default function MobileSolicitar() {
         audioPath = await uploadBlob(audioBlob, "webm", `${clientUuid}_audio`);
       }
 
-      const { error } = await supabase.from("portal_solicitacoes").insert({
-        cliente_id: clienteId,
-        user_id: user!.id,
-        client_uuid: clientUuid,
-        fazenda_id: fazendaId || null,
-        talhao_id: talhaoId || null,
-        tipo_demanda: tipoDemanda,
-        urgencia,
-        descricao: descricao || null,
-        solicitante_nome: solicitanteNome || null,
-        solicitante_contato: unmask(solicitanteContato) || null,
-        fotos_iniciais: null, // Legado
-        fotos_paths: fotoPaths.length ? fotoPaths : null,
-        audio_inicial_url: null, // Legado
-        audio_inicial_path: audioPath,
-      } as any);
-      if (error) throw error;
-      toast.success("Solicitação enviada com sucesso!");
+      const result = await insertSolicitacaoIdempotente(
+        async (row) => await supabase.from("portal_solicitacoes").insert(row as any),
+        {
+          cliente_id: clienteId,
+          user_id: user.id,
+          client_uuid: clientUuid,
+          fazenda_id: fazendaId || null,
+          talhao_id: talhaoId || null,
+          tipo_demanda: tipoDemanda,
+          urgencia,
+          descricao: descricao || null,
+          solicitante_nome: solicitanteNome || null,
+          solicitante_contato: unmask(solicitanteContato) || null,
+          fotos_iniciais: null, // Legado
+          fotos_paths: fotoPaths.length ? fotoPaths : null,
+          audio_inicial_url: null, // Legado
+          audio_inicial_path: audioPath,
+        },
+      );
+      clientUuidRef.current = null;
+      toast.success(result === "created" ? "Solicitação enviada com sucesso!" : "Esta solicitação já havia sido enviada.");
       navigate("/app");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
