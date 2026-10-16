@@ -1,0 +1,20 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "version": "20261016234052",
+  "name": "client_access_overload_deny_revoked_links",
+  "status": "INSTALADO PELO AUDITOR — NÃO REAPLICAR",
+  "capture": "SELECT do ledger canônico em 2026-10-16; colunas version/name/statements",
+  "statements": 1,
+  "file": "scripts/user-links-v0/installed/20261016234052_client_access_overload_deny_revoked_links.sql",
+  "bytes": 1219,
+  "sha256": "2f5d4fd5b30704743cae5d58386154fd5733e417d5a52f8be4289684846d95a3",
+  "function": "public.can_user_access_cliente(uuid,uuid)",
+  "baseline_md5": "c0acb1dcd7f0b183f9500f4c264c1fa1",
+  "live_md5_after": "c610786fc9f6d6a44453b9e63c91e974",
+  "live_md5_confirmed_by_agent": "c610786fc9f6d6a44453b9e63c91e974",
+  "acl_confirmed": "anon EXECUTE=false, authenticated EXECUTE=true (preservada)",
+  "change": "única adição AND uc.revoked_at IS NULL no branch fallback do overload de dois argumentos; demais branches, assinatura, owner, ACL e search_path preservados",
+  "auditor_evidence": "antes: helper TRUE com vínculo revogado vs resolver canônico false; depois: ambos false; cinco casos hosted BEGIN/ROLLBACK (vigente/revogado/inativo/futuro/expirado) PASS, sem commit",
+  "direct_policy_two_arg": "fonte não encontrou policy direta usando o overload de dois argumentos; vazamento NÃO afirmado como comprovado",
+  "writes_by_agent": false
+}

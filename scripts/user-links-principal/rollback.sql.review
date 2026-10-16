@@ -1,9 +1,9 @@
--- ROLLBACK CANDIDATO v2 — SOMENTE COM GATE DE ASSOCIAÇÃO FECHADO.
+-- ROLLBACK CANDIDATO v3 — SOMENTE COM GATE DE ASSOCIAÇÃO FECHADO.
 -- Esta restauração traz de volta a definição live anterior, que contém a falha
 -- conhecida (principal histórico). Só é segura enquanto a troca de associações
 -- estiver fechada (estado atual). Se o gate de associação estiver aberto, NÃO
 -- usar este arquivo: a contenção segura é manter/aplicar o candidate.sql.review
--- (v2), que é ele próprio o estado contido.
+-- (v3), que é ele próprio o estado contido.
 -- Não apaga dados, não reverte vínculos legítimos, não toca V0/common F2/ledger.
 CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()
  RETURNS trigger

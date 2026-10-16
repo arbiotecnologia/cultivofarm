@@ -1242,3 +1242,11 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Ponto 5: rollback somente com gate de associação fechado; com gate aberto a contenção é o próprio candidato v2.
 - [x] Testes locais: 21/21 checks PASS em PostgreSQL descartável; nenhum PASS live inventado.
 - [ ] Ensaio hosted BEGIN/ROLLBACK pelo auditor; cache same-identity e anexos são o próximo recorte (não misturar runtime).
+
+## Vínculos externos — principal v3 + reconciliação 20261016234052 (16/10/2026)
+- [x] Candidato v3 `sync_user_cliente_principal`: recursão por idempotência com detecção de trabalho (sem pg_trigger_depth, sem GUC); writer aninhado não suprimido; preflight com triggers auxiliares, FK cascade e NOT NULL reais.
+- [x] Harness v3: 36/36 checks PASS (FK cascade, writer aninhado, multirow CASE/DELETE, empate created_at, expiração temporal, Admin autenticado negado, 2 conexões). UNVERIFIED: hosted, RLS completa, schema fiscal.
+- [x] Migration 20261016234052 arquivada (ledger exato, MD5 live c610786fc9f6d6a44453b9e63c91e974, ACL preservada); não reaplicada.
+- [ ] Revisão independente do candidato v3; ensaio hosted BEGIN/ROLLBACK pelo auditor.
+- [ ] Próximo recorte: cache same-identity e anexos/signed URLs (não misturar com runtime).
+- [ ] Gestão de associações (troca mesmo tipo): gates fechados.
