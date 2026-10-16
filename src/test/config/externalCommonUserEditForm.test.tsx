@@ -38,7 +38,7 @@ beforeEach(() => {
   transport.rpc.mockReturnValue({ abortSignal: transport.abortSignal });
   transport.abortSignal.mockResolvedValue(result);
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('diálogo real de dados comuns externos (gate simulado só no teste)', () => {
   it.each(['cliente_produtor', 'parceiro_b2b'])('envia %s pela RPC canônica preservando receiver, roles, links e campos não exibidos', async role => {
@@ -94,6 +94,33 @@ describe('diálogo real de dados comuns externos (gate simulado só no teste)', 
     let open = true; const request = deferred(); transport.abortSignal.mockReturnValue(request.promise);
     render(form({ ...base, isCurrent: () => open })); reason(); fireEvent.click(save()); open = false;
     await act(async () => request.resolve(result)); expect(base.onSuccess).not.toHaveBeenCalled(); expect(base.onError).not.toHaveBeenCalled();
+  });
+  it('reabrir o mesmo alvo mantém a trava da nova tentativa mesmo quando finally antigo termina', async () => {
+    const old = deferred(); const fresh = deferred();
+    transport.abortSignal.mockReturnValueOnce(old.promise).mockReturnValueOnce(fresh.promise);
+    const view = render(form()); reason(); fireEvent.click(save());
+    view.rerender(<></>); view.rerender(form(base, 'generation2')); reason(); fireEvent.click(save());
+    await act(async () => old.resolve(result));
+    expect(screen.getByRole('button', { name: 'Salvando...' })).toBeDisabled();
+    expect(base.onSuccess).not.toHaveBeenCalled();
+    await act(async () => fresh.resolve(result)); expect(base.onSuccess).toHaveBeenCalledTimes(1);
+    expect(transport.rpc).toHaveBeenCalledTimes(2);
+  });
+  it('troca ator ABA com remount não aceita a conclusão anterior', async () => {
+    const old = deferred(); transport.abortSignal.mockReturnValue(old.promise);
+    const view = render(form()); reason(); fireEvent.click(save());
+    view.rerender(form({ ...base, actorId: 'B', scope: 'B' }, 'B'));
+    view.rerender(form(base, 'A2'));
+    await act(async () => old.resolve(result)); expect(base.onSuccess).not.toHaveBeenCalled(); expect(base.onError).not.toHaveBeenCalled();
+  });
+  it('timeout aborta uma tentativa, exige reload e ignora sucesso tardio sem afirmar rollback', async () => {
+    vi.useFakeTimers(); const request = deferred(); transport.abortSignal.mockReturnValue(request.promise);
+    render(form()); reason(); fireEvent.click(save());
+    await act(async () => { await vi.advanceTimersByTimeAsync(20001); });
+    expect(transport.abortSignal.mock.calls[0][0].aborted).toBe(true);
+    expect(screen.getByRole('button', { name: 'Recarregue a lista para tentar novamente' })).toBeDisabled();
+    expect(base.onError).toHaveBeenCalledTimes(1);
+    await act(async () => request.resolve(result)); expect(base.onSuccess).not.toHaveBeenCalled(); expect(transport.rpc).toHaveBeenCalledTimes(1);
   });
   it('retry manual do mesmo payload mantém chave, sem retry automático', async () => {
     transport.abortSignal.mockResolvedValueOnce({ data: null, error: { message: 'user_edit_invalid_fields' } }).mockResolvedValueOnce(result);
