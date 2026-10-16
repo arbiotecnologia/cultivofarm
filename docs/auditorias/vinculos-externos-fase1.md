@@ -29,6 +29,8 @@
 `DROP FUNCTION public.tenant_admin_user_links(uuid[]); DROP FUNCTION platform_private.tenant_admin_user_links(uuid[]);` e reverter os arquivos de UI. Sem dados a preservar, pois a função só lê.
 
 ## Proposta da Fase 2 (candidata; implementação autorizada, sem escrita aplicada até revisão independente)
+**Bloqueio atual:** a Fase 2 permanece pendente. Correção focal da chamada de leitura pós-publicação registrada em `vinculos-externos-fase1-receiver-20261016.md`; aguarda revisão e teste real Admin AR após publicação pelo titular.
+
 Estende o contrato existente em vez de criar `v2` paralelo: `admin_edit_user_profile_v1` ganha parâmetros opcionais (`p_expected_version`, `p_links`, `p_idempotency_key`, `p_reason`); chamadas atuais (sem `p_links`) mantêm comportamento e guards idênticos. Só existirá função separada se a revisão mostrar conflito de assinatura/ACL.
 1. **Versão/CAS única (perfil + vínculos):** `version = sha256` canônico de: campos comuns do perfil, `updated_at`, papéis ordenados e status ativo, e todos os vínculos `user_clientes` (id, cliente, principal, is_active, revoked_at, datas, access_level) e `partner_users` (id, parceiro, papel, ativo). Exposta pela leitura da Fase 1; divergência → `version_conflict` sem escrita.
 2. **Concorrência:** na ordem perfil → vínculos do alvo → clientes/parceiros elegíveis (ids ordenados), `FOR UPDATE`; versão recalculada após os locks.

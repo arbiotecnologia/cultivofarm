@@ -1161,6 +1161,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Lista/edição: tipo de acesso explícito, vínculo atual com carregando/erro/sem vínculo distintos; externos somente leitura com explicação (sem falso salvar).
 - [x] Cadastro: rótulos de tipo, ajuda quando não há elegíveis vs busca vazia, erro com "tentar novamente".
 - [x] Delta a5a8725b: parser estrito do contrato, externos com perfis internos ocultos e dados comuns desabilitados (senha separada mantida), `any` novos removidos; lint legado separado.
-- [ ] Correção focal pós-publicação: preservar receiver de `SupabaseClient.rpc` na leitura em lote; regressão com método dependente de `this`, validações e relatório em execução. Sem mudanças no banco ou SMTP.
+- [x] Correção focal pós-publicação: adaptador canônico preserva receiver de `SupabaseClient.rpc`; regressão dependente de `this` reproduz a falha e verifica integração corrigida. Vitest 30/30, lint novos 0/página 18 legados idênticos, build automático OK19:34:29, scanner F4b43/43. Relatório `docs/auditorias/vinculos-externos-fase1-receiver-20261016.md`.
+- [ ] Typecheck dedicado da correção: aguardando execução na revisão independente; execução manual vedada no ambiente, sem log separado disponível.
 - [ ] Revisão independente da correção + publicação (pelo titular); leitura real Admin AR após publicação pendente.
 - [ ] Fase 2 candidata (extensão do contrato v1, CAS perfil+vínculos, idempotência com revalidação, locks, revogação server-side): implementação autorizada; nenhuma escrita aplicada antes da revisão independente.
