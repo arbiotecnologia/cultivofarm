@@ -83,7 +83,7 @@ describe("F4b panel", () => {
   expect(screen.queryByRole("button", { name: /Ativar email/ })).toBeNull();
  });
  it("activate: single request on double click, real status shown", async () => {
-  const send = vi.fn(async (i: { op: string; active?: boolean }): Promise<SenderResult> => i.op === "activation" ? { code: "F4_STATUS", status: st({ active: true, dispatch_enabled: true }) } : { code: "F4_STATUS", status: st() });
+  const send = vi.fn(async (i: { op?: string; active?: boolean }): Promise<SenderResult> => i.op === "activation" ? { code: "F4_STATUS", status: st({ active: true, dispatch_enabled: true }) } : { code: "F4_STATUS", status: st() });
   render(<TenantSenderVerification version={2} connectionReady blocked={false} send={send} activationEnabled />);
   const btn = await screen.findByRole("button", { name: /Ativar email/ });
   fireEvent.click(btn); fireEvent.click(btn);
@@ -97,7 +97,7 @@ describe("F4b panel", () => {
  });
  it("late activation response dropped after version/identity change", async () => {
   let resolve!: (r: SenderResult) => void;
-  const send = vi.fn((i: { op: string }) => i.op === "activation" ? new Promise<SenderResult>(r => { resolve = r; }) : Promise.resolve({ code: "F4_STATUS" as const, status: st() }));
+  const send = vi.fn((i: { op?: string }) => i.op === "activation" ? new Promise<SenderResult>(r => { resolve = r; }) : Promise.resolve({ code: "F4_STATUS" as const, status: st() }));
   const { rerender } = render(<TenantSenderVerification version={2} connectionReady blocked={false} send={send} activationEnabled />);
   fireEvent.click(await screen.findByRole("button", { name: /Ativar email/ }));
   rerender(<TenantSenderVerification version={3} connectionReady blocked={false} send={vi.fn(async () => ({ code: "F4_STATUS" as const, status: st({ version: 3, sender_verified: false }) }))} activationEnabled />);
@@ -106,7 +106,7 @@ describe("F4b panel", () => {
   expect(screen.queryByText(/avisos de solicitação atribuída/)).toBeNull();
  });
  it("server refusal shows safe message only", async () => {
-  const send = vi.fn(async (i: { op: string }): Promise<SenderResult> => i.op === "activation" ? { code: "SMTP_FORBIDDEN" } : { code: "F4_STATUS", status: st() });
+  const send = vi.fn(async (i: { op?: string }): Promise<SenderResult> => i.op === "activation" ? { code: "SMTP_FORBIDDEN" } : { code: "F4_STATUS", status: st() });
   render(<TenantSenderVerification version={2} connectionReady blocked={false} send={send} activationEnabled />);
   fireEvent.click(await screen.findByRole("button", { name: /Ativar email/ }));
   await screen.findByText("Não foi possível concluir. Recarregue para verificar o estado.");
