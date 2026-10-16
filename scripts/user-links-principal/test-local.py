@@ -27,7 +27,7 @@ CONS='00000000-0000-4000-8000-0000000000a3'
 C1='00000000-0000-4000-8000-0000000000b1'
 C2='00000000-0000-4000-8000-0000000000b2'
 C3='00000000-0000-4000-8000-0000000000b3'
-def admin(sql):return f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{ADMIN}';{sql};COMMIT;"
+def admin(sql):return f"BEGIN;SET LOCAL ROLE service_role;{sql};COMMIT;" # escritas de vínculo: contexto service/provisionamento (auth.uid() NULL), como no live
 def asuser(u,sql):return f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{u}';{sql};COMMIT;"
 try:
  subprocess.run(prefix+['initdb','-D',str(tmp/'data'),'-A','trust','-U','postgres'],check=True,capture_output=True)
@@ -129,7 +129,9 @@ try:
  CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles();
  GRANT USAGE ON SCHEMA auth TO authenticated; GRANT USAGE ON SCHEMA cf_user_guards_v1 TO authenticated;
  GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+ GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
  GRANT SELECT,UPDATE ON cf_user_guards_v1.state TO authenticated;
+ GRANT SELECT,UPDATE ON cf_user_guards_v1.state TO service_role;
  INSERT INTO public.clientes VALUES ('{C1}'),('{C2}'),('{C3}');
  INSERT INTO public.profiles(user_id,email) VALUES ('{ADMIN}','admin@t'),('{PROD}','p1@t'),('{PROD2}','p2@t'),('{CONS}','c@t');
  INSERT INTO public.user_roles VALUES ('{ADMIN}','administrador'),('{CONS}','consultor_tecnico');
@@ -188,7 +190,7 @@ try:
  # ---- 11) concorrência: duas conexões trocando principal em loop ----
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=NULL WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
  swap=f"UPDATE public.user_clientes SET principal=(cliente_id='{{C}}') WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}');"
- body=''.join(f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{ADMIN}';"+swap.replace('{C}',C1 if i%2 else C2)+"COMMIT;" for i in range(20))
+ body=''.join("BEGIN;SET LOCAL ROLE service_role;"+swap.replace('{C}',C1 if i%2 else C2)+"COMMIT;" for i in range(20))
  procs=[subprocess.Popen(base[:-1],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True) for _ in range(2)]
  for p in procs: p.stdin.write(body); p.stdin.close()
  for p in procs:
@@ -196,7 +198,7 @@ try:
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal AND is_active AND revoked_at IS NULL",'1')
  check(f"SELECT p.cliente_id=uc.cliente_id FROM public.profiles p JOIN public.user_clientes uc ON uc.user_id=p.user_id AND uc.principal WHERE p.user_id='{PROD}'",'t')
  # ---- 12) rollback transacional não persiste ----
- run(f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{ADMIN}';UPDATE public.user_clientes SET is_active=false,revoked_at=now() WHERE user_id='{PROD}';ROLLBACK;")
+ run(f"BEGIN;SET LOCAL ROLE service_role;UPDATE public.user_clientes SET is_active=false,revoked_at=now() WHERE user_id='{PROD}';ROLLBACK;")
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'1')
  # ---- 13) consultor sem vínculos intacto ----
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{CONS}'",'0')
