@@ -64,3 +64,31 @@ describe("SMTP-T1 UI real, transport simulated",()=>{
   await waitFor(()=>expect(save).toHaveBeenCalledTimes(2));expect(save.mock.calls[1][0]).toEqual({expected_version:4,config});
  });
 });
+describe('SMTP F2/F3 UI scope and explicit send',()=>{
+ const result={version:1,mode:'connection' as const,code:'smtp_connection_ok' as const,dispatch_enabled:false as const,sender_verified:false as const};
+ it('send requires same-version connection and confirmation, with no arbitrary recipient',async()=>{
+  const test=vi.fn().mockResolvedValueOnce(result).mockResolvedValueOnce({...result,mode:'send',code:'smtp_send_accepted'});
+  render(<TenantEmailSettings scope="A" transport={{...transport(),test}}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Testar conexão'})).toBeEnabled());
+  expect(screen.getByRole('button',{name:'Enviar teste'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button',{name:'Testar conexão'}));
+  await waitFor(()=>expect(screen.getByRole('checkbox')).toBeEnabled());
+  expect(screen.getByRole('button',{name:'Enviar teste'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('checkbox'));fireEvent.click(screen.getByRole('button',{name:'Enviar teste'}));
+  await waitFor(()=>expect(test).toHaveBeenCalledTimes(2));
+  expect(test.mock.calls[1][0]).toEqual({mode:'send',expected_version:1,confirm_send:true,idempotency_key:expect.any(String)});
+ });
+ it('double click one test and late identity response discarded',async()=>{
+  let resolve:((v:typeof result)=>void)|undefined;const test=vi.fn(()=>new Promise<typeof result>(r=>{resolve=r;}));const t={...transport(),test};
+  const r=render(<TenantEmailSettings scope="A" transport={t}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Testar conexão'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button',{name:'Testar conexão'}));fireEvent.click(screen.getByRole('button',{name:'Testar conexão'}));expect(test).toHaveBeenCalledOnce();
+  r.rerender(<TenantEmailSettings scope="B" transport={t}/>);resolve?.(result);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Testar conexão'})).toBeEnabled());expect(screen.getByRole('checkbox')).toBeDisabled();
+ });
+ it('raw error blocks repeated test, without leaked exception',async()=>{
+  const test=vi.fn(async()=>{throw new Error('unsafe AUTH synthetic-only');});render(<TenantEmailSettings scope="A" transport={{...transport(),test}}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Testar conexão'})).toBeEnabled());fireEvent.click(screen.getByRole('button',{name:'Testar conexão'}));
+  await screen.findByRole('alert');expect(document.body.textContent).not.toContain('synthetic-only');expect(screen.getByRole('button',{name:'Testar conexão'})).toBeDisabled();expect(test).toHaveBeenCalledOnce();
+ });
+});

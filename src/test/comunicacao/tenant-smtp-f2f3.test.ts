@@ -6,7 +6,7 @@ import { executeTest } from '../../../scripts/smtp-tenant-candidate/f2f3/executo
 import type { ProbeConnection } from '../../../supabase/functions/_shared/comunicacao/smtp-provider-probe';
 const input={mode:'connection' as const,expected_version:1,idempotency_key:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};
 const result={mode:'connection' as const,version:1,code:'smtp_connection_ok' as const,dispatch_enabled:false as const,sender_verified:false as const};
-const deps=():TestDeps=>({canonicalUrl:'https://swzpzcwiasxmjutrmvkm.supabase.co',reviewed:true,transportProven:true,client:()=>({auth:{getUser:vi.fn(async()=>({data:{user:{id:'actor'}},error:null}))},rpc:vi.fn(async()=>({data:true,error:null}))}),trustedOrigin:o=>o==='https://app.cultivofarm.com.br',cors:()=>({}),execute:vi.fn(async()=>result)});
+const deps=():TestDeps=>({canonicalUrl:'https://swzpzcwiasxmjutrmvkm.supabase.co',reviewed:true,transportProven:true,client:()=>({auth:{getUser:vi.fn(async()=>({data:{user:{id:'actor'}},error:null}))},rpc:vi.fn(async()=>({data:{version:1},error:null}))}),trustedOrigin:o=>o==='https://app.cultivofarm.com.br',cors:()=>({}),execute:vi.fn(async()=>result)});
 const req=(body:unknown=input)=>new Request('https://local.test',{method:'POST',headers:{Authorization:'Bearer synthetic',Origin:'https://app.cultivofarm.com.br'},body:JSON.stringify(body)});
 describe('SMTP F2/F3 contracts and handler',()=>{
  it.each(['tenant','organization_id','to','host','password','credential','actor'])('rejects forged %s',async(key)=>{const d=deps();const r=await createTestHandler(d)(req({...input,[key]:'forged'}));expect(r.status).toBe(400);expect(d.execute).not.toHaveBeenCalled();});
@@ -17,7 +17,7 @@ describe('SMTP F2/F3 contracts and handler',()=>{
  it.each(['superadmin','financeiro','consultor','b2b','produtor'])('scope denied %s never executes',async()=>{const d=deps();d.client=()=>({auth:{getUser:async()=>({data:{user:{id:'actor'}},error:null})},rpc:async()=>({data:false,error:null})});expect((await createTestHandler(d)(req())).status).toBe(403);expect(d.execute).not.toHaveBeenCalled();});
  it('sanitizes raw exceptions',async()=>{const d=deps();d.execute=async()=>{throw new Error('unsafe AUTH password');};const r=await createTestHandler(d)(req());expect(await r.text()).toBe('{"code":"SMTP_INTERNAL"}');});
  it('returns only safe result/no-store',async()=>{const r=await createTestHandler(deps())(req());expect(r.headers.get('Cache-Control')).toBe('no-store');expect(await r.json()).toEqual(result);});
- it('revoked actor cannot receive late result',async()=>{const d=deps();const rpc=vi.fn().mockResolvedValueOnce({data:true,error:null}).mockResolvedValueOnce({data:false,error:null});d.client=()=>({auth:{getUser:async()=>({data:{user:{id:'actor'}},error:null})},rpc});expect((await createTestHandler(d)(req())).status).toBe(403);});
+ it('revoked actor cannot receive late result',async()=>{const d=deps();const rpc=vi.fn().mockResolvedValueOnce({data:{version:1},error:null}).mockResolvedValueOnce({data:false,error:null});d.client=()=>({auth:{getUser:async()=>({data:{user:{id:'actor'}},error:null})},rpc});expect((await createTestHandler(d)(req())).status).toBe(403);});
  it('rejects oversized stream and query',async()=>{const d=deps();expect((await createTestHandler(d)(req({...input,junk:'x'.repeat(2048)}))).status).toBe(400);expect(d.execute).not.toHaveBeenCalled();});
 });
 describe('SSRF and partial writes',()=>{
