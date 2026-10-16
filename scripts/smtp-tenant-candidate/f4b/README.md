@@ -3,6 +3,9 @@
 Base `600a94f1` (F4a promovida; remetente AR v2 verificado pelo titular). Nada aplicado/deployado pelo agente.
 Gates nascem fechados: `tenant_smtp_dispatch_gate=false` (SQL), `TENANT_SMTP_F4B_REVIEWED=false` (Edge), `TENANT_SMTP_LANE_REVIEWED=false` (worker), `TENANT_SMTP_F4B_PHASE=false` (UI).
 
+## Credencial dedicada do invocador
+`invoker-auth.ts` (+ espelho `process-communication-outbox/tenant-lane/`): `isTenantLaneRequest` exige POST com um único `lane=tenant_smtp`; `authorizeLaneInvoker` nega valor configurado ausente/<32, header ausente ou diferente. Worker: ramo da lane usa só essa credencial; rota global mantém `authorize` original (o header novo é ignorado) e `lane` desconhecida autenticada → 400. `cron_option.sql.review` lê apenas o Vault `tenant_smtp_lane_invoker_secret` e envia `x-tenant-smtp-secret`. Rollback não lê nem apaga segredos.
+
 ## Correções da revisão e7f66ff
 - P2 MIME: `buildNativeMimeMessage` (núcleo e espelho) escapa `& < > " '` somente no fallback de texto (`<pre>`); HTML explícito preservado. Teste independente decodifica a parte `text/html` e exige `&lt;/pre&gt;&lt;b&gt;UNTRUSTED&lt;/b&gt;`.
 - Destino vinculado: o claim grava `recipient_hash` = SHA-256(outbox_id + ':' + e-mail normalizado), nunca o texto do e-mail; o authorize recalcula com o e-mail Auth atual e recusa (`recipient_changed`, job cancelado e auditado) se mudou, mesmo confirmado.
@@ -14,7 +17,7 @@ Gates nascem fechados: `tenant_smtp_dispatch_gate=false` (SQL), `TENANT_SMTP_F4B
 1. Aplicar `20261016_smtp_f4b_tenant_dispatch.sql` após `preflight.sql` no ref `swzpzcwiasxmjutrmvkm` (gate nasce false).
 2. Deploy do worker com `worker-index.ts.review` + `tenant-lane/` e do Edge F4b, ainda com flags false; revisar; só então flags true.
 3. Habilitar a extensão pg_net (pg_cron já existe; nenhum dos seis jobs atuais invoca o worker).
-4. No formulário seguro de segredos do Vault, criar `tenant_smtp_lane_invoker_secret` com o mesmo valor do segredo Edge `INTERNAL_FUNCTION_SECRET`. O agente não lê nem recebe esse valor.
+4. Credencial dedicada (não usa `INTERNAL_FUNCTION_SECRET`): gerar UM valor aleatório (≥32 caracteres) e gravá-lo, só por formulários seguros, como Edge Secret `TENANT_SMTP_LANE_INVOKER_SECRET` e como segredo Vault `tenant_smtp_lane_invoker_secret` (mesmo valor). Ele autoriza SOMENTE `POST process-communication-outbox?lane=tenant_smtp` pelo header `x-tenant-smtp-secret` (comparação em tempo constante); não autoriza a rota global nem outra lane, e a rota de lane não aceita mais as credenciais globais. Ausente/vazio/curto/inválido → 401. O agente não lê nem recebe esse valor.
 5. Aplicar `cron_option.sql.review` (falha fechado se pg_net/segredo ausentes) e abrir `tenant_smtp_dispatch_gate`.
 6. Admin da empresa ativa pelo painel (conexão OK ≤10 min). Rollback: `rollback.sql` (também remove o agendamento).
 
@@ -51,7 +54,7 @@ Gates nascem fechados: `tenant_smtp_dispatch_gate=false` (SQL), `TENANT_SMTP_F4B
 `20261016_smtp_f4b_tenant_dispatch.sql`, `preflight.sql`, `rollback.sql` (não destrutivo; também remove o agendamento opcional), `cron_option.sql.review`, `contract.ts`, `lane.ts`, `worker-index.ts.review` (substitui o index do worker após revisão), `test_sql.py`, `scan_local.py`. Espelho: `f2f3/deploy/supabase/functions/process-communication-outbox/` e `tenant-email-settings/f4b/`.
 
 ## Evidências locais (rev.)
-SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empresas sintéticas configuradas pelo fluxo real, sem rede): 101 PASS (rev. e7f66ff). Vitest F4b 31 + MIME 6 (núcleo e espelho); suíte comunicação 875/875. Typecheck `-p tsconfig.app.json` 0. Lint focal 0. Scanner F4b 38/38, F4 20/20. `deno check` espelho: 0 erros novos (6 preexistentes no worker atual).
+SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empresas sintéticas configuradas pelo fluxo real, sem rede): 101 PASS (rev. e7f66ff). Vitest F4b 31 + MIME 6 + invocador 20 (candidato e espelho); suíte comunicação 895/895. Typecheck `-p tsconfig.app.json` 0. Lint focal 0. Scanner F4b 41/41, F4 20/20. `deno check` espelho: 0 erros novos (6 preexistentes no worker atual).
 
 ## Riscos / limites
 - Ausência de senha/código em logs de infraestrutura (Edge Invocations, PostgREST, statements) NÃO comprovada; TLS em trânsito, Vault em repouso.
