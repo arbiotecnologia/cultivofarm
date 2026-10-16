@@ -252,6 +252,7 @@ try:
  run(admin(f"UPDATE public.user_clientes SET created_at='{TIE}' WHERE user_id='{NEST}'"))
  run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}')"))
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal",'1')
+ # vencedor deve ser exatamente o determinístico (created_at ASC, id ASC)
  tie=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
  expect=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}') ORDER BY created_at ASC, id ASC LIMIT 1")
  assert tie==expect,(tie,expect);checks+=1
