@@ -102,7 +102,6 @@ CREATE OR REPLACE FUNCTION public.tenant_smtp_test_prepare(p_job uuid,p_fence uu
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE r platform_private.tenant_smtp_test_receipts; s public.communication_tenant_email_settings; v_org uuid; v_password text; v_email text;
 BEGIN
- IF current_user<>'postgres' AND session_user<>'postgres' THEN NULL; END IF; -- ACL below is the service boundary, not caller GUC.
  SELECT organization_id INTO v_org FROM platform_private.tenant_smtp_test_receipts WHERE id=p_job;
  IF v_org IS NULL THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(v_org::text,0));
@@ -146,7 +145,7 @@ BEGIN
  INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action) VALUES(v_org,p_actor,r.version,p_code);
  END IF;
  -- Record results even if actor revoked after socket; never return result to revoked actor.
- RETURN jsonb_build_object('code',r.code,'version',r.version,'mode',r.mode,'dispatch_enabled',false,'sender_verified',false);
+ RETURN jsonb_build_object('code',p_code,'version',r.version,'mode',r.mode,'dispatch_enabled',false,'sender_verified',false);
 END $$;
 REVOKE ALL ON FUNCTION public.tenant_smtp_test_finish(uuid,uuid,uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.tenant_smtp_test_finish(uuid,uuid,uuid,text) TO service_role;

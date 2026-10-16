@@ -1,0 +1,18 @@
+// REVIEW ONLY. Install imports under existing tenant-email-settings after review.
+// Deno API docs + upstream source permit connect(literal IP) -> startTls(original host).
+// Hosted runtime equivalence MUST be proven by auditor before setting proven:true.
+import { pinnedDeps } from './pinned-transport.ts';
+export const TENANT_PINNING_PROVEN = false;
+export const tenantSmtpDeps = pinnedDeps({
+ proven:TENANT_PINNING_PROVEN,
+ resolve:async(host,family)=>{
+  try {return await Deno.resolveDns(host,family);}
+  catch(error){if(error instanceof Deno.errors.NotFound)return [];throw new Error('smtp_dns_blocked');}
+ },
+ tcp:(ip,port)=>Deno.connect({hostname:ip,port,transport:'tcp'}),
+ tls:async(socket,hostname)=>{
+  const connection=await Deno.startTls(socket as Deno.TcpConn,{hostname});
+  await connection.handshake(); // implicit TLS: no plaintext SMTP prior to handshake
+  return connection;
+ },
+});
