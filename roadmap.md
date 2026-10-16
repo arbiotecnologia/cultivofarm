@@ -1166,19 +1166,24 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] F1 real publicada PASS, conforme confirmação do titular nesta rodada.
 - [x] F2 common-only instalada fechada pelo auditor; nenhuma reaplicação pelo agente. Troca/revogação continua pendente.
 
-## Vínculos externos — Fase 2 candidata (16/10/2026)
+## Vínculos externos — Fase 2 dados comuns revisados (16/10/2026)
+- [x] Promoção técnica22:37 autorizada: gate UItrue APENAS dados comuns, mocks explícitos false/true na integração e diálogo; vínculos/perfil/status só consulta. SQLgatefalse, sem publicação/contas/SMTP/Auth/sessão.
+- [x] Revisão EXTERNA loading3ee706b5:34focados (27diálogo+7parserCAS) PASS/typecheck0; anteriorf6:132PASS/lintnovos0/build0/scanner4205/0. F1 real publicada PASS preservada; NÃO alegar UI F2 real sucesso.
+- [x] SQL20261016223134 instalada pelo auditor e arquivada EXATA em installed:7750bytes/MD53044e25460a44a57f48564626c786d9b; função liveMD5d5e006ba09bfe53004971d512fc6cd49. Pré-autorização antes de locks, restante pós-lock preservado. Readback PRÓPRIO gatefalse/audit0/anonfalse; nenhum SQL aplicado pelo agente.
+- [x] SQL F2 com claims/BEGIN/ROLLBACK positivas e negativas repetidas PASS e ledger UPDATE/DELETE recusados: evidência EXTERNA do auditor, sem alterações persistentes em usuários; não equivale à UI F2 real.
+- [x] QA final do delta:137/137Vitest em7arquivos (27diálogo/7parserCAS/14helper), lint focal4arquivos0/Configuracoes18erros legados0warnings; scannersegredos0/diff-checkPASS/buildautomáticoOK22:40:51. Suíte adicional143/143PASS inclui26validação (sobreposição, não somar totais). Typecheck0 externo3ee706b5; execução manual não realizada por regra do harness. Commit funcional/documental observado8febc0f1, registro QA final gerenciado pelo ambiente.
 - [x] P2 loading22:30: boundary usado pela tela aguarda token inicial e preserva rascunho/CAS/receipt no refetch.103VitestPASS (27diálogo), lintnovo0/18legados iguais, buildautomáticoOK22:31:30; sem banco/publicação/gates. Typecheck dedicado e teste autenticado continuam revisão externa; base observada e54b4939, commit do delta gerenciado pelo ambiente.
 - [x] Solicitação inicial histórica: candidata revisável sem aplicação pelo agente; SQL posteriormente instalada fechada pelo auditor, sem publicação/liberação da F2.
 - [x] Evidência independente F1/1613abbf:36VitestPASS/typecheck0/build0/lintnovos0/18legados/scanner4187/0; F1 real publicada PASS confirmada pelo titular na atualização vigente.
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
 - [x] SQL common-only instalada pelo auditor: versão20261016221926 user_external_common_edit_closed_reviewed; arquivo exato arquivado em scripts/user-links-phase2/installed (19280bytes/MD5 coincide com ledger hosted). Nenhuma reaplicação/eligible.
-- [x] UI common-only integrada atrás de gate false: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Não publicada.
+- [x] UI common-only integrada, gate promovido true22:37 após revisão: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Não publicada; SQL permanece fechado.
 - [x] CAS perfil+roles+todoslinks/estados persistidos; ator/tenant revalidados no replay, hash payload, motivo e ledger imutável; seletor elegível paginado sem edição de links.
 - [x] QA histórico SQL:35checks PostgreSQL descartável/102Vitest; proposta de diff anterior substituída pela UI isolada, NÃO aplicar novamente.
 - [x] QA UI atual:132/132Vitest em7arquivos (23diálogo realRTL/Radix/7tokenCAS/102regressões), lintnovo0/Configuracoes18legados, scanner0, diff-checkPASS, buildautomáticoOK22:27:24. Typecheck dedicado atual UNVERIFIED.
 - [x] Readback próprio canônico:SQLgatefalse/auditcount0/anonexecutefalse; nenhuma escrita/reaplicação/eligible/publicação.
 - [x] Revisão ca6f5915 e testes hosted BEGIN/ROLLBACK PASS informados pelo auditor: AdminAR comuns/replay/hash/CAS/links, identidades negadas, ledger fechado; nenhuma alteração persistente em usuários.
-- [ ] Revisão final UI, typecheck dedicado e teste real do diálogo antes de abrir gates. Não é falta de autorização humana genérica.
+- [ ] Auditor: verificar este delta/abrir somente gate SQL e executar diálogo real F2; typecheck0 da revisão loading informado, nenhuma certificação UI F2 real ainda. Sem nova aprovação humana genérica.
 - [ ] Troca de vínculos do mesmo tipo: proposta separada no relatório; histórico B2B e revalidação/cache do titular impedem promoção como gestão completa.
 - [ ] Achados fora deste delta: rpc extraído sem receiver em DocumentosPanel.tsx e financeiro/relatorios/ReportShell.tsx; useMyCommercialOrders correto com call(supabase). Não corrigidos.
 - [x] Alerta get_cliente_ids_for_user descartado: live filtra revogação/vigência e fallback vigente, confirmado pelo auditor.

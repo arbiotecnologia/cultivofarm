@@ -32,12 +32,12 @@ export const ROTULO_TIPO_ACESSO: Record<TipoAcesso, string> = {
 };
 
 /**
- * Fase 1: a edição de usuários externos permanece bloqueada no servidor
- * (`user_edit_linked_role_unavailable`). A tela explica isso sem oferecer falso salvar.
+ * O editor geral não altera externos; dados comuns usam o caminho F2 separado.
+ * Perfis de acesso e vínculos continuam somente consulta.
  */
 export const EDICAO_EXTERNA_DISPONIVEL = false;
 export const MSG_EDICAO_EXTERNA_INDISPONIVEL =
-  "A edição de usuários externos (Produtor e Parceiro B2B) ainda não está disponível nesta tela. Os dados e o vínculo atual abaixo são apenas para consulta e não foram alterados.";
+  "A edição não está disponível para este tipo de acesso. Os dados, o perfil e os vínculos abaixo são apenas para consulta.";
 
 export function edicaoBloqueadaPorTipo(tipo: TipoAcesso): boolean {
   return !EDICAO_EXTERNA_DISPONIVEL && tipo !== "internal";
