@@ -1,3 +1,8 @@
+## SMTP F2/F3 — integração prova via UI e cooldown (02:14 UTC)
+- [ ] Preparar botão temporário AdminAR na seção existente, runtime_proof sem credencial; testes AUTH/send continuam dependentes da homologação.
+- [ ] Preservar PASS mesma versão no SMTP_COOLDOWN, espera60s sem retry e testes de fencing/negações/transporte; atualizar espelho e evidências.
+- [ ] Auditor: revisar delta e coletar prova hosted via sessão UI; fechar flags após resultado. Sem deploy/SQL/publicação pelo agente.
+
 ## SMTP F2/F3 — ACL executor hospedado (02:10 UTC)
 - [x] Incorporado relato externo: SQL179e84e aplicado pelo auditor via smtp_tenant_controlled_diagnostics_closed, gatefalse/ARv2 preservados; PGlite31/7identidades claimsPASS, prepareSERVICEfalhou schemaUSAGE; rollback total informado, sem senhaAR lida.
 - [x] Sucessor revisável schema dedicado prepare/finish, wrappersINV, semUSAGEplatform_private/globalEXEC; preflight/rollback e harness service_role real, fixtureB rollback integral.
