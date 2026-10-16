@@ -209,6 +209,8 @@ Rollback futuro: fechar somente gate de associações/UI, manter dados comuns ap
 
 Entregáveis desta rodada: este plano com17itens, delta do relatório histórico, roadmap e memória de restrições. **Sem decisão estrutural adotada nem mudança runtime**, portanto nenhum módulo/AGENTS arquitetural novo. Arquivo candidato antigo permanece histórico, não operacional.
 
+**QA própria documental:**70/70 Vitest PASS em6arquivos existentes (27diálogo,7CAS,9portalCliente,7myPartner,12financeiro,8storageScope), executados22:57:59UTC; transporte/identidade simulados, não troca real. Scanner global sem valor secreto real e diff-checkPASS. Build automáticoOK22:58:12UTC. Lint/typecheck dedicados não reexecutados (nenhum TS/runtime alterado); baseline independente ddd5d119 informa ambos0. Nenhuma falsa certificação de teste real da futura UI de associações. Comando: `bun run test -- src/test/config/externalCommonUserEditForm.test.tsx src/test/config/userLinksVersion.test.ts src/test/config/portalCliente.session.test.tsx src/test/config/myPartner.session.test.tsx src/test/financeiro/b2bFinancial.session.test.tsx src/test/equipe-tecnica/storageAccessScope.test.tsx`.
+
 Pendências reais: triagem semântica de196/177candidatos e SQL dinâmico/deploys; fechamento das lacunas específicas; protocolo self-revisão e limpeza same-identity; política de URLs anteriores/limitação offline; desenho final de ledger de links/reativação/principal; candidatos e execução concorrente/JWT/Storage/browser; gates e piloto futuros. Full gestão de vínculos NÃO entregue nem certificada. Achados receiver de `DocumentosPanel.tsx` e `financeiro/relatorios/ReportShell.tsx` continuam fora do delta.
 
 ## Anexo A — inventário direto de funções live (47 assinaturas)
