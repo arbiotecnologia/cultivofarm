@@ -1,5 +1,7 @@
 # SMTP-T1 — candidato de rascunho HTTPS + Vault
 
+> Histórico T1 preservado. Continuação autorizada F2/F3 sobre c922a18d está em `smtp-tenant-f2f3-candidate-20261016.md`: candidato fechado, sem aplicação remota nem senha real; prova hosted pinning/typecheck/E2E pendentes. Não interpretar as propostas futuras abaixo como implementação homologada.
+
 ## 1. Decisão vigente e alcance
 Titular substituiu a dependência de KMS/criptografia no navegador e de redaction absoluta por HTTPS em trânsito + Vault existente em repouso. Revisão ACL/Vault e controles da aplicação continuam obrigatórios. Entrega somente candidato de cadastro/edição DRAFT; sem promoção, gate remoto, conexão ou email. NO-GO anterior é histórico, não veto à nova decisão.
 

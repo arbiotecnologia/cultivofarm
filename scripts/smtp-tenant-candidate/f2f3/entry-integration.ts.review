@@ -1,0 +1,16 @@
+// REVIEW ONLY delta for EXISTING tenant-email-settings/index.ts; not a new module/Edge.
+// Keep existing GET/PUT handler; POST delegates to this candidate.
+import { createTestHandler } from './f2f3/handler.ts';
+import { dispatchTest } from './f2f3/dispatch.ts';
+import { tenantSmtpDeps, TENANT_PINNING_PROVEN } from './f2f3/deno-runtime.ts';
+// Reuse createClient/canonical URL/anon/CORS imports of existing entrypoint.
+const testHandler=createTestHandler({
+ canonicalUrl:url, reviewed:true, transportProven:TENANT_PINNING_PROVEN,
+ client:authorization=>createClient(url,anon,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}}),
+ trustedOrigin:isTrustedOrigin,cors:corsHeadersFor,
+ execute:(actor,client,input)=>dispatchTest(actor,client,
+  createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',{auth:{persistSession:false,autoRefreshToken:false}}),input,tenantSmtpDeps),
+});
+// Replace only Deno.serve(handler) with Deno.serve(req=>req.method==='POST'?testHandler(req):handler(req)).
+// All deployed local imports must be under supabase/functions/tenant-email-settings;
+// replace candidate '../../../supabase/functions/_shared/' imports with '../_shared/'.

@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { saveSchema, viewSchema, type SmtpView } from "../../../scripts/smtp-tenant-candidate/_shared/contract";
+import { testRequestSchema, testResultSchema, type TestRequest, type TestResult } from "../../../scripts/smtp-tenant-candidate/f2f3/contract";
+export { testMessage, type TestRequest, type TestResult } from "../../../scripts/smtp-tenant-candidate/f2f3/contract";
 export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 
 // Draft-only promotion authorized by owner; auditor deploys after focused review.
@@ -9,6 +11,7 @@ export const TENANT_SMTP_REVIEWED = true;
 export interface TenantSmtpTransport {
   load(): Promise<SmtpView>;
   save(input: unknown): Promise<SmtpView>;
+  test?(input: TestRequest): Promise<TestResult>;
 }
 async function request(method: "GET" | "PUT", input?: unknown): Promise<SmtpView> {
   if (!TENANT_SMTP_REVIEWED) throw new Error("SMTP_UNAVAILABLE");
@@ -23,4 +26,12 @@ async function request(method: "GET" | "PUT", input?: unknown): Promise<SmtpView
   if (!parsed.success) throw new Error("SMTP_INTERNAL");
   return parsed.data;
 }
-export const tenantSmtpTransport: TenantSmtpTransport = { load: () => request("GET"), save: input => request("PUT", input) };
+export const tenantSmtpTransport: TenantSmtpTransport = {
+ load: () => request("GET"), save: input => request("PUT", input),
+ test:async input=>{
+  const body=testRequestSchema.parse(input);
+  const {data,error}=await supabase.functions.invoke("tenant-email-settings",{method:"POST",body});
+  if(error)throw new Error("SMTP_UNAVAILABLE");
+  return testResultSchema.parse(data);
+ },
+};

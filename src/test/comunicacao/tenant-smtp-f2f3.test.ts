@@ -1,0 +1,102 @@
+import { describe,it,expect,vi } from 'vitest';
+import { testRequestSchema } from '../../../scripts/smtp-tenant-candidate/f2f3/contract';
+import { createTestHandler, type TestDeps } from '../../../scripts/smtp-tenant-candidate/f2f3/handler';
+import { publicAddress,pinnedDeps,completeWrites } from '../../../scripts/smtp-tenant-candidate/f2f3/pinned-transport';
+import { executeTest } from '../../../scripts/smtp-tenant-candidate/f2f3/executor';
+import { dispatchTest } from '../../../scripts/smtp-tenant-candidate/f2f3/dispatch';
+import type { ProbeConnection } from '../../../supabase/functions/_shared/comunicacao/smtp-provider-probe';
+const input={mode:'connection' as const,expected_version:1,idempotency_key:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};
+const result={mode:'connection' as const,version:1,code:'smtp_connection_ok' as const,dispatch_enabled:false as const,sender_verified:false as const};
+const deps=():TestDeps=>({canonicalUrl:'https://swzpzcwiasxmjutrmvkm.supabase.co',reviewed:true,transportProven:true,client:()=>({auth:{getUser:vi.fn(async()=>({data:{user:{id:'actor'}},error:null}))},rpc:vi.fn(async()=>({data:{version:1},error:null}))}),trustedOrigin:o=>o==='https://app.cultivofarm.com.br',cors:()=>({}),execute:vi.fn(async()=>result)});
+const req=(body:unknown=input)=>new Request('https://local.test',{method:'POST',headers:{Authorization:'Bearer synthetic',Origin:'https://app.cultivofarm.com.br'},body:JSON.stringify(body)});
+describe('SMTP F2/F3 contracts and handler',()=>{
+ it.each(['tenant','organization_id','to','host','password','credential','actor'])('rejects forged %s',async(key)=>{const d=deps();const r=await createTestHandler(d)(req({...input,[key]:'forged'}));expect(r.status).toBe(400);expect(d.execute).not.toHaveBeenCalled();});
+ it('send requires explicit confirmation',()=>{expect(testRequestSchema.safeParse({...input,mode:'send'}).success).toBe(false);});
+ it.each(['reviewed','transportProven'])('closed %s no actor/execute',async(key)=>{const d={...deps(),[key]:false};const r=await createTestHandler(d)(req());expect(r.status).toBe(503);expect(d.execute).not.toHaveBeenCalled();});
+ it('untrusted origin fails before execute',async()=>{const d=deps();const r=await createTestHandler(d)(new Request('https://local.test',{method:'POST',headers:{Origin:'https://evil.test'}}));expect(r.status).toBe(403);expect(d.execute).not.toHaveBeenCalled();});
+ it('denies absent session',async()=>{const d=deps();const r=await createTestHandler(d)(new Request('https://local.test',{method:'POST'}));expect(r.status).toBe(401);});
+ it.each(['superadmin','financeiro','consultor','b2b','produtor'])('scope denied %s never executes',async()=>{const d=deps();d.client=()=>({auth:{getUser:async()=>({data:{user:{id:'actor'}},error:null})},rpc:async()=>({data:false,error:null})});expect((await createTestHandler(d)(req())).status).toBe(403);expect(d.execute).not.toHaveBeenCalled();});
+ it('sanitizes raw exceptions',async()=>{const d=deps();d.execute=async()=>{throw new Error('unsafe AUTH password');};const r=await createTestHandler(d)(req());expect(await r.text()).toBe('{"code":"SMTP_INTERNAL"}');});
+ it('returns only safe result/no-store',async()=>{const r=await createTestHandler(deps())(req());expect(r.headers.get('Cache-Control')).toBe('no-store');expect(await r.json()).toEqual(result);});
+ it('revoked actor cannot receive late result',async()=>{const d=deps();const rpc=vi.fn().mockResolvedValueOnce({data:{version:1},error:null}).mockResolvedValueOnce({data:false,error:null});d.client=()=>({auth:{getUser:async()=>({data:{user:{id:'actor'}},error:null})},rpc});expect((await createTestHandler(d)(req())).status).toBe(403);});
+ it('rejects oversized stream and query',async()=>{const d=deps();expect((await createTestHandler(d)(req({...input,junk:'x'.repeat(2048)}))).status).toBe(400);expect(d.execute).not.toHaveBeenCalled();});
+});
+describe('SSRF and partial writes',()=>{
+ it.each(['127.0.0.1','10.0.0.1','100.64.0.1','169.254.169.254','172.16.0.1','192.168.1.1','198.18.0.1','224.0.0.1','0.0.0.0','192.0.2.1','198.51.100.1','203.0.113.1','::1','::ffff:127.0.0.1','fc00::1','fe80::1','2001:db8:0:0:0:0:0:1','2002:808:808:0:0:0:0:1','3fff:0:0:0:0:0:0:1'])('denies special %s',ip=>expect(publicAddress(ip)).toBe(false));
+ it.each(['8.8.8.8','1.1.1.1','2606:4700:4700:0:0:0:0:1111'])('permits public %s',ip=>expect(publicAddress(ip)).toBe(true));
+ const socket=()=>({read:vi.fn(async()=>null),write:vi.fn(async(b:Uint8Array)=>b.length),close:vi.fn()});
+ it('validates ALL A/AAAA before socket',async()=>{const tcp=vi.fn();const d=pinnedDeps({proven:true,resolve:async(_,family)=>family==='A'?['8.8.8.8']:['::1'],tcp,tls:vi.fn()});await expect(d.connectTls('provider.test',465)).rejects.toThrow('smtp_dns_blocked');expect(tcp).not.toHaveBeenCalled();});
+ it('pins IP no second resolution while TLS retains original hostname',async()=>{const s=socket();const resolve=vi.fn(async(_,family)=>family==='A'?['8.8.8.8']:[]);const tcp=vi.fn(async()=>s);const tls=vi.fn(async()=>s);const d=pinnedDeps({proven:true,resolve,tcp,tls});await d.connectTls('provider.test',465);expect(resolve).toHaveBeenCalledTimes(2);expect(tcp).toHaveBeenCalledWith('8.8.8.8',465);expect(tls).toHaveBeenCalledWith(s,'provider.test');});
+ it('TLS certificate failure closes socket/no fallback',async()=>{const s=socket();const d=pinnedDeps({proven:true,resolve:async()=>['8.8.8.8'],tcp:async()=>s,tls:async()=>{throw new Error('bad cert raw');}});await expect(d.connectTls('provider.test',465)).rejects.toThrow('smtp_tls_failed');expect(s.close).toHaveBeenCalled();});
+ it.each([25,587,2525])('blocks port %s before DNS',async(port)=>{const resolve=vi.fn();const d=pinnedDeps({proven:true,resolve,tcp:vi.fn(),tls:vi.fn()});await expect(d.connectTls('provider.test',port)).rejects.toThrow('SMTP_UNAVAILABLE');expect(resolve).not.toHaveBeenCalled();});
+ it('unproven runtime never resolves',async()=>{const resolve=vi.fn();const d=pinnedDeps({proven:false,resolve,tcp:vi.fn(),tls:vi.fn()});await expect(d.connectTls('provider.test',465)).rejects.toThrow('SMTP_UNAVAILABLE');expect(resolve).not.toHaveBeenCalled();});
+ it('completes short writes',async()=>{const s=socket();s.write=vi.fn(async(b:Uint8Array)=>Math.min(2,b.length));expect(await completeWrites(s).write(new Uint8Array(7))).toBe(7);expect(s.write).toHaveBeenCalledTimes(4);});
+ it('zero write fails instead of pretending success',async()=>{const s=socket();s.write=vi.fn(async()=>0);await expect(completeWrites(s).write(new Uint8Array(3))).rejects.toThrow();});
+ it('closed socket cannot continue partial writes',async()=>{const s=socket();const complete=completeWrites(s);s.write=vi.fn(async()=>{complete.close();return 1;});await expect(complete.write(new Uint8Array(3))).rejects.toThrow();expect(s.write).toHaveBeenCalledTimes(1);});
+});
+describe('actor claim -> service executor -> sanitized finish',()=>{
+ const jobId='11111111-1111-4111-8111-111111111111';const fence='22222222-2222-4222-8222-222222222222';
+ it('completed replay never reads credential or opens socket',async()=>{
+  const actor=deps().client('synthetic');actor.rpc=vi.fn(async()=>({data:{replay:true,...result},error:null}));const service=deps().client('synthetic');service.rpc=vi.fn();const connectTls=vi.fn();
+  expect(await dispatchTest('actor',actor,service,input,{connectTls,connect:vi.fn(),startTls:vi.fn()})).toEqual(result);
+  expect(service.rpc).not.toHaveBeenCalled();expect(connectTls).not.toHaveBeenCalled();
+ });
+ it('prepare denied never contacts SMTP',async()=>{
+  const actor=deps().client('synthetic');actor.rpc=vi.fn(async()=>({data:{replay:false,job_id:jobId,fence},error:null}));const service=deps().client('synthetic');service.rpc=vi.fn(async()=>({data:null,error:{message:'unsafe error'}}));const connectTls=vi.fn();
+  await expect(dispatchTest('actor',actor,service,input,{connectTls,connect:vi.fn(),startTls:vi.fn()})).rejects.toThrow('SMTP_INTERNAL');expect(connectTls).not.toHaveBeenCalled();
+ });
+ it('finishes one authorized job without returning secret',async()=>{
+  const actor=deps().client('synthetic');actor.rpc=vi.fn(async()=>({data:{replay:false,job_id:jobId,fence},error:null}));const service=deps().client('synthetic');const rpc=vi.fn().mockResolvedValueOnce({data:{mode:'connection',version:1,recipient:'admin@provider.com',config:{host:'smtp.provider.com',port:465,tls_mode:'implicit_tls',username:'synthetic',from_email:'sender@provider.com',reply_to:'',from_name:'Cultivo Farm'},password:'synthetic-only'},error:null}).mockResolvedValueOnce({data:result,error:null});service.rpc=rpc;
+  const replies=['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n'];const socket:ProbeConnection={read:async b=>{const line=replies.shift();if(!line)return null;const bytes=new TextEncoder().encode(line);b.set(bytes);return bytes.length;},write:async b=>b.length,close:vi.fn()};
+  const actual=await dispatchTest('actor',actor,service,input,{connectTls:async()=>socket,connect:vi.fn(),startTls:vi.fn()});expect(actual).toEqual(result);expect(rpc).toHaveBeenLastCalledWith('tenant_smtp_test_finish',{p_job:jobId,p_fence:fence,p_actor:'actor',p_code:'smtp_connection_ok'});expect(JSON.stringify(actual)).not.toContain('synthetic-only');
+ });
+});
+describe('actual shared SMTP core via synthetic socket',()=>{
+ const env={DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,SMTP_HOST:'smtp.provider.com',SMTP_PORT:'465',SMTP_USER:'synthetic',SMTP_PASSWORD:'synthetic-only',SMTP_FROM:'sender@provider.com'};
+ function wire(replies:string[]){const writes:string[]=[];const s:ProbeConnection={read:async(b)=>{const line=replies.shift();if(!line)return null;const data=new TextEncoder().encode(line);b.set(data);return data.length;},write:async b=>{writes.push(new TextDecoder().decode(b));return b.length;},close:vi.fn()};return {s,writes,deps:{connectTls:async()=>s,connect:vi.fn(),startTls:vi.fn()}};}
+ it('connection AUTH only without envelope/DATA',async()=>{const w=wire(['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n']);expect((await executeTest({mode:'connection',version:1,recipient:'admin@provider.com',env},w.deps)).code).toBe('smtp_connection_ok');expect(w.writes.some(v=>v.startsWith('AUTH'))).toBe(true);expect(w.writes.some(v=>/MAIL FROM|RCPT TO|DATA/.test(v))).toBe(false);});
+ it('250 accepted stays unverified and disabled',async()=>{const w=wire(['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n','250 accepted\r\n']);const r=await executeTest({mode:'send',version:1,recipient:'admin@provider.com',env},w.deps);expect(r.code).toBe('smtp_send_accepted');expect(r.dispatch_enabled).toBe(false);expect(r.sender_verified).toBe(false);expect(w.writes.filter(v=>v==='DATA\r\n')).toHaveLength(1);});
+ it('EOF post DATA is ambiguous, never retries',async()=>{const w=wire(['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n']);const r=await executeTest({mode:'send',version:1,recipient:'admin@provider.com',env},w.deps);expect(r.code).toBe('smtp_send_ambiguous');expect(w.writes.filter(v=>v==='DATA\r\n')).toHaveLength(1);});
+ it('explicit post DATA 550 is definitive failure',async()=>{const w=wire(['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n','550 rejected\r\n']);expect((await executeTest({mode:'send',version:1,recipient:'admin@provider.com',env},w.deps)).code).toBe('smtp_test_failed');});
+});
+
+describe('timeouts fail closed',()=>{
+ it('DNS timeout never starts TCP',async()=>{
+  vi.useFakeTimers();
+  try{
+   const tcp=vi.fn();const d=pinnedDeps({proven:true,resolve:()=>new Promise(()=>{}),tcp,tls:vi.fn()});
+   const pending=expect(d.connectTls('provider.test',465)).rejects.toThrow('smtp_dns_blocked');
+   await vi.advanceTimersByTimeAsync(4001);await pending;expect(tcp).not.toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
+ it('AUTH stall closes acquired socket before session completes',async()=>{
+  vi.useFakeTimers();
+  try{
+   const close=vi.fn();let readCount=0;
+   const socket:ProbeConnection={read:async b=>{if(readCount++>0)return new Promise(()=>{});const bytes=new TextEncoder().encode('220 ready\r\n');b.set(bytes);return bytes.length;},write:async b=>b.length,close};
+   const pending=executeTest({mode:'connection',version:1,recipient:'admin@provider.com',env:{DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,SMTP_HOST:'smtp.provider.com',SMTP_PORT:'465',SMTP_USER:'synthetic',SMTP_PASSWORD:'synthetic-only',SMTP_FROM:'sender@provider.com'}},{connectTls:async()=>socket,connect:vi.fn(),startTls:vi.fn()});
+   await vi.advanceTimersByTimeAsync(15001);expect((await pending).code).toBe('smtp_test_failed');expect(close).toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
+ it('late pinned connection closes and never upgrades after deadline',async()=>{
+  vi.useFakeTimers();
+  try {
+   const close=vi.fn();let release:((s:ProbeConnection)=>void)|undefined;
+   const tcp=vi.fn(()=>new Promise<ProbeConnection>(r=>{release=r;}));const tls=vi.fn();
+   const d=pinnedDeps({proven:true,resolve:async()=>['8.8.8.8'],tcp,tls});
+   const pending=expect(d.connectTls('smtp.provider.com',465)).rejects.toThrow('smtp_tls_failed');
+   await vi.advanceTimersByTimeAsync(4001);await pending;
+   release?.({read:async()=>null,write:async b=>b.length,close});await vi.advanceTimersByTimeAsync(1);
+   expect(close).toHaveBeenCalled();expect(tls).not.toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
+ it('post DATA timeout ambiguous, socket closed without retry',async()=>{
+  vi.useFakeTimers();
+  try{
+   const replies=['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n'];const close=vi.fn();const write=vi.fn(async(b:Uint8Array)=>b.length);
+   const socket:ProbeConnection={read:async b=>{const reply=replies.shift();if(!reply)return new Promise(()=>{});const bytes=new TextEncoder().encode(reply);b.set(bytes);return bytes.length;},write,close};
+   const pending=executeTest({mode:'send',version:1,recipient:'admin@provider.com',env:{DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,SMTP_HOST:'smtp.provider.com',SMTP_PORT:'465',SMTP_USER:'synthetic',SMTP_PASSWORD:'synthetic-only',SMTP_FROM:'sender@provider.com'}},{connectTls:async()=>socket,connect:vi.fn(),startTls:vi.fn()});
+   await vi.advanceTimersByTimeAsync(3001);expect((await pending).code).toBe('smtp_send_ambiguous');expect(close).toHaveBeenCalled();expect(write.mock.calls.filter(([b])=>new TextDecoder().decode(b)==='DATA\r\n')).toHaveLength(1);
+  }finally{vi.useRealTimers();}
+ });
+});

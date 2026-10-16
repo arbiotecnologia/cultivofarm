@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, RotateCcw } from "lucide-react";
-import { EMPTY_DRAFT, EMPTY_VIEW, saveSchema, safeSmtpMessage, tenantSmtpTransport, type SmtpDraft, type SmtpView, type TenantSmtpTransport } from "@/lib/configuracoes/tenantSmtp";
+import { Save, RotateCcw, Send, PlugZap } from "lucide-react";
+import { EMPTY_DRAFT, EMPTY_VIEW, saveSchema, safeSmtpMessage, tenantSmtpTransport, testMessage, type TestRequest, type SmtpDraft, type SmtpView, type TenantSmtpTransport } from "@/lib/configuracoes/tenantSmtp";
 
 export default function TenantEmailSettings({ scope, transport=tenantSmtpTransport }: {scope:string;transport?:TenantSmtpTransport}) {
  const [view,setView]=useState<SmtpView>(EMPTY_VIEW);
@@ -15,11 +15,15 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
  const [message,setMessage]=useState("");
  const [reload,setReload]=useState(0);
  const [errors,setErrors]=useState<Record<string,string>>({});
+ const [testing,setTesting]=useState(false);
+ const [connectionVersion,setConnectionVersion]=useState<number|null>(null);
+ const [confirmSend,setConfirmSend]=useState(false);
+ const testKey=useRef<{input:TestRequest;uncertain:boolean}|null>(null);
  const generation=useRef(0); const lock=useRef(false);
  const [loadedContext,setLoadedContext]=useState<{scope:string;transport:TenantSmtpTransport}|null>(null);
  const currentContext=loadedContext?.scope===scope && loadedContext.transport===transport;
  useEffect(()=>{
-  const epoch=++generation.current;lock.current=false;
+  const epoch=++generation.current;lock.current=false;testKey.current=null;setTesting(false);setConnectionVersion(null);setConfirmSend(false);
   setLoadedContext({scope,transport});setPassword("");setDraft({...EMPTY_DRAFT});setView(EMPTY_VIEW);setErrors({});setMessage("");setPhase("loading");
   transport.load().then(data=>{if(generation.current!==epoch)return;setView(data);setDraft(data.config ?? {...EMPTY_DRAFT});setPhase("ready");})
    .catch(error=>{if(generation.current!==epoch)return;setMessage(safeSmtpMessage(error instanceof Error ? error.message : undefined));setPhase("blocked");});
@@ -34,11 +38,25 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
   lock.current=true;const epoch=generation.current;setPhase("saving");setErrors({});setMessage("");
   // Clear visible credential before asynchronous IO; never put it in a query/cache.
   setPassword("");
-  try {const data=await transport.save(parsed.data);if(generation.current!==epoch)return;setView(data);setDraft(data.config ?? {...EMPTY_DRAFT});setMessage("Rascunho salvo. Remetente não verificado; envio bloqueado.");setPhase("ready");}
+  try {const data=await transport.save(parsed.data);if(generation.current!==epoch)return;setView(data);setDraft(data.config ?? {...EMPTY_DRAFT});setConnectionVersion(null);setConfirmSend(false);setMessage("Rascunho salvo. Remetente não verificado; envio bloqueado.");setPhase("ready");}
   catch(error){if(generation.current!==epoch)return;const code=error instanceof Error ? error.message : "SMTP_INTERNAL";setMessage(safeSmtpMessage(code));setPhase(code==="SMTP_CONFLICT" ? "conflict" : "blocked");}
   finally {if(generation.current===epoch)lock.current=false;}
  };
- const disabled=!currentContext || phase!=="ready";
+ const runTest=async(mode:"connection"|"send")=>{
+  if(!currentContext || lock.current || phase!=="ready" || !transport.test || testKey.current?.uncertain || (mode==="send" && (!confirmSend || connectionVersion!==view.version)))return;
+  lock.current=true;setTesting(true);setPassword("");setMessage("");const epoch=generation.current;
+  const input:TestRequest={mode,expected_version:view.version,idempotency_key:crypto.randomUUID(),...(mode==="send"?{confirm_send:true as const}:{})};
+  testKey.current={input,uncertain:true};
+  try {
+   const result=await transport.test(input);if(generation.current!==epoch)return;
+   setMessage(testMessage(result.code));
+   testKey.current={input,uncertain:result.code==="smtp_send_ambiguous" || result.code==="SMTP_BUSY"};
+   setConnectionVersion(mode==="connection" && result.code==="smtp_connection_ok" && result.version===view.version?view.version:null);setConfirmSend(false);
+  }catch {if(generation.current!==epoch)return;setMessage(testMessage("SMTP_INTERNAL"));setPhase("blocked");setConnectionVersion(null);}
+  finally {if(generation.current===epoch){lock.current=false;setTesting(false);}}
+ };
+ const disabled=!currentContext || phase!=="ready" || testing;
+ const dirty=JSON.stringify(draft)!==JSON.stringify(view.config) || password!=="";
  if(!currentContext)return <section className="mt-6 border-t pt-6"><p role="status" className="text-sm text-muted-foreground">Carregando configuração…</p></section>;
  return <section className="mt-6 border-t pt-6" aria-labelledby="tenant-email-title">
   <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="tenant-email-title" className="text-lg font-semibold">Email da empresa</h2><Badge variant="secondary">Envio bloqueado</Badge></div>
@@ -54,7 +72,12 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
    <div className="min-w-0"><Label htmlFor="tenant-name">Nome do remetente</Label><Input id="tenant-name" value={draft.from_name} onChange={e=>field("from_name",e.target.value)} disabled={disabled} maxLength={255}/>{errors.from_name && <p className="text-sm text-destructive">{errors.from_name}</p>}</div>
    <div className="min-w-0"><Label htmlFor="tenant-reply">Reply-to (opcional)</Label><Input id="tenant-reply" type="email" value={draft.reply_to} onChange={e=>field("reply_to",e.target.value)} disabled={disabled} maxLength={255}/>{errors.reply_to && <p className="text-sm text-destructive">{errors.reply_to}</p>}</div>
    <div className="min-w-0"><Label htmlFor="tenant-password">{view.credential_configured ? "Nova credencial (opcional)" : "Credencial SMTP"}</Label><Input id="tenant-password" type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={disabled} autoComplete="new-password" maxLength={4096}/>{errors.password && <p className="text-sm text-destructive">{errors.password}</p>}{view.credential_configured && <p className="text-xs text-muted-foreground">Credencial cadastrada. O valor não está disponível para consulta.</p>}</div>
-   <div className="sm:col-span-2 flex flex-wrap gap-2"><Button type="submit" disabled={disabled}><Save className="mr-2 h-4 w-4"/>{phase==="saving" ? "Salvando…" : "Salvar rascunho"}</Button><Button type="button" variant="outline" disabled={phase==="loading" || phase==="saving"} onClick={()=>setReload(v=>v+1)}><RotateCcw className="mr-2 h-4 w-4"/>Recarregar</Button></div>
+   <div className="sm:col-span-2 flex flex-wrap gap-2"><Button type="submit" disabled={disabled}><Save className="mr-2 h-4 w-4"/>{phase==="saving" ? "Salvando…" : "Salvar rascunho"}</Button><Button type="button" variant="outline" disabled={phase==="loading" || phase==="saving" || testing} onClick={()=>setReload(v=>v+1)}><RotateCcw className="mr-2 h-4 w-4"/>Recarregar</Button></div>
   </form>
+  <div className="mt-4 flex flex-wrap items-center gap-3">
+   <Button type="button" variant="outline" disabled={disabled || dirty || !view.credential_configured || !transport.test || testKey.current?.uncertain===true} onClick={()=>void runTest("connection")}><PlugZap className="mr-2 h-4 w-4"/>Testar conexão</Button>
+   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={confirmSend} disabled={disabled || dirty || connectionVersion!==view.version} onChange={e=>setConfirmSend(e.target.checked)}/>Confirmo o teste para meu email confirmado</label>
+   <Button type="button" variant="outline" disabled={disabled || dirty || !confirmSend || connectionVersion!==view.version || testKey.current?.uncertain===true} onClick={()=>void runTest("send")}><Send className="mr-2 h-4 w-4"/>Enviar teste</Button>
+  </div>
  </section>;
 }
