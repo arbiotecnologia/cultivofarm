@@ -100,8 +100,9 @@ describe("P1 structural containment (not remote runtime)", () => {
   });
   it("portal selector resets state, fences old requests and scopes storage", () => {
     const hook = readFileSync("src/hooks/usePortalCliente.ts", "utf8");
-    expect(hook).toContain("requestGeneration !== generation.current");
-    expect(hook).toContain('setClientes([]); setClienteId(null); setClienteNome(null)');
+    expect(hook).toContain("requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted");
+    expect(hook).toContain('if (!current()) return;');
+    expect(hook).toContain('ready && resolvedScope === scope');
     expect(hook).toContain("${STORAGE_KEY}:${scope}");
     expect(hook).toContain('.filter("organization_id", "eq", organizationId)');
   });

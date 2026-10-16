@@ -13,8 +13,8 @@ const anon=Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const client=(authorization:string)=>createClient(url,anon,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}});
 const common={canonicalUrl:url,client,trustedOrigin:isTrustedOrigin,cors:corsHeadersFor};
 const draftHandler=createTenantSmtpHandler({...common,reviewed:true});
-// F4 candidate: closed until independent review + private SQL gate. Dispatch stays false.
-export const TENANT_SMTP_F4_REVIEWED=false;
+// F4a reviewed (sender possession only); private SQL gate stays independent. Dispatch stays false.
+export const TENANT_SMTP_F4_REVIEWED=true;
 const service=()=>createClient(url,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",{auth:{persistSession:false,autoRefreshToken:false}});
 const f4Handler=createF4Handler({...common,reviewed:TENANT_SMTP_F4_REVIEWED,transportProven:TENANT_PINNING_PROVEN,
  execute:(actor,actorClient,input)=>dispatchF4(actor,actorClient,service(),input,tenantSmtpDeps),

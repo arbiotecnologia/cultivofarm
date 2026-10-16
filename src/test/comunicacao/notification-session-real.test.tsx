@@ -5,9 +5,13 @@ import type { ReactNode } from 'react';
 const m = vi.hoisted(() => ({ auth: { user: { id: 'A' } as { id: string } | null, profile: { user_id: 'A', organization_id: 'OA', ativo: true }, roles: ['cliente_produtor'], loading: false }, requests: [] as { table: string; resolve: (value: unknown) => void }[], remove: vi.fn() }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => m.auth }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {
+ rpc: (name: string) => {
+  const promise = new Promise(resolve => m.requests.push({ table: `rpc:${name}`, resolve }));
+  return { abortSignal: () => promise };
+ },
  from: (table: string) => {
   const promise = new Promise(resolve => m.requests.push({ table, resolve }));
-  const builder = { select: () => builder, eq: () => builder, filter: () => builder, in: () => builder, order: () => builder, limit: () => promise, maybeSingle: () => promise, then: promise.then.bind(promise) };
+  const builder = { select: () => builder, eq: () => builder, is: () => builder, abortSignal: () => promise, filter: () => builder, in: () => builder, order: () => builder, limit: () => promise, maybeSingle: () => promise, then: promise.then.bind(promise) };
   return builder;
  }, channel: () => { const channel = { on: () => channel, subscribe: () => channel }; return channel; }, removeChannel: m.remove,
 } }));
@@ -17,12 +21,33 @@ import { usePortalCliente } from '@/hooks/usePortalCliente';
 function wrapper() { const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } }); return ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>; }
 const row = (id: string) => ({ id, titulo: id, tipo: 'informativo', lido: false, created_at: '2026-10-08T12:00:00Z' });
 function resolve(table: string, data: unknown) { const r = m.requests.find(r => r.table === table); if (!r) throw new Error(`Missing ${table}`); m.requests.splice(m.requests.indexOf(r), 1); r.resolve({ data, error: null }); }
-beforeEach(() => { m.requests = []; m.remove.mockClear(); m.auth = { user: { id: 'A' }, profile: { user_id: 'A', organization_id: 'OA', ativo: true }, roles: ['cliente_produtor'], loading: false }; });
+beforeEach(() => { window.dispatchEvent(new Event('portal-client-preferences-cleared')); localStorage.clear(); m.requests = []; m.remove.mockClear(); m.auth = { user: { id: 'A' }, profile: { user_id: 'A', organization_id: 'OA', ativo: true }, roles: ['cliente_produtor'], loading: false }; });
 describe('NOTIF-2 real QueryClient, only auth/server mocked', () => {
+ it('portal does not accept raw membership without server authorization', async () => {
+  const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
+  await act(async () => resolve('rpc:get_cliente_ids_for_user', []));
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true, is_active: true }]));
+  await waitFor(() => expect(h.result.current.loading).toBe(false));
+  expect(h.result.current.clienteId).toBeNull();
+  expect(h.result.current.clientes).toEqual([]);
+  expect(m.requests.some(request => request.table === 'clientes')).toBe(false);
+  h.unmount();
+ });
+ it('portal fails closed when membership RPC returns an error', async () => {
+  const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
+  const pending = m.requests.shift();
+  expect(pending?.table).toBe('rpc:get_cliente_ids_for_user');
+  await act(async () => pending?.resolve({data:null,error:{code:'42501'}}));
+  await waitFor(() => expect(h.result.current.loading).toBe(false));
+  expect(h.result.current.clienteId).toBeNull();
+  expect(m.requests).toEqual([]);
+  h.unmount();
+ });
  for (const role of ['administrador', 'gestor']) it(`portal resolves linked CA for ${role} and clears selection for financeiro`, async () => {
   m.auth.roles = [role];
   const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
-  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true }]));
+  await act(async () => resolve('rpc:get_cliente_ids_for_user', ['CA']));
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true, is_active: true }]));
   await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
   await waitFor(() => expect(h.result.current.clienteId).toBe('CA'));
   expect(h.result.current.clientes.map(c => c.id)).toEqual(['CA']);
@@ -62,7 +87,8 @@ describe('NOTIF-2 real QueryClient, only auth/server mocked', () => {
  }
  for (const state of ['loading', 'mismatch', 'inactive', 'logout', 'revoked', 'unowned'] as const) it(`portal hides resolved selection during ${state}`, async () => {
   const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
-  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true }]));
+  await act(async () => resolve('rpc:get_cliente_ids_for_user', ['CA']));
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true, is_active: true }]));
   await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
   await waitFor(() => expect(h.result.current.clienteId).toBe('CA'));
   if (state === 'loading') m.auth.loading = true;
@@ -76,7 +102,8 @@ describe('NOTIF-2 real QueryClient, only auth/server mocked', () => {
  it('unified portal data disappears when producer role is removed despite cached rows', async () => {
   const h = renderHook(() => useNotificacoesUnificadas(), { wrapper: wrapper() });
   await act(async () => resolve('notificacoes_operacionais', []));
-  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true }]));
+  await act(async () => resolve('rpc:get_cliente_ids_for_user', ['CA']));
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CA', principal: true, is_active: true }]));
   await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
   await waitFor(() => expect(m.requests.some(r => r.table === 'portal_notificacoes')).toBe(true));
   await act(async () => resolve('portal_notificacoes', [row('PORTAL')]));
@@ -85,14 +112,16 @@ describe('NOTIF-2 real QueryClient, only auth/server mocked', () => {
  });
  it('portal fences late selection and role removal including remembered selection', async () => {
   const h = renderHook(() => usePortalCliente(), { wrapper: wrapper() });
-  const old = m.requests.shift(); expect(old?.table).toBe('user_clientes');
+  const old = m.requests.shift(); expect(old?.table).toBe('rpc:get_cliente_ids_for_user');
   m.auth.profile = { ...m.auth.profile, organization_id: 'OB' }; h.rerender();
-  await act(async () => resolve('user_clientes', [{ cliente_id: 'CB', principal: true }]));
+  await act(async () => resolve('rpc:get_cliente_ids_for_user', ['CB']));
+  await act(async () => resolve('user_clientes', [{ cliente_id: 'CB', principal: true, is_active: true }]));
   await act(async () => resolve('clientes', [{ id: 'CB', nome: 'B' }]));
   await waitFor(() => expect(h.result.current.clienteId).toBe('CB'));
-  await act(async () => old?.resolve({ data: [{ cliente_id: 'CA', principal: true }], error: null }));
-  await act(async () => resolve('clientes', [{ id: 'CA', nome: 'A' }]));
+  await act(async () => old?.resolve({ data: ['CA'], error: null }));
+  expect(m.requests.some(request => request.table === 'clientes')).toBe(false);
   expect(h.result.current.clienteId).toBe('CB');
   m.auth.roles = []; h.rerender(); expect(h.result.current.clienteId).toBeNull(); expect(h.result.current.clientes).toEqual([]); h.unmount();
  });
 });
+

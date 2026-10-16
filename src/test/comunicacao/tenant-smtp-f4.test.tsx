@@ -18,7 +18,7 @@ const deps = (): F4Deps => ({ canonicalUrl: "https://swzpzcwiasxmjutrmvkm.supaba
 const req = (body: unknown, q = "?op=sender") => new Request("https://local.test/" + q, { method: "POST", headers: { Authorization: "Bearer synthetic", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) });
 
 describe("F4 contract/handler", () => {
- it("production phase closed and transport absent", () => { expect(TENANT_SMTP_F4_PHASE).toBe(false); expect(tenantSmtpTransport.sender).toBeUndefined(); });
+ it("production F4a promoted: sender transport present", () => { expect(TENANT_SMTP_F4_PHASE).toBe(true); expect(typeof tenantSmtpTransport.sender).toBe("function"); });
  it.each(["organization_id", "tenant", "to", "recipient", "host", "from_email", "password", "actor"])("rejects forged %s", async k => {
   const d = deps(); const r = await createF4Handler(d)(req({ op: "challenge", expected_version: 1, idempotency_key: KEY, [k]: "x" })); expect(r.status).toBe(400); expect(d.execute).not.toHaveBeenCalled(); });
  it("code never accepted in query string", async () => { const d = deps(); expect((await createF4Handler(d)(req({ op: "status" }, "?op=sender&code=12345678"))).status).toBe(400); expect(d.execute).not.toHaveBeenCalled(); });

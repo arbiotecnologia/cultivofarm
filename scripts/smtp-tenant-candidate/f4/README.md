@@ -11,7 +11,7 @@ Nada aplicado/deployado pelo agente. Gates F4 nascem `false`; `dispatch_enabled`
 | `contract.ts`, `challenge-code.ts`, `sender-executor.ts`, `dispatch.ts`, `handler.ts` | Edge F4 dentro de `tenant-email-settings` (rota `POST ?op=sender`). Espelho em `f2f3/deploy/.../tenant-email-settings/f4/` via `sync_mirror.py`. |
 | `test_sql.py` | PostgreSQL descartável reaproveitando o harness F2/F3 (54 checks, `SET ROLE service_role` real). |
 | `scan_local.py` | 20 verificações estáticas. |
-| `src/pages/configuracoes/TenantSenderVerification.tsx` | Painel simples no bloco "Email da empresa" (oculto: `TENANT_SMTP_F4_PHASE=false`). |
+| `src/pages/configuracoes/TenantSenderVerification.tsx` | Painel simples no bloco "Email da empresa" (F4a promovida após revisão 95c10a83: `TENANT_SMTP_F4_PHASE=true`, `TENANT_SMTP_F4_REVIEWED=true`; gate SQL independente; ativação recusada, dispatch false). |
 
 ## Verificação de posse (F4a)
 1. Admin ativo da própria empresa (mesmo guard F2/F3; superadmin/outros perfis negados) pede código → `claim` exige CAS da versão, gates F4 e F2/F3, 465/TLS, credencial, **conexão OK da mesma versão nos últimos 10 min**, nenhum job pendente, cooldown 60 s e máximo 5/24 h por tenant. Novo desafio invalida os abertos.

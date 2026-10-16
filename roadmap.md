@@ -1133,3 +1133,5 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Correções revisão 2300653: confirm com gates+revalidação, ativação operacional recusada (`SMTP_OPERATIONAL_NOT_READY`), dispatch_ready false, invalidação de `executing`, reconciliação de órfãos 2 min, harness sem DISABLE TRIGGER (54 checks), UI com geração/badge único, regra AGENTS restaurada. Vitest 41 F4 / 180 tenant-smtp; typecheck app 0; scanner 20/20; deno check PASS.
 - [ ] Auditor: revisar, aplicar migration F4a, deploy Edge, abrir gates e homologar código com Admin AR (bloqueio: revisão independente/aplicação remota). Ativação operacional segue pendente do contrato worker.
 - [ ] F5 worker/outbox: exige vínculo provado organização/origem/destinatário na outbox (decisão de schema + contrato NOTIF3). Bloqueio NOTIF3 mantido.
+- [x] F4a promoção mínima (revisão 95c10a83): `TENANT_SMTP_F4_PHASE=true`, `TENANT_SMTP_F4_REVIEWED=true` (review+espelho). Migration 20261016131517 aplicada pelo auditor, gate false. Posse do remetente ainda NÃO confirmada; deploy/gate/desafio pelo auditor.
+- [ ] F4b ativação operacional/worker: pendente (contrato da outbox).
