@@ -66,7 +66,7 @@ describe('restricted credential-free hosted proof',()=>{
  const org='007bb519-cba0-4704-be2c-cb93ad010048';
  const make=(organization=org)=>{
   const s=socket([]);const runtime={proven:false,resolve:vi.fn(async(_h:string,f:string)=>f==='A'?['191.6.216.80']:['2804:10:8016::216:80']),tcp:vi.fn(async()=>s),tls:vi.fn(async(_s:ProbeConnection,h:string)=>{if(h==='smtp-name-mismatch.invalid')throw new Error('TLS_HOSTNAME_MISMATCH');return s;})};
-  const rpc=vi.fn(async()=>({data:{actor:'actor',organization,version:2},error:null}));
+  const rpc=vi.fn(async(_name:string)=>({data:{actor:'actor',organization,version:2},error:null}));
   const deps={canonicalUrl:'https://swzpzcwiasxmjutrmvkm.supabase.co',enabled:true,runtime,client:()=>({auth:{getUser:async()=>({data:{user:{id:'actor'}},error:null})},rpc}),trustedOrigin:()=>true,cors:()=>({})};return {deps,runtime,rpc,s};
  };
  const request=()=>new Request('https://fixture.test?proof=pinning',{method:'POST',headers:{Authorization:'Bearer synthetic'}});

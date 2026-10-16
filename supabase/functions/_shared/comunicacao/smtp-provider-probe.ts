@@ -244,8 +244,8 @@ export async function openAuthenticatedSmtpSession(
   connection = tls
     ? await openBounded(deps.connectTls(hostname, port), timeoutMs, "connect")
     : await openBounded(deps.connect(hostname, port), timeoutMs, "connect");
-  onConnection?.(connection);
   try {
+    onConnection?.(connection);
     onStage?.("greeting");
     if ((await readSmtpResponse(connection, timeoutMs, "greeting")).status !== 220) throw createSmtpProbeFailure("smtp_greeting_failed", "greeting");
     onStage?.("ehlo");
@@ -298,6 +298,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
   let connection: ProbeConnection | null = null;
   let tls = port === 465;
   let stage: SmtpProbeStage = "connect";
+  let expired=false;
 
   const run = async (): Promise<SmtpProbeResult> => {
     try {
@@ -306,7 +307,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
           env,
           deps,
           (nextStage) => { stage = nextStage; },
-          (openedConnection) => { connection = openedConnection; },
+          (openedConnection) => { connection = openedConnection;if(expired){openedConnection.close();throw createSmtpProbeFailure("smtp_connect_timeout",stage);} },
         );
         connection = session.connection;
         tls = session.tls;
@@ -327,7 +328,7 @@ export async function probeSmtpProvider(env: WorkerEnv, deps: SmtpProbeDeps): Pr
   };
 
   try {
-    return await withTimeout(run(), absoluteTimeout, () => stage, () => connection?.close());
+    return await withTimeout(run(), absoluteTimeout, () => stage, () => {expired=true;connection?.close();});
   } catch (error) {
     const failure = classifyError(error, stage);
     return {
