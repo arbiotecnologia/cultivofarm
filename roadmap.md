@@ -1,9 +1,10 @@
 ## Vínculos externos — V0 mínimo (16/10/2026 22:59 UTC)
 - [x] Plano86ad803b revisado; preparar fechamento de leitores históricos antes de gestão. Sem banco/deployEdge/publicação; common true/SQLtrue/audit4 e associações preservados.
 - [x] Evidência EXTERNA: Produtor real preview /configuracoes e /financeiro→/portal; /portal/financeiro título existente SEM valor comercial do principal AR. Separadamente SQLclaims/ROLLBACK accounts_receivable1 própria/0outrosclientes/0outrostenants; não é teste de revogação/cache.
-- [ ] Candidato commercial_campaigns/campanhas_cliente_select e has_active_user_cliente_access; auditar irmãs/ACL/RLS/schema, testes locais e ensaio hospedado reversível não executado.
-- [ ] Corrigir leitor ConsultorTecnico e preparar Edge list-portal-users sem deploy, preservando autorização/tenant; sync/enforce apenas análise separada.
-- [ ] QA focal/lint/scanner/build e relatório factual/diff/rollback; claims hospedadas futuras não certificadas nesta entrega.
+- [x] Candidato commercial_campaigns/campanhas_cliente_select e has_active_user_cliente_access fora de migrations, hash live e ACL/irmãs/schema recapturados; RLS filha só Admin/Gestor Comercial impede inferir exposição Produtor. Ensaio hosted BEGIN/ROLLBACK com IDs existentes preparado, NÃO executado.
+- [x] ConsultorTecnico usa resolver live correto; Edge list-portal-users só candidata fora de deploy, filtros server-side e revalidação após IO. Sync/enforce em análise separada, não alterados.
+- [x] QA76/76Vitest6arquivos (13 testes novos executam queryFn/handler reais),16checks PostgreSQL descartável; lint testes0/página16erros2avisos baseline iguais; scanner0/diff-checkPASS/build automático23:07:14OK. Typecheck manual não executado. Relatório docs/auditorias/vinculos-externos-v0-20261016.md/diffs/rollback entregues; sem hosted/UI real nesta rodada.
+- [ ] Revisão/ensaio canônico e eventual deploy do V0: auditor; fullschema transitivo/Storage/cache distribuído e gestão de associação não certificados, gates de associação fechados. Nenhuma ação remota autorizada nesta entrega.
 
 ## SMTP F2/F3 — promoção mínima após prova REAL (02:28 UTC)
 - [x] Evidência EXTERNA do auditor: site publicado bb4e2266, sessão Admin AR, Edgev4 JWTtrue; UI retornou prova TLS aprovada, sem credencial/email, com ok/PINNING_PROOF_PASS/dns_validated/ipv4_tls/ipv6_tls/hostname_mismatch_rejected todos true. Screenshot informado pelo auditor, não inspecionado/executado pelo agente.
