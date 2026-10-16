@@ -1,0 +1,9 @@
+# Principal — análise separada; não instalar
+
+Captura canônica 16/10/2026: `user_clientes` tem BEFORE STATEMENT `a00_cf_user_gate`, AFTER ROW `trg_user_clientes_sync`, depois `z90_cf_touch_profile`. Não há trigger `enforce_cliente_id_for_produtor` diretamente em user_clientes na captura atual. A função contém esse branch, mas branch não é trigger instalado.
+
+`sync_user_cliente_principal` atual desmarca demais, escolhe mais antigo sem vigência e atualiza profiles. Seus UPDATEs geram novos triggers/singleton e podem recursar; novo candidato precisa provar convergência. O UPDATE de profiles atravessa guards de campos sensíveis/tenant/senha, `trg_profiles_enforce_cliente`, stamp e require_admin. `enforce_cliente_id_for_produtor` só trata user_roles e user_clientes; quando TG_TABLE_NAME=profiles retorna NEW sem validar principal. Em user_roles (BEFORE INSERT/UPDATE) conta quaisquer links, inclusive históricos. Não confundir contagem com acesso vigente.
+
+Proposta NÃO SQL operacional: eleger apenas IDs de resolver vigente sob autoridade adequada; exatamente um principal vigente no estado final; evitar UPDATE de NEW no AFTER que recursa, atualizar somente valores distintos; deferir validação do conjunto ao fim da transação ou núcleo de associação, preservando ordem singleton→perfis→links. Considerar revogação do último link, DELETE, reativação UNIQUE, troca principal, expiração temporal sem DML, mudança user_id, corrida e ABA. A solução futura deve resolver principal e constraint de role conjuntamente, não enxertar na policy.
+
+Nenhum trigger/função/associação alterado; aplicação e testes fullschema ficam pendentes. Resolver live protege fallback e permanece correto; principal histórico não prova vazamento.

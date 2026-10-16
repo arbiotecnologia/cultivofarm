@@ -306,10 +306,19 @@ export default function ConsultorTecnico() {
     queryKey: ["consultor-clientes", selected?.user_id],
     enabled: !!selected?.user_id,
     queryFn: async () => {
+      const selectedUserId = selected?.user_id;
+      if (!selectedUserId) return [];
+      // Resolver canônico aplica revogação/vigência e escopo do chamador no servidor.
+      const { data: allowedIds, error: scopeError } = await supabase.rpc(
+        "get_cliente_ids_for_user", { _user_id: selectedUserId },
+      );
+      if (scopeError) throw scopeError;
+      if (!allowedIds?.length) return [];
       const { data: vinc, error: erroVinc } = await supabase
         .from("user_clientes")
         .select("cliente_id, principal")
-        .eq("user_id", selected.user_id)
+        .eq("user_id", selectedUserId)
+        .in("cliente_id", allowedIds)
         .eq("is_active", true);
       if (erroVinc) throw erroVinc;
       if (!vinc || vinc.length === 0) return [];

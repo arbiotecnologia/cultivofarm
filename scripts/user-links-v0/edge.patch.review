@@ -1,0 +1,95 @@
+--- a/supabase/functions/list-portal-users/index.ts
++++ b/supabase/functions/list-portal-users/index.ts
+@@ -17,9 +17,15 @@
+       });
+     }
+ 
++    const supabaseUrl = Deno.env.get("SUPABASE_URL");
++    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
++    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
++    if (supabaseUrl !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !anonKey || !serviceKey) {
++      throw new Error("canonical_configuration_required");
++    }
+     const anonClient = createClient(
+-      Deno.env.get("SUPABASE_URL")!,
+-      Deno.env.get("SUPABASE_ANON_KEY")!,
++      supabaseUrl,
++      anonKey,
+       { global: { headers: { Authorization: authHeader } } }
+     );
+     const token = authHeader.replace("Bearer ", "");
+@@ -81,16 +87,21 @@
+     }
+ 
+     const admin = createClient(
+-      Deno.env.get("SUPABASE_URL")!,
+-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
++      supabaseUrl,
++      serviceKey,
+       { auth: { persistSession: false, autoRefreshToken: false } },
+     );
+ 
+     // Busca vínculos somente após validar o cliente no tenant do ator.
++    const membershipTime = new Date().toISOString();
+     const { data: vinculos, error: vErr } = await admin
+       .from("user_clientes")
+       .select("user_id, principal")
+-      .eq("cliente_id", clienteId);
++      .eq("cliente_id", clienteId)
++      .eq("is_active", true)
++      .is("revoked_at", null)
++      .or(`valid_from.is.null,valid_from.lte.${membershipTime}`)
++      .or(`valid_until.is.null,valid_until.gte.${membershipTime}`);
+     if (vErr) throw vErr;
+ 
+     const userIds = (vinculos ?? []).map((v: any) => v.user_id);
+@@ -140,10 +151,47 @@
+       };
+     }));
+ 
++    // Revalida ator/tenant/cliente e vínculos após IO privilegiado.
++    const { data: finalOrg, error: finalOrgError } = await anonClient.rpc("h15_actor_organization");
++    let finalAllowed = false;
++    for (const r of roles) {
++      const { data, error } = await anonClient.rpc("has_role", { _user_id: callerId, _role: r });
++      if (!error && data) { finalAllowed = true; break; }
++    }
++    if (finalOrgError || finalOrg !== actorOrg || !finalAllowed) {
++      return new Response(JSON.stringify({ error: "tenant_context_required" }), {
++        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
++      });
++    }
++    const { data: finalCliente, error: finalClienteError } = await anonClient
++      .from("clientes").select("id").eq("id", clienteId)
++      .eq("organization_id", actorOrg).maybeSingle();
++    if (finalClienteError || !finalCliente) {
++      return new Response(JSON.stringify({ error: "cliente_not_found" }), {
++        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
++      });
++    }
++    const finalTime = new Date().toISOString();
++    const { data: finalLinks, error: finalLinksError } = await admin
++      .from("user_clientes").select("user_id, principal")
++      .eq("cliente_id", clienteId).eq("is_active", true).is("revoked_at", null)
++      .or(`valid_from.is.null,valid_from.lte.${finalTime}`)
++      .or(`valid_until.is.null,valid_until.gte.${finalTime}`);
++    if (finalLinksError) throw finalLinksError;
++    const finalIds = (finalLinks ?? []).map((link: { user_id: string }) => link.user_id);
++    const { data: finalProfiles, error: finalProfilesError } = finalIds.length > 0
++      ? await admin.from("profiles").select("user_id").eq("organization_id", actorOrg).in("user_id", finalIds)
++      : { data: [], error: null };
++    if (finalProfilesError) throw finalProfilesError;
++    const finalProfileIds = new Set((finalProfiles ?? []).map((profile: { user_id: string }) => profile.user_id));
++    const current = enriched.filter((profile) => finalProfileIds.has(profile.user_id));
++    const finalPrincipal = new Map((finalLinks ?? []).map((link: { user_id: string; principal: boolean }) => [link.user_id, link.principal]));
++    for (const profile of current) profile.principal = finalPrincipal.get(profile.user_id) ?? false;
++
+     // Principal primeiro
+-    enriched.sort((a, b) => (a.principal === b.principal ? 0 : a.principal ? -1 : 1));
++    current.sort((a, b) => (a.principal === b.principal ? 0 : a.principal ? -1 : 1));
+ 
+-    return new Response(JSON.stringify({ users: enriched }), {
++    return new Response(JSON.stringify({ users: current }), {
+       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+     });
+   } catch (err) {

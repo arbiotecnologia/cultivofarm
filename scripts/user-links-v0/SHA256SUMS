@@ -1,0 +1,12 @@
+b7df030ba8b7adcc6d0cd32324967669d66cbb6feb9e3b6dae55bb7ce4f8e85b  scripts/user-links-v0/candidate.sql.review
+84007fe4ae2a68235e28a051b29232e06b3fd62c6bdd11884a4cfe71d8671415  scripts/user-links-v0/consultor.patch.review
+19cebe6a2a20acd1cdca4c6e1c0ca6240583726131c0184c9240824ac2337824  scripts/user-links-v0/edge.patch.review
+c2905af7ce8c5330db6d90cdee99148759b87046ac34e541491a518d58d5d595  scripts/user-links-v0/hosted-rehearsal.sql.review
+6a289ae897745fdac2137477a05f9ad8c45d7edb8aec556c902563dbe0c4dfc3  scripts/user-links-v0/list-portal-users.index.ts.review
+e5598cc33b334725dc3054a49e7ac6d8af01054cb2e36182fb6ddad1f5a2d437  scripts/user-links-v0/preflight-readonly.sql
+9ac632aae09ca5e9ed0feafb1b67aab42c75697fb85e1d4ce8931ae5d9c05903  scripts/user-links-v0/principal-analysis.md
+6e42822f64a9a9f0e1565f63ca6562327b6c93f9a0372a0519fd3f3f31f46057  scripts/user-links-v0/rollback.sql.review
+1a5dc3b4add58d925dbb1d8d872c5195be3b89ba8fb1f18b575dfab7115fe7d7  scripts/user-links-v0/test-local.py
+a5e3c98cccf2147ccadfaec996ae8e5d15d06c00f6d18845d1802de7c1988420  src/test/security/user-links-v0-readers.test.ts
+2e8e67a853ee2bc492329d4feac28e5361b9df213021d1126942d179abe8ff51  src/test/security/d51-5-p0c-portal-users.test.ts
+4c40aeafd5af96177726750babbabc1a607b3c59d39da9ab20d4bbbccd363c40  docs/auditorias/vinculos-externos-v0-20261016.md
