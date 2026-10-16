@@ -1083,5 +1083,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 ### Delta 6d801c (pré-instalação)
 - [x] Pin `npm:@supabase/supabase-js@2.110.8` no index.ts.review + SHA256SUMS regenerado
 - [x] authProviderTopology.test.ts compatível com Windows (helper sourcePath) — 3/3 PASS local
+- [x] Compatibilidade ES2020: replaceAll→split/join no teste; 3/3 PASS; tsc -p tsconfig.app.json exit0 (00:33 UTC)
 - [x] Scanner focal 11/11 PASS e git diff --check PASS pós-delta
 - [ ] Instalação canônica fechada pelo auditor após preflight (bloqueio externo)
