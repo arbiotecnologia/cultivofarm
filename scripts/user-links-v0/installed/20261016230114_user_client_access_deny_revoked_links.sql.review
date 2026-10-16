@@ -1,0 +1,29 @@
+CREATE OR REPLACE FUNCTION public.has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[] DEFAULT ARRAY['read'::text, 'execute'::text, 'manage'::text])
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF _user_id IS NULL OR _cliente_id IS NULL THEN
+    RETURN false;
+  END IF;
+  IF NOT public.fn_authz_uid_scope_ok(_user_id) THEN
+    RETURN false;
+  END IF;
+  IF public.has_role(_user_id, 'administrador'::public.app_role) THEN
+    RETURN true;
+  END IF;
+  RETURN EXISTS (
+    SELECT 1
+      FROM public.user_clientes uc
+     WHERE uc.user_id = _user_id
+       AND uc.cliente_id = _cliente_id
+       AND uc.is_active = true
+       AND uc.revoked_at IS NULL
+       AND (uc.valid_from IS NULL OR uc.valid_from <= now())
+       AND (uc.valid_until IS NULL OR uc.valid_until >= now())
+       AND uc.access_level::text = ANY(_levels)
+  );
+END
+$function$

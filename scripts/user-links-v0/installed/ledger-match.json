@@ -1,0 +1,23 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "version": "20261016230114",
+  "name": "user_client_access_deny_revoked_links",
+  "status": "INSTALADO PELO AUDITOR — NÃO REAPLICAR",
+  "capture": "SELECT ledger e pg_get_functiondef via read_query em 2026-10-16; config project_id canônico conferido",
+  "statements": 1,
+  "file": "scripts/user-links-v0/installed/20261016230114_user_client_access_deny_revoked_links.sql.review",
+  "bytes": 934,
+  "ledger_md5": "e099f51d128620e5a68cc3e9001dd976",
+  "live_definition_md5": "e099f51d128620e5a68cc3e9001dd976",
+  "live_source_md5": "dd91e64bc1d9e4a7645bbf4a750632db",
+  "sha256": "8f1209a6b00fce90192c2d8b30c9e6813b3219fff4a475094742d9e9f271230e",
+  "baseline_md5_reported_by_auditor": "e900be25dbf7c2d0cd3105bf13dcfb94",
+  "owner": "postgres",
+  "security_definer": true,
+  "volatility": "STABLE",
+  "search_path": "public",
+  "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "change_reported_by_auditor": "Única condição AND uc.revoked_at IS NULL; branches/assinatura/ACL preservados",
+  "hosted_tests": "Evidência externa do auditor; não reexecutada pelo agente; não prova UI/JWT/cache",
+  "writes_this_reconciliation": false
+}
