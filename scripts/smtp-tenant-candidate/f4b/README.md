@@ -1,7 +1,22 @@
-# F4b — Ativação por empresa + via SMTP do tenant na outbox existente (CANDIDATO, fechado; rev. pós-revisão 1cd70701)
+# F4b — Ativação por empresa + via SMTP do tenant na outbox existente (CANDIDATO, fechado; rev. pós-revisões 1cd70701 e e7f66ff)
 
 Base `600a94f1` (F4a promovida; remetente AR v2 verificado pelo titular). Nada aplicado/deployado pelo agente.
 Gates nascem fechados: `tenant_smtp_dispatch_gate=false` (SQL), `TENANT_SMTP_F4B_REVIEWED=false` (Edge), `TENANT_SMTP_LANE_REVIEWED=false` (worker), `TENANT_SMTP_F4B_PHASE=false` (UI).
+
+## Correções da revisão e7f66ff
+- P2 MIME: `buildNativeMimeMessage` (núcleo e espelho) escapa `& < > " '` somente no fallback de texto (`<pre>`); HTML explícito preservado. Teste independente decodifica a parte `text/html` e exige `&lt;/pre&gt;&lt;b&gt;UNTRUSTED&lt;/b&gt;`.
+- Destino vinculado: o claim grava `recipient_hash` = SHA-256(outbox_id + ':' + e-mail normalizado), nunca o texto do e-mail; o authorize recalcula com o e-mail Auth atual e recusa (`recipient_changed`, job cancelado e auditado) se mudou, mesmo confirmado.
+- Carteira: `tenant_smtp_lane_source_reason` exige vínculo `user_clientes` atual do consultor com o cliente (`is_active`, `revoked_at IS NULL`, `valid_from/valid_until`, `access_level` read/execute/manage) — mesmo predicado de `producer_request_mutation_guard`/`technical_client_link`. Falha → `recipient_portfolio_revoked` no enqueue, claim e authorize.
+- Fairness real: o claim seleciona até 25 EMPRESAS (pela fila mais antiga) e, para cada uma, até 5 jobs próprios; empresa ocupada/sem quota/sem credencial é pulada inteira. Teste: 25+ jobs da empresa A saturada à frente não impedem B. Limitação: fontes inválidas além de 5 por empresa são canceladas nas rodadas seguintes.
+- Invocação: opção fechada agora chama também com fila vazia quando há lease vencido a reconciliar ou heartbeat com mais de 5 min; não chama se há lease vivo (rodada em andamento) e usa trava consultiva. Rodada do worker limitada a 3 jobs e orçamento de 50 s (não inicia novo job com menos de 16 s restantes), abaixo do timeout HTTP de 55 s.
+
+## Procedimento mínimo de configuração (humano, após revisão)
+1. Aplicar `20261016_smtp_f4b_tenant_dispatch.sql` após `preflight.sql` no ref `swzpzcwiasxmjutrmvkm` (gate nasce false).
+2. Deploy do worker com `worker-index.ts.review` + `tenant-lane/` e do Edge F4b, ainda com flags false; revisar; só então flags true.
+3. Habilitar a extensão pg_net (pg_cron já existe; nenhum dos seis jobs atuais invoca o worker).
+4. No formulário seguro de segredos do Vault, criar `tenant_smtp_lane_invoker_secret` com o mesmo valor do segredo Edge `INTERNAL_FUNCTION_SECRET`. O agente não lê nem recebe esse valor.
+5. Aplicar `cron_option.sql.review` (falha fechado se pg_net/segredo ausentes) e abrir `tenant_smtp_dispatch_gate`.
+6. Admin da empresa ativa pelo painel (conexão OK ≤10 min). Rollback: `rollback.sql` (também remove o agendamento).
 
 ## Correções da revisão 1cd70701
 - P1 fonte revogada: `tenant_smtp_lane_source_reason` relê a solicitação atual (existe, mesmo `cliente_id`, consultor ainda atribuído, `status IN ('pendente','atribuida')`), cliente `status_cliente='ativo'` na mesma empresa e destinatário provado. Usada no enqueue, no claim (antes de IO) e no authorize. Fonte inválida → job/outbox `cancelled` + auditoria, sem destinatário/senha no retorno. Cobertos: desatribuição, reatribuição, cancelamento, exclusão, cliente inativo, troca de cliente, cliente movido de empresa.
@@ -36,13 +51,15 @@ Gates nascem fechados: `tenant_smtp_dispatch_gate=false` (SQL), `TENANT_SMTP_F4B
 `20261016_smtp_f4b_tenant_dispatch.sql`, `preflight.sql`, `rollback.sql` (não destrutivo; também remove o agendamento opcional), `cron_option.sql.review`, `contract.ts`, `lane.ts`, `worker-index.ts.review` (substitui o index do worker após revisão), `test_sql.py`, `scan_local.py`. Espelho: `f2f3/deploy/supabase/functions/process-communication-outbox/` e `tenant-email-settings/f4b/`.
 
 ## Evidências locais (rev.)
-SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empresas sintéticas configuradas pelo fluxo real, sem rede): 91 PASS no total do harness, sendo 90 específicos F4b. Vitest F4b 29 (inclui fio SMTP simulado: recusa após AUTH sem MAIL/RCPT/DATA) + suíte comunicação 867/867. Typecheck `-p tsconfig.app.json` 0. Lint focal 0. Scanner F4b 33/33, F4 20/20. `deno check` espelho: 0 erros novos (6 preexistentes no worker atual).
+SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empresas sintéticas configuradas pelo fluxo real, sem rede): 101 PASS (rev. e7f66ff). Vitest F4b 31 + MIME 6 (núcleo e espelho); suíte comunicação 875/875. Typecheck `-p tsconfig.app.json` 0. Lint focal 0. Scanner F4b 38/38, F4 20/20. `deno check` espelho: 0 erros novos (6 preexistentes no worker atual).
 
 ## Riscos / limites
 - Ausência de senha/código em logs de infraestrutura (Edge Invocations, PostgREST, statements) NÃO comprovada; TLS em trânsito, Vault em repouso.
 - Pausa/edição entre claim e AUTH: barrada no authorize. Só a janela authorize→DATA permanece (documentada acima).
 - Finish após lease vencido mas antes da reconciliação registra o resultado real; após reconciliação é terminal (`lost`).
 - Reatribuição X→Y cancela o aviso para X; Y não recebe aviso neste contrato (só primeira atribuição).
+- Sobreposição residual: entre o disparo pg_net e o primeiro claim (segundos) não há lease vivo; o próximo cron vem 60 s depois e a rodada termina em ≤50 s.
+- Hash do destino é por job (sal = outbox_id); muda de e-mail para o mesmo valor normalizado não é detectado (equivalente).
 - pg_net no invocador opcional mantém cabeçalhos (segredo) em fila interna transitoriamente.
 - Quotas são por hora e por empresa; não há quota diária. Teste de duas sessões concorrentes reais não executado (coberto por SKIP LOCKED + trava por empresa).
 - Hosted: revisar triggers existentes em `comunicacao_eventos`/`portal_solicitacoes` e grants do `service_role` (preflight lista).
