@@ -80,7 +80,7 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
  if(!currentContext)return <section className="mt-6 border-t pt-6"><p role="status" className="text-sm text-muted-foreground">Carregando configuração…</p></section>;
  return <section className="mt-6 border-t pt-6" aria-labelledby="tenant-email-title">
   <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="tenant-email-title" className="text-lg font-semibold">Email da empresa</h2><Badge variant="secondary">Envio bloqueado</Badge></div>
-  <div className="my-3 flex flex-wrap gap-2"><Badge variant="outline">Rascunho</Badge><Badge variant="outline">Remetente não verificado</Badge></div>
+  <div className="my-3 flex flex-wrap gap-2"><Badge variant="outline">Rascunho</Badge>{!transport.sender && <Badge variant="outline">Remetente não verificado</Badge>}</div>
   {phase==="loading" && <p role="status" className="text-sm text-muted-foreground">Carregando configuração…</p>}
   {message && <p role={phase==="ready" ? "status" : "alert"} className="mb-4 text-sm text-muted-foreground">{message}</p>}
   <form onSubmit={e=>{e.preventDefault();void save();}} className="grid gap-4 sm:grid-cols-2" autoComplete="off">
