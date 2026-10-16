@@ -7,7 +7,7 @@ HTTPS + Vault vigente; KMS adiado. Candidato conexão e envio controlado, sem ap
 Base recebida c922a18d57d998c347ae85f3c2e4db05212af310; snapshots/commits geridos pelo ambiente, nenhum checkout/commit manual. Diff contra essa base.
 
 ## 3. Evidência externa
-Titular informou AR Bio 007bb519-cba0-4704-be2c-cb93ad010048, versão1, smtpi.refilinformatica.com.br,465 implicit_tls, remetente teste@refilinformatica.com.br, credential_configured=true/DRAFT/dispatch=false/sender_verified=false. Informação não relida pelo agente; configuração e credencial reais intocadas.
+Titular informou inicialmente AR Bio007bb519-cba0-4704-be2c-cb93ad010048/versão1, e em02:02 confirmou correção **pelo Admin** para smtpi.kinghost.net/versão2. DNS informado A191.6.216.80/AAAA2804:10:8016::216:80; TLS local oficialPASS1.3/hostantigoFAILnameMismatch, nenhumaAUTH. São evidências externas, não reproduzidas pelo agente. Configuração/credencial reais não lidas nem editadas nesta revisão; flags DRAFT/dispatchfalse/sender_verifiedfalse preservadas.
 
 ## 4. Auditoria do existente
 Revisados native-smtp-client, smtp-provider-probe/deno, test-communication-email, worker e migrations outbox. Diagnóstico global e worker continuam indisponíveis; reutilizado núcleo TLS/EHLO/AUTH/SMTP existente, não fila/módulo paralelo.
@@ -28,13 +28,13 @@ Eventos sintéticos processados e jobs na outbox existente. Ticket privado txid/
 Lock por organização antes de row locks, CAS claim+prepare, chave idempotente por actor/org. Replay não fornece novo executor. Cooldown60s, conexão da mesma versão+actor em5min para send. Dois clientes PostgreSQL locais provaram apenas um claim.
 
 ## 10. SSRF/TLS
-A+AAAA completos validados antes de TCP, literal IP pinado, hostname original em startTls/handshake, certificado obrigatório. DNS/TCP/TLS com deadline4s e sem fallback; algoritmo conservador bloqueia ranges especiais e desconhecidos. IPv6 comprimido e blocos públicos amplos recusados: disponibilidade limitada explicitamente.
+A+AAAA completos validados antes de TCP, literal IP pinado, hostname original em startTls/handshake, certificado obrigatório. Parser numérico testado aceita IPv6 comprimido KingHost e públicos em192/8,198/8,203/8,2001/16, sem bloquear inteiros arbitrários. Exclui faixas especiais/mapped/translated/NAT64/Teredo/6to4/documentação/ULA e sintaxe ambígua. DNS+TCP+TLS compartilham deadline4s; sem fallback. CNAME terminal/resolver hosted permanece critério de prova, não fato já certificado.
 
 ## 11. Prova runtime e portas
 Docs Supabase limits bloqueiam25/587;465 candidata, não disponibilidade garantida. Deno2.6.10 local comprovou literalIP+hostname original e rejeitou hostname errado em fixture TLS local. Source upstream sugere APIs presentes, mas não prova build hosted. TENANT_PINNING_PROVEN=false. CNAME terminal/resolver hosted não comprovados; alternativa segura descrita no README: rotas server-side homologadas, não implementadas.
 
 ## 12. Partial writes/timeouts
-Wrapper completa short writes, zero/invalid write falha, socket fechado impede continuação. AUTH/conexão15s, SMTP response3s, late sockets fechados; DNS travado não inicia TCP. Pós-DATA incerto vira ambiguous, nunca retry automático;550 explícito é falha definitiva.
+Núcleo compartilhado agora espera CRLF completo/status multiline consistente/16KiB/64linhas e deadline único por resposta, preserva próximo frame por socket. writeSmtpBytes completa comandos e MIME, zero/invalid write falha, timeout não retoma loop. F2/F3 não depende de completeWrites redundante. Core fecha connect/startTls tardios e probe com deadline absoluto; AUTH/conexão15s/SMTPresponse3s permanecem. Pós-DATA incerto ambiguous sem retry;550 explícito definitivo.
 
 ## 13. Segredo e logs
 Credencial somente Vault->prepare service autorizado->memória executor, sem UI/cache/audit/console/exceptions brutas; JS não promete zeroização física. HTTPS em trânsito/Vault em repouso não provam ausência de bodies RPC de prepare, p_password T1 ou parâmetros/contextos SQL em logs de infraestrutura. Revisar retenção/acesso/configuração administrativa; nenhum vazamento afirmado nem KMS exigido.
@@ -49,7 +49,10 @@ Na seção existente, conexão+confirmação+envio, senha limpa, lock, generatio
 Vitest focal e regressões, SQL descartável com Auth/Vault sintéticos e rollback, lint/scanner/diff-check executados; resultados finais no adendo abaixo. Build automático observado OK. Typecheck efetivo app **UNVERIFIED nesta rodada**: execução manual proibida pelo ambiente; build/root files[] não são substitutos. Auditor precisa checar -p tsconfig.app.json antes de promoção. Nenhum teste Edge remoto usado, ref externo não comprovável nessas ferramentas.
 
 ## 17. Arquivos e rollback
-Pacote scripts/smtp-tenant-candidate/f2f3/{SQL,rollback,preflight,contract,handler,dispatch,executor,pinned-transport,review runtime/integração,test_sql,scanner,README,SHA256SUMS}; tenantSmtp.ts, TenantEmailSettings.tsx, dois testes, AGENTS/roadmap/relatório. Não alterou dependências/rotas/Auth/global/worker/deployed functions. Rollback fecha gate/revoga cores+wrappers/restaura INSERT fail-closed preservando dados. **Revisável, não pronto para ativação hosted** até revisão independente, typecheck e prova pinning/DNS+E2E Admin reais pelo auditor; não solicitar credencial real ao titular.
+Pacote scripts/smtp-tenant-candidate/f2f3 inclui espelho deploy completo, hosted-proof/sync_mirror e entrypoint completo; compartilhados smtp-provider-probe/native-smtp-client corrigidos, testes/AGENTS/roadmap/relatório/manifesto. Sem dependência/rota/Auth/global/worker/configuração hosted alterada. Rollback fecha gate/revoga cores+wrappers/restaura INSERT fail-closed preservando dados; desativar HOSTED_PROOF_ENABLED no entrypoint remove a prova temporária. **Revisável, não ativado hosted** até revisão independente, typecheck e prova pinning/DNS+E2E Admin reais pelo auditor; não solicitar credencial real ao titular.
+
+### Revisão independente179e84e — delta02:02
+135VitestPASS informado externamente, typecheck app ainda em execução. SQL42501 de contexto agora HTTP403 (sem execução). Prova temporária na Edge existente, somente Admin AR server-proven, hostfixo465, TLSA/AAAA e negativo hostname mismatch, sem senha/secret/Vault/AUTH/email/config write, resposta boolean/códigos. Deadline12s e cooldown60s locais; não rate-limit distribuído. TENANT_PINNING_PROVEN=false, não abre gates. Descrição operacional precisa no README; prova não executada hosted pelo agente.
 
 Referências: https://supabase.com/docs/guides/functions/limits ; https://docs.deno.com/api/deno/~/Deno.startTls ; https://docs.deno.com/api/deno/~/Deno.connectTls ; https://github.com/supabase/edge-runtime/blob/main/ext/runtime/ops/net.rs .
 
