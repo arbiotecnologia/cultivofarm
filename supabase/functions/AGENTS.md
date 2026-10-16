@@ -8,3 +8,4 @@
 - Legacy alert-email and push dispatch stay fail-closed until server-proven source, tenant and individual recipient contracts are homologated; flags alone cannot authorize delivery.
 - Fiscal Edges prove actor organization/resource before privileged operations; tenant files use private buckets and organization-prefixed paths derived server-side, with unowned legacy objects fail-closed.
 - Candidate B2B provisioning provenance uses reserved IDs, private receipts and server-owned app metadata; finish revalidates the claim's actor iat/invitation fence and takes the user guard gate before row locks — prevents editable provenance, stale-admin completion and gate/profile lock inversion.
+- Tenant SMTP sender possession uses a single-use code sent to the configured sender, stored only as salted hash bound to org/version/from; activation lives in private tables and any config version bump invalidates both — SMTP acceptance never proves mailbox ownership.

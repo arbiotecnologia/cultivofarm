@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, RotateCcw, Send, PlugZap } from "lucide-react";
+import TenantSenderVerification from "./TenantSenderVerification";
 import { EMPTY_DRAFT, EMPTY_VIEW, saveSchema, safeSmtpMessage, tenantSmtpTransport, testMessage, type TestRequest, type SmtpDraft, type SmtpView, type TenantSmtpTransport } from "@/lib/configuracoes/tenantSmtp";
 
 export default function TenantEmailSettings({ scope, transport=tenantSmtpTransport, proofEligible=false }: {scope:string;transport?:TenantSmtpTransport;proofEligible?:boolean}) {
@@ -100,5 +101,6 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={confirmSend} disabled={disabled || dirty || connectionVersion!==view.version} onChange={e=>setConfirmSend(e.target.checked)}/>Confirmo o teste para meu email confirmado</label>
    <Button type="button" variant="outline" disabled={disabled || cooldownSeconds>0 || dirty || !confirmSend || connectionVersion!==view.version || testKey.current?.uncertain===true} onClick={()=>void runTest("send")}><Send className="mr-2 h-4 w-4"/>Enviar teste</Button>
   </div>
+  {transport.sender && phase!=="loading" && view.version>0 && <TenantSenderVerification key={`${scope}:${view.version}:${reload}`} version={view.version} connectionReady={connectionVersion===view.version && !dirty} blocked={disabled || dirty} send={transport.sender}/>}
  </section>;
 }
