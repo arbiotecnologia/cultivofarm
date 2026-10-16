@@ -1161,5 +1161,6 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Lista/edição: tipo de acesso explícito, vínculo atual com carregando/erro/sem vínculo distintos; externos somente leitura com explicação (sem falso salvar).
 - [x] Cadastro: rótulos de tipo, ajuda quando não há elegíveis vs busca vazia, erro com "tentar novamente".
 - [x] Delta a5a8725b: parser estrito do contrato, externos com perfis internos ocultos e dados comuns desabilitados (senha separada mantida), `any` novos removidos; lint legado separado.
-- [ ] Revisão independente do delta + publicação (pelo titular).
+- [ ] Correção focal pós-publicação: preservar receiver de `SupabaseClient.rpc` na leitura em lote; regressão com método dependente de `this`, validações e relatório em execução. Sem mudanças no banco ou SMTP.
+- [ ] Revisão independente da correção + publicação (pelo titular); leitura real Admin AR após publicação pendente.
 - [ ] Fase 2 candidata (extensão do contrato v1, CAS perfil+vínculos, idempotência com revalidação, locks, revogação server-side): implementação autorizada; nenhuma escrita aplicada antes da revisão independente.
