@@ -57,11 +57,10 @@ try:
  run('CREATE POLICY fixture_child_read ON commercial_campaign_clientes TO authenticated USING(true)')
  check(scoped('SELECT count(*) FROM commercial_campaigns'),'1')
  for change in ['is_active=false','revoked_at=now()','valid_from=now()+interval \'1 day\'','valid_until=now()-interval \'1 day\'']:
-  run('UPDATE user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval \'1 day\',valid_until=NULL,'+change)
+  run('UPDATE user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval \'1 day\',valid_until=NULL')
+  run('UPDATE user_clientes SET '+change)
   check(scoped(helper),'f');check(scoped('SELECT count(*) FROM commercial_campaigns'),'0')
- run("UPDATE user_clientes SET is_active=true,revoked_at=NULL,valid_from=now(),valid_until=now()")
- # Exact boundary same transaction, inclusive to match live resolver.
- check(actor+"UPDATE user_clientes SET valid_from=now(),valid_until=now();"+'ROLLBACK;','') if False else None
+ run("BEGIN;UPDATE user_clientes SET is_active=true,revoked_at=NULL,valid_from=now(),valid_until=now();SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='00000000-0000-4000-8000-000000000001';SELECT public.has_active_user_cliente_access(auth.uid(),'00000000-0000-4000-8000-000000000002');ROLLBACK;")
  run("UPDATE user_clientes SET valid_from=NULL,valid_until=NULL")
  check(scoped(helper),'t')
  check(scoped(helper.replace('auth.uid()',"'00000000-0000-4000-8000-000000000099'")),'f')
