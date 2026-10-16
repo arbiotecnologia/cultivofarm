@@ -22,11 +22,11 @@ checks={
  'recipient re-proven at claim':'v_email:=platform_private.tenant_smtp_lane_recipient(j.organization_id,j.recipient_user_id)' in sql,
  'rollback non-destructive':'DROP TABLE' not in rb and 'DELETE' not in rb and 'TRUNCATE' not in rb,
  'lane no console':'console.' not in lane,
- 'lane flag false':'export const TENANT_SMTP_LANE_REVIEWED = false;' in worker,
+ 'lane flag promoted':'export const TENANT_SMTP_LANE_REVIEWED = true;' in worker,
  'worker NOTIF3 kept':'const deliveryContractAvailable = false;' in worker and 'const deliveryContractAvailable = false;' in live,
- 'live worker unchanged':'tenant_smtp' not in live,
- 'edge F4b flag false':'TENANT_SMTP_F4B_REVIEWED=false' in (D/'tenant-email-settings/index.ts').read_text(),
- 'UI F4b phase false':'export const TENANT_SMTP_F4B_PHASE = false;' in lib,
+ 'live worker = reviewed worker':live==(R/'worker-index.ts.review').read_text(),
+ 'edge F4b flag promoted':'TENANT_SMTP_F4B_REVIEWED=true' in (D/'tenant-email-settings/index.ts').read_text(),
+ 'UI F4b phase promoted':'export const TENANT_SMTP_F4B_PHASE = true;' in lib,
  'UI activate gated':'activationEnabled && status?.sender_verified && !status.active' in ui,
  'mirror lane equal':(D/'process-communication-outbox/tenant-lane/lane.ts').read_text()==lane.replace('../../../supabase/functions/_shared/','../../_shared/'),
  'mirror worker equal':(D/'process-communication-outbox/index.ts').read_text()==worker,
@@ -47,7 +47,9 @@ checks={
  'lane invoker dedicated secret only':'authorizeLaneInvoker(req, LANE_INVOKER_SECRET)' in worker and "'x-tenant-smtp-secret',v_secret" in (R/'cron_option.sql.review').read_text() and 'x-internal-secret' not in (R/'cron_option.sql.review').read_text(),
  'mirror invoker auth equal':(D/'process-communication-outbox/tenant-lane/invoker-auth.ts').read_text()==(R/'invoker-auth.ts').read_text(),
  'invoker auth no console/logging':'console.' not in (R/'invoker-auth.ts').read_text(),
- 'not deployed':not Path('supabase/functions/process-communication-outbox/tenant-lane').exists() and not Path('supabase/functions/tenant-email-settings/f4b').exists(),
+ 'deployed lane = mirror':all(Path('supabase/functions/process-communication-outbox/tenant-lane/'+n).read_text()==(D/'process-communication-outbox/tenant-lane'/n).read_text().replace('../../tenant-email-settings/f4/contract.ts','../../_shared/tenant-smtp/f4-contract.ts') for n in ('lane.ts','invoker-auth.ts','contract.ts')),
+ 'deployed f4b = mirror':Path('supabase/functions/tenant-email-settings/f4b/contract.ts').read_text()==(D/'tenant-email-settings/f4b/contract.ts').read_text(),
+ 'gateway jwt split':'[functions.process-communication-outbox]\nverify_jwt = false' in Path('supabase/config.toml').read_text() and '[functions.tenant-email-settings]\nverify_jwt = true' in Path('supabase/config.toml').read_text(),
 }
 for k,v in checks.items():print(('PASS ' if v else 'FAIL ')+k)
 assert all(checks.values())

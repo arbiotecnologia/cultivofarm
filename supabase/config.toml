@@ -95,3 +95,13 @@ verify_jwt = false
 # revalidado em código; service_role somente dentro da função.
 [functions.platform-org-admin-email-change]
 verify_jwt = true
+
+# SMTP por empresa (F4b). Configurações por empresa: JWT obrigatório no gateway + Admin revalidado em código.
+[functions.tenant-email-settings]
+verify_jwt = true
+
+# Processador da outbox: a rota ?lane=tenant_smtp autentica SOMENTE pelo header dedicado
+# x-tenant-smtp-secret (TENANT_SMTP_LANE_INVOKER_SECRET); a rota global mantém a autorização em código.
+# JWT de gateway desligado apenas aqui, porque o invocador (pg_cron/pg_net) não envia JWT.
+[functions.process-communication-outbox]
+verify_jwt = false

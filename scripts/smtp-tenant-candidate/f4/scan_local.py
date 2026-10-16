@@ -26,8 +26,8 @@ checks={
  'dispatch_ready constant false':"$$ SELECT false $$" in sql,
  'invalidation covers executing':"state IN ('claimed','executing','sent','ambiguous')" in sql,
  'confirm checks gates':sql.count('Closed gate blocks confirmation')==1,
- 'UI activate only behind F4b phase':'activationEnabled && status?.sender_verified' in Path('src/pages/configuracoes/TenantSenderVerification.tsx').read_text() and 'TENANT_SMTP_F4B_PHASE = false' in ui,
- 'not deployed':not Path('supabase/functions/tenant-email-settings/f4').exists(),
+ 'UI activate only behind F4b phase':'activationEnabled && status?.sender_verified' in Path('src/pages/configuracoes/TenantSenderVerification.tsx').read_text() and 'TENANT_SMTP_F4B_PHASE = true' in ui,
+ 'deployed f4 contract = mirror':Path('supabase/functions/_shared/tenant-smtp/f4-contract.ts').read_text()==(E/'f4'/'contract.ts').read_text() and 'export * from "../../_shared/tenant-smtp/f4-contract.ts"' in Path('supabase/functions/tenant-email-settings/f4/contract.ts').read_text(),
 }
 for k,v in checks.items():print(('PASS ' if v else 'FAIL ')+k)
 assert all(checks.values())

@@ -408,6 +408,8 @@ describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
       ["whatsapp-status-webhook", /x-hub-signature-256|timingSafeEqual/],
       ["platform-complete-first-access", /auth\.getClaims\s*\(/],
       ["onboarding-cnpj-lookup", /auth\.getClaims\s*\(/],
+      // F4b: only ?lane=tenant_smtp, dedicated header compared in constant time; global route keeps in-code authorize.
+      ["process-communication-outbox", /authorizeLaneInvoker\(req, LANE_INVOKER_SECRET\)/],
     ]);
     const disabled: string[] = [];
     for (const b of blocks) {

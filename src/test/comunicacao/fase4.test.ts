@@ -663,6 +663,8 @@ describe("Fase 4 · funções sem JWT legado mantêm autenticação interna", ()
       ["whatsapp-status-webhook", /x-hub-signature-256|timingSafeEqual/],
       ["platform-complete-first-access", /auth\.getClaims\s*\(/],
       ["onboarding-cnpj-lookup", /auth\.getClaims\s*\(/],
+      // F4b: only ?lane=tenant_smtp, dedicated header compared in constant time; global route keeps in-code authorize.
+      ["process-communication-outbox", /authorizeLaneInvoker\(req, LANE_INVOKER_SECRET\)/],
     ]);
     expect(disabled.sort()).toEqual([...contracts.keys()].sort());
     for (const name of disabled) {

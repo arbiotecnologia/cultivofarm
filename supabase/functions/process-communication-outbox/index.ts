@@ -25,9 +25,20 @@ import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { sendWhatsapp } from "../_shared/comunicacao/whatsapp-adapter.ts";
 import { sendInApp } from "../_shared/comunicacao/inapp-adapter.ts";
+import { runTenantLane } from "./tenant-lane/lane.ts";
+import { authorizeLaneInvoker, isTenantLaneRequest } from "./tenant-lane/invoker-auth.ts";
+import { tenantSmtpDeps, TENANT_PINNING_PROVEN } from "../_shared/tenant-smtp/deno-runtime.ts";
+
+// F4b tenant SMTP lane: reviewed flag starts FALSE. Independent of the global NOTIF3 containment below,
+// which stays exactly as is (global DELIVERY_ENABLED/WhatsApp/in_app untouched). The lane only processes
+// jobs created by the server contract (platform_private.tenant_smtp_dispatch_jobs); credentials only via
+// the executor claim; no global fallback; no retry of a job after IO.
+export const TENANT_SMTP_LANE_REVIEWED = true;
 
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+// Dedicated lane-only credential (never valid for the global route below).
+const LANE_INVOKER_SECRET = Deno.env.get("TENANT_SMTP_LANE_INVOKER_SECRET") ?? "";
 
 const WORKER_ID = `worker-${Deno.env.get("DENO_DEPLOYMENT_ID") ?? "local"}-${crypto.randomUUID().slice(0, 8)}`;
 const BATCH_SIZE = 10;
@@ -58,8 +69,22 @@ function authorize(req: Request): { ok: true } | { ok: false; res: Response } {
 Deno.serve(async (req: Request) => {
   const pre = requirePost(req);
   if (pre) return pre;
+  // Tenant SMTP lane: ONLY the dedicated header/secret authorizes it; global credentials are not accepted here.
+  if (isTenantLaneRequest(req)) {
+    if (!authorizeLaneInvoker(req, LANE_INVOKER_SECRET)) return json(401, { ok: false, error: "unauthorized" });
+    if (!TENANT_SMTP_LANE_REVIEWED || !TENANT_PINNING_PROVEN) return json(503, { ok: false, error: "TENANT_SMTP_LANE_UNAVAILABLE" });
+    try {
+      const summary = await runTenantLane(serviceClient(), WORKER_ID.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 80), tenantSmtpDeps);
+      return json(summary.stopped === "claim_error" || summary.stopped === "finish_error" ? 500 : 200, { ok: true, lane: "tenant_smtp", ...summary });
+    } catch {
+      return json(500, { ok: false, error: "TENANT_SMTP_LANE_INTERNAL" });
+    }
+  }
+
+  // Global route: unchanged authentication (x-tenant-smtp-secret is ignored here).
   const authz = authorize(req);
   if (!authz.ok) return authz.res;
+  if (new URL(req.url).searchParams.has("lane")) return json(400, { ok: false, error: "unknown_lane" });
 
   // NOTIF-3: internal credentials do not prove source/tenant/recipient.
   // No runtime secret load, claim, adapter or ledger effects while contained.

@@ -67,3 +67,10 @@ SQL PostgreSQL descartável (2x idempotente, `SET ROLE service_role`, duas empre
 - Quotas são por hora e por empresa; não há quota diária. Teste de duas sessões concorrentes reais não executado (coberto por SKIP LOCKED + trava por empresa).
 - Hosted: revisar triggers existentes em `comunicacao_eventos`/`portal_solicitacoes` e grants do `service_role` (preflight lista).
 - Edge F4a em produção valida `dispatch_enabled` literal false: aplicar SQL F4b junto ao deploy do Edge com F4b revisado.
+
+## Estado da promoção (2026-10-16)
+- Aplicados no ref swzpzcwiasxmjutrmvkm: migration F4b (gate criado fechado), pg_net, agendamento `tenant-smtp-lane` (a cada minuto: ~1440 checagens SQL/dia; chamada HTTP só com trabalho, reserva vencida ou sinal de vida >5 min).
+- Deploy: process-communication-outbox `22f0a7a6…cd79` (JWT de gateway desligado só nele; auth dedicada da lane em código) e tenant-email-settings `c30b576e…0a2e` (JWT obrigatório).
+- Validação com gate aberto: 3 chamadas responderam 401 `unauthorized` do próprio worker; sem sinal de vida. Gate reaberto → fechado. Empresas ativas 0, itens 0, nenhum e-mail.
+- Causa provável: Edge Secret `TENANT_SMTP_LANE_INVOKER_SECRET` ausente no projeto Supabase, com menos de 32 caracteres ou diferente do Vault `tenant_smtp_lane_invoker_secret`. Valores não foram lidos.
+- Correções de texto: o equilíbrio é por empresa (até 25 empresas × 5 itens por rodada); auditoria usa ator NULL apenas para o executor, nunca ator zero; o orçamento de 50 s é um limite brando do worker, não prazo rígido das RPCs. Não há garantia absoluta contra a corrida residual pós-autorização.

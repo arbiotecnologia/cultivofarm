@@ -1,0 +1,1 @@
+UPDATE platform_private.tenant_smtp_dispatch_gate SET approved=false WHERE id;
