@@ -48,7 +48,7 @@ SELECT pg_temp.assert_true('no direct insert',NOT has_table_privilege('authentic
   def error(label,query,code):return "SELECT pg_temp.expect_error('"+label+"',$q$"+query+"$q$,'"+code+"');"
   sql+=error('stale version no retry',f"SELECT public.tenant_email_settings_save(1,{cfg},'test-only')",'40001')
   sql+=error('Vault failure safe rollback',f"SELECT public.tenant_email_settings_save(2,{cfg},'fail-vault')",'P0001')
-  sql+=error('injection rejected',f"SELECT public.tenant_email_settings_save(2,jsonb_set({cfg},'{{from_name}}',to_jsonb(E'bad\\r\\nDATA')),'test-only')",'22023')
+  sql+=error('injection rejected',f"SELECT public.tenant_email_settings_save(2,jsonb_set({cfg},'{{from_name}}',to_jsonb(E'bad\\r\\nDATA'::text)),'test-only')",'22023')
   sql+=error('forged organization key',f"SELECT public.tenant_email_settings_save(2,{cfg}||jsonb_build_object('organization_id','{b}'),'test-only')",'22023')
   sql+=error('direct mutation ACL',"UPDATE public.communication_tenant_email_settings SET dispatch_enabled=true",'42501')
   sql+="RESET ROLE;SELECT pg_temp.assert_true('atomic metadata version',(SELECT version FROM communication_tenant_email_settings WHERE organization_id='"+a+"')=2);SELECT pg_temp.assert_true('atomic Vault rollback',(SELECT sum(rotations) FROM vault.calls)=3);SELECT pg_temp.assert_true('no audit credential/value', (SELECT array_agg(column_name::text) FROM information_schema.columns WHERE table_schema='public' AND table_name='communication_tenant_email_audit') @> ARRAY['actor_id','action','version'] AND NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='communication_tenant_email_audit' AND column_name IN ('password','config','secret_id')));"
