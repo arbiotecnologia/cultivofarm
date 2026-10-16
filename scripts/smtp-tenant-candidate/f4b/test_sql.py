@@ -7,6 +7,7 @@ ADM='11111111-1111-4111-8111-111111111111';ORG='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaa
 ADM2='22222222-2222-4222-8222-222222222222';ORG2='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' # tenant B admin
 CON='c0c0c0c0-c0c0-4c0c-8c0c-c0c0c0c0c0c0';CON2='c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1';NOROLE='c2c2c2c2-c2c2-4c2c-8c2c-c2c2c2c2c2c2';CON3='c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3'
 CLI='d0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0';CLI2='d1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1';CLI3='d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3';CLI4='d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4'
+CLI5='d5d5d5d5-d5d5-4d5d-8d5d-d5d5d5d5d5d5';CLI6='d6d6d6d6-d6d6-4d6d-8d6d-d6d6d6d6d6d6';CLI7='d7d7d7d7-d7d7-4d7d-8d7d-d7d7d7d7d7d7'
 def sol(i):return f'e{i:07d}-0000-4000-8000-000000000000'
 def main():
  ns=f4.harness_setup();sql=ns['sql'];cfg=ns['cfg']
@@ -22,13 +23,17 @@ def main():
 CREATE TYPE public.cliente_status AS ENUM('prospect','ativo','inativo','bloqueado_financeiro');
 CREATE TABLE public.clientes(id uuid PRIMARY KEY,organization_id uuid,status_cliente public.cliente_status NOT NULL DEFAULT 'ativo');
 CREATE TABLE public.portal_solicitacoes(id uuid PRIMARY KEY,cliente_id uuid,consultor_atribuido uuid,numero_solicitacao text,tipo_demanda text,urgencia text,status text DEFAULT 'pendente');
-INSERT INTO public.clientes VALUES('{CLI}','{ORG}'),('{CLI2}','{ORG2}'),('{CLI3}','{ORG}'),('{CLI4}','{ORG}');
+INSERT INTO public.clientes VALUES('{CLI}','{ORG}'),('{CLI2}','{ORG2}'),('{CLI3}','{ORG}'),('{CLI4}','{ORG}'),('{CLI5}','{ORG}'),('{CLI6}','{ORG}'),('{CLI7}','{ORG}');
+CREATE TABLE public.user_clientes(user_id uuid,cliente_id uuid,is_active boolean,revoked_at timestamptz,valid_from timestamptz,valid_until timestamptz,access_level text);
+INSERT INTO public.user_clientes VALUES('{CON}','{CLI}',true,NULL,NULL,NULL,'execute'),('{CON}','{CLI3}',true,NULL,NULL,NULL,'read'),('{CON}','{CLI4}',true,NULL,NULL,NULL,'manage'),
+ ('{CON}','{CLI5}',true,NULL,NULL,NULL,'execute'),('{CON}','{CLI6}',true,NULL,NULL,NULL,'execute'),('{CON}','{CLI7}',true,NULL,now()-interval '2 days',now()-interval '1 day','execute'),
+ ('{CON3}','{CLI}',true,NULL,NULL,NULL,'execute'),('{CON2}','{CLI2}',true,NULL,NULL,NULL,'execute'),('{NOROLE}','{CLI}',true,NULL,NULL,NULL,'execute');
 INSERT INTO public.profiles(user_id,organization_id) VALUES('{CON}','{ORG}'),('{CON2}','{ORG2}'),('{NOROLE}','{ORG}'),('{CON3}','{ORG}');
 INSERT INTO auth.users VALUES('{CON}','consultor@tenant-a.test',now()),('{CON2}','consultor@tenant-b.test',now()),('{NOROLE}','norole@tenant-a.test',now()),('{CON3}','consultor3@tenant-a.test',now());
 """
   sql+=f"INSERT INTO public.user_roles VALUES('{CON}','consultor_tecnico'),('{CON2}','tecnico_agronomo'),('{CON3}','consultor_tecnico');"
   sql+=("INSERT INTO public.portal_solicitacoes(id,cliente_id,numero_solicitacao,tipo_demanda,urgencia) SELECT ('e'||lpad(g::text,7,'0')||'-0000-4000-8000-000000000000')::uuid,"
-   f"CASE WHEN g=9 OR g>80 THEN '{CLI2}'::uuid WHEN g=24 THEN '{CLI3}'::uuid WHEN g=26 THEN '{CLI4}'::uuid ELSE '{CLI}'::uuid END,'SOL-'||g||'<b>x</b>','praga','alta' FROM generate_series(1,90) g;")
+   f"CASE WHEN g=9 OR g BETWEEN 81 AND 89 THEN '{CLI2}'::uuid WHEN g=24 THEN '{CLI3}'::uuid WHEN g=26 THEN '{CLI4}'::uuid WHEN g=27 THEN '{CLI5}'::uuid WHEN g=36 THEN '{CLI6}'::uuid WHEN g=28 THEN '{CLI7}'::uuid ELSE '{CLI}'::uuid END,'SOL-'||g||'<b>x</b>','praga','alta' FROM generate_series(1,120) g;")
   sql+="""CREATE OR REPLACE FUNCTION public.rpc_claim_communication_outbox(p_batch_size integer,p_worker_id text,p_lease_seconds integer DEFAULT 60) RETURNS SETOF comunicacao_outbox LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $f$
 BEGIN RETURN QUERY WITH candidatos AS (SELECT id FROM public.comunicacao_outbox WHERE ((status='pending' AND next_attempt_at<=now()) OR (status='processing' AND lease_expires_at IS NOT NULL AND lease_expires_at<now())) ORDER BY next_attempt_at LIMIT p_batch_size FOR UPDATE SKIP LOCKED),
  updated AS (UPDATE public.comunicacao_outbox o SET status='processing',locked_at=now(),locked_by=p_worker_id,lease_expires_at=now()+make_interval(secs=>p_lease_seconds),attempts=o.attempts+1 FROM candidatos c WHERE o.id=c.id RETURNING o.*) SELECT * FROM updated; END$f$;
@@ -91,6 +96,7 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+=assign(2,CON2)+"RESET ROLE;"+ok('recipient from other tenant not enqueued',f"{job(2)} IS NULL")
   sql+=assign(3,NOROLE)+"RESET ROLE;"+ok('recipient without technical role not enqueued',f"{job(3)} IS NULL")
   sql+=assign(4,ADM)+"RESET ROLE;"+ok('admin (non consultant) not enqueued',f"{job(4)} IS NULL")
+  sql+=assign(28)+"RESET ROLE;"+ok('expired portfolio window not enqueued',f"{job(28)} IS NULL")
   sql+=f"RESET ROLE;UPDATE public.portal_solicitacoes SET status='concluida' WHERE id='{sol(5)}';"+assign(5)+"RESET ROLE;"+ok('ineligible source state not enqueued',f"{job(5)} IS NULL")
   sql+="RESET ROLE;"+f"INSERT INTO public.comunicacao_eventos(id,event_key,source_type,source_id,payload,idempotency_key,status) VALUES('f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0','tenant.smtp.solicitacao_atribuida','portal_solicitacoes','{sol(6)}','{{}}','forged-event-0001','processed');"
   sql+=f"INSERT INTO public.comunicacao_outbox(id,event_id,template_chave,template_versao,template_snapshot,canal,recipient_user_id,status,attempts,max_attempts,locked_by,idempotency_key) VALUES('f1f1f1f1-f1f1-4f1f-8f1f-f1f1f1f1f1f1','f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0','solicitacao_atribuida_consultor_v1',1,'{{}}','email','{CON}','processing',0,1,'tenant_smtp_lane','forged-outbox-0001');"
@@ -107,19 +113,20 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+=err('different outcome replay conflicts',fin('j1','failed'),'40001')
   sql+="RESET ROLE;"+ok('outbox sent',f"{obx(1)}='sent'")
   # Source revocation between enqueue and claim: cancellation, deletion, reassignment, unassignment, client/tenant change.
-  for i in (20,21,22,23,24,25,26): sql+=assign(i)
-  sql+="RESET ROLE;"+ok('seven revocation fixtures queued',f"(SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued')=7")
+  for i in (20,21,22,23,24,25,26,27): sql+=assign(i)
+  sql+="RESET ROLE;"+ok('eight revocation fixtures queued',f"(SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued')=8")
   sql+=f"""RESET ROLE;UPDATE public.portal_solicitacoes SET consultor_atribuido=NULL WHERE id='{sol(20)}';
 UPDATE public.portal_solicitacoes SET consultor_atribuido='{CON3}' WHERE id='{sol(21)}';
 UPDATE public.portal_solicitacoes SET status='cancelada' WHERE id='{sol(22)}';
 DELETE FROM public.portal_solicitacoes WHERE id='{sol(23)}';
 UPDATE public.clientes SET status_cliente='inativo' WHERE id='{CLI3}';
 UPDATE public.portal_solicitacoes SET cliente_id='{CLI2}' WHERE id='{sol(25)}';
-UPDATE public.clientes SET organization_id='{ORG2}' WHERE id='{CLI4}';"""
+UPDATE public.clientes SET organization_id='{ORG2}' WHERE id='{CLI4}';
+UPDATE public.user_clientes SET revoked_at=now() WHERE user_id='{CON}' AND cliente_id='{CLI5}';"""
   sql+=lclaim('rev')+"RESET ROLE;"+ok('revoked sources never return recipient or credential',empty('rev'))
-  for i,c in ((20,'source_unassigned'),(21,'source_reassigned'),(22,'source_state_ineligible'),(23,'source_missing'),(24,'client_ineligible'),(25,'source_client_changed'),(26,'client_tenant_changed')):
+  for i,c in ((20,'source_unassigned'),(21,'source_reassigned'),(22,'source_state_ineligible'),(23,'source_missing'),(24,'client_ineligible'),(25,'source_client_changed'),(26,'client_tenant_changed'),(27,'recipient_portfolio_revoked')):
    sql+=ok(f'revoked {c} cancelled',f"{job(i)}='cancelled' AND {code(i)}='{c}' AND {obx(i)}='cancelled'")
-  sql+=ok('cancellations audited per source',"(SELECT count(*) FROM platform_private.tenant_smtp_lane_audit WHERE event='cancelled')=7")
+  sql+=ok('cancellations audited per source',"(SELECT count(*) FROM platform_private.tenant_smtp_lane_audit WHERE event='cancelled')=8")
   # Pause between claim and authorize: no envelope.
   sql+=assign(30)+lclaim('j30')+actor(ADM)+ok('pause ok during lease',f"({act('false')[7:]})->>'active'='false'")
   sql+=svc+ok('authorize after pause withheld',f"({auth('j30')[7:]})->>'reason'='tenant_not_ready'")
@@ -144,6 +151,14 @@ UPDATE public.clientes SET organization_id='{ORG2}' WHERE id='{CLI4}';"""
   # Source revoked between claim and authorize.
   sql+=assign(34)+lclaim('j34')+f"RESET ROLE;UPDATE public.portal_solicitacoes SET consultor_atribuido=NULL WHERE id='{sol(34)}';"
   sql+=svc+ok('unassigned during lease withheld',f"({auth('j34')[7:]})->>'reason'='source_unassigned'")
+  sql+=assign(36)+lclaim('j36')+f"RESET ROLE;UPDATE public.user_clientes SET is_active=false WHERE user_id='{CON}' AND cliente_id='{CLI6}';"
+  sql+=svc+ok('portfolio deactivated during lease withheld',f"({auth('j36')[7:]})->>'reason'='recipient_portfolio_revoked'")
+  sql+="RESET ROLE;"+ok('portfolio withheld job cancelled',f"{job(36)}='cancelled' AND {obx(36)}='cancelled'")
+  sql+=assign(35)+lclaim('j35')+"RESET ROLE;"+ok('claim binds destination hash, not plaintext',f"(SELECT recipient_hash ~ '^[0-9a-f]{{64}}$' AND row_to_json(j)::text NOT LIKE '%consultor@%' FROM platform_private.tenant_smtp_dispatch_jobs j WHERE source_id='{sol(35)}')")
+  sql+=f"RESET ROLE;UPDATE auth.users SET email='consultor-novo@tenant-a.test' WHERE id='{CON}';"
+  sql+=svc+ok('Auth email changed (still confirmed) during lease withheld',f"({auth('j35')[7:]})->>'reason'='recipient_changed'")
+  sql+="RESET ROLE;"+ok('stale destination cancelled + audited',f"{job(35)}='cancelled' AND {code(35)}='recipient_changed' AND EXISTS(SELECT 1 FROM platform_private.tenant_smtp_lane_audit WHERE event='withheld' AND result_code='recipient_changed' AND source_id='{sol(35)}')")
+  sql+=f"RESET ROLE;UPDATE auth.users SET email='consultor@tenant-a.test' WHERE id='{CON}';"
   sql+="RESET ROLE;"+ok('authorize response has no secret',"NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_lane_audit x WHERE row_to_json(x)::text ~ '(synthetic-only|consultor@|Nova solicita)')")
   sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_lane_heartbeat SET seen_at=clock_timestamp()-interval '11 minutes';"+actor(ADM)+ok('stale lane heartbeat: UI not operational',"(public.tenant_smtp_f4_status()->>'dispatch_enabled')='false'")
   # Tenant B fully configured (real save/connection/verification/activation) for fairness.
@@ -159,6 +174,11 @@ UPDATE public.clientes SET organization_id='{ORG2}' WHERE id='{CLI4}';"""
   sql+=ok('B recipient is B consultant only',f"(SELECT recipient_user_id='{CON2}' AND organization_id='{ORG2}' FROM platform_private.tenant_smtp_dispatch_jobs WHERE source_id='{sol(81)}')")
   sql+="RESET ROLE;UPDATE public.portal_solicitacoes SET consultor_atribuido='"+CON+"' WHERE id BETWEEN '"+sol(61)+"' AND '"+sol(80)+"' AND cliente_id='"+CLI+"';"
   sql+="RESET ROLE;"+ok('enqueue quota exactly 50/hour per tenant',f"(SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE organization_id='{ORG}')=50")
+  sql+=f"RESET ROLE;UPDATE platform_private.tenant_smtp_dispatch_jobs SET created_at=created_at-interval '61 minutes' WHERE organization_id='{ORG}';"
+  sql+="RESET ROLE;UPDATE public.portal_solicitacoes SET consultor_atribuido='"+CON+"' WHERE id BETWEEN '"+sol(90)+"' AND '"+sol(119)+"';"
+  sql+=assign(83,CON2)+"RESET ROLE;"+ok('saturated tenant A has 25+ queued ahead of B',f"(SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE organization_id='{ORG}' AND state='queued' AND created_at<(SELECT created_at FROM platform_private.tenant_smtp_dispatch_jobs WHERE source_id='{sol(83)}'))>=25")
+  sql+=lclaim('j83')+"RESET ROLE;"+ok('fairness: 25+ saturated jobs do not block next tenant',"(SELECT v->>'recipient'='consultor@tenant-b.test' FROM w WHERE k='j83')")
+  sql+=svc+f"SELECT {auth('j83')[7:]};SELECT {fin('j83','sent')[7:]};"
   # Config edit between claim and authorize (tenant B): version CAS withholds.
   sql+=assign(82,CON2)+lclaim('j82')+f"RESET ROLE;UPDATE communication_tenant_email_settings SET version=version+1 WHERE organization_id='{ORG2}';"
   sql+=svc+ok('config edit during lease withheld',f"({auth('j82')[7:]})->>'reason'='tenant_not_ready'")
