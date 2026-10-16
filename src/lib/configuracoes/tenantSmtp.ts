@@ -8,8 +8,8 @@ export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 // HTTPS + Vault accepted by owner; infrastructure log suppression is unverified.
 // Enables draft requests only; server ACL/Vault/review gate remain independent. No global fallback.
 export const TENANT_SMTP_REVIEWED = true;
-// Temporary review candidate only; close together with HOSTED_PROOF_ENABLED after evidence collection.
-export const TENANT_SMTP_PROOF_PHASE = true;
+// Hosted proof collected by auditor; temporary UI closed alongside HOSTED_PROOF_ENABLED.
+export const TENANT_SMTP_PROOF_PHASE = false;
 export function canRunTenantSmtpProof(context:{ready:boolean;userId?:string;organizationId?:string|null;roles:readonly string[]}):boolean {
  return TENANT_SMTP_PROOF_PHASE && context.ready && !!context.userId && context.organizationId==='007bb519-cba0-4704-be2c-cb93ad010048' && context.roles.includes('administrador') && !context.roles.includes('superadmin');
 }

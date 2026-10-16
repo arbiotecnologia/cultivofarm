@@ -1,13 +1,19 @@
+## SMTP F2/F3 — promoção mínima após prova REAL (02:28 UTC)
+- [x] Evidência EXTERNA do auditor: site publicado bb4e2266, sessão Admin AR, Edgev4 JWTtrue; UI retornou prova TLS aprovada, sem credencial/email, com ok/PINNING_PROOF_PASS/dns_validated/ipv4_tls/ipv6_tls/hostname_mismatch_rejected todos true. Screenshot informado pelo auditor, não inspecionado/executado pelo agente.
+- [x] Candidato mínimo: UI TENANT_SMTP_PROOF_PHASE=false, Edge HOSTED_PROOF_ENABLED=false, review/espelho TENANT_PINNING_PROVEN=true. Guards/core/schema/config/senha preservados; homologação KingHost465 somente controle, não hosts arbitrários.
+- [x] Delta local:207/207Vitest em5arquivos, lint2arquivos0, scanner25/25, SQLdescartável47checks incluindo corrida/SETROLEservice/rollback PASS, manifesto35/35, deno check --no-lock PASS e build automático02:30:21OK. Manifesto anterior referia deno.lock ausente no checkout/não versionado: entrada órfã retirada, nenhum lock apagado/gerado; sem alegar frozen. Typecheck app dedicado depende auditor, não equivale ao build/root.
+- [ ] Auditor: revisão independente, gate privado true/deploy e teste AUTH/envio controlado; nenhum SQL/deploy/publicação pelo agente. Workers globais/dispatch/sender_verified/AuthSMTP permanecem sem liberação; recuperação de jobs órfãos/ambíguos segue fail-closed, aguarda fluxo humano auditado.
+
 ## SMTP F2/F3 — integração prova via UI e cooldown (02:14 UTC)
 - [x] Botão temporário AdminAR na seção existente, runtime_proof estrito sem credencial/JWT manual; AUTH/send dependem da homologação, pinningfalse/GETPUT preservados.
 - [x] PASS mesma versão preservado no SMTP_COOLDOWN, espera60s sem retry/reconexão e confirmação desmarcada.205Vitest/47SQL/scanner25/25/deno frozen PASS; lint focal7arquivos0, Configuracoes18/2 idêntico baseline. Browser sintético desktop/mobile PASS, não hosted; build automático02:17:12OK, typecheck efetivo app segue UNVERIFIED por restrição do ambiente.
-- [ ] Auditor: revisar delta e coletar prova hosted via sessão UI; fechar flags após resultado. Sem deploy/SQL/publicação pelo agente.
+- [x] Auditor informou prova hosted REAL em02:28; flags fechadas no candidato atual, sem deploy/SQL/publicação pelo agente.
 
 ## SMTP F2/F3 — ACL executor hospedado (02:10 UTC)
 - [x] Incorporado relato externo: SQL179e84e aplicado pelo auditor via smtp_tenant_controlled_diagnostics_closed, gatefalse/ARv2 preservados; PGlite31/7identidades claimsPASS, prepareSERVICEfalhou schemaUSAGE; rollback total informado, sem senhaAR lida.
 - [x] Sucessor revisável schema dedicado prepare/finish, wrappersINV, semUSAGEplatform_private/globalEXEC; preflight/rollback e harness service_role real, fixtureB rollback integral.
 - [x] Delta local:47SQL checks/corrida PASS,65Vitest PASS,scanner23/23,diff-check limpo,build automático02:13:26OK; nenhuma credencial/configAR acessada.
-- [ ] Auditor: revisar/aplicar somente deltaACL e validar no canônico; agente não aplica SQL/deploy/publicação. Typecheck app/prova hosted pinning continuam pendentes.
+- [x] Auditor informou migrations20261016020433 diagnosticsclosed e20261016021643 executorACL aplicadas, gatefalse/receipts0; fixtureFSF Vault sintético sobSETROLEservice_role PASS/ROLLBACK e7identidadesSQLPASS; platform_privateUSAGEservicefalse/tenant_smtp_executorUSAGEservicetrue. Não reaplicar. Typecheck app segue pendente; pinningREAL informado02:28.
 
 ## SMTP F2/F3 — correções da revisão179e84e (02:02 UTC)
 - [x] Corrigidos IPv6/faixas especiais, framing SMTP/short writes compartilhados e deadline único4s/late sockets.
