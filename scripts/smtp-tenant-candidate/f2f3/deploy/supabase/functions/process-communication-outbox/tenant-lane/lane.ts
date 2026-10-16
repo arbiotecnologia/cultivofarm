@@ -6,7 +6,7 @@ export type LaneRpc={rpc(name:string,args:Record<string,unknown>):PromiseLike<{d
 export type LaneAuthorize=()=>Promise<boolean>;
 export type LaneSendResult=LaneOutcome|'withheld';
 export type LaneSend=(job:LaneJob,deps:SmtpProbeDeps,authorize:LaneAuthorize)=>Promise<LaneSendResult>;
-export type LaneSummary={claimed:number;sent:number;failed:number;ambiguous:number;withheld:number;lost:number;stopped:'empty'|'limit'|'claim_error'|'finish_error'};
+export type LaneSummary={claimed:number;sent:number;failed:number;ambiguous:number;withheld:number;lost:number;stopped:'empty'|'limit'|'budget'|'claim_error'|'finish_error'};
 // Same pinned transport + 15s deadline + post-DATA ambiguity as F2/F3/F4a. Recipient/text come only from the server claim.
 // Server authorization happens AFTER AUTH and BEFORE MAIL FROM; refusal closes the session without any envelope.
 export const sendLaneMessage:LaneSend=async(job,deps,authorize)=>{
@@ -28,11 +28,16 @@ export const sendLaneMessage:LaneSend=async(job,deps,authorize)=>{
   return dataMayHaveStarted?'ambiguous':'failed';
  }finally{expired=true;if(timer!==undefined)clearTimeout(timer);try{socket?.close();}catch{/* no exception output */}}
 };
+// Run bounds aligned with the invoker HTTP timeout (55s): at most LANE_MAX_JOBS x 15s transport deadline, and no new
+// claim when less than one full transport deadline (+1s margin) remains in LANE_BUDGET_MS.
+export const LANE_MAX_JOBS=3; export const LANE_BUDGET_MS=50000; export const LANE_JOB_DEADLINE_MS=15000;
 // One job per claim; never retries a job. Busy/over-quota tenants are skipped server-side (fairness).
 // Any finish error stops the run (uncertain ledger, no transport retry). 'withheld' needs no finish: the server already cancelled.
-export async function runTenantLane(service:LaneRpc,worker:string,deps:SmtpProbeDeps,send:LaneSend=sendLaneMessage,max=5):Promise<LaneSummary>{
+export async function runTenantLane(service:LaneRpc,worker:string,deps:SmtpProbeDeps,send:LaneSend=sendLaneMessage,max=LANE_MAX_JOBS,clock:()=>number=Date.now,budgetMs=LANE_BUDGET_MS):Promise<LaneSummary>{
  const s:LaneSummary={claimed:0,sent:0,failed:0,ambiguous:0,withheld:0,lost:0,stopped:'limit'};
- for(let i=0;i<max;i++){
+ const start=clock();
+ for(let i=0;i<Math.min(max,LANE_MAX_JOBS);i++){
+  if(clock()-start>budgetMs-LANE_JOB_DEADLINE_MS-1000){s.stopped='budget';return s;}
   const c=await service.rpc('tenant_smtp_lane_claim',{p_worker:worker});
   if(c.error){s.stopped='claim_error';return s;}
   if(c.data===null){s.stopped='empty';return s;}
