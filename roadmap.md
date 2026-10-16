@@ -1,3 +1,8 @@
+## Vínculos externos — promoção exata Edge V0 (16/10/2026 23:12 UTC)
+- [x] Autorizada promoção byte a byte da candidata list-portal-users para fonte runtime; sem lógica adicional, SQL, deploy Edge ou publicação; verify_jwt/helpers/CORS/common/ledger/contas preservados.
+- [x] Teste focal runtime+regressão20/20PASS (14+6), lint2testes0, igualdade bytes/SHA256 candidata PASS, diff-checkPASS/build automático23:13:23OK. Primeiro run19PASS/1FAIL asserção legada sobre leitura service key, corrigida para fronteira real criação admin; sem lógica runtime adicional. Revisão externa76Vitest/lint2testes0/scanner4221zero/build0; typecheck externo em conclusão, não certificado ainda.
+- [ ] Auditor fará deploy/revisão final e acessos reais com confirmação específica no momento; nenhuma implantação/publicação/SQL pelo agente neste delta.
+
 ## Vínculos externos — reconciliação documental (16/10/2026 23:09 UTC)
 - [x] Auditor instalou 20261016230114 user_client_access_deny_revoked_links: única condição revoked_at IS NULL; SELECT próprio ledger/live confirma MD5 e099f51d128620e5a68cc3e9001dd976. SQL exato arquivado em scripts/user-links-v0/installed, NÃO REAPLICAR; baseline anterior externo e900be25dbf7c2d0cd3105bf13dcfb94 corrigido no relato.
 - [x] Evidência EXTERNA claims/ROLLBACK: antes helperTRUE/resolver0 com revogado ativo; depois valid/revoked/inactive/future/expired=true/false/false/false/false; seis tabelas3→0/2→0/3→0/2→0/2→0/26→0; dados reais, zero mutações committed, readback vínculo/principal/revokednull preservados. Não é UI/JWT/cache certificado.

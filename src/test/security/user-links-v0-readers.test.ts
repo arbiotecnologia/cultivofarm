@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import ts from "typescript";
 
-const edgeSource = readFileSync("scripts/user-links-v0/list-portal-users.index.ts.review", "utf8").replace(/^import .*;\s*$/gm, "");
+const runtimeEdge = readFileSync("supabase/functions/list-portal-users/index.ts");
+const edgeSource = runtimeEdge.toString("utf8").replace(/^import .*;\s*$/gm, "");
 const edgeJs = ts.transpileModule(edgeSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
 const actor = "00000000-0000-4000-8000-000000000001";
 const client = "00000000-0000-4000-8000-000000000002";
@@ -64,7 +66,13 @@ async function runEdge(link: Link, s: Scenario = {}) {
 }
 
 const valid: Link = { user_id: actor, principal: true, is_active: true, revoked_at: null, valid_from: "2020-01-01T00:00:00Z", valid_until: null };
-describe("V0 — Edge candidata executada, SDK/identidade isolados", () => {
+describe("V0 — Edge runtime promovida executada, SDK/identidade isolados", () => {
+  it("preserva byte a byte o hash da candidata revisada", () => {
+    const candidate = readFileSync("scripts/user-links-v0/list-portal-users.index.ts.review");
+    const sha256 = (source: Buffer) => createHash("sha256").update(source).digest("hex");
+    expect(sha256(runtimeEdge)).toBe(sha256(candidate));
+    expect(runtimeEdge.equals(candidate)).toBe(true);
+  });
   it("aceita ativo vigente no tenant derivado, ignora tenant do payload", async () => {
     const result = await runEdge(valid);
     expect(result.status).toBe(200);

@@ -13,7 +13,10 @@ describe("D51.5 P0-C — isolamento de usuários do portal", () => {
     expect(edge).toContain("auth.getClaims(token)");
     expect(edge).toContain('"h15_actor_organization"');
     expect(edge).toContain('anonClient.rpc("has_role"');
-    expect(edge.indexOf('.from("clientes")')).toBeLessThan(edge.indexOf("SUPABASE_SERVICE_ROLE_KEY"));
+    // Ler configuração não concede acesso: a fronteira é criar o cliente privilegiado.
+    const privilegedClient = edge.indexOf("const admin = createClient(");
+    expect(privilegedClient).toBeGreaterThan(-1);
+    expect(edge.indexOf('.from("clientes")')).toBeLessThan(privilegedClient);
   });
 
   it("valida o cliente pela organização derivada do ator", () => {
