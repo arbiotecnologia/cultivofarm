@@ -12,7 +12,7 @@ Artefatos em `scripts/user-links-phase2/` (fora de `supabase/migrations`):
 - `eligible.sql.review`: seleção server-side paginada preparatória; não autoriza troca, não montada na UI.
 - `preflight-readonly.sql`: definições/ACL/colunas/policies/triggers a recapturar antes de promoção; executor deve comprovar ref canônico.
 - `rollback.sql.review`: fechamento e roteiro de restauração sem apagar histórico.
-- `ui-closed.patch.review` e `build-ui-diff.py`: diff **não aplicado** à tela, reproduzível; constante false.
+- `ui-closed.patch.review` e `build-ui-diff.py`: proposta histórica, substituída pela integração isolada atual; NÃO aplicar sobre a tela atual.
 - `test-local.py`: PostgreSQL descartável via socket `/tmp`, schema/Auth reduzidos; nunca usar conexão remota.
 
 A tela agora possui callsite para o formulário isolado `ExternalCommonUserEditForm`, exclusivamente atrás de `externalUserEditGate=false`; externos continuam somente leitura. A edição interna e a seção administrativa de senha permanecem intactas.
@@ -67,7 +67,7 @@ Formulário keyed por escopo/generation, cleanup invalida respostas em andamento
 
 Revisão auxiliar `sub_acwmfqa1`: erro estruturado RPC era mascarado — corrigido preservando objeto para mapper seguro existente; autorização redundante removida (locks já protegem estado). Seletor usa authorize(auth.uid()) deliberadamente para exigir ator Admin/tenant ativo sem aceitar tenant externo; isso não autoriza editar o ator/elegível. Contagem seis chaves mantida por contrato fechado. Replay rigoroso mantido para evitar resultado obsoleto. Essas decisões não equivalem a aprovação técnica independente do titular.
 
-## QA executado e limites
+## QA histórico da candidata SQL (antes da instalação externa)
 
 - PostgreSQL descartável **35 checks PASS**: gate, dados comuns/vínculos intactos, CAS de links/estados/expiração por tempo, replay/hash/ator/readiness, TécnicoB2B/tenant negados, paginação 0/1/offset e limite 100, ACL fechada, auditoria UPDATE/DELETE/TRUNCATE negada, branch interna, contenção NOWAIT e segundo CAS conflitante.
 - Vitest **102/102 PASS**, cinco arquivos: externalUserEditCandidate (13), userLinks (25), userLinksQuery (5), edicaoUsuarioRpc (51), externalUserDraft (8).
@@ -107,3 +107,16 @@ Leitura própria do ledger hosted no canônico confirmou versão20261016221926/n
 Evidência externa ca6f5915:102Vitest/typecheck0/lintnovos0; auditor instalou SQL fechada e informou BEGIN/ROLLBACK PASS para comuns AdminAR Produtor/B2B, replayigual/hashdiferente/CASobsoleto, links/roles negados e AdminFSF/Consultor/Financeiro/B2B/Produtor/Superadmin/ARalvoFSF negados; digest/ledger não expostos. Não reproduzimos escritas nem testes hospedados nesta rodada.
 
 QA da rodada: suíte real de diálogo RTL/Radix com transporte e gate simulados + helper/parser/regressões executada; comandos e totais finais abaixo. Isso não certifica a página completa autenticada nem o diálogo em produção. Gate verdadeiro existe somente no mock dos testes, nunca no runtime. Typecheck/build manuais não executados por restrição do harness; build automático é evidência separada. Troca e gestão completa permanecem NO-GO, demais leitores/sessão/cache do titular pendentes.
+
+### QA final desta rodada
+
+- **132/132 Vitest PASS**, sete arquivos; **23 testes do diálogo real RTL/Radix**, sete do token CAS e102 regressões. Envio Produtor/B2B, receiver dependente de this, snapshot inválido, campos inválidos, gatefalse, duploclique no mesmo evento, fechar/reabrir outro e mesmo alvo, ABA com remount, ator/tenant/readiness/escopo, timeout/abort/sucesso tardio, chave igual/alterada e reload por ambiguidade/CAS.
+- **Lint novo/focal0** nos seis arquivos helper/gate/formulário/testes/parser. Configuracoes permanece com **18 erros legados**, nenhum novo; não equivale a lint globalPASS.
+- **Scanner fiscal repositório PASS**, zero valores secretos reais; diff-checkPASS.
+- **Build automáticoOK22:27:24UTC**; typecheck efetivo dedicado desta rodada ainda **UNVERIFIED**, não substituído pelo build ou pela revisão ca6f5915 anterior.
+- **Readback próprio hosted somente leitura:** SQL gatefalse, auditcount0, anonexecute=false. Nenhuma escrita em usuários nem aplicação/eligible/publicação pelo agente.
+- Teste real autenticado da página e diálogo permanece **pendente da revisão final/abertura autorizada**. Os testes DOM não são prova GoTrue/JWT/API hospedada.
+
+Arquivos da integração: `src/components/configuracoes/ExternalCommonUserEditForm.tsx`, `src/lib/configuracoes/externalUserEditGate.ts`, `externalUserEditCandidate.ts`, `userLinks.ts`, `src/pages/Configuracoes.tsx`; testes `src/test/config/externalCommonUserEditForm.test.tsx` e `userLinksVersion.test.ts`. Arquivo de arquitetura `AGENTS.md`, relatório, roadmap e arquivo/manifesto SQL versionados atualizados. Gates false, roles/links/status/Auth/SMTP intactos.
+
+Comando reproduzível: `bun run test -- src/test/config/externalCommonUserEditForm.test.tsx src/test/config/userLinksVersion.test.ts src/test/config/externalUserEditCandidate.test.ts src/test/config/userLinks.test.ts src/test/config/userLinksQuery.test.ts src/test/config/edicaoUsuarioRpc.test.ts src/test/config/externalUserDraft.test.ts`.

@@ -1167,13 +1167,15 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] F2 common-only instalada fechada pelo auditor; nenhuma reaplicação pelo agente. Troca/revogação continua pendente.
 
 ## Vínculos externos — Fase 2 candidata (16/10/2026)
-- [x] Solicitação registrada: candidata revisável, sem SQL hospedado, sem publicação ou liberação de UI; implementação autorizada, revisão técnica ainda necessária.
-- [x] Evidência independente fornecida para F1/1613abbf: 36 Vitest PASS, typecheck/build 0, lint novos 0/18 legados iguais, scanner 4187/0; substitui a pendência de typecheck acima, não comprova publicação/validação visual em andamento.
+- [x] Solicitação inicial histórica: candidata revisável sem aplicação pelo agente; SQL posteriormente instalada fechada pelo auditor, sem publicação/liberação da F2.
+- [x] Evidência independente F1/1613abbf:36VitestPASS/typecheck0/build0/lintnovos0/18legados/scanner4187/0; F1 real publicada PASS confirmada pelo titular na atualização vigente.
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
 - [x] SQL common-only instalada pelo auditor: versão20261016221926 user_external_common_edit_closed_reviewed; arquivo exato arquivado em scripts/user-links-phase2/installed (19280bytes/MD5 coincide com ledger hosted). Nenhuma reaplicação/eligible.
 - [x] UI common-only integrada atrás de gate false: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Não publicada.
 - [x] CAS perfil+roles+todoslinks/estados persistidos; ator/tenant revalidados no replay, hash payload, motivo e ledger imutável; seletor elegível paginado sem edição de links.
-- [x] QA local: PostgreSQL descartável 35 checks, Vitest 102/102, lint novos 0, scanner sem segredos, build automático OK19:49:26; diff UI aplica em dry-run. Typecheck dedicado final indisponível (harness, sem log separado); não declarar certificado.
+- [x] QA histórico SQL:35checks PostgreSQL descartável/102Vitest; proposta de diff anterior substituída pela UI isolada, NÃO aplicar novamente.
+- [x] QA UI atual:132/132Vitest em7arquivos (23diálogo realRTL/Radix/7tokenCAS/102regressões), lintnovo0/Configuracoes18legados, scanner0, diff-checkPASS, buildautomáticoOK22:27:24. Typecheck dedicado atual UNVERIFIED.
+- [x] Readback próprio canônico:SQLgatefalse/auditcount0/anonexecutefalse; nenhuma escrita/reaplicação/eligible/publicação.
 - [x] Revisão ca6f5915 e testes hosted BEGIN/ROLLBACK PASS informados pelo auditor: AdminAR comuns/replay/hash/CAS/links, identidades negadas, ledger fechado; nenhuma alteração persistente em usuários.
 - [ ] Revisão final UI, typecheck dedicado e teste real do diálogo antes de abrir gates. Não é falta de autorização humana genérica.
 - [ ] Troca de vínculos do mesmo tipo: proposta separada no relatório; histórico B2B e revalidação/cache do titular impedem promoção como gestão completa.
