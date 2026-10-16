@@ -8,6 +8,7 @@ import { dispatchF4 } from "../../../scripts/smtp-tenant-candidate/f4/dispatch";
 import { generateCode, hashCode } from "../../../scripts/smtp-tenant-candidate/f4/challenge-code";
 import { TENANT_SMTP_F4_PHASE, tenantSmtpTransport, type F4Result, type F4Status, type F4Request } from "@/lib/configuracoes/tenantSmtp";
 import TenantSenderVerification from "@/pages/configuracoes/TenantSenderVerification";
+import TenantEmailSettings from "@/pages/configuracoes/TenantEmailSettings";
 
 const ID = "11111111-1111-4111-8111-111111111111", FENCE = "22222222-2222-4222-8222-222222222222", KEY = "33333333-3333-4333-8333-333333333333";
 const status = (o: Partial<F4Status> = {}): F4Status => ({ version: 1, sender_verified: false, active: false, dispatch_enabled: false, challenge: null, ...o });
@@ -99,4 +100,14 @@ describe("F4 UI", () => {
   render(<TenantSenderVerification version={1} connectionReady blocked send={send} />); await act(async () => {}); expect(send).not.toHaveBeenCalled(); });
  it("status of other version rejected", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ version: 9, sender_verified: true }) }));
   render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />); expect(await screen.findByText(/configuração mudou/)).toBeTruthy(); expect(screen.queryByText("Remetente verificado")).toBeNull(); });
+});
+describe("F4 parent status coherence", () => {
+ const view = { ok: true as const, version: 1, config: { host: "smtp.provider.com", port: 465, tls_mode: "implicit_tls" as const, username: "u", from_email: "s@provider.com", reply_to: "", from_name: "X" }, credential_configured: true, state: "DRAFT" as const, sender_verified: false as const, dispatch_enabled: false as const };
+ it("with F4 enabled only one verification badge (F4) renders", async () => {
+  const transport = { load: vi.fn(async () => view), save: vi.fn(), sender: vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ sender_verified: true }) })) };
+  render(<TenantEmailSettings scope="org:a" transport={transport as never} />);
+  expect(await screen.findByText("Remetente verificado")).toBeTruthy(); expect(screen.queryByText("Remetente não verificado")).toBeNull(); });
+ it("without F4 the T1 badge stays", async () => {
+  render(<TenantEmailSettings scope="org:a" transport={{ load: vi.fn(async () => view), save: vi.fn() } as never} />);
+  expect(await screen.findByText("Remetente não verificado")).toBeTruthy(); });
 });
