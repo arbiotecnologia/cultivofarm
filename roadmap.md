@@ -1224,3 +1224,12 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Triagem semântica final/fechamento:196funções/177políticas candidatas, SQL dinâmico/deploys/Storage e carteiras; somente futura implementação revisada pode certificar antigo negado/novo permitido.
 - [ ] Implementação de associações: NÃO autorizada nesta rodada; sem DDL, contas/roles/links ou publicação. TécnicoB2B, perfis novos e conversão interno/externo bloqueados.
 - [ ] Certificação de acesso antigo e retirada de resíduos em duas sessões/dispositivos: depende da futura implementação revisada e provas reais; reload de nome não certifica revogação.
+
+## Cliente principal — candidato de consistência (16/10/2026, base bfce1cc6)
+- [x] Análise live própria somente leitura: sync_user_cliente_principal 50392a57 sem filtro de vigência e desempate não determinístico; enforce_cliente_id_for_produtor ecad56ba conta históricos na role e não tem trigger em user_clientes; resolver canônico c80d5900 correto; triggers/constraints/guards capturados.
+- [x] Candidato fora de migrations: scripts/user-links-principal/candidate.sql.review (vigência canônica, desempate created_at+id, profile só vigente/NULL, convergência sem recursão, ACL/assinatura preservadas, preflight drift). Rollback byte a byte e preflight-readonly incluídos.
+- [x] Testes PostgreSQL descartável local: 18/18 checks PASS (baseline reproduz defeito; candidato nega revogado/inativo/futuro/expirado, reelege, reativação UNIQUE, DELETE do principal, rollback transacional). Não hosted; concorrência real pendente.
+- [ ] Ensaio hosted BEGIN/ROLLBACK e concorrência: pelo auditor após revisão; nenhum PASS live inventado.
+- [ ] enforce_cliente_id_for_produtor: análise separada (scripts/user-links-v0/principal-analysis.md), não instalada nem misturada.
+- [ ] Cache/sessão multidispositivo e signed URLs: pendentes; troca de associação segue com gates fechados.
+- Relatório: docs/auditorias/vinculos-externos-principal-candidato-20261016.md.

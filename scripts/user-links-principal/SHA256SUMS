@@ -1,1 +1,4 @@
-# Preenchido após congelamento dos arquivos .review nesta rodada.
+0c366cb93e6fdabbaf833c576af887e5e86ba233fb40271226603083bf5d14f5  candidate.sql.review
+f5f273f70194264aea67becc9306c3e6e4973023b5d43d8b730fa7bb0e074d12  rollback.sql.review
+ef61af1c8a2794557e7d1dc06a9a5c65206c43434ca0cf8949765cdc37c11114  preflight-readonly.sql
+ce51c329f3de1c73ee1814ee77bce9887988283258201e251abd7bec3731627b  test-local.py
