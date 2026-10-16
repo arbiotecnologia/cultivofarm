@@ -5,7 +5,7 @@ import { f4RequestSchema, mapRpcError } from "../../../scripts/smtp-tenant-candi
 import { createF4Handler, type F4Deps } from "../../../scripts/smtp-tenant-candidate/f4/handler";
 import { dispatchF4 } from "../../../scripts/smtp-tenant-candidate/f4/dispatch";
 import { generateCode, hashCode } from "../../../scripts/smtp-tenant-candidate/f4/challenge-code";
-import { TENANT_SMTP_F4_PHASE, tenantSmtpTransport, type F4Result, type F4Status } from "@/lib/configuracoes/tenantSmtp";
+import { TENANT_SMTP_F4_PHASE, tenantSmtpTransport, type F4Result, type F4Status, type F4Request } from "@/lib/configuracoes/tenantSmtp";
 import TenantSenderVerification from "@/pages/configuracoes/TenantSenderVerification";
 
 const ID = "11111111-1111-4111-8111-111111111111", FENCE = "22222222-2222-4222-8222-222222222222", KEY = "33333333-3333-4333-8333-333333333333";
@@ -64,7 +64,7 @@ describe("F4 dispatch", () => {
 describe("F4 UI", () => {
  const sent = status({ challenge: { id: ID, state: "sent", expires_at: null, attempts_left: 5 } });
  it("code cleared before IO and double click single request", async () => {
-  let resolve!: (v: F4Result) => void; const send = vi.fn(async (i: { op: string }) => i.op === "confirm" ? new Promise<F4Result>(r => { resolve = r; }) : { code: "F4_STATUS" as const, status: sent });
+  let resolve!: (v: F4Result) => void; const send = vi.fn(async (i: F4Request) => i.op === "confirm" ? new Promise<F4Result>(r => { resolve = r; }) : { code: "F4_STATUS" as const, status: sent });
   render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />);
   const input = await screen.findByLabelText("Código recebido"); fireEvent.change(input, { target: { value: "12345678" } });
   const btn = screen.getByRole("button", { name: "Confirmar código" }); fireEvent.click(btn); fireEvent.click(btn);
