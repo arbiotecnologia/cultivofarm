@@ -45,3 +45,4 @@
 
 - OS approval and generator open INSERT guards stay atomic; preserve links/snapshots, deny unresolved B2B approval — prevents bypass.
 - External users reuse receipts/provisioner, ACL closed — no fork.
+- Tenant SMTP sender possession uses a single-use code sent to the configured sender, stored only as salted hash bound to org/version/from; activation lives in private tables and any config version bump invalidates both — SMTP acceptance never proves mailbox ownership.

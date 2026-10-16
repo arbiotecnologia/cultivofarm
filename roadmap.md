@@ -1125,3 +1125,10 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Compatibilidade ES2020: replaceAll→split/join no teste; 3/3 PASS; tsc -p tsconfig.app.json exit0 (00:33 UTC)
 - [x] Scanner focal 11/11 PASS e git diff --check PASS pós-delta
 - [ ] Instalação canônica fechada pelo auditor após preflight (bloqueio externo)
+
+## SMTP-T F4 — posse do remetente + ativação por empresa (candidato, base 2d239edc)
+- [x] Candidato em `scripts/smtp-tenant-candidate/f4/` + espelho Edge `tenant-email-settings/f4` (rota `POST ?op=sender`), fechado: `TENANT_SMTP_F4_REVIEWED=false`, `TENANT_SMTP_F4_PHASE=false`, gate SQL F4 false, dispatch literal false.
+- [x] Verificação por código de uso único enviado ao próprio remetente (hash salgado, 15 min, 5 tentativas, cooldown 60s, 5/24h, CAS org/versão/from, invalidação por edição/rotação); ativação/pausa auditadas.
+- [x] QA local: SQL descartável 45 checks (2x idempotente, service_role real, rollback não destrutivo); Vitest F4 33 + suíte tenant-smtp 172; typecheck `-p tsconfig.app.json` 0 erros; lint focal 0; scanner F4 14/14; `deno check` espelho PASS.
+- [ ] Auditor: revisar, aplicar migration F4, deploy Edge, abrir gates e homologar código com Admin AR (bloqueio: revisão independente/aplicação remota).
+- [ ] F5 worker/outbox: exige vínculo provado organização/origem/destinatário na outbox (decisão de schema + contrato NOTIF3). Bloqueio NOTIF3 mantido.
