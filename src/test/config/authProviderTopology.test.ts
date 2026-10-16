@@ -4,7 +4,7 @@ import { relative, resolve } from "node:path";
 
 const ROOT = resolve(__dirname, "../../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
-const sourcePath = (p: string) => relative(ROOT, p).replaceAll("\\", "/");
+const sourcePath = (p: string) => relative(ROOT, p).split("\\").join("/");
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {
