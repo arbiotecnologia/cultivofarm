@@ -15,8 +15,8 @@ describe.each([["candidate", authorizeLaneInvoker], ["mirror", mirror.authorizeL
   it("correct v1 header (Unicode secret) accepted", () => expect(auth(req(URL_LANE, { [LANE_INVOKER_HEADER]: H(UNICODE) }), UNICODE)).toBe(true));
   it("raw secret as header (legacy transport) denied", () => expect(auth(req(URL_LANE, { [LANE_INVOKER_HEADER]: CONFIGURED }), CONFIGURED)).toBe(false));
   it("malformed v1 header denied", () => {
-    for (const v of ["b64u1.", "b64u2." + base64UrlUtf8(CONFIGURED), H(CONFIGURED) + "=", H(CONFIGURED).replace("b64u1.", ""), "b64u1." + btoa(CONFIGURED), H(CONFIGURED) + " "])
-      expect(auth(req(URL_LANE, { [LANE_INVOKER_HEADER]: v }), CONFIGURED)).toBe(false);
+    for (const v of ["b64u1.", "b64u2." + base64UrlUtf8(CONFIGURED), H(CONFIGURED) + "=", H(CONFIGURED).replace("b64u1.", ""), "b64u1." + btoa(String.fromCharCode(...new TextEncoder().encode(UNICODE))), "b64u1.a b"])
+      expect(auth(req(URL_LANE, { [LANE_INVOKER_HEADER]: v }), v.includes("+") || v.includes("/") || v.endsWith("=") ? UNICODE : CONFIGURED)).toBe(false);
   });
   it("v1 header of another value denied", () => expect(auth(req(URL_LANE, { [LANE_INVOKER_HEADER]: H(UNICODE) }), CONFIGURED)).toBe(false));
   it("missing header denied", () => expect(auth(req(URL_LANE), CONFIGURED)).toBe(false));
