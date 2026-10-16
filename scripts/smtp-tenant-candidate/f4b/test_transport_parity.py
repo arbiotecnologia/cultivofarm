@@ -18,9 +18,8 @@ try:
     for i, v in enumerate(SYNTH):
         lit = lambda s: "'" + s.replace("'", "''") + "'"
         stmt = f"SET search_path=''; SELECT (SELECT {expr.replace('v_secret', 'x.v')} FROM (SELECT {lit(v)}::text v) x) = {lit(edge(v))};"
-        r = subprocess.run(['psql', '-h', str(t), '-p', '55497', '-U', 'postgres', '-At', '-c', stmt], capture_output=True, text=True)
-        res = r.stdout.strip() == 't'
-        if not res: print('dbg', r.returncode, r.stderr[:300])
+        r = subprocess.run(['psql', '-h', str(t), '-p', '55497', '-U', 'postgres', '-X', '-q', '-At', '-c', stmt], capture_output=True, text=True)
+        res = r.returncode == 0 and r.stdout.strip().splitlines()[-1:] == ['t']
         ok &= res
         print(f"{'PASS' if res else 'FAIL'} synthetic#{i} parity")
         raw_ok = edge(v) != v
