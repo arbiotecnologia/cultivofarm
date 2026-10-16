@@ -8,7 +8,7 @@ export type LaneSummary={claimed:number;sent:number;failed:number;ambiguous:numb
 // Same pinned transport + 15s deadline + post-DATA ambiguity as F2/F3/F4a. Recipient/text come only from the server claim.
 export const sendLaneMessage:LaneSend=async(job,deps)=>{
  const env:WorkerEnv={DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,
-  SMTP_HOST:job.config.host,SMTP_PORT:String(job.config.port),SMTP_USER:job.config.username,SMTP_PASSWORD:job.password,SMTP_FROM:job.config.from_email} as WorkerEnv;
+  SMTP_HOST:job.config.host,SMTP_PORT:String(job.config.port),SMTP_USER:job.config.username,SMTP_PASSWORD:job.password,SMTP_FROM:job.config.from_email};
  let socket:ProbeConnection|undefined; let dataMayHaveStarted=false; let expired=false; let timer:ReturnType<typeof setTimeout>|undefined;
  const run=async():Promise<LaneOutcome>=>{
   const session=await openAuthenticatedSmtpSession(env,{...deps,connectTls:async(host,port)=>{socket=await deps.connectTls(host,port);if(expired){socket.close();throw new Error('failed');}return socket;}});
@@ -19,7 +19,6 @@ export const sendLaneMessage:LaneSend=async(job,deps)=>{
  };
  try{return await Promise.race([run(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>{expired=true;try{socket?.close();}catch{/* sanitized */}reject(new Error('timeout'));},15000);})]);}
  catch(error){
-  if(error instanceof NativeSmtpAdapterFailure && error.certainty==='definitive' && error.code!=='email_smtp_protocol' && !dataMayHaveStarted)return 'failed';
   if(error instanceof NativeSmtpAdapterFailure && error.certainty==='definitive' && error.code!=='email_smtp_protocol')return 'failed';
   return dataMayHaveStarted?'ambiguous':'failed';
  }finally{expired=true;if(timer!==undefined)clearTimeout(timer);try{socket?.close();}catch{/* no exception output */}}
