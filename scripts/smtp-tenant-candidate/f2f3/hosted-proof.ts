@@ -52,7 +52,8 @@ export function createHostedProofHandler(deps:ProofDeps){
     if(expired){close();throw new Error('PROOF_FAILED');}
     const tls=await deps.runtime.tls(tcp,hostname);sockets.add(tls);
     if(expired){close();throw new Error('PROOF_FAILED');}
-    tls.close();tcp.close();
+    try{tls.close();}catch{/* best effort */}
+    try{tcp.close();}catch{/* startTls may consume the original TCP handle */}
    };
    const run=async()=>{
     const [a,aaaa]=await Promise.all([deps.runtime.resolve(FIXED_HOST,'A'),deps.runtime.resolve(FIXED_HOST,'AAAA')]);
