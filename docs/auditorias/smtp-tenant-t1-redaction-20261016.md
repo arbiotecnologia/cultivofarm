@@ -58,3 +58,6 @@ QA local00:30 UTC: **53/53 Vitest** nos dois testes SMTP PASS; **scanner11/11 PA
 **Correção de compatibilidade00:33 UTC**: `replaceAll` substituído por `.split("\\").join("/")` somente no teste (ES2020 do tsconfig.app); target/lib e Auth runtime intocados. **Teste focal3/3 PASS**; **typecheck efetivo `tsc --noEmit -p tsconfig.app.json` exit0, zero erros** — não declarado `npm run typecheck` (raiz com files[]/references) como prova da checagem app. Relatório segue **NO-GO**, gates OFF.
 
 Evidência externa do auditor (registrada, não verificada localmente): Edge v1 readback5/5 arquivos iguais; UI publicada desktop/mobile bloqueada; HTTP sem JWT401, origem ruim403, origem oficial OPTIONS204.
+
+## Decisão superveniente do titular — 2026-10-16
+O NO-GO acima é histórico do critério de redaction absoluta. O titular o substituiu por HTTPS + Vault existente, revisão ACL/Vault e controles de logs da aplicação, adiando KMS/criptografia no navegador. Não se afirma ausência em logs de infraestrutura nem vazamento. Gates permanecem OFF nesta entrega; candidato e riscos atuais em `smtp-tenant-t1-draft-candidate-20261016.md`.
