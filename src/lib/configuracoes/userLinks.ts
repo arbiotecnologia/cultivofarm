@@ -59,25 +59,36 @@ export interface VinculosUsuario {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Valida o retorno; qualquer forma inesperada é erro (nunca vira "sem vínculo"). */
+const INVALIDA = "Resposta de vínculos inválida.";
+type Obj = Record<string, unknown>;
+function obj(v: unknown): Obj { if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error(INVALIDA); return v as Obj; }
+function uuid(v: unknown): string { if (typeof v !== "string" || !UUID_RE.test(v)) throw new Error(INVALIDA); return v; }
+function texto(v: unknown): string { if (typeof v !== "string") throw new Error(INVALIDA); return v; }
+function textoOuNull(v: unknown): string | null { if (v === null || v === undefined) return null; return texto(v); }
+function bool(v: unknown): boolean { if (typeof v !== "boolean") throw new Error(INVALIDA); return v; }
+function contagem(v: unknown): number { if (typeof v !== "number" || !Number.isInteger(v) || v < 0) throw new Error(INVALIDA); return v; }
+
+/** Valida o contrato completo; qualquer forma inesperada é erro (nunca vira "sem vínculo"). */
 export function parseVinculos(data: unknown): Map<string, VinculosUsuario> {
-  const items = (data as { items?: unknown } | null)?.items;
-  if (!Array.isArray(items)) throw new Error("Resposta de vínculos inválida.");
+  const items = obj(data).items;
+  if (!Array.isArray(items)) throw new Error(INVALIDA);
   const out = new Map<string, VinculosUsuario>();
-  for (const it of items as Array<Record<string, any>>) { // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (!it || !UUID_RE.test(it.user_id ?? "") || !Array.isArray(it.clientes)) throw new Error("Resposta de vínculos inválida.");
-    out.set(it.user_id, {
-      user_id: it.user_id,
-      clientes: (it.clientes as Array<Record<string, unknown>>).map((c) => ({
-        cliente_id: String(c.cliente_id), nome: String(c.nome ?? ""), principal: c.principal === true,
-        status_cliente: (c.status_cliente as string | null) ?? null, vigente: c.vigente === true,
-      })),
-      parceiro: it.parceiro && UUID_RE.test(it.parceiro.partner_id ?? "")
-        ? { partner_id: it.parceiro.partner_id, razao_social: String(it.parceiro.razao_social ?? ""), papel: it.parceiro.papel ?? null, ativo: it.parceiro.ativo === true }
-        : null,
-      parceiros_total: Number(it.parceiros_total ?? 0),
-      fora_do_alcance: Number(it.fora_do_alcance ?? 0),
+  for (const raw of items) {
+    const it = obj(raw);
+    const user_id = uuid(it.user_id);
+    if (out.has(user_id) || !Array.isArray(it.clientes)) throw new Error(INVALIDA);
+    const clientes = it.clientes.map((r): VinculoCliente => {
+      const c = obj(r);
+      return { cliente_id: uuid(c.cliente_id), nome: texto(c.nome), principal: bool(c.principal), status_cliente: textoOuNull(c.status_cliente), vigente: bool(c.vigente) };
     });
+    let parceiro: VinculoParceiro | null = null;
+    if (it.parceiro !== null && it.parceiro !== undefined) {
+      const p = obj(it.parceiro);
+      parceiro = { partner_id: uuid(p.partner_id), razao_social: texto(p.razao_social), papel: textoOuNull(p.papel), ativo: bool(p.ativo) };
+    }
+    const parceiros_total = contagem(it.parceiros_total);
+    if ((parceiro ? parceiros_total < 1 : parceiros_total !== 0)) throw new Error(INVALIDA);
+    out.set(user_id, { user_id, clientes, parceiro, parceiros_total, fora_do_alcance: contagem(it.fora_do_alcance) });
   }
   return out;
 }
