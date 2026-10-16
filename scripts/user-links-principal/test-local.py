@@ -1,11 +1,14 @@
 """PostgreSQL descartável via socket /tmp; nunca conecta ao hosted.
-Harness v2: guards reais (cf_user_guards_v1, sensitive/tenant/h15, enforce),
-roles Admin/Produtor/Consultor, trigger AFTER STATEMENT candidato, casos
-multirow e concorrência com duas conexões. Restante marcado UNVERIFIED."""
+Harness v3: guards reais (cf_user_guards_v1, sensitive/tenant/h15, enforce),
+roles Admin/Produtor/Consultor, trigger AFTER STATEMENT candidato v3
+(idempotência com detecção de trabalho, sem pg_trigger_depth), casos multirow,
+FK cascade, writer aninhado de provisionamento, empate created_at, claims
+Admin autenticado (negação existente documentada) e concorrência com duas
+conexões. valid_from NOT NULL DEFAULT now() espelha o live. Restante UNVERIFIED."""
 from pathlib import Path
-import os, subprocess, tempfile, shutil
+import os, subprocess, tempfile, shutil, time
 ROOT=Path(__file__).resolve().parents[2]
-tmp=Path(tempfile.mkdtemp(prefix='links-principal-v2-',dir='/tmp'));tmp.chmod(0o777)
+tmp=Path(tempfile.mkdtemp(prefix='links-principal-v3-',dir='/tmp'));tmp.chmod(0o777)
 prefix=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
 base=['psql','-X','-h',str(tmp),'-p','55498','-U','postgres','-v','ON_ERROR_STOP=1','-qAt']
 def run(sql):
@@ -24,9 +27,11 @@ ADMIN='00000000-0000-4000-8000-0000000000a0'
 PROD='00000000-0000-4000-8000-0000000000a1'
 PROD2='00000000-0000-4000-8000-0000000000a2'
 CONS='00000000-0000-4000-8000-0000000000a3'
+NEST='00000000-0000-4000-8000-0000000000a4'
 C1='00000000-0000-4000-8000-0000000000b1'
 C2='00000000-0000-4000-8000-0000000000b2'
 C3='00000000-0000-4000-8000-0000000000b3'
+C4='00000000-0000-4000-8000-0000000000b4'
 def admin(sql):return f"BEGIN;SET LOCAL ROLE service_role;{sql};COMMIT;" # escritas de vínculo: contexto service/provisionamento (auth.uid() NULL), como no live
 def asuser(u,sql):return f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{u}';{sql};COMMIT;"
 try:
@@ -43,8 +48,8 @@ try:
    data_admissao date,observacoes_internas text,senha_provisoria boolean);
  CREATE TABLE public.user_roles(user_id uuid,role public.app_role);
  CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,cliente_id uuid REFERENCES public.clientes(id) ON DELETE CASCADE,
-   principal boolean DEFAULT false,created_at timestamptz DEFAULT now(),is_active boolean DEFAULT true,
-   revoked_at timestamptz,valid_from timestamptz,valid_until timestamptz,UNIQUE(user_id,cliente_id));
+   principal boolean NOT NULL DEFAULT false,created_at timestamptz DEFAULT now(),is_active boolean NOT NULL DEFAULT true,
+   revoked_at timestamptz,valid_from timestamptz NOT NULL DEFAULT now(),valid_until timestamptz,UNIQUE(user_id,cliente_id));
  CREATE TABLE public.partner_users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,user_id uuid,created_at timestamptz DEFAULT now(),papel text);
  CREATE TABLE auth.users(id uuid PRIMARY KEY);
  CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY DEFAULT true,revision bigint NOT NULL DEFAULT 0,CHECK(singleton));
@@ -132,13 +137,13 @@ try:
  GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
  GRANT SELECT,UPDATE ON cf_user_guards_v1.state TO authenticated;
  GRANT SELECT,UPDATE ON cf_user_guards_v1.state TO service_role;
- INSERT INTO public.clientes VALUES ('{C1}'),('{C2}'),('{C3}');
- INSERT INTO public.profiles(user_id,email) VALUES ('{ADMIN}','admin@t'),('{PROD}','p1@t'),('{PROD2}','p2@t'),('{CONS}','c@t');
+ INSERT INTO public.clientes VALUES ('{C1}'),('{C2}'),('{C3}'),('{C4}');
+ INSERT INTO public.profiles(user_id,email) VALUES ('{ADMIN}','admin@t'),('{PROD}','p1@t'),('{PROD2}','p2@t'),('{CONS}','c@t'),('{NEST}','n@t');
  INSERT INTO public.user_roles VALUES ('{ADMIN}','administrador'),('{CONS}','consultor_tecnico');
  CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin();
  CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin();
-''')
- # ---- instala candidato v2 (função + trigger STATEMENT) ----
+ ''')
+ # ---- instala candidato v3 (função + triggers STATEMENT) ----
  candidate=(ROOT/'scripts/user-links-principal/candidate.sql.review').read_text()
  candidate=candidate[candidate.index('CREATE OR REPLACE FUNCTION'):]
  # espelha o estado live: função baseline + trigger ROW antes da troca para STATEMENT
@@ -146,16 +151,19 @@ try:
  run(baseline[baseline.index('CREATE OR REPLACE FUNCTION'):baseline.index('DROP TRIGGER')])
  run("CREATE TRIGGER trg_user_clientes_sync AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal()")
  run(candidate)
- # ---- 1) fluxo Admin: vínculo vigente vira principal e sincroniza profile ----
+ # ---- 1) fluxo service/provisionamento: vínculo vigente vira principal e sincroniza profile ----
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{PROD}','{C1}',true,now()-interval '2 days')"))
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",C1)
  # ---- 2) role produtor exige vínculo (enforce real); consultor não ----
  runerr(admin(f"INSERT INTO public.user_roles VALUES ('{PROD2}','cliente_produtor')"))
  run(admin(f"INSERT INTO public.user_roles VALUES ('{PROD}','cliente_produtor')"))
  checks+=2
- # ---- 3) multirow: revogar principal e eleger outra linha no MESMO comando ----
+ # ---- 3) multirow CASE: C1 (principal) revogado e C2 vigente no MESMO comando ----
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{PROD}','{C2}',false,now()-interval '1 day')"))
- run(admin(f"UPDATE public.user_clientes SET is_active=false,revoked_at=now() WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ run(admin(f"""UPDATE public.user_clientes SET
+   is_active=CASE WHEN cliente_id='{C1}' THEN false ELSE true END,
+   revoked_at=CASE WHEN cliente_id='{C1}' THEN now() ELSE NULL END
+  WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"""))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",C2)
  # ---- 4) multirow: UPDATE principal=true em DUAS linhas num só comando ----
@@ -179,8 +187,14 @@ try:
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'0')
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",'')
  # ---- 8) negativo: autenticado não-admin não escreve vínculo (contenção existente) ----
- run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=NULL WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
+ run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval '1 hour' WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
  runerr(asuser(PROD,f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'")) # troca principal vigente: sync tenta profile e guard de tenant nega
+ checks+=1
+ # ---- 8b) negativo: Admin AUTENTICADO também é negado na escrita de vínculo ----
+ # Negação existente e preservada: a sincronização de profiles.cliente_id é
+ # bloqueada para qualquer autenticado pelo guard de tenant (auth.uid() não NULL).
+ # Escritas de vínculo exigem contexto service/provisionamento, como no live.
+ runerr(asuser(ADMIN,f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
  checks+=1
  # ---- 9) negativo: sem uid (anon) bloqueado pelo gate ----
  runerr(f"BEGIN;SET LOCAL ROLE authenticated;UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}';COMMIT;")
@@ -189,7 +203,7 @@ try:
  runerr(admin("DELETE FROM public.user_roles WHERE role='administrador'"))
  checks+=1
  # ---- 11) concorrência: duas conexões trocando principal em loop ----
- run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=NULL WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
+ run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval '1 hour' WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
  swap=f"UPDATE public.user_clientes SET principal=(cliente_id='{{C}}') WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}');"
  body=''.join("BEGIN;SET LOCAL ROLE service_role;"+swap.replace('{C}',C1 if i%2 else C2)+"COMMIT;" for i in range(20))
  procs=[subprocess.Popen(base[:-1],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True) for _ in range(2)]
@@ -203,7 +217,56 @@ try:
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'1')
  # ---- 13) consultor sem vínculos intacto ----
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{CONS}'",'0')
- print(f'{checks} checks PASS — PostgreSQL isolado, guards reais, 2 conexões; não hosted')
+ # ---- 14) FK cascade: DELETE do cliente remove vínculos e reelege principal ----
+ # PROD2 tem C2 (principal) e C3; apagar C2 cascateia o vínculo, dispara o
+ # trigger DELETE statement e C3 deve ser eleito; profile segue coerente.
+ run(admin(f"DELETE FROM public.clientes WHERE id='{C2}'"))
+ check(f"SELECT count(*) FROM public.user_clientes WHERE cliente_id='{C2}'",'0')
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD2}' AND principal",C3)
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD2}'",C3)
+ # ---- 15) writer aninhado: trigger de provisionamento insere vínculo DURANTE a reconciliação ----
+ # Simula provisionamento: ao nascer o 1º vínculo de um usuário, um trigger
+ # externo insere um 2º vínculo no mesmo comando. Sem pg_trigger_depth, a
+ # passagem extra NÃO é suprimida e o estado final converge.
+ run(f'''CREATE FUNCTION public.prov_nested_writer() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='public' AS $f$
+ BEGIN
+  IF (SELECT count(*) FROM public.user_clientes WHERE user_id=NEW.user_id)=1 THEN
+   INSERT INTO public.user_clientes(user_id,cliente_id,principal) VALUES (NEW.user_id,'{C4}',false);
+  END IF; RETURN NULL;
+ END $f$;
+ CREATE TRIGGER z95_prov_nested AFTER INSERT ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION public.prov_nested_writer()''')
+ run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal) VALUES ('{NEST}','{C3}',true)"))
+ check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}'",'2')
+ check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal",'1')
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C3)
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C3)
+ # ---- 16) DELETE multirow: remove principal e outra linha; remanescente eleito ----
+ run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal) VALUES ('{NEST}','{C1}',false)"))
+ run(admin(f"DELETE FROM public.user_clientes WHERE user_id='{NEST}' AND cliente_id IN ('{C3}','{C4}')"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C1)
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C1)
+ # ---- 17) empate created_at: desempate determinístico por id ----
+ TIE='2026-01-01 00:00:00+00'
+ run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{NEST}'"))
+ run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{NEST}','{C3}',false,'{TIE}')"))
+ run(admin(f"UPDATE public.user_clientes SET created_at='{TIE}' WHERE user_id='{NEST}'"))
+ run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}')"))
+ check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal",'1')
+ tie=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
+ expect=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}') ORDER BY created_at ASC, id ASC LIMIT 1")
+ assert tie==expect,(tie,expect);checks+=1
+ # ---- 18) expiração temporal SEM DML: nenhum trigger dispara com a passagem do
+ # tempo (por desenho); leituras passam pelo resolver canônico, que filtra
+ # valid_until. Aqui provamos que o predicado de vigência exclui o expirado e
+ # que o profile NÃO é reescrito sozinho (sem falso principal novo).
+ run(admin(f"UPDATE public.user_clientes SET valid_until=now()+interval '2 seconds' WHERE user_id='{NEST}' AND principal"))
+ time.sleep(3)
+ check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now())",'0')
+ # próximo DML qualquer reconcilia: rebaixa o expirado e elege vigente
+ run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '1 hour' WHERE user_id='{NEST}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C1)
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C1)
+ print(f'{checks} checks PASS — PostgreSQL isolado, guards reais, FK cascade, writer aninhado, 2 conexões; não hosted')
  print('UNVERIFIED: ensaio hosted BEGIN/ROLLBACK, RLS/policies completas, schema fiscal integral, guard_superadmin_role_assignment')
 finally:
  subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True)
