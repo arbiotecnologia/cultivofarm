@@ -1,5 +1,5 @@
 // REVIEW ONLY. Install as supabase/functions/tenant-email-settings/index.ts AFTER auditor approval.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
 import { createTenantSmtpHandler } from "./handler.ts";
 import { corsHeadersFor, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
 const url = Deno.env.get("SUPABASE_URL") ?? "";
