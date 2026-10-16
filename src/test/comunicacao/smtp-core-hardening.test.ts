@@ -88,6 +88,12 @@ describe('restricted credential-free hosted proof',()=>{
  it('mixed private AAAA blocks all TCP',async()=>{const m=make();m.runtime.resolve.mockImplementation(async(_h,f)=>f==='A'?['191.6.216.80']:['::1']);expect((await (await createHostedProofHandler(m.deps)(request())).json()).ok).toBe(false);expect(m.runtime.tcp).not.toHaveBeenCalled();});
  it('TLS network failure is not mismatch proof and never raw error',async()=>{const m=make();m.runtime.tls.mockImplementation(async()=>{throw new Error('PRIVATE raw failure');});const text=await (await createHostedProofHandler(m.deps)(request())).text();expect(text).not.toContain('PRIVATE');expect(JSON.parse(text).ok).toBe(false);});
  it('unexpected wrong hostname acceptance fails proof',async()=>{const m=make();m.runtime.tls.mockImplementation(async()=>m.s);expect((await (await createHostedProofHandler(m.deps)(request())).json()).code).toBe('PINNING_PROOF_FAILED');});
+ it('upgraded TLS returning another connection and BadResource on tcp.close still passes',async()=>{
+  const m=make();const tlsSocket=socket([]);
+  m.s.close=vi.fn(()=>{throw new Error('BadResource');});
+  m.runtime.tls.mockImplementation(async(_s:ProbeConnection,h:string)=>{if(h==='smtp-name-mismatch.invalid')throw new Error('TLS_HOSTNAME_MISMATCH');return tlsSocket;});
+  expect((await (await createHostedProofHandler(m.deps)(request())).json()).code).toBe('PINNING_PROOF_PASS');expect(tlsSocket.close).toHaveBeenCalled();
+ });
  it('proof cooldown and exclusive invocation',async()=>{const m=make();const handler=createHostedProofHandler(m.deps);await handler(request());expect((await handler(request())).status).toBe(429);expect(m.runtime.resolve).toHaveBeenCalledTimes(2);});
  it('proof never reads or writes SMTP',async()=>{const m=make();const read=vi.fn(),write=vi.fn();m.s.read=read;m.s.write=write;await createHostedProofHandler(m.deps)(request());expect(read).not.toHaveBeenCalled();expect(write).not.toHaveBeenCalled();});
 });
