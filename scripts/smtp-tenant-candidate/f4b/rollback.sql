@@ -5,7 +5,7 @@ UPDATE platform_private.tenant_smtp_dispatch_gate SET approved=false;
 UPDATE platform_private.tenant_smtp_activation SET active=false,reason='f4b_rollback',changed_at=clock_timestamp() WHERE active;
 SELECT platform_private.tenant_smtp_lane_cancel_queued(organization_id,'f4b_rollback',NULL) FROM (SELECT DISTINCT organization_id FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued') q;
 -- Optional invoker (cron_option.sql.review), if it was ever installed.
-DO $$ BEGIN IF to_regnamespace('cron') IS NOT NULL AND EXISTS(SELECT 1 FROM cron.job WHERE jobname='tenant-smtp-lane') THEN PERFORM cron.unschedule('tenant-smtp-lane'); END IF; END $$;
+DO $$ DECLARE n int; BEGIN IF to_regclass('cron.job') IS NOT NULL THEN EXECUTE 'SELECT count(*) FROM cron.job WHERE jobname=$1' INTO n USING 'tenant-smtp-lane'; IF n>0 THEN EXECUTE 'SELECT cron.unschedule($1)' USING 'tenant-smtp-lane'; END IF; END IF; END $$;
 DROP TRIGGER IF EXISTS tenant_smtp_lane_solicitacao_atribuida ON public.portal_solicitacoes;
 REVOKE EXECUTE ON FUNCTION public.tenant_smtp_lane_claim(text),public.tenant_smtp_lane_authorize(uuid,uuid),public.tenant_smtp_lane_finish(uuid,uuid,text) FROM service_role;
 REVOKE EXECUTE ON FUNCTION tenant_smtp_executor.tenant_smtp_lane_claim(text),tenant_smtp_executor.tenant_smtp_lane_authorize(uuid,uuid),tenant_smtp_executor.tenant_smtp_lane_finish(uuid,uuid,text) FROM service_role;
