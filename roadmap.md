@@ -1,4 +1,5 @@
 ## SMTP-T1 — fundação multiprovedor por empresa (22:34)
+- [ ] Delta da revisão c2509c6: corrigir identidades Vault com UUID default, gate antecipado/rechecado, wrappers INVOKER e cores privados; repetir regressões e atualizar manifesto, sem aplicação remota.
 - [x] HEAD/banco canônico/ACL/RLS inventariados somente leitura, worker local contido; nenhum segredo lido.
 - [x] Pacote tenant DRAFT/Vault write-only/RLS/CAS/audit e UI existente; SQL/Edge candidatos fora de deploy. Frontend, entrypoint e gate privado persistente OFF.
 - [x] QA local: 190 Vitest selecionados PASS; SQL descartável 46 checks PASS; scanner focal9/9; lint focal0 (baseline Configuracoes18/2); build automáticoOK; typecheck separado UNVERIFIED; desktop/mobile formulário simuladoPASS, sem Auth/browser hosted. Relatório docs/auditorias/smtp-tenant-t1-20261016.md e manifesto/rollback entregues.
