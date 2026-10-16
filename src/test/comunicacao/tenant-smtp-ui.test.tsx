@@ -1,5 +1,6 @@
 import {render,screen,fireEvent,waitFor,cleanup} from "@testing-library/react";
 import {afterEach,describe,it,expect,vi} from "vitest";
+import {act} from "react-dom/test-utils";
 import TenantEmailSettings from "@/pages/configuracoes/TenantEmailSettings";
 import {EMPTY_VIEW,type SmtpView,type TenantSmtpTransport} from "@/lib/configuracoes/tenantSmtp";
 afterEach(cleanup);
@@ -66,6 +67,36 @@ describe("SMTP-T1 UI real, transport simulated",()=>{
 });
 describe('SMTP F2/F3 UI scope and explicit send',()=>{
  const result={version:1,mode:'connection' as const,code:'smtp_connection_ok' as const,dispatch_enabled:false as const,sender_verified:false as const};
+ it('send cooldown preserves proven version, waits 60s and never retries automatically',async()=>{
+  const test=vi.fn().mockResolvedValueOnce(result).mockResolvedValueOnce({...result,mode:'send',code:'SMTP_COOLDOWN'}).mockResolvedValueOnce({...result,mode:'send',code:'smtp_send_accepted'});
+  render(<TenantEmailSettings scope="A" transport={{...transport(),test}}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Testar conexão'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button',{name:'Testar conexão'}));await waitFor(()=>expect(screen.getByRole('checkbox')).toBeEnabled());
+  vi.useFakeTimers();try{
+   fireEvent.click(screen.getByRole('checkbox'));await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Enviar teste'}));});
+   expect(screen.getByRole('checkbox')).toBeEnabled();expect(screen.getByRole('checkbox')).not.toBeChecked();
+   fireEvent.click(screen.getByRole('checkbox'));expect(screen.getByRole('button',{name:'Enviar teste'})).toBeDisabled();
+   await act(async()=>{await vi.advanceTimersByTimeAsync(59999);});expect(test).toHaveBeenCalledTimes(2);expect(screen.getByRole('button',{name:'Enviar teste'})).toBeDisabled();
+   await act(async()=>{await vi.advanceTimersByTimeAsync(251);});expect(test).toHaveBeenCalledTimes(2);expect(screen.getByRole('button',{name:'Enviar teste'})).toBeEnabled();
+   await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Enviar teste'}));});expect(test).toHaveBeenCalledTimes(3);expect(test.mock.calls.map(([input])=>input.mode)).toEqual(['connection','send','send']);
+  }finally{vi.useRealTimers();}
+ });
+ it('proof is credential-free, double-click locked and does not authorize AUTH/send',async()=>{
+  const proof=vi.fn(async()=>({ok:true,code:'PINNING_PROOF_PASS' as const,dns_validated:true,ipv4_tls:true,ipv6_tls:true,hostname_mismatch_rejected:true}));
+  render(<TenantEmailSettings scope="AR" proofEligible transport={{...transport(),proof}}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Provar TLS sem credencial'})).toBeEnabled());
+  fireEvent.change(screen.getByLabelText('Nova credencial (opcional)'),{target:{value:'synthetic-secret'}});
+  fireEvent.click(screen.getByRole('button',{name:'Provar TLS sem credencial'}));fireEvent.click(screen.getByRole('button',{name:'Provar TLS sem credencial'}));
+  await waitFor(()=>expect(proof).toHaveBeenCalledOnce());expect(proof.mock.calls[0]).toEqual([]);
+  expect(screen.getByLabelText('Nova credencial (opcional)')).toHaveValue('');expect(screen.getByRole('button',{name:'Testar conexão'})).toBeDisabled();expect(screen.getByRole('button',{name:'Enviar teste'})).toBeDisabled();
+ });
+ it('proof absent without eligibility and late response discarded after tenant switch',async()=>{
+  let resolve:((value:{ok:boolean;code:'PINNING_PROOF_PASS'})=>void)|undefined;
+  const proof=vi.fn(()=>new Promise<{ok:boolean;code:'PINNING_PROOF_PASS'}>(r=>{resolve=r;}));const t={...transport(),proof};
+  const r=render(<TenantEmailSettings scope="AR" proofEligible transport={t}/>);await waitFor(()=>expect(screen.getByRole('button',{name:'Provar TLS sem credencial'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button',{name:'Provar TLS sem credencial'}));r.rerender(<TenantEmailSettings scope="FSF" transport={t}/>);
+  await act(async()=>resolve?.({ok:true,code:'PINNING_PROOF_PASS'}));expect(screen.queryByRole('button',{name:'Provar TLS sem credencial'})).not.toBeInTheDocument();expect(screen.queryByText(/Prova TLS aprovada/)).not.toBeInTheDocument();
+ });
  it('send requires same-version connection and confirmation, with no arbitrary recipient',async()=>{
   const test=vi.fn().mockResolvedValueOnce(result).mockResolvedValueOnce({...result,mode:'send',code:'smtp_send_accepted'});
   render(<TenantEmailSettings scope="A" transport={{...transport(),test}}/>);

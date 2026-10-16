@@ -28,6 +28,8 @@ checks={
 'mirror JWT preserved':'verify_jwt = true' in (r/'deploy/supabase/config.toml').read_text(),
 'executor dedicated schema only':'GRANT USAGE ON SCHEMA tenant_smtp_executor TO service_role' in (r/'20261016_smtp_executor_schema_acl.sql').read_text() and not re.search(r'GRANT\s+USAGE\s+ON\s+SCHEMA\s+platform_private', (r/'20261016_smtp_executor_schema_acl.sql').read_text(),re.I),
 'real service role SQL coverage':'SET ROLE service_role' in (r/'test_sql.py').read_text() and 'REVOKE USAGE ON SCHEMA platform_private FROM service_role' in (r/'test_sql.py').read_text(),
+'UI proof uses existing canonical transport':"supabase.functions.invoke('tenant-email-settings?proof=pinning'" in Path('src/lib/configuracoes/tenantSmtp.ts').read_text() and "body:{mode:'runtime_proof'}" in Path('src/lib/configuracoes/tenantSmtp.ts').read_text(),
+'UI proof and runtime flags independent':'TENANT_SMTP_PROOF_PHASE = true' in Path('src/lib/configuracoes/tenantSmtp.ts').read_text() and 'TENANT_PINNING_PROVEN = false' in (r/'deno-runtime.ts.review').read_text(),
 }
 for label,value in checks.items():print(('PASS ' if value else 'FAIL ')+label)
 assert all(checks.values())
