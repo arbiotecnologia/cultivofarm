@@ -21,6 +21,9 @@ def main():
   sql+=Path('supabase/migrations/20261008041815_982505b2-b6f8-4351-a4ca-0185106a712b.sql').read_text().split('CREATE OR REPLACE FUNCTION platform_private.notification_outbox_closed()',1)[1]
   sql=sql.replace(" RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$ BEGIN RETURN NULL; END $$;","CREATE OR REPLACE FUNCTION platform_private.notification_outbox_closed() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$ BEGIN RETURN NULL; END $$;",1)
   sql+=(R/'20261016_smtp_f2f3.sql').read_text()*2
+  sql+="REVOKE USAGE ON SCHEMA platform_private FROM service_role; CREATE FUNCTION platform_private.unrelated_service_core() RETURNS int LANGUAGE sql SECURITY DEFINER SET search_path='' AS $$SELECT 1$$;REVOKE ALL ON FUNCTION platform_private.unrelated_service_core() FROM PUBLIC;GRANT EXECUTE ON FUNCTION platform_private.unrelated_service_core() TO service_role;"
+  delta=(R/'20261016_smtp_executor_schema_acl.sql').read_text()
+  sql+=delta*2
   a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';u='11111111-1111-4111-8111-111111111111';v='22222222-2222-4222-8222-222222222222'
   key='33333333-3333-4333-8333-333333333333';key2='44444444-4444-4444-8444-444444444444'
   cfg='{"host":"smtp.provider.com","port":465,"tls_mode":"implicit_tls","username":"user","from_email":"sender@provider.com","reply_to":"","from_name":"Cultivo Farm"}'
@@ -34,23 +37,24 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
   def claim(mode='connection',k=key,version=1,confirm='false'):return f"SELECT public.tenant_smtp_test_claim('{mode}',{version},'{k}',{confirm})"
   sql+=actor(u)+err('closed gate',claim(),'42501')+'RESET ROLE;UPDATE platform_private.tenant_smtp_test_gate SET approved=true;'
   sql+=actor(u)+err('CAS version',claim(version=2),'40001')+err('confirmation required',claim('send'),'22023')+err('no connection pass',claim('send',confirm='true'),'42501')
-  sql+="RESET ROLE;CREATE TEMP TABLE work(v jsonb);GRANT ALL ON work TO authenticated;"+actor(u)+f"INSERT INTO work {claim()};"
+  sql+="RESET ROLE;CREATE TEMP TABLE work(v jsonb);GRANT ALL ON work TO authenticated,service_role;"+actor(u)+f"INSERT INTO work {claim()};"
   sql+="SELECT pg_temp.ok('replay never grants executor',("+claim().replace('SELECT ','',1)+")->>'replay'='true');"
   sql+=err('concurrent pending new key',claim(k=key2),'40001')+err('no client secret executor',f"SELECT public.tenant_smtp_test_prepare((SELECT (v->>'job_id')::uuid FROM work),(SELECT (v->>'fence')::uuid FROM work),'{u}')",'42501')+'RESET ROLE;'
   sql+=f"SELECT pg_temp.ok('job in existing outbox',(SELECT count(*) FROM comunicacao_outbox)=1);SELECT pg_temp.ok('no general worker grants',NOT has_function_privilege('authenticated','public.tenant_smtp_test_prepare(uuid,uuid,uuid)','EXECUTE'));"
   prep=f"SELECT public.tenant_smtp_test_prepare((SELECT (v->>'job_id')::uuid FROM work),(SELECT (v->>'fence')::uuid FROM work),'{u}')"
-  sql+=err('forged actor',prep.replace(u,v),'42501')
+  sql+="SELECT pg_temp.ok('canonical service schema denied',NOT has_schema_privilege('service_role','platform_private','USAGE'));SELECT pg_temp.ok('dedicated service usage',has_schema_privilege('service_role','tenant_smtp_executor','USAGE'));SELECT pg_temp.ok('clients lack executor schema',NOT has_schema_privilege('authenticated','tenant_smtp_executor','USAGE') AND NOT has_schema_privilege('anon','tenant_smtp_executor','USAGE'));SELECT pg_temp.ok('only two dedicated cores',(SELECT count(*) FROM pg_proc WHERE pronamespace='tenant_smtp_executor'::regnamespace)=2);SET ROLE service_role;SELECT pg_temp.ok('real executor role',current_user='service_role');"
+  sql+=err('unrelated private exec still blocked','SELECT platform_private.unrelated_service_core()','42501')+err('forged actor',prep.replace(u,v),'42501')+'RESET ROLE;'
   sql+=f"INSERT INTO platform_org_admin_invites VALUES('{u}','idle',clock_timestamp()+interval '1 minute');"
-  sql+=err('stale actor invitation fence',prep,'42501')+"DELETE FROM platform_org_admin_invites;"
+  sql+="SET ROLE service_role;"+err('stale actor invitation fence',prep,'42501')+"RESET ROLE;DELETE FROM platform_org_admin_invites;"
   sql+="SELECT pg_temp.ok('global worker cannot reclaim diagnostic',(SELECT bool_and(status='processing' AND lease_expires_at IS NULL AND max_attempts=1) FROM comunicacao_outbox));"
   sql+="SELECT pg_temp.ok('public executor is invoker',NOT(SELECT prosecdef FROM pg_proc WHERE oid='public.tenant_smtp_test_prepare(uuid,uuid,uuid)'::regprocedure));"
-  sql+="SELECT pg_temp.ok('server confirmed recipient',("+prep.replace('SELECT ','',1)+")->>'recipient'='admin@provider.com');"
+  sql+="SET ROLE service_role;SELECT pg_temp.ok('server confirmed recipient',("+prep.replace('SELECT ','',1)+")->>'recipient'='admin@provider.com');"
   sql+=err('executor cannot run twice',prep,'42501')
   finish=f"SELECT public.tenant_smtp_test_finish((SELECT (v->>'job_id')::uuid FROM work),(SELECT (v->>'fence')::uuid FROM work),'{u}','smtp_connection_ok')"
-  sql+=finish+';'+finish+';'
+  sql+=finish+';'+finish+';RESET ROLE;'
   sql+=actor(u)+err('cooldown 60s',claim(k=key2),'40001')+"RESET ROLE;UPDATE platform_private.tenant_smtp_test_receipts SET created_at=clock_timestamp()-interval '61 seconds';"
-  sql+=actor(u)+f"DELETE FROM work;INSERT INTO work {claim('send',key2,confirm='true')};RESET ROLE;"+prep+';'
-  sql+=finish.replace('smtp_connection_ok','smtp_send_ambiguous')+';'
+  sql+=actor(u)+f"DELETE FROM work;INSERT INTO work {claim('send',key2,confirm='true')};RESET ROLE;SET ROLE service_role;"+prep+';'
+  sql+=finish.replace('smtp_connection_ok','smtp_send_ambiguous')+';RESET ROLE;'
   sql+="UPDATE platform_private.tenant_smtp_test_receipts SET created_at=clock_timestamp()-interval '61 seconds';"
   sql+=actor(u)+err('ambiguity no blind resend',claim('send',key,confirm='true'),'40001')+'RESET ROLE;'
   for role in ['gestor','financeiro','cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico','superadmin']:
@@ -62,6 +66,8 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
   sql+="""
 SELECT pg_temp.ok('legacy outbox still contained', NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_insert_tickets));
 """
+  sql+=(R/'rollback_executor_schema_acl.sql').read_text()*2
+  sql+="SELECT pg_temp.ok('rollback dedicated usage closed',NOT has_schema_privilege('service_role','tenant_smtp_executor','USAGE'));SELECT pg_temp.ok('rollback private usage unchanged',NOT has_schema_privilege('service_role','platform_private','USAGE'));SELECT pg_temp.ok('rollback unrelated EXEC preserved',has_function_privilege('service_role','platform_private.unrelated_service_core()','EXECUTE'));"
   sql+=(R/'rollback.sql').read_text()
   sql+="SELECT pg_temp.ok('rollback gate closed',NOT(SELECT approved FROM platform_private.tenant_smtp_test_gate));SELECT pg_temp.ok('rollback preserves outbox',(SELECT count(*) FROM comunicacao_outbox)=2);SELECT pg_temp.ok('rollback revokes client',NOT has_function_privilege('authenticated','public.tenant_smtp_test_claim(text,bigint,uuid,boolean)','EXECUTE'));"
   run=subprocess.run(['psql','-X','-h',str(t),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1'],input=sql,text=True,capture_output=True)
@@ -69,7 +75,7 @@ SELECT pg_temp.ok('legacy outbox still contained', NOT EXISTS(SELECT 1 FROM plat
   # Two real concurrent connections in disposable PG only. Restore reviewed candidate
   # on the isolated backend, seed fresh B using synthetic Vault; never remote.
   cmd=['psql','-X','-h',str(t),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1']
-  setup=(R/'20261016_smtp_f2f3.sql').read_text()+f"UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"+actor(v)+f"SELECT public.tenant_email_settings_save(0,'{cfg}','synthetic-only');RESET ROLE;"
+  setup=(R/'20261016_smtp_f2f3.sql').read_text()+delta+f"UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"+actor(v)+f"SELECT public.tenant_email_settings_save(0,'{cfg}','synthetic-only');RESET ROLE;"
   z=subprocess.run(cmd,input=setup,text=True,capture_output=True);assert z.returncode==0,z.stderr[-1000:]
   first=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
   first.stdin.write("BEGIN;"+actor(v)+claim(k=key)+";SELECT pg_sleep(0.4);COMMIT;");first.stdin.close()
