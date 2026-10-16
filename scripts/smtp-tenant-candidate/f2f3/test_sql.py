@@ -62,6 +62,21 @@ SELECT pg_temp.ok('legacy outbox still contained', NOT EXISTS(SELECT 1 FROM plat
   sql+="SELECT pg_temp.ok('rollback gate closed',NOT(SELECT approved FROM platform_private.tenant_smtp_test_gate));SELECT pg_temp.ok('rollback preserves outbox',(SELECT count(*) FROM comunicacao_outbox)=2);SELECT pg_temp.ok('rollback revokes client',NOT has_function_privilege('authenticated','public.tenant_smtp_test_claim(text,bigint,uuid,boolean)','EXECUTE'));"
   run=subprocess.run(['psql','-X','-h',str(t),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1'],input=sql,text=True,capture_output=True)
   print('\n'.join(x for x in run.stderr.splitlines() if 'PASS' in x or 'ERROR' in x));assert run.returncode==0,run.stderr[-2200:]
+  # Two real concurrent connections in disposable PG only. Restore reviewed candidate
+  # on the isolated backend, seed fresh B using synthetic Vault; never remote.
+  cmd=['psql','-X','-h',str(t),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1']
+  setup=(R/'20261016_smtp_f2f3.sql').read_text()+f"UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"+actor(v)+f"SELECT public.tenant_email_settings_save(0,'{cfg}','synthetic-only');RESET ROLE;"
+  z=subprocess.run(cmd,input=setup,text=True,capture_output=True);assert z.returncode==0,z.stderr[-1000:]
+  first=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+  first.stdin.write("BEGIN;"+actor(v)+claim(k=key)+";SELECT pg_sleep(0.4);COMMIT;");first.stdin.close()
+  import time
+  time.sleep(0.12)
+  second=subprocess.run(cmd,input=actor(v)+claim(k=key2)+";",text=True,capture_output=True)
+  first.wait(timeout=10)
+  assert first.returncode==0 and second.returncode!=0 and 'SMTP_BUSY' in second.stderr,'race must admit exactly one job'
+  check=subprocess.run(cmd,input=f"SELECT count(*) FROM platform_private.tenant_smtp_test_receipts WHERE organization_id='{b}';",text=True,capture_output=True)
+  assert '1' in check.stdout
+  print('PASS two concurrent SQL sessions one claim, second SMTP_BUSY')
  finally:
   subprocess.run(prefix+['pg_ctl','-D',str(t/'data'),'-m','immediate','stop'],capture_output=True);shutil.rmtree(t)
 if __name__=='__main__':main()

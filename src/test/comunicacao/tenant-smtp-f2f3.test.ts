@@ -40,3 +40,27 @@ describe('actual shared SMTP core via synthetic socket',()=>{
  it('EOF post DATA is ambiguous, never retries',async()=>{const w=wire(['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n']);const r=await executeTest({mode:'send',version:1,recipient:'admin@provider.com',env},w.deps);expect(r.code).toBe('smtp_send_ambiguous');expect(w.writes.filter(v=>v==='DATA\r\n')).toHaveLength(1);});
  it('explicit post DATA 550 is definitive failure',async()=>{const w=wire(['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n','550 rejected\r\n']);expect((await executeTest({mode:'send',version:1,recipient:'admin@provider.com',env},w.deps)).code).toBe('smtp_test_failed');});
 });
+
+describe('timeouts fail closed',()=>{
+ it('late pinned connection closes and never upgrades after deadline',async()=>{
+  vi.useFakeTimers();
+  try {
+   const close=vi.fn();let release:((s:ProbeConnection)=>void)|undefined;
+   const tcp=vi.fn(()=>new Promise<ProbeConnection>(r=>{release=r;}));const tls=vi.fn();
+   const d=pinnedDeps({proven:true,resolve:async()=>['8.8.8.8'],tcp,tls});
+   const pending=expect(d.connectTls('smtp.provider.com',465)).rejects.toThrow('smtp_tls_failed');
+   await vi.advanceTimersByTimeAsync(4001);await pending;
+   release?.({read:async()=>null,write:async b=>b.length,close});await vi.advanceTimersByTimeAsync(1);
+   expect(close).toHaveBeenCalled();expect(tls).not.toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
+ it('post DATA timeout ambiguous, socket closed without retry',async()=>{
+  vi.useFakeTimers();
+  try{
+   const replies=['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n','250 ok\r\n','250 ok\r\n','354 data\r\n'];const close=vi.fn();const write=vi.fn(async(b:Uint8Array)=>b.length);
+   const socket:ProbeConnection={read:async b=>{const reply=replies.shift();if(!reply)return new Promise(()=>{});const bytes=new TextEncoder().encode(reply);b.set(bytes);return bytes.length;},write,close};
+   const pending=executeTest({mode:'send',version:1,recipient:'admin@provider.com',env:{DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,SMTP_HOST:'smtp.provider.com',SMTP_PORT:'465',SMTP_USER:'synthetic',SMTP_PASSWORD:'synthetic-only',SMTP_FROM:'sender@provider.com'}},{connectTls:async()=>socket,connect:vi.fn(),startTls:vi.fn()});
+   await vi.advanceTimersByTimeAsync(3001);expect((await pending).code).toBe('smtp_send_ambiguous');expect(close).toHaveBeenCalled();expect(write.mock.calls.filter(([b])=>new TextDecoder().decode(b)==='DATA\r\n')).toHaveLength(1);
+  }finally{vi.useRealTimers();}
+ });
+});
