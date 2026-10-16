@@ -127,6 +127,9 @@ try:
  CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles();
  CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.user_clientes FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();
  CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles();
+ GRANT USAGE ON SCHEMA auth TO authenticated; GRANT USAGE ON SCHEMA cf_user_guards_v1 TO authenticated;
+ GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+ GRANT SELECT,UPDATE ON cf_user_guards_v1.state TO authenticated;
  INSERT INTO public.clientes VALUES ('{C1}'),('{C2}'),('{C3}');
  INSERT INTO public.profiles(user_id,email) VALUES ('{ADMIN}','admin@t'),('{PROD}','p1@t'),('{PROD2}','p2@t'),('{CONS}','c@t');
  INSERT INTO public.user_roles VALUES ('{ADMIN}','administrador'),('{CONS}','consultor_tecnico');
