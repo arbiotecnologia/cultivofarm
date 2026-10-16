@@ -23,6 +23,7 @@ Migrations `20261016020433` diagnosticsclosed e `20261016021643` executorACL já
 - Outbox existente: diagnostics processing sem lease, max_attempts=1; claim global não os retoma. Gate/worker global/Auth permanecem fechados. SMTP250 não verifica domínio nem inbox.
 
 ## Testes locais
+Promoção02:28:207/207Vitest em5arquivos, lint focal2arquivos0, SQLdescartável47checks/corrida PASS, scanner25/25, manifesto35/35, `deno check --no-lock` entrypoint PASS e build automático02:30:21OK. Typecheck app efetivo pendente auditor, sem execução manual nem equivalência build/root. Entrada antiga `deno.lock` ausente/não versionada retirada do manifesto; nenhum lock apagado/gerado nem dependência alterada. Não alegar frozen; revisão independente deve considerar essa limitação de reprodutibilidade já presente. O teste habilitado de prova permanece injetado; produção UI/servidor false e negativos preservados.
 `bun run test -- src/test/comunicacao/tenant-smtp-f2f3.test.ts src/test/comunicacao/tenant-smtp-ui.test.tsx src/test/comunicacao/tenant-smtp-foundation.test.ts src/test/config/authProviderTopology.test.ts`
 
 `python3 scripts/smtp-tenant-candidate/f2f3/test_sql.py` usa PostgreSQL descartável e marcador sintético somente, inclusive duas sessões concorrentes. `scan_local.py` é scanner focal, não certificação global. Checagem efetiva app exige `-p tsconfig.app.json`, não script raiz com references.

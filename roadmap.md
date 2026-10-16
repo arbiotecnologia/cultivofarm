@@ -1,7 +1,7 @@
 ## SMTP F2/F3 — promoção mínima após prova REAL (02:28 UTC)
 - [x] Evidência EXTERNA do auditor: site publicado bb4e2266, sessão Admin AR, Edgev4 JWTtrue; UI retornou prova TLS aprovada, sem credencial/email, com ok/PINNING_PROOF_PASS/dns_validated/ipv4_tls/ipv6_tls/hostname_mismatch_rejected todos true. Screenshot informado pelo auditor, não inspecionado/executado pelo agente.
 - [x] Candidato mínimo: UI TENANT_SMTP_PROOF_PHASE=false, Edge HOSTED_PROOF_ENABLED=false, review/espelho TENANT_PINNING_PROVEN=true. Guards/core/schema/config/senha preservados; homologação KingHost465 somente controle, não hosts arbitrários.
-- [ ] Validações locais deste delta e manifesto: registrar resultado ao final; typecheck app dedicado depende auditor, não equivale ao build/root.
+- [x] Delta local:207/207Vitest em5arquivos, lint2arquivos0, scanner25/25, SQLdescartável47checks incluindo corrida/SETROLEservice/rollback PASS, manifesto35/35, deno check --no-lock PASS e build automático02:30:21OK. Manifesto anterior referia deno.lock ausente no checkout/não versionado: entrada órfã retirada, nenhum lock apagado/gerado; sem alegar frozen. Typecheck app dedicado depende auditor, não equivale ao build/root.
 - [ ] Auditor: revisão independente, gate privado true/deploy e teste AUTH/envio controlado; nenhum SQL/deploy/publicação pelo agente. Workers globais/dispatch/sender_verified/AuthSMTP permanecem sem liberação; recuperação de jobs órfãos/ambíguos segue fail-closed, aguarda fluxo humano auditado.
 
 ## SMTP F2/F3 — integração prova via UI e cooldown (02:14 UTC)
