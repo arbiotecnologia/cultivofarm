@@ -1,10 +1,10 @@
 # Vínculos externos — Fase 2 candidata
 
-Data: 16/10/2026. Estado: **CANDIDATA NÃO APLICADA, UI FECHADA**. Implementação autorizada pelo titular; promoção depende de auditoria técnica independente, não de uma aprovação humana genérica. Publicação solicitada da F1 e validação visual em andamento não são aprovação desta F2.
+Data: 16/10/2026. Estado: **SQL INSTALADA FECHADA / UI INTEGRADA COM GATE FALSE**. Implementação autorizada pelo titular; promoção depende de auditoria técnica independente, não de uma aprovação humana genérica. F1 real publicada PASS conforme confirmação do titular; isso não abre os gates da F2.
 
 ## Entrega e recorte
 
-Primeiro recorte: editar **somente dados comuns** de `cliente_produtor` e `parceiro_b2b`, preservando integralmente perfil de acesso e vínculos. **Não é gestão completa**. Técnico B2B, perfis mistos, conversão interno/externo, troca/desassociação, Auth, e-mail de acesso, senha, SMTP e estados permanecem bloqueados. Nenhum registro hospedado foi alterado, nenhuma migration aplicada, nenhum deploy/publicação executado neste delta.
+Primeiro recorte: editar **somente dados comuns** de `cliente_produtor` e `parceiro_b2b`, preservando integralmente perfil de acesso e vínculos. **Não é gestão completa**. Técnico B2B, perfis mistos, conversão interno/externo, troca/desassociação, Auth, e-mail de acesso, senha, SMTP e estados permanecem bloqueados. SQL common-only instalada pelo auditor em20261016221926; nenhuma reaplicação/escrita/deploy/publicação pelo agente nesta rodada. Testes transacionais do auditor sem alteração persistente em usuários.
 
 Artefatos em `scripts/user-links-phase2/` (fora de `supabase/migrations`):
 - `candidate.sql.review`: extensão da RPC v1, gate false, CAS/ledger privados e token no leitor F1.
@@ -15,7 +15,7 @@ Artefatos em `scripts/user-links-phase2/` (fora de `supabase/migrations`):
 - `ui-closed.patch.review` e `build-ui-diff.py`: diff **não aplicado** à tela, reproduzível; constante false.
 - `test-local.py`: PostgreSQL descartável via socket `/tmp`, schema/Auth reduzidos; nunca usar conexão remota.
 
-`src/lib/configuracoes/externalUserEditCandidate.ts` não possui callsite em produção; `EXTERNAL_USER_EDIT_PHASE2_REVIEWED=false`. Seu teste integra a suíte existente. A tela em execução continua somente leitura para externos.
+A tela agora possui callsite para o formulário isolado `ExternalCommonUserEditForm`, exclusivamente atrás de `externalUserEditGate=false`; externos continuam somente leitura. A edição interna e a seção administrativa de senha permanecem intactas.
 
 ## Contrato e evidência hospedada somente leitura
 
@@ -61,7 +61,9 @@ Dados comuns não alteram ACL/membership neste recorte, mas nome/contato do titu
 
 ## UI candidata e revisão recebida
 
-Diff fechado propõe motivo, snapshot CAS/chave por ator/tenant/alvo, dados comuns sem seletor de roles/links, chamada v1 com receiver preservado, sem retry automático; erro/confirmação estritos e reload em estado ambíguo. Invalidations incluem admin-user-links. Dry-run do diff PASS; diff não foi compilado nem exercitado em sessão real porque não está instalado. Necessita testes de diálogo/duplo clique/identidade/timeout antes da promoção.
+Formulário integrado atrás do gate false, com nome/telefone/motivo validados antes da RPC, label associado e botão inválido desabilitado. Seis campos comuns preservados; CREA/especialidade não exibidos mantêm o valor original. Sem seletor de roles/links/status. Snapshot congela alvo/updated_at/hash; divergência/refetch requer reabrir. Motivo obrigatório 2–500; nome 2–150; telefone opcional 10/11 dígitos. Trava ref síncrona antes do await; chave estável em retry manual igual, chave nova para payload modificado. Timeout/resultado inválido/CAS requerem reload, sem retry automático.
+
+Formulário keyed por escopo/generation, cleanup invalida respostas em andamento; pai também cerca efeitos por ator/tenant/readiness/roles/alvo/generation antes do fechamento e toasts. Invalidations somente ['admin-users',org,actor] e ['admin-user-links',org,actor]. Fechar e reabrir outro/mesmo alvo não deixa o finally anterior desbloquear a tentativa nova. Seção de senha não foi alterada e permanece fluxo separado; seus callbacks legados não recebem esta certificação.
 
 Revisão auxiliar `sub_acwmfqa1`: erro estruturado RPC era mascarado — corrigido preservando objeto para mapper seguro existente; autorização redundante removida (locks já protegem estado). Seletor usa authorize(auth.uid()) deliberadamente para exigir ator Admin/tenant ativo sem aceitar tenant externo; isso não autoriza editar o ator/elegível. Contagem seis chaves mantida por contrato fechado. Replay rigoroso mantido para evitar resultado obsoleto. Essas decisões não equivalem a aprovação técnica independente do titular.
 
@@ -76,7 +78,7 @@ Revisão auxiliar `sub_acwmfqa1`: erro estruturado RPC era mascarado — corrigi
 
 ## Rollback e gates de promoção
 
-Antes de aplicar: recapturar definição completa de RPC/leitor/ACL/triggers; comparar baseline/preflight no ref canônico; aplicar candidato + seletor numa única transação revisada com gate false. SQL deliberadamente fail-closed na reaplicação. Não abrir UI ou SQL até evidência independente de contrato/locks/ACL/CAS/ledger, typecheck do diff e testes reais isolados de Admin/titular com cleanup exato.
+SQL já instalada pelo auditor: NÃO reaplicar preflight/candidate, nem eligible.sql. Manter SQL/UI false até revisão final e testes reais do diálogo. O preflight de ausência é histórico, não operacional.
 
 Rollback: fechar gate e retornar constante UI false; restaurar RPC da baseline e leitor F1/ACL exatos capturados. Revogar helpers novos executáveis; manter ledger/gate para investigação, não dropar tabelas nem desfazer contatos legítimos em lote. Associação nunca foi alterada por este recorte. Reversão futura de troca deve ser nova operação auditada/CAS, não apagar ledger/restaurar acesso cego. `rollback.sql.review` é roteiro, não rollback integral executado/testado hospedado.
 
@@ -93,6 +95,15 @@ Inventário runtime direto adicional confirmado por fonte:
 - `supabase/functions/list-portal-users/index.ts:90–94`: leitura privilegiada user_clientes após fronteira de cliente/tenant, **sem filtros de revogação/vigência**; pode listar vínculos históricos como atuais. Sem alteração neste delta.
 - `supabase/functions/fase-e-runtime-harness/index.ts`: inserts/cleanup de fixtures, não leitor de negócio; não executado neste turno.
 
-**Alerta não confirmado live:** a última definição encontrada por texto exato no histórico local de `get_cliente_ids_for_user` (`20260607060137_4d3e041f-9ad1-415e-a318-c26f4ea8f49e.sql:2–13`) faz UNION bruto de user_clientes e profiles.cliente_id, sem revogação/vigência. Isso é um bloqueador para assumir revogação efetiva server-side. NÃO afirmar que a função hospedada é essa, nem que todas as RLS atuais vazam: updates externos, wrappers/policies restritivas e definições não capturadas podem mudar o resultado. É necessário capturar pg_get_functiondef/ACL e políticas dependentes no ref canônico e testar sessão revogada antes de qualquer promoção da troca. Não houve leitura hospedada adicional desse helper nem correção neste delta.
+**Alerta descartado pelo auditor:** LIVE get_cliente_ids_for_user já filtra is_active/revoked_at/valid_from/valid_until e protege profiles.cliente_id com EXISTS vigente. O histórico local não representa a definição live; demais leitores seguem pendentes.
 
 A revisão auxiliar tratou histórico como live e generalizou revalidação a cada render; essas conclusões **não foram adotadas**. Escopo/generation fence por identidade não prova invalidação por alteração de vínculo na mesma identidade. Nesta entrega a auditoria cobre caminhos conhecidos e inventário runtime direto; certificação de **todos** leitores/RLS live continua pendente, explicitamente bloqueando troca. Dados comuns preservam vínculos e não corrigem essas lacunas preexistentes.
+
+
+## Atualização 22:28 UTC — instalação externa e registro exato
+
+Leitura própria do ledger hosted no canônico confirmou versão20261016221926/nome user_external_common_edit_closed_reviewed, um statement,19280bytes,MD5 9ed7f2f0d33bb1fb0090703a4d8484a8, igual ao arquivo local. Arquivo byte-identical versionado em `scripts/user-links-phase2/installed/20261016221926_user_external_common_edit_closed_reviewed.sql.review` e `ledger-match.json`, sem execução. Registro em supabase/migrations não realizado: instrução do ambiente reserva gravações nessa pasta à ferramenta que aplicaria SQL; reaplicar foi expressamente proibido. É pendência de registro automático, não de SQL instalado.
+
+Evidência externa ca6f5915:102Vitest/typecheck0/lintnovos0; auditor instalou SQL fechada e informou BEGIN/ROLLBACK PASS para comuns AdminAR Produtor/B2B, replayigual/hashdiferente/CASobsoleto, links/roles negados e AdminFSF/Consultor/Financeiro/B2B/Produtor/Superadmin/ARalvoFSF negados; digest/ledger não expostos. Não reproduzimos escritas nem testes hospedados nesta rodada.
+
+QA da rodada: suíte real de diálogo RTL/Radix com transporte e gate simulados + helper/parser/regressões executada; comandos e totais finais abaixo. Isso não certifica a página completa autenticada nem o diálogo em produção. Gate verdadeiro existe somente no mock dos testes, nunca no runtime. Typecheck/build manuais não executados por restrição do harness; build automático é evidência separada. Troca e gestão completa permanecem NO-GO, demais leitores/sessão/cache do titular pendentes.

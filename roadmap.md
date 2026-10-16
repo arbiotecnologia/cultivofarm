@@ -1162,19 +1162,23 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Cadastro: rótulos de tipo, ajuda quando não há elegíveis vs busca vazia, erro com "tentar novamente".
 - [x] Delta a5a8725b: parser estrito do contrato, externos com perfis internos ocultos e dados comuns desabilitados (senha separada mantida), `any` novos removidos; lint legado separado.
 - [x] Correção focal pós-publicação: adaptador canônico preserva receiver de `SupabaseClient.rpc`; regressão dependente de `this` reproduz a falha e verifica integração corrigida. Vitest 30/30, lint novos 0/página 18 legados idênticos, build automático OK19:34:29, scanner F4b43/43. Relatório `docs/auditorias/vinculos-externos-fase1-receiver-20261016.md`.
-- [ ] Typecheck dedicado da correção: aguardando execução na revisão independente; execução manual vedada no ambiente, sem log separado disponível.
-- [ ] Revisão independente da correção + publicação (pelo titular); leitura real Admin AR após publicação pendente.
-- [ ] Fase 2 candidata (extensão do contrato v1, CAS perfil+vínculos, idempotência com revalidação, locks, revogação server-side): implementação autorizada; nenhuma escrita aplicada antes da revisão independente.
+- [x] Typecheck da F1 PASS informado pela revisão independente 1613abbf.
+- [x] F1 real publicada PASS, conforme confirmação do titular nesta rodada.
+- [x] F2 common-only instalada fechada pelo auditor; nenhuma reaplicação pelo agente. Troca/revogação continua pendente.
 
 ## Vínculos externos — Fase 2 candidata (16/10/2026)
 - [x] Solicitação registrada: candidata revisável, sem SQL hospedado, sem publicação ou liberação de UI; implementação autorizada, revisão técnica ainda necessária.
 - [x] Evidência independente fornecida para F1/1613abbf: 36 Vitest PASS, typecheck/build 0, lint novos 0/18 legados iguais, scanner 4187/0; substitui a pendência de typecheck acima, não comprova publicação/validação visual em andamento.
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
-- [x] Recorte common_preserve_links: SQL/rollback/preflight em scripts/user-links-phase2, fora de supabase/migrations; módulo sem callsite, gate false, diff de tela separado e fechado.
+- [x] SQL common-only instalada pelo auditor: versão20261016221926 user_external_common_edit_closed_reviewed; arquivo exato arquivado em scripts/user-links-phase2/installed (19280bytes/MD5 coincide com ledger hosted). Nenhuma reaplicação/eligible.
+- [x] UI common-only integrada atrás de gate false: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Não publicada.
 - [x] CAS perfil+roles+todoslinks/estados persistidos; ator/tenant revalidados no replay, hash payload, motivo e ledger imutável; seletor elegível paginado sem edição de links.
 - [x] QA local: PostgreSQL descartável 35 checks, Vitest 102/102, lint novos 0, scanner sem segredos, build automático OK19:49:26; diff UI aplica em dry-run. Typecheck dedicado final indisponível (harness, sem log separado); não declarar certificado.
-- [ ] Auditoria técnica/homologação Auth/RLS real: bloqueio deliberado de aplicação e gate. Não é falta de autorização humana genérica.
+- [x] Revisão ca6f5915 e testes hosted BEGIN/ROLLBACK PASS informados pelo auditor: AdminAR comuns/replay/hash/CAS/links, identidades negadas, ledger fechado; nenhuma alteração persistente em usuários.
+- [ ] Revisão final UI, typecheck dedicado e teste real do diálogo antes de abrir gates. Não é falta de autorização humana genérica.
 - [ ] Troca de vínculos do mesmo tipo: proposta separada no relatório; histórico B2B e revalidação/cache do titular impedem promoção como gestão completa.
 - [ ] Achados fora deste delta: rpc extraído sem receiver em DocumentosPanel.tsx e financeiro/relatorios/ReportShell.tsx; useMyCommercialOrders correto com call(supabase). Não corrigidos.
-- [ ] Bloqueador da troca Produtor: verificar live get_cliente_ids_for_user (histórico local ignora revogação/vigência), ConsultorTecnico e list-portal-users com filtros incompletos. Sem correção de autorização neste delta; inventário completo RLS live ainda não certificado.
+- [x] Alerta get_cliente_ids_for_user descartado: live filtra revogação/vigência e fallback vigente, confirmado pelo auditor.
+- [ ] Troca Produtor: ConsultorTecnico/list-portal-users e inventário completo RLS live continuam pendentes; nenhuma alteração de autorização.
+- [ ] Registro na pasta automática de migrations: bloqueado pela regra do ambiente que reserva essa pasta à ferramenta de aplicação; SQL exato versionado fora dela, sem reaplicar.
 - Relatório e riscos: docs/auditorias/vinculos-externos-fase2-candidate-20261016.md.
