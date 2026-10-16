@@ -47,6 +47,7 @@ try:
  candidate=(ROOT/'scripts/user-links-v0/candidate.sql.review').read_text()
  # Baseline hash preflight isn't full live schema: exercise exact operational statements only.
  candidate=candidate[candidate.index('-- Conserva JOIN'):]
+ candidate=candidate.replace("  IF md5(d)<>'e099f51d128620e5a68cc3e9001dd976' THEN RAISE EXCEPTION 'v0_helper_definition_drift'; END IF;",'') # full-definition hash checked only against hosted capture
  run(candidate)
  actor="BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='00000000-0000-4000-8000-000000000001';"
  def scoped(sql):return actor+sql+';ROLLBACK;'

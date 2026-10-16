@@ -37,6 +37,7 @@ DECLARE d text;
 BEGIN
   SELECT pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure) INTO d;
   IF strpos(d,'AND uc.revoked_at IS NULL')>0 THEN RETURN; END IF;
+  IF md5(d)<>'e099f51d128620e5a68cc3e9001dd976' THEN RAISE EXCEPTION 'v0_helper_definition_drift'; END IF;
   IF strpos(d,'AND uc.is_active = true')=0 OR strpos(d,'fn_authz_uid_scope_ok')=0
      OR strpos(d,'uc.access_level::text = ANY(_levels)')=0 THEN
     RAISE EXCEPTION 'v0_helper_drift';
