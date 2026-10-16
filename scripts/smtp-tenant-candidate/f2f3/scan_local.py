@@ -26,6 +26,8 @@ checks={
 'proof no SMTP or credential RPC':not re.search(r'prepare|Vault|AUTH PLAIN|sendEmail|writeSmtp', (r/'hosted-proof.ts').read_text()),
 'mirror closed runtime': 'TENANT_PINNING_PROVEN = false' in (r/'deploy/supabase/functions/tenant-email-settings/f2f3/deno-runtime.ts').read_text(),
 'mirror JWT preserved':'verify_jwt = true' in (r/'deploy/supabase/config.toml').read_text(),
+'executor dedicated schema only':'GRANT USAGE ON SCHEMA tenant_smtp_executor TO service_role' in (r/'20261016_smtp_executor_schema_acl.sql').read_text() and not re.search(r'GRANT\s+USAGE\s+ON\s+SCHEMA\s+platform_private', (r/'20261016_smtp_executor_schema_acl.sql').read_text(),re.I),
+'real service role SQL coverage':'SET ROLE service_role' in (r/'test_sql.py').read_text() and 'REVOKE USAGE ON SCHEMA platform_private FROM service_role' in (r/'test_sql.py').read_text(),
 }
 for label,value in checks.items():print(('PASS ' if value else 'FAIL ')+label)
 assert all(checks.values())

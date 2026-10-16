@@ -25895,6 +25895,29 @@ export type Database = {
         Returns: Json
       }
       tenant_email_settings_scope: { Args: never; Returns: boolean }
+      tenant_smtp_test_claim: {
+        Args: {
+          p_confirm?: boolean
+          p_key: string
+          p_mode: string
+          p_version: number
+        }
+        Returns: Json
+      }
+      tenant_smtp_test_context: { Args: never; Returns: Json }
+      tenant_smtp_test_finish: {
+        Args: {
+          p_actor: string
+          p_code: string
+          p_fence: string
+          p_job: string
+        }
+        Returns: Json
+      }
+      tenant_smtp_test_prepare: {
+        Args: { p_actor: string; p_fence: string; p_job: string }
+        Returns: Json
+      }
       unassign_b2b_user_client_secure: {
         Args: { p_cliente_id: string; p_reason?: string; p_user_id: string }
         Returns: boolean
