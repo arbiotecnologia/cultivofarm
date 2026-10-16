@@ -136,6 +136,8 @@ try:
  # ---- instala candidato v2 (função + trigger STATEMENT) ----
  candidate=(ROOT/'scripts/user-links-principal/candidate.sql.review').read_text()
  candidate=candidate[candidate.index('CREATE OR REPLACE FUNCTION'):]
+ # espelha o estado live: trigger ROW existente antes da troca para STATEMENT
+ run("CREATE TRIGGER trg_user_clientes_sync AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal()")
  run(candidate)
  # ---- 1) fluxo Admin: vínculo vigente vira principal e sincroniza profile ----
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{PROD}','{C1}',true,now()-interval '2 days')"))
