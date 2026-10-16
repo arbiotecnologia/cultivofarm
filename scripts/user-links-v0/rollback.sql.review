@@ -1,0 +1,5 @@
+-- Rollback de contenção: não restaurar predicados históricos. Sem dados/ledger apagados.
+-- Executar só após V0 instalado, validar ref e capturar policy atual antes.
+-- Mantém helper corrigido. Suspende apenas ramo Cliente da campanha; irmãos intactos.
+ALTER POLICY campanhas_cliente_select ON public.commercial_campaigns USING (false);
+-- UI pode voltar ao commit anterior, mas não restaurar Edge sem filtros de vigência.
