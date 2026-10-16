@@ -1,7 +1,8 @@
 import {afterEach,describe,it,expect,vi} from "vitest";
+import {readFileSync} from "node:fs";
 import {draftSchema,EMPTY_VIEW,saveSchema,draftHostAllowed} from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 import {createTenantSmtpHandler, type ActorClient} from "../../../scripts/smtp-tenant-candidate/handler";
-import {TENANT_SMTP_REVIEWED,tenantSmtpTransport,canRunTenantSmtpProof} from "@/lib/configuracoes/tenantSmtp";
+import {TENANT_SMTP_REVIEWED,TENANT_SMTP_PROOF_PHASE,tenantSmtpTransport,canRunTenantSmtpProof} from "@/lib/configuracoes/tenantSmtp";
 const {invoke}=vi.hoisted(()=>({invoke:vi.fn()}));
 vi.mock("@/integrations/supabase/client",()=>({supabase:{functions:{invoke}}}));
 afterEach(()=>{vi.restoreAllMocks();invoke.mockReset();});
@@ -18,14 +19,18 @@ async function run(options:{scope?:boolean;scopeError?:boolean;jwt?:boolean;revi
  return {res,body,rpc,factory};
 }
 describe("SMTP-T1 contract and real candidate handler — mocked actor RPC, zero network",()=>{
- it('proof eligibility requires authenticated ready Admin AR and denies superadmin',()=>{
+ it('production proof is closed even for authenticated ready Admin AR',()=>{
   const base={ready:true,userId:'actor',organizationId:'007bb519-cba0-4704-be2c-cb93ad010048',roles:['administrador']};
-  expect(canRunTenantSmtpProof(base)).toBe(true);
+  expect(TENANT_SMTP_PROOF_PHASE).toBe(false);expect(canRunTenantSmtpProof(base)).toBe(false);
   for(const delta of [{ready:false},{userId:undefined},{organizationId:'FSF'},{roles:['superadmin','administrador']},{roles:['financeiro']},{roles:['consultor']},{roles:['parceiro_b2b']},{roles:['cliente_produtor']}])expect(canRunTenantSmtpProof({...base,...delta})).toBe(false);
  });
- it('proof transport uses canonical authenticated invocation and only runtime_proof body',async()=>{
-  const result={ok:true,code:'PINNING_PROOF_PASS',dns_validated:true,ipv4_tls:true,ipv6_tls:true,hostname_mismatch_rejected:true};invoke.mockResolvedValue({data:result,error:null});
-  await expect(tenantSmtpTransport.proof?.()).resolves.toEqual(result);expect(invoke).toHaveBeenCalledExactlyOnceWith('tenant-email-settings?proof=pinning',{method:'POST',body:{mode:'runtime_proof'}});
+ it('closed production proof transport never invokes the Edge',async()=>{
+  await expect(tenantSmtpTransport.proof?.()).rejects.toThrow('SMTP_UNAVAILABLE');expect(invoke).not.toHaveBeenCalled();
+ });
+ it('review and mirror promote pinning but close hosted proof independently',()=>{
+  const root='scripts/smtp-tenant-candidate/f2f3/';
+  for(const path of ['deno-runtime.ts.review','deploy/supabase/functions/tenant-email-settings/f2f3/deno-runtime.ts'])expect(readFileSync(root+path,'utf8')).toMatch(/export const TENANT_PINNING_PROVEN = true;/);
+  for(const path of ['entry-integration.ts.review','deploy/supabase/functions/tenant-email-settings/index.ts'])expect(readFileSync(root+path,'utf8')).toMatch(/export const HOSTED_PROOF_ENABLED=false;/);
  });
  it.each(["smtp.provider.com","mail.other-provider.net"])("multiprovider %s accepted as unverified draft",host=>expect(draftSchema.safeParse({...config,host}).success).toBe(true));
  it.each(["localhost","127.0.0.1","2130706433","0x7f000001","[::1]","smtp.local","metadata.google.internal","metadata","http://smtp.provider.com","smtp.provider.com\r\nQUIT","smtp.provider.com.","user@smtp.provider.com","smtp.internal"])("unsafe/ambiguous host %s rejected",host=>expect(draftHostAllowed(host)).toBe(false));
