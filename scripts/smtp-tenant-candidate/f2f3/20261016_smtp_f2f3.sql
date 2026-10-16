@@ -36,6 +36,20 @@ BEGIN
  RETURN v_org;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_smtp_test_actor(uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_test_context() RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid; v_version bigint;
+BEGIN
+ v_org:=platform_private.tenant_email_actor_org();
+ IF v_org IS NULL OR platform_private.tenant_smtp_test_actor(auth.uid()) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT version INTO v_version FROM public.communication_tenant_email_settings WHERE organization_id=v_org;
+ RETURN jsonb_build_object('actor',auth.uid(),'organization',v_org,'version',v_version);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_smtp_test_context() FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.tenant_smtp_test_context() TO authenticated;
+CREATE OR REPLACE FUNCTION public.tenant_smtp_test_context() RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.tenant_smtp_test_context() $$;
+REVOKE ALL ON FUNCTION public.tenant_smtp_test_context() FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.tenant_smtp_test_context() TO authenticated;
 -- Preserve NULL for every legacy/unproven insert. No GUC authorization.
 CREATE OR REPLACE FUNCTION platform_private.notification_outbox_closed() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$

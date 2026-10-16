@@ -5,7 +5,7 @@ export function publicAddress(ip: string): boolean {
     const a = ip.split('.').map(Number);
     if (a.some((v, i) => v > 255 || String(v) !== ip.split('.')[i])) return false;
     const [x,y,z] = a;
-    return x > 0 && x < 224 && ![10,127].includes(x) && !(x===100 && y>=64 && y<=127)
+    return x > 0 && x < 224 && ![10,127,192,198,203].includes(x) && !(x===100 && y>=64 && y<=127)
       && !(x===169 && y===254) && !(x===172 && y>=16 && y<=31) && !(x===192 && (y===0 || y===168 || (y===88 && z===99) || (y===2 && z===0)))
       && !(x===198 && (y===18 || y===19 || (y===51 && z===100))) && !(x===203 && y===0 && z===113);
   }
@@ -13,7 +13,7 @@ export function publicAddress(ip: string): boolean {
   // documentation, 6to4, Teredo, mapped/translated/ULA/link-local and multicast.
   if (!/^[23][0-9a-f]{3}(?::[0-9a-f]{1,4}){7}$/i.test(ip)) return false;
   const w = ip.split(':').map(v => parseInt(v,16));
-  return !(w[0]===0x2001 && (w[1]<=0x1ff || w[1]===0xdb8)) && w[0]!==0x2002 && !(w[0]===0x3fff && w[1]<=0xfff);
+  return w[0]!==0x2001 && w[0]!==0x2002 && !(w[0]===0x3fff && w[1]<=0xfff);
 }
 export interface PinnedRuntime {
   proven: boolean;

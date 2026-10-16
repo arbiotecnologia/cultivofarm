@@ -19,7 +19,7 @@ export function createTestHandler(deps:TestDeps) {
   try {
    const client=deps.client(auth); const user=await client.auth.getUser();
    if(user.error || !user.data.user)return respond(401,{code:'SMTP_UNAUTHORIZED'});
-   const scope=await client.rpc('tenant_email_settings_get');
+   const scope=await client.rpc('tenant_smtp_test_context');
    if(scope.error)return respond(500,{code:'SMTP_INTERNAL'});
    if(!scope.data || typeof scope.data!=='object')return respond(403,{code:'SMTP_FORBIDDEN'});
    const reader=req.body?.getReader(); if(!reader)return respond(400,{code:'SMTP_INVALID'});
@@ -30,7 +30,7 @@ export function createTestHandler(deps:TestDeps) {
    const parsed=testRequestSchema.safeParse(raw);if(!parsed.success)return respond(400,{code:'SMTP_INVALID'});
    const result=testResultSchema.parse(await deps.execute(user.data.user.id,client,parsed.data));
    // Revalidate actual actor ACL before returning late result (finish audit always runs first).
-   const after=await client.rpc('tenant_email_settings_get');if(after.error || JSON.stringify(after.data)!==JSON.stringify(scope.data))return respond(403,{code:'SMTP_FORBIDDEN'});
+   const after=await client.rpc('tenant_smtp_test_context');if(after.error || JSON.stringify(after.data)!==JSON.stringify(scope.data))return respond(403,{code:'SMTP_FORBIDDEN'});
    return respond(200,result);
   } catch{return respond(500,{code:'SMTP_INTERNAL'});}
  };
