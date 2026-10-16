@@ -24,6 +24,7 @@ export function createHostedProofHandler(deps:ProofDeps){
   const authorization=req.headers.get('Authorization') ?? '';
   if(!/^Bearer [^\s]+$/.test(authorization))return reply(401,'SMTP_UNAUTHORIZED');
   const now=deps.now ?? Date.now;
+  let ownsBusy=false;
   try{
    const actor=deps.client(authorization);const user=await actor.auth.getUser();
    if(user.error || !user.data.user)return reply(401,'SMTP_UNAUTHORIZED');
@@ -32,7 +33,7 @@ export function createHostedProofHandler(deps:ProofDeps){
    const context=scope.data as {actor?:unknown;organization?:unknown}|null;
    if(!context || context.actor!==user.data.user.id || context.organization!==AR_ORGANIZATION)return reply(403,'SMTP_FORBIDDEN');
    if(busy || now()<nextAt)return reply(429,'SMTP_COOLDOWN');
-   busy=true;nextAt=now()+60000;
+   busy=true;ownsBusy=true;nextAt=now()+60000;
    let expired=false;let timer:ReturnType<typeof setTimeout>|undefined;
    const sockets=new Set<ProbeConnection>();
    let dns_validated=false,ipv4_tls=false,ipv6_tls=false,hostname_mismatch_rejected=false;
@@ -65,6 +66,6 @@ export function createHostedProofHandler(deps:ProofDeps){
    const after=await actor.rpc('tenant_smtp_test_context');
    if(after.error || JSON.stringify(after.data)!==JSON.stringify(scope.data))return reply(403,'SMTP_FORBIDDEN');
    return reply(200,code,{dns_validated,ipv4_tls,ipv6_tls,hostname_mismatch_rejected});
-  }catch{busy=false;return reply(500,'SMTP_INTERNAL');}
+  }catch{if(ownsBusy)busy=false;return reply(500,'SMTP_INTERNAL');}
  };
 }

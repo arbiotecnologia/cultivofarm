@@ -5,7 +5,7 @@ import {publicAddress,parseIpv6,pinnedDeps} from '../../../scripts/smtp-tenant-c
 import {createHostedProofHandler} from '../../../scripts/smtp-tenant-candidate/f2f3/hosted-proof';
 const socket=(chunks:string[]):ProbeConnection=>({read:async b=>{const s=chunks.shift();if(s===undefined)return null;const v=new TextEncoder().encode(s);b.set(v);return v.length;},write:async b=>b.length,close:vi.fn()});
 describe('numeric IP parser and special ranges',()=>{
- it.each(['2804:10:8016::216:80','2001:4860:4860::8888','192.5.6.30','198.41.0.4','203.1.1.1','191.6.216.80'])('accepts actual public %s',ip=>expect(publicAddress(ip)).toBe(true));
+ it.each(['2804:10:8016::216:80','2001:4860:4860::8888','192.5.6.30','192.0.3.1','192.2.1.1','198.41.0.4','203.1.1.1','191.6.216.80'])('accepts actual public %s',ip=>expect(publicAddress(ip)).toBe(true));
  it('expands KingHost IPv6 exactly',()=>expect(parseIpv6('2804:10:8016::216:80')).toEqual([0x2804,0x10,0x8016,0,0,0,0x216,0x80]));
  it.each(['::ffff:191.6.216.80','::ffff:0:bf06:d850','::ffff:bf06:d850','64:ff9b::bf06:d850','64:ff9b:1::1','2001::1','2001:20::1','2002:bf06:d850::1','2001:db8::1','3fff::1','fc00::1','fe80::1','ff02::1','::','::1','1::2::3','2804:10:8016::216:80%eth0','2804:10:8016:::216:80','192.0.0.9','198.19.0.1','203.0.113.1'])('rejects special/malformed %s',ip=>expect(publicAddress(ip)).toBe(false));
  it('all compressed positions equal expanded address',()=>{
