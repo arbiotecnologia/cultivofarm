@@ -1164,7 +1164,7 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Correção focal pós-publicação: adaptador canônico preserva receiver de `SupabaseClient.rpc`; regressão dependente de `this` reproduz a falha e verifica integração corrigida. Vitest 30/30, lint novos 0/página 18 legados idênticos, build automático OK19:34:29, scanner F4b43/43. Relatório `docs/auditorias/vinculos-externos-fase1-receiver-20261016.md`.
 - [x] Typecheck da F1 PASS informado pela revisão independente 1613abbf.
 - [x] F1 real publicada PASS, conforme confirmação do titular nesta rodada.
-- [x] F2 common-only instalada fechada pelo auditor; nenhuma reaplicação pelo agente. Troca/revogação continua pendente.
+- [x] F2 common-only instalada inicialmente fechada; auditor posteriormente abriu SQL e publicou. Nenhuma reaplicação pelo agente. Troca/revogação continua pendente.
 
 ## Vínculos externos — Fase 2 dados comuns revisados (16/10/2026)
 - [x] Promoção técnica22:37 autorizada: gate UItrue APENAS dados comuns, mocks explícitos false/true na integração e diálogo; vínculos/perfil/status só consulta. SQLgatefalse, sem publicação/contas/SMTP/Auth/sessão.
@@ -1177,16 +1177,25 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Evidência independente F1/1613abbf:36VitestPASS/typecheck0/build0/lintnovos0/18legados/scanner4187/0; F1 real publicada PASS confirmada pelo titular na atualização vigente.
 - [x] Contrato v1/schema/RLS/locks auditados por leitura; partner_users NÃO possui ativo/is_active/revoked_at; vínculo físico UNIQUE(user_id). user_clientes mantém revogação existente.
 - [x] SQL common-only instalada pelo auditor: versão20261016221926 user_external_common_edit_closed_reviewed; arquivo exato arquivado em scripts/user-links-phase2/installed (19280bytes/MD5 coincide com ledger hosted). Nenhuma reaplicação/eligible.
-- [x] UI common-only integrada, gate promovido true22:37 após revisão: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Não publicada; SQL permanece fechado.
+- [x] UI common-only integrada, gate promovido true22:37 após revisão: formulário isolado, validações, trava síncrona, snapshot/generation e callbacks escopados. Publicada depois pelo auditor, SQLtrue e piloto comum realPASS conforme atualização22:46.
 - [x] CAS perfil+roles+todoslinks/estados persistidos; ator/tenant revalidados no replay, hash payload, motivo e ledger imutável; seletor elegível paginado sem edição de links.
 - [x] QA histórico SQL:35checks PostgreSQL descartável/102Vitest; proposta de diff anterior substituída pela UI isolada, NÃO aplicar novamente.
 - [x] QA UI atual:132/132Vitest em7arquivos (23diálogo realRTL/Radix/7tokenCAS/102regressões), lintnovo0/Configuracoes18legados, scanner0, diff-checkPASS, buildautomáticoOK22:27:24. Typecheck dedicado atual UNVERIFIED.
 - [x] Readback próprio canônico:SQLgatefalse/auditcount0/anonexecutefalse; nenhuma escrita/reaplicação/eligible/publicação.
 - [x] Revisão ca6f5915 e testes hosted BEGIN/ROLLBACK PASS informados pelo auditor: AdminAR comuns/replay/hash/CAS/links, identidades negadas, ledger fechado; nenhuma alteração persistente em usuários.
-- [ ] Auditor: verificar este delta/abrir somente gate SQL e executar diálogo real F2; typecheck0 da revisão loading informado, nenhuma certificação UI F2 real ainda. Sem nova aprovação humana genérica.
+- [x] Evidência independente 22:46UTC: commit ddd5d119 revisado,137VitestPASS/typecheck0/lintnovos0/scanner4208zero/build0. Auditor abriu SQLtrue e publicou deployment779765e3-c64d-4e97-bb69-c473e8fc2c9a. AdminAR publicado: Produtor nome temporário/restauração e B2B cargo temporário/restauração PASS;4ledgerrows,2porconta,autorAdminAR,motivo,old/new; links intactos,nomes originais,cargosnull. TitularProdutor preview viu atualização/restauração APÓS reload; nenhuma atualização automática e cache de revogação NÃO certificado.
 - [ ] Troca de vínculos do mesmo tipo: proposta separada no relatório; histórico B2B e revalidação/cache do titular impedem promoção como gestão completa.
 - [ ] Achados fora deste delta: rpc extraído sem receiver em DocumentosPanel.tsx e financeiro/relatorios/ReportShell.tsx; useMyCommercialOrders correto com call(supabase). Não corrigidos.
 - [x] Alerta get_cliente_ids_for_user descartado: live filtra revogação/vigência e fallback vigente, confirmado pelo auditor.
 - [ ] Troca Produtor: ConsultorTecnico/list-portal-users e inventário completo RLS live continuam pendentes; nenhuma alteração de autorização.
 - [ ] Registro na pasta automática de migrations: bloqueado pela regra do ambiente que reserva essa pasta à ferramenta de aplicação; SQL exato versionado fora dela, sem reaplicar.
 - Relatório e riscos: docs/auditorias/vinculos-externos-fase2-candidate-20261016.md.
+
+## Vínculos externos — próximo recorte: plano de associação do mesmo tipo (16/10/2026 22:46UTC)
+- [x] Registrar evidência independente de dados comuns publicada PASS, separada das verificações próprias somente leitura.
+- [x] Elaborar arquivo técnico com17itens: `docs/auditorias/vinculos-externos-mesmo-tipo-plano-20261016.md`. Leitura canônica: SQLtrue/audit4/alvos2/anonfalse;47funções diretas/196candidatas transitivas,118políticas direto/um salto/177conservadoras. Seis históricas reconciliadas; resolver get_cliente_ids_for_user correto. Sem DDL/execução de escrita.
+- [x] Registrar lacunas específicas: campanhas_cliente_select vigente sem filtros de revogação, sync_user_cliente_principal histórico, has_active_user_cliente_access sem revoked_at, branding sem valid_from; Consultor/list-portal-users; scope sem revisão; URLs assinadas anteriores. Singletonrevision/stamp existentes avaliados antes de novo mecanismo.
+- [x] QA documental própria:70/70VitestPASS em6arquivos existentes (diálogo/CAS/portalCliente/myPartner/financeiro/storageScope), scannerglobalzero/diff-checkPASS/buildautomáticoOK22:58:12UTC. Sem TS/runtime alterado; lint/typecheck não reexecutados, baseline externo ddd5d119zero. Nenhum teste real de troca de associação executado.
+- [ ] Triagem semântica final/fechamento:196funções/177políticas candidatas, SQL dinâmico/deploys/Storage e carteiras; somente futura implementação revisada pode certificar antigo negado/novo permitido.
+- [ ] Implementação de associações: NÃO autorizada nesta rodada; sem DDL, contas/roles/links ou publicação. TécnicoB2B, perfis novos e conversão interno/externo bloqueados.
+- [ ] Certificação de acesso antigo e retirada de resíduos em duas sessões/dispositivos: depende da futura implementação revisada e provas reais; reload de nome não certifica revogação.
