@@ -75,7 +75,7 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+="RESET ROLE;UPDATE public.portal_solicitacoes SET consultor_atribuido=NULL WHERE id='"+sol(1)+"';"+assign(1)
   sql+="RESET ROLE;"+ok('future event enqueued',f"{job(1)}='queued'")
   sql+=ok('lane row invisible to global claim shape',f"(SELECT o.status='processing' AND o.lease_expires_at IS NULL AND o.attempts=0 AND o.max_attempts=1 FROM comunicacao_outbox o JOIN platform_private.tenant_smtp_dispatch_jobs j ON j.outbox_id=o.id WHERE j.source_id='{sol(1)}')")
-  sql+=ok('payload sanitized no markup',f"(SELECT payload_snapshot->>'numero'='SOL-1bxb' FROM comunicacao_outbox o JOIN platform_private.tenant_smtp_dispatch_jobs j ON j.outbox_id=o.id WHERE j.source_id='{sol(1)}')")
+  sql+=ok('payload sanitized no markup',f"(SELECT payload_snapshot->>'numero'='SOL-1bx/b' FROM comunicacao_outbox o JOIN platform_private.tenant_smtp_dispatch_jobs j ON j.outbox_id=o.id WHERE j.source_id='{sol(1)}')")
   sql+=svc+ok('global claim never takes lane rows',"(SELECT count(*) FROM public.rpc_claim_communication_outbox(10,'global',60))=0")
   sql+="RESET ROLE;UPDATE public.portal_solicitacoes SET consultor_atribuido=NULL WHERE id='"+sol(1)+"';"+assign(1)+"RESET ROLE;"+ok('reassign same recipient idempotent',f"(SELECT count(*) FROM platform_private.tenant_smtp_dispatch_jobs WHERE source_id='{sol(1)}')=1")
   sql+=assign(9)+"RESET ROLE;"+ok('cross-tenant source (cliente org B, consultor org A) not enqueued',f"{job(9)} IS NULL")
