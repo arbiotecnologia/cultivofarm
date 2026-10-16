@@ -82,9 +82,9 @@ Deno.serve(async (req: Request) => {
   }
 
   // Global route: unchanged authentication (x-tenant-smtp-secret is ignored here).
-  if (new URL(req.url).searchParams.has("lane")) return json(400, { ok: false, error: "unknown_lane" });
   const authz = authorize(req);
   if (!authz.ok) return authz.res;
+  if (new URL(req.url).searchParams.has("lane")) return json(400, { ok: false, error: "unknown_lane" });
 
   // NOTIF-3: internal credentials do not prove source/tenant/recipient.
   // No runtime secret load, claim, adapter or ledger effects while contained.
