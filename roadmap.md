@@ -1,3 +1,8 @@
+## SMTP F2/F3 — integração prova via UI e cooldown (02:14 UTC)
+- [x] Botão temporário AdminAR na seção existente, runtime_proof estrito sem credencial/JWT manual; AUTH/send dependem da homologação, pinningfalse/GETPUT preservados.
+- [x] PASS mesma versão preservado no SMTP_COOLDOWN, espera60s sem retry/reconexão e confirmação desmarcada.205Vitest/47SQL/scanner25/25/deno frozen PASS; lint focal7arquivos0, Configuracoes18/2 idêntico baseline. Browser sintético desktop/mobile PASS, não hosted; build automático02:17:12OK, typecheck efetivo app segue UNVERIFIED por restrição do ambiente.
+- [ ] Auditor: revisar delta e coletar prova hosted via sessão UI; fechar flags após resultado. Sem deploy/SQL/publicação pelo agente.
+
 ## SMTP F2/F3 — ACL executor hospedado (02:10 UTC)
 - [x] Incorporado relato externo: SQL179e84e aplicado pelo auditor via smtp_tenant_controlled_diagnostics_closed, gatefalse/ARv2 preservados; PGlite31/7identidades claimsPASS, prepareSERVICEfalhou schemaUSAGE; rollback total informado, sem senhaAR lida.
 - [x] Sucessor revisável schema dedicado prepare/finish, wrappersINV, semUSAGEplatform_private/globalEXEC; preflight/rollback e harness service_role real, fixtureB rollback integral.

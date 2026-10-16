@@ -1,4 +1,5 @@
 import type { ActorClient } from '../handler.ts';
+import { runtimeProofRequestSchema } from './contract.ts';
 import { publicAddress, type PinnedRuntime } from './pinned-transport.ts';
 import type { ProbeConnection } from '../../_shared/comunicacao/smtp-provider-probe.ts';
 const AR_ORGANIZATION='007bb519-cba0-4704-be2c-cb93ad010048';
@@ -19,7 +20,14 @@ export function createHostedProofHandler(deps:ProofDeps){
   if(origin && !deps.trustedOrigin(origin))return reply(403,'SMTP_FORBIDDEN');
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:{...deps.cors(origin),'Cache-Control':'no-store'}});
   const url=new URL(req.url);
-  if(req.method!=='POST' || url.search!=='?proof=pinning' || req.body!==null)return reply(400,'SMTP_INVALID');
+  if(req.method!=='POST' || url.search!=='?proof=pinning')return reply(400,'SMTP_INVALID');
+  // Existing bodyless probe remains compatible; UI sends only a strict mode, never target or credentials.
+  if(req.body!==null){
+   const reader=req.body.getReader();let text='';let size=0;const decoder=new TextDecoder();
+   try{while(true){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;if(size>128){await reader.cancel();return reply(400,'SMTP_INVALID');}text+=decoder.decode(chunk.value,{stream:true});}
+    text+=decoder.decode();if(!runtimeProofRequestSchema.safeParse(JSON.parse(text)).success)return reply(400,'SMTP_INVALID');
+   }catch{return reply(400,'SMTP_INVALID');}
+  }
   if(!deps.enabled || deps.canonicalUrl!=='https://swzpzcwiasxmjutrmvkm.supabase.co')return reply(503,'SMTP_UNAVAILABLE');
   const authorization=req.headers.get('Authorization') ?? '';
   if(!/^Bearer [^\s]+$/.test(authorization))return reply(401,'SMTP_UNAUTHORIZED');

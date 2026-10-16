@@ -74,6 +74,7 @@ import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceira
 import { CreditCard } from "lucide-react";
 import { MeuPlanoTab } from "@/pages/configuracoes/MeuPlanoTab";
 import TenantEmailSettings from "@/pages/configuracoes/TenantEmailSettings";
+import { canRunTenantSmtpProof } from "@/lib/configuracoes/tenantSmtp";
 import { useOnboardingState } from "@/hooks/useOrgOnboarding";
 import { FUSOS_BRASIL, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 
@@ -684,7 +685,7 @@ export default function Configuracoes() {
                 )}
               </CardContent>
             </Card>
-            {canTenantEmail && <TenantEmailSettings key={tenantEmailScope.scope} scope={tenantEmailScope.scope} />}
+            {canTenantEmail && <TenantEmailSettings key={tenantEmailScope.scope} scope={tenantEmailScope.scope} proofEligible={canRunTenantSmtpProof({ready:tenantEmailScope.ready,userId:user?.id,organizationId:profile?.organization_id,roles:roles ?? []})} />}
           </TabsContent>
         )}
 

@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { saveSchema, viewSchema, type SmtpView } from "../../../scripts/smtp-tenant-candidate/_shared/contract";
-import { testRequestSchema, testResultSchema, type TestRequest, type TestResult } from "../../../scripts/smtp-tenant-candidate/f2f3/contract";
+import { testRequestSchema, testResultSchema, runtimeProofResultSchema, type RuntimeProofResult, type TestRequest, type TestResult } from "../../../scripts/smtp-tenant-candidate/f2f3/contract";
 export { testMessage, type TestRequest, type TestResult } from "../../../scripts/smtp-tenant-candidate/f2f3/contract";
 export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 
@@ -8,10 +8,16 @@ export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 // HTTPS + Vault accepted by owner; infrastructure log suppression is unverified.
 // Enables draft requests only; server ACL/Vault/review gate remain independent. No global fallback.
 export const TENANT_SMTP_REVIEWED = true;
+// Temporary review candidate only; close together with HOSTED_PROOF_ENABLED after evidence collection.
+export const TENANT_SMTP_PROOF_PHASE = true;
+export function canRunTenantSmtpProof(context:{ready:boolean;userId?:string;organizationId?:string|null;roles:readonly string[]}):boolean {
+ return TENANT_SMTP_PROOF_PHASE && context.ready && !!context.userId && context.organizationId==='007bb519-cba0-4704-be2c-cb93ad010048' && context.roles.includes('administrador') && !context.roles.includes('superadmin');
+}
 export interface TenantSmtpTransport {
   load(): Promise<SmtpView>;
   save(input: unknown): Promise<SmtpView>;
   test?(input: TestRequest): Promise<TestResult>;
+  proof?(): Promise<RuntimeProofResult>;
 }
 async function request(method: "GET" | "PUT", input?: unknown): Promise<SmtpView> {
   if (!TENANT_SMTP_REVIEWED) throw new Error("SMTP_UNAVAILABLE");
@@ -27,6 +33,13 @@ async function request(method: "GET" | "PUT", input?: unknown): Promise<SmtpView
   return parsed.data;
 }
 export const tenantSmtpTransport: TenantSmtpTransport = {
+ proof:async()=>{
+  if(!TENANT_SMTP_PROOF_PHASE)throw new Error('SMTP_UNAVAILABLE');
+  const {data,error}=await supabase.functions.invoke('tenant-email-settings?proof=pinning',{method:'POST',body:{mode:'runtime_proof'}});
+  if(error)throw new Error('SMTP_UNAVAILABLE');
+  const parsed=runtimeProofResultSchema.safeParse(data);if(!parsed.success)throw new Error('SMTP_INTERNAL');
+  return parsed.data;
+ },
  load: () => request("GET"), save: input => request("PUT", input),
  test:async input=>{
   const body=testRequestSchema.parse(input);
