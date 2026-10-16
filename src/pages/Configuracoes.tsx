@@ -41,8 +41,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { RPC_VINCULOS_USUARIOS, parseVinculos, tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
+type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
 import { MaskedInput } from "@/components/ui/masked-input";
@@ -197,12 +197,6 @@ export default function Configuracoes() {
     if (!detalhado) return <span className="text-sm">{e.resumo}{fora}</span>;
     return <ul className="text-sm space-y-1">{e.detalhes.map((d, i) => <li key={i}>{d}</li>)}{fora && <li>{fora}</li>}</ul>;
   };
-
-  const editOrig: LinhaUsuario | null = editUser
-    ? ((usersPage as LinhaUsuario[]).find((u) => u.user_id === editUser.user_id) ?? (editUser as LinhaUsuario))
-    : null;
-  const editTipo = tipoAcessoDoUsuario(editOrig?.roles);
-  const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo);
 
   const TENANT_MANAGEABLE_ROLES = ACTIVE_ROLES.filter((candidate) =>
     !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
@@ -387,6 +381,12 @@ export default function Configuracoes() {
   // Edit user dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
+  const editOrig: LinhaUsuario | null = editUser
+    ? ((usersPage as LinhaUsuario[]).find((u) => u.user_id === editUser.user_id) ?? (editUser as LinhaUsuario))
+    : null;
+  const editTipo = tipoAcessoDoUsuario(editOrig?.roles);
+  const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo);
+
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
