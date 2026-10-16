@@ -5,8 +5,8 @@ export { testMessage, type TestRequest, type TestResult } from "../../../scripts
 export * from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 import { f4RequestSchema, f4ResultSchema, type F4Request, type F4Result } from "../../../scripts/smtp-tenant-candidate/f4/contract";
 export { f4Message, type F4Request, type F4Result, type F4Status } from "../../../scripts/smtp-tenant-candidate/f4/contract";
-// F4 candidate (sender possession + activation). Closed until review + Edge/SQL gates. Dispatch stays false.
-export const TENANT_SMTP_F4_PHASE = false;
+// F4a promoted after independent review: sender possession only. Edge/SQL gates stay independent; activation refused, dispatch false.
+export const TENANT_SMTP_F4_PHASE = true;
 
 // Draft-only promotion authorized by owner; auditor deploys after focused review.
 // HTTPS + Vault accepted by owner; infrastructure log suppression is unverified.
