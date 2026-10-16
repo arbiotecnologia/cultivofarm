@@ -8,7 +8,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   rest: transport,
   rpc(this: { rest: typeof transport }, name: string, args: unknown) { return this.rest.rpc(name, args); },
 } }));
-import { ExternalCommonUserEditForm, type ExternalCommonTarget } from '@/components/configuracoes/ExternalCommonUserEditForm';
+import { ExternalCommonUserEditBoundary, ExternalCommonUserEditForm, type ExternalCommonTarget } from '@/components/configuracoes/ExternalCommonUserEditForm';
 
 const target: ExternalCommonTarget = {
   user_id: '11111111-1111-4111-8111-111111111111', updated_at: '2026-10-16T22:00:00Z',
@@ -33,6 +33,11 @@ function form(props = base, key = '1') {
 }
 const reason = () => fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Correção de contato' } });
 const save = () => screen.getByRole('button', { name: 'Salvar Alterações' });
+function screenPath(props: React.ComponentProps<typeof ExternalCommonUserEditBoundary>) {
+  return <Dialog open><DialogContent aria-describedby={undefined}><DialogTitle>Editar Usuário</DialogTitle>
+    <ExternalCommonUserEditBoundary key={props.scope} {...props} />
+  </DialogContent></Dialog>;
+}
 beforeEach(() => {
   vi.clearAllMocks(); transport.gate = true;
   transport.rpc.mockReturnValue({ abortSignal: transport.abortSignal });
@@ -41,6 +46,43 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('diálogo real de dados comuns externos (gate simulado só no teste)', () => {
+  it('caminho da tela aguarda loading inicial e monta com o primeiro token sem fechar/reabrir', async () => {
+    const view = render(screenPath({ ...base, expectedVersion: undefined, snapshotReady: false }));
+    expect(screen.queryByLabelText('Nome')).toBeNull(); expect(transport.rpc).not.toHaveBeenCalled();
+    view.rerender(screenPath(base));
+    await screen.findByLabelText('Nome'); reason(); fireEvent.click(save());
+    await waitFor(() => expect(base.onSuccess).toHaveBeenCalledTimes(1));
+    expect(transport.rpc.mock.calls[0][1].p_profile._external_edit.expected_version).toBe('a'.repeat(64));
+  });
+  it('refetch mantém rascunho, CAS original e chave da tentativa sem desmontar', async () => {
+    transport.abortSignal.mockResolvedValueOnce({ data: null, error: { message: 'user_edit_invalid_fields' } }).mockResolvedValueOnce(result);
+    const view = render(screenPath(base)); await screen.findByLabelText('Nome'); reason();
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho editado' } });
+    fireEvent.click(save()); await waitFor(() => expect(base.onError).toHaveBeenCalledTimes(1));
+    const node = screen.getByLabelText('Cargo');
+    view.rerender(screenPath({ ...base, expectedVersion: undefined, snapshotReady: false }));
+    expect(screen.getByLabelText('Cargo')).toBe(node); expect(node).toHaveValue('Rascunho editado');
+    view.rerender(screenPath({ ...base, expectedVersion: 'c'.repeat(64), target: { ...target, cargo: 'Alterado remotamente', updated_at: '2026-10-16T22:05:00Z' } }));
+    expect(screen.getByLabelText('Cargo')).toBe(node); fireEvent.click(save());
+    await waitFor(() => expect(base.onSuccess).toHaveBeenCalledTimes(1));
+    const args = transport.rpc.mock.calls.map(call => call[1]);
+    expect(args[1].p_profile._external_edit.expected_version).toBe('a'.repeat(64));
+    expect(args[1].p_expected_updated_at).toBe(target.updated_at);
+    expect(args[1].p_profile._external_edit.idempotency_key).toBe(args[0].p_profile._external_edit.idempotency_key);
+  });
+  it('erro inicial não monta formulário e pode recuperar com token válido', async () => {
+    const view = render(screenPath({ ...base, expectedVersion: undefined, snapshotReady: false, snapshotError: true }));
+    expect(screen.getByRole('alert')).toBeTruthy(); expect(screen.queryByLabelText('Nome')).toBeNull();
+    view.rerender(screenPath(base)); await screen.findByLabelText('Nome'); reason(); expect(save()).toBeEnabled();
+  });
+  it('conflito real após refetch preserva CAS antigo e exige reload', async () => {
+    transport.abortSignal.mockResolvedValue({ data: null, error: { message: 'user_edit_conflict' } });
+    const view = render(screenPath(base)); await screen.findByLabelText('Nome'); reason();
+    view.rerender(screenPath({ ...base, expectedVersion: 'c'.repeat(64) })); fireEvent.click(save());
+    await waitFor(() => expect(base.onError).toHaveBeenCalledTimes(1));
+    expect(transport.rpc.mock.calls[0][1].p_profile._external_edit.expected_version).toBe('a'.repeat(64));
+    expect(screen.getByRole('button', { name: 'Recarregue a lista para tentar novamente' })).toBeDisabled();
+  });
   it.each(['cliente_produtor', 'parceiro_b2b'])('envia %s pela RPC canônica preservando receiver, roles, links e campos não exibidos', async role => {
     render(form({ ...base, target: { ...target, roles: [role] } })); reason();
     fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Corrigido' } });
