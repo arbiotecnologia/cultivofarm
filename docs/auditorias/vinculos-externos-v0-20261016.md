@@ -130,3 +130,8 @@ Revisão independente externa:76VitestPASS/lint2testes0/scanner4221zero/build0; 
 - Dados comuns: quatro operações restauradas, links intactos, ledger4; SMTP inalterado. Sem novas operações neste encerramento.
 - Gestão de associações, cache multidispositivo, signed URLs e principal continuam pendentes, **gates de associação fechados**. Confirmação específica de acessos reais futuros no momento.
 - Esta rodada só documentos/arquivo SQL instalado/manifesto: nenhum teste novo, runtime, DDL, deploy ou publicação pelo agente; hashes e diff documental verificados, sem nova auditoria ampla.
+---
+
+## Adendo — migration 20261016234052 (overload de dois argumentos)
+
+Auditor aplicou `20261016234052 client_access_overload_deny_revoked_links` no canônico: única adição `AND uc.revoked_at IS NULL` no fallback de `public.can_user_access_cliente(uuid,uuid)`. MD5 antes `c0acb1dcd7f0b183f9500f4c264c1fa1`, depois `c610786fc9f6d6a44453b9e63c91e974` (confirmado pelo agente por leitura); ACL preservada (anon EXECUTE=false, authenticated EXECUTE=true). SQL exato do ledger arquivado em `scripts/user-links-v0/installed/20261016234052_client_access_overload_deny_revoked_links.sql` + manifesto `20261016234052-ledger-match.json`; não reaplicado. Evidência do auditor: antes helper TRUE com vínculo revogado vs resolver canônico false; depois ambos false; cinco casos hosted BEGIN/ROLLBACK (vigente/revogado/inativo/futuro/expirado) PASS sem commit. Fonte não encontrou policy direta usando o overload de dois argumentos — vazamento não afirmado como comprovado.
