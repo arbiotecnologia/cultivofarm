@@ -124,6 +124,7 @@ UPDATE public.portal_solicitacoes SET cliente_id='{CLI2}' WHERE id='{sol(25)}';
 UPDATE public.clientes SET organization_id='{ORG2}' WHERE id='{CLI4}';
 UPDATE public.user_clientes SET revoked_at=now() WHERE user_id='{CON}' AND cliente_id='{CLI5}';"""
   sql+=lclaim('rev')+"RESET ROLE;"+ok('revoked sources never return recipient or credential',empty('rev'))
+  sql+=lclaim('rev2')+"RESET ROLE;"+ok('bounded per-tenant scan: second run also returns nothing',empty('rev2'))
   for i,c in ((20,'source_unassigned'),(21,'source_reassigned'),(22,'source_state_ineligible'),(23,'source_missing'),(24,'client_ineligible'),(25,'source_client_changed'),(26,'client_tenant_changed'),(27,'recipient_portfolio_revoked')):
    sql+=ok(f'revoked {c} cancelled',f"{job(i)}='cancelled' AND {code(i)}='{c}' AND {obx(i)}='cancelled'")
   sql+=ok('cancellations audited per source',"(SELECT count(*) FROM platform_private.tenant_smtp_lane_audit WHERE event='cancelled')=8")
