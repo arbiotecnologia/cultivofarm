@@ -40,6 +40,11 @@ describe('complete SMTP responses and writes',()=>{
   await writeSmtpCommand(s,'EHLO cultivofarm.local',1000,'ehlo');expect(actual).toBe('EHLO cultivofarm.local\r\n');
  });
  it.each([0,-1,999,1.5])('invalid write count %s fails',async count=>{const s=socket([]);s.write=async()=>count;await expect(writeSmtpCommand(s,'EHLO',1000,'ehlo')).rejects.toThrow();});
+ it('late partial write cannot continue after deadline',async()=>{
+  vi.useFakeTimers();try{const s=socket([]);const write=vi.fn(async()=>{await new Promise(r=>setTimeout(r,200));return 2;});s.write=write;
+   const pending=expect(writeSmtpCommand(s,'EHLO',100,'ehlo')).rejects.toThrow();await vi.advanceTimersByTimeAsync(101);await pending;await vi.advanceTimersByTimeAsync(100);expect(write).toHaveBeenCalledTimes(1);expect(s.close).toHaveBeenCalled();
+  }finally{vi.useRealTimers();}
+ });
  it('MIME body and terminator fully written without wrapper',async()=>{
   const s=socket(['250 sender\r\n','250 recipient\r\n','354 continue\r\n','250 accepted\r\n']);let actual='';s.write=async b=>{const n=Math.min(2,b.length);actual+=new TextDecoder().decode(b.subarray(0,n));return n;};
   await new NativeSmtpClient(s,1000).send({from:'from@fixture.test',to:'to@fixture.test',subject:'Test',content:'body'});
@@ -80,4 +85,6 @@ describe('restricted credential-free hosted proof',()=>{
  it('mixed private AAAA blocks all TCP',async()=>{const m=make();m.runtime.resolve.mockImplementation(async(_h,f)=>f==='A'?['191.6.216.80']:['::1']);expect((await (await createHostedProofHandler(m.deps)(request())).json()).ok).toBe(false);expect(m.runtime.tcp).not.toHaveBeenCalled();});
  it('TLS network failure is not mismatch proof and never raw error',async()=>{const m=make();m.runtime.tls.mockImplementation(async()=>{throw new Error('PRIVATE raw failure');});const text=await (await createHostedProofHandler(m.deps)(request())).text();expect(text).not.toContain('PRIVATE');expect(JSON.parse(text).ok).toBe(false);});
  it('unexpected wrong hostname acceptance fails proof',async()=>{const m=make();m.runtime.tls.mockImplementation(async()=>m.s);expect((await (await createHostedProofHandler(m.deps)(request())).json()).code).toBe('PINNING_PROOF_FAILED');});
+ it('proof cooldown and exclusive invocation',async()=>{const m=make();const handler=createHostedProofHandler(m.deps);await handler(request());expect((await handler(request())).status).toBe(429);expect(m.runtime.resolve).toHaveBeenCalledTimes(2);});
+ it('proof never reads or writes SMTP',async()=>{const m=make();const read=vi.fn(),write=vi.fn();m.s.read=read;m.s.write=write;await createHostedProofHandler(m.deps)(request());expect(read).not.toHaveBeenCalled();expect(write).not.toHaveBeenCalled();});
 });
