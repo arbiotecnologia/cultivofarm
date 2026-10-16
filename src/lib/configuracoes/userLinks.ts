@@ -61,16 +61,16 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** Valida o retorno; qualquer forma inesperada é erro (nunca vira "sem vínculo"). */
 export function parseVinculos(data: unknown): Map<string, VinculosUsuario> {
-  const items = (data as any)?.items;
+  const items = (data as { items?: unknown } | null)?.items;
   if (!Array.isArray(items)) throw new Error("Resposta de vínculos inválida.");
   const out = new Map<string, VinculosUsuario>();
-  for (const it of items) {
+  for (const it of items as Array<Record<string, any>>) { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!it || !UUID_RE.test(it.user_id ?? "") || !Array.isArray(it.clientes)) throw new Error("Resposta de vínculos inválida.");
     out.set(it.user_id, {
       user_id: it.user_id,
-      clientes: it.clientes.map((c: any) => ({
+      clientes: (it.clientes as Array<Record<string, unknown>>).map((c) => ({
         cliente_id: String(c.cliente_id), nome: String(c.nome ?? ""), principal: c.principal === true,
-        status_cliente: c.status_cliente ?? null, vigente: c.vigente === true,
+        status_cliente: (c.status_cliente as string | null) ?? null, vigente: c.vigente === true,
       })),
       parceiro: it.parceiro && UUID_RE.test(it.parceiro.partner_id ?? "")
         ? { partner_id: it.parceiro.partner_id, razao_social: String(it.parceiro.razao_social ?? ""), papel: it.parceiro.papel ?? null, ativo: it.parceiro.ativo === true }
