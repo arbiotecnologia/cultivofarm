@@ -25826,6 +25826,7 @@ export type Database = {
         Args: { p_active: boolean; p_user_id: string }
         Returns: Json
       }
+      tenant_admin_user_links: { Args: { p_user_ids: string[] }; Returns: Json }
       tenant_catalog_hidden_ids: {
         Args: { p_entity_type: string }
         Returns: {

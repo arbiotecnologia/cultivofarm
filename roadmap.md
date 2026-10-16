@@ -1147,11 +1147,18 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Credencial dedicada do invocador `TENANT_SMTP_LANE_INVOKER_SECRET` (header `x-tenant-smtp-secret`, só `?lane=tenant_smtp`), worker/espelho/cron/README/rollback; Vitest 895/895, SQL 101, scanner 41/41.
 - [ ] Invocador automático: titular cadastra o mesmo valor dedicado no Edge Secret e no Vault `tenant_smtp_lane_invoker_secret` + habilita pg_net (bloqueio: configuração humana).
 - [x] Promoção F4b: migration, pg_net, cron id 8, deploy worker/Edge, flags revisadas; transporte v1 (base64url) corrigiu 401; chamada vazia 200 e heartbeat comprovados; gate aberto com 0 empresas ativas.
-- [ ] Publicar a interface; Admin AR ativa pela tela; piloto pela origem real (titular).
-- [ ] Vínculos/auditoria (após fechar SMTP).
+- [x] Interface publicada; Admin AR ativou pela tela; piloto real SOL-2026-000003 → job 49d6bb28 `sent` (16/10 18:59 UTC), recebimento na caixa de entrada confirmado pelo titular. Recorte SMTP encerrado.
+- [ ] Vínculos externos: em fases (ver seção abaixo).
 
 ## Piloto F4b — formulário /app/solicitar (2026-10-16)
 - [x] Coluna opcional `portal_solicitacoes.client_uuid` + índice único `(user_id, client_uuid)` parcial; existentes NULL; RLS/guard/grants intactos.
 - [x] Retry com UUID estável, trava contra duplo clique, 23505 do índice do autor = "já enviada"; demais erros propagados.
-- [ ] Pendente: revisão independente, publicação e repetição do piloto pela sessão real.
+- [x] Publicado (c5b559d7) e piloto repetido pela sessão real com sucesso.
 - [ ] Pendente (fora do recorte): uploads com falha são descartados silenciosamente; fila offline de solicitações inexistente.
+
+## Vínculos externos — Fase 1 leitura/descoberta (2026-10-16)
+- [x] RPC `tenant_admin_user_links(uuid[])` (INVOKER público → DEFINER `platform_private`), só Admin da empresa, tenant derivado, ≤100 ids, uma chamada por página; vínculos de outra empresa só contados.
+- [x] Lista/edição: tipo de acesso explícito, vínculo atual com carregando/erro/sem vínculo distintos; externos somente leitura com explicação (sem falso salvar).
+- [x] Cadastro: rótulos de tipo, ajuda quando não há elegíveis vs busca vazia, erro com "tentar novamente".
+- [ ] Revisão independente + publicação.
+- [ ] Fase 2 (proposta em `docs/auditorias/vinculos-externos-fase1.md`): aguardando aprovação antes de qualquer SQL de escrita.
