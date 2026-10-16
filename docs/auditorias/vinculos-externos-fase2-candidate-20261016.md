@@ -1,6 +1,6 @@
 # Vínculos externos — Fase 2 candidata
 
-Data: 16/10/2026. Estado: **SQL INSTALADA FECHADA / UI INTEGRADA COM GATE FALSE**. Implementação autorizada pelo titular; promoção depende de auditoria técnica independente, não de uma aprovação humana genérica. F1 real publicada PASS conforme confirmação do titular; isso não abre os gates da F2.
+Data: 16/10/2026. Estado atual: **DADOS COMUNS REVISADOS / GATE UI TRUE / SQL INSTALADA COM GATE FALSE**. Promoção técnica apenas de dados comuns aprovada às22:37; abertura SQL reservada ao auditor após verificar este delta. F1 real publicada PASS conforme confirmação do titular; UI F2 real ainda NÃO certificada. Sem publicação pelo agente.
 
 ## Entrega e recorte
 
@@ -15,7 +15,7 @@ Artefatos em `scripts/user-links-phase2/` (fora de `supabase/migrations`):
 - `ui-closed.patch.review` e `build-ui-diff.py`: proposta histórica, substituída pela integração isolada atual; NÃO aplicar sobre a tela atual.
 - `test-local.py`: PostgreSQL descartável via socket `/tmp`, schema/Auth reduzidos; nunca usar conexão remota.
 
-A tela agora possui callsite para o formulário isolado `ExternalCommonUserEditForm`, exclusivamente atrás de `externalUserEditGate=false`; externos continuam somente leitura. A edição interna e a seção administrativa de senha permanecem intactas.
+A tela possui callsite para o formulário isolado `ExternalCommonUserEditForm`, com `externalUserEditGate=true` somente para dados comuns de Produtor/B2B Gestor. Perfil de acesso, vínculos e status continuam somente consulta no diálogo. Técnico/mistos seguem bloqueados. O gate SQL independente permanece false; a edição interna e a seção administrativa de senha permanecem intactas.
 
 ## Contrato e evidência hospedada somente leitura
 
@@ -61,7 +61,7 @@ Dados comuns não alteram ACL/membership neste recorte, mas nome/contato do titu
 
 ## UI candidata e revisão recebida
 
-Formulário integrado atrás do gate false, com nome/telefone/motivo validados antes da RPC, label associado e botão inválido desabilitado. Seis campos comuns preservados; CREA/especialidade não exibidos mantêm o valor original. Sem seletor de roles/links/status. Snapshot congela alvo/updated_at/hash; divergência/refetch requer reabrir. Motivo obrigatório 2–500; nome 2–150; telefone opcional 10/11 dígitos. Trava ref síncrona antes do await; chave estável em retry manual igual, chave nova para payload modificado. Timeout/resultado inválido/CAS requerem reload, sem retry automático.
+Formulário revisado com gate UI true, nome/telefone/motivo validados antes da RPC, label associado e botão inválido desabilitado. Seis campos comuns preservados; CREA/especialidade não exibidos mantêm o valor original. Sem seletor de roles/links/status. Boundary aguarda primeiro snapshot válido e congela alvo/updated_at/hash; refetch mantém formulário/rascunho/tentativa e CAS original, conflito exige reload. Motivo obrigatório 2–500; nome 2–150; telefone opcional 10/11 dígitos. Trava ref síncrona antes do await; chave estável em retry manual igual, chave nova para payload modificado. Timeout/resultado inválido/CAS requerem reload, sem retry automático.
 
 Formulário keyed por escopo/generation, cleanup invalida respostas em andamento; pai também cerca efeitos por ator/tenant/readiness/roles/alvo/generation antes do fechamento e toasts. Invalidations somente ['admin-users',org,actor] e ['admin-user-links',org,actor]. Fechar e reabrir outro/mesmo alvo não deixa o finally anterior desbloquear a tentativa nova. Seção de senha não foi alterada e permanece fluxo separado; seus callbacks legados não recebem esta certificação.
 
@@ -78,9 +78,9 @@ Revisão auxiliar `sub_acwmfqa1`: erro estruturado RPC era mascarado — corrigi
 
 ## Rollback e gates de promoção
 
-SQL já instalada pelo auditor: NÃO reaplicar preflight/candidate, nem eligible.sql. Manter SQL/UI false até revisão final e testes reais do diálogo. O preflight de ausência é histórico, não operacional.
+SQL já instalada pelo auditor nas versões20261016221926 e20261016223134: NÃO reaplicar preflight/candidate, nem eligible.sql. UI true revisada apenas para dados comuns; SQL false até abertura pelo auditor após verificar este delta. Teste real UI F2 permanece pendente. O preflight de ausência é histórico, não operacional.
 
-Rollback: fechar gate e retornar constante UI false; restaurar RPC da baseline e leitor F1/ACL exatos capturados. Revogar helpers novos executáveis; manter ledger/gate para investigação, não dropar tabelas nem desfazer contatos legítimos em lote. Associação nunca foi alterada por este recorte. Reversão futura de troca deve ser nova operação auditada/CAS, não apagar ledger/restaurar acesso cego. `rollback.sql.review` é roteiro, não rollback integral executado/testado hospedado.
+Rollback operacional deste delta: retornar constante UI false; qualquer fechamento SQL cabe ao auditor. Preservar a pré-autorização live20261016223134, revalidação após locks, RPC interna, leitor F1/ACL e ledger; NÃO restaurar helper/candidata antigos. Não dropar tabelas nem desfazer contatos legítimos em lote. Associação nunca foi alterada por este recorte. Reversão futura de troca exige operação auditada/CAS; `rollback.sql.review` é histórico, não executar cegamente nem alegar rollback integral hospedado.
 
 Fora do delta: `DocumentosPanel.tsx` e `financeiro/relatorios/ReportShell.tsx` extraem rpc e chamam solto; `useMyCommercialOrders` usa `.call(supabase)` corretamente. Achados registrados, não corrigidos.
 
@@ -121,8 +121,17 @@ Arquivos da integração: `src/components/configuracoes/ExternalCommonUserEditFo
 
 Comando reproduzível: `bun run test -- src/test/config/externalCommonUserEditForm.test.tsx src/test/config/userLinksVersion.test.ts src/test/config/externalUserEditCandidate.test.ts src/test/config/userLinks.test.ts src/test/config/userLinksQuery.test.ts src/test/config/edicaoUsuarioRpc.test.ts src/test/config/externalUserDraft.test.ts`.
 
-## P2 loading — recorte mínimo solicitado 22:30
+## P2 loading — histórico do recorte mínimo solicitado 22:30
 
 `ExternalCommonUserEditBoundary`, no mesmo arquivo do formulário e usado diretamente por Configuracoes, aguarda token SHA256 válido e consulta inicial concluída antes de montar. Loading/erro explícitos; recuperação não exige fechar/reabrir. Captura primeiro alvo/token conjuntamente e mantém ambos, nó do formulário, rascunho e receipt em refetch/erro posterior; CAS não é atualizado pelo dado remoto. Envios durante refetch continuam bloqueados, sem desmontagem. Conflito real permanece verificado pelo servidor com CAS original e exige reload.
 
 Quatro regressões RTL usam exatamente o boundary da tela: loading→token→envio; refetch com dados/versão alterados preserva nó/rascunho/CAS/chave; erro inicial→recuperação; conflito real pós-refetch. **103/103 PASS em5arquivos,27diálogo**, incluindo escopo, fechar/reabrir, timeout e duploclique anteriores. Lintnovo0/Configuracoes18legados iguais; buildautomáticoOK22:31:30. Typecheck dedicado e teste autenticado não certificados neste recorte. Gates UI/SQL false preservados, nenhum banco/publicação/gestão de links ou sessão alterados. Base do delta observada `e54b4939`; hash do novo commit é gerenciado pelo ambiente e não foi inventado/criado manualmente.
+
+## Promoção mínima revisada — 22:37 UTC
+
+- Aprovação independente loading3ee706b5:34 focados (27diálogo/7parserCAS) PASS e typecheck0; f6:132PASS/lintnovos0/build0/scanner4205/0. Evidência EXTERNA do auditor, não execução própria desta rodada.
+- Única promoção funcional: `EXTERNAL_USER_EDIT_PHASE2_REVIEWED=true`. Integração testa false explicitamente por mock e true com envio e links preservados, independente da constante de produção; diálogo já simula ambos. Sem alteração de roles/links/status/SMTP/Auth/contas ou sessão.
+- Ledger e função live lidos no canônico:20261016223134 user_external_common_preauthorize_before_lock,1statement,7750bytes,MD5 `3044e25460a44a57f48564626c786d9b`; definição live MD5 `d5e006ba09bfe53004971d512fc6cd49`. Arquivos exatos `.sql.review` e manifesto nominal em `scripts/user-links-phase2/installed/`; captura base64 decodificada preserva bytes (renderização textual da ferramenta não é byte-identical). Corpo após locks igual à candidata anterior; pré-autorização ator/readiness/Admin/tenant e gate nega antes de singleton/perfis, revalidação completa depois preservada. NENHUMA reaplicação/eligible.
+- Readback PRÓPRIO somente leitura:SQLgatefalse/auditcount0/anonexecutefalse. Positivas/negativas hosted com claims e BEGIN/ROLLBACK repetidas PASS, imutabilidade UPDATE/DELETE do ledger negada: evidência EXTERNA relatada pelo auditor, não novos ensaios do agente.
+- QA própria inicial:143/143Vitest em5arquivos (27diálogo/14helper/25links/51RPC/26validação), lint gate/helpertest0, scanner0. Resultado final ampliado registrado no roadmap. Typecheck/build manuais não executados por restrição do harness; typecheck0 independente acima, build automático consultado separadamente.
+- Base observada `6af34b43`; commits do delta gerenciados pelo ambiente, sem commit Git manual. Publicação e abertura SQL não executadas. UI F2 real pendente de abertura/verificação do auditor; F1 real publicada PASS já confirmada. Gestão de vínculos e achados de receiver permanecem fora do recorte.
