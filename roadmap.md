@@ -1,3 +1,8 @@
+## SMTP F2/F3 — correções da revisão179e84e (02:02 UTC)
+- [ ] Corrigir IPv6/faixas especiais, framing SMTP/short writes e deadline/late sockets.
+- [ ] Entregar espelho deploy completo e prova hosted AR fixa sem AUTH/Vault; manter pinningfalse e configuração intocada.
+- [ ] Testes focais, scanner/manifesto/lint, relatório e snapshot final; nenhuma aplicação remota.
+
 ## SMTP F2/F3 — candidato revisável sobre c922a18d (01:46 UTC)
 - [x] Preparado candidato conexão TLS+AUTH/envio explícito ao Admin confirmado próprio, sem aplicação/deploy/publicação/credencial real.
 - [x] Núcleo SMTP/outbox reutilizados; prova TLS pinada local e hosted gate false; órfãos/ambiguidade sem reclaim/retry global.

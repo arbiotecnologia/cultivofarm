@@ -20,7 +20,7 @@ export function createTestHandler(deps:TestDeps) {
    const client=deps.client(auth); const user=await client.auth.getUser();
    if(user.error || !user.data.user)return respond(401,{code:'SMTP_UNAUTHORIZED'});
    const scope=await client.rpc('tenant_smtp_test_context');
-   if(scope.error)return respond(500,{code:'SMTP_INTERNAL'});
+   if(scope.error)return scope.error.code==='42501'?respond(403,{code:'SMTP_FORBIDDEN'}):respond(500,{code:'SMTP_INTERNAL'});
    if(!scope.data || typeof scope.data!=='object')return respond(403,{code:'SMTP_FORBIDDEN'});
    const reader=req.body?.getReader(); if(!reader)return respond(400,{code:'SMTP_INVALID'});
    const chunks:Uint8Array[]=[];let size=0;
