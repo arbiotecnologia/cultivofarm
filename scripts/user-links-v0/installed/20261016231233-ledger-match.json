@@ -1,0 +1,15 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "version": "20261016231233",
+  "name": "user_links_v0_campaign_current_membership",
+  "status": "INSTALADO PELO AUDITOR — NÃO REAPLICAR",
+  "capture": "SELECT do ledger canônico em2026-10-16; project_id config conferido",
+  "statements": 1,
+  "file": "scripts/user-links-v0/installed/20261016231233_user_links_v0_campaign_current_membership.sql.review",
+  "bytes": 1553,
+  "ledger_md5": "1563e28baeba2ae55c4386303c924b30",
+  "sha256": "068fe24a470b29fe331181911c01acc840fd371958cd3d20b28b50251787317f",
+  "content": "preflight + ALTER POLICY exatos; comentários históricos preservados; bloco helper excluído",
+  "campaign_positive_producer": "UNVERIFIED; claims/ROLLBACK commercial_campaigns=0 reportado pelo auditor",
+  "writes_by_agent": false
+}

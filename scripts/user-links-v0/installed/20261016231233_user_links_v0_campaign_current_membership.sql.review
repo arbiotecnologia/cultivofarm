@@ -1,0 +1,32 @@
+-- V0 CANDIDATO. Não executar nesta rodada. Destino obrigatório swzpzcwiasxmjutrmvkm.
+-- Executor deve validar o ref fora do SQL; current_database() não prova project ref.
+-- Sem alteração de ACL, roles, dados, triggers, gate common ou ledger.
+DO $preflight$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public'
+    AND tablename='commercial_campaigns' AND policyname='campanhas_cliente_select'
+    AND md5(coalesce(qual,'')||'|'||coalesce(with_check,''))='d51e952033bab03f6f27100cd31c1f0e') THEN
+    RAISE EXCEPTION 'v0_campaign_policy_drift';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+    AND table_name='user_clientes' AND column_name='revoked_at') THEN
+    RAISE EXCEPTION 'v0_schema_drift';
+  END IF;
+END
+$preflight$;
+
+-- Conserva JOIN/subquery INVOKER e RLS de commercial_campaign_clientes.
+-- Não abrir leitura da tabela filha para obter um positivo artificial.
+ALTER POLICY campanhas_cliente_select ON public.commercial_campaigns USING (
+  ativa AND tipo_publico = ANY(ARRAY['comercial'::text,'ambos'::text])
+  AND EXISTS (
+    SELECT 1 FROM public.commercial_campaign_clientes cc
+    JOIN public.user_clientes uc ON uc.cliente_id=cc.cliente_id
+    WHERE cc.campaign_id=commercial_campaigns.id
+      AND uc.user_id=(SELECT auth.uid())
+      AND uc.cliente_id=ANY(public.get_cliente_ids_for_user((SELECT auth.uid())))
+      AND EXISTS (SELECT 1 FROM public.clientes c WHERE c.id=cc.cliente_id
+        AND c.organization_id=public.h15_actor_organization())
+  )
+);
+
