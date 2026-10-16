@@ -55,10 +55,15 @@ function quotedPrintable(value: string): string {
   return dotStuff(lines.join("\r\n"));
 }
 
+export function escapeHtmlText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 export function buildNativeMimeMessage(opts: Parameters<SmtpLikeClient["send"]>[0]): string {
   const boundary = `cultivofarm-${crypto.randomUUID().replace(/-/g, "")}`;
   const plain = quotedPrintable(opts.content);
-  const html = quotedPrintable(opts.html ?? `<pre>${opts.content}</pre>`);
+  // Explicit HTML is caller-owned; the plain-text fallback is escaped so untrusted text never becomes markup.
+  const html = quotedPrintable(opts.html ?? `<pre>${escapeHtmlText(opts.content)}</pre>`);
   return [
     `From: ${opts.from}`,
     `To: ${opts.to}`,
