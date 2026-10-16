@@ -4,7 +4,8 @@ BEGIN;
 UPDATE platform_private.tenant_smtp_dispatch_gate SET approved=false;
 UPDATE platform_private.tenant_smtp_activation SET active=false,reason='f4b_rollback',changed_at=clock_timestamp() WHERE active;
 SELECT platform_private.tenant_smtp_lane_cancel_queued(organization_id,'f4b_rollback',NULL) FROM (SELECT DISTINCT organization_id FROM platform_private.tenant_smtp_dispatch_jobs WHERE state='queued') q;
--- Optional invoker (cron_option.sql.review), if it was ever installed.
+-- Optional invoker (cron_option.sql.review), if it was ever installed. The Vault secret 'tenant_smtp_lane_invoker_secret' and the
+-- Edge secret TENANT_SMTP_LANE_INVOKER_SECRET are NOT read or deleted here; the owner removes/rotates them via secure forms.
 DO $$ DECLARE n int; BEGIN IF to_regclass('cron.job') IS NOT NULL THEN EXECUTE 'SELECT count(*) FROM cron.job WHERE jobname=$1' INTO n USING 'tenant-smtp-lane'; IF n>0 THEN EXECUTE 'SELECT cron.unschedule($1)' USING 'tenant-smtp-lane'; END IF; END IF; END $$;
 DROP TRIGGER IF EXISTS tenant_smtp_lane_solicitacao_atribuida ON public.portal_solicitacoes;
 REVOKE EXECUTE ON FUNCTION public.tenant_smtp_lane_claim(text),public.tenant_smtp_lane_authorize(uuid,uuid),public.tenant_smtp_lane_finish(uuid,uuid,text) FROM service_role;

@@ -44,6 +44,9 @@ checks={
  'UI readiness needs lane heartbeat':'tenant_smtp_lane_heartbeat WHERE id AND seen_at' in sql,
  'invoker not in candidate SQL':'cron.schedule' not in sql and 'net.http_post' not in sql,
  'lane audit no payload columns':all(c not in sql.split('tenant_smtp_lane_audit(',1)[1].split(');',1)[0] for c in ('payload','email','subject','password')),
+ 'lane invoker dedicated secret only':'authorizeLaneInvoker(req, LANE_INVOKER_SECRET)' in worker and "'x-tenant-smtp-secret',v_secret" in (R/'cron_option.sql.review').read_text() and 'x-internal-secret' not in (R/'cron_option.sql.review').read_text(),
+ 'mirror invoker auth equal':(D/'process-communication-outbox/tenant-lane/invoker-auth.ts').read_text()==(R/'invoker-auth.ts').read_text(),
+ 'invoker auth no console/logging':'console.' not in (R/'invoker-auth.ts').read_text(),
  'not deployed':not Path('supabase/functions/process-communication-outbox/tenant-lane').exists() and not Path('supabase/functions/tenant-email-settings/f4b').exists(),
 }
 for k,v in checks.items():print(('PASS ' if v else 'FAIL ')+k)

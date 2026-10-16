@@ -3,8 +3,10 @@
 -- only one of pg_cron/pg_net is installed (pg_cron jobs exist). A new worker URL without an invoker does NOT make SMTP operational.
 -- Human prerequisites before applying this file, after F4b SQL/Edge/worker review:
 --  1. Enable pg_net (Dashboard -> Database -> Extensions) — configuration decision of the owner.
---  2. Create Vault secret named 'tenant_smtp_lane_invoker_secret' with the SAME value as Edge secret INTERNAL_FUNCTION_SECRET
---     (the worker already authorizes x-internal-secret). Never paste it into SQL/chat.
+--  2. Create ONE dedicated random value (>=32 chars) and store it, via secure forms only, as Edge secret
+--     TENANT_SMTP_LANE_INVOKER_SECRET and as Vault secret 'tenant_smtp_lane_invoker_secret'. It authorizes ONLY
+--     POST ?lane=tenant_smtp via header x-tenant-smtp-secret (never the global route). INTERNAL_FUNCTION_SECRET is not used.
+--     Never paste it into SQL/chat.
 --  3. Deploy worker with TENANT_SMTP_LANE_REVIEWED=true and open tenant_smtp_dispatch_gate.
 -- Residual: pg_net keeps request headers in net.http_request_queue until processed (transient) — secret readable by DB
 -- superusers during that window. Alternative without this residue: external scheduler outside the DB.
@@ -32,9 +34,9 @@ BEGIN
  -- Serialize concurrent cron sessions inside the DB (pg_net itself is async).
  IF NOT pg_try_advisory_xact_lock(hashtextextended('tenant_smtp_lane_invoke',0)) THEN RETURN; END IF;
  SELECT decrypted_secret INTO v_secret FROM vault.decrypted_secrets WHERE name='tenant_smtp_lane_invoker_secret';
- IF v_secret IS NULL THEN RETURN; END IF;
+ IF v_secret IS NULL OR length(v_secret)<32 THEN RETURN; END IF;
  PERFORM net.http_post(url:='https://swzpzcwiasxmjutrmvkm.supabase.co/functions/v1/process-communication-outbox?lane=tenant_smtp',
-  headers:=jsonb_build_object('Content-Type','application/json','x-internal-secret',v_secret),body:='{}'::jsonb,timeout_milliseconds:=55000);
+  headers:=jsonb_build_object('Content-Type','application/json','x-tenant-smtp-secret',v_secret),body:='{}'::jsonb,timeout_milliseconds:=55000);
 END $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_smtp_lane_invoke() FROM PUBLIC,anon,authenticated,service_role;
 SELECT cron.schedule('tenant-smtp-lane','* * * * *','SELECT platform_private.tenant_smtp_lane_invoke();');
