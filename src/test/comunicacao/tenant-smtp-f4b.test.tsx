@@ -10,10 +10,12 @@ import TenantSenderVerification from "@/pages/configuracoes/TenantSenderVerifica
 const OUT = "11111111-1111-4111-8111-111111111111", FENCE = "22222222-2222-4222-8222-222222222222";
 const job = (o: Record<string, unknown> = {}) => ({ outbox_id: OUT, fence: FENCE, version: 2, recipient: "consultor@tenant-a.test", subject: "Nova solicitação atribuída", text: "corpo",
  config: { host: "smtpi.example.test", port: 465, tls_mode: "implicit_tls", username: "u", from_email: "sender@tenant-a.test" }, password: "synthetic-only", ...o });
-const rpc = (claims: unknown[], finish: (a: Record<string, unknown>) => { data: unknown; error: unknown } = () => ({ data: { state: "sent" }, error: null })) => {
+const done = (state: string, lost = false) => ({ data: { state, replay: false, lost }, error: null });
+const rpc = (claims: unknown[], finish: (a: Record<string, unknown>) => { data: unknown; error: unknown } = a => done(String(a.p_outcome)), authorize: () => { data: unknown; error: unknown } = () => ({ data: { ok: true }, error: null })) => {
  const calls: Array<[string, Record<string, unknown>]> = [];
  const client: LaneRpc = { rpc: async (name, args) => { calls.push([name, args]);
   if (name === "tenant_smtp_lane_claim") return { data: claims.length ? claims.shift() : null, error: null };
+  if (name === "tenant_smtp_lane_authorize") return authorize() as { data: unknown; error: null };
   return finish(args) as { data: unknown; error: null }; } };
  return { client, calls };
 };
@@ -50,9 +52,27 @@ describe("F4b worker lane", () => {
   const s = await runTenantLane(r.client, "w", deps, send); expect(s.stopped).toBe("claim_error"); expect(send).not.toHaveBeenCalled();
   expect(r.calls.some(([n]) => n === "tenant_smtp_lane_finish")).toBe(false);
  });
- it("busy/quota stop without IO; skipped continues", async () => {
-  for (const flag of ["busy", "quota"] as const) { const r = rpc([{ [flag]: true }, job()]); const send = vi.fn(); expect((await runTenantLane(r.client, "w", deps, send)).stopped).toBe(flag); expect(send).not.toHaveBeenCalled(); }
-  const r = rpc([{ skipped: true }, job()]); const send = vi.fn(async () => "sent" as const); const s = await runTenantLane(r.client, "w", deps, send); expect(s.skipped).toBe(1); expect(s.sent).toBe(1);
+ it("legacy busy/quota shapes are not accepted as jobs (fairness is server-side)", async () => {
+  const r = rpc([{ busy: true }]); const send = vi.fn(); expect((await runTenantLane(r.client, "w", deps, send)).stopped).toBe("claim_error"); expect(send).not.toHaveBeenCalled();
+ });
+ it("server refusal at authorize: withheld, no finish, continues with next job", async () => {
+  let n = 0; const r = rpc([job(), job({ outbox_id: "33333333-3333-4333-8333-333333333333" })], a => done(String(a.p_outcome)), () => ({ data: { ok: n++ > 0 }, error: null }));
+  const s = await runTenantLane(r.client, "w", deps, async (_j, _d, authorize) => (await authorize()) ? "sent" : "withheld");
+  expect(s.withheld).toBe(1); expect(s.sent).toBe(1);
+  expect(r.calls.filter(([c]) => c === "tenant_smtp_lane_finish").length).toBe(1);
+ });
+ it("authorize RPC error means withheld (no envelope)", async () => {
+  const r = rpc([job()], a => done(String(a.p_outcome)), () => ({ data: null, error: { code: "42501" } }));
+  const s = await runTenantLane(r.client, "w", deps, async (_j, _d, authorize) => (await authorize()) ? "sent" : "withheld");
+  expect(s.withheld).toBe(1); expect(s.sent).toBe(0);
+ });
+ it("late finish after lease_expired is not counted as sent", async () => {
+  const r = rpc([job()], () => done("lease_expired", true)); const s = await runTenantLane(r.client, "w", deps, async () => "sent");
+  expect(s.sent).toBe(0); expect(s.lost).toBe(1);
+ });
+ it("finish response with unexpected shape stops run", async () => {
+  const r = rpc([job(), job()], () => ({ data: { state: "sent" }, error: null })); const s = await runTenantLane(r.client, "w", deps, async () => "sent");
+  expect(s.stopped).toBe("finish_error"); expect(s.sent).toBe(0);
  });
  it("send exception is ambiguous, finished once, never retried", async () => {
   const r = rpc([job()]); const send = vi.fn(async () => { throw new Error("socket reset after DATA"); });
@@ -70,8 +90,9 @@ describe("F4b worker lane", () => {
   expect(seen?.password).toBe(""); expect(JSON.stringify(r.calls)).not.toContain("synthetic-only");
  });
  it("connect failure before DATA is failed, not ambiguous", async () => {
-  const out = await sendLaneMessage(laneJobSchema.parse(job()), { connectTls: async () => { throw new Error("smtp_dns_blocked"); } } as never);
-  expect(out).toBe("failed");
+  const authorize = vi.fn(async () => true);
+  const out = await sendLaneMessage(laneJobSchema.parse(job()), { connectTls: async () => { throw new Error("smtp_dns_blocked"); } } as never, authorize);
+  expect(out).toBe("failed"); expect(authorize).not.toHaveBeenCalled();
  });
 });
 

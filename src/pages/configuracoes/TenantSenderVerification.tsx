@@ -70,7 +70,7 @@ export default function TenantSenderVerification({ version, connectionReady, blo
   </div>
   <p className="mt-2 text-sm text-muted-foreground">Enviaremos um código para a caixa do email remetente. Só quem acessa essa caixa consegue concluir. Isso confirma a caixa, não valida o domínio. Alterar a configuração exige nova verificação.</p>
   {status?.sender_verified && !activationEnabled && <p role="status" className="mt-2 text-sm">Remetente verificado; envio operacional ainda indisponível.</p>}
-  {status?.sender_verified && activationEnabled && <p role="status" className="mt-2 text-sm">{status.dispatch_enabled ? "Email da empresa ativo: avisos de solicitação atribuída serão enviados ao consultor responsável." : status.active ? "Email da empresa ativado, aguardando liberação do envio." : "Email da empresa pausado. Nada é enviado."}</p>}
+  {status?.sender_verified && activationEnabled && <p role="status" className="mt-2 text-sm">{status.dispatch_enabled ? "Email da empresa ativo: avisos de solicitação atribuída serão enviados ao consultor responsável." : status.active ? "Email da empresa ativado, mas o processador de envio ainda não está em execução. Nada é enviado por enquanto." : "Email da empresa pausado. Nada é enviado."}</p>}
   {message && <p role="status" className="mt-2 text-sm text-muted-foreground">{message}</p>}
   <div className="mt-3 flex flex-wrap items-end gap-3">
    <Button type="button" variant="outline" disabled={disabled || !connectionReady || status?.sender_verified === true} onClick={() => void challenge()}><MailCheck className="mr-2 h-4 w-4" />Enviar código ao remetente</Button>
