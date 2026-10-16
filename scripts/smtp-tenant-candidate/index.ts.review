@@ -1,0 +1,12 @@
+// REVIEW ONLY. Install as supabase/functions/tenant-email-settings/index.ts AFTER auditor approval.
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { createTenantSmtpHandler } from "./handler.ts";
+import { corsHeadersFor, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+const url = Deno.env.get("SUPABASE_URL") ?? "";
+const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+Deno.serve(createTenantSmtpHandler({
+  canonicalUrl: url,
+  reviewed: false, // Requires telemetry redaction proof and reviewed database deployment.
+  client: authorization => createClient(url,anon,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}}),
+  trustedOrigin: isTrustedOrigin, cors: corsHeadersFor,
+}));
