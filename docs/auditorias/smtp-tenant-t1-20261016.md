@@ -3,6 +3,16 @@
 ## Decisão
 **GO para revisão do pacote local; NO-GO para credencial real, implantação automática, conexão ou envio.** Preparação concluída no escopo executado; homologação hosted e aplicação dependem do auditor. Gates comerciais/fiscais continuam inalterados.
 
+## Delta focal após revisão independente c2509c6613553ce9126e420acb6f321c84000d1c
+- Evidência externa recebida em 2026-10-16 00:15 UTC: 104 Vitest PASS, typecheck PASS, lint novos PASS, scanner PASS. Não confundir com QA próprio abaixo nem com homologação integral.
+- Correção do bloqueador: preflight usa identidades **create_secret(text,text,text,uuid)** / **update_secret(uuid,text,text,text,uuid)**, verifica default final e EXECUTE do executor. Chamadas omitindo UUID default permanecem válidas. A alegação inicial de compatibilidade estava incompleta: os stubs antigos reproduziam assinaturas incorretas. Owner supabase_admin, postgres EXECUTE e anon/auth sem EXECUTE são evidência read-only externa do auditor, sem nova consulta ou mudança remota pelo agente.
+- Gate privado agora é exigido após autorização, ANTES de validação/uso Vault, e após lock/rechecagem de ator; trigger permanece defesa adicional. Antes só o trigger revertia efeitos: não impedia a tentativa. Teste com sequência não transacional local comprova ausência de tentativa; nenhuma sequência/objeto foi criada no Vault conectado.
+- Scope/get/save privilegiados movidos a platform_private; públicos viraram INVOKER de search_path vazio, ACL explícita mínima incluindo cores autenticados que revalidam identidade. Sem parâmetro org; USAGE privado existente verificado pelo preflight, não concedido globalmente. Rollback revoga também cores. GET não usa SELECT *.
+- Worker/global/Auth/UI/gates intactos. Não houve aplicação, publicação, envio ou leitura de segredo. T1 permanece pacote revisável e fechado; nenhuma nova fase/plano.
+- QA próprio do delta: PostgreSQL descartável **52 checks PASS** (antes 46), incluindo identidades reais sem overload curto, INVOKER/DEFINER/ACL e gate antes de config inválida com zero attempts; **53/53 Vitest PASS** em dois arquivos. Scanner ajustado para não confundir argumento write p_password de wrapper com leitura de coluna password; valida também wrappers INVOKER e ausência de wildcard. Manifesto regenerado após delta.
+- Falha instrumental do delta: separador SQL ausente no harness inicialmente gerou syntax error, corrigido; scanner original gerou falso positivo em SELECT privado com argumento p_password, regra refinada. Não omitir esses resultados iniciais; reexecuções finais constam da entrega.
+- Typecheck PASS do snapshot c2509c6 é evidência externa; delta SQL/Python/docs sem mudança TS/UI. Typecheck separado do delta não executado manualmente, frontend/produção e concorrência hosted continuam UNVERIFIED.
+
 Solicitação: 2026-10-15 22:34 UTC; execução/QA atravessou 2026-10-16 UTC. HEAD inicial observado `98c74c3f`. Nenhum commit Git manual; snapshots são geridos pela plataforma.
 
 ## Estado externo informado pelo titular

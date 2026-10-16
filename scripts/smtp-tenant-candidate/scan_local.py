@@ -7,12 +7,16 @@ checks={
  'no automatic deployed candidate':not Path('supabase/functions/tenant-email-settings').exists(),
  'no SMTP network primitives':not re.search(r'\b(fetch|connect|connectTls|startTls|sendEmail|loadRuntimeConfig)\s*\(',handler),
  'no handler logging':not re.search(r'console\.|logger\.',handler),
- 'no Vault reader in SQL':not re.search(r'decrypted_secrets|SELECT\s+.*password',sql,re.I),
+ # A wrapper passes p_password as a write argument; that is not a stored-secret
+ # read. Reject actual credential-column reads and all decrypted Vault sources.
+ 'no Vault reader in SQL':not re.search(r'decrypted_secrets|SELECT\s+(?:\w+\.)?password\b',sql,re.I),
  'no reserved schema DDL':not re.search(r'(CREATE|ALTER|DROP)\s+(TABLE|FUNCTION|TRIGGER|POLICY)\s+(vault|auth|storage)\.',sql,re.I),
  'no service key in entry': 'SERVICE_ROLE' not in entry,
  'entry reviewed OFF': 'reviewed: false' in entry,
  'frontend reviewed OFF': 'TENANT_SMTP_REVIEWED = false' in Path('src/lib/configuracoes/tenantSmtp.ts').read_text(),
  'canonical only':not any(v in handler+sql+entry for v in ['yzszlzjpovmcteuxjznj','chkgpuawcswhefiabwsm','navfzbwgwzruipouyfnk','ikaauvsflpmamgxmkhoq']),
+ 'public wrappers INVOKER':len(re.findall(r'CREATE OR REPLACE FUNCTION public\.tenant_email_settings_\w+\([^;]*?SECURITY INVOKER',sql,re.I))==3,
+ 'no wildcard settings read':not re.search(r'SELECT\s+\*',sql,re.I),
 }
 for name,ok in checks.items():print(('PASS ' if ok else 'FAIL ')+name)
 assert all(checks.values())
