@@ -23,6 +23,7 @@ def main():
   sql+=(R/'20261016_smtp_f2f3.sql').read_text()*2
   sql+="REVOKE USAGE ON SCHEMA platform_private FROM service_role; CREATE FUNCTION platform_private.unrelated_service_core() RETURNS int LANGUAGE sql SECURITY DEFINER SET search_path='' AS $$SELECT 1$$;REVOKE ALL ON FUNCTION platform_private.unrelated_service_core() FROM PUBLIC;GRANT EXECUTE ON FUNCTION platform_private.unrelated_service_core() TO service_role;"
   delta=(R/'20261016_smtp_executor_schema_acl.sql').read_text()
+  sql+="SET ROLE service_role;DO $$DECLARE message text;BEGIN BEGIN PERFORM public.tenant_smtp_test_prepare(NULL,NULL,NULL);EXCEPTION WHEN insufficient_privilege THEN GET STACKED DIAGNOSTICS message=MESSAGE_TEXT;IF message='permission denied for schema platform_private' THEN RAISE NOTICE 'PASS reproduces hosted schema denial';RETURN;END IF;RAISE EXCEPTION 'FAIL wrong baseline denial';END;RAISE EXCEPTION 'FAIL missing baseline denial';END$$;RESET ROLE;"
   sql+=delta*2
   a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';u='11111111-1111-4111-8111-111111111111';v='22222222-2222-4222-8222-222222222222'
   key='33333333-3333-4333-8333-333333333333';key2='44444444-4444-4444-8444-444444444444'

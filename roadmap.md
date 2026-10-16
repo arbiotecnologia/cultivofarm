@@ -1,3 +1,8 @@
+## SMTP F2/F3 — ACL executor hospedado (02:10 UTC)
+- [x] Incorporado relato externo: SQL179e84e aplicado pelo auditor via smtp_tenant_controlled_diagnostics_closed, gatefalse/ARv2 preservados; PGlite31/7identidades claimsPASS, prepareSERVICEfalhou schemaUSAGE; rollback total informado, sem senhaAR lida.
+- [x] Sucessor revisável schema dedicado prepare/finish, wrappersINV, semUSAGEplatform_private/globalEXEC; preflight/rollback e harness service_role real, fixtureB rollback integral.
+- [ ] Auditor: revisar/aplicar somente deltaACL e validar no canônico; agente não aplica SQL/deploy/publicação. Typecheck app/prova hosted pinning continuam pendentes.
+
 ## SMTP F2/F3 — correções da revisão179e84e (02:02 UTC)
 - [x] Corrigidos IPv6/faixas especiais, framing SMTP/short writes compartilhados e deadline único4s/late sockets.
 - [x] Espelho deploy completo/entrypoint/JWTtrue e prova hosted AR fixa sem AUTH/Vault; pinningfalse e configuração real intocada, SQL42501→403.
