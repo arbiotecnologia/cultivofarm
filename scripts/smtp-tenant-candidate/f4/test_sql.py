@@ -104,10 +104,10 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+=actor(v)+''.join(f"SELECT {conf('1111111'+str(i),'c5',2)[7:]};" for i in range(4))
   sql+=ok('fifth attempt exhausts',f"({conf('22222222','c5',2)[7:]})->>'code'='SENDER_CHALLENGE_EXHAUSTED'")
   sql+=ok('exhausted stays closed',f"({conf('12345678','c5',2)[7:]})->>'code'='SENDER_CHALLENGE_INVALID'")
-  sql+=backdate+flow('c6','a8a8a8a8-a8a8-4a8a-8a8a-a8a8a8a8a8a8',2)
+  sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET created_at=created_at-interval '25 hours' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c1');"+backdate+flow('c6','a8a8a8a8-a8a8-4a8a-8a8a-a8a8a8a8a8a8',2)
   sql+="RESET ROLE;UPDATE platform_private.tenant_smtp_sender_challenges SET expires_at=clock_timestamp()-interval '1 second' WHERE id=(SELECT (v->>'challenge_id')::uuid FROM w WHERE k='c6');"
   sql+=actor(v)+ok('expired code rejected',f"({conf('12345678','c6',2)[7:]})->>'code'='SENDER_CHALLENGE_EXPIRED'")
-  sql+=backdate+actor(v)+err('daily quota (6th in 24h)',claim('a7a7a7a7-a7a7-4a7a-8a7a-a7a7a7a7a7a7',2),'40001')
+  sql+=backdate+actor(v)+err('daily quota (6th in 24h window)',claim('a7a7a7a7-a7a7-4a7a-8a7a-a7a7a7a7a7a7',2),'40001')
   sql+="RESET ROLE;"+ok('quota count is 6 real claims',"(SELECT count(*) FROM platform_private.tenant_smtp_sender_challenges)=6")
   # rollback
   sql+="RESET ROLE;"+(R/'rollback.sql').read_text()
