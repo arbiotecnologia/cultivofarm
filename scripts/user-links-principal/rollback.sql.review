@@ -1,6 +1,10 @@
--- ROLLBACK CANDIDATO. Restaura a definição live capturada em 16/10/2026
--- (MD5 50392a57c5908c67c709c4e84f0e932e), byte a byte. Não apaga dados,
--- não reverte vínculos legítimos, não toca V0/common F2/ledger.
+-- ROLLBACK CANDIDATO v2 — SOMENTE COM GATE DE ASSOCIAÇÃO FECHADO.
+-- Esta restauração traz de volta a definição live anterior, que contém a falha
+-- conhecida (principal histórico). Só é segura enquanto a troca de associações
+-- estiver fechada (estado atual). Se o gate de associação estiver aberto, NÃO
+-- usar este arquivo: a contenção segura é manter/aplicar o candidate.sql.review
+-- (v2), que é ele próprio o estado contido.
+-- Não apaga dados, não reverte vínculos legítimos, não toca V0/common F2/ledger.
 CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -48,4 +52,9 @@ BEGIN
 
   RETURN COALESCE(NEW, OLD);
 END;
-$function$
+$function$;
+
+DROP TRIGGER trg_user_clientes_sync ON public.user_clientes;
+CREATE TRIGGER trg_user_clientes_sync
+ AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes
+ FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal();
