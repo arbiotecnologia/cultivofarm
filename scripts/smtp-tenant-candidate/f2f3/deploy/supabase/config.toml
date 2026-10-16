@@ -1,0 +1,2 @@
+[functions.tenant-email-settings]
+verify_jwt = true
