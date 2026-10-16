@@ -4,6 +4,8 @@
 
 **Reconciliação documental 23:09 UTC; base local `6dffc373`:** auditor instalou no canônico a migration `20261016230114 user_client_access_deny_revoked_links` enquanto V0 era preparado. Somente o helper foi instalado; campanha e Edge continuam candidatas. Nesta reconciliação o agente fez apenas SELECT de ledger/definição e arquivamento/documentação, sem runtime adicional, reaplicação, deploy ou publicação. Não executar o candidato combinado antigo como instalação pendente do helper.
 
+**Encerramento documental 23:17 UTC; base `6e60102a`:** os estados acima são históricos. Auditor aplicou também `20261016231233 user_links_v0_campaign_current_membership` (preflight + ALTER POLICY, sem bloco helper) e implantou Edge v91 verify_jwt=true, readback de fonte exata da candidata. Agente apenas arquiva SQL do ledger e atualiza documentos/manifesto; sem runtime, testes novos, reaplicação, deploy, publicação ou acesso a credenciais. Campanha positivo Produtor continua UNVERIFIED; Consultor real em andamento, não PASS.
+
 ## 1. Evidência externa, separada da prova própria
 
 Auditor informou Produtor real no preview: `/configuracoes` e `/financeiro` redirecionam a `/portal`; `/portal/financeiro` exibe título existente **sem valor comercial** do cliente principal AR. Separadamente, SQL com claims/ROLLBACK em accounts_receivable: **uma linha própria visível, zero outros clientes e zero outros tenants**. São provas diferentes: UI real não prova composição completa RLS; claims não são JWT/API/browser. Não houve prova de retirada automática de dados na sessão aberta ou de revogação distribuída. Dados comuns publicados previamente PASS com restauração e audit4 continuam aceitos, não foram retestados/mutados nesta rodada.
@@ -28,7 +30,7 @@ Evidência **externa do auditor**, não reexecutada pelo agente: antes da aplica
 
 | Tabela | Policies SELECT/ALL efetivas para leitura |
 |---|---|
-| commercial_campaigns | três permissivas, zero restritivas: campanhas_admin_all (Admin/Gestor Comercial), campanhas_partner_select (B2B físico atual), campanhas_cliente_select (vínculo histórico sem filtros) |
+| commercial_campaigns | três permissivas, zero restritivas: campanhas_admin_all (Admin/Gestor Comercial), campanhas_partner_select (B2B físico atual), campanhas_cliente_select (baseline histórico sem filtros; agora membership vigente instalado em20261016231233) |
 | commercial_campaign_clientes | única camp_clientes_admin_all, Admin/Gestor Comercial; nenhum SELECT Produtor |
 | commercial_campaign_products | admin ALL e partner SELECT via commercial_campaign_partners |
 | commercial_campaign_partners | admin ALL e partner self SELECT |
@@ -42,6 +44,8 @@ JOIN da policy campanhas_cliente_select é subquery INVOKER, portanto a RLS da *
 Critério ativo/vigente aceito significa membership/helper e predicado na fixture descartável autorizada; não prometer campanha live visível contrariando RLS. Se produto precisar acesso às campanhas, será outro recorte explícito, não correção de revogação.
 
 **Positivo Produtor em campanha hospedada: UNVERIFIED.** Auditor informa ausência de associação/fixture atual aplicável; filha continua RLS admin-only (Admin/Gestor Comercial). Não fabricar PASS, ampliar filha ou inferir exposição apenas pelo predicado confirmado.
+
+Após aplicação externa da policy: Produtor com claims/ROLLBACK leu **commercial_campaigns=0**, conforme auditor; isso não certifica positivo. SQL exato do ledger arquivado em `installed/20261016231233_user_links_v0_campaign_current_membership.sql.review`, MD5 **1563e28baeba2ae55c4386303c924b30**. Comentários históricos da candidata foram preservados literalmente; arquivo instalado não é instrução para reaplicar. Não abre filha, não altera helper/ACL nem associações.
 
 ## 5. Auditoria de dependentes e irmãs do helper
 
@@ -78,9 +82,11 @@ Inventário/reprodução em `preflight-readonly.sql` e consultas desta rodada. H
 
 Testes executam **queryFn extraído da AST da página real**, não cópia nem asserção de string: prova receiver e ids autorizados, erro/vazio sem leitura histórica. SDK/identidades simulados, sem rede; não é prova UI autenticada do titular nesta rodada. Cache same-identity/queryKey antigo não é resolvido por V0, gestão segue fechada.
 
-## 7. list-portal-users — fonte promovida, NÃO implantada
+## 7. list-portal-users — fonte promovida e implantação externa v91
 
 Promoção exata autorizada às23:12: `scripts/user-links-v0/list-portal-users.index.ts.review` copiada byte a byte para `supabase/functions/list-portal-users/index.ts`, sem lógica adicional. SHA256 comum **6a289ae897745fdac2137477a05f9ad8c45d7edb8aec556c902563dbe0c4dfc3**. Fonte local promovida NÃO significa deploy: Edge hospedada v89/JWTverifytrue informada pelo auditor; config local verify_jwt=true preservada, sem deploy Edge/SQL/publicação. Mantém JWT claims, h15 organização, roles Admin/Gestor/Administrativo, cliente pelo anon com RLS/organization_id, perfis same-tenant antes de roles/Auth metadata. Confere ref exato antes de clientes. Serviço não autoriza ator/tenant.
+
+Atualização externa23:17: auditor implantou **v91 verify_jwt=true**, readback fonte exata candidata. Baseline capturada **v89**; **v90 intermediária não atribuída**, sem inferir autoria ou implantação pelo agente. **UI real positiva PASS externa:** Admin AR no publicado, após reload, Clientes→cliente principal teste→Portal exibiu Produtor e Consultor corretos. Este positivo de listagem não prova revogação/cache multidispositivo, signed URLs ou fluxo real da página ConsultorTecnico.
 
 Query privilegiada usa is_active=true, revoked_at NULL e vigência; filtro aplicado **na consulta server-side**, não só frontend. Revalida ator/tenant/cliente após IO, relê membership vigente e perfis do tenant antes da resposta; remove revogados durante IO. Campos de saída e principal mantidos. Datas no serviço são relógio Edge, compatíveis inclusivos; desvio Edge/DB e corrida após última verificação são limites, não promessa de serialização. Não cria nova RPC/serviço indiscriminado. Não altera Auth senhas/contas; leitura last_sign_in existente preservada.
 
@@ -93,7 +99,8 @@ Paginações da listagem e revisão de sessão distribuída permanecem fase post
 ## 9. Candidatos, preflight, ensaio reversível e rollback
 
 - `installed/20261016230114_user_client_access_deny_revoked_links.sql.review`: statement EXATO do ledger, sem cabeçalho/envelope/DDL adicional; **JÁ INSTALADO, NÃO REAPLICAR**. Manifesto `installed/ledger-match.json` registra hashes e metadados live; fora da pasta automática.
-- `candidate.sql.review`: candidato combinado histórico preservado byte a byte, não substituir o arquivo instalado por ele. Helper já instalado; campanha pendente de revisão. Seu baseline/hash histórico não certifica novo preflight; não executar nesta reconciliação.
+- `installed/20261016231233_user_links_v0_campaign_current_membership.sql.review`: SQL EXATO do ledger (preflight+ALTER POLICY, bloco helper excluído), manifesto próprio `installed/20261016231233-ledger-match.json`; **JÁ INSTALADO EXTERNAMENTE, NÃO REAPLICAR**.
+- `candidate.sql.review`: candidato combinado histórico preservado byte a byte, não substituir arquivos instalados por ele. Helper e campanha já instalados separadamente pelo auditor. Seu baseline/hash histórico não certifica novo preflight; não executar nesta reconciliação.
 - `hosted-rehearsal.sql.review`: roteiro histórico com identidades/campanha explicitamente fornecidas; não executado pelo agente, não reaplicar helper. Próximo ensaio da campanha requer reconciliação pelo auditor e associação existente aplicável; positivo atual UNVERIFIED. UID forjado requer titular não Admin.
 - Sem caso real revogado/futuro/expirado disponível: usar SQL descartável test-local.py. Não adulterar conta real nem marcar ausência de fixture como PASS hospedado.
 - `test-local.py`: PostgreSQL por socket /tmp, porta fixa local55496, schema/Auth/tenant reduzidos; operacional SQL exato, hash full-definition e preflight live excluídos explicitamente (não reproduz schema inteiro). Policy filha deny equivalente live dá0 ativo; policy **fixture descartável** abre filha apenas localmente para testar positivo do predicado. Tenant forjado fecha campanha. Helper conserva bypass Admin e não promete tenant sozinho.
@@ -114,3 +121,12 @@ Aceite futuro: auditor revisar SQL/Edge/diff, preflight completo sem drift, clai
 ### Delta autorizado 23:12 — promoção exata
 
 Revisão independente externa:76VitestPASS/lint2testes0/scanner4221zero/build0; typecheck em conclusão, não declarar concluído. Leitor Consultor receiver canônico aprovado e intocado neste delta. Teste user-links-v0-readers passa a transpilar/executar a fonte runtime promovida com SDK/identidade simulados e acrescenta igualdade SHA256/bytes da candidata. Regressão estática D51.5 confundia leitura da variável service key com acesso privilegiado; agora compara à criação de `admin`, preservando negação real antes de serviço no harness. Primeiro run:19PASS/1FAIL nessa asserção obsoleta; nenhum runtime ajustado para satisfazer teste. Run final23:13:29: **20/20PASS em2arquivos (14+6)**, lint2testes0, cmp/SHA256 e diff-checkPASS; build automático23:13:23OK. Campanha permanece candidata mais restrita, filha RLS não aberta; helper20261016230114 não reaplicado. Common true/ledger4/helpers/CORS/SMTP/Auth/contas preservados. Confirmação de acessos reais futura somente no momento; mocks não são prova hospedada.
+
+### Fechamento factual 23:17 — evidência independente
+
+- Fonte **6e60102a**: testes independentes finais **20/20 PASS, 14+6 testes em 2 arquivos**; não 19/20, nem 20 arquivos. O primeiro run falho acima é apenas histórico, não resultado final.
+- V0 anterior: **76 PASS/typecheck0/build0/lint novos0/scanner4221/0**, informados pelo auditor; typecheck externo agora concluído, não executado manualmente pelo agente.
+- Publicação frontend **solicitada** pelo auditor, deployment **4dea8794-405a-4dd7-a3d7-e6c91c004aef**; conclusão não confirmada nesta atualização. Teste **Consultor real em andamento pelo auditor**, não alegar PASS.
+- Dados comuns: quatro operações restauradas, links intactos, ledger4; SMTP inalterado. Sem novas operações neste encerramento.
+- Gestão de associações, cache multidispositivo, signed URLs e principal continuam pendentes, **gates de associação fechados**. Confirmação específica de acessos reais futuros no momento.
+- Esta rodada só documentos/arquivo SQL instalado/manifesto: nenhum teste novo, runtime, DDL, deploy ou publicação pelo agente; hashes e diff documental verificados, sem nova auditoria ampla.

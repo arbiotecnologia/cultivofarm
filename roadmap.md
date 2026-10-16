@@ -1,13 +1,19 @@
-## Vínculos externos — promoção exata Edge V0 (16/10/2026 23:12 UTC)
+## Vínculos externos — encerramento documental V0 (16/10/2026 23:17 UTC)
+- [x] Auditor aplicou20261016231233 user_links_v0_campaign_current_membership (preflight+ALTER POLICY sem helper); SQL exato ledger arquivado installed/MD5 1563e28baeba2ae55c4386303c924b30. Não reaplicar helper/campanha, filha RLS preservada. Produtor claims/ROLLBACK commercial_campaigns0; positivo UNVERIFIED.
+- [x] Edge externa v91 verify_jwttrue/readbackfonteexatacandidata; baseline89,90intermediária não atribuída. AdminAR publicado após reload Clientes→principalteste→Portal Produtor+Consultor corretos PASS UI real EXTERNA.
+- [x] Fonte6e60102a testes independentes finais20/20PASS (14+6 em2arquivos, NÃO19/20 nem20arquivos); V0anterior76PASS/typecheck0/build0/lintnovos0/scanner4221zero. Common4operações restauradas/linksintactos/SMTPinalterado. Rodada somente docs/archive, sem runtime/testes novos/deploy/SQL/publicação/credenciais.
+- [ ] Publicação frontend solicitada deployment4dea8794-405a-4dd7-a3d7-e6c91c004aef, conclusão não confirmada; Consultor real em andamento auditor, não PASS. Gestão associações/cachemultidispositivo/signedURLs/principal pendentes, gates fechados; confirmação específica futura no momento.
+
+## Vínculos externos — promoção exata Edge V0 (16/10/2026 23:12 UTC; histórico)
 - [x] Autorizada promoção byte a byte da candidata list-portal-users para fonte runtime; sem lógica adicional, SQL, deploy Edge ou publicação; verify_jwt/helpers/CORS/common/ledger/contas preservados.
 - [x] Teste focal runtime+regressão20/20PASS (14+6), lint2testes0, igualdade bytes/SHA256 candidata PASS, diff-checkPASS/build automático23:13:23OK. Primeiro run19PASS/1FAIL asserção legada sobre leitura service key, corrigida para fronteira real criação admin; sem lógica runtime adicional. Revisão externa76Vitest/lint2testes0/scanner4221zero/build0; typecheck externo em conclusão, não certificado ainda.
-- [ ] Auditor fará deploy/revisão final e acessos reais com confirmação específica no momento; nenhuma implantação/publicação/SQL pelo agente neste delta.
+- [x] Deploy Edge/revisão e positivo real listagem externos concluídos conforme encerramento23:17; teste Consultor/publicaçãofrontend seguem pendentes acima. Nenhuma implantação/publicação/SQL pelo agente.
 
 ## Vínculos externos — reconciliação documental (16/10/2026 23:09 UTC)
 - [x] Auditor instalou 20261016230114 user_client_access_deny_revoked_links: única condição revoked_at IS NULL; SELECT próprio ledger/live confirma MD5 e099f51d128620e5a68cc3e9001dd976. SQL exato arquivado em scripts/user-links-v0/installed, NÃO REAPLICAR; baseline anterior externo e900be25dbf7c2d0cd3105bf13dcfb94 corrigido no relato.
 - [x] Evidência EXTERNA claims/ROLLBACK: antes helperTRUE/resolver0 com revogado ativo; depois valid/revoked/inactive/future/expired=true/false/false/false/false; seis tabelas3→0/2→0/3→0/2→0/2→0/26→0; dados reais, zero mutações committed, readback vínculo/principal/revokednull preservados. Não é UI/JWT/cache certificado.
 - [x] Delta somente documentação/arquivo instalado/manifesto; nenhum runtime adicional, banco escrito, deploy Edge/publicação ou mudança common/SQLtrue/audit4/roles/Auth/SMTP/associações.
-- [ ] Campanha positivo Produtor UNVERIFIED: sem associação/fixture atual e filha RLS Admin/Gestor Comercial; campanha/Edge/restante V0 aguardam revisão técnica do auditor, não implantação nesta rodada. Confirmação específica de acessos reais futuros somente no momento; associação permanece fechada.
+- [ ] Campanha positivo Produtor UNVERIFIED: sem associação/fixture atual e filha RLS Admin/Gestor Comercial; campanha instalada e Edge implantada externamente conforme23:17, não reaplicar. Confirmação específica de acessos reais futuros somente no momento; associação permanece fechada.
 
 ## Vínculos externos — V0 mínimo (16/10/2026 22:59 UTC; histórico, helper instalado externamente às23:01)
 - [x] Plano86ad803b revisado; preparar fechamento de leitores históricos antes de gestão. Sem banco/deployEdge/publicação; common true/SQLtrue/audit4 e associações preservados.
