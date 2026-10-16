@@ -1,6 +1,6 @@
 import {render,screen,fireEvent,waitFor,cleanup} from "@testing-library/react";
 import {afterEach,describe,it,expect,vi} from "vitest";
-import {act} from "react-dom/test-utils";
+import {act} from "react";
 import TenantEmailSettings from "@/pages/configuracoes/TenantEmailSettings";
 import {EMPTY_VIEW,type SmtpView,type TenantSmtpTransport} from "@/lib/configuracoes/tenantSmtp";
 afterEach(cleanup);
