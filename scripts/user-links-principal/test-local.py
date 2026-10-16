@@ -179,7 +179,7 @@ try:
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'0')
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",'')
  # ---- 8) negativo: autenticado não-admin não escreve vínculo (contenção existente) ----
- runerr(asuser(PROD,f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C3}'"))
+ runerr(asuser(PROD,f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'")) # vigente: sync tenta profile e guard de tenant nega
  checks+=1
  # ---- 9) negativo: sem uid (anon) bloqueado pelo gate ----
  runerr(f"BEGIN;SET LOCAL ROLE authenticated;UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}';COMMIT;")
