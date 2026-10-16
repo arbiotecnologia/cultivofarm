@@ -1,53 +1,47 @@
-# Cliente principal — candidato de consistência (fase pequena, revisável)
+# Cliente principal — candidato de consistência v2 (revisável)
 
-**Data:** 16/10/2026. **Base:** `bfce1cc6`. **Estado:** CANDIDATO REVISÁVEL — nenhum SQL hospedado aplicado, nenhuma publicação, nenhuma alteração de contas/vínculos reais, gate de associação fechado. Common F2 e V0 instalados preservados.
+**Data:** 16/10/2026. **Base:** `bfce1cc6` + revisão independente de `29d50c73` (v1 NÃO aprovado). **Estado:** CANDIDATO v2 REVISÁVEL — nenhum SQL hospedado aplicado, nenhuma publicação, nenhuma alteração de contas/vínculos reais, gate de associação fechado. Common F2 e V0 instalados preservados.
 
-## 1. Análise live (captura própria, somente leitura, ref canônico validado)
+## 1. Correções dos cinco pontos da revisão
+
+**(1) Preflight:** trocado `<>` por `IS DISTINCT FROM` (NULL de função ausente agora falha); assinatura conferida via `pg_get_function_identity_arguments`; trigger conferido por `tgenabled='O'`, `tgtype=29` e `pg_get_triggerdef` exato; UNIQUE conferida por `pg_get_constraintdef`='UNIQUE (user_id, cliente_id)' com `contype='u'`, não só por nome.
+
+**(2) UPDATE de user_id:** o candidato v2 reconcilia **todos** os usuários afetados (NEW e OLD) via transition tables; o usuário antigo e o novo são recalculados no mesmo comando, sem reatribuir dados. Caso de teste 6 prova ambos os lados.
+
+**(3) Perigo multirow do AFTER ROW:** confirmado o risco de "tuple to be updated was already modified by an operation triggered by the current command". **Escolha: AFTER STATEMENT com transition tables.** Postgres não aceita transition tables em trigger multi-evento, então são três triggers (`_ins`/`_upd`/`_del`), cada um referenciando apenas suas tabelas; a função seleciona o branch por `TG_OP` (plpgsql planeja cada statement só na primeira execução, então branches sem transition table nunca são planejados). O estado final é computado uma vez por comando; os UPDATEs internos re-disparam o trigger e `pg_trigger_depth()>1` encerra a segunda passagem (estado final idempotente). Lock order preservada: `a00_cf_user_gate` (BEFORE STATEMENT) continua adquirindo o singleton antes de qualquer linha; ordem user_clientes→profiles mantida; guards e provisionamento intactos. Provas: teste 3 (revogar principal e eleger outra linha no mesmo comando), teste 4 (`UPDATE principal=true` em duas linhas num só comando), teste 5 (INSERT multirow), teste 11 (duas conexões em loop de troca, sem erro de tupla nem deadlock, estado final coerente).
+
+**(4) Harness com guards reais:** instaladas as definições live de `acquire_gate`, `require_admin`, `touch_related_profiles`, `advance_stamp`, `guard_profile_sensitive_fields`, `guard_profile_tenant_fields`, `h15_profile_organization_guard`, `enforce_cliente_id_for_produtor` e o conjunto completo de triggers em profiles/user_roles/user_clientes, com `user_roles` populadas (Admin/Produtor/Consultor). **Achado de integridade:** o wrapper live `admin_edit_user_profile_v1` proíbe escopo de links (`user_edit_unscoped_links_forbidden`) e `guard_profile_tenant_fields` nega mudança de `cliente_id` para qualquer `auth.uid()` não nulo — ou seja, escritas de vínculo no live ocorrem em contexto service/provisionamento (uid NULL / service_role). O harness espelha isso: escritas de vínculo como `service_role`; negativos autenticados provam que a contenção existente é preservada (teste 8: autenticado não-admin negado pelo guard de tenant; teste 9: anon negado pelo gate; teste 10: `require_admin` impede remover último admin). **UNVERIFIED:** ensaio hosted BEGIN/ROLLBACK, RLS/policies completas, schema fiscal integral, `guard_superadmin_role_assignment`.
+
+**(5) Rollback seguro:** `rollback.sql.review` agora carrega pré-condição explícita — **somente com gate de associação fechado** (estado atual), pois restaura a falha conhecida. Com gate aberto, a contenção segura é o próprio candidato v2 (não o rollback).
+
+## 2. Análise live (captura própria, somente leitura, ref canônico validado)
 
 | Objeto | Estado live | MD5 definição |
 |---|---|---|
-| `public.sync_user_cliente_principal()` | AFTER ROW em `user_clientes`; elege principal **sem filtrar** is_active/revoked_at/validade; desempate só `created_at` | `50392a57c5908c67c709c4e84f0e932e` |
-| `public.enforce_cliente_id_for_produtor()` | Trata `user_roles` (conta **todos** os links, inclusive históricos) e branch `user_clientes` **sem trigger instalado** nessa tabela; em `profiles` retorna NEW sem validar principal | `ecad56badcb2120f7048fad7519f76f4` |
-| `get_cliente_ids_for_user` | Correto: filtra vigência e protege fallback `profiles.cliente_id` | `c80d5900692d960f649d0a9f7850fe2c` |
-| `has_active_user_cliente_access` | V0 instalado: inclui `revoked_at IS NULL` | `e099f51d128620e5a68cc3e9001dd976` |
+| `public.sync_user_cliente_principal()` | AFTER ROW; elege principal **sem filtrar** vigência; desempate só `created_at` | `50392a57c5908c67c709c4e84f0e932e` |
+| `public.enforce_cliente_id_for_produtor()` | Conta **todos** os links na checagem de role; branch `user_clientes` sem trigger instalado | `ecad56badcb2120f7048fad7519f76f4` |
+| `get_cliente_ids_for_user` | Correto: vigência + fallback protegido | `c80d5900692d960f649d0a9f7850fe2c` |
+| `has_active_user_cliente_access` | V0 instalado com `revoked_at IS NULL` | `e099f51d128620e5a68cc3e9001dd976` |
+| `admin_edit_user_profile_v1` | Proíbe links (`user_edit_unscoped_links_forbidden`); branch comum F2 delegada | `a65e2174baa6996b5bfe64eb7a434524` |
 
-Triggers live em `user_clientes`: `a00_cf_user_gate` (BEFORE STATEMENT), `trg_user_clientes_sync` (AFTER ROW), `z90_cf_touch_profile` (AFTER ROW). Em `profiles`: guards de campos sensíveis/tenant/senha, `trg_profiles_enforce_cliente`, stamp `z99`, `require_admin`. Constraints: `UNIQUE(user_id,cliente_id)` em user_clientes; `profiles.cliente_id` FK `ON DELETE SET NULL`; `profiles.user_id` UNIQUE.
+Triggers live em `user_clientes`: `a00_cf_user_gate` (BEFORE STATEMENT), `trg_user_clientes_sync` (AFTER ROW), `z90_cf_touch_profile` (AFTER ROW). Constraints: `UNIQUE(user_id,cliente_id)`; `profiles.cliente_id` FK `ON DELETE SET NULL`.
 
-**Achados de risco do comportamento atual:**
-1. Principal pode apontar para vínculo revogado/inativo/expirado/futuro (sem filtro de vigência).
-2. Desempate não determinístico entre linhas com mesmo `created_at` (falta tiebreak por id).
-3. `profiles.cliente_id` pode ser sincronizado para histórico — não é vazamento confirmado (resolver live protege o fallback), mas bloqueia consistência da troca.
-4. Recursão: os UPDATEs internos re-disparam o trigger; o término atual depende de os UPDATEs não encontrarem linhas — o candidato preserva essa propriedade de convergência e a prova em teste.
-5. O UPDATE de `profiles` pelo trigger atravessa `guard_profile_sensitive_fields`/`guard_profile_tenant_fields`: para `authenticated` não-admin, mudança de `cliente_id` é negada — contenção existente preservada, não alterada neste recorte.
+## 3. Candidato v2 (`scripts/user-links-principal/candidate.sql.review`)
 
-## 2. Candidato (`scripts/user-links-principal/candidate.sql.review`)
+Fora da pasta de migrations. Escopo: `sync_user_cliente_principal` + substituição do trigger ROW por três STATEMENT. Assinatura, `SECURITY DEFINER`, `search_path` e ACL preservados; nenhum GRANT/REVOKE novo.
 
-Fora da pasta de migrations. Escopo: **somente** `sync_user_cliente_principal`. Assinatura, `SECURITY DEFINER`, `search_path` e ACL preservados; nenhum GRANT/REVOKE novo. Preflight DO falha por drift (hashes live, trigger e UNIQUE).
+- Vigência canônica idêntica ao resolver live.
+- Rebaixa principais não vigentes; honra `principal` marcado apenas se vigente (desempate determinístico `created_at,id`); garante exatamente um principal vigente; `profiles.cliente_id` só vigente ou NULL — nunca histórico.
+- `pg_trigger_depth()>1` garante término; convergência provada, não inferida.
+- `enforce_cliente_id_for_produtor` **não alterado** (análise separada em `scripts/user-links-v0/principal-analysis.md`); nenhuma proibição nova sobre writers/provisionamento legados.
 
-Mudanças:
-- Vigência canônica idêntica ao resolver live: `is_active AND revoked_at IS NULL AND valid_from/valid_until` na janela.
-- Passo 1 novo: rebaixa principais não vigentes.
-- Passo 2: só honra `NEW.principal` se a linha for vigente.
-- Passo 3: elege o vigente mais antigo com desempate `created_at, id` (determinístico); se não houver vigente, **nenhum** principal — sem fallback histórico.
-- Passo 4: `profiles.cliente_id` sincroniza só com principal vigente ou NULL.
-- Convergência: cada UPDATE tem predicado que só casa linhas a mudar; segunda passagem não encontra trabalho (provado nos testes).
+## 4. Testes (`scripts/user-links-principal/test-local.py`)
 
-**Não alterado de propósito:** `enforce_cliente_id_for_produtor` (contagem histórica na checagem de role) — revisão separada já registrada em `scripts/user-links-v0/principal-analysis.md`; impor proibição nova aqui poderia quebrar writers/provisionamento legados. Nenhuma mudança de negócio além de fechar principais históricos.
-
-## 3. Testes (`scripts/user-links-principal/test-local.py`)
-
-PostgreSQL descartável em `/tmp` (socket, porta 55497, nunca hosted). **18/18 checks PASS**:
-- Baseline live reproduz o defeito (principal revogado eleito) — documentado, sem PASS falso.
-- Candidato: vigente aceito; revogado/inativo/futuro/expirado nunca eleitos; profile nunca aponta para histórico; exatamente um principal vigente; reativação por UNIQUE (mesma id) funciona; DELETE do principal reelege vigente; sem vínculo vigente → profile NULL; consultor sem vínculos intacto; convergência sem recursão infinita; rollback transacional não persiste nada.
-- Limites: schema reduzido local (sem guards cf_user_guards_v1 completos, sem RLS, sem concorrência real); prova hosted e concorrência ficam para ensaio transacional do auditor.
-
-## 4. Rollback
-
-`rollback.sql.review` restaura a definição live byte a byte (MD5 `50392a57c5908c67c709c4e84f0e932e`). Não apaga dados nem reverte vínculos legítimos.
+PostgreSQL descartável em `/tmp` (socket, porta 55498, nunca hosted). **21/21 checks PASS**, incluindo guards reais, roles, fluxos service/negativos, multirow (3 casos), reconciliação de user_id antigo/novo, concorrência com duas conexões (20 trocas cada, sem erro de tupla), rollback transacional e consultor intacto. UNVERIFIED listados na seção 1(4).
 
 ## 5. Pendências (não deste recorte)
 
-- Cache/sessão do titular em outra sessão/dispositivo e signed URLs: seguem pendentes (sem BroadcastChannel entre origens).
+- Ensaio hosted BEGIN/ROLLBACK e concorrência real: pelo auditor, após revisão.
+- Cache same-identity e anexos/signed URLs: próximo trabalho, não misturado aqui.
+- Gestão de associações (troca mesmo tipo): gates fechados.
 - `enforce_cliente_id_for_produtor`: análise separada, não instalada.
-- Gestão de associações (troca mesmo tipo): gates fechados, aguarda esta correção + revisão.
-- Ensaio hosted BEGIN/ROLLBACK e teste de concorrência: pelo auditor, após revisão.
