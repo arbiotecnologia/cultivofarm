@@ -42,9 +42,16 @@ export function pinnedDeps(runtime: PinnedRuntime): SmtpProbeDeps {
     connectTls: async (host, port) => {
       if (!runtime.proven || port!==465) throw new Error('SMTP_UNAVAILABLE');
       let addresses: string[];
-      try { const [a,aaaa] = await Promise.all([runtime.resolve(host,'A'),runtime.resolve(host,'AAAA')]); addresses=[...a,...aaaa]; }
-      catch { throw new Error('smtp_dns_blocked'); }
-      if (!addresses.length || !addresses.every(publicAddress)) throw new Error('smtp_dns_blocked');
+      let dnsTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const [a,aaaa]=await Promise.race([
+          Promise.all([runtime.resolve(host,'A'),runtime.resolve(host,'AAAA')]),
+          new Promise<never>((_,reject)=>{dnsTimer=setTimeout(()=>reject(new Error('smtp_dns_blocked')),4000);}),
+        ]);
+        addresses=[...a,...aaaa];
+      } catch { throw new Error('smtp_dns_blocked'); }
+      finally {if(dnsTimer!==undefined)clearTimeout(dnsTimer);}
+      if (!addresses.length || addresses.length>64 || !addresses.every(publicAddress)) throw new Error('smtp_dns_blocked');
       let socket: ProbeConnection | undefined;
       let secured: ProbeConnection | undefined;
       let expired=false;

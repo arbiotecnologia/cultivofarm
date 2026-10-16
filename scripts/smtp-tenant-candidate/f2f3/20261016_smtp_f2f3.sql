@@ -112,7 +112,7 @@ RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT plat
 REVOKE ALL ON FUNCTION public.tenant_smtp_test_claim(text,bigint,uuid,boolean) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_smtp_test_claim(text,bigint,uuid,boolean) TO authenticated;
 -- This is NOT a password RPC for clients. Requires an unconsumed authorized job/fence.
-CREATE OR REPLACE FUNCTION public.tenant_smtp_test_prepare(p_job uuid,p_fence uuid,p_actor uuid)
+CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_test_prepare(p_job uuid,p_fence uuid,p_actor uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE r platform_private.tenant_smtp_test_receipts; s public.communication_tenant_email_settings; v_org uuid; v_password text; v_email text;
 BEGIN
@@ -141,9 +141,13 @@ EXCEPTION WHEN SQLSTATE '42501' THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRC
  WHEN SQLSTATE '40001' THEN RAISE EXCEPTION 'SMTP_CONFLICT' USING ERRCODE='40001';
  WHEN OTHERS THEN RAISE EXCEPTION 'SMTP_INTERNAL';
 END $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_smtp_test_prepare(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.tenant_smtp_test_prepare(uuid,uuid,uuid) TO service_role;
+CREATE OR REPLACE FUNCTION public.tenant_smtp_test_prepare(p_job uuid,p_fence uuid,p_actor uuid)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.tenant_smtp_test_prepare(p_job,p_fence,p_actor) $$;
 REVOKE ALL ON FUNCTION public.tenant_smtp_test_prepare(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.tenant_smtp_test_prepare(uuid,uuid,uuid) TO service_role;
-CREATE OR REPLACE FUNCTION public.tenant_smtp_test_finish(p_job uuid,p_fence uuid,p_actor uuid,p_code text)
+CREATE OR REPLACE FUNCTION platform_private.tenant_smtp_test_finish(p_job uuid,p_fence uuid,p_actor uuid,p_code text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE r platform_private.tenant_smtp_test_receipts; v_org uuid;
 BEGIN
@@ -165,6 +169,10 @@ BEGIN
  -- Record results even if actor revoked after socket; never return result to revoked actor.
  RETURN jsonb_build_object('code',p_code,'version',r.version,'mode',r.mode,'dispatch_enabled',false,'sender_verified',false);
 END $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_smtp_test_finish(uuid,uuid,uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.tenant_smtp_test_finish(uuid,uuid,uuid,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.tenant_smtp_test_finish(p_job uuid,p_fence uuid,p_actor uuid,p_code text)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.tenant_smtp_test_finish(p_job,p_fence,p_actor,p_code) $$;
 REVOKE ALL ON FUNCTION public.tenant_smtp_test_finish(uuid,uuid,uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.tenant_smtp_test_finish(uuid,uuid,uuid,text) TO service_role;
 COMMIT;
