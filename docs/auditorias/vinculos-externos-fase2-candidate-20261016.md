@@ -81,3 +81,18 @@ Antes de aplicar: recapturar definição completa de RPC/leitor/ACL/triggers; co
 Rollback: fechar gate e retornar constante UI false; restaurar RPC da baseline e leitor F1/ACL exatos capturados. Revogar helpers novos executáveis; manter ledger/gate para investigação, não dropar tabelas nem desfazer contatos legítimos em lote. Associação nunca foi alterada por este recorte. Reversão futura de troca deve ser nova operação auditada/CAS, não apagar ledger/restaurar acesso cego. `rollback.sql.review` é roteiro, não rollback integral executado/testado hospedado.
 
 Fora do delta: `DocumentosPanel.tsx` e `financeiro/relatorios/ReportShell.tsx` extraem rpc e chamam solto; `useMyCommercialOrders` usa `.call(supabase)` corretamente. Achados registrados, não corrigidos.
+
+## Complemento da varredura de leitores (revisão auxiliar final)
+
+Inventário runtime direto adicional confirmado por fonte:
+- `src/hooks/usePortalCliente.ts`: campos completos e filtro de revogação/vigência.
+- `src/pages/ConsultorTecnico.tsx:309–313`: filtra somente is_active; **não filtra revoked_at/valid_from/valid_until** nessa leitura. Exige revisão antes de troca/revogação.
+- `src/hooks/usePartnerUsers.ts`: listas/elegíveis e fence de propriedade; mutações de vínculo continuam bloqueadas.
+- `src/pages/portal-parceiro/UsuariosClientesB2B.tsx:50–53` e `TecnicosProdutores.tsx:31–34`: associação física + enriquecimento de perfil.
+- `src/lib/partnerUserProfiles.ts`: resolve partner_users.user_id por profiles.user_id, não profiles.id.
+- `supabase/functions/list-portal-users/index.ts:90–94`: leitura privilegiada user_clientes após fronteira de cliente/tenant, **sem filtros de revogação/vigência**; pode listar vínculos históricos como atuais. Sem alteração neste delta.
+- `supabase/functions/fase-e-runtime-harness/index.ts`: inserts/cleanup de fixtures, não leitor de negócio; não executado neste turno.
+
+**Alerta não confirmado live:** a última definição encontrada por texto exato no histórico local de `get_cliente_ids_for_user` (`20260607060137_4d3e041f-9ad1-415e-a318-c26f4ea8f49e.sql:2–13`) faz UNION bruto de user_clientes e profiles.cliente_id, sem revogação/vigência. Isso é um bloqueador para assumir revogação efetiva server-side. NÃO afirmar que a função hospedada é essa, nem que todas as RLS atuais vazam: updates externos, wrappers/policies restritivas e definições não capturadas podem mudar o resultado. É necessário capturar pg_get_functiondef/ACL e políticas dependentes no ref canônico e testar sessão revogada antes de qualquer promoção da troca. Não houve leitura hospedada adicional desse helper nem correção neste delta.
+
+A revisão auxiliar tratou histórico como live e generalizou revalidação a cada render; essas conclusões **não foram adotadas**. Escopo/generation fence por identidade não prova invalidação por alteração de vínculo na mesma identidade. Nesta entrega a auditoria cobre caminhos conhecidos e inventário runtime direto; certificação de **todos** leitores/RLS live continua pendente, explicitamente bloqueando troca. Dados comuns preservam vínculos e não corrigem essas lacunas preexistentes.

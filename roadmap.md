@@ -1176,3 +1176,5 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Auditoria técnica/homologação Auth/RLS real: bloqueio deliberado de aplicação e gate. Não é falta de autorização humana genérica.
 - [ ] Troca de vínculos do mesmo tipo: proposta separada no relatório; histórico B2B e revalidação/cache do titular impedem promoção como gestão completa.
 - [ ] Achados fora deste delta: rpc extraído sem receiver em DocumentosPanel.tsx e financeiro/relatorios/ReportShell.tsx; useMyCommercialOrders correto com call(supabase). Não corrigidos.
+- [ ] Bloqueador da troca Produtor: verificar live get_cliente_ids_for_user (histórico local ignora revogação/vigência), ConsultorTecnico e list-portal-users com filtros incompletos. Sem correção de autorização neste delta; inventário completo RLS live ainda não certificado.
+- Relatório e riscos: docs/auditorias/vinculos-externos-fase2-candidate-20261016.md.
