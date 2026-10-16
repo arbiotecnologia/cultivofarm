@@ -10,7 +10,7 @@ export const TENANT_SMTP_F4_PHASE = true;
 import { f4bRequestSchema, f4bResultSchema, type F4bRequest } from "../../../scripts/smtp-tenant-candidate/f4b/contract";
 export type { F4bStatus } from "../../../scripts/smtp-tenant-candidate/f4b/contract";
 // F4b candidate: tenant activation/pause + real readiness. FALSE until independent review; SQL dispatch gate independent.
-export const TENANT_SMTP_F4B_PHASE = false;
+export const TENANT_SMTP_F4B_PHASE = true;
 export type SenderRequest = F4Request | F4bRequest;
 export type SenderResult = import("zod").infer<typeof f4bResultSchema>;
 

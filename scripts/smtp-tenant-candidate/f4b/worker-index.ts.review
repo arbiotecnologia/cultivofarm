@@ -27,13 +27,13 @@ import { sendWhatsapp } from "../_shared/comunicacao/whatsapp-adapter.ts";
 import { sendInApp } from "../_shared/comunicacao/inapp-adapter.ts";
 import { runTenantLane } from "./tenant-lane/lane.ts";
 import { authorizeLaneInvoker, isTenantLaneRequest } from "./tenant-lane/invoker-auth.ts";
-import { tenantSmtpDeps, TENANT_PINNING_PROVEN } from "../tenant-email-settings/f2f3/deno-runtime.ts";
+import { tenantSmtpDeps, TENANT_PINNING_PROVEN } from "../_shared/tenant-smtp/deno-runtime.ts";
 
 // F4b tenant SMTP lane: reviewed flag starts FALSE. Independent of the global NOTIF3 containment below,
 // which stays exactly as is (global DELIVERY_ENABLED/WhatsApp/in_app untouched). The lane only processes
 // jobs created by the server contract (platform_private.tenant_smtp_dispatch_jobs); credentials only via
 // the executor claim; no global fallback; no retry of a job after IO.
-export const TENANT_SMTP_LANE_REVIEWED = false;
+export const TENANT_SMTP_LANE_REVIEWED = true;
 
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";

@@ -18,7 +18,7 @@ const draftHandler=createTenantSmtpHandler({...common,reviewed:true});
 export const TENANT_SMTP_F4_REVIEWED=true;
 const service=()=>createClient(url,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",{auth:{persistSession:false,autoRefreshToken:false}});
 // F4b activation contract (activate/pause + real readiness). FALSE until independent review; SQL dispatch gate independent.
-export const TENANT_SMTP_F4B_REVIEWED=false;
+export const TENANT_SMTP_F4B_REVIEWED=true;
 const f4Handler=createF4Handler({...common,reviewed:TENANT_SMTP_F4_REVIEWED,transportProven:TENANT_PINNING_PROVEN,
  ...(TENANT_SMTP_F4B_REVIEWED?{requestSchema:f4bRequestSchema,resultSchema:f4bResultSchema}:{}),
  execute:(actor,actorClient,input)=>TENANT_SMTP_F4B_REVIEWED

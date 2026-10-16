@@ -35,7 +35,7 @@ describe("lane invoker helpers and wiring", () => {
     expect(isTenantLaneRequest(req(URL_LANE))).toBe(true);
     expect(isTenantLaneRequest(req(URL_LANE.replace("tenant_smtp", "x")))).toBe(false);
   });
-  it("worker: lane branch uses only dedicated auth; global route keeps original authorize and NOTIF3; flags off", () => {
+  it("worker: lane branch uses only dedicated auth; global route keeps original authorize and NOTIF3; lane flag promoted", () => {
     const w = readFileSync("scripts/smtp-tenant-candidate/f4b/worker-index.ts.review", "utf8");
     const lane = w.slice(w.indexOf("if (isTenantLaneRequest(req))"), w.indexOf("// Global route"));
     expect(lane).toContain("authorizeLaneInvoker(req, LANE_INVOKER_SECRET)");
@@ -44,7 +44,7 @@ describe("lane invoker helpers and wiring", () => {
     expect(global).toContain("const authz = authorize(req);");
     expect(global).not.toContain("LANE_INVOKER_SECRET");
     expect(w).toContain("const deliveryContractAvailable = false;");
-    expect(w).toContain("export const TENANT_SMTP_LANE_REVIEWED = false;");
+    expect(w).toContain("export const TENANT_SMTP_LANE_REVIEWED = true;");
     expect(w.match(/TENANT_SMTP_LANE_INVOKER_SECRET/g)?.length).toBe(1);
   });
   it("cron option reads only the named Vault secret and sends the dedicated header", () => {

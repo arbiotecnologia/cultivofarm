@@ -1,0 +1,97 @@
+project_id = "swzpzcwiasxmjutrmvkm"
+
+[functions.whatsapp-status-webhook]
+verify_jwt = false
+
+# F4.2 — empacotamento do motor XML NF-e.
+# O primeiro deploy omitiu o bundle XSD oficial porque `xsdValidate.ts` lê os
+# arquivos por `import.meta.url` (Deno.readTextFile) e o bundler não os enxerga
+# como dependências de import. `static_files` força a inclusão dos 5 XSDs e do
+# manifesto no artefato implantado. `verify_jwt` permanece true.
+# Transporte SEFAZ: JWT obrigatório declarado explicitamente, para não depender
+# do default da ferramenta em uma função que assina e transmite documentos.
+[functions.fiscal-sefaz-transport]
+verify_jwt = true
+
+[functions.fiscal-xml-engine]
+verify_jwt = true
+static_files = [
+  "./functions/fiscal-xml-engine/xsd/*.xsd",
+  "./functions/fiscal-xml-engine/xsd/manifest.json",
+]
+
+# Incidente 2026-09-18: a reconexão do Supabase republicou automaticamente as 37
+# funções sem verificação de JWT no gateway, apagando a proteção de gateway que existia.
+# Os blocos abaixo declaram explicitamente verify_jwt=true para todas as funções
+# fiscais e para as seis funções administrativas/privadas que já eram true,
+# impedindo que o default volte a rebaixá-las num próximo deploy.
+# Webhooks e funções com autenticação customizada NÃO são alterados aqui.
+
+[functions.fiscal-binding-diagnostics]
+verify_jwt = true
+
+[functions.fiscal-certificate-revoke]
+verify_jwt = true
+
+[functions.fiscal-certificate-upload]
+verify_jwt = true
+
+[functions.fiscal-cnpj-lookup]
+verify_jwt = true
+
+[functions.fiscal-event-sign]
+verify_jwt = true
+
+[functions.fiscal-preflight]
+verify_jwt = true
+
+[functions.create-user]
+verify_jwt = true
+
+# Convite de administrador de empresa pelo Superadmin de Plataforma.
+[functions.platform-invite-org-admin]
+verify_jwt = true
+
+# Configuração global de Comunicação: JWT obrigatório no gateway e autorização
+# de Superadmin validada novamente dentro de cada função.
+[functions.communication-provider-settings]
+verify_jwt = true
+
+[functions.test-communication-email]
+verify_jwt = true
+
+# Primeiro acesso: autenticação customizada em código (getClaims) — sem
+# verificação de JWT legado no gateway.
+[functions.platform-complete-first-access]
+verify_jwt = false
+
+[functions.admin-update-user-password]
+verify_jwt = true
+
+# Administração destrutiva/auditoria de catálogo: JWT obrigatório no gateway,
+# além da validação de papel dentro das funções.
+[functions.admin-wipe-produtos-catalog]
+verify_jwt = true
+
+[functions.admin-audit-produtos-orfaos]
+verify_jwt = true
+
+[functions.list-portal-users]
+verify_jwt = true
+
+[functions.enviar-pdf-aplicacao]
+verify_jwt = true
+
+[functions.enviar-pdf-visita]
+verify_jwt = true
+
+[functions.sync-clima]
+verify_jwt = true
+
+[functions.onboarding-cnpj-lookup]
+verify_jwt = false
+
+# Troca de e-mail de administrador provisionado: JWT no gateway e Superadmin
+# revalidado em código; service_role somente dentro da função.
+[functions.platform-org-admin-email-change]
+verify_jwt = true

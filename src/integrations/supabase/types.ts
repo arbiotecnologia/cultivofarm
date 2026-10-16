@@ -25900,6 +25900,15 @@ export type Database = {
         Returns: Json
       }
       tenant_smtp_f4_status: { Args: never; Returns: Json }
+      tenant_smtp_lane_authorize: {
+        Args: { p_fence: string; p_outbox: string }
+        Returns: Json
+      }
+      tenant_smtp_lane_claim: { Args: { p_worker: string }; Returns: Json }
+      tenant_smtp_lane_finish: {
+        Args: { p_fence: string; p_outbox: string; p_outcome: string }
+        Returns: Json
+      }
       tenant_smtp_sender_challenge_claim: {
         Args: { p_key: string; p_version: number }
         Returns: Json

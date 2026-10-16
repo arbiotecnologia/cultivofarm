@@ -21,15 +21,15 @@ const rpc = (claims: unknown[], finish: (a: Record<string, unknown>) => { data: 
 };
 const deps = {} as never;
 
-describe("F4b flags stay closed", () => {
- it("frontend F4b phase false", () => expect(TENANT_SMTP_F4B_PHASE).toBe(false));
- it("worker lane and edge F4b review flags false; NOTIF3 global containment intact", () => {
+describe("F4b flags promoted after review; global containment intact", () => {
+ it("frontend F4b phase promoted", () => expect(TENANT_SMTP_F4B_PHASE).toBe(true));
+ it("worker lane and edge F4b review flags promoted; NOTIF3 global containment intact", () => {
   const w = readFileSync("scripts/smtp-tenant-candidate/f4b/worker-index.ts.review", "utf8");
-  expect(w).toContain("export const TENANT_SMTP_LANE_REVIEWED = false;");
+  expect(w).toContain("export const TENANT_SMTP_LANE_REVIEWED = true;");
   expect(w).toContain("const deliveryContractAvailable = false;");
   const e = readFileSync("scripts/smtp-tenant-candidate/f2f3/deploy/supabase/functions/tenant-email-settings/index.ts", "utf8");
-  expect(e).toContain("TENANT_SMTP_F4B_REVIEWED=false");
-  expect(readFileSync("supabase/functions/process-communication-outbox/index.ts", "utf8")).not.toContain("tenant_smtp");
+  expect(e).toContain("TENANT_SMTP_F4B_REVIEWED=true");
+  expect(readFileSync("supabase/functions/process-communication-outbox/index.ts", "utf8")).toBe(w);
  });
 });
 
@@ -136,8 +136,8 @@ describe("F4b SMTP wire: authorization after AUTH, before envelope", () => {
 
 const st = (o: Partial<F4bStatus> = {}): F4bStatus => ({ version: 2, sender_verified: true, active: false, dispatch_enabled: false, challenge: null, ...o });
 describe("F4b panel", () => {
- it("hidden while phase off", async () => {
-  render(<TenantSenderVerification version={2} connectionReady blocked={false} send={async () => ({ code: "F4_STATUS", status: st() })} />);
+ it("hidden while phase off (injected)", async () => {
+  render(<TenantSenderVerification version={2} connectionReady blocked={false} activationEnabled={false} send={async () => ({ code: "F4_STATUS", status: st() })} />);
   await screen.findByText("Remetente verificado; envio operacional ainda indisponível.");
   expect(screen.queryByRole("button", { name: /Ativar email/ })).toBeNull();
  });

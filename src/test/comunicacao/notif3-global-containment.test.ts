@@ -20,7 +20,7 @@ function handler(name: string, profileActive = true, superadmin = true) {
   const noEffects = vi.fn(() => { throw new Error('unexpected effect'); });
   const schema = { object: () => schema, enum: () => schema, default: () => schema, optional: () => schema, literal: () => schema, string: () => schema, trim: () => schema, email: () => schema, max: () => schema, strict: () => schema };
   const context = {
-    Request, Response, crypto, console, exports: {},
+    Request, Response, URL, crypto, console, exports: {},
     Deno: { env: { get: (key: string) => key === 'SUPABASE_URL' ? 'https://swzpzcwiasxmjutrmvkm.supabase.co' : 'test-only' }, serve: (fn: typeof serve) => { serve = fn; } },
     createClient, serviceClient, z: schema,
     json: (status: number, body: unknown) => new Response(JSON.stringify(body), { status }),
@@ -29,6 +29,8 @@ function handler(name: string, profileActive = true, superadmin = true) {
     handlePreflight: () => new Response(null, { status: 204 }),
     loadRuntimeConfig: noEffects, readWorkerEnv: noEffects, sendEmail: noEffects,
     sendWhatsapp: noEffects, sendInApp: noEffects, probeSmtpProviderInDeno: noEffects,
+    // Tenant lane wiring (promoted F4b): global requests never take the lane branch.
+    isTenantLaneRequest: () => false, authorizeLaneInvoker: () => false, runTenantLane: noEffects, tenantSmtpDeps: {}, TENANT_PINNING_PROVEN: true,
   };
   runInNewContext(ts.transpileModule(clean, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText, context);
   if (!serve) throw new Error('handler missing');

@@ -81,7 +81,7 @@ describe("F4 UI", () => {
  it("challenge needs connection pass of same version", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status() }));
   render(<TenantSenderVerification version={1} connectionReady={false} blocked={false} send={send} />); await waitFor(() => expect(screen.getByRole("button", { name: "Enviar código ao remetente" })).toBeDisabled()); });
  it("verified shows operational unavailable, no activation, no Ativo badge", async () => { const send = vi.fn(async () => ({ code: "F4_STATUS" as const, status: status({ sender_verified: true }) }));
-  render(<TenantSenderVerification version={1} connectionReady blocked={false} send={send} />);
+  render(<TenantSenderVerification version={1} connectionReady blocked={false} activationEnabled={false} send={send} />);
   expect(await screen.findByText("Remetente verificado; envio operacional ainda indisponível.")).toBeTruthy();
   expect(screen.queryByRole("button", { name: /Ativar/ })).toBeNull(); expect(screen.queryByText("Ativo")).toBeNull(); });
  it("StrictMode remount drops first-mount late response", async () => {
