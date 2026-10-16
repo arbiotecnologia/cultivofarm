@@ -96,6 +96,33 @@ describe("F4b worker lane", () => {
  });
 });
 
+function wire(replies: string[]) { const writes: string[] = []; const s = { read: async (b: Uint8Array) => { const line = replies.shift(); if (!line) return null; const d = new TextEncoder().encode(line); b.set(d); return d.length; }, write: async (b: Uint8Array) => { writes.push(new TextDecoder().decode(b)); return b.length; }, close: vi.fn() };
+ return { writes, deps: { connectTls: async () => s, connect: vi.fn(), startTls: vi.fn() } as never }; }
+const AUTHED = ["220 ready\r\n", "250 AUTH PLAIN\r\n", "235 ok\r\n"];
+describe("F4b SMTP wire: authorization after AUTH, before envelope", () => {
+ it("refused authorization: AUTH happened, no MAIL FROM/RCPT/DATA", async () => {
+  const w = wire([...AUTHED]); const authorize = vi.fn(async () => false);
+  expect(await sendLaneMessage(laneJobSchema.parse(job()), w.deps, authorize)).toBe("withheld");
+  expect(authorize).toHaveBeenCalledTimes(1); expect(w.writes.some(v => v.startsWith("AUTH"))).toBe(true);
+  expect(w.writes.some(v => /MAIL FROM|RCPT TO|DATA/.test(v))).toBe(false);
+ });
+ it("authorize throwing is withheld, no envelope", async () => {
+  const w = wire([...AUTHED]); expect(await sendLaneMessage(laneJobSchema.parse(job()), w.deps, async () => { throw new Error("rpc"); })).toBe("withheld");
+  expect(w.writes.some(v => /MAIL FROM/.test(v))).toBe(false);
+ });
+ it("authorized: envelope only to server recipient, single DATA", async () => {
+  const w = wire([...AUTHED, "250 ok\r\n", "250 ok\r\n", "354 data\r\n", "250 accepted\r\n"]);
+  expect(await sendLaneMessage(laneJobSchema.parse(job()), w.deps, async () => true)).toBe("sent");
+  expect(w.writes.filter(v => v.startsWith("RCPT TO"))).toEqual(["RCPT TO:<consultor@tenant-a.test>\r\n"]);
+  expect(w.writes.filter(v => v === "DATA\r\n")).toHaveLength(1);
+ });
+ it("EOF after DATA is ambiguous (no retry)", async () => {
+  const w = wire([...AUTHED, "250 ok\r\n", "250 ok\r\n", "354 data\r\n"]);
+  expect(await sendLaneMessage(laneJobSchema.parse(job()), w.deps, async () => true)).toBe("ambiguous");
+  expect(w.writes.filter(v => v === "DATA\r\n")).toHaveLength(1);
+ });
+});
+
 const st = (o: Partial<F4bStatus> = {}): F4bStatus => ({ version: 2, sender_verified: true, active: false, dispatch_enabled: false, challenge: null, ...o });
 describe("F4b panel", () => {
  it("hidden while phase off", async () => {
