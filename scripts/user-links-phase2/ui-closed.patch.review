@@ -1,0 +1,106 @@
+--- a/src/lib/configuracoes/userLinks.ts
++++ b/src/lib/configuracoes/userLinks.ts
+@@ -51,6 +51,7 @@
+ }
+ export interface VinculosUsuario {
+   user_id: string;
++  expected_version?: string;
+   clientes: VinculoCliente[];
+   parceiro: VinculoParceiro | null;
+   parceiros_total: number;
+@@ -88,7 +89,8 @@
+     }
+     const parceiros_total = contagem(it.parceiros_total);
+     if ((parceiro ? parceiros_total < 1 : parceiros_total !== 0)) throw new Error(INVALIDA);
+-    out.set(user_id, { user_id, clientes, parceiro, parceiros_total, fora_do_alcance: contagem(it.fora_do_alcance) });
++    if (it.expected_version !== undefined && (typeof it.expected_version !== "string" || !/^[a-f0-9]{64}$/.test(it.expected_version))) throw new Error(INVALIDA);
++    out.set(user_id, { user_id, expected_version: it.expected_version as string | undefined, clientes, parceiro, parceiros_total, fora_do_alcance: contagem(it.fora_do_alcance) });
+   }
+   return out;
+ }
+--- a/src/pages/Configuracoes.tsx
++++ b/src/pages/Configuracoes.tsx
+@@ -42,6 +42,7 @@
+ import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
++import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED, submitCommonExternalEditCandidate } from "@/lib/configuracoes/externalUserEditCandidate";
+ import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
+ type LinhaUsuario = { user_id: string; roles?: string[] | null };
+ import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
+@@ -330,6 +331,7 @@
+     onSuccess: (_data, { current }) => {
+       if (!current()) return;
+       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
++      queryClient.invalidateQueries({ queryKey: ["admin-user-links"] });
+       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+       toast({ title: "Usuário criado com sucesso" });
+       setCreateOpen(false);
+@@ -381,7 +383,17 @@
+     ? ((usersPage as LinhaUsuario[]).find((u) => u.user_id === editUser.user_id) ?? (editUser as LinhaUsuario))
+     : null;
+   const editTipo = tipoAcessoDoUsuario(editOrig?.roles);
+-  const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo);
++  const [externalEditSnapshot, setExternalEditSnapshot] = useState<{ userId: string; actorId: string; orgId: string; version: string; key: string } | null>(null);
++  const [externalEditReason, setExternalEditReason] = useState("");
++  const externalCommonCandidate = EXTERNAL_USER_EDIT_PHASE2_REVIEWED && ["producer", "b2b"].includes(editTipo);
++  const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo) && !externalCommonCandidate;
++  useEffect(() => {
++    if (!editOpen) { setExternalEditSnapshot(null); setExternalEditReason(""); return; }
++    if (externalEditSnapshot && (externalEditSnapshot.userId !== editUser?.user_id || externalEditSnapshot.actorId !== user?.id || externalEditSnapshot.orgId !== profile?.organization_id)) { setExternalEditSnapshot(null); setExternalEditReason(""); return; }
++    if (!externalCommonCandidate || externalEditSnapshot || !editUser?.user_id || !user?.id || !profile?.organization_id || vinculos.isError || vinculos.isFetching) return;
++    const version = vinculos.data?.get(editUser.user_id)?.expected_version;
++    if (version) setExternalEditSnapshot({ userId: editUser.user_id, actorId: user.id, orgId: profile.organization_id, version, key: crypto.randomUUID() });
++  }, [editOpen, editUser?.user_id, user?.id, profile?.organization_id, externalCommonCandidate, externalEditSnapshot, vinculos.data, vinculos.isError, vinculos.isFetching]);
+ 
+   const [newPassword, setNewPassword] = useState("");
+   const [confirmPassword, setConfirmPassword] = useState("");
+@@ -439,6 +451,21 @@
+       if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
+       // Fase 1: externos são somente leitura (servidor também recusa). Nenhuma chamada é feita.
+       if (editSomenteLeitura) throw erroLocalEdicao(MSG_EDICAO_EXTERNA_INDISPONIVEL);
++      if (externalCommonCandidate) {
++        if (!externalEditSnapshot || externalEditSnapshot.userId !== editUser.user_id || externalEditSnapshot.actorId !== user?.id || externalEditSnapshot.orgId !== profile?.organization_id || vinculos.isError || vinculos.isFetching) throw erroAmbiguoEdicao();
++        const candidateClient = supabase as unknown as Parameters<typeof submitCommonExternalEditCandidate>[0];
++        await executarComDeadlineEdicao(async signal => {
++          if (!signal) throw erroAmbiguoEdicao();
++          return submitCommonExternalEditCandidate(candidateClient, {
++            userId: editUser.user_id, expectedUpdatedAt: editUser.updated_at,
++            expectedVersion: externalEditSnapshot.version, idempotencyKey: externalEditSnapshot.key,
++            reason: externalEditReason, roles: editOrig?.roles ?? [],
++            profile: { nome: editUser.nome, telefone: unmask(editUser.telefone ?? ""), cargo: editUser.cargo,
++              cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj), crea: editUser.crea, especialidade: editUser.especialidade },
++          }, signal);
++        });
++        return { rolesChanged: false, userId: editUser.user_id };
++      }
+ 
+ 
+ 
+@@ -518,6 +545,7 @@
+       setEditErros({});
+       setEditResumo(null);
+       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
++      queryClient.invalidateQueries({ queryKey: ["admin-user-links"] });
+       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+       // Cross-tab: se os papéis do usuário mudaram, avisa a sessão dele (se estiver logada em outra aba)
+       // para recarregar roles/portais sem exigir novo login. Não autoriza acesso — RLS/RPC seguem soberanos.
+@@ -1088,7 +1116,7 @@
+                     <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[editTipo]}</p></div>
+                     <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
+                     {editSomenteLeitura && <p role="status" className="text-xs text-muted-foreground border rounded-md p-2">{MSG_EDICAO_EXTERNA_INDISPONIVEL}</p>}
+-                    {!editSomenteLeitura && <div>
++                    {editTipo === "internal" && <div>
+                       <Label>Perfis de Acesso (selecione um ou mais)</Label>
+                       <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                       {TENANT_MANAGEABLE_ROLES.map(r => {
+@@ -1110,7 +1138,8 @@
+                         })}
+                       </div>
+                     </div>}
+-                    <fieldset disabled={editSomenteLeitura} className="space-y-3 disabled:opacity-70">
++                    {externalCommonCandidate && <div><Label>Motivo</Label><Input value={externalEditReason} onChange={e => setExternalEditReason(e.target.value)} maxLength={500} /></div>}
++                    <fieldset disabled={editSomenteLeitura || (externalCommonCandidate && !externalEditSnapshot)} className="space-y-3 disabled:opacity-70">
+                     <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
+                     <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
+                     <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
