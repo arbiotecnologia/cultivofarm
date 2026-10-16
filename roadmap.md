@@ -1,3 +1,8 @@
+## SMTP F2/F3 — candidato revisável sobre c922a18d (01:46 UTC)
+- [ ] Preparar conexão TLS+AUTH e envio explícito ao Admin confirmado próprio, sem aplicação/deploy/publicação/credencial real.
+- [ ] Provar ou conter pinning DNS/IP/TLS no runtime; reutilizar núcleo SMTP/outbox sem liberar workers/Auth.
+- [ ] Entregar SQL/rollback, testes negativos e relatório com evidências locais e limitações separadas.
+
 ## SMTP-T1 — candidato de rascunho HTTPS + Vault (decisão do titular 2026-10-16)
 - [x] Delta01:32 sobre4591c4cd: UI/entry true só rascunho, aviso465/TLS/25/587, schema/handler intactos. SMTP65/65 + topology3/3 PASS, lint focal4arquivos0, scanner16/16; manifesto atualizado. Auditor promove; nenhum banco/deploy/publicação executado.
 - [x] Evidência externa recebida01:32 sobre4591c4cd:62/62/build/lint5arquivos PASS, scanner4058arquivos0achados; SQL hosted claims simulados/rollback PASS; typecheck app ainda executando, sessão real Admin AR disponível ao auditor.
