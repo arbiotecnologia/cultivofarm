@@ -168,11 +168,11 @@ try:
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD2}' AND principal",C2)
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD2}'",C2)
  # ---- 6) UPDATE de user_id reconcilia usuário antigo E novo ----
- run(admin(f"UPDATE public.user_clientes SET user_id='{PROD2}' WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1)
+ run(admin(f"UPDATE public.user_clientes SET user_id='{PROD2}' WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD2}' AND principal",'1')
- check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",C1)
- run(admin(f"UPDATE public.user_clientes SET user_id='{PROD}' WHERE user_id='{PROD2}' AND cliente_id='{C2}'"))
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",C2)
+ run(admin(f"UPDATE public.user_clientes SET user_id='{PROD}' WHERE user_id='{PROD2}' AND cliente_id='{C1}'"))
  # ---- 7) futuro/expirado nunca elegidos; sem vigente -> profile NULL ----
  run(admin(f"UPDATE public.user_clientes SET is_active=false,revoked_at=now() WHERE user_id='{PROD}'"))
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,valid_from) VALUES ('{PROD}','{C3}',false,now()+interval '1 day') ON CONFLICT (user_id,cliente_id) DO UPDATE SET valid_from=now()+interval '1 day',is_active=true,revoked_at=NULL"))
