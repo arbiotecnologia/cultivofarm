@@ -1,7 +1,8 @@
 ## SMTP-T1 — candidato de rascunho HTTPS + Vault (decisão do titular 2026-10-16)
-- [ ] Auditar HEAD ff98eec/fundação instalada sem escrita e com ref canônico comprovado; separar evidência externa de verificação própria.
-- [ ] Preparar delta revisável de rascunho, critérios ACL/Vault/logs da aplicação, preflight pós-instalação e rollback sem reaplicar fundação.
-- [ ] Testes focais UI/handler/SQL, checagem efetiva app, lint/scanner/build; relatório em 17 tópicos e fases funcionais concretas.
+- [x] Base ff98eec comparada sem checkout; fundação canônica auditada read-only: ledger/ACL/RLS/Vault metadata/gatefalse/counts0, separando evidência externa de Edge/UI.
+- [x] Delta revisável de rascunho: fencing de render/IO, no-store, critérios atuais, preflight somente leitura e rollback preservador; nenhuma reaplicação de fundação.
+- [x] SMTP59/59 + topology3/3 PASS; SQL descartável52, lint focal0, scanner15/15, build automáticoOK; browser desktop/mobile mockPASS. Relatório17 tópicos em docs/auditorias/smtp-tenant-t1-draft-candidate-20261016.md com T2–T6 e riscos. Typecheck app novo UNVERIFIED: ambiente proíbe execução manual; não certificado por root/build.
+- [ ] Auditor: executar typecheck efetivo -p tsconfig.app.json e E2E autenticado após promoção autorizada; não há prova app dedicada nem sessão gerenciada externa disponível ao agente.
 - [ ] Auditor: revisar e aplicar candidato/abrir somente gates de rascunho mediante autorização; agente não publica/aplica/envia.
 
 ## SMTP-T1 — histórico da fundação multiprovedor por empresa (22:34)
