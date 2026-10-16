@@ -42,7 +42,7 @@ CREATE TEMP TABLE w(k text PRIMARY KEY,v jsonb);GRANT ALL ON w TO authenticated,
   sql+=actor(v)+err('no connection PASS',claim(K1),'42501')+err('CAS version',claim(K1,2),'40001')
   sql+=actor(u)+err('cross-tenant actor without settings',claim(K1),'40001')
   # synthetic connection PASS receipt for v (org b, version 1)
-  sql+=f"RESET ROLE;INSERT INTO comunicacao_eventos(id,event_key,source_type,source_id,created_by,idempotency_key,status,payload) VALUES('{CK}','x','x','{b}','{v}','f4-fixture','processed','{{}}');"
+  sql+=f"RESET ROLE;INSERT INTO comunicacao_eventos(id,event_key,source_type,source_id,created_by,idempotency_key,status,payload) VALUES('{CK}','tenant.smtp.diagnostic','tenant_smtp_diagnostic_v1','{b}','{v}','f4-fixture','processed','{{}}');"
   sql+="ALTER TABLE comunicacao_outbox DISABLE TRIGGER USER;"
   sql+=f"INSERT INTO comunicacao_outbox(id,event_id,template_chave,template_versao,template_snapshot,canal,recipient_user_id,status,idempotency_key) VALUES('{CK}','{CK}','t',1,'{{}}','email','{v}','dead_letter','f4-fixture');ALTER TABLE comunicacao_outbox ENABLE TRIGGER USER;"
   sql+=f"INSERT INTO platform_private.tenant_smtp_test_receipts(id,organization_id,actor_id,version,actor_iat,mode,request_key,fence,outbox_id,state,code,completed_at) VALUES(gen_random_uuid(),'{b}','{v}',1,1,'connection','{CK}',gen_random_uuid(),'{CK}','complete','smtp_connection_ok',clock_timestamp());"
