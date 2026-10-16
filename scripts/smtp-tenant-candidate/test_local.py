@@ -22,11 +22,28 @@ CREATE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE s
 CREATE FUNCTION public.is_platform_superadmin(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT public.has_role($1,'superadmin')$$;
 CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo AND NOT senha_provisoria)$$;
 -- Vault simulation ONLY: counts mutations, stores no secret value.
+CREATE SEQUENCE vault.attempts;
 CREATE TABLE vault.calls(id uuid PRIMARY KEY,rotations int NOT NULL DEFAULT 1);
-CREATE FUNCTION vault.create_secret(text,text,text) RETURNS uuid LANGUAGE plpgsql AS $$DECLARE v uuid:=gen_random_uuid(); BEGIN IF $1='fail-vault' THEN RAISE EXCEPTION 'unsafe provider failure'; END IF; INSERT INTO vault.calls VALUES(v,1); RETURN v;END$$;
-CREATE FUNCTION vault.update_secret(uuid,text,text,text) RETURNS void LANGUAGE plpgsql AS $$BEGIN IF $2='fail-vault' THEN RAISE EXCEPTION 'unsafe provider failure'; END IF;UPDATE vault.calls SET rotations=rotations+1 WHERE id=$1;END$$;
+CREATE FUNCTION vault.create_secret(text,text,text,uuid DEFAULT NULL) RETURNS uuid LANGUAGE plpgsql AS $$DECLARE v uuid:=gen_random_uuid(); BEGIN PERFORM nextval('vault.attempts'); IF $1='fail-vault' THEN RAISE EXCEPTION 'unsafe provider failure'; END IF; INSERT INTO vault.calls VALUES(v,1); RETURN v;END$$;
+CREATE FUNCTION vault.update_secret(uuid,text,text,text,uuid DEFAULT NULL) RETURNS void LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('vault.attempts'); IF $2='fail-vault' THEN RAISE EXCEPTION 'unsafe provider failure'; END IF;UPDATE vault.calls SET rotations=rotations+1 WHERE id=$1;END$$;
+REVOKE ALL ON FUNCTION vault.create_secret(text,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION vault.update_secret(uuid,text,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
 """
-  sql+=(ROOT/'20261016_smtp_t1.sql').read_text()
+  candidate=(ROOT/'20261016_smtp_t1.sql').read_text()
+  # Regression against exact identities: defaults allow 3/4 argument CALLS,
+  # never make those shorter identities exist in pg_proc.
+  sql+="""
+DO $identities$ BEGIN
+ IF to_regprocedure('vault.create_secret(text,text,text)') IS NOT NULL
+ OR to_regprocedure('vault.update_secret(uuid,text,text,text)') IS NOT NULL
+ OR to_regprocedure('vault.create_secret(text,text,text,uuid)') IS NULL
+ OR to_regprocedure('vault.update_secret(uuid,text,text,text,uuid)') IS NULL THEN
+  RAISE EXCEPTION 'FAIL Vault real signatures';
+ END IF;
+ RAISE NOTICE 'PASS Vault real identities and absent short overloads';
+END $identities$;
+"""
+  sql+=candidate
   # Execute twice: additive migration idempotency (no body changes).
   sql+=(ROOT/'20261016_smtp_t1.sql').read_text()
   a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';u='11111111-1111-4111-8111-111111111111';v='22222222-2222-4222-8222-222222222222'
@@ -39,10 +56,14 @@ SELECT pg_temp.assert_true('private refs no client ACL',NOT has_table_privilege(
 SELECT pg_temp.assert_true('private refs no service ACL',NOT has_table_privilege('service_role','platform_private.communication_tenant_email_secret_refs','SELECT'));
 SELECT pg_temp.assert_true('anon no RPC',NOT has_function_privilege('anon','public.tenant_email_settings_get()','EXECUTE'));
 SELECT pg_temp.assert_true('service no RPC',NOT has_function_privilege('service_role','public.tenant_email_settings_save(bigint,jsonb,text)','EXECUTE'));
+SELECT pg_temp.assert_true('public wrappers INVOKER',(SELECT count(*)=3 AND bool_and(NOT prosecdef) FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname IN ('tenant_email_settings_scope','tenant_email_settings_get','tenant_email_settings_save')));
+SELECT pg_temp.assert_true('private cores DEFINER',(SELECT count(*)=3 AND bool_and(prosecdef) FROM pg_proc WHERE pronamespace='platform_private'::regnamespace AND proname IN ('tenant_email_settings_scope','tenant_email_settings_get','tenant_email_settings_save')));
+SELECT pg_temp.assert_true('private core anon service denied',NOT has_function_privilege('anon','platform_private.tenant_email_settings_save(bigint,jsonb,text)','EXECUTE') AND NOT has_function_privilege('service_role','platform_private.tenant_email_settings_save(bigint,jsonb,text)','EXECUTE'));
 SELECT pg_temp.assert_true('no direct insert',NOT has_table_privilege('authenticated','public.communication_tenant_email_settings','INSERT'));
 """
   def actor(uid):return f"SELECT set_config('request.jwt.claim.sub','{uid}',false);SET ROLE authenticated;"
-  sql+=actor(u)+f"DO $gate$ BEGIN BEGIN PERFORM public.tenant_email_settings_save(0,{cfg},'test-only');EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS database review gate OFF';RETURN;END;RAISE EXCEPTION 'FAIL database review gate';END $gate$;RESET ROLE;SELECT pg_temp.assert_true('gate rollback no Vault mutation',(SELECT count(*) FROM vault.calls)=0);UPDATE platform_private.communication_tenant_email_review_gate SET approved=true WHERE id=true;"
+  sql+=actor(u)+f"DO $gate$ BEGIN BEGIN PERFORM public.tenant_email_settings_save(0,{cfg},'test-only');EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS database review gate OFF';RETURN;END;RAISE EXCEPTION 'FAIL database review gate';END $gate$;RESET ROLE;SELECT pg_temp.assert_true('gate rollback no Vault mutation',(SELECT count(*) FROM vault.calls)=0);"
+  sql+=actor(u)+"SELECT pg_temp.expect_error('gate before invalid config',$q$SELECT public.tenant_email_settings_save(-1,NULL,'fail-vault')$q$,'42501');RESET ROLE;SELECT pg_temp.assert_true('gate prevents Vault ATTEMPT not just rollback',(SELECT is_called=false FROM vault.attempts));UPDATE platform_private.communication_tenant_email_review_gate SET approved=true WHERE id=true;"
   sql+=actor(u)+f"SELECT pg_temp.assert_true('admin A scope',public.tenant_email_settings_scope());SELECT pg_temp.assert_true('A empty draft',public.tenant_email_settings_get()->>'version'='0');SELECT pg_temp.assert_true('A save',public.tenant_email_settings_save(0,{cfg},'test-only')->>'version'='1');RESET ROLE;"
   sql+=actor(v)+f"SELECT pg_temp.assert_true('B empty independent',public.tenant_email_settings_get()->>'version'='0');SELECT pg_temp.assert_true('B RLS cannot read A',(SELECT count(*) FROM public.communication_tenant_email_settings)=0);SELECT pg_temp.assert_true('B save',public.tenant_email_settings_save(0,{cfg},'test-only')->>'version'='1');RESET ROLE;"
   sql+=actor(u)+f"SELECT pg_temp.assert_true('A RLS sees only A',(SELECT count(*) FROM public.communication_tenant_email_settings)=1);SELECT pg_temp.assert_true('A audit only A',(SELECT count(*) FROM public.communication_tenant_email_audit)=1);SELECT pg_temp.assert_true('rotation stays draft',public.tenant_email_settings_save(1,{cfg},'test-only-rotated')->>'dispatch_enabled'='false');"

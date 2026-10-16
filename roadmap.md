@@ -1,4 +1,5 @@
 ## SMTP-T1 — fundação multiprovedor por empresa (22:34)
+- [x] Delta c2509c6: preflight/stubs Vault4/5 com UUID default, gate antes de validação/Vault e após lock + trigger; wrappers INVOKER/cores privados/ACL, get explícito e rollback. SQL local52 checks/53 Vitest PASS; docs/hashes atualizados, nenhuma operação remota; homologação continua pendente auditor.
 - [x] HEAD/banco canônico/ACL/RLS inventariados somente leitura, worker local contido; nenhum segredo lido.
 - [x] Pacote tenant DRAFT/Vault write-only/RLS/CAS/audit e UI existente; SQL/Edge candidatos fora de deploy. Frontend, entrypoint e gate privado persistente OFF.
 - [x] QA local: 190 Vitest selecionados PASS; SQL descartável 46 checks PASS; scanner focal9/9; lint focal0 (baseline Configuracoes18/2); build automáticoOK; typecheck separado UNVERIFIED; desktop/mobile formulário simuladoPASS, sem Auth/browser hosted. Relatório docs/auditorias/smtp-tenant-t1-20261016.md e manifesto/rollback entregues.

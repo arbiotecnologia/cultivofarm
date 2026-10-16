@@ -5,9 +5,16 @@ DO $preflight$
 BEGIN
  IF to_regprocedure('platform_private.platform_actor_access_ready(uuid)') IS NULL
  OR to_regprocedure('public.is_platform_superadmin(uuid)') IS NULL
- OR to_regprocedure('vault.create_secret(text,text,text)') IS NULL
- OR to_regprocedure('vault.update_secret(uuid,text,text,text)') IS NULL THEN
+ OR to_regprocedure('vault.create_secret(text,text,text,uuid)') IS NULL
+ OR to_regprocedure('vault.update_secret(uuid,text,text,text,uuid)') IS NULL THEN
   RAISE EXCEPTION 'SMTP dependency unavailable';
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc WHERE oid=to_regprocedure('vault.create_secret(text,text,text,uuid)') AND pronargdefaults>=1)
+ OR NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc WHERE oid=to_regprocedure('vault.update_secret(uuid,text,text,text,uuid)') AND pronargdefaults>=1)
+ OR NOT has_function_privilege(current_user,'vault.create_secret(text,text,text,uuid)','EXECUTE')
+ OR NOT has_function_privilege(current_user,'vault.update_secret(uuid,text,text,text,uuid)','EXECUTE')
+ OR NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN
+  RAISE EXCEPTION 'SMTP dependency ACL/default unavailable';
  END IF;
 END $preflight$;
 
@@ -69,11 +76,35 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_email_actor_org() FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION platform_private.tenant_email_actor_org() TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.tenant_email_settings_scope()
+-- Separate persistent server fence: UI/Edge review flags alone cannot authorize
+-- direct PostgREST credential submission before telemetry and ACL review.
+CREATE TABLE IF NOT EXISTS platform_private.communication_tenant_email_review_gate (
+ id boolean PRIMARY KEY DEFAULT true,
+ approved boolean NOT NULL DEFAULT false
+);
+REVOKE ALL ON platform_private.communication_tenant_email_review_gate FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.communication_tenant_email_review_gate ENABLE ROW LEVEL SECURITY;
+INSERT INTO platform_private.communication_tenant_email_review_gate(id,approved) VALUES(true,false) ON CONFLICT(id) DO NOTHING;
+CREATE OR REPLACE FUNCTION platform_private.tenant_email_require_review()
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.communication_tenant_email_review_gate WHERE id=true AND approved=true) THEN
+  RAISE EXCEPTION 'SMTP_UNAVAILABLE' USING ERRCODE='42501';
+ END IF;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.tenant_email_require_review() FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION platform_private.tenant_email_settings_scope()
 RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
  SELECT platform_private.tenant_email_actor_org() IS NOT NULL
 $$;
-REVOKE ALL ON FUNCTION public.tenant_email_settings_scope() FROM PUBLIC, anon, service_role;
+REVOKE ALL ON FUNCTION platform_private.tenant_email_settings_scope() FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION platform_private.tenant_email_settings_scope() TO authenticated;
+CREATE OR REPLACE FUNCTION public.tenant_email_settings_scope()
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path = '' AS $$
+ SELECT platform_private.tenant_email_settings_scope()
+$$;
+REVOKE ALL ON FUNCTION public.tenant_email_settings_scope() FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_email_settings_scope() TO authenticated;
 
 DROP POLICY IF EXISTS tenant_email_read ON public.communication_tenant_email_settings;
@@ -142,25 +173,33 @@ DROP TRIGGER IF EXISTS tenant_email_audit_immutable ON public.communication_tena
 CREATE TRIGGER tenant_email_audit_immutable BEFORE UPDATE OR DELETE ON public.communication_tenant_email_audit
  FOR EACH ROW EXECUTE FUNCTION platform_private.tenant_email_audit_immutable();
 
-CREATE OR REPLACE FUNCTION public.tenant_email_settings_get()
+CREATE OR REPLACE FUNCTION platform_private.tenant_email_settings_get()
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
-DECLARE v_org uuid; v_row public.communication_tenant_email_settings%ROWTYPE;
+DECLARE v_org uuid; v_version bigint; v_config jsonb; v_credential_configured boolean;
 BEGIN
  v_org:=platform_private.tenant_email_actor_org();
  IF v_org IS NULL THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
- SELECT * INTO v_row FROM public.communication_tenant_email_settings WHERE organization_id=v_org;
- RETURN jsonb_build_object('ok',true,'version',coalesce(v_row.version,0),'config',v_row.config,
- 'credential_configured',coalesce(v_row.credential_configured,false),'state','DRAFT','sender_verified',false,'dispatch_enabled',false);
+ SELECT version,config,credential_configured INTO v_version,v_config,v_credential_configured
+ FROM public.communication_tenant_email_settings WHERE organization_id=v_org;
+ RETURN jsonb_build_object('ok',true,'version',coalesce(v_version,0),'config',v_config,
+ 'credential_configured',coalesce(v_credential_configured,false),'state','DRAFT','sender_verified',false,'dispatch_enabled',false);
 END $$;
-REVOKE ALL ON FUNCTION public.tenant_email_settings_get() FROM PUBLIC, anon, service_role;
+REVOKE ALL ON FUNCTION platform_private.tenant_email_settings_get() FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION platform_private.tenant_email_settings_get() TO authenticated;
+CREATE OR REPLACE FUNCTION public.tenant_email_settings_get()
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path = '' AS $$
+ SELECT platform_private.tenant_email_settings_get()
+$$;
+REVOKE ALL ON FUNCTION public.tenant_email_settings_get() FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_email_settings_get() TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.tenant_email_settings_save(p_expected_version bigint,p_config jsonb,p_password text DEFAULT NULL)
+CREATE OR REPLACE FUNCTION platform_private.tenant_email_settings_save(p_expected_version bigint,p_config jsonb,p_password text DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_org uuid; v_version bigint; v_secret uuid;
 BEGIN
  v_org:=platform_private.tenant_email_actor_org();
  IF v_org IS NULL THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.tenant_email_require_review();
  IF p_expected_version IS NULL OR p_expected_version<0 OR p_expected_version>9007199254740991 THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
  PERFORM platform_private.tenant_email_validate_config(p_config);
  IF p_password IS NOT NULL AND (length(p_password)<1 OR length(p_password)>4096 OR p_password ~ '[[:cntrl:]]') THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023'; END IF;
@@ -168,6 +207,7 @@ BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended(v_org::text,0));
  -- Prevent revoke/inactivation during a queued operation from writing.
  IF platform_private.tenant_email_actor_org() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.tenant_email_require_review();
  SELECT version INTO v_version FROM public.communication_tenant_email_settings WHERE organization_id=v_org FOR UPDATE;
  v_version:=coalesce(v_version,0);
  IF p_expected_version<>v_version THEN RAISE EXCEPTION 'SMTP_CONFLICT' USING ERRCODE='40001'; END IF;
@@ -187,30 +227,25 @@ BEGIN
  credential_configured=true,state='DRAFT',sender_verified=false,dispatch_enabled=false,updated_at=now();
  INSERT INTO public.communication_tenant_email_audit(organization_id,actor_id,version,action)
  VALUES(v_org,auth.uid(),v_version+1,CASE WHEN p_password IS NULL THEN 'draft_saved' ELSE 'credential_rotated' END);
- RETURN public.tenant_email_settings_get();
+ RETURN platform_private.tenant_email_settings_get();
 EXCEPTION
  WHEN SQLSTATE '42501' THEN RAISE EXCEPTION 'SMTP_FORBIDDEN' USING ERRCODE='42501';
  WHEN SQLSTATE '40001' THEN RAISE EXCEPTION 'SMTP_CONFLICT' USING ERRCODE='40001';
  WHEN SQLSTATE '22023' THEN RAISE EXCEPTION 'SMTP_INVALID' USING ERRCODE='22023';
  WHEN OTHERS THEN RAISE EXCEPTION 'SMTP_INTERNAL' USING ERRCODE='P0001';
 END $$;
-REVOKE ALL ON FUNCTION public.tenant_email_settings_save(bigint,jsonb,text) FROM PUBLIC, anon, service_role;
+REVOKE ALL ON FUNCTION platform_private.tenant_email_settings_save(bigint,jsonb,text) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION platform_private.tenant_email_settings_save(bigint,jsonb,text) TO authenticated;
+CREATE OR REPLACE FUNCTION public.tenant_email_settings_save(p_expected_version bigint,p_config jsonb,p_password text DEFAULT NULL)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path = '' AS $$
+ SELECT platform_private.tenant_email_settings_save(p_expected_version,p_config,p_password)
+$$;
+REVOKE ALL ON FUNCTION public.tenant_email_settings_save(bigint,jsonb,text) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.tenant_email_settings_save(bigint,jsonb,text) TO authenticated;
--- Separate persistent server fence: UI/Edge review flags alone cannot authorize
--- direct PostgREST credential submission before telemetry and ACL review.
-CREATE TABLE IF NOT EXISTS platform_private.communication_tenant_email_review_gate (
- id boolean PRIMARY KEY DEFAULT true,
- approved boolean NOT NULL DEFAULT false
-);
-REVOKE ALL ON platform_private.communication_tenant_email_review_gate FROM PUBLIC,anon,authenticated,service_role;
-ALTER TABLE platform_private.communication_tenant_email_review_gate ENABLE ROW LEVEL SECURITY;
-INSERT INTO platform_private.communication_tenant_email_review_gate(id,approved) VALUES(true,false) ON CONFLICT(id) DO NOTHING;
 CREATE OR REPLACE FUNCTION platform_private.tenant_email_review_fence()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
- IF NOT EXISTS(SELECT 1 FROM platform_private.communication_tenant_email_review_gate WHERE id=true AND approved=true) THEN
-  RAISE EXCEPTION 'SMTP_UNAVAILABLE' USING ERRCODE='42501';
- END IF;
+ PERFORM platform_private.tenant_email_require_review();
  RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.tenant_email_review_fence() FROM PUBLIC,anon,authenticated,service_role;
