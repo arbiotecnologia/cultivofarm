@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const singleLine = z.string().max(255).refine(v => !/[\x00-\x1f\x7f]/.test(v), "Não use caracteres de controle.");
+const noControls = (v: string) => [...v].every(c => c.charCodeAt(0) > 31 && c.charCodeAt(0) !== 127);
+const singleLine = z.string().max(255).refine(noControls, "Não use caracteres de controle.");
 export function draftHostAllowed(host: string): boolean {
   return host.length <= 253 && /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(host)
     && !/(^|\.)(localhost|local|internal|lan|home|test|invalid|example|onion)$/.test(host)
@@ -19,7 +20,7 @@ export type SmtpDraft = z.infer<typeof draftSchema>;
 export const saveSchema = z.object({
   expected_version: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
   config: draftSchema,
-  password: z.string().min(1).max(4096).refine(v => !/[\x00-\x1f\x7f]/.test(v)).optional(),
+  password: z.string().min(1).max(4096).refine(noControls).optional(),
 }).strict();
 export const viewSchema = z.object({
   ok: z.literal(true), version: z.number().int().min(0),

@@ -21,13 +21,13 @@ export default function TenantEmailSettings({ scope, transport=tenantSmtpTranspo
   setPassword("");setDraft({...EMPTY_DRAFT});setView(EMPTY_VIEW);setErrors({});setMessage("");setPhase("loading");
   transport.load().then(data=>{if(generation.current!==epoch)return;setView(data);setDraft(data.config ?? {...EMPTY_DRAFT});setPhase("ready");})
    .catch(error=>{if(generation.current!==epoch)return;setMessage(safeSmtpMessage(error instanceof Error ? error.message : undefined));setPhase("blocked");});
-  return ()=>{generation.current++;lock.current=false;};
+  return ()=>{generation.current=epoch+1;lock.current=false;};
  },[scope,transport,reload]);
  const field=(key:keyof SmtpDraft,value:string|number)=>setDraft(prev=>({...prev,[key]:value}));
  const save=async()=>{
   if(lock.current || phase!=="ready")return;
   const parsed=saveSchema.safeParse({expected_version:view.version,config:draft,...(password ? {password}: {})});
-  if(!parsed.success){const next:Record<string,string>={};for(const issue of parsed.error.issues)next[String(issue.path.at(-1))]=issue.path[0]==="password" ? "Credencial inválida." : issue.message;setErrors(next);setPassword("");return;}
+  if(!parsed.success){const next:Record<string,string>={};for(const issue of parsed.error.issues)next[String(issue.path[issue.path.length-1])]=issue.path[0]==="password" ? "Credencial inválida." : issue.message;setErrors(next);setPassword("");return;}
   if(!view.credential_configured && !password){setErrors({password:safeSmtpMessage("SMTP_CREDENTIAL_REQUIRED")});return;}
   lock.current=true;const epoch=generation.current;setPhase("saving");setErrors({});setMessage("");
   // Clear visible credential before asynchronous IO; never put it in a query/cache.
