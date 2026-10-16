@@ -1,3 +1,10 @@
+## Vínculos externos — V0 mínimo (16/10/2026 22:59 UTC)
+- [x] Plano86ad803b revisado; preparar fechamento de leitores históricos antes de gestão. Sem banco/deployEdge/publicação; common true/SQLtrue/audit4 e associações preservados.
+- [x] Evidência EXTERNA: Produtor real preview /configuracoes e /financeiro→/portal; /portal/financeiro título existente SEM valor comercial do principal AR. Separadamente SQLclaims/ROLLBACK accounts_receivable1 própria/0outrosclientes/0outrostenants; não é teste de revogação/cache.
+- [ ] Candidato commercial_campaigns/campanhas_cliente_select e has_active_user_cliente_access; auditar irmãs/ACL/RLS/schema, testes locais e ensaio hospedado reversível não executado.
+- [ ] Corrigir leitor ConsultorTecnico e preparar Edge list-portal-users sem deploy, preservando autorização/tenant; sync/enforce apenas análise separada.
+- [ ] QA focal/lint/scanner/build e relatório factual/diff/rollback; claims hospedadas futuras não certificadas nesta entrega.
+
 ## SMTP F2/F3 — promoção mínima após prova REAL (02:28 UTC)
 - [x] Evidência EXTERNA do auditor: site publicado bb4e2266, sessão Admin AR, Edgev4 JWTtrue; UI retornou prova TLS aprovada, sem credencial/email, com ok/PINNING_PROOF_PASS/dns_validated/ipv4_tls/ipv6_tls/hostname_mismatch_rejected todos true. Screenshot informado pelo auditor, não inspecionado/executado pelo agente.
 - [x] Candidato mínimo: UI TENANT_SMTP_PROOF_PHASE=false, Edge HOSTED_PROOF_ENABLED=false, review/espelho TENANT_PINNING_PROVEN=true. Guards/core/schema/config/senha preservados; homologação KingHost465 somente controle, não hosts arbitrários.
