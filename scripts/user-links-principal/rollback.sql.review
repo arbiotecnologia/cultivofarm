@@ -1,0 +1,51 @@
+-- ROLLBACK CANDIDATO. Restaura a definição live capturada em 16/10/2026
+-- (MD5 50392a57c5908c67c709c4e84f0e932e), byte a byte. Não apaga dados,
+-- não reverte vínculos legítimos, não toca V0/common F2/ledger.
+CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_user uuid;
+  v_principal uuid;
+BEGIN
+  v_user := COALESCE(NEW.user_id, OLD.user_id);
+
+  -- Se inseriu/atualizou marcando principal, desmarca os demais
+  IF TG_OP IN ('INSERT','UPDATE') AND NEW.principal THEN
+    UPDATE public.user_clientes
+       SET principal = false
+     WHERE user_id = v_user
+       AND id <> NEW.id
+       AND principal = true;
+  END IF;
+
+  -- Garante que sempre exista um principal se houver linhas
+  IF NOT EXISTS (
+    SELECT 1 FROM public.user_clientes WHERE user_id = v_user AND principal = true
+  ) THEN
+    UPDATE public.user_clientes
+       SET principal = true
+     WHERE id = (
+       SELECT id FROM public.user_clientes
+        WHERE user_id = v_user
+        ORDER BY created_at ASC LIMIT 1
+     );
+  END IF;
+
+  -- Sincroniza profiles.cliente_id com o principal atual
+  SELECT cliente_id INTO v_principal
+    FROM public.user_clientes
+   WHERE user_id = v_user AND principal = true
+   LIMIT 1;
+
+  UPDATE public.profiles
+     SET cliente_id = v_principal
+   WHERE user_id = v_user
+     AND COALESCE(cliente_id::text,'') IS DISTINCT FROM COALESCE(v_principal::text,'');
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$function$
