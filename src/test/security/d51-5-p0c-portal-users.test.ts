@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
@@ -47,10 +47,20 @@ describe("D51.5 P0-C — isolamento de usuários do portal", () => {
     localStorage.setItem("portal_active_cliente_id", "old");
     localStorage.setItem("portal_active_cliente_id:old-actor", "old-client");
     localStorage.setItem("v0-unrelated", "keep");
-    clearActivePortalContext();
-    expect(localStorage.getItem("portal_active_cliente_id")).toBeNull();
-    expect(localStorage.getItem("portal_active_cliente_id:old-actor")).toBeNull();
-    expect(localStorage.getItem("v0-unrelated")).toBe("keep");
-    localStorage.removeItem("v0-unrelated");
+    // Setup global tem length=0/key=null fixos; simular enumeração real apenas neste teste.
+    const keys = ["portal_active_cliente_id", "portal_active_cliente_id:old-actor", "v0-unrelated"];
+    const oldLength = localStorage.length;
+    const keySpy = vi.spyOn(localStorage, "key").mockImplementation((index) => keys[index] ?? null);
+    Object.defineProperty(localStorage, "length", { value: keys.length, configurable: true });
+    try {
+      clearActivePortalContext();
+      expect(localStorage.getItem("portal_active_cliente_id")).toBeNull();
+      expect(localStorage.getItem("portal_active_cliente_id:old-actor")).toBeNull();
+      expect(localStorage.getItem("v0-unrelated")).toBe("keep");
+    } finally {
+      keySpy.mockRestore();
+      Object.defineProperty(localStorage, "length", { value: oldLength, configurable: true });
+      for (const key of keys) localStorage.removeItem(key);
+    }
   });
 });
