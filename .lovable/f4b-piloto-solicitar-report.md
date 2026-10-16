@@ -8,7 +8,7 @@ ALTER TABLE public.portal_solicitacoes ADD COLUMN IF NOT EXISTS client_uuid uuid
 CREATE UNIQUE INDEX IF NOT EXISTS portal_solicitacoes_author_client_uuid_uniq
   ON public.portal_solicitacoes (user_id, client_uuid) WHERE client_uuid IS NOT NULL;
 ```
-Rollback: `DROP INDEX IF EXISTS public.portal_solicitacoes_author_client_uuid_uniq; ALTER TABLE public.portal_solicitacoes DROP COLUMN IF EXISTS client_uuid;`
+Rollback (corrigido após uso real): NÃO usar `DROP COLUMN`/`DROP INDEX`. A coluna já guarda chaves de idempotência de solicitações reais (ex.: SOL-2026-000003); removê-la apagaria histórico e reabriria duplicidade. Rollback seguro = reverter apenas o código do formulário para não enviar `client_uuid`, preservando coluna, índice, chaves e histórico.
 
 Readback: coluna uuid nullable, índice presente, 0 linhas preenchidas, 9 policies inalteradas, guard `a00_producer_request_mutation_guard` habilitado (UPDATE do Produtor continua bloqueado para qualquer coluna além de `confirmacao_produtor`, incluindo `client_uuid`).
 
