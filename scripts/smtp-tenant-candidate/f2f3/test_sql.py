@@ -75,6 +75,14 @@ SELECT pg_temp.ok('legacy outbox still contained', NOT EXISTS(SELECT 1 FROM plat
   # Two real concurrent connections in disposable PG only. Restore reviewed candidate
   # on the isolated backend, seed fresh B using synthetic Vault; never remote.
   cmd=['psql','-X','-h',str(t),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1']
+  # Entire synthetic B fixture rolls back; no real credentials or hosted calls.
+  fixture=(R/'20261016_smtp_f2f3.sql').read_text()+delta
+  fixture+="BEGIN;UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"+actor(v)+f"SELECT public.tenant_email_settings_save(0,'{cfg}','synthetic-only');DELETE FROM work;INSERT INTO work {claim()};RESET ROLE;SET ROLE service_role;"
+  fixture+=prep.replace(u,v)+';'+finish.replace(u,v)+";RESET ROLE;ROLLBACK;"
+  fixture+=f"SELECT pg_temp.ok('fixture rollback gate false',NOT(SELECT approved FROM platform_private.tenant_smtp_test_gate));SELECT pg_temp.ok('fixture rollback B settings zero',(SELECT count(*) FROM communication_tenant_email_settings WHERE organization_id='{b}')=0);SELECT pg_temp.ok('fixture rollback B receipts zero',(SELECT count(*) FROM platform_private.tenant_smtp_test_receipts WHERE organization_id='{b}')=0);SELECT pg_temp.ok('fixture rollback B Vault refs zero',(SELECT count(*) FROM platform_private.communication_tenant_email_secret_refs WHERE organization_id='{b}')=0);SELECT pg_temp.ok('fixture rollback outbox baseline',(SELECT count(*) FROM comunicacao_outbox)=2);"
+  checked=subprocess.run(cmd,input=fixture,text=True,capture_output=True)
+  print('\n'.join(x for x in checked.stderr.splitlines() if 'PASS' in x or 'ERROR' in x));assert checked.returncode==0,checked.stderr[-2200:]
+  checked=subprocess.run(cmd,input=(R/'rollback_executor_schema_acl.sql').read_text()+(R/'rollback.sql').read_text(),text=True,capture_output=True);assert checked.returncode==0,checked.stderr[-1000:]
   setup=(R/'20261016_smtp_f2f3.sql').read_text()+delta+f"UPDATE platform_private.tenant_smtp_test_gate SET approved=true;"+actor(v)+f"SELECT public.tenant_email_settings_save(0,'{cfg}','synthetic-only');RESET ROLE;"
   z=subprocess.run(cmd,input=setup,text=True,capture_output=True);assert z.returncode==0,z.stderr[-1000:]
   first=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
