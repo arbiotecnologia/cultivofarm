@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, type ZodTypeAny } from 'zod';
 import { draftSchema } from '../_shared/contract.ts';
 import type { ActorClient } from '../handler.ts';
 import type { SmtpProbeDeps } from '../../_shared/comunicacao/smtp-provider-probe.ts';
@@ -7,12 +7,13 @@ import { generateCode, generateSalt, hashCode } from './challenge-code.ts';
 import { sendChallenge, type ChallengeOutcome } from './sender-executor.ts';
 const preparedSchema=z.object({version:z.number().int().positive(),recipient:z.string().email(),config:draftSchema,password:z.string().min(1).max(4096)}).strict();
 type Send=typeof sendChallenge;
-export async function dispatchF4(actor:string,client:ActorClient,service:ActorClient,input:F4Request,deps:SmtpProbeDeps,send:Send=sendChallenge):Promise<F4Result>{
- if(input.op==='status'){const r=await client.rpc('tenant_smtp_f4_status');if(r.error)return {code:mapRpcError(r.error)};return f4ResultSchema.parse({code:'F4_STATUS',status:f4StatusSchema.parse(r.data)});}
+export async function dispatchF4(actor:string,client:ActorClient,service:ActorClient,input:F4Request,deps:SmtpProbeDeps,send:Send=sendChallenge,statusSchema:ZodTypeAny=f4StatusSchema,resultSchema:ZodTypeAny=f4ResultSchema):Promise<F4Result>{
+ if(input.op==='status'){const r=await client.rpc('tenant_smtp_f4_status');if(r.error)return {code:mapRpcError(r.error)};return resultSchema.parse({code:'F4_STATUS',status:statusSchema.parse(r.data)});}
  if(input.op==='activation'){
-  const r=await client.rpc('tenant_smtp_activation_set',{p_version:input.expected_version,p_active:false});
+  // F4a contract only admits false; F4b schema admits true. Server re-proves every precondition.
+  const r=await client.rpc('tenant_smtp_activation_set',{p_version:input.expected_version,p_active:(input as {active:boolean}).active===true});
   if(r.error)return {code:mapRpcError(r.error)};
-  return f4ResultSchema.parse({code:'F4_STATUS',status:f4StatusSchema.parse(r.data)});
+  return resultSchema.parse({code:'F4_STATUS',status:statusSchema.parse(r.data)});
  }
  if(input.op==='confirm'){
   // Code travels only in this POST body → RPC arg; never URL/query/log. Attempts persisted server-side.
