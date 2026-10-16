@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { clearActivePortalContext } from "@/lib/activePortalContext";
 
 const ROOT = resolve(__dirname, "../../..");
 const edge = readFileSync(resolve(ROOT, "supabase/functions/list-portal-users/index.ts"), "utf8");
 const ui = readFileSync(resolve(ROOT, "src/components/clientes/AcessoPortalTab.tsx"), "utf8");
 const auth = readFileSync(resolve(ROOT, "src/hooks/useAuth.tsx"), "utf8");
-const portalContext = readFileSync(resolve(ROOT, "src/lib/activePortalContext.ts"), "utf8");
 
 describe("D51.5 P0-C — isolamento de usuários do portal", () => {
   it("valida JWT, organização ativa e papel antes do acesso privilegiado", () => {
@@ -44,6 +44,13 @@ describe("D51.5 P0-C — isolamento de usuários do portal", () => {
     expect(ui).toContain("if (!current) return");
     expect(auth).toMatch(/if \(identityChanged \|\| authorizationChanged \|\| !nextUserId\) \{[\s\S]*?queryClient\.clear\(\);/);
     expect(auth).toMatch(/const signOut = async \(\) => \{[\s\S]*?queryClient\.clear\(\);/);
-    expect(portalContext).toContain('localStorage.removeItem(PORTAL_CLIENT_STORAGE_KEY)');
+    localStorage.setItem("portal_active_cliente_id", "old");
+    localStorage.setItem("portal_active_cliente_id:old-actor", "old-client");
+    localStorage.setItem("v0-unrelated", "keep");
+    clearActivePortalContext();
+    expect(localStorage.getItem("portal_active_cliente_id")).toBeNull();
+    expect(localStorage.getItem("portal_active_cliente_id:old-actor")).toBeNull();
+    expect(localStorage.getItem("v0-unrelated")).toBe("keep");
+    localStorage.removeItem("v0-unrelated");
   });
 });
