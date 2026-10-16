@@ -22,11 +22,14 @@ export interface PinnedRuntime {
   tls(socket: ProbeConnection, hostname: string): Promise<ProbeConnection>;
 }
 export function completeWrites(connection: ProbeConnection): ProbeConnection {
+  let closed=false;
   return {
-    read:buffer=>connection.read(buffer), close:()=>connection.close(),
+    read:buffer=>{if(closed)throw new Error('smtp_test_failed');return connection.read(buffer);},
+    close:()=>{closed=true;connection.close();},
     write:async bytes=>{
       let offset=0;
       while(offset<bytes.length){
+        if(closed)throw new Error('smtp_test_failed');
         const count=await connection.write(bytes.subarray(offset));
         if(!Number.isInteger(count) || count<=0 || count>bytes.length-offset)throw new Error('smtp_test_failed');
         offset+=count;

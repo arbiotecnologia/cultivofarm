@@ -18,11 +18,11 @@ export async function dispatchTest(actor:string,client:ActorClient,service:Actor
  const prepared=await service.rpc('tenant_smtp_test_prepare',args);if(prepared.error)throw new Error('SMTP_INTERNAL');
  const job=preparedSchema.parse(prepared.data);
  // No cache/global runtime/fallback. Secret only in invocation memory.
- const result=await executeTest({mode:job.mode,version:job.version,recipient:job.recipient,env:{
+ let result:TestResult;
+ try{result=await executeTest({mode:job.mode,version:job.version,recipient:job.recipient,env:{
   DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,
   SMTP_HOST:job.config.host,SMTP_PORT:String(job.config.port),SMTP_USER:job.config.username,SMTP_PASSWORD:job.password,SMTP_FROM:job.config.from_email,
- }},deps);
- job.password='';
+ }},deps);}finally{job.password='';}
  const finished=await service.rpc('tenant_smtp_test_finish',{...args,p_code:result.code});
  if(finished.error)throw new Error('SMTP_INTERNAL'); // uncertain ledger: never retry transport
  return testResultSchema.parse(finished.data);

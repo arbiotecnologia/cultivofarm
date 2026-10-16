@@ -3,6 +3,7 @@ import { testRequestSchema } from '../../../scripts/smtp-tenant-candidate/f2f3/c
 import { createTestHandler, type TestDeps } from '../../../scripts/smtp-tenant-candidate/f2f3/handler';
 import { publicAddress,pinnedDeps,completeWrites } from '../../../scripts/smtp-tenant-candidate/f2f3/pinned-transport';
 import { executeTest } from '../../../scripts/smtp-tenant-candidate/f2f3/executor';
+import { dispatchTest } from '../../../scripts/smtp-tenant-candidate/f2f3/dispatch';
 import type { ProbeConnection } from '../../../supabase/functions/_shared/comunicacao/smtp-provider-probe';
 const input={mode:'connection' as const,expected_version:1,idempotency_key:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};
 const result={mode:'connection' as const,version:1,code:'smtp_connection_ok' as const,dispatch_enabled:false as const,sender_verified:false as const};
@@ -31,6 +32,24 @@ describe('SSRF and partial writes',()=>{
  it('unproven runtime never resolves',async()=>{const resolve=vi.fn();const d=pinnedDeps({proven:false,resolve,tcp:vi.fn(),tls:vi.fn()});await expect(d.connectTls('provider.test',465)).rejects.toThrow('SMTP_UNAVAILABLE');expect(resolve).not.toHaveBeenCalled();});
  it('completes short writes',async()=>{const s=socket();s.write=vi.fn(async(b:Uint8Array)=>Math.min(2,b.length));expect(await completeWrites(s).write(new Uint8Array(7))).toBe(7);expect(s.write).toHaveBeenCalledTimes(4);});
  it('zero write fails instead of pretending success',async()=>{const s=socket();s.write=vi.fn(async()=>0);await expect(completeWrites(s).write(new Uint8Array(3))).rejects.toThrow();});
+ it('closed socket cannot continue partial writes',async()=>{const s=socket();const complete=completeWrites(s);s.write=vi.fn(async()=>{complete.close();return 1;});await expect(complete.write(new Uint8Array(3))).rejects.toThrow();expect(s.write).toHaveBeenCalledTimes(1);});
+});
+describe('actor claim -> service executor -> sanitized finish',()=>{
+ const jobId='11111111-1111-4111-8111-111111111111';const fence='22222222-2222-4222-8222-222222222222';
+ it('completed replay never reads credential or opens socket',async()=>{
+  const actor=deps().client('synthetic');actor.rpc=vi.fn(async()=>({data:{replay:true,...result},error:null}));const service=deps().client('synthetic');service.rpc=vi.fn();const connectTls=vi.fn();
+  expect(await dispatchTest('actor',actor,service,input,{connectTls,connect:vi.fn(),startTls:vi.fn()})).toEqual(result);
+  expect(service.rpc).not.toHaveBeenCalled();expect(connectTls).not.toHaveBeenCalled();
+ });
+ it('prepare denied never contacts SMTP',async()=>{
+  const actor=deps().client('synthetic');actor.rpc=vi.fn(async()=>({data:{replay:false,job_id:jobId,fence},error:null}));const service=deps().client('synthetic');service.rpc=vi.fn(async()=>({data:null,error:{message:'unsafe error'}}));const connectTls=vi.fn();
+  await expect(dispatchTest('actor',actor,service,input,{connectTls,connect:vi.fn(),startTls:vi.fn()})).rejects.toThrow('SMTP_INTERNAL');expect(connectTls).not.toHaveBeenCalled();
+ });
+ it('finishes one authorized job without returning secret',async()=>{
+  const actor=deps().client('synthetic');actor.rpc=vi.fn(async()=>({data:{replay:false,job_id:jobId,fence},error:null}));const service=deps().client('synthetic');const rpc=vi.fn().mockResolvedValueOnce({data:{mode:'connection',version:1,recipient:'admin@provider.com',config:{host:'smtp.provider.com',port:465,tls_mode:'implicit_tls',username:'synthetic',from_email:'sender@provider.com',reply_to:'',from_name:'Cultivo Farm'},password:'synthetic-only'},error:null}).mockResolvedValueOnce({data:result,error:null});service.rpc=rpc;
+  const replies=['220 ready\r\n','250 AUTH PLAIN\r\n','235 ok\r\n'];const socket:ProbeConnection={read:async b=>{const line=replies.shift();if(!line)return null;const bytes=new TextEncoder().encode(line);b.set(bytes);return bytes.length;},write:async b=>b.length,close:vi.fn()};
+  const actual=await dispatchTest('actor',actor,service,input,{connectTls:async()=>socket,connect:vi.fn(),startTls:vi.fn()});expect(actual).toEqual(result);expect(rpc).toHaveBeenLastCalledWith('tenant_smtp_test_finish',{p_job:jobId,p_fence:fence,p_actor:'actor',p_code:'smtp_connection_ok'});expect(JSON.stringify(actual)).not.toContain('synthetic-only');
+ });
 });
 describe('actual shared SMTP core via synthetic socket',()=>{
  const env={DELIVERY_ENABLED:false,EMAIL_ENABLED:false,WHATSAPP_ENABLED:false,INAPP_ENABLED:false,SMTP_HOST:'smtp.provider.com',SMTP_PORT:'465',SMTP_USER:'synthetic',SMTP_PASSWORD:'synthetic-only',SMTP_FROM:'sender@provider.com'};
