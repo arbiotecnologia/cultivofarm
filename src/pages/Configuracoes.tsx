@@ -41,7 +41,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { RPC_VINCULOS_USUARIOS, parseVinculos, tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
+import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
+import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -179,12 +180,7 @@ export default function Configuracoes() {
     queryKey: ["admin-user-links", profile?.organization_id, user?.id, pageUserIds],
     enabled: isAdmin && pageUserIds.length > 0,
     retry: false,
-    queryFn: async ({ signal }) => {
-      const rpc = supabase.rpc as unknown as (fn: string, args: { p_user_ids: string[] }) => { abortSignal: (s: AbortSignal) => Promise<{ data: unknown; error: unknown }> };
-      const { data, error } = await rpc(RPC_VINCULOS_USUARIOS, { p_user_ids: pageUserIds }).abortSignal(signal);
-      if (error) throw new Error("Não foi possível carregar os vínculos.");
-      return parseVinculos(data);
-    },
+    queryFn: ({ signal }) => carregarVinculosUsuarios(pageUserIds, signal),
   });
   const vinculoDe = (u: LinhaUsuario): EstadoVinculo => estadoVinculo(tipoAcessoDoUsuario(u.roles), vinculos, u.user_id);
   const renderVinculo = (u: LinhaUsuario, detalhado = false) => {
