@@ -2,8 +2,9 @@ import {afterEach,describe,it,expect,vi} from "vitest";
 import {draftSchema,EMPTY_VIEW,saveSchema,draftHostAllowed} from "../../../scripts/smtp-tenant-candidate/_shared/contract";
 import {createTenantSmtpHandler, type ActorClient} from "../../../scripts/smtp-tenant-candidate/handler";
 import {TENANT_SMTP_REVIEWED,tenantSmtpTransport} from "@/lib/configuracoes/tenantSmtp";
-import {supabase} from "@/integrations/supabase/client";
-afterEach(()=>vi.restoreAllMocks());
+const {invoke}=vi.hoisted(()=>({invoke:vi.fn()}));
+vi.mock("@/integrations/supabase/client",()=>({supabase:{functions:{invoke}}}));
+afterEach(()=>{vi.restoreAllMocks();invoke.mockReset();});
 const config={host:"smtp.provider.com",port:465,tls_mode:"implicit_tls",username:"user",from_email:"sender@provider.com",reply_to:"",from_name:"Cultivo Farm"};
 const password="test-only-secret-sentinel";
 async function run(options:{scope?:boolean;scopeError?:boolean;jwt?:boolean;reviewed?:boolean;url?:string;rpcError?:string;badView?:boolean;method?:string;body?:unknown}={}) {
@@ -34,13 +35,13 @@ describe("SMTP-T1 contract and real candidate handler — mocked actor RPC, zero
  it("oversized body stops before save",async()=>{const r=await run({body:{expected_version:0,config,password:"a".repeat(40000)}});expect(r.res.status).toBe(400);expect(r.rpc).toHaveBeenCalledTimes(1);});
  it.each([{reviewed:false},{url:"https://invalid.invalid"}])("closed installation gate %j",async options=>{const r=await run(options);expect(r.res.status).toBe(503);expect(r.factory).not.toHaveBeenCalled();});
  it("production draft transport is enabled and invokes only existing GET/PUT endpoint",async()=>{
-  const invoke=vi.spyOn(supabase.functions,"invoke").mockResolvedValue({data:EMPTY_VIEW,error:null});
+  invoke.mockResolvedValue({data:EMPTY_VIEW,error:null});
   expect(TENANT_SMTP_REVIEWED).toBe(true);await expect(tenantSmtpTransport.load()).resolves.toEqual(EMPTY_VIEW);
   await expect(tenantSmtpTransport.save({expected_version:0,config,password})).resolves.toEqual(EMPTY_VIEW);
   expect(invoke.mock.calls).toEqual([["tenant-email-settings",{method:"GET",body:undefined}],["tenant-email-settings",{method:"PUT",body:{expected_version:0,config,password}}]]);
  });
  it.each([401,403,409,400,500])("enabled production transport keeps safe failure %s and no retry",async status=>{
-  const invoke=vi.spyOn(supabase.functions,"invoke").mockResolvedValue({data:null,error:{context:{status},message:password}} as never);
+  invoke.mockResolvedValue({data:null,error:{context:{status},message:password}});
   await expect(tenantSmtpTransport.save({expected_version:0,config,password})).rejects.toThrow(({401:"SMTP_UNAUTHORIZED",403:"SMTP_FORBIDDEN",409:"SMTP_CONFLICT",400:"SMTP_INVALID",500:"SMTP_INTERNAL"})[status]);expect(invoke).toHaveBeenCalledOnce();
  });
  it("draft still accepts 587 as metadata without proving runtime support",()=>expect(draftSchema.safeParse({...config,port:587}).success).toBe(true));
