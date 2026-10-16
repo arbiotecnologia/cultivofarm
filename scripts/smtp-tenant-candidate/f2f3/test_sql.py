@@ -55,6 +55,9 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
   sql+=actor(v)+err('other tenant CAS no data',claim(),'40001')+'RESET ROLE;'
   sql+=f"UPDATE auth.users SET email_confirmed_at=NULL WHERE id='{u}';"+actor(u)+err('unconfirmed admin denied',claim(),'42501')+'RESET ROLE;'
   sql+="SELECT pg_temp.ok('DRAFT unchanged',(SELECT version=1 AND NOT dispatch_enabled AND NOT sender_verified FROM communication_tenant_email_settings));SELECT pg_temp.ok('private tickets consumed',(SELECT count(*) FROM platform_private.tenant_smtp_test_insert_tickets)=0);"
+  sql+="""
+SELECT pg_temp.ok('legacy outbox still contained', NOT EXISTS(SELECT 1 FROM platform_private.tenant_smtp_test_insert_tickets));
+"""
   sql+=(R/'rollback.sql').read_text()
   sql+="SELECT pg_temp.ok('rollback gate closed',NOT(SELECT approved FROM platform_private.tenant_smtp_test_gate));SELECT pg_temp.ok('rollback preserves outbox',(SELECT count(*) FROM comunicacao_outbox)=2);SELECT pg_temp.ok('rollback revokes client',NOT has_function_privilege('authenticated','public.tenant_smtp_test_claim(text,bigint,uuid,boolean)','EXECUTE'));"
   run=subprocess.run(['psql','-X','-h',str(t),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1'],input=sql,text=True,capture_output=True)
