@@ -34,6 +34,7 @@ const ACOES = [
   ["reactivate_manual", "Reativar assinatura"],
   ["cancel", "Cancelar"],
   ["expire_trial", "Expirar período de teste vencido"],
+  ["activate_subscription", "Regularizar assinatura (não registra pagamento)"],
 ] as const;
 type AcaoAssinatura = (typeof ACOES)[number][0];
 
@@ -57,7 +58,9 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const [versao, setVersao] = useState("");
   const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
-  const assinatura = assinaturas.data?.find((s) => s.organization_id === org && s.status !== "CANCELLED" && s.status !== "EXPIRED");
+  const [confirmado, setConfirmado] = useState(false);
+  const assinatura = assinaturas.data?.find((s) => s.organization_id === org && s.status !== "CANCELLED" && s.status !== "EXPIRED")
+    ?? assinaturas.data?.find((s) => s.organization_id === org && s.status === "EXPIRED" && s.trial_ends_at);
   const atual = versoes.data?.find((v) => v.id === assinatura?.plan_version_id);
   const trialUtilizado = assinaturas.data?.some((s) => s.organization_id === org && s.status === "TRIAL") || historico.data?.some((h) => h.organization_id === org && (h.action === "start_trial" || h.previous_status === "TRIAL" || h.new_status === "TRIAL"));
   const permitidas = assinatura
@@ -65,9 +68,12 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
     : assinaturas.isSuccess && historico.isSuccess && (assinaturas.data?.length ?? 0) < 200 && (historico.data?.length ?? 0) < 200 && !trialUtilizado ? ["start_trial" as const] : [];
   const mesmaVersao = acao === "change_plan" && !!versao && versao === assinatura?.plan_version_id;
   const busy = alterar.isPending || refreshing;
-  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo);
+  const regularizar = acao === "activate_subscription";
+  const trialVencido = assinatura?.status === "TRIAL" && !!assinatura.trial_ends_at && new Date(assinatura.trial_ends_at).getTime() <= Date.now();
+  const situacaoEfetiva = trialVencido ? "Teste vencido" : assinatura ? SITUACOES[assinatura.status] ?? "Situação indisponível" : "";
+  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo) || (regularizar && !confirmado);
   useEffect(() => {
-    setVersao(""); setMotivo(""); setRefreshError(false);
+    setVersao(""); setMotivo(""); setRefreshError(false); setConfirmado(false);
   }, [org]);
   useEffect(() => {
     if (!permitidas.includes(acao) && permitidas[0]) setAcao(permitidas[0]);
@@ -103,9 +109,10 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
         onSuccess: () => {
           const suspensa = acao === "change_plan" && assinatura?.status === "SUSPENDED";
           const plano = versoes.data?.find((v) => v.id === versao);
-          toast.success(suspensa ? `${plano?.name_snapshot ?? "Plano"} · v${plano?.version_number ?? ""} aplicado. A assinatura continua suspensa. Selecione Reativar assinatura para liberar o acesso.` : "Ação aplicada e registrada no histórico.");
+          toast.success(suspensa ? `${plano?.name_snapshot ?? "Plano"} · v${plano?.version_number ?? ""} aplicado. A assinatura continua suspensa. Selecione Reativar assinatura para liberar o acesso.` : acao === "activate_subscription" ? "Assinatura regularizada para Ativa e registrada no histórico. Nenhum pagamento foi registrado." : "Ação aplicada e registrada no histórico.");
           setMotivo("");
           setVersao("");
+          setConfirmado(false);
           atualizarResumo();
         },
         onError: (e) => { submitting.current = false; toast.error(mensagemErroAssinatura(e)); },
@@ -127,9 +134,9 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
           </SelectContent>
         </Select>
         {org && <div role="status" aria-live="polite" className="text-sm sm:col-span-2 break-words">
-          {refreshing ? "Atualizando assinatura e histórico…" : refreshError ? "Ação registrada, mas não foi possível atualizar o resumo. Atualize a consulta antes de nova ação." : assinaturas.isError ? "Não foi possível consultar a assinatura." : !assinaturas.isSuccess ? "Carregando assinatura…" : assinatura ? `${atual ? `${atual.name_snapshot} · v${atual.version_number}` : assinatura.plan_version_id ? "Versão aplicada indisponível" : "Plano legado sem versão"} — ${SITUACOES[assinatura.status] ?? "Situação indisponível"}` : "Empresa sem assinatura."}
+          {refreshing ? "Atualizando assinatura e histórico…" : refreshError ? "Ação registrada, mas não foi possível atualizar o resumo. Atualize a consulta antes de nova ação." : assinaturas.isError ? "Não foi possível consultar a assinatura." : !assinaturas.isSuccess ? "Carregando assinatura…" : assinatura ? `${atual ? `${atual.name_snapshot} · v${atual.version_number}` : assinatura.plan_version_id ? "Versão aplicada indisponível" : "Plano legado sem versão"} — ${situacaoEfetiva}` : "Empresa sem assinatura."}
         </div>}
-        <Select value={permitidas.includes(acao) ? acao : ""} disabled={busy || !assinaturas.isSuccess || !permitidas.length || refreshError} onValueChange={(value) => { setAcao(value as AcaoAssinatura); setVersao(""); }}>
+        <Select value={permitidas.includes(acao) ? acao : ""} disabled={busy || !assinaturas.isSuccess || !permitidas.length || refreshError} onValueChange={(value) => { setAcao(value as AcaoAssinatura); setVersao(""); setConfirmado(false); }}>
           <SelectTrigger aria-label="Ação" className="h-auto min-h-11 [&>span]:whitespace-normal [&>span]:text-left"><SelectValue placeholder="Nenhuma ação disponível" /></SelectTrigger>
           <SelectContent>
             {ACOES.filter(([value]) => permitidas.includes(value)).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
@@ -148,10 +155,18 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
         <div className="sm:col-span-2">
           {exigeVersao && versoes.isSuccess && versoesVigentes.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Nenhuma versão comercial vigente. A ação permanece bloqueada.</p>}
           {acao === "change_plan" && assinatura?.status === "SUSPENDED" && <p className="mb-3 text-sm" role="note">O plano será atualizado, mas a assinatura continuará suspensa. Para liberar o acesso, use Reativar assinatura.</p>}
+          {regularizar && assinatura && permitidas.includes(acao) && <div className="mb-3 space-y-2 rounded-md border p-3 text-sm" role="note">
+            <p><strong>Regularização de assinatura.</strong> A situação passa de {situacaoEfetiva} para <strong>Ativa</strong>, mantendo o plano atual{atual ? ` (${atual.name_snapshot} · v${atual.version_number}${atual.billing_cycle ? `, ciclo ${atual.billing_cycle}` : ""})` : ""} e o histórico do período de teste.</p>
+            <p>Esta ação <strong>não registra pagamento nem quita cobrança</strong>, não prorroga o teste e não implanta cobrança ou expiração automática.</p>
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={confirmado} disabled={busy} onChange={(e) => setConfirmado(e.target.checked)} aria-label="Confirmar regularização" className="mt-1" />
+              <span>Confirmo a conversão para assinatura ativa, ciente de que nenhum pagamento é registrado.</span>
+            </label>
+          </div>}
           {mesmaVersao && <p role="status" className="mb-3 text-sm">Este plano já está aplicado nesta empresa.</p>}
           {refreshError && <Button variant="outline" onClick={atualizarResumo} disabled={busy} className="mb-3">Atualizar consulta</Button>}
           <Button disabled={bloqueada || (exigeVersao && !versao) || busy} onClick={enviar}>
-            {refreshing ? "Atualizando resumo…" : alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : "Aplicar ação"}
+            {refreshing ? "Atualizando resumo…" : alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : regularizar ? "Regularizar assinatura" : "Aplicar ação"}
           </Button>
           <p role="status" aria-live="polite" className="mt-2 text-sm text-muted-foreground">
             {alterar.isPending ? (alterar.verifying ? "Verificando resultado…" : "Aplicando…") : alterar.isError ? mensagemErroAssinatura(alterar.error) : ""}

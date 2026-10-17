@@ -66,12 +66,12 @@ describe("Gestão de assinatura: plano não reativa", () => {
     ["SUSPENDED", ["reactivate_manual", "cancel", "change_plan"]],
     ["ACTIVE", ["change_plan", "mark_past_due", "suspend", "cancel"]],
     ["PAST_DUE", ["change_plan", "suspend", "cancel"]],
-    ["TRIAL", ["change_plan", "cancel", "expire_trial"]],
-    ["CANCELLED", []], ["EXPIRED", []],
+    ["TRIAL", ["activate_subscription", "change_plan", "cancel", "expire_trial"]],
+    ["CANCELLED", []], ["EXPIRED", ["activate_subscription"]],
   ])("matriz UX %s", (status, expected) => expect(acoesAssinatura(status, "2020-01-01")).toEqual(expected));
   it("não permite expirar teste vigente ou sem prazo", () => {
-    expect(acoesAssinatura("TRIAL", "2099-01-01")).toEqual(["change_plan", "cancel"]);
-    expect(acoesAssinatura("TRIAL", null)).toEqual(["change_plan", "cancel"]);
+    expect(acoesAssinatura("TRIAL", "2099-01-01")).toEqual(["activate_subscription", "change_plan", "cancel"]);
+    expect(acoesAssinatura("TRIAL", null)).toEqual(["activate_subscription", "change_plan", "cancel"]);
   });
   it("legada permite apenas regularizar plano", () => {
     mocks.version = null; render(<AlterarAssinaturaCard organizationIdInicial="org" />);

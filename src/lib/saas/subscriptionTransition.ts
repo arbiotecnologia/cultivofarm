@@ -1,6 +1,6 @@
 export interface SubscriptionAction {
   organizationId: string;
-  action: "start_trial" | "change_plan" | "mark_past_due" | "suspend" | "reactivate_manual" | "cancel" | "expire_trial";
+  action: "start_trial" | "change_plan" | "mark_past_due" | "suspend" | "reactivate_manual" | "cancel" | "expire_trial" | "activate_subscription";
   planVersionId: string | null;
   reason: string;
 }
@@ -11,7 +11,9 @@ export function acoesAssinatura(status: string | undefined, trialEndsAt: string 
     case "SUSPENDED": return ["reactivate_manual", "cancel", "change_plan"];
     case "ACTIVE": return ["change_plan", "mark_past_due", "suspend", "cancel"];
     case "PAST_DUE": return ["change_plan", "suspend", "cancel"];
-    case "TRIAL": return ["change_plan", "cancel", ...(trialEndsAt && new Date(trialEndsAt).getTime() <= now ? ["expire_trial" as const] : [])];
+    case "TRIAL": return ["activate_subscription", "change_plan", "cancel", ...(trialEndsAt && new Date(trialEndsAt).getTime() <= now ? ["expire_trial" as const] : [])];
+    // EXPIRED só é elegível quando decorrente de trial; o servidor valida a origem.
+    case "EXPIRED": return ["activate_subscription"];
     default: return [];
   }
 }
