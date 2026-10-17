@@ -82,7 +82,7 @@ try:
  # fingerprint read of tenant B completes WITHOUT waiting (no global lock)
  # and returns unchanged.
  import time
- fp_b_before=run("SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',false);") # noop guard
+ stamp_b_before=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
  writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
  writer.stdin.write("BEGIN;UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';SELECT pg_sleep(0.6);ROLLBACK;");writer.stdin.close()
  time.sleep(0.15)
