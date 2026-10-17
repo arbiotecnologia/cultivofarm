@@ -254,16 +254,22 @@ try:
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C1)
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C1)
  # ---- 17) empate created_at: desempate determinístico por id ----
+ # Com o índice parcial, marcar dois principais no mesmo comando nega 23505;
+ # o empate é exercitado na ELEIÇÃO automática (nenhum marcado, dois vigentes).
  TIE='2026-01-01 00:00:00+00'
  run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{NEST}'"))
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{NEST}','{C3}',false,'{TIE}')"))
  run(admin(f"UPDATE public.user_clientes SET created_at='{TIE}' WHERE user_id='{NEST}'"))
- run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}')"))
+ # DML neutra dispara o trigger; passo 3 elege o determinístico
+ run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '2 hours' WHERE user_id='{NEST}'"))
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal",'1')
  # vencedor deve ser exatamente o determinístico (created_at ASC, id ASC)
  tie=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
  expect=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}') ORDER BY created_at ASC, id ASC LIMIT 1")
  assert tie==expect,(tie,expect);checks+=1
+ # INSERT direto de segundo principal também nega 23505
+ err=runerr(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal) VALUES ('{NEST}','{C4}',true)"))
+ assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
  # ---- 18) expiração temporal SEM DML: nenhum trigger dispara com a passagem do
  # tempo (por desenho); leituras passam pelo resolver canônico, que filtra
  # valid_until. Aqui provamos que o predicado de vigência exclui o expirado e
