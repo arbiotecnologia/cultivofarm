@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { Blob as NodeBlob } from "node:buffer";
 import ts from "typescript";
 
 function reviewModule(path: string): Record<string, (...args: unknown[]) => unknown> {
@@ -52,7 +53,7 @@ describe("v6 binary handler — actual candidate helper with simulated transport
   });
   it("serves authenticated bytes after second resource authorization", async () => {
     const auth = vi.fn().mockResolvedValue(true);
-    const response = await serve(auth, async () => ({ data: new Blob(["pdf"]), error: null }));
+    const response = await serve(auth, async () => ({ data: new NodeBlob(["pdf"]), error: null }));
     expect(auth).toHaveBeenCalledTimes(2); expect(await response.text()).toBe("pdf");
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
@@ -73,7 +74,7 @@ describe("v6 binary handler — actual candidate helper with simulated transport
     vi.useFakeTimers();
     try {
       let resolve: (value: unknown) => void = () => {};
-      const download = vi.fn(() => new Promise((done) => { resolve = done; }));
+      const download = vi.fn((_signal: AbortSignal) => new Promise((done) => { resolve = done; }));
       const pending = serve(async () => true, download);
       await vi.advanceTimersByTimeAsync(15000);
       const response = await pending; expect(response.status).toBe(504);

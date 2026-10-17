@@ -93,6 +93,7 @@ try:
  # Actual captured Storage operation helpers; minimal object RLS transport.
  run((HERE/'live-storage.sql.review').read_text())
  run('''CREATE TABLE storage.objects(bucket_id text,name text,tenant text);
+ GRANT USAGE ON SCHEMA storage TO service_role;
  ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
  GRANT SELECT ON storage.objects TO authenticated,anon,service_role;
  CREATE POLICY fixture_tenant_read ON storage.objects FOR SELECT TO authenticated USING (tenant=current_setting('fixture.tenant',true));
