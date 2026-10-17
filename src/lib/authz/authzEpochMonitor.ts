@@ -129,7 +129,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
 
     try {
       const result = await deps.fetcher();
-      if (state === "stopped" || generation !== myGen) return; // resposta antiga
+      if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return; // resposta antiga
       if (deps.now() >= leaseUntil) { expire("timeout"); return; } // atrasada
       if (!result.eligible || !result.fingerprint) { expire("ineligible"); return; }
 
@@ -140,7 +140,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       if (changed) deps.onEpochChange(result);
       schedulePoll();
     } catch {
-      if (state === "stopped" || generation !== myGen) return;
+      if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return;
       expire("error");
     }
   };

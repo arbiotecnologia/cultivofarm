@@ -1269,3 +1269,9 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Testes: 15/15 monitor + 10/10 integração AuthProvider+boundary + 3/3 documentos + 31/31 guards multiportal; src/test/config 477/479 (2 falhas pré-existentes de imports legados, não relacionadas); tsgo 0; lint novos 0; build OK; scanner OK; diff-check limpo.
 - [ ] Revisão independente; ensaio hosted BEGIN/ROLLBACK do RPC pelo auditor; gate segue FALSE e só abre após migration aplicada e revisada.
 - [ ] Próximo recorte: anexos/signed URLs; troca de principal sem violar uq_user_clientes_principal; gestão de associações com gates fechados.
+
+## Regularização de assinatura (candidata, não aplicada)
+- Candidato SQL em scripts/subscription-regularization/ (candidate.sql.review, rollback, baseline): ação activate_subscription somente Superadmin; TRIAL vigente/vencido e EXPIRED de trial → ACTIVE; preserva started_at/trial_ends_at/cancel_at; idempotência vinculada org+ação+payload (motivo/versão); lock empresa+assinatura; sem pagamento/cobrança.
+- Harness PostgreSQL local: 19/19 checks PASS (auth, transições, replay, payload adulterado, concorrência, guard DML).
+- UI: botão "Regularizar assinatura" com confirmação explícita, declaração "não registra pagamento nem quita cobrança", situação "Teste vencido". 796/796 testes SaaS PASS; tsc 0; lint focal 0; build OK.
+- PENDENTE: revisão independente antes de aplicar SQL; AR Bio NÃO convertida; sem publicação. Cache de autorização segue gate false.

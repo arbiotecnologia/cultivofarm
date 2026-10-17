@@ -385,6 +385,8 @@ export function mensagemErroAssinatura(e: unknown): string {
   if (msg.includes("trial exige")) return "O teste só pode começar em empresa sem assinatura em andamento.";
   if (msg.includes("assinatura corrente inexistente")) return "Esta empresa não tem assinatura em andamento.";
   if (msg.includes("transição inválida")) return "Esta ação não é permitida na situação atual da assinatura.";
+  if (msg.includes("sem versão comercial")) return "Esta assinatura não tem versão comercial. Regularize a versão com “Alterar plano” antes de ativar.";
+  if (msg.includes("correlação já utilizada")) return "Esta tentativa já foi usada em outra operação. Recarregue e confira o histórico antes de tentar de novo.";
   if (msg.includes("empresa inexistente")) return "Empresa não encontrada. Recarregue a página.";
   return "Não foi possível concluir a operação. Recarregue e confira antes de tentar de novo.";
 }
