@@ -445,8 +445,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    !user ||
-    (!loading && (!isExternalUser || authzState === "valid"));
+    (!!user && !loading && (!isExternalUser || authzState === "valid"));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     !isExternalUser ||
