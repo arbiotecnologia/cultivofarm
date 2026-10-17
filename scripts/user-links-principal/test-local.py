@@ -167,11 +167,17 @@ try:
   WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"""))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",C2)
- # ---- 4) multirow: UPDATE principal=true em DUAS linhas num só comando ----
+ # ---- 4) índice live uq_user_clientes_principal: UPDATE principal=true em DUAS
+ # linhas num só comando NEGA 23505 (corrige alegação anterior de PASS) ----
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
- run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
+ err=runerr(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
+ assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
+ # caminho válido: marcar um de cada vez; o sync rebaixa o anterior
+ run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'1')
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1) # created_at mais antigo vence
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
+ run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1)
  # ---- 5) INSERT multirow num só comando ----
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{PROD2}','{C2}',false,now()-interval '1 day'),('{PROD2}','{C3}',false,now())"))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD2}' AND principal",C2)
@@ -205,7 +211,8 @@ try:
  checks+=1
  # ---- 11) concorrência: duas conexões trocando principal em loop ----
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval '1 hour' WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
- swap=f"UPDATE public.user_clientes SET principal=(cliente_id='{{C}}') WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}');"
+ # troca em DOIS statements (índice parcial nega true simultâneo no mesmo comando)
+ swap=f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal;UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{{C}}';"
  body=''.join("BEGIN;SET LOCAL ROLE service_role;"+swap.replace('{C}',C1 if i%2 else C2)+"COMMIT;" for i in range(20))
  procs=[subprocess.Popen(base[:-1],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True) for _ in range(2)]
  for p in procs: p.stdin.write(body); p.stdin.close()
