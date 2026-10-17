@@ -76,3 +76,116 @@ Build OK; `git diff --check` limpo.
   criado; abrir o gate sem a função instalada faz o fetcher falhar e expirar
   (fail-closed, oculta dados) — comportamento seguro, mas o gate só deve abrir
   após a migration ser aplicada e revisada.
+
+## 5. Revisão c787cd9e — correções e integração completa (17/10/2026)
+
+Revisão independente NÃO aprovou a versão isolada; esta rodada completou a
+foundation pedida. Nada foi ativado/aplicado/publicado.
+
+### 5.1 Correções independentes incorporadas
+
+- Migration `20261017000806 client_portal_branding_deny_future_links`
+  arquivada em `scripts/user-links-v0/installed/` (ledger exato, sem
+  reaplicar): `save_client_portal_branding` MD5 antes
+  `36897b8731527d5a22ba4a995b337a93` → depois `2471d0af39864bf3093d24371aa6dbc6`;
+  única adição `AND (uc.valid_from IS NULL OR uc.valid_from <= now())`; ACL
+  anon=false/authenticated=true preservada. Hosted 5 estados BEGIN/ROLLBACK
+  PASS reportados pelo auditor (válido/revogado/inativo/futuro/expirado).
+- P2 `ClienteDocumentosTab`: `type="button"` em Enviar/Baixar/Excluir (estavam
+  submetendo o form pai e fechando o modal). Teste RTL novo com `<form>` real,
+  signed URL pendente e arquivo sem tipo: submit 0 nos três caminhos; Excluir
+  só abre confirmação. **3/3 PASS**; sem outra mudança no componente.
+
+### 5.2 SQL candidato v2 (FORA de migrations, NÃO aplicado)
+
+`scripts/authz-cache/candidate.sql.review` reescrito após a revisão:
+
+- Núcleo privado `_authz_fingerprint_core(uuid)` (EXECUTE revogado de
+  PUBLIC/anon/authenticated; apenas service_role) + invoker público
+  `get_my_authz_fingerprint()` self-only (EXECUTE apenas authenticated;
+  deriva `auth.uid()`, sem parâmetro de usuário/tenant, sem JWT metadata).
+- Elegibilidade EXTERNA estrita: perfil ativo, sem senha provisória, com
+  organização, ao menos uma role externa (cliente_produtor, parceiro_b2b,
+  parceiro_b2b_tecnico, consultor_tecnico) E ao menos um vínculo vigente
+  coerente com o tenant — `user_clientes` vigente com cliente ativo da mesma
+  organização, ou `partner_users` com `partner_accounts.ativo` e
+  `commercial_owner_organization_id` igual à organização do perfil.
+- Retorno OPACO: apenas `{eligible, fingerprint, server_now}` — sem IDs, sem
+  listas de roles/clientes. Fingerprint inclui `profiles.updated_at`
+  (monotônico, captura A→B→A), organização, roles, estado completo dos
+  vínculos (revogação/vigência/principal + status/tenant do cliente) e estado
+  do partner (ativo/tenant); flag `v` por vínculo computada com `now()`
+  captura expiração temporal sem DML.
+- Preflight de drift confirma as colunas referenciadas antes de criar.
+- Harness `scripts/authz-cache/test-local.py`: **22/22 checks PASS** em
+  PostgreSQL isolado (negação sem sessão, ACL do núcleo fechada para
+  authenticated, perfil interno inelegível mesmo com vínculo, role externa sem
+  vínculo inelegível, retorno sem IDs, revogação/vigência temporal/cliente
+  inativo/cliente de outro tenant/partner inativo/partner de outro tenant,
+  ABA via updated_at, senha provisória, self-only, determinismo).
+  UNVERIFIED: ensaio hosted BEGIN/ROLLBACK, policies completas, dados live.
+
+### 5.3 Monitor e integração real (gate permanece FALSE)
+
+- `authzEpochMonitor.ts`: relógio MONOTÔNICO injetado (`performance.now` no
+  runtime); lease de 15s expira também em estado `valid` (deadline armado e
+  rechecado no acesso via `checkAccess`); `pending` esconde render quando não
+  há lease vigente, mas revalidação em background com lease vigente não
+  derruba a tela (sem flicker); offline/expiração invalidam a geração —
+  resultado em voo de geração antiga nunca reabre; evento `offline` do
+  navegador expira imediatamente.
+- `useAuth.tsx`: um único monitor por AuthProvider, criado SOMENTE para
+  perfis externos após Auth pronto (perfil+roles carregados); usuários
+  internos nunca criam monitor (regressão: RPC nunca chamado). Gate de
+  criação via ref — o `refresh()` disparado pela mudança de época alterna
+  `loading` e NÃO recria o monitor. Contexto expõe `authzReady`,
+  `authzEpoch`, `authzState`, `checkAuthzAccess()` (rechecagem de lease no
+  acesso) e `revalidateAuthz()`. `authzReady` é false enquanto perfil/roles
+  carregam (sem flash de conteúdo antes de saber se o perfil é externo).
+  Epoch change: geração++, cancela/limpa consultas, limpa seleção de portal e
+  preferências compartilhadas (evento `portal-client-preferences-cleared`),
+  incrementa época reativa e recarrega identidade (perfil/roles coerentes
+  antes de voltar). Expire: geração++, cancela consultas, limpa seleção;
+  quem ESCONDE os dados é o estado reativo.
+- Boundary real `src/components/authz/AuthzEpochBoundary.tsx` integrado aos
+  guards existentes (`PortalGuard` em App.tsx e `B2BRouteGuard`) — sem rota
+  nem provider paralelo. Pending/expired: conteúdo sensível oculto
+  imediatamente com estado amigável e "Tentar novamente". Valid: filhos
+  renderizados com `key={authzEpoch}` — mudança de época REMONTA o conteúdo,
+  descartando rascunhos, seleções e objectURLs no unmount dos consumidores.
+- Hooks integrados: `useStorageAccessScope`, `useSignedUrls` e
+  `usePortalCliente` incluem `authzReady` no ready e `authzEpoch` no
+  escopo/fence — respostas de época antiga não reabrem; `useScopedPortalQuery`
+  e `useMyPartner` herdam pelo scope. Defaults `true`/`0` preservam mocks e
+  providers antigos (semântica de gate fechado).
+
+### 5.4 Evidências
+
+- `authzEpochMonitor.test.ts`: 15/15 PASS (fake clock + promises).
+- `authzFoundation.integration.test.tsx` (NOVO, AuthProvider real + boundary,
+  gate mockado true): 10/10 PASS — pending esconde/exibe; vínculo muda
+  mantendo uid/org/role → remount com limpeza de rascunho/objectURL; lease
+  expira em aba oculta; offline durante fetch não reabre; resposta atrasada
+  não reabre; A→B→A remonta a cada mudança; erro → "Tentar novamente" →
+  recupera; foco revalida; revogação sem Broadcast fecha a sessão; usuário
+  interno sem monitor e sem RPC.
+- Regressões: `src/test/config` 477/479 PASS — as 2 falhas são PRÉ-EXISTENTES
+  e não relacionadas (imports legados `@/integrations/supabase/types` em
+  EstornoDialog/Categorias/AprovacaoCard/WizardAnexosStep, presentes antes
+  desta rodada, flagrados por canonicalTypesGuard e cultivofarm-runtime).
+  Guards multiportal 31/31; ClienteDocumentosTab 3/3; F2 dialog intacto.
+- Typecheck dedicado (tsgo): 0 erros. Lint dos arquivos novos/alterados:
+  0 erros (4 warnings pré-existentes em useAuth.tsx). Build OK;
+  `git diff --check` limpo; scanner de segredos OK.
+
+### 5.5 Limites e pendências
+
+- Gate `AUTHZ_CACHE_FOUNDATION_ENABLED` permanece **false**; SQL candidato
+  NÃO aplicado; nada publicado; gate de associação fechado.
+- Abrir o gate sem a migration instalada é fail-closed (fetcher falha →
+  expira → oculta), mas o gate só deve abrir após a migration ser aplicada e
+  revisada.
+- Anexos/signed URLs de objetos já baixados não são revogáveis — recorte
+  seguinte. Troca de principal sem violar `uq_user_clientes_principal` segue
+  pendente no modo associação. Cache multidispositivo depende do poll/lease
+  (não há revogação instantânea cross-device).

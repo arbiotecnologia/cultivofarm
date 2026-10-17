@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useMyPartner } from "@/hooks/useMyPartner";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 
 /**
  * B2BRouteGuard — protege `/portal-parceiro/*`.
@@ -68,7 +69,9 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  // Foundation de cache (mesma identidade): boundary esconde/remonta conteúdo
+  // sensível conforme a época de autorização. Gate fechado = sem alteração.
+  return <AuthzEpochBoundary>{children}</AuthzEpochBoundary>;
 }
 
 export default B2BRouteGuard;

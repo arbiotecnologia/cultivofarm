@@ -24,13 +24,17 @@ function publishSelection(scope: string, id: string | null) {
 }
 
 export function usePortalCliente() {
-  const { user, profile, roles, loading: authLoading } = useAuth();
+  const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
   const organizationId = profile?.organization_id ?? null;
   const portalRole = roles.some(role => ["cliente_produtor", "administrador", "gestor"].includes(role));
-  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && profile.senha_provisoria !== true && !!organizationId && portalRole;
+  // Foundation de cache (mesma identidade): lease pendente/expirada derruba o
+  // ready; a época entra no escopo — seleção/respostas de época antiga não
+  // reabrem. A limpeza de seleções já ocorre via "portal-client-preferences-
+  // cleared" disparado pelo AuthProvider na mudança de época/expiração.
+  const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && profile.senha_provisoria !== true && !!organizationId && portalRole && authzReady;
   const generation = useRef(0);
   const controller = useRef<AbortController>();
-  const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${[...roles].sort().join(",")}:${ready}`;
+  const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${[...roles].sort().join(",")}:${ready}:${authzEpoch}`;
   const sharedId = useSyncExternalStore(subscribeSelection, () => selections.get(scope) ?? null, () => null);
   const liveScope = useRef(scope);
   if (liveScope.current !== scope) { liveScope.current = scope; generation.current += 1; controller.current?.abort(); }

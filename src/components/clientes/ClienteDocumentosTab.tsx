@@ -231,7 +231,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
               }}
             />
           </div>
-          <Button onClick={handleUpload} disabled={uploading || !file}>
+          <Button type="button" onClick={handleUpload} disabled={uploading || !file}>
             {uploading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
@@ -282,6 +282,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDownload(doc)}
@@ -290,6 +291,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
                       <Download className="h-4 w-4" />
                     </Button>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       className="text-destructive"

@@ -1259,3 +1259,13 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Revisão independente; ensaio hosted BEGIN/ROLLBACK do RPC pelo auditor; abertura do gate só após migration aplicada e revisada.
 - [ ] Próximo recorte: anexos/signed URLs; troca de principal sem violar uq_user_clientes_principal (modo associação); gestão de associações segue com gates fechados.
 - Relatório: docs/auditorias/authz-cache-foundation-20261017.md.
+
+## Cache same-identity — integração completa após revisão c787cd9e (17/10/2026)
+- [x] Migration 20261017000806 (branding nega vínculos futuros) arquivada em scripts/user-links-v0/installed/, MD5 live 2471d0af39864bf3093d24371aa6dbc6, ACL preservada; não reaplicada.
+- [x] P2 ClienteDocumentosTab: type="button" nos 3 botões; 3 testes RTL com form pai PASS; sem outra mudança.
+- [x] SQL candidato v2 (scripts/authz-cache/candidate.sql.review, NÃO aplicado): núcleo privado + invoker self-only, elegibilidade externa estrita (perfil ativo, sem senha provisória, org, role externa, vínculo vigente com tenant coerente), retorno opaco {eligible,fingerprint,server_now}, preflight de drift; harness 22/22 PASS isolado.
+- [x] Monitor: relógio monotônico, lease expira também em valid, geração invalidada em offline/expiração, evento offline imediato, revalidação em background sem flicker.
+- [x] Integração real: monitor único só para perfis externos após Auth pronto; AuthContext expõe authzReady/authzEpoch/authzState/checkAuthzAccess/revalidateAuthz; boundary real em PortalGuard e B2BRouteGuard com remount por época; useStorageAccessScope/useSignedUrls/usePortalCliente com epoch+readiness em scope/fences (useScopedPortalQuery/useMyPartner herdam).
+- [x] Testes: 15/15 monitor + 10/10 integração AuthProvider+boundary + 3/3 documentos + 31/31 guards multiportal; src/test/config 477/479 (2 falhas pré-existentes de imports legados, não relacionadas); tsgo 0; lint novos 0; build OK; scanner OK; diff-check limpo.
+- [ ] Revisão independente; ensaio hosted BEGIN/ROLLBACK do RPC pelo auditor; gate segue FALSE e só abre após migration aplicada e revisada.
+- [ ] Próximo recorte: anexos/signed URLs; troca de principal sem violar uq_user_clientes_principal; gestão de associações com gates fechados.
