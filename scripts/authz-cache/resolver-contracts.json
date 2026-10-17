@@ -1,0 +1,9 @@
+{
+  "source": "Revisão independente 0c324c2d informada por Renato em 2026-10-17 01:40 UTC; sem recaptura hosted pelo agente",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "contracts": [
+    { "signature": "public.get_cliente_ids_for_user(uuid)", "provolatile": "v", "definition_md5": "c80d5900692d960f649d0a9f7850fe2c" },
+    { "signature": "platform_private.producer_commercial_client_scope(uuid)", "provolatile": "s", "definition_md5": "49b8329ce232670c1560f0683b913a26" },
+    { "signature": "platform_private.b2b_commercial_context()", "provolatile": "s", "definition_md5": "02158d4204dea67308558f649113ba6d" }
+  ]
+}
