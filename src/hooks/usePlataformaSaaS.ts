@@ -229,7 +229,7 @@ export function useAssinaturasSaaS(organizationId?: string) {
         .select(
           "id,organization_id,plan_id,plan_version_id,status,billing_cycle,billing_cycle_snapshot," +
             "price_snapshot,currency_snapshot,limits_snapshot,features_snapshot,started_at,trial_ends_at," +
-            "current_period_start,current_period_end,cancelled_at,suspended_at,created_at",
+            "current_period_start,current_period_end,cancelled_at,cancel_at,suspended_at,created_at",
         )
         .order("created_at", { ascending: false })
         .limit(LIMITE);
