@@ -1,0 +1,23 @@
+{
+  "source": "Texto técnico fornecido pelo auditor no pedido de 2026-10-17 12:42 UTC; não recapturado hosted pelo agente",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "hash_kind": "md5(pg_get_functiondef), conforme auditor; não hash de SQL reformatado",
+  "contracts": {
+    "cf_user_guards_v1.acquire_gate()": "b0dd9a14d5fd799a40df0975baf4c5a6",
+    "cf_user_guards_v1.advance_stamp()": "ce295ff5799d306ad81578047cd9bff5",
+    "cf_user_guards_v1.touch_related_profiles()": "e5911c3801be399f9de57e038b390e79",
+    "platform_private.b2b_commercial_context()": "02158d4204dea67308558f649113ba6d",
+    "platform_private.entitlements_for_user(uuid)": "7f4ec7facaebbdf35444dd490fdebe56",
+    "platform_private.producer_commercial_client_scope(uuid)": "49b8329ce232670c1560f0683b913a26",
+    "public.get_cliente_ids_for_user(uuid)": "c80d5900692d960f649d0a9f7850fe2c",
+    "public.get_my_available_portal_contexts()": "4e3a27946c31ef4645eb5b7c7937c236",
+    "public.fn_authz_uid_scope_ok(uuid)": "00a9a4d4a075d756d312d69778493b39",
+    "public.h15_actor_organization()": "55edafec08bcc84a00f1526c14334a2c",
+    "public.has_role(uuid,public.app_role)": "4d90e93d521a4819d9085f28d742030f",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "35cfda5d5988fb6ad57944bd11a51c3c",
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84",
+    "platform_private.b2b_actor_scope(uuid)": "c85cb35201682c3c86b9a327d24c8482",
+    "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
+    "platform_private.has_role(uuid,public.app_role)": "c5af5b55de6d79da9b73a33948746ae2"
+  }
+}

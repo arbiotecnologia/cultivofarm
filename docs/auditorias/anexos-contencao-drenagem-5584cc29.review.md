@@ -17,7 +17,7 @@ Gate Blob e cache false. Marca/arquivos públicos de branding fora do recorte.
 | pdfAplicacao | 600 |
 | Edge generate-financial-report/receipt | 3600 |
 | Edge fiscal-xml-engine | 120 |
-| Edge entrega-termo-pdf | constante SIGNED_URL_TTL, recapturar |
+| Edge entrega-termo-pdf | 120 |
 
 Inventário não prova TTL histórico máximo, policies Storage, exposição de PDFs
 persistidos/embeds, caches ou todas as versões antigas. ReportShell e chamadas
@@ -63,3 +63,33 @@ somente de objetos exatos com hash/ACL arquivados, não reabrir emissão privada
 automaticamente. Implementação server-side executável depende contratos
 Storage/provedores live, inventário completo e auditoria de rollback. Nesta
 rodada apenas candidato e testes simulados, nenhuma contenção remota provada.
+
+## Adendo v6 — SQL revisável por operação
+
+`scripts/authz-cache/storage-operation-containment.sql.review` e rollback fora
+de migrations: policy SELECT RESTRICTIVE AND regras existentes para buckets
+privados inventariados. Allowlist `get_authenticated`, list/list_v2 e info
+autenticada; signing/sign_many/render.image_sign e contexto ausente negados.
+Não confia em versão de cliente, não cria autorização tenant paralela e não
+altera função/tabela/trigger de schema reservado. Políticas Storage são o alvo.
+
+Fontes públicas consultadas nesta rodada:
+- https://supabase.com/docs/guides/storage/schema/helper-functions
+- https://github.com/supabase/storage/blob/master/src/http/routes/operations.ts
+
+`storage.allow_any_operation(text[])` é documentado (normaliza prefixo storage,
+match exato, contexto ausente false). Existência/hash/ACL no servidor **não
+comprovados**. Preflight mantém hashes NULL e aborta; isso não é candidato
+instalável ou prova hosted. Manifest de policies/buckets e role grants faltam.
+Allowlist precisa ensaio de copy/move/updates que possam consumir SELECT antes
+de liberação, sem abrir signing como efeito colateral. Policies permissivas
+existentes não contornam uma restrictive correta; grants/roles/BYPASSRLS e
+buckets dinâmicos precisam revisão.
+
+**service-role não é contido por RLS.** generate-financial-report,
+generate-financial-receipt, entrega-termo-pdf e fiscal-xml-engine ainda emitem:
+política acima não resolve Edges antigas. Precisam candidato de retirada de
+signing em cada ramo atual/replay/cache e retorno autenticado, com receiver/
+guards preservados; não alteradas nesta rodada para evitar deploy automático.
+Buckets de runs/exportações podem ser dinâmicos; não presumir só defaults.
+T0 permanece indefinido até negativas HTTP reais e última emissão comprovada.

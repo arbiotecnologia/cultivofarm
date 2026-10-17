@@ -155,6 +155,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
     if (!access.ready) return;
     const current = access.capture();
     if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+      if (attachmentOpener.urls[doc.arquivo_path]) { attachmentOpener.download(doc.arquivo_path, doc.nome); return; }
       await attachmentOpener.open(doc.arquivo_path, () => toast.error("Documento indisponível"));
       return;
     }
@@ -293,10 +294,13 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDownload(doc)}
-                      title="Baixar"
+                      disabled={AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.loadingPaths.includes(doc.arquivo_path)}
+                      title={AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.urls[doc.arquivo_path] ? "Baixar arquivo" : "Baixar"}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
+                    {AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.loadingPaths.includes(doc.arquivo_path) && <span role="status">Carregando</span>}
+                    {AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.urls[doc.arquivo_path] && <span role="status">Pronto para baixar</span>}
                     <Button
                       type="button"
                       variant="ghost"

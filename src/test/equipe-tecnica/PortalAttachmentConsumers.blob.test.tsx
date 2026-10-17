@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@/lib/authz/attachmentBlobGate", () => ({ get AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED() { return mocks.gate; } }));
-vi.mock("@/lib/authz/authenticatedAttachment", () => ({ ATTACHMENT_LIMITS: { files: 24, totalBytes: 60 * 1024 * 1024 }, downloadAuthenticatedAttachment: mocks.download }));
+vi.mock("@/lib/authz/authenticatedAttachment", () => ({ ATTACHMENT_LIMITS: { files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024 }, downloadAuthenticatedAttachment: mocks.download }));
 vi.mock("sonner", () => ({ toast: { error: mocks.toast, success: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   from: () => ({ select: () => ({ eq: () => ({ order: mocks.query }) }) }),
@@ -37,12 +37,18 @@ beforeEach(() => {
 });
 for (const consumer of ["cliente", "pedido"] as const) {
   const component = (id: string) => consumer === "cliente" ? <ClienteDocumentosTab clienteId={id} /> : <OrderMessagesPanel orderId={id} authorType="parceiro" />;
-  const trigger = () => consumer === "cliente" ? screen.getByTitle("Baixar") : screen.getByRole("button", { name: /Anexo pedido/ });
-  it(`${consumer}: sucesso atual abre Blob, não assina e revoga ao desmontar`, async () => {
+  const trigger = () => consumer === "cliente" ? screen.getByTitle(/^Baixar/) : screen.getByRole("button", { name: /Anexo pedido/ });
+  it(`${consumer}: prepara uma vez, download explícito sem popup e revoga ao desmontar`, async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const h = render(component("R1"));
     await waitFor(() => expect(trigger()).toBeTruthy());
     fireEvent.click(trigger());
-    await waitFor(() => expect(window.open).toHaveBeenCalledWith("blob:owned", "_blank", "noopener,noreferrer"));
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(1));
+    expect(window.open).not.toHaveBeenCalled(); expect(click).not.toHaveBeenCalled();
+    await waitFor(() => expect(trigger().textContent + trigger().getAttribute("title")).toMatch(/Baixar arquivo/));
+    fireEvent.click(trigger()); fireEvent.click(trigger());
+    expect(click).toHaveBeenCalledTimes(2);
+    expect(mocks.download).toHaveBeenCalledTimes(1); expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
     expect(mocks.sign).not.toHaveBeenCalled();
     h.unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
   });
@@ -53,7 +59,8 @@ for (const consumer of ["cliente", "pedido"] as const) {
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
     expect(mocks.sign).not.toHaveBeenCalled(); expect(window.open).not.toHaveBeenCalled();
     fireEvent.click(trigger());
-    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1)); h.unmount();
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(1));
+    expect(window.open).not.toHaveBeenCalled(); h.unmount();
   });
   for (const change of ["pending", "epoch", "tenant", "ABA", "resource", "unmount"] as const) {
     it(`${consumer}: ${change} aborta e descarta sucesso tardio, com trava de duplo clique`, async () => {
