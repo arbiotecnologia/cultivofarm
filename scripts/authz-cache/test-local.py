@@ -82,6 +82,9 @@ try:
  # fingerprint read of tenant B completes WITHOUT waiting (no global lock)
  # and returns unchanged.
  import time
+ # Fixture B committed (scoped-tests rolou back): prova de isolamento real.
+ run('''INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
+ INSERT INTO profiles(user_id,organization_id) VALUES('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;''')
  stamp_b_before=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
  writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
  writer.stdin.write("BEGIN;UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';SELECT pg_sleep(0.6);ROLLBACK;");writer.stdin.close()
