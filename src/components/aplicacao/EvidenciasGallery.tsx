@@ -97,7 +97,11 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
               aria-label={failed.includes(e.storage_path) ? `Falha ao carregar ${e.legenda || "anexo"}; tentar novamente` : undefined}
               onClick={() => {
                 if (!access.ready) return;
-                if (failed.includes(e.storage_path)) { request(e.storage_path); refresh(); return; }
+                // Retry: candidato re-emite request (controlador já limpo); legado refaz o lote.
+                if (failed.includes(e.storage_path)) {
+                  if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) request(e.storage_path); else refresh();
+                  return;
+                }
                 if (!urls[e.storage_path]) { request(e.storage_path); return; }
                 if (e.tipo === "foto") setLightbox({ scope: access.scope, path: e.storage_path });
                 else window.open(urls[e.storage_path], "_blank", "noopener,noreferrer");
