@@ -11,7 +11,7 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
   const current = useRef({ scope: fence.scope, ready });
   current.current = { scope: fence.scope, ready };
   const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null; failed: string[] }>({ scope: "", urls: {}, loading: false, error: null, failed: [] });
+  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; loadingPaths: string[]; error: Error | null; failed: string[] }>({ scope: "", urls: {}, loading: false, loadingPaths: [], error: null, failed: [] });
   const requestRef = useRef<(path: string) => void>(() => {});
 
   useLayoutEffect(() => {
@@ -24,12 +24,13 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
     const failed = new Set<string>();
     let error: Error | null = null;
     const isCurrent = () => alive && current.current.ready && current.current.scope === scope;
-    const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, error, failed: [...failed] }); };
-    setResult({ scope, urls: {}, loading: false, error: null, failed: [] });
+    const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, loadingPaths: [...controllers.keys()], error, failed: [...failed] }); };
+    setResult({ scope, urls: {}, loading: false, loadingPaths: [], error: null, failed: [] });
     const request = (path: string) => {
       if (!isCurrent() || !valid.includes(path) || controllers.has(path) || urls[path]) return;
       failed.delete(path);
-      if (valid.length > ATTACHMENT_LIMITS.files) { error = new Error("Limite de anexos excedido"); publish(); return; }
+      if (valid.length > ATTACHMENT_LIMITS.files) { error = new Error("Limite de anexos excedido (24 arquivos)"); failed.add(path); publish(); return; }
+      if (!failed.size) error = null;
       const controller = new AbortController();
       controllers.set(path, controller); pending++; publish();
       void downloadAuthenticatedAttachment(bucket, path, controller.signal).then(blob => {
@@ -58,5 +59,5 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
   const request = useCallback((path: string) => requestRef.current(path), []);
   const refresh = useCallback(() => setAttempt(n => n + 1), []);
   const visible = ready && result.scope === fence.scope;
-  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready && !options.lazy, error: visible ? result.error : null, failed: visible ? result.failed : [], refresh, request };
+  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready && !options.lazy, loadingPaths: visible ? result.loadingPaths : [], error: visible ? result.error : null, failed: visible ? result.failed : [], refresh, request };
 }
