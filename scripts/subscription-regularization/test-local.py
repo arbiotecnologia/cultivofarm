@@ -105,7 +105,11 @@ BEGIN
   RETURN NEW;
 END $$;
 CREATE TRIGGER saas_subscription_audit AFTER UPDATE ON public.organization_subscriptions
-  FOR EACH ROW EXECUTE FUNCTION public.saas_subscription_audit();''')
+  FOR EACH ROW EXECUTE FUNCTION public.saas_subscription_audit();
+GRANT USAGE ON SCHEMA platform_private TO authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.transition_subscription_core(uuid,text,text,uuid,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.platform_transition_subscription(uuid,text,text,uuid,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_platform_superadmin(uuid) TO authenticated;''')
 
     # ---- candidata (sem o preflight, que depende do live hosted) ----
     candidata = (ROOT/'scripts/subscription-regularization/candidate.sql.review').read_text()
