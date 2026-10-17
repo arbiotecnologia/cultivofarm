@@ -1,5 +1,6 @@
 -- LOCAL ONLY: fixtures no PostgreSQL descartável do runner.
 BEGIN;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
 CREATE FUNCTION pg_temp.check_revision(label text, sql_a text, sql_b text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE a bigint; b bigint;
 BEGIN

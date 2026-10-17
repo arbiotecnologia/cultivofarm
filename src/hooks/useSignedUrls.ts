@@ -78,8 +78,8 @@ function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: strin
 }
 
 // Both hooks remain mounted; closed candidate does not download or mint extra URLs.
-export function useSignedUrls(paths: (string | null | undefined)[], bucket = "consultor-arquivos") {
+export function useSignedUrls(paths: (string | null | undefined)[], bucket = "consultor-arquivos", options: { lazy?: boolean } = {}) {
   const legacy = useLegacySignedUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? [] : paths, bucket);
-  const blobs = useAuthenticatedBlobUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? paths : [], bucket, { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED });
-  return AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs : legacy;
+  const blobs = useAuthenticatedBlobUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? paths : [], bucket, { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED, lazy: options.lazy });
+  return AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs : { ...legacy, request: (_path: string) => {} };
 }

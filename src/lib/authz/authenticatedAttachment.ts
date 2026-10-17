@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Operational bounds, not authorization. Storage RLS remains authoritative.
-export const ATTACHMENT_LIMITS = { concurrent: 3, files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024, timeoutMs: 15_000 } as const;
+export const ATTACHMENT_LIMITS = { concurrent: 3, queued: 48, files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024, timeoutMs: 15_000 } as const;
 const unavailable = () => new Error("Anexo indisponível");
 let active = 0;
 const queue: Array<() => void> = [];
@@ -20,6 +20,7 @@ async function acquire(signal: AbortSignal): Promise<() => void> {
       reject(unavailable());
     };
     if (active < ATTACHMENT_LIMITS.concurrent) start();
+    else if (queue.length >= ATTACHMENT_LIMITS.queued) reject(unavailable());
     else { queue.push(start); signal.addEventListener("abort", abort, { once: true }); }
   });
   let released = false;
@@ -39,12 +40,12 @@ function mime(path: string) {
 /** Canonical SDK fetch carries actor authentication; no signed/public fallback. */
 export async function downloadAuthenticatedAttachment(bucket: string, path: string, signal: AbortSignal): Promise<Blob> {
   const controller = new AbortController();
-  const abort = () => controller.abort();
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const abort = () => { controller.abort(); void reader?.cancel().catch(() => {}); };
   signal.addEventListener("abort", abort, { once: true });
   if (signal.aborted) abort();
   const timeout = setTimeout(abort, ATTACHMENT_LIMITS.timeoutMs);
   let release: (() => void) | undefined;
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
     if (!bucket || !path || path.startsWith("/") || path.split("/").some(part => part === ".." || part === ".")) throw unavailable();
     release = await acquire(controller.signal);
@@ -52,7 +53,7 @@ export async function downloadAuthenticatedAttachment(bucket: string, path: stri
     const { data, error } = await supabase.storage.from(bucket).download(path, {}, { signal: controller.signal, cache: "no-store" }).asStream();
     if (error || !data || controller.signal.aborted) { await data?.cancel(); throw unavailable(); }
     reader = data.getReader();
-    const chunks: Uint8Array[] = [];
+    const chunks: ArrayBuffer[] = [];
     let size = 0;
     while (true) {
       const item = await reader.read();
@@ -60,7 +61,8 @@ export async function downloadAuthenticatedAttachment(bucket: string, path: stri
       if (item.done) break;
       size += item.value.byteLength;
       if (size > ATTACHMENT_LIMITS.fileBytes) { controller.abort(); throw unavailable(); }
-      chunks.push(item.value);
+      // Own ArrayBuffer (never SharedArrayBuffer); avoids retaining pooled chunks.
+      chunks.push(new Uint8Array(item.value).buffer);
     }
     return new Blob(chunks, { type: mime(path) });
   } catch { throw unavailable(); }
