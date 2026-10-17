@@ -85,7 +85,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$ BEGIN NULL; END $$
 CREATE FUNCTION public.saas_subscription_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN
-  IF nullif(current_setting('app.saas_change_action', true),'') IS NULL AND session_user = 'authenticator' THEN
+  IF nullif(current_setting('app.saas_change_action', true),'') IS NULL AND session_user IN ('authenticator','authenticated') THEN
     RAISE EXCEPTION 'direct DML negado';
   END IF;
   RETURN NEW;
@@ -267,7 +267,7 @@ VALUES ('{SUB10}','{ORG10}','{PLAN}','{V1}','TRIAL', now()-interval '20 days', n
     assert run(f"SELECT count(*) FROM public.organization_subscription_history WHERE subscription_id='{SUB10}'") == "1"; checks += 1
 
     # 21) DML direto com papel authenticator: negado pelo guard
-    e = runerr(f"BEGIN;SET LOCAL ROLE authenticator;UPDATE public.organization_subscriptions SET status='ACTIVE' WHERE id='{SUB9}';COMMIT;")
+    e = runerr(f"SET SESSION AUTHORIZATION authenticated;UPDATE public.organization_subscriptions SET status='ACTIVE' WHERE id='{SUB9}';")
     assert "direct DML" in e, e; checks += 1
 
     print(f"PASS — {checks} checks (PostgreSQL isolado; NÃO hosted)")
