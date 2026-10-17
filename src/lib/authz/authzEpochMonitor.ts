@@ -118,8 +118,10 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
 
     const myGen = ++generation;
     const requestStart = deps.now();
-    // Pending esconde render até a resposta válida chegar.
-    setState("pending");
+    // Pending esconde render até a resposta válida chegar — mas uma
+    // revalidação em background com lease AINDA vigente não derruba a tela
+    // (sem flicker); se a lease vencer durante o request, o deadline expira.
+    if (state !== "valid") setState("pending");
 
     // Lease máxima medida desde o início do request; não estende a anterior.
     leaseUntil = requestStart + leaseMs;
