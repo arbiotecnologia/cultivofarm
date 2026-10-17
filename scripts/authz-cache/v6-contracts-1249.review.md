@@ -33,3 +33,10 @@ Fonte: catálogo canônico `swzpzcwiasxmjutrmvkm` fornecido pelo auditor no pedi
 ## Decisão
 
 Não há SQL novo de ledger/rollback executável: falta ordem dos callers, FKs/índices e prova concorrente/temporal. Gate global existente não é removido nem bypassado. A candidata Storage continua fail-closed: hash helper conhecido, hash do manifest desconhecido. RLS não contém service_role/BYPASSRLS; emissores Edge precisam contenção própria antes de T0.
+
+## Validações deste delta
+
+- Sete `no-explicit-any` eliminados somente em ClienteDocumentosTab/OrderMessagesPanel: tipos de Row/Enum canônicos e OrderMessage existente; sem refatoração ampla.
+- Vitest local: ownership 7 + consumidores 17 + formulário pai 3 = 27/27; monitor 19 + integração 12 = 31/31; total **58/58**, cinco arquivos. Os 25/25 independentes citados pelo auditor são evidência dele, não nova execução nossa.
+- ESLint dois componentes, hook ownership e dois arquivos de testes: zero erros/warnings. diff-check zero; prévia automática build OK 12:51:58 UTC. Typecheck dedicado/scanner não executados neste delta.
+- Uma leitura de catálogo hosted de assinaturas/hash; nenhum teste DML/HTTP/browser, instalação, deploy, publicação ou transição de assinatura. Cache/Blob gates false, troca bloqueada, Auth/SMTP/assinatura preservados. T0 indefinido.
