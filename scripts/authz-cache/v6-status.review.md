@@ -21,15 +21,16 @@ autorização externa; não incluir consultor ou reimplementar seleção de cont
 ## Contratos exatos ainda faltantes
 
 - Recebidos em 12:49: 13 funções com corpos/hash/ACL, 55 triggers com tgfoid/tgtype/qual/corpos e 287 colunas/nullable/defaults. Não listar esses contratos novamente como ausentes; reconciliação em `v6-contracts-1249.review.md`.
-- Índices/constraints/FKs ainda pendentes do próximo delta do auditor; DDL/guards/índices das filhas de audit/recalc/default financeiro e `platform_private.authz_tickets` também necessários.
+- Recebidos em 12:52: 144 constraints relacionadas e 33 índices das tabelas selecionadas. Não mais pedir esse pacote; faltam catálogos completos das filhas de audit/recalc/default financeiro, tickets privados e índices das demais dependências não incluídas no recorte.
 - Corpos live completos dos callers/writers enumerados por assinatura na consulta canônica read-only de 12:50: `v6-writers-catalog.review.md`. Assinaturas não são prova da ordem interna; filtro textual não cobre todos writers/dynamic SQL/grants diretos.
-- `storage.operation()` e manifest das policies/buckets/ACL efetiva seguem pendentes. Hash/body dos dois allow_operation recebidos, sem HTTP validado.
+- Recebido manifest 33 policies + 11 buckets + RLS enabled/forced=false. `storage.operation()`, ACL/grants efetivos, corpos dos helpers Storage e provas de operação HTTP seguem pendentes. order-attachments/entrega-termos ausentes: preflight permanece rejeitando, sem criar/remapear.
 - Fixture reduzido anterior contém stub has_ticket: continua inválido para certificação. Corpo real agora conhecido, sem substituição por stub nem novo harness PASS alegado.
 
 ## Ordem de locks não fechada
 
 Os três guards fornecidos provam singleton → identidade → touch perfis OLD/NEW
 e reentrada singleton. Não provam ordem dos writers comerciais/invites/tickets.
+Adendo 12:52: corpos recebidos de transition_subscription_core, admin_edit_user_profile_v1, user_edit_f2_common, is_tenant_admin_for_user, issue_ticket e issue_saas_plan_version_ticket; não listá-los como corpos faltantes. A análise desses corpos está em v6-contracts-1252.review.md. Já existe ordem inversa no caminho interno admin (profile FOR UPDATE → user_roles DML → singleton); o caminho common usa singleton NOWAIT → profiles → links → clientes/partners FOR SHARE. Não introduzir contador/locks novos sobre essas inversões nem alterar gates existentes.
 Ledger por entidade AFTER STATEMENT pode criar ciclo se writer que segura
 revisão de org passa a obter row de partner que outro writer segura antes de
 obter revisão de org. Sorted keys dentro de um statement não resolve transações

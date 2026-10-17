@@ -78,9 +78,7 @@ Fontes públicas consultadas nesta rodada:
 - https://github.com/supabase/storage/blob/master/src/http/routes/operations.ts
 
 `storage.allow_any_operation(text[])` é documentado (normaliza prefixo storage,
-match exato, contexto ausente false). Existência/hash/ACL no servidor **não
-comprovados**. Preflight mantém hashes NULL e aborta; isso não é candidato
-instalável ou prova hosted. Manifest de policies/buckets e role grants faltam.
+match exato, contexto ausente false). Adendos 12:49/12:52 forneceram corpo/hash/proacl/owner e manifest 33 policies/11 buckets; ver anexos-manifest-1252-20261017.review.md. Preflight tem hash helper conhecido e hash de serialização das policies NULL; aborta também por order-attachments/entrega-termos ausentes. Não é instalável. storage.operation(), grants efetivos e testes HTTP ainda faltam.
 Allowlist precisa ensaio de copy/move/updates que possam consumir SELECT antes
 de liberação, sem abrir signing como efeito colateral. Policies permissivas
 existentes não contornam uma restrictive correta; grants/roles/BYPASSRLS e
