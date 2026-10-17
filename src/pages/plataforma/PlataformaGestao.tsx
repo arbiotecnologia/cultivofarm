@@ -39,7 +39,19 @@ const ACOES = [
 type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const SITUACOES: Record<string, string> = { SUSPENDED: "Suspensa", ACTIVE: "Ativa", PAST_DUE: "Em atraso", TRIAL: "Em teste", CANCELLED: "Cancelada", EXPIRED: "Expirada" };
-const CICLOS: Record<string, string> = { monthly: "mensal", yearly: "anual", quarterly: "trimestral", semiannual: "semestral", weekly: "semanal" };
+// Ciclos canônicos do CHECK de banco: monthly/quarterly/semiannual/annual/custom.
+const CICLOS: Record<string, string> = { monthly: "mensal", quarterly: "trimestral", semiannual: "semestral", annual: "anual", custom: "personalizado" };
+
+/** Moeda do SNAPSHOT da assinatura via Intl; fallback seguro sem prefixo fixo. */
+function formatarMoedaSnapshot(valor: number, moeda: string | null): string {
+  const codigo = (moeda ?? "").trim().toUpperCase();
+  if (/^[A-Z]{3}$/.test(codigo)) {
+    try {
+      return new Intl.NumberFormat("pt-BR", { style: "currency", currency: codigo }).format(valor);
+    } catch { /* código de moeda desconhecido: cai no fallback abaixo */ }
+  }
+  return `${valor.toFixed(2).replace(".", ",")}${codigo ? ` ${codigo}` : ""}`.trim();
+}
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
@@ -60,9 +72,24 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
   const [confirmado, setConfirmado] = useState(false);
-  const assinatura = assinaturas.data?.find((s) => s.organization_id === org && s.status !== "CANCELLED" && s.status !== "EXPIRED")
-    ?? assinaturas.data?.find((s) => s.organization_id === org && s.status === "EXPIRED" && s.trial_ends_at);
+  // Seleção espelha o núcleo: linha MAIS RECENTE por started_at/created_at/id.
+  // EXPIRED só é elegível com origem TRIAL→EXPIRED comprovada no histórico;
+  // uma CANCELLED (ou qualquer outra) mais nova nunca é pulada.
+  const ordenadas = (assinaturas.data ?? []).filter((s) => s.organization_id === org)
+    .sort((a, b) => Date.parse(b.started_at ?? b.created_at) - Date.parse(a.started_at ?? a.created_at)
+      || Date.parse(b.created_at) - Date.parse(a.created_at) || b.id.localeCompare(a.id));
+  const maisRecente = ordenadas[0];
+  const origemTrialExpirada = !!maisRecente && historico.data?.some(
+    (h) => h.subscription_id === maisRecente.id && h.previous_status === "TRIAL" && h.new_status === "EXPIRED",
+  );
+  const assinatura = !maisRecente ? undefined
+    : maisRecente.status === "CANCELLED" ? undefined
+    : maisRecente.status === "EXPIRED" ? (origemTrialExpirada ? maisRecente : undefined)
+    : maisRecente;
   const atual = versoes.data?.find((v) => v.id === assinatura?.plan_version_id);
+  const versaoAtualVigente = !!atual && atual.status === "PUBLISHED" && !!atual.effective_from
+    && new Date(atual.effective_from).getTime() <= Date.now()
+    && (!atual.effective_to || new Date(atual.effective_to).getTime() > Date.now());
   const trialUtilizado = assinaturas.data?.some((s) => s.organization_id === org && s.status === "TRIAL") || historico.data?.some((h) => h.organization_id === org && (h.action === "start_trial" || h.previous_status === "TRIAL" || h.new_status === "TRIAL"));
   const permitidas = assinatura
     ? assinatura.plan_version_id === null ? ["change_plan" as const] : acoesAssinatura(assinatura.status, assinatura.trial_ends_at)
@@ -72,13 +99,21 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const regularizar = acao === "activate_subscription";
   const trialVencido = assinatura?.status === "TRIAL" && !!assinatura.trial_ends_at && new Date(assinatura.trial_ends_at).getTime() <= Date.now();
   const situacaoEfetiva = trialVencido ? "Teste vencido" : assinatura ? SITUACOES[assinatura.status] ?? "Situação indisponível" : "";
-  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo) || (regularizar && !confirmado);
+  // Bloqueios da regularização espelham o núcleo: cancelamento agendado ou
+  // versão atual carregada fora de vigência impedem a conversão nesta fase.
+  const bloqueioRegularizar = !regularizar || !assinatura ? null
+    : assinatura.cancel_at ? "Esta assinatura tem cancelamento agendado. Cancele a agenda antes de regularizar."
+    : !versoes.isSuccess ? "Carregando a vigência da versão atual…"
+    : !versaoAtualVigente ? "A versão atual da assinatura não está publicada e vigente. Regularize o plano com Alterar plano antes de converter."
+    : null;
+  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo) || (regularizar && (!confirmado || bloqueioRegularizar !== null));
   useEffect(() => {
     setVersao(""); setMotivo(""); setRefreshError(false); setConfirmado(false);
   }, [org]);
   // Confirmação só vale para o estado lido: qualquer mudança de assinatura,
-  // versão, status ou snapshots reseta a confirmação explícita.
-  useEffect(() => { setConfirmado(false); }, [assinatura?.id, assinatura?.plan_version_id, assinatura?.status, assinatura?.price_snapshot, assinatura?.billing_cycle_snapshot]);
+  // versão, status, moeda, cancelamento agendado ou snapshots reseta a
+  // confirmação explícita.
+  useEffect(() => { setConfirmado(false); }, [assinatura?.id, assinatura?.plan_version_id, assinatura?.status, assinatura?.price_snapshot, assinatura?.currency_snapshot, assinatura?.billing_cycle_snapshot, assinatura?.cancel_at, assinatura?.current_period_start, assinatura?.current_period_end]);
   useEffect(() => {
     if (!permitidas.includes(acao) && permitidas[0]) setAcao(permitidas[0]);
   }, [assinatura?.status, assinatura?.trial_ends_at, acao]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -161,7 +196,8 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
           {acao === "change_plan" && assinatura?.status === "SUSPENDED" && <p className="mb-3 text-sm" role="note">O plano será atualizado, mas a assinatura continuará suspensa. Para liberar o acesso, use Reativar assinatura.</p>}
           {regularizar && assinatura && permitidas.includes(acao) && <div className="mb-3 space-y-2 rounded-md border p-3 text-sm" role="note">
             <p><strong>Regularização de assinatura.</strong> A situação passa de {situacaoEfetiva} para <strong>Ativa</strong>, mantendo o plano atual{atual ? ` (${atual.name_snapshot} · v${atual.version_number})` : ""} e o histórico do período de teste.</p>
-            <p>Condições preservadas da assinatura: <strong>{assinatura.price_snapshot != null ? `R$ ${Number(assinatura.price_snapshot).toFixed(2).replace(".", ",")} ${assinatura.currency_snapshot ?? ""}`.trim() : "valor não registrado"}{assinatura.billing_cycle_snapshot ? ` · ciclo ${CICLOS[assinatura.billing_cycle_snapshot] ?? assinatura.billing_cycle_snapshot}` : ""}</strong> (exatamente como registradas; nada é recalculado).</p>
+            <p>Condições preservadas da assinatura: <strong>{assinatura.price_snapshot != null ? formatarMoedaSnapshot(Number(assinatura.price_snapshot), assinatura.currency_snapshot) : "valor não registrado"}{assinatura.billing_cycle_snapshot ? ` · ciclo ${CICLOS[assinatura.billing_cycle_snapshot] ?? assinatura.billing_cycle_snapshot}` : ""}</strong> (exatamente como registradas; nada é recalculado).</p>
+            {bloqueioRegularizar && <p role="alert">{bloqueioRegularizar}</p>}
             <p>Esta ação <strong>não registra pagamento nem quita cobrança</strong>, não prorroga o teste e não implanta cobrança ou expiração automática.</p>
             <label className="flex items-start gap-2">
               <input type="checkbox" checked={confirmado} disabled={busy} onChange={(e) => setConfirmado(e.target.checked)} aria-label="Confirmar regularização" className="mt-1" />

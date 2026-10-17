@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 """PostgreSQL descartável via socket /tmp; nunca conecta ao hosted.
-Harness v2 da candidata de regularização de assinatura: espelha o live
-(user_roles + profiles.ativo, is_platform_superadmin real, índice parcial
-uq_org_subscriptions_one_current, guard de DML com papel authenticator real,
-ticket/histórico) e aplica scripts/subscription-regularization/candidate.sql.review.
-Casos: ator ativo/inativo, replay idempotente/adulterado/outra org/outra ação,
-EXPIRED com e sem origem TRIAL, CANCELLED mais nova, cancel_at, versão vencida,
-legada, empresa inativa/inexistente, regressão de ações existentes,
-concorrência com duas conexões e DML direto negado."""
+Harness v3 da regularização de assinatura: espelha o live com fidelidade —
+user_roles + profiles(ativo, senha_provisoria), is_platform_superadmin real,
+índice parcial uq_org_subscriptions_one_current, tickets platform_private.authz_tickets
+(issue_ticket/has_ticket por txid), guard de DML por ticket (não GUC) com
+session_user authenticator real, histórico com actor_user_id, triggers com os
+nomes live (saas_subscription_guard_trg, trg_org_subscriptions_audit,
+saas_subscription_require_published_version_trg e os três de histórico) —
+e aplica o corpo INSTALADO em scripts/subscription-regularization/candidate.sql.review
+(idêntico à migration 20261017005910).
+Casos: ator ativo/inativo/senha_provisoria, replay idempotente/adulterado/outra
+org/outra ação, EXPIRED com e sem origem TRIAL, CANCELLED mais nova, cancel_at,
+versão vencida, legada, empresa inativa/inexistente, regressão de ações
+existentes, concorrência com duas conexões (exatamente 1 sucesso/1 histórico),
+DML direto negado sem ticket e papel anon sem EXECUTE."""
 from pathlib import Path
 import os, subprocess, tempfile, shutil, time, threading, uuid
 
 ROOT = Path(__file__).resolve().parents[2]
-tmp = Path(tempfile.mkdtemp(prefix='subreg-v2-', dir='/tmp')); tmp.chmod(0o777)
+tmp = Path(tempfile.mkdtemp(prefix='subreg-v3-', dir='/tmp')); tmp.chmod(0o777)
 prefix = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
 base = ['psql', '-X', '-h', str(tmp), '-p', '55497', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-qAt']
 
@@ -29,10 +35,11 @@ def runerr(sql):
 checks = 0
 def uid(): return str(uuid.uuid4())
 
+# session_user authenticator real (como PostgREST) + papel authenticated por request.
 def as_user(u, sql):
-    return f"BEGIN;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{u}';{sql};COMMIT;"
+    return f"BEGIN;SET SESSION AUTHORIZATION authenticator;SET LOCAL ROLE authenticated;SET LOCAL request.jwt.claim.sub='{u}';{sql};COMMIT;"
 
-SA, SA_INATIVO, ADMIN = uid(), uid(), uid()
+SA, SA_INATIVO, SA_PROVISORIO, ADMIN = uid(), uid(), uid(), uid()
 ORG1, ORG2 = uid(), uid()
 PLAN, V1, V2 = uid(), uid(), uid()
 COR1, COR2 = uid(), uid()
@@ -47,12 +54,14 @@ try:
         raise SystemExit(open(tmp/'log').read())
 
     # ---- schema espelhado do live ----
-    run('''CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role;
+    run('''CREATE ROLE authenticator NOLOGIN; CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role;
+GRANT authenticated, anon TO authenticator;
 CREATE SCHEMA auth; CREATE SCHEMA platform_private;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 CREATE TYPE public.app_role AS ENUM('administrador','superadmin','gestor','financeiro');
 CREATE TYPE public.saas_subscription_status AS ENUM('TRIAL','ACTIVE','PAST_DUE','SUSPENDED','CANCELLED','EXPIRED');
-CREATE TABLE public.profiles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid UNIQUE NOT NULL, organization_id uuid, ativo boolean NOT NULL DEFAULT true);
+CREATE TABLE public.profiles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid UNIQUE NOT NULL, organization_id uuid,
+  ativo boolean NOT NULL DEFAULT true, senha_provisoria boolean NOT NULL DEFAULT false);
 CREATE TABLE public.user_roles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, role public.app_role NOT NULL, UNIQUE(user_id, role));
 CREATE TABLE public.organizations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), nome text, ativo boolean NOT NULL DEFAULT true, status text NOT NULL DEFAULT 'ativa');
 CREATE TABLE public.saas_plans(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), nome text);
@@ -76,27 +85,40 @@ CREATE UNIQUE INDEX uq_org_subscriptions_one_current ON public.organization_subs
 CREATE TABLE public.organization_subscription_history(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), subscription_id uuid NOT NULL, organization_id uuid NOT NULL,
   action text NOT NULL, reason text, previous_status text, new_status text,
-  old_values jsonb, new_values jsonb, correlation_id uuid, created_by uuid, created_at timestamptz NOT NULL DEFAULT now());
+  old_values jsonb, new_values jsonb, correlation_id uuid, actor_user_id uuid, created_at timestamptz NOT NULL DEFAULT now());
+-- Tickets de autorização por transação (modelo live platform_private.authz_tickets).
+CREATE TABLE platform_private.authz_tickets(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  op text NOT NULL, organization_id uuid NOT NULL, txid bigint NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+CREATE FUNCTION platform_private.issue_ticket(_op text, _org uuid) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  INSERT INTO platform_private.authz_tickets(op, organization_id, txid) VALUES (_op, _org, txid_current());
+END $$;
+CREATE FUNCTION platform_private.has_ticket(_op text, _org uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+  SELECT EXISTS (SELECT 1 FROM platform_private.authz_tickets t
+    WHERE t.op = _op AND t.organization_id = _org AND t.txid = txid_current())
+$$;
 CREATE FUNCTION public.is_platform_superadmin(_user_id uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS
 $$ SELECT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=_user_id AND r.role='superadmin'::public.app_role) $$;
-CREATE FUNCTION platform_private.issue_ticket(_op text, _org uuid) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$ BEGIN NULL; END $$;
+-- Guard de DML: sem ticket da transação, escrita por authenticator/authenticated é negada.
 CREATE FUNCTION public.saas_subscription_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN
-  IF nullif(current_setting('app.saas_change_action', true),'') IS NULL AND session_user IN ('authenticator','authenticated') THEN
-    RAISE EXCEPTION 'direct DML negado';
+  IF session_user IN ('authenticator','authenticated')
+     AND NOT platform_private.has_ticket('saas_subscription_write', COALESCE(NEW.organization_id, OLD.organization_id)) THEN
+    RAISE EXCEPTION 'direct DML negado' USING ERRCODE='42501';
   END IF;
-  RETURN NEW;
+  RETURN COALESCE(NEW, OLD);
 END $$;
-CREATE ROLE authenticator NOLOGIN;
-CREATE TRIGGER saas_subscription_guard BEFORE UPDATE ON public.organization_subscriptions
+CREATE TRIGGER saas_subscription_guard_trg BEFORE INSERT OR UPDATE OR DELETE ON public.organization_subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.saas_subscription_guard();
 CREATE FUNCTION public.saas_subscription_audit() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN
-  INSERT INTO public.organization_subscription_history(subscription_id,organization_id,action,reason,previous_status,new_status,old_values,new_values,correlation_id,created_by)
+  INSERT INTO public.organization_subscription_history(subscription_id,organization_id,action,reason,previous_status,new_status,old_values,new_values,correlation_id,actor_user_id)
   VALUES (NEW.id, NEW.organization_id,
           current_setting('app.saas_change_action', true),
           current_setting('app.saas_change_reason', true),
@@ -104,14 +126,37 @@ BEGIN
           nullif(current_setting('app.saas_correlation_id', true),'')::uuid, auth.uid());
   RETURN NEW;
 END $$;
-CREATE TRIGGER saas_subscription_audit AFTER UPDATE ON public.organization_subscriptions
+CREATE TRIGGER trg_org_subscriptions_audit AFTER UPDATE ON public.organization_subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.saas_subscription_audit();
+CREATE FUNCTION public.saas_subscription_require_published_version() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  IF NEW.plan_version_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.saas_plan_versions v WHERE v.id = NEW.plan_version_id AND v.status = 'PUBLISHED') THEN
+    RAISE EXCEPTION 'versão não publicada' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER saas_subscription_require_published_version_trg BEFORE INSERT OR UPDATE ON public.organization_subscriptions
+  FOR EACH ROW EXECUTE FUNCTION public.saas_subscription_require_published_version();
+CREATE FUNCTION public.saas_no_delete() RETURNS trigger LANGUAGE plpgsql SET search_path TO '' AS
+$$ BEGIN RAISE EXCEPTION 'histórico imutável: delete negado' USING ERRCODE='42501'; END $$;
+CREATE FUNCTION public.saas_history_no_mutation() RETURNS trigger LANGUAGE plpgsql SET search_path TO '' AS
+$$ BEGIN RAISE EXCEPTION 'histórico imutável: update negado' USING ERRCODE='42501'; END $$;
+CREATE FUNCTION public.saas_subscription_history_no_mutation() RETURNS trigger LANGUAGE plpgsql SET search_path TO '' AS
+$$ BEGIN RAISE EXCEPTION 'histórico imutável: truncado negado' USING ERRCODE='42501'; END $$;
+CREATE TRIGGER organization_subscription_history_no_delete_trg BEFORE DELETE ON public.organization_subscription_history
+  FOR EACH ROW EXECUTE FUNCTION public.saas_no_delete();
+CREATE TRIGGER organization_subscription_history_no_mutation_trg BEFORE UPDATE ON public.organization_subscription_history
+  FOR EACH ROW EXECUTE FUNCTION public.saas_history_no_mutation();
+CREATE TRIGGER trg_org_sub_history_no_mutation BEFORE TRUNCATE ON public.organization_subscription_history
+  FOR EACH STATEMENT EXECUTE FUNCTION public.saas_subscription_history_no_mutation();
 GRANT USAGE ON SCHEMA platform_private TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_platform_superadmin(uuid) TO authenticated;
 GRANT SELECT, UPDATE ON public.organization_subscriptions TO authenticated;
 GRANT SELECT ON public.organizations, public.saas_plan_versions, public.profiles, public.user_roles TO authenticated;''')
 
-    # ---- candidata (sem o preflight, que depende do live hosted) ----
+    # ---- corpo INSTALADO (candidate.sql.review é idêntico à migration 20261017005910) ----
     candidata = (ROOT/'scripts/subscription-regularization/candidate.sql.review').read_text()
     corpo = candidata.split('CREATE OR REPLACE FUNCTION platform_private.transition_subscription_core', 1)[1]
     run('CREATE OR REPLACE FUNCTION platform_private.transition_subscription_core' + corpo)
@@ -121,13 +166,14 @@ $$ SELECT platform_private.transition_subscription_core(_organization_id,_action
 GRANT EXECUTE ON FUNCTION platform_private.transition_subscription_core(uuid,text,text,uuid,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.platform_transition_subscription(uuid,text,text,uuid,uuid) TO authenticated;''')
 
-    run(f"""INSERT INTO public.profiles(user_id, ativo) VALUES ('{SA}', true), ('{SA_INATIVO}', false), ('{ADMIN}', true);
-INSERT INTO public.user_roles(user_id, role) VALUES ('{SA}','superadmin'), ('{SA_INATIVO}','superadmin'), ('{ADMIN}','administrador');
+    run(f"""INSERT INTO public.profiles(user_id, ativo, senha_provisoria) VALUES
+  ('{SA}', true, false), ('{SA_INATIVO}', false, false), ('{SA_PROVISORIO}', true, true), ('{ADMIN}', true, false);
+INSERT INTO public.user_roles(user_id, role) VALUES ('{SA}','superadmin'), ('{SA_INATIVO}','superadmin'), ('{SA_PROVISORIO}','superadmin'), ('{ADMIN}','administrador');
 INSERT INTO public.organizations(id, nome, ativo) VALUES ('{ORG1}','AR Bio', true), ('{ORG2}','Outra', true);
 INSERT INTO public.saas_plans(id, nome) VALUES ('{PLAN}','Pro');
 INSERT INTO public.saas_plan_versions(id, plan_id, status, price_amount, currency, billing_cycle, effective_from)
   VALUES ('{V1}','{PLAN}','PUBLISHED', 499.90, 'BRL', 'monthly', now() - interval '30 days'),
-         ('{V2}','{PLAN}','PUBLISHED', 599.90, 'BRL', 'yearly', now() - interval '30 days');""")
+         ('{V2}','{PLAN}','PUBLISHED', 599.90, 'BRL', 'annual', now() - interval '30 days');""")
 
     # 1) superadmin ativo: TRIAL vencido -> ACTIVE, snapshots/trial/periodo preservados
     SUB1 = uid()
@@ -136,8 +182,8 @@ VALUES ('{SUB1}','{ORG1}','{PLAN}','{V1}','TRIAL', now()-interval '20 days', now
     run(as_user(SA, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','regularização manual AR Bio','{COR1}',NULL)")); checks += 1
     s = run(f"SELECT status||'|'||price_snapshot||'|'||currency_snapshot||'|'||billing_cycle||'|'||(trial_ends_at IS NOT NULL)||'|'||(current_period_start IS NULL) FROM public.organization_subscriptions WHERE id='{SUB1}'")
     assert s == "ACTIVE|499.90|BRL|monthly|true|true", s; checks += 1
-    h = run(f"SELECT count(*)||'|'||string_agg(DISTINCT action,',')||'|'||string_agg(DISTINCT reason,',') FROM public.organization_subscription_history WHERE subscription_id='{SUB1}'")
-    assert h == "1|activate_subscription|regularização manual AR Bio", h; checks += 1
+    h = run(f"SELECT count(*)||'|'||string_agg(DISTINCT action,',')||'|'||string_agg(DISTINCT reason,',')||'|'||string_agg(DISTINCT actor_user_id::text,',') FROM public.organization_subscription_history WHERE subscription_id='{SUB1}'")
+    assert h == f"1|activate_subscription|regularização manual AR Bio|{SA}", h; checks += 1
 
     # 2) replay idêntico: mesmo id, sem novo histórico
     r = run(as_user(SA, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','regularização manual AR Bio','{COR1}',NULL)"))
@@ -160,13 +206,21 @@ VALUES ('{SUB1}','{ORG1}','{PLAN}','{V1}','TRIAL', now()-interval '20 days', now
     e = runerr(as_user(SA_INATIVO, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','regularização manual AR Bio','{COR1}',NULL)"))
     assert "perfil do ator inativo" in e, e; checks += 1
 
+    # 6b) superadmin com senha_provisoria: negado
+    e = runerr(as_user(SA_PROVISORIO, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','motivo valido','{uid()}',NULL)"))
+    assert "perfil do ator inativo" in e, e; checks += 1
+
     # 7) admin comum: negado
     e = runerr(as_user(ADMIN, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','motivo valido','{uid()}',NULL)"))
     assert "apenas superadmin" in e, e; checks += 1
 
-    # 8) sem claims (anon): negado
-    e = runerr(f"BEGIN;SET LOCAL ROLE authenticated;SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','motivo valido','{uid()}',NULL);COMMIT;")
+    # 8) sem claims (authenticated sem sub): negado
+    e = runerr(f"BEGIN;SET SESSION AUTHORIZATION authenticator;SET LOCAL ROLE authenticated;SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','motivo valido','{uid()}',NULL);COMMIT;")
     assert "apenas superadmin" in e, e; checks += 1
+
+    # 8b) papel anon: sem EXECUTE no wrapper
+    e = runerr(f"BEGIN;SET SESSION AUTHORIZATION authenticator;SET LOCAL ROLE anon;SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','motivo valido','{uid()}',NULL);COMMIT;")
+    assert "permission denied" in e, e; checks += 1
 
     # 9) EXPIRED de origem TRIAL -> ACTIVE (fallback sem corrente)
     SUB2 = uid()
@@ -196,7 +250,7 @@ VALUES ('{SUB4A}','{ORG4}','expire_trial','fim trial','TRIAL','EXPIRED','{uid()}
     e = runerr(as_user(SA, f"SELECT public.platform_transition_subscription('{ORG4}','activate_subscription','motivo valido','{uid()}',NULL)"))
     assert "origem em trial" in e, e; checks += 1
 
-    # 12) CANCELLED mais nova: activate cai no EXPIRED sem origem -> negado; cancel sem corrente -> negado
+    # 12) CANCELLED mais nova: cancel sem corrente -> negado
     e = runerr(as_user(SA, f"SELECT public.platform_transition_subscription('{ORG4}','cancel','motivo valido','{uid()}',NULL)"))
     assert "corrente inexistente" in e, e; checks += 1
 
@@ -266,9 +320,15 @@ VALUES ('{SUB10}','{ORG10}','{PLAN}','{V1}','TRIAL', now()-interval '20 days', n
     assert run(f"SELECT status FROM public.organization_subscriptions WHERE id='{SUB10}'") == "ACTIVE"
     assert run(f"SELECT count(*) FROM public.organization_subscription_history WHERE subscription_id='{SUB10}'") == "1"; checks += 1
 
-    # 21) DML direto com papel authenticator: negado pelo guard
-    e = runerr(f"SET SESSION AUTHORIZATION authenticated;UPDATE public.organization_subscriptions SET status='ACTIVE' WHERE id='{SUB9}';")
+    # 21) DML direto com session_user authenticator e SEM ticket: negado pelo guard
+    e = runerr(f"SET SESSION AUTHORIZATION authenticator;SET ROLE authenticated;UPDATE public.organization_subscriptions SET status='ACTIVE' WHERE id='{SUB9}';")
     assert "direct DML" in e, e; checks += 1
+
+    # 22) histórico imutável: UPDATE/DELETE negados
+    e = runerr(f"UPDATE public.organization_subscription_history SET reason='x' WHERE subscription_id='{SUB1}'")
+    assert "histórico imutável" in e, e
+    e = runerr(f"DELETE FROM public.organization_subscription_history WHERE subscription_id='{SUB1}'")
+    assert "histórico imutável" in e, e; checks += 1
 
     print(f"PASS — {checks} checks (PostgreSQL isolado; NÃO hosted)")
 finally:
