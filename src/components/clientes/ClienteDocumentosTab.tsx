@@ -26,6 +26,8 @@ import { FileIcon, Upload, Trash2, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
 
 const TIPOS: { value: string; label: string }[] = [
   { value: "cnh", label: "CNH" },
