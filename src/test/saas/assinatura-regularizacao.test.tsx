@@ -22,7 +22,7 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useVersoesPlanosSaaS: () => ({ isSuccess: true, data: [
     { id: "base", name_snapshot: "Plano Base", version_number: 1, billing_cycle: "MONTHLY", status: "PUBLISHED", effective_from: "2026-01-01" },
   ] }),
-  useAssinaturasSaaS: () => ({ isSuccess: true, data: [{ organization_id: "org", status: mocks.status, plan_version_id: "base", trial_ends_at: mocks.trialEndsAt }], refetch: vi.fn().mockResolvedValue({}) }),
+  useAssinaturasSaaS: () => ({ isSuccess: true, data: [{ id: "sub1", organization_id: "org", status: mocks.status, plan_version_id: "base", trial_ends_at: mocks.trialEndsAt, price_snapshot: 499.9, currency_snapshot: "BRL", billing_cycle_snapshot: "monthly" }], refetch: vi.fn().mockResolvedValue({}) }),
   useHistoricoAssinaturasSaaS: () => ({ isSuccess: true, data: [], refetch: vi.fn().mockResolvedValue({}) }),
   useAlterarAssinatura: () => ({ mutate: mocks.mutate, isPending: false }),
   mensagemErroAssinatura: () => "Erro seguro", useCriarExcecao: vi.fn(), useEncerrarExcecao: vi.fn(), useExcecoesSaaS: vi.fn(), useModulosFeaturesSaaS: vi.fn(),
