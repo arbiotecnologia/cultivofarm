@@ -282,13 +282,15 @@ try:
  # tempo (por desenho); leituras passam pelo resolver canônico, que filtra
  # valid_until. Aqui provamos que o predicado de vigência exclui o expirado e
  # que o profile NÃO é reescrito sozinho (sem falso principal novo).
+ cur=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
+ other=C3 if cur==C1 else C1
  run(admin(f"UPDATE public.user_clientes SET valid_until=now()+interval '2 seconds' WHERE user_id='{NEST}' AND principal"))
  time.sleep(3)
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now())",'0')
  # próximo DML qualquer reconcilia: rebaixa o expirado e elege vigente
- run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '1 hour' WHERE user_id='{NEST}' AND cliente_id='{C1}'"))
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C1)
- check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C1)
+ run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '1 hour' WHERE user_id='{NEST}' AND cliente_id='{other}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",other)
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",other)
  print(f'{checks} checks PASS — PostgreSQL isolado, guards reais, FK cascade, writer aninhado, 2 conexões; não hosted')
  print('UNVERIFIED: ensaio hosted BEGIN/ROLLBACK, RLS/policies completas, schema fiscal integral, guard_superadmin_role_assignment')
 finally:
