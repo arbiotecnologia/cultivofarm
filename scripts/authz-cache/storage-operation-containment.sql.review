@@ -1,10 +1,10 @@
 -- CANDIDATO V6 DE CONTENÇÃO, NÃO INSTALAR. Não migration, não executado.
 -- Ref exclusivo swzpzcwiasxmjutrmvkm comprovado externamente.
--- REVIEW BLOCKER: manifest/policy/helper live não anexado; abaixo falha fechado.
+-- Helper fornecido auditor 12:49; manifest/policies/operation live faltam.
 -- Nenhum auth/storage function/table/trigger é criado/alterado.
 BEGIN;
 DO $preflight$
-DECLARE expected_policy_md5 text := NULL; expected_helper_md5 text := NULL;
+DECLARE expected_policy_md5 text := NULL; expected_helper_md5 text := 'ccefb34283c346cc88e224d075bd5312';
 BEGIN
  IF expected_policy_md5 IS NULL OR expected_helper_md5 IS NULL THEN
    RAISE EXCEPTION 'v6_storage_live_contract_unproven';
@@ -14,6 +14,11 @@ BEGIN
  END IF;
  IF md5(pg_get_functiondef('storage.allow_any_operation(text[])'::regprocedure))
      IS DISTINCT FROM expected_helper_md5 THEN RAISE EXCEPTION 'v6_storage_helper_drift'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='storage.allow_any_operation(text[])'::regprocedure
+   AND provolatile='s' AND prosecdef IS FALSE AND proconfig IS NULL
+   AND proowner='supabase_storage_admin'::regrole AND proacl IS NULL) THEN
+   RAISE EXCEPTION 'v6_storage_helper_acl_drift';
+ END IF;
  IF (SELECT md5(string_agg(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check),E'\n' ORDER BY policyname))
      FROM pg_policies WHERE schemaname='storage' AND tablename='objects')
      IS DISTINCT FROM expected_policy_md5 THEN RAISE EXCEPTION 'v6_storage_policy_drift'; END IF;
