@@ -8,6 +8,10 @@ const futuro = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn(), toast: vi.fn(),
   status: "TRIAL" as string, trialEndsAt: "2020-01-01" as string | null,
+  cancelAt: null as string | null, moeda: "BRL" as string, ciclo: "monthly" as string,
+  versaoStatus: "PUBLISHED" as string, versaoFrom: "2026-01-01" as string | null, versaoTo: null as string | null,
+  historico: [] as Array<Record<string, unknown>>,
+  extras: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("sonner", () => ({ toast: { success: mocks.toast, error: vi.fn() } }));
