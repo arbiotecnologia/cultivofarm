@@ -1,0 +1,16 @@
+-- CANDIDATO rollback somente; NÃO executar no hosted.
+-- Ref swzpzcwiasxmjutrmvkm deve ser comprovado pelo executor.
+-- Exige evidência externa de AUTHZ_CACHE_FOUNDATION_ENABLED=false antes de executar.
+-- Sem CASCADE: qualquer dependência nova impede remoção silenciosa.
+BEGIN;
+DO $guard$
+BEGIN
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=to_regprocedure('public.get_my_authz_fingerprint()')
+   AND (p.prosecdef OR p.proconfig IS DISTINCT FROM ARRAY['search_path=""']::text[])) THEN
+   RAISE EXCEPTION 'authz_rollback_definition_drift';
+ END IF;
+END $guard$;
+DROP FUNCTION IF EXISTS public.get_my_authz_fingerprint();
+DROP FUNCTION IF EXISTS authz_cache_private.get_my_fingerprint_core();
+DROP SCHEMA IF EXISTS authz_cache_private;
+COMMIT;
