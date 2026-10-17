@@ -217,8 +217,10 @@ try:
  checks+=1
  # ---- 11) concorrência: duas conexões trocando principal em loop ----
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval '1 hour' WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
- # troca em DOIS statements (índice parcial nega true simultâneo no mesmo comando)
- swap=f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal;UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{{C}}';"
+ # Com o índice parcial + eleição automática, a "troca" de principal é feita
+ # por VIGÊNCIA: reativar ambos e revogar o principal atual; o sync elege o
+ # outro deterministicamente. Dois statements por iteração.
+ swap=f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}');UPDATE public.user_clientes SET is_active=false,revoked_at=now() WHERE user_id='{PROD}' AND principal AND cliente_id='{{C}}';"
  body=''.join("BEGIN;SET LOCAL ROLE service_role;"+swap.replace('{C}',C1 if i%2 else C2)+"COMMIT;" for i in range(20))
  procs=[subprocess.Popen(base[:-1],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True) for _ in range(2)]
  for p in procs: p.stdin.write(body); p.stdin.close()
