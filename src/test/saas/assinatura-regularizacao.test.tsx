@@ -87,4 +87,23 @@ describe("AlterarAssinaturaCard — regularização", () => {
     expect(screen.getByText(/Em teste/)).toBeInTheDocument();
     expect(screen.queryByText(/Teste vencido/)).not.toBeInTheDocument();
   });
+
+  it("resumo exibe snapshots preservados da assinatura (preço/moeda/ciclo legível), não o ciclo da versão", () => {
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription");
+    // assinatura mockada: price 499.9 BRL, ciclo snapshot 'monthly'; versão tem billing_cycle 'MONTHLY'
+    expect(screen.getByText(/R\$ 499,90 BRL/)).toBeInTheDocument();
+    expect(screen.getByText(/ciclo mensal/)).toBeInTheDocument();
+    expect(screen.queryByText(/ciclo MONTHLY/)).not.toBeInTheDocument();
+  });
+
+  it("confirmação reseta quando o estado lido da assinatura muda", () => {
+    const { rerender } = render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription"); motivo();
+    fireEvent.click(screen.getByLabelText("Confirmar regularização"));
+    expect(screen.getByRole("button", { name: "Regularizar assinatura" })).toBeEnabled();
+    mocks.status = "EXPIRED"; // estado lido mudou
+    rerender(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    expect(screen.getByLabelText("Confirmar regularização")).not.toBeChecked();
+  });
 });
