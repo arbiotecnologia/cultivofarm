@@ -1,0 +1,40 @@
+-- READ-ONLY capture 2026-10-17; canonical ref swzpzcwiasxmjutrmvkm.
+-- Source: read_query 20261017-125635-506933 / 20261017-125846-*
+-- Bodies below are pg_get_functiondef verbatim; not migration or execution.
+CREATE OR REPLACE FUNCTION storage.operation()
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+BEGIN
+    RETURN current_setting('storage.operation', true);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION storage.allow_any_operation(expected_operations text[])
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+AS $function$
+  WITH current_operation AS (
+    SELECT storage.operation() AS raw_operation
+  ),
+  normalized AS (
+    SELECT CASE
+      WHEN raw_operation LIKE 'storage.%' THEN substr(raw_operation, 9)
+      ELSE raw_operation
+    END AS current_operation
+    FROM current_operation
+  )
+  SELECT EXISTS (
+    SELECT 1
+    FROM normalized n
+    CROSS JOIN LATERAL unnest(expected_operations) AS expected_operation
+    WHERE expected_operation IS NOT NULL
+      AND expected_operation <> ''
+      AND n.current_operation = CASE
+        WHEN expected_operation LIKE 'storage.%' THEN substr(expected_operation, 9)
+        ELSE expected_operation
+      END
+  );
+$function$;
