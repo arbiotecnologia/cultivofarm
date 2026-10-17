@@ -18,6 +18,9 @@ SELECT pg_temp.assert_true('core direct same result',authz_cache_private.get_my_
 SELECT pg_temp.assert_true('opaque exactly two fields',(SELECT count(*)=2 FROM jsonb_object_keys(public.get_my_authz_fingerprint())));
 RESET ROLE;
 SELECT pg_temp.assert_true('wrapper INVOKER',NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_my_authz_fingerprint()'::regprocedure));
+SELECT pg_temp.assert_true('Cliente resolver real volatility v',(SELECT provolatile='v' FROM pg_proc WHERE oid='public.get_cliente_ids_for_user(uuid)'::regprocedure));
+SELECT pg_temp.assert_true('core preserves volatile dependency',(SELECT provolatile='v' FROM pg_proc WHERE oid='authz_cache_private.get_my_fingerprint_core()'::regprocedure));
+SELECT pg_temp.assert_true('wrapper preserves volatile core',(SELECT provolatile='v' FROM pg_proc WHERE oid='public.get_my_authz_fingerprint()'::regprocedure));
 SELECT pg_temp.assert_true('anon no schema usage',NOT has_schema_privilege('anon','authz_cache_private','USAGE'));
 SELECT pg_temp.assert_true('anon no wrapper execute',NOT has_function_privilege('anon','public.get_my_authz_fingerprint()','EXECUTE'));
 SELECT pg_temp.assert_true('service no core execute',NOT has_function_privilege('service_role','authz_cache_private.get_my_fingerprint_core()','EXECUTE'));

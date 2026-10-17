@@ -34,7 +34,7 @@ try:
  CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $$;
  CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo AND senha_provisoria=false) $$;
  CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() $$;
- CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT ARRAY(SELECT cliente_id FROM public.user_clientes WHERE user_id=$1 AND $1=auth.uid() AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now()) ORDER BY cliente_id) $$;
+ CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$ SELECT ARRAY(SELECT cliente_id FROM public.user_clientes WHERE user_id=$1 AND $1=auth.uid() AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now()) ORDER BY cliente_id) $$;
  CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT feature_key FROM public.fixture_entitlements WHERE user_id=$1 $$;
  CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid,boolean) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$;
  ''')
@@ -43,7 +43,15 @@ try:
  b2b=(ROOT/'supabase/migrations/20261008212043_b3b02dba-c8f9-4dbb-beb4-52d77aae3f62.sql').read_text()
  run(b2b[:b2b.index('REVOKE ALL')])
  candidate=(ROOT/'scripts/authz-cache/candidate.sql.review').read_text()
- run(re.sub(r'DO \$preflight\$.*?END \$preflight\$;', '',candidate,count=1,flags=re.S))
+ # Execute exact individual preflight contracts with fixture definition hashes.
+ # Hosted hashes remain immutable in the candidate; local bodies are reduced.
+ local_candidate=candidate
+ for signature, hosted in [
+  ('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c'),
+  ('platform_private.producer_commercial_client_scope(uuid)','49b8329ce232670c1560f0683b913a26'),
+  ('platform_private.b2b_commercial_context()','02158d4204dea67308558f649113ba6d')]:
+  local_candidate=local_candidate.replace(hosted,run(f"SELECT md5(pg_get_functiondef('{signature}'::regprocedure))"))
+ run(local_candidate)
  print(run((ROOT/'scripts/authz-cache/tests.sql.review').read_text()))
  run((ROOT/'scripts/authz-cache/rollback.sql.review').read_text())
  assert run("SELECT to_regprocedure('public.get_my_authz_fingerprint()') IS NULL AND to_regnamespace('authz_cache_private') IS NULL")=='t'

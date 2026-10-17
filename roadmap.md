@@ -1,3 +1,9 @@
+## Cache/anexos — revisão 0c324c2d, 17/10/2026 01:40 UTC
+- [ ] Corrigir preflight por volatilidade individual v/s/s, arquivar hashes informados e testar contrato real sem alterar resolvers.
+- [ ] Inventariar writers e preparar revisão monotônica transacional com testes locais; sem alegar ABA universal por updated_at.
+- [ ] Preparar download autenticado/Blob, limites/concurrency/lazy, descarte stale e cleanup; inventário de emissores e drenagem TTL/clientes antigos.
+- [ ] Revisão técnica/fullschema e prova autenticada: gates false, sem instalar/publicar/alterar associações, assinatura ou pagamentos. B2B publicado observado pelo auditor: parceiro correto/pedidos vazio/recursos indisponíveis, Plataforma negada; NÃO aprovação integral.
+
 ## Cache de autorização — recorte pequeno 17/10/2026 01:30 UTC
 - [x] Base preservada `5aff4b06369d3530272ee2107205f534669b0a16`; AR Bio ACTIVE confirmado pelo titular, correlação `22b1206d-ef4d-4409-91ec-add115a16228`, preço/snapshots/financeiro preservados. NÃO repetir ativação.
 - [x] Auditar/corrigir lease confirmada versus timeout e foco pending; 107/107 Vitest em 7 arquivos, AuthProvider/hooks/boundary reais com transporte simulado. Lint 0 erros/4 warnings existentes; build automático OK. Typecheck dedicado não executado pelo agente.
