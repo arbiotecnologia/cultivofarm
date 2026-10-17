@@ -90,9 +90,9 @@ describe("authzEpochMonitor", () => {
     expect(monitor.checkAccess()).toBe(false);
   });
 
-  it("pending esconde render: checkAccess false durante revalidação", async () => {
+  it("revalidação em background com lease vigente não derruba a tela; se a lease vencer no meio, fecha", async () => {
     let resolveFetch!: (v: AuthzFingerprintResult) => void;
-    const { monitor, fetcher } = setup({
+    const { monitor, advance } = setup({
       fetcher: vi.fn()
         .mockResolvedValueOnce(fp("A"))
         .mockImplementationOnce(() => new Promise((res) => { resolveFetch = res; })),
@@ -100,11 +100,29 @@ describe("authzEpochMonitor", () => {
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
     expect(monitor.checkAccess()).toBe(true);
-    monitor.revalidate();
+    monitor.revalidate(); // lease ainda vigente: sem flicker
+    expect(monitor.state()).toBe("valid");
+    expect(monitor.checkAccess()).toBe(true);
+    // Lease vence durante o request em voo: acesso fecha mesmo sem resposta.
+    await advance(15_001);
+    expect(monitor.state()).toBe("expired");
+    expect(monitor.checkAccess()).toBe(false);
+    resolveFetch(fp("A")); // resposta de geração antiga não reabre
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("pending esconde render quando NÃO há lease vigente (primeira carga)", async () => {
+    let resolveFetch!: (v: AuthzFingerprintResult) => void;
+    const { monitor } = setup({
+      fetcher: () => new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }),
+    });
+    monitor.start();
     expect(monitor.state()).toBe("pending");
     expect(monitor.checkAccess()).toBe(false);
     resolveFetch(fp("A"));
     await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("valid");
     expect(monitor.checkAccess()).toBe(true);
   });
 
