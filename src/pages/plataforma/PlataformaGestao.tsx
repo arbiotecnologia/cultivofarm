@@ -99,7 +99,14 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const regularizar = acao === "activate_subscription";
   const trialVencido = assinatura?.status === "TRIAL" && !!assinatura.trial_ends_at && new Date(assinatura.trial_ends_at).getTime() <= Date.now();
   const situacaoEfetiva = trialVencido ? "Teste vencido" : assinatura ? SITUACOES[assinatura.status] ?? "Situação indisponível" : "";
-  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo) || (regularizar && !confirmado);
+  // Bloqueios da regularização espelham o núcleo: cancelamento agendado ou
+  // versão atual carregada fora de vigência impedem a conversão nesta fase.
+  const bloqueioRegularizar = !regularizar || !assinatura ? null
+    : assinatura.cancel_at ? "Esta assinatura tem cancelamento agendado. Cancele a agenda antes de regularizar."
+    : !versoes.isSuccess ? "Carregando a vigência da versão atual…"
+    : !versaoAtualVigente ? "A versão atual da assinatura não está publicada e vigente. Regularize o plano com Alterar plano antes de converter."
+    : null;
+  const bloqueada = !org || !assinaturas.isSuccess || refreshError || !permitidas.includes(acao) || mesmaVersao || !motivoOk(motivo) || (regularizar && (!confirmado || bloqueioRegularizar !== null));
   useEffect(() => {
     setVersao(""); setMotivo(""); setRefreshError(false); setConfirmado(false);
   }, [org]);
