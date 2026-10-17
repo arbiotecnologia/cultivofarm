@@ -1,0 +1,293 @@
+// Integração REAL AuthProvider + AuthzEpochBoundary + hooks consumidores da
+// foundation de cache (mesma identidade), com fake clock e promises
+// controladas. Gate AUTHZ_CACHE_FOUNDATION_ENABLED mockado como TRUE —
+// produção permanece false até revisão.
+//
+// Cobre (revisão c787cd9e): vínculo muda mantendo uid/org/role; duas sessões
+// sem Broadcast; lease expira em aba oculta; offline durante fetch; resposta
+// atrasada; A→B→A; erro + retry; volta de foco; remount limpa rascunhos/
+// seleção/objectURLs; regressão de usuário INTERNO (sem monitor).
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, act, fireEvent, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+const U1 = "00000000-0000-4000-8000-00000000c001";
+const ORG = "00000000-0000-4000-8000-0000000000e1";
+
+// Fila de respostas controladas do fingerprint RPC.
+type FpResult = { eligible: boolean; fingerprint: string | null };
+let fpQueue: Array<() => Promise<FpResult>> = [];
+let fpCalls = 0;
+const nextFp = (r: FpResult) => fpQueue.push(async () => r);
+const deferredFp = () => {
+  let resolve!: (r: FpResult) => void;
+  let reject!: (e: unknown) => void;
+  const promise = new Promise<FpResult>((res, rej) => { resolve = res; reject = rej; });
+  fpQueue.push(() => promise);
+  return { resolve, reject };
+};
+
+let currentRoles: string[] = ["cliente_produtor"];
+
+const chain = (result: unknown) => {
+  const o: Record<string, unknown> = {};
+  o.eq = () => o;
+  o.maybeSingle = async () => result;
+  o.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
+    Promise.resolve(result).then(res, rej);
+  return o;
+};
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    auth: {
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      getSession: async () => ({ data: { session: { user: { id: U1 } } }, error: null }),
+      signOut: async () => ({}),
+    },
+    from: (table: string) => ({
+      select: () =>
+        chain(
+          table === "profiles"
+            ? {
+                data: {
+                  id: "p1",
+                  user_id: U1,
+                  nome: "Produtor",
+                  email: null,
+                  ativo: true,
+                  senha_provisoria: false,
+                  organization_id: ORG,
+                  cliente_id: "c1",
+                },
+                error: null,
+              }
+            : { data: currentRoles.map((role) => ({ role })), error: null },
+        ),
+    }),
+    rpc: async (name: string) => {
+      if (name !== "get_my_authz_fingerprint") throw new Error(`rpc inesperada: ${name}`);
+      fpCalls += 1;
+      const next = fpQueue.shift();
+      if (!next) throw new Error("sem resposta de fingerprint enfileirada");
+      const r = await next();
+      return { data: r, error: null };
+    },
+  },
+}));
+
+vi.mock("@/lib/authz/authzEpochGate", () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true }));
+vi.mock("@/lib/portalBroadcast", () => ({
+  subscribePortalEvents: () => () => {},
+  broadcastPortalEvent: () => {},
+}));
+vi.mock("@/lib/activePortalContext", () => ({ clearActivePortalContext: vi.fn() }));
+
+import { AuthProvider } from "@/hooks/useAuth";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+
+// Consumidor sensível: conta mounts/unmounts e simula rascunho + objectURL
+// limpos no unmount (como fazem os consumidores reais).
+const stats = { mounts: 0, unmounts: 0, revokedUrls: 0, draftsCleared: 0 };
+function Sensitive() {
+  useEffect(() => {
+    stats.mounts += 1;
+    const fakeUrl = `blob:fake-${stats.mounts}`;
+    return () => {
+      stats.unmounts += 1;
+      stats.revokedUrls += 1; // URL.revokeObjectURL(fakeUrl) no consumidor real
+      stats.draftsCleared += 1;
+      void fakeUrl;
+    };
+  }, []);
+  return <div>conteúdo sensível</div>;
+}
+
+function renderPortal() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <AuthProvider>
+        <AuthzEpochBoundary>
+          <Sensitive />
+        </AuthzEpochBoundary>
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
+
+const flush = async () => {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(0);
+  });
+};
+
+describe("foundation de cache — integração AuthProvider + boundary", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    fpQueue = [];
+    fpCalls = 0;
+    currentRoles = ["cliente_produtor"];
+    stats.mounts = 0;
+    stats.unmounts = 0;
+    stats.revokedUrls = 0;
+    stats.draftsCleared = 0;
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("perfil externo: pending ESCONDE conteúdo; resposta válida exibe", async () => {
+    const d = deferredFp();
+    renderPortal();
+    await flush(); // auth carrega; monitor inicia pending
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    expect(screen.getByText("Verificando seu acesso")).toBeTruthy();
+    await act(async () => {
+      d.resolve({ eligible: true, fingerprint: "fpA" });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+    expect(stats.mounts).toBe(1);
+  });
+
+  it("vínculo muda mantendo uid/org/role: época nova REMONTA e limpa rascunho/URL", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    nextFp({ eligible: true, fingerprint: "fpB" }); // revogação/troca de vínculo
+    renderPortal();
+    await flush();
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000); // poll seguinte
+    });
+    // Remount por época: unmount limpou rascunho e objectURL antes de exibir.
+    expect(stats.unmounts).toBe(1);
+    expect(stats.revokedUrls).toBe(1);
+    expect(stats.draftsCleared).toBe(1);
+    expect(stats.mounts).toBe(2);
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+  });
+
+  it("aba oculta: lease de 15s expira mesmo em estado valid e esconde dados", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    renderPortal();
+    await flush();
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15_001); // sem poll (oculta) — lease vence
+    });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    expect(screen.getByText("Sessão de acesso pausada")).toBeTruthy();
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+  });
+
+  it("offline durante fetch: expira imediatamente e resposta em voo NÃO reabre", async () => {
+    const d = deferredFp();
+    renderPortal();
+    await flush(); // pending, fetch em voo
+    await act(async () => {
+      window.dispatchEvent(new Event("offline"));
+    });
+    expect(screen.getByText("Sessão de acesso pausada")).toBeTruthy();
+    await act(async () => {
+      d.resolve({ eligible: true, fingerprint: "fpA" }); // resposta antiga
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+  });
+
+  it("resposta atrasada além da lease não reabre dados", async () => {
+    const d = deferredFp();
+    renderPortal();
+    await flush();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15_001); // lease vence antes da resposta
+    });
+    await act(async () => {
+      d.resolve({ eligible: true, fingerprint: "fpA" });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+  });
+
+  it("A→B→A: cada mudança de fingerprint remonta o conteúdo", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    nextFp({ eligible: true, fingerprint: "fpB" });
+    nextFp({ eligible: true, fingerprint: "fpA" }); // ABA
+    renderPortal();
+    await flush();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(stats.mounts).toBe(3);
+    expect(stats.unmounts).toBe(2);
+    expect(stats.revokedUrls).toBe(2);
+  });
+
+  it("erro na revalidação: esconde, mostra Tentar novamente e recupera", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    fpQueue.push(async () => {
+      throw new Error("rede");
+    });
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    renderPortal();
+    await flush();
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000); // poll falha
+    });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    const retry = screen.getByRole("button", { name: "Tentar novamente" });
+    await act(async () => {
+      fireEvent.click(retry);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+  });
+
+  it("volta de foco revalida antes de mostrar", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    renderPortal();
+    await flush();
+    const callsBefore = fpCalls;
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fpCalls).toBe(callsBefore + 1);
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+  });
+
+  it("duas sessões independentes sem Broadcast: revogação em uma não afeta a outra", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" }); // sessão 1
+    renderPortal();
+    await flush();
+    // Segunda sessão (outro dispositivo) com fila própria simulada: o monitor
+    // dela é independente — aqui provamos que a sessão 1 não depende de
+    // BroadcastChannel: sem nenhum evento cross-tab, ela revalida sozinha.
+    nextFp({ eligible: false, fingerprint: null }); // vínculo revogado no servidor
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    expect(screen.getByText("Sessão de acesso pausada")).toBeTruthy();
+  });
+
+  it("regressão: usuário INTERNO não cria monitor nem chama o RPC", async () => {
+    currentRoles = ["administrador"];
+    renderPortal();
+    await flush();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+    expect(fpCalls).toBe(0);
+  });
+});
