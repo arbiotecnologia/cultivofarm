@@ -461,6 +461,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
 
   const signOut = async () => {
+    // Gate-off remains a no-op. Fence requests before asynchronous logout.
+    authzMonitorRef.current?.stop();
     try {
       clearActivePortalContext();
       const { broadcastPortalEvent } = await import("@/lib/portalBroadcast");

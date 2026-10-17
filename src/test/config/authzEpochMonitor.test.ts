@@ -237,6 +237,37 @@ describe("authzEpochMonitor", () => {
     expect(monitor.currentFingerprint()).toBe("B");
   });
 
+  it("erro antigo após retry válido não expira a geração atual", async () => {
+    let rejectOld: ((reason: Error) => void) | undefined;
+    const fetcher = vi.fn<() => Promise<AuthzFingerprintResult>>()
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectOld = reject; }))
+      .mockResolvedValueOnce(fp("B"));
+    const { monitor, deps } = setup({ fetcher });
+    monitor.start(); monitor.revalidate();
+    await vi.advanceTimersByTimeAsync(0);
+    rejectOld?.(new Error("antigo"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.checkAccess()).toBe(true);
+    expect(monitor.currentFingerprint()).toBe("B");
+    expect(deps.onExpire).not.toHaveBeenCalled();
+  });
+
+  it("relógio passa deadline antes de timers: checkAccess expira e invalida fetch", async () => {
+    let clock = 0;
+    let resolveOld: ((value: AuthzFingerprintResult) => void) | undefined;
+    const { monitor } = setup({ now: () => clock,
+      fetcher: vi.fn().mockResolvedValueOnce(fp("A"))
+        .mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; })),
+    });
+    monitor.start(); await vi.advanceTimersByTimeAsync(0);
+    clock = 10_000; await vi.advanceTimersByTimeAsync(10_000);
+    clock = 15_000;
+    expect(monitor.checkAccess()).toBe(false);
+    expect(monitor.state()).toBe("expired");
+    resolveOld?.(fp("B")); await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.currentFingerprint()).toBe("A");
+  });
+
   it("retry após erro: revalidate com sucesso volta a mostrar dados", async () => {
     const { monitor, fetcher, advance } = setup();
     fetcher.mockRejectedValueOnce(new Error("rede"));
