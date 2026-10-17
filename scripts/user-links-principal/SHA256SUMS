@@ -1,3 +1,5 @@
 ba18609c7ac7d6e754b3100be558496a740f30adacc4c47691ac93751cc75739  candidate.sql.review
 275a03dcb7de9ee6aaacd54ad4cecb564f36c07d575fc3b5e556df237d41e051  rollback.sql.review
 a0699abf39435ef4e5767818608926517fc9b99e52d185b7e1765a2b12d932ce  test-local.py
+cc09ac36db1f5f824fadf654a9505d21d87543ecf61493d1da0ff0d10274d774  ../authz-cache/candidate.sql.review
+a30a93c1061a603d61faab60684091686a578c73566665ed29ad4c9e0d008029  ../authz-cache/test-local.py
