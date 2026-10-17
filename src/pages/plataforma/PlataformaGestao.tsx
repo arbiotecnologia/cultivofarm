@@ -39,7 +39,19 @@ const ACOES = [
 type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const SITUACOES: Record<string, string> = { SUSPENDED: "Suspensa", ACTIVE: "Ativa", PAST_DUE: "Em atraso", TRIAL: "Em teste", CANCELLED: "Cancelada", EXPIRED: "Expirada" };
-const CICLOS: Record<string, string> = { monthly: "mensal", yearly: "anual", quarterly: "trimestral", semiannual: "semestral", weekly: "semanal" };
+// Ciclos canônicos do CHECK de banco: monthly/quarterly/semiannual/annual/custom.
+const CICLOS: Record<string, string> = { monthly: "mensal", quarterly: "trimestral", semiannual: "semestral", annual: "anual", custom: "personalizado" };
+
+/** Moeda do SNAPSHOT da assinatura via Intl; fallback seguro sem prefixo fixo. */
+function formatarMoedaSnapshot(valor: number, moeda: string | null): string {
+  const codigo = (moeda ?? "").trim().toUpperCase();
+  if (/^[A-Z]{3}$/.test(codigo)) {
+    try {
+      return new Intl.NumberFormat("pt-BR", { style: "currency", currency: codigo }).format(valor);
+    } catch { /* código de moeda desconhecido: cai no fallback abaixo */ }
+  }
+  return `${valor.toFixed(2).replace(".", ",")}${codigo ? ` ${codigo}` : ""}`.trim();
+}
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
