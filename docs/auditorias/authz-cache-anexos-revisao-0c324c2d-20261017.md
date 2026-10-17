@@ -170,3 +170,105 @@ prometer revogar arquivo já baixado, cópia/cache externo ou documento já aber
 Riscos pendentes são gates técnicos, não pedido genérico de aprovação humana;
 gestão de vínculo permanece bloqueada. Relatório anterior é histórico e suas
 alegações universais de updated_at/ABA não valem para esta candidata.
+---
+
+# Adendo — revisão a36514db (17/10/2026): impeditivos e correções
+
+## A. Revisão monotônica global REJEITADA — substituída por escopo
+
+`monotonic.sql.review` incorporava singleton GLOBAL no fingerprint de todas as
+identidades e BEFORE STATEMENT em clientes/empresas/assinaturas: edição zero-row
+em tenant A remontava rascunhos de B e serializava writers comerciais no lock
+global, com risco de inversão contra row locks de RPCs. **NÃO INSTALAR**; arquivo
+preservado como histórico com cabeçalho de rejeição.
+
+Substituta `scoped.sql.review` (v5, candidata, não instalada):
+- fingerprint do titular usa `profiles.updated_at` do PRÓPRIO usuário (carimbo
+  já movido pelos triggers live `z90_cf_touch_profile` em user_clientes/
+  partner_users/user_roles → `touch_related_profiles`, e `z99_cf_profile_stamp`
+  em profiles → `greatest(clock_timestamp(), OLD.updated_at + 1 microsecond)`);
+  nenhum contador global novo.
+- AFTER ROW `a01_authz_scope_touch` apenas em `partner_accounts` (toque nos
+  perfis dos partner_users do parceiro) e `organizations` (toque nos perfis da
+  organização), reutilizando `touch_related_profiles`/`advance_stamp`;
+  fan-out limitado ao escopo afetado, locks por PK ordenada.
+- Sem BEFORE STATEMENT global, sem GUC, sem pg_trigger_depth; writers comerciais
+  de outros tenants não tocam o carimbo do titular.
+
+Testes (`scoped-tests.sql.review` + `test-local.py`, PostgreSQL descartável):
+38 assertions base PASS; 5 checks scoped PASS (ABA do titular muda fingerprint;
+escrita em tenant A NÃO muda carimbo/fingerprint de B; toque via partner_accounts
+e fan-out por organizations funcionam; carimbo monotônico); 1 teste com DUAS
+conexões reais: writer de tenant A com transação aberta não bloqueia nem altera
+o carimbo de tenant B (<0,5s). Rollback scoped PASS, carimbos preservados.
+Limites: fixture reduzida, não prova hosted, fullschema, RLS, lock ordering
+contra RPCs comerciais reais nem cobertura universal de writers transitivos.
+
+## B. EvidenciasGallery — estados de falha/retry acessíveis
+
+Antes: consumia só `urls/request`; falha de rede/limite 24 arquivos/20 MiB
+deixava ícone mudo e o clique não repetia (controllers retinha o path).
+
+Correções:
+- `useAuthenticatedBlobUrls`: estado `failed` por caminho; controlador removido
+  no `finally` (permite retry); `catch` marca o path como falho.
+- `useSignedUrls` (legacy): `failed` derivado de caminhos válidos sem URL após
+  erro; retry via `refresh` refaz o lote.
+- Galeria: item falho exibe `role="alert"` "Falhou — tentar novamente" com
+  aria-label; clique repete o download (candidato: `request`; legado:
+  `refresh`); spin de carregamento só no candidato; nenhuma URL/arquivo obsoleto
+  é aberto (lightbox só com URL do escopo vigente).
+- Bug encontrado nos testes: `request`+`refresh` juntos abortavam a própria
+  retentativa (cleanup do efeito aborta controllers); corrigido para um caminho
+  por branch.
+
+Teste real de componente `EvidenciasGallery.retry.test.tsx` (2 testes): falha
+de rede → feedback acessível → clique repete → sucesso abre lightbox sem duplo
+clique; falha persistente não abre arquivo nem limpa o erro.
+
+## C. Consumidores de anexos sensíveis — candidatos com gate fechado
+
+- `ClienteDocumentosTab` (bucket clientes-docs): branch candidata fechada com
+  download autenticado + Blob URL (revoga após 60s), fence `access.capture()`;
+  legado signed URL 60s preservado só com gate false; botões type="button"
+  mantidos.
+- `OrderMessagesPanel` (bucket order-attachments): `openOrderAttachment` e
+  `AttachmentThumb` com branch candidata fechada (Blob URL, abort/revoke no
+  unmount); SEM fallback remoto quando o download autenticado nega; legado
+  `getAttachmentSignedUrl` só com gate false. Logos públicos de branding
+  intocados.
+- Emissores privados restantes inventariados (não convertidos neste recorte):
+  `financeiro/DocumentosPanel.tsx`, `financeiro/relatorios/ReportShell.tsx`,
+  `hooks/useCommercial.ts:getAttachmentSignedUrl` (usado pelo branch legado),
+  `hooks/useSignedUrls.ts` legado e demais consumidores listados nos testes.
+  Enquanto existirem, T0 de drenagem permanece indefinido e a abertura do gate
+  global é NO-GO; atualização de UI não resolve clientes/antigas abas que
+  continuam emitindo signed URLs — contenção/drenagem server-side revisável
+  segue pendente (plano na seção 4 original).
+
+## D. Resultados exatos desta rodada
+
+- **117/117 Vitest** em 10 arquivos de `src/test/equipe-tecnica` (inclui os 2
+  novos de retry e os 14 testes independentes preservados); monitor/hooks
+  aprovados em 0c324c2d intocados.
+- SQL local: 38 assertions base + 5 scoped + 1 duas conexões + rollback PASS
+  (PostgreSQL descartável; NÃO hosted).
+- Typecheck `tsgo -p tsconfig.app.json`: **0 erros**. Lint focal: 0 erros novos;
+  7 erros `no-explicit-any` legados em ClienteDocumentosTab/OrderMessagesPanel
+  preexistem ao diff (não introduzidos). Build OK; diff-check PASS; scanner
+  focal: apenas REVOKEs esperados nos SQL candidatos.
+- Gates: `AUTHZ_CACHE_FOUNDATION_ENABLED=false`,
+  `AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED=false`. Sem SQL hosted, sem instalação,
+  sem publicação, sem alteração de associações/assinatura/pagamentos/dados.
+
+## E. Pendências e riscos
+
+- Candidata scoped exige revisão crítica: campos/joins do schema (ex.
+  `partner_accounts.commercial_owner_organization_id`), fan-out e lock ordering
+  precisam de harness fiel ao fullschema antes de qualquer instalação.
+- Limites do downloader (3 concorrentes, fila 48, 24 caminhos, 20 MiB/arquivo,
+  60 MiB/instância, timeout 15s) implementados, mas 401/403/404/arquivo grande/
+  timeout/fila ainda sem teste real dedicado nesta rodada.
+- Prova autenticada browser/Storage API e hosted SQL seguem UNVERIFIED; nenhum
+  teste mockado aqui é prova hosted.
+- Gestão/troca de vínculos permanece bloqueada; não declarada liberada.
