@@ -136,17 +136,22 @@ BEGIN
   FOR UPDATE;
 
   IF v_sub.id IS NULL AND _action = 'activate_subscription' THEN
+    -- Fallback EXPIRED: somente a assinatura MAIS RECENTE da empresa, e só
+    -- se a origem TRIAL→EXPIRED estiver comprovada no histórico. Uma
+    -- CANCELLED (ou qualquer outra) mais nova bloqueia a ressurreição.
     SELECT * INTO v_sub
     FROM public.organization_subscriptions s
     WHERE s.organization_id = _organization_id
-      AND s.status = 'EXPIRED'
     ORDER BY s.started_at DESC
     LIMIT 1
     FOR UPDATE;
-    IF v_sub.id IS NOT NULL AND NOT EXISTS (
-      SELECT 1 FROM public.organization_subscription_history h
-      WHERE h.subscription_id = v_sub.id
-        AND h.previous_status = 'TRIAL' AND h.new_status = 'EXPIRED'
+    IF v_sub.id IS NOT NULL AND (
+      v_sub.status <> 'EXPIRED'
+      OR NOT EXISTS (
+        SELECT 1 FROM public.organization_subscription_history h
+        WHERE h.subscription_id = v_sub.id
+          AND h.previous_status = 'TRIAL' AND h.new_status = 'EXPIRED'
+      )
     ) THEN
       RAISE EXCEPTION 'platform_conflict: assinatura expirada sem origem em trial comprovada' USING ERRCODE='40001';
     END IF;
