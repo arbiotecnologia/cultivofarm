@@ -15,7 +15,7 @@ const deleteSpy = vi.fn();
 const createSignedUrl = vi.fn(() => new Promise(() => {})); // pendente
 
 vi.mock("@/integrations/supabase/client", () => {
-  const builder: any = {
+  const builder: Record<string, unknown> = {
     select: () => builder, eq: () => builder, filter: () => builder,
     order: () => Promise.resolve({ data: [DOC], error: null }),
     maybeSingle: () => Promise.resolve({ data: null, error: null }),
