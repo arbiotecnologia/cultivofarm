@@ -41,6 +41,7 @@ const chain = (result: unknown) => {
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
+    storage: { from: () => ({ createSignedUrls: (...args: unknown[]) => signedRead(...args) }) },
     auth: {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       getSession: async () => ({ data: { session: { user: { id: U1 } } }, error: null }),
