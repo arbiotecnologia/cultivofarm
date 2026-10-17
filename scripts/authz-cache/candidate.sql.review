@@ -34,10 +34,10 @@ BEGIN
       IS DISTINCT FROM '49b8329ce232670c1560f0683b913a26' THEN
    RAISE EXCEPTION 'authz_membership_definition_drift';
  END IF;
- IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc p
-   WHERE p.oid='platform_private.b2b_commercial_context()'::regprocedure
-   AND p.proconfig IS NOT DISTINCT FROM ARRAY['search_path=""']::text[]
-   AND p.prorettype='jsonb'::regtype) THEN
+ IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc proc
+   WHERE proc.oid='platform_private.b2b_commercial_context()'::regprocedure
+   AND proc.proconfig IS NOT DISTINCT FROM ARRAY['search_path=""']::text[]
+   AND proc.prorettype='jsonb'::regtype) THEN
    RAISE EXCEPTION 'authz_b2b_contract_drift';
  END IF;
  IF EXISTS(SELECT 1 FROM (VALUES
