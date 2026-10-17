@@ -1,0 +1,26 @@
+[
+  {
+    "runtime": "supabase/functions/generate-financial-report/index.ts",
+    "runtime_sha256": "9eb9e19f18ebd56c546ac6aa351c9c292ba81f9bc3777e31238151b03abd8f12",
+    "candidate": "generate-financial-report.index.ts.review",
+    "candidate_sha256": "20ee404b9017d2330a1e8dafbda6f971afc3b517237bb34d7ac04b44489d8a41"
+  },
+  {
+    "runtime": "supabase/functions/generate-financial-receipt/index.ts",
+    "runtime_sha256": "45913bfbc8aefe59c27868806a947f0e5b8c94e39f57212b27694e1536f9b4a0",
+    "candidate": "generate-financial-receipt.index.ts.review",
+    "candidate_sha256": "0b51ed399bbf6042c754370396236a125e351a21cee82f9d0ffb1f4bed47e941"
+  },
+  {
+    "runtime": "supabase/functions/fiscal-xml-engine/index.ts",
+    "runtime_sha256": "9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1",
+    "candidate": "fiscal-xml-engine.index.ts.review",
+    "candidate_sha256": "1885b3453c32446e4ee7c8b63c5d706bf6921fc843b6f53c283983d3d2a3c98a"
+  },
+  {
+    "runtime": "supabase/functions/entrega-termo-pdf/index.ts",
+    "runtime_sha256": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
+    "candidate": "entrega-termo-pdf.index.ts.review",
+    "candidate_sha256": "182a21d42209da65c1ada2367e42f3bb9c95bca7d76a09845356ede80b655a9d"
+  }
+]

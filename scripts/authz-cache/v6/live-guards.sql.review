@@ -1,0 +1,63 @@
+-- READ-ONLY captured bodies, canonical swzpzcwiasxmjutrmvkm.
+-- Hashes in live-contracts.review.md are hosted pg_get_functiondef hashes,
+-- NOT hashes of this file (terminators/comments/newlines differ).
+CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()
+ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $function$
+BEGIN
+ IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ RETURN NULL;
+END $function$;
+CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_related_profiles()
+ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE old_id uuid; new_id uuid; item uuid;
+BEGIN
+ IF TG_LEVEL<>'ROW' OR TG_RELID NOT IN ('public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;
+ IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;
+ FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;
+ RETURN NULL;
+END $function$;
+CREATE OR REPLACE FUNCTION cf_user_guards_v1.advance_stamp()
+ RETURNS trigger LANGUAGE plpgsql SET search_path TO ''
+AS $function$
+BEGIN NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond'); RETURN NEW; END $function$;
+CREATE OR REPLACE FUNCTION platform_private.has_ticket(_scope text, _target uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+  SELECT EXISTS (SELECT 1 FROM platform_private.authz_tickets
+                  WHERE txid = txid_current() AND scope = _scope AND target = _target);
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.issue_ticket(_scope text, _target uuid)
+ RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO ''
+AS $function$
+  INSERT INTO platform_private.authz_tickets(txid, scope, target)
+  VALUES (txid_current(), _scope, _target) ON CONFLICT DO NOTHING;
+$function$;
+CREATE OR REPLACE FUNCTION public.organizations_guard_status()
+ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $function$
+DECLARE via_api boolean := session_user = 'authenticator';
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.id <> OLD.id THEN
+    RAISE EXCEPTION 'org_invalid: id imutável' USING errcode='42501'; END IF;
+  IF NOT via_api THEN RETURN NEW; END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NOT platform_private.has_ticket('org_create', '00000000-0000-0000-0000-000000000000'::uuid) THEN
+      RAISE EXCEPTION 'org_forbidden: criação apenas via plataforma' USING errcode='42501'; END IF;
+    RETURN NEW;
+  END IF;
+  IF (NEW.status, NEW.razao_social, NEW.nome_fantasia, NEW.cnpj, NEW.cnpj_normalizado, NEW.email_corporativo,
+      NEW.fuso_horario, NEW.onboarding_dados, NEW.onboarding_concluido_em, NEW.ativada_em, NEW.nome)
+     IS DISTINCT FROM
+     (OLD.status, OLD.razao_social, OLD.nome_fantasia, OLD.cnpj, OLD.cnpj_normalizado, OLD.email_corporativo,
+      OLD.fuso_horario, OLD.onboarding_dados, OLD.onboarding_concluido_em, OLD.ativada_em, OLD.nome)
+     AND NOT platform_private.has_ticket('org_write', NEW.id) THEN
+    RAISE EXCEPTION 'org_forbidden: alteração apenas via fluxo do servidor' USING errcode='42501';
+  END IF;
+  RETURN NEW;
+END $function$;

@@ -1,0 +1,26 @@
+--- supabase/functions/fiscal-xml-engine/index.ts
++++ supabase/functions/fiscal-xml-engine/index.ts
+@@ -1,3 +1,4 @@
++import { serveVerifiedAttachment } from "../_shared/serve-verified-attachment.ts";
+ /**
+  * Fase F4 — Edge Function `fiscal-xml-engine`.
+  *
+@@ -308,9 +309,15 @@
+     const path = artifact === "signed" ? run?.signed_path : run?.unsigned_path;
+     if (!path) return json({ error: "artifact_not_available" }, 404, headers);
+ 
+-    const signed = await admin.storage.from(run?.storage_bucket ?? BUCKET).createSignedUrl(path, 120);
+-    if (signed.error || !signed.data) return json({ error: "signed_url_failed" }, 500, headers);
+-    return json({ url: signed.data.signedUrl, expiresIn: 120, artifact }, 200, headers);
++    if ((run?.storage_bucket ?? BUCKET) !== BUCKET) return json({ error: "artifact_bucket_invalid" }, 409, headers);
++    return serveVerifiedAttachment(req, headers, async () => {
++      const visible = await authed.from("fiscal_xml_runs").select("id,unsigned_path,signed_path,storage_bucket")
++        .eq("id", runId).maybeSingle();
++      if (visible.error || !visible.data || (artifact === "signed" ? visible.data.signed_path : visible.data.unsigned_path) !== path) return false;
++      const scope = await admin.rpc("h15_service_actor_run_access", { p_actor: actor, p_run: runId });
++      return !scope.error && scope.data === true;
++    }, (signal) => authed.storage.from(BUCKET).download(path, {}, { signal }), "application/xml", "documento.xml", 10 * 1024 * 1024);
++
+   }
+ 
+   if (action !== "generate") return json({ error: "action_invalid" }, 400, headers);

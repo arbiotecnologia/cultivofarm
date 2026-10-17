@@ -1,0 +1,51 @@
+--- supabase/functions/entrega-termo-pdf/index.ts
++++ supabase/functions/entrega-termo-pdf/index.ts
+@@ -1,3 +1,4 @@
++import { serveVerifiedAttachment } from "../_shared/serve-verified-attachment.ts";
+ // Renderiza e serve o PDF do Termo de Entrega EXCLUSIVAMENTE a partir do snapshot assinado.
+ // Nunca lê o estado atual das tabelas de negócio para compor o documento.
+ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+@@ -10,7 +11,6 @@
+ };
+ 
+ const BUCKET = "entrega-termos";
+-const SIGNED_URL_TTL = 120; // segundos — janela curta
+ 
+ function json(body: unknown, status = 200) {
+   return new Response(JSON.stringify(body), {
+@@ -159,7 +159,10 @@
+ 
+     const body = await req.json().catch(() => ({}));
+     const termoId = typeof body?.termo_id === "string" ? body.termo_id : null;
+-    const action = body?.action === "signed_url" ? "signed_url" : "generate";
++    // Old client cannot mint a bearer URL. Explicitly request binary download.
++    if (body?.action === "signed_url") return json({ error: "signed_url_disabled" }, 410);
++    if (body?.action !== undefined && body.action !== "generate" && body.action !== "download") return json({ error: "action_invalid" }, 400);
++    const action = body?.action === "download" ? "download" : "generate";
+     if (!termoId || !/^[0-9a-f-]{36}$/i.test(termoId)) return json({ error: "termo_id_invalido" }, 400);
+ 
+     // Autorizacao por vinculo: leitura sob RLS com o token do usuario.
+@@ -194,13 +197,17 @@
+ 
+     if (termo.status !== "assinado" || !termo.assinado_em) return json({ error: "termo_nao_assinado" }, 409);
+ 
+-    if (action === "signed_url") {
++    if (action === "download") {
+       if (!termo.pdf_path) return json({ error: "pdf_nao_gerado" }, 409);
+-      const { data: signed, error: signErr } = await admin.storage
+-        .from(BUCKET)
+-        .createSignedUrl(termo.pdf_path, SIGNED_URL_TTL);
+-      if (signErr || !signed?.signedUrl) return json({ error: "falha_signed_url" }, 500);
+-      return json({ signed_url: signed.signedUrl, expires_in: SIGNED_URL_TTL, pdf_hash: termo.pdf_hash });
++      return serveVerifiedAttachment(req, corsHeaders, async () => {
++        const current = await userClient.from("entrega_termos")
++          .select("id,status,cancelado_em,pdf_path,pdf_hash,assinado_em").eq("id", termoId).maybeSingle();
++        if (current.error || !current.data || current.data.status !== "assinado" || current.data.cancelado_em ||
++          !current.data.assinado_em || current.data.pdf_path !== termo.pdf_path || current.data.pdf_hash !== termo.pdf_hash) return false;
++        const successor = await userClient.from("entrega_termos").select("id")
++          .eq("substitui_termo_id", termoId).limit(1).maybeSingle();
++        return !successor.error && !successor.data;
++      }, (signal) => userClient.storage.from(BUCKET).download(termo.pdf_path, {}, { signal }), "application/pdf", "termo.pdf", 15 * 1024 * 1024);
+     }
+ 
+     // --- generate (idempotente) ---

@@ -1,0 +1,22 @@
+-- Review only. No reset of identity stamps or historical snapshots.
+BEGIN;
+DO $$ DECLARE tbl text;
+BEGIN
+ -- An operator must supply the reviewed rollback permit, not an app GUC.
+ -- No permit infrastructure is installed by this candidate; default fail closed.
+ RAISE EXCEPTION 'v6_rollback_requires_independent_gate_and_manifest_review';
+END $$;
+DO $$ DECLARE tbl text;
+BEGIN
+ FOREACH tbl IN ARRAY ARRAY['clientes','organizations','partner_accounts',
+ 'organization_subscriptions','organization_feature_overrides','saas_plan_versions',
+ 'saas_plan_version_features','saas_features','saas_modules'] LOOP
+   EXECUTE format('DROP TRIGGER zzzz_authz_entity_stamp ON public.%I',tbl);
+   EXECUTE format('DROP TRIGGER zzzz_authz_no_truncate ON public.%I',tbl);
+   -- Keep private revision columns to prevent a future reset; do not DROP CASCADE.
+ END LOOP;
+END $$;
+DROP FUNCTION authz_entity_v6.stamp();
+DROP FUNCTION authz_entity_v6.no_truncate();
+DROP SCHEMA authz_entity_v6;
+COMMIT;

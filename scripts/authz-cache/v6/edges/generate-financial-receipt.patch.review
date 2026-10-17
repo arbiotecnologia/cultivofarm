@@ -1,0 +1,27 @@
+--- supabase/functions/generate-financial-receipt/index.ts
++++ supabase/functions/generate-financial-receipt/index.ts
+@@ -1,3 +1,4 @@
++import { serveVerifiedAttachment } from "../_shared/serve-verified-attachment.ts";
+ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+ import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+ import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+@@ -115,12 +116,14 @@
+       .eq("id", receiptId)
+       .eq("organization_id", organizationId);
+     if (updateError) throw updateError;
+-    const { data: signed, error: signedError } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);
+-    if (signedError || !signed?.signedUrl) throw new Error("URL do recibo indisponível");
++    return serveVerifiedAttachment(req, corsHeaders, async () => {
++      const { data: currentOrg, error: orgError } = await supabase.rpc("h15_actor_organization");
++      if (orgError || currentOrg !== organizationId) return false;
++      const { data: current, error } = await supabase.from("financial_receipts")
++        .select("id,storage_path").eq("id", receiptId).eq("organization_id", organizationId).maybeSingle();
++      return !error && current?.storage_path === path;
++    }, (signal) => supabase.storage.from("financial-receipts").download(path, {}, { signal }), "application/pdf", "recibo.pdf");
+ 
+-    return new Response(JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number }), {
+-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+-    });
+   } catch {
+     return new Response(JSON.stringify({ error: "financial_receipt_failed" }), {
+       status: 500,

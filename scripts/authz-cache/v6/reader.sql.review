@@ -1,0 +1,106 @@
+-- REVIEW ONLY, NOT INSTALLED. Requires row-revision independently reviewed.
+-- No Auth changes or replacement resolver. No caller-selected user/tenant.
+BEGIN;
+CREATE SCHEMA authz_reader_v6 AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA authz_reader_v6 FROM PUBLIC,anon,authenticated,service_role;
+GRANT USAGE ON SCHEMA authz_reader_v6 TO authenticated;
+CREATE FUNCTION authz_reader_v6.vector() RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+ WITH actor AS (SELECT * FROM public.profiles WHERE user_id=auth.uid()),
+ links AS (SELECT * FROM public.user_clientes WHERE user_id=auth.uid()),
+ partners AS (SELECT pa.* FROM public.partner_accounts pa JOIN public.partner_users pu
+   ON pu.partner_id=pa.id WHERE pu.user_id=auth.uid()),
+ clients AS (SELECT c.* FROM public.clientes c WHERE c.id IN (SELECT cliente_id FROM links)
+   OR c.id IN (SELECT cliente_id FROM actor)),
+ orgs AS (SELECT o.* FROM public.organizations o WHERE o.id IN
+   (SELECT organization_id FROM actor UNION SELECT organization_id FROM clients
+    UNION SELECT commercial_owner_organization_id FROM partners)),
+ subscriptions AS (SELECT s.* FROM public.organization_subscriptions s
+   WHERE s.organization_id IN (SELECT organization_id FROM actor)),
+ overrides AS (SELECT o.* FROM public.organization_feature_overrides o
+   WHERE o.organization_id IN (SELECT organization_id FROM actor)),
+ versions AS (SELECT v.* FROM public.saas_plan_versions v
+   WHERE v.id IN (SELECT plan_version_id FROM subscriptions)),
+ vf AS (SELECT f.* FROM public.saas_plan_version_features f
+   WHERE f.plan_version_id IN (SELECT id FROM versions)),
+ features AS (SELECT f.* FROM public.saas_features f WHERE f.id IN
+   (SELECT feature_id FROM vf UNION SELECT feature_id FROM overrides)),
+ modules AS (SELECT m.* FROM public.saas_modules m WHERE m.id IN (SELECT module_id FROM features))
+ SELECT jsonb_build_object(
+  'actor',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY user_id),'[]') FROM actor x),
+  'roles',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM public.user_roles x WHERE user_id=auth.uid()),
+  'links',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM links x),
+  'partner_links',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM public.partner_users x WHERE user_id=auth.uid()),
+  'clients',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM clients x),
+  'partners',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM partners x),
+  'orgs',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM orgs x),
+  'subscriptions',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM subscriptions x),
+  'overrides',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM overrides x),
+  'versions',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM versions x),
+  'version_features',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY plan_version_id,feature_id),'[]') FROM vf x),
+  'features',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM features x),
+  'modules',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY id),'[]') FROM modules x),
+  -- Readiness state only, never invitation tokens/password material.
+  'invites',(SELECT coalesce(jsonb_agg(jsonb_build_array(id,access_operation_status,status,access_valid_after)
+    ORDER BY id),'[]') FROM public.platform_org_admin_invites WHERE user_id=auth.uid())
+ );
+$$;
+REVOKE ALL ON FUNCTION authz_reader_v6.vector() FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION authz_reader_v6.core() RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE before_vector jsonb; after_vector jsonb; u uuid:=auth.uid();
+ started timestamptz:=clock_timestamp(); finished timestamptz; boundary timestamptz;
+ role_name text; clients uuid[]; eligible boolean:=false; section jsonb; item jsonb;
+ key text; value text; at_time timestamptz; budget_ms numeric;
+BEGIN
+ IF u IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ before_vector:=authz_reader_v6.vector();
+ IF NOT platform_private.platform_actor_access_ready(u) THEN
+  RETURN jsonb_build_object('eligible',false,'fingerprint',NULL); END IF;
+ IF (SELECT count(*) FROM public.user_roles WHERE user_id=u)<>1 THEN
+  RETURN jsonb_build_object('eligible',false,'fingerprint',NULL); END IF;
+ SELECT role::text INTO role_name FROM public.user_roles WHERE user_id=u;
+ IF role_name='cliente_produtor' THEN
+  clients:=public.get_cliente_ids_for_user(u);
+  SELECT EXISTS(SELECT 1 FROM unnest(clients) id
+    WHERE platform_private.producer_commercial_client_scope(id) IS TRUE) INTO eligible;
+ ELSIF role_name IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN
+  eligible:=platform_private.b2b_commercial_context() IS NOT NULL;
+ END IF;
+ -- Separate VOLATILE statement, not a single snapshot CTE with resolver.
+ after_vector:=authz_reader_v6.vector(); finished:=clock_timestamp();
+ IF NOT eligible OR before_vector IS DISTINCT FROM after_vector THEN
+  RETURN jsonb_build_object('eligible',false,'fingerprint',NULL); END IF;
+ -- Time changes do not require DML. Inspect ALL histories/future candidates,
+ -- never only currently-effective records or only future boundaries.
+ FOR section IN SELECT v FROM jsonb_each(after_vector) e(k,v)
+   WHERE k IN ('links','subscriptions','overrides','versions') LOOP
+  FOR item IN SELECT * FROM jsonb_array_elements(section) LOOP
+   FOR key,value IN SELECT k,v FROM jsonb_each_text(item) e(k,v)
+    WHERE k IN ('valid_from','valid_until','trial_ends_at','cancel_at','starts_at','ends_at','effective_from','effective_to')
+      AND v IS NOT NULL LOOP
+    at_time:=value::timestamptz;
+    IF at_time>=transaction_timestamp() AND at_time<=finished THEN
+     RETURN jsonb_build_object('eligible',false,'fingerprint',NULL); END IF;
+    IF at_time>finished AND (boundary IS NULL OR at_time<boundary) THEN boundary:=at_time; END IF;
+   END LOOP;
+  END LOOP;
+ END LOOP;
+ budget_ms:=least(15000,coalesce(extract(epoch FROM boundary-finished)*1000,15000));
+ IF budget_ms<=0 OR finished-started>=interval '15 seconds' THEN
+  RETURN jsonb_build_object('eligible',false,'fingerprint',NULL); END IF;
+ RETURN jsonb_build_object('eligible',true,'fingerprint',md5(after_vector::text),
+   'server_remaining_ms',floor(budget_ms));
+END $$;
+REVOKE ALL ON FUNCTION authz_reader_v6.core() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION authz_reader_v6.core() TO authenticated;
+CREATE FUNCTION public.get_my_authz_fingerprint_v6() RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$ SELECT authz_reader_v6.core(); $$;
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint_v6() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint_v6() TO authenticated;
+COMMIT;
+-- Deliberately separate name: not wired to runtime. Existing parser/monitor
+-- must subtract full monotonic round trip from server_remaining_ms before
+-- independent review could approve any gate. No auth.users reads.
+-- Preflight must verify every dependency has row revision or existing stamp,
+-- plus invite→stamp coverage; deleted rows change set, reincarnation catches ABA.

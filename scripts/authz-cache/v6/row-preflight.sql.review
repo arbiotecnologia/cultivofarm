@@ -1,0 +1,25 @@
+-- SELECT-only. Canonical swzpzcwiasxmjutrmvkm; no mutation.
+-- Export full result; not an upload/HTTP test and not automatic approval.
+SELECT c.oid::regclass AS relation,c.relacl,c.relrowsecurity,c.relforcerowsecurity,
+ t.tgname,t.tgtype,t.tgenabled,pg_get_triggerdef(t.oid) AS definition,
+ md5(pg_get_triggerdef(t.oid)) AS trigger_md5,
+ t.tgfoid::regprocedure AS function,pg_get_functiondef(t.tgfoid) AS body,
+ md5(pg_get_functiondef(t.tgfoid)) AS body_md5,
+ ((t.tgtype & 2)=0 OR t.tgname COLLATE "C" < 'zzzz_authz_entity_stamp' COLLATE "C") AS sorts_before_stamp
+FROM pg_class c LEFT JOIN pg_trigger t ON t.tgrelid=c.oid AND NOT t.tgisinternal
+WHERE c.oid IN ('public.clientes'::regclass,'public.organizations'::regclass,
+ 'public.partner_accounts'::regclass,'public.organization_subscriptions'::regclass,
+ 'public.organization_feature_overrides'::regclass,'public.saas_plan_versions'::regclass,
+ 'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass)
+ORDER BY relation,t.tgname;
+SELECT p.oid::regprocedure, p.proacl,p.provolatile,p.prosecdef,p.proconfig,
+ md5(pg_get_functiondef(p.oid)) AS md5
+FROM pg_proc p WHERE p.oid IN ('cf_user_guards_v1.acquire_gate()'::regprocedure,
+ 'cf_user_guards_v1.touch_related_profiles()'::regprocedure,
+ 'cf_user_guards_v1.advance_stamp()'::regprocedure,
+ 'public.get_cliente_ids_for_user(uuid)'::regprocedure,
+ 'platform_private.producer_commercial_client_scope(uuid)'::regprocedure,
+ 'platform_private.b2b_commercial_context()'::regprocedure);
+-- Preconditions still needed: explicit executor-confirmed gates false,
+-- relation/trigger/constraint/ACL manifest digest and full writer output contracts.
+-- Do NOT treat this inventory as an executable installer preflight.

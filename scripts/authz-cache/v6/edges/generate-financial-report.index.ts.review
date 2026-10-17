@@ -1,0 +1,234 @@
+import { serveVerifiedAttachment } from "../_shared/serve-verified-attachment.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+
+interface Body {
+  report_type: string;
+  filters: Record<string, unknown>;
+  format: "PDF" | "XLSX" | "CSV";
+  title?: string;
+}
+
+const RPC_MAP: Record<string, string> = {
+  monthly: "get_report_monthly_financial",
+  receivables: "get_report_receivables",
+  payables: "get_report_payables",
+  delinquency: "get_report_delinquency",
+  nfe_pending: "get_report_nfe_pending",
+  deliveries_billing: "get_report_deliveries_billing_status",
+  customer_statement: "get_report_customer_statement",
+  accountability: "get_report_accountability",
+  cashflow: "get_financial_cashflow",
+  dre: "get_financial_dre_summary",
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+function hasTenantArgument(value: Record<string, unknown>): boolean {
+  // Iterative and fail-closed: never skip an uninspected subtree on budget exhaustion.
+  const pending: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
+  let remaining = 10000;
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current) break;
+    if (--remaining < 0 || current.depth > 64) return true;
+    if (typeof current.value !== "object" || current.value === null) continue;
+    if (Object.prototype.hasOwnProperty.call(current.value, "organization_id") ||
+      Object.prototype.hasOwnProperty.call(current.value, "tenant_id")) return true;
+    const children = Object.values(current.value);
+    if (children.length + pending.length > remaining) return true;
+    for (const child of children) pending.push({ value: child, depth: current.depth + 1 });
+  }
+  return false;
+}
+
+function isBody(value: unknown): value is Body {
+  return isObject(value) && !Object.prototype.hasOwnProperty.call(value, "organization_id") &&
+    !Object.prototype.hasOwnProperty.call(value, "tenant_id") &&
+    typeof value.report_type === "string" && Object.prototype.hasOwnProperty.call(RPC_MAP, value.report_type) &&
+    (value.format === "PDF" || value.format === "XLSX" || value.format === "CSV") &&
+    isObject(value.filters) && !hasTenantArgument(value.filters) &&
+    (value.title === undefined || (typeof value.title === "string" && value.title.length <= 255));
+}
+
+Deno.serve(async (req) => {
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const corsHeaders = corsHeadersFor(origin);
+  const respond = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), {
+    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+  if (origin && !isTrustedOrigin(origin)) {
+    return respond({ error: "origin_not_allowed" }, 403);
+  }
+  if (req.method !== "POST") return respond({ error: "method_not_allowed" }, 405);
+  let body: unknown;
+  try { body = await req.json(); } catch { return respond({ error: "invalid_request" }, 400); }
+  if (!isBody(body)) return respond({ error: "invalid_request" }, 400);
+
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const url = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (url !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !anonKey) {
+      return respond({ error: "financial_report_unavailable" }, 500);
+    }
+    const supabase = createClient(
+      url,
+      anonKey,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    if (authError || !userData?.user?.id) {
+      return respond({ error: "Unauthorized" }, 401);
+    }
+
+    const { data: organizationId, error: organizationError } = await supabase.rpc("h15_actor_organization");
+    if (organizationError || typeof organizationId !== "string" || !organizationId.trim()) {
+      return respond({ error: "tenant_context_required" }, 403);
+    }
+
+    const rpcName = RPC_MAP[body.report_type];
+
+    // Call the RPC with filters as params
+    const { data, error } = await supabase.rpc(rpcName, body.filters as never);
+    if (error) throw error;
+
+    const rows: unknown[] = Array.isArray(data)
+      ? data
+      : data && typeof data === "object"
+        ? [data as Record<string, unknown>]
+        : [];
+
+    const title = body.title ?? body.report_type;
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `${body.report_type}_${ts}.${body.format.toLowerCase()}`;
+    let fileBytes: Uint8Array;
+    let contentType: string;
+    const maxRows = 1000, maxPages = 100, maxContentBytes = 1024 * 1024, maxFileBytes = 5 * 1024 * 1024;
+    const encoder = new TextEncoder();
+    const valueText = (value: unknown): string => value === undefined || value === null
+      ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
+    // Validate the RPC result before enumerating columns for any renderer.
+    if (rows.length > maxRows || !rows.every(isObject) ||
+      encoder.encode(JSON.stringify({ rows, title, filters: body.filters })).byteLength > maxContentBytes) {
+      throw new Error("financial_report_unavailable");
+    }
+    const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+
+    if (body.format === "PDF") {
+      const pdf = await PDFDocument.create();
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+      const pages: ReturnType<typeof pdf.addPage>[] = [];
+      const addPage = () => {
+        if (pages.length >= maxPages) throw new Error("financial_report_unavailable");
+        const next = pdf.addPage([595, 842]); pages.push(next); return next;
+      };
+      let page = addPage(), y = 800;
+      // Measure every code point with the actual embedded font; unsupported glyphs throw.
+      // No substitution, substring cutoff or omitted records on overflow.
+      const write = (text: string, size = 9, selectedFont = font) => {
+        for (const paragraph of text.split(/\r\n|\r|\n/)) {
+          let line = "";
+          const drawLine = () => {
+            if (y < 60) { page = addPage(); y = 800; }
+            page.drawText(line, { x: 40, y, size, font: selectedFont });
+            y -= size + 4;
+          };
+          for (const char of paragraph) {
+            const charWidth = selectedFont.widthOfTextAtSize(char, size);
+            if (!Number.isFinite(charWidth) || charWidth > 515) throw new Error("financial_report_unavailable");
+            if (selectedFont.widthOfTextAtSize(line + char, size) > 515) { drawLine(); line = ""; }
+            line += char;
+          }
+          drawLine();
+        }
+      };
+      write("AR Bio On-Farm Manager", 14, bold);
+      write(title, 18, bold);
+      write(`Gerado em ${new Date().toLocaleString("pt-BR")}`);
+      write(`Filtros: ${JSON.stringify(body.filters)}`, 8);
+      if (!rows.length) write("Nenhum dado encontrado.", 10);
+      for (let i = 0; i < rows.length; i++) {
+        write(`Registro ${i + 1} de ${rows.length}`, 10, bold);
+        for (const column of columns) write(`${column}: ${valueText(rows[i][column])}`);
+        y -= 6;
+      }
+      pages.forEach((printedPage, i) => {
+        const footer = `AR Bio • ${rows.length} registro(s) • Página ${i + 1} de ${pages.length}`;
+        if (font.widthOfTextAtSize(footer, 8) > 515) throw new Error("financial_report_unavailable");
+        printedPage.drawText(footer, { x: 40, y: 30, size: 8, font, color: rgb(0.4,0.4,0.4) });
+      });
+      fileBytes = await pdf.save();
+      contentType = "application/pdf";
+    } else if (body.format === "XLSX") {
+      // Only primitive AOA values reach SheetJS; an RPC object is never a cell definition.
+      const spreadsheetValue = (value: unknown): string | number | boolean | null => {
+        if (value === undefined || value === null) return null;
+        if (typeof value === "number") {
+          if (!Number.isFinite(value)) throw new Error("financial_report_unavailable");
+          return value;
+        }
+        if (typeof value === "string" || typeof value === "boolean") return value;
+        if (typeof value === "object") return JSON.stringify(value);
+        throw new Error("financial_report_unavailable");
+      };
+      const matrix: Array<Array<string | number | boolean | null>> = columns.length
+        ? [columns, ...rows.map((row) => columns.map((column) => spreadsheetValue(
+          Object.prototype.hasOwnProperty.call(row, column) ? row[column] : null,
+        )))] : [];
+      const ws = XLSX.utils.aoa_to_sheet(matrix);
+      const wb = XLSX.utils.book_new();
+      const sheetName = [...title].filter((char) => char.charCodeAt(0) >= 32 && !"[]:*?/\\".includes(char))
+        .join("").trim().slice(0, 31).replace(/^'+|'+$/g, "").trim() || "Relatorio";
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      fileBytes = new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    } else {
+      const csvField = (value: unknown): string => {
+        let text = valueText(value);
+        // Prefix outside all leading whitespace; preserve legitimate numeric negatives.
+        if (typeof value === "string" && /^(?:\s*[=+\-@]|[^\S\r\n\t]*[\t\r\n])/.test(text)) text = "'" + text;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      const csv = columns.length ? [columns.map(csvField).join(","), ...rows.map((row) => columns.map((column) => csvField(row[column])).join(","))].join("\r\n") : "";
+      fileBytes = encoder.encode(csv);
+      contentType = "text/csv";
+    }
+    if (fileBytes.byteLength > maxFileBytes) {
+      throw new Error("financial_report_unavailable");
+    }
+
+    const path = `${organizationId}/${userData.user.id}/${filename}`;
+    const { data: uploaded, error: upErr } = await supabase.storage.from("financial-reports").upload(path, fileBytes, { contentType, upsert: true });
+    if (upErr || uploaded?.path !== path) throw new Error("financial_report_unavailable");
+
+    const { data: exportId, error: registerError } = await supabase.rpc("register_financial_report_export", {
+      p_report_type: body.report_type,
+      p_report_title: title,
+      p_filters: body.filters,
+      p_file_format: body.format,
+      p_storage_path: path,
+      p_status: "SUCCESS",
+      p_error_message: null,
+    });
+    if (registerError || typeof exportId !== "string" || !exportId.trim()) {
+      throw new Error("financial_report_unavailable");
+    }
+
+    return serveVerifiedAttachment(req, corsHeaders, async () => {
+      const { data: currentOrg, error } = await supabase.rpc("h15_actor_organization");
+      return !error && currentOrg === organizationId;
+    }, (signal) => supabase.storage.from("financial-reports").download(path, {}, { signal }), contentType, filename);
+
+  } catch {
+    return new Response(JSON.stringify({ error: "financial_report_unavailable" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

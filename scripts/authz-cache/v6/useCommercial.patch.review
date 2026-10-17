@@ -1,0 +1,38 @@
+--- src/hooks/useCommercial.ts
++++ src/hooks/useCommercial.ts
+@@ -390,19 +390,22 @@
+   const qc = useQueryClient();
+   return useMutation({
+     mutationFn: async (p: { message_id: string; order_id: string; file: File }) => {
+-      const { data: u } = await supabase.auth.getUser();
+-      const path = `${p.order_id}/${p.message_id}/${Date.now()}-${p.file.name}`;
+-      const up = await supabase.storage.from("order-attachments").upload(path, p.file);
+-      if (up.error) throw up.error;
+-      const { error } = await supabase.from("partner_order_message_attachments" as any).insert({
+-        message_id: p.message_id,
+-        file_name: p.file.name,
+-        file_path: path,
+-        mime_type: p.file.type,
+-        size_bytes: p.file.size,
+-        uploaded_by: u.user?.id ?? null,
+-      } as any);
+-      if (error) throw error;
++      if (p.file.size <= 0 || p.file.size > 20 * 1024 * 1024) throw new Error("Arquivo fora do limite permitido");
++      const { data: u, error: authError } = await supabase.auth.getUser();
++      if (authError || !u.user) throw new Error("Sessão indisponível");
++      // Reserve record FIRST: Storage requires an existing authorized metadata row.
++      // Keep reservation after transport ambiguity; explicit retry reuses id/path.
++      const attachmentId = crypto.randomUUID();
++      const path = `${p.order_id}/${p.message_id}/${attachmentId}`;
++      const { error: reserveError } = await supabase.from("partner_order_message_attachments").insert({
++        id: attachmentId, message_id: p.message_id, file_name: p.file.name,
++        file_path: path, mime_type: p.file.type || null, size_bytes: p.file.size,
++        uploaded_by: u.user.id,
++      });
++      if (reserveError) throw reserveError;
++      const up = await supabase.storage.from("order-attachments").upload(path, p.file, { upsert: false });
++      if (up.error) throw new Error("Envio não confirmado; mantenha a reserva para revisão e nova tentativa explícita");
++
+     },
+     onSuccess: (_d, v) => {
+       qc.invalidateQueries({ queryKey: ["msg-attachments", v.message_id] });

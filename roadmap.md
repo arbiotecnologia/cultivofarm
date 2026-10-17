@@ -1,3 +1,10 @@
+## Cache/anexos — continuação autorizada 12:55 UTC
+- [x] Coleta READ-ONLY canônica e candidatos concretos row-revision/reader/rollback, anexos privados e quatro pares Edge review/patch/hash; nenhum runtime Edge/Auth alterado.
+- [x] 102/102 testes em oito arquivos, 21 checks SQL reduzido com guards reais e duas conexões; lint testes novos zero/scanner/diff-check/build automático OK. Não schema integral/HTTP.
+- [x] Relatório cache-anexos-v6-implementacao-20261017.review.md com arquivos, contratos e limitações; gates false/vínculos fechados/T0 indefinido.
+- [ ] Fechar reader/preflight e matriz RLS com schema integral, writers transitivos, callers binários e emissores restantes; candidatos presentes, não certificados.
+- [ ] Prova HTTP isolada requer instância descartável Supabase Storage/Auth/API com contratos importados; não disponibilizada. Não testar instalando em produção. UI candidata UNVERIFIED.
+
 ## Cache/anexos — v6 em revisão, NO-GO
 - [x] 16 contratos/hash fornecidos arquivados; faltantes exatos em v6-status/read-only. Ordem locks/tempo não fechada: SQL cache executável/harness fiel bloqueados por corpos writers/guards/DDL live, sem stubs PASS.
 - [x] Ownership 24 URLs/60MiB/20MiB arquivo, dedupe/LRU/retry/revoke; preparação visível e clique download explícito sem popup async. 183/183 regressões locais PASS (15 arquivos), lint focal0; caso após unmount preservado.

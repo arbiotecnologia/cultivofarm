@@ -1,0 +1,8 @@
+-- Review only; gates false and manifest review required, default fail closed.
+BEGIN;
+DO $$ BEGIN RAISE EXCEPTION 'v6_rollback_requires_independent_gate_and_manifest_review'; END $$;
+DROP FUNCTION public.get_my_authz_fingerprint_v6();
+DROP FUNCTION authz_reader_v6.core();
+DROP FUNCTION authz_reader_v6.vector();
+DROP SCHEMA authz_reader_v6;
+COMMIT;
