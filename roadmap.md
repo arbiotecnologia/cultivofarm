@@ -1,3 +1,9 @@
+## Cache de autorização — recorte pequeno 17/10/2026 01:30 UTC
+- [x] Base preservada `5aff4b06369d3530272ee2107205f534669b0a16`; AR Bio ACTIVE confirmado pelo titular, correlação `22b1206d-ef4d-4409-91ec-add115a16228`, preço/snapshots/financeiro preservados. NÃO repetir ativação.
+- [x] Auditar/corrigir lease confirmada versus timeout e foco pending; 107/107 Vitest em 7 arquivos, AuthProvider/hooks/boundary reais com transporte simulado. Lint 0 erros/4 warnings existentes; build automático OK. Typecheck dedicado não executado pelo agente.
+- [x] Candidato v3 privado self-only + wrapper INVOKER, resolvers canônicos e rollback: 35 assertions PostgreSQL isolado PASS; preflight hashes hospedados não ensaiado, dependências/Auth reduzidos. Sem instalação/consulta hospedada/publicação/ativação.
+- [ ] Revisão independente e futura prova autenticada: gate cache false, edição de associações bloqueada; anexos Blob URLs no próximo recorte, não nesta entrega.
+
 ## Vínculos externos — encerramento documental V0 (16/10/2026 23:17 UTC)
 - [x] Auditor aplicou20261016231233 user_links_v0_campaign_current_membership (preflight+ALTER POLICY sem helper); SQL exato ledger arquivado installed/MD5 1563e28baeba2ae55c4386303c924b30. Não reaplicar helper/campanha, filha RLS preservada. Produtor claims/ROLLBACK commercial_campaigns0; positivo UNVERIFIED.
 - [x] Edge externa v91 verify_jwttrue/readbackfonteexatacandidata; baseline89,90intermediária não atribuída. AdminAR publicado após reload Clientes→principalteste→Portal Produtor+Consultor corretos PASS UI real EXTERNA.
@@ -1275,4 +1281,5 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [x] Hosted BEGIN/ROLLBACK (auditor): 6 identidades reais negadas; SA ativo converte TRIAL→ACTIVE preservando snapshots/trial/período; histórico único; replay/adulterações/SA inativo negados; após rollback AR Bio segue TRIAL.
 - [x] Harness v3 fiel (authz_tickets por txid, guard por ticket com session_user authenticator, actor_user_id, nomes exatos de triggers, senha_provisoria, anon sem EXECUTE): 26/26 checks PASS, PostgreSQL isolado.
 - [x] UI ajustada: CICLOS canônicos (annual/custom), moeda via Intl do snapshot, seleção EXPIRED por linha mais recente + origem no histórico (CANCELLED mais nova nunca pulada), bloqueio amigável por cancel_at/versão fora de vigência, reset de confirmação inclui moeda/cancel_at/período. Vitest src/test/saas 805/805 PASS; tsc 0; lint focal 0; build OK; scanner OK; diff-check OK.
-- [ ] PENDENTE: auditor conferir ajustes UI antes de publicar; AR Bio NÃO convertida (conversão real aguarda auditor); cache de autorização segue gate false e NÃO aprovado; associações fechadas.
+- [x] AR Bio ACTIVE confirmada pelo titular em 17/10 01:30, correlação 22b1206d-ef4d-4409-91ec-add115a16228; supersede pendência histórica de conversão. NÃO repetir ativação.
+- [ ] Auditoria técnica de cache/anexos futura; gate cache false e associações fechadas, sem publicação pelo agente.

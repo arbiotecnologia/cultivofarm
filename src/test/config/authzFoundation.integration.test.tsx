@@ -41,6 +41,7 @@ const chain = (result: unknown) => {
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
+    storage: { from: () => ({ createSignedUrls: (...args: unknown[]) => signedRead(...args) }) },
     auth: {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       getSession: async () => ({ data: { session: { user: { id: U1 } } }, error: null }),
@@ -86,11 +87,18 @@ vi.mock("@/lib/activePortalContext", () => ({ clearActivePortalContext: vi.fn() 
 
 import { AuthProvider } from "@/hooks/useAuth";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+
+const portalRead = vi.fn<() => Promise<string>>();
+const signedRead = vi.fn();
 
 // Consumidor sensível: conta mounts/unmounts e simula rascunho + objectURL
 // limpos no unmount (como fazem os consumidores reais).
 const stats = { mounts: 0, unmounts: 0, revokedUrls: 0, draftsCleared: 0 };
 function Sensitive() {
+  const query = useScopedPortalQuery({ queryKey: ["authz-sensitive"], queryFn: portalRead });
+  const signed = useSignedUrls(["a.png"]);
   useEffect(() => {
     stats.mounts += 1;
     const fakeUrl = `blob:fake-${stats.mounts}`;
@@ -101,7 +109,7 @@ function Sensitive() {
       void fakeUrl;
     };
   }, []);
-  return <div>conteúdo sensível</div>;
+  return <div>conteúdo sensível<span>{query.data}</span><span>{signed.urls["a.png"]}</span></div>;
 }
 
 function renderPortal() {
@@ -128,6 +136,8 @@ describe("foundation de cache — integração AuthProvider + boundary", () => {
     vi.useFakeTimers();
     fpQueue = [];
     fpCalls = 0;
+    portalRead.mockReset().mockResolvedValue("consulta atual");
+    signedRead.mockReset().mockResolvedValue({ data: [{ path: "a.png", signedUrl: "https://example.invalid/current" }], error: null });
     currentRoles = ["cliente_produtor"];
     stats.mounts = 0;
     stats.unmounts = 0;
@@ -253,7 +263,7 @@ describe("foundation de cache — integração AuthProvider + boundary", () => {
 
   it("volta de foco revalida antes de mostrar", async () => {
     nextFp({ eligible: true, fingerprint: "fpA" });
-    nextFp({ eligible: true, fingerprint: "fpA" });
+    const d = deferredFp();
     renderPortal();
     await flush();
     const callsBefore = fpCalls;
@@ -262,6 +272,34 @@ describe("foundation de cache — integração AuthProvider + boundary", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(fpCalls).toBe(callsBefore + 1);
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    expect(stats.unmounts).toBe(1);
+    await act(async () => { d.resolve({ eligible: true, fingerprint: "fpA" }); await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
+  });
+
+  it("hooks reais descartam consulta e URL antigas após offline e retry da mesma identidade", async () => {
+    let resolveQuery: ((value: string) => void) | undefined;
+    let resolveSigned: ((value: unknown) => void) | undefined;
+    portalRead.mockImplementationOnce(() => new Promise(resolve => { resolveQuery = resolve; }));
+    signedRead.mockImplementationOnce(() => new Promise(resolve => { resolveSigned = resolve; }));
+    nextFp({ eligible: true, fingerprint: "fpA" });
+    nextFp({ eligible: true, fingerprint: "fpB" });
+    renderPortal();
+    await flush();
+    await act(async () => { window.dispatchEvent(new Event("offline")); });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      resolveQuery?.("consulta obsoleta");
+      resolveSigned?.({ data: [{ path: "a.png", signedUrl: "https://example.invalid/stale" }], error: null });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.queryByText("consulta obsoleta")).toBeNull();
+    expect(screen.queryByText("https://example.invalid/stale")).toBeNull();
     expect(screen.getByText("conteúdo sensível")).toBeTruthy();
   });
 
@@ -289,5 +327,13 @@ describe("foundation de cache — integração AuthProvider + boundary", () => {
     });
     expect(screen.getByText("conteúdo sensível")).toBeTruthy();
     expect(fpCalls).toBe(0);
+  });
+
+  it("consultor técnico não é classificado como externo neste recorte", async () => {
+    currentRoles = ["consultor_tecnico"];
+    renderPortal();
+    await flush();
+    expect(fpCalls).toBe(0);
+    expect(screen.getByText("conteúdo sensível")).toBeTruthy();
   });
 });

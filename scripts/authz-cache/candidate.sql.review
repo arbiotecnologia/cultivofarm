@@ -1,189 +1,112 @@
--- CANDIDATO v2 foundation cache de autorização (mesma identidade). NÃO executar.
--- Destino obrigatório swzpzcwiasxmjutrmvkm; executor valida o ref fora do SQL.
--- Revisão c787cd9e: elegibilidade restrita a perfis EXTERNOS com vínculo
--- vigente; retorno opaco (eligible + fingerprint + server_now); núcleo privado
--- + invoker público com ACL explícita; preflight de drift.
--- Escopo: DUAS funções novas. Não altera tabelas, triggers, roles, gates,
--- V0/common F2/principal instalados nem ledger.
---
--- Desenho:
--- * Self-only: sem parâmetro de usuário/tenant no invoker; deriva auth.uid().
---   NUNCA confia em JWT metadata — lê profile/roles/vínculos atuais do banco.
--- * Elegível somente se: perfil ativo, sem senha provisória, com organização,
---   ao menos UMA role externa (cliente_produtor, parceiro_b2b,
---   parceiro_b2b_tecnico, consultor_tecnico) E ao menos UM vínculo vigente
---   coerente com o tenant do perfil:
---     - user_clientes vigente (is_active, sem revoked_at, valid_from/valid_until)
---       cujo cliente está ativo e pertence à organização do perfil; ou
---     - partner_users cujo partner_accounts está ativo e tem
---       commercial_owner_organization_id = organização do perfil.
--- * Fingerprint opaco: md5 sobre profile.updated_at (monotônico — captura
---   A→B→A) + roles + estado completo dos vínculos (revogação/vigência/
---   principal) + estado do partner (ativo/tenant) + estado dos clientes
---   (status/tenant) + organização. Flag 'v' por vínculo computada com now():
---   expiração temporal muda o fingerprint mesmo sem DML.
--- * Retorno SOMENTE {eligible, fingerprint, server_now}: sem IDs, sem listas
---   de roles/clientes — nada que amplie exposição.
--- * Núcleo privado _authz_fingerprint_core(uuid): EXECUTE revogado de
---   PUBLIC/anon/authenticated; apenas service_role. Invoker público
---   get_my_authz_fingerprint(): EXECUTE apenas authenticated; valida sessão e
---   delega ao núcleo com o uid da sessão.
--- * Preflight de drift: confirma colunas referenciadas antes de criar.
-
+-- CANDIDATO v3. NÃO INSTALAR. Destino exclusivo swzpzcwiasxmjutrmvkm.
+-- Executor deve comprovar ref fora do SQL. Gate frontend continua false.
+-- Sem alterações em dados, principal, associações, RLS ou grants globais.
+-- Schema dedicado: USAGE/EXECUTE mínimos permitem wrapper INVOKER.
+-- Core SEM parâmetros deriva auth.uid(): chamada direta também é self-only.
+BEGIN;
 DO $preflight$
+DECLARE sig text; p record;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='profiles'
-      AND column_name IN ('ativo','organization_id','senha_provisoria','updated_at')
-    GROUP BY table_name HAVING count(*)=4) THEN
-    RAISE EXCEPTION 'authz_preflight_profiles_drift';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='user_clientes'
-      AND column_name IN ('cliente_id','is_active','revoked_at','valid_from','valid_until','principal')
-    GROUP BY table_name HAVING count(*)=6) THEN
-    RAISE EXCEPTION 'authz_preflight_user_clientes_drift';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='clientes'
-      AND column_name IN ('status_cliente','organization_id')
-    GROUP BY table_name HAVING count(*)=2) THEN
-    RAISE EXCEPTION 'authz_preflight_clientes_drift';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='partner_accounts'
-      AND column_name IN ('ativo','commercial_owner_organization_id')
-    GROUP BY table_name HAVING count(*)=2) THEN
-    RAISE EXCEPTION 'authz_preflight_partner_accounts_drift';
-  END IF;
-END
-$preflight$;
-
--- Núcleo privado: recebe uid apenas de chamador autorizado (service_role ou
--- o invoker público, que passa auth.uid()).
-CREATE OR REPLACE FUNCTION public._authz_fingerprint_core(p_uid uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
+ IF to_regnamespace('authz_cache_private') IS NOT NULL
+ OR to_regprocedure('public.get_my_authz_fingerprint()') IS NOT NULL
+ OR to_regprocedure('public._authz_fingerprint_core(uuid)') IS NOT NULL THEN
+   RAISE EXCEPTION 'authz_candidate_destination_occupied';
+ END IF;
+ FOREACH sig IN ARRAY ARRAY['public.get_cliente_ids_for_user(uuid)',
+   'platform_private.producer_commercial_client_scope(uuid)',
+   'platform_private.b2b_commercial_context()'] LOOP
+   SELECT x.prosecdef,x.prorettype,x.provolatile,x.proconfig,x.proowner INTO p
+     FROM pg_catalog.pg_proc x WHERE x.oid=to_regprocedure(sig);
+   IF NOT FOUND OR p.prosecdef IS DISTINCT FROM true OR p.provolatile IS DISTINCT FROM 's'
+      OR p.proowner IS DISTINCT FROM 'postgres'::regrole THEN
+     RAISE EXCEPTION 'authz_canonical_resolver_drift: %',sig;
+   END IF;
+ END LOOP;
+ -- Hashes documentados do hosted: não substituir por migration histórica.
+ IF md5(pg_get_functiondef('public.get_cliente_ids_for_user(uuid)'::regprocedure))
+      IS DISTINCT FROM 'c80d5900692d960f649d0a9f7850fe2c'
+ OR md5(pg_get_functiondef('platform_private.producer_commercial_client_scope(uuid)'::regprocedure))
+      IS DISTINCT FROM '49b8329ce232670c1560f0683b913a26' THEN
+   RAISE EXCEPTION 'authz_membership_definition_drift';
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc p
+   WHERE p.oid='platform_private.b2b_commercial_context()'::regprocedure
+   AND p.proconfig IS NOT DISTINCT FROM ARRAY['search_path=""']::text[]
+   AND p.prorettype='jsonb'::regtype) THEN
+   RAISE EXCEPTION 'authz_b2b_contract_drift';
+ END IF;
+ IF EXISTS(SELECT 1 FROM (VALUES
+   ('profiles','user_id'),('profiles','ativo'),('profiles','senha_provisoria'),('profiles','organization_id'),('profiles','updated_at'),
+   ('organizations','id'),('organizations','ativo'),('organizations','status'),('organizations','partner_account_id'),('organizations','updated_at'),
+   ('user_clientes','id'),('user_clientes','user_id'),('user_clientes','cliente_id'),
+   ('clientes','id'),('clientes','status_cliente'),('clientes','organization_id'),
+   ('partner_users','id'),('partner_users','user_id'),('partner_users','partner_id'),('partner_users','papel'),
+   ('partner_accounts','id'),('partner_accounts','ativo'),('partner_accounts','deleted_at'),('partner_accounts','updated_at'),('partner_accounts','commercial_owner_organization_id')
+ ) expected(tbl,col) WHERE NOT EXISTS(SELECT 1 FROM information_schema.columns c
+   WHERE c.table_schema='public' AND c.table_name=expected.tbl AND c.column_name=expected.col)) THEN
+   RAISE EXCEPTION 'authz_fingerprint_columns_drift';
+ END IF;
+END $preflight$;
+CREATE SCHEMA authz_cache_private AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA authz_cache_private FROM PUBLIC,anon,authenticated,service_role;
+GRANT USAGE ON SCHEMA authz_cache_private TO authenticated;
+CREATE FUNCTION authz_cache_private.get_my_fingerprint_core()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $core$
 DECLARE
-  v_profile public.profiles%ROWTYPE;
-  v_roles jsonb;
-  v_links jsonb;
-  v_partners jsonb;
-  v_has_external_role boolean;
-  v_has_valid_link boolean;
-  v_fp text;
+ u uuid:=auth.uid(); p public.profiles%ROWTYPE; o public.organizations%ROWTYPE;
+ roles jsonb; links jsonb; partners jsonb; clients uuid[]; b2b jsonb;
+ eligible boolean:=false; payload jsonb;
 BEGIN
-  IF p_uid IS NULL THEN
-    RETURN jsonb_build_object('eligible', false, 'fingerprint', NULL, 'server_now', now());
-  END IF;
-
-  SELECT * INTO v_profile FROM public.profiles WHERE user_id = p_uid;
-  IF NOT FOUND OR v_profile.ativo IS NOT TRUE
-     OR v_profile.senha_provisoria IS TRUE
-     OR v_profile.organization_id IS NULL THEN
-    RETURN jsonb_build_object('eligible', false, 'fingerprint', NULL, 'server_now', now());
-  END IF;
-
-  SELECT coalesce(jsonb_agg(r.role::text ORDER BY r.role::text), '[]'::jsonb)
-    INTO v_roles
-    FROM public.user_roles r
-   WHERE r.user_id = p_uid;
-
-  v_has_external_role := EXISTS (
-    SELECT 1 FROM public.user_roles r
-     WHERE r.user_id = p_uid
-       AND r.role::text IN ('cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico','consultor_tecnico')
-  );
-
-  -- Estado COMPLETO dos vínculos de cliente (não só os vigentes), com estado
-  -- do cliente (status/tenant) — revogação, validade, principal e mudanças de
-  -- cadastro mudam o fingerprint. 'v' = vigente e coerente com o tenant agora.
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-           'c', uc.cliente_id,
-           'a', uc.is_active,
-           'r', uc.revoked_at,
-           'f', uc.valid_from,
-           'u', uc.valid_until,
-           'p', uc.principal,
-           'cs', c.status_cliente,
-           'co', c.organization_id,
-           'v', (uc.is_active AND uc.revoked_at IS NULL
-                 AND uc.valid_from <= now()
-                 AND (uc.valid_until IS NULL OR uc.valid_until >= now())
-                 AND c.status_cliente = 'ativo'
-                 AND c.organization_id = v_profile.organization_id)
-         ) ORDER BY uc.cliente_id), '[]'::jsonb)
-    INTO v_links
-    FROM public.user_clientes uc
-    LEFT JOIN public.clientes c ON c.id = uc.cliente_id
-   WHERE uc.user_id = p_uid;
-
-  -- Estado dos vínculos partner com ativo/tenant do partner_accounts.
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-           'p', pu.partner_id,
-           'r', pu.papel,
-           'pa', pa.ativo,
-           'pt', pa.commercial_owner_organization_id,
-           'v', (pa.ativo IS TRUE
-                 AND pa.commercial_owner_organization_id = v_profile.organization_id)
-         ) ORDER BY pu.partner_id), '[]'::jsonb)
-    INTO v_partners
-    FROM public.partner_users pu
-    LEFT JOIN public.partner_accounts pa ON pa.id = pu.partner_id
-   WHERE pu.user_id = p_uid;
-
-  v_has_valid_link :=
-    EXISTS (SELECT 1 FROM jsonb_array_elements(v_links) e WHERE (e->>'v')::boolean)
-    OR EXISTS (SELECT 1 FROM jsonb_array_elements(v_partners) e WHERE (e->>'v')::boolean);
-
-  IF NOT v_has_external_role OR NOT v_has_valid_link THEN
-    RETURN jsonb_build_object('eligible', false, 'fingerprint', NULL, 'server_now', now());
-  END IF;
-
-  v_fp := md5(
-    coalesce(v_profile.updated_at::text, '') || '|' ||
-    coalesce(v_profile.organization_id::text, '') || '|' ||
-    v_roles::text || '|' ||
-    v_links::text || '|' ||
-    v_partners::text
-  );
-
-  RETURN jsonb_build_object('eligible', true, 'fingerprint', v_fp, 'server_now', now());
-END;
-$function$;
-
-REVOKE ALL ON FUNCTION public._authz_fingerprint_core(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public._authz_fingerprint_core(uuid) FROM anon;
-REVOKE ALL ON FUNCTION public._authz_fingerprint_core(uuid) FROM authenticated;
-GRANT EXECUTE ON FUNCTION public._authz_fingerprint_core(uuid) TO service_role;
-
--- Invoker público self-only: deriva auth.uid(), nega sem sessão, delega ao núcleo.
-CREATE OR REPLACE FUNCTION public.get_my_authz_fingerprint()
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-DECLARE
-  v_uid uuid := auth.uid();
-BEGIN
-  IF v_uid IS NULL THEN
-    RAISE EXCEPTION 'auth_required' USING ERRCODE = '42501';
-  END IF;
-  RETURN public._authz_fingerprint_core(v_uid);
-END;
-$function$;
-
-REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM anon;
+ IF u IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ SELECT * INTO p FROM public.profiles WHERE user_id=u;
+ IF NOT FOUND OR p.ativo IS DISTINCT FROM true OR p.senha_provisoria IS DISTINCT FROM false
+    OR p.organization_id IS NULL THEN
+   RETURN jsonb_build_object('eligible',false,'fingerprint',NULL);
+ END IF;
+ SELECT * INTO o FROM public.organizations WHERE id=p.organization_id;
+ IF NOT FOUND OR o.ativo IS DISTINCT FROM true OR o.status IS DISTINCT FROM 'ativa' THEN
+   RETURN jsonb_build_object('eligible',false,'fingerprint',NULL);
+ END IF;
+ SELECT coalesce(jsonb_agg(r.role::text ORDER BY r.role::text),'[]'::jsonb)
+ INTO roles FROM public.user_roles r WHERE r.user_id=u;
+ -- This small external-only candidate does not invent a mixed-role context.
+ IF jsonb_array_length(roles) IS DISTINCT FROM 1 THEN
+   RETURN jsonb_build_object('eligible',false,'fingerprint',NULL);
+ END IF;
+ -- Branches match role AND its canonical resolver, never role OR generic link.
+ IF EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND r.role::text='cliente_produtor') THEN
+   clients:=public.get_cliente_ids_for_user(u);
+   SELECT EXISTS(SELECT 1 FROM unnest(clients) c(id)
+     WHERE platform_private.producer_commercial_client_scope(c.id) IS TRUE) INTO eligible;
+ ELSIF EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u
+     AND r.role::text IN ('parceiro_b2b','parceiro_b2b_tecnico')) THEN
+   b2b:=platform_private.b2b_commercial_context();
+   eligible:=b2b IS NOT NULL;
+ END IF;
+ IF eligible IS DISTINCT FROM true THEN
+   RETURN jsonb_build_object('eligible',false,'fingerprint',NULL);
+ END IF;
+ -- Full link state (no fictional partner_users flags), canonical resolved IDs,
+ -- tenant activity, deleted partner and role/papel; no IDs returned to caller.
+ SELECT coalesce(jsonb_agg(jsonb_build_object('link',to_jsonb(uc),
+   'client',jsonb_build_object('id',c.id,'status',c.status_cliente,'org',c.organization_id),
+   'current',uc.cliente_id=ANY(coalesce(clients,ARRAY[]::uuid[]))) ORDER BY uc.id),'[]'::jsonb)
+ INTO links FROM public.user_clientes uc LEFT JOIN public.clientes c ON c.id=uc.cliente_id WHERE uc.user_id=u;
+ SELECT coalesce(jsonb_agg(jsonb_build_object('link',to_jsonb(pu),
+   'partner',jsonb_build_object('id',pa.id,'active',pa.ativo,'deleted',pa.deleted_at,
+     'owner',pa.commercial_owner_organization_id,'updated',pa.updated_at)) ORDER BY pu.id),'[]'::jsonb)
+ INTO partners FROM public.partner_users pu LEFT JOIN public.partner_accounts pa ON pa.id=pu.partner_id WHERE pu.user_id=u;
+ payload:=jsonb_build_object('profile_revision',p.updated_at,'org',p.organization_id,
+   'organization_active',o.ativo,'organization_status',o.status,'organization_partner',o.partner_account_id,
+   'organization_revision',o.updated_at,'roles',roles,'clients',clients,'links',links,'partners',partners,'b2b',b2b);
+ RETURN jsonb_build_object('eligible',true,'fingerprint',md5(payload::text));
+END $core$;
+REVOKE ALL ON FUNCTION authz_cache_private.get_my_fingerprint_core() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION authz_cache_private.get_my_fingerprint_core() TO authenticated;
+CREATE FUNCTION public.get_my_authz_fingerprint()
+ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $wrapper$
+ SELECT authz_cache_private.get_my_fingerprint_core();
+$wrapper$;
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO service_role;
-
--- ROLLBACK (contenção): DROP FUNCTION public.get_my_authz_fingerprint();
---                       DROP FUNCTION public._authz_fingerprint_core(uuid);
--- Funções novas, sem dados, sem triggers: drop é seguro e completo.
+COMMIT;

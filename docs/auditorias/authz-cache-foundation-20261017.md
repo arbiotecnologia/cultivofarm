@@ -1,5 +1,85 @@
 # Foundation de cache de autorização (mesma identidade) — 2026-10-17
 
+## Recorte 01:30 UTC — correção restrita sobre 5aff4b0
+
+Esta seção **substitui as alegações anteriores sobre v2/lease/ABA**. As seções
+abaixo são histórico, não aprovação da candidata atual.
+
+### Auditoria antes das alterações
+- HEAD inicial `5aff4b06369d3530272ee2107205f534669b0a16` preservado como base.
+  AR Bio ACTIVE é evidência do titular, correlação
+  `22b1206d-ef4d-4409-91ec-add115a16228`; nenhuma ativação repetida.
+- Os 15 testes existentes passavam, mas um deles exigia foco mantendo valid;
+  essa expectativa contradizia a revisão. Foi corrigida para **pending imediato**,
+  sem enfraquecer proteção. Novo caso t10→t15 reproduz o prazo que era estendido.
+- SQL v2 era core **public** e wrapper **DEFINER**, apesar dos comentários;
+  role externa + vínculo genérico ignorava papel, exclusão, organização e B2B entitlement.
+- Alerta do investigador sobre resolver Cliente histórico foi descartado:
+  evidência live arquivada `c80d5900692d960f649d0a9f7850fe2c` já protege
+  vigência/revogação/fallback. Não alterar esse resolver nem principal.
+
+### Delta e arquivos
+- `src/lib/authz/authzEpochMonitor.ts`: prazo confirmado separado de timeout;
+  poll t10 conserva t15 até resposta válida; sucesso t14 renova só até t25,
+  não t29. Foco/retry entra pending imediatamente. Offline/expiração/stop
+  invalidam gerações; erro antigo não derruba retry válido. `checkAccess` é
+  leitura pura para uso durante render; timer/poll/resposta tratam expiração.
+- `src/hooks/useAuth.tsx`: um monitor por identidade/tenant; latch de primeira
+  readiness evita depender do batching profile/roles e não recria no refresh;
+  logout para monitor antes do await. Consultor removido da lista de externos.
+  Boundary e hooks existentes preservados: epoch+readiness cercam consultas/URLs.
+- Testes: `src/test/config/authzEpochMonitor.test.ts`,
+  `authzFoundation.integration.test.tsx`, `scopedPortalQuery.session.test.tsx`
+  e `src/test/equipe-tecnica/useSignedUrls.test.tsx`.
+  Integração usa **AuthProvider, QueryClient, boundary, useScopedPortalQuery e
+  useSignedUrls reais**, com sessão/transporte simulados. Rascunho/objectURL
+  de Sensitive é cleanup simulado, não prova de anexos reais.
+- `scripts/authz-cache/candidate.sql.review`: v3, schema dedicado
+  `authz_cache_private`, core DEFINER **sem parâmetros** derivando auth.uid(),
+  wrapper público INVOKER; USAGE/EXECUTE somente nos dois objetos necessários
+  a authenticated, sem USAGE novo em platform_private. Chamada direta ao core
+  também self-only. search_path vazio e referências qualificadas.
+  Produtor exige role correspondente + get_cliente_ids_for_user + scope canônico;
+  B2B usa b2b_commercial_context, que resolve exclusividade/papel/partner ativo
+  não excluído/organização/entitlement `catalogo_precos` e legacy tenant.
+  Mixed roles inelegíveis nesta candidata externa restrita; não inventa contexto.
+  Retorno somente eligible/fingerprint. Hash não é nova autorização.
+- `scripts/authz-cache/rollback.sql.review`, `tests.sql.review`, `test-local.py`:
+  rollback sem CASCADE, gate fechado deve ser comprovado externamente;
+  testes transacionais sintéticos, sem execução hospedada.
+- `AGENTS.md`, memória e roadmap atualizados; nenhuma rota, flag de liberação,
+  dependência, principal, associação, Auth/SMTP, pagamento ou snapshot alterado.
+
+### Evidência executada nesta rodada
+- **107/107 Vitest PASS**, 7 arquivos: monitor19, integração12, scoped11,
+  signed21, storage scope8, seleção Produtor9, diálogo F2 27.
+- **35 assertions SQL PASS + rollback PASS** em PostgreSQL descartável.
+  Core/wrapper candidato exatos; scopes Produtor/B2B reutilizam corpos locais.
+  Auth, entitlements, phase1 e resolver Cliente são dependências reduzidas/stubs,
+  não fullschema hosted. Inclui clock real expirando vínculo sem DML adicional,
+  papel/multipapel/multivínculo/exclusão/tenant/entitlement e ACL mínima.
+  Primeira execução falhou no mixed-role; fechamento explícito foi corrigido
+  e todos os asserts reexecutados. Não atribuir PASS à versão anterior.
+- Lint focal: **0 erros, 4 warnings existentes useAuth**. Diff-check limpo.
+  Build automático OK às 01:37:22 UTC; typecheck dedicado **UNVERIFIED**,
+  não executado manualmente por restrição do ambiente.
+
+### Pendências e riscos — NO-GO de abertura
+- `AUTHZ_CACHE_FOUNDATION_ENABLED=false`; edição de vínculos bloqueada.
+  Nenhum SQL hosted, deploy/publicação ou escrita real executado nesta rodada.
+- Preflight hosted/hash B2B atual, ACL/owner e fullschema/RLS/JWT/GoTrue e
+  fluxo autenticado UI→RPC **UNVERIFIED**. Ferramenta sem prova de ref não usada.
+  Sessão externa não gerenciável pelo agente; teste local não certifica hosted.
+- ABA de respostas/estados **observados** coberto; vínculo revogado e restaurado
+  integralmente entre polls pode manter hash se nenhuma revisão monotônica mudar.
+  Não existe prova de atualização universal de profiles.updated_at por todo writer.
+  Revisão técnica precisa tratar esse limite antes de qualquer abertura.
+- URL assinada continua válida até TTL de 3600s; limpar estado não revoga bytes
+  baixados nem URL copiada. **Próximo recorte: anexos autenticados com Blob URLs,
+  descarte de respostas obsoletas e revokeObjectURL real**. Não implementado aqui.
+- Riscos multidispositivo limitados por poll/lease, sem revogação instantânea;
+  troca de vínculos NÃO liberada. Regularização AR Bio não é reexecutada.
+
 Recorte autorizado após instalação do principal v3. Sem troca de vínculos, sem
 SQL hospedado, sem publicação, sem abrir gate de associação.
 

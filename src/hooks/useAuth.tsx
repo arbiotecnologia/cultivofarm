@@ -18,7 +18,6 @@ const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
   "cliente_produtor",
   "parceiro_b2b",
   "parceiro_b2b_tecnico",
-  "consultor_tecnico",
 ];
 
 interface Profile {
@@ -366,9 +365,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authzMonitorGateRef = useRef(false);
   authzMonitorGateRef.current =
     AUTHZ_CACHE_FOUNDATION_ENABLED && !loading && !!user?.id && !!profile && isExternalUser;
+  const principalScope = JSON.stringify([user?.id, profile?.organization_id, isExternalUser]);
+  const [initializedPrincipal, setInitializedPrincipal] = useState("");
+  useEffect(() => {
+    // Initial profile and roles can arrive in different renders. Latch only
+    // ready principals; loading during refresh does not recreate the monitor.
+    if (authzMonitorGateRef.current) setInitializedPrincipal(principalScope);
+  }, [loading, principalScope]);
 
   useEffect(() => {
-    if (!authzMonitorGateRef.current) {
+    if (!authzMonitorGateRef.current || initializedPrincipal !== principalScope) {
       setAuthzState("idle");
       return;
     }
@@ -436,7 +442,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     // roles entram via isExternalUser (booleano estável); loading/profile
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
-  }, [user?.id, isExternalUser, queryClient]);
+  }, [initializedPrincipal, principalScope, queryClient]);
 
   // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
   // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
@@ -445,7 +451,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    (!!user && !loading && (!isExternalUser || authzState === "valid"));
+    (!!user && !loading && (!isExternalUser ||
+      (initializedPrincipal === principalScope && authzState === "valid" &&
+        (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     !isExternalUser ||
@@ -453,6 +461,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
 
   const signOut = async () => {
+    // Gate-off remains a no-op. Fence requests before asynchronous logout.
+    authzMonitorRef.current?.stop();
     try {
       clearActivePortalContext();
       const { broadcastPortalEvent } = await import("@/lib/portalBroadcast");

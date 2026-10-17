@@ -4,7 +4,7 @@ import { StrictMode, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const createSignedUrls = vi.fn();
-const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["administrador"], loading: false }));
+const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -21,6 +21,7 @@ beforeEach(() => {
   auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
   auth.roles = ["administrador"];
   auth.loading = false;
+  auth.authzReady = true; auth.authzEpoch = 0;
 });
 
 describe("useSignedUrls", () => {
@@ -42,7 +43,7 @@ describe("useSignedUrls", () => {
     expect(next.result.current.urls).toEqual({});
     next.unmount(); queryClient.clear();
   });
-  for (const change of ["identity", "tenant", "roles", "logout", "inactive", "mismatch", "loading", "provisional"] as const) {
+  for (const change of ["identity", "tenant", "roles", "logout", "inactive", "mismatch", "loading", "provisional", "pending", "epoch"] as const) {
     it(`limpa apresentação imediatamente em ${change}`, async () => {
       createSignedUrls.mockResolvedValue({ data: [{ path: "a.png", signedUrl: "https://s/old" }], error: null });
       const h = renderHook(() => useSignedUrls(["a.png"]));
@@ -56,6 +57,8 @@ describe("useSignedUrls", () => {
       if (change === "mismatch") auth.profile.user_id = "B";
       if (change === "loading") auth.loading = true;
       if (change === "provisional") auth.profile.senha_provisoria = true;
+      if (change === "pending") auth.authzReady = false;
+      if (change === "epoch") auth.authzEpoch = 1;
       h.rerender();
       expect(h.result.current.urls).toEqual({});
       expect(h.result.current.error).toBeNull();
