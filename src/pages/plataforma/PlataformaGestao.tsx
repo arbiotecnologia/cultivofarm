@@ -39,6 +39,7 @@ const ACOES = [
 type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const SITUACOES: Record<string, string> = { SUSPENDED: "Suspensa", ACTIVE: "Ativa", PAST_DUE: "Em atraso", TRIAL: "Em teste", CANCELLED: "Cancelada", EXPIRED: "Expirada" };
+const CICLOS: Record<string, string> = { monthly: "mensal", yearly: "anual", quarterly: "trimestral", semiannual: "semestral", weekly: "semanal" };
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
