@@ -11,7 +11,7 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
   const current = useRef({ scope: fence.scope, ready });
   current.current = { scope: fence.scope, ready };
   const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null }>({ scope: "", urls: {}, loading: false, error: null });
+  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null; failed: string[] }>({ scope: "", urls: {}, loading: false, error: null, failed: [] });
   const requestRef = useRef<(path: string) => void>(() => {});
 
   useLayoutEffect(() => {
@@ -58,5 +58,5 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
   const request = useCallback((path: string) => requestRef.current(path), []);
   const refresh = useCallback(() => setAttempt(n => n + 1), []);
   const visible = ready && result.scope === fence.scope;
-  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready && !options.lazy, error: visible ? result.error : null, refresh, request };
+  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready && !options.lazy, error: visible ? result.error : null, failed: visible ? result.failed : [], refresh, request };
 }
