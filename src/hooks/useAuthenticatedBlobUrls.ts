@@ -38,8 +38,8 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
         if (!isCurrent()) { URL.revokeObjectURL(url); return; }
         urls[path] = url;
       }).catch(() => {
-        if (isCurrent()) error = new Error("Anexo indisponível");
-      }).finally(() => { pending--; publish(); });
+        if (isCurrent()) { error = new Error("Anexo indisponível"); failed.add(path); }
+      }).finally(() => { controllers.delete(path); pending--; publish(); });
     };
     requestRef.current = request;
     if (ready && !options.lazy) valid.forEach(request);
