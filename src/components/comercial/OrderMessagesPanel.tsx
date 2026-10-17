@@ -29,7 +29,7 @@ const iconFor = (mime: string | null | undefined) => {
   return <FileIcon className="h-3 w-3" />;
 };
 
-function AttachmentThumb({ path, fileName, mime, onOpen }: { path: string; fileName: string; mime: string | null; onOpen: (path: string) => void }) {
+function AttachmentThumb({ path, fileName, mime, onOpen, prepared, busy }: { path: string; fileName: string; mime: string | null; onOpen: (path: string) => void; prepared: boolean; busy: boolean }) {
   const [thumb, setThumb] = useState<string | null>(null);
   const access = useStorageAccessScope(`order-thumbnail:${path}`);
   const blobs = useAuthenticatedBlobUrls(mime?.startsWith("image/") ? [path] : [], "order-attachments", { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED });
@@ -48,7 +48,7 @@ function AttachmentThumb({ path, fileName, mime, onOpen }: { path: string; fileN
 
   if (visibleThumb) {
     return (
-      <Button variant="ghost" type="button" onClick={() => onOpen(path)} className="inline-block h-14 w-14 p-0 rounded border overflow-hidden hover:opacity-80" title={fileName}>
+      <Button variant="ghost" type="button" disabled={busy} onClick={() => onOpen(path)} className="inline-block h-14 w-14 p-0 rounded border overflow-hidden hover:opacity-80" title={prepared ? `Baixar ${fileName}` : fileName}>
         <img src={visibleThumb} alt={fileName} className="h-full w-full object-cover" loading="lazy" />
       </Button>
     );
@@ -56,10 +56,13 @@ function AttachmentThumb({ path, fileName, mime, onOpen }: { path: string; fileN
   return (
     <Button variant="ghost"
       type="button"
+      disabled={busy}
       onClick={() => onOpen(path)}
       className="inline-flex items-center gap-1 text-xs px-2 py-0.5 border rounded hover:bg-accent"
     >
       {iconFor(mime)} {fileName}
+      {prepared && <span>Baixar arquivo</span>}
+      {busy && <span role="status">Carregando</span>}
       {blobs.loadingPaths.includes(path) && <span role="status">Carregando</span>}
       {blobs.failed.includes(path) && <span role="alert">Anexo indisponível</span>}
     </Button>
@@ -84,6 +87,7 @@ function MessageItem({ m, orderId }: { m: any; orderId: string }) {
   const openAttachment = async (path: string) => {
     if (!access.ready) return;
     if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+      if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
       await opener.open(path, () => toast.error("Anexo indisponível"));
       return;
     }
@@ -120,6 +124,8 @@ function MessageItem({ m, orderId }: { m: any; orderId: string }) {
               fileName={a.file_name}
               mime={a.mime_type}
               onOpen={openAttachment}
+              prepared={!!opener.urls[a.file_path]}
+              busy={opener.loadingPaths.includes(a.file_path)}
             />
           ))}
         </div>
