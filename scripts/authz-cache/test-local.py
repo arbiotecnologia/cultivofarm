@@ -1,6 +1,6 @@
 """Candidato exato em PostgreSQL descartável. Auth/tabelas reduzidos, NÃO hosted.
-Preflight por hashes hospedados não pode passar em stubs: removido explicitamente,
-nunca interpretado como PASS. Corpos de scopes Produtor/B2B reutilizados do repo.
+Preflight usa hashes dos stubs locais, explicitamente distintos do hosted.
+Volatilidade individual real v/s/s; corpos Produtor/B2B reutilizados do repo.
 """
 from pathlib import Path
 import subprocess, tempfile, os, re
@@ -53,6 +53,40 @@ try:
   local_candidate=local_candidate.replace(hosted,run(f"SELECT md5(pg_get_functiondef('{signature}'::regprocedure))"))
  run(local_candidate)
  print(run((ROOT/'scripts/authz-cache/tests.sql.review').read_text()))
+ # Monotonic extension: reduced tables; same captured identity gate body.
+ run('''CREATE SCHEMA cf_user_guards_v1;
+ CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY,revision bigint NOT NULL);
+ INSERT INTO cf_user_guards_v1.state VALUES(true,0);
+ CREATE TABLE auth.users(id uuid PRIMARY KEY);
+ ''')
+ captured=(ROOT/'scripts/tests/b2b-provisioning-real-triggers.sql').read_text()
+ gate=re.search(r'CREATE FUNCTION cf_user_guards_v1.acquire_gate\(\).*?END \$\$;',captured,re.S).group()
+ run(gate)
+ for tbl in ['auth.users','public.profiles','public.user_roles','public.user_clientes','public.partner_users']:
+  run(f'CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR UPDATE OR DELETE ON {tbl} FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();')
+ for tbl in ['organization_subscriptions','organization_feature_overrides','saas_plan_versions','saas_plan_version_features','saas_features','saas_modules']:
+  run(f'CREATE TABLE public.{tbl}(id uuid PRIMARY KEY DEFAULT gen_random_uuid());')
+ run((ROOT/'scripts/authz-cache/monotonic.sql.review').read_text())
+ # Reuse committed producer fixture from temporal test, now restore validity.
+ run('''UPDATE user_clientes SET valid_until=NULL;
+ INSERT INTO partner_accounts(id) VALUES('00000000-0000-4000-8000-000000000031');
+ INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
+ ''')
+ run((ROOT/'scripts/authz-cache/monotonic-tests.sql.review').read_text())
+ # Two actual local connections: global revision gate blocks until commit.
+ import time
+ writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ writer.stdin.write("BEGIN;UPDATE partner_accounts SET ativo=false;SELECT pg_sleep(0.6);UPDATE partner_accounts SET ativo=true;COMMIT;");writer.stdin.close()
+ time.sleep(0.15)
+ started=time.monotonic()
+ run('UPDATE organizations SET ativo=ativo;')
+ assert time.monotonic()-started>0.25,'second writer did not wait for singleton'
+ assert writer.wait()==0
+ print('1 teste duas conexões/local serialization PASS.')
+ revision=run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton')
+ run((ROOT/'scripts/authz-cache/monotonic-rollback.sql.review').read_text())
+ assert run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton')==revision
+ print('Rollback monotônico preserva revision PASS.')
  run((ROOT/'scripts/authz-cache/rollback.sql.review').read_text())
  assert run("SELECT to_regprocedure('public.get_my_authz_fingerprint()') IS NULL AND to_regnamespace('authz_cache_private') IS NULL")=='t'
  print('Rollback local PASS; hosted preflight/hashes/RLS/GoTrue/UI autenticada UNVERIFIED.')

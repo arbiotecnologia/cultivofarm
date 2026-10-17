@@ -31,7 +31,7 @@ describe("authenticated Blob candidate", () => {
     it(`hides and revokes owned URLs on ${change}`, async () => {
       const h = renderHook(() => useAuthenticatedBlobUrls(["a.jpg"]));
       await waitFor(() => expect(h.result.current.urls["a.jpg"]).toBe("blob:owned-1"));
-      mocks.stream.mockImplementation(() => new Promise(() => {}));
+      mocks.stream.mockImplementation((_path: string, _options: unknown, parameters: { signal: AbortSignal }) => new Promise((_resolve, reject) => parameters.signal.addEventListener("abort", () => reject(new Error("abort")), { once: true })));
       if (change === "logout") auth.user = null;
       if (change === "pending") auth.authzReady = false;
       if (change === "epoch") auth.authzEpoch++;
