@@ -75,6 +75,9 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   useEffect(() => {
     setVersao(""); setMotivo(""); setRefreshError(false); setConfirmado(false);
   }, [org]);
+  // Confirmação só vale para o estado lido: qualquer mudança de assinatura,
+  // versão, status ou snapshots reseta a confirmação explícita.
+  useEffect(() => { setConfirmado(false); }, [assinatura?.id, assinatura?.plan_version_id, assinatura?.status, assinatura?.price_snapshot, assinatura?.billing_cycle_snapshot]);
   useEffect(() => {
     if (!permitidas.includes(acao) && permitidas[0]) setAcao(permitidas[0]);
   }, [assinatura?.status, assinatura?.trial_ends_at, acao]); // eslint-disable-line react-hooks/exhaustive-deps
