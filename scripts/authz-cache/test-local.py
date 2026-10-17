@@ -54,7 +54,7 @@ try:
     assert r.returncode != 0 and "permission denied" in r.stderr, r.stderr; checks += 1
 
     run("CREATE ROLE test_auth LOGIN; GRANT authenticated TO test_auth;")
-    as_u1 = f"BEGIN; SET LOCAL ROLE authenticated; CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT '{U1}'::uuid $$;"
+    as_u1 = f"BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='{U1}';"
 
     # 3. perfil inexistente → eligible false
     r = run(f"{as_u1} SELECT public.get_my_authz_fingerprint()::text; COMMIT;")
@@ -103,12 +103,12 @@ try:
 
     # 11. self-only: outra identidade não vê dados de U1
     run(f"INSERT INTO public.profiles(user_id) VALUES ('{U2}');")
-    r11 = run(f"BEGIN; SET LOCAL ROLE authenticated; CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT '{U2}'::uuid $$; SELECT public.get_my_authz_fingerprint()::text; COMMIT;")
+    r11 = run(f"BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='{U2}'; SELECT public.get_my_authz_fingerprint()::text; COMMIT;")
     assert C1 not in r11 and '"cliente_ids": []' in r11, r11; checks += 1
 
     # 12. perfil inativo → eligible false
     run(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U2}';")
-    r12 = run(f"BEGIN; SET LOCAL ROLE authenticated; CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT '{U2}'::uuid $$; SELECT public.get_my_authz_fingerprint()::text; COMMIT;")
+    r12 = run(f"BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub='{U2}'; SELECT public.get_my_authz_fingerprint()::text; COMMIT;")
     assert '"eligible": false' in r12; checks += 1
 
     # 13. determinismo: duas chamadas consecutivas idênticas
