@@ -1,0 +1,108 @@
+-- CANDIDATO foundation cache de autorização (mesma identidade). NÃO executar.
+-- Destino obrigatório swzpzcwiasxmjutrmvkm; executor valida o ref fora do SQL.
+-- Escopo: UMA função nova self-only. Não altera tabelas, triggers, roles,
+-- gates, V0/common F2/principal instalados nem ledger.
+--
+-- Desenho:
+-- * Self-only: sem parâmetro de usuário/tenant; deriva auth.uid() da sessão.
+--   NUNCA confia em JWT metadata para autorização — lê profile/roles/vínculos
+--   atuais do banco a cada chamada.
+-- * Fingerprint opaco: md5 sobre profile.updated_at (monotônico via
+--   cf_user_guards_v1.advance_stamp — captura A→B→A, cliente_id sozinho não
+--   basta) + roles + TODOS os vínculos com estado (revogação/vigência) +
+--   vínculos partner. Inclui flag 'v' (vigente AGORA) por vínculo, computada
+--   com now(): expiração temporal muda o fingerprint mesmo sem DML.
+-- * Reutiliza o resolver canônico get_cliente_ids_for_user para a lista de
+--   clientes elegíveis (fonte única de vigência/revogação).
+-- * ACL fechada: REVOKE de PUBLIC/anon; EXECUTE apenas authenticated.
+-- * STABLE + SECURITY DEFINER com search_path fixo; nega sem sessão.
+
+CREATE OR REPLACE FUNCTION public.get_my_authz_fingerprint()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_profile public.profiles%ROWTYPE;
+  v_roles jsonb;
+  v_links jsonb;
+  v_partners jsonb;
+  v_clientes jsonb;
+  v_fp text;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'auth_required' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_profile FROM public.profiles WHERE user_id = v_uid;
+  IF NOT FOUND OR v_profile.ativo IS NOT TRUE THEN
+    RETURN jsonb_build_object(
+      'eligible', false,
+      'fingerprint', NULL,
+      'server_now', now()
+    );
+  END IF;
+
+  SELECT coalesce(jsonb_agg(r.role::text ORDER BY r.role::text), '[]'::jsonb)
+    INTO v_roles
+    FROM public.user_roles r
+   WHERE r.user_id = v_uid;
+
+  -- Estado COMPLETO dos vínculos (não só os vigentes): revogação, troca de
+  -- validade e de principal mudam o fingerprint. 'v' = vigente neste instante.
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+           'c', uc.cliente_id,
+           'a', uc.is_active,
+           'r', uc.revoked_at,
+           'f', uc.valid_from,
+           'u', uc.valid_until,
+           'p', uc.principal,
+           'v', (uc.is_active AND uc.revoked_at IS NULL
+                 AND uc.valid_from <= now()
+                 AND (uc.valid_until IS NULL OR uc.valid_until >= now()))
+         ) ORDER BY uc.cliente_id), '[]'::jsonb)
+    INTO v_links
+    FROM public.user_clientes uc
+   WHERE uc.user_id = v_uid;
+
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+           'p', pu.partner_id,
+           'r', pu.papel
+         ) ORDER BY pu.partner_id), '[]'::jsonb)
+    INTO v_partners
+    FROM public.partner_users pu
+   WHERE pu.user_id = v_uid;
+
+  -- Elegibilidade atual via resolver canônico (fonte única de vigência)
+  SELECT coalesce(to_jsonb(array_agg(c ORDER BY c)), '[]'::jsonb)
+    INTO v_clientes
+    FROM unnest(public.get_cliente_ids_for_user(v_uid)) AS c;
+
+  v_fp := md5(
+    coalesce(v_profile.updated_at::text, '') || '|' ||
+    v_roles::text || '|' ||
+    v_links::text || '|' ||
+    v_partners::text
+  );
+
+  RETURN jsonb_build_object(
+    'eligible', true,
+    'fingerprint', v_fp,
+    'profile_updated_at', v_profile.updated_at,
+    'roles', v_roles,
+    'cliente_ids', v_clientes,
+    'server_now', now()
+  );
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO service_role;
+
+-- ROLLBACK (contenção): DROP FUNCTION public.get_my_authz_fingerprint();
+-- Função nova, sem dados, sem triggers: drop é seguro e completo.
