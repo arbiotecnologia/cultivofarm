@@ -1,7 +1,8 @@
 ## Cache/anexos — revisão 0c324c2d, 17/10/2026 01:40 UTC
-- [ ] Corrigir preflight por volatilidade individual v/s/s, arquivar hashes informados e testar contrato real sem alterar resolvers.
-- [ ] Inventariar writers e preparar revisão monotônica transacional com testes locais; sem alegar ABA universal por updated_at.
-- [ ] Preparar download autenticado/Blob, limites/concurrency/lazy, descarte stale e cleanup; inventário de emissores e drenagem TTL/clientes antigos.
+- [x] Preflight v4 individual v/s/s, hashes externos arquivados, core/wrapper VOLATILE; resolvers preservados.38 asserts locais/preflight com hashes dos stubs PASS, não hosted.
+- [x] Inventário writers e revisão monotônica singleton existente em SQL/rollback fora migrations;22 asserts+2 synthetic cascade/nested/multirow+1 corrida duas conexões PASS. Cobertura instalada/lock order/tempo/transitives pendentes, sem ABA universal.
+- [x] Candidata Blob autenticada stream/3conc/fila48/24files/20MiBfile/60MiBhook/15s, lazy+gallery com gatesfalse;117Vitest8arquivos PASS/lintfocal0/0/buildOK. Inventário emissões frontend/Edges+plano drenagem3600s/clientes antigos, branding público preservado.
+- [ ] Promoção integral anexos bloqueada: revisão técnica das candidatas, paths/fallbacks legados, demais emissores/Edges/lazy consumers/PDF/email e prova API autenticada. Nenhum desses caminhos declarado migrado/testado integralmente; gates false.
 - [ ] Revisão técnica/fullschema e prova autenticada: gates false, sem instalar/publicar/alterar associações, assinatura ou pagamentos. B2B publicado observado pelo auditor: parceiro correto/pedidos vazio/recursos indisponíveis, Plataforma negada; NÃO aprovação integral.
 
 ## Cache de autorização — recorte pequeno 17/10/2026 01:30 UTC
