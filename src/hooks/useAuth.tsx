@@ -314,6 +314,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient, user?.id]);
 
 
+  // Foundation de cache de autorização (mesma identidade). Um único monitor
+  // por AuthProvider, atrás de gate próprio FECHADO até revisão; sem provider
+  // paralelo e sem BroadcastChannel entre sessões. Callback de auth permanece
+  // síncrono; o monitor roda fora dele.
+  useEffect(() => {
+    if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !user?.id) return;
+    const monitor = createAuthzEpochMonitor({
+      fetcher: async () => {
+        const { data, error } = await supabase.rpc("get_my_authz_fingerprint");
+        if (error) throw error;
+        const row = (Array.isArray(data) ? data[0] : data) as
+          | { eligible?: boolean; fingerprint?: string | null }
+          | null;
+        return { eligible: row?.eligible === true, fingerprint: row?.fingerprint ?? null };
+      },
+      now: () => Date.now(),
+      setTimeoutFn: (cb, ms) => window.setTimeout(cb, ms),
+      clearTimeoutFn: (h) => window.clearTimeout(h as number),
+      isVisible: () => document.visibilityState === "visible",
+      isOnline: () => navigator.onLine,
+      onEpochChange: () => {
+        // Nova época: geração++, cancela/limpa consultas, limpa seleção de
+        // portal e recarrega identidade. Rascunhos/objectURLs sensíveis são
+        // limpos pelos consumidores ao remontar com a nova geração.
+        generationRef.current += 1;
+        void queryClient.cancelQueries();
+        queryClient.clear();
+        clearActivePortalContext();
+        void refresh();
+      },
+      onExpire: () => {
+        // Erro/offline/timeout: oculta dados sensíveis até revalidar.
+        void queryClient.cancelQueries();
+        clearActivePortalContext();
+      },
+    });
+    const onFocus = () => monitor.revalidate();
+    const onVisibility = () => { if (document.visibilityState === "visible") monitor.revalidate(); };
+    const onOnline = () => monitor.revalidate();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
+    monitor.start();
+    return () => {
+      monitor.stop();
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [user?.id, queryClient]);
+
   const signOut = async () => {
     try {
       clearActivePortalContext();
