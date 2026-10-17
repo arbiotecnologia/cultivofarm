@@ -183,6 +183,7 @@ describe("AlterarAssinaturaCard — regularização", () => {
     fireEvent.click(screen.getByLabelText("Confirmar regularização"));
     expect(screen.getByRole("button", { name: "Regularizar assinatura" })).toBeEnabled();
     mocks.status = "EXPIRED"; // estado lido mudou
+    mocks.historico = [{ subscription_id: "sub1", organization_id: "org", action: "expire_trial", previous_status: "TRIAL", new_status: "EXPIRED" }];
     rerender(<AlterarAssinaturaCard organizationIdInicial="org" />);
     expect(screen.getByLabelText("Confirmar regularização")).not.toBeChecked();
   });
