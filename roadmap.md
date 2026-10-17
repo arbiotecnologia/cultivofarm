@@ -1,3 +1,9 @@
+## P1 contenção mensagens/anexos — prioridade 13:09 UTC
+- [ ] Capturar policies/ACL/triggers/FKs/guards canônicos READ-ONLY; confirmar falha estrutural sem alegar exploit.
+- [ ] Preparar duas policies aditivas RESTRICTIVE ALL authenticated, preflight/hash e rollback restrito; sem instalação/grants/novos buckets.
+- [ ] Ensaiar BEGIN/ROLLBACK isolado com guards reais e dois tenants, inserts/delete/revogação; separar de prova hosted indisponível via read_query SELECT-only.
+- [ ] Entregar candidata e resultados para revisão independente; cache/ledger suspensos, gates false.
+
 ## Cache/anexos — continuação autorizada 12:55 UTC
 - [x] Coleta READ-ONLY canônica e candidatos concretos row-revision/reader/rollback, anexos privados e quatro pares Edge review/patch/hash; nenhum runtime Edge/Auth alterado.
 - [x] 102/102 testes em oito arquivos, 21 checks SQL reduzido com guards reais e duas conexões; lint testes novos zero/scanner/diff-check/build automático OK. Não schema integral/HTTP.
