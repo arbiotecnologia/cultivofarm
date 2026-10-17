@@ -17,6 +17,11 @@ import { EvidenciasGallery } from "@/components/aplicacao/EvidenciasGallery";
 
 const row = { evidencia: { id: "E", tipo: "foto", storage_path: "private/a.jpg", legenda: "Foto privada", mime: "image/jpeg", versao_origem_id: null } };
 let notify: (entries: IntersectionObserverEntry[]) => void = () => {};
+function retryButton() {
+  const button = screen.getAllByRole("alert").find(element => element.closest("button"))?.closest("button");
+  if (!button) throw new Error("missing retry button");
+  return button;
+}
 const okStream = () => new ReadableStream({ start(c) { c.enqueue(new Uint8Array([1])); c.close(); } });
 
 beforeEach(() => {
@@ -40,12 +45,12 @@ it("falha de rede mostra estado acessível por item e clique repete sem duplo cl
   if (!target) throw new Error("missing attachment");
   act(() => notify([{ target, isIntersecting: true } as IntersectionObserverEntry]));
   // Falha: feedback acessível, sem URL obsoleta aberta.
-  await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-  expect(screen.getByRole("alert").textContent).toContain("tentar novamente");
+  await waitFor(() => expect(screen.getAllByRole("alert")[1]).toBeTruthy());
+  expect(screen.getAllByRole("alert")[1].textContent).toContain("tentar novamente");
   expect(screen.queryByAltText("Foto privada")).toBeNull();
   // Retry explícito: controllers não retêm o path, nova tentativa é emitida.
   state.stream.mockImplementation(async () => ({ data: okStream(), error: null }));
-  fireEvent.click(screen.getByRole("alert").closest("button")!);
+  fireEvent.click(retryButton());
   await waitFor(() => expect(screen.getByAltText("Foto privada").getAttribute("src")).toBe("blob:private"));
   expect(state.stream).toHaveBeenCalledTimes(2);
   // Após sucesso, um clique abre o lightbox (download explícito, sem clique extra).
@@ -61,10 +66,40 @@ it("falha persistente não abre arquivo nem limpa o estado de erro", async () =>
   const target = h.container.querySelector("[data-attachment-path]");
   if (!target) throw new Error("missing attachment");
   act(() => notify([{ target, isIntersecting: true } as IntersectionObserverEntry]));
-  await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-  fireEvent.click(screen.getByRole("alert").closest("button")!);
+  await waitFor(() => expect(screen.getAllByRole("alert")[1]).toBeTruthy());
+  fireEvent.click(retryButton());
   await waitFor(() => expect(state.stream).toHaveBeenCalledTimes(2));
-  await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+  await waitFor(() => expect(screen.getAllByRole("alert")[1]).toBeTruthy());
   expect(screen.queryByRole("dialog")).toBeNull();
+  h.unmount();
+});
+
+it("limite 25 marca item falho, retry continua explícito e não emite bytes", async () => {
+  state.query.mockResolvedValue({ data: Array.from({ length: 25 }, (_, n) => ({ evidencia: { ...row.evidencia, id: `E${n}`, storage_path: `private/${n}.jpg`, legenda: `Foto ${n}` } })), error: null });
+  const h = render(<EvidenciasGallery aplicacaoId="APP" />);
+  await waitFor(() => expect(h.container.querySelectorAll("[data-attachment-path]")).toHaveLength(25));
+  const target = h.container.querySelector("[data-attachment-path]");
+  if (!target) throw new Error("missing attachment");
+  act(() => notify([{ target, isIntersecting: true } as IntersectionObserverEntry]));
+  await screen.findByText("Limite de anexos excedido (24 arquivos)");
+  fireEvent.click(retryButton());
+  expect(state.stream).not.toHaveBeenCalled();
+  expect(screen.getByText("Limite de anexos excedido (24 arquivos)")).toBeTruthy();
+  h.unmount();
+});
+
+it("loading só pertence ao item solicitado e retry recupera limite após reduzir paths", async () => {
+  let resolve: (value: unknown) => void = () => {};
+  state.query.mockResolvedValue({ data: [row, { evidencia: { ...row.evidencia, id: "E2", storage_path: "private/b.jpg", legenda: "Foto B" } }], error: null });
+  state.stream.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+  const h = render(<EvidenciasGallery aplicacaoId="APP" />);
+  await waitFor(() => expect(h.container.querySelectorAll("[data-attachment-path]")).toHaveLength(2));
+  const target = h.container.querySelector("[data-attachment-path]");
+  if (!target) throw new Error("missing attachment");
+  act(() => notify([{ target, isIntersecting: true } as IntersectionObserverEntry]));
+  await waitFor(() => expect(screen.getAllByLabelText("Carregando anexo")).toHaveLength(1));
+  await act(async () => resolve({ data: okStream(), error: null }));
+  await screen.findByAltText("Foto privada");
+  expect(screen.queryByLabelText("Carregando anexo")).toBeNull();
   h.unmount();
 });

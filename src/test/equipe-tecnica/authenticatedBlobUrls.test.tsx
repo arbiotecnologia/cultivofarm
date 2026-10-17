@@ -72,6 +72,7 @@ describe("authenticated Blob candidate", () => {
   it("rejects over 24 files explicitly without issuing requests", async () => {
     const h = renderHook(() => useAuthenticatedBlobUrls(Array.from({ length: 25 }, (_, n) => `${n}.jpg`)));
     await waitFor(() => expect(h.result.current.error).toBeInstanceOf(Error));
+    expect(h.result.current.failed).toHaveLength(25);
     expect(mocks.stream).not.toHaveBeenCalled(); h.unmount();
   });
   it("caps retained content at 60 MiB per scoped hook", async () => {
@@ -118,4 +119,21 @@ describe("authenticated Blob candidate", () => {
     await waitFor(() => expect(h.result.current.urls["a.jpg"]).toBe("blob:owned-1"));
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1); h.unmount();
   });
+});
+it("limite 25 é retentável após redução para 24 e loading é individual", async () => {
+  const h = renderHook(({ paths }) => useAuthenticatedBlobUrls(paths, "private", { lazy: true }), { initialProps: { paths: Array.from({ length: 25 }, (_, n) => `${n}.jpg`) } });
+  act(() => h.result.current.request("0.jpg"));
+  expect(h.result.current.failed).toEqual(["0.jpg"]);
+  expect(mocks.stream).not.toHaveBeenCalled();
+  h.rerender({ paths: Array.from({ length: 24 }, (_, n) => `${n}.jpg`) });
+  act(() => h.result.current.request("0.jpg"));
+  expect(h.result.current.loadingPaths).toEqual(["0.jpg"]);
+  await waitFor(() => expect(h.result.current.urls["0.jpg"]).toBeTruthy());
+  expect(h.result.current.failed).toEqual([]);
+  expect(h.result.current.error).toBeNull(); h.unmount();
+});
+for (const status of [401, 403, 404]) it(`Storage ${status} nega sem assinatura/fallback`, async () => {
+  mocks.stream.mockResolvedValue({ data: null, error: { status } });
+  await expect(downloadAuthenticatedAttachment("private", "a.pdf", new AbortController().signal)).rejects.toThrow("Anexo indisponível");
+  expect(mocks.sign).not.toHaveBeenCalled();
 });
