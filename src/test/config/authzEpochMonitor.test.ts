@@ -252,7 +252,7 @@ describe("authzEpochMonitor", () => {
     expect(deps.onExpire).not.toHaveBeenCalled();
   });
 
-  it("relógio passa deadline antes de timers: checkAccess expira e invalida fetch", async () => {
+  it("relógio passa deadline antes de timers: acesso nega e resposta tardia expira", async () => {
     let clock = 0;
     let resolveOld: ((value: AuthzFingerprintResult) => void) | undefined;
     const { monitor } = setup({ now: () => clock,
@@ -263,8 +263,8 @@ describe("authzEpochMonitor", () => {
     clock = 10_000; await vi.advanceTimersByTimeAsync(10_000);
     clock = 15_000;
     expect(monitor.checkAccess()).toBe(false);
-    expect(monitor.state()).toBe("expired");
     resolveOld?.(fp("B")); await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("expired");
     expect(monitor.currentFingerprint()).toBe("A");
   });
 

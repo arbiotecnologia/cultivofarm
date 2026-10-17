@@ -63,6 +63,13 @@ END $$;
 UPDATE partner_accounts SET commercial_owner_organization_id='00000000-0000-4000-8000-000000000002';
 UPDATE organizations SET partner_account_id='00000000-0000-4000-8000-000000000031' WHERE id='00000000-0000-4000-8000-000000000001';
 SELECT pg_temp.assert_true('canonical legacy tenant positive',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
+DO $$DECLARE a text; b text; BEGIN
+ a:=public.get_my_authz_fingerprint()->>'fingerprint';
+ UPDATE profiles SET updated_at=updated_at+interval '1 microsecond';
+ b:=public.get_my_authz_fingerprint()->>'fingerprint';
+ PERFORM pg_temp.assert_true('revision changes fingerprint',a IS DISTINCT FROM b);
+ PERFORM pg_temp.assert_true('unchanged state deterministic',b=public.get_my_authz_fingerprint()->>'fingerprint');
+END $$;
 UPDATE user_roles SET role='parceiro_b2b_tecnico'; UPDATE partner_users SET papel='tecnico';
 SELECT pg_temp.assert_true('technical corresponding papel',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',true);
@@ -73,4 +80,17 @@ DO $$ BEGIN
  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS no identity denied'; END;
 END $$;
 ROLLBACK;
-SELECT '33 assertions SQL transacionais PASS — stubs explícitos, não hosted';
+-- Natural passage: now is stable inside each transaction. Synthetic only.
+BEGIN;
+CREATE FUNCTION pg_temp.assert_true(label text, result boolean) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN IF result IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAIL %',label; END IF; RAISE NOTICE 'PASS %',label; END $$;
+INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000001');
+INSERT INTO profiles(user_id,organization_id) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000001');
+INSERT INTO clientes(id,organization_id) VALUES('00000000-0000-4000-8000-000000000021','00000000-0000-4000-8000-000000000001');
+INSERT INTO user_roles VALUES('00000000-0000-4000-8000-000000000011','cliente_produtor');
+INSERT INTO user_clientes(user_id,cliente_id,valid_until) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000021',clock_timestamp()+interval '300 milliseconds');
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',false);
+SELECT pg_temp.assert_true('temporal before expiry',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
+COMMIT;
+SELECT pg_sleep(0.4);
+SELECT pg_temp.assert_true('temporal expiry without link DML',public.get_my_authz_fingerprint()->>'eligible'='false');

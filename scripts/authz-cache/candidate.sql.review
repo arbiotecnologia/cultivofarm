@@ -35,6 +35,17 @@ BEGIN
    AND p.prorettype='jsonb'::regtype) THEN
    RAISE EXCEPTION 'authz_b2b_contract_drift';
  END IF;
+ IF EXISTS(SELECT 1 FROM (VALUES
+   ('profiles','user_id'),('profiles','ativo'),('profiles','senha_provisoria'),('profiles','organization_id'),('profiles','updated_at'),
+   ('organizations','id'),('organizations','ativo'),('organizations','status'),('organizations','partner_account_id'),('organizations','updated_at'),
+   ('user_clientes','id'),('user_clientes','user_id'),('user_clientes','cliente_id'),
+   ('clientes','id'),('clientes','status_cliente'),('clientes','organization_id'),
+   ('partner_users','id'),('partner_users','user_id'),('partner_users','partner_id'),('partner_users','papel'),
+   ('partner_accounts','id'),('partner_accounts','ativo'),('partner_accounts','deleted_at'),('partner_accounts','updated_at'),('partner_accounts','commercial_owner_organization_id')
+ ) expected(tbl,col) WHERE NOT EXISTS(SELECT 1 FROM information_schema.columns c
+   WHERE c.table_schema='public' AND c.table_name=expected.tbl AND c.column_name=expected.col)) THEN
+   RAISE EXCEPTION 'authz_fingerprint_columns_drift';
+ END IF;
 END $preflight$;
 CREATE SCHEMA authz_cache_private AUTHORIZATION postgres;
 REVOKE ALL ON SCHEMA authz_cache_private FROM PUBLIC,anon,authenticated,service_role;

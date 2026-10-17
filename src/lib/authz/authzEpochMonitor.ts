@@ -184,10 +184,8 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       expire(reason);
     },
     state: () => state,
-    checkAccess: () => {
-      if (state === "valid" && deps.now() >= leaseUntil) expire("timeout");
-      return state === "valid" && deps.now() < leaseUntil;
-    },
+    // Pure read: used during React render. Timers/poll/response expire state.
+    checkAccess: () => state === "valid" && deps.now() < leaseUntil,
     currentFingerprint: () => fingerprint,
   };
 }

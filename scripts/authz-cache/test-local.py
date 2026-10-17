@@ -11,6 +11,8 @@ base = ['psql','-X','-h',str(tmp),'-p','55499','-U','postgres','-v','ON_ERROR_ST
 def run(sql):
  r = subprocess.run(base, input=sql, text=True, capture_output=True)
  if r.returncode: raise RuntimeError(r.stderr)
+ if 'NOTICE:  PASS ' in r.stderr:
+  print(f"{r.stderr.count('NOTICE:  PASS ')} assertions SQL executadas PASS.")
  return r.stdout.strip()
 try:
  subprocess.run(prefix+['initdb','-D',str(tmp/'data'),'-A','trust','-U','postgres'],check=True,capture_output=True)
