@@ -1,0 +1,18 @@
+-- NÃO EXECUTAR HOSTED; comprovar gate frontend false externamente.
+-- Preserva valor monotônico existente: rollback jamais reseta revision.
+BEGIN;
+CREATE OR REPLACE FUNCTION public.get_my_authz_fingerprint() RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
+ SELECT authz_cache_private.get_my_fingerprint_core();
+$$;
+DROP FUNCTION authz_cache_private.get_my_revisioned_fingerprint();
+DO $remove$
+DECLARE tbl text;
+BEGIN
+ FOREACH tbl IN ARRAY ARRAY['organizations','partner_accounts','clientes','organization_subscriptions',
+ 'organization_feature_overrides','saas_plan_versions','saas_plan_version_features','saas_features','saas_modules'] LOOP
+   EXECUTE format('DROP TRIGGER a00_authz_dependency_revision ON public.%I',tbl);
+ END LOOP;
+END $remove$;
+DROP FUNCTION authz_cache_private.bump_dependency_revision();
+COMMIT;

@@ -1,25 +1,30 @@
--- CANDIDATO v3. NÃO INSTALAR. Destino exclusivo swzpzcwiasxmjutrmvkm.
+-- CANDIDATO v4. NÃO INSTALAR. Destino exclusivo swzpzcwiasxmjutrmvkm.
 -- Executor deve comprovar ref fora do SQL. Gate frontend continua false.
 -- Sem alterações em dados, principal, associações, RLS ou grants globais.
 -- Schema dedicado: USAGE/EXECUTE mínimos permitem wrapper INVOKER.
 -- Core SEM parâmetros deriva auth.uid(): chamada direta também é self-only.
 BEGIN;
 DO $preflight$
-DECLARE sig text; p record;
+DECLARE contract record; p record;
 BEGIN
  IF to_regnamespace('authz_cache_private') IS NOT NULL
  OR to_regprocedure('public.get_my_authz_fingerprint()') IS NOT NULL
  OR to_regprocedure('public._authz_fingerprint_core(uuid)') IS NOT NULL THEN
    RAISE EXCEPTION 'authz_candidate_destination_occupied';
  END IF;
- FOREACH sig IN ARRAY ARRAY['public.get_cliente_ids_for_user(uuid)',
-   'platform_private.producer_commercial_client_scope(uuid)',
-   'platform_private.b2b_commercial_context()'] LOOP
+ FOR contract IN SELECT * FROM (VALUES
+   ('public.get_cliente_ids_for_user(uuid)','v','c80d5900692d960f649d0a9f7850fe2c'),
+   ('platform_private.producer_commercial_client_scope(uuid)','s','49b8329ce232670c1560f0683b913a26'),
+   ('platform_private.b2b_commercial_context()','s','02158d4204dea67308558f649113ba6d')
+ ) c(signature,volatility,definition_md5) LOOP
    SELECT x.prosecdef,x.prorettype,x.provolatile,x.proconfig,x.proowner INTO p
-     FROM pg_catalog.pg_proc x WHERE x.oid=to_regprocedure(sig);
-   IF NOT FOUND OR p.prosecdef IS DISTINCT FROM true OR p.provolatile IS DISTINCT FROM 's'
+     FROM pg_catalog.pg_proc x WHERE x.oid=to_regprocedure(contract.signature);
+   IF NOT FOUND OR p.prosecdef IS DISTINCT FROM true OR p.provolatile::text IS DISTINCT FROM contract.volatility
       OR p.proowner IS DISTINCT FROM 'postgres'::regrole THEN
-     RAISE EXCEPTION 'authz_canonical_resolver_drift: %',sig;
+     RAISE EXCEPTION 'authz_canonical_resolver_drift: %',contract.signature;
+   END IF;
+   IF md5(pg_get_functiondef(to_regprocedure(contract.signature))) IS DISTINCT FROM contract.definition_md5 THEN
+     RAISE EXCEPTION 'authz_canonical_definition_drift: %',contract.signature;
    END IF;
  END LOOP;
  -- Hashes documentados do hosted: não substituir por migration histórica.
@@ -29,10 +34,10 @@ BEGIN
       IS DISTINCT FROM '49b8329ce232670c1560f0683b913a26' THEN
    RAISE EXCEPTION 'authz_membership_definition_drift';
  END IF;
- IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc p
-   WHERE p.oid='platform_private.b2b_commercial_context()'::regprocedure
-   AND p.proconfig IS NOT DISTINCT FROM ARRAY['search_path=""']::text[]
-   AND p.prorettype='jsonb'::regtype) THEN
+ IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc proc
+   WHERE proc.oid='platform_private.b2b_commercial_context()'::regprocedure
+   AND proc.proconfig IS NOT DISTINCT FROM ARRAY['search_path=""']::text[]
+   AND proc.prorettype='jsonb'::regtype) THEN
    RAISE EXCEPTION 'authz_b2b_contract_drift';
  END IF;
  IF EXISTS(SELECT 1 FROM (VALUES
@@ -51,7 +56,7 @@ CREATE SCHEMA authz_cache_private AUTHORIZATION postgres;
 REVOKE ALL ON SCHEMA authz_cache_private FROM PUBLIC,anon,authenticated,service_role;
 GRANT USAGE ON SCHEMA authz_cache_private TO authenticated;
 CREATE FUNCTION authz_cache_private.get_my_fingerprint_core()
- RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $core$
+ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $core$
 DECLARE
  u uuid:=auth.uid(); p public.profiles%ROWTYPE; o public.organizations%ROWTYPE;
  roles jsonb; links jsonb; partners jsonb; clients uuid[]; b2b jsonb;
@@ -104,7 +109,7 @@ END $core$;
 REVOKE ALL ON FUNCTION authz_cache_private.get_my_fingerprint_core() FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION authz_cache_private.get_my_fingerprint_core() TO authenticated;
 CREATE FUNCTION public.get_my_authz_fingerprint()
- RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $wrapper$
+ RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $wrapper$
  SELECT authz_cache_private.get_my_fingerprint_core();
 $wrapper$;
 REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC,anon,authenticated,service_role;

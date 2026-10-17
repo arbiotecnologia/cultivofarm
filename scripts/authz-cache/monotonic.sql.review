@@ -1,0 +1,82 @@
+-- CANDIDATA COMPLEMENTAR, NÃO INSTALAR. Executar somente após candidate.sql.review.
+-- Ref externo obrigatório swzpzcwiasxmjutrmvkm; gate frontend false.
+-- Reutiliza singleton existente, SEM reset/backfill/novo contador por usuário.
+-- Não modifica auth.users nem gates existentes, RLS, associações ou dados reais.
+BEGIN;
+DO $preflight$
+DECLARE tbl text;
+BEGIN
+ IF to_regclass('cf_user_guards_v1.state') IS NULL OR
+    to_regprocedure('cf_user_guards_v1.acquire_gate()') IS NULL OR
+    to_regprocedure('authz_cache_private.get_my_fingerprint_core()') IS NULL THEN
+   RAISE EXCEPTION 'authz_revision_dependency_missing';
+ END IF;
+ IF (SELECT count(*) FROM cf_user_guards_v1.state) IS DISTINCT FROM 1 OR
+    NOT EXISTS(SELECT 1 FROM cf_user_guards_v1.state WHERE singleton IS TRUE AND revision>=0) THEN
+   RAISE EXCEPTION 'authz_revision_state_invalid';
+ END IF;
+ -- Identity gates MUST already be enabled BEFORE STATEMENT I/U/D, no WHEN.
+ -- Never install a trigger on a reserved schema to make this check pass.
+ FOREACH tbl IN ARRAY ARRAY['auth.users','public.profiles','public.user_roles','public.user_clientes','public.partner_users'] LOOP
+   IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t WHERE t.tgrelid=to_regclass(tbl)
+      AND t.tgfoid='cf_user_guards_v1.acquire_gate()'::regprocedure
+      AND t.tgtype=30 AND t.tgenabled='O' AND t.tgqual IS NULL AND t.tgnargs=0) THEN
+     RAISE EXCEPTION 'authz_identity_gate_unproven: %',tbl;
+   END IF;
+ END LOOP;
+ IF has_table_privilege('authenticated','cf_user_guards_v1.state','UPDATE') OR
+    has_table_privilege('anon','cf_user_guards_v1.state','UPDATE') THEN
+   RAISE EXCEPTION 'authz_revision_acl_drift';
+ END IF;
+END $preflight$;
+CREATE FUNCTION authz_cache_private.bump_dependency_revision() RETURNS trigger
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $bump$
+BEGIN
+ IF TG_LEVEL IS DISTINCT FROM 'STATEMENT' OR TG_WHEN IS DISTINCT FROM 'BEFORE' OR
+    TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR TG_TABLE_NAME NOT IN (
+      'organizations','partner_accounts','clientes','organization_subscriptions',
+      'organization_feature_overrides','saas_plan_versions','saas_plan_version_features',
+      'saas_features','saas_modules') THEN
+   RAISE EXCEPTION 'authz_revision_context_forbidden' USING ERRCODE='42501';
+ END IF;
+ IF TG_OP='TRUNCATE' THEN RAISE EXCEPTION 'authz_dependency_truncate_forbidden' USING ERRCODE='42501'; END IF;
+ -- Trigger does NOT authorize the underlying write; existing tickets/RLS/guards do.
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton IS TRUE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'authz_revision_unavailable'; END IF;
+ RETURN NULL;
+END $bump$;
+REVOKE ALL ON FUNCTION authz_cache_private.bump_dependency_revision() FROM PUBLIC,anon,authenticated,service_role;
+DO $install$
+DECLARE tbl text;
+BEGIN
+ FOREACH tbl IN ARRAY ARRAY['organizations','partner_accounts','clientes','organization_subscriptions',
+ 'organization_feature_overrides','saas_plan_versions','saas_plan_version_features','saas_features','saas_modules'] LOOP
+  IF to_regclass('public.'||tbl) IS NULL THEN RAISE EXCEPTION 'authz_dependency_missing: %',tbl; END IF;
+  EXECUTE format('CREATE TRIGGER a00_authz_dependency_revision BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.%I FOR EACH STATEMENT EXECUTE FUNCTION authz_cache_private.bump_dependency_revision()',tbl);
+ END LOOP;
+END $install$;
+CREATE FUNCTION authz_cache_private.get_my_revisioned_fingerprint() RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $read$
+DECLARE before_revision bigint; after_revision bigint; result jsonb;
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ SELECT revision INTO STRICT before_revision FROM cf_user_guards_v1.state WHERE singleton IS TRUE;
+ result:=authz_cache_private.get_my_fingerprint_core(); -- canonical eligibility unchanged
+ SELECT revision INTO STRICT after_revision FROM cf_user_guards_v1.state WHERE singleton IS TRUE;
+ -- VOLATILE dependency can acquire later snapshots: reject any committed drift.
+ IF before_revision IS DISTINCT FROM after_revision OR before_revision<0 THEN
+   RETURN jsonb_build_object('eligible',false,'fingerprint',NULL);
+ END IF;
+ IF result->>'eligible' IS DISTINCT FROM 'true' THEN RETURN result; END IF;
+ RETURN jsonb_build_object('eligible',true,'fingerprint',md5(jsonb_build_array(
+   auth.uid(),before_revision::text,result->>'fingerprint')::text));
+END $read$;
+REVOKE ALL ON FUNCTION authz_cache_private.get_my_revisioned_fingerprint() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION authz_cache_private.get_my_revisioned_fingerprint() TO authenticated;
+CREATE OR REPLACE FUNCTION public.get_my_authz_fingerprint() RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
+ SELECT authz_cache_private.get_my_revisioned_fingerprint();
+$$;
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO authenticated;
+COMMIT;

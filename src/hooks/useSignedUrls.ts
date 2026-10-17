@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthenticatedBlobUrls } from "./useAuthenticatedBlobUrls";
+import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 
-export function useSignedUrls(paths: (string | null | undefined)[], bucket: string = "consultor-arquivos") {
+function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: string = "consultor-arquivos") {
   const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
   // Foundation de cache (mesma identidade): lease pendente/expirada esconde
   // URLs assinadas; época no escopo impede que respostas antigas reabram.
@@ -73,4 +75,11 @@ export function useSignedUrls(paths: (string | null | undefined)[], bucket: stri
   // Cerca de apresentação no próprio render, antes de cleanup/effects.
   const visible = ready && result.scope === scope;
   return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready, error: visible ? result.error : null, refresh };
+}
+
+// Both hooks remain mounted; closed candidate does not download or mint extra URLs.
+export function useSignedUrls(paths: (string | null | undefined)[], bucket = "consultor-arquivos", options: { lazy?: boolean } = {}) {
+  const legacy = useLegacySignedUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? [] : paths, bucket);
+  const blobs = useAuthenticatedBlobUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? paths : [], bucket, { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED, lazy: options.lazy });
+  return AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs : { ...legacy, request: (_path: string) => {} };
 }

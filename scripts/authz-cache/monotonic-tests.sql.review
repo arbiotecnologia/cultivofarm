@@ -1,0 +1,53 @@
+-- LOCAL ONLY: fixtures no PostgreSQL descartável do runner.
+BEGIN;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
+CREATE FUNCTION pg_temp.check_revision(label text, sql_a text, sql_b text) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE a bigint; b bigint;
+BEGIN
+ SELECT revision INTO a FROM cf_user_guards_v1.state WHERE singleton;
+ EXECUTE sql_a; EXECUTE sql_b;
+ SELECT revision INTO b FROM cf_user_guards_v1.state WHERE singleton;
+ IF b<=a THEN RAISE EXCEPTION 'FAIL revision %',label; END IF;
+ RAISE NOTICE 'PASS revision %',label;
+END $$;
+SELECT pg_temp.check_revision('principal ABA','UPDATE user_clientes SET principal=true','UPDATE user_clientes SET principal=false');
+SELECT pg_temp.check_revision('valid_from ABA','UPDATE user_clientes SET valid_from=valid_from+interval ''1 day''','UPDATE user_clientes SET valid_from=valid_from-interval ''1 day''');
+SELECT pg_temp.check_revision('valid_until ABA','UPDATE user_clientes SET valid_until=now()','UPDATE user_clientes SET valid_until=NULL');
+SELECT pg_temp.check_revision('revoked_at ABA','UPDATE user_clientes SET revoked_at=now()','UPDATE user_clientes SET revoked_at=NULL');
+SELECT pg_temp.check_revision('role ABA','UPDATE user_roles SET role=''consultor_tecnico''','UPDATE user_roles SET role=''cliente_produtor''');
+SELECT pg_temp.check_revision('partner papel ABA','UPDATE partner_users SET papel=''tecnico''','UPDATE partner_users SET papel=''gestor''');
+SELECT pg_temp.check_revision('partner activity ABA','UPDATE partner_accounts SET ativo=false','UPDATE partner_accounts SET ativo=true');
+SELECT pg_temp.check_revision('partner deletion ABA','UPDATE partner_accounts SET deleted_at=now()','UPDATE partner_accounts SET deleted_at=NULL');
+SELECT pg_temp.check_revision('partner identity ABA','UPDATE partner_users SET partner_id=''00000000-0000-4000-8000-000000000099''','UPDATE partner_users SET partner_id=''00000000-0000-4000-8000-000000000031''');
+SELECT pg_temp.check_revision('identity ABA','UPDATE profiles SET ativo=false','UPDATE profiles SET ativo=true');
+SELECT pg_temp.check_revision('organization ABA','UPDATE organizations SET ativo=false','UPDATE organizations SET ativo=true');
+SELECT pg_temp.check_revision('multirow OLD/NEW user','UPDATE user_clientes SET user_id=''00000000-0000-4000-8000-000000000099''','UPDATE user_clientes SET user_id=''00000000-0000-4000-8000-000000000011''');
+SELECT pg_temp.check_revision('delete/reinsert membership','DELETE FROM partner_users','INSERT INTO partner_users(user_id,partner_id,papel) VALUES(''00000000-0000-4000-8000-000000000011'',''00000000-0000-4000-8000-000000000031'',''gestor'')');
+DO $$DECLARE tbl text; a bigint; b bigint; BEGIN
+ FOREACH tbl IN ARRAY ARRAY['organization_subscriptions','organization_feature_overrides','saas_plan_versions','saas_plan_version_features','saas_features','saas_modules'] LOOP
+  SELECT revision INTO a FROM cf_user_guards_v1.state WHERE singleton;
+  EXECUTE format('INSERT INTO public.%I DEFAULT VALUES',tbl);
+  EXECUTE format('DELETE FROM public.%I',tbl);
+  SELECT revision INTO b FROM cf_user_guards_v1.state WHERE singleton;
+  IF b<=a THEN RAISE EXCEPTION 'FAIL dependency %',tbl; END IF;
+  RAISE NOTICE 'PASS revision dependency %',tbl;
+ END LOOP;
+END $$;
+DO $$DECLARE a bigint; b bigint; BEGIN
+ SELECT revision INTO a FROM cf_user_guards_v1.state WHERE singleton;
+ BEGIN UPDATE partner_accounts SET ativo=false; RAISE EXCEPTION USING ERRCODE='ZX001';
+ EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
+ SELECT revision INTO b FROM cf_user_guards_v1.state WHERE singleton;
+ IF a IS DISTINCT FROM b THEN RAISE EXCEPTION 'FAIL savepoint rollback'; END IF;
+ RAISE NOTICE 'PASS revision savepoint rollback';
+ BEGIN TRUNCATE partner_accounts; RAISE EXCEPTION 'FAIL truncate';
+ EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS truncate denied'; END;
+END $$;
+DO $$DECLARE a text; b text; BEGIN
+ a:=public.get_my_authz_fingerprint()->>'fingerprint';
+ UPDATE user_clientes SET revoked_at=now(); UPDATE user_clientes SET revoked_at=NULL;
+ b:=public.get_my_authz_fingerprint()->>'fingerprint';
+ IF a IS NULL OR b IS NULL OR a IS NOT DISTINCT FROM b THEN RAISE EXCEPTION 'FAIL fingerprint ABA'; END IF;
+ RAISE NOTICE 'PASS revision fingerprint ABA without updated_at';
+END $$;
+ROLLBACK;

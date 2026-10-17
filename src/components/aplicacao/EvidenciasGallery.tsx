@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FileText, History } from "lucide-react";
@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
+import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 
 interface Evidencia {
   id: string;
@@ -29,9 +30,27 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
   const access = useStorageAccessScope(`aplicacao:${aplicacaoId}`);
   const [result, setResult] = useState<{ scope: string; items: Evidencia[] }>({ scope: "", items: [] });
   const items = access.ready && result.scope === access.scope ? result.items : [];
-  const { urls } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias");
+  const { urls, request } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
+  const galleryRef = useRef<HTMLDivElement>(null);
   const [lightbox, setLightbox] = useState<{ scope: string; path: string } | null>(null);
   const lightboxUrl = lightbox?.scope === access.scope ? urls[lightbox.path] : undefined;
+
+  useEffect(() => {
+    if (!AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED || !access.ready || !galleryRef.current) return;
+    const current = access.capture();
+    // Visible photo previews only; other formats remain explicit click downloads.
+    const observer = new IntersectionObserver(entries => {
+      if (!current()) return;
+      for (const entry of entries) {
+        const path = (entry.target as HTMLElement).dataset.attachmentPath;
+        if (entry.isIntersecting && path) { request(path); observer.unobserve(entry.target); }
+      }
+    }, { rootMargin: "100px" });
+    galleryRef.current.querySelectorAll("[data-attachment-path]").forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+    // capture is intentionally scoped; depending on its unstable wrapper loops observers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access.scope, access.ready, items, request]);
 
   useEffect(() => {
     const current = access.capture();
@@ -67,15 +86,17 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div ref={galleryRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {items.map((e) => (
           <div key={e.id} className="border rounded-lg overflow-hidden bg-card relative group">
             <Button
               variant="ghost"
               type="button"
-              disabled={!urls[e.storage_path]}
+              data-attachment-path={e.tipo === "foto" ? e.storage_path : undefined}
+              disabled={!urls[e.storage_path] && !AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED}
               onClick={() => {
-                if (!access.ready || !urls[e.storage_path]) return;
+                if (!access.ready) return;
+                if (!urls[e.storage_path]) { request(e.storage_path); return; }
                 if (e.tipo === "foto") setLightbox({ scope: access.scope, path: e.storage_path });
                 else window.open(urls[e.storage_path], "_blank", "noopener,noreferrer");
               }}

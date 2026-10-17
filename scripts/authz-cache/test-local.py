@@ -1,6 +1,6 @@
 """Candidato exato em PostgreSQL descartável. Auth/tabelas reduzidos, NÃO hosted.
-Preflight por hashes hospedados não pode passar em stubs: removido explicitamente,
-nunca interpretado como PASS. Corpos de scopes Produtor/B2B reutilizados do repo.
+Preflight usa hashes dos stubs locais, explicitamente distintos do hosted.
+Volatilidade individual real v/s/s; corpos Produtor/B2B reutilizados do repo.
 """
 from pathlib import Path
 import subprocess, tempfile, os, re
@@ -34,7 +34,7 @@ try:
  CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $$;
  CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo AND senha_provisoria=false) $$;
  CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() $$;
- CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT ARRAY(SELECT cliente_id FROM public.user_clientes WHERE user_id=$1 AND $1=auth.uid() AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now()) ORDER BY cliente_id) $$;
+ CREATE FUNCTION public.get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$ SELECT ARRAY(SELECT cliente_id FROM public.user_clientes WHERE user_id=$1 AND $1=auth.uid() AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now()) ORDER BY cliente_id) $$;
  CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT feature_key FROM public.fixture_entitlements WHERE user_id=$1 $$;
  CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid,boolean) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$;
  ''')
@@ -43,8 +43,65 @@ try:
  b2b=(ROOT/'supabase/migrations/20261008212043_b3b02dba-c8f9-4dbb-beb4-52d77aae3f62.sql').read_text()
  run(b2b[:b2b.index('REVOKE ALL')])
  candidate=(ROOT/'scripts/authz-cache/candidate.sql.review').read_text()
- run(re.sub(r'DO \$preflight\$.*?END \$preflight\$;', '',candidate,count=1,flags=re.S))
+ # Execute exact individual preflight contracts with fixture definition hashes.
+ # Hosted hashes remain immutable in the candidate; local bodies are reduced.
+ local_candidate=candidate
+ for signature, hosted in [
+  ('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c'),
+  ('platform_private.producer_commercial_client_scope(uuid)','49b8329ce232670c1560f0683b913a26'),
+  ('platform_private.b2b_commercial_context()','02158d4204dea67308558f649113ba6d')]:
+  local_candidate=local_candidate.replace(hosted,run(f"SELECT md5(pg_get_functiondef('{signature}'::regprocedure))"))
+ run(local_candidate)
  print(run((ROOT/'scripts/authz-cache/tests.sql.review').read_text()))
+ # Monotonic extension: reduced tables; same captured identity gate body.
+ run('''CREATE SCHEMA cf_user_guards_v1;
+ CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY,revision bigint NOT NULL);
+ INSERT INTO cf_user_guards_v1.state VALUES(true,0);
+ CREATE TABLE auth.users(id uuid PRIMARY KEY);
+ ''')
+ captured=(ROOT/'scripts/tests/b2b-provisioning-real-triggers.sql').read_text()
+ gate=re.search(r'CREATE FUNCTION cf_user_guards_v1.acquire_gate\(\).*?END \$\$;',captured,re.S).group()
+ run(gate)
+ for tbl in ['auth.users','public.profiles','public.user_roles','public.user_clientes','public.partner_users']:
+  run(f'CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR UPDATE OR DELETE ON {tbl} FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();')
+ for tbl in ['organization_subscriptions','organization_feature_overrides','saas_plan_versions','saas_plan_version_features','saas_features','saas_modules']:
+  run(f'CREATE TABLE public.{tbl}(id uuid PRIMARY KEY DEFAULT gen_random_uuid());')
+ run((ROOT/'scripts/authz-cache/monotonic.sql.review').read_text())
+ # Reuse committed producer fixture from temporal test, now restore validity.
+ run('''UPDATE user_clientes SET valid_until=NULL;
+ INSERT INTO partner_accounts(id) VALUES('00000000-0000-4000-8000-000000000031');
+ INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
+ ''')
+ run((ROOT/'scripts/authz-cache/monotonic-tests.sql.review').read_text())
+ # Additional synthetic cascade + nested principal/profile writer on candidate.
+ run('''ALTER TABLE user_clientes ADD CONSTRAINT fixture_client_fk FOREIGN KEY(cliente_id) REFERENCES clientes(id) ON DELETE CASCADE;
+ CREATE FUNCTION public.fixture_nested_revision() RETURNS trigger LANGUAGE plpgsql AS $$
+ BEGIN UPDATE profiles SET updated_at=updated_at WHERE user_id=NEW.user_id; RETURN NEW; END $$;
+ CREATE TRIGGER fixture_nested_revision AFTER UPDATE ON user_clientes FOR EACH ROW EXECUTE FUNCTION public.fixture_nested_revision();
+ INSERT INTO clientes(id,organization_id) VALUES('00000000-0000-4000-8000-000000000022','00000000-0000-4000-8000-000000000001');
+ INSERT INTO user_clientes(user_id,cliente_id) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000022');
+ ''')
+ before=int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))
+ run('UPDATE user_clientes SET principal=principal;') # multirow and nested profile stamps
+ assert int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))>=before+3
+ before=int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))
+ run("DELETE FROM clientes WHERE id='00000000-0000-4000-8000-000000000022';")
+ assert int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))>=before+2
+ print('2 synthetic multirow/nested/cascade revision checks PASS (not live fullschema).')
+ # Two actual local connections: global revision gate blocks until commit.
+ import time
+ writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ writer.stdin.write("BEGIN;UPDATE partner_accounts SET ativo=false;SELECT pg_sleep(0.6);UPDATE partner_accounts SET ativo=true;COMMIT;");writer.stdin.close()
+ time.sleep(0.15)
+ started=time.monotonic()
+ run('UPDATE organizations SET ativo=ativo;')
+ assert time.monotonic()-started>0.25,'second writer did not wait for singleton'
+ assert writer.wait()==0
+ print('1 teste duas conexões/local serialization PASS.')
+ revision=run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton')
+ run((ROOT/'scripts/authz-cache/monotonic-rollback.sql.review').read_text())
+ assert run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton')==revision
+ print('Rollback monotônico preserva revision PASS.')
  run((ROOT/'scripts/authz-cache/rollback.sql.review').read_text())
  assert run("SELECT to_regprocedure('public.get_my_authz_fingerprint()') IS NULL AND to_regnamespace('authz_cache_private') IS NULL")=='t'
  print('Rollback local PASS; hosted preflight/hashes/RLS/GoTrue/UI autenticada UNVERIFIED.')

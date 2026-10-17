@@ -1,3 +1,10 @@
+## Cache/anexos — revisão 0c324c2d, 17/10/2026 01:40 UTC
+- [x] Preflight v4 individual v/s/s, hashes externos arquivados, core/wrapper VOLATILE; resolvers preservados.38 asserts locais/preflight com hashes dos stubs PASS, não hosted.
+- [x] Inventário writers e revisão monotônica singleton existente em SQL/rollback fora migrations;22 asserts+2 synthetic cascade/nested/multirow+1 corrida duas conexões PASS. Cobertura instalada/lock order/tempo/transitives pendentes, sem ABA universal.
+- [x] Candidata Blob autenticada stream/3conc/fila48/24files/20MiBfile/60MiBhook/15s, lazy+gallery com gatesfalse;117Vitest8arquivos PASS/lintfocal0/0/buildOK. Inventário emissões frontend/Edges+plano drenagem3600s/clientes antigos, branding público preservado.
+- [ ] Promoção integral anexos bloqueada: revisão técnica das candidatas, paths/fallbacks legados, demais emissores/Edges/lazy consumers/PDF/email e prova API autenticada. Nenhum desses caminhos declarado migrado/testado integralmente; gates false.
+- [ ] Revisão técnica/fullschema e prova autenticada: gates false, sem instalar/publicar/alterar associações, assinatura ou pagamentos. B2B publicado observado pelo auditor: parceiro correto/pedidos vazio/recursos indisponíveis, Plataforma negada; NÃO aprovação integral.
+
 ## Cache de autorização — recorte pequeno 17/10/2026 01:30 UTC
 - [x] Base preservada `5aff4b06369d3530272ee2107205f534669b0a16`; AR Bio ACTIVE confirmado pelo titular, correlação `22b1206d-ef4d-4409-91ec-add115a16228`, preço/snapshots/financeiro preservados. NÃO repetir ativação.
 - [x] Auditar/corrigir lease confirmada versus timeout e foco pending; 107/107 Vitest em 7 arquivos, AuthProvider/hooks/boundary reais com transporte simulado. Lint 0 erros/4 warnings existentes; build automático OK. Typecheck dedicado não executado pelo agente.

@@ -1,5 +1,12 @@
 # Foundation de cache de autorização (mesma identidade) — 2026-10-17
 
+## Revisão 0c324c2d — recorte atual
+
+Resultado/arquivos/limites em `authz-cache-anexos-revisao-0c324c2d-20261017.md`.
+Preflight v3 hosted falhou: Cliente é VOLATILE, não STABLE. Candidata v4 corrige
+contratos individuais, sem alterar resolvers. Revisão monotônica e Blob são
+candidatos fechados, não instalação/cobertura universal/liberação de associações.
+
 ## Recorte 01:30 UTC — correção restrita sobre 5aff4b0
 
 Esta seção **substitui as alegações anteriores sobre v2/lease/ABA**. As seções
