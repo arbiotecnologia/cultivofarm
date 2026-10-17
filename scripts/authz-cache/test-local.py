@@ -46,7 +46,7 @@ try:
 
     # 1. sem sessão: negado
     r = psql("SELECT public.get_my_authz_fingerprint();")
-    assert r.returncode != 0 and "42501" in r.stderr, r.stderr; checks += 1
+    assert r.returncode != 0 and "auth_required" in r.stderr, r.stderr; checks += 1
 
     # 2. ACL: anon não executa
     run("CREATE ROLE test_anon LOGIN; GRANT anon TO test_anon;")
