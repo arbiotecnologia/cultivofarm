@@ -72,7 +72,8 @@ try:
  run('CREATE TRIGGER z99_cf_profile_stamp BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.advance_stamp();')
  run((ROOT/'scripts/authz-cache/scoped.sql.review').read_text())
  # Reuse committed producer fixture from temporal test, now restore validity.
- run('''UPDATE user_clientes SET valid_until=NULL;
+ run('''UPDATE user_clientes SET valid_until=NULL, revoked_at=NULL, is_active=true;
+ UPDATE profiles SET ativo=true, senha_provisoria=false;
  INSERT INTO partner_accounts(id) VALUES('00000000-0000-4000-8000-000000000031');
  INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
  ''')
