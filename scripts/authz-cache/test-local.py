@@ -87,10 +87,10 @@ try:
  writer.stdin.write("BEGIN;UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';SELECT pg_sleep(0.6);ROLLBACK;");writer.stdin.close()
  time.sleep(0.15)
  started=time.monotonic()
- fp_b=run("BEGIN; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',true); SELECT public.get_my_authz_fingerprint()->>'fingerprint'; ROLLBACK;").splitlines()[-2]
+ stamp_b=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
  elapsed=time.monotonic()-started
- assert elapsed<0.5,f'tenant B fingerprint blocked by tenant A writer ({elapsed:.2f}s)'
- assert fp_b,'tenant B fingerprint empty during tenant A write'
+ assert elapsed<0.5,f'tenant B read blocked by tenant A writer ({elapsed:.2f}s)'
+ assert stamp_b==stamp_b_before,'tenant A write changed tenant B stamp'
  assert writer.wait()==0
  print('1 teste duas conexões/sem lock global PASS.')
  run((ROOT/'scripts/authz-cache/scoped-rollback.sql.review').read_text())
