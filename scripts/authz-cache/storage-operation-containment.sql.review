@@ -1,0 +1,45 @@
+-- CANDIDATO V6 DE CONTENÇÃO, NÃO INSTALAR. Não migration, não executado.
+-- Ref exclusivo swzpzcwiasxmjutrmvkm comprovado externamente.
+-- REVIEW BLOCKER: manifest/policy/helper live não anexado; abaixo falha fechado.
+-- Nenhum auth/storage function/table/trigger é criado/alterado.
+BEGIN;
+DO $preflight$
+DECLARE expected_policy_md5 text := NULL; expected_helper_md5 text := NULL;
+BEGIN
+ IF expected_policy_md5 IS NULL OR expected_helper_md5 IS NULL THEN
+   RAISE EXCEPTION 'v6_storage_live_contract_unproven';
+ END IF;
+ IF to_regprocedure('storage.allow_any_operation(text[])') IS NULL THEN
+   RAISE EXCEPTION 'v6_storage_operation_helper_missing';
+ END IF;
+ IF md5(pg_get_functiondef('storage.allow_any_operation(text[])'::regprocedure))
+     IS DISTINCT FROM expected_helper_md5 THEN RAISE EXCEPTION 'v6_storage_helper_drift'; END IF;
+ IF (SELECT md5(string_agg(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check),E'\n' ORDER BY policyname))
+     FROM pg_policies WHERE schemaname='storage' AND tablename='objects')
+     IS DISTINCT FROM expected_policy_md5 THEN RAISE EXCEPTION 'v6_storage_policy_drift'; END IF;
+ IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='storage.objects'::regclass) THEN
+   RAISE EXCEPTION 'v6_storage_rls_missing';
+ END IF;
+ IF EXISTS(SELECT 1 FROM unnest(ARRAY['clientes-docs','order-attachments','consultor-arquivos']) b(id)
+  WHERE NOT EXISTS(SELECT 1 FROM storage.buckets s WHERE s.id=b.id AND s.public IS FALSE)) THEN
+   RAISE EXCEPTION 'v6_storage_private_bucket_unproven';
+ END IF;
+ IF EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
+   AND policyname='v6_private_operation_fence') THEN RAISE EXCEPTION 'v6_storage_destination_occupied'; END IF;
+END $preflight$;
+-- Restrictive AND existing tenant/RBAC policies; not a new permissive grant.
+-- Signing/sign_many/render.image_sign and missing operation context are denied.
+-- Authenticated download remains eligible, never broader than existing RLS.
+-- Other SELECT-consuming Storage ops require inventory before expanding list.
+CREATE POLICY v6_private_operation_fence ON storage.objects AS RESTRICTIVE
+FOR SELECT TO authenticated,anon USING (
+ bucket_id NOT IN ('clientes-docs','order-attachments','consultor-arquivos')
+ OR storage.allow_any_operation(ARRAY[
+   'storage.object.get_authenticated',
+   'storage.object.list','storage.object.list_v2',
+   'object.get_authenticated_info','object.head_authenticated_info'
+ ])
+);
+COMMIT;
+-- service_role/BYPASSRLS signers are NOT contained by this policy.
+-- Remaining buckets/Edges/PDF emitters must be reviewed separately; no T0.

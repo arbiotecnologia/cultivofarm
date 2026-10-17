@@ -1,0 +1,15 @@
+-- CANDIDATO ROLLBACK V6, NÃO EXECUTAR. Gate false deve ser comprovado externamente.
+-- Restores emission risk: never automatically roll back and start T0.
+BEGIN;
+DO $guard$
+DECLARE expected_policy_md5 text := NULL;
+BEGIN
+ IF expected_policy_md5 IS NULL THEN RAISE EXCEPTION 'v6_rollback_policy_unproven'; END IF;
+ IF (SELECT md5(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check))
+ FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
+ AND policyname='v6_private_operation_fence') IS DISTINCT FROM expected_policy_md5 THEN
+  RAISE EXCEPTION 'v6_rollback_policy_drift';
+ END IF;
+END $guard$;
+DROP POLICY v6_private_operation_fence ON storage.objects;
+COMMIT;
