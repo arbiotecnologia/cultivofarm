@@ -1,6 +1,7 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,9 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 
-const TIPOS: { value: string; label: string }[] = [
+type ClienteDocumento = Database["public"]["Tables"]["cliente_documentos"]["Row"];
+type DocumentoTipo = Database["public"]["Enums"]["cliente_doc_tipo"];
+const TIPOS: { value: DocumentoTipo; label: string }[] = [
   { value: "cnh", label: "CNH" },
   { value: "cartao_cnpj", label: "Cartão CNPJ" },
   { value: "inscricao_produtor", label: "Inscrição de Produtor" },
@@ -52,14 +55,14 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   const { profile } = useAuth();
   const access = useStorageAccessScope(`cliente:${clienteId}`);
   const attachmentOpener = useAuthenticatedAttachmentOpener(`cliente:${clienteId}`, "clientes-docs");
-  const [result, setResult] = useState<{ scope: string; docs: any[] }>({ scope: "", docs: [] });
+  const [result, setResult] = useState<{ scope: string; docs: ClienteDocumento[] }>({ scope: "", docs: [] });
   const docs = access.ready && result.scope === access.scope ? result.docs : [];
   const [loading, setLoading] = useState(false);
-  const [tipo, setTipo] = useState<string>("");
+  const [tipo, setTipo] = useState<DocumentoTipo | "">("");
   const [descricao, setDescricao] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [confirmDel, setConfirmDel] = useState<any | null>(null);
+  const [confirmDel, setConfirmDel] = useState<ClienteDocumento | null>(null);
   const [showErrors, setShowShowErrors] = useState(false);
   const mutationLock = useRef(false);
 
@@ -119,7 +122,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
         {
           cliente_id: clienteId,
           nome: file.name,
-          tipo: tipo as any,
+          tipo,
           descricao: descricao || null,
           arquivo_path: path,
           tamanho_bytes: file.size,
@@ -151,7 +154,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
     }
   };
 
-  const handleDownload = async (doc: any) => {
+  const handleDownload = async (doc: ClienteDocumento) => {
     if (!access.ready) return;
     const current = access.capture();
     if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
@@ -167,7 +170,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
-  const handleDelete = async (doc: any) => {
+  const handleDelete = async (doc: ClienteDocumento) => {
     if (!access.ready || mutationLock.current || !docs.some(d => d.id === doc.id)) return;
     mutationLock.current = true;
     const current = access.capture();
@@ -189,7 +192,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
     } finally { mutationLock.current = false; }
   };
 
-  const grupos = docs.reduce<Record<string, any[]>>((acc, d) => {
+  const grupos = docs.reduce<Record<string, ClienteDocumento[]>>((acc, d) => {
     const k = d.tipo || "outro";
     (acc[k] ||= []).push(d);
     return acc;
@@ -202,7 +205,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Tipo *</Label>
-            <Select value={tipo} onValueChange={(v) => { setTipo(v); if(v) setShowShowErrors(false); }}>
+            <Select value={tipo} onValueChange={(v) => { const selected = TIPOS.find(t => t.value === v); if (!selected) return; setTipo(selected.value); setShowShowErrors(false); }}>
               <SelectTrigger className={!tipo && showErrors ? "border-destructive ring-destructive/20" : ""}>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>

@@ -6,6 +6,7 @@ import {
   useMessageAttachments,
   useUploadMessageAttachment,
   getAttachmentSignedUrl,
+  type OrderMessage,
 } from "@/hooks/useCommercial";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,7 +77,7 @@ const STATUS_LABEL: Record<string, string> = {
   encerrada: "Encerrada",
 };
 
-function MessageItem({ m, orderId }: { m: any; orderId: string }) {
+function MessageItem({ m, orderId }: { m: OrderMessage & { status?: string | null }; orderId: string }) {
   const setStatus = useSetMessageStatus();
   const { data: attachments = [] } = useMessageAttachments(m.id);
   const upload = useUploadMessageAttachment();
