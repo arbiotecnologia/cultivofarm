@@ -1,6 +1,6 @@
 // Foundation de cache de autorização para a MESMA identidade.
 //
-// Um único monitor por AuthProvider (integração em useAuth.tsx, atrás do gate
+// Um único monitor por AuthProvider (integração no hook de autenticação, atrás do gate
 // AUTHZ_CACHE_FOUNDATION_ENABLED), criado apenas para perfis EXTERNOS após o
 // Auth estar pronto. Sem provider/rota paralelo e sem BroadcastChannel entre
 // sessões/dispositivos: cada sessão mantém o próprio monitor e revalida no
