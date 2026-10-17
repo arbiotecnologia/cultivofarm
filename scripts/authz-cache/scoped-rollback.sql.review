@@ -1,0 +1,16 @@
+-- NÃO EXECUTAR HOSTED; comprovar gate frontend false externamente.
+-- Reverte SOMENTE a candidata de escopo (scoped.sql.review); não toca nos
+-- triggers live z90/z99 nem em dados. Perfis tocados mantêm seus carimbos
+-- (monotônicos, nunca resetados).
+BEGIN;
+DROP TRIGGER IF EXISTS z91_cf_touch_scope_partner ON public.partner_accounts;
+DROP TRIGGER IF EXISTS z91_cf_touch_scope_org ON public.organizations;
+DROP FUNCTION IF EXISTS authz_cache_private.touch_scope_profiles();
+DROP FUNCTION IF EXISTS authz_cache_private.get_my_revisioned_fingerprint();
+CREATE OR REPLACE FUNCTION public.get_my_authz_fingerprint() RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
+  SELECT authz_cache_private.get_my_fingerprint_core();
+$$;
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO authenticated;
+COMMIT;

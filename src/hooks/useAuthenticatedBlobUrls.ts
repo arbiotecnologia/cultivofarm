@@ -11,7 +11,7 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
   const current = useRef({ scope: fence.scope, ready });
   current.current = { scope: fence.scope, ready };
   const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null }>({ scope: "", urls: {}, loading: false, error: null });
+  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null; failed: string[] }>({ scope: "", urls: {}, loading: false, error: null, failed: [] });
   const requestRef = useRef<(path: string) => void>(() => {});
 
   useLayoutEffect(() => {
@@ -21,12 +21,14 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
     let pending = 0;
     const urls: Record<string, string> = {};
     const controllers = new Map<string, AbortController>();
+    const failed = new Set<string>();
     let error: Error | null = null;
     const isCurrent = () => alive && current.current.ready && current.current.scope === scope;
-    const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, error }); };
-    setResult({ scope, urls: {}, loading: false, error: null });
+    const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, error, failed: [...failed] }); };
+    setResult({ scope, urls: {}, loading: false, error: null, failed: [] });
     const request = (path: string) => {
       if (!isCurrent() || !valid.includes(path) || controllers.has(path) || urls[path]) return;
+      failed.delete(path);
       if (valid.length > ATTACHMENT_LIMITS.files) { error = new Error("Limite de anexos excedido"); publish(); return; }
       const controller = new AbortController();
       controllers.set(path, controller); pending++; publish();
@@ -38,8 +40,8 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
         if (!isCurrent()) { URL.revokeObjectURL(url); return; }
         urls[path] = url;
       }).catch(() => {
-        if (isCurrent()) error = new Error("Anexo indisponível");
-      }).finally(() => { pending--; publish(); });
+        if (isCurrent()) { error = new Error("Anexo indisponível"); failed.add(path); }
+      }).finally(() => { controllers.delete(path); pending--; publish(); });
     };
     requestRef.current = request;
     if (ready && !options.lazy) valid.forEach(request);
@@ -56,5 +58,5 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
   const request = useCallback((path: string) => requestRef.current(path), []);
   const refresh = useCallback(() => setAttempt(n => n + 1), []);
   const visible = ready && result.scope === fence.scope;
-  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready && !options.lazy, error: visible ? result.error : null, refresh, request };
+  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready && !options.lazy, error: visible ? result.error : null, failed: visible ? result.failed : [], refresh, request };
 }

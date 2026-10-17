@@ -1,3 +1,8 @@
+-- REJEITADO na revisão a36514db: singleton GLOBAL no fingerprint de todas as
+-- identidades + BEFORE STATEMENT em clientes/empresas/assinaturas invalida
+-- tenants não relacionados e serializa writers comerciais no lock global.
+-- NÃO INSTALAR. Substituído por scoped.sql.review (escopo próprio via
+-- advance_stamp/touch_related_profiles). Arquivo mantido só como histórico.
 -- CANDIDATA COMPLEMENTAR, NÃO INSTALAR. Executar somente após candidate.sql.review.
 -- Ref externo obrigatório swzpzcwiasxmjutrmvkm; gate frontend false.
 -- Reutiliza singleton existente, SEM reset/backfill/novo contador por usuário.

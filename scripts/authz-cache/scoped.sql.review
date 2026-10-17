@@ -1,0 +1,94 @@
+-- CANDIDATA v5 (ESCOPO PRÓPRIO), NÃO INSTALAR. Substitui o desenho global de
+-- monotonic.sql.review, REJEITADO na revisão a36514db (singleton global em
+-- fingerprint de todas as identidades + BEFORE STATEMENT serializando writers).
+-- Ref externo obrigatório swzpzcwiasxmjutrmvkm; gates frontend false.
+--
+-- Desenho: reutiliza os mecanismos live advance_stamp/touch_related_profiles
+-- (z99_cf_profile_stamp em profiles; z90_cf_touch_profile em user_roles,
+-- user_clientes, partner_users). O fingerprint incorpora o updated_at
+-- MONOTÔNICO do próprio perfil: qualquer mudança de identidade/role/vínculo
+-- do titular (incluindo A→B→A) avança o carimbo e muda o fingerprint, sem
+-- lock global e sem invalidar outros tenants.
+--
+-- Lacuna coberta: mudanças em partner_accounts/organizations NÃO disparam
+-- z90 (evidência live). Acrescenta-se AFTER ROW restrito que toca SOMENTE os
+-- perfis vinculados àquele parceiro/empresa (fan-out limitado ao escopo),
+-- sem BEFORE STATEMENT e sem singleton.
+BEGIN;
+DO $preflight$
+BEGIN
+  IF to_regprocedure('authz_cache_private.get_my_fingerprint_core()') IS NULL OR
+     to_regprocedure('cf_user_guards_v1.touch_related_profiles()') IS NULL OR
+     to_regprocedure('cf_user_guards_v1.advance_stamp()') IS NULL THEN
+    RAISE EXCEPTION 'authz_scoped_dependency_missing';
+  END IF;
+  -- Triggers live de carimbo devem existir; nunca instalar em schema reservado.
+  IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t
+    WHERE t.tgrelid='public.profiles'::regclass AND t.tgname='z99_cf_profile_stamp'
+      AND t.tgenabled='O' AND NOT t.tgisinternal) THEN
+    RAISE EXCEPTION 'authz_scoped_stamp_trigger_unproven';
+  END IF;
+END $preflight$;
+
+-- Fan-out limitado: toca apenas perfis dos usuários ligados ao parceiro/empresa
+-- alterada. AFTER ROW não bloqueia o writer antes da linha; o UPDATE de
+-- profiles toma row locks só dos perfis do escopo, na mesma ordem (ORDER BY)
+-- para evitar inversão com writers que já tocam perfis ordenados.
+CREATE FUNCTION authz_cache_private.touch_scope_profiles() RETURNS trigger
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $touch$
+BEGIN
+  IF TG_LEVEL IS DISTINCT FROM 'ROW' OR TG_WHEN IS DISTINCT FROM 'AFTER' OR
+     TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR
+     TG_TABLE_NAME NOT IN ('partner_accounts','organizations') THEN
+    RAISE EXCEPTION 'authz_scope_context_forbidden' USING ERRCODE='42501';
+  END IF;
+  IF TG_OP='UPDATE' AND NEW IS NOT DISTINCT FROM OLD THEN RETURN COALESCE(NEW,OLD); END IF;
+  IF TG_TABLE_NAME='partner_accounts' THEN
+    UPDATE public.profiles p SET updated_at = greatest(clock_timestamp(), p.updated_at + interval '1 microsecond')
+    FROM (SELECT DISTINCT pu.user_id FROM public.partner_users pu
+          WHERE pu.partner_id IN (OLD.id, NEW.id) ORDER BY pu.user_id) s
+    WHERE p.user_id = s.user_id;
+  ELSE
+    UPDATE public.profiles p SET updated_at = greatest(clock_timestamp(), p.updated_at + interval '1 microsecond')
+    FROM (SELECT DISTINCT uc.user_id FROM public.user_clientes uc
+          JOIN public.clientes c ON c.id = uc.cliente_id
+          WHERE c.organization_id IN (OLD.id, NEW.id)
+          UNION SELECT pu.user_id FROM public.partner_users pu
+          JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+          WHERE pa.commercial_owner_organization_id IN (OLD.id, NEW.id)) s
+    WHERE p.user_id = s.user_id;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END $touch$;
+REVOKE ALL ON FUNCTION authz_cache_private.touch_scope_profiles() FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE TRIGGER z91_cf_touch_scope_partner AFTER INSERT OR UPDATE OR DELETE ON public.partner_accounts
+  FOR EACH ROW EXECUTE FUNCTION authz_cache_private.touch_scope_profiles();
+CREATE TRIGGER z91_cf_touch_scope_org AFTER INSERT OR UPDATE OR DELETE ON public.organizations
+  FOR EACH ROW EXECUTE FUNCTION authz_cache_private.touch_scope_profiles();
+
+-- Fingerprint revisionado por escopo próprio: carimbo monotônico do perfil do
+-- titular + core canônico. Sem contador global; leitura do próprio perfil é
+-- self-only e já autorizada pelas políticas existentes.
+CREATE FUNCTION authz_cache_private.get_my_revisioned_fingerprint() RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $read$
+DECLARE stamp timestamptz; result jsonb;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  SELECT p.updated_at INTO stamp FROM public.profiles p WHERE p.user_id = auth.uid();
+  IF stamp IS NULL THEN RETURN jsonb_build_object('eligible',false,'fingerprint',NULL); END IF;
+  result := authz_cache_private.get_my_fingerprint_core(); -- elegibilidade canônica inalterada
+  IF result->>'eligible' IS DISTINCT FROM 'true' THEN RETURN result; END IF;
+  RETURN jsonb_build_object('eligible',true,'fingerprint',md5(jsonb_build_array(
+    auth.uid(), stamp::text, result->>'fingerprint')::text));
+END $read$;
+REVOKE ALL ON FUNCTION authz_cache_private.get_my_revisioned_fingerprint() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION authz_cache_private.get_my_revisioned_fingerprint() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_my_authz_fingerprint() RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
+  SELECT authz_cache_private.get_my_revisioned_fingerprint();
+$$;
+REVOKE ALL ON FUNCTION public.get_my_authz_fingerprint() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.get_my_authz_fingerprint() TO authenticated;
+COMMIT;

@@ -26,6 +26,8 @@ import { FileIcon, Upload, Trash2, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
 
 const TIPOS: { value: string; label: string }[] = [
   { value: "cnh", label: "CNH" },
@@ -151,6 +153,19 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
   const handleDownload = async (doc: any) => {
     if (!access.ready) return;
     const current = access.capture();
+    if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+      // Candidata (gate fechado): download autenticado; sem fallback remoto ao negar.
+      try {
+        const blob = await downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, new AbortController().signal);
+        if (!current()) return;
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank", "noopener,noreferrer");
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      } catch {
+        if (current()) toast.error("Documento indisponível");
+      }
+      return;
+    }
     const { data, error } = await supabase.storage
       .from("clientes-docs")
       .createSignedUrl(doc.arquivo_path, 60);

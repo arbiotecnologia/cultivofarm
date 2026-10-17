@@ -53,7 +53,8 @@ try:
   local_candidate=local_candidate.replace(hosted,run(f"SELECT md5(pg_get_functiondef('{signature}'::regprocedure))"))
  run(local_candidate)
  print(run((ROOT/'scripts/authz-cache/tests.sql.review').read_text()))
- # Monotonic extension: reduced tables; same captured identity gate body.
+ # Scoped extension (v5): reuses live-like z90/z99 stamp triggers; NO global
+ # singleton in fingerprints (design rejected in review a36514db).
  run('''CREATE SCHEMA cf_user_guards_v1;
  CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY,revision bigint NOT NULL);
  INSERT INTO cf_user_guards_v1.state VALUES(true,0);
@@ -61,47 +62,43 @@ try:
  ''')
  captured=(ROOT/'scripts/tests/b2b-provisioning-real-triggers.sql').read_text()
  gate=re.search(r'CREATE FUNCTION cf_user_guards_v1.acquire_gate\(\).*?END \$\$;',captured,re.S).group()
- run(gate)
+ touch=re.search(r'CREATE FUNCTION cf_user_guards_v1.touch_related_profiles\(\).*?\$\$;',captured,re.S).group()
+ stamp=re.search(r'CREATE FUNCTION cf_user_guards_v1.advance_stamp\(\).*?\$\$;',captured,re.S).group()
+ run(gate); run(touch); run(stamp)
  for tbl in ['auth.users','public.profiles','public.user_roles','public.user_clientes','public.partner_users']:
   run(f'CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR UPDATE OR DELETE ON {tbl} FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();')
- for tbl in ['organization_subscriptions','organization_feature_overrides','saas_plan_versions','saas_plan_version_features','saas_features','saas_modules']:
-  run(f'CREATE TABLE public.{tbl}(id uuid PRIMARY KEY DEFAULT gen_random_uuid());')
- run((ROOT/'scripts/authz-cache/monotonic.sql.review').read_text())
+ for tbl in ['public.user_roles','public.user_clientes','public.partner_users']:
+  run(f'CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR UPDATE OR DELETE ON {tbl} FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles();')
+ run('CREATE TRIGGER z99_cf_profile_stamp BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.advance_stamp();')
+ run((ROOT/'scripts/authz-cache/scoped.sql.review').read_text())
  # Reuse committed producer fixture from temporal test, now restore validity.
- run('''UPDATE user_clientes SET valid_until=NULL;
+ run('''UPDATE user_clientes SET valid_until=NULL, revoked_at=NULL, is_active=true;
+ UPDATE profiles SET ativo=true, senha_provisoria=false;
  INSERT INTO partner_accounts(id) VALUES('00000000-0000-4000-8000-000000000031');
  INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
  ''')
- run((ROOT/'scripts/authz-cache/monotonic-tests.sql.review').read_text())
- # Additional synthetic cascade + nested principal/profile writer on candidate.
- run('''ALTER TABLE user_clientes ADD CONSTRAINT fixture_client_fk FOREIGN KEY(cliente_id) REFERENCES clientes(id) ON DELETE CASCADE;
- CREATE FUNCTION public.fixture_nested_revision() RETURNS trigger LANGUAGE plpgsql AS $$
- BEGIN UPDATE profiles SET updated_at=updated_at WHERE user_id=NEW.user_id; RETURN NEW; END $$;
- CREATE TRIGGER fixture_nested_revision AFTER UPDATE ON user_clientes FOR EACH ROW EXECUTE FUNCTION public.fixture_nested_revision();
- INSERT INTO clientes(id,organization_id) VALUES('00000000-0000-4000-8000-000000000022','00000000-0000-4000-8000-000000000001');
- INSERT INTO user_clientes(user_id,cliente_id) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000022');
- ''')
- before=int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))
- run('UPDATE user_clientes SET principal=principal;') # multirow and nested profile stamps
- assert int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))>=before+3
- before=int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))
- run("DELETE FROM clientes WHERE id='00000000-0000-4000-8000-000000000022';")
- assert int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))>=before+2
- print('2 synthetic multirow/nested/cascade revision checks PASS (not live fullschema).')
- # Two actual local connections: global revision gate blocks until commit.
+ run((ROOT/'scripts/authz-cache/scoped-tests.sql.review').read_text())
+ # Two actual local connections: writer on tenant A holds open transaction;
+ # fingerprint read of tenant B completes WITHOUT waiting (no global lock)
+ # and returns unchanged.
  import time
+ # Fixture B committed (scoped-tests rolou back): prova de isolamento real.
+ run('''INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
+ INSERT INTO profiles(user_id,organization_id) VALUES('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;''')
+ stamp_b_before=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
  writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
- writer.stdin.write("BEGIN;UPDATE partner_accounts SET ativo=false;SELECT pg_sleep(0.6);UPDATE partner_accounts SET ativo=true;COMMIT;");writer.stdin.close()
+ writer.stdin.write("BEGIN;UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';SELECT pg_sleep(0.6);ROLLBACK;");writer.stdin.close()
  time.sleep(0.15)
  started=time.monotonic()
- run('UPDATE organizations SET ativo=ativo;')
- assert time.monotonic()-started>0.25,'second writer did not wait for singleton'
+ stamp_b=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
+ elapsed=time.monotonic()-started
+ assert elapsed<0.5,f'tenant B read blocked by tenant A writer ({elapsed:.2f}s)'
+ assert stamp_b==stamp_b_before,'tenant A write changed tenant B stamp'
  assert writer.wait()==0
- print('1 teste duas conexões/local serialization PASS.')
- revision=run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton')
- run((ROOT/'scripts/authz-cache/monotonic-rollback.sql.review').read_text())
- assert run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton')==revision
- print('Rollback monotônico preserva revision PASS.')
+ print('1 teste duas conexões/sem lock global PASS.')
+ run((ROOT/'scripts/authz-cache/scoped-rollback.sql.review').read_text())
+ assert run("SELECT to_regprocedure('authz_cache_private.get_my_revisioned_fingerprint()') IS NULL")=='t'
+ print('Rollback scoped PASS (carimbos de perfil preservados, sem reset).')
  run((ROOT/'scripts/authz-cache/rollback.sql.review').read_text())
  assert run("SELECT to_regprocedure('public.get_my_authz_fingerprint()') IS NULL AND to_regnamespace('authz_cache_private') IS NULL")=='t'
  print('Rollback local PASS; hosted preflight/hashes/RLS/GoTrue/UI autenticada UNVERIFIED.')

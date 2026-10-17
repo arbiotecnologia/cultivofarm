@@ -13,6 +13,25 @@ import { Badge } from "@/components/ui/badge";
 import { Paperclip, FileText, FileSpreadsheet, FileImage, File as FileIcon } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { toast } from "sonner";
+import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
+
+/** Candidata (gate fechado): download autenticado sem fallback remoto quando negado. */
+async function openOrderAttachment(path: string): Promise<void> {
+  if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+    try {
+      const blob = await downloadAuthenticatedAttachment("order-attachments", path, new AbortController().signal);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error("Anexo indisponível");
+    }
+    return;
+  }
+  const url = await getAttachmentSignedUrl(path);
+  if (url) window.open(url, "_blank");
+}
 
 const MAX_ATTACHMENT_MB = 10;
 const ACCEPTED_TYPES = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.webp";
@@ -29,7 +48,19 @@ function AttachmentThumb({ path, fileName, mime, onOpen }: { path: string; fileN
   const [thumb, setThumb] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
+    let blobUrl: string | null = null;
     if (mime?.startsWith("image/")) {
+      if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+        const controller = new AbortController();
+        downloadAuthenticatedAttachment("order-attachments", path, controller.signal)
+          .then((blob) => {
+            if (cancelled) return;
+            blobUrl = URL.createObjectURL(blob);
+            setThumb(blobUrl);
+          })
+          .catch(() => { /* Sem fallback remoto: ícone permanece. */ });
+        return () => { cancelled = true; controller.abort(); if (blobUrl) URL.revokeObjectURL(blobUrl); };
+      }
       getAttachmentSignedUrl(path).then((u) => { if (!cancelled) setThumb(u); });
     }
     return () => { cancelled = true; };
@@ -66,10 +97,7 @@ function MessageItem({ m, orderId }: { m: any; orderId: string }) {
   const upload = useUploadMessageAttachment();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const openAttachment = async (path: string) => {
-    const url = await getAttachmentSignedUrl(path);
-    if (url) window.open(url, "_blank");
-  };
+  const openAttachment = openOrderAttachment;
 
   return (
     <div className="text-sm border-b py-2 last:border-b-0">

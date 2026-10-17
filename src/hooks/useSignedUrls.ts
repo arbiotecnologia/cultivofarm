@@ -74,7 +74,11 @@ function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: strin
 
   // Cerca de apresentação no próprio render, antes de cleanup/effects.
   const visible = ready && result.scope === scope;
-  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready, error: visible ? result.error : null, refresh };
+  // Falha por item: caminho válido sem URL após erro é retentável via refresh.
+  const failed = visible && result.error
+    ? Array.from(new Set(paths.filter((p): p is string => typeof p === "string" && p.length > 0))).filter((p) => !result.urls[p])
+    : [];
+  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready, error: visible ? result.error : null, failed, refresh };
 }
 
 // Both hooks remain mounted; closed candidate does not download or mint extra URLs.

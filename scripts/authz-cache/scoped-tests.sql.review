@@ -1,0 +1,73 @@
+-- LOCAL ONLY: fixtures no PostgreSQL descartável do runner. NÃO hosted.
+-- Prova o desenho de escopo próprio (scoped.sql.review): ABA no escopo do
+-- titular muda o fingerprint; escrita em outro tenant NÃO muda nem bloqueia.
+-- A (user 0011) reutiliza o estado elegível já montado pelo harness;
+-- B (user 0099, org 0002) é fixture novo e isolado.
+BEGIN;
+INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
+INSERT INTO profiles(user_id,organization_id) VALUES
+ ('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
+INSERT INTO user_roles(user_id,role) VALUES
+ ('00000000-0000-4000-8000-000000000099','cliente_produtor') ON CONFLICT DO NOTHING;
+INSERT INTO clientes(id,organization_id) VALUES
+ ('00000000-0000-4000-8000-0000000000b1','00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
+INSERT INTO user_clientes(user_id,cliente_id) VALUES
+ ('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-0000000000b1') ON CONFLICT DO NOTHING;
+
+-- 1) ABA no escopo próprio muda o fingerprint de A.
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
+DO $$DECLARE a text; b text; BEGIN
+  a := public.get_my_authz_fingerprint()->>'fingerprint';
+  UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';
+  UPDATE user_clientes SET revoked_at=NULL WHERE user_id='00000000-0000-4000-8000-000000000011';
+  b := public.get_my_authz_fingerprint()->>'fingerprint';
+  IF a IS NULL OR b IS NULL OR a IS NOT DISTINCT FROM b THEN RAISE EXCEPTION 'FAIL scoped ABA own'; END IF;
+  RAISE NOTICE 'PASS scoped ABA own';
+END $$;
+
+-- 2) Escrita no tenant B NÃO muda o fingerprint de A (sem contador global).
+DO $$DECLARE a text; b text; BEGIN
+  a := public.get_my_authz_fingerprint()->>'fingerprint';
+  UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000099';
+  UPDATE user_clientes SET revoked_at=NULL WHERE user_id='00000000-0000-4000-8000-000000000099';
+  UPDATE organizations SET ativo=false WHERE id='00000000-0000-4000-8000-000000000002';
+  UPDATE organizations SET ativo=true WHERE id='00000000-0000-4000-8000-000000000002';
+  b := public.get_my_authz_fingerprint()->>'fingerprint';
+  IF a IS DISTINCT FROM b THEN RAISE EXCEPTION 'FAIL scoped cross-tenant isolation'; END IF;
+  RAISE NOTICE 'PASS scoped cross-tenant isolation';
+END $$;
+
+-- 3) Mudança no parceiro de A (partner 0031, fixture do harness) toca o perfil de A.
+DO $$DECLARE a text; b text; BEGIN
+  a := public.get_my_authz_fingerprint()->>'fingerprint';
+  UPDATE partner_accounts SET ativo=false WHERE id='00000000-0000-4000-8000-000000000031';
+  b := public.get_my_authz_fingerprint()->>'fingerprint';
+  IF a IS NOT DISTINCT FROM b THEN RAISE EXCEPTION 'FAIL scoped partner touch'; END IF;
+  RAISE NOTICE 'PASS scoped partner touch';
+END $$;
+
+-- 4) Mudança na organização de A toca A, mas não B.
+DO $$DECLARE aA text; bA text; aB text; bB text; orgA uuid; BEGIN
+  SELECT organization_id INTO orgA FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000011';
+  aA := public.get_my_authz_fingerprint()->>'fingerprint';
+  EXECUTE 'UPDATE organizations SET status=''suspensa'' WHERE id=$1' USING orgA;
+  bA := public.get_my_authz_fingerprint()->>'fingerprint';
+  IF aA IS NOT DISTINCT FROM bA THEN RAISE EXCEPTION 'FAIL scoped org touch own'; END IF;
+  PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',true);
+  aB := public.get_my_authz_fingerprint()->>'fingerprint';
+  EXECUTE 'UPDATE organizations SET status=''ativa'' WHERE id=$1' USING orgA;
+  bB := public.get_my_authz_fingerprint()->>'fingerprint';
+  IF aB IS DISTINCT FROM bB THEN RAISE EXCEPTION 'FAIL scoped org touch other'; END IF;
+  PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
+  RAISE NOTICE 'PASS scoped org fan-out limited';
+END $$;
+
+-- 5) Carimbo monotônico: toques consecutivos nunca retrocedem updated_at.
+DO $$DECLARE s1 timestamptz; s2 timestamptz; BEGIN
+  SELECT updated_at INTO s1 FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000011';
+  UPDATE user_roles SET role='cliente_produtor' WHERE user_id='00000000-0000-4000-8000-000000000011';
+  SELECT updated_at INTO s2 FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000011';
+  IF s2 <= s1 THEN RAISE EXCEPTION 'FAIL scoped stamp monotonic'; END IF;
+  RAISE NOTICE 'PASS scoped stamp monotonic';
+END $$;
+ROLLBACK;
