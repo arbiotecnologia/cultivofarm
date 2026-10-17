@@ -24,6 +24,8 @@ def scalar(sql, user=None):
     return run(sql, user)
 
 try:
+    subprocess.run(prefix+["initdb","-D",str(tmp/"data"),"-A","trust","-U","postgres"],check=True,capture_output=True)
+    subprocess.run(prefix+["pg_ctl","-D",str(tmp/"data"),"-l",str(tmp/"log"),"-o",f'-k {tmp} -h "" -p 55499',"start"],check=True,capture_output=True)
     run("CREATE ROLE authenticated NOLOGIN; CREATE ROLE anon NOLOGIN; CREATE ROLE service_role NOLOGIN;")
     run("CREATE SCHEMA IF NOT EXISTS auth; CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;")
     run("""CREATE TABLE public.profiles(user_id uuid PRIMARY KEY, ativo boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now());
