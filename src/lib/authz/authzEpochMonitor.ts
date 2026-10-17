@@ -11,8 +11,9 @@
 // * Lease máxima de leaseMs medida DESDE O INÍCIO do request. A lease expira
 //   mesmo quando o estado é "valid": autorização anterior nunca é estendida
 //   por um novo poll, e o deadline é rechecado em cada acesso (checkAccess).
-// * Estado "pending" ESCONDE render: dados sensíveis só aparecem em "valid"
-//   com lease vigente.
+// * Revalidação explícita entra imediatamente em pending e ESCONDE render.
+//   Poll em background só conserva o prazo previamente CONFIRMADO; timeout
+//   da requisição é separado e não renova autoridade antes de uma resposta.
 // * Offline/expiração INVALIDAM A GERAÇÃO: resultado em voo de geração antiga
 //   nunca reabre dados após offline. Evento "offline" do navegador expira
 //   imediatamente, sem esperar o próximo ciclo.

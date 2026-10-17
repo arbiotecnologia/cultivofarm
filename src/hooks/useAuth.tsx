@@ -365,9 +365,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authzMonitorGateRef = useRef(false);
   authzMonitorGateRef.current =
     AUTHZ_CACHE_FOUNDATION_ENABLED && !loading && !!user?.id && !!profile && isExternalUser;
+  const principalScope = JSON.stringify([user?.id, profile?.organization_id, isExternalUser]);
+  const [initializedPrincipal, setInitializedPrincipal] = useState("");
+  useEffect(() => {
+    // Initial profile and roles can arrive in different renders. Latch only
+    // ready principals; loading during refresh does not recreate the monitor.
+    if (authzMonitorGateRef.current) setInitializedPrincipal(principalScope);
+  }, [loading, principalScope]);
 
   useEffect(() => {
-    if (!authzMonitorGateRef.current) {
+    if (!authzMonitorGateRef.current || initializedPrincipal !== principalScope) {
       setAuthzState("idle");
       return;
     }
@@ -435,7 +442,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     // roles entram via isExternalUser (booleano estável); loading/profile
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
-  }, [user?.id, profile?.organization_id, isExternalUser, queryClient]);
+  }, [initializedPrincipal, principalScope, queryClient]);
 
   // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
   // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
@@ -445,7 +452,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!!user && !loading && (!isExternalUser ||
-      (authzState === "valid" && (authzMonitorRef.current?.checkAccess() ?? false))));
+      (initializedPrincipal === principalScope && authzState === "valid" &&
+        (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     !isExternalUser ||

@@ -58,6 +58,10 @@ BEGIN
  END IF;
  SELECT coalesce(jsonb_agg(r.role::text ORDER BY r.role::text),'[]'::jsonb)
  INTO roles FROM public.user_roles r WHERE r.user_id=u;
+ -- This small external-only candidate does not invent a mixed-role context.
+ IF jsonb_array_length(roles) IS DISTINCT FROM 1 THEN
+   RETURN jsonb_build_object('eligible',false,'fingerprint',NULL);
+ END IF;
  -- Branches match role AND its canonical resolver, never role OR generic link.
  IF EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND r.role::text='cliente_produtor') THEN
    clients:=public.get_cliente_ids_for_user(u);
