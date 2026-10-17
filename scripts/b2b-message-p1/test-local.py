@@ -101,6 +101,13 @@ try:
  scenario('provisional admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE profiles SET senha_provisoria=true WHERE user_id='{UA}';")
  scenario('revoked readiness fence admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"INSERT INTO platform_org_admin_invites VALUES('{UA}','processing',NULL);")
  scenario('inactive partner denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE partner_accounts SET ativo=false WHERE id='{PA}';")
+ scenario('cross attachment uploader does not bypass new tenant fence',UB,f"WITH d AS(DELETE FROM partner_order_message_attachments WHERE id='{AA}' RETURNING id) SELECT count(*) FROM d",'0',f"UPDATE partner_order_message_attachments SET uploaded_by='{UB}' WHERE id='{AA}';")
+ scenario('missing commercial owner fails closed',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE partner_accounts SET commercial_owner_organization_id=NULL WHERE id='{PA}';")
+ scenario('UPDATE still unavailable without permissive update policy',UA,f"WITH d AS(UPDATE partner_order_messages SET order_id='{OB}' WHERE id='{MA}' RETURNING id) SELECT count(*) FROM d",'0')
+ scenario('attachment UPDATE still unavailable',UA,f"WITH d AS(UPDATE partner_order_message_attachments SET message_id='{MB}' WHERE id='{AA}' RETURNING id) SELECT count(*) FROM d",'0')
+ check('anon has no permissive child read despite fixture ACL',f"BEGIN;{fixtures}SET LOCAL ROLE anon;SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments);ROLLBACK;",'0:0')
+ run(f"BEGIN;{fixtures}INSERT INTO partner_order_messages(order_id,autor_tipo,mensagem) VALUES('{uid(99)}','admin','orphan');ROLLBACK;",'foreign key');results.append('owner orphan message FK denied')
+ run(f"BEGIN;{fixtures}INSERT INTO partner_order_message_attachments(message_id,file_name,file_path) VALUES('{uid(99)}','orphan','path');ROLLBACK;",'foreign key');results.append('owner orphan metadata FK denied')
  # privileged cascade proof does NOT represent authenticated DELETE authority
  check('owner cascade removes metadata only in rollback',f"BEGIN;{fixtures}DELETE FROM partner_orders WHERE id='{OA}';SELECT count(*) FROM partner_order_message_attachments WHERE id='{AA}';ROLLBACK;",'0')
  check('all fixture rows rolled back',"SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments)||':'||(SELECT count(*) FROM commercial_audit_log)",'0:0:0')
