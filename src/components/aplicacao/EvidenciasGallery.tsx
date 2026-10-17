@@ -30,7 +30,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
   const access = useStorageAccessScope(`aplicacao:${aplicacaoId}`);
   const [result, setResult] = useState<{ scope: string; items: Evidencia[] }>({ scope: "", items: [] });
   const items = access.ready && result.scope === access.scope ? result.items : [];
-  const { urls, request } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
+  const { urls, request, loading, failed, refresh } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
   const galleryRef = useRef<HTMLDivElement>(null);
   const [lightbox, setLightbox] = useState<{ scope: string; path: string } | null>(null);
   const lightboxUrl = lightbox?.scope === access.scope ? urls[lightbox.path] : undefined;
