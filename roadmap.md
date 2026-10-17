@@ -1,3 +1,8 @@
+## Cache/anexos — v6 em revisão, NO-GO
+- [ ] Arquivar contratos fornecidos e fechar locks/snapshot/tempo; se faltarem guards/dependências, listar assinatura exata sem stubs PASS. SQL/deploy/gates proibidos.
+- [ ] Limitar ownership/dedupe/retry e download explícito sem popup; manter regressões independentes após unmount e rodar suíte focal.
+- [ ] Contenção server-side por operação Storage/policy; download autenticado preservado, T0 indefinido até negar emissores antigos.
+
 ## Cache/anexos — revisão 5584cc29, NO-GO
 - [x] Retirada explícita da alegação de ausência de lock global: scoped v5 REJEITADA. UPDATE profiles dispara a00/acquire_gate mesmo com zero rows; MVCC SELECT de B não provava isolamento de writers. Nenhum gate existente removido/bypassado.
 - [x] Harness com corpos capturados acquire_gate/touch_related_profiles/advance_stamp: duas conexões reproduzem lock_timeout do writer B contra partner sem perfis e organização A; 38 base + 5 scoped históricos + rollback locais, não prova hosted/fullschema.
