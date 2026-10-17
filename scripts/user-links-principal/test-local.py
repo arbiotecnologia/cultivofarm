@@ -172,10 +172,13 @@ try:
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
  err=runerr(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
  assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
- # caminho válido: marcar um de cada vez; o sync rebaixa o anterior
+ # caminho válido: desmarcar o atual ANTES de marcar o novo (o índice é
+ # verificado durante o statement, antes do trigger rebaixar o anterior)
+ run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal"))
  run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'1')
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
+ run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal"))
  run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1)
  # ---- 5) INSERT multirow num só comando ----
