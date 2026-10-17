@@ -24,10 +24,13 @@ vi.mock("@/components/ui/select", () => ({
 vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useOrganizacoesSaaS: () => ({ data: [{ id: "org", nome: "AR Bio fictícia" }] }),
   useVersoesPlanosSaaS: () => ({ isSuccess: true, data: [
-    { id: "base", name_snapshot: "Plano Base", version_number: 1, billing_cycle: "MONTHLY", status: "PUBLISHED", effective_from: "2026-01-01" },
+    { id: "base", name_snapshot: "Plano Base", version_number: 1, billing_cycle: "MONTHLY", status: mocks.versaoStatus, effective_from: mocks.versaoFrom, effective_to: mocks.versaoTo },
   ] }),
-  useAssinaturasSaaS: () => ({ isSuccess: true, data: [{ id: "sub1", organization_id: "org", status: mocks.status, plan_version_id: "base", trial_ends_at: mocks.trialEndsAt, price_snapshot: 499.9, currency_snapshot: "BRL", billing_cycle_snapshot: "monthly" }], refetch: vi.fn().mockResolvedValue({}) }),
-  useHistoricoAssinaturasSaaS: () => ({ isSuccess: true, data: [], refetch: vi.fn().mockResolvedValue({}) }),
+  useAssinaturasSaaS: () => ({ isSuccess: true, data: [
+    { id: "sub1", organization_id: "org", status: mocks.status, plan_version_id: "base", trial_ends_at: mocks.trialEndsAt, cancel_at: mocks.cancelAt, price_snapshot: 499.9, currency_snapshot: mocks.moeda, billing_cycle_snapshot: mocks.ciclo, started_at: "2026-09-01", created_at: "2026-09-01" },
+    ...mocks.extras,
+  ], refetch: vi.fn().mockResolvedValue({}) }),
+  useHistoricoAssinaturasSaaS: () => ({ isSuccess: true, data: mocks.historico, refetch: vi.fn().mockResolvedValue({}) }),
   useAlterarAssinatura: () => ({ mutate: mocks.mutate, isPending: false }),
   mensagemErroAssinatura: () => "Erro seguro", useCriarExcecao: vi.fn(), useEncerrarExcecao: vi.fn(), useExcecoesSaaS: vi.fn(), useModulosFeaturesSaaS: vi.fn(),
 }));
