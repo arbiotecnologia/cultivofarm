@@ -1,0 +1,16 @@
+-- SELECT-only; operator must review drift before running candidate DDL.
+SELECT id,public,file_size_limit,allowed_mime_types FROM storage.buckets ORDER BY id;
+SELECT policyname,permissive,roles,cmd,qual,with_check FROM pg_policies
+WHERE (schemaname='storage' AND tablename='objects') OR
+ (schemaname='public' AND tablename IN ('partner_orders','partner_order_messages',
+ 'partner_order_message_attachments','entrega_termos','entregas'))
+ORDER BY schemaname,tablename,policyname;
+SELECT p.oid::regprocedure,p.proacl,p.provolatile,p.prosecdef,p.proconfig,
+ md5(pg_get_functiondef(p.oid)) FROM pg_proc p WHERE p.oid IN (
+ 'storage.operation()'::regprocedure,'storage.allow_any_operation(text[])'::regprocedure,
+ 'public.h15_actor_organization()'::regprocedure,'public.b2b_phase1_order_visible(uuid)'::regprocedure,
+ 'platform_private.b2b_commercial_context()'::regprocedure);
+SELECT conname,pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid IN
+ ('public.partner_order_message_attachments'::regclass,'public.partner_order_messages'::regclass);
+-- Missing buckets are a real prerequisite, not a SELECT upload PASS.
+-- Creation only via Storage API after approval: no SQL storage.buckets writes.

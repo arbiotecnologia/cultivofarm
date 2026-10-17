@@ -1,0 +1,12 @@
+-- Review only. Rollback cannot silently reopen generic policies/sign emitters.
+BEGIN;
+DO $$ BEGIN RAISE EXCEPTION 'v6_rollback_requires_gate_closed_manifest_and_emitter_review'; END $$;
+DROP POLICY v6_message_attachment_read ON public.partner_order_message_attachments;
+DROP POLICY v6_message_attachment_insert ON public.partner_order_message_attachments;
+DROP POLICY v6_message_attachment_delete ON public.partner_order_message_attachments;
+DROP POLICY v6_order_attachment_read ON storage.objects;
+DROP POLICY v6_order_attachment_insert ON storage.objects;
+DROP POLICY v6_term_attachment_read ON storage.objects;
+-- Keep restrictive bucket fences, bucket privacy and data: rollback must not
+-- restore signing/upload under generic grants. Helpers therefore remain too.
+COMMIT;

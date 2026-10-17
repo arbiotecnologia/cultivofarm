@@ -1,0 +1,89 @@
+-- PRIVATE DDL/RLS CANDIDATE, NOT INSTALLED. No bucket created with SQL.
+-- After independent approval, Storage API creates order-attachments private
+-- 20MiB and entrega-termos private 15MiB PDF. Existing objects/records untouched.
+BEGIN;
+CREATE SCHEMA attachment_v6 AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA attachment_v6 FROM PUBLIC,anon,authenticated,service_role;
+GRANT USAGE ON SCHEMA attachment_v6 TO authenticated;
+-- INVOKER deliberately requires the existing order/message/metadata RLS;
+-- it cannot use a service key to broaden the actor's scope.
+CREATE FUNCTION attachment_v6.message_allowed(p_message uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
+ SELECT auth.uid() IS NOT NULL AND public.h15_actor_organization() IS NOT NULL
+ AND EXISTS(SELECT 1 FROM public.partner_order_messages m JOIN public.partner_orders o ON o.id=m.order_id
+ WHERE m.id=p_message AND public.b2b_phase1_order_visible(o.id)
+ AND (public.has_role(auth.uid(),'administrador'::public.app_role)
+ OR public.has_role(auth.uid(),'gestor_comercial'::public.app_role)
+ OR (public.has_role(auth.uid(),'parceiro_b2b'::public.app_role)
+   AND o.partner_id::text=(platform_private.b2b_commercial_context()->>'partner_id'))));
+$$;
+REVOKE ALL ON FUNCTION attachment_v6.message_allowed(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION attachment_v6.message_allowed(uuid) TO authenticated;
+CREATE FUNCTION attachment_v6.order_object_allowed(p_name text,p_write boolean) RETURNS boolean
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
+ SELECT public.storage1_path_strict(p_name)
+ AND EXISTS(SELECT 1 FROM public.partner_order_message_attachments a
+ JOIN public.partner_order_messages m ON m.id=a.message_id
+ WHERE a.file_path=p_name AND split_part(p_name,'/',1)=m.order_id::text
+ AND split_part(p_name,'/',2)=m.id::text AND attachment_v6.message_allowed(m.id)
+ AND (NOT p_write OR (a.uploaded_by=auth.uid() AND a.size_bytes BETWEEN 1 AND 20971520)));
+$$;
+REVOKE ALL ON FUNCTION attachment_v6.order_object_allowed(text,boolean) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION attachment_v6.order_object_allowed(text,boolean) TO authenticated;
+-- Existing permissive metadata grants remain; add an AND, never an OR grant.
+CREATE POLICY v6_message_attachment_read ON public.partner_order_message_attachments
+AS RESTRICTIVE FOR SELECT TO authenticated USING (attachment_v6.message_allowed(message_id));
+CREATE POLICY v6_message_attachment_insert ON public.partner_order_message_attachments
+AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK (
+ attachment_v6.message_allowed(message_id) AND uploaded_by=auth.uid()
+ AND size_bytes BETWEEN 1 AND 20971520 AND public.storage1_path_strict(file_path)
+ AND split_part(file_path,'/',2)=message_id::text
+ AND EXISTS(SELECT 1 FROM public.partner_order_messages m
+   WHERE m.id=message_id AND split_part(file_path,'/',1)=m.order_id::text));
+CREATE POLICY v6_message_attachment_delete ON public.partner_order_message_attachments
+AS RESTRICTIVE FOR DELETE TO authenticated USING (attachment_v6.message_allowed(message_id));
+CREATE POLICY v6_order_attachment_read ON storage.objects FOR SELECT TO authenticated
+USING (bucket_id='order-attachments' AND attachment_v6.order_object_allowed(name,false)
+ AND storage.allow_any_operation(ARRAY['object.get_authenticated']));
+CREATE POLICY v6_order_attachment_insert ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id='order-attachments' AND attachment_v6.order_object_allowed(name,true));
+-- No UPDATE / upsert or generic DELETE grant. Failed upload retains reserved
+-- metadata/path for explicit retry. Orphans are not automatically erased.
+CREATE FUNCTION attachment_v6.term_object_allowed(p_name text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
+ SELECT auth.uid() IS NOT NULL AND public.h15_actor_organization() IS NOT NULL
+ AND public.storage1_path_strict(p_name)
+ AND EXISTS(SELECT 1 FROM public.entrega_termos t JOIN public.entregas e ON e.id=t.entrega_id
+ WHERE t.pdf_path=p_name AND t.status='assinado' AND t.assinado_em IS NOT NULL
+ AND t.cancelado_em IS NULL AND e.organization_id=public.h15_actor_organization()
+ AND split_part(p_name,'/',1)=e.id::text AND split_part(p_name,'/',2)=t.id::text
+ AND (public.is_delivery_staff(auth.uid()) OR public.is_financial_staff(auth.uid())
+   OR e.cliente_id=ANY(public.get_cliente_ids_for_user(auth.uid())))
+ AND NOT EXISTS(SELECT 1 FROM public.entrega_termos next WHERE next.substitui_termo_id=t.id));
+$$;
+REVOKE ALL ON FUNCTION attachment_v6.term_object_allowed(text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION attachment_v6.term_object_allowed(text) TO authenticated;
+CREATE POLICY v6_term_attachment_read ON storage.objects FOR SELECT TO authenticated
+USING (bucket_id='entrega-termos' AND attachment_v6.term_object_allowed(name)
+ AND storage.allow_any_operation(ARRAY['object.get_authenticated']));
+-- Restrictive fence ensures no existing generic permissive policy can sign,
+-- insert/upsert/delete terms, or bypass registration for order attachments.
+CREATE POLICY v6_new_bucket_read_fence ON storage.objects AS RESTRICTIVE
+FOR SELECT TO anon,authenticated USING (
+ bucket_id NOT IN ('order-attachments','entrega-termos') OR
+ (auth.uid() IS NOT NULL AND storage.allow_any_operation(ARRAY['object.get_authenticated'])
+ AND CASE bucket_id WHEN 'order-attachments' THEN attachment_v6.order_object_allowed(name,false)
+ ELSE attachment_v6.term_object_allowed(name) END));
+CREATE POLICY v6_new_bucket_write_fence ON storage.objects AS RESTRICTIVE
+FOR INSERT TO anon,authenticated WITH CHECK (
+ bucket_id NOT IN ('order-attachments','entrega-termos') OR
+ (bucket_id='order-attachments' AND auth.uid() IS NOT NULL AND attachment_v6.order_object_allowed(name,true)));
+CREATE POLICY v6_new_bucket_update_fence ON storage.objects AS RESTRICTIVE
+FOR UPDATE TO anon,authenticated USING (bucket_id NOT IN ('order-attachments','entrega-termos'))
+WITH CHECK (bucket_id NOT IN ('order-attachments','entrega-termos'));
+CREATE POLICY v6_new_bucket_delete_fence ON storage.objects AS RESTRICTIVE
+FOR DELETE TO anon,authenticated USING (bucket_id NOT IN ('order-attachments','entrega-termos'));
+COMMIT;
+-- service_role BYPASSRLS remains an explicitly separate Edge boundary.
+-- Public bucket endpoints and existing signed tokens require HTTP containment
+-- verification. This SQL alone does NOT start T0.
