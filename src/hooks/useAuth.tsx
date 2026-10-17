@@ -434,8 +434,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-    // roles entram via isExternalUser (booleano estável); profile/user gates.
-  }, [user?.id, loading, isExternalUser, queryClient]);
+    // roles entram via isExternalUser (booleano estável); loading/profile
+    // entram via authzMonitorGateRef — refresh() não recria o monitor.
+  }, [user?.id, isExternalUser, queryClient]);
 
   // Readiness derivada: gate fechado ou perfil interno → sempre pronto;
   // perfil externo → pronto SOMENTE com monitor "valid" (lease rechecada no
