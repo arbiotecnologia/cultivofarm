@@ -1,0 +1,46 @@
+// Review-only: no service-role download. Caller SDK must retain bearer.
+export async function serveVerifiedAttachment(
+  req: Request,
+  headers: Record<string, string>,
+  authorize: () => Promise<boolean>,
+  download: (signal: AbortSignal) => Promise<{ data: Blob | null; error: unknown }>,
+  contentType: string,
+  fileName: string,
+  maxBytes = 20 * 1024 * 1024,
+): Promise<Response> {
+  const fail = (status: number, error: string) => new Response(JSON.stringify({ error }), {
+    status, headers: { ...headers, "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+  if (req.signal.aborted) return fail(499, "download_aborted");
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  req.signal.addEventListener("abort", abort, { once: true });
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const deadline = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => { controller.abort(); reject(new Error("download_timeout")); }, 15000);
+      controller.signal.addEventListener("abort", () => reject(new Error("download_aborted")), { once: true });
+    });
+    return await Promise.race([deadline, (async () => {
+      if (!(await authorize())) return fail(403, "permission_denied");
+      if (controller.signal.aborted) return fail(499, "download_aborted");
+      const result = await download(controller.signal);
+      if (controller.signal.aborted) return fail(499, "download_aborted");
+      if (result.error || !result.data) return fail(404, "artifact_unavailable");
+      if (result.data.size > maxBytes) return fail(413, "artifact_too_large");
+      // Re-prove caller/resource after I/O; old service snapshots cannot authorize.
+      if (!(await authorize())) return fail(403, "permission_denied");
+      if (controller.signal.aborted) return fail(499, "download_aborted");
+      return new Response(result.data, { headers: { ...headers,
+        "Content-Type": contentType, "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": `attachment; filename="${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}"`,
+      } });
+    })()]);
+  } catch {
+    return fail(req.signal.aborted ? 499 : controller.signal.aborted ? 504 : 500, "download_unavailable");
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+    req.signal.removeEventListener("abort", abort);
+  }
+}
