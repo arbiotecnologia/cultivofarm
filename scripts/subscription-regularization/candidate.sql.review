@@ -71,6 +71,8 @@ DECLARE
   v_existing uuid;
   v_existing_org uuid;
   v_existing_action text;
+  v_existing_reason text;
+  v_existing_version text;
   v_cycle text;
 BEGIN
   IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
@@ -86,13 +88,17 @@ BEGIN
   -- Idempotência vinculada: correlação existente só é reutilizada se for da
   -- MESMA organização e MESMA ação; caso contrário, nega (nunca retorna a
   -- assinatura de outra empresa/operação).
-  SELECT h.subscription_id, h.organization_id, h.action
-  INTO v_existing, v_existing_org, v_existing_action
+  SELECT h.subscription_id, h.organization_id, h.action, h.reason,
+         h.new_values->>'plan_version_id'
+  INTO v_existing, v_existing_org, v_existing_action, v_existing_reason,
+       v_existing_version
   FROM public.organization_subscription_history h
   WHERE h.correlation_id = _correlation_id;
   IF v_existing IS NOT NULL THEN
     IF v_existing_org IS DISTINCT FROM _organization_id
-       OR v_existing_action IS DISTINCT FROM _action THEN
+       OR v_existing_action IS DISTINCT FROM _action
+       OR v_existing_reason IS DISTINCT FROM btrim(_reason)
+       OR nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id THEN
       RAISE EXCEPTION 'platform_conflict: correlação já utilizada em outra operação' USING ERRCODE='40001';
     END IF;
     RETURN v_existing;
@@ -115,13 +121,17 @@ BEGIN
   FOR UPDATE;
 
   -- Revalidação pós-lock da idempotência vinculada.
-  SELECT h.subscription_id, h.organization_id, h.action
-  INTO v_existing, v_existing_org, v_existing_action
+  SELECT h.subscription_id, h.organization_id, h.action, h.reason,
+         h.new_values->>'plan_version_id'
+  INTO v_existing, v_existing_org, v_existing_action, v_existing_reason,
+       v_existing_version
   FROM public.organization_subscription_history h
   WHERE h.correlation_id = _correlation_id;
   IF v_existing IS NOT NULL THEN
     IF v_existing_org IS DISTINCT FROM _organization_id
-       OR v_existing_action IS DISTINCT FROM _action THEN
+       OR v_existing_action IS DISTINCT FROM _action
+       OR v_existing_reason IS DISTINCT FROM btrim(_reason)
+       OR nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id THEN
       RAISE EXCEPTION 'platform_conflict: correlação já utilizada em outra operação' USING ERRCODE='40001';
     END IF;
     RETURN v_existing;
