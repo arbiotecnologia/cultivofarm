@@ -93,9 +93,11 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
               variant="ghost"
               type="button"
               data-attachment-path={e.tipo === "foto" ? e.storage_path : undefined}
-              disabled={!urls[e.storage_path] && !AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED}
+              disabled={!urls[e.storage_path] && !AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && !failed.includes(e.storage_path)}
+              aria-label={failed.includes(e.storage_path) ? `Falha ao carregar ${e.legenda || "anexo"}; tentar novamente` : undefined}
               onClick={() => {
                 if (!access.ready) return;
+                if (failed.includes(e.storage_path)) { request(e.storage_path); refresh(); return; }
                 if (!urls[e.storage_path]) { request(e.storage_path); return; }
                 if (e.tipo === "foto") setLightbox({ scope: access.scope, path: e.storage_path });
                 else window.open(urls[e.storage_path], "_blank", "noopener,noreferrer");
@@ -104,6 +106,13 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
             >
               {e.tipo === "foto" && urls[e.storage_path] ? (
                 <img src={urls[e.storage_path]} alt={e.legenda || ""} className="w-full h-full object-cover" />
+              ) : failed.includes(e.storage_path) ? (
+                <span className="absolute inset-0 m-auto h-fit w-fit flex flex-col items-center gap-1 text-destructive" role="alert">
+                  <FileText className="h-8 w-8" />
+                  <span className="text-[10px] font-medium">Falhou — tentar novamente</span>
+                </span>
+              ) : loading && AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? (
+                <History className="h-6 w-6 text-muted-foreground absolute inset-0 m-auto animate-spin" aria-label="Carregando anexo" />
               ) : (
                 <FileText className="h-8 w-8 text-muted-foreground absolute inset-0 m-auto" />
               )}
