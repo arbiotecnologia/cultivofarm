@@ -17,9 +17,9 @@ INSERT INTO user_clientes(user_id,cliente_id) VALUES
  ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000a1'),
  ('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-0000000000b1') ON CONFLICT DO NOTHING;
 INSERT INTO partner_accounts(id,commercial_owner_organization_id) VALUES
- ('00000000-0000-4000-8000-0000000000p1','00000000-0000-4000-8000-000000000001') ON CONFLICT DO NOTHING;
+ ('00000000-0000-4000-8000-0000000000c1','00000000-0000-4000-8000-000000000001') ON CONFLICT DO NOTHING;
 INSERT INTO partner_users(user_id,partner_id,papel) VALUES
- ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000p1','gestor') ON CONFLICT DO NOTHING;
+ ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000c1','gestor') ON CONFLICT DO NOTHING;
 
 -- 1) ABA no escopo próprio muda o fingerprint de A.
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
@@ -47,7 +47,7 @@ END $$;
 -- 3) Mudança no parceiro de A toca o perfil de A (fan-out limitado ao escopo).
 DO $$DECLARE a text; b text; BEGIN
   a := public.get_my_authz_fingerprint()->>'fingerprint';
-  UPDATE partner_accounts SET ativo=false WHERE id='00000000-0000-4000-8000-0000000000p1';
+  UPDATE partner_accounts SET ativo=false WHERE id='00000000-0000-4000-8000-0000000000c1';
   b := public.get_my_authz_fingerprint()->>'fingerprint';
   IF a IS NOT DISTINCT FROM b THEN RAISE EXCEPTION 'FAIL scoped partner touch'; END IF;
   RAISE NOTICE 'PASS scoped partner touch';
