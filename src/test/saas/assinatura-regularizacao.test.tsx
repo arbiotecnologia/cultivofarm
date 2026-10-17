@@ -120,9 +120,61 @@ describe("AlterarAssinaturaCard — regularização", () => {
     render(<AlterarAssinaturaCard organizationIdInicial="org" />);
     action("activate_subscription");
     // assinatura mockada: price 499.9 BRL, ciclo snapshot 'monthly'; versão tem billing_cycle 'MONTHLY'
-    expect(screen.getByText(/R\$ 499,90 BRL/)).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*499,90/)).toBeInTheDocument();
     expect(screen.getByText(/ciclo mensal/)).toBeInTheDocument();
     expect(screen.queryByText(/ciclo MONTHLY/)).not.toBeInTheDocument();
+  });
+
+  it("ciclo anual usa 'annual' e ciclo personalizado é legível", () => {
+    mocks.ciclo = "annual";
+    const { unmount } = render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription");
+    expect(screen.getByText(/ciclo anual/)).toBeInTheDocument();
+    unmount();
+    mocks.ciclo = "custom";
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription");
+    expect(screen.getByText(/ciclo personalizado/)).toBeInTheDocument();
+  });
+
+  it("moeda do snapshot é formatada via Intl (USD não vira R$)", () => {
+    mocks.moeda = "USD";
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription");
+    expect(screen.getByText(/US\$\s*499,90/)).toBeInTheDocument();
+    expect(screen.queryByText(/R\$\s*499,90/)).not.toBeInTheDocument();
+  });
+
+  it("cancelamento agendado bloqueia a regularização com mensagem amigável", () => {
+    mocks.cancelAt = futuro;
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription"); motivo();
+    fireEvent.click(screen.getByLabelText("Confirmar regularização"));
+    expect(screen.getByRole("alert")).toHaveTextContent(/cancelamento agendado/i);
+    expect(screen.getByRole("button", { name: "Regularizar assinatura" })).toBeDisabled();
+  });
+
+  it("versão atual fora de vigência bloqueia a regularização com orientação", () => {
+    mocks.versaoTo = "2026-06-01"; // vigência encerrada
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription"); motivo();
+    fireEvent.click(screen.getByLabelText("Confirmar regularização"));
+    expect(screen.getByRole("alert")).toHaveTextContent(/não está publicada e vigente/i);
+    expect(screen.getByRole("button", { name: "Regularizar assinatura" })).toBeDisabled();
+  });
+
+  it("confirmação reseta quando moeda ou cancelamento agendado mudam", () => {
+    const { rerender } = render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription"); motivo();
+    fireEvent.click(screen.getByLabelText("Confirmar regularização"));
+    expect(screen.getByRole("button", { name: "Regularizar assinatura" })).toBeEnabled();
+    mocks.moeda = "USD";
+    rerender(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    expect(screen.getByLabelText("Confirmar regularização")).not.toBeChecked();
+    fireEvent.click(screen.getByLabelText("Confirmar regularização"));
+    mocks.cancelAt = futuro;
+    rerender(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    expect(screen.getByLabelText("Confirmar regularização")).not.toBeChecked();
   });
 
   it("confirmação reseta quando o estado lido da assinatura muda", () => {
