@@ -20,26 +20,11 @@ autorização externa; não incluir consultor ou reimplementar seleção de cont
 
 ## Contratos exatos ainda faltantes
 
-- `public.is_platform_superadmin(uuid)` chamado por
-  `platform_private.b2b_phase1_partner_visible(uuid,boolean)`; closure live/hash/ACL.
-- Instalação/ACL/hash atuais de todos os triggers nas 14 tabelas listadas no
-  read-only, especialmente invites/subscriptions/overrides/planos/clientes/partner.
-- `cf_user_guards_v1.require_admin()`, `public.guard_profile_sensitive_fields()`,
-  `public.guard_profile_senha_provisoria()`, `public.guard_profile_senha_ticket()`,
-  `public.guard_profile_tenant_fields()`, `public.h15_profile_organization_guard()`,
-  `public.guard_superadmin_role_assignment()`, `public.enforce_cliente_id_for_produtor()`,
-  `public.update_updated_at_column()` e dependências reais de ticket. O arquivo
-  local contém `platform_private.has_ticket(text,uuid)` stub `SELECT false`:
-  **não substituir contrato real por esse stub nem alegar harness fiel completo**.
-- DDL/index/FKs/nullable das 14 tabelas do read-only (notadamente profiles,
-  platform_org_admin_invites, assinaturas, overrides e version_features).
-- Corpos live e assinatura completa dos writers efetivamente instalados que
-  tocam essas tabelas: admin_edit_user_profile_v1 e seu core, writers de
-  subscription/status/profile/plan publish/overrides/invites e partners/clientes.
-  As assinaturas sobrecarregadas devem ser enumeradas por catálogo antes de
-  escolher uma versão; nomes conhecidos não comprovam tipos/overloads atuais.
-  Guards retornados por catálogo devem ser incluídos recursivamente. Não inventar
-  lista fechada a partir de migrations históricas ou pg_depend/dynamic SQL.
+- Recebidos em 12:49: 13 funções com corpos/hash/ACL, 55 triggers com tgfoid/tgtype/qual/corpos e 287 colunas/nullable/defaults. Não listar esses contratos novamente como ausentes; reconciliação em `v6-contracts-1249.review.md`.
+- Índices/constraints/FKs ainda pendentes do próximo delta do auditor; DDL/guards/índices das filhas de audit/recalc/default financeiro e `platform_private.authz_tickets` também necessários.
+- Corpos live completos dos callers/writers enumerados por assinatura na consulta canônica read-only de 12:50: `v6-writers-catalog.review.md`. Assinaturas não são prova da ordem interna; filtro textual não cobre todos writers/dynamic SQL/grants diretos.
+- `storage.operation()` e manifest das policies/buckets/ACL efetiva seguem pendentes. Hash/body dos dois allow_operation recebidos, sem HTTP validado.
+- Fixture reduzido anterior contém stub has_ticket: continua inválido para certificação. Corpo real agora conhecido, sem substituição por stub nem novo harness PASS alegado.
 
 ## Ordem de locks não fechada
 
