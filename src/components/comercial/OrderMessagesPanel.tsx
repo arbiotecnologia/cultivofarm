@@ -14,24 +14,9 @@ import { Paperclip, FileText, FileSpreadsheet, FileImage, File as FileIcon } fro
 import { formatDateDisplay } from "@/lib/date-utils";
 import { toast } from "sonner";
 import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
-import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
-
-/** Candidata (gate fechado): download autenticado sem fallback remoto quando negado. */
-async function openOrderAttachment(path: string): Promise<void> {
-  if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
-    try {
-      const blob = await downloadAuthenticatedAttachment("order-attachments", path, new AbortController().signal);
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch {
-      toast.error("Anexo indisponível");
-    }
-    return;
-  }
-  const url = await getAttachmentSignedUrl(path);
-  if (url) window.open(url, "_blank");
-}
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 const MAX_ATTACHMENT_MB = 10;
 const ACCEPTED_TYPES = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.webp";
@@ -46,41 +31,38 @@ const iconFor = (mime: string | null | undefined) => {
 
 function AttachmentThumb({ path, fileName, mime, onOpen }: { path: string; fileName: string; mime: string | null; onOpen: (path: string) => void }) {
   const [thumb, setThumb] = useState<string | null>(null);
+  const access = useStorageAccessScope(`order-thumbnail:${path}`);
+  const blobs = useAuthenticatedBlobUrls(mime?.startsWith("image/") ? [path] : [], "order-attachments", { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED });
   useEffect(() => {
     let cancelled = false;
-    let blobUrl: string | null = null;
-    if (mime?.startsWith("image/")) {
-      if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
-        const controller = new AbortController();
-        downloadAuthenticatedAttachment("order-attachments", path, controller.signal)
-          .then((blob) => {
-            if (cancelled) return;
-            blobUrl = URL.createObjectURL(blob);
-            setThumb(blobUrl);
-          })
-          .catch(() => { /* Sem fallback remoto: ícone permanece. */ });
-        return () => { cancelled = true; controller.abort(); if (blobUrl) URL.revokeObjectURL(blobUrl); };
-      }
-      getAttachmentSignedUrl(path).then((u) => { if (!cancelled) setThumb(u); });
+    const current = access.capture();
+    setThumb(null);
+    if (!AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && access.ready && mime?.startsWith("image/")) {
+      getAttachmentSignedUrl(path).then((u) => { if (!cancelled && current()) setThumb(u); });
     }
     return () => { cancelled = true; };
-  }, [path, mime]);
+    // capture is intentionally bound to the current resource scope.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, mime, access.scope]);
+  const visibleThumb = AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs.urls[path] : access.ready ? thumb : null;
 
-  if (thumb) {
+  if (visibleThumb) {
     return (
-      <button type="button" onClick={() => onOpen(path)} className="inline-block h-14 w-14 rounded border overflow-hidden hover:opacity-80" title={fileName}>
-        <img src={thumb} alt={fileName} className="h-full w-full object-cover" loading="lazy" />
-      </button>
+      <Button variant="ghost" type="button" onClick={() => onOpen(path)} className="inline-block h-14 w-14 p-0 rounded border overflow-hidden hover:opacity-80" title={fileName}>
+        <img src={visibleThumb} alt={fileName} className="h-full w-full object-cover" loading="lazy" />
+      </Button>
     );
   }
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={() => onOpen(path)}
       className="inline-flex items-center gap-1 text-xs px-2 py-0.5 border rounded hover:bg-accent"
     >
       {iconFor(mime)} {fileName}
-    </button>
+      {blobs.loadingPaths.includes(path) && <span role="status">Carregando</span>}
+      {blobs.failed.includes(path) && <span role="alert">Anexo indisponível</span>}
+    </Button>
   );
 }
 
@@ -97,7 +79,18 @@ function MessageItem({ m, orderId }: { m: any; orderId: string }) {
   const upload = useUploadMessageAttachment();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const openAttachment = openOrderAttachment;
+  const access = useStorageAccessScope(`order:${orderId}:message:${m.id}`);
+  const opener = useAuthenticatedAttachmentOpener(`order:${orderId}:message:${m.id}`, "order-attachments");
+  const openAttachment = async (path: string) => {
+    if (!access.ready) return;
+    if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+      await opener.open(path, () => toast.error("Anexo indisponível"));
+      return;
+    }
+    const current = access.capture();
+    const url = await getAttachmentSignedUrl(path);
+    if (current() && url) window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="text-sm border-b py-2 last:border-b-0">
@@ -197,7 +190,7 @@ export function OrderMessagesPanel({
         ) : messages.length === 0 ? (
           <div className="text-xs text-muted-foreground text-center py-4">Sem mensagens.</div>
         ) : (
-          messages.map((m) => <MessageItem key={m.id} m={m} orderId={orderId} />)
+          messages.map((m) => <MessageItem key={`${orderId}:${m.id}`} m={m} orderId={orderId} />)
         )}
       </div>
       <div className="p-2 border-t space-y-1">
