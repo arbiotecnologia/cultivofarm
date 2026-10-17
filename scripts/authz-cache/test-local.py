@@ -56,6 +56,8 @@ try:
  # Scoped extension (v5): reuses live-like z90/z99 stamp triggers; NO global
  # singleton in fingerprints (design rejected in review a36514db).
  run('''CREATE SCHEMA cf_user_guards_v1;
+ CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY,revision bigint NOT NULL);
+ INSERT INTO cf_user_guards_v1.state VALUES(true,0);
  CREATE TABLE auth.users(id uuid PRIMARY KEY);
  ''')
  captured=(ROOT/'scripts/tests/b2b-provisioning-real-triggers.sql').read_text()
