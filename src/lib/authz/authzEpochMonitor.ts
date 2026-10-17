@@ -1,20 +1,23 @@
 // Foundation de cache de autorização para a MESMA identidade.
 //
 // Um único monitor por AuthProvider (integração em useAuth.tsx, atrás do gate
-// AUTHZ_CACHE_FOUNDATION_ENABLED). Sem provider/rota paralelo e sem
-// BroadcastChannel entre sessões/dispositivos: cada sessão mantém o próprio
-// monitor e revalida no servidor.
+// AUTHZ_CACHE_FOUNDATION_ENABLED), criado apenas para perfis EXTERNOS após o
+// Auth estar pronto. Sem provider/rota paralelo e sem BroadcastChannel entre
+// sessões/dispositivos: cada sessão mantém o próprio monitor e revalida no
+// servidor.
 //
-// Semântica:
-// * Polling a cada pollMs apenas quando visível, online e com lease válida.
-// * Lease máxima de leaseMs medida DESDE O INÍCIO do request: uma resposta
-//   atrasada NÃO renova lease já vencida (expira e oculta dados sensíveis).
-// * Foco/visibility/online revalidam ANTES de mostrar dados (estado pending).
-// * Erro/offline/timeout expiram a lease e notificam onExpire.
+// Semântica (revisão c787cd9e):
+// * Relógio MONOTÔNICO injetado (performance.now no runtime; fake nos testes).
+// * Lease máxima de leaseMs medida DESDE O INÍCIO do request. A lease expira
+//   mesmo quando o estado é "valid": autorização anterior nunca é estendida
+//   por um novo poll, e o deadline é rechecado em cada acesso (checkAccess).
+// * Estado "pending" ESCONDE render: dados sensíveis só aparecem em "valid"
+//   com lease vigente.
+// * Offline/expiração INVALIDAM A GERAÇÃO: resultado em voo de geração antiga
+//   nunca reabre dados após offline. Evento "offline" do navegador expira
+//   imediatamente, sem esperar o próximo ciclo.
 // * Mudança de fingerprint (revogação, troca de vínculo, A→B→A via
 //   profile.updated_at monotônico) notifica onEpochChange UMA vez por época.
-// * Proteção ABA/geração: cada request carrega uma geração; respostas de
-//   gerações antigas são descartadas e nunca reabrem dados.
 
 export interface AuthzFingerprintResult {
   eligible: boolean;
@@ -25,6 +28,7 @@ export type AuthzMonitorState = "idle" | "pending" | "valid" | "expired" | "stop
 
 export interface AuthzEpochMonitorDeps {
   fetcher: () => Promise<AuthzFingerprintResult>;
+  /** Relógio monotônico em ms (ex.: () => performance.now()). */
   now: () => number;
   setTimeoutFn: (cb: () => void, ms: number) => unknown;
   clearTimeoutFn: (handle: unknown) => void;
@@ -32,6 +36,8 @@ export interface AuthzEpochMonitorDeps {
   isOnline: () => boolean;
   onEpochChange: (result: AuthzFingerprintResult) => void;
   onExpire: (reason: "error" | "offline" | "timeout" | "ineligible") => void;
+  /** Chamado em toda transição de estado (para expor readiness reativo). */
+  onStateChange?: (state: AuthzMonitorState) => void;
   pollMs?: number;
   leaseMs?: number;
 }
@@ -40,7 +46,11 @@ export interface AuthzEpochMonitor {
   start: () => void;
   stop: () => void;
   revalidate: () => void;
+  /** Expira imediatamente (evento offline do navegador). */
+  expireNow: (reason: "offline" | "error") => void;
   state: () => AuthzMonitorState;
+  /** true somente em "valid" com lease vigente — rechecagem no acesso. */
+  checkAccess: () => boolean;
   currentFingerprint: () => string | null;
 }
 
@@ -55,6 +65,12 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   let pollTimer: unknown = null;
   let leaseTimer: unknown = null;
 
+  const setState = (next: AuthzMonitorState) => {
+    if (state === next) return;
+    state = next;
+    deps.onStateChange?.(next);
+  };
+
   const clearTimers = () => {
     if (pollTimer !== null) { deps.clearTimeoutFn(pollTimer); pollTimer = null; }
     if (leaseTimer !== null) { deps.clearTimeoutFn(leaseTimer); leaseTimer = null; }
@@ -62,9 +78,23 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
 
   const expire = (reason: "error" | "offline" | "timeout" | "ineligible") => {
     if (state === "stopped") return;
-    state = "expired";
+    // Invalida a geração: resultado em voo nunca reabre dados após expirar.
+    generation++;
     leaseUntil = 0;
+    setState("expired");
     deps.onExpire(reason);
+  };
+
+  // Expiração da lease vale também para o estado "valid": passado o deadline,
+  // os dados ficam ocultos até nova validação bem-sucedida.
+  const armLeaseDeadline = () => {
+    if (leaseTimer !== null) deps.clearTimeoutFn(leaseTimer);
+    const remaining = leaseUntil - deps.now();
+    if (remaining <= 0) { expire("timeout"); return; }
+    leaseTimer = deps.setTimeoutFn(() => {
+      leaseTimer = null;
+      if (state !== "stopped" && deps.now() >= leaseUntil) expire("timeout");
+    }, remaining);
   };
 
   const schedulePoll = () => {
@@ -73,10 +103,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     pollTimer = deps.setTimeoutFn(() => {
       pollTimer = null;
       if (state === "stopped") return;
-      // Offline expira prontamente mesmo sem ciclo completo.
-      if (!deps.isOnline()) { void poll(); return; }
-      // Só dispara novo ciclo com lease válida e visível; caso contrário
-      // reagenda e aguarda revalidate() externo (foco/visibility/online).
+      if (!deps.isOnline()) { expire("offline"); return; }
       if (state === "valid" && deps.isVisible() && deps.now() < leaseUntil) {
         void poll();
       } else {
@@ -91,30 +118,23 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
 
     const myGen = ++generation;
     const requestStart = deps.now();
-    state = "pending";
+    // Pending esconde render até a resposta válida chegar.
+    setState("pending");
 
-    // Lease máxima medida desde o início do request.
+    // Lease máxima medida desde o início do request; não estende a anterior.
     leaseUntil = requestStart + leaseMs;
-    if (leaseTimer !== null) deps.clearTimeoutFn(leaseTimer);
-    leaseTimer = deps.setTimeoutFn(() => {
-      leaseTimer = null;
-      if (state !== "stopped" && generation === myGen && state !== "valid") {
-        expire("timeout");
-      }
-    }, leaseMs);
+    armLeaseDeadline();
 
     try {
       const result = await deps.fetcher();
       if (state === "stopped" || generation !== myGen) return; // resposta antiga
-
-      // Resposta atrasada não renova lease vencida.
-      if (deps.now() >= leaseUntil) { expire("timeout"); return; }
-
+      if (deps.now() >= leaseUntil) { expire("timeout"); return; } // atrasada
       if (!result.eligible || !result.fingerprint) { expire("ineligible"); return; }
 
       const changed = fingerprint !== null && fingerprint !== result.fingerprint;
       fingerprint = result.fingerprint;
-      state = "valid";
+      setState("valid");
+      armLeaseDeadline();
       if (changed) deps.onEpochChange(result);
       schedulePoll();
     } catch {
@@ -129,16 +149,21 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       void poll();
     },
     stop() {
-      state = "stopped";
+      setState("stopped");
       clearTimers();
       generation++;
     },
     revalidate() {
       if (state === "stopped") return;
-      // Foco/visibility/online: revalida antes de mostrar dados.
       void poll();
     },
+    expireNow(reason) {
+      if (state === "stopped") return;
+      clearTimers();
+      expire(reason);
+    },
     state: () => state,
+    checkAccess: () => state === "valid" && deps.now() < leaseUntil,
     currentFingerprint: () => fingerprint,
   };
 }

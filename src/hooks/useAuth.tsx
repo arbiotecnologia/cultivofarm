@@ -7,7 +7,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { AUTHZ_CACHE_FOUNDATION_ENABLED } from "@/lib/authz/authzEpochGate";
-import { createAuthzEpochMonitor } from "@/lib/authz/authzEpochMonitor";
+import {
+  createAuthzEpochMonitor,
+  type AuthzEpochMonitor,
+  type AuthzMonitorState,
+} from "@/lib/authz/authzEpochMonitor";
+
+/** Papéis EXTERNOS monitorados pela foundation de cache (mesma identidade). */
+const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
+  "cliente_produtor",
+  "parceiro_b2b",
+  "parceiro_b2b_tecnico",
+  "consultor_tecnico",
+];
 
 interface Profile {
   id: string;
@@ -39,6 +51,22 @@ interface AuthContextType {
   error: string | null;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  /**
+   * Foundation de cache de autorização (mesma identidade), atrás de
+   * AUTHZ_CACHE_FOUNDATION_ENABLED. Com o gate fechado ou para perfis
+   * internos, `authzReady` é sempre true e `authzEpoch` permanece 0.
+   * Para perfis externos: `authzReady` é true SOMENTE com monitor "valid";
+   * `authzEpoch` incrementa a cada mudança de fingerprint (revogação, troca
+   * de vínculo, A→B→A) — consumidores sensíveis incluem a época no fence e
+   * remontam conteúdo ao mudar.
+   */
+  authzReady: boolean;
+  authzEpoch: number;
+  authzState: AuthzMonitorState;
+  /** Rechecagem de lease no acesso (relógio monotônico). */
+  checkAuthzAccess: () => boolean;
+  /** Revalidação manual (botão "Tentar novamente"). */
+  revalidateAuthz: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -52,6 +80,11 @@ const AuthContext = createContext<AuthContextType>({
   error: null,
   signOut: async () => {},
   refresh: async () => {},
+  authzReady: true,
+  authzEpoch: 0,
+  authzState: "idle",
+  checkAuthzAccess: () => true,
+  revalidateAuthz: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -319,9 +352,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Foundation de cache de autorização (mesma identidade). Um único monitor
   // por AuthProvider, atrás de gate próprio FECHADO até revisão; sem provider
   // paralelo e sem BroadcastChannel entre sessões. Callback de auth permanece
-  // síncrono; o monitor roda fora dele.
+  // síncrono; o monitor roda fora dele e SOMENTE para perfis EXTERNOS após o
+  // Auth estar pronto (perfil+roles carregados) — usuários internos nunca
+  // criam monitor.
+  const [authzEpoch, setAuthzEpoch] = useState(0);
+  const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
+  const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
+  const isExternalUser = roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+
   useEffect(() => {
-    if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !user?.id) return;
+    if (!AUTHZ_CACHE_FOUNDATION_ENABLED || loading || !user?.id || !profile || !isExternalUser) {
+      setAuthzState("idle");
+      return;
+    }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
         const { data, error } = await supabase.rpc("get_my_authz_fingerprint");
@@ -331,41 +374,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           | null;
         return { eligible: row?.eligible === true, fingerprint: row?.fingerprint ?? null };
       },
-      now: () => Date.now(),
+      // Relógio MONOTÔNICO: mudanças de relógio do sistema não estendem lease.
+      now: () => performance.now(),
       setTimeoutFn: (cb, ms) => window.setTimeout(cb, ms),
       clearTimeoutFn: (h) => window.clearTimeout(h as number),
       isVisible: () => document.visibilityState === "visible",
       isOnline: () => navigator.onLine,
+      onStateChange: (next) => setAuthzState(next),
       onEpochChange: () => {
-        // Nova época: geração++, cancela/limpa consultas, limpa seleção de
-        // portal e recarrega identidade. Rascunhos/objectURLs sensíveis são
-        // limpos pelos consumidores ao remontar com a nova geração.
+        // Nova época (fingerprint mudou): geração++, cancela/limpa consultas,
+        // limpa seleção de portal e preferências compartilhadas, incrementa a
+        // época reativa (consumidores remontam conteúdo sensível e descartam
+        // rascunhos/objectURLs no unmount) e recarrega identidade para que
+        // perfil/roles voltem coerentes antes de exibir dados novamente.
         generationRef.current += 1;
         void queryClient.cancelQueries();
         queryClient.clear();
         clearActivePortalContext();
+        window.dispatchEvent(new Event("portal-client-preferences-cleared"));
+        setAuthzEpoch((e) => e + 1);
         void refresh();
       },
       onExpire: () => {
-        // Erro/offline/timeout: oculta dados sensíveis até revalidar.
+        // Erro/offline/timeout/ineligible: geração++ (respostas em voo não
+        // reabrem), cancela consultas e limpa seleção. O ESTADO reativo
+        // (authzState="expired" via onStateChange) é o que ESCONDE os dados —
+        // boundary e scopes derivam readiness dele.
+        generationRef.current += 1;
         void queryClient.cancelQueries();
         clearActivePortalContext();
+        window.dispatchEvent(new Event("portal-client-preferences-cleared"));
       },
     });
+    authzMonitorRef.current = monitor;
     const onFocus = () => monitor.revalidate();
     const onVisibility = () => { if (document.visibilityState === "visible") monitor.revalidate(); };
     const onOnline = () => monitor.revalidate();
+    // Offline expira IMEDIATAMENTE — resultado em voo de geração antiga não
+    // reabre dados (o monitor invalida a geração no expire).
+    const onOffline = () => monitor.expireNow("offline");
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
     monitor.start();
     return () => {
+      authzMonitorRef.current = null;
       monitor.stop();
+      setAuthzState("idle");
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
     };
-  }, [user?.id, queryClient]);
+    // roles entram via isExternalUser (booleano estável); profile/user gates.
+  }, [user?.id, loading, isExternalUser, queryClient]);
+
+  // Readiness derivada: gate fechado ou perfil interno → sempre pronto;
+  // perfil externo → pronto SOMENTE com monitor "valid" (lease rechecada no
+  // acesso via checkAuthzAccess). "pending"/"expired" ESCONDEM dados.
+  const authzReady =
+    !AUTHZ_CACHE_FOUNDATION_ENABLED || !isExternalUser || authzState === "valid";
+  const checkAuthzAccess = () =>
+    !AUTHZ_CACHE_FOUNDATION_ENABLED ||
+    !isExternalUser ||
+    (authzMonitorRef.current?.checkAccess() ?? false);
+  const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
 
   const signOut = async () => {
     try {
@@ -397,6 +471,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         signOut,
         refresh,
+        authzReady,
+        authzEpoch,
+        authzState,
+        checkAuthzAccess,
+        revalidateAuthz,
       }}
     >
       {children}
