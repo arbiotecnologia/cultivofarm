@@ -20,7 +20,9 @@ BEGIN
  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='storage.objects'::regclass) THEN
    RAISE EXCEPTION 'v6_storage_rls_missing';
  END IF;
- IF EXISTS(SELECT 1 FROM unnest(ARRAY['clientes-docs','order-attachments','consultor-arquivos']) b(id)
+ IF EXISTS(SELECT 1 FROM unnest(ARRAY['clientes-docs','order-attachments','consultor-arquivos',
+  'aplicacao-evidencias','entrega-documentos','entrega-termos','financial-docs',
+  'financial-reports','financial-receipts','fiscal-xml']) b(id)
   WHERE NOT EXISTS(SELECT 1 FROM storage.buckets s WHERE s.id=b.id AND s.public IS FALSE)) THEN
    RAISE EXCEPTION 'v6_storage_private_bucket_unproven';
  END IF;
@@ -33,7 +35,9 @@ END $preflight$;
 -- Other SELECT-consuming Storage ops require inventory before expanding list.
 CREATE POLICY v6_private_operation_fence ON storage.objects AS RESTRICTIVE
 FOR SELECT TO authenticated,anon USING (
- bucket_id NOT IN ('clientes-docs','order-attachments','consultor-arquivos')
+ bucket_id NOT IN ('clientes-docs','order-attachments','consultor-arquivos',
+  'aplicacao-evidencias','entrega-documentos','entrega-termos','financial-docs',
+  'financial-reports','financial-receipts','fiscal-xml')
  OR storage.allow_any_operation(ARRAY[
    'storage.object.get_authenticated',
    'storage.object.list','storage.object.list_v2',
@@ -42,4 +46,4 @@ FOR SELECT TO authenticated,anon USING (
 );
 COMMIT;
 -- service_role/BYPASSRLS signers are NOT contained by this policy.
--- Remaining buckets/Edges/PDF emitters must be reviewed separately; no T0.
+-- Dynamic buckets (fiscal run/export rows) need full inventory; no T0.

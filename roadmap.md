@@ -1,7 +1,9 @@
 ## Cache/anexos — v6 em revisão, NO-GO
-- [ ] Arquivar contratos fornecidos e fechar locks/snapshot/tempo; se faltarem guards/dependências, listar assinatura exata sem stubs PASS. SQL/deploy/gates proibidos.
-- [ ] Limitar ownership/dedupe/retry e download explícito sem popup; manter regressões independentes após unmount e rodar suíte focal.
-- [ ] Contenção server-side por operação Storage/policy; download autenticado preservado, T0 indefinido até negar emissores antigos.
+- [x] 16 contratos/hash fornecidos arquivados; faltantes exatos em v6-status/read-only. Ordem locks/tempo não fechada: SQL cache executável/harness fiel bloqueados por corpos writers/guards/DDL live, sem stubs PASS.
+- [x] Ownership 24 URLs/60MiB/20MiB arquivo, dedupe/LRU/retry/revoke; preparação visível e clique download explícito sem popup async. 183/183 regressões locais PASS (15 arquivos), lint focal0; caso após unmount preservado.
+- [x] Contenção SQL/rollback RESTRICTIVE por operação Storage revisáveis fora migrations, preflight fechado por falta manifest/helper live; não instalados. Download autenticado permanece sob RLS existente; T0 indefinido.
+- [ ] Contratos live dos writers/guards/DDL, ordem locks e snapshots/tempo para cache executável; assinaturas faltantes no relatório v6. Nenhuma alteração Auth para fechar harness.
+- [ ] Helper/policies/HTTP Storage e retirada de emissão service-role nos ramos Edge legados antes de drenagem; blocker: contratos/provas server-side ainda ausentes. Gates false, vínculos fechados, sem deploy/publicação.
 
 ## Cache/anexos — revisão 5584cc29, NO-GO
 - [x] Retirada explícita da alegação de ausência de lock global: scoped v5 REJEITADA. UPDATE profiles dispara a00/acquire_gate mesmo com zero rows; MVCC SELECT de B não provava isolamento de writers. Nenhum gate existente removido/bypassado.
