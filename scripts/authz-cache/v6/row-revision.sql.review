@@ -1,0 +1,46 @@
+-- v6 ALTERNATIVE, REVIEW ONLY. Never run before preflight/independent review.
+-- No ledger, fan-out, profile DML, advisory locks or changes to identity gates.
+-- NEW-only BEFORE ROW revisions use the already-held entity row lock.
+-- Fresh incarnation on INSERT covers DELETE/recreate; counter covers ABA UPDATE.
+BEGIN;
+CREATE SCHEMA authz_entity_v6 AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA authz_entity_v6 FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION authz_entity_v6.stamp() RETURNS trigger
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF TG_LEVEL IS DISTINCT FROM 'ROW' OR TG_WHEN IS DISTINCT FROM 'BEFORE'
+ OR TG_TABLE_SCHEMA IS DISTINCT FROM 'public'
+ OR TG_TABLE_NAME NOT IN ('clientes','organizations','partner_accounts',
+ 'organization_subscriptions','organization_feature_overrides','saas_plan_versions',
+ 'saas_plan_version_features','saas_features','saas_modules') THEN
+   RAISE EXCEPTION 'revision_context_invalid' USING ERRCODE='42501';
+ END IF;
+ IF TG_OP='INSERT' THEN
+   NEW.authz_incarnation:=gen_random_uuid(); NEW.authz_revision:=1;
+ ELSIF TG_OP='UPDATE' THEN
+   NEW.authz_incarnation:=OLD.authz_incarnation;
+   NEW.authz_revision:=OLD.authz_revision+1; -- overflow aborts, never resets
+ ELSE RAISE EXCEPTION 'revision_event_invalid'; END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION authz_entity_v6.stamp() FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION authz_entity_v6.no_truncate() RETURNS trigger
+LANGUAGE plpgsql SET search_path='' AS $$
+BEGIN RAISE EXCEPTION 'authz_dependency_truncate_denied' USING ERRCODE='42501'; END $$;
+REVOKE ALL ON FUNCTION authz_entity_v6.no_truncate() FROM PUBLIC,anon,authenticated,service_role;
+DO $$ DECLARE tbl text;
+BEGIN
+ FOREACH tbl IN ARRAY ARRAY['clientes','organizations','partner_accounts',
+ 'organization_subscriptions','organization_feature_overrides','saas_plan_versions',
+ 'saas_plan_version_features','saas_features','saas_modules'] LOOP
+   EXECUTE format('ALTER TABLE public.%I ADD COLUMN authz_incarnation uuid NOT NULL DEFAULT gen_random_uuid(), ADD COLUMN authz_revision bigint NOT NULL DEFAULT 1',tbl);
+   -- Must sort AFTER every existing BEFORE guard (checked independently).
+   -- Immutable plan guards see the old revision unchanged before this stamp.
+   EXECUTE format('CREATE TRIGGER zzzz_authz_entity_stamp BEFORE INSERT OR UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION authz_entity_v6.stamp()',tbl);
+   EXECUTE format('CREATE TRIGGER zzzz_authz_no_truncate BEFORE TRUNCATE ON public.%I FOR EACH STATEMENT EXECUTE FUNCTION authz_entity_v6.no_truncate()',tbl);
+ END LOOP;
+END $$;
+COMMIT;
+-- No public reader installed here. Reader/temporal contract is a separate gate.
+-- Wide SELECT * / to_jsonb NEW audit payloads see two additional fields: review
+-- their compatibility before applying. Existing historical snapshots untouched.

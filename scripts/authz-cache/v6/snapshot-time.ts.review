@@ -1,0 +1,31 @@
+// Review-only verifier, independent from Auth; no role/resolver replacement.
+export interface AuthorizationObservation {
+  vector: string;
+  eligible: boolean;
+  transactionMs: number;
+  observedMs: number;
+  // ALL boundaries, including elapsed boundaries after transaction start.
+  boundariesMs: number[];
+}
+export function confirmedAuthorizationLease(
+  before: AuthorizationObservation,
+  after: AuthorizationObservation,
+  requestStartedMonotonicMs: number,
+  responseMonotonicMs: number,
+): { ready: boolean; expiresMonotonicMs: number } {
+  const deny = { ready: false, expiresMonotonicMs: requestStartedMonotonicMs };
+  if (!before.eligible || !after.eligible || before.vector !== after.vector ||
+    before.transactionMs !== after.transactionMs || after.observedMs < before.observedMs ||
+    responseMonotonicMs < requestStartedMonotonicMs) return deny;
+  const boundaries = [...before.boundariesMs, ...after.boundariesMs];
+  if (![before.transactionMs, before.observedMs, after.observedMs, requestStartedMonotonicMs,
+    responseMonotonicMs, ...boundaries].every(Number.isFinite)) return deny;
+  // Canonical resolvers use transaction now(). Reject stale temporal snapshots.
+  if (boundaries.some((b) => b >= before.transactionMs && b <= after.observedMs)) return deny;
+  const next = Math.min(...boundaries.filter((b) => b > after.observedMs));
+  // Subtract full client round trip conservatively, not just server duration.
+  const remaining = Math.min(15000, next - after.observedMs) -
+    (responseMonotonicMs - requestStartedMonotonicMs);
+  if (remaining <= 0) return deny;
+  return { ready: true, expiresMonotonicMs: responseMonotonicMs + remaining };
+}
