@@ -4,29 +4,23 @@
 # parâmetro), negação sem sessão, elegibilidade, mudança de fingerprint por
 # revogação/vigência temporal/roles/updated_at (ABA) e ACL fechada.
 import subprocess, tempfile, os, time, hashlib, sys
+from pathlib import Path
 
-PGBIN = subprocess.run(["bash","-c","ls /usr/lib/postgresql/*/bin 2>/dev/null || which initdb | xargs dirname"],
-                       capture_output=True, text=True).stdout.strip().split("\n")[0]
-INITDB, PGCTL, PSQL = f"{PGBIN}/initdb", f"{PGBIN}/pg_ctl", f"{PGBIN}/psql"
-
-tmp = tempfile.mkdtemp(prefix="authzcache-")
-sock = os.path.join(tmp, "sock")
-subprocess.run([INITDB, "-D", f"{tmp}/data", "-U", "postgres", "--auth=trust"], check=True, capture_output=True)
-subprocess.run([PGCTL, "-D", f"{tmp}/data", "-o", f"-k {sock} -p 55444 -c listen_addresses=''", "-l", f"{tmp}/log", "start"], check=True, capture_output=True)
-time.sleep(1)
+tmp = Path(tempfile.mkdtemp(prefix="authzcache-", dir="/tmp")); tmp.chmod(0o777)
+prefix = ["setpriv","--reuid=1000","--regid=1000","--clear-groups"] if os.getuid()==0 else []
+base = ["psql","-X","-h",str(tmp),"-p","55499","-U","postgres","-v","ON_ERROR_STOP=1","-qAt"]
 
 checks = 0
-def psql(sql, user="postgres"):
-    r = subprocess.run([PSQL, "-h", sock, "-p", "55444", "-U", user, "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-At", "-c", sql],
-                       capture_output=True, text=True)
-    return r
+def psql(sql, user=None):
+    cmd = base + (["-U", user] if user else [])
+    return subprocess.run(cmd, input=sql, text=True, capture_output=True)
 
-def run(sql, user="postgres"):
+def run(sql, user=None):
     r = psql(sql, user)
     assert r.returncode == 0, f"{sql[:120]} -> {r.stderr}"
     return r.stdout.strip()
 
-def scalar(sql, user="postgres"):
+def scalar(sql, user=None):
     return run(sql, user)
 
 try:
