@@ -73,6 +73,21 @@ try:
  INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
  ''')
  run((ROOT/'scripts/authz-cache/monotonic-tests.sql.review').read_text())
+ # Additional synthetic cascade + nested principal/profile writer on candidate.
+ run('''ALTER TABLE user_clientes ADD CONSTRAINT fixture_client_fk FOREIGN KEY(cliente_id) REFERENCES clientes(id) ON DELETE CASCADE;
+ CREATE FUNCTION public.fixture_nested_revision() RETURNS trigger LANGUAGE plpgsql AS $$
+ BEGIN UPDATE profiles SET updated_at=updated_at WHERE user_id=NEW.user_id; RETURN NEW; END $$;
+ CREATE TRIGGER fixture_nested_revision AFTER UPDATE ON user_clientes FOR EACH ROW EXECUTE FUNCTION public.fixture_nested_revision();
+ INSERT INTO clientes(id,organization_id) VALUES('00000000-0000-4000-8000-000000000022','00000000-0000-4000-8000-000000000001');
+ INSERT INTO user_clientes(user_id,cliente_id) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000022');
+ ''')
+ before=int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))
+ run('UPDATE user_clientes SET principal=principal;') # multirow and nested profile stamps
+ assert int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))>=before+3
+ before=int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))
+ run("DELETE FROM clientes WHERE id='00000000-0000-4000-8000-000000000022';")
+ assert int(run('SELECT revision FROM cf_user_guards_v1.state WHERE singleton'))>=before+2
+ print('2 synthetic multirow/nested/cascade revision checks PASS (not live fullschema).')
  # Two actual local connections: global revision gate blocks until commit.
  import time
  writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
