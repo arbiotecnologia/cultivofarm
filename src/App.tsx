@@ -317,7 +317,13 @@ export function PortalGuard() {
     return <Navigate to="/sem-permissao" replace />;
   }
 
-  return <PortalLayout />;
+  // Foundation de cache (mesma identidade): boundary esconde/remonta conteúdo
+  // sensível conforme a época de autorização. Gate fechado = sem alteração.
+  return (
+    <AuthzEpochBoundary>
+      <PortalLayout />
+    </AuthzEpochBoundary>
+  );
 }
 
 
