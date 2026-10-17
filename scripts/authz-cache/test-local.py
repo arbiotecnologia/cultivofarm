@@ -12,7 +12,7 @@ base = ["psql","-X","-h",str(tmp),"-p","55499","-U","postgres","-v","ON_ERROR_ST
 
 checks = 0
 def psql(sql, user=None):
-    cmd = base + (["-U", user] if user else [])
+    cmd = base + (["-U", user] if user else []) + ["-d", "postgres"]
     return subprocess.run(cmd, input=sql, text=True, capture_output=True)
 
 def run(sql, user=None):
