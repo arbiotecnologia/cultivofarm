@@ -1,0 +1,30 @@
+-- READ-ONLY canonical swzpzcwiasxmjutrmvkm; every ok must be true before review.
+WITH expected(t,n,h) AS (VALUES
+ ('partner_orders',5,'21dcad4df953b5a19e0ffc8515d3d31f'),
+ ('partner_order_messages',4,'94f81030b9075b4cfe4d5ca668dac915'),
+ ('partner_order_message_attachments',3,'ba0e0aef613cda9166650ebec0485604')),
+ actual AS (SELECT tablename,count(*) n,md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||roles::text||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''),E'\n' ORDER BY policyname)) h
+ FROM pg_policies WHERE schemaname='public' GROUP BY tablename)
+SELECT e.t,a.n,a.h,(a.n=e.n AND a.h=e.h) IS TRUE AS ok FROM expected e LEFT JOIN actual a ON a.tablename=e.t;
+SELECT md5(string_agg(c.oid::regclass::text||'|'||coalesce(c.relacl::text,'')||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text,E'\n' ORDER BY c.oid::regclass::text))='8aced6f91d2119f0f79ecef1e4eda223' AS acl_ok
+FROM pg_class c WHERE c.oid IN ('public.partner_orders'::regclass,'public.partner_order_messages'::regclass,'public.partner_order_message_attachments'::regclass);
+SELECT md5(coalesce(string_agg(t.tgrelid::regclass::text||'|'||pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text||'|'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgrelid::regclass::text,t.tgname),''))='0ddbd7a5e55e0ae87c191f45bf4bcea4' AS triggers_ok
+FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.partner_order_messages'::regclass,'public.partner_order_message_attachments'::regclass);
+SELECT md5(string_agg(conrelid::regclass::text||'|'||conname||'|'||pg_get_constraintdef(oid)||'|'||convalidated::text,E'\n' ORDER BY conrelid::regclass::text,conname))='33dff3248407591697078ab190e5f963' AS constraints_ok
+FROM pg_constraint WHERE conrelid IN ('public.partner_order_messages'::regclass,'public.partner_order_message_attachments'::regclass);
+SELECT md5(string_agg(tablename||'|'||indexname||'|'||indexdef,E'\n' ORDER BY tablename,indexname))='52ae2b332eeb83e5b7e3395de68bd7f5' AS indexes_ok
+FROM pg_indexes WHERE schemaname='public' AND tablename IN ('partner_order_messages','partner_order_message_attachments');
+SELECT c.oid::regclass AS relation,c.relrowsecurity,c.relforcerowsecurity,c.relacl,
+ has_table_privilege('authenticated',c.oid,'SELECT') AS can_read,
+ has_table_privilege('authenticated',c.oid,'INSERT') AS can_insert,
+ has_table_privilege('authenticated',c.oid,'DELETE') AS can_delete
+FROM pg_class c WHERE c.oid IN ('public.partner_orders'::regclass,'public.partner_accounts'::regclass,'public.partner_order_messages'::regclass,'public.partner_order_message_attachments'::regclass);
+SELECT p.oid::regprocedure,p.provolatile,p.prosecdef,p.proconfig,p.proacl,md5(pg_get_functiondef(p.oid)) AS md5
+FROM pg_proc p WHERE p.oid IN ('platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure,
+ 'platform_private.b2b_actor_scope(uuid)'::regprocedure,'public.h15_actor_organization()'::regprocedure,
+ 'platform_private.h15_actor_organization()'::regprocedure,'platform_private.has_role(uuid,public.app_role)'::regprocedure);
+-- Review dependency output against live-contracts below, not just trigger names.
+SELECT policyname,permissive,cmd,roles,qual,with_check FROM pg_policies
+WHERE schemaname='public' AND tablename='partner_accounts' ORDER BY policyname;
+SELECT NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public'
+ AND policyname IN ('p1_message_order_tenant_guard','p1_attachment_message_tenant_guard')) AS names_available;
