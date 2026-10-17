@@ -55,7 +55,7 @@ BEGIN
           WHERE c.organization_id IN (OLD.id, NEW.id)
           UNION SELECT pu.user_id FROM public.partner_users pu
           JOIN public.partner_accounts pa ON pa.id = pu.partner_id
-          WHERE pa.organization_id IN (OLD.id, NEW.id)) s
+          WHERE pa.commercial_owner_organization_id IN (OLD.id, NEW.id)) s
     WHERE p.user_id = s.user_id;
   END IF;
   RETURN COALESCE(NEW, OLD);
