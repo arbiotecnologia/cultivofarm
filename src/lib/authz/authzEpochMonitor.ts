@@ -62,8 +62,10 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   let fingerprint: string | null = null;
   let generation = 0;
   let leaseUntil = 0;
+  let requestUntil = 0;
   let pollTimer: unknown = null;
   let leaseTimer: unknown = null;
+  let requestTimer: unknown = null;
 
   const setState = (next: AuthzMonitorState) => {
     if (state === next) return;
@@ -74,13 +76,16 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   const clearTimers = () => {
     if (pollTimer !== null) { deps.clearTimeoutFn(pollTimer); pollTimer = null; }
     if (leaseTimer !== null) { deps.clearTimeoutFn(leaseTimer); leaseTimer = null; }
+    if (requestTimer !== null) { deps.clearTimeoutFn(requestTimer); requestTimer = null; }
   };
 
   const expire = (reason: "error" | "offline" | "timeout" | "ineligible") => {
     if (state === "stopped") return;
     // Invalida a geração: resultado em voo nunca reabre dados após expirar.
     generation++;
+    clearTimers();
     leaseUntil = 0;
+    requestUntil = 0;
     setState("expired");
     deps.onExpire(reason);
   };
@@ -105,34 +110,47 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       if (state === "stopped") return;
       if (!deps.isOnline()) { expire("offline"); return; }
       if (state === "valid" && deps.isVisible() && deps.now() < leaseUntil) {
-        void poll();
+        void poll(false);
       } else {
         schedulePoll();
       }
     }, pollMs);
   };
 
-  const poll = async () => {
+  const poll = async (explicit: boolean) => {
     if (state === "stopped") return;
     if (!deps.isOnline()) { expire("offline"); return; }
+    // A suspended timer must not let a request renew already-expired authority.
+    if (state === "valid" && deps.now() >= leaseUntil) expire("timeout");
 
     const myGen = ++generation;
     const requestStart = deps.now();
-    // Pending esconde render até a resposta válida chegar — mas uma
-    // revalidação em background com lease AINDA vigente não derruba a tela
-    // (sem flicker); se a lease vencer durante o request, o deadline expira.
-    if (state !== "valid") setState("pending");
-
-    // Lease máxima medida desde o início do request; não estende a anterior.
-    leaseUntil = requestStart + leaseMs;
-    armLeaseDeadline();
+    if (pollTimer !== null) { deps.clearTimeoutFn(pollTimer); pollTimer = null; }
+    if (requestTimer !== null) deps.clearTimeoutFn(requestTimer);
+    // Explicit focus/retry never keeps content visible while revalidating.
+    // Background polling keeps ONLY the previously confirmed deadline.
+    if (explicit || state !== "valid") {
+      leaseUntil = 0;
+      if (leaseTimer !== null) { deps.clearTimeoutFn(leaseTimer); leaseTimer = null; }
+      setState("pending");
+    }
+    requestUntil = requestStart + leaseMs;
+    requestTimer = deps.setTimeoutFn(() => {
+      if (generation === myGen && state !== "stopped") expire("timeout");
+    }, leaseMs);
 
     try {
       const result = await deps.fetcher();
       if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return; // resposta antiga
-      if (deps.now() >= leaseUntil) { expire("timeout"); return; } // atrasada
+      if (deps.now() >= requestUntil || (state === "valid" && deps.now() >= leaseUntil)) {
+        expire("timeout"); return;
+      }
       if (!result.eligible || !result.fingerprint) { expire("ineligible"); return; }
 
+      if (requestTimer !== null) { deps.clearTimeoutFn(requestTimer); requestTimer = null; }
+      // Renew ONLY after a valid response, conservatively from request start.
+      leaseUntil = requestUntil;
+      requestUntil = 0;
       const changed = fingerprint !== null && fingerprint !== result.fingerprint;
       fingerprint = result.fingerprint;
       setState("valid");
@@ -148,7 +166,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   return {
     start() {
       if (state === "stopped") return;
-      void poll();
+      void poll(true);
     },
     stop() {
       setState("stopped");
@@ -157,7 +175,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     },
     revalidate() {
       if (state === "stopped") return;
-      void poll();
+      void poll(true);
     },
     expireNow(reason) {
       if (state === "stopped") return;

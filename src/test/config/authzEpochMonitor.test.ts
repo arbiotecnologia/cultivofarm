@@ -90,7 +90,7 @@ describe("authzEpochMonitor", () => {
     expect(monitor.checkAccess()).toBe(false);
   });
 
-  it("revalidação em background com lease vigente não derruba a tela; se a lease vencer no meio, fecha", async () => {
+  it("revalidação explícita oculta imediatamente mesmo com lease vigente", async () => {
     let resolveFetch!: (v: AuthzFingerprintResult) => void;
     const { monitor, advance } = setup({
       fetcher: vi.fn()
@@ -100,15 +100,53 @@ describe("authzEpochMonitor", () => {
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
     expect(monitor.checkAccess()).toBe(true);
-    monitor.revalidate(); // lease ainda vigente: sem flicker
-    expect(monitor.state()).toBe("valid");
-    expect(monitor.checkAccess()).toBe(true);
+    monitor.revalidate();
+    expect(monitor.state()).toBe("pending");
+    expect(monitor.checkAccess()).toBe(false);
     // Lease vence durante o request em voo: acesso fecha mesmo sem resposta.
     await advance(15_001);
     expect(monitor.state()).toBe("expired");
     expect(monitor.checkAccess()).toBe(false);
     resolveFetch(fp("A")); // resposta de geração antiga não reabre
     await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("poll em t10 NÃO estende autorização t15 para t25 antes da resposta", async () => {
+    let resolveFetch: ((v: AuthzFingerprintResult) => void) | undefined;
+    const { monitor, advance } = setup({
+      fetcher: vi.fn().mockResolvedValueOnce(fp("A"))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFetch = resolve; })),
+    });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    await advance(10_000);
+    expect(monitor.checkAccess()).toBe(true);
+    await advance(5_000);
+    expect(monitor.state()).toBe("expired");
+    expect(monitor.checkAccess()).toBe(false);
+    resolveFetch?.(fp("B"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.currentFingerprint()).toBe("A");
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("réponse valide en t14 renouvelle seulement jusqu’à t25 depuis début t10", async () => {
+    let resolveFetch: ((v: AuthzFingerprintResult) => void) | undefined;
+    const { monitor, advance, setVisible } = setup({
+      fetcher: vi.fn().mockResolvedValueOnce(fp("A"))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFetch = resolve; })),
+    });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    await advance(10_000);
+    await advance(4_000);
+    resolveFetch?.(fp("A"));
+    await vi.advanceTimersByTimeAsync(0);
+    setVisible(false);
+    await advance(10_999);
+    expect(monitor.checkAccess()).toBe(true);
+    await advance(1);
     expect(monitor.checkAccess()).toBe(false);
   });
 

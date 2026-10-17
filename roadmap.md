@@ -1,3 +1,9 @@
+## Cache de autorização — recorte pequeno 17/10/2026 01:30 UTC
+- [x] Base preservada `5aff4b06369d3530272ee2107205f534669b0a16`; AR Bio ACTIVE confirmado pelo titular, correlação `22b1206d-ef4d-4409-91ec-add115a16228`, preço/snapshots/financeiro preservados. NÃO repetir ativação.
+- [ ] Auditar/corrigir lease confirmada versus timeout da consulta e revalidação explícita pending; regressões reais AuthProvider/hooks/boundary.
+- [ ] Candidato SQL privado + wrapper INVOKER, resolvers canônicos e rollback/testes transacionais locais; nenhuma instalação hospedada.
+- [ ] Revisão independente e futura prova autenticada: gate cache false, edição de associações bloqueada; anexos Blob URLs no próximo recorte, não nesta entrega.
+
 ## Vínculos externos — encerramento documental V0 (16/10/2026 23:17 UTC)
 - [x] Auditor aplicou20261016231233 user_links_v0_campaign_current_membership (preflight+ALTER POLICY sem helper); SQL exato ledger arquivado installed/MD5 1563e28baeba2ae55c4386303c924b30. Não reaplicar helper/campanha, filha RLS preservada. Produtor claims/ROLLBACK commercial_campaigns0; positivo UNVERIFIED.
 - [x] Edge externa v91 verify_jwttrue/readbackfonteexatacandidata; baseline89,90intermediária não atribuída. AdminAR publicado após reload Clientes→principalteste→Portal Produtor+Consultor corretos PASS UI real EXTERNA.
