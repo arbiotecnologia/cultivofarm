@@ -21,12 +21,14 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
     let pending = 0;
     const urls: Record<string, string> = {};
     const controllers = new Map<string, AbortController>();
+    const failed = new Set<string>();
     let error: Error | null = null;
     const isCurrent = () => alive && current.current.ready && current.current.scope === scope;
-    const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, error }); };
-    setResult({ scope, urls: {}, loading: false, error: null });
+    const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, error, failed: [...failed] }); };
+    setResult({ scope, urls: {}, loading: false, error: null, failed: [] });
     const request = (path: string) => {
       if (!isCurrent() || !valid.includes(path) || controllers.has(path) || urls[path]) return;
+      failed.delete(path);
       if (valid.length > ATTACHMENT_LIMITS.files) { error = new Error("Limite de anexos excedido"); publish(); return; }
       const controller = new AbortController();
       controllers.set(path, controller); pending++; publish();
