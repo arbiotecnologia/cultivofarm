@@ -50,6 +50,7 @@ try:
  CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,cliente_id uuid REFERENCES public.clientes(id) ON DELETE CASCADE,
    principal boolean NOT NULL DEFAULT false,created_at timestamptz DEFAULT now(),is_active boolean NOT NULL DEFAULT true,
    revoked_at timestamptz,valid_from timestamptz NOT NULL DEFAULT now(),valid_until timestamptz,UNIQUE(user_id,cliente_id));
+ CREATE UNIQUE INDEX uq_user_clientes_principal ON public.user_clientes(user_id) WHERE principal; -- índice LIVE: no máximo UM principal por usuário; múltiplos principal=true no mesmo comando negam 23505
  CREATE TABLE public.partner_users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,user_id uuid,created_at timestamptz DEFAULT now(),papel text);
  CREATE TABLE auth.users(id uuid PRIMARY KEY);
  CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY DEFAULT true,revision bigint NOT NULL DEFAULT 0,CHECK(singleton));
