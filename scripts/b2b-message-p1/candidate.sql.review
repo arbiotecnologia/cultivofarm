@@ -1,0 +1,31 @@
+-- REVIEW ONLY. Canonical swzpzcwiasxmjutrmvkm; not a managed migration.
+-- Run preflight separately first. No GRANT, helper, bucket or guard replacement.
+BEGIN;
+CREATE POLICY p1_message_order_tenant_guard
+ON public.partner_order_messages AS RESTRICTIVE FOR ALL TO authenticated
+USING (EXISTS (
+ SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id
+ WHERE po.id=partner_order_messages.order_id
+ AND pa.commercial_owner_organization_id=(SELECT public.h15_actor_organization())
+))
+WITH CHECK (EXISTS (
+ SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id
+ WHERE po.id=partner_order_messages.order_id
+ AND pa.commercial_owner_organization_id=(SELECT public.h15_actor_organization())
+));
+CREATE POLICY p1_attachment_message_tenant_guard
+ON public.partner_order_message_attachments AS RESTRICTIVE FOR ALL TO authenticated
+USING (EXISTS (
+ SELECT 1 FROM public.partner_order_messages m
+ WHERE m.id=partner_order_message_attachments.message_id
+))
+WITH CHECK (EXISTS (
+ SELECT 1 FROM public.partner_order_messages m
+ WHERE m.id=partner_order_message_attachments.message_id
+));
+COMMIT;
+-- EXISTS uses invoker RLS on po/pa/m, not SECURITY DEFINER or order helper.
+-- Ownership is intentionally stricter: owner NULL/legacy cross-org denied.
+-- Existing B2B parent/partner guards remain mandatory; no reopening blocked B2B.
+-- Message DELETE remains denied without a permissive DELETE policy.
+-- Owner/service_role/BYPASSRLS and Storage objects are not contained by this delta.

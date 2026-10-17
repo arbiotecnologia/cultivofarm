@@ -1,0 +1,12 @@
+{
+  "candidate.sql.review": "d075984c58dde8a53b907f301c6af4ad1a5a8603a45aa875fa9695ab3a5fae28",
+  "preflight.sql.review": "485b7997842c07e9d170f5ef8089f2acdac4ce8d680c2c184707e338d5ca26f1",
+  "rollback.sql.review": "a495820f9396825cf82ea5d0eb232b8616945b00941f1c0f26897aa553f89cf7",
+  "live-guards.sql.review": "42721f5e1bb38e5867cebf0d84d039d0efafd2aa0965fcded508b84fe64f02b1",
+  "live-partner.sql.review": "78234fd71006a9f08340f83c3949ad45eb7d7499eaceaaa4ffe51d1acf686b04",
+  "live-counters.sql.review": "09b67dad06e62d06b9aa7c55712b8723aa9e23fb9cccf0394f14485c087bbb02",
+  "fixture-policies.sql": "af56b81a18f1a24ff8baecbf7033052143a8a1568b36de12c4cfa48e33f66c14",
+  "test-local.py": "95adc4f983b6ff4dcc11129869bd513299286faf4379faba299acf948c502d68",
+  "live-manifest.json": "73f99a189a5569b32aaa7e45761e73862eac81cfa975e947a83b8e29ec7253ae",
+  "results.local.json": "baa8d1efbd3c1b9b011fa8383c7ac684e9300342b36eac23335d3d290f9f6b3c"
+}

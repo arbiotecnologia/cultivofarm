@@ -1,3 +1,11 @@
+## P1 contenção mensagens/anexos — prioridade 13:09 UTC
+- [x] Catálogo READ-ONLY: mensagens0/anexos0/órfãos0; P1 estrutural, sem exploit hosted demonstrado. ACL/triggers/FKs/resolvers e hashes capturados.
+- [x] scripts/b2b-message-p1: duas policies ALL RESTRICTIVE, preflight/rollback/hashes e harness com corpos/policies capturados; sem instalação/grants/buckets.
+- [x] 34 checks BEGIN/ROLLBACK locais PASS, identidades AR/FSF sintéticas, gestores/forjado/Delete/B2B/revogação/FK/cascades; schema reduzido, não hosted.
+- [x] Relatório b2b-mensagens-p1-contencao-20261017.review.md entregue; cache/ledger suspensos/gates false.
+- [ ] Auditor executar preflight completo e prova transacional hosted com identidades reais: read_query disponível é SELECT-only; nenhuma migration aplicada para simular teste.
+- [ ] rpc_partner_message_counters DEFINER mantém branch admin sem tenant (hash live capturado e residual reproduzido localmente); fora deste delta de policies, exige revisão própria antes de certificação integral.
+
 ## Cache/anexos — continuação autorizada 12:55 UTC
 - [x] Coleta READ-ONLY canônica e candidatos concretos row-revision/reader/rollback, anexos privados e quatro pares Edge review/patch/hash; nenhum runtime Edge/Auth alterado.
 - [x] 102/102 testes em oito arquivos, 21 checks SQL reduzido com guards reais e duas conexões; lint testes novos zero/scanner/diff-check/build automático OK. Não schema integral/HTTP.

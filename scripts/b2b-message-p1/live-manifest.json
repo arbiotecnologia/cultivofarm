@@ -1,0 +1,30 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "captured_at_utc": "2026-10-17T13:10:00Z",
+  "rows": {"messages": 0, "metadata": 0, "orphan_messages": 0, "orphan_metadata": 0},
+  "policy_md5": {
+    "partner_orders": "21dcad4df953b5a19e0ffc8515d3d31f",
+    "partner_order_messages": "94f81030b9075b4cfe4d5ca668dac915",
+    "partner_order_message_attachments": "ba0e0aef613cda9166650ebec0485604"
+  },
+  "acl_md5": "8aced6f91d2119f0f79ecef1e4eda223",
+  "constraints_md5": "33dff3248407591697078ab190e5f963",
+  "indexes_md5": "52ae2b332eeb83e5b7e3395de68bd7f5",
+  "trigger_md5": "0ddbd7a5e55e0ae87c191f45bf4bcea4",
+  "function_md5": {
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "35cfda5d5988fb6ad57944bd11a51c3c",
+    "platform_private.b2b_actor_scope(uuid)": "c85cb35201682c3c86b9a327d24c8482",
+    "platform_private.has_role(uuid,app_role)": "c5af5b55de6d79da9b73a33948746ae2",
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84",
+    "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
+    "public.h15_actor_organization()": "55edafec08bcc84a00f1526c14334a2c",
+    "public.has_role(uuid,app_role)": "4d90e93d521a4819d9085f28d742030f",
+    "public.is_platform_superadmin(uuid)": "3dfe79d976821244d9b7a7f893d765f2",
+    "public.get_user_partner_id()": "77822b0ef57e42bfe9cd7075265402aa",
+    "public.tg_commercial_audit()": "59f38730b9f37102cbf2ed4bd44a7e00",
+    "platform_private.entitlements_for_user(uuid)": "7f4ec7facaebbdf35444dd490fdebe56"
+  },
+  "live_child_triggers": ["trg_audit_messages: AFTER INSERT OR DELETE OR UPDATE", "trg_audit_attachments: AFTER INSERT OR DELETE"],
+  "live_fk": ["messages.order_id -> orders.id CASCADE", "attachments.message_id -> messages.id CASCADE", "attachments.uploaded_by -> auth.users.id NO ACTION"],
+  "mode": "read-only; no hosted BEGIN/ROLLBACK executed"
+}
