@@ -87,7 +87,7 @@ try:
  writer.stdin.write("BEGIN;UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';SELECT pg_sleep(0.6);ROLLBACK;");writer.stdin.close()
  time.sleep(0.15)
  started=time.monotonic()
- fp_b=run("SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',true); SELECT public.get_my_authz_fingerprint()->>'fingerprint'").splitlines()[-1]
+ fp_b=run("BEGIN; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',true); SELECT public.get_my_authz_fingerprint()->>'fingerprint'; ROLLBACK;").splitlines()[-2]
  elapsed=time.monotonic()-started
  assert elapsed<0.5,f'tenant B fingerprint blocked by tenant A writer ({elapsed:.2f}s)'
  assert fp_b,'tenant B fingerprint empty during tenant A write'
