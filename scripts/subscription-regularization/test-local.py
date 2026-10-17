@@ -30,8 +30,14 @@ def main():
     run([INITDB, "-D", f"{tmp}/data", "-U", "postgres", "--auth=trust"])
     port = "55439"
     run([PG_CTL, "-D", f"{tmp}/data", "-o", f"-p {port} -k {tmp}", "-l", f"{tmp}/log", "start"])
-    time.sleep(1)
     os.environ["PGHOST"], os.environ["PGPORT"], os.environ["PGUSER"] = tmp, port, "postgres"
+    for _ in range(30):
+        if run([PSQL, "-X", "-qAt", "-d", "postgres", "-c", "SELECT 1"]).returncode == 0:
+            break
+        time.sleep(0.5)
+    else:
+        print(open(f"{tmp}/log").read())
+        raise SystemExit("PostgreSQL local não subiu")
     try:
         psql("postgres", "CREATE DATABASE harness;")
         db = "harness"
