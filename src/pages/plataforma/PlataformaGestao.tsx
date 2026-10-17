@@ -39,6 +39,7 @@ const ACOES = [
 type AcaoAssinatura = (typeof ACOES)[number][0];
 
 const SITUACOES: Record<string, string> = { SUSPENDED: "Suspensa", ACTIVE: "Ativa", PAST_DUE: "Em atraso", TRIAL: "Em teste", CANCELLED: "Cancelada", EXPIRED: "Expirada" };
+const CICLOS: Record<string, string> = { monthly: "mensal", yearly: "anual", quarterly: "trimestral", semiannual: "semestral", weekly: "semanal" };
 
 const motivoOk = (m: string) => m.trim().length >= 5;
 
@@ -75,6 +76,9 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   useEffect(() => {
     setVersao(""); setMotivo(""); setRefreshError(false); setConfirmado(false);
   }, [org]);
+  // Confirmação só vale para o estado lido: qualquer mudança de assinatura,
+  // versão, status ou snapshots reseta a confirmação explícita.
+  useEffect(() => { setConfirmado(false); }, [assinatura?.id, assinatura?.plan_version_id, assinatura?.status, assinatura?.price_snapshot, assinatura?.billing_cycle_snapshot]);
   useEffect(() => {
     if (!permitidas.includes(acao) && permitidas[0]) setAcao(permitidas[0]);
   }, [assinatura?.status, assinatura?.trial_ends_at, acao]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -156,7 +160,8 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
           {exigeVersao && versoes.isSuccess && versoesVigentes.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Nenhuma versão comercial vigente. A ação permanece bloqueada.</p>}
           {acao === "change_plan" && assinatura?.status === "SUSPENDED" && <p className="mb-3 text-sm" role="note">O plano será atualizado, mas a assinatura continuará suspensa. Para liberar o acesso, use Reativar assinatura.</p>}
           {regularizar && assinatura && permitidas.includes(acao) && <div className="mb-3 space-y-2 rounded-md border p-3 text-sm" role="note">
-            <p><strong>Regularização de assinatura.</strong> A situação passa de {situacaoEfetiva} para <strong>Ativa</strong>, mantendo o plano atual{atual ? ` (${atual.name_snapshot} · v${atual.version_number}${atual.billing_cycle ? `, ciclo ${atual.billing_cycle}` : ""})` : ""} e o histórico do período de teste.</p>
+            <p><strong>Regularização de assinatura.</strong> A situação passa de {situacaoEfetiva} para <strong>Ativa</strong>, mantendo o plano atual{atual ? ` (${atual.name_snapshot} · v${atual.version_number})` : ""} e o histórico do período de teste.</p>
+            <p>Condições preservadas da assinatura: <strong>{assinatura.price_snapshot != null ? `R$ ${Number(assinatura.price_snapshot).toFixed(2).replace(".", ",")} ${assinatura.currency_snapshot ?? ""}`.trim() : "valor não registrado"}{assinatura.billing_cycle_snapshot ? ` · ciclo ${CICLOS[assinatura.billing_cycle_snapshot] ?? assinatura.billing_cycle_snapshot}` : ""}</strong> (exatamente como registradas; nada é recalculado).</p>
             <p>Esta ação <strong>não registra pagamento nem quita cobrança</strong>, não prorroga o teste e não implanta cobrança ou expiração automática.</p>
             <label className="flex items-start gap-2">
               <input type="checkbox" checked={confirmado} disabled={busy} onChange={(e) => setConfirmado(e.target.checked)} aria-label="Confirmar regularização" className="mt-1" />

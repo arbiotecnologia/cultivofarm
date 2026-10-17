@@ -1,62 +1,63 @@
--- CANDIDATO — Regularização de assinatura (activate_subscription)
--- FORA de supabase/migrations: NÃO aplicado. Revisar antes de qualquer aplicação.
--- Escopo: adiciona a ação explícita 'activate_subscription' ao núcleo privado
--- platform_private.transition_subscription_core, convertendo TRIAL (vigente ou
--- vencido) ou EXPIRED decorrente de trial em ACTIVE, SEM registrar pagamento,
--- sem quitar cobrança, sem prorrogar/reiniciar trial e sem tocar em
--- pagamentos/contas/fiscal/SMTP. Wrapper público INVOKER inalterado.
--- Preserva: started_at, trial_ends_at histórico, cancel_at (não limpa
--- silenciosamente), snapshots existentes quando nenhuma versão nova é dada.
+-- =====================================================================
+-- CANDIDATA v2 — Regularização de assinatura (activate_subscription)
+-- NÃO APLICAR. Fora de supabase/migrations. Aguarda revisão independente.
+--
+-- Correções da revisão b3619ad8:
+--  1) Ator: is_platform_superadmin (live verifica SÓ user_roles) + perfil
+--     ativo em public.profiles (p.ativo). Sem trocar o modelo de papéis.
+--  2) activate_subscription exige _plan_version_id NULL (contrato simples);
+--     resolve a versão ATUAL da assinatura e valida PUBLISHED + vigência
+--     (effective_from/to); preserva TODOS os snapshots; não regulariza
+--     assinatura legada (sem versão) — isso é papel exclusivo de change_plan.
+--  3) Lock da ORGANIZAÇÃO (FOR UPDATE) antes de qualquer seleção/replay;
+--     seleciona a corrente primeiro; EXPIRED só é fallback quando NÃO há
+--     corrente, deve ser a mais recente e ter origem TRIAL→EXPIRED
+--     comprovada no histórico (não ressuscita trial antigo após CANCELLED
+--     mais nova).
+--  4) cancel_at NOT NULL bloqueia a ativação com orientação explícita;
+--     current_period_start/end NÃO são alterados (conversão administrativa,
+--     sem cobrança/expiração nova).
+--  5) Contrato de payload validado ANTES do replay; idempotência vinculada
+--     a organização + ação + motivo + versão (por ação).
+--  6) Preflight compara hash MD5 normalizado das definições live reais
+--     (core, wrapper, is_platform_superadmin) — ver installed/.
+--  7) Harness espelha uq_org_subscriptions_one_current, triggers reais e
+--     papel authenticator real no guard de DML.
+-- =====================================================================
 
--- ============================================================
--- 1. PREFLIGHT — drift das definições live (aborta se divergir)
--- ============================================================
+-- ---------------------------------------------------------------------
+-- PREFLIGHT (read-only). Normalizar com regexp_replace(def, '\s+', ' ', 'g')
+-- antes do MD5, pois pg_get_functiondef pode variar em quebras de linha.
+-- Hashes de referência (definição arquivada em installed/, normalizada):
+--   core                  : ver installed/transition-core-live-20261017.sql
+--   wrapper               : idem
+--   is_platform_superadmin: idem
+-- O preflight FALHA (e nada é aplicado) se qualquer hash divergir, se o
+-- índice uq_org_subscriptions_one_current estiver ausente, ou se os triggers
+-- de guarda/auditoria/imutabilidade não existirem.
+-- ---------------------------------------------------------------------
 DO $$
 DECLARE
-  v_core text := pg_get_functiondef('platform_private.transition_subscription_core(uuid,text,text,uuid,uuid)'::regprocedure);
-  v_wrapper text := pg_get_functiondef('public.platform_transition_subscription(uuid,text,text,uuid,uuid)'::regprocedure);
+  v_core text := md5(regexp_replace(pg_get_functiondef('platform_private.transition_subscription_core(uuid,text,text,uuid,uuid)'::regprocedure), '\s+', ' ', 'g'));
+  v_wrap text := md5(regexp_replace(pg_get_functiondef('public.platform_transition_subscription(uuid,text,text,uuid,uuid)'::regprocedure), '\s+', ' ', 'g'));
+  v_sa   text := md5(regexp_replace(pg_get_functiondef('public.is_platform_superadmin(uuid)'::regprocedure), '\s+', ' ', 'g'));
 BEGIN
-  IF v_core IS NULL OR v_wrapper IS NULL THEN
-    RAISE EXCEPTION 'preflight: funções de transição ausentes';
+  -- Hashes preenchidos pelo auditor a partir do live no momento da aplicação.
+  IF v_core <> '__CORE_MD5__' OR v_wrap <> '__WRAPPER_MD5__' OR v_sa <> '__SA_MD5__' THEN
+    RAISE EXCEPTION 'preflight: definição live diverge do baseline arquivado (core=%, wrapper=%, superadmin=%)', v_core, v_wrap, v_sa;
   END IF;
-  -- O core live NÃO pode já conter a ação nova (evita dupla aplicação).
-  IF position('activate_subscription' in v_core) > 0 THEN
-    RAISE EXCEPTION 'preflight: activate_subscription já presente no core live';
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public' AND indexname='uq_org_subscriptions_one_current') THEN
+    RAISE EXCEPTION 'preflight: índice uq_org_subscriptions_one_current ausente';
   END IF;
-  -- Wrapper deve seguir INVOKER (pg_get_functiondef omite o padrão) delegando
-  -- ao núcleo privado.
-  IF position('SECURITY DEFINER' in v_wrapper) > 0
-     OR position('platform_private.transition_subscription_core' in v_wrapper) = 0 THEN
-    RAISE EXCEPTION 'preflight: wrapper público divergente do esperado';
-  END IF;
-  -- Triggers de proteção devem existir e estar habilitados.
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='saas_subscription_guard_trg'
-                 AND tgrelid='public.organization_subscriptions'::regclass AND tgenabled<>'D') THEN
-    RAISE EXCEPTION 'preflight: saas_subscription_guard_trg ausente/desabilitado';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trg_org_subscriptions_audit'
-                 AND tgrelid='public.organization_subscriptions'::regclass AND tgenabled<>'D') THEN
-    RAISE EXCEPTION 'preflight: trg_org_subscriptions_audit ausente/desabilitado';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='saas_subscription_require_published_version_trg'
-                 AND tgrelid='public.organization_subscriptions'::regclass AND tgenabled<>'D') THEN
-    RAISE EXCEPTION 'preflight: require_published_version ausente/desabilitado';
-  END IF;
-  -- Histórico deve permanecer imutável (no_mutation/no_delete).
-  IF (SELECT count(*) FROM pg_trigger
-      WHERE tgrelid='public.organization_subscription_history'::regclass
-        AND tgname IN ('organization_subscription_history_no_delete_trg',
-                       'organization_subscription_history_no_mutation_trg',
-                       'trg_org_sub_history_no_mutation') AND tgenabled<>'D') < 3 THEN
-    RAISE EXCEPTION 'preflight: proteções do histórico ausentes/desabilitadas';
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
+                 WHERE c.relname='organization_subscriptions' AND t.tgname IN ('saas_subscription_guard','saas_subscription_audit')) THEN
+    RAISE EXCEPTION 'preflight: triggers de guarda/auditoria ausentes';
   END IF;
 END $$;
 
--- ============================================================
--- 2. NÚCLEO — CREATE OR REPLACE com a ação nova
---    Diff mínimo sobre o baseline live arquivado em
---    scripts/subscription-regularization/baseline/.
--- ============================================================
+-- ---------------------------------------------------------------------
+-- Núcleo v2
+-- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION platform_private.transition_subscription_core(_organization_id uuid, _action text, _reason text, _correlation_id uuid, _plan_version_id uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -73,10 +74,13 @@ DECLARE
   v_existing_action text;
   v_existing_reason text;
   v_existing_version text;
-  v_cycle text;
 BEGIN
+  -- (1) Ator: papel superadmin (modelo live) + perfil real ativo.
   IF auth.uid() IS NULL OR NOT public.is_platform_superadmin(auth.uid()) THEN
     RAISE EXCEPTION 'platform_forbidden: apenas superadmin' USING ERRCODE='42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id = auth.uid() AND p.ativo) THEN
+    RAISE EXCEPTION 'platform_forbidden: perfil do ator inativo' USING ERRCODE='42501';
   END IF;
   IF _reason IS NULL OR length(btrim(_reason)) < 5 OR _correlation_id IS NULL THEN
     RAISE EXCEPTION 'platform_invalid: motivo e correlação obrigatórios' USING ERRCODE='22023';
@@ -85,13 +89,29 @@ BEGIN
     RAISE EXCEPTION 'platform_invalid: ação inválida' USING ERRCODE='22023';
   END IF;
 
-  -- Idempotência vinculada: correlação existente só é reutilizada se for da
-  -- MESMA organização e MESMA ação; caso contrário, nega (nunca retorna a
-  -- assinatura de outra empresa/operação).
+  -- (5) Contrato de payload por ação, validado ANTES de qualquer replay.
+  IF _action = 'activate_subscription' AND _plan_version_id IS NOT NULL THEN
+    RAISE EXCEPTION 'platform_invalid: regularização não aceita versão; use Alterar plano separadamente' USING ERRCODE='22023';
+  END IF;
+  IF _action = 'change_plan' AND _plan_version_id IS NULL THEN
+    RAISE EXCEPTION 'platform_invalid: versão obrigatória' USING ERRCODE='22023';
+  END IF;
+  IF _action <> 'change_plan' AND _action <> 'start_trial' AND _plan_version_id IS NOT NULL THEN
+    RAISE EXCEPTION 'platform_invalid: versão só é aceita em change_plan/start_trial' USING ERRCODE='22023';
+  END IF;
+
+  -- (3) Lock da ORGANIZAÇÃO antes de seleção e de qualquer replay:
+  -- serializa transições concorrentes da mesma empresa.
+  PERFORM 1 FROM public.organizations o WHERE o.id = _organization_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'platform_invalid: empresa inexistente' USING ERRCODE='22023';
+  END IF;
+
+  -- Idempotência vinculada: mesma correlação só é reutilizada com MESMA
+  -- organização, ação, motivo e versão coerente com a ação.
   SELECT h.subscription_id, h.organization_id, h.action, h.reason,
          h.new_values->>'plan_version_id'
-  INTO v_existing, v_existing_org, v_existing_action, v_existing_reason,
-       v_existing_version
+  INTO v_existing, v_existing_org, v_existing_action, v_existing_reason, v_existing_version
   FROM public.organization_subscription_history h
   WHERE h.correlation_id = _correlation_id;
   IF v_existing IS NOT NULL THEN
@@ -106,39 +126,35 @@ BEGIN
     RETURN v_existing;
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id = _organization_id) THEN
-    RAISE EXCEPTION 'platform_invalid: empresa inexistente' USING ERRCODE='22023';
-  END IF;
-
-  -- Lock da assinatura corrente (empresa+assinatura). Para
-  -- activate_subscription, assinaturas EXPIRED também são candidatas
-  -- (conversão de trial expirado); demais ações mantêm o filtro original.
+  -- (3) Corrente primeiro; EXPIRED só como fallback e somente para activate.
   SELECT * INTO v_sub
   FROM public.organization_subscriptions s
   WHERE s.organization_id = _organization_id
-    AND (s.status IN ('TRIAL','ACTIVE','PAST_DUE','SUSPENDED')
-         OR (_action = 'activate_subscription' AND s.status = 'EXPIRED'))
+    AND s.status IN ('TRIAL','ACTIVE','PAST_DUE','SUSPENDED')
   ORDER BY s.started_at DESC
   LIMIT 1
   FOR UPDATE;
 
-  -- Revalidação pós-lock da idempotência vinculada.
-  SELECT h.subscription_id, h.organization_id, h.action, h.reason,
-         h.new_values->>'plan_version_id'
-  INTO v_existing, v_existing_org, v_existing_action, v_existing_reason,
-       v_existing_version
-  FROM public.organization_subscription_history h
-  WHERE h.correlation_id = _correlation_id;
-  IF v_existing IS NOT NULL THEN
-    IF v_existing_org IS DISTINCT FROM _organization_id
-       OR v_existing_action IS DISTINCT FROM _action
-       OR v_existing_reason IS DISTINCT FROM btrim(_reason)
-       OR (_plan_version_id IS NOT NULL
-           AND nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id)
-       OR (_plan_version_id IS NULL AND v_existing_action = 'change_plan') THEN
-      RAISE EXCEPTION 'platform_conflict: correlação já utilizada em outra operação' USING ERRCODE='40001';
+  IF v_sub.id IS NULL AND _action = 'activate_subscription' THEN
+    -- Fallback EXPIRED: somente a assinatura MAIS RECENTE da empresa, e só
+    -- se a origem TRIAL→EXPIRED estiver comprovada no histórico. Uma
+    -- CANCELLED (ou qualquer outra) mais nova bloqueia a ressurreição.
+    SELECT * INTO v_sub
+    FROM public.organization_subscriptions s
+    WHERE s.organization_id = _organization_id
+    ORDER BY s.started_at DESC
+    LIMIT 1
+    FOR UPDATE;
+    IF v_sub.id IS NOT NULL AND (
+      v_sub.status <> 'EXPIRED'
+      OR NOT EXISTS (
+        SELECT 1 FROM public.organization_subscription_history h
+        WHERE h.subscription_id = v_sub.id
+          AND h.previous_status = 'TRIAL' AND h.new_status = 'EXPIRED'
+      )
+    ) THEN
+      RAISE EXCEPTION 'platform_conflict: assinatura expirada sem origem em trial comprovada' USING ERRCODE='40001';
     END IF;
-    RETURN v_existing;
   END IF;
 
   IF _plan_version_id IS NOT NULL THEN
@@ -197,39 +213,40 @@ BEGIN
     RAISE EXCEPTION 'platform_invalid: assinatura corrente inexistente' USING ERRCODE='22023';
   END IF;
 
-  -- Assinatura legada só pode sair desse estado por regularização explícita,
-  -- usando change_plan e uma versão publicada/vigente validada acima.
-  -- activate_subscription também regulariza a versão quando uma versão
-  -- vigente é informada; sem versão alguma (assinatura sem plan_version_id e
-  -- nenhuma informada), a conversão é negada — não há autoeleição de plano.
-  IF v_sub.plan_version_id IS NULL AND _action NOT IN ('change_plan','activate_subscription') THEN
-    RAISE EXCEPTION 'platform_conflict: assinatura legada exige regularização explícita' USING ERRCODE='40001';
+  -- Assinatura legada (sem versão) só sai desse estado por change_plan.
+  IF v_sub.plan_version_id IS NULL AND _action <> 'change_plan' THEN
+    RAISE EXCEPTION 'platform_conflict: assinatura legada exige regularização explícita de versão (Alterar plano)' USING ERRCODE='40001';
   END IF;
 
-  IF _action = 'change_plan' AND _plan_version_id IS NULL THEN
-    RAISE EXCEPTION 'platform_invalid: versão obrigatória' USING ERRCODE='22023';
-  END IF;
-
-  IF _action = 'activate_subscription' AND v_sub.plan_version_id IS NULL AND _plan_version_id IS NULL THEN
-    RAISE EXCEPTION 'platform_invalid: assinatura sem versão comercial; regularize a versão antes de ativar' USING ERRCODE='22023';
+  -- (2) activate_subscription: valida a versão ATUAL da assinatura
+  -- (publicada e vigente) e a empresa ativa; preserva TODOS os snapshots.
+  IF _action = 'activate_subscription' THEN
+    IF NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id = _organization_id AND o.ativo) THEN
+      RAISE EXCEPTION 'platform_conflict: empresa inativa não pode ser regularizada' USING ERRCODE='40001';
+    END IF;
+    IF v_sub.status NOT IN ('TRIAL','EXPIRED') THEN
+      RAISE EXCEPTION 'platform_conflict: transição inválida' USING ERRCODE='40001';
+    END IF;
+    -- (4) cancelamento agendado bloqueia a regularização nesta fase.
+    IF v_sub.cancel_at IS NOT NULL THEN
+      RAISE EXCEPTION 'platform_conflict: assinatura com cancelamento agendado; cancele a agenda antes de regularizar' USING ERRCODE='40001';
+    END IF;
+    SELECT * INTO v_version
+    FROM public.saas_plan_versions v
+    WHERE v.id = v_sub.plan_version_id
+      AND v.status = 'PUBLISHED'
+      AND v.effective_from <= v_now
+      AND (v.effective_to IS NULL OR v.effective_to > v_now);
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'platform_invalid: versão atual da assinatura não está publicada e vigente' USING ERRCODE='22023';
+    END IF;
   END IF;
 
   IF (_action='mark_past_due' AND v_sub.status<>'ACTIVE')
      OR (_action='suspend' AND v_sub.status NOT IN('ACTIVE','PAST_DUE'))
      OR (_action='reactivate_manual' AND v_sub.status<>'SUSPENDED')
-     OR (_action='cancel' AND v_sub.status NOT IN ('TRIAL','ACTIVE','PAST_DUE','SUSPENDED'))
-     OR (_action='expire_trial' AND (v_sub.status<>'TRIAL' OR v_sub.trial_ends_at IS NULL OR v_sub.trial_ends_at>v_now))
-     OR (_action='activate_subscription' AND NOT (
-          v_sub.status = 'TRIAL'
-          OR (v_sub.status = 'EXPIRED'
-              AND v_sub.trial_ends_at IS NOT NULL
-              AND EXISTS (
-                SELECT 1 FROM public.organization_subscription_history h
-                WHERE h.subscription_id = v_sub.id
-                  AND h.previous_status = 'TRIAL'
-                  AND h.new_status = 'EXPIRED'
-              ))
-        )) THEN
+     OR (_action='cancel' AND v_sub.status NOT IN('TRIAL','ACTIVE','PAST_DUE','SUSPENDED'))
+     OR (_action='expire_trial' AND (v_sub.status<>'TRIAL' OR v_sub.trial_ends_at IS NULL OR v_sub.trial_ends_at>v_now)) THEN
     RAISE EXCEPTION 'platform_conflict: transição inválida' USING ERRCODE='40001';
   END IF;
 
@@ -248,34 +265,18 @@ BEGIN
   PERFORM set_config('app.saas_change_action', _action, true);
   PERFORM set_config('app.saas_correlation_id', _correlation_id::text, true);
 
-  -- Período corrente derivado do ciclo EXISTENTE (ou da versão informada).
-  -- Não implanta cobrança nem expiração automática: é apenas o registro
-  -- administrativo do período. Ciclo desconhecido/ausente => NULL.
-  v_cycle := coalesce(v_version.billing_cycle, v_sub.billing_cycle);
-
+  -- (4) activate_subscription NÃO toca current_period_start/end nem
+  -- snapshots: conversão administrativa sem cobrança/expiração nova.
   UPDATE public.organization_subscriptions s
-  SET plan_id = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.plan_id ELSE s.plan_id END,
-      plan_version_id = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.id ELSE s.plan_version_id END,
+  SET plan_id = CASE WHEN _action='change_plan' THEN v_version.plan_id ELSE s.plan_id END,
+      plan_version_id = CASE WHEN _action='change_plan' THEN v_version.id ELSE s.plan_version_id END,
       status = v_target,
-      price_snapshot = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.price_amount ELSE s.price_snapshot END,
-      currency_snapshot = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.currency ELSE s.currency_snapshot END,
-      billing_cycle = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.billing_cycle ELSE s.billing_cycle END,
-      billing_cycle_snapshot = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.billing_cycle ELSE s.billing_cycle_snapshot END,
-      limits_snapshot = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.limits_snapshot ELSE s.limits_snapshot END,
-      features_snapshot = CASE WHEN _action='change_plan' OR (_action='activate_subscription' AND _plan_version_id IS NOT NULL) THEN v_version.features_snapshot ELSE s.features_snapshot END,
-      -- activate_subscription: preserva started_at e trial_ends_at (histórico),
-      -- não prorroga nem reinicia trial; cancel_at NÃO é tocado (não ignorado
-      -- silenciosamente); período corrente derivado do ciclo, sem cobrança.
-      current_period_start = CASE WHEN _action='activate_subscription' THEN v_now ELSE s.current_period_start END,
-      current_period_end = CASE WHEN _action='activate_subscription' THEN
-        CASE v_cycle
-          WHEN 'monthly' THEN v_now + interval '1 month'
-          WHEN 'quarterly' THEN v_now + interval '3 months'
-          WHEN 'semiannual' THEN v_now + interval '6 months'
-          WHEN 'annual' THEN v_now + interval '1 year'
-          ELSE NULL
-        END
-      ELSE s.current_period_end END,
+      price_snapshot = CASE WHEN _action='change_plan' THEN v_version.price_amount ELSE s.price_snapshot END,
+      currency_snapshot = CASE WHEN _action='change_plan' THEN v_version.currency ELSE s.currency_snapshot END,
+      billing_cycle = CASE WHEN _action='change_plan' THEN v_version.billing_cycle ELSE s.billing_cycle END,
+      billing_cycle_snapshot = CASE WHEN _action='change_plan' THEN v_version.billing_cycle ELSE s.billing_cycle_snapshot END,
+      limits_snapshot = CASE WHEN _action='change_plan' THEN v_version.limits_snapshot ELSE s.limits_snapshot END,
+      features_snapshot = CASE WHEN _action='change_plan' THEN v_version.features_snapshot ELSE s.features_snapshot END,
       suspended_at = CASE WHEN v_target='SUSPENDED' THEN coalesce(s.suspended_at,v_now) ELSE NULL END,
       cancelled_at = CASE WHEN v_target='CANCELLED' THEN coalesce(s.cancelled_at,v_now) ELSE NULL END,
       state_changed_at = v_now,
@@ -286,6 +287,4 @@ BEGIN
 END;
 $function$;
 
--- ACL inalterada: o núcleo live usa ACL padrão (EXECUTE a PUBLIC) e a
--- autorização é o guard interno is_platform_superadmin + ticket por trigger.
--- O candidato NÃO muda grants para não quebrar o wrapper INVOKER existente.
+-- Wrapper público inalterado (INVOKER, delega ao núcleo). Não recriar.

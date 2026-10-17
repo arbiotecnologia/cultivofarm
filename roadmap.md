@@ -1270,8 +1270,8 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Revisão independente; ensaio hosted BEGIN/ROLLBACK do RPC pelo auditor; gate segue FALSE e só abre após migration aplicada e revisada.
 - [ ] Próximo recorte: anexos/signed URLs; troca de principal sem violar uq_user_clientes_principal; gestão de associações com gates fechados.
 
-## Regularização de assinatura (candidata, não aplicada)
-- Candidato SQL em scripts/subscription-regularization/ (candidate.sql.review, rollback, baseline): ação activate_subscription somente Superadmin; TRIAL vigente/vencido e EXPIRED de trial → ACTIVE; preserva started_at/trial_ends_at/cancel_at; idempotência vinculada org+ação+payload (motivo/versão); lock empresa+assinatura; sem pagamento/cobrança.
-- Harness PostgreSQL local: 19/19 checks PASS (auth, transições, replay, payload adulterado, concorrência, guard DML).
-- UI: botão "Regularizar assinatura" com confirmação explícita, declaração "não registra pagamento nem quita cobrança", situação "Teste vencido". 796/796 testes SaaS PASS; tsc 0; lint focal 0; build OK.
-- PENDENTE: revisão independente antes de aplicar SQL; AR Bio NÃO convertida; sem publicação. Cache de autorização segue gate false.
+## Regularização de assinatura (candidata v2, não aplicada)
+- Revisão b3619ad8 REPROVOU a v1; v2 corrige: ator exige perfil ativo (live is_platform_superadmin verifica só user_roles); activate exige versão NULL e valida a versão ATUAL (PUBLISHED+vigente); lock da ORGANIZAÇÃO antes de seleção/replay; fallback EXPIRED só se for a assinatura mais recente com origem TRIAL→EXPIRED comprovada (CANCELLED mais nova bloqueia); cancel_at bloqueia; current_period_* inalterados; idempotência vinculada org+ação+motivo+versão com contrato validado antes do replay; preflight por hash MD5 das definições live arquivadas em installed/.
+- Harness PostgreSQL local fiel ao live (user_roles+profiles.ativo, índice parcial real, guards, papel authenticated): 23/23 checks PASS. Vitest focado 28/28 PASS; tsc 0; lint focal 0; build OK; scanner OK.
+- UI: resumo exibe snapshots preservados da assinatura (preço/moeda/ciclo legível), confirmação reseta ao mudar estado lido, declaração "não registra pagamento nem quita cobrança", situação "Teste vencido".
+- PENDENTE: nova revisão independente da v2 antes de aplicar SQL; AR Bio NÃO convertida; sem publicação. Cache de autorização segue gate false e NÃO aprovado. Rollback aprovado usa o backup do auditor (subscription-core-before-activation.sql.review), não o baseline reconstruído.

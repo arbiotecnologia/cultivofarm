@@ -22,7 +22,7 @@ vi.mock("@/hooks/usePlataformaSaaS", () => ({
   useVersoesPlanosSaaS: () => ({ isSuccess: true, data: [
     { id: "base", name_snapshot: "Plano Base", version_number: 1, billing_cycle: "MONTHLY", status: "PUBLISHED", effective_from: "2026-01-01" },
   ] }),
-  useAssinaturasSaaS: () => ({ isSuccess: true, data: [{ organization_id: "org", status: mocks.status, plan_version_id: "base", trial_ends_at: mocks.trialEndsAt }], refetch: vi.fn().mockResolvedValue({}) }),
+  useAssinaturasSaaS: () => ({ isSuccess: true, data: [{ id: "sub1", organization_id: "org", status: mocks.status, plan_version_id: "base", trial_ends_at: mocks.trialEndsAt, price_snapshot: 499.9, currency_snapshot: "BRL", billing_cycle_snapshot: "monthly" }], refetch: vi.fn().mockResolvedValue({}) }),
   useHistoricoAssinaturasSaaS: () => ({ isSuccess: true, data: [], refetch: vi.fn().mockResolvedValue({}) }),
   useAlterarAssinatura: () => ({ mutate: mocks.mutate, isPending: false }),
   mensagemErroAssinatura: () => "Erro seguro", useCriarExcecao: vi.fn(), useEncerrarExcecao: vi.fn(), useExcecoesSaaS: vi.fn(), useModulosFeaturesSaaS: vi.fn(),
@@ -86,5 +86,24 @@ describe("AlterarAssinaturaCard — regularização", () => {
     render(<AlterarAssinaturaCard organizationIdInicial="org" />);
     expect(screen.getByText(/Em teste/)).toBeInTheDocument();
     expect(screen.queryByText(/Teste vencido/)).not.toBeInTheDocument();
+  });
+
+  it("resumo exibe snapshots preservados da assinatura (preço/moeda/ciclo legível), não o ciclo da versão", () => {
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription");
+    // assinatura mockada: price 499.9 BRL, ciclo snapshot 'monthly'; versão tem billing_cycle 'MONTHLY'
+    expect(screen.getByText(/R\$ 499,90 BRL/)).toBeInTheDocument();
+    expect(screen.getByText(/ciclo mensal/)).toBeInTheDocument();
+    expect(screen.queryByText(/ciclo MONTHLY/)).not.toBeInTheDocument();
+  });
+
+  it("confirmação reseta quando o estado lido da assinatura muda", () => {
+    const { rerender } = render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    action("activate_subscription"); motivo();
+    fireEvent.click(screen.getByLabelText("Confirmar regularização"));
+    expect(screen.getByRole("button", { name: "Regularizar assinatura" })).toBeEnabled();
+    mocks.status = "EXPIRED"; // estado lido mudou
+    rerender(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    expect(screen.getByLabelText("Confirmar regularização")).not.toBeChecked();
   });
 });
