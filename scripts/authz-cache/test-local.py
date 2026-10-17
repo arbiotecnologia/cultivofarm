@@ -27,7 +27,7 @@ try:
     subprocess.run(prefix+["initdb","-D",str(tmp/"data"),"-A","trust","-U","postgres"],check=True,capture_output=True)
     subprocess.run(prefix+["pg_ctl","-D",str(tmp/"data"),"-l",str(tmp/"log"),"-o",f'-k {tmp} -h "" -p 55499',"start"],check=True,capture_output=True)
     run("CREATE ROLE authenticated NOLOGIN; CREATE ROLE anon NOLOGIN; CREATE ROLE service_role NOLOGIN;")
-    run("CREATE SCHEMA IF NOT EXISTS auth; CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;")
+    run("CREATE SCHEMA IF NOT EXISTS auth; CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid $$;")
     run("""CREATE TABLE public.profiles(user_id uuid PRIMARY KEY, ativo boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now());
            CREATE TABLE public.user_roles(user_id uuid, role text, UNIQUE(user_id, role));
            CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, cliente_id uuid, is_active boolean NOT NULL DEFAULT true, revoked_at timestamptz, valid_from timestamptz NOT NULL DEFAULT now(), valid_until timestamptz, principal boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now());
