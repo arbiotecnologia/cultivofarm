@@ -187,6 +187,10 @@ VALUES ('{VIG}','{PLAN}',1,'PUBLISHED',now()-interval '30 days',NULL,499,'BRL','
     r = as_user(SA, f"SELECT public.platform_transition_subscription('{ORG1}','cancel','outro motivo','{COR2}',NULL)")
     assert r.returncode != 0 and "correlação já utilizada" in r.stderr, r.stderr; checks += 1
 
+    # 5b. replay mesma correlação/org/ação com PAYLOAD (motivo) diferente: negado
+    r = as_user(SA, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','motivo adulterado','{COR2}',NULL)")
+    assert r.returncode != 0 and "correlação já utilizada" in r.stderr, r.stderr; checks += 1
+
     # 6. admin comum negado; 7. anon negado; 8. superadmin inativo negado
     r = as_user(ADM, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','tentativa admin','33333333-3333-4333-8333-333333333333',NULL)")
     assert r.returncode != 0 and "apenas superadmin" in r.stderr, r.stderr; checks += 1
