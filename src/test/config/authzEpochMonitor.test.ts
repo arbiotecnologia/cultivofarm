@@ -153,16 +153,17 @@ describe("authzEpochMonitor", () => {
     expect(deps.onExpire).toHaveBeenCalledWith("error");
   });
 
-  it("retorno de foco revalida antes de mostrar dados", async () => {
+  it("retorno de foco após lease vencida revalida ANTES de mostrar dados", async () => {
     const { monitor, fetcher, setVisible, advance } = setup();
     fetcher.mockResolvedValue(fp("A"));
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
     setVisible(false);
-    await advance(5_000); // invisível: sem poll
+    await advance(15_001); // invisível: sem poll, lease vence
+    expect(monitor.state()).toBe("expired");
     expect(fetcher).toHaveBeenCalledTimes(1);
     setVisible(true);
-    monitor.revalidate();
+    monitor.revalidate(); // foco volta: pending esconde até revalidar
     expect(monitor.state()).toBe("pending");
     expect(monitor.checkAccess()).toBe(false);
     await vi.advanceTimersByTimeAsync(0);
