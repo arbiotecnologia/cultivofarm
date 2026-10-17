@@ -81,9 +81,13 @@ try:
   run(f"BEGIN;{fixtures}{mutate}SET LOCAL ROLE authenticated;SET LOCAL fixture.actor='{u}';{sql};ROLLBACK;",'row-level security');results.append(label)
  scenario('baseline synthetic admin FSF reads AR children despite hidden parent',UB,f"SELECT (SELECT count(*) FROM partner_orders WHERE id='{OA}')||':'||(SELECT count(*) FROM partner_order_messages WHERE id='{MA}')||':'||(SELECT count(*) FROM partner_order_message_attachments WHERE id='{AA}')",'0:1:1')
  run((HERE/'candidate.sql.review').read_text())
+ run((HERE/'live-counters.sql.review').read_text())
+ scenario('residual DEFINER counters bypasses child containment',UB,f"SELECT public.rpc_partner_message_counters('{PA}')->>'nao_lidas'",'1')
  for u,label in [(UA,'AR'),(UB,'FSF')]:
   scenario(f'{label} own positive/cross invisible',u,"SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments)",'1:1')
  scenario('FSF cannot read AR explicitly',UB,f"SELECT (SELECT count(*) FROM partner_order_messages WHERE id='{MA}')||':'||(SELECT count(*) FROM partner_order_message_attachments WHERE id='{AA}')",'0:0')
+ scenario('gestor own positive unchanged',UA,"SELECT count(*) FROM partner_order_messages",'1',f"UPDATE user_roles SET role='gestor_comercial' WHERE user_id='{UA}';")
+ scenario('gestor cross invisible',UB,f"SELECT count(*) FROM partner_order_messages WHERE id='{MA}'",'0',f"UPDATE user_roles SET role='gestor_comercial' WHERE user_id='{UB}';")
  scenario('AR inserts own message',UA,f"WITH i AS(INSERT INTO partner_order_messages(order_id,autor_id,autor_tipo,mensagem) VALUES('{OA}','{UA}','admin','new') RETURNING id) SELECT count(*) FROM i",'1')
  denied('FSF forged message AR order denied',UB,f"INSERT INTO partner_order_messages(order_id,autor_tipo,mensagem) VALUES('{OA}','admin','forged')")
  denied('AR forged message FSF order denied',UA,f"INSERT INTO partner_order_messages(order_id,autor_tipo,mensagem) VALUES('{OB}','admin','forged')")
