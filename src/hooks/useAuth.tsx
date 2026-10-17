@@ -374,7 +374,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
-        const { data, error } = await supabase.rpc("get_my_authz_fingerprint");
+        const { data, error } = await supabase.rpc("get_my_authz_fingerprint" as never);
         if (error) throw error;
         const row = (Array.isArray(data) ? data[0] : data) as
           | { eligible?: boolean; fingerprint?: string | null }
