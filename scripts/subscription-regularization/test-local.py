@@ -115,7 +115,9 @@ GRANT EXECUTE ON FUNCTION public.is_platform_superadmin(uuid) TO authenticated;'
     run('CREATE OR REPLACE FUNCTION platform_private.transition_subscription_core' + corpo)
     run('''CREATE FUNCTION public.platform_transition_subscription(_organization_id uuid, _action text, _reason text, _correlation_id uuid, _plan_version_id uuid DEFAULT NULL::uuid)
 RETURNS uuid LANGUAGE sql SET search_path TO '' AS
-$$ SELECT platform_private.transition_subscription_core(_organization_id,_action,_reason,_correlation_id,_plan_version_id) $$;''')
+$$ SELECT platform_private.transition_subscription_core(_organization_id,_action,_reason,_correlation_id,_plan_version_id) $$;
+GRANT EXECUTE ON FUNCTION platform_private.transition_subscription_core(uuid,text,text,uuid,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.platform_transition_subscription(uuid,text,text,uuid,uuid) TO authenticated;''')
 
     run(f"""INSERT INTO public.profiles(user_id, ativo) VALUES ('{SA}', true), ('{SA_INATIVO}', false), ('{ADMIN}', true);
 INSERT INTO public.user_roles(user_id, role) VALUES ('{SA}','superadmin'), ('{SA_INATIVO}','superadmin'), ('{ADMIN}','administrador');
