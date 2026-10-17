@@ -58,7 +58,13 @@ describe("acoesAssinatura — regularização", () => {
 });
 
 describe("AlterarAssinaturaCard — regularização", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.status = "TRIAL"; mocks.trialEndsAt = passado; });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.status = "TRIAL"; mocks.trialEndsAt = passado;
+    mocks.cancelAt = null; mocks.moeda = "BRL"; mocks.ciclo = "monthly";
+    mocks.versaoStatus = "PUBLISHED"; mocks.versaoFrom = "2026-01-01"; mocks.versaoTo = null;
+    mocks.historico = []; mocks.extras = [];
+  });
 
   it("mostra 'Teste vencido' (não 'Em teste') e exige confirmação explícita antes de habilitar", () => {
     render(<AlterarAssinaturaCard organizationIdInicial="org" />);
