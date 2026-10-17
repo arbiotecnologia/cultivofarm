@@ -133,7 +133,7 @@ INSERT INTO public.saas_plan_versions(id, plan_id, status, price_amount, currenc
 VALUES ('{SUB1}','{ORG1}','{PLAN}','{V1}','TRIAL', now()-interval '20 days', now()-interval '6 days', 499.90,'BRL','monthly','monthly');""")
     run(as_user(SA, f"SELECT public.platform_transition_subscription('{ORG1}','activate_subscription','regularização manual AR Bio','{COR1}',NULL)")); checks += 1
     s = run(f"SELECT status||'|'||price_snapshot||'|'||currency_snapshot||'|'||billing_cycle||'|'||(trial_ends_at IS NOT NULL)||'|'||(current_period_start IS NULL) FROM public.organization_subscriptions WHERE id='{SUB1}'")
-    assert s == "ACTIVE|499.90|BRL|monthly|t|t", s; checks += 1
+    assert s == "ACTIVE|499.90|BRL|monthly|true|true", s; checks += 1
     h = run(f"SELECT count(*)||'|'||string_agg(DISTINCT action,',')||'|'||string_agg(DISTINCT reason,',') FROM public.organization_subscription_history WHERE subscription_id='{SUB1}'")
     assert h == "1|activate_subscription|regularização manual AR Bio", h; checks += 1
 
