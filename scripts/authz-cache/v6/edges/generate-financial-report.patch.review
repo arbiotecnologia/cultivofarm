@@ -29,7 +29,7 @@
 +    return serveVerifiedAttachment(req, corsHeaders, async () => {
 +      const { data: currentOrg, error } = await supabase.rpc("h15_actor_organization");
 +      return !error && currentOrg === organizationId;
-+    }, (signal) => supabase.storage.from("financial-reports").download(path, { signal }), contentType, filename);
++    }, (signal) => supabase.storage.from("financial-reports").download(path, {}, { signal }), contentType, filename);
 +
    } catch {
      return new Response(JSON.stringify({ error: "financial_report_unavailable" }), {

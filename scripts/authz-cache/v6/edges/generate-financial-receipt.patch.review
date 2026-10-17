@@ -17,7 +17,7 @@
 +      const { data: current, error } = await supabase.from("financial_receipts")
 +        .select("id,storage_path").eq("id", receiptId).eq("organization_id", organizationId).maybeSingle();
 +      return !error && current?.storage_path === path;
-+    }, (signal) => supabase.storage.from("financial-receipts").download(path, { signal }), "application/pdf", "recibo.pdf");
++    }, (signal) => supabase.storage.from("financial-receipts").download(path, {}, { signal }), "application/pdf", "recibo.pdf");
  
 -    return new Response(JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number }), {
 -      headers: { ...corsHeaders, "Content-Type": "application/json" },

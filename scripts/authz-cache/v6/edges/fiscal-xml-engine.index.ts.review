@@ -316,7 +316,7 @@ Deno.serve(async (req) => {
       if (visible.error || !visible.data || (artifact === "signed" ? visible.data.signed_path : visible.data.unsigned_path) !== path) return false;
       const scope = await admin.rpc("h15_service_actor_run_access", { p_actor: actor, p_run: runId });
       return !scope.error && scope.data === true;
-    }, (signal) => authed.storage.from(BUCKET).download(path, { signal }), "application/xml", "documento.xml", 10 * 1024 * 1024);
+    }, (signal) => authed.storage.from(BUCKET).download(path, {}, { signal }), "application/xml", "documento.xml", 10 * 1024 * 1024);
 
   }
 

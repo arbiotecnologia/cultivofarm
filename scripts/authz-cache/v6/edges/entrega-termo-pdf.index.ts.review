@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
         const successor = await userClient.from("entrega_termos").select("id")
           .eq("substitui_termo_id", termoId).limit(1).maybeSingle();
         return !successor.error && !successor.data;
-      }, (signal) => userClient.storage.from(BUCKET).download(termo.pdf_path, { signal }), "application/pdf", "termo.pdf", 15 * 1024 * 1024);
+      }, (signal) => userClient.storage.from(BUCKET).download(termo.pdf_path, {}, { signal }), "application/pdf", "termo.pdf", 15 * 1024 * 1024);
     }
 
     // --- generate (idempotente) ---
