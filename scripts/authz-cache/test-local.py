@@ -124,4 +124,4 @@ try:
     print(f"{checks} checks PASS — PostgreSQL isolado; NÃO hosted")
     print("UNVERIFIED: ensaio hosted BEGIN/ROLLBACK, policies completas, resolver canônico live integral")
 finally:
-    subprocess.run([PGCTL, "-D", f"{tmp}/data", "stop", "-m", "fast"], capture_output=True)
+    subprocess.run(prefix+["pg_ctl", "-D", str(tmp/"data"), "stop", "-m", "fast"], capture_output=True)
