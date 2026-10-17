@@ -265,11 +265,11 @@ try:
  # Com o índice parcial, marcar dois principais no mesmo comando nega 23505;
  # o empate é exercitado na ELEIÇÃO automática (nenhum marcado, dois vigentes).
  TIE='2026-01-01 00:00:00+00'
- run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{NEST}'"))
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{NEST}','{C3}',false,'{TIE}')"))
  run(admin(f"UPDATE public.user_clientes SET created_at='{TIE}' WHERE user_id='{NEST}'"))
- # DML neutra dispara o trigger; passo 3 elege o determinístico
- run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '2 hours' WHERE user_id='{NEST}'"))
+ # desmarcar o principal DEPOIS do empate existir: a eleição do passo 3
+ # encontra os dois vigentes com created_at idêntico e desempata por id
+ run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{NEST}' AND principal"))
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal",'1')
  # vencedor deve ser exatamente o determinístico (created_at ASC, id ASC)
  tie=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
