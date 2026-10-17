@@ -50,6 +50,7 @@ try:
  CREATE TABLE public.user_clientes(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,cliente_id uuid REFERENCES public.clientes(id) ON DELETE CASCADE,
    principal boolean NOT NULL DEFAULT false,created_at timestamptz DEFAULT now(),is_active boolean NOT NULL DEFAULT true,
    revoked_at timestamptz,valid_from timestamptz NOT NULL DEFAULT now(),valid_until timestamptz,UNIQUE(user_id,cliente_id));
+ CREATE UNIQUE INDEX uq_user_clientes_principal ON public.user_clientes(user_id) WHERE principal; -- índice LIVE: no máximo UM principal por usuário; múltiplos principal=true no mesmo comando negam 23505
  CREATE TABLE public.partner_users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,user_id uuid,created_at timestamptz DEFAULT now(),papel text);
  CREATE TABLE auth.users(id uuid PRIMARY KEY);
  CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY DEFAULT true,revision bigint NOT NULL DEFAULT 0,CHECK(singleton));
@@ -166,11 +167,23 @@ try:
   WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"""))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{PROD}'",C2)
- # ---- 4) multirow: UPDATE principal=true em DUAS linhas num só comando ----
+ # ---- 4) índice live uq_user_clientes_principal: UPDATE principal=true em DUAS
+ # linhas num só comando NEGA 23505 (corrige alegação anterior de PASS) ----
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
- run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
- check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'1')
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1) # created_at mais antigo vence
+ err=runerr(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
+ assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
+ # marcar um 2º principal (mesmo em comando separado) também NEGA 23505:
+ # após desmarcar, o sync reelege o vigente mais antigo no próprio statement,
+ # então a marcação seguinte encontra um principal já existente. Comportamento
+ # suportado: tornar o atual não vigente; a eleição determinística assume.
+ run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal"))
+ err=runerr(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
+ assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1) # reeleito pelo sync
+ run(admin(f"UPDATE public.user_clientes SET revoked_at=now(),is_active=false WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2) # eleição determinística
+ run(admin(f"UPDATE public.user_clientes SET revoked_at=NULL,is_active=true WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2) # reativação preserva principal atual
  # ---- 5) INSERT multirow num só comando ----
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{PROD2}','{C2}',false,now()-interval '1 day'),('{PROD2}','{C3}',false,now())"))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD2}' AND principal",C2)
@@ -204,7 +217,10 @@ try:
  checks+=1
  # ---- 11) concorrência: duas conexões trocando principal em loop ----
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL,valid_from=now()-interval '1 hour' WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
- swap=f"UPDATE public.user_clientes SET principal=(cliente_id='{{C}}') WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}');"
+ # Com o índice parcial + eleição automática, a "troca" de principal é feita
+ # por VIGÊNCIA: reativar ambos e revogar o principal atual; o sync elege o
+ # outro deterministicamente. Dois statements por iteração.
+ swap=f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}');UPDATE public.user_clientes SET is_active=false,revoked_at=now() WHERE user_id='{PROD}' AND principal AND cliente_id='{{C}}';"
  body=''.join("BEGIN;SET LOCAL ROLE service_role;"+swap.replace('{C}',C1 if i%2 else C2)+"COMMIT;" for i in range(20))
  procs=[subprocess.Popen(base[:-1],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True) for _ in range(2)]
  for p in procs: p.stdin.write(body); p.stdin.close()
@@ -246,27 +262,35 @@ try:
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C1)
  check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C1)
  # ---- 17) empate created_at: desempate determinístico por id ----
+ # Com o índice parcial, marcar dois principais no mesmo comando nega 23505;
+ # o empate é exercitado na ELEIÇÃO automática (nenhum marcado, dois vigentes).
  TIE='2026-01-01 00:00:00+00'
- run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{NEST}'"))
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{NEST}','{C3}',false,'{TIE}')"))
  run(admin(f"UPDATE public.user_clientes SET created_at='{TIE}' WHERE user_id='{NEST}'"))
- run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}')"))
+ # desmarcar o principal DEPOIS do empate existir: a eleição do passo 3
+ # encontra os dois vigentes com created_at idêntico e desempata por id
+ run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{NEST}' AND principal"))
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal",'1')
  # vencedor deve ser exatamente o determinístico (created_at ASC, id ASC)
  tie=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
  expect=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND cliente_id IN ('{C1}','{C3}') ORDER BY created_at ASC, id ASC LIMIT 1")
  assert tie==expect,(tie,expect);checks+=1
+ # INSERT direto de segundo principal também nega 23505
+ err=runerr(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal) VALUES ('{NEST}','{C4}',true)"))
+ assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
  # ---- 18) expiração temporal SEM DML: nenhum trigger dispara com a passagem do
  # tempo (por desenho); leituras passam pelo resolver canônico, que filtra
  # valid_until. Aqui provamos que o predicado de vigência exclui o expirado e
  # que o profile NÃO é reescrito sozinho (sem falso principal novo).
+ cur=run(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal")
+ other=C3 if cur==C1 else C1
  run(admin(f"UPDATE public.user_clientes SET valid_until=now()+interval '2 seconds' WHERE user_id='{NEST}' AND principal"))
  time.sleep(3)
  check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{NEST}' AND principal AND is_active AND revoked_at IS NULL AND valid_from<=now() AND (valid_until IS NULL OR valid_until>=now())",'0')
  # próximo DML qualquer reconcilia: rebaixa o expirado e elege vigente
- run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '1 hour' WHERE user_id='{NEST}' AND cliente_id='{C1}'"))
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",C1)
- check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",C1)
+ run(admin(f"UPDATE public.user_clientes SET valid_from=now()-interval '1 hour' WHERE user_id='{NEST}' AND cliente_id='{other}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{NEST}' AND principal",other)
+ check(f"SELECT cliente_id FROM public.profiles WHERE user_id='{NEST}'",other)
  print(f'{checks} checks PASS — PostgreSQL isolado, guards reais, FK cascade, writer aninhado, 2 conexões; não hosted')
  print('UNVERIFIED: ensaio hosted BEGIN/ROLLBACK, RLS/policies completas, schema fiscal integral, guard_superadmin_role_assignment')
 finally:

@@ -43,7 +43,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger
     WHERE tgrelid='public.user_clientes'::regclass AND tgname='trg_user_clientes_sync'
       AND tgenabled='O' AND tgtype=29
-      AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_user_clientes_sync AFTER INSERT OR DELETE OR UPDATE ON public.user_clientes FOR EACH ROW EXECUTE FUNCTION public.sync_user_cliente_principal()') THEN
+      AND tgfoid='public.sync_user_cliente_principal()'::regprocedure AND tgnargs=0 AND tgqual IS NULL AND octet_length(tgargs)=0) THEN
     RAISE EXCEPTION 'principal_trigger_drift';
   END IF;
   -- Triggers auxiliares/guards que o desenho pressupõe (ordem de lock e touch)

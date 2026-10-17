@@ -73,3 +73,15 @@ Hashes v3 em `scripts/user-links-principal/SHA256SUMS`. Rollback atualizado para
 ## Reconciliação documental (mesma rodada, somente leitura)
 
 Migration `20261016234052 client_access_overload_deny_revoked_links` (aplicada pelo auditor) arquivada byte a byte em `scripts/user-links-v0/installed/` com manifesto `20261016234052-ledger-match.json`. MD5 live confirmado pelo agente: `c610786fc9f6d6a44453b9e63c91e974` (baseline `c0acb1dcd7f0b183f9500f4c264c1fa1`); ACL preservada (anon false, authenticated true). Única adição: `AND uc.revoked_at IS NULL` no fallback do overload de dois argumentos. Fonte não encontrou policy direta de dois argumentos — vazamento **não** afirmado como comprovado. Não reaplicado.
+
+## Correção (17/10/2026) — índice live uq_user_clientes_principal
+
+O índice live `uq_user_clientes_principal UNIQUE(user_id) WHERE principal` NÃO
+estava no harness quando o teste 4 (`UPDATE principal=true` em duas linhas num
+só comando) foi declarado PASS. Com o índice espelhado, esse comando é NEGADO
+com 23505: o índice verifica a unicidade antes do trigger AFTER STATEMENT
+reconciliar. Harness corrigido (40/40 PASS): troca de principal ocorre via
+revogação/vigência, nunca marcando segunda linha como principal. O índice faz
+parte da regra live e não será retirado; o modo associação futuro precisa
+resolver a troca de principal sem violá-lo e sem flags/GUC setáveis. Ver
+docs/auditorias/authz-cache-foundation-20261017.md, seção 1.

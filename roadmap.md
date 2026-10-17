@@ -1250,3 +1250,12 @@ Checkpoints seguintes são históricos; seus gates e ausência de migration desc
 - [ ] Revisão independente do candidato v3; ensaio hosted BEGIN/ROLLBACK pelo auditor.
 - [ ] Próximo recorte: cache same-identity e anexos/signed URLs (não misturar com runtime).
 - [ ] Gestão de associações (troca mesmo tipo): gates fechados.
+
+## Cache de autorização same-identity — foundation (17/10/2026)
+- [x] Principal v3 reconciliado: migration 20261016235551 arquivada (MD5 1d053564ccd5fa672a10ec87d5cb0baa); preflight por tgfoid/tgnargs/tgqual/tgargs; índice live uq_user_clientes_principal espelhado no harness; alegação de múltiplo principal corrigida (23505); 40/40 checks locais.
+- [x] SQL candidato get_my_authz_fingerprint em scripts/authz-cache/candidate.sql.review (FORA de migrations, NÃO aplicado): self-only, fingerprint opaco (updated_at monotônico+roles+vínculos+partner, flag vigente com now()), resolver canônico, ACL fechada; harness 14/14 PASS isolado.
+- [x] Frontend atrás de gate próprio FECHADO (AUTHZ_CACHE_FOUNDATION_ENABLED=false): monitor único no AuthProvider, poll 10s visível/online, lease 15s desde início do request, foco/visibility/online revalidam, erro/offline/timeout expiram e ocultam, epoch change limpa cache/seleção e incrementa geração, ABA por geração; sem Broadcast entre sessões; callback de auth síncrono preservado.
+- [x] Testes: 11/11 monitor (fake clock) + regressão F2 = 52/52 PASS; lint focal 0 erros; build OK; diff-check limpo.
+- [ ] Revisão independente; ensaio hosted BEGIN/ROLLBACK do RPC pelo auditor; abertura do gate só após migration aplicada e revisada.
+- [ ] Próximo recorte: anexos/signed URLs; troca de principal sem violar uq_user_clientes_principal (modo associação); gestão de associações segue com gates fechados.
+- Relatório: docs/auditorias/authz-cache-foundation-20261017.md.

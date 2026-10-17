@@ -1,0 +1,242 @@
+-- INSTALADO pelo auditor em 2026-10-16 (migration 20261016235551).
+-- Arquivo de evidência: SQL exato lido do ledger supabase_migrations.schema_migrations.
+-- NÃO reaplicar. MD5 live da função confirmado: 1d053564ccd5fa672a10ec87d5cb0baa.
+-- Diferença única vs candidato v3 local: preflight do trigger compara
+-- tgfoid/tgnargs/tgqual/tgargs em vez da string pg_get_triggerdef (live omite
+-- o prefixo "public."). Índice live uq_user_clientes_principal
+-- UNIQUE(user_id) WHERE principal NÃO estava no harness local — espelhado.
+-- CANDIDATO v3. Não executar nesta rodada. Destino obrigatório swzpzcwiasxmjutrmvkm.
+-- Executor deve validar o ref fora do SQL; current_database() não prova project ref.
+-- Escopo: SOMENTE public.sync_user_cliente_principal + seu trigger trg_user_clientes_sync.
+-- Não altera ACL, roles, dados, constraints, demais triggers, gate common F2,
+-- V0 instalado nem ledger. ACL da função preservada (mesmo nome/assinatura).
+--
+-- Decisão de desenho (revisão v2, ponto sobre pg_trigger_depth):
+-- AFTER STATEMENT com transition tables, SEM supressão por pg_trigger_depth().
+-- A recursão termina por IDEMPOTÊNCIA COM DETECÇÃO DE TRABALHO: cada UPDATE
+-- interno só é executado quando um EXISTS prévio comprova que há linha a mudar.
+-- A segunda passagem (disparada pelos UPDATEs internos) encontra zero trabalho,
+-- não emite nenhum UPDATE e não dispara novo trigger — fim da recursão.
+-- Diferente de pg_trigger_depth()>1, um writer ANINHADO externo (ex.: trigger de
+-- provisionamento que insere user_clientes durante esta reconciliação) NÃO é
+-- suprimido: a passagem extra executa seus próprios EXISTS e reconcilia o novo
+-- estado normalmente. Nenhum GUC setável é usado (nenhum bypass possível).
+-- Lock order preservada: UPDATEs internos seguem a ordem anterior
+-- (user_clientes -> profiles); a00_cf_user_gate (BEFORE STATEMENT) continua
+-- adquirindo o singleton antes de qualquer linha. Guards e provisionamento intactos.
+-- valid_from é NOT NULL DEFAULT now() no live (verificado no preflight): os
+-- predicados de vigência não precisam de ramo IS NULL.
+
+DO $preflight$
+DECLARE
+  v_md5 text;
+BEGIN
+  -- IS DISTINCT FROM: NULL (função ausente) também falha, não passa silencioso
+  SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5 FROM pg_proc p
+   JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='sync_user_cliente_principal'
+    AND pg_get_function_identity_arguments(p.oid)='';
+  IF v_md5 IS DISTINCT FROM '50392a57c5908c67c709c4e84f0e932e' THEN
+    RAISE EXCEPTION 'principal_sync_definition_drift';
+  END IF;
+  SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5 FROM pg_proc p
+   JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='get_cliente_ids_for_user'
+    AND pg_get_function_identity_arguments(p.oid)='_user_id uuid';
+  IF v_md5 IS DISTINCT FROM 'c80d5900692d960f649d0a9f7850fe2c' THEN
+    RAISE EXCEPTION 'principal_resolver_definition_drift';
+  END IF;
+  -- Trigger real: habilitado, AFTER ROW atual, definição esperada
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='public.user_clientes'::regclass AND tgname='trg_user_clientes_sync'
+      AND tgenabled='O' AND tgtype=29
+      AND tgfoid='public.sync_user_cliente_principal()'::regprocedure AND tgnargs=0 AND tgqual IS NULL AND octet_length(tgargs)=0) THEN
+    RAISE EXCEPTION 'principal_trigger_drift';
+  END IF;
+  -- Triggers auxiliares/guards que o desenho pressupõe (ordem de lock e touch)
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='public.user_clientes'::regclass AND tgname='a00_cf_user_gate'
+      AND tgenabled='O' AND tgtype=30) THEN
+    RAISE EXCEPTION 'principal_gate_trigger_drift';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='public.user_clientes'::regclass AND tgname='a00_cf_user_no_truncate'
+      AND tgenabled='O' AND tgtype=34) THEN
+    RAISE EXCEPTION 'principal_truncate_guard_drift';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='public.user_clientes'::regclass AND tgname='z90_cf_touch_profile'
+      AND tgenabled='O' AND tgtype=29) THEN
+    RAISE EXCEPTION 'principal_touch_trigger_drift';
+  END IF;
+  -- UNIQUE real por definição, não só por nome
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+    WHERE conrelid='public.user_clientes'::regclass AND contype='u'
+      AND pg_get_constraintdef(oid)='UNIQUE (user_id, cliente_id)') THEN
+    RAISE EXCEPTION 'principal_unique_drift';
+  END IF;
+  -- FK cascade cliente -> user_clientes (cenário de remoção de cliente)
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+    WHERE conrelid='public.user_clientes'::regclass AND contype='f'
+      AND pg_get_constraintdef(oid)='FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE') THEN
+    RAISE EXCEPTION 'principal_cliente_fk_drift';
+  END IF;
+  -- NOT NULL relevantes: valid_from com default now(); principal/is_active NOT NULL
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='user_clientes'
+      AND ((column_name='valid_from' AND (is_nullable<>'NO' OR column_default IS DISTINCT FROM 'now()'))
+        OR (column_name IN ('principal','is_active') AND is_nullable<>'NO'))) THEN
+    RAISE EXCEPTION 'principal_notnull_drift';
+  END IF;
+  -- profiles.cliente_id precisa aceitar NULL (usuário sem vínculo vigente)
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='profiles'
+      AND column_name='cliente_id' AND is_nullable<>'YES') THEN
+    RAISE EXCEPTION 'principal_profile_nullable_drift';
+  END IF;
+END
+$preflight$;
+
+CREATE OR REPLACE FUNCTION public.sync_user_cliente_principal()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_user uuid;
+  v_users uuid[] := '{}';
+  v_principal uuid;
+  v_marked uuid;
+BEGIN
+  -- Reconcilia TODOS os usuários afetados: NEW e OLD (UPDATE de user_id
+  -- reconcilia o usuário antigo e o novo; nenhum dado é reatribuído).
+  -- Coleta por evento: cada trigger statement só executa o branch cuja
+  -- transition table existe (plpgsql planeja cada statement na 1ª execução).
+  IF TG_OP = 'INSERT' THEN
+    FOR v_user IN SELECT DISTINCT n.user_id FROM new_rows n LOOP
+      v_users := v_users || v_user;
+    END LOOP;
+  ELSIF TG_OP = 'DELETE' THEN
+    FOR v_user IN SELECT DISTINCT o.user_id FROM old_rows o LOOP
+      v_users := v_users || v_user;
+    END LOOP;
+  ELSE
+    FOR v_user IN
+      SELECT n.user_id FROM new_rows n
+      UNION
+      SELECT o.user_id FROM old_rows o
+    LOOP
+      v_users := v_users || v_user;
+    END LOOP;
+  END IF;
+
+  FOREACH v_user IN ARRAY v_users LOOP
+    -- 1) Rebaixa principais não vigentes (inativo, revogado, futuro, expirado).
+    --    Só emite UPDATE quando há trabalho: é o que encerra a recursão.
+    IF EXISTS (
+      SELECT 1 FROM public.user_clientes
+       WHERE user_id = v_user AND principal = true
+         AND NOT (is_active AND revoked_at IS NULL
+                  AND valid_from <= now()
+                  AND (valid_until IS NULL OR valid_until >= now()))
+    ) THEN
+      UPDATE public.user_clientes
+         SET principal = false
+       WHERE user_id = v_user
+         AND principal = true
+         AND NOT (is_active AND revoked_at IS NULL
+                  AND valid_from <= now()
+                  AND (valid_until IS NULL OR valid_until >= now()));
+    END IF;
+
+    -- 2) Principal explicitamente marcado e vigente neste comando vence;
+    --    desempate determinístico (created_at, id) se houver mais de um
+    IF TG_OP = 'DELETE' THEN
+      v_marked := NULL;
+    ELSE
+      SELECT uc.id INTO v_marked
+        FROM new_rows n
+        JOIN public.user_clientes uc ON uc.id = n.id
+       WHERE n.user_id = v_user AND n.principal
+         AND uc.is_active AND uc.revoked_at IS NULL
+         AND uc.valid_from <= now()
+         AND (uc.valid_until IS NULL OR uc.valid_until >= now())
+       ORDER BY uc.created_at ASC, uc.id ASC
+       LIMIT 1;
+    END IF;
+    IF v_marked IS NOT NULL
+       AND EXISTS (SELECT 1 FROM public.user_clientes
+                    WHERE user_id = v_user AND id <> v_marked AND principal = true) THEN
+      UPDATE public.user_clientes
+         SET principal = false
+       WHERE user_id = v_user
+         AND id <> v_marked
+         AND principal = true;
+    END IF;
+
+    -- 3) Garante exatamente um principal vigente (mais antigo; desempate por id)
+    IF NOT EXISTS (
+      SELECT 1 FROM public.user_clientes
+       WHERE user_id = v_user AND principal = true
+         AND is_active AND revoked_at IS NULL
+         AND valid_from <= now()
+         AND (valid_until IS NULL OR valid_until >= now())
+    ) AND EXISTS (
+      SELECT 1 FROM public.user_clientes
+       WHERE user_id = v_user
+         AND is_active AND revoked_at IS NULL
+         AND valid_from <= now()
+         AND (valid_until IS NULL OR valid_until >= now())
+    ) THEN
+      UPDATE public.user_clientes
+         SET principal = true
+       WHERE id = (
+         SELECT id FROM public.user_clientes
+          WHERE user_id = v_user
+            AND is_active AND revoked_at IS NULL
+            AND valid_from <= now()
+            AND (valid_until IS NULL OR valid_until >= now())
+          ORDER BY created_at ASC, id ASC
+          LIMIT 1
+       );
+    END IF;
+
+    -- 4) profiles.cliente_id SOMENTE com principal vigente (ou NULL);
+    --    nunca aponta para vínculo histórico/revogado
+    SELECT cliente_id INTO v_principal
+      FROM public.user_clientes
+     WHERE user_id = v_user AND principal = true
+       AND is_active AND revoked_at IS NULL
+       AND valid_from <= now()
+       AND (valid_until IS NULL OR valid_until >= now())
+     LIMIT 1;
+
+    IF EXISTS (SELECT 1 FROM public.profiles
+                WHERE user_id = v_user AND cliente_id IS DISTINCT FROM v_principal) THEN
+      UPDATE public.profiles
+         SET cliente_id = v_principal
+       WHERE user_id = v_user
+         AND cliente_id IS DISTINCT FROM v_principal;
+    END IF;
+  END LOOP;
+
+  RETURN NULL;
+END;
+$function$;
+
+-- Troca ROW -> STATEMENT. Postgres não aceita transition tables em trigger
+-- multi-evento: um trigger por evento, cada um referenciando só suas tabelas.
+DROP TRIGGER trg_user_clientes_sync ON public.user_clientes;
+CREATE TRIGGER trg_user_clientes_sync_ins
+ AFTER INSERT ON public.user_clientes
+ REFERENCING NEW TABLE AS new_rows
+ FOR EACH STATEMENT EXECUTE FUNCTION public.sync_user_cliente_principal();
+CREATE TRIGGER trg_user_clientes_sync_upd
+ AFTER UPDATE ON public.user_clientes
+ REFERENCING NEW TABLE AS new_rows OLD TABLE AS old_rows
+ FOR EACH STATEMENT EXECUTE FUNCTION public.sync_user_cliente_principal();
+CREATE TRIGGER trg_user_clientes_sync_del
+ AFTER DELETE ON public.user_clientes
+ REFERENCING OLD TABLE AS old_rows
+ FOR EACH STATEMENT EXECUTE FUNCTION public.sync_user_cliente_principal();
