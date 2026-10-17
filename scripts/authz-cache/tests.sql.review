@@ -1,0 +1,76 @@
+-- TESTES LOCAIS TRANSACIONAIS. Somente fixture_* / IDs sintéticos isolados.
+-- NÃO enviar ao hosted: tabelas/roles/Auth reduzidos do test-local.py.
+BEGIN;
+CREATE FUNCTION pg_temp.assert_true(label text, result boolean) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN IF result IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAIL %',label; END IF; RAISE NOTICE 'PASS %',label; END $$;
+INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000001'),('00000000-0000-4000-8000-000000000002');
+INSERT INTO profiles(user_id,organization_id) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000001');
+INSERT INTO clientes(id,organization_id) VALUES('00000000-0000-4000-8000-000000000021','00000000-0000-4000-8000-000000000001');
+INSERT INTO user_roles VALUES('00000000-0000-4000-8000-000000000011','cliente_produtor');
+INSERT INTO user_clientes(user_id,cliente_id) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000021');
+INSERT INTO partner_accounts(id,commercial_owner_organization_id) VALUES('00000000-0000-4000-8000-000000000031','00000000-0000-4000-8000-000000000001');
+INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
+INSERT INTO fixture_entitlements VALUES('00000000-0000-4000-8000-000000000011','catalogo_precos');
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.assert_true('wrapper INVOKER executes private self-only core',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
+SELECT pg_temp.assert_true('core direct same result',authz_cache_private.get_my_fingerprint_core()=public.get_my_authz_fingerprint());
+SELECT pg_temp.assert_true('opaque exactly two fields',(SELECT count(*)=2 FROM jsonb_object_keys(public.get_my_authz_fingerprint())));
+RESET ROLE;
+SELECT pg_temp.assert_true('wrapper INVOKER',NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_my_authz_fingerprint()'::regprocedure));
+SELECT pg_temp.assert_true('anon no schema usage',NOT has_schema_privilege('anon','authz_cache_private','USAGE'));
+SELECT pg_temp.assert_true('anon no wrapper execute',NOT has_function_privilege('anon','public.get_my_authz_fingerprint()','EXECUTE'));
+SELECT pg_temp.assert_true('service no core execute',NOT has_function_privilege('service_role','authz_cache_private.get_my_fingerprint_core()','EXECUTE'));
+SELECT pg_temp.assert_true('no global private schema usage',NOT has_schema_privilege('authenticated','platform_private','USAGE'));
+DO $$DECLARE update_sql text;BEGIN
+ FOREACH update_sql IN ARRAY ARRAY[
+ 'UPDATE user_clientes SET revoked_at=now()',
+ 'UPDATE user_clientes SET is_active=false',
+ 'UPDATE user_clientes SET valid_from=now()+interval ''1 day''',
+ 'UPDATE user_clientes SET valid_until=now()-interval ''1 day''',
+ 'UPDATE profiles SET ativo=false',
+ 'UPDATE profiles SET senha_provisoria=true',
+ 'UPDATE organizations SET ativo=false',
+ 'UPDATE organizations SET status=''inativa''',
+ 'UPDATE clientes SET status_cliente=''inativo''',
+ 'UPDATE clientes SET organization_id=''00000000-0000-4000-8000-000000000002''',
+ 'UPDATE user_roles SET role=''consultor_tecnico'''] LOOP
+ BEGIN
+ EXECUTE update_sql;
+ PERFORM pg_temp.assert_true(update_sql,public.get_my_authz_fingerprint()->>'eligible'='false');
+ RAISE EXCEPTION USING ERRCODE='ZX001';
+ EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
+ END LOOP;
+END $$;
+UPDATE user_roles SET role='parceiro_b2b';
+SELECT pg_temp.assert_true('B2B canonical positive',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
+DO $$DECLARE update_sql text;BEGIN
+ FOREACH update_sql IN ARRAY ARRAY[
+ 'UPDATE partner_accounts SET ativo=false',
+ 'UPDATE partner_accounts SET deleted_at=now()',
+ 'UPDATE partner_users SET papel=''tecnico''',
+ 'DELETE FROM fixture_entitlements',
+ 'INSERT INTO user_roles VALUES(''00000000-0000-4000-8000-000000000011'',''cliente_produtor'')',
+ 'INSERT INTO partner_users SELECT gen_random_uuid(),partner_id,user_id,created_at,papel FROM partner_users',
+ 'UPDATE partner_accounts SET commercial_owner_organization_id=''00000000-0000-4000-8000-000000000002'''] LOOP
+ BEGIN
+ EXECUTE update_sql;
+ PERFORM pg_temp.assert_true(update_sql,public.get_my_authz_fingerprint()->>'eligible'='false');
+ RAISE EXCEPTION USING ERRCODE='ZX001';
+ EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL; END;
+ END LOOP;
+END $$;
+UPDATE partner_accounts SET commercial_owner_organization_id='00000000-0000-4000-8000-000000000002';
+UPDATE organizations SET partner_account_id='00000000-0000-4000-8000-000000000031' WHERE id='00000000-0000-4000-8000-000000000001';
+SELECT pg_temp.assert_true('canonical legacy tenant positive',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
+UPDATE user_roles SET role='parceiro_b2b_tecnico'; UPDATE partner_users SET papel='tecnico';
+SELECT pg_temp.assert_true('technical corresponding papel',(public.get_my_authz_fingerprint()->>'eligible')::boolean);
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',true);
+SELECT pg_temp.assert_true('other self has no profile',public.get_my_authz_fingerprint()->>'eligible'='false');
+SELECT set_config('request.jwt.claim.sub','',true);
+DO $$ BEGIN
+ BEGIN PERFORM public.get_my_authz_fingerprint(); RAISE EXCEPTION 'FAIL anonymous';
+ EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS no identity denied'; END;
+END $$;
+ROLLBACK;
+SELECT '33 assertions SQL transacionais PASS — stubs explícitos, não hosted';
