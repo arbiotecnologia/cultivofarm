@@ -359,9 +359,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
   const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
   const isExternalUser = roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+  // Gate de criação via ref: o refresh() disparado pela mudança de época
+  // alterna `loading` e NÃO pode derrubar/recriar o monitor (isso consumiria
+  // respostas fora de ordem e duplicaria polls). O efeito roda quando a
+  // identidade externa é resolvida (roles carregam junto do perfil).
+  const authzMonitorGateRef = useRef(false);
+  authzMonitorGateRef.current =
+    AUTHZ_CACHE_FOUNDATION_ENABLED && !loading && !!user?.id && !!profile && isExternalUser;
 
   useEffect(() => {
-    if (!AUTHZ_CACHE_FOUNDATION_ENABLED || loading || !user?.id || !profile || !isExternalUser) {
+    if (!authzMonitorGateRef.current) {
       setAuthzState("idle");
       return;
     }
