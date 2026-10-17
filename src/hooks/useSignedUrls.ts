@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 export function useSignedUrls(paths: (string | null | undefined)[], bucket: string = "consultor-arquivos") {
-  const { user, profile, roles, loading: authLoading, authzReady, authzEpoch } = useAuth();
+  const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
   // Foundation de cache (mesma identidade): lease pendente/expirada esconde
   // URLs assinadas; época no escopo impede que respostas antigas reabram.
   const ready = !authLoading && !!user?.id && profile?.user_id === user.id &&

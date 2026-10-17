@@ -24,7 +24,7 @@ function publishSelection(scope: string, id: string | null) {
 }
 
 export function usePortalCliente() {
-  const { user, profile, roles, loading: authLoading, authzReady, authzEpoch } = useAuth();
+  const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
   const organizationId = profile?.organization_id ?? null;
   const portalRole = roles.some(role => ["cliente_produtor", "administrador", "gestor"].includes(role));
   // Foundation de cache (mesma identidade): lease pendente/expirada derruba o
