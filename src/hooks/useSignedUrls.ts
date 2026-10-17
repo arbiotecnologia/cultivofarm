@@ -87,4 +87,3 @@ export function useSignedUrls(paths: (string | null | undefined)[], bucket = "co
   const blobs = useAuthenticatedBlobUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? paths : [], bucket, { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED, lazy: options.lazy });
   return AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs : { ...legacy, request: (_path: string) => {} };
 }
-}
