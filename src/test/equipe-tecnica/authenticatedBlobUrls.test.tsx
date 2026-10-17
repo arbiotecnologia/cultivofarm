@@ -74,6 +74,35 @@ describe("authenticated Blob candidate", () => {
     await waitFor(() => expect(h.result.current.error).toBeInstanceOf(Error));
     expect(mocks.stream).not.toHaveBeenCalled(); h.unmount();
   });
+  it("caps retained content at 60 MiB per scoped hook", async () => {
+    mocks.stream.mockImplementation(async () => body(ATTACHMENT_LIMITS.fileBytes));
+    const h = renderHook(() => useAuthenticatedBlobUrls(["a.pdf", "b.pdf", "c.pdf", "d.pdf"]));
+    await waitFor(() => expect(h.result.current.loading).toBe(false));
+    expect(Object.keys(h.result.current.urls)).toHaveLength(3);
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(3);
+    expect(h.result.current.error).toBeInstanceOf(Error); h.unmount();
+  });
+  it("abort cancels stalled reader without waiting for old bytes", async () => {
+    const cancel = vi.fn();
+    mocks.stream.mockResolvedValue({ data: new ReadableStream({ cancel }), error: null });
+    const controller = new AbortController();
+    const pending = downloadAuthenticatedAttachment("private", "a.pdf", controller.signal);
+    await waitFor(() => expect(mocks.stream).toHaveBeenCalledTimes(1));
+    controller.abort();
+    await expect(pending).rejects.toThrow("Anexo indisponível");
+    expect(cancel).toHaveBeenCalled();
+  });
+  it("timeout at 15 seconds cancels a stalled download", async () => {
+    vi.useFakeTimers();
+    try {
+      const cancel = vi.fn();
+      mocks.stream.mockResolvedValue({ data: new ReadableStream({ cancel }), error: null });
+      const pending = downloadAuthenticatedAttachment("private", "a.pdf", new AbortController().signal);
+      const assertion = expect(pending).rejects.toThrow("Anexo indisponível");
+      await vi.advanceTimersByTimeAsync(ATTACHMENT_LIMITS.timeoutMs);
+      await assertion; expect(cancel).toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
   it("preserves partial success and manual refresh revokes previous owned URLs", async () => {
     mocks.stream.mockImplementation(async (path: string) => path === "b.pdf" ? { data: null, error: new Error("token=secret") } : body());
     const h = renderHook(() => useAuthenticatedBlobUrls(["a.jpg", "b.pdf"]));

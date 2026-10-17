@@ -48,6 +48,8 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
     }, { rootMargin: "100px" });
     galleryRef.current.querySelectorAll("[data-attachment-path]").forEach(element => observer.observe(element));
     return () => observer.disconnect();
+    // capture is intentionally scoped; depending on its unstable wrapper loops observers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.scope, access.ready, items, request]);
 
   useEffect(() => {
