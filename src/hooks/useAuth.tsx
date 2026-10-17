@@ -18,7 +18,6 @@ const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
   "cliente_produtor",
   "parceiro_b2b",
   "parceiro_b2b_tecnico",
-  "consultor_tecnico",
 ];
 
 interface Profile {
@@ -436,7 +435,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     // roles entram via isExternalUser (booleano estável); loading/profile
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
-  }, [user?.id, isExternalUser, queryClient]);
+  }, [user?.id, profile?.organization_id, isExternalUser, queryClient]);
 
   // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
   // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
@@ -445,7 +444,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    (!!user && !loading && (!isExternalUser || authzState === "valid"));
+    (!!user && !loading && (!isExternalUser ||
+      (authzState === "valid" && (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     !isExternalUser ||

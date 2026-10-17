@@ -131,7 +131,7 @@ describe("authzEpochMonitor", () => {
     expect(monitor.checkAccess()).toBe(false);
   });
 
-  it("réponse valide en t14 renouvelle seulement jusqu’à t25 depuis début t10", async () => {
+  it("resposta válida em t14 renova somente até t25 desde o início t10", async () => {
     let resolveFetch: ((v: AuthzFingerprintResult) => void) | undefined;
     const { monitor, advance, setVisible } = setup({
       fetcher: vi.fn().mockResolvedValueOnce(fp("A"))
