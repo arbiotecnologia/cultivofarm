@@ -81,7 +81,7 @@ try:
  # Two local connections: reproduce global writer contention even when the
  # profile fan-out is empty. MVCC SELECT never proved writer lock isolation.
  import time
- # Fixture B committed (scoped-tests rolou back): prova de isolamento real.
+ # Fixture B committed (scoped-tests rolled back): reproduce writer contention.
  run('''INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
  INSERT INTO profiles(user_id,organization_id) VALUES('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;''')
  run("INSERT INTO partner_accounts(id) VALUES('00000000-0000-4000-8000-000000000032')")

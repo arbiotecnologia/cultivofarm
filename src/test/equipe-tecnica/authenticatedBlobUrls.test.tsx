@@ -137,3 +137,34 @@ for (const status of [401, 403, 404]) it(`Storage ${status} nega sem assinatura/
   await expect(downloadAuthenticatedAttachment("private", "a.pdf", new AbortController().signal)).rejects.toThrow("Anexo indisponível");
   expect(mocks.sign).not.toHaveBeenCalled();
 });
+it("fila limita 48, aborta espera sem executar Storage e libera slots", async () => {
+  const pending: Array<(v: ReturnType<typeof body>) => void> = [];
+  mocks.stream.mockImplementation(() => new Promise(r => pending.push(r)));
+  const controllers = Array.from({ length: 3 + 48 }, () => new AbortController());
+  const requests = controllers.map((c, n) => downloadAuthenticatedAttachment("private", `${n}.pdf`, c.signal).catch(() => null));
+  await waitFor(() => expect(pending).toHaveLength(3));
+  await expect(downloadAuthenticatedAttachment("private", "overflow.pdf", new AbortController().signal)).rejects.toThrow("Anexo indisponível");
+  controllers.slice(3).forEach(c => c.abort());
+  await Promise.all(requests.slice(3));
+  expect(mocks.stream).toHaveBeenCalledTimes(3);
+  await act(async () => pending.forEach(resolve => resolve(body())));
+  await Promise.all(requests.slice(0, 3));
+  mocks.stream.mockResolvedValue(body());
+  await expect(downloadAuthenticatedAttachment("private", "after.pdf", new AbortController().signal)).resolves.toBeInstanceOf(Blob);
+});
+it("timeout da fila conta desde entrada, não desde obtenção do slot", async () => {
+  vi.useFakeTimers();
+  try {
+    const pending: Array<(v: ReturnType<typeof body>) => void> = [];
+    mocks.stream.mockImplementation(() => new Promise(r => pending.push(r)));
+    const requests = Array.from({ length: 4 }, (_, n) => downloadAuthenticatedAttachment("private", `${n}.pdf`, new AbortController().signal).catch(() => null));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.stream).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(await requests[3]).toBeNull();
+    // SDK mock ignores abort deliberately; obsolete responses still fail closed.
+    pending.forEach(resolve => resolve(body()));
+    expect(await Promise.all(requests)).toEqual([null, null, null, null]);
+    expect(mocks.stream).toHaveBeenCalledTimes(3);
+  } finally { vi.useRealTimers(); }
+});

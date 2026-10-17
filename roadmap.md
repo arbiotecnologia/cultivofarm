@@ -1,10 +1,10 @@
-## Cache/anexos — revisão a36514db, 17/10/2026 (impeditivos tratados)
-- [x] Desenho monotônico global REJEITADO (singleton global em fingerprint + BEFORE STATEMENT serializava tenants): substituído por candidata `scoped.sql.review` v5 com carimbo por perfil via `touch_related_profiles`/`advance_stamp` live e AFTER ROW limitado a partner_accounts/organizations; `monotonic.sql.review` marcado NÃO INSTALAR.
-- [x] Testes SQL locais: 38 base + 5 scoped (ABA próprio muda, escrita tenant A não muda B) + 1 prova DUAS conexões sem lock global + rollback PASS; fixture reduzida, não hosted.
-- [x] EvidenciasGallery: estados acessíveis falha/retry por item (`role=alert`, aria-label), retry sem duplo clique, sem URL obsoleta; bug request+refresh auto-abort corrigido; 2 testes reais de componente novos.
-- [x] ClienteDocumentosTab e OrderMessagesPanel: branch candidata gate-false com download autenticado/Blob URL, sem fallback remoto ao negar; legado signed URL só com gate false; branding público intacto.
-- [x] QA: 117/117 Vitest (10 arquivos), tsgo 0 erros, lint 0 novos (7 anys legados pré-existentes), build OK, diff-check PASS, scanner limpo. Gates false; sem SQL hosted/instalação/publicação.
-- [ ] Revisão crítica da candidata scoped (joins fullschema, fan-out, lock ordering) antes de qualquer instalação; testes reais 401/403/404/grande/timeout/fila do downloader; emissores privados restantes (DocumentosPanel, ReportShell, useCommercial) e contenção/drenagem server-side; prova autenticada browser/Storage. Troca de vínculos NÃO liberada.
+## Cache/anexos — revisão 5584cc29, NO-GO
+- [x] Retirada explícita da alegação de ausência de lock global: scoped v5 REJEITADA. UPDATE profiles dispara a00/acquire_gate mesmo com zero rows; MVCC SELECT de B não provava isolamento de writers. Nenhum gate existente removido/bypassado.
+- [x] Harness com corpos capturados acquire_gate/touch_related_profiles/advance_stamp: duas conexões reproduzem lock_timeout do writer B contra partner sem perfis e organização A; 38 base + 5 scoped históricos + rollback locais, não prova hosted/fullschema.
+- [x] Blob: limite 25 marca failed[path], alerta global visível, retry após redução para 24 e loading por item. Consumidores ClienteDocumentosTab/OrderMessagesPanel usam owner compartilhado com abort/revoke e nenhum fallback no ramo candidato.
+- [x] 17 regressões RTL dos consumidores reais com transportes simulados: sucesso, negação/retry, pending/epoch/tenant/ABA/resource/unmount, duplo clique e thumbnail; não UI autenticada hosted.
+- [ ] Revisão privada por entidade: somente desenho revisável após reprodução de locks; SQL executável completo depende contratos live de todos os writers/transitivos e prova da ordem de locks comerciais. Não instalar scoped/monotonic.
+- [ ] Contenção de emissão antiga no servidor e comprovação da última emissão antes de T0/drenagem; emissores restantes e políticas Storage ainda não homologados. Gate global permanece false, browser autenticado/Storage real UNVERIFIED, gestão de vínculos fechada.
 
 ## Cache/anexos — revisão 0c324c2d, 17/10/2026 01:40 UTC
 - [x] Preflight v4 individual v/s/s, hashes externos arquivados, core/wrapper VOLATILE; resolvers preservados.38 asserts locais/preflight com hashes dos stubs PASS, não hosted.
