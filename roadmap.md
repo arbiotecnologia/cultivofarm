@@ -1,3 +1,9 @@
+## Cache/anexos — continuação autorizada 12:55 UTC
+- [ ] Capturar READ-ONLY corpos/ACL/writers/Storage canônicos sem secrets/Auth users; arquivar fontes e hashes.
+- [ ] Preparar alternativa de revisão na própria entidade, preflight/rollback e provas locais de locks/ABA/tempo; não instalar nem alterar Auth.
+- [ ] Preparar SQL privado focal para anexos ausentes, patches Edge .review e testes handlers/operations; separar prova SQL de HTTP.
+- [ ] Consolidar resultados e blockers externos exatos. Gates false, vínculos fechados, T0 indefinido; UI candidata UNVERIFIED.
+
 ## Cache/anexos — v6 em revisão, NO-GO
 - [x] 16 contratos/hash fornecidos arquivados; faltantes exatos em v6-status/read-only. Ordem locks/tempo não fechada: SQL cache executável/harness fiel bloqueados por corpos writers/guards/DDL live, sem stubs PASS.
 - [x] Ownership 24 URLs/60MiB/20MiB arquivo, dedupe/LRU/retry/revoke; preparação visível e clique download explícito sem popup async. 183/183 regressões locais PASS (15 arquivos), lint focal0; caso após unmount preservado.
