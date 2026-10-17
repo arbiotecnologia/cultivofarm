@@ -1,6 +1,9 @@
 -- CANDIDATO V6 DE CONTENÇÃO, NÃO INSTALAR. Não migration, não executado.
 -- Ref exclusivo swzpzcwiasxmjutrmvkm comprovado externamente.
--- Helper fornecido auditor 12:49; manifest/policies/operation live faltam.
+-- Helper fornecido 12:49; manifest 33 policies/11 buckets fornecido 12:52.
+-- Manifest confirma order-attachments e entrega-termos AUSENTES. NÃO remover
+-- do preflight para simular prontidão nem criar/remapear bucket neste delta.
+-- Hash canônico serializado/ACL/operação e revisão de visits/cert faltam.
 -- Nenhum auth/storage function/table/trigger é criado/alterado.
 BEGIN;
 DO $preflight$

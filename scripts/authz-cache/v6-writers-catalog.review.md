@@ -2,7 +2,7 @@
 
 Ref validado em `supabase/config.toml`: `swzpzcwiasxmjutrmvkm`. Uma consulta SELECT via ferramenta Supabase retornou assinaturas/MD5, sem registros de usuários e sem executar writers. Fonte: `tool-results://supabase--read_query/20261017-125023-994942`. Filtro por nome e texto DML; **não é closure universal** (SQL dinâmico, callers externos e grants diretos não cobertos).
 
-Os corpos completos atuais dos seguintes writers/callers ainda devem ser auditados para locks; assinatura presente não equivale a prova de corpo/ordem:
+Inventário original de assinaturas (não closure universal); o complemento 12:52 já forneceu corpos de transition_subscription_core, user_edit_f2_common e admin_edit_user_profile_v1, mais is_tenant_admin_for_user/issue_ticket/issue_saas_plan_version_ticket. Esses seis não são mais corpos faltantes. Os demais callers abaixo continuam exigindo corpos live para locks; assinatura presente não equivale a prova de corpo/ordem:
 
 ```text
 platform_private.create_organization_core(text,text,text,text,text,boolean,jsonb)
