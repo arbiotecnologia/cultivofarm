@@ -1,3 +1,7 @@
+-- REJEITADA 5584cc29: UPDATE profiles (até zero-row) entra no a00_cf_user_gate
+-- e toma o singleton GLOBAL existente. ORDER BY em UPDATE FROM não prova locks.
+-- Leitor sem comparação antes/depois e dependências incompletas. NÃO INSTALAR.
+-- Preservada para reproduzir o defeito, não é sucessora instalável.
 -- CANDIDATA v5 (ESCOPO PRÓPRIO), NÃO INSTALAR. Substitui o desenho global de
 -- monotonic.sql.review, REJEITADO na revisão a36514db (singleton global em
 -- fingerprint de todas as identidades + BEFORE STATEMENT serializando writers).

@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
-import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 
 const TIPOS: { value: string; label: string }[] = [
   { value: "cnh", label: "CNH" },
@@ -51,6 +51,7 @@ interface Props {
 export function ClienteDocumentosTab({ clienteId }: Props) {
   const { profile } = useAuth();
   const access = useStorageAccessScope(`cliente:${clienteId}`);
+  const attachmentOpener = useAuthenticatedAttachmentOpener(`cliente:${clienteId}`, "clientes-docs");
   const [result, setResult] = useState<{ scope: string; docs: any[] }>({ scope: "", docs: [] });
   const docs = access.ready && result.scope === access.scope ? result.docs : [];
   const [loading, setLoading] = useState(false);
@@ -154,16 +155,7 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
     if (!access.ready) return;
     const current = access.capture();
     if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
-      // Candidata (gate fechado): download autenticado; sem fallback remoto ao negar.
-      try {
-        const blob = await downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, new AbortController().signal);
-        if (!current()) return;
-        const url = URL.createObjectURL(blob);
-        window.open(url, "_blank", "noopener,noreferrer");
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      } catch {
-        if (current()) toast.error("Documento indisponível");
-      }
+      await attachmentOpener.open(doc.arquivo_path, () => toast.error("Documento indisponível"));
       return;
     }
     const { data, error } = await supabase.storage

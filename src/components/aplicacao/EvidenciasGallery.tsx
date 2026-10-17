@@ -30,7 +30,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
   const access = useStorageAccessScope(`aplicacao:${aplicacaoId}`);
   const [result, setResult] = useState<{ scope: string; items: Evidencia[] }>({ scope: "", items: [] });
   const items = access.ready && result.scope === access.scope ? result.items : [];
-  const { urls, request, loading, failed, refresh } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
+  const { urls, request, loadingPaths, error, failed, refresh } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
   const galleryRef = useRef<HTMLDivElement>(null);
   const [lightbox, setLightbox] = useState<{ scope: string; path: string } | null>(null);
   const lightboxUrl = lightbox?.scope === access.scope ? urls[lightbox.path] : undefined;
@@ -86,6 +86,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
 
   return (
     <>
+      {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
       <div ref={galleryRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {items.map((e) => (
           <div key={e.id} className="border rounded-lg overflow-hidden bg-card relative group">
@@ -115,7 +116,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
                   <FileText className="h-8 w-8" />
                   <span className="text-[10px] font-medium">Falhou — tentar novamente</span>
                 </span>
-              ) : loading && AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? (
+              ) : loadingPaths.includes(e.storage_path) && AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? (
                 <History className="h-6 w-6 text-muted-foreground absolute inset-0 m-auto animate-spin" aria-label="Carregando anexo" />
               ) : (
                 <FileText className="h-8 w-8 text-muted-foreground absolute inset-0 m-auto" />

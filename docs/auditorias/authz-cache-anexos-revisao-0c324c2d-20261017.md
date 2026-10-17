@@ -174,7 +174,7 @@ alegações universais de updated_at/ABA não valem para esta candidata.
 
 # Adendo — revisão a36514db (17/10/2026): impeditivos e correções
 
-## A. Revisão monotônica global REJEITADA — substituída por escopo
+## A. Histórico a36514db — AMBAS candidatas REJEITADAS por 5584cc29
 
 `monotonic.sql.review` incorporava singleton GLOBAL no fingerprint de todas as
 identidades e BEFORE STATEMENT em clientes/empresas/assinaturas: edição zero-row
@@ -182,7 +182,8 @@ em tenant A remontava rascunhos de B e serializava writers comerciais no lock
 global, com risco de inversão contra row locks de RPCs. **NÃO INSTALAR**; arquivo
 preservado como histórico com cabeçalho de rejeição.
 
-Substituta `scoped.sql.review` (v5, candidata, não instalada):
+Proposta `scoped.sql.review` v5 abaixo é histórica, REJEITADA, não instalada.
+As alegações de locks ordenados/ausência de bloqueio foram RETIRADAS:
 - fingerprint do titular usa `profiles.updated_at` do PRÓPRIO usuário (carimbo
   já movido pelos triggers live `z90_cf_touch_profile` em user_clientes/
   partner_users/user_roles → `touch_related_profiles`, e `z99_cf_profile_stamp`
@@ -198,9 +199,10 @@ Substituta `scoped.sql.review` (v5, candidata, não instalada):
 Testes (`scoped-tests.sql.review` + `test-local.py`, PostgreSQL descartável):
 38 assertions base PASS; 5 checks scoped PASS (ABA do titular muda fingerprint;
 escrita em tenant A NÃO muda carimbo/fingerprint de B; toque via partner_accounts
-e fan-out por organizations funcionam; carimbo monotônico); 1 teste com DUAS
-conexões reais: writer de tenant A com transação aberta não bloqueia nem altera
-o carimbo de tenant B (<0,5s). Rollback scoped PASS, carimbos preservados.
+e fan-out por organizations funcionam; carimbo monotônico). A antiga prova com
+DUAS conexões apenas fazia SELECT MVCC de B: **não provava ausência de lock
+global nem isolamento de writers**. Nova reprodução abaixo confirma o bloqueio.
+Rollback scoped local PASS, carimbos preservados.
 Limites: fixture reduzida, não prova hosted, fullschema, RLS, lock ordering
 contra RPCs comerciais reais nem cobertura universal de writers transitivos.
 
@@ -261,7 +263,7 @@ clique; falha persistente não abre arquivo nem limpa o erro.
   `AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED=false`. Sem SQL hosted, sem instalação,
   sem publicação, sem alteração de associações/assinatura/pagamentos/dados.
 
-## E. Pendências e riscos
+## E. Pendências e riscos (histórico, corrigido abaixo)
 
 - Candidata scoped exige revisão crítica: campos/joins do schema (ex.
   `partner_accounts.commercial_owner_organization_id`), fan-out e lock ordering
@@ -272,3 +274,87 @@ clique; falha persistente não abre arquivo nem limpa o erro.
 - Prova autenticada browser/Storage API e hosted SQL seguem UNVERIFIED; nenhum
   teste mockado aqui é prova hosted.
 - Gestão/troca de vínculos permanece bloqueada; não declarada liberada.
+
+---
+
+# Adendo 5584cc29 — correção explícita e NO-GO
+
+## P1: lock global confirmado; nenhum desenho instalável
+
+`UPDATE profiles` dispara BEFORE STATEMENT `a00_cf_user_gate` mesmo sem linhas.
+O corpo capturado `acquire_gate` atualiza `cf_user_guards_v1.state` singleton.
+Logo a scoped anterior ainda tomava lock GLOBAL. ORDER BY em UPDATE FROM
+não garante aquisição de row locks; branch org sem ordenação, repetição por
+AFTER ROW, preflight de nome apenas, dependências comerciais incompletas e
+leitor VOLATILE sem comparação antes/depois continuam razões de rejeição.
+Não remover, alterar nem bypassar o gate existente para fazer testes passar.
+
+`scripts/authz-cache/test-local.py` agora reproduz com dois processos psql:
+partner sem perfis e organização A seguram lock; writer perfil B falha
+`lock_timeout=150ms` dentro de acquire_gate. Corpos capturados acquire/touch/
+advance executados, fixtures/instalação local reduzidas. 38 base + 5 scoped
+históricos e rollback PASS; **2 reproduções do defeito**, não PASS de segurança.
+Não houve captura live ou operação hosted nesta rodada.
+
+Desenho mínimo revisável em `scripts/authz-cache/entity-revision.design.review.md`:
+ledger privado indexado por entidade, tombstones anti-ABA, OLD/NEW, comparação
+dupla do conjunto/revisões, sem UPDATE profiles/global contador/fanout.
+Cobertura transitiva e ordem de locks dos writers comerciais não comprovadas.
+**Não foi produzido SQL executável novo nem rollback executável novo**, pois
+os corpos/hash/guards/locks transitivos live ainda faltam; inventário e rollback
+projetado estão no desenho. Não alegar cobertura completa ou universal updated_at.
+Scoped/monotonic continuam arquivos históricos rejeitados, não instalar.
+
+## P2: Blob e contratos dos consumidores candidatos
+
+- `src/hooks/useAuthenticatedBlobUrls.ts`: failed[path] no limite 25, erro
+  global e `loadingPaths` individual; retry após redução para 24 limpa estado.
+- `src/hooks/useSignedUrls.ts`: interface loadingPaths preservada no legado.
+- `src/components/aplicacao/EvidenciasGallery.tsx`: consome error, alerta e
+  loading por item; retry direto não aborta a própria requisição.
+- `src/hooks/useAuthenticatedAttachmentOpener.ts`: owner compartilhado de
+  AbortControllers/Blob URLs, captura de geração, cleanup ao scope/unmount;
+  completion antiga não apaga controller novo de mesmo path.
+- `src/components/clientes/ClienteDocumentosTab.tsx` e
+  `src/components/comercial/OrderMessagesPanel.tsx`: usam owner no ramo Blob;
+  sem assinatura/fallback após negativa; thumbnail usa pool fenced; legado
+  continua sob gate false. Não houve mudança em branding/pagamentos/associações.
+- `src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx`: 17 RTL
+  contra componentes reais com transporte simulado: sucesso/revoke, negativa e
+  retry, pending/epoch/tenant/ABA/resource/unmount, dupla entrada, thumbnail.
+- `src/test/equipe-tecnica/EvidenciasGallery.retry.test.tsx`: 4 RTL, incluindo
+  limite/retry e loading individual.
+- `src/test/equipe-tecnica/authenticatedBlobUrls.test.tsx`: 23 testes usando
+  downloader real com SDK/streams simulados, incluindo 401/403/404, >20MiB,
+  >24 paths, 60MiB acumulados, 3 slots/48 fila/overflow, abort de fila/reader,
+  timeout 15000ms desde entrada na fila, stale/StrictMode/revoke.
+
+Essas negativas são respostas SDK simuladas, não requests HTTP/Storage hosted.
+RTL é teste de componente real, não teste de sessão autenticada real.
+`window.open` após await pode ser bloqueado pelo browser; teste mockado não
+certifica popup/download em dispositivo real. Revogação só controla URLs locais.
+
+Contenção server-side antes de drenagem em
+`docs/auditorias/anexos-contencao-drenagem-5584cc29.review.md`: inventário de
+signers frontend/Edges, distinguir signing/download (sem revogar SELECT às
+cegas), fechar service emitters, negar clientes antigos em API real antes de
+T0. TTL máximo histórico/última emissão/clock e caches não comprovados; T0
+indefinido. Nenhuma policy/Edge instalada. UI nova sozinha não resolve emissão
+antiga nem revoga arquivos já baixados.
+
+## Resultados e limites desta rodada
+
+- `bun run test -- src/test/equipe-tecnica src/test/config/authzEpochMonitor.test.ts src/test/config/authzFoundation.integration.test.tsx src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx`: **176/176 PASS, 14 arquivos**.
+  Monitor e integração existentes intocados; testes independentes preservados.
+- Lint hooks/galeria/testes novos: **0 erros/0 warnings**. Lint incluindo dois
+  consumidores: **7 no-explicit-any existentes** (6 ClienteDocumentosTab + 1
+  OrderMessagesPanel); não resolvidos lateralmente. Não é lint global zero.
+- Diff-check PASS. Build automático registrado OK; typecheck dedicado não
+  executado manualmente nesta rodada (validação independente pendente).
+- Sem scanner completo novo executado: não reutilizar número 4230 como prova
+  desta rodada. Inventário de emissores por rg não equivale a scanner completo.
+- Cache/Blob gates **false**; sem SQL hosted, migrations novas, deploy,
+  publicação ou alterações de dados. Assinatura ACTIVE/vínculos preservados;
+  não houve reativação nem readback hosted nesta rodada.
+- **UNVERIFIED**: fullschema/locks comerciais/ledger futuro, sessão real/UI Blob
+  e Storage API, contenção server-side/TTL histórico. Não abrir gates.
