@@ -53,8 +53,8 @@ try:
   local_candidate=local_candidate.replace(hosted,run(f"SELECT md5(pg_get_functiondef('{signature}'::regprocedure))"))
  run(local_candidate)
  print(run((ROOT/'scripts/authz-cache/tests.sql.review').read_text()))
- # Scoped extension (v5): reuses live-like z90/z99 stamp triggers; NO global
- # singleton in fingerprints (design rejected in review a36514db).
+ # REJECTED scoped v5: exact captured identity bodies expose its indirect
+ # singleton lock. This harness reproduces the defect, NOT an install gate.
  run('''CREATE SCHEMA cf_user_guards_v1;
  CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY,revision bigint NOT NULL);
  INSERT INTO cf_user_guards_v1.state VALUES(true,0);
@@ -78,24 +78,32 @@ try:
  INSERT INTO partner_users(user_id,partner_id,papel) VALUES('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000031','gestor');
  ''')
  run((ROOT/'scripts/authz-cache/scoped-tests.sql.review').read_text())
- # Two actual local connections: writer on tenant A holds open transaction;
- # fingerprint read of tenant B completes WITHOUT waiting (no global lock)
- # and returns unchanged.
+ # Two local connections: reproduce global writer contention even when the
+ # profile fan-out is empty. MVCC SELECT never proved writer lock isolation.
  import time
  # Fixture B committed (scoped-tests rolou back): prova de isolamento real.
  run('''INSERT INTO organizations(id) VALUES('00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;
  INSERT INTO profiles(user_id,organization_id) VALUES('00000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-000000000002') ON CONFLICT DO NOTHING;''')
- stamp_b_before=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
- writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
- writer.stdin.write("BEGIN;UPDATE user_clientes SET revoked_at=now() WHERE user_id='00000000-0000-4000-8000-000000000011';SELECT pg_sleep(0.6);ROLLBACK;");writer.stdin.close()
- time.sleep(0.15)
- started=time.monotonic()
- stamp_b=run("SELECT updated_at FROM profiles WHERE user_id='00000000-0000-4000-8000-000000000099'")
- elapsed=time.monotonic()-started
- assert elapsed<0.5,f'tenant B read blocked by tenant A writer ({elapsed:.2f}s)'
- assert stamp_b==stamp_b_before,'tenant A write changed tenant B stamp'
- assert writer.wait()==0
- print('1 teste duas conexões/sem lock global PASS.')
+ run("INSERT INTO partner_accounts(id) VALUES('00000000-0000-4000-8000-000000000032')")
+ for entity, write in [
+  ('partner with zero profiles', "UPDATE partner_accounts SET ativo=false WHERE id='00000000-0000-4000-8000-000000000032'"),
+  ('organization tenant A', "UPDATE organizations SET ativo=false WHERE id='00000000-0000-4000-8000-000000000002'")]:
+  writer=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+  writer.stdin.write(f"BEGIN;{write};SELECT pg_sleep(1.2);ROLLBACK;");writer.stdin.close()
+  # Wait for the actual singleton lock holder, not a timing assumption.
+  deadline=time.monotonic()+3
+  while run("SELECT count(*) FROM pg_locks WHERE relation='cf_user_guards_v1.state'::regclass AND mode='RowExclusiveLock' AND granted")=='0':
+   if time.monotonic()>deadline: raise AssertionError('writer never acquired identity gate')
+   time.sleep(0.02)
+  blocked=subprocess.run(base,input="BEGIN;SET LOCAL lock_timeout='150ms';UPDATE profiles SET updated_at=updated_at WHERE user_id='00000000-0000-4000-8000-000000000099';ROLLBACK;",text=True,capture_output=True)
+  assert blocked.returncode!=0 and 'lock timeout' in blocked.stderr,blocked.stderr
+  assert 'acquire_gate' in blocked.stderr,blocked.stderr
+  assert writer.wait()==0
+  print(f'REPRODUCED rejected scoped GLOBAL lock: {entity} blocks tenant B writer.')
+ # Existing identity chain: singleton BEFORE STATEMENT -> row -> sorted
+ # OLD/NEW profile writes -> singleton re-entry -> monotonic stamp.
+ run("BEGIN;UPDATE user_roles SET role=role WHERE user_id='00000000-0000-4000-8000-000000000011';ROLLBACK;")
+ print('Captured acquire/touch/advance bodies executed; no identity gate bypass.')
  run((ROOT/'scripts/authz-cache/scoped-rollback.sql.review').read_text())
  assert run("SELECT to_regprocedure('authz_cache_private.get_my_revisioned_fingerprint()') IS NULL")=='t'
  print('Rollback scoped PASS (carimbos de perfil preservados, sem reset).')
