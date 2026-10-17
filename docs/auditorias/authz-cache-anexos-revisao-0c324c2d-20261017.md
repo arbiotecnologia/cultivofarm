@@ -162,7 +162,8 @@ prometer revogar arquivo já baixado, cópia/cache externo ou documento já aber
 - Lint focal **0 erros/0 warnings**. Build automático **OK 01:47:06 UTC**; erro
   intermediário BlobPart Uint8Array corrigido com buffer próprio. Typecheck dedicado
   não executado manualmente: **UNVERIFIED**, build não o substitui.
-- Scanner focal e diff-check registrados no fechamento; sem prova autenticada
+- Scanner focal **16 arquivos/0 achados**, diff-check PASS e build automático
+  **OK 01:48:44 UTC** no fechamento; sem prova autenticada
   browser/Storage API/hosted SQL nesta rodada. Sessão externa gerenciada indisponível
   ao agente; evidência do auditor acima não substitui testes integrados de anexos.
 
