@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useMyPartner } from "@/hooks/useMyPartner";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 
 /**
  * B2BRouteGuard — protege `/portal-parceiro/*`.

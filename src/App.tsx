@@ -28,6 +28,7 @@ import SemPermissao from "@/pages/SemPermissao";
 import PlataformaHome from "@/pages/plataforma/PlataformaHome";
 import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
