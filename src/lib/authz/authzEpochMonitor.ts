@@ -72,10 +72,15 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     if (pollTimer !== null) deps.clearTimeoutFn(pollTimer);
     pollTimer = deps.setTimeoutFn(() => {
       pollTimer = null;
-      // Só dispara novo ciclo com lease válida, visível e online; caso
-      // contrário aguarda revalidate() externo (foco/visibility/online).
-      if (state === "valid" && deps.isVisible() && deps.isOnline() && deps.now() < leaseUntil) {
+      if (state === "stopped") return;
+      // Offline expira prontamente mesmo sem ciclo completo.
+      if (!deps.isOnline()) { void poll(); return; }
+      // Só dispara novo ciclo com lease válida e visível; caso contrário
+      // reagenda e aguarda revalidate() externo (foco/visibility/online).
+      if (state === "valid" && deps.isVisible() && deps.now() < leaseUntil) {
         void poll();
+      } else {
+        schedulePoll();
       }
     }, pollMs);
   };
