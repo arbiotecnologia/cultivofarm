@@ -98,7 +98,9 @@ BEGIN
     IF v_existing_org IS DISTINCT FROM _organization_id
        OR v_existing_action IS DISTINCT FROM _action
        OR v_existing_reason IS DISTINCT FROM btrim(_reason)
-       OR nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id THEN
+       OR (_plan_version_id IS NOT NULL
+           AND nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id)
+       OR (_plan_version_id IS NULL AND v_existing_action = 'change_plan') THEN
       RAISE EXCEPTION 'platform_conflict: correlação já utilizada em outra operação' USING ERRCODE='40001';
     END IF;
     RETURN v_existing;
@@ -131,7 +133,9 @@ BEGIN
     IF v_existing_org IS DISTINCT FROM _organization_id
        OR v_existing_action IS DISTINCT FROM _action
        OR v_existing_reason IS DISTINCT FROM btrim(_reason)
-       OR nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id THEN
+       OR (_plan_version_id IS NOT NULL
+           AND nullif(v_existing_version, '')::uuid IS DISTINCT FROM _plan_version_id)
+       OR (_plan_version_id IS NULL AND v_existing_action = 'change_plan') THEN
       RAISE EXCEPTION 'platform_conflict: correlação já utilizada em outra operação' USING ERRCODE='40001';
     END IF;
     RETURN v_existing;
