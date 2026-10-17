@@ -438,11 +438,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
   }, [user?.id, isExternalUser, queryClient]);
 
-  // Readiness derivada: gate fechado ou perfil interno → sempre pronto;
-  // perfil externo → pronto SOMENTE com monitor "valid" (lease rechecada no
-  // acesso via checkAuthzAccess). "pending"/"expired" ESCONDEM dados.
+  // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
+  // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
+  // readiness — evita flash de conteúdo sensível antes de saber se o perfil é
+  // externo. Perfil interno → pronto sem monitor; externo → pronto SOMENTE
+  // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
   const authzReady =
-    !AUTHZ_CACHE_FOUNDATION_ENABLED || !isExternalUser || authzState === "valid";
+    !AUTHZ_CACHE_FOUNDATION_ENABLED ||
+    !user ||
+    (!loading && (!isExternalUser || authzState === "valid"));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     !isExternalUser ||
