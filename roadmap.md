@@ -6,7 +6,8 @@
 - [ ] Helper/policies/HTTP Storage e retirada de emissão service-role nos ramos Edge legados antes de drenagem; blocker: contratos/provas server-side ainda ausentes. Gates false, vínculos fechados, sem deploy/publicação.
 - [x] Delta 12:49: sete `any` removidos dos dois componentes; 58/58 testes focados incluindo cache, lint componentes/hook/testes zero. 13 funções/55 triggers/287 colunas recebidos reconciliados; assinaturas writers enumeradas em catálogo read-only.
 - [x] Delta 12:52: 144 constraints/33 índices/33 policies/11 buckets/seis corpos reconciliados; order-attachments e entrega-termos ausentes. Plano mínimo de RLS/fluxo, sem criar/remapear; preflight continua rejeitando.
-- [ ] Corpos writers restantes/filhas/tickets/tempo e ACL/helper Storage; não gerar ledger executável sem provas. Relevância visitas-pdf/fiscal-certificates e contenção service-role antes de T0, indefinido; gates false.
+- [x] Inventário fonte visitas-pdf (sem referência runtime literal encontrada) e fiscal-certificates (ciphertext/uso somente server-side, nunca portal); policies históricas não equivalem ao manifest live.
+- [ ] Corpos writers restantes/filhas/tickets/tempo, ACL/helpers Storage e refs externas de visitas; não gerar ledger executável sem provas. RLS/anexos pedidos e contenção service-role antes de T0, indefinido; gates false.
 
 ## Cache/anexos — revisão 5584cc29, NO-GO
 - [x] Retirada explícita da alegação de ausência de lock global: scoped v5 REJEITADA. UPDATE profiles dispara a00/acquire_gate mesmo com zero rows; MVCC SELECT de B não provava isolamento de writers. Nenhum gate existente removido/bypassado.
