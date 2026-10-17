@@ -72,9 +72,24 @@ export function AlterarAssinaturaCard({ organizationIdInicial = null }: { organi
   const [acao, setAcao] = useState<AcaoAssinatura>("change_plan");
   const [motivo, setMotivo] = useState("");
   const [confirmado, setConfirmado] = useState(false);
-  const assinatura = assinaturas.data?.find((s) => s.organization_id === org && s.status !== "CANCELLED" && s.status !== "EXPIRED")
-    ?? assinaturas.data?.find((s) => s.organization_id === org && s.status === "EXPIRED" && s.trial_ends_at);
+  // Seleção espelha o núcleo: linha MAIS RECENTE por started_at/created_at/id.
+  // EXPIRED só é elegível com origem TRIAL→EXPIRED comprovada no histórico;
+  // uma CANCELLED (ou qualquer outra) mais nova nunca é pulada.
+  const ordenadas = (assinaturas.data ?? []).filter((s) => s.organization_id === org)
+    .sort((a, b) => Date.parse(b.started_at ?? b.created_at) - Date.parse(a.started_at ?? a.created_at)
+      || Date.parse(b.created_at) - Date.parse(a.created_at) || b.id.localeCompare(a.id));
+  const maisRecente = ordenadas[0];
+  const origemTrialExpirada = !!maisRecente && historico.data?.some(
+    (h) => h.subscription_id === maisRecente.id && h.previous_status === "TRIAL" && h.new_status === "EXPIRED",
+  );
+  const assinatura = !maisRecente ? undefined
+    : maisRecente.status === "CANCELLED" ? undefined
+    : maisRecente.status === "EXPIRED" ? (origemTrialExpirada ? maisRecente : undefined)
+    : maisRecente;
   const atual = versoes.data?.find((v) => v.id === assinatura?.plan_version_id);
+  const versaoAtualVigente = !!atual && atual.status === "PUBLISHED" && !!atual.effective_from
+    && new Date(atual.effective_from).getTime() <= Date.now()
+    && (!atual.effective_to || new Date(atual.effective_to).getTime() > Date.now());
   const trialUtilizado = assinaturas.data?.some((s) => s.organization_id === org && s.status === "TRIAL") || historico.data?.some((h) => h.organization_id === org && (h.action === "start_trial" || h.previous_status === "TRIAL" || h.new_status === "TRIAL"));
   const permitidas = assinatura
     ? assinatura.plan_version_id === null ? ["change_plan" as const] : acoesAssinatura(assinatura.status, assinatura.trial_ends_at)

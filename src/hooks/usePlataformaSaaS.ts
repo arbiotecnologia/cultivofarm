@@ -47,6 +47,7 @@ export interface AssinaturaSaaS {
   current_period_start: string | null;
   current_period_end: string | null;
   cancelled_at: string | null;
+  cancel_at: string | null;
   suspended_at: string | null;
   created_at: string;
 }
