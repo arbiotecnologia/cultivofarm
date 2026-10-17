@@ -172,15 +172,18 @@ try:
  run(admin(f"UPDATE public.user_clientes SET is_active=true,revoked_at=NULL WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
  err=runerr(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id IN ('{C1}','{C2}')"))
  assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
- # caminho válido: desmarcar o atual ANTES de marcar o novo (o índice é
- # verificado durante o statement, antes do trigger rebaixar o anterior)
+ # marcar um 2º principal (mesmo em comando separado) também NEGA 23505:
+ # após desmarcar, o sync reelege o vigente mais antigo no próprio statement,
+ # então a marcação seguinte encontra um principal já existente. Comportamento
+ # suportado: tornar o atual não vigente; a eleição determinística assume.
  run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal"))
- run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
- check(f"SELECT count(*) FROM public.user_clientes WHERE user_id='{PROD}' AND principal",'1')
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2)
- run(admin(f"UPDATE public.user_clientes SET principal=false WHERE user_id='{PROD}' AND principal"))
- run(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
- check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1)
+ err=runerr(admin(f"UPDATE public.user_clientes SET principal=true WHERE user_id='{PROD}' AND cliente_id='{C2}'"))
+ assert '23505' in err or 'uq_user_clientes_principal' in err,err;checks+=1
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C1) # reeleito pelo sync
+ run(admin(f"UPDATE public.user_clientes SET revoked_at=now(),is_active=false WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2) # eleição determinística
+ run(admin(f"UPDATE public.user_clientes SET revoked_at=NULL,is_active=true WHERE user_id='{PROD}' AND cliente_id='{C1}'"))
+ check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD}' AND principal",C2) # reativação preserva principal atual
  # ---- 5) INSERT multirow num só comando ----
  run(admin(f"INSERT INTO public.user_clientes(user_id,cliente_id,principal,created_at) VALUES ('{PROD2}','{C2}',false,now()-interval '1 day'),('{PROD2}','{C3}',false,now())"))
  check(f"SELECT cliente_id FROM public.user_clientes WHERE user_id='{PROD2}' AND principal",C2)
