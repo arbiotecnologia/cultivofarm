@@ -89,9 +89,24 @@ describe("AlterarAssinaturaCard — regularização", () => {
 
   it("EXPIRED decorrente de trial aparece na busca e só oferece regularização", () => {
     mocks.status = "EXPIRED";
+    mocks.historico = [{ subscription_id: "sub1", organization_id: "org", action: "expire_trial", previous_status: "TRIAL", new_status: "EXPIRED" }];
     render(<AlterarAssinaturaCard organizationIdInicial="org" />);
     const combo = screen.getAllByRole("combobox")[1] as HTMLSelectElement;
     expect([...combo.options].map((o) => o.value)).toEqual(["activate_subscription"]);
+  });
+
+  it("EXPIRED sem origem TRIAL→EXPIRED no histórico não é selecionada", () => {
+    mocks.status = "EXPIRED"; // histórico vazio: origem não comprovada
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    expect(screen.getByText(/Empresa sem assinatura/)).toBeInTheDocument();
+  });
+
+  it("CANCELLED mais nova nunca é pulada para ressuscitar EXPIRED antiga", () => {
+    mocks.status = "EXPIRED";
+    mocks.historico = [{ subscription_id: "sub1", organization_id: "org", action: "expire_trial", previous_status: "TRIAL", new_status: "EXPIRED" }];
+    mocks.extras = [{ id: "sub2", organization_id: "org", status: "CANCELLED", plan_version_id: "base", trial_ends_at: null, cancel_at: null, price_snapshot: 499.9, currency_snapshot: "BRL", billing_cycle_snapshot: "monthly", started_at: "2026-10-01", created_at: "2026-10-01" }];
+    render(<AlterarAssinaturaCard organizationIdInicial="org" />);
+    expect(screen.getByText(/Empresa sem assinatura/)).toBeInTheDocument();
   });
 
   it("TRIAL vigente mostra 'Em teste' e não 'Teste vencido'", () => {
