@@ -13,6 +13,25 @@ import { Badge } from "@/components/ui/badge";
 import { Paperclip, FileText, FileSpreadsheet, FileImage, File as FileIcon } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { toast } from "sonner";
+import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
+
+/** Candidata (gate fechado): download autenticado sem fallback remoto quando negado. */
+async function openOrderAttachment(path: string): Promise<void> {
+  if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+    try {
+      const blob = await downloadAuthenticatedAttachment("order-attachments", path, new AbortController().signal);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error("Anexo indisponível");
+    }
+    return;
+  }
+  const url = await getAttachmentSignedUrl(path);
+  if (url) window.open(url, "_blank");
+}
 
 const MAX_ATTACHMENT_MB = 10;
 const ACCEPTED_TYPES = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.webp";
