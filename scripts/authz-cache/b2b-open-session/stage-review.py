@@ -17,6 +17,9 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 def stage(manifest, receipt, output):
+    output = output.resolve()
+    if output == ROOT or ROOT in output.parents:
+        raise ValueError("staging_inside_project_forbidden")
     if receipt.get("project_ref") != REF or receipt.get("scope") != "b2b-context":
         raise ValueError("canonical_ref_or_scope_missing")
     # No capture, hash or snapshot is interpreted as a review approval.
@@ -27,6 +30,8 @@ def stage(manifest, receipt, output):
     if receipt.get("manifest_sha256") != sha(json.dumps(manifest, sort_keys=True).encode()):
         raise ValueError("receipt_manifest_mismatch")
     for path, expected in manifest["files"].items():
+        if (ROOT / path).resolve() != ROOT / path or Path(path).is_absolute():
+            raise ValueError("manifest_path_invalid")
         if sha((ROOT / path).read_bytes()) != expected:
             raise ValueError("source_drift:" + path)
     gate = (ROOT / GATE).read_text()
