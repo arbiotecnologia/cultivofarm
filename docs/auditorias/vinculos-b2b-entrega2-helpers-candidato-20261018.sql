@@ -70,8 +70,15 @@ AS $function$
     AND pu.tenant_id = pa.commercial_owner_organization_id;
 $function$;
 
--- FASE C: b2b_commercial_context() — adiciona revoked_at IS NULL à contagem e ao
--- vínculo selecionado (owner NOT NULL e parceiro ativo já eram exigidos).
+-- FASE C (rev 2.1): b2b_commercial_context() — adiciona revoked_at IS NULL à
+-- contagem e ao vínculo selecionado (owner NOT NULL e parceiro ativo já eram
+-- exigidos) E fecha a lacuna apontada pela revisão externa: o vínculo passa a
+-- exigir coerência de tenant (pu.tenant_id NOT NULL e = owner), a mesma regra
+-- dos helpers escalares. Sem isso, um vínculo cujo tenant foi alterado
+-- continuaria autorizando o portal enquanto os escalares já negariam.
+-- Semântica legacy_partner_tenant preservada: owner é o owner COMERCIAL do
+-- parceiro e pode divergir da organization_id do ator (modo legado real);
+-- o que se exige é tenant_id do vínculo = owner comercial, nunca = org do ator.
 CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
 RETURNS jsonb
 LANGUAGE plpgsql
