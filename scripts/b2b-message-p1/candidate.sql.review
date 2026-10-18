@@ -23,6 +23,14 @@ WITH CHECK (EXISTS (
  SELECT 1 FROM public.partner_order_messages m
  WHERE m.id=partner_order_message_attachments.message_id
 ));
+-- Residual rpc_partner_message_counters: SECURITY DEFINER bypassa a RLS filha.
+-- ALTER mínimo para SECURITY INVOKER preserva corpo, assinatura, owner e ACL
+-- (postgres/service/authenticated) intactos; o corpo passa a contar apenas o
+-- que as policies de partner_order_messages/partner_orders permitem ao
+-- chamador, e as 2 policies RESTRICTIVE acima fecham o vazamento cross-tenant.
+-- O guard de permissão interno da função (has_role/get_user_partner_id)
+-- permanece como defesa em profundidade, não como única barreira.
+ALTER FUNCTION public.rpc_partner_message_counters(uuid) SECURITY INVOKER;
 COMMIT;
 -- EXISTS uses invoker RLS on po/pa/m, not SECURITY DEFINER or order helper.
 -- Ownership is intentionally stricter: owner NULL/legacy cross-org denied.

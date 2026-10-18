@@ -5,4 +5,6 @@ BEGIN;
 DO $$ BEGIN RAISE EXCEPTION 'p1_rollback_requires_reviewed_replacement_containment'; END $$;
 DROP POLICY p1_attachment_message_tenant_guard ON public.partner_order_message_attachments;
 DROP POLICY p1_message_order_tenant_guard ON public.partner_order_messages;
+-- Restaura o modo de segurança anterior da função (corpo/ACL nunca tocados).
+ALTER FUNCTION public.rpc_partner_message_counters(uuid) SECURITY DEFINER;
 COMMIT;
