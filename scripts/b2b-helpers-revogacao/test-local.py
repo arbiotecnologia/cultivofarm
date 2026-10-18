@@ -263,9 +263,10 @@ try:
     # uma constante esperada do bloco pós; originais intactos. A exceção no
     # DO pós aborta a transação => todos os corpos permanecem PRE.
     tampered = root / 'candidate-post-fail.sql'
-    tampered.write_text(CAND.read_text().replace(
-        POST['public.get_b2b_user_role_for_partner(uuid,uuid)'],
-        '0' * 32, 1))
+    src = CAND.read_text()
+    alvo = POST['public.get_b2b_user_role_for_partner(uuid,uuid)']
+    pos = src.rindex(alvo)  # ÚLTIMA ocorrência = bloco pós (a 1ª é o cabeçalho)
+    tampered.write_text(src[:pos] + '0' * 32 + src[pos + len(alvo):])
     run_file(tampered, fail='PÓS FALHOU')
     results.append("falha de PÓS provocada em cópia temporária (constante pós alterada)")
     for sig, h in PRE.items():
