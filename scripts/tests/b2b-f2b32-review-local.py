@@ -49,6 +49,7 @@ def main():
         pre = (DOCS/'vinculos-b2b-f2b32-preflight-readonly-20261018.sql').read_text()
         post = (DOCS/'vinculos-b2b-f2b32-postflight-readonly-20261018.sql').read_text()
         run('BEGIN READ ONLY;'+pre+post+'ROLLBACK;')
+        run((DOCS/'vinculos-b2b-f2b33-fases-candidato-bloqueado-20261018.sql').read_text(), 'F2B33_NO_GO_BACKUP_ACTOR_SOURCE_RECEIPT_CONCURRENCY_RLS')
         check('preflight postflight execute read-only before columns', "NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='partner_technician_clients'::regclass AND attname='grant_origin')")
         candidate = (DOCS/'vinculos-b2b-f2b31-metadata-neutra-candidato-20261018.sql').read_text()
         schema = candidate.split('-- BEGIN LOCAL SCHEMA\n')[1].split('-- END LOCAL SCHEMA')[0]
