@@ -381,4 +381,47 @@ describe("authzEpochMonitor", () => {
     expect(monitor.currentFingerprint()).toBe("B");
     expect(monitor.checkAccess()).toBe(true);
   });
+
+  it.each([
+    ["NaN", Number.NaN],
+    ["Infinity", Number.POSITIVE_INFINITY],
+    ["negativo", -1],
+  ])("server_remaining_ms %s (presente porém inválido) falha fechado, sem lease local", async (_label, budget) => {
+    const { monitor, fetcher, deps, advance } = setup();
+    fetcher.mockResolvedValue({ eligible: true, fingerprint: "A", server_remaining_ms: budget });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("expired");
+    expect(deps.onExpire).toHaveBeenCalledWith("error");
+    expect(monitor.checkAccess()).toBe(false);
+    // Não autoriza nem agenda revalidação válida silenciosa no ciclo seguinte.
+    await advance(10_000);
+    expect(monitor.state()).toBe("expired");
+  });
+
+  it("deadline já consumido apesar de effectiveLeaseMs>0: sem valid, sem epoch, sem poll", async () => {
+    // RTT de 4s com budget 7s: effective = 3s > 0, mas deadline = t0+3s < now(t4).
+    let clock = 0;
+    let resolveFetch!: (v: AuthzFingerprintResult) => void;
+    const { monitor, deps } = setup({
+      now: () => clock,
+      fetcher: () => new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }),
+    });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    clock = 4_000;
+    resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 7_000 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("expired");
+    expect(deps.onExpire).toHaveBeenCalledWith("timeout");
+    expect(monitor.checkAccess()).toBe(false);
+    expect(monitor.currentFingerprint()).toBeNull();
+    expect(deps.onEpochChange).not.toHaveBeenCalled();
+    // Nenhum poll posterior reabre: fetcher não é chamado de novo.
+    const callsBefore = (deps.fetcher as ReturnType<typeof vi.fn>).mock.calls.length;
+    clock = 20_000;
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect((deps.fetcher as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBefore);
+    expect(monitor.state()).toBe("expired");
+  });
 });
