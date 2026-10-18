@@ -39,13 +39,18 @@ WITH expected(sig,h) AS (VALUES
  ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881'),
  ('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c'),
  ('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f'),
- ('public.get_user_partner_id()','77822b0ef57e42bfe9cd7075265402aa'),
+ -- Hashes pós-Entrega 2 rev 2.3 (migration 20261018213517, aplicada 18/10):
+ -- helpers agora respeitam revoked_at e tenant_id. NÃO sobrescrever.
+ ('public.get_user_partner_id()','b334c3a454ebc4233d3b9e0d0a700d78'),
+ ('public.get_partner_papel()','f84f898ead03dfd646ece50d16baf909'),
  ('public.is_platform_superadmin(uuid)','3dfe79d976821244d9b7a7f893d765f2'),
  ('platform_private.b2b_direct_partner_row_allowed()','8967832dbfa4ee782c4c063ca5e1e3d4'),
  ('platform_private.b2b_coherent_self_partner(uuid)','56d8f1e84bbf889eb2d3f990c3ed1162'),
- ('platform_private.b2b_commercial_context()','02158d4204dea67308558f649113ba6d'),
+ ('platform_private.b2b_commercial_context()','a31d198c9a9fc9a5e7c397ab36fe0fa4'),
  ('platform_private.entitlements_for_user(uuid)','7f4ec7facaebbdf35444dd490fdebe56'),
- ('public.tg_commercial_audit()','59f38730b9f37102cbf2ed4bd44a7e00'))
+ ('public.tg_commercial_audit()','59f38730b9f37102cbf2ed4bd44a7e00'),
+ -- Residual P1: contadores ainda DEFINER pré-candidata (corpo/ACL preservados).
+ ('public.rpc_partner_message_counters(uuid)','5b049aa45efddf8aff1b92b14a759a46'))
 SELECT e.sig,md5(pg_get_functiondef(p.oid)) AS actual_md5,
  (md5(pg_get_functiondef(p.oid))=e.h) IS TRUE AS body_ok,p.proacl,p.proconfig,p.provolatile,p.prosecdef
 FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.sig);
