@@ -232,9 +232,9 @@ BEGIN
    JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace nf ON nf.oid=p.pronamespace
   WHERE n.nspname='public' AND nf.nspname='cf_user_guards_v1' AND NOT t.tgisinternal
     AND c.relname IN ('profiles','user_roles','user_clientes','platform_org_admin_invites','partner_users');
-  -- 3 (partner_users, PRÉ-F1.2) + 12 novos = 15
-  IF v_count <> 15 THEN
-    RAISE EXCEPTION 'PREF13_VALIDATE: esperados 15 triggers de guard, encontrados %', v_count; END IF;
+  -- 3 (partner_users, PRÉ-F1.2) + 14 novos (4 profiles + 4 user_roles + 3 user_clientes + 3 invites) = 17
+  IF v_count <> 17 THEN
+    RAISE EXCEPTION 'PREF13_VALIDATE: esperados 17 triggers de guard, encontrados %', v_count; END IF;
 END $$;
 
 COMMIT;
