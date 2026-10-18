@@ -247,13 +247,30 @@ try:
 
     # --- DRIFT antes da candidata: corpo alterado => guarda rejeita, nada muda ---
     run("CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT true$$;")
+    snap_antes = {sig: md5(sig) for sig in PRE}  # inclui a função adulterada
     run_file(CAND, fail='PRE FALHOU')
     results.append("drift pré-candidata rejeitado (is_valid adulterado)")
+    snap_depois = {sig: md5(sig) for sig in PRE}
+    assert snap_depois == snap_antes, (snap_antes, snap_depois)
+    results.append("snapshot idêntico antes/depois da candidata recusada (incl. adulterada)")
     run(LIVE_BODIES)  # restaura baseline
     run(ACLS)
     for sig, h in PRE.items():
         assert md5(sig) == h, f"baseline não restaurado em {sig}"
     results.append("baseline restaurado após drift")
+
+    # --- FALHA DE PÓS em CÓPIA TEMPORÁRIA do script completo: altera SOMENTE
+    # uma constante esperada do bloco pós; originais intactos. A exceção no
+    # DO pós aborta a transação => todos os corpos permanecem PRE.
+    tampered = root / 'candidate-post-fail.sql'
+    tampered.write_text(CAND.read_text().replace(
+        POST['public.get_b2b_user_role_for_partner(uuid,uuid)'],
+        '0' * 32, 1))
+    run_file(tampered, fail='PÓS FALHOU')
+    results.append("falha de PÓS provocada em cópia temporária (constante pós alterada)")
+    for sig, h in PRE.items():
+        assert md5(sig) == h, f"corpo de {sig} alterado apesar da exceção de PÓS"
+    results.append("todos os corpos PRE preservados após exceção de PÓS (atomicidade)")
 
     # --- Aplica candidata COMPLETA intacta ---
     run_file(CAND)
@@ -339,8 +356,12 @@ try:
 
     # --- DRIFT antes do rollback: corpo adulterado => rollback recusa ---
     run("CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT 'x'::text$$;")
+    snap_antes = {sig: md5(sig) for sig in POST}  # inclui a função adulterada
     run_file(ROLL, fail='ROLLBACK RECUSADO')
     results.append("drift pré-rollback rejeitado (get_role adulterado)")
+    snap_depois = {sig: md5(sig) for sig in POST}
+    assert snap_depois == snap_antes, (snap_antes, snap_depois)
+    results.append("snapshot idêntico antes/depois do rollback recusado (incl. adulterada)")
     # Atomicidade: as OUTRAS funções permanecem nos hashes POST
     check("atomicidade: is_valid intacta após rollback recusado",
           f"SELECT md5(pg_get_functiondef('{ 'public.is_valid_b2b_partner_user(uuid,uuid)' }'::regprocedure))",
