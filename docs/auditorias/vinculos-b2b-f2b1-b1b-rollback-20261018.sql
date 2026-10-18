@@ -2,8 +2,13 @@
 -- Ref obrigatório swzpzcwiasxmjutrmvkm; confirmar externamente, não por GUC/database.
 -- Restaura lacuna de revogação; somente com decisão explícita/contenção.
 BEGIN;
+SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';
 DO $rollback$
 BEGIN
+ IF current_user<>'postgres' THEN RAISE EXCEPTION 'F2B1_EXECUTOR_NOT_REVIEWED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc f WHERE f.oid='platform_private.b2b_commercial_context()'::regprocedure AND f.proowner='postgres'::regrole AND f.prosecdef AND f.provolatile='s' AND f.proconfig=ARRAY['search_path=""']::text[])
+ OR (SELECT array_agg(x::text ORDER BY x::text) FROM pg_proc f,unnest(f.proacl) x WHERE f.oid='platform_private.b2b_commercial_context()'::regprocedure) IS DISTINCT FROM ARRAY['authenticated=X/postgres','postgres=X/postgres','service_role=X/postgres']::text[]
+ THEN RAISE EXCEPTION 'F2B1_ROLLBACK_METADATA_DRIFT'; END IF;
  IF (SELECT prosrc FROM pg_proc WHERE oid='platform_private.b2b_commercial_context()'::regprocedure)
  IS DISTINCT FROM $expected$
 DECLARE u uuid:=auth.uid(); org uuid; role_name text; link record; owner uuid; legacy uuid; mode text;

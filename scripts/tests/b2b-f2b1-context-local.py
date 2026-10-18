@@ -39,6 +39,11 @@ CREATE FUNCTION local_assert(label text,ok boolean) RETURNS void LANGUAGE plpgsq
         run(baseline+(D/'vinculos-b2b-f2b-baseline-20261018.sql').read_text())
         signatures=['platform_private.b2b_commercial_context()','platform_private.b2b_actor_scope(uuid)','platform_private.b2b_phase1_partner_visible(uuid,boolean)','platform_private.b2b_commercial_partner_projection()']
         run('\n'.join(f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC; GRANT EXECUTE ON FUNCTION {s} TO authenticated,service_role;' for s in signatures))
+        run('REVOKE EXECUTE ON FUNCTION platform_private.b2b_actor_scope(uuid) FROM authenticated;')
+        rejected_a=run((D/(P+'b1a-migracao-20261018.sql')).read_text(),False)
+        if 'F2B1_ASSIGNMENT_BASELINE_DRIFT' not in rejected_a.stderr:
+            raise RuntimeError('B1a must refuse absent sync trigger baseline: '+rejected_a.stderr)
+        print('PASS B1a refused missing assignment baseline')
         # Full candidate preflight must refuse missing production policy manifest.
         candidate=(D/(P+'b1b-migracao-20261018.sql')).read_text()
         rejection=run(candidate,False)
@@ -115,12 +120,13 @@ SELECT local_assert('known baseline revoked target still eligible',is_valid_b2b_
 UPDATE partner_user_clients SET active=false;
 SELECT local_assert('baseline allows deactivate eligible revoked target',(SELECT active FROM partner_user_clients)=false);
 UPDATE profiles SET ativo=false WHERE user_id='55555555-5555-4555-8555-555555555555';
-DO $$ BEGIN
+DO $$ DECLARE rejected boolean:=false; BEGIN
  BEGIN UPDATE partner_user_clients SET active=false; RAISE EXCEPTION 'UNEXPECTED_ACCEPT';
  EXCEPTION WHEN raise_exception THEN
  IF SQLERRM NOT LIKE 'Usuário % não é um usuário B2B válido do parceiro %' THEN RAISE; END IF;
+ rejected:=true;
  END;
- PERFORM local_assert('known baseline inactive target blocks cleanup',true);
+ PERFORM local_assert('known baseline inactive target blocks cleanup',rejected);
 END $$;
 SELECT local_assert('admin no implicit context',platform_private.b2b_commercial_context() IS NULL);
 UPDATE user_roles SET role='superadmin' WHERE user_id=auth.uid();
