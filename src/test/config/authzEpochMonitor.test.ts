@@ -402,10 +402,11 @@ describe("authzEpochMonitor", () => {
   it("deadline já consumido apesar de effectiveLeaseMs>0: sem valid, sem epoch, sem poll", async () => {
     // RTT de 4s com budget 7s: effective = 3s > 0, mas deadline = t0+3s < now(t4).
     let clock = 0;
+    let fetchCalls = 0;
     let resolveFetch!: (v: AuthzFingerprintResult) => void;
     const { monitor, deps } = setup({
       now: () => clock,
-      fetcher: () => new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }),
+      fetcher: () => { fetchCalls++; return new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }); },
     });
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
@@ -418,10 +419,10 @@ describe("authzEpochMonitor", () => {
     expect(monitor.currentFingerprint()).toBeNull();
     expect(deps.onEpochChange).not.toHaveBeenCalled();
     // Nenhum poll posterior reabre: fetcher não é chamado de novo.
-    const callsBefore = (deps.fetcher as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callsBefore = fetchCalls;
     clock = 20_000;
     await vi.advanceTimersByTimeAsync(20_000);
-    expect((deps.fetcher as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBefore);
+    expect(fetchCalls).toBe(callsBefore);
     expect(monitor.state()).toBe("expired");
   });
 });
