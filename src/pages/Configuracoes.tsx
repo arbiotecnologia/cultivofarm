@@ -916,6 +916,8 @@ export default function Configuracoes() {
                             </>
                           )}
 
+                        </div>
+                        <div className="shrink-0 border-t px-6 py-4">
                           <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending || (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED)}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
                           </Button>
