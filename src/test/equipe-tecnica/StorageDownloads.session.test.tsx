@@ -37,6 +37,8 @@ describe("delayed Storage downloads", () => {
   ] as const;
   for (const [name, component] of views) {
     it(`${name}: does not open delayed signed URL after lease expires without rerender`, async () => {
+      let leaseValid = true;
+      auth.checkAuthzAccess = () => leaseValid;
       const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
       const h = render(<MemoryRouter><QueryClientProvider client={client}>{component()}</QueryClientProvider></MemoryRouter>);
       await screen.findByText("PRIVATE_DOC");
@@ -46,7 +48,7 @@ describe("delayed Storage downloads", () => {
       const download = screen.getAllByRole("button").find(b => b.querySelector("svg.lucide-download"));
       if (!download) throw new Error("download missing");
       fireEvent.click(download); await waitFor(() => expect(mocks.sign).toHaveBeenCalledTimes(1));
-      auth.checkAuthzAccess = () => false; // callback reads current monitor, no Auth rerender
+      leaseValid = false; // same callback reads current monitor, no Auth rerender
       await act(async () => resolve({ data: { signedUrl: "https://example.invalid/late" }, error: null }));
       expect(open).not.toHaveBeenCalled();
       fireEvent.click(download); expect(mocks.sign).toHaveBeenCalledTimes(1);
