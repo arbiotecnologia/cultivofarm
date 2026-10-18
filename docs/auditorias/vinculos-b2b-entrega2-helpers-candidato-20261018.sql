@@ -32,7 +32,13 @@ BEGIN
 END
 $migration$;
 
--- FASE A: get_user_partner_id() — fail-closed, elegibilidade completa.
+-- FASE A (rev 2.2): get_user_partner_id() — fail-closed em DUAS etapas, igualando
+-- a semântica da Fase C: (1) conta TODOS os vínculos NÃO revogados do usuário —
+-- 0 ou 2+ => NULL, antes de qualquer elegibilidade; (2) só então exige que o
+-- vínculo único seja elegível (parceiro ativo/não deletado, owner NOT NULL,
+-- tenant_id = owner). Na rev 2.1 a contagem era só de elegíveis: com 2 não
+-- revogados (1 elegível + 1 inelegível) o escalar autorizava e o portal negava.
+-- LEFT JOIN: vínculo cujo parceiro não existe continua contado (fail-closed).
 CREATE OR REPLACE FUNCTION public.get_user_partner_id()
 RETURNS uuid
 LANGUAGE sql
@@ -40,18 +46,22 @@ STABLE
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
-  SELECT CASE WHEN count(*) = 1 THEN (array_agg(pu.partner_id))[1] END
+  SELECT CASE
+           WHEN count(*) FILTER (WHERE pu.revoked_at IS NULL) <> 1 THEN NULL
+           WHEN bool_or(pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                        AND pa.commercial_owner_organization_id IS NOT NULL
+                        AND pu.tenant_id IS NOT NULL
+                        AND pu.tenant_id = pa.commercial_owner_organization_id)
+                FILTER (WHERE pu.revoked_at IS NULL)
+           THEN (array_agg(pu.partner_id) FILTER (WHERE pu.revoked_at IS NULL))[1]
+         END
   FROM public.partner_users pu
-  JOIN public.partner_accounts pa ON pa.id = pu.partner_id
-  WHERE pu.user_id = auth.uid()
-    AND pu.revoked_at IS NULL
-    AND pa.ativo = true AND pa.deleted_at IS NULL
-    AND pa.commercial_owner_organization_id IS NOT NULL
-    AND pu.tenant_id IS NOT NULL
-    AND pu.tenant_id = pa.commercial_owner_organization_id;
+  LEFT JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+  WHERE pu.user_id = auth.uid();
 $function$;
 
--- FASE B: get_partner_papel(uuid) — idem, para o alvo informado (callers internos).
+-- FASE B (rev 2.2): get_partner_papel(uuid) — mesma regra em duas etapas, para o
+-- alvo informado (callers internos).
 CREATE OR REPLACE FUNCTION public.get_partner_papel(_user_id uuid)
 RETURNS text
 LANGUAGE sql
@@ -59,15 +69,18 @@ STABLE
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
-  SELECT CASE WHEN count(*) = 1 THEN (array_agg(pu.papel))[1] END
+  SELECT CASE
+           WHEN count(*) FILTER (WHERE pu.revoked_at IS NULL) <> 1 THEN NULL
+           WHEN bool_or(pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                        AND pa.commercial_owner_organization_id IS NOT NULL
+                        AND pu.tenant_id IS NOT NULL
+                        AND pu.tenant_id = pa.commercial_owner_organization_id)
+                FILTER (WHERE pu.revoked_at IS NULL)
+           THEN (array_agg(pu.papel) FILTER (WHERE pu.revoked_at IS NULL))[1]
+         END
   FROM public.partner_users pu
-  JOIN public.partner_accounts pa ON pa.id = pu.partner_id
-  WHERE pu.user_id = _user_id
-    AND pu.revoked_at IS NULL
-    AND pa.ativo = true AND pa.deleted_at IS NULL
-    AND pa.commercial_owner_organization_id IS NOT NULL
-    AND pu.tenant_id IS NOT NULL
-    AND pu.tenant_id = pa.commercial_owner_organization_id;
+  LEFT JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+  WHERE pu.user_id = _user_id;
 $function$;
 
 -- FASE C (rev 2.1): b2b_commercial_context() — adiciona revoked_at IS NULL à
