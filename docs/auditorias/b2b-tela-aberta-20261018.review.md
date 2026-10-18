@@ -40,6 +40,14 @@ Blob/principal/troca de vínculos não foram ativados.
 - Demais seções de preparação abaixo são histórico anterior à liberação; as
   pendências de revisão live ali listadas foram satisfeitas para ESTE recorte
   conforme receipt, não para v6/global. Prova JWT sem reload aguarda auditor.
+- Validação local da ativação: **76/76 testes, 4 arquivos PASS**, incluindo 3
+  assertions de configuração real sem mocks (gate true/scope B2B/Blob false),
+  29 integração B2B, 29 monitor e 15 fingerprint histórico mockado; esse último
+  não ativa v6 no runtime. **6/6 guardas Python PASS**. Build/typecheck automático
+  `build OK` em `2026-10-18T22:56:03Z`; nenhuma execução manual de build/typecheck.
+  POST runtime idêntico ao candidato, rollback PRE exato e demais fontes do
+  manifest preservadas. Preflight SHA256 corrigido:
+  `eabe50fafee25d13ec182d1083ecf62be9dad66b192b68a591b30347d1c19e16`.
 
 Backend dos três helpers: aplicado pelo auditor, migration `20261018222908`,
 commit `80e8347`, hashes/ACL/RLS e SQL independentes aprovados externamente;
