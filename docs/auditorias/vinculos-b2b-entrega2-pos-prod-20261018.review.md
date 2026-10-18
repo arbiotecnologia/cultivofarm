@@ -47,12 +47,24 @@ Este agente não executou DDL/DML hosted nem publicação.
 ## 4. Limites declarados (o que NÃO foi provado)
 
 - NÃO prova UI de desvinculação/reativação — a mutação foi SQL operacional de
-  teste, não o fluxo de interface.
-- NÃO prova todos os tenants: JWT cruzado A/B segue pendente.
+  teste, não o fluxo de interface dos contratos.
+- NÃO prova todos os tenants: JWT cruzado A/B segue pendente (ver 4.1).
 - Sem recarga, a tela não mudou na primeira observação imediata; TTL/cache
   residual NÃO medido nem afirmado (ver seção 5).
 - Advisors antes/depois com mesmos counts (INFO 36; WARN: anon 2,
   authenticated 336, password 1) — não prova ausência de vulnerabilidades.
+
+### 4.1 Evidência real adicional (2026-10-18, escopo honesto)
+
+- Sessão publicada trocada pelo proprietário para `renato_cunha22@hotmail.com`
+  (tenant B `8f57c7dd-0557-4041-b401-7a00f7244626`).
+- Configurações/Usuários na sessão B mostrou apenas os 2 usuários de B; antes,
+  o admin de A via seus 6 — isolamento de lista observado.
+- Abrir cliente de A (`/clientes/33e9257d-ed39-4fc1-b959-680eb886ef6c`) na
+  sessão B retornou "Cliente não encontrado" — negação cross-tenant observada.
+- **Escopo:** teste real LIMITADO (um tenant B, duas telas/uma rota). NÃO é a
+  matriz A/B completa de JWT/RLS; não cobre todas as rotas, papéis nem
+  mutações. A homologação A/B continua PARCIAL.
 
 ## 5. Inspeção READ-ONLY: invalidação cliente/fingerprint no portal B2B
 
@@ -90,8 +102,13 @@ restauração), sem inventar mecanismo novo nem alterar hooks:
   limpa caches e remonta o conteúdo via `AuthzEpochBoundary`
   (`src/components/authz/AuthzEpochBoundary.tsx`). **Tempo esperado hoje
   (gate fechado):** até o próximo refetch por foco/navegação/reload — sem
-  bound de tempo garantido. **Com gate aberto (futuro):** pior caso ~poll
-  10s + lease 15s. Nenhum TTL foi medido no teste real; não afirmar número.
+  bound de tempo garantido. **Com gate aberto (futuro), linguagem corrigida:**
+  a lease de 15s é medida DESDE O INÍCIO do request que obteve a última
+  resposta confirmada (não "poll 10s + lease 15s" somados); com a aba visível
+  e online, um poll a cada 10s reconfirma antes do vencimento, mas **nenhum
+  timer é prometido enquanto o navegador está suspenso** — ao acordar, o evento
+  de foco/visibilidade força revalidação que ESCONDE o conteúdo até nova
+  confirmação. Nenhum TTL foi medido no teste real; não afirmar número.
 - **Testes existentes do mecanismo:** `src/test/config/authzEpochMonitor.test.ts`,
   `src/test/config/authzFoundation.integration.test.tsx`,
   `src/test/config/myPartner.session.test.tsx`,
