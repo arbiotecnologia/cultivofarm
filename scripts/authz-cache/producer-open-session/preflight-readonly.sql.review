@@ -1,0 +1,25 @@
+-- Auditor must validate connector ref EXACTLY swzpzcwiasxmjutrmvkm first.
+-- SELECT-only, complete file with ON_ERROR_STOP. No migration/installation.
+BEGIN TRANSACTION READ ONLY;
+SET LOCAL statement_timeout='15s';
+SET LOCAL lock_timeout='3s';
+WITH expected(signature,hash,acl,cfg,definer,volatility) AS (VALUES
+ ('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c','authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=public',true,'v'),
+ ('public.fn_authz_uid_scope_ok(uuid)','00a9a4d4a075d756d312d69778493b39','authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=public, pg_temp',true,'s'),
+ ('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=""',false,'s'),
+ ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881','authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=""',true,'s'),
+ ('public.can_user_access_cliente(uuid)','4c2eaf7ab10e204e7ad57d41cb418554','authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=public',true,'s'))
+SELECT 1 / CASE WHEN count(*)=5 AND bool_and(coalesce(
+ md5(pg_get_functiondef(p.oid))=e.hash AND p.proowner='postgres'::regrole AND
+ p.prosecdef=e.definer AND p.provolatile::text=e.volatility AND array_to_string(p.proconfig,',')=e.cfg AND
+ (SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(p.proacl) a)=e.acl,false)) THEN 1 ELSE 0 END AS contracts_guard
+FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.signature);
+SELECT 1 / CASE WHEN md5(string_agg(concat_ws('|',policyname,permissive,array_to_string(roles,','),cmd,qual,with_check),E'\n' ORDER BY policyname))='ad69f41e27cba39ec819b209517dd28f' THEN 1 ELSE 0 END AS clientes_policies_guard
+FROM pg_policies WHERE schemaname='public' AND tablename='clientes';
+SELECT 1 / CASE WHEN relrowsecurity THEN 1 ELSE 0 END AS clientes_rls_guard FROM pg_class WHERE oid='public.clientes'::regclass;
+SELECT p.oid::regprocedure,md5(pg_get_functiondef(p.oid)),p.proacl,p.proconfig,pg_get_functiondef(p.oid)
+FROM pg_proc p WHERE p.oid=to_regprocedure('platform_private.platform_actor_access_ready(uuid)');
+-- Last prerequisite is inventory, NOT closed by a snapshot. No v6 dependency.
+SELECT t.tgrelid::regclass,t.tgname,t.tgenabled,t.tgfoid::regprocedure,md5(pg_get_functiondef(t.tgfoid))
+FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.user_clientes'::regclass,'public.profiles'::regclass,'public.user_roles'::regclass) ORDER BY 1,2;
+ROLLBACK;
