@@ -20,7 +20,7 @@ BEGIN
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   -- Count ALL unrevoked links before eligibility; never select one out of ambiguity.
   SELECT pu.partner_id FROM public.partner_users pu
   JOIN public.partner_accounts pa ON pa.id=pu.partner_id
@@ -41,7 +41,7 @@ $expected1$),
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   -- Public arbitrary-target introspection is closed; no admin/service impersonation.
   SELECT pu.papel FROM public.partner_users pu
   JOIN public.partner_accounts pa ON pa.id=pu.partner_id
@@ -73,15 +73,15 @@ CREATE OR REPLACE FUNCTION public.get_user_partner_id()
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   SELECT partner_id FROM public.partner_users WHERE user_id = auth.uid() LIMIT 1;
-$function$
+$function$;
 CREATE OR REPLACE FUNCTION public.get_partner_papel(_user_id uuid)
  RETURNS text
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   SELECT papel FROM public.partner_users WHERE user_id = _user_id LIMIT 1;
-$function$
+$function$;
 COMMIT;
