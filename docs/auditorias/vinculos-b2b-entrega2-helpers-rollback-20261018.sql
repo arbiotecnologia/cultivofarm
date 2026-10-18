@@ -74,7 +74,7 @@ BEGIN
  ELSE RETURN NULL;
  END IF;
  RETURN jsonb_build_object('partner_id',link.partner_id,'organization_id',org,
-   'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,mode);
+   'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,'mode',mode);
 END $function$;
 
 -- Verificação pós-rollback (hashes baseline):
