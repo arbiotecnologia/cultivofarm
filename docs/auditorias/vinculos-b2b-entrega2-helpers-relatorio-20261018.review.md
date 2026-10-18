@@ -97,6 +97,19 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
   presente, tenant coerente, não revogado): **nenhum acesso legítimo cortado hoje**.
 - Overload `(uuid)` herda o endurecimento sem alteração própria.
 - Não reabre RPCs fechadas, não altera containment PUC, não toca policies.
+- **Portal/PUC seguem a regra comum:** com a rev 2.1, o contexto do portal e os
+  helpers escalares aplicam a mesma elegibilidade (revogação + owner presente +
+  tenant coerente); não há mais caminho em que o portal autorize o que o
+  escalar nega. PUC permanece com policy RESTRICTIVE `false` (intocado).
+- **Token/provisioning:** o contexto alimenta apenas leitura de contexto
+  comercial B2B; nenhum fluxo de provisioning/emissão de token depende de
+  vínculo com tenant divergente do owner (produção: 1 vínculo ativo elegível,
+  PUC=0, PTC=0, ownerless=0 — evidência externa 2026-10-18). Nenhum acesso
+  legítimo cortado hoje; vínculos futuros com tenant incoerente serão negados
+  até regularização explícita.
+- **Rollback atualizado:** guarda anti-drift do rollback agora também exige o
+  marcador `link.tenant_id IS DISTINCT FROM owner` no corpo instalado antes de
+  reverter — não reverte um corpo divergente.
 
 ## 5. Status
 
