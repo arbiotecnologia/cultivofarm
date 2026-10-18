@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:24 — produtor tela aberta, candidata limitada
+- [x] Registrar evidência independente e confirmar RPC canônica self/h15/RLS que preserve múltiplos clientes.
+- [x] Preparar gate produtor fechado + integração no único monitor e boundaries /app e /portal, preservando B2B/internos.
+- [x] Testar mobile/desktop, revoke/restore, múltiplos clientes, troca A/B e respostas tardias; preparar rollback/preflight guardados.
+- [x] Documentar 143/143 testes + 2/2 staging e limites em docs/auditorias/produtor-tela-aberta-20261018.review.md; sem hosted writes/publicação/global/Blob.
+- [ ] Ativação/homologação produtor: bloqueada por revisão/preflight integral, implantação e login real independentes do auditor; gate false mantido.
+
 ## 18/10 23:15 — monitor/anexos, recorte crítico após 24b5f807
 - [x] Inventariar UI/emissores/Storage documentado e demonstrar falha de resposta tardia com lease consumida (4/4 testes falharam antes).
 - [x] Corrigir somente fences existentes, testar adversários e preparar artefatos/rollback SHA256 fail-closed; gates/B2B/Edges intactos.

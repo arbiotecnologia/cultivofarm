@@ -1,0 +1,61 @@
+{
+  "baseline": "a905ae694f119e5f42a90f530b697da0c729ae32",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "files": [
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "pre_sha256": "60df6010f4abe7fde67a96486dbbc67527d6a9c8beba8f173b1c20e79dc4704a",
+      "post_sha256": "07d6cf7ae7c0d9e2159c8fd2f880c46138c4a05da1cc3c198939199d9cac343d",
+      "candidate": "useAuth.tsx.candidate.review",
+      "rollback": "useAuth.tsx.rollback.review",
+      "rollback_action": "restore"
+    },
+    {
+      "path": "src/hooks/usePortalCliente.ts",
+      "pre_sha256": "2750b74125b3bb395f4201cc71347ab07e8af2d26ce473a96ab555c3eff6410e",
+      "post_sha256": "9d3efcbc29334997e0ee6b23324c2fe4cc62dad192ee61457c9ed03a1e2f73b0",
+      "candidate": "usePortalCliente.ts.candidate.review",
+      "rollback": "usePortalCliente.ts.rollback.review",
+      "rollback_action": "restore"
+    },
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "pre_sha256": "8405d4354dfe2504b088a75fd048d1162f567b95365a6d6c1d9cf1ab9bd75e1b",
+      "post_sha256": "82aaff16a4c1394f67b42c6f1dca4852bb15855a13ce7e657d041364a6a6ee49",
+      "candidate": "authzEpochGate.ts.candidate.review",
+      "rollback": "authzEpochGate.ts.rollback.review",
+      "rollback_action": "restore"
+    },
+    {
+      "path": "src/lib/authz/producerContextProbe.ts",
+      "pre_sha256": null,
+      "post_sha256": "f46e511ebb45ea085305f0a61913c10499c9755f3f478f187560f45b4f406efb",
+      "candidate": "producerContextProbe.ts.candidate.review",
+      "rollback": null,
+      "rollback_action": "remove_new_file"
+    },
+    {
+      "path": "src/components/guards/AppPortalGuard.tsx",
+      "pre_sha256": "16c5e7ab890d6ffba392bde3d5bc15b6d55aaf064b4122efa4cdaef0a28c69e5",
+      "post_sha256": "1eac3a1135a0e47d1b3dab00789fe9b84bf4b8a2d4e5511fbd0d2db214bdc79c",
+      "candidate": "AppPortalGuard.tsx.candidate.review",
+      "rollback": "AppPortalGuard.tsx.rollback.review",
+      "rollback_action": "restore"
+    },
+    {
+      "path": "src/pages/app/MobileDashboardProdutor.tsx",
+      "pre_sha256": "8a0a6f09a0c887b85a4bd4b896e3af0e32baa5a912f404a0c563072ac45299f7",
+      "post_sha256": "f059bc9352c241d5f45a184f60f4044cf3e0458c33d2600efd0f3c3829428ae5",
+      "candidate": "MobileDashboardProdutor.tsx.candidate.review",
+      "rollback": "MobileDashboardProdutor.tsx.rollback.review",
+      "rollback_action": "restore"
+    }
+  ],
+  "activation": {
+    "path": "src/lib/authz/authzEpochGate.ts",
+    "pre_sha256": "82aaff16a4c1394f67b42c6f1dca4852bb15855a13ce7e657d041364a6a6ee49",
+    "post_sha256": "680b083e509d3a493535e7c136d1eb52863da1f9523d5c3d7c79dd169080d75a",
+    "candidate": "producer-gate.activation.review",
+    "rollback": "producer-gate.deactivation.review"
+  }
+}

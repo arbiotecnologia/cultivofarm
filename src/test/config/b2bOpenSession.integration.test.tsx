@@ -18,7 +18,7 @@ const chain = (result: unknown) => {
   c.then = (resolve: (r: unknown) => void) => Promise.resolve(result).then(resolve);
   return c;
 };
-vi.mock("@/lib/authz/authzEpochGate", () => ({ get AUTHZ_CACHE_FOUNDATION_ENABLED() { return state.gate; }, AUTHZ_CACHE_ROLLOUT_SCOPE: "b2b-context" }));
+vi.mock("@/lib/authz/authzEpochGate", () => ({ get AUTHZ_CACHE_FOUNDATION_ENABLED() { return state.gate; }, AUTHZ_CACHE_ROLLOUT_SCOPE: "b2b-context", PRODUCER_CONTEXT_MONITOR_ENABLED: false }));
 vi.mock("@/lib/portalBroadcast", () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 vi.mock("@/lib/accessAuditLog", () => ({ logAccessDeniedOnce: () => {}, routeGroupFromPath: () => "b2b" }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {

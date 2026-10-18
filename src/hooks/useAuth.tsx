@@ -6,8 +6,9 @@ import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
-import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE } from "@/lib/authz/authzEpochGate";
+import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
+import { producerContextProbe } from "@/lib/authz/producerContextProbe";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -173,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (
         userRoles.includes("cliente_produtor") &&
         userRoles.length === 1 &&
+        !(AUTHZ_CACHE_FOUNDATION_ENABLED && AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context" && PRODUCER_CONTEXT_MONITOR_ENABLED) &&
         !profile.cliente_id
       ) {
         setError(
@@ -359,8 +361,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
   const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
   const b2bContextOnly = AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context";
+  const producerContextOnly = b2bContextOnly && PRODUCER_CONTEXT_MONITOR_ENABLED &&
+    roles.length === 1 && roles[0] === "cliente_produtor";
   const isExternalUser = b2bContextOnly
-    ? roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico")
+    ? producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
     profile.senha_provisoria === false && !!profile.organization_id;
@@ -386,6 +390,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
+        if (producerContextOnly) {
+          return producerContextProbe(user?.id ?? "", profile?.organization_id ?? "");
+        }
         if (b2bContextOnly) {
           // Generated RPC names lag the already-installed resolver; canonical
           // client only, unknown response validated below (same as useMyPartner).
