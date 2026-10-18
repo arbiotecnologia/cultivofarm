@@ -92,13 +92,17 @@ Nenhum código TypeScript/React foi alterado nesta fase (somente arquivos SQL/do
 ## 7. Critérios PASS / NO-GO para liberar F2 (Guards)
 
 **PASS exige TODOS:**
-1. Migration F1 revisada e aprovada pelo proprietário.
-2. Aplicação em homolog `vrlcdwmlytukrjezrrnf` + T1–T6 PASS com saída registrada (prova hospedada).
-3. Aplicação em produção aprovada e executada com T7 read-only antes/depois (0 divergências).
-4. PENDÊNCIA P1 (parceiro sem tenant) com dono e prazo definidos.
+1. Migration F1 revisada e aprovada pelo proprietário. ✅ (aplicada pelo auditor externo)
+2. Aplicação em homolog `vrlcdwmlytukrjezrrnf` + T1–T6 PASS com saída registrada (prova hospedada). ✅ **HOSPEDADO 2026-10-18** (ver registro no topo) — com a ressalva de que foi SQL privilegiado, não RLS em sessões reais.
+3. Aplicação em produção aprovada e executada com T7 read-only antes/depois (0 divergências). ⏳ **PENDENTE** — produção segue intocada.
+4. PENDÊNCIA P1 (parceiro sem tenant) com dono e prazo definidos. ⏳ **PENDENTE**.
+5. **NOVO:** Paridade de segurança homolog×produção — homolog ainda sem guards em `profiles`/`user_roles`/`user_clientes` e 279 vs 286 tabelas. ⏳ **PENDENTE** (PRÉ-F1.3).
+6. **NOVO:** Teste A/B de RLS com sessões reais em homolog. ⏳ **PENDENTE**.
+7. **NOVO:** Gate fail-closed para vínculos sem tenant (análise de bypass do CHECK nullable) — desenhado em `vinculos-b2b-f2-plano-20261018.review.md` seção 2. ⏳ **PENDENTE**.
 
 **NO-GO (bloqueia F2):**
-- Qualquer falha de T1–T6 em homolog.
+- Itens 3–7 acima não concluídos. **F2 permanece BLOQUEADA nesta rodada.**
+- Qualquer falha de T1–T6 em homolog (não ocorreu).
 - Recusa de aprovação da migration em produção.
 - Descoberta de consumidor de `partner_users` não inventariado na F0 que quebre com as colunas novas (risco avaliado como baixo: colunas aditivas com defaults).
 
