@@ -171,10 +171,14 @@ BEGIN
   UPDATE lab.partner_users SET revoked_at = now()
   WHERE user_id = '10000000-0000-4000-8000-000000000001';
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000a1'), 'revogação deve fechar acesso imediatamente';
-  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000011','20000000-0000-4000-8000-0000000000a1'), 'revogação do vínculo deve fechar PUC do técnico';
+  -- revogar o PRÓPRIO vínculo do técnico fecha sua PUC
+  UPDATE lab.partner_users SET revoked_at = now()
+  WHERE user_id = '10000000-0000-4000-8000-000000000011';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000011','20000000-0000-4000-8000-0000000000a1'), 'revogação do próprio vínculo deve fechar PUC do técnico';
   UPDATE lab.partner_users SET revoked_at = NULL
   WHERE user_id IN ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000011');
   ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000a1'), 'restauração deve reabrir acesso legítimo';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000011','20000000-0000-4000-8000-0000000000a1'), 'restauração deve reabrir PUC do técnico';
   RAISE NOTICE 'PASS fase4: revogação dinâmica respeitada';
 END $$;
 
