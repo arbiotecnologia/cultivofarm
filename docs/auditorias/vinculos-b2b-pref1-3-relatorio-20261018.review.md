@@ -37,7 +37,7 @@ Produção tem ainda guards de aplicação fora do schema cf (`guard_profile_sen
 - **P0 preflight fail-closed:** exige PRÉ-F1.2 presente (schema/state/3 funções com flags corretas), 4 tabelas alvo existentes, `auth.uid()` disponível, e **aborta** se qualquer trigger/função a criar já existir (sem duplicidade, sem conflito).
 - **P1:** cria as 4 funções ausentes (`acquire_invitation_gate`, `advance_stamp`, `require_admin`, `touch_invitation_profiles`) com corpos **verbatim** de produção, mesma segurança (DEFINER/INVOKER, `search_path=''`), REVOKE de PUBLIC/anon/authenticated/service_role (REVOKEs condicionados à existência das roles — correção já validada na PRÉ-F1.2).
 - **P2:** cria os 14 triggers com nomes/timing/eventos idênticos à produção.
-- **P3:** validação pós-criação na mesma transação (15 triggers cf no total, incluindo os 3 de `partner_users`).
+- **P3:** validação pós-criação na mesma transação (17 triggers cf no total, incluindo os 3 de `partner_users`).
 - **Smokes S1–S5** transacionais documentados no rodapé; **rollback completo** sem CASCADE, preservando PRÉ-F1.2/F1 e dados.
 
 ## 3. Achados e blockers
