@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:32 — inativação interna financeira, candidata limitada
+- [ ] Registrar evidência real independente e inventariar autoridade self/h15/readiness/roles + guards internos.
+- [ ] Preparar menor extensão no monitor único com gate fechado, preservando B2B/produtor/RBAC e dados órfãos.
+- [ ] Testar /financeiro aberto, inativação/restore/roles/timeout/respostas tardias; entregar candidatos/rollback/preflight.
+- [ ] Documentar resultados e limites separados de revogação por entidade/entitlements, sem DDL/deploy/publicação.
+
 ## 18/10 23:24 — produtor tela aberta, candidata limitada
 - [x] Registrar evidência independente e confirmar RPC canônica self/h15/RLS que preserve múltiplos clientes.
 - [x] Preparar gate produtor fechado + integração no único monitor e boundaries /app e /portal, preservando B2B/internos.
