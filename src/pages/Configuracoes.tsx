@@ -43,7 +43,7 @@ import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
 import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
-import { carregarUsuariosAdmin, definirStatusUsuario, montarArgsListagem, placeholderMesmaConsulta } from "@/lib/configuracoes/usuariosListQuery";
+import { carregarUsuariosAdmin, definirStatusUsuario, montarArgsListagem, placeholderMesmaConsulta, type UsuarioListado } from "@/lib/configuracoes/usuariosListQuery";
 import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
@@ -170,7 +170,8 @@ export default function Configuracoes() {
       placeholderMesmaConsulta(prev, prevQuery?.queryKey, ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina]),
     queryFn: async () => {
       // O contrato server-side retorna user_id e updated_at para edição otimista.
-      return carregarUsuariosAdmin(supabase, montarArgsListagem({
+      // RPC ausente do schema gerado: estreitamento único do receiver (padrão userLinksQuery).
+      return carregarUsuariosAdmin(supabase as unknown as Parameters<typeof carregarUsuariosAdmin>[0], montarArgsListagem({
         search: debouncedSearchTerm,
         role: filterRole,
         status: filterStatus,
@@ -241,7 +242,8 @@ export default function Configuracoes() {
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
       if (bloqueio) throw new ErroStatusLocal(bloqueio);
-      await definirStatusUsuario(supabase, userId, ativo);
+      // RPC ausente do schema gerado: estreitamento único do receiver (padrão userLinksQuery).
+      await definirStatusUsuario(supabase as unknown as Parameters<typeof definirStatusUsuario>[0], userId, ativo);
     },
 
     onSuccess: () => {
