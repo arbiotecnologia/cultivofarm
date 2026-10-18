@@ -79,6 +79,36 @@ assinatura, search_path e containment PUC inalterados.
 - Demais casos das fases 1–4 reexecutados e verde (brechas no baseline, endurecimento,
   revogação dinâmica, rollback exato, anti-drift).
 
+## 1.3 Revisão final 1.2 (2026-10-18) — FAIL-CLOSED para owner NULL em todos os ramos B2B
+
+Revisão de segurança final apontou que a revisão 1.1 ainda tratava owner NULL como
+"legado" com prova contextual fraca. Correção aplicada com base em evidência live:
+
+- **Evidência:** produção tem **zero** vínculos ativos com owner NULL; o contexto real
+  `platform_private.b2b_commercial_context` exige owner NÃO NULL inclusive no modo
+  `legacy_partner_tenant` — que é `organization_id` do ator **diferente** do owner,
+  e não owner ausente. Owner NULL não é legado válido: é parceiro não regularizado.
+- **Candidata 1.2:** todos os ramos B2B (b2b, pu2, pu3) exigem
+  `commercial_owner_organization_id IS NOT NULL`, `tenant_id IS NOT NULL` e
+  `tenant_id = owner`. A referência a `clientes.organization_id` foi removida da
+  candidata (não inventamos `owner = client org` universal).
+- **Modo legado real preservado:** vínculo com `tenant_id = owner` autoriza mesmo
+  quando `profile.organization_id` do usuário difere do owner — a função não lê
+  `profiles`, e isso é intencional (testado).
+- **Carteira válida preservada:** cliente com `organization_id` diferente do owner
+  do parceiro, validamente associado via `partner_clients`, segue autorizado — a
+  coerência exigida é vínculo↔parceiro, não vínculo↔cliente (testado).
+- **Impacto documentado:** parceiros sem owner perdem acesso B2B até regularização
+  explícita (atribuir `commercial_owner_organization_id` com trilha auditável). Em
+  produção hoje isso afeta **zero** vínculos ativos; o único parceiro sintético sem
+  owner (AUDIT-CF) não possui vínculo ativo.
+- **Testes laboratório atualizados:** owner NULL + tenant NULL nega; owner NULL com
+  qualquer tenant nega (U3, U7, U8, T13, T14); owner presente com tenant = owner
+  aceita mesmo com perfil divergente (modo legado real); carteira cross-org válida
+  preservada. Vitest 1/1 passou.
+- **Nenhuma dependência válida concreta de owner NULL foi encontrada** — não houve
+  necessidade de NO-GO por esse motivo.
+
 ## 2. Decisão de desenho
 
 - **Não impor self-only**: o overload autoriza ALVO terceiro por desenho (callers internos e policies passam `_user_id` arbitrário). Endurecer por vínculo do alvo, nunca por `auth.uid()`.
