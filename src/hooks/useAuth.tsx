@@ -450,8 +450,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         generationRef.current += 1;
         void queryClient.cancelQueries();
         queryClient.clear();
-        clearActivePortalContext();
-        window.dispatchEvent(new Event("portal-client-preferences-cleared"));
+        // Only an untrusted client preference survives producer confirmation.
+        // Membership/cache authorization still expires with every epoch.
+        clearActivePortalContext({ preserveClientPreference: producerContextOnly });
+        if (!producerContextOnly) window.dispatchEvent(new Event("portal-client-preferences-cleared"));
         setAuthzEpoch((e) => e + 1);
         void refresh();
       },

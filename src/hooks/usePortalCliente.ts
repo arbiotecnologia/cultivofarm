@@ -29,15 +29,14 @@ export function usePortalCliente() {
   const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
   const organizationId = profile?.organization_id ?? null;
   const portalRole = roles.some(role => ["cliente_produtor", "administrador", "gestor"].includes(role));
-  // Foundation de cache (mesma identidade): lease pendente/expirada derruba o
-  // ready; a época entra no escopo — seleção/respostas de época antiga não
-  // reabrem. A limpeza de seleções já ocorre via "portal-client-preferences-
-  // cleared" disparado pelo AuthProvider na mudança de época/expiração.
+  // Preference identity is stable; authorization/request scope still includes
+  // readiness/epoch. A saved ID is never exposed before canonical validation.
   const ready = !authLoading && !!user && profile?.user_id === user.id && profile?.ativo === true && profile.senha_provisoria !== true && !!organizationId && portalRole && authzReady;
   const generation = useRef(0);
   const controller = useRef<AbortController>();
   const scope = `${user?.id ?? ""}:${organizationId ?? ""}:${[...roles].sort().join(",")}:${ready}:${authzEpoch}`;
-  const sharedId = useSyncExternalStore(subscribeSelection, () => selections.get(scope) ?? null, () => null);
+  const preferenceScope = JSON.stringify([user?.id ?? "", organizationId ?? "", [...roles].sort()]);
+  const sharedId = useSyncExternalStore(subscribeSelection, () => selections.get(preferenceScope) ?? null, () => null);
   const liveScope = useRef(scope);
   if (liveScope.current !== scope) { liveScope.current = scope; generation.current += 1; controller.current?.abort(); }
   const [resolvedScope, setResolvedScope] = useState("");
@@ -112,15 +111,19 @@ export function usePortalCliente() {
 
     // Selecionar cliente ativo
     let stored: string | null = null;
-    try { stored = window.localStorage.getItem(`${STORAGE_KEY}:${scope}`); } catch { /* Optional preference only. */ }
+    try { stored = window.localStorage.getItem(`${STORAGE_KEY}:${preferenceScope}`); } catch { /* Optional preference only. */ }
     const active =
-      list.find((c) => c.id === selections.get(scope)) || list.find((c) => c.id === stored) ||
+      list.find((c) => c.id === selections.get(preferenceScope)) || list.find((c) => c.id === stored) ||
       list.find((c) => c.principal) ||
       list[0] ||
       null;
-    publishSelection(scope, active?.id ?? null);
+    publishSelection(preferenceScope, active?.id ?? null);
+    try {
+      if (active) window.localStorage.setItem(`${STORAGE_KEY}:${preferenceScope}`, active.id);
+      else window.localStorage.removeItem(`${STORAGE_KEY}:${preferenceScope}`);
+    } catch { /* Preference only, never authorization. */ }
     setLoading(false);
-  }, [user, organizationId, ready, scope]);
+  }, [user, organizationId, ready, scope, preferenceScope]);
 
   useEffect(() => {
     void load();
@@ -131,24 +134,24 @@ export function usePortalCliente() {
 
   useEffect(() => {
     const sync = (event: StorageEvent) => {
-      if (event.key !== `${STORAGE_KEY}:${scope}` || !ready || resolvedScope !== scope) return;
+      if (event.key !== `${STORAGE_KEY}:${preferenceScope}` || !ready || !fence.capture()() || resolvedScope !== scope) return;
       const found = clientes.find(c => c.id === event.newValue);
-      if (found) publishSelection(scope, found.id);
+      if (found) publishSelection(preferenceScope, found.id);
     };
     window.addEventListener("storage", sync);
     return () => { window.removeEventListener("storage", sync); };
-  }, [scope, ready, resolvedScope, clientes]);
+  }, [scope, preferenceScope, ready, resolvedScope, clientes, fence]);
 
   const setClienteAtivo = useCallback(
     (id: string) => {
       const found = clientes.find((c) => c.id === id);
-      if (!ready || resolvedScope !== scope || !found) return;
-      publishSelection(scope, found.id);
+      if (!ready || !fence.capture()() || resolvedScope !== scope || !found) return;
+      publishSelection(preferenceScope, found.id);
       try {
-        window.localStorage.setItem(`${STORAGE_KEY}:${scope}`, found.id);
+        window.localStorage.setItem(`${STORAGE_KEY}:${preferenceScope}`, found.id);
       } catch { /* Selection remains valid in memory if storage is unavailable. */ }
     },
-    [clientes, scope, ready, resolvedScope]
+    [clientes, scope, preferenceScope, ready, resolvedScope, fence]
   );
 
   const selected = ready && fence.ready && resolvedScope === scope ? clientes.find(c => c.id === sharedId) : undefined;
