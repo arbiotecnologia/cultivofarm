@@ -31,7 +31,10 @@ sem nova arquitetura/ledger. Aplicação exclusivamente pelo auditor via Supabas
 - Hashes POST fixos apurados no PG local e commitados (nunca regenerados
   pelos testes):
   - `public.get_b2b_user_role_for_partner(uuid,uuid)` → `27efcdaf40dc0e5287abd4cf418a6571`
-  - `public.is_valid_b2b_partner_user(uuid,uuid)` → `01ca51531eea52aab65c9d8138dd88d3`
+  - `public.is_valid_b2b_partner_user(uuid,uuid)` → `93520101987e599280460d3dadcf3a9f`
+    (reapurado após rev a1c27b3: folha passou a exigir count TOTAL de
+    `user_roles` = 1, alinhado ao contrato E2 `b2b_commercial_context` —
+    gestor+administrador ou qualquer 2+ roles falham fechado)
   - `platform_private.b2b_actor_scope(uuid)` → `09b184da91c59f8b1f9be72217f8c37e`
 - A verificação inválida anterior (md5 de prosrc contra hash de
   pg_get_functiondef) foi eliminada: tudo usa `md5(pg_get_functiondef(oid))`.
@@ -55,6 +58,18 @@ sem nova arquitetura/ledger. Aplicação exclusivamente pelo auditor via Supabas
   antes do rollback (rejeitado), atomicidade (as outras funções permanecem nos
   hashes POST quando um guard rejeita), rollback exato por hashes, rollback
   sobre baseline PRE recusado.
+- Prova atômica reforçada (rev a1c27b3): snapshot de hashes antes/depois da
+  candidata recusada e antes/depois do rollback recusado, INCLUINDO a função
+  adulterada; falha de PÓS provocada em CÓPIA TEMPORÁRIA do script completo
+  (somente uma constante esperada do bloco pós alterada; originais intactos),
+  com todos os corpos PRE preservados após a exceção.
+- Cobertura adicional (rev a1c27b3): gestor+administrador (2 roles totais)
+  NEGADO em cada um dos 3 helpers; positivo B2B legacy REAL (role
+  parceiro_b2b, papel gestor, profile.org=ORG_LEGACY com
+  partner_account_id=P_LEGACY, vínculo tenant=owner comercial ORG_OWNER e
+  partner=P_LEGACY) com asserts count=1/user_partner=P_LEGACY/profile_ok/
+  org_partner/partner_valid — distinto do U_LEGACY administrador sem vínculo,
+  que prova apenas o ramo interno de org legacy.
 - Stubs declarados: `has_role` lê tabela-fixture `user_roles` (sem RLS/JWT);
   `entitlements_for_user` stub com fixture. Nenhum trigger live desligado (o
   banco descartável não tem triggers).
@@ -74,7 +89,7 @@ sem nova arquitetura/ledger. Aplicação exclusivamente pelo auditor via Supabas
 
 ## 2. Resultados
 
-- Harness local: **60/60 checks PASS** (exit 0), incluindo guards, drift,
+- Harness local: **71/71 checks PASS** (exit 0), incluindo guards, drift,
   atomicidade e rollback exato.
 - Prova externa do defeito (auditor, produção, BEGIN+UPDATE guardado+ROLLBACK):
   sob `revoked_at` setado, os 3 helpers antigos continuaram concedendo

@@ -149,7 +149,8 @@ GRANT EXECUTE ON FUNCTION platform_private.b2b_actor_scope(uuid) TO service_role
 
 # ---- Identidades da fixture ----
 U_OK, U_TEC, U_REV, U_2LINK, U_0LINK, U_WRONGT, U_OWNERNULL, U_INACT, U_DEL, \
-U_BADPAPEL, U_2ROLES, U_INTERNAL, U_LEGACY, U_ORGINACT = [uid(i) for i in range(1, 15)]
+U_BADPAPEL, U_2ROLES, U_INTERNAL, U_LEGACY, U_ORGINACT, U_GESTOR_ADMIN, \
+U_LEGACYB2B = [uid(i) for i in range(1, 17)]
 P_OK, P_INACT, P_DEL, P_OWNERNULL, P_LEGACY = uid(20), uid(21), uid(22), uid(23), uid(24)
 ORG_OWNER, ORG_OTHER, ORG_LEGACY, ORG_INACT = uid(30), uid(31), uid(32), uid(33)
 
@@ -179,7 +180,9 @@ INSERT INTO public.profiles(user_id, organization_id, ativo) VALUES
   ('{U_2ROLES}', '{ORG_OWNER}', true),
   ('{U_INTERNAL}', '{ORG_OTHER}', true),
   ('{U_LEGACY}', '{ORG_LEGACY}', true),
-  ('{U_ORGINACT}', '{ORG_INACT}', true);
+  ('{U_ORGINACT}', '{ORG_INACT}', true),
+  ('{U_GESTOR_ADMIN}', '{ORG_OWNER}', true),
+  ('{U_LEGACYB2B}', '{ORG_LEGACY}', true);
 INSERT INTO public.user_roles(user_id, role) VALUES
   ('{U_OK}', 'parceiro_b2b'),
   ('{U_TEC}', 'parceiro_b2b_tecnico'),
@@ -194,7 +197,10 @@ INSERT INTO public.user_roles(user_id, role) VALUES
   ('{U_2ROLES}', 'parceiro_b2b_tecnico'),
   ('{U_INTERNAL}', 'administrador'),
   ('{U_LEGACY}', 'administrador'),
-  ('{U_ORGINACT}', 'parceiro_b2b');
+  ('{U_ORGINACT}', 'parceiro_b2b'),
+  ('{U_GESTOR_ADMIN}', 'parceiro_b2b'),
+  ('{U_GESTOR_ADMIN}', 'administrador'),
+  ('{U_LEGACYB2B}', 'parceiro_b2b');
 INSERT INTO public.partner_users(partner_id, user_id, papel, tenant_id, revoked_at) VALUES
   ('{P_OK}', '{U_OK}', 'gestor', '{ORG_OWNER}', NULL),
   ('{P_OK}', '{U_TEC}', 'tecnico', '{ORG_OWNER}', NULL),
@@ -207,7 +213,9 @@ INSERT INTO public.partner_users(partner_id, user_id, papel, tenant_id, revoked_
   ('{P_DEL}', '{U_DEL}', 'gestor', '{ORG_OWNER}', NULL),
   ('{P_OK}', '{U_BADPAPEL}', 'gestor', '{ORG_OWNER}', NULL),
   ('{P_OK}', '{U_2ROLES}', 'gestor', '{ORG_OWNER}', NULL),
-  ('{P_OK}', '{U_ORGINACT}', 'gestor', '{ORG_OWNER}', NULL);
+  ('{P_OK}', '{U_ORGINACT}', 'gestor', '{ORG_OWNER}', NULL),
+  ('{P_OK}', '{U_GESTOR_ADMIN}', 'gestor', '{ORG_OWNER}', NULL),
+  ('{P_LEGACY}', '{U_LEGACYB2B}', 'gestor', '{ORG_OWNER}', NULL);
 INSERT INTO public.entitlements_fixture(user_id) VALUES ('{U_OK}'), ('{U_TEC}');
 """
 
@@ -218,7 +226,7 @@ PRE = {
 }
 POST = {
  'public.get_b2b_user_role_for_partner(uuid,uuid)': '27efcdaf40dc0e5287abd4cf418a6571',
- 'public.is_valid_b2b_partner_user(uuid,uuid)': '01ca51531eea52aab65c9d8138dd88d3',
+ 'public.is_valid_b2b_partner_user(uuid,uuid)': '93520101987e599280460d3dadcf3a9f',
  'platform_private.b2b_actor_scope(uuid)': '09b184da91c59f8b1f9be72217f8c37e',
 }
 
@@ -239,13 +247,31 @@ try:
 
     # --- DRIFT antes da candidata: corpo alterado => guarda rejeita, nada muda ---
     run("CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT true$$;")
+    snap_antes = {sig: md5(sig) for sig in PRE}  # inclui a função adulterada
     run_file(CAND, fail='PRE FALHOU')
     results.append("drift pré-candidata rejeitado (is_valid adulterado)")
+    snap_depois = {sig: md5(sig) for sig in PRE}
+    assert snap_depois == snap_antes, (snap_antes, snap_depois)
+    results.append("snapshot idêntico antes/depois da candidata recusada (incl. adulterada)")
     run(LIVE_BODIES)  # restaura baseline
     run(ACLS)
     for sig, h in PRE.items():
         assert md5(sig) == h, f"baseline não restaurado em {sig}"
     results.append("baseline restaurado após drift")
+
+    # --- FALHA DE PÓS em CÓPIA TEMPORÁRIA do script completo: altera SOMENTE
+    # uma constante esperada do bloco pós; originais intactos. A exceção no
+    # DO pós aborta a transação => todos os corpos permanecem PRE.
+    tampered = root / 'candidate-post-fail.sql'
+    src = CAND.read_text()
+    alvo = POST['public.get_b2b_user_role_for_partner(uuid,uuid)']
+    pos = src.rindex(alvo)  # ÚLTIMA ocorrência = bloco pós (a 1ª é o cabeçalho)
+    tampered.write_text(src[:pos] + '0' * 32 + src[pos + len(alvo):])
+    run_file(tampered, fail='PÓS FALHOU')
+    results.append("falha de PÓS provocada em cópia temporária (constante pós alterada)")
+    for sig, h in PRE.items():
+        assert md5(sig) == h, f"corpo de {sig} alterado apesar da exceção de PÓS"
+    results.append("todos os corpos PRE preservados após exceção de PÓS (atomicidade)")
 
     # --- Aplica candidata COMPLETA intacta ---
     run_file(CAND)
@@ -271,6 +297,7 @@ try:
     check("valid: papel inconsistente (gestor c/ role tecnico) = false", f"SELECT {V}('{U_BADPAPEL}','{P_OK}')", "f")
     check("valid: dois papéis B2B = false", f"SELECT {V}('{U_2ROLES}','{P_OK}')", "f")
     check("valid: sem papel B2B (interno) = false", f"SELECT {V}('{U_INTERNAL}','{P_OK}')", "f")
+    check("valid: gestor+administrador (2 roles totais) = false", f"SELECT {V}('{U_GESTOR_ADMIN}','{P_OK}')", "f")
 
     # ===== get_role: positivos =====
     check("role: gestor elegível -> parceiro_b2b", f"SELECT {R}('{U_OK}','{P_OK}')", "parceiro_b2b")
@@ -285,6 +312,7 @@ try:
     check("role: 2 vínculos -> NULL", f"SELECT coalesce({R}('{U_2LINK}','{P_OK}'),'<null>')", "<null>")
     check("role: papel inconsistente -> NULL", f"SELECT coalesce({R}('{U_BADPAPEL}','{P_OK}'),'<null>')", "<null>")
     check("role: dois papéis B2B -> NULL", f"SELECT coalesce({R}('{U_2ROLES}','{P_OK}'),'<null>')", "<null>")
+    check("role: gestor+administrador (2 roles totais) -> NULL", f"SELECT coalesce({R}('{U_GESTOR_ADMIN}','{P_OK}'),'<null>')", "<null>")
 
     # ===== b2b_actor_scope: positivos =====
     check("scope: gestor elegível -> count=1, partner", f"SELECT user_partner_count, user_partner FROM {S}('{U_OK}')", f"1|{P_OK}")
@@ -299,14 +327,27 @@ try:
     check("scope: 2 vínculos -> count=2, partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_2LINK}')", "2|<null>")
     check("scope: papel inconsistente -> partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_BADPAPEL}')", "1|<null>")
     check("scope: dois papéis B2B -> partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_2ROLES}')", "1|<null>")
+    check("scope: gestor+administrador (2 roles totais) -> partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_GESTOR_ADMIN}')", "1|<null>")
 
     # ===== Positivos REAIS interno/legacy e negativo org inativa =====
     # Interno: profile ativo em ORG_OTHER (sem partner_account_id), sem vínculo.
     check("scope: INTERNO profile_ok=true, org_partner NULL, partner_valid=false",
           f"SELECT profile_ok, coalesce(org_partner::text,'<null>'), partner_valid FROM {S}('{U_INTERNAL}')", "t|<null>|f")
-    # Legacy REAL: profile.organization_id = ORG_LEGACY, cujo partner_account_id = P_LEGACY.
-    check("scope: LEGACY profile_ok=true, org_partner=P_LEGACY, partner_valid=true (semântica antiga)",
+    # Legacy interno: profile.organization_id = ORG_LEGACY (partner_account_id
+    # = P_LEGACY), role administrador, SEM vínculo — prova o ramo interno de
+    # org legacy (partner_valid pela semântica antiga, sem owner).
+    check("scope: LEGACY interno profile_ok=true, org_partner=P_LEGACY, partner_valid=true (semântica antiga)",
           f"SELECT profile_ok, org_partner, partner_valid FROM {S}('{U_LEGACY}')", f"t|{P_LEGACY}|t")
+    # B2B LEGACY REAL: role parceiro_b2b, papel gestor, profile.org=ORG_LEGACY
+    # (partner_account_id=P_LEGACY) E vínculo elegível tenant=owner comercial
+    # (ORG_OWNER) com partner=P_LEGACY. Prova que o endurecimento do vínculo
+    # externo NÃO bloqueia o B2B legado elegível.
+    check("scope: B2B LEGACY count=1, user_partner=P_LEGACY",
+          f"SELECT user_partner_count, user_partner FROM {S}('{U_LEGACYB2B}')", f"1|{P_LEGACY}")
+    check("scope: B2B LEGACY profile_ok=true, org_partner=P_LEGACY, partner_valid=true",
+          f"SELECT profile_ok, org_partner, partner_valid FROM {S}('{U_LEGACYB2B}')", f"t|{P_LEGACY}|t")
+    check("valid: B2B LEGACY elegível = true", f"SELECT {V}('{U_LEGACYB2B}','{P_LEGACY}')", "t")
+    check("role: B2B LEGACY -> parceiro_b2b", f"SELECT {R}('{U_LEGACYB2B}','{P_LEGACY}')", "parceiro_b2b")
     # Org inativa: profile_ok=false.
     check("scope: org INATIVA -> profile_ok=false, org_partner NULL",
           f"SELECT profile_ok, coalesce(org_partner::text,'<null>') FROM {S}('{U_ORGINACT}')", "f|<null>")
@@ -316,8 +357,12 @@ try:
 
     # --- DRIFT antes do rollback: corpo adulterado => rollback recusa ---
     run("CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT 'x'::text$$;")
+    snap_antes = {sig: md5(sig) for sig in POST}  # inclui a função adulterada
     run_file(ROLL, fail='ROLLBACK RECUSADO')
     results.append("drift pré-rollback rejeitado (get_role adulterado)")
+    snap_depois = {sig: md5(sig) for sig in POST}
+    assert snap_depois == snap_antes, (snap_antes, snap_depois)
+    results.append("snapshot idêntico antes/depois do rollback recusado (incl. adulterada)")
     # Atomicidade: as OUTRAS funções permanecem nos hashes POST
     check("atomicidade: is_valid intacta após rollback recusado",
           f"SELECT md5(pg_get_functiondef('{ 'public.is_valid_b2b_partner_user(uuid,uuid)' }'::regprocedure))",
