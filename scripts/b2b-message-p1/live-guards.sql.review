@@ -19,7 +19,7 @@ $function$;
 -- conta TODOS os vínculos não revogados; zero ou 2+ falham fechado (NULL).
 CREATE OR REPLACE FUNCTION public.get_user_partner_id()
  RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $function$
- SELECT CASE WHEN count(*)=1 THEN min(partner_id) ELSE NULL::uuid END
+ SELECT CASE WHEN count(*)=1 THEN min(partner_id::text)::uuid ELSE NULL::uuid END
  FROM public.partner_users WHERE user_id=auth.uid() AND revoked_at IS NULL;
 $function$;
 CREATE OR REPLACE FUNCTION public.get_partner_papel()
