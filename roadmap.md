@@ -64,5 +64,6 @@
 - [x] Auditar helpers escalares get_user_partner_id/get_partner_papel (LIMIT 1 sem revoked_at/owner; fail-closed 0/2+) — brechas confirmadas, 30 policies dependentes mapeadas.
 - [x] Auditar platform_private.b2b_commercial_context (sem revoked_at na contagem/seleção) e overload can_user_access_cliente(uuid) (herda endurecimento da Fase A, sem alteração própria).
 - [x] Preparar SQL candidato por fase (A/B/C) + rollback exato + testes locais (Vitest 1/1 passou); SEM DDL/DML hosted, sem publicar, sem reabrir RPCs/PUC containment.
+- [x] Revisão externa 2026-10-18: lacuna Fase C (sem tenant_id=owner no contexto do portal) corrigida na rev 2.1 — vínculo exige tenant coerente com owner comercial, legacy_partner_tenant preservado; candidata real executada em PostgreSQL descartável, fase 5 do lab (8 cenários) e Vitest 1/1 passaram; rollback anti-drift atualizado.
 - [ ] Instalação Entrega 2: NO-GO — backup/restore e provas JWT/RLS A/B pendentes; exige autorização específica.
 - [ ] Auditar leitores diretos partner_users/PTC remanescentes (31 funções lexicais, 6 policies diretas) — próximo recorte.
