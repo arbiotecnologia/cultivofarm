@@ -17,15 +17,63 @@ const selfUpdateHardening = readFileSync("supabase/migrations/20261005194435_b6e
 const transactionalAB = readFileSync("supabase/migrations/20261005194622_91711015-fd68-40ef-a008-24d14cb3be1c.sql", "utf8");
 
 describe("D51.4 Gate 1 — isolamento de usuários", () => {
-  it("lista usuários por RPC tenant paginada e chave de cache por identidade", () => {
-    expect(page).toContain('rpc("tenant_admin_list_users"');
+  it("lista usuários por RPC tenant paginada e chave de cache por identidade", async () => {
+    // Wiring da página: delega ao helper real e mantém chave tenant+usuário.
+    expect(page).toContain('from "@/lib/configuracoes/usuariosListQuery"');
+    expect(page).toContain("carregarUsuariosAdmin(");
     expect(page).toContain('profile?.organization_id, user?.id');
     expect(page).not.toContain('from("profiles")\n          .select("user_id, nome, email');
+
+    // Contrato do helper real com client RPC fake (não apenas strings).
+    const calls: Array<{ fn: string; args: unknown }> = [];
+    const client = {
+      rpc: (fn: string, args: unknown) => {
+        calls.push({ fn, args });
+        return Promise.resolve({ data: { items: [{ user_id: "u1" }], total: 1 }, error: null });
+      },
+    };
+    const args = montarArgsListagem({ search: " ana ", role: "all", status: "ativo", pagina: 2, porPagina: 10 });
+    expect(args).toEqual({ p_search: "ana", p_role: null, p_active: true, p_offset: 10, p_limit: 10 });
+    const pagina = await carregarUsuariosAdmin(client, args);
+    expect(calls).toEqual([{ fn: RPC_LISTAR_USUARIOS, args }]);
+    expect(pagina).toEqual({ items: [{ user_id: "u1" }], total: 1 });
+
+    // Erro da RPC propaga sem mascaramento.
+    const falha = { rpc: () => Promise.resolve({ data: null, error: new Error("permissão negada") }) };
+    await expect(carregarUsuariosAdmin(falha, args)).rejects.toThrow("permissão negada");
+
+    // Envelope inválido falha fechado.
+    const invalido = { rpc: () => Promise.resolve({ data: { total: 0 }, error: null }) };
+    await expect(carregarUsuariosAdmin(invalido, args)).rejects.toThrow("Resposta da listagem de usuários inválida.");
   });
 
-  it("altera status somente pela RPC tenant", () => {
-    expect(page).toContain('rpc("tenant_admin_set_user_active"');
+  it("altera status somente pela RPC tenant", async () => {
+    // Wiring da página: delega ao helper real; sem update direto em profiles.
+    expect(page).toContain("definirStatusUsuario(");
     expect(page).not.toMatch(/from\("profiles"\)[\s\S]{0,120}update\(\{ ativo/);
+
+    // Contrato do helper real: mesma RPC para ativar/desativar, retorno conferido.
+    const calls: Array<{ fn: string; args: unknown }> = [];
+    const client = {
+      rpc: (fn: string, args: unknown) => {
+        calls.push({ fn, args });
+        return Promise.resolve({ data: { success: true, user_id: "u1" }, error: null });
+      },
+    };
+    await definirStatusUsuario(client, "u1", false);
+    expect(calls).toEqual([{ fn: RPC_STATUS_USUARIO, args: { p_user_id: "u1", p_active: false } }]);
+
+    // Erro da RPC propaga.
+    const falha = { rpc: () => Promise.resolve({ data: null, error: new Error("sem alçada") }) };
+    await expect(definirStatusUsuario(falha, "u1", true)).rejects.toThrow("sem alçada");
+
+    // Retorno com user_id divergente é rejeitado (não confirma atualização alheia).
+    const errado = { rpc: () => Promise.resolve({ data: { success: true, user_id: "u2" }, error: null }) };
+    await expect(definirStatusUsuario(errado, "u1", true)).rejects.toThrow("Não foi possível confirmar a atualização do status.");
+
+    // success ausente/falso também falha fechado.
+    const semSucesso = { rpc: () => Promise.resolve({ data: { success: false, user_id: "u1" }, error: null }) };
+    await expect(definirStatusUsuario(semSucesso, "u1", true)).rejects.toThrow("Não foi possível confirmar a atualização do status.");
   });
 
   it("create-user deriva organização do ator e proíbe escopo enviado pelo browser", () => {
