@@ -105,7 +105,7 @@ Asserts cobrem owner/projeção, revogado, vigência, tenant NULL/divergente, le
 
 Falhas iniciais corrigidas: search_path dos doubles locais; expectativa de histórico legado falhou por dependência real e virou **teste do bloqueador**, não alegação de suporte. Exceptions aceitas apenas no erro esperado, com flag que exige rejeição; nenhuma exceção genérica conta PASS.
 
-**Não realizados:** DDL/DML/pre-prova hosted, login/logout/MFA/JWT, RLS real A/B, writer autorizado de terceiros, cleanup real, concorrência/idempotência hosted, Storage autenticado/TTL, financeiro/fiscal reais, portal/cache após revogação. Build automático observado OK em `/tmp/observability/build-errors.log`; typecheck separado sem evidência nesta rodada, portanto não declarado PASS. Lint global não certificado; sem PASS global de aplicação.
+**Não realizados:** DDL/DML/pre-prova hosted, login/logout/MFA/JWT, RLS real A/B, writer autorizado de terceiros, cleanup real, concorrência/idempotência hosted, Storage autenticado/TTL, financeiro/fiscal reais, portal/cache após revogação. Build automático observado OK em `/tmp/observability/build-errors.log`; typecheck separado sem evidência nesta rodada, portanto não declarado PASS. Lint focado executado: `bunx eslint src/test/saas/b2b-f2b1-context-postgres.test.ts`, exit 0; lint global não certificado, sem PASS global de aplicação.
 
 ## 8. Próximo recorte seguro
 
