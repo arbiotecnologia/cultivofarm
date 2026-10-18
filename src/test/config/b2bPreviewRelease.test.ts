@@ -6,14 +6,14 @@ describe("Liberação limitada do auditor 2026-10-18 22:55 — configuração re
   it("habilita o monitor existente na prévia", () => {
     expect(AUTHZ_CACHE_FOUNDATION_ENABLED).toBe(true);
   });
-  it("mantém o recorte b2b-context sem ativação v6/produtores", () => {
+  it("mantém o recorte b2b-context sem ativação v6", () => {
     expect(AUTHZ_CACHE_ROLLOUT_SCOPE).toBe("b2b-context");
   });
   it("mantém anexos Blob fechados", () => {
     expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
   });
-  it("mantém a candidata do produtor fechada até liberação", () => {
-    expect(PRODUCER_CONTEXT_MONITOR_ENABLED).toBe(false);
+  it("ativa somente produtor conforme liberação 23:37", () => {
+    expect(PRODUCER_CONTEXT_MONITOR_ENABLED).toBe(true);
   });
   it("mantém a candidata financeira fechada até liberação", () => {
     expect(FINANCIAL_CONTEXT_MONITOR_ENABLED).toBe(false);

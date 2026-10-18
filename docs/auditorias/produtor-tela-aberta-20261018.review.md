@@ -1,5 +1,19 @@
 # Produtor — revogação em tela aberta, candidata limitada
 
+## Delta vigente 18/10 23:37 — preferência corrigida, produtor ativado na prévia
+
+As seções abaixo são histórico da candidata ea575bac, não o estado vigente do gate. Autorização expressa do usuário: após corrigir seleção e validar fontes/regressões, **PRODUCER_CONTEXT_MONITOR_ENABLED=true**; financeiro **false**, B2B true/scope b2b-context, global/v6/Blob/contratos fechados. Sem publicação/DDL. Auditor ainda fará live preflight e revisão antes de publicar; não declarar homologação real concluída.
+
+Defeito reproduzido antes da correção: **2/2 casos novos FAIL** em `/app` e `/portal`: seleção explícita B já resolvida voltou ao principal A no primeiro poll idêntico. Causa dupla: chave local incorporava readiness/epoch e limpeza de contexto apagava as preferências em AuthProvider/useAvailableContexts.
+
+Correção mínima: chave de preferência JSON `[UID, tenant, roles ordenadas]`, separada do scope de autorização (que **continua** contendo readiness/epoch). Toda preferência em memória/localStorage só é exposta após nova lista canônica/RLS e fence temporal válidos. Seleção revogada é substituída/removida do storage. Confirmações produtor preservam apenas preferência cliente na limpeza visual; caches, geração, query cancellation/clear, remount e RPCs novas continuam inalterados. Logout/expire/limpeza explícita mantêm comportamento de descarte. Nenhum dado/autorização de epoch anterior é reutilizado; storage forjado não concede vínculo.
+
+**Resultados:** 10 arquivos / **146 testes PASS**, incluindo B sobrevivendo >=2 polls idênticos em ambos os portais, contagem h15 e incremento de epoch comprovados; revogar B com A restante escolhe A e sobrescreve preferência; UID/tenant/roles distintos com mesmos IDs elegíveis não herdam B; storage forjado descartado. Regressores de B2B, financeiro, timeout/offline/stale e anexos passam. **2/2 staging PASS**, bytes/hashes e source drift sem saída parcial. Build/typecheck automático OK, último observado `23:42:10Z`; diff check PASS. Sessões/RPC simuladas nos testes React, não JWT/RLS/login real.
+
+**Artefatos atuais:** `scripts/authz-cache/producer-preference-release/manifest.json`, `1..5.candidate.review`, `1..5.rollback.review`, `producer-gate.on.review`, `producer-gate.off.review`, `stage.py`, `test_stage.py`. Baseline delta `9d074f78f956294e07ffacbb70cad44f169afb5e`, PRE/POST SHA256 fixos no manifest; receipt da autorização no mesmo manifest. Rollback do gate exige POST exatamente igual a `producer-gate.on.review` antes de substituir pelos bytes off; rollback completo exige os cinco POST antes de restaurar os cinco PRE. Não sobrescrever drift/alterações posteriores. Artefatos originais produtor/financeiro são históricos imutáveis; staging antigo deve rejeitar drift, não reaplicar por cima.
+
+**Preflight de fonte:** engine monitor, probe produtor, probe B2B, useStorageAccessScope, Blob gate e preflight SQL produtor byte-idênticos ao baseline; hashes de proteção fixos no novo manifest. Assinaturas/guards SQL/RLS não alterados nem executados live aqui. Correção anexos a905: auditor informou **5/5 + 4 hashes + stage2/2 PASS**; preservada, sem nova alegação de homologação Storage/URLs/bytes. Limites de observação 10s/15s navegador ativo, ABA transitório/snapshot não atômico, suspensão e URLs já emitidas continuam vigentes.
+
 ## Evidência independente e escopo
 
 Relato do auditor recebido em 18/10/2026 23:24 UTC: sessão real do produtor

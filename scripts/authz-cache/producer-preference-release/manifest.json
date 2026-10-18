@@ -1,0 +1,57 @@
+{
+  "baseline_commit": "9d074f78f956294e07ffacbb70cad44f169afb5e",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "receipt": "User 2026-10-18 23:37: producer-only preview authorized after source/regression checks; auditor live preflight/review before publication",
+  "files": [
+    {
+      "path": "src/hooks/usePortalCliente.ts",
+      "candidate": "1.candidate.review",
+      "rollback": "1.rollback.review",
+      "pre_sha256": "9d3efcbc29334997e0ee6b23324c2fe4cc62dad192ee61457c9ed03a1e2f73b0",
+      "post_sha256": "6e83a3ac0a53b486b0bd7edaba4e0e1b0ea7d5bd15bdbf4d3fd785569abd2f7a"
+    },
+    {
+      "path": "src/lib/activePortalContext.ts",
+      "candidate": "2.candidate.review",
+      "rollback": "2.rollback.review",
+      "pre_sha256": "4853a0bafebd1c9700bd2effc4a9c0eff95bdd7a690e6ea5abe42741abe44d1e",
+      "post_sha256": "4de43fcb48def7524663469019e8ba8dc5848f69b4a7f5d9a7637f7a90f20ab6"
+    },
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "candidate": "3.candidate.review",
+      "rollback": "3.rollback.review",
+      "pre_sha256": "ed25354f4a77de0ff46706d12b9af30ade97fd056977fa5d08231e8ed36eee58",
+      "post_sha256": "462eed44dbaa6706a2392e730570d216534221e576c9ea48329b338ccc7114c2"
+    },
+    {
+      "path": "src/hooks/useAvailableContexts.ts",
+      "candidate": "4.candidate.review",
+      "rollback": "4.rollback.review",
+      "pre_sha256": "b7f8fadba05e0ade2f0dcbf3f0b9c2a4bb931286cb7f0d4aea36a84b5c966626",
+      "post_sha256": "79e6c8adf3531c2c2aa63831fa6998c8939d1f3d77a304bee02fd38ec83ce946"
+    },
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "candidate": "5.candidate.review",
+      "rollback": "5.rollback.review",
+      "pre_sha256": "b176c387bf2e92224ca9e86b4b2e749906d70a6f655db3d58109e0d3c8f1aad5",
+      "post_sha256": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5"
+    }
+  ],
+  "activation": {
+    "path": "src/lib/authz/authzEpochGate.ts",
+    "candidate": "producer-gate.on.review",
+    "rollback": "producer-gate.off.review",
+    "pre_sha256": "29bd82305f5f1bec91c298c23faf080f2b13378c56adf0c68297f4c2dea2d8eb",
+    "post_sha256": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5"
+  },
+  "protected_sha256": {
+    "src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
+    "src/lib/authz/producerContextProbe.ts": "f46e511ebb45ea085305f0a61913c10499c9755f3f478f187560f45b4f406efb",
+    "src/lib/authz/b2bContextProbe.ts": "171a8ed48d1bdfefcb5600f02ce574e1dff558f2c1c0dad04c75fb0303751d61",
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "scripts/authz-cache/producer-open-session/preflight-readonly.sql.review": "a274481a4f22d096de1c8903db230f42c505bd9858b999672bfda3366b007c31"
+  }
+}

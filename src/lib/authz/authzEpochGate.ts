@@ -2,12 +2,12 @@
 // revisão independente: o monitor não é criado enquanto false.
 export const AUTHZ_CACHE_FOUNDATION_ENABLED: boolean = true;
 
-// Candidate scope only: no producer/global v6 activation.
+// Limited observational scopes only; no global v6 activation.
 export const AUTHZ_CACHE_ROLLOUT_SCOPE: "b2b-context" | "external-fingerprint" = "b2b-context";
 
-// Candidate producer-only observation; auditor must authorize activation.
+// Producer preview activation authorized 2026-10-18 23:37 after regressions.
 // Does not enable global fingerprint/v6 or authenticated attachment Blobs.
-export const PRODUCER_CONTEXT_MONITOR_ENABLED: boolean = false;
+export const PRODUCER_CONTEXT_MONITOR_ENABLED: boolean = true;
 
 // Financial-only principal readiness, not global entity/entitlement monitoring.
 export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = false;

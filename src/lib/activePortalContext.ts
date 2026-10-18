@@ -32,11 +32,12 @@ export function getActivePortalContext(): ActivePortalContext | null {
   }
 }
 
-export function clearActivePortalContext(): void {
-  window.dispatchEvent(new Event("portal-client-preferences-cleared"));
+export function clearActivePortalContext(options?: { preserveClientPreference?: boolean }): void {
+  if (!options?.preserveClientPreference) window.dispatchEvent(new Event("portal-client-preferences-cleared"));
   try {
     sessionStorage.removeItem(STORAGE_KEY);
   } catch { /* Session storage may be unavailable independently. */ }
+  if (options?.preserveClientPreference) return;
   try {
     const keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index));
     for (const key of keys) {

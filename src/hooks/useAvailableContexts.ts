@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { useAuth } from "@/hooks/useAuth";
+import { PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 
 export type PortalContext = "b2b" | "technical" | "admin";
 
@@ -33,7 +34,7 @@ export function useAvailableContexts() {
   if (current.current.scope !== scope) {
     current.current.scope = scope;
     current.current.epoch += 1;
-    clearActivePortalContext();
+    clearActivePortalContext({ preserveClientPreference: PRODUCER_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "cliente_produtor" });
   }
   useEffect(() => {
     const state = current.current;
