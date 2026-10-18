@@ -104,11 +104,22 @@ SELECT set_config('request.jwt.claim.sub','',true);
 SELECT local_assert('no actor',get_user_partner_id() IS NULL);
 SELECT local_assert('anon cannot execute',NOT has_function_privilege('anon','public.get_user_partner_id()','EXECUTE'));
 SELECT local_assert('grants retained',has_function_privilege('authenticated','public.get_partner_papel(uuid)','EXECUTE') AND has_function_privilege('service_role','public.get_partner_papel(uuid)','EXECUTE'));
+INSERT INTO profiles VALUES('55555555-5555-4555-8555-555555555555','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true,false);
+INSERT INTO user_roles VALUES('55555555-5555-4555-8555-555555555555','administrador');
+SELECT set_config('request.jwt.claim.sub','55555555-5555-4555-8555-555555555555',true);
+SELECT local_assert('tenant B admin no partner',get_user_partner_id() IS NULL);
+SELECT local_assert('tenant B admin cannot inspect A papel',get_partner_papel('44444444-4444-4444-8444-444444444444') IS NULL);
+UPDATE user_roles SET role='superadmin' WHERE user_id=auth.uid();
+SELECT local_assert('superadmin no implicit partner',get_user_partner_id() IS NULL AND get_partner_papel('44444444-4444-4444-8444-444444444444') IS NULL);
+SELECT set_config('request.jwt.claim.sub','',true);
+SET LOCAL ROLE service_role;
+SELECT local_assert('service no impersonation',get_partner_papel('44444444-4444-4444-8444-444444444444') IS NULL);
+RESET ROLE;
 ROLLBACK;
 """
         result=run(tests)
         print(result.stderr)
-        if result.stderr.count('NOTICE:  PASS')!=22:
+        if result.stderr.count('NOTICE:  PASS')!=26:
             raise RuntimeError('Unexpected assertion count')
         # Execute reviewer pre-proof against synthetic one eligible fixture; no live users.
         fixture=tests.split("SELECT set_config('request.jwt.claim.sub'")[0].replace('BEGIN;','')
@@ -118,7 +129,7 @@ ROLLBACK;
         run((DOCS/'vinculos-b2b-f2b-rollback-20261018.sql').read_text())
         checks="SELECT local_assert('exact rollback user helper',md5(pg_get_functiondef('public.get_user_partner_id()'::regprocedure))='77822b0ef57e42bfe9cd7075265402aa'); SELECT local_assert('exact rollback papel',md5(pg_get_functiondef('public.get_partner_papel(uuid)'::regprocedure))='c892ee1df845b69950344953757ab472');"
         print(run(checks).stderr)
-        print('PASS local contract: 22 behavior assertions, 2 exact rollback hashes; no hosted RLS')
+        print('PASS local contract: 26 behavior assertions, 2 exact rollback hashes; no hosted RLS')
     finally:
         if started:
             subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True)
