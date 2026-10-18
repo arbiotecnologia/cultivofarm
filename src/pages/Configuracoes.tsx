@@ -241,11 +241,7 @@ export default function Configuracoes() {
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
       if (bloqueio) throw new ErroStatusLocal(bloqueio);
-      try {
-        await definirStatusUsuario(supabase, userId, ativo);
-      } catch (e) {
-        throw e instanceof Error && !(e instanceof ErroStatusLocal) ? e : e;
-      }
+      await definirStatusUsuario(supabase, userId, ativo);
     },
 
     onSuccess: () => {
