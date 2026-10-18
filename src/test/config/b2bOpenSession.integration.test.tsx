@@ -57,7 +57,11 @@ import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 
 const ctx = (partner = P) => ({ partner_id: partner, organization_id: O, commercial_owner_organization_id: O,
   role: state.roles[0], papel: state.roles[0] === "parceiro_b2b_tecnico" ? "tecnico" : "gestor", mode: "commercial_owner" });
-const tick = async (ms = 0) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+const tick = async (ms = 0) => {
+  await act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+  // React Query observer notifications are macrotasks scheduled after renders.
+  for (let i = 0; i < 8; i++) await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+};
 function Data() {
   const catalog = usePartnerCatalog(P);
   const prices = usePartnerPrices(P);
@@ -140,7 +144,7 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     Object.defineProperty(document, "visibilityState", { value: "visible" }); act(() => window.dispatchEvent(new Event("focus"))); await tick();
     expect(screen.queryByText("portal aberto")).toBeNull(); resolve?.(ctx()); await tick(); expect(screen.getByText("portal aberto")).toBeTruthy();
   });
-  it.each([["cliente_produtor"], ["administrador"], ["parceiro_b2b", "administrador"], ["parceiro_b2b", "parceiro_b2b_tecnico"]])("não inicia probe para roles %j", async roles => {
+  it.each([{ roles: ["cliente_produtor"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }, { roles: ["parceiro_b2b", "parceiro_b2b_tecnico"] }])("não inicia probe para roles $roles", async ({ roles }) => {
     state.roles = roles; setup(); await tick(); await tick(30_000); expect(state.contextCalls).toBe(0);
   });
   it("gate fechado não inicia monitor B2B", async () => { state.gate = false; setup(); await tick(); const calls = state.contextCalls; await tick(30_000); expect(state.contextCalls).toBe(calls); expect(screen.getByText("portal aberto")).toBeTruthy(); });
