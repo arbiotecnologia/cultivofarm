@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "./useStorageAccessScope";
 
 interface ClienteVinculado {
   id: string;
@@ -24,6 +25,7 @@ function publishSelection(scope: string, id: string | null) {
 }
 
 export function usePortalCliente() {
+  const fence = useStorageAccessScope("producer-membership");
   const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
   const organizationId = profile?.organization_id ?? null;
   const portalRole = roles.some(role => ["cliente_produtor", "administrador", "gestor"].includes(role));
@@ -46,7 +48,8 @@ export function usePortalCliente() {
     const requestGeneration = ++generation.current;
     controller.current?.abort();
     const abort = new AbortController(); controller.current = abort;
-    const current = () => requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted;
+    const authorized = fence.capture();
+    const current = () => authorized() && requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted;
     setClientes([]);
     setResolvedScope("");
     if (!ready || !user || !organizationId) {
@@ -148,6 +151,6 @@ export function usePortalCliente() {
     [clientes, scope, ready, resolvedScope]
   );
 
-  const selected = ready && resolvedScope === scope ? clientes.find(c => c.id === sharedId) : undefined;
-  return { clienteId: selected?.id ?? null, clienteNome: selected?.nome ?? null, clientes: ready && resolvedScope === scope ? clientes : [], setClienteAtivo, loading: authLoading || (ready && (loading || resolvedScope !== scope)), ready, scope, reload: load };
+  const selected = ready && fence.ready && resolvedScope === scope ? clientes.find(c => c.id === sharedId) : undefined;
+  return { clienteId: selected?.id ?? null, clienteNome: selected?.nome ?? null, clientes: ready && fence.ready && resolvedScope === scope ? clientes : [], setClienteAtivo, loading: authLoading || (ready && (loading || resolvedScope !== scope)), ready: ready && fence.ready, scope, reload: load };
 }

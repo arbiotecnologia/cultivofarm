@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 
 /**
  * AppPortalGuard — protege a árvore `/app/*`.
@@ -18,7 +19,7 @@ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
  * A autorização NUNCA depende de `primaryRole` nem de `isMobileProfile`.
  */
 export function AppPortalGuard({ children }: { children?: ReactNode }) {
-  const { user, roles, loading } = useAuth();
+  const { user, roles, loading, authzReady = true } = useAuth();
   const location = useLocation();
   const { data, isLoading, isError } = useAvailableContexts();
 
@@ -38,6 +39,11 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     }
   }, [denied, location.pathname]);
 
+  // Pause before readers depending on authzReady; retry stays on this URL.
+  if (!loading && user && isProducer && !authzReady) {
+    return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+  }
+
   if (loading || (user && isLoading)) {
     return (
       <div
@@ -54,7 +60,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     return <Navigate to="/app/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (isAdmin || isProducer) return <>{children ?? <Outlet />}</>;
+  if (isAdmin || isProducer) return <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>;
 
   if (isError) {
     return <Navigate to="/sem-permissao" replace />;
