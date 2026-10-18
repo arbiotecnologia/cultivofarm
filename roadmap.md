@@ -23,3 +23,10 @@
 - [x] Comparar modelos e documentar preferência PUC canônica/PTC transitória, 17 critérios, backlog/gates e SQL aditivo bloqueado.
 - [x] Revisar preflight/rollback; 14 checks estruturais locais, 4 testes focados em duas rodadas e lint novo exit 0; sem escrita hosted/prova RLS.
 - [ ] Instalação futura: depende de aceite da semântica, contrato ator/alvo e provas hospedadas A/B; não autorizada neste turno.
+
+## F2-B3.1 — contrato em etapas sem alterar grants
+- [x] Reconfirmar baseline read-only: PUC/PTC 0/0, 29 policies por helpers, 59 entradas no manifesto; writers/cascades e limites de origem documentados.
+- [x] Preparar metadata neutra sem FK/uso autorizador, preflight/rollback gated e relatório de decisão B3.2.
+- [x] Executar 22 checks PostgreSQL descartável, arquivos completos sob baseline sintético e 4 suites Vitest; lint focado exit 0, sem prova hosted.
+- [ ] B3.2 instalação neutra externa: aguarda autorização/revisão, backup, destino e preflight sem drift/consumers; agente não executa.
+- [ ] Origem/cleanup/cutover: NO-GO por contrato ator/source estável/colisões/revogação e provas JWT/RLS A/B/legado/Storage pendentes.
