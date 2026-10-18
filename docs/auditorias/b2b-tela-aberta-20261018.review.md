@@ -1,4 +1,4 @@
-# Revogação B2B com tela aberta — liberada somente na prévia
+# Revogação B2B com tela aberta — gestor aprovado em teste real e publicado pelo auditor
 
 ## Resultado e escopo
 
@@ -6,10 +6,83 @@ O monitor EXISTENTE no AuthProvider agora admite rollout **somente B2B exclusivo
 (`parceiro_b2b` ou `parceiro_b2b_tecnico`). Usa a RPC EXISTENTE
 `get_my_commercial_partner_context` pelo cliente canônico. Não instala fingerprint,
 resolver, tabela, revision ledger, grants, RLS ou Edge. Nenhuma operação hosted ou
-publicação pelo agente. `AUTHZ_CACHE_FOUNDATION_ENABLED=true` somente na prévia por liberação expressa 22:55;
+publicação pelo agente. `AUTHZ_CACHE_FOUNDATION_ENABLED=true` no recorte b2b-context,
+habilitado na prévia às 22:55 e posteriormente publicado pelo auditor;
 Blob/principal/troca de vínculos não foram ativados.
 
-### Liberação limitada 22:55 UTC — estado atual
+## Pós-implantação informado pelo auditor — 2026-10-18 23:00 UTC
+
+**Resultado aceito: B2B gestor em sessão real, revogação e restauração sem reload.**
+Fonte: registro do auditor no chat; evidências executadas/capturadas externamente,
+não reexecutadas nem capturadas pelo agente nesta rodada exclusivamente documental.
+
+### Teste real na prévia conectada à produção canônica
+
+- Sessão de teste `teste4@refilinformatica.com.br`, Supabase
+  `swzpzcwiasxmjutrmvkm`; bundle `/assets/index-Dk8zEZhV.js`.
+  `/portal-parceiro/dashboard` visível após **um único reload inicial** para
+  carregar o bundle novo; esse reload antecede a prova de revogação.
+- Revogação operacional guardada do vínculo
+  `3ae4462f-0351-46fd-bf4e-b45aec16eebe`, versão **6→7**, em
+  `2026-10-18T22:57:54.531612Z`.
+- **Sem reload, goto, foco ou interação intermediária**, screenshot/AX em
+  `2026-10-18T22:58:08.618Z` mostrou **Sessão de acesso pausada**, dados de
+  parceiro/pedidos removidos e a mesma URL. Limite superior observado **≈14,1s**
+  entre a revogação e essa captura; **não latência exata**, não garantia de SLA
+  em navegador suspenso. A captura não prova inspeção interna do QueryClient;
+  limpeza do cache possui a evidência local integrada documentada abaixo.
+- **Tentar novamente** enquanto revogado voltou ao estado pausado.
+- Restauração guardada **7→8**, campos de revogação NULL; **Tentar novamente**
+  recuperou o portal na **mesma URL e sessão, sem reload ou novo login**.
+- Sessão publicada do Admin B (Fagner/renato_cunha22) preservada.
+
+### Publicação e postflight realizados pelo auditor
+
+- Publicação autorizada e já executada **pelo auditor**, deployment
+  `16d6e45e-a43f-443c-b256-236669c379d2`; nenhuma publicação pelo agente.
+- `app.cultivofarm.com.br` passou de `index-DAqmpZk7.js` ao **mesmo
+  `index-Dk8zEZhV.js` testado na prévia**. Isso vincula o bundle publicado à
+  prova anterior; não equivale a repetir todo o teste de revogação no domínio.
+- Admin B: dashboard abre; `/portal-parceiro/dashboard` redireciona para
+  `/sem-permissao`; retorno ao dashboard OK.
+- Postflight: vínculo **ativo, versão 8**; RLS checksum
+  `cc8cc0e7107010774a86906273d3fd09` inalterado. RPC fingerprint e schemas v6
+  continuam ausentes por desenho do recorte; **nenhuma DDL nova** informada.
+
+### Staging e verificações independentes adicionais
+
+- Correção de portabilidade `c3a31bbb` executada independentemente no Windows:
+  **8/8 PASS** com temporários dentro do workspace. Primeira tentativa bloqueada
+  por permissão de Temp; rerun em destino permitido PASS. Não omitir essa
+  limitação ambiental nem confundi-la com falha dos guards.
+- Verificações independentes informadas: **9/9 monitor + 4/4 aberto +
+  4/4 configuração B2B PASS**. São provas locais independentes, separadas do
+  teste real de sessão descrito acima.
+- Hash estático do script após correção:
+  `92f87beb038c97ddb2043241bceb32321004ccb2b378b7d55ebd3ebfe6a2e7f2`;
+  manifest canônico SHA256
+  `0b32a3b510078fc8d4e86948c1b92ea78ae14d70b57cbf02ca8767d9834ed997`.
+  Receipt 22:55 permanece registro histórico do manifest anterior; não
+  reassinado automaticamente pelo agente. Artefatos locais são atualizados pelo auditor.
+
+### Limites do aceite
+
+| Cenário | Evidência desta rodada | Aceite |
+|---|---|---|
+| Gestor B2B, revogação persistente e retry/restauração | Sessão real na prévia, mesma URL, sem reload após início do teste | Aprovado neste recorte |
+| Admin B preservado e negado no portal B2B | Sessão real publicada, dashboard/negação/retorno | Confirmado pelo auditor |
+| Técnico B2B e produtor | Testes simulados quando aplicável; produtores fora do monitor | Não homologados em login real nesta rodada |
+| Rede offline, suspensão/aba oculta | Integração local simulada quando aplicável | Não homologados em login real nesta rodada |
+| ABA transitório entre polls | Não garantido pelo recorte; ABA observado testado localmente | Não homologado/detectado universalmente |
+| Downloads, signed URLs e bytes já divulgados | Fora do recorte; Blob gate false | Não homologados em login real nesta rodada |
+
+Contratos amplos permanecem **fechados** até suas pendências próprias; v6 amplo
+**não liberado**. Não afirmar auditoria global concluída, revogação instantânea,
+homologação de todos os perfis ou SLA em navegador suspenso. Nesta rodada foram
+alterados somente relatório/roadmap e memória factual; runtime, flags, scripts,
+receipt e artefatos preservados; nenhuma operação hosted ou publicação pelo agente.
+
+### Liberação limitada 22:55 UTC — histórico anterior ao teste/publicação
 
 - Auditor autorizou exclusivamente habilitar a prévia, após revisão `ffd299e9`:
   17/17 hashes, monitor 9/9 + 4/4 padrão + 4/4 refreshOnConfirmationtrue PASS
@@ -39,7 +112,8 @@ Blob/principal/troca de vínculos não foram ativados.
   POST SHA256 `8405d4354dfe2504b088a75fd048d1162f567b95365a6d6c1d9cf1ab9bd75e1b`.
 - Demais seções de preparação abaixo são histórico anterior à liberação; as
   pendências de revisão live ali listadas foram satisfeitas para ESTE recorte
-  conforme receipt, não para v6/global. Prova JWT sem reload aguarda auditor.
+  conforme receipt, não para v6/global. Prova real de gestor sem reload concluída
+  posteriormente pelo auditor, conforme seção de pós-implantação acima.
 - Validação local da ativação: **76/76 testes, 4 arquivos PASS**, incluindo 3
   assertions de configuração real sem mocks (gate true/scope B2B/Blob false),
   29 integração B2B, 29 monitor e 15 fingerprint histórico mockado; esse último
@@ -107,7 +181,11 @@ pelo agente nem confundido com prova de sessão aberta.
   Teste usa download simulado; gate Blob continua false e signed URLs/bytes já
   divulgados NÃO são revogados por esconder a tela.
 
-## Matriz de liberação verificável pelo auditor
+## Matriz de preparação — histórico anterior à liberação 22:55
+
+Estados de espera abaixo refletem a preparação original; liberação limitada e
+postflight posteriores estão registrados acima. Não são bloqueios ainda abertos
+para o gestor aprovado nem aprovação das pendências amplas de v6/Storage.
 
 | Requisito | Prova/guard | Estado |
 |---|---|---|
@@ -178,8 +256,9 @@ novo é SELECT-only/inventário+guard, não um harness de concorrência sintéti
   Prova parent ampla anterior é histórica; nesta rodada não reexecutada.
   Cinco falhas antigas fora deste recorte não resolvidas; não declarar auditoria global.
 - Browser autenticado: integração Supabase externa não gerenciada, sem sessão
-  restaurável pelo agente; prévia agora habilitada para teste JWT em tela aberta
-  pelo auditor. Nenhum login/revogação hosted pelo agente; publicação não autorizada.
+  restaurável pelo agente; teste real de gestor em tela aberta e publicação
+  executados pelo auditor conforme pós-implantação acima. Nenhum login/revogação
+  hosted ou publicação pelo agente; nesta rodada não há pedido de republicação.
 - Commit é gerenciado automaticamente pelo ambiente; não criar commit por Git
   nem inventar hash antes de disponível.
 
