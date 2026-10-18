@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:59 — anexos financeiros no fluxo existente
+- [ ] Corrigir path/basename e fences upload/remove/metadados sem alterar servidor ou monitores.
+- [ ] Executar regressões adversariais e preparar rollback exato da candidata.
+- [ ] Registrar evidência independente pós-publicação de drafts/revoke/restore e limites; entrega para revisão externa, sem publicar.
+
 ## 18/10 23:47 — ativação financeira autorizada
 - [x] Habilitar somente financeiro exclusivo, preservando produtor/B2B e Blob/global fechados.
 - [x] Validar drafts/revogação/gates (185/185) e rollback financeiro false sem perder outro recorte; 5 manifests antigos fail-closed, stage4/4.
