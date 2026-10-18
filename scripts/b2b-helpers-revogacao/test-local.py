@@ -238,7 +238,7 @@ try:
         check(f"baseline PRE {sig.split('(')[0]}", f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))", h)
 
     # --- DRIFT antes da candidata: corpo alterado => guarda rejeita, nada muda ---
-    run("CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(uuid,uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT true$$;")
+    run("CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT true$$;")
     run_file(CAND, fail='PRE FALHOU')
     results.append("drift pré-candidata rejeitado (is_valid adulterado)")
     run(LIVE_BODIES)  # restaura baseline
@@ -315,7 +315,7 @@ try:
     check("scope: has_catalog false sem entitlement", f"SELECT has_catalog FROM {S}('{U_LEGACY}')", "f")
 
     # --- DRIFT antes do rollback: corpo adulterado => rollback recusa ---
-    run("CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(uuid,uuid) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT 'x'::text$$;")
+    run("CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$SELECT 'x'::text$$;")
     run_file(ROLL, fail='ROLLBACK RECUSADO')
     results.append("drift pré-rollback rejeitado (get_role adulterado)")
     # Atomicidade: as OUTRAS funções permanecem nos hashes POST
