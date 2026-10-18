@@ -8,3 +8,6 @@ export const AUTHZ_CACHE_ROLLOUT_SCOPE: "b2b-context" | "external-fingerprint" =
 // Candidate producer-only observation; auditor must authorize activation.
 // Does not enable global fingerprint/v6 or authenticated attachment Blobs.
 export const PRODUCER_CONTEXT_MONITOR_ENABLED: boolean = false;
+
+// Financial-only principal readiness, not global entity/entitlement monitoring.
+export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = false;

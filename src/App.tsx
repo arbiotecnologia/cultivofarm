@@ -29,6 +29,7 @@ import PlataformaHome from "@/pages/plataforma/PlataformaHome";
 import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { FINANCIAL_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
@@ -244,7 +245,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 }
 
 
-function ProtectedRoutes() {
+export function ProtectedRoutes() {
   const { user, role, loading, error, refresh, signOut } = useAuth();
   const location = useLocation();
 
@@ -279,7 +280,11 @@ function ProtectedRoutes() {
     return <Navigate to={homePath} replace />;
   }
 
-  return <AppLayout />;
+  // Boundary precedes RoleGuard/sidebar: cached roles must never leave an
+  // inactive monitored principal navigating while its children are hidden.
+  return FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro"
+    ? <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>
+    : <AppLayout />;
 }
 
 export function PortalGuard() {
