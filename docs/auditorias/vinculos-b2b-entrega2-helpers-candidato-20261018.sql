@@ -94,11 +94,12 @@ BEGIN
  SELECT r.role::text INTO role_name FROM public.user_roles r WHERE r.user_id=u;
  IF role_name NOT IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN RETURN NULL; END IF;
  IF (SELECT count(*) FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL)<>1 THEN RETURN NULL; END IF;
- SELECT pu.partner_id,pu.papel INTO link FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
+ SELECT pu.partner_id,pu.papel,pu.tenant_id INTO link FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
  IF link.papel IS DISTINCT FROM (CASE WHEN role_name='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END) THEN RETURN NULL; END IF;
  SELECT pa.commercial_owner_organization_id INTO owner FROM public.partner_accounts pa
  WHERE pa.id=link.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
  IF owner IS NULL THEN RETURN NULL; END IF;
+ IF link.tenant_id IS NULL OR link.tenant_id IS DISTINCT FROM owner THEN RETURN NULL; END IF;
  IF NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos') THEN RETURN NULL; END IF;
  SELECT o.partner_account_id INTO legacy FROM public.organizations o WHERE o.id=org AND o.ativo IS TRUE AND o.status='ativa';
  IF NOT FOUND THEN RETURN NULL; END IF;
