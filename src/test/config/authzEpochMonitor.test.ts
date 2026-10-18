@@ -427,27 +427,31 @@ describe("authzEpochMonitor", () => {
   });
 
   it("relógio cruza o deadline entre pré-checagem e arm: sem epoch nem poll após expire", async () => {
-    // O relógio monotônico avança DENTRO de setState("valid") (antes de
-    // armLeaseDeadline): a pré-checagem passou com deadline futuro, mas ao
-    // armar o timer o deadline já está no passado. armLeaseDeadline expira e
-    // a re-checagem pós-arm impede onEpochChange/schedulePoll.
+    // Cenário que EFETIVAMENTE atinge o arm: resposta resolve em t0 com
+    // budget 15s (deadline t0+15s, futuro — a pré-checagem passa e o estado
+    // vai a "valid"). DENTRO de setState("valid"), o relógio avança para
+    // t20 (além do deadline) antes de armLeaseDeadline(): o arm expira e a
+    // re-checagem pós-arm impede onEpochChange/schedulePoll.
+    // Sem a guarda pós-arm, este teste FALHA (epoch/poll sairiam após expire).
     let clock = 0;
     let fetchCalls = 0;
     let resolveFetch!: (v: AuthzFingerprintResult) => void;
+    const stateLog: string[] = [];
     const { monitor, deps } = setup({
       now: () => clock,
       fetcher: () => { fetchCalls++; return new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }); },
       onStateChange: vi.fn((s: string) => {
+        stateLog.push(s);
         if (s === "valid") clock = 20_000; // cruza o deadline na janela do arm
       }),
     });
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
-    // Resposta em t4 com budget 7s: deadline = t0+3s; setState leva o relógio
-    // a t20, muito além do deadline, antes de armLeaseDeadline().
-    clock = 4_000;
-    resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 7_000 });
+    resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 15_000 });
     await vi.advanceTimersByTimeAsync(0);
+    // O estado passou por "valid" (pré-checagem ok) e SÓ DEPOIS expirou no arm.
+    expect(stateLog).toContain("valid");
+    expect(stateLog.indexOf("valid")).toBeLessThan(stateLog.indexOf("expired"));
     expect(monitor.state()).toBe("expired");
     expect(deps.onExpire).toHaveBeenCalledWith("timeout");
     expect(monitor.checkAccess()).toBe(false);
