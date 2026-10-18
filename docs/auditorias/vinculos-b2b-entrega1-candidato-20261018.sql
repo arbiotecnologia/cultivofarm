@@ -15,18 +15,20 @@ DECLARE
   v_definition text;
   -- Marcador 1: ramo parceiro_b2b sem revoked_at nem validação de parceiro.
   v_marker_b2b text := E'      SELECT 1 FROM public.partner_clients pc\n      JOIN public.partner_users pu ON pu.partner_id = pc.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true';
-  -- REVISÃO 1.1 (2026-10-18): legado owner NULL exige prova contextual — pu.tenant_id
-  -- NULL ou igual à organization_id do próprio cliente alvo (clientes.organization_id
-  -- confirmada no catálogo live). NÃO impõe owner=profile.organization_id (não universal).
-  v_repl_b2b text := E'      SELECT 1 FROM public.partner_clients pc\n      JOIN public.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN public.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND (\n          (pa.commercial_owner_organization_id IS NOT NULL\n           AND pu.tenant_id IS NOT NULL\n           AND pu.tenant_id = pa.commercial_owner_organization_id)\n          OR (pa.commercial_owner_organization_id IS NULL\n              AND (pu.tenant_id IS NULL\n                   OR pu.tenant_id = (SELECT c.organization_id FROM public.clientes c WHERE c.id = _cliente_id)))\n        )';
+  -- REVISÃO FINAL 1.2 (2026-10-18): FAIL-CLOSED para owner NULL em TODOS os ramos B2B.
+  -- Evidência live: produção tem ZERO vínculos ativos com owner NULL; o contexto real
+  -- platform_private.b2b_commercial_context exige owner NÃO NULL inclusive no modo
+  -- legacy_partner_tenant (que é organization_id do ator DIFERENTE do owner, não owner
+  -- ausente). Owner NULL não é legado válido — é parceiro não regularizado, e o acesso
+  -- só volta após regularização explícita (atribuir owner com trilha auditável).
+  -- NÃO impõe owner=profile.organization_id (não universal) nem owner=clientes.organization_id.
+  v_repl_b2b text := E'      SELECT 1 FROM public.partner_clients pc\n      JOIN public.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN public.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND pa.commercial_owner_organization_id IS NOT NULL\n        AND pu.tenant_id IS NOT NULL\n        AND pu.tenant_id = pa.commercial_owner_organization_id';
   -- Marcador 2: ramo parceiro_b2b_tecnico sem revoked_at nem parceiro vigente.
   v_marker_tec text := E'      SELECT 1 FROM public.partner_user_clients puc\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n    ) OR EXISTS (\n      SELECT 1 FROM public.partner_technician_clients ptc\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n    )), false);';
   -- ERRATA 2026-10-18: partner_user_clients NÃO possui revoked_at (confirmado via
   -- information_schema live). Revogação é verificada no vínculo partner_users (pu2/pu3).
-  -- REVISÃO 1.1: pu2/pu3 recebem a mesma coerência de tenant do ramo b2b
-  -- (owner NOT NULL exige tenant_id = owner; owner NULL exige tenant NULL ou
-  -- tenant = organization_id do cliente alvo).
-  v_repl_tec text := E'      SELECT 1 FROM public.partner_user_clients puc\n      JOIN public.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN public.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n        AND (\n          (pa2.commercial_owner_organization_id IS NOT NULL\n           AND pu2.tenant_id IS NOT NULL\n           AND pu2.tenant_id = pa2.commercial_owner_organization_id)\n          OR (pa2.commercial_owner_organization_id IS NULL\n              AND (pu2.tenant_id IS NULL\n                   OR pu2.tenant_id = (SELECT c2.organization_id FROM public.clientes c2 WHERE c2.id = _cliente_id)))\n        )\n    ) OR EXISTS (\n      SELECT 1 FROM public.partner_technician_clients ptc\n      JOIN public.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN public.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n        AND (\n          (pa3.commercial_owner_organization_id IS NOT NULL\n           AND pu3.tenant_id IS NOT NULL\n           AND pu3.tenant_id = pa3.commercial_owner_organization_id)\n          OR (pa3.commercial_owner_organization_id IS NULL\n              AND (pu3.tenant_id IS NULL\n                   OR pu3.tenant_id = (SELECT c3.organization_id FROM public.clientes c3 WHERE c3.id = _cliente_id)))\n        )\n    )), false);';
+  -- REVISÃO FINAL 1.2: pu2/pu3 fail-closed para owner NULL, mesma regra do ramo b2b.
+  v_repl_tec text := E'      SELECT 1 FROM public.partner_user_clients puc\n      JOIN public.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN public.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n        AND pa2.commercial_owner_organization_id IS NOT NULL\n        AND pu2.tenant_id IS NOT NULL\n        AND pu2.tenant_id = pa2.commercial_owner_organization_id\n    ) OR EXISTS (\n      SELECT 1 FROM public.partner_technician_clients ptc\n      JOIN public.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN public.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n        AND pa3.commercial_owner_organization_id IS NOT NULL\n        AND pu3.tenant_id IS NOT NULL\n        AND pu3.tenant_id = pa3.commercial_owner_organization_id\n    )), false);';
 BEGIN
   SELECT pg_get_functiondef('public.can_user_access_cliente(uuid,uuid)'::regprocedure)
     INTO v_definition;
@@ -55,9 +57,11 @@ BEGIN
      OR position('pu2.revoked_at IS NULL' IN v_definition) = 0
      OR position('pu3.revoked_at IS NULL' IN v_definition) = 0
      OR position('pa.ativo = true AND pa.deleted_at IS NULL' IN v_definition) = 0
+     OR position('pa.commercial_owner_organization_id IS NOT NULL' IN v_definition) = 0
+     OR position('pa2.commercial_owner_organization_id IS NOT NULL' IN v_definition) = 0
+     OR position('pa3.commercial_owner_organization_id IS NOT NULL' IN v_definition) = 0
      OR position('pu2.tenant_id = pa2.commercial_owner_organization_id' IN v_definition) = 0
-     OR position('pu3.tenant_id = pa3.commercial_owner_organization_id' IN v_definition) = 0
-     OR position('public.clientes c WHERE c.id = _cliente_id' IN v_definition) = 0 THEN
+     OR position('pu3.tenant_id = pa3.commercial_owner_organization_id' IN v_definition) = 0 THEN
     RAISE EXCEPTION 'entrega1_client_access_postcondition_failed';
   END IF;
 END
