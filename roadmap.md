@@ -17,3 +17,9 @@
 - [x] Testar projeção, resíduos, repetição, isolamento e concorrência em PostgreSQL descartável (23 checks; três suites focadas passaram).
 - [x] Registrar efeitos/limites e PASS/NO-GO por contrato, sem execução hosted/publicação.
 - [ ] Autorizar pacote instalável F2-B2: bloqueado por proveniência PTC compartilhada, contrato de ator/cleanup e revogação fora do sync; exige decisão e revisão independentes.
+
+## F2-B3 — decisão de proveniência e preparação
+- [ ] Reconfirmar baseline read-only e consumidores de concessão independente PTC/PUC.
+- [ ] Comparar modelos e documentar decisão preferida, 17 critérios, backlog/gates e SQL aditivo revisável.
+- [ ] Revisar preflight/rollback e registrar evidências sem executar bancos ou certificar RLS local.
+- [ ] Instalação futura: depende de aceite da semântica, contrato ator/alvo e provas hospedadas A/B; não autorizada neste turno.
