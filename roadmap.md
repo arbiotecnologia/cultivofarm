@@ -52,3 +52,17 @@
 - [x] Auditoria read-only: brechas revogação/parceiro inativo/PTC órfão confirmadas; baseline md5 c610786f.
 - [x] Candidata + rollback + preflight em docs/auditorias/vinculos-b2b-entrega1-*; testes PG descartável 4 fases PASS.
 - [ ] Instalação: NO-GO até backup/restauração comprovados e provas JWT/RLS A/B; containment PUC e 12 policies intactos.
+
+## Entrega 1 — can_user_access_cliente(uuid,uuid) hardening
+- [x] Candidata revisão 1.2 (fail-closed owner NULL, revogação pu/pu2/pu3, coerência tenant=owner) preparada e testada em PostgreSQL descartável com paridade live.
+- [x] Aplicada em PRODUÇÃO pelo auditor externo (cultivofarm_b2b_entrega1_client_access_hardening_prod_20261018); pós-auditoria: md5 4e0c374caa04bb9bf9fac9cc4e6723f1, 12 policies preservadas, ACL/owner/search_path inalterados, zero acessos legítimos cortados.
+- [x] Relatório pós-implantação registrado (docs/auditorias/vinculos-b2b-entrega1-pos-prod-20261018.review.md); rollback manual disponível sob avaliação.
+- [ ] JWT/RLS real tenants A/B: NÃO testado — homologação de acesso real pendente (blocker: sessões externas).
+- [ ] Backup/restauração de produção: não comprovado — comprovar antes de próxima migração.
+
+## Entrega 2 — próximo recorte read-only (revogação B2B remanescente)
+- [x] Auditar helpers escalares get_user_partner_id/get_partner_papel (LIMIT 1 sem revoked_at/owner; fail-closed 0/2+) — brechas confirmadas, 30 policies dependentes mapeadas.
+- [x] Auditar platform_private.b2b_commercial_context (sem revoked_at na contagem/seleção) e overload can_user_access_cliente(uuid) (herda endurecimento da Fase A, sem alteração própria).
+- [x] Preparar SQL candidato por fase (A/B/C) + rollback exato + testes locais (Vitest 1/1 passou); SEM DDL/DML hosted, sem publicar, sem reabrir RPCs/PUC containment.
+- [ ] Instalação Entrega 2: NO-GO — backup/restore e provas JWT/RLS A/B pendentes; exige autorização específica.
+- [ ] Auditar leitores diretos partner_users/PTC remanescentes (31 funções lexicais, 6 policies diretas) — próximo recorte.
