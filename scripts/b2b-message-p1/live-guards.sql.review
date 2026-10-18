@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
  WITH pr AS (
  SELECT o.partner_account_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
  WHERE p.user_id=_uid AND p.ativo=true AND o.ativo=true AND o.status='ativa' LIMIT 1
- ), pu AS (SELECT count(*)::int c,min(partner_id::text)::uuid pid FROM public.partner_users WHERE user_id=_uid)
+ ), pu AS (SELECT count(*)::int c,min(partner_id::text)::uuid pid FROM public.partner_users WHERE user_id=_uid AND revoked_at IS NULL)
  SELECT EXISTS(SELECT 1 FROM pr),(SELECT partner_account_id FROM pr),(SELECT pid FROM pu),(SELECT c FROM pu),
  EXISTS(SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id=pr.partner_account_id WHERE pa.ativo=true AND pa.deleted_at IS NULL),
  EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key='catalogo_precos');

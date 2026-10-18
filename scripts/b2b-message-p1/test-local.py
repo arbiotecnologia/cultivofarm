@@ -30,7 +30,7 @@ try:
  CREATE TABLE profiles(user_id uuid PRIMARY KEY,organization_id uuid,ativo boolean,senha_provisoria boolean,created_at timestamptz DEFAULT now());
  CREATE TABLE organizations(id uuid PRIMARY KEY,partner_account_id uuid,ativo boolean,status text);
  CREATE TABLE user_roles(user_id uuid,role app_role);
- CREATE TABLE partner_users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,user_id uuid UNIQUE,papel text,created_at timestamptz DEFAULT now());
+ CREATE TABLE partner_users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),partner_id uuid,user_id uuid UNIQUE,papel text,created_at timestamptz DEFAULT now(),revoked_at timestamptz,revoked_by uuid,revocation_reason text,version int DEFAULT 1);
  CREATE TABLE platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
  CREATE TABLE clientes(id uuid PRIMARY KEY,organization_id uuid);
  CREATE TABLE partner_accounts(id uuid PRIMARY KEY,commercial_owner_organization_id uuid,client_id uuid,ativo boolean,deleted_at timestamptz);
@@ -82,7 +82,11 @@ try:
  scenario('baseline synthetic admin FSF reads AR children despite hidden parent',UB,f"SELECT (SELECT count(*) FROM partner_orders WHERE id='{OA}')||':'||(SELECT count(*) FROM partner_order_messages WHERE id='{MA}')||':'||(SELECT count(*) FROM partner_order_message_attachments WHERE id='{AA}')",'0:1:1')
  run((HERE/'candidate.sql.review').read_text())
  run((HERE/'live-counters.sql.review').read_text())
- scenario('residual DEFINER counters bypasses child containment',UB,f"SELECT public.rpc_partner_message_counters('{PA}')->>'nao_lidas'",'1')
+ # Candidata v2 inclui ALTER ... SECURITY INVOKER: o residual está fechado.
+ # Pré-candidata o mesmo corpo DEFINER vazaria '1' para FSF; pós-candidata a
+ # RLS filha + policies RESTRICTIVE contenham a contagem ao próprio tenant.
+ scenario('counters INVOKER contido: FSF nao conta mensagens AR',UB,f"SELECT public.rpc_partner_message_counters('{PA}')->>'nao_lidas'",'0')
+ scenario('counters INVOKER positivo: admin AR conta proprias',UA,f"SELECT public.rpc_partner_message_counters()->>'nao_lidas'",'1')
  for u,label in [(UA,'AR'),(UB,'FSF')]:
   scenario(f'{label} own positive/cross invisible',u,"SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments)",'1:1')
  scenario('FSF cannot read AR explicitly',UB,f"SELECT (SELECT count(*) FROM partner_order_messages WHERE id='{MA}')||':'||(SELECT count(*) FROM partner_order_message_attachments WHERE id='{AA}')",'0:0')
@@ -101,6 +105,8 @@ try:
  scenario('blocked B2B commercial stays blocked',P,"SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments)",'0:0')
  scenario('technical stays blocked',T,"SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments)",'0:0')
  scenario('removed partner link remains denied',P,"SELECT count(*) FROM partner_order_messages",'0',f"DELETE FROM partner_users WHERE user_id='{P}';")
+ scenario('revoked partner link denied (revoked_at respeitado)',P,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE partner_users SET revoked_at=now(),revoked_by='{UA}',revocation_reason='TESTE',version=2 WHERE user_id='{P}';")
+ scenario('revoked link restored reabre acesso',P,"SELECT count(*) FROM partner_order_messages",'1',f"UPDATE partner_users SET revoked_at=now(),revoked_by='{UA}',revocation_reason='TESTE',version=2 WHERE user_id='{P}';UPDATE partner_users SET revoked_at=NULL,revoked_by=NULL,revocation_reason=NULL,version=3 WHERE user_id='{P}';")
  scenario('inactive admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE profiles SET ativo=false WHERE user_id='{UA}';")
  scenario('provisional admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE profiles SET senha_provisoria=true WHERE user_id='{UA}';")
  scenario('revoked readiness fence admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"INSERT INTO platform_org_admin_invites VALUES('{UA}','processing',NULL);")
