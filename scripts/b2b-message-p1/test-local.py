@@ -106,7 +106,10 @@ try:
  scenario('technical stays blocked',T,"SELECT (SELECT count(*) FROM partner_order_messages)||':'||(SELECT count(*) FROM partner_order_message_attachments)",'0:0')
  scenario('removed partner link remains denied',P,"SELECT count(*) FROM partner_order_messages",'0',f"DELETE FROM partner_users WHERE user_id='{P}';")
  scenario('revoked partner link denied (revoked_at respeitado)',P,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE partner_users SET revoked_at=now(),revoked_by='{UA}',revocation_reason='TESTE',version=2 WHERE user_id='{P}';")
- scenario('revoked link restored reabre acesso',P,"SELECT count(*) FROM partner_order_messages",'1',f"UPDATE partner_users SET revoked_at=now(),revoked_by='{UA}',revocation_reason='TESTE',version=2 WHERE user_id='{P}';UPDATE partner_users SET revoked_at=NULL,revoked_by=NULL,revocation_reason=NULL,version=3 WHERE user_id='{P}';")
+ # P e comercial bloqueado neste recorte (baseline 0:0); a prova de restore e
+ # no helper: revogado => NULL, restaurado => partner original.
+ scenario('helper NULL com vinculo revogado',P,"SELECT coalesce(get_user_partner_id()::text,'NULL')",'NULL',f"UPDATE partner_users SET revoked_at=now(),revoked_by='{UA}',revocation_reason='TESTE',version=2 WHERE user_id='{P}';")
+ scenario('helper restaurado retorna partner original',P,"SELECT get_user_partner_id()::text",PA,f"UPDATE partner_users SET revoked_at=now(),revoked_by='{UA}',revocation_reason='TESTE',version=2 WHERE user_id='{P}';UPDATE partner_users SET revoked_at=NULL,revoked_by=NULL,revocation_reason=NULL,version=3 WHERE user_id='{P}';")
  scenario('inactive admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE profiles SET ativo=false WHERE user_id='{UA}';")
  scenario('provisional admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"UPDATE profiles SET senha_provisoria=true WHERE user_id='{UA}';")
  scenario('revoked readiness fence admin denied',UA,"SELECT count(*) FROM partner_order_messages",'0',f"INSERT INTO platform_org_admin_invites VALUES('{UA}','processing',NULL);")
