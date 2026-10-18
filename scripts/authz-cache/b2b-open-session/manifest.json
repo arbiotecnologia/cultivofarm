@@ -11,7 +11,7 @@
     "src/hooks/usePartnerCatalog.ts": "8d0ebe3a8d039b908314e2792e0edf2827999bb2dbc236b1e2e5ac7abb58d318",
     "src/hooks/usePartnerPrices.ts": "04cba6e303360e2fcee63de4f6f6ed2307bb577c1a0c6f3d5fb1abc0e5bc737d",
     "src/hooks/usePartnerSimulations.ts": "33a6090742df5ac20a070c0841316793e430a73215779be1bd5d7bc3cf5ad97c",
-    "src/components/guards/B2BRouteGuard.tsx": "7e64c34037d1cc930bcfc9f6aaabbe2a9cbc63811d107b2e18a4496e6488fa4e",
+    "src/components/guards/B2BRouteGuard.tsx": "7b067389a7cc60fcfc929a17e183e0eb57d130c8ebff54e2633d728ad1b28926",
     "src/hooks/useStorageAccessScope.ts": "987f3935d124e8e7a80a926c9917f90027507f0ed96a6e17b2da456650203bbd",
     "src/hooks/useMyPartner.ts": "e3a89af2ecca57409da8cffbaf9ef6b48c7f395f06ea19601f8c4797e71a51a9",
     "src/hooks/useScopedPortalQuery.ts": "6efb962be490184d9b1945c039a9c99f972d53e988d7eead1f5309cbe832f163",
@@ -19,6 +19,6 @@
     "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
     "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
     "scripts/authz-cache/b2b-open-session/stage-review.py": "e1bd631299be51304629fbac77eb0c0166f12bbbc4f385c2366d6ea12f876b99",
-    "scripts/authz-cache/b2b-open-session/preflight-readonly.sql.review": "85d218ad61ff5c7892d6c10c9022009799eec06901a3feba22a38075a54c636e"
+    "scripts/authz-cache/b2b-open-session/preflight-readonly.sql.review": "b82e7274bb1f0856efc683bc3b337b32195086c138b868fdb3cf0c5c50825705"
   }
 }

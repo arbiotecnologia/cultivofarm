@@ -14,6 +14,34 @@ commit `80e8347`, hashes/ACL/RLS e SQL independentes aprovados externamente;
 login revogado negou **após reload**, restaurado ativo versão 6. Não reexecutado
 pelo agente nem confundido com prova de sessão aberta.
 
+### Complemento independente 22:51 UTC
+
+- Achado no HEAD `80e8347`: boundary após own.ready/hasPartnerContext provocava
+  redirect prematuro, pois useMyPartner depende authzReady. A candidata anterior
+  já antecipava pause antes da negação; este complemento prioriza pause também
+  antes da espera dos readers, preservando a barreira inicial de Auth loading.
+- Teste gestor/técnico agora mantém RPC inicial pendente e prova boundary visível,
+  ausência de dados/queries de catálogo e MESMA URL; resolve→valid, poll→revogado,
+  retry pendente novamente na mesma URL e restore→dados novos, sem reload.
+  AuthProvider, useMyPartner, useAvailableContexts, QueryClient e Router reais;
+  apenas transporte RPC/download fake. Não é prova JWT hosted.
+- Auditor confirmou live `profiles.z99_cf_profile_stamp` enabled O, hash
+  `ce295ff5799d306ad81578047cd9bff5`; `partner_users`/`user_roles.z90_cf_touch_profile`
+  enabled O, hash `e5911c3801be399f9de57e038b390e79`; convite stamp enabled O,
+  hash `ff13703e8174fa2fa3cd641ff5b36258` (nome não fornecido, não inventado).
+  Preflight candidato adiciona guarda SELECT-only dos três pares conhecidos e
+  inventário por hash do convite. Não executado pelo agente.
+- Prova externa SQL BEGIN/ROLLBACK: revoke e restore avançaram profiles.updated_at
+  nas DUAS operações; vínculo permanece versão 6. Isso confirma stamp local do
+  perfil, NÃO closure monotônica de todas dependências/concorrência v6 ou JWT.
+- RPC get_my_authz_fingerprint e schemas v6 continuam ausentes segundo auditor;
+  população informada: 1 gestor B2B ativo e 2 produtores ativos. Rollout continua
+  restrito B2B, produtores sem monitor; não criar fixtures/roles nem ativar v6.
+- Validação deste complemento: **58/58 testes em 2 arquivos PASS** (29 integração
+  e 29 monitor), **6/6 staging guards Python PASS**; verificação automática
+  build/typecheck `build OK` em `2026-10-18T22:52:35Z`. Sem suíte ampla nova,
+  sem browser autenticado/JWT, sem execução SQL local/hosted ou publicação.
+
 ## Alterações concretas
 
 - `src/hooks/useAuth.tsx`: mesmo monitor, scope de UID/org/readiness/roles;
