@@ -5,8 +5,9 @@
 --   FASE C: platform_private.b2b_commercial_context()  md5 baseline 02158d4204dea67308558f649113ba6d
 -- Regra de elegibilidade (mesma da Entrega 1 rev 1.2): vínculo NÃO revogado,
 -- parceiro ativo/não deletado, owner NOT NULL, tenant_id = owner.
--- Fail-closed: 0 ou 2+ vínculos elegíveis => NULL (nunca LIMIT 1 aleatório).
--- NÃO altera: 30 policies dependentes, overload can_user_access_cliente(uuid)
+-- Fail-closed: 0 ou 2+ vínculos NÃO revogados => NULL (nunca LIMIT 1 aleatório).
+-- NÃO altera: 31 policies dependentes (evidência live pg_policy/pg_get_expr
+--   2026-10-18), overload can_user_access_cliente(uuid)
 --   (que passa a herdar o endurecimento via get_user_partner_id), RPCs fechadas,
 --   containment PUC.
 BEGIN;
