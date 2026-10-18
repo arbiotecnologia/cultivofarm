@@ -141,6 +141,20 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     expect(screen.getByText("catálogo novo")).toBeTruthy(); expect(screen.queryByText("catálogo atual")).toBeNull();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
   });
+  it("A→B→A observado refaz leituras; resposta A anterior não contamina A restaurado", async () => {
+    let resolve: ((v: unknown) => void) | undefined;
+    state.catalog.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const client = setup(); await tick();
+    state.context = ctx("00000000-0000-4000-8000-000000000004"); await tick(10_000);
+    state.context = ctx(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "A restaurado" }] }); await tick(10_000);
+    resolve?.({ data: [{ produto_nome: "A obsoleto" }] }); await tick();
+    expect(screen.getByText("A restaurado")).toBeTruthy(); expect(screen.queryByText("A obsoleto")).toBeNull();
+    expect(JSON.stringify(client.getQueryCache().getAll().map(q => q.state.data))).not.toContain("obsoleto");
+  });
+  it.each(["15000", true, {}, [], { ...ctx(), papel: "tecnico" }])("resposta inválida %j pausa na integração sem fallback", async raw => {
+    state.context = raw; const client = setup(); await tick(); paused(client); const calls = state.contextCalls;
+    await tick(30_000); expect(state.contextCalls).toBe(calls);
+  });
   it("aba oculta expira e foco só restaura após resposta", async () => {
     const client = setup(); await tick(); Object.defineProperty(document, "visibilityState", { value: "hidden" }); await tick(15_001); paused(client);
     let resolve: ((v: unknown) => void) | undefined; state.override = () => new Promise(r => { resolve = r; });

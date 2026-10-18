@@ -387,7 +387,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
         if (b2bContextOnly) {
-          const { data, error } = await supabase.rpc("get_my_commercial_partner_context");
+          // Generated RPC names lag the already-installed resolver; canonical
+          // client only, unknown response validated below (same as useMyPartner).
+          const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+          const { data, error } = await rpc.call(supabase, "get_my_commercial_partner_context");
           if (error) throw new Error("b2b_probe_unavailable");
           return b2bContextProbe(data, profile?.organization_id ?? "", roles[0] ?? "");
         }
