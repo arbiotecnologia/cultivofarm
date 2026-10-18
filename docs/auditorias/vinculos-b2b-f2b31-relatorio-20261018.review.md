@@ -1,6 +1,8 @@
 # Cultivo Farm — F2-B3.1 — contrato em etapas — 18/10/2026
 
 ## Decisão executiva
+**Revisão B3.2: instalação NO-GO por backup recuperável não comprovado e riscos adicionais de rowshape/dependências automáticas no rollback. Adiar metadata é recomendado. Ver `vinculos-b2b-f2b32-relatorio-20261018.review.md`; o PASS local abaixo permanece histórico, não autoriza aplicar os candidatos.**
+
 **PASS preparação e compatibilidade estrutural local. GO somente para revisão externa do estágio neutro B3.2; instalação não autorizada neste turno. NO-GO para origem confiável, cleanup, cutover ou certificação RLS.**
 
 Menor mudança: duas colunas nullable em PTC, **sem default, backfill, CHECK, FK, índice, guard novo, mudança de função/policy/ACL ou uso em autorização**. São campos NÃO CONFIÁVEIS; o cliente continua podendo preenchê-los sob os grants atuais. Não chamar `puc` de projeção comprovada nesta etapa. Nenhuma tela muda para RPC fechada. O candidato B3 anterior com FK RESTRICT não é promovido; este pacote o substitui apenas no recorte de staging.

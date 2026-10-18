@@ -30,3 +30,9 @@
 - [x] Executar 22 checks PostgreSQL descartável, arquivos completos sob baseline sintético e 4 suites Vitest; lint focado exit 0, sem prova hosted.
 - [ ] B3.2 instalação neutra externa: aguarda autorização/revisão, backup, destino e preflight sem drift/consumers; agente não executa.
 - [ ] Origem/cleanup/cutover: NO-GO por contrato ator/source estável/colisões/revogação e provas JWT/RLS A/B/legado/Storage pendentes.
+
+## F2-B3.2 — revisão independente / B3.3 somente desenho
+- [x] Revisar manifesto/rollback, locks, concessões indiretas e consumidores dinâmicos; preparar preflight/postflight ampliados (risco automático RESTRICT confirmado).
+- [x] Documentar checklist de backup recuperável e decisão de adiar metadata; recuperação real NÃO realizada.
+- [x] Desenhar B3.3 server-owned com RPCs fechados, ator/alvo, colisões e fronteiras transacionais; prompts e 12 checks locais (não contrato funcional implementado).
+- [ ] Implantação: NO-GO; auditor não possui backup/snapshot recuperável comprovado, nem provas reais JWT/RLS A/B.
