@@ -14,6 +14,7 @@ CREATE TABLE lab.partner_clients(partner_id uuid, cliente_id uuid, active boolea
 CREATE TABLE lab.partner_user_clients(partner_id uuid, user_id uuid, cliente_id uuid, active boolean); -- sem revoked_at: paridade exata com live
 CREATE TABLE lab.partner_technician_clients(partner_id uuid, technician_user_id uuid, cliente_id uuid, active boolean);
 CREATE TABLE lab.user_clientes(user_id uuid, cliente_id uuid, is_active boolean, revoked_at timestamptz, valid_from timestamptz, valid_until timestamptz);
+CREATE TABLE lab.clientes(id uuid, organization_id uuid); -- paridade live: clientes.organization_id existe
 
 CREATE FUNCTION lab.has_role(u uuid, r lab.app_role) RETURNS boolean LANGUAGE sql STABLE AS
 $$ SELECT EXISTS (SELECT 1 FROM lab.user_roles WHERE user_id=u AND role=r) $$;
@@ -92,6 +93,12 @@ INSERT INTO lab.partner_clients VALUES
   ('a0000000-0000-4000-8000-0000000000b1', '20000000-0000-4000-8000-0000000000b1', true),
   ('a0000000-0000-4000-8000-0000000000c1', '20000000-0000-4000-8000-0000000000c1', true),
   ('a0000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1', true);
+-- clientes com organization_id (paridade live): a1/c1 tenant A, b1 tenant B
+INSERT INTO lab.clientes VALUES
+  ('20000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa'),
+  ('20000000-0000-4000-8000-0000000000b1', 'a0000000-0000-4000-8000-0000000000bb'),
+  ('20000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000aa'),
+  ('20000000-0000-4000-8000-0000000000d1', 'a0000000-0000-4000-8000-0000000000aa');
 INSERT INTO lab.user_roles VALUES
   ('10000000-0000-4000-8000-000000000001','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000002','parceiro_b2b'),
