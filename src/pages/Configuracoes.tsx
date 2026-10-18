@@ -43,6 +43,7 @@ import { PARTNER_REGISTRATION_UNAVAILABLE } from "@/hooks/usePartnerUsers";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueadaPorTipo, MSG_EDICAO_EXTERNA_INDISPONIVEL, ajudaSemElegiveis, type EstadoVinculo } from "@/lib/configuracoes/userLinks";
 import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
+import { carregarUsuariosAdmin, definirStatusUsuario, montarArgsListagem, placeholderMesmaConsulta, type UsuarioListado } from "@/lib/configuracoes/usuariosListQuery";
 import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
@@ -153,7 +154,7 @@ export default function Configuracoes() {
   const [pagina, setPagina] = useState(1);
 
   const {
-    data: allUsers = { items: [] as any[], total: 0 },
+    data: allUsers = { items: [] as UsuarioListado[], total: 0 },
     isLoading: usersLoading,
     isError: usersError,
     isFetching: usersFetching,
@@ -162,23 +163,21 @@ export default function Configuracoes() {
   } = useQuery({
     queryKey: ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina],
     enabled: isAdmin && !!profile?.organization_id && !!user?.id,
-    // Mantém a página anterior visível durante a recarga (mesmo escopo identidade+tenant):
-    // a lista nunca "some" após ativar/desativar um usuário.
+    // Mantém a página anterior visível SOMENTE na recarga da mesma consulta
+    // (mesmo escopo identidade+tenant e mesmos filtros/página): a lista nunca "some"
+    // após ativar/desativar, mas filtro/página/tenant/sessão novos nunca exibem dados velhos.
     placeholderData: (prev, prevQuery) =>
-      prevQuery && prevQuery.queryKey[1] === profile?.organization_id && prevQuery.queryKey[2] === user?.id ? prev : undefined,
+      placeholderMesmaConsulta(prev, prevQuery?.queryKey, ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina]),
     queryFn: async () => {
       // O contrato server-side retorna user_id e updated_at para edição otimista.
-      const { data, error } = await supabase.rpc("tenant_admin_list_users" as never, {
-        p_search: debouncedSearchTerm.trim() || null,
-        p_role: filterRole === "all" ? null : filterRole,
-        p_active: filterStatus === "all" ? null : filterStatus === "ativo",
-        p_offset: (pagina - 1) * USUARIOS_POR_PAGINA,
-        p_limit: USUARIOS_POR_PAGINA,
-      } as never);
-      if (error) throw error;
-      const payload = (data ?? {}) as { items?: unknown; total?: unknown };
-      if (!Array.isArray(payload.items)) throw new Error("Resposta da listagem de usuários inválida.");
-      return { items: payload.items as any[], total: Number(payload.total ?? 0) };
+      // RPC ausente do schema gerado: estreitamento único do receiver (padrão userLinksQuery).
+      return carregarUsuariosAdmin(supabase as unknown as Parameters<typeof carregarUsuariosAdmin>[0], montarArgsListagem({
+        search: debouncedSearchTerm,
+        role: filterRole,
+        status: filterStatus,
+        pagina,
+        porPagina: USUARIOS_POR_PAGINA,
+      }));
     },
   });
 
@@ -207,7 +206,7 @@ export default function Configuracoes() {
     !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
   );
   function toggleRole(roles: string[], r: string, on: boolean): string[] {
-    let next = new Set(roles);
+    const next = new Set(roles);
     if (on) {
       next.add(r);
     } else {
@@ -243,16 +242,13 @@ export default function Configuracoes() {
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
       if (bloqueio) throw new ErroStatusLocal(bloqueio);
-      const { data, error } = await (supabase as any).rpc("tenant_admin_set_user_active", {
-        p_user_id: userId,
-        p_active: ativo,
-      });
-      if (error) throw error;
-      if (data?.success !== true || data?.user_id !== userId) throw new ErroStatusLocal("Não foi possível confirmar a atualização do status.");
+      // RPC ausente do schema gerado: estreitamento único do receiver (padrão userLinksQuery).
+      await definirStatusUsuario(supabase as unknown as Parameters<typeof definirStatusUsuario>[0], userId, ativo);
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-links"] });
       toast({ title: "Status do usuário atualizado" });
     },
     onError: (e: unknown) => {

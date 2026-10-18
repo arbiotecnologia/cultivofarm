@@ -242,7 +242,10 @@ describe("integração Configuracoes.tsx — um único caminho de escrita (RPC)"
   });
 
   it("consulta de usuários inclui updated_at e o salvamento não refaz fetch antes de salvar", () => {
-    expect(src).toContain('rpc("tenant_admin_list_users"');
+    // A chamada RPC vive no módulo tipado usuariosListQuery (sem casts soltos na tela).
+    const modulo = readFileSync(resolve(__dirname, "../../lib/configuracoes/usuariosListQuery.ts"), "utf8");
+    expect(modulo).toContain('rpc(RPC_LISTAR_USUARIOS');
+    expect(src).toContain("carregarUsuariosAdmin");
     expect(src).toContain("user_id e updated_at");
     expect(blocoSalvar).not.toContain("refetchUsers");
   });
