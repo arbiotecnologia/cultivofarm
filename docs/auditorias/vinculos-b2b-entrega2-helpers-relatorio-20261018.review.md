@@ -87,32 +87,47 @@ corpos permanecem os da candidata (nada revertido), comprovado por hash.
 ## 3. Testes locais (PostgreSQL descartável, paridade de colunas live)
 
 `scripts/tests/entrega2-helpers-local.sql` + `.py` + Vitest
-`src/test/saas/entrega2-helpers-postgres.test.ts` (rev 2.2):
+`src/test/saas/entrega2-helpers-postgres.test.ts` (rev 2.3, pós-revisão
+ffca65827):
 
-- **Corpos REAIS, sem duplicação:** o runner extrai os 3 `CREATE OR REPLACE
-  FUNCTION` diretamente do arquivo da candidata e os instala no PostgreSQL
-  descartável — a matriz roda sobre o SQL que seria aplicado, não sobre réplica.
-  O corpo real instalado da Entrega 1 (`can_user_access_cliente(uuid,uuid)`) é
-  embutido e sua fidelidade é provada por hash: `md5(pg_get_functiondef)` no lab
-  = `4e0c374caa04bb9bf9fac9cc4e6723f1`, idêntico ao de produção.
-- **Matriz M1–M12 (todas PASS):** M1 elegível/`commercial_owner`; M2
-  `legacy_partner_tenant` real (org do ator ≠ owner comercial, owner preservado);
-  M3 contextual cliente (ramo `parceiro_b2b` do corpo real da Entrega 1
-  autoriza cliente na carteira válida); M4 owner NULL → NULL nos três; M5
-  tenant NULL → NULL; M6 tenant mismatch → NULL; M7/M7b parceiro inativo e
-  deletado → NULL; M8 dois elegíveis → NULL; **M9 um elegível + um inelegível
-  NÃO revogado → NULL nos três** (divergência da rev 2.1 eliminada); M10 um
-  ativo + um revogado (histórico) → resolve; M11 revogação dinâmica fecha
-  escalar, portal e acesso contextual ao cliente, restauração reabre; M12 alvo
-  terceiro (callers internos) elegível/revogado.
-- **Rollback:** 5a instalação exata aceita e baseline restaurado (comprovado por
-  retorno ao comportamento `LIMIT 1`); 5b drift com marcadores preservados
-  rejeitado atomicamente.
+- **Arquivos INTEIROS, sem duplicação e sem regravação:** o runner extrai os
+  corpos BASELINE do arquivo de rollback, instala-os no PostgreSQL descartável
+  e prova por hash que são os corpos de produção
+  (`77822b0e…`/`c892ee1d…`/`02158d42…`). Em seguida executa o **arquivo
+  candidato inteiro** (pre-guards de hash, corpos e pós-condições intactos) e
+  verifica os hashes instalados contra **constantes fixas commitadas**
+  (`b334c3a4…`/`f84f898e…`/`a31d198c…`) — divergência = FALHA; o teste nunca
+  reaprova nem regrava golden hashes (geração só via `--generate-hashes`,
+  modo explícito que apenas imprime).
+- **Rollback inteiro testado:** 5a executa o arquivo de rollback intacto sobre
+  a instalação exata — aceito, baseline restaurado e hashes baseline
+  comprovados; 5b reaplica a candidata, introduz drift com marcadores
+  preservados e executa o rollback inteiro — rejeitado atomicamente, e os
+  corpos permanecem os da candidata (nada revertido), comprovado por hash.
+- **Matriz M1–M15 (todas PASS), os TRÊS corpos afirmados por cenário** com
+  roles/entitlements válidos nos fixtures: M1 elegível/`commercial_owner`; M2
+  `legacy_partner_tenant` real (org do ator ≠ owner comercial, owner
+  preservado); M3 contextual cliente (ramo `parceiro_b2b` do corpo real da
+  Entrega 1 autoriza cliente na carteira válida); M4 owner NULL → NULL nos
+  três; M5 tenant NULL → NULL nos três; M6 tenant mismatch → NULL nos três;
+  M7/M7b parceiro inativo e deletado → NULL nos três; M8 dois elegíveis →
+  NULL nos três; **M9 um elegível + um inelegível NÃO revogado → NULL nos
+  três** (divergência da rev 2.1 eliminada); M10 um ativo + um revogado
+  (histórico) → resolve nos três; M11 revogação dinâmica fecha escalar, papel,
+  portal e acesso contextual ao cliente, restauração reabre; M12 alvo terceiro
+  (callers internos) elegível/revogado; **M13 zero vínculos → NULL nos três**;
+  **M14 ator NULL / alvo NULL → NULL**; **M15 cliente NÃO associado → false**
+  (negativo contextual).
+- **Fidelidade Entrega 1:** `md5(pg_get_functiondef)` do corpo embutido =
+  `4e0c374caa04bb9bf9fac9cc4e6723f1`, idêntico ao de produção.
 - **Iterações de correção durante os testes:** regex de extração `[a-z_]+`
   excluía `b2b_commercial_context` (dígitos) → `[a-z0-9_]+`; iterações
   anteriores: `HAVING` sem `GROUP BY` → `CASE WHEN count(*)=1`; `min(uuid)`
-  inexistente → `array_agg(...)[1]`.
-- **Vitest 1/1 passou.**
+  inexistente → `array_agg(...)[1]`; rev 2.3: removida a regravação de hashes
+  do rollback pelo runner (apontada pela revisão ffca65827).
+- **Execução confiável:** Vitest via `execFileSync` sem shell/pipes — exit
+  code não-zero lança exceção (nenhum `| tail` sem pipefail mascarando erro).
+  **Vitest 1/1 passou (exit 0).**
 
 ### 3.1 Evidência `valid_from` (auditoria sem inventar regra)
 
