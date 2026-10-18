@@ -37,6 +37,10 @@ pelo agente nem confundido com prova de sessão aberta.
 - RPC get_my_authz_fingerprint e schemas v6 continuam ausentes segundo auditor;
   população informada: 1 gestor B2B ativo e 2 produtores ativos. Rollout continua
   restrito B2B, produtores sem monitor; não criar fixtures/roles nem ativar v6.
+- Validação deste complemento: **58/58 testes em 2 arquivos PASS** (29 integração
+  e 29 monitor), **6/6 staging guards Python PASS**; verificação automática
+  build/typecheck `build OK` em `2026-10-18T22:52:35Z`. Sem suíte ampla nova,
+  sem browser autenticado/JWT, sem execução SQL local/hosted ou publicação.
 
 ## Alterações concretas
 
