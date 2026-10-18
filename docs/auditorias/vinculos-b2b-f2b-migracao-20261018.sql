@@ -12,8 +12,8 @@ DO $preflight$
 DECLARE r record; p record; acl text[]; digest text;
 BEGIN
  IF current_user <> 'postgres' THEN RAISE EXCEPTION 'F2B_EXECUTOR_NOT_REVIEWED'; END IF;
- IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-     WHERE n.nspname='public' AND p.proname IN
+ IF (SELECT count(*) FROM pg_proc proc JOIN pg_namespace n ON n.oid=proc.pronamespace
+     WHERE n.nspname='public' AND proc.proname IN
      ('get_user_partner_id','get_partner_papel','get_b2b_user_role_for_partner','is_valid_b2b_partner_user')) <> 4
  THEN RAISE EXCEPTION 'F2B_OVERLOAD_DRIFT'; END IF;
  FOR r IN SELECT * FROM (VALUES ('public.get_user_partner_id()','77822b0ef57e42bfe9cd7075265402aa'),
