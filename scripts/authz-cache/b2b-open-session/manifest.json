@@ -19,6 +19,6 @@
     "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
     "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
     "scripts/authz-cache/b2b-open-session/stage-review.py": "e1bd631299be51304629fbac77eb0c0166f12bbbc4f385c2366d6ea12f876b99",
-    "scripts/authz-cache/b2b-open-session/preflight-readonly.sql.review": "b82e7274bb1f0856efc683bc3b337b32195086c138b868fdb3cf0c5c50825705"
+    "scripts/authz-cache/b2b-open-session/preflight-readonly.sql.review": "eabe50fafee25d13ec182d1083ecf62be9dad66b192b68a591b30347d1c19e16"
   }
 }
