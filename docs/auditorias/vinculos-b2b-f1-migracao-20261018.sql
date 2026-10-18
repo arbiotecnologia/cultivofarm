@@ -139,7 +139,21 @@ BEGIN
 END;
 $function$;
 
-REVOKE EXECUTE ON FUNCTION public.partner_users_derive_tenant() FROM PUBLIC, anon, authenticated;
+-- Revogação tolerante: revoga de PUBLIC sempre e de anon/authenticated apenas
+-- quando esses roles existirem no ambiente (Supabase tem; Postgres local não).
+DO $$
+DECLARE
+  v_roles text := 'PUBLIC';
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    v_roles := v_roles || ', anon';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    v_roles := v_roles || ', authenticated';
+  END IF;
+  EXECUTE format('REVOKE EXECUTE ON FUNCTION public.partner_users_derive_tenant() FROM %s', v_roles);
+END;
+$$;
 
 CREATE TRIGGER a10_partner_users_derive_tenant
   BEFORE INSERT OR UPDATE ON public.partner_users
@@ -160,7 +174,19 @@ BEGIN
 END;
 $function$;
 
-REVOKE EXECUTE ON FUNCTION public.partner_users_bump_version() FROM PUBLIC, anon, authenticated;
+DO $$
+DECLARE
+  v_roles text := 'PUBLIC';
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    v_roles := v_roles || ', anon';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    v_roles := v_roles || ', authenticated';
+  END IF;
+  EXECUTE format('REVOKE EXECUTE ON FUNCTION public.partner_users_bump_version() FROM %s', v_roles);
+END;
+$$;
 
 CREATE TRIGGER a20_partner_users_bump_version
   BEFORE UPDATE ON public.partner_users
