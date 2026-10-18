@@ -145,30 +145,45 @@ ffca65827):
 
 ## 4. Impacto e compatibilidade
 
-- As 30 policies dependentes passam a negar acesso a vínculos revogados/inelegíveis
-  — esse é o objetivo. O único vínculo ativo em produção é elegível (owner
-  presente, tenant coerente, não revogado): **nenhum acesso legítimo cortado hoje**.
+- As 31 policies dependentes (evidência live 2026-10-18 via `pg_policy` com
+  `pg_get_expr` sobre qual/check) passam a negar acesso a vínculos
+  revogados/inelegíveis — esse é o objetivo. O único vínculo em produção é
+  elegível (1 vínculo total, owner presente, tenant coerente, não revogado;
+  PUC=0, PTC=0, `valid_from` futuro=0): **nenhum acesso legítimo cortado hoje**.
 - Overload `(uuid)` herda o endurecimento sem alteração própria.
 - Não reabre RPCs fechadas, não altera containment PUC, não toca policies.
-- **Portal/PUC seguem a regra comum:** com a rev 2.2, o contexto do portal e os
-  helpers escalares aplicam a mesma elegibilidade E a mesma contagem (todos os
-  não revogados, fail-closed em 0/2+); não há mais caminho em que um autorize o
-  que o outro nega. PUC permanece com policy RESTRICTIVE `false` (intocado).
+- **Uniformidade limitada à cardinalidade/elegibilidade do vínculo:** com a
+  rev 2.2, o contexto do portal e os helpers escalares aplicam a mesma contagem
+  (todos os não revogados, fail-closed em 0/2+) e a mesma elegibilidade do
+  vínculo (parceiro ativo/não deletado, owner NOT NULL, tenant_id = owner).
+  **NÃO se afirma equivalência global portal/escalares:** o portal mantém gates
+  adicionais próprios (ator pronto via `platform_actor_access_ready`, exatamente
+  1 role, entitlement `catalogo_precos`, organização ativa, visibilidade fase 1)
+  que os escalares não avaliam — um usuário pode resolver o escalar e ainda
+  assim não obter contexto do portal por esses gates. PUC permanece com policy
+  RESTRICTIVE `false` (intocado).
 - **Token/provisioning:** o contexto alimenta apenas leitura de contexto
   comercial B2B; nenhum fluxo de provisioning/emissão de token depende de
-  vínculo com tenant divergente do owner (produção: 1 vínculo ativo elegível,
+  vínculo com tenant divergente do owner (produção: 1 vínculo total elegível,
   PUC=0, PTC=0, ownerless=0 — evidência externa 2026-10-18). Nenhum acesso
   legítimo cortado hoje; vínculos futuros com tenant incoerente serão negados
   até regularização explícita.
-- **Rollback atualizado (rev 2.2):** guarda anti-drift por hashes md5 exatos de
-  `pg_get_functiondef` (ver seção 2) — drift com marcadores preservados é
-  rejeitado atomicamente, comprovado no laboratório.
+- **Rollback (rev 2.3):** guarda anti-drift por hashes md5 fixos commitados
+  (ver seção 2) — arquivo inteiro testado no laboratório; drift com marcadores
+  preservados é rejeitado atomicamente e os corpos candidatos permanecem
+  intactos após a falha.
+- **Contas de teste:** o usuário autorizou contas de teste por perfil/tenant e
+  confirmou sessão real externa do admin AR Bio (arbiotecnologia@gmail.com) com
+  seis testes existentes. Nenhuma conta foi criada nem alterada neste recorte;
+  nenhuma escrita hosted.
 
 ## 5. Status
 
-- **PASS:** preparação e validação local rev 2.2 (candidata funcional sobre
-  corpos reais, matriz M1–M12, rollback com guarda de hash exata, fidelidade do
-  corpo da Entrega 1 por hash de produção).
+- **PASS:** preparação e validação local rev 2.3 (candidata e rollback
+  executados como arquivos inteiros sobre baseline fiel a produção, hashes
+  fixos commitados verificados sem regravação, matriz M1–M15 com os três
+  corpos afirmados por cenário, fidelidade do corpo da Entrega 1 por hash de
+  produção).
 - **Autorização e backup:** o usuário autorizou a continuação do projeto e
   assume a responsabilidade pelo backup de produção (registrado em 2026-10-18);
   não será solicitada nova autorização de backup. Isso NÃO equivale à
