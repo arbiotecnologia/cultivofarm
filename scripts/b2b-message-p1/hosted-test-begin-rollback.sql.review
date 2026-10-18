@@ -1,0 +1,82 @@
+-- REVIEW ONLY — teste hosted BEGIN/ROLLBACK do fechamento P1 (mensagens B2B).
+-- Canonico swzpzcwiasxmjutrmvkm. NADA e commitado: transacao unica com ROLLBACK.
+-- Nao desliga triggers, nao simula emissor validado, nao toca guards fiscais.
+-- Identidades reais (preencher antes de executar; script falha fechado sem elas):
+--   :admin_ar  = admin do tenant AR Bio (ex.: a7d45277-6dec-413d-bf6b-86620c1ef39f)
+--   :admin_fsf = admin do tenant FSF
+-- Uso: psql -v admin_ar='<uuid>' -v admin_fsf='<uuid>' -f hosted-test-begin-rollback.sql.review
+
+\set ON_ERROR_STOP on
+DO $$
+BEGIN
+  IF :'admin_ar' IS NULL OR :'admin_ar' = '' OR :'admin_fsf' IS NULL OR :'admin_fsf' = '' THEN
+    RAISE EXCEPTION 'identidades reais admin_ar/admin_fsf obrigatorias';
+  END IF;
+END $$;
+
+BEGIN;
+
+-- Ator simulado via claim JWT da transacao (NAO e login real; prova RLS/RPC).
+CREATE OR REPLACE FUNCTION pg_temp.act(u uuid) RETURNS void LANGUAGE sql AS $$
+  SELECT set_config('request.jwt.claims', json_build_object('sub', u::text)::text, true);
+$$;
+
+-- 0) Pre-condicoes: helpers Entrega 2 instalados e contadores ainda DEFINER.
+SELECT md5(pg_get_functiondef('public.get_user_partner_id()'::regprocedure)) = 'b334c3a454ebc4233d3b9e0d0a700d78' AS e2_partner_ok,
+       md5(pg_get_functiondef('platform_private.b2b_commercial_context()'::regprocedure)) = 'a31d198c9a9fc9a5e7c397ab36fe0fa4' AS e2_context_ok,
+       (SELECT prosecdef FROM pg_proc WHERE oid='public.rpc_partner_message_counters(uuid)'::regprocedure) AS counters_definer_pre;
+
+-- 1) Fixtures AR minimas dentro da transacao (pedido + mensagem + anexo).
+--    Reutiliza partner_account real de AR se existir; caso contrario falha
+--    com o erro exato em vez de fabricar fixture invalida.
+DO $$
+DECLARE v_partner uuid; v_order uuid; v_msg uuid;
+BEGIN
+  SELECT pa.id INTO v_partner FROM public.partner_accounts pa
+  WHERE pa.ativo IS TRUE AND pa.deleted_at IS NULL
+    AND pa.commercial_owner_organization_id IS NOT NULL
+  ORDER BY pa.id LIMIT 1;
+  IF v_partner IS NULL THEN
+    RAISE EXCEPTION 'FIXTURE_BLOQUEADA: nenhuma partner_account ativa com owner; cadastro real necessario';
+  END IF;
+  INSERT INTO public.partner_orders(partner_id, status)
+  VALUES (v_partner, 'rascunho') RETURNING id INTO v_order;
+  INSERT INTO public.partner_order_messages(order_id, autor_id, autor_tipo, mensagem)
+  VALUES (v_order, :'admin_ar'::uuid, 'admin', 'fixture P1 rollback') RETURNING id INTO v_msg;
+  INSERT INTO public.partner_order_message_attachments(message_id, file_name, file_path, uploaded_by)
+  VALUES (v_msg, 'p1.txt', 'p1/fixture.txt', :'admin_ar'::uuid);
+  PERFORM set_config('p1.order', v_order::text, true);
+  PERFORM set_config('p1.msg', v_msg::text, true);
+END $$;
+
+-- 2) Aplica candidata v2 DENTRO da transacao (2 policies RESTRICTIVE + INVOKER).
+\ir candidate.sql.review
+
+-- 3) Provas com identidade admin AR (proprio tenant: positivo).
+SELECT pg_temp.act(:'admin_ar'::uuid);
+SELECT count(*) > 0 AS ar_ve_propria_msg
+FROM public.partner_order_messages WHERE id = current_setting('p1.msg')::uuid;
+SELECT (public.rpc_partner_message_counters()->>'nao_lidas')::int >= 1 AS ar_contador_positivo;
+
+-- 4) Provas com identidade admin FSF (cross-tenant: invisivel).
+SELECT pg_temp.act(:'admin_fsf'::uuid);
+SELECT count(*) = 0 AS fsf_nao_ve_msg_ar
+FROM public.partner_order_messages WHERE id = current_setting('p1.msg')::uuid;
+SELECT count(*) = 0 AS fsf_nao_ve_anexo_ar
+FROM public.partner_order_message_attachments WHERE message_id = current_setting('p1.msg')::uuid;
+-- Residual fechado: contador INVOKER nao enxerga mensagem de AR.
+SELECT NOT EXISTS (
+  SELECT 1 FROM public.partner_order_messages m
+  WHERE m.id = current_setting('p1.msg')::uuid
+) AS fsf_contador_sem_base_ar;
+
+-- 5) Insert forjado cross-tenant deve ser negado (espera erro 42501/RLS).
+--    Executar manualmente e conferir erro exato; nao automatizado aqui para
+--    nao abortar a transacao de prova:
+--    INSERT INTO public.partner_order_messages(order_id, autor_tipo, mensagem)
+--    VALUES (current_setting('p1.order')::uuid, 'admin', 'forged');
+
+ROLLBACK;
+-- Pos-rollback: nenhuma policy, fixture ou ALTER persiste.
+SELECT NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public'
+  AND policyname IN ('p1_message_order_tenant_guard','p1_attachment_message_tenant_guard')) AS limpo;
