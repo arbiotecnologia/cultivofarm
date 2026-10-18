@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:47 — ativação financeira autorizada
+- [ ] Habilitar somente financeiro exclusivo, preservando produtor/B2B e Blob/global fechados.
+- [ ] Validar drafts/revogação/gates e rollback financeiro false sem perder outro recorte; manifests antigos fail-closed.
+- [ ] Entregar artefatos/receipt/relatório para revisão final externa; sem DDL/Edge/publicação ou homologação alegada.
+
 ## 18/10 23:42 — continuidade de drafts por confirmação
 - [x] Reproduzir remount periódico (6 FAIL antes) e limitar refresh por confirmação ao B2B publicado.
 - [x] Testar drafts por dois polls, mudança real/revoke/roles/inativação/expiração/revalidação/identity e restore sem ressuscitar drafts (183/183).

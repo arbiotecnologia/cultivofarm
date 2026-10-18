@@ -12,10 +12,10 @@ describe("Liberação limitada do auditor 2026-10-18 22:55 — configuração re
   it("mantém anexos Blob fechados", () => {
     expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
   });
-  it("ativa somente produtor conforme liberação 23:37", () => {
+  it("preserva produtor conforme liberação 23:37", () => {
     expect(PRODUCER_CONTEXT_MONITOR_ENABLED).toBe(true);
   });
-  it("mantém a candidata financeira fechada até liberação", () => {
-    expect(FINANCIAL_CONTEXT_MONITOR_ENABLED).toBe(false);
+  it("ativa financeiro conforme liberação 23:47", () => {
+    expect(FINANCIAL_CONTEXT_MONITOR_ENABLED).toBe(true);
   });
 });
