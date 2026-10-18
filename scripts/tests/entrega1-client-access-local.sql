@@ -81,45 +81,45 @@ INSERT INTO lab.partner_accounts VALUES
   ('a0000000-0000-4000-8000-0000000000c1', true, NULL, NULL),                                     -- parceiro legacy sem owner
   ('a0000000-0000-4000-8000-0000000000d1', false, NULL, 'a0000000-0000-4000-8000-0000000000aa'); -- parceiro inativo
 INSERT INTO lab.partner_users VALUES
-  ('u0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', NULL),                -- U1 legítimo A
-  ('u0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', now()),               -- U2 revogado
-  ('u0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-0000000000c1', NULL, NULL),                                                 -- U3 legacy sem owner
-  ('u0000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-0000000000d1', 'a0000000-0000-4000-8000-0000000000aa', NULL),                -- U4 parceiro inativo
-  ('u0000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-0000000000b1', 'a0000000-0000-4000-8000-0000000000bb', NULL),                -- U5 legítimo B
-  ('u0000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000bb', NULL);                -- U6 tenant divergente do owner
+  ('10000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', NULL),                -- U1 legítimo A
+  ('10000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', now()),               -- U2 revogado
+  ('10000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-0000000000c1', NULL, NULL),                                                 -- U3 legacy sem owner
+  ('10000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-0000000000d1', 'a0000000-0000-4000-8000-0000000000aa', NULL),                -- U4 parceiro inativo
+  ('10000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-0000000000b1', 'a0000000-0000-4000-8000-0000000000bb', NULL),                -- U5 legítimo B
+  ('10000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000bb', NULL);                -- U6 tenant divergente do owner
 INSERT INTO lab.partner_clients VALUES
-  ('a0000000-0000-4000-8000-0000000000a1', 'c0000000-0000-4000-8000-0000000000a1', true),
-  ('a0000000-0000-4000-8000-0000000000b1', 'c0000000-0000-4000-8000-0000000000b1', true),
-  ('a0000000-0000-4000-8000-0000000000c1', 'c0000000-0000-4000-8000-0000000000c1', true),
-  ('a0000000-0000-4000-8000-0000000000d1', 'c0000000-0000-4000-8000-0000000000d1', true);
+  ('a0000000-0000-4000-8000-0000000000a1', '20000000-0000-4000-8000-0000000000a1', true),
+  ('a0000000-0000-4000-8000-0000000000b1', '20000000-0000-4000-8000-0000000000b1', true),
+  ('a0000000-0000-4000-8000-0000000000c1', '20000000-0000-4000-8000-0000000000c1', true),
+  ('a0000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1', true);
 INSERT INTO lab.user_roles VALUES
-  ('u0000000-0000-4000-8000-000000000001','parceiro_b2b'),
-  ('u0000000-0000-4000-8000-000000000002','parceiro_b2b'),
-  ('u0000000-0000-4000-8000-000000000003','parceiro_b2b'),
-  ('u0000000-0000-4000-8000-000000000004','parceiro_b2b'),
-  ('u0000000-0000-4000-8000-000000000005','parceiro_b2b'),
-  ('u0000000-0000-4000-8000-000000000006','parceiro_b2b'),
-  ('u0000000-0000-4000-8000-000000000011','parceiro_b2b_tecnico'),
-  ('u0000000-0000-4000-8000-000000000012','parceiro_b2b_tecnico'),
-  ('u0000000-0000-4000-8000-000000000099','administrador');
+  ('10000000-0000-4000-8000-000000000001','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000002','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000003','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000004','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000005','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000006','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000011','parceiro_b2b_tecnico'),
+  ('10000000-0000-4000-8000-000000000012','parceiro_b2b_tecnico'),
+  ('10000000-0000-4000-8000-000000000099','administrador');
 
 -- Técnico: T11 com PUC ativa via vínculo próprio em A; T12 só com PTC direct sem vínculo partner_users.
 INSERT INTO lab.partner_users VALUES
-  ('u0000000-0000-4000-8000-000000000011', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
+  ('10000000-0000-4000-8000-000000000011', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
 INSERT INTO lab.partner_user_clients VALUES
-  ('a0000000-0000-4000-8000-0000000000a1', 'u0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-0000000000a1', true, NULL);
+  ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000011', '20000000-0000-4000-8000-0000000000a1', true, NULL);
 INSERT INTO lab.partner_technician_clients VALUES
-  ('a0000000-0000-4000-8000-0000000000a1', 'u0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-0000000000a1', true);
+  ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000012', '20000000-0000-4000-8000-0000000000a1', true);
 
 -- ===== FASE 1: prova da brecha no corpo BASELINE =====
 DO $$
 BEGIN
   -- brecha: vínculo revogado ainda autoriza
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-0000000000a1'), 'baseline deveria autorizar revogado (brecha)';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-0000000000a1'), 'baseline deveria autorizar revogado (brecha)';
   -- brecha: parceiro inativo ainda autoriza
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000004','c0000000-0000-4000-8000-0000000000d1'), 'baseline deveria autorizar parceiro inativo (brecha)';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-0000000000d1'), 'baseline deveria autorizar parceiro inativo (brecha)';
   -- brecha: PTC direct sem vínculo partner_users autoriza técnico
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000012','c0000000-0000-4000-8000-0000000000a1'), 'baseline deveria autorizar PTC sem vínculo (brecha)';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000012','20000000-0000-4000-8000-0000000000a1'), 'baseline deveria autorizar PTC sem vínculo (brecha)';
   RAISE NOTICE 'PASS fase1: brechas reproduzidas no baseline';
 END $$;
 
@@ -144,24 +144,24 @@ END $$;
 DO $$
 BEGIN
   -- legítimo preservado (A e B)
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-0000000000a1'), 'U1 legítimo deve continuar autorizado';
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000005','c0000000-0000-4000-8000-0000000000b1'), 'U5 legítimo B deve continuar autorizado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000a1'), 'U1 legítimo deve continuar autorizado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-0000000000b1'), 'U5 legítimo B deve continuar autorizado';
   -- revogado bloqueado
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-0000000000a1'), 'U2 revogado deve ser bloqueado';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-0000000000a1'), 'U2 revogado deve ser bloqueado';
   -- parceiro inativo bloqueado
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000004','c0000000-0000-4000-8000-0000000000d1'), 'U4 parceiro inativo deve ser bloqueado';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-0000000000d1'), 'U4 parceiro inativo deve ser bloqueado';
   -- tenant divergente do owner bloqueado
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000006','c0000000-0000-4000-8000-0000000000a1'), 'U6 tenant divergente deve ser bloqueado';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-0000000000a1'), 'U6 tenant divergente deve ser bloqueado';
   -- legacy sem owner preservado
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000003','c0000000-0000-4000-8000-0000000000c1'), 'U3 legacy sem owner deve continuar autorizado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-0000000000c1'), 'U3 legacy sem owner deve continuar autorizado';
   -- cross-tenant: U1 (parceiro A) não acessa cliente do parceiro B
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-0000000000b1'), 'cross-parceiro deve ser bloqueado';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000b1'), 'cross-parceiro deve ser bloqueado';
   -- técnico com PUC ativa e vínculo vigente preservado
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000011','c0000000-0000-4000-8000-0000000000a1'), 'T11 PUC vigente deve continuar autorizado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000011','20000000-0000-4000-8000-0000000000a1'), 'T11 PUC vigente deve continuar autorizado';
   -- técnico só com PTC direct e SEM vínculo partner_users bloqueado
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000012','c0000000-0000-4000-8000-0000000000a1'), 'T12 PTC sem vínculo deve ser bloqueado';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000012','20000000-0000-4000-8000-0000000000a1'), 'T12 PTC sem vínculo deve ser bloqueado';
   -- admin (ramo inalterado) e alvo terceiro sem self-only
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000099','c0000000-0000-4000-8000-0000000000a1'), 'admin deve continuar autorizado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000099','20000000-0000-4000-8000-0000000000a1'), 'admin deve continuar autorizado';
   RAISE NOTICE 'PASS fase3: endurecimento correto';
 END $$;
 
@@ -169,12 +169,12 @@ END $$;
 DO $$
 BEGIN
   UPDATE lab.partner_users SET revoked_at = now()
-  WHERE user_id = 'u0000000-0000-4000-8000-000000000001';
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-0000000000a1'), 'revogação deve fechar acesso imediatamente';
-  ASSERT NOT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000011','c0000000-0000-4000-8000-0000000000a1'), 'revogação do vínculo deve fechar PUC do técnico';
+  WHERE user_id = '10000000-0000-4000-8000-000000000001';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000a1'), 'revogação deve fechar acesso imediatamente';
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000011','20000000-0000-4000-8000-0000000000a1'), 'revogação do vínculo deve fechar PUC do técnico';
   UPDATE lab.partner_users SET revoked_at = NULL
-  WHERE user_id IN ('u0000000-0000-4000-8000-000000000001','u0000000-0000-4000-8000-000000000011');
-  ASSERT lab.can_user_access_cliente('u0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-0000000000a1'), 'restauração deve reabrir acesso legítimo';
+  WHERE user_id IN ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000011');
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000a1'), 'restauração deve reabrir acesso legítimo';
   RAISE NOTICE 'PASS fase4: revogação dinâmica respeitada';
 END $$;
 
