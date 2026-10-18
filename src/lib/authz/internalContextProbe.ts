@@ -18,6 +18,9 @@ export async function internalContextProbe(userId: string, organizationId: strin
   // Do not adopt a new/mixed role using a cached principal. Pause until the
   // original role is restored, or a fresh login resolves the new RBAC context.
   if (!Array.isArray(roles) || roles.length !== 1 || roles[0]?.role !== "financeiro") return deny();
+  const { data: allowed, error: roleError } = await supabase.rpc("has_role", { _user_id: userId, _role: "financeiro" });
+  if (roleError) throw new Error("internal_probe_unavailable");
+  if (allowed !== true) return deny();
   const { data: finalOrg, error: finalError } = await rpc.call(supabase, "h15_actor_organization");
   if (finalError) throw new Error("internal_probe_unavailable");
   if (finalOrg !== organizationId) return deny();
