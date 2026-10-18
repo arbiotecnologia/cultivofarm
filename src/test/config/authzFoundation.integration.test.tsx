@@ -16,7 +16,7 @@ const U1 = "00000000-0000-4000-8000-00000000c001";
 const ORG = "00000000-0000-4000-8000-0000000000e1";
 
 // Fila de respostas controladas do fingerprint RPC.
-type FpResult = { eligible: boolean; fingerprint: string | null };
+type FpResult = { eligible: boolean; fingerprint: string | null; server_remaining_ms?: unknown };
 let fpQueue: Array<() => Promise<FpResult>> = [];
 let fpCalls = 0;
 const nextFp = (r: FpResult) => fpQueue.push(async () => r);

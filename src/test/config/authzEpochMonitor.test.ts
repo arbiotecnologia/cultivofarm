@@ -425,4 +425,38 @@ describe("authzEpochMonitor", () => {
     expect(fetchCalls).toBe(callsBefore);
     expect(monitor.state()).toBe("expired");
   });
+
+  it("relógio cruza o deadline entre pré-checagem e arm: sem epoch nem poll após expire", async () => {
+    // O relógio monotônico avança DENTRO de setState("valid") (antes de
+    // armLeaseDeadline): a pré-checagem passou com deadline futuro, mas ao
+    // armar o timer o deadline já está no passado. armLeaseDeadline expira e
+    // a re-checagem pós-arm impede onEpochChange/schedulePoll.
+    let clock = 0;
+    let fetchCalls = 0;
+    let resolveFetch!: (v: AuthzFingerprintResult) => void;
+    const { monitor, deps } = setup({
+      now: () => clock,
+      fetcher: () => { fetchCalls++; return new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }); },
+      onStateChange: vi.fn((s: string) => {
+        if (s === "valid") clock = 20_000; // cruza o deadline na janela do arm
+      }),
+    });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    // Resposta em t4 com budget 7s: deadline = t0+3s; setState leva o relógio
+    // a t20, muito além do deadline, antes de armLeaseDeadline().
+    clock = 4_000;
+    resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 7_000 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("expired");
+    expect(deps.onExpire).toHaveBeenCalledWith("timeout");
+    expect(monitor.checkAccess()).toBe(false);
+    expect(deps.onEpochChange).not.toHaveBeenCalled();
+    // Nenhum poll foi agendado após a expiração.
+    const callsBefore = fetchCalls;
+    clock = 60_000;
+    await vi.advanceTimersByTimeAsync(40_000);
+    expect(fetchCalls).toBe(callsBefore);
+    expect(monitor.state()).toBe("expired");
+  });
 });
