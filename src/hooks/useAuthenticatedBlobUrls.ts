@@ -16,6 +16,7 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
 
   useLayoutEffect(() => {
     const scope = fence.scope;
+    const authorized = fence.capture();
     let alive = true;
     let bytes = 0;
     let pending = 0;
@@ -23,7 +24,7 @@ export function useAuthenticatedBlobUrls(paths: (string | null | undefined)[], b
     const controllers = new Map<string, AbortController>();
     const failed = new Set<string>();
     let error: Error | null = null;
-    const isCurrent = () => alive && current.current.ready && current.current.scope === scope;
+    const isCurrent = () => alive && current.current.ready && current.current.scope === scope && authorized();
     const publish = () => { if (isCurrent()) setResult({ scope, urls: { ...urls }, loading: pending > 0, loadingPaths: [...controllers.keys()], error, failed: [...failed] }); };
     setResult({ scope, urls: {}, loading: false, loadingPaths: [], error: null, failed: [] });
     const request = (path: string) => {

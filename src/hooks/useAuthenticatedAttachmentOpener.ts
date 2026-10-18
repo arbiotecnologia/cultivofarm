@@ -22,8 +22,8 @@ export function useAuthenticatedAttachmentOpener(resource: string, bucket: strin
   }, [access.scope, bucket]);
 
   const open = async (path: string, onError: () => void) => {
-    if (!access.ready || controllers.current.has(path) || urls.current.has(path)) return;
     const current = access.capture();
+    if (!current() || controllers.current.has(path) || urls.current.has(path)) return;
     const controller = new AbortController();
     controllers.current.set(path, controller);
     publish();
