@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002';
-const s=vi.hoisted(()=>({gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['financeiro'],org:'00000000-0000-4000-8000-000000000002',h15:0,error:false,hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined}));
+const s=vi.hoisted(()=>({gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['financeiro'],org:'00000000-0000-4000-8000-000000000002',finalOrg:undefined as string|undefined,h15:0,error:false,hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined}));
 function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
 vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',PRODUCER_CONTEXT_MONITOR_ENABLED:false,get FINANCIAL_CONTEXT_MONITOR_ENABLED(){return s.gate;}}));
 vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
@@ -20,7 +20,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
  from:(t:string)=>chain(()=>t==='profiles'?{data:{user_id:s.rowUid??U,organization_id:s.org,ativo:s.active,senha_provisoria:s.password,nome:'Financeiro'}}:t==='user_roles'?{data:s.roles.map(role=>({role}))}:{data:[]}),
  rpc:async(name:string)=>{
   if(name==='has_role')return {data:s.roleAllowed,error:null};
-  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.active===true&&s.password===false?s.org:null),error:s.error?{}:null};}
+  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error?{}:null};}
   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
   if(name==='get_top_financial_rankings')return {data:{},error:null};
   throw new Error('unexpected '+name);
@@ -34,7 +34,7 @@ function Location(){return <output data-testid="url">{useLocation().pathname}</o
 function setup(){const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={['/financeiro']}><Location/><Routes><Route element={<ProtectedRoutes/>}><Route path="/financeiro" element={<FinanceiroDashboard/>}/></Route><Route path="/auth" element={<div>login indevido</div>}/></Routes></MemoryRouter></AuthProvider></QueryClientProvider>);return qc;}
 async function tick(ms=0){await act(async()=>{await vi.advanceTimersByTimeAsync(ms);});for(let i=0;i<10;i++)await act(async()=>{await vi.advanceTimersByTimeAsync(1);});}
 function paused(qc:QueryClient){expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();expect(screen.queryByText('Menu financeiro')).toBeNull();expect(screen.queryByText('R$ 100,00')).toBeNull();expect(screen.getByTestId('url').textContent).toBe('/financeiro');expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);}
-beforeEach(()=>{vi.useFakeTimers();s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['financeiro'];s.org=O;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.rowUid=undefined;localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
+beforeEach(()=>{vi.useFakeTimers();s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['financeiro'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.rowUid=undefined;localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
 afterEach(()=>{cleanup();vi.useRealTimers();});
 describe('financeiro sessão aberta candidata',()=>{
  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
@@ -54,5 +54,5 @@ describe('probe financeiro self/readiness',()=>{
  it('h15 erro falha fechado',async()=>{s.error=true;await expect(internalContextProbe(U,O)).rejects.toThrow();});
  it('tenant divergente nega',async()=>{s.org=U;expect((await internalContextProbe(U,O)).eligible).toBe(false);});
  it('perfil de outro UID nega',async()=>{s.rowUid=O;expect((await internalContextProbe(U,O)).eligible).toBe(false);});
- it('h15 final divergente nega',async()=>{let n=0;s.hold=async()=>{s.org=U;n++;return O;};expect((await internalContextProbe(U,O)).eligible).toBe(false);expect(n).toBe(1);});
+ it('h15 final divergente nega após perfil e role válidos',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O)).eligible).toBe(false);expect(s.h15).toBe(2);});
 });
