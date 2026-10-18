@@ -1,8 +1,15 @@
 -- ============================================================================
 -- FASE F1 — FUNDAÇÃO ADITIVA DE partner_users (REVISÁVEL — NÃO APLICADA)
 -- Ref canônico: swzpzcwiasxmjutrmvkm (PRODUÇÃO) — NÃO EXECUTAR sem aprovação.
--- Homolog: vrlcdwmlytukrjezrrnf (NÃO espelha schema/dados de produção;
--- paridade NÃO atestada — 279 vs 286 tabelas, 0 vínculos vs 2).
+-- Homolog: vrlcdwmlytukrjezrrnf — EXIGE PRÉ-F1 APLICADO ANTES (ver abaixo).
+--
+-- REVISÃO 2026-10-18 (auditoria externa):
+--   * Homolog NÃO possui partner_accounts.commercial_owner_organization_id
+--     → esta migration FALHARIA em homolog sem o script PRÉ-F1
+--     (vinculos-b2b-pref1-paridade-homolog-20261018.sql).
+--   * Adicionado preflight de esquema (passo 0) que ABORTA com mensagem
+--     explícita se a coluna predecessora não existir — em vez de falhar
+--     no meio da transação com erro genérico.
 --
 -- Escopo F1 (somente aditivo e reversível):
 --   * Novas colunas em public.partner_users: valid_from, revoked_at,
@@ -16,23 +23,56 @@
 --   * Remover UNIQUE(user_id) — portão unidirecional da fase Cutover.
 --   * Unicidade parcial de vínculo ativo, helpers fail-closed, migração
 --     das 29 policies, RPCs de revogação/criação, seletor de parceiro na UI.
---   * Tabela de histórico append-only: ADIADA para a fase Guards — criar
---     tabela sem consumidor e sem política fechada validada seria risco sem
---     benefício; revogação ainda não existe como operação nesta fase.
+--   * Tabela de histórico append-only: ADIADA para a fase Guards.
 --
 -- Pré-condições VERIFICADAS em produção (2026-10-18, read-only):
 --   * partner_users: id, partner_id, user_id, created_at, papel; 2 vínculos,
 --     2 usuários distintos, 0 excedentes por usuário.
---   * partner_accounts.commercial_owner_organization_id é NULLABLE e
---     1 dos 2 vínculos aponta para parceiro SEM tenant → tenant_id NÃO pode
---     ser NOT NULL nesta fase (backfill obrigatório falharia). Registrado
---     como PENDÊNCIA P1: regularizar o parceiro sem tenant antes do Cutover.
+--   * partner_accounts.commercial_owner_organization_id é NULLABLE, sem FK
+--     formal e sem índice dedicado; 1 dos 2 vínculos aponta para parceiro
+--     SEM tenant → tenant_id NÃO pode ser NOT NULL nesta fase.
+--     PENDÊNCIA P1: regularizar o parceiro sem tenant antes do Cutover.
 --   * Triggers existentes (cf_user_guards_v1.acquire_gate BEFORE STATEMENT,
 --     block_truncate, touch_related_profiles AFTER ROW) não referenciam
 --     colunas de partner_users → compatíveis com colunas aditivas.
 -- ============================================================================
 
 BEGIN;
+
+-- ----------------------------------------------------------------------------
+-- 0. PREFLIGHT DE ESQUEMA — aborta com mensagem explícita se a coluna
+--    predecessora não existir (protege homolog sem PRÉ-F1 e qualquer
+--    ambiente divergente). Também confirma as tabelas-base.
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'partner_users'
+  ) THEN
+    RAISE EXCEPTION 'f1_preflight_abort: tabela public.partner_users ausente';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'partner_accounts'
+      AND column_name = 'commercial_owner_organization_id'
+  ) THEN
+    RAISE EXCEPTION 'f1_preflight_abort: partner_accounts.commercial_owner_organization_id ausente — aplicar PRÉ-F1 antes (homolog) ou ambiente divergente de produção';
+  END IF;
+
+  -- Idempotência: se as colunas F1 já existem, aborta em vez de reaplicar.
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'partner_users'
+      AND column_name = 'tenant_id'
+  ) THEN
+    RAISE EXCEPTION 'f1_preflight_abort: colunas F1 já presentes — migration já aplicada';
+  END IF;
+
+  RAISE NOTICE 'f1_preflight OK: esquema predecessor presente';
+END;
+$$;
 
 -- ----------------------------------------------------------------------------
 -- 1. Colunas aditivas (todas com default ou NULLABLE → sem reescrita pesada)
@@ -150,7 +190,7 @@ BEGIN
    WHERE pu.tenant_id IS DISTINCT FROM pa.commercial_owner_organization_id;
 
   IF v_divergentes > 0 THEN
-    RAISE EXCEPTION 'partner_users_backfill_divergent:%', v_divergentes
+    RAISE EXCEPTION 'partner_users_backfill_divergent: % linhas divergentes', v_divergentes
       USING ERRCODE = 'PT500';
   END IF;
 
@@ -159,9 +199,7 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- 6. Índice de apoio às consultas por tenant (leituras administrativas e
---    futuras policies por par/tenant) — aditivo, CONCURRENTLY não permitido
---    dentro de transação; tabela tem 2 linhas, lock é desprezível.
+-- 6. Índices de apoio (aditivos; tabela pequena, lock desprezível)
 -- ----------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_partner_users_tenant_id
   ON public.partner_users (tenant_id);
