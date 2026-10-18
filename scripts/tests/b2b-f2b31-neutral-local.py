@@ -59,7 +59,7 @@ def main():
         candidate = (DOCS/'vinculos-b2b-f2b31-metadata-neutra-candidato-20261018.sql').read_text()
         rollback = (DOCS/'vinculos-b2b-f2b31-rollback-20261018.sql').read_text()
         preflight = (DOCS/'vinculos-b2b-f2b31-preflight-readonly-20261018.sql').read_text()
-        run(preflight)
+        local_hash = run(preflight).splitlines()[0].split('|')[0]
         check('read-only preflight creates no columns', "NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='partner_technician_clients' AND column_name='grant_origin')")
         run(candidate, 'F2B31_EXTERNAL_REVIEW_REQUIRED')
         check('unreviewed release is atomic no-op', "NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='partner_technician_clients' AND column_name='grant_origin')")
@@ -70,7 +70,9 @@ def main():
         rb = rollback.split('-- BEGIN LOCAL ROLLBACK\n')[1].split('-- END LOCAL ROLLBACK')[0]
         run('BEGIN;'+schema+'ROLLBACK;')
         check('DDL rollback removes all staged columns', "NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='partner_technician_clients' AND column_name='grant_origin')")
-        run('BEGIN;'+schema+'COMMIT;')
+        # Replace only the production manifest with this synthetic baseline, never a hosted release.
+        local_release = reviewed.replace('97e96aa537418f63d7a9b32574dbf7cc', local_hash).replace('entries<>59', 'entries<>10')
+        run(local_release)
         check('two nullable no-default columns only', "(SELECT count(*)=2 FROM information_schema.columns WHERE table_name='partner_technician_clients' AND column_name IN ('grant_origin','source_puc_id') AND is_nullable='YES' AND column_default IS NULL)")
         check('no new FK or check constraints', "(SELECT count(*)=4 FROM pg_constraint WHERE conrelid='partner_technician_clients'::regclass)")
         run(schema, 'already exists')
@@ -111,7 +113,9 @@ def main():
         run('CREATE VIEW local_dependency AS SELECT grant_origin FROM partner_technician_clients;')
         run('BEGIN;'+rb, 'depend')
         check('dependent view blocks rollback without CASCADE', "EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='partner_technician_clients' AND column_name='grant_origin')")
-        run('DROP VIEW local_dependency; BEGIN;'+rb+'COMMIT;')
+        run('DROP VIEW local_dependency;')
+        local_rollback = rollback.replace('reviewed_ref text := NULL', "reviewed_ref text := 'swzpzcwiasxmjutrmvkm'").replace('review_receipt text := NULL', "review_receipt text := 'LOCAL_ONLY_NOT_APPROVAL'").replace('97e96aa537418f63d7a9b32574dbf7cc', local_hash).replace('entries<>59', 'entries<>10')
+        run(local_rollback)
         check('rollback retains direct rows and active values', '(SELECT count(*)=2 FROM partner_technician_clients) AND NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name=\'partner_technician_clients\' AND column_name=\'grant_origin\')')
         now = run("SELECT md5(pg_get_functiondef('sync_puc_to_ptc_fn()'::regprocedure))||'|'||(SELECT relacl::text FROM pg_class WHERE oid='partner_technician_clients'::regclass)||'|'||pg_get_viewdef('local_reader'::regclass);")
         if baseline != now:
