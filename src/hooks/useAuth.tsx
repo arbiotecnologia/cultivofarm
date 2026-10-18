@@ -174,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (
         userRoles.includes("cliente_produtor") &&
         userRoles.length === 1 &&
+        !(AUTHZ_CACHE_FOUNDATION_ENABLED && AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context" && PRODUCER_CONTEXT_MONITOR_ENABLED) &&
         !profile.cliente_id
       ) {
         setError(
