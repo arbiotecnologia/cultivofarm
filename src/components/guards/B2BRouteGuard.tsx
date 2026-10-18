@@ -40,6 +40,10 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
     }
   }, [denied, location.pathname]);
 
+  // Auth loading remains the first barrier. Once identity is resolved, pause
+  // takes precedence over reader loading/denial: both readers depend on authzReady.
+  if (!loading && user && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+
   if (loading || (user && (isLoading || (exclusivePartner && own.isLoading)))) {
     return (
       <div
@@ -55,9 +59,6 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
   if (!user) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
-
-  // Keep retry reachable on the SAME URL, before disabled readers look denied.
-  if (!authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
 
   if (!ready || isError) {
     return <Navigate to="/sem-permissao" replace />;

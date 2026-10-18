@@ -4,6 +4,24 @@
 BEGIN TRANSACTION READ ONLY;
 SET LOCAL statement_timeout = '15s';
 SET LOCAL lock_timeout = '3s';
+-- External confirmation 2026-10-18 22:51 UTC: these three table/trigger pairs
+-- enabled O and exact pg_get_functiondef hashes. SELECT-only rejection on drift.
+WITH expected(relation,trigger_name,hash) AS (VALUES
+ ('public.profiles','z99_cf_profile_stamp','ce295ff5799d306ad81578047cd9bff5'),
+ ('public.partner_users','z90_cf_touch_profile','e5911c3801be399f9de57e038b390e79'),
+ ('public.user_roles','z90_cf_touch_profile','e5911c3801be399f9de57e038b390e79'))
+SELECT 1 / CASE WHEN count(*)=3 AND bool_and(coalesce(t.tgenabled='O' AND
+ md5(pg_get_functiondef(t.tgfoid))=e.hash,false)) THEN 1 ELSE 0 END AS stamp_guard
+FROM expected e LEFT JOIN pg_trigger t ON t.tgrelid=to_regclass(e.relation)
+ AND t.tgname=e.trigger_name AND NOT t.tgisinternal;
+-- Invitation stamp hash supplied without trigger signature: inventory only,
+-- do not invent a name or label cardinality/closure approved.
+SELECT t.tgrelid::regclass relation,t.tgname,t.tgenabled,
+ t.tgfoid::regprocedure function,md5(pg_get_functiondef(t.tgfoid)) hash
+FROM pg_trigger t WHERE NOT t.tgisinternal AND
+ md5(pg_get_functiondef(t.tgfoid)) IN ('ce295ff5799d306ad81578047cd9bff5',
+ 'e5911c3801be399f9de57e038b390e79','ff13703e8174fa2fa3cd641ff5b36258')
+ORDER BY t.tgrelid::regclass::text,t.tgname;
 -- Real SQL rejection, not a printed PASS label. Check exact installed bodies,
 -- owners/search_path/ACL for the reviewed 3 helpers. Missing/drift divides by 0.
 WITH expected(signature,hash,acl,cfg) AS (VALUES

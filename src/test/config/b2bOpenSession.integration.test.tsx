@@ -101,14 +101,32 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
   it.each(["parceiro_b2b", "parceiro_b2b_tecnico"])("revoga/restaura %s sem reload e revoga Blob local", async role => {
-    state.roles = [role]; state.context = ctx(); const client = setup(); await tick();
+    state.roles = [role]; state.context = ctx();
+    let initialResolve: ((v: unknown) => void) | undefined;
+    state.override = () => new Promise(resolve => { initialResolve = resolve; });
+    const client = setup(); await tick();
+    expect(state.contextCalls).toBe(1); // only monitor; real scoped readers disabled
+    expect(screen.getByText("Verificando seu acesso")).toBeTruthy();
+    expect(screen.queryByText("portal aberto")).toBeNull();
+    expect(screen.queryByText("acesso negado")).toBeNull();
+    expect(screen.getByTestId("url").textContent).toBe("/portal-parceiro/catalogo");
+    expect(state.catalog).not.toHaveBeenCalled();
+    expect(client.getQueryCache().getAll().some(q => q.state.data !== undefined)).toBe(false);
+    initialResolve?.(ctx()); await tick();
     expect(screen.getByText("catálogo atual")).toBeTruthy();
     expect(screen.getByText("simulação atual")).toBeTruthy();
     expect(screen.getByAltText("anexo").getAttribute("src")).toBe("blob:owned");
     state.context = null; await tick(10_000); paused(client);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
     state.context = ctx(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo" }] });
+    let restoreResolve: ((v: unknown) => void) | undefined;
+    state.override = () => new Promise(resolve => { restoreResolve = resolve; });
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" })); await tick();
+    expect(screen.getByText("Verificando seu acesso")).toBeTruthy();
+    expect(screen.queryByText("portal aberto")).toBeNull();
+    expect(screen.queryByText("acesso negado")).toBeNull();
+    expect(screen.getByTestId("url").textContent).toBe("/portal-parceiro/catalogo");
+    restoreResolve?.(ctx()); await tick();
     expect(screen.getByText("catálogo novo")).toBeTruthy(); expect(screen.queryByText("catálogo atual")).toBeNull();
     expect(screen.getByTestId("url").textContent).toBe("/portal-parceiro/catalogo");
   });

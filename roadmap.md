@@ -89,6 +89,7 @@
 - [ ] Dívida remanescente: 5 falhas pré-existentes da suíte ampla não relacionadas a autorização — já falham no parent, fora deste escopo.
 
 ## Revogação em tela aberta — continuação 2026-10-18
+- [ ] Complemento 22:51: provar pending inicial→valid→poll revogado→retry pending→restauração sem redirect, priorizar boundary antes da espera dos readers e incorporar stamps live como evidência externa (sem ativação/hosted; produtores preservados).
 - [x] Preparar recorte mínimo no monitor existente para B2B exclusivo usando get_my_commercial_partner_context, sem novo resolver; gate false, outros perfis sem monitor; pause/retry na mesma URL, cache/época/contextos/consumidores cercados e anexos legados explicitamente fora da certificação.
 - [x] Executar integração React/relógio controlado: 29 novos casos, 175/175 testes direcionados (11 arquivos) PASS + 6/6 staging guards Python; timeout/offline/stale/revoke→restore/ABA observado/cache/Blob reais com transporte fake. Build/typecheck automáticos OK. Não JWT/SQL concorrente v6.
 - [x] Entregar matriz verificável e preflight SELECT-only/guardas, manifest fixo e staging candidato/rollback fora do runtime, receipt de liberação obrigatório e rollback com hash POST exato+drenagem: docs/auditorias/b2b-tela-aberta-20261018.review.md. v6 amplo segue NO-GO; sem goldens inventados nem SQL hosted.
