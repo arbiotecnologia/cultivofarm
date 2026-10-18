@@ -99,6 +99,40 @@ As consultas `supabase--read_query` deste agente atingem **somente o ref canôni
 
 **Próximo gate:** B0 (readiness read-only em homolog pelo auditor externo) → B1–B3 → PRÉ-F1.3 → A2 → teste A/B. Nenhum DDL/DML executado neste turno; nada publicado.
 
+## 7. B0 corrigido — homolog está VAZIO de identidades (2026-10-18, auditor externo)
+
+**Fatos verificados pelo auditor em homolog `vrlcdwmlytukrjezrrnf`:** `organizations=1`, `profiles=0`, `user_roles=0`, `platform_org_admin_invites=0`, `auth.users=0`. RPCs `platform_claim_org_admin_provisioning` (4 overloads) e `platform_finalize_org_admin_provisioning` existem e a tabela de invites tem estrutura.
+
+**Consequência:** o plano B1 anterior (convite por superadmin de homolog) **não é executável** — não existe nenhum usuário autenticado em homolog. A Edge `platform-invite-org-admin` exige JWT de **superadmin** verificado server-side via `is_platform_superadmin` (verificado no código-fonte, linha 93-98) e **nunca concede** o papel `superadmin` — apenas `administrador` da empresa. Ou seja: o fluxo canônico de convite pressupõe um superadmin preexistente, e **não há RPC/Edge de bootstrap inaugural** no codebase (verificado: nenhuma função `setup`/`signup`/`seed` de primeiro superadmin; as migrations apenas adicionam o valor `superadmin` ao enum — o primeiro superadmin de produção foi criado fora de migration, por procedimento operacional não versionado).
+
+### 7.1 Opções avaliadas para o primeiro superadmin de homolog
+
+| Opção | Avaliação |
+|---|---|
+| Convite canônico por superadmin | **Inviável** — exige superadmin que não existe em homolog. |
+| RPC/Edge de bootstrap inaugural | **Inexistente** no codebase; **não será inventada** (seria bypass de segurança). |
+| Copiar identidade/sessão de produção | **Proibido** — viola isolamento e a regra de não reutilizar identidade de produção. |
+| Provisionamento privilegiado supervisionado (Dashboard Supabase de homolog) | **Único caminho viável**, executado pelo proprietário/auditor com acesso de owner ao projeto homolog — fora do alcance deste agente. |
+
+### 7.2 Plano B0 corrigido — bootstrap inaugural supervisionado (executado pelo proprietário/auditor, nunca pelo agente)
+
+- **C0 — Criação do usuário inaugural (painel Supabase de homolog):** o proprietário cria **manualmente no Dashboard do projeto homolog** (Authentication → Users → Add user) um usuário com e-mail controlado do auditor, com confirmação de e-mail. Nenhuma senha trafega em chat; a senha inicial é definida pelo próprio convidado via fluxo de recuperação/primeiro acesso, ou temporária gerada pelo painel e trocada no primeiro login.
+- **C1 — Concessão do papel superadmin (única escrita privilegiada autorizada):** via SQL Editor do painel de homolog, em transação única e auditada em ata: garantir `profiles` do usuário (ativo) e `INSERT INTO public.user_roles (user_id, role) VALUES (<uuid>, 'superadmin')`. **Estado anterior a guards:** como PRÉ-F1.3 ainda não foi aplicada, `require_admin` não existe em homolog — este INSERT não será bloqueado. Registrar em ata: quem executou, quando, uuid mascarado, motivo (bootstrap de homologação).
+- **C2 — Verificação:** login/logout real do superadmin inaugural em homolog; `is_platform_superadmin(<uuid>)` retorna true; contagens passam a profiles=1, user_roles=1.
+- **C3 — Daqui em diante, somente fluxo canônico:** o superadmin inaugural usa `platform-invite-org-admin` para criar o **administrador do tenant de homolog** (organizations=1 já existe) com e-mail de teste do auditor; o convidado define a própria senha pelo link de primeiro acesso. Verificar `platform_org_admin_invites` com auditoria do convite.
+- **C4 — Só então PRÉ-F1.3:** aplicar a migration preparada; smoke de `require_admin` bloqueando remoção do último admin ativo (transacional, ROLLBACK, 0 linhas persistidas).
+- **C5 — Gates seguintes (inalterados):** A2 (guards de aplicação fora do schema cf), 279 vs 286 tabelas, P1, teste A/B de RLS com sessões reais. **F2 BLOQUEADA.**
+
+### 7.3 O que o usuário/proprietário precisa fornecer ou realizar
+
+1. Acesso de owner ao **Dashboard do projeto homolog** `vrlcdwmlytukrjezrrnf` (este agente não tem e não deve receber essa credencial).
+2. Executar C0/C1 pessoalmente ou delegar ao auditor externo sob supervisão, registrando ata.
+3. Um e-mail de teste controlado para o superadmin inaugural e outro para o admin de tenant (não reutilizar e-mails de produção).
+4. MFA: recomendado ativar MFA no usuário inaugural após o primeiro login (configuração de conta do próprio usuário); o primeiro acesso segue o fluxo canônico de definição de senha — nenhuma senha em chat ou relatório.
+5. Comprovação: prints/consultas de contagem (sem PII) antes/depois, resultado de `is_platform_superadmin`, e registro do convite em `platform_org_admin_invites`.
+
+**Nota de segurança:** C1 é a única escrita direta autorizada e só é segura **porque** os guards ainda não existem em homolog; após PRÉ-F1.3, esse caminho fica bloqueado por `require_admin`/`guard_superadmin_role_assignment` — o que é o comportamento desejado. Nenhuma equivalência com produção é presumida.
+
 ## 5. Recomendações
 
 1. Aplicar PRÉ-F1.3 em homolog somente após revisão deste relatório.
