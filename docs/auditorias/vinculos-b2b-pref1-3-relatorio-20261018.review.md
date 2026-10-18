@@ -48,6 +48,17 @@ Produção tem ainda guards de aplicação fora do schema cf (`guard_profile_sen
 - **A4 (concorrência):** `acquire_invitation_gate` usa `FOR UPDATE NOWAIT` — sob concorrência pode falhar com `55P03`; comportamento idêntico ao de produção (verbatim), registrado para os testes de concorrência da F2.
 - **A5 (pendência conhecida, inalterada):** produção tem 1 vínculo com parceiro sem tenant (P1) e homolog tem 279 vs 286 tabelas — paridade total não atestada; F2 permanece **BLOQUEADA**.
 
+## 3.1 Validação local executada nesta rodada (Postgres 17.9 descartável, stub de homolog pós-PRÉ-F1.2)
+
+- **Aplicação:** migration executa até COMMIT com P0–P3 PASS. ✅
+- **Idempotência por recusa:** reexecução aborta em `PREF13_CONFLICT` (P0.4/P0.5), sem efeitos. ✅
+- **Smoke S1 (gate/revision):** UPDATE em `profiles` incrementa `state.revision` (3→4) com fixture de admin ativo. ✅ — **achado de semântica:** com zero admins ativos, `require_admin` bloqueia até INSERT em `profiles` (comportamento verbatim de produção; a fixture exigiu desabilitar o trigger só na preparação). Documentar para o auditor: em homolog real há admins, mas o primeiro bootstrap de admin em base vazia exige janela controlada.
+- **Smoke S2 (TRUNCATE):** bloqueado com `user_bulk_truncate_forbidden` (PT409). ✅
+- **Smoke S3 (último admin):** DELETE do único admin bloqueado com `user_last_active_admin` (PT409). ✅
+- **Rollback:** os 14 triggers + 4 funções removidos sem CASCADE; restam exatamente os 3 triggers da PRÉ-F1.2. ✅
+- **Limitação do stub:** `auth.users` precisou ser criado no stub (gate referencia o regclass); homolog real já o possui. S4 (cross-tenant/cache) **não testado** — exige sessões reais, sem PASS declarado.
+- **Correções feitas durante a validação:** checagem de `search_path` no preflight (proconfig armazena `search_path=""`); contagem P3 corrigida para 17 (14 novos + 3 PRÉ-F1.2).
+
 ## 4. Critérios de aceite da PRÉ-F1.3 (para o auditor externo)
 
 1. P0 aborta limpo se executado fora de ordem ou em base divergente (testar reexecução — deve falhar em P0.4/P0.5, provando idempotência por recusa).
