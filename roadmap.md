@@ -89,6 +89,7 @@
 - [ ] Dívida remanescente: 5 falhas pré-existentes da suíte ampla não relacionadas a autorização — já falham no parent, fora deste escopo.
 
 ## Revogação em tela aberta — continuação 2026-10-18
+- [ ] Complemento de portabilidade: staging UTF-8 explícito e bytes LF/CRLF preservados, guards calculados dos bytes gravados, testes acentuados e atualização explícita só do hash do script no manifest; runtime intacto. Receipt anterior permanece histórico do manifest anterior; auditor atualizará artefatos locais, sem publicação.
 - [x] Liberação limitada 22:55: assinatura get_user_partner_id()/hash corrigidos; receipt e staged candidate/rollback PRE/POST exatos registrados; gate true somente b2b-context na prévia, Blob false. 76/76 testes (4 arquivos) + 6/6 guards Python PASS; build/typecheck automático OK. Nenhum monitor/guard/hook adicional alterado, sem hosted/publicação.
 - [x] Complemento 22:51: pending inicial→valid→poll revogado→retry pending→restauração sem redirect em gestor/técnico; boundary antes da espera dos readers. 58/58 testes (2 arquivos) e 6/6 staging guards PASS, build/typecheck automático OK. Stamps live registrados como evidência externa + guarda SELECT-only não executada; sem ativação/hosted, produtores preservados.
 - [x] Preparar recorte mínimo no monitor existente para B2B exclusivo usando get_my_commercial_partner_context, sem novo resolver; gate false, outros perfis sem monitor; pause/retry na mesma URL, cache/época/contextos/consumidores cercados e anexos legados explicitamente fora da certificação.

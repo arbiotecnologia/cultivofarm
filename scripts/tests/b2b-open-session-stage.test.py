@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 path = Path(__file__).resolve().parents[1] / "authz-cache/b2b-open-session/stage-review.py"
 spec = importlib.util.spec_from_file_location("stage_review", path)
@@ -40,6 +41,39 @@ class StageTests(unittest.TestCase):
         guards = json.loads((self.output / "gate-guards.json").read_text())
         self.assertEqual(guards["post_sha256"], module.sha((self.output / "gate-candidate.ts.review").read_bytes()))
         self.assertTrue(guards["rollback_requires_exact_post"])
+
+    def test_utf8_lf_bytes_and_hashes_preserved(self):
+        self.assert_exact_utf8_artifacts("\n")
+
+    def test_utf8_crlf_bytes_and_hashes_preserved(self):
+        self.assert_exact_utf8_artifacts("\r\n")
+
+    def assert_exact_utf8_artifacts(self, newline):
+        # Accents exercise locale corruption; CRLF exercises newline normalization.
+        baseline = newline.join([
+            "// Autorização: prévia, revisão e sessão — não publicar.",
+            "export const AUTHZ_CACHE_FOUNDATION_ENABLED: boolean = false;",
+            'export const AUTHZ_CACHE_ROLLOUT_SCOPE = "b2b-context";', "",
+        ]).encode("utf-8")
+        self.gate.write_bytes(baseline)
+        manifest = {"files": {module.GATE: module.sha(baseline)}}
+        receipt = {**self.receipt, "manifest_sha256": module.sha(
+            json.dumps(manifest, sort_keys=True).encode("utf-8"))}
+        # Artifact generation must never depend on locale or text newline APIs.
+        with patch.object(Path, "read_text", side_effect=AssertionError("locale text read")), \
+             patch.object(Path, "write_text", side_effect=AssertionError("locale text write")):
+            module.stage(manifest, receipt, self.output)
+        rollback = (self.output / "gate-rollback.ts.review").read_bytes()
+        candidate = (self.output / "gate-candidate.ts.review").read_bytes()
+        guards = json.loads((self.output / "gate-guards.json").read_bytes().decode("utf-8"))
+        self.assertEqual(self.gate.read_bytes(), baseline)
+        self.assertEqual(rollback, baseline)
+        self.assertEqual(candidate, baseline.replace(
+            b"AUTHZ_CACHE_FOUNDATION_ENABLED: boolean = false;",
+            b"AUTHZ_CACHE_FOUNDATION_ENABLED: boolean = true;"))
+        self.assertEqual(guards["pre_sha256"], module.sha(rollback))
+        self.assertEqual(guards["pre_sha256"], module.sha(baseline))
+        self.assertEqual(guards["post_sha256"], module.sha(candidate))
 
     def test_wrong_or_missing_ref_rejected(self):
         for ref in (None, "not-canonical"):
