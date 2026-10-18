@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { requireActiveCatalogSuperadmin } from "../../supabase/functions/_shared/catalog-superadmin-guard";
 
 const settingsPage = readFileSync("src/pages/Configuracoes.tsx", "utf8");
 const appearance = readFileSync("src/components/configuracoes/AparenciaTab.tsx", "utf8");
