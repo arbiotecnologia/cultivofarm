@@ -17,9 +17,11 @@ export async function producerContextProbe(userId: string, organizationId: strin
   if (!ids.length) return deny();
   // Generic membership IDs alone are never authority. RLS includes restrictive
   // h15 tenant isolation and current can_user_access_cliente; no profile fallback.
+  // Generated client types predate organization_id; validate unknown response
+  // instead of regenerating bindings or widening the canonical client.
   const { data: rows, error } = await supabase.from("clientes").select("id, organization_id")
-    .in("id", [...new Set(ids)]).eq("organization_id", organizationId).eq("status_cliente", "ativo");
-  if (error || !Array.isArray(rows) || rows.some(row => !uuid.test(row.id) || row.organization_id !== organizationId || !ids.includes(row.id))) {
+    .in("id", [...new Set(ids)]).filter("organization_id", "eq", organizationId).eq("status_cliente", "ativo") as unknown as { data: unknown; error: unknown };
+  if (error || !Array.isArray(rows) || rows.some(row => !row || typeof row !== "object" || typeof row.id !== "string" || !uuid.test(row.id) || row.organization_id !== organizationId || !ids.includes(row.id))) {
     throw new Error("producer_probe_invalid");
   }
   const { data: finalOrg, error: finalError } = await rpc.call(supabase, "h15_actor_organization");
