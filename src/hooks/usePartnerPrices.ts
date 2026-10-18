@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { round2 } from "@/lib/catalogo/formatUnidades";
@@ -48,10 +49,11 @@ export function calcLitroFromDose100ml(precoDose: number): number {
 }
 
 export function usePartnerPrices(partnerId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-prices", partnerId],
     enabled: !!partnerId,
     queryFn: async (): Promise<PartnerPriceRow[]> => {
+      if (!partnerId) return [];
       const [produtosRes, microsRes, pricesRes] = await Promise.all([
         (supabase as any)
           .from("produtos")
@@ -66,7 +68,7 @@ export function usePartnerPrices(partnerId: string | null | undefined) {
         (supabase as any)
           .from("partner_product_prices")
           .select("*")
-          .eq("partner_id", partnerId!)
+          .eq("partner_id", partnerId)
           .eq("ativo", true),
       ]);
       if (produtosRes.error) throw produtosRes.error;
