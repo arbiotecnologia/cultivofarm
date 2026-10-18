@@ -279,6 +279,7 @@ try:
     check("valid: papel inconsistente (gestor c/ role tecnico) = false", f"SELECT {V}('{U_BADPAPEL}','{P_OK}')", "f")
     check("valid: dois papéis B2B = false", f"SELECT {V}('{U_2ROLES}','{P_OK}')", "f")
     check("valid: sem papel B2B (interno) = false", f"SELECT {V}('{U_INTERNAL}','{P_OK}')", "f")
+    check("valid: gestor+administrador (2 roles totais) = false", f"SELECT {V}('{U_GESTOR_ADMIN}','{P_OK}')", "f")
 
     # ===== get_role: positivos =====
     check("role: gestor elegível -> parceiro_b2b", f"SELECT {R}('{U_OK}','{P_OK}')", "parceiro_b2b")
@@ -293,6 +294,7 @@ try:
     check("role: 2 vínculos -> NULL", f"SELECT coalesce({R}('{U_2LINK}','{P_OK}'),'<null>')", "<null>")
     check("role: papel inconsistente -> NULL", f"SELECT coalesce({R}('{U_BADPAPEL}','{P_OK}'),'<null>')", "<null>")
     check("role: dois papéis B2B -> NULL", f"SELECT coalesce({R}('{U_2ROLES}','{P_OK}'),'<null>')", "<null>")
+    check("role: gestor+administrador (2 roles totais) -> NULL", f"SELECT coalesce({R}('{U_GESTOR_ADMIN}','{P_OK}'),'<null>')", "<null>")
 
     # ===== b2b_actor_scope: positivos =====
     check("scope: gestor elegível -> count=1, partner", f"SELECT user_partner_count, user_partner FROM {S}('{U_OK}')", f"1|{P_OK}")
@@ -307,14 +309,27 @@ try:
     check("scope: 2 vínculos -> count=2, partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_2LINK}')", "2|<null>")
     check("scope: papel inconsistente -> partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_BADPAPEL}')", "1|<null>")
     check("scope: dois papéis B2B -> partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_2ROLES}')", "1|<null>")
+    check("scope: gestor+administrador (2 roles totais) -> partner NULL", f"SELECT user_partner_count, coalesce(user_partner::text,'<null>') FROM {S}('{U_GESTOR_ADMIN}')", "1|<null>")
 
     # ===== Positivos REAIS interno/legacy e negativo org inativa =====
     # Interno: profile ativo em ORG_OTHER (sem partner_account_id), sem vínculo.
     check("scope: INTERNO profile_ok=true, org_partner NULL, partner_valid=false",
           f"SELECT profile_ok, coalesce(org_partner::text,'<null>'), partner_valid FROM {S}('{U_INTERNAL}')", "t|<null>|f")
-    # Legacy REAL: profile.organization_id = ORG_LEGACY, cujo partner_account_id = P_LEGACY.
-    check("scope: LEGACY profile_ok=true, org_partner=P_LEGACY, partner_valid=true (semântica antiga)",
+    # Legacy interno: profile.organization_id = ORG_LEGACY (partner_account_id
+    # = P_LEGACY), role administrador, SEM vínculo — prova o ramo interno de
+    # org legacy (partner_valid pela semântica antiga, sem owner).
+    check("scope: LEGACY interno profile_ok=true, org_partner=P_LEGACY, partner_valid=true (semântica antiga)",
           f"SELECT profile_ok, org_partner, partner_valid FROM {S}('{U_LEGACY}')", f"t|{P_LEGACY}|t")
+    # B2B LEGACY REAL: role parceiro_b2b, papel gestor, profile.org=ORG_LEGACY
+    # (partner_account_id=P_LEGACY) E vínculo elegível tenant=owner comercial
+    # (ORG_OWNER) com partner=P_LEGACY. Prova que o endurecimento do vínculo
+    # externo NÃO bloqueia o B2B legado elegível.
+    check("scope: B2B LEGACY count=1, user_partner=P_LEGACY",
+          f"SELECT user_partner_count, user_partner FROM {S}('{U_LEGACYB2B}')", f"1|{P_LEGACY}")
+    check("scope: B2B LEGACY profile_ok=true, org_partner=P_LEGACY, partner_valid=true",
+          f"SELECT profile_ok, org_partner, partner_valid FROM {S}('{U_LEGACYB2B}')", f"t|{P_LEGACY}|t")
+    check("valid: B2B LEGACY elegível = true", f"SELECT {V}('{U_LEGACYB2B}','{P_LEGACY}')", "t")
+    check("role: B2B LEGACY -> parceiro_b2b", f"SELECT {R}('{U_LEGACYB2B}','{P_LEGACY}')", "parceiro_b2b")
     # Org inativa: profile_ok=false.
     check("scope: org INATIVA -> profile_ok=false, org_partner NULL",
           f"SELECT profile_ok, coalesce(org_partner::text,'<null>') FROM {S}('{U_ORGINACT}')", "f|<null>")
