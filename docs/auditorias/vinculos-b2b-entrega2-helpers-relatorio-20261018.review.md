@@ -77,6 +77,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 - **Fase 4:** revogação dinâmica fecha imediatamente; restauração reabre.
 - Iterações de correção durante o teste: `HAVING` sem `GROUP BY` (inválido) →
   `CASE WHEN count(*)=1`; `min(uuid)` inexistente → `array_agg(...)[1]`.
+- **Fase 5 (contexto do portal, réplica da rev 2.1):** 5.1 `commercial_owner`
+  (org do ator = owner) resolve; 5.2 `legacy_partner_tenant` real (org do ator
+  `cc` ≠ owner `aa`, org legada ao parceiro) resolve com owner comercial
+  preservado; 5.3 tenant mismatch → NULL (lacuna fechada); 5.4 tenant NULL →
+  NULL; 5.5 owner NULL → NULL; 5.6 revogado → NULL; 5.7 multi-vínculo 2+ →
+  NULL; 5.8 revogação parcial (1 ativo entre vários) → resolve.
+- **Candidata real executada em PostgreSQL descartável** (stubs mínimos de
+  `auth.uid`, `platform_private.*`, `h15_actor_organization`; guards de hash
+  hospedados neutralizados apenas no lab): os 3 corpos compilam, executam
+  (retorno NULL com ator anônimo) e as pós-condições textuais de corpo —
+  incluindo `link.tenant_id IS DISTINCT FROM owner` — são satisfeitas.
 - **Vitest 1/1 passou.**
 
 ## 4. Impacto e compatibilidade
