@@ -223,6 +223,11 @@ export default function Configuracoes() {
 
   // Paginação client-side sobre o conjunto JÁ filtrado (nada é truncado silenciosamente)
   useEffect(() => { setPagina(1); }, [filterRole, filterStatus, debouncedSearchTerm]);
+  // Página fora do intervalo após mudança de status/total volta para a última página válida.
+  useEffect(() => {
+    const ultima = Math.max(1, Math.ceil((allUsers.total ?? 0) / USUARIOS_POR_PAGINA));
+    if (!usersFetching && pagina > ultima) setPagina(ultima);
+  }, [allUsers.total, usersFetching, pagina]);
   const paginacao = useMemo(() => ({
     total: allUsers.total ?? 0,
     totalPaginas: Math.max(1, Math.ceil((allUsers.total ?? 0) / USUARIOS_POR_PAGINA)),
@@ -970,6 +975,7 @@ export default function Configuracoes() {
                   <div role="alert" className="py-10 text-center space-y-3">
                     <p className="text-sm text-destructive">
                       Não foi possível carregar a lista de usuários. Os dados podem estar incompletos.
+                      {(usersErrorDetail as { message?: string } | null)?.message ? <span className="block text-xs text-muted-foreground mt-1">Detalhe: {(usersErrorDetail as { message?: string }).message}</span> : null}
                     </p>
                     <Button variant="outline" size="sm" onClick={() => refetchUsers()}>Tentar novamente</Button>
                   </div>
@@ -1068,6 +1074,11 @@ export default function Configuracoes() {
 
                               />
                               <span className="text-xs text-muted-foreground">{u.ativo === false ? "Inativo" : "Ativo"}</span>
+                              {u.ativo === false && (
+                                <Button type="button" variant="outline" size="sm" disabled={toggleAtivo.isPending} onClick={() => toggleAtivo.mutate({ userId: u.user_id, ativo: true })}>
+                                  Reativar
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell onClick={stopRowClick}>
