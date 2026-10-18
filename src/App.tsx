@@ -29,6 +29,7 @@ import PlataformaHome from "@/pages/plataforma/PlataformaHome";
 import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { FINANCIAL_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
@@ -281,7 +282,9 @@ export function ProtectedRoutes() {
 
   // Boundary precedes RoleGuard/sidebar: cached roles must never leave an
   // inactive monitored principal navigating while its children are hidden.
-  return <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>;
+  return FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro"
+    ? <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>
+    : <AppLayout />;
 }
 
 export function PortalGuard() {
