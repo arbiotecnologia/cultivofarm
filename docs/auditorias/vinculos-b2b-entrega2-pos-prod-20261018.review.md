@@ -235,3 +235,34 @@ Revisão independente de integração encontrou dois bypasses residuais, ambos c
 
 ### Gates inalterados
 - `AUTHZ_CACHE_FOUNDATION_ENABLED` permanece `false`; `get_my_authz_fingerprint`/`_v6` ausentes no pg_proc; nenhuma publicação, DDL ou DML hosted neste recorte. Risco NÃO é nulo: integração permanece não homologada.
+
+## Adendo 2026-10-18 (rev 3 — prova da janela do arm corrigida + helpers B2B revogação)
+
+### Prova da janela do arm (correção do teste)
+- O teste anterior (clock=4000, budget=7000) falhava ANTES de setState("valid") — não provava a janela. Corrigido: resposta em t0 com budget 15s atinge "valid"; revalidate em t10 com fingerprint novo e budget 15s (deadline t25, futuro na pré-checagem); onStateChange avança o relógio para t40 DENTRO do 2º "valid", antes de armLeaseDeadline.
+- Asserts: onStateChange recebeu "valid" (2ª ocorrência) ANTES de "expired"; sem epoch change; sem poll.
+- Prova de eficácia: com a guarda `if (state !== "valid" || generation !== myGen) return;` removida temporariamente, o teste FALHA em `onEpochChange` (disparado após expire); com a guarda restaurada, 29/29 PASS. Autorização não foi relaxada.
+
+### Pendência de backend confirmada ao vivo: 3 helpers ignoram revoked_at
+Correção pequena preparada nos PRÓPRIOS helpers (sem funções paralelas/contratos/UI), NÃO aplicada hosted:
+- `public.get_b2b_user_role_for_partner(uuid,uuid)` — adiciona `pu.revoked_at IS NULL`.
+- `public.is_valid_b2b_partner_user(uuid,uuid)` — adiciona `pu.revoked_at IS NULL` e `pa.deleted_at IS NULL`.
+- `platform_private.b2b_actor_scope(uuid)` — conta TODOS os vínculos não revogados antes da elegibilidade (0/2+ falham fechado); `user_partner` só com vínculo único elegível (parceiro ativo, não deletado, owner não nulo, tenant=owner); `partner_valid` da org passa a exigir owner não nulo; `profile_ok`/`org_partner`/`has_catalog` preservados (acesso interno/legacy intacto). Sem recursão: actor_scope não chama b2b_commercial_context de volta.
+- Arquivos: `scripts/b2b-helpers-revogacao/candidate.sql.review` (guarda fail-closed de hashes pré + verificação pós de ACL/owner/search_path), `rollback.sql.review` (corpos exatos pré-candidata, guarda anti-drift, confere retorno aos hashes), `callers.md` (mapa lexical de chamadores: trigger partner_users 20260702; cadeia platform_private 20261006/20261007/20261008; nenhum chamador frontend).
+- Hashes pré (live revisado, md5 de pg_get_functiondef): role `b2596473d00151ef41b4b2ce82e044cb`, valid `7b17274fb6dce728741a2a9c77710a76`, actor_scope `c85cb35201682c3c86b9a327d24c8482`. Hashes pós serão computados pelo auditor na aplicação (a verificação pós exige mudança de hash + ACL/owner/search_path idênticos).
+- Testes SQL locais (`test-local.py`, PostgreSQL descartável): 21/21 PASS com CORPOS REAIS extraídos dos arquivos (não réplicas) — negativos: revogado, tenant errado, parceiro inativo, parceiro deletado, sem papel B2B, 0 e 2 vínculos; positivo elegível; interno/legacy preservado; rollback fiel (restaura comportamento pré). Stubs declarados: has_role via fixture user_roles, entitlements_for_user via fixture; NÃO prova JWT/RLS real nem b2b_commercial_context (corpo próprio já alinhado na E2).
+
+### Suíte ampla — 8 falhas pré-existentes (nomes/assertions exatos)
+Comparação com o HEAD (parent): as 8 falham igualmente sem as mudanças deste recorte (verificado por inspeção de conteúdo — ex.: a string esperada por d51-4 está ausente já no HEAD). Nenhuma importa `useAuth.tsx` ou `authzEpochMonitor.ts` exceto d51-4, que lê useAuth.tsx estaticamente:
+1. `src/test/security/d51-4-tenant-users.test.ts` > "lista usuários por RPC tenant paginada e chave de cache por identidade" — assertion: `expect(auth).toContain('rpc("tenant_admin_list_users"'` — a string está ausente no useAuth.tsx TAMBÉM no HEAD (pré-existente). TESTA AUTORIZAÇÃO (gate tenant), mas a falha é de drift estático do arquivo, não deste recorte.
+2. `src/test/security/d51-4-tenant-users.test.ts` > "altera status somente pela RPC tenant" — mesma família de assertion estática sobre useAuth.tsx; pré-existente. TESTA AUTORIZAÇÃO.
+3. `src/test/security/d51-5-p1-systemic.test.ts` > "valida Superadmin no servidor antes de usar service role no catálogo global" — assertion estática sobre guarda de superadmin; pré-existente. TESTA AUTORIZAÇÃO.
+4. `src/test/visita/etapasVisita.test.ts` > "a tela usa o primeiro bloqueio antes de consultar o servidor" — assertion de ordem de validação na UI de visita; sem relação com authz. Pré-existente.
+5. `src/test/visita/etapasVisita.test.ts` > "finalização tem trava de clique único e salvamento em andamento" — UI de visita; pré-existente.
+6. `src/test/visita/etapasVisita.test.ts` > "seletores dependentes ficam desabilitados sem o pai" — UI de visita; pré-existente.
+7. `src/test/config/canonicalTypesGuard.test.ts` > "nenhum arquivo de aplicação importa o types.ts legado" — guarda de tipos canônicos; pré-existente.
+8. `src/test/config/cultivofarm-runtime.static.test.ts` > "permite somente o cliente canônico e nenhum contrato gerenciado em produção" — guarda estática de runtime; pré-existente.
+Escopo honesto: as falhas de autorização (1–3) são assertions estáticas sobre conteúdo de arquivos e já falhavam no parent; não foram causadas nem agravadas por este recorte, mas permanecem ABERTAS como dívida fora do escopo.
+
+### Gates inalterados
+- `AUTHZ_CACHE_FOUNDATION_ENABLED` permanece `false`; nenhuma publicação, DDL ou DML hosted; candidata dos 3 helpers aguarda revisão e aplicação pelo auditor. Risco NÃO é nulo: monitor inativo em produção, integração não homologada, helpers revogação ainda não aplicados.
