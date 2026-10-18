@@ -303,13 +303,13 @@ describe("foundation de cache — integração AuthProvider + boundary", () => {
     expect(screen.getByText("conteúdo sensível")).toBeTruthy();
   });
 
-  it("duas sessões independentes sem Broadcast: revogação em uma não afeta a outra", async () => {
-    nextFp({ eligible: true, fingerprint: "fpA" }); // sessão 1
+  it("sessão única sem Broadcast: revogação no servidor é percebida no próprio poll", async () => {
+    nextFp({ eligible: true, fingerprint: "fpA" });
     renderPortal();
     await flush();
-    // Segunda sessão (outro dispositivo) com fila própria simulada: o monitor
-    // dela é independente — aqui provamos que a sessão 1 não depende de
-    // BroadcastChannel: sem nenhum evento cross-tab, ela revalida sozinha.
+    // Este teste monta UMA única sessão: prova apenas que ela não depende de
+    // BroadcastChannel — sem nenhum evento cross-tab, revalida sozinha no
+    // próximo poll. Isolamento entre duas sessões reais NÃO é coberto aqui.
     nextFp({ eligible: false, fingerprint: null }); // vínculo revogado no servidor
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000);
