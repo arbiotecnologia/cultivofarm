@@ -1,23 +1,51 @@
-"""ENTREGA 2 rev 2.2: harness PostgreSQL descartável; nunca conecta ao hosted.
+"""ENTREGA 2 rev 2.3: harness PostgreSQL descartável; nunca conecta ao hosted.
 
-Extrai os TRÊS CORPOS REAIS da candidata (docs/auditorias/vinculos-b2b-entrega2-
-helpers-candidato-20261018.sql) e o corpo real instalado da Entrega 1, instala-os
-em PostgreSQL descartável com stubs mínimos e roda a matriz comportamental
-(entrega2-helpers-local.sql). Em seguida:
-  1. computa os hashes md5 canônicos dos 3 corpos candidatos;
-  2. reescreve a guarda do rollback (entre os marcadores BEGIN/END HASH GUARD)
-     com os hashes exatos — substituindo a verificação por position();
-  3. prova que o rollback aceita a instalação exata, rejeita atomicamente um
-     drift que preserva os antigos marcadores textuais e restaura o baseline.
+Fluxo (sem regravar NENHUM arquivo):
+  1. extrai os corpos BASELINE do arquivo de rollback e os instala no lab,
+     provando por hash md5 que são exatamente os corpos de produção;
+  2. executa o ARQUIVO CANDIDATO INTEIRO (pre-guards de hash, corpos e
+     pós-condições intactos) sobre esse baseline;
+  3. verifica que os hashes dos 3 corpos instalados são EXATAMENTE os hashes
+     fixos commitados (FIXED_CANDIDATE_HASHES) — falha se divergirem; o teste
+     NUNCA reaprova nem regrava golden hashes;
+  4. roda a matriz comportamental (entrega2-helpers-local.sql) sobre os corpos
+     reais instalados + corpo real da Entrega 1;
+  5. executa o ARQUIVO DE ROLLBACK INTEIRO intacto: deve aceitar a instalação
+     exata e restaurar os baselines (hashes baseline comprovados);
+  6. reaplica a candidata, introduz um drift que preserva os antigos marcadores
+     textuais e executa o ROLLBACK INTEIRO: deve falhar atomicamente e os
+     corpos devem PERMANECER os da candidata (nada revertido).
+
+Geração de hashes é modo explícito separado (--generate-hashes), nunca usado
+pelo teste: apenas imprime os hashes computados para revisão humana.
 """
 from pathlib import Path
-import os, re, shutil, subprocess, tempfile
+import os, re, shutil, subprocess, sys, tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 PORT = '55499'
 CANDIDATE = ROOT / 'docs/auditorias/vinculos-b2b-entrega2-helpers-candidato-20261018.sql'
 ROLLBACK = ROOT / 'docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql'
 MATRIX = ROOT / 'scripts/tests/entrega2-helpers-local.sql'
+
+# Hashes FIXOS commitados (rev 2.2, revisão externa ffca65827). O teste falha
+# se os corpos da candidata divergirem — nunca os regrava.
+FIXED_CANDIDATE_HASHES = {
+    'public.get_user_partner_id()': 'b334c3a454ebc4233d3b9e0d0a700d78',
+    'public.get_partner_papel(uuid)': 'f84f898ead03dfd646ece50d16baf909',
+    'platform_private.b2b_commercial_context()': 'a31d198c9a9fc9a5e7c397ab36fe0fa4',
+}
+# Hashes baseline de produção (evidência externa 2026-10-18).
+BASELINE_HASHES = {
+    'public.get_user_partner_id()': '77822b0ef57e42bfe9cd7075265402aa',
+    'public.get_partner_papel(uuid)': 'c892ee1df845b69950344953757ab472',
+    'platform_private.b2b_commercial_context()': '02158d4204dea67308558f649113ba6d',
+}
+REGPROC = {
+    'public.get_user_partner_id()': "'public.get_user_partner_id()'::regprocedure",
+    'public.get_partner_papel(uuid)': "'public.get_partner_papel(uuid)'::regprocedure",
+    'platform_private.b2b_commercial_context()': "'platform_private.b2b_commercial_context()'::regprocedure",
+}
 
 # Corpo real instalado da Entrega 1 em produção (evidência externa 2026-10-18;
 # md5(pg_get_functiondef) = 4e0c374caa04bb9bf9fac9cc4e6723f1 — verificado no lab).
@@ -134,11 +162,11 @@ CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid, boolean) RETUR
 """
 
 
-def extract_bodies(candidate_sql: str) -> list[str]:
-    """Extrai os 3 CREATE OR REPLACE FUNCTION reais da candidata (sem os guards)."""
+def extract_bodies(sql: str) -> list[str]:
+    """Extrai os CREATE OR REPLACE FUNCTION de um arquivo SQL (candidata ou rollback)."""
     bodies = re.findall(
         r'CREATE OR REPLACE FUNCTION (?:public|platform_private)\.[a-z0-9_]+\(.*?\$function\$;',
-        candidate_sql, flags=re.S)
+        sql, flags=re.S)
     assert len(bodies) == 3, f'esperava 3 corpos, extraiu {len(bodies)}'
     return bodies
 
@@ -156,7 +184,16 @@ def run_psql(tmp: Path, sql: str, check: bool = True) -> subprocess.CompletedPro
     return r
 
 
+def hashes_of(tmp: Path) -> dict[str, str]:
+    selects = '\n'.join(f'SELECT md5(pg_get_functiondef({rp}));' for rp in REGPROC.values())
+    r = run_psql(tmp, selects)
+    found = re.findall(r'([0-9a-f]{32})', r.stdout)
+    assert len(found) == 3, f'hashes extraídos: {found}'
+    return dict(zip(REGPROC.keys(), found))
+
+
 def main():
+    generate_only = '--generate-hashes' in sys.argv
     tmp = Path(tempfile.mkdtemp(prefix='entrega2-', dir='/tmp'))
     tmp.chmod(0o777)
     pre = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
@@ -171,57 +208,59 @@ def main():
         started = True
 
         candidate_sql = CANDIDATE.read_text()
-        bodies = extract_bodies(candidate_sql)
+        rollback_sql = ROLLBACK.read_text()
+        baseline_bodies = extract_bodies(rollback_sql)
 
-        # 1) Instala stubs + corpos reais (Entrega 1 instalada + 3 da candidata) e roda a matriz.
-        setup = STUBS + ENTREGA1_BODY + '\n'.join(bodies) + '\nCOMMIT;\n'
+        # 1) Instala stubs + baselines extraídos do rollback + Entrega 1 real.
+        setup = STUBS + ENTREGA1_BODY + '\n'.join(baseline_bodies) + '\nCOMMIT;\n'
         run_psql(tmp, setup)
-        run_psql(tmp, MATRIX.read_text())
 
-        # 2) Prova de fidelidade do corpo da Entrega 1 embutido (hash de produção).
+        # 2) Prova de fidelidade: baselines do rollback == corpos de produção.
+        hb = hashes_of(tmp)
+        for name, expected in BASELINE_HASHES.items():
+            assert hb[name] == expected, f'baseline {name} divergente: {hb[name]} != {expected}'
+        print('PASS baseline: corpos extraídos do rollback conferem hashes de produção '
+              '(77822b0e…/c892ee1d…/02158d42…)')
+
+        # 3) Executa o ARQUIVO CANDIDATO INTEIRO (pre-guards, corpos, pós-condições).
+        run_psql(tmp, candidate_sql)
+        print('PASS candidata: arquivo inteiro executado com pre/post guards intactos')
+
+        # 4) Hashes FIXOS commitados — falha se divergirem; NUNCA regrava arquivos.
+        hc = hashes_of(tmp)
+        if generate_only:
+            for name, h in hc.items():
+                print(f'GENERATE {name} = {h}')
+            print('modo --generate-hashes: nenhum arquivo gravado, nenhum assert aplicado')
+            return
+        for name, expected in FIXED_CANDIDATE_HASHES.items():
+            assert hc[name] == expected, \
+                f'hash candidato {name} divergente do commitado: {hc[name]} != {expected}'
+        print('PASS hashes fixos: corpos candidatos conferem os hashes commitados '
+              '(b334c3a4…/f84f898e…/a31d198c…)')
+
+        # 5) Fidelidade do corpo da Entrega 1 embutido (hash de produção).
         r = run_psql(tmp, "SELECT md5(pg_get_functiondef('public.can_user_access_cliente(uuid,uuid)'::regprocedure));")
         m = re.search(r'([0-9a-f]{32})', r.stdout)
         assert m and m.group(1) == '4e0c374caa04bb9bf9fac9cc4e6723f1', \
             f'hash Entrega 1 divergente: {m and m.group(1)}'
         print('PASS fidelidade Entrega 1: md5 confere com produção (4e0c374caa04bb9bf9fac9cc4e6723f1)')
 
-        # 3) Hashes canônicos dos 3 corpos candidatos.
-        r = run_psql(tmp, """
-SELECT md5(pg_get_functiondef('public.get_user_partner_id()'::regprocedure));
-SELECT md5(pg_get_functiondef('public.get_partner_papel(uuid)'::regprocedure));
-SELECT md5(pg_get_functiondef('platform_private.b2b_commercial_context()'::regprocedure));
-""")
-        hashes = re.findall(r'([0-9a-f]{32})', r.stdout)
-        assert len(hashes) == 3, f'hashes extraídos: {hashes}'
-        h1, h2, h3 = hashes
-        print(f'hashes candidatos rev 2.2: get_user_partner_id={h1} get_partner_papel={h2} b2b_commercial_context={h3}')
+        # 6) Matriz comportamental sobre os corpos reais instalados.
+        run_psql(tmp, MATRIX.read_text())
 
-        # 4) Reescreve a guarda do rollback com hashes exatos (entre marcadores).
-        rb = ROLLBACK.read_text()
-        guard = (
-            '  -- BEGIN HASH GUARD (gerado por scripts/tests/entrega2-helpers-local.py; rev 2.2)\n'
-            f"  IF md5(d1) IS DISTINCT FROM '{h1}'\n"
-            f"     OR md5(d2) IS DISTINCT FROM '{h2}'\n"
-            f"     OR md5(d3) IS DISTINCT FROM '{h3}' THEN\n"
-            "    RAISE EXCEPTION 'entrega2_rollback_antidrift: corpos divergem do instalado; abortando';\n"
-            '  END IF;\n'
-            '  -- END HASH GUARD')
-        rb_new, n = re.subn(
-            r'  -- BEGIN HASH GUARD.*?-- END HASH GUARD', guard, rb, flags=re.S)
-        assert n == 1, 'marcadores BEGIN/END HASH GUARD não encontrados no rollback'
-        ROLLBACK.write_text(rb_new)
-        print('PASS rollback: guarda reescrita com hashes exatos pg_get_functiondef')
+        # 7) Rollback 5a: ARQUIVO INTEIRO intacto aceita a instalação exata e
+        #    restaura os baselines (hashes baseline comprovados).
+        run_psql(tmp, rollback_sql)
+        hr = hashes_of(tmp)
+        for name, expected in BASELINE_HASHES.items():
+            assert hr[name] == expected, f'rollback não restaurou baseline {name}: {hr[name]}'
+        print('PASS rollback 5a: arquivo inteiro executado; baseline restaurado e hashes baseline conferem')
 
-        # 5a) Rollback aceita a instalação exata (guarda passa, baseline restaurado).
-        rb_sql = re.sub(r"^BEGIN;.*?^\$guard\$;\n", '', rb_new, flags=re.S | re.M)  # corpos baseline + verify
-        guard_sql = re.search(r'DO \$guard\$.*?\$guard\$;', rb_new, flags=re.S).group(0)
-        run_psql(tmp, 'BEGIN;\n' + guard_sql + '\n' + rb_sql.replace('COMMIT;', '') + '\nCOMMIT;')
-        r = run_psql(tmp, "SELECT pg_get_functiondef('public.get_user_partner_id()'::regprocedure) LIKE '%LIMIT 1%' AS baseline_restaurado;")
-        assert ' t' in r.stdout or '| t' in r.stdout, 'baseline não restaurado após rollback'
-        print('PASS rollback 5a: instalação exata aceita e baseline restaurado')
-
-        # 5b) Drift que PRESERVA os antigos marcadores textuais deve ser rejeitado
-        #     atomicamente (a guarda antiga por position() aceitaria).
+        # 8) Rollback 5b: reaplica candidata, introduz drift que PRESERVA os
+        #    antigos marcadores textuais e executa o ROLLBACK INTEIRO: deve
+        #    falhar atomicamente e os corpos devem permanecer os da candidata.
+        run_psql(tmp, candidate_sql)
         drift = """
 CREATE OR REPLACE FUNCTION public.get_user_partner_id()
 RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
@@ -241,11 +280,20 @@ AS $function$
   WHERE pu.user_id = auth.uid();
 $function$;
 """
-        run_psql(tmp, 'BEGIN;\n' + '\n'.join(bodies) + '\n' + drift + '\nCOMMIT;')
-        r = run_psql(tmp, 'BEGIN;\n' + guard_sql + '\nCOMMIT;', check=False)
+        run_psql(tmp, 'BEGIN;\n' + drift + '\nCOMMIT;')
+        r = run_psql(tmp, rollback_sql, check=False)
         assert r.returncode != 0 and 'entrega2_rollback_antidrift' in r.stderr, \
-            'guarda deveria rejeitar drift com marcadores preservados'
-        print('PASS rollback 5b: drift com marcadores preservados rejeitado atomicamente')
+            'rollback inteiro deveria rejeitar drift com marcadores preservados'
+        hd = hashes_of(tmp)
+        assert hd['public.get_partner_papel(uuid)'] == FIXED_CANDIDATE_HASHES['public.get_partner_papel(uuid)'], \
+            'papel deveria permanecer candidato após falha do rollback'
+        assert hd['platform_private.b2b_commercial_context()'] == FIXED_CANDIDATE_HASHES['platform_private.b2b_commercial_context()'], \
+            'contexto deveria permanecer candidato após falha do rollback'
+        assert hd['public.get_user_partner_id()'] not in (
+            BASELINE_HASHES['public.get_user_partner_id()'],
+            FIXED_CANDIDATE_HASHES['public.get_user_partner_id()']), \
+            'get_user_partner_id deveria permanecer no corpo driftado (nada revertido)'
+        print('PASS rollback 5b: rollback inteiro rejeitou drift atomicamente; corpos candidatos preservados')
 
         print('NO-GO hosted installation: homologação JWT/RLS A/B com sessões reais pendente')
     finally:

@@ -11,7 +11,9 @@ fases, rollback e testes locais. **Nenhum DDL/DML hosted, nenhuma publicação.*
 SELECT partner_id FROM public.partner_users WHERE user_id = auth.uid() LIMIT 1;
 ```
 Sem `revoked_at`, sem validação de parceiro/owner/tenant, `LIMIT 1` arbitrário em
-multi-vínculo. **28 policies** dependem dele (verificadas via `pg_policy`):
+multi-vínculo. **31 policies** referenciam os 3 helpers no total (evidência live
+externa 2026-10-18 via `pg_policy` com `pg_get_expr` sobre qual/check); destas,
+**28 policies** dependem de `get_user_partner_id`:
 commercial_campaigns (3), partner_catalog_access_logs, partner_clients,
 partner_engagement_metrics, partner_order_idempotency, partner_order_items,
 partner_order_message_attachments (2), partner_order_messages (2),
@@ -66,47 +68,66 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 - Guards de hash anti-drift dos 3 corpos baseline; pós-condições read-only;
   assinaturas, ACL, SECURITY DEFINER e search_path preservados.
 
-**Rollback (rev 2.2):** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
-— restaura os 3 corpos baseline exatos. A guarda anti-drift foi substituída de
-marcadores `position()` por **hashes md5 exatos de `pg_get_functiondef`** dos 3
-corpos candidatos, computados pelo PostgreSQL no laboratório e gravados no
-arquivo pelo runner de teste (seção `BEGIN/END HASH GUARD`):
+**Rollback (rev 2.3):** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
+— restaura os 3 corpos baseline exatos. A guarda anti-drift usa **hashes md5
+exatos de `pg_get_functiondef`** dos 3 corpos candidatos, **fixos e commitados**
+(seção `BEGIN/END HASH GUARD`):
 `get_user_partner_id` = `b334c3a454ebc4233d3b9e0d0a700d78`,
 `get_partner_papel` = `f84f898ead03dfd646ece50d16baf909`,
 `b2b_commercial_context` = `a31d198c9a9fc9a5e7c397ab36fe0fa4`.
-Prova no laboratório: um drift que **preserva os antigos marcadores textuais**
-(predicado tautológico adicionado, marcadores intactos) é rejeitado atomicamente
-pela guarda de hash — a guarda anterior por `position()` o aceitaria.
+**Correção da revisão externa ffca65827:** o runner de teste NÃO regrava mais
+esses hashes — ele os verifica contra constantes fixas e FALHA se divergirem.
+Geração de hashes existe apenas como modo explícito separado
+(`--generate-hashes`, só imprime; nunca usado pelo teste).
+Prova no laboratório: o **arquivo de rollback inteiro** é executado contra um
+drift que **preserva os antigos marcadores textuais** (predicado tautológico
+adicionado, marcadores intactos) e é rejeitado atomicamente — após a falha, os
+corpos permanecem os da candidata (nada revertido), comprovado por hash.
 
 ## 3. Testes locais (PostgreSQL descartável, paridade de colunas live)
 
 `scripts/tests/entrega2-helpers-local.sql` + `.py` + Vitest
-`src/test/saas/entrega2-helpers-postgres.test.ts` (rev 2.2):
+`src/test/saas/entrega2-helpers-postgres.test.ts` (rev 2.3, pós-revisão
+ffca65827):
 
-- **Corpos REAIS, sem duplicação:** o runner extrai os 3 `CREATE OR REPLACE
-  FUNCTION` diretamente do arquivo da candidata e os instala no PostgreSQL
-  descartável — a matriz roda sobre o SQL que seria aplicado, não sobre réplica.
-  O corpo real instalado da Entrega 1 (`can_user_access_cliente(uuid,uuid)`) é
-  embutido e sua fidelidade é provada por hash: `md5(pg_get_functiondef)` no lab
-  = `4e0c374caa04bb9bf9fac9cc4e6723f1`, idêntico ao de produção.
-- **Matriz M1–M12 (todas PASS):** M1 elegível/`commercial_owner`; M2
-  `legacy_partner_tenant` real (org do ator ≠ owner comercial, owner preservado);
-  M3 contextual cliente (ramo `parceiro_b2b` do corpo real da Entrega 1
-  autoriza cliente na carteira válida); M4 owner NULL → NULL nos três; M5
-  tenant NULL → NULL; M6 tenant mismatch → NULL; M7/M7b parceiro inativo e
-  deletado → NULL; M8 dois elegíveis → NULL; **M9 um elegível + um inelegível
-  NÃO revogado → NULL nos três** (divergência da rev 2.1 eliminada); M10 um
-  ativo + um revogado (histórico) → resolve; M11 revogação dinâmica fecha
-  escalar, portal e acesso contextual ao cliente, restauração reabre; M12 alvo
-  terceiro (callers internos) elegível/revogado.
-- **Rollback:** 5a instalação exata aceita e baseline restaurado (comprovado por
-  retorno ao comportamento `LIMIT 1`); 5b drift com marcadores preservados
-  rejeitado atomicamente.
+- **Arquivos INTEIROS, sem duplicação e sem regravação:** o runner extrai os
+  corpos BASELINE do arquivo de rollback, instala-os no PostgreSQL descartável
+  e prova por hash que são os corpos de produção
+  (`77822b0e…`/`c892ee1d…`/`02158d42…`). Em seguida executa o **arquivo
+  candidato inteiro** (pre-guards de hash, corpos e pós-condições intactos) e
+  verifica os hashes instalados contra **constantes fixas commitadas**
+  (`b334c3a4…`/`f84f898e…`/`a31d198c…`) — divergência = FALHA; o teste nunca
+  reaprova nem regrava golden hashes (geração só via `--generate-hashes`,
+  modo explícito que apenas imprime).
+- **Rollback inteiro testado:** 5a executa o arquivo de rollback intacto sobre
+  a instalação exata — aceito, baseline restaurado e hashes baseline
+  comprovados; 5b reaplica a candidata, introduz drift com marcadores
+  preservados e executa o rollback inteiro — rejeitado atomicamente, e os
+  corpos permanecem os da candidata (nada revertido), comprovado por hash.
+- **Matriz M1–M15 (todas PASS), os TRÊS corpos afirmados por cenário** com
+  roles/entitlements válidos nos fixtures: M1 elegível/`commercial_owner`; M2
+  `legacy_partner_tenant` real (org do ator ≠ owner comercial, owner
+  preservado); M3 contextual cliente (ramo `parceiro_b2b` do corpo real da
+  Entrega 1 autoriza cliente na carteira válida); M4 owner NULL → NULL nos
+  três; M5 tenant NULL → NULL nos três; M6 tenant mismatch → NULL nos três;
+  M7/M7b parceiro inativo e deletado → NULL nos três; M8 dois elegíveis →
+  NULL nos três; **M9 um elegível + um inelegível NÃO revogado → NULL nos
+  três** (divergência da rev 2.1 eliminada); M10 um ativo + um revogado
+  (histórico) → resolve nos três; M11 revogação dinâmica fecha escalar, papel,
+  portal e acesso contextual ao cliente, restauração reabre; M12 alvo terceiro
+  (callers internos) elegível/revogado; **M13 zero vínculos → NULL nos três**;
+  **M14 ator NULL / alvo NULL → NULL**; **M15 cliente NÃO associado → false**
+  (negativo contextual).
+- **Fidelidade Entrega 1:** `md5(pg_get_functiondef)` do corpo embutido =
+  `4e0c374caa04bb9bf9fac9cc4e6723f1`, idêntico ao de produção.
 - **Iterações de correção durante os testes:** regex de extração `[a-z_]+`
   excluía `b2b_commercial_context` (dígitos) → `[a-z0-9_]+`; iterações
   anteriores: `HAVING` sem `GROUP BY` → `CASE WHEN count(*)=1`; `min(uuid)`
-  inexistente → `array_agg(...)[1]`.
-- **Vitest 1/1 passou.**
+  inexistente → `array_agg(...)[1]`; rev 2.3: removida a regravação de hashes
+  do rollback pelo runner (apontada pela revisão ffca65827).
+- **Execução confiável:** Vitest via `execFileSync` sem shell/pipes — exit
+  code não-zero lança exceção (nenhum `| tail` sem pipefail mascarando erro).
+  **Vitest 1/1 passou (exit 0).**
 
 ### 3.1 Evidência `valid_from` (auditoria sem inventar regra)
 
@@ -124,30 +145,45 @@ pela guarda de hash — a guarda anterior por `position()` o aceitaria.
 
 ## 4. Impacto e compatibilidade
 
-- As 30 policies dependentes passam a negar acesso a vínculos revogados/inelegíveis
-  — esse é o objetivo. O único vínculo ativo em produção é elegível (owner
-  presente, tenant coerente, não revogado): **nenhum acesso legítimo cortado hoje**.
+- As 31 policies dependentes (evidência live 2026-10-18 via `pg_policy` com
+  `pg_get_expr` sobre qual/check) passam a negar acesso a vínculos
+  revogados/inelegíveis — esse é o objetivo. O único vínculo em produção é
+  elegível (1 vínculo total, owner presente, tenant coerente, não revogado;
+  PUC=0, PTC=0, `valid_from` futuro=0): **nenhum acesso legítimo cortado hoje**.
 - Overload `(uuid)` herda o endurecimento sem alteração própria.
 - Não reabre RPCs fechadas, não altera containment PUC, não toca policies.
-- **Portal/PUC seguem a regra comum:** com a rev 2.2, o contexto do portal e os
-  helpers escalares aplicam a mesma elegibilidade E a mesma contagem (todos os
-  não revogados, fail-closed em 0/2+); não há mais caminho em que um autorize o
-  que o outro nega. PUC permanece com policy RESTRICTIVE `false` (intocado).
+- **Uniformidade limitada à cardinalidade/elegibilidade do vínculo:** com a
+  rev 2.2, o contexto do portal e os helpers escalares aplicam a mesma contagem
+  (todos os não revogados, fail-closed em 0/2+) e a mesma elegibilidade do
+  vínculo (parceiro ativo/não deletado, owner NOT NULL, tenant_id = owner).
+  **NÃO se afirma equivalência global portal/escalares:** o portal mantém gates
+  adicionais próprios (ator pronto via `platform_actor_access_ready`, exatamente
+  1 role, entitlement `catalogo_precos`, organização ativa, visibilidade fase 1)
+  que os escalares não avaliam — um usuário pode resolver o escalar e ainda
+  assim não obter contexto do portal por esses gates. PUC permanece com policy
+  RESTRICTIVE `false` (intocado).
 - **Token/provisioning:** o contexto alimenta apenas leitura de contexto
   comercial B2B; nenhum fluxo de provisioning/emissão de token depende de
-  vínculo com tenant divergente do owner (produção: 1 vínculo ativo elegível,
+  vínculo com tenant divergente do owner (produção: 1 vínculo total elegível,
   PUC=0, PTC=0, ownerless=0 — evidência externa 2026-10-18). Nenhum acesso
   legítimo cortado hoje; vínculos futuros com tenant incoerente serão negados
   até regularização explícita.
-- **Rollback atualizado (rev 2.2):** guarda anti-drift por hashes md5 exatos de
-  `pg_get_functiondef` (ver seção 2) — drift com marcadores preservados é
-  rejeitado atomicamente, comprovado no laboratório.
+- **Rollback (rev 2.3):** guarda anti-drift por hashes md5 fixos commitados
+  (ver seção 2) — arquivo inteiro testado no laboratório; drift com marcadores
+  preservados é rejeitado atomicamente e os corpos candidatos permanecem
+  intactos após a falha.
+- **Contas de teste:** o usuário autorizou contas de teste por perfil/tenant e
+  confirmou sessão real externa do admin AR Bio (arbiotecnologia@gmail.com) com
+  seis testes existentes. Nenhuma conta foi criada nem alterada neste recorte;
+  nenhuma escrita hosted.
 
 ## 5. Status
 
-- **PASS:** preparação e validação local rev 2.2 (candidata funcional sobre
-  corpos reais, matriz M1–M12, rollback com guarda de hash exata, fidelidade do
-  corpo da Entrega 1 por hash de produção).
+- **PASS:** preparação e validação local rev 2.3 (candidata e rollback
+  executados como arquivos inteiros sobre baseline fiel a produção, hashes
+  fixos commitados verificados sem regravação, matriz M1–M15 com os três
+  corpos afirmados por cenário, fidelidade do corpo da Entrega 1 por hash de
+  produção).
 - **Autorização e backup:** o usuário autorizou a continuação do projeto e
   assume a responsabilidade pelo backup de produção (registrado em 2026-10-18);
   não será solicitada nova autorização de backup. Isso NÃO equivale à
