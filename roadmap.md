@@ -1,8 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 18/10 23:37 — preferência produtor e ativação limitada
-- [ ] Separar preferência estável de autorização/cache por epoch e provar B sobrevivendo dois polls, revogação parcial e isolamento UID/tenant.
-- [ ] Ativar somente produtor após regressões/preflight de fonte, registrar delta/hashes/rollback; financeiro/global/Blob fechados, sem hosted/publicação.
+- [x] Separar preferência estável de autorização/cache por epoch e provar B sobrevivendo dois polls, revogação parcial e isolamento UID/tenant (2/2 FAIL antes, PASS após).
+- [x] Ativar somente produtor após regressões/preflight de fonte, registrar delta/hashes/rollback (146/146 + stage2/2); financeiro/global/Blob fechados, sem hosted/publicação.
+- [ ] Live preflight/revisão/login real produtor: aguardam auditor, antes da publicação externa.
 
 ## 18/10 23:32 — inativação interna financeira, candidata limitada
 - [x] Registrar evidência real independente e inventariar autoridade self/h15/readiness/roles + guards internos.
@@ -16,7 +17,7 @@
 - [x] Preparar gate produtor fechado + integração no único monitor e boundaries /app e /portal, preservando B2B/internos.
 - [x] Testar mobile/desktop, revoke/restore, múltiplos clientes, troca A/B e respostas tardias; preparar rollback/preflight guardados.
 - [x] Documentar 143/143 testes + 2/2 staging e limites em docs/auditorias/produtor-tela-aberta-20261018.review.md; sem hosted writes/publicação/global/Blob.
-- [ ] Ativação/homologação produtor: bloqueada por revisão/preflight integral, implantação e login real independentes do auditor; gate false mantido.
+- [x] Ativação preview produtor autorizada 23:37 após correção preferência/testes; gate true. Homologação/live preflight/publicação externa ainda pendentes acima.
 
 ## 18/10 23:15 — monitor/anexos, recorte crítico após 24b5f807
 - [x] Inventariar UI/emissores/Storage documentado e demonstrar falha de resposta tardia com lease consumida (4/4 testes falharam antes).
