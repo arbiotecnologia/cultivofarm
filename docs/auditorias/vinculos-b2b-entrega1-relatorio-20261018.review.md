@@ -46,6 +46,39 @@ de paridade**. Erro registrado e corrigido:
   real do overload com papéis B2B, vínculo revogado, PTC direct órfão, legacy sem
   owner e cross-tenant — todas as expectativas conferem.
 
+## 1.2 Revisão 1.1 (2026-10-18) — coerência de tenant nos ramos técnicos e prova contextual no legado
+
+Auditor independente apontou duas lacunas remanescentes, ambas corrigidas e testadas:
+
+1. **Ramos técnicos sem coerência de tenant:** `pu2`/`pu3` exigiam vínculo não revogado
+   e parceiro ativo, mas não validavam `tenant_id` contra o owner do parceiro. Um
+   técnico com vínculo de tenant divergente continuaria autorizado. **Correção:**
+   `pu2`/`pu3` receberam a mesma regra do ramo `parceiro_b2b` — owner NOT NULL exige
+   `tenant_id = commercial_owner_organization_id`; owner NULL exige `tenant_id` NULL
+   ou igual à `organization_id` do cliente alvo.
+2. **Legado owner NULL sem prova contextual:** o ramo `parceiro_b2b` autorizava
+   qualquer `pu.tenant_id` quando o parceiro não tem owner. **Correção:** owner NULL
+   agora exige `pu.tenant_id IS NULL` **ou** `pu.tenant_id = clientes.organization_id`
+   do cliente alvo (coluna confirmada no catálogo live). Isso bloqueia o cenário
+   "cliente do tenant B atribuído a vínculo legacy do tenant A" sem tornar
+   `owner = profile.organization_id` universal (não há evidência de que seja) e sem
+   cortar o legado comprovado (tenant NULL ou coerente).
+
+**Decisões preservadas:** ramos internos (admin/gestor/técnico/user_clientes)
+intocados; overload alvo ≠ ator mantido (callers internos autorizam terceiros por
+desenho — documentado: SECURITY DEFINER com EXECUTE authenticated permite probing
+por user_id alvo, e restringir self-only quebraria as 12 policies que avaliam alvo;
+mitigação disso é recorte separado, não desta candidata); corpo original, ACL,
+assinatura, search_path e containment PUC inalterados.
+
+**Novos testes no laboratório (paridade exata de colunas com live):**
+- U7: legacy owner NULL, tenant B, cliente do tenant A → **bloqueado**.
+- U8: legacy owner NULL, tenant A, cliente do tenant A → **preservado**.
+- T13: técnico legacy com PUC, tenant divergente do cliente → **bloqueado**.
+- T14: técnico legacy com PUC, tenant coerente → **preservado**.
+- Demais casos das fases 1–4 reexecutados e verde (brechas no baseline, endurecimento,
+  revogação dinâmica, rollback exato, anti-drift).
+
 ## 2. Decisão de desenho
 
 - **Não impor self-only**: o overload autoriza ALVO terceiro por desenho (callers internos e policies passam `_user_id` arbitrário). Endurecer por vínculo do alvo, nunca por `auth.uid()`.

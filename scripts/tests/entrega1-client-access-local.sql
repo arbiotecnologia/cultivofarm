@@ -14,6 +14,7 @@ CREATE TABLE lab.partner_clients(partner_id uuid, cliente_id uuid, active boolea
 CREATE TABLE lab.partner_user_clients(partner_id uuid, user_id uuid, cliente_id uuid, active boolean); -- sem revoked_at: paridade exata com live
 CREATE TABLE lab.partner_technician_clients(partner_id uuid, technician_user_id uuid, cliente_id uuid, active boolean);
 CREATE TABLE lab.user_clientes(user_id uuid, cliente_id uuid, is_active boolean, revoked_at timestamptz, valid_from timestamptz, valid_until timestamptz);
+CREATE TABLE lab.clientes(id uuid, organization_id uuid); -- paridade live: clientes.organization_id existe
 
 CREATE FUNCTION lab.has_role(u uuid, r lab.app_role) RETURNS boolean LANGUAGE sql STABLE AS
 $$ SELECT EXISTS (SELECT 1 FROM lab.user_roles WHERE user_id=u AND role=r) $$;
@@ -92,6 +93,12 @@ INSERT INTO lab.partner_clients VALUES
   ('a0000000-0000-4000-8000-0000000000b1', '20000000-0000-4000-8000-0000000000b1', true),
   ('a0000000-0000-4000-8000-0000000000c1', '20000000-0000-4000-8000-0000000000c1', true),
   ('a0000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1', true);
+-- clientes com organization_id (paridade live): a1/c1 tenant A, b1 tenant B
+INSERT INTO lab.clientes VALUES
+  ('20000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa'),
+  ('20000000-0000-4000-8000-0000000000b1', 'a0000000-0000-4000-8000-0000000000bb'),
+  ('20000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000aa'),
+  ('20000000-0000-4000-8000-0000000000d1', 'a0000000-0000-4000-8000-0000000000aa');
 INSERT INTO lab.user_roles VALUES
   ('10000000-0000-4000-8000-000000000001','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000002','parceiro_b2b'),
@@ -99,8 +106,12 @@ INSERT INTO lab.user_roles VALUES
   ('10000000-0000-4000-8000-000000000004','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000005','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000006','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000007','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000008','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000011','parceiro_b2b_tecnico'),
   ('10000000-0000-4000-8000-000000000012','parceiro_b2b_tecnico'),
+  ('10000000-0000-4000-8000-000000000013','parceiro_b2b_tecnico'),
+  ('10000000-0000-4000-8000-000000000014','parceiro_b2b_tecnico'),
   ('10000000-0000-4000-8000-000000000099','administrador');
 
 -- Técnico: T11 com PUC ativa via vínculo próprio em A; T12 só com PTC direct sem vínculo partner_users.
@@ -110,6 +121,21 @@ INSERT INTO lab.partner_user_clients VALUES
   ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000011', '20000000-0000-4000-8000-0000000000a1', true);
 INSERT INTO lab.partner_technician_clients VALUES
   ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000012', '20000000-0000-4000-8000-0000000000a1', true);
+
+-- REVISÃO 1.1: legado owner NULL com tenant divergente do cliente (cross-tenant legacy).
+-- U7: parceiro legacy C, tenant_id=B, cliente c1 do tenant A -> deve ser BLOQUEADO.
+-- U8: parceiro legacy C, tenant_id=A, cliente c1 do tenant A -> preservado.
+INSERT INTO lab.partner_users VALUES
+  ('10000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000bb', NULL),
+  ('10000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
+-- T13: técnico legacy com tenant B e PUC no cliente do tenant A -> bloqueado.
+-- T14: técnico legacy com tenant A e PUC no cliente do tenant A -> preservado.
+INSERT INTO lab.partner_users VALUES
+  ('10000000-0000-4000-8000-000000000013', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000bb', NULL),
+  ('10000000-0000-4000-8000-000000000014', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
+INSERT INTO lab.partner_user_clients VALUES
+  ('a0000000-0000-4000-8000-0000000000c1', '10000000-0000-4000-8000-000000000013', '20000000-0000-4000-8000-0000000000c1', true),
+  ('a0000000-0000-4000-8000-0000000000c1', '10000000-0000-4000-8000-000000000014', '20000000-0000-4000-8000-0000000000c1', true);
 
 -- ===== FASE 1: prova da brecha no corpo BASELINE =====
 DO $$
@@ -128,9 +154,9 @@ DO $$
 DECLARE
   d text;
   m1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true';
-  r1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN lab.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND (\n          (pa.commercial_owner_organization_id IS NOT NULL\n           AND pu.tenant_id IS NOT NULL\n           AND pu.tenant_id = pa.commercial_owner_organization_id)\n          OR pa.commercial_owner_organization_id IS NULL\n        )';
+  r1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN lab.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND (\n          (pa.commercial_owner_organization_id IS NOT NULL\n           AND pu.tenant_id IS NOT NULL\n           AND pu.tenant_id = pa.commercial_owner_organization_id)\n          OR (pa.commercial_owner_organization_id IS NULL\n              AND (pu.tenant_id IS NULL\n                   OR pu.tenant_id = (SELECT c.organization_id FROM lab.clientes c WHERE c.id = _cliente_id)))\n        )';
   m2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n    )), false);';
-  r2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      JOIN lab.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN lab.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      JOIN lab.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN lab.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n    )), false);';
+  r2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      JOIN lab.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN lab.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n        AND (\n          (pa2.commercial_owner_organization_id IS NOT NULL\n           AND pu2.tenant_id IS NOT NULL\n           AND pu2.tenant_id = pa2.commercial_owner_organization_id)\n          OR (pa2.commercial_owner_organization_id IS NULL\n              AND (pu2.tenant_id IS NULL\n                   OR pu2.tenant_id = (SELECT c2.organization_id FROM lab.clientes c2 WHERE c2.id = _cliente_id)))\n        )\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      JOIN lab.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN lab.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n        AND (\n          (pa3.commercial_owner_organization_id IS NOT NULL\n           AND pu3.tenant_id IS NOT NULL\n           AND pu3.tenant_id = pa3.commercial_owner_organization_id)\n          OR (pa3.commercial_owner_organization_id IS NULL\n              AND (pu3.tenant_id IS NULL\n                   OR pu3.tenant_id = (SELECT c3.organization_id FROM lab.clientes c3 WHERE c3.id = _cliente_id)))\n        )\n    )), false);';
 BEGIN
   SELECT pg_get_functiondef('lab.can_user_access_cliente(uuid,uuid)'::regprocedure) INTO d;
   ASSERT (length(d)-length(replace(d,m1,'')))/length(m1) = 1, 'marcador b2b divergente';
@@ -152,8 +178,14 @@ BEGIN
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-0000000000d1'), 'U4 parceiro inativo deve ser bloqueado';
   -- tenant divergente do owner bloqueado
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-0000000000a1'), 'U6 tenant divergente deve ser bloqueado';
-  -- legacy sem owner preservado
+  -- legacy sem owner preservado (tenant NULL)
   ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-0000000000c1'), 'U3 legacy sem owner deve continuar autorizado';
+  -- REVISÃO 1.1: legacy owner NULL com tenant divergente do cliente bloqueado; coerente preservado
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000007','20000000-0000-4000-8000-0000000000c1'), 'U7 legacy tenant B em cliente tenant A deve ser bloqueado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000008','20000000-0000-4000-8000-0000000000c1'), 'U8 legacy tenant coerente deve continuar autorizado';
+  -- técnico legacy: tenant divergente do cliente bloqueado; coerente preservado
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000013','20000000-0000-4000-8000-0000000000c1'), 'T13 legacy tenant divergente deve ser bloqueado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000014','20000000-0000-4000-8000-0000000000c1'), 'T14 legacy tenant coerente deve continuar autorizado';
   -- cross-tenant: U1 (parceiro A) não acessa cliente do parceiro B
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000b1'), 'cross-parceiro deve ser bloqueado';
   -- técnico com PUC ativa e vínculo vigente preservado
