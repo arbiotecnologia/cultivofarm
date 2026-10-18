@@ -14,7 +14,8 @@ BEGIN
   d3 := pg_get_functiondef('platform_private.b2b_commercial_context()'::regprocedure);
   IF position('CASE WHEN count(*) = 1 THEN (array_agg(pu.partner_id))[1]' IN d1) = 0
      OR position('CASE WHEN count(*) = 1 THEN (array_agg(pu.papel))[1]' IN d2) = 0
-     OR position('pu.revoked_at IS NULL)<>1' IN d3) = 0 THEN
+     OR position('pu.revoked_at IS NULL)<>1' IN d3) = 0
+     OR position('link.tenant_id IS DISTINCT FROM owner' IN d3) = 0 THEN
     RAISE EXCEPTION 'entrega2_rollback_antidrift: corpos divergem do instalado; abortando';
   END IF;
 END

@@ -47,8 +47,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
   (nunca `LIMIT 1` aleatório; `min(uuid)` não existe em PostgreSQL — corrigido
   durante os testes locais).
 - **Fase B — `get_partner_papel(uuid)`:** mesma regra para o alvo parametrizado.
-- **Fase C — `b2b_commercial_context()`:** adiciona `pu.revoked_at IS NULL` à
-  contagem e à seleção do vínculo; demais guardas preservadas.
+- **Fase C — `b2b_commercial_context()` (rev 2.1, pós-revisão externa):**
+  adiciona `pu.revoked_at IS NULL` à contagem e à seleção do vínculo **e fecha a
+  lacuna de coerência de tenant apontada pela revisão externa**: o `SELECT` do
+  vínculo passa a trazer `pu.tenant_id` e, imediatamente após o guarda de owner,
+  exige `link.tenant_id IS NOT NULL AND link.tenant_id = owner`. Antes, um
+  vínculo com tenant alterado continuava autorizando o portal enquanto os
+  escalares já negariam — divergência de regra entre portal e helpers.
+  Semântica `legacy_partner_tenant` preservada: owner é o owner **comercial** do
+  parceiro e pode divergir da `organization_id` do ator; exige-se
+  `tenant_id = owner comercial`, nunca `tenant_id = org do ator`. Contagem 0/2+
+  considera todos os vínculos não revogados (fail-closed).
 - Guards de hash anti-drift dos 3 corpos baseline; pós-condições read-only;
   assinaturas, ACL, SECURITY DEFINER e search_path preservados.
 
@@ -68,6 +77,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 - **Fase 4:** revogação dinâmica fecha imediatamente; restauração reabre.
 - Iterações de correção durante o teste: `HAVING` sem `GROUP BY` (inválido) →
   `CASE WHEN count(*)=1`; `min(uuid)` inexistente → `array_agg(...)[1]`.
+- **Fase 5 (contexto do portal, réplica da rev 2.1):** 5.1 `commercial_owner`
+  (org do ator = owner) resolve; 5.2 `legacy_partner_tenant` real (org do ator
+  `cc` ≠ owner `aa`, org legada ao parceiro) resolve com owner comercial
+  preservado; 5.3 tenant mismatch → NULL (lacuna fechada); 5.4 tenant NULL →
+  NULL; 5.5 owner NULL → NULL; 5.6 revogado → NULL; 5.7 multi-vínculo 2+ →
+  NULL; 5.8 revogação parcial (1 ativo entre vários) → resolve.
+- **Candidata real executada em PostgreSQL descartável** (stubs mínimos de
+  `auth.uid`, `platform_private.*`, `h15_actor_organization`; guards de hash
+  hospedados neutralizados apenas no lab): os 3 corpos compilam, executam
+  (retorno NULL com ator anônimo) e as pós-condições textuais de corpo —
+  incluindo `link.tenant_id IS DISTINCT FROM owner` — são satisfeitas.
 - **Vitest 1/1 passou.**
 
 ## 4. Impacto e compatibilidade
@@ -77,6 +97,19 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
   presente, tenant coerente, não revogado): **nenhum acesso legítimo cortado hoje**.
 - Overload `(uuid)` herda o endurecimento sem alteração própria.
 - Não reabre RPCs fechadas, não altera containment PUC, não toca policies.
+- **Portal/PUC seguem a regra comum:** com a rev 2.1, o contexto do portal e os
+  helpers escalares aplicam a mesma elegibilidade (revogação + owner presente +
+  tenant coerente); não há mais caminho em que o portal autorize o que o
+  escalar nega. PUC permanece com policy RESTRICTIVE `false` (intocado).
+- **Token/provisioning:** o contexto alimenta apenas leitura de contexto
+  comercial B2B; nenhum fluxo de provisioning/emissão de token depende de
+  vínculo com tenant divergente do owner (produção: 1 vínculo ativo elegível,
+  PUC=0, PTC=0, ownerless=0 — evidência externa 2026-10-18). Nenhum acesso
+  legítimo cortado hoje; vínculos futuros com tenant incoerente serão negados
+  até regularização explícita.
+- **Rollback atualizado:** guarda anti-drift do rollback agora também exige o
+  marcador `link.tenant_id IS DISTINCT FROM owner` no corpo instalado antes de
+  reverter — não reverte um corpo divergente.
 
 ## 5. Status
 

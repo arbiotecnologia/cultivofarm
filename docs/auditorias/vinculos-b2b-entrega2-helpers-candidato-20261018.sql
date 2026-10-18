@@ -70,8 +70,15 @@ AS $function$
     AND pu.tenant_id = pa.commercial_owner_organization_id;
 $function$;
 
--- FASE C: b2b_commercial_context() — adiciona revoked_at IS NULL à contagem e ao
--- vínculo selecionado (owner NOT NULL e parceiro ativo já eram exigidos).
+-- FASE C (rev 2.1): b2b_commercial_context() — adiciona revoked_at IS NULL à
+-- contagem e ao vínculo selecionado (owner NOT NULL e parceiro ativo já eram
+-- exigidos) E fecha a lacuna apontada pela revisão externa: o vínculo passa a
+-- exigir coerência de tenant (pu.tenant_id NOT NULL e = owner), a mesma regra
+-- dos helpers escalares. Sem isso, um vínculo cujo tenant foi alterado
+-- continuaria autorizando o portal enquanto os escalares já negariam.
+-- Semântica legacy_partner_tenant preservada: owner é o owner COMERCIAL do
+-- parceiro e pode divergir da organization_id do ator (modo legado real);
+-- o que se exige é tenant_id do vínculo = owner comercial, nunca = org do ator.
 CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -87,11 +94,12 @@ BEGIN
  SELECT r.role::text INTO role_name FROM public.user_roles r WHERE r.user_id=u;
  IF role_name NOT IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN RETURN NULL; END IF;
  IF (SELECT count(*) FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL)<>1 THEN RETURN NULL; END IF;
- SELECT pu.partner_id,pu.papel INTO link FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
+ SELECT pu.partner_id,pu.papel,pu.tenant_id INTO link FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
  IF link.papel IS DISTINCT FROM (CASE WHEN role_name='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END) THEN RETURN NULL; END IF;
  SELECT pa.commercial_owner_organization_id INTO owner FROM public.partner_accounts pa
  WHERE pa.id=link.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
  IF owner IS NULL THEN RETURN NULL; END IF;
+ IF link.tenant_id IS NULL OR link.tenant_id IS DISTINCT FROM owner THEN RETURN NULL; END IF;
  IF NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos') THEN RETURN NULL; END IF;
  SELECT o.partner_account_id INTO legacy FROM public.organizations o WHERE o.id=org AND o.ativo IS TRUE AND o.status='ativa';
  IF NOT FOUND THEN RETURN NULL; END IF;
@@ -122,7 +130,8 @@ BEGIN
      OR position('CASE WHEN count(*) = 1 THEN (array_agg(pu.papel))[1]' IN d2) = 0 THEN
     RAISE EXCEPTION 'entrega2_postcondition_get_partner_papel_failed';
   END IF;
-  IF position('pu.revoked_at IS NULL' IN d3) = 0 THEN
+  IF position('pu.revoked_at IS NULL' IN d3) = 0
+     OR position('link.tenant_id IS DISTINCT FROM owner' IN d3) = 0 THEN
     RAISE EXCEPTION 'entrega2_postcondition_b2b_commercial_context_failed';
   END IF;
 END
