@@ -435,13 +435,15 @@ describe("authzEpochMonitor", () => {
     // Sem a guarda pós-arm, este teste FALHA (epoch/poll sairiam após expire).
     let clock = 0;
     let fetchCalls = 0;
+    let validSeen = 0;
     const stateLog: string[] = [];
     const { monitor, deps, fetcher } = setup({
       now: () => clock,
       onStateChange: vi.fn((s: string) => {
         stateLog.push(s);
-        if (s === "valid" && stateLog.filter((x) => x === "valid").length === 2) {
-          clock = 40_000; // 2º valid (poll): cruza o deadline na janela do arm
+        if (s === "valid") {
+          validSeen += 1;
+          if (validSeen === 2) clock = 40_000; // 2º valid: cruza o deadline na janela do arm
         }
       }),
     });
@@ -450,18 +452,20 @@ describe("authzEpochMonitor", () => {
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
     expect(monitor.state()).toBe("valid");
-    // Poll em t10: fingerprint MUDA para B com budget 15s (deadline t10+15=t25,
-    // futuro na pré-checagem). setState("valid") avança o relógio para t40
-    // (além do deadline) ANTES de armLeaseDeadline(): o arm expira e a
-    // re-checagem pós-arm impede onEpochChange/schedulePoll. Sem a guarda,
-    // onEpochChange dispararia após a expiração e este teste FALHARIA.
+    // Revalidate em t10 (transição pending→valid, que notifica): fingerprint
+    // MUDA para B com budget 15s (deadline t10+15=t25, futuro na pré-checagem).
+    // setState("valid") avança o relógio para t40 (além do deadline) ANTES de
+    // armLeaseDeadline(): o arm expira e a re-checagem pós-arm impede
+    // onEpochChange/schedulePoll. Sem a guarda, onEpochChange dispararia após
+    // a expiração e este teste FALHARIA.
     fetchCalls = 1;
     clock = 10_000;
     fetcher.mockResolvedValueOnce({ eligible: true, fingerprint: "B", server_remaining_ms: 15_000 });
-    await vi.advanceTimersByTimeAsync(10_000);
+    monitor.revalidate();
+    await vi.advanceTimersByTimeAsync(0);
     // O estado passou pelo 2º "valid" (pré-checagem ok) e SÓ DEPOIS expirou no arm.
-    expect(stateLog.filter((s) => s === "valid").length).toBe(2);
-    expect(stateLog.lastIndexOf("valid")).toBeLessThan(stateLog.indexOf("expired"));
+    expect(validSeen).toBe(2);
+    expect(stateLog.lastIndexOf("valid")).toBeLessThan(stateLog.lastIndexOf("expired"));
     expect(monitor.state()).toBe("expired");
     expect(deps.onExpire).toHaveBeenCalledWith("timeout");
     expect(monitor.checkAccess()).toBe(false);
