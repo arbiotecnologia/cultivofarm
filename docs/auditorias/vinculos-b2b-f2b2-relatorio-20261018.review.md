@@ -95,7 +95,7 @@ Comandos executados:
 - `bun run test -- src/test/saas/b2b-f2b2-sync-postgres.test.ts src/test/saas/b2b-f2b1-context-postgres.test.ts src/test/saas/b2b-f2b-helpers-postgres.test.ts`: **3 arquivos / 3 testes passaram**, rodada 18:07 UTC (F2-B2 23 checks, F2-B1 35, escalar 26).
 - `python3 scripts/tests/b2b-f2b2-sync-local.py`: **23 checks**, audit de diffs e rollback exato, executado novamente.
 - `bunx eslint src/test/saas/b2b-f2b2-sync-postgres.test.ts`: exit 0; não lint global.
-- Typecheck separado não executado (harness automático); sem alegar PASS individual. Build somente resultado automático, sem build manual.
+- Typecheck separado não executado (harness automático); sem alegar PASS individual. Build automático observado **OK às 18:08:49 UTC** em `/tmp/observability/build-errors.log`, sem build manual. Teste F2-B2 final reexecutado às 18:08:57 UTC: 1/1 passou após adicionar assertion de 23 checks.
 
 Não realizados: sessão real/login/logout/MFA, testes RLS hospedados A/B, mutation real, limpeza legada, APIs Storage/TTL, autorização de ator, homologação global, concorrência hospedada. Nada publicado.
 
