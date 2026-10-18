@@ -1,8 +1,17 @@
-# Fase F1 — Fundação aditiva de `partner_users` — 2026-10-18 (PREPARADA, NÃO APLICADA)
+# Fase F1 — Fundação aditiva de `partner_users` — 2026-10-18 (PREPARADA, NÃO APLICADA) — REVISÃO PÓS-AUDITORIA EXTERNA
 
 Ref canônico: `swzpzcwiasxmjutrmvkm` (produção). Homolog: `vrlcdwmlytukrjezrrnf`.
 **Nenhum DDL/DML executado. Nenhuma migration aplicada. Nada publicado.**
 "Verificado" = observado via SELECT read-only nesta rodada; "Pendente" = aguarda execução/aprovação.
+
+> **REVISÃO 2026-10-18 (auditoria externa):** homolog NÃO possui
+> `partner_accounts.commercial_owner_organization_id` — a F1 v1 falharia em
+> homolog. Criada a fase **PRÉ-F1** (`vinculos-b2b-pref1-paridade-homolog-20261018.sql`)
+> e o relatório de paridade (`vinculos-b2b-pref1-paridade-20261018.review.md`).
+> A migration F1 ganhou preflight de esquema (passo 0) e os testes foram
+> reescritos (v2): sintaxe PL/pgSQL válida, fixtures transacionais próprias,
+> FAIL explícito, zero SKIP. Ordem obrigatória: PRÉ-F1 → F1 → T1–T7 em homolog.
+> Paridade total homolog×produção (279 vs 286 tabelas) **não homologada**.
 
 ## 1. Entregas (arquivos criados, nada aplicado)
 
