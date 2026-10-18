@@ -12,12 +12,13 @@ BEGIN
   d1 := pg_get_functiondef('public.get_user_partner_id()'::regprocedure);
   d2 := pg_get_functiondef('public.get_partner_papel(uuid)'::regprocedure);
   d3 := pg_get_functiondef('platform_private.b2b_commercial_context()'::regprocedure);
-  IF position('CASE WHEN count(*) = 1 THEN (array_agg(pu.partner_id))[1]' IN d1) = 0
-     OR position('CASE WHEN count(*) = 1 THEN (array_agg(pu.papel))[1]' IN d2) = 0
-     OR position('pu.revoked_at IS NULL)<>1' IN d3) = 0
-     OR position('link.tenant_id IS DISTINCT FROM owner' IN d3) = 0 THEN
+  -- BEGIN HASH GUARD (gerado por scripts/tests/entrega2-helpers-local.py; rev 2.2)
+  IF md5(d1) IS DISTINCT FROM 'b334c3a454ebc4233d3b9e0d0a700d78'
+     OR md5(d2) IS DISTINCT FROM 'f84f898ead03dfd646ece50d16baf909'
+     OR md5(d3) IS DISTINCT FROM 'a31d198c9a9fc9a5e7c397ab36fe0fa4' THEN
     RAISE EXCEPTION 'entrega2_rollback_antidrift: corpos divergem do instalado; abortando';
   END IF;
+  -- END HASH GUARD
 END
 $guard$;
 

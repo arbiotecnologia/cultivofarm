@@ -41,12 +41,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 
 `docs/auditorias/vinculos-b2b-entrega2-helpers-candidato-20261018.sql`:
 
-- **Fase A — `get_user_partner_id()`:** elegibilidade completa (revoked_at IS NULL,
-  parceiro ativo/não deletado, owner NOT NULL, tenant_id = owner) e fail-closed em
-  0 ou 2+ vínculos via `CASE WHEN count(*) = 1 THEN (array_agg(...))[1] END`
-  (nunca `LIMIT 1` aleatório; `min(uuid)` não existe em PostgreSQL — corrigido
-  durante os testes locais).
-- **Fase B — `get_partner_papel(uuid)`:** mesma regra para o alvo parametrizado.
+- **Fase A — `get_user_partner_id()` (rev 2.2, pós-revisão externa):** fail-closed
+  em DUAS etapas, uniforme com a Fase C: (1) conta TODOS os vínculos NÃO
+  revogados — 0 ou 2+ ⇒ NULL, antes de qualquer elegibilidade; (2) só então exige
+  que o vínculo único seja elegível (parceiro ativo/não deletado, owner NOT NULL,
+  tenant_id = owner). Na rev 2.1 a contagem era só de elegíveis: com 2 não
+  revogados (1 elegível + 1 inelegível) o escalar autorizava e o portal negava —
+  divergência corrigida. `LEFT JOIN` garante que vínculo com parceiro inexistente
+  continue contado (fail-closed). Um vínculo ativo + históricos revogados
+  continua resolvendo (revogados não entram na contagem).
+- **Fase B — `get_partner_papel(uuid)` (rev 2.2):** mesma regra em duas etapas
+  para o alvo parametrizado.
 - **Fase C — `b2b_commercial_context()` (rev 2.1, pós-revisão externa):**
   adiciona `pu.revoked_at IS NULL` à contagem e à seleção do vínculo **e fecha a
   lacuna de coerência de tenant apontada pela revisão externa**: o `SELECT` do
@@ -61,34 +66,61 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 - Guards de hash anti-drift dos 3 corpos baseline; pós-condições read-only;
   assinaturas, ACL, SECURITY DEFINER e search_path preservados.
 
-**Rollback:** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
-— restaura os 3 corpos baseline exatos com anti-drift e verificação de hash.
+**Rollback (rev 2.2):** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
+— restaura os 3 corpos baseline exatos. A guarda anti-drift foi substituída de
+marcadores `position()` por **hashes md5 exatos de `pg_get_functiondef`** dos 3
+corpos candidatos, computados pelo PostgreSQL no laboratório e gravados no
+arquivo pelo runner de teste (seção `BEGIN/END HASH GUARD`):
+`get_user_partner_id` = `b334c3a454ebc4233d3b9e0d0a700d78`,
+`get_partner_papel` = `f84f898ead03dfd646ece50d16baf909`,
+`b2b_commercial_context` = `a31d198c9a9fc9a5e7c397ab36fe0fa4`.
+Prova no laboratório: um drift que **preserva os antigos marcadores textuais**
+(predicado tautológico adicionado, marcadores intactos) é rejeitado atomicamente
+pela guarda de hash — a guarda anterior por `position()` o aceitaria.
 
 ## 3. Testes locais (PostgreSQL descartável, paridade de colunas live)
 
 `scripts/tests/entrega2-helpers-local.sql` + `.py` + Vitest
-`src/test/saas/entrega2-helpers-postgres.test.ts`:
+`src/test/saas/entrega2-helpers-postgres.test.ts` (rev 2.2):
 
-- **Fase 1 (baseline):** brechas reproduzidas — revogado, owner NULL e parceiro
-  inativo ainda resolvem parceiro/papel.
-- **Fase 3 (candidata):** elegível preservado; revogado, owner NULL, parceiro
-  inativo, tenant divergente, multi-vínculo (2+) e sem vínculo → todos NULL
-  (fail-closed).
-- **Fase 4:** revogação dinâmica fecha imediatamente; restauração reabre.
-- Iterações de correção durante o teste: `HAVING` sem `GROUP BY` (inválido) →
-  `CASE WHEN count(*)=1`; `min(uuid)` inexistente → `array_agg(...)[1]`.
-- **Fase 5 (contexto do portal, réplica da rev 2.1):** 5.1 `commercial_owner`
-  (org do ator = owner) resolve; 5.2 `legacy_partner_tenant` real (org do ator
-  `cc` ≠ owner `aa`, org legada ao parceiro) resolve com owner comercial
-  preservado; 5.3 tenant mismatch → NULL (lacuna fechada); 5.4 tenant NULL →
-  NULL; 5.5 owner NULL → NULL; 5.6 revogado → NULL; 5.7 multi-vínculo 2+ →
-  NULL; 5.8 revogação parcial (1 ativo entre vários) → resolve.
-- **Candidata real executada em PostgreSQL descartável** (stubs mínimos de
-  `auth.uid`, `platform_private.*`, `h15_actor_organization`; guards de hash
-  hospedados neutralizados apenas no lab): os 3 corpos compilam, executam
-  (retorno NULL com ator anônimo) e as pós-condições textuais de corpo —
-  incluindo `link.tenant_id IS DISTINCT FROM owner` — são satisfeitas.
+- **Corpos REAIS, sem duplicação:** o runner extrai os 3 `CREATE OR REPLACE
+  FUNCTION` diretamente do arquivo da candidata e os instala no PostgreSQL
+  descartável — a matriz roda sobre o SQL que seria aplicado, não sobre réplica.
+  O corpo real instalado da Entrega 1 (`can_user_access_cliente(uuid,uuid)`) é
+  embutido e sua fidelidade é provada por hash: `md5(pg_get_functiondef)` no lab
+  = `4e0c374caa04bb9bf9fac9cc4e6723f1`, idêntico ao de produção.
+- **Matriz M1–M12 (todas PASS):** M1 elegível/`commercial_owner`; M2
+  `legacy_partner_tenant` real (org do ator ≠ owner comercial, owner preservado);
+  M3 contextual cliente (ramo `parceiro_b2b` do corpo real da Entrega 1
+  autoriza cliente na carteira válida); M4 owner NULL → NULL nos três; M5
+  tenant NULL → NULL; M6 tenant mismatch → NULL; M7/M7b parceiro inativo e
+  deletado → NULL; M8 dois elegíveis → NULL; **M9 um elegível + um inelegível
+  NÃO revogado → NULL nos três** (divergência da rev 2.1 eliminada); M10 um
+  ativo + um revogado (histórico) → resolve; M11 revogação dinâmica fecha
+  escalar, portal e acesso contextual ao cliente, restauração reabre; M12 alvo
+  terceiro (callers internos) elegível/revogado.
+- **Rollback:** 5a instalação exata aceita e baseline restaurado (comprovado por
+  retorno ao comportamento `LIMIT 1`); 5b drift com marcadores preservados
+  rejeitado atomicamente.
+- **Iterações de correção durante os testes:** regex de extração `[a-z_]+`
+  excluía `b2b_commercial_context` (dígitos) → `[a-z0-9_]+`; iterações
+  anteriores: `HAVING` sem `GROUP BY` → `CASE WHEN count(*)=1`; `min(uuid)`
+  inexistente → `array_agg(...)[1]`.
 - **Vitest 1/1 passou.**
+
+### 3.1 Evidência `valid_from` (auditoria sem inventar regra)
+
+- `partner_users.valid_from` existe no schema live, mas **nenhuma função de
+  acesso o aplica a vínculos B2B**: os três helpers baseline não o referenciam;
+  o corpo instalado da Entrega 1 usa `valid_from`/`valid_until` apenas no ramo
+  `user_clientes` (usuários internos), não nos ramos B2B. Busca live em
+  `pg_proc` por `valid_from` + `partner_users` retornou apenas
+  `can_user_access_cliente` (ramo interno), `rpc_b2b_list_selectable_payment_plans`,
+  `tenant_admin_user_links` e `user_edit_f2_version` — nenhum contrato existente
+  exige `valid_from` em `partner_users`.
+- **Decisão:** a candidata NÃO adiciona filtro de `valid_from` — seria regra
+  nova sem contrato comprovado. Registrado como observação para recorte futuro
+  (definir semântica de vigência de vínculo B2B antes de qualquer enforce).
 
 ## 4. Impacto e compatibilidade
 
@@ -97,24 +129,30 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
   presente, tenant coerente, não revogado): **nenhum acesso legítimo cortado hoje**.
 - Overload `(uuid)` herda o endurecimento sem alteração própria.
 - Não reabre RPCs fechadas, não altera containment PUC, não toca policies.
-- **Portal/PUC seguem a regra comum:** com a rev 2.1, o contexto do portal e os
-  helpers escalares aplicam a mesma elegibilidade (revogação + owner presente +
-  tenant coerente); não há mais caminho em que o portal autorize o que o
-  escalar nega. PUC permanece com policy RESTRICTIVE `false` (intocado).
+- **Portal/PUC seguem a regra comum:** com a rev 2.2, o contexto do portal e os
+  helpers escalares aplicam a mesma elegibilidade E a mesma contagem (todos os
+  não revogados, fail-closed em 0/2+); não há mais caminho em que um autorize o
+  que o outro nega. PUC permanece com policy RESTRICTIVE `false` (intocado).
 - **Token/provisioning:** o contexto alimenta apenas leitura de contexto
   comercial B2B; nenhum fluxo de provisioning/emissão de token depende de
   vínculo com tenant divergente do owner (produção: 1 vínculo ativo elegível,
   PUC=0, PTC=0, ownerless=0 — evidência externa 2026-10-18). Nenhum acesso
   legítimo cortado hoje; vínculos futuros com tenant incoerente serão negados
   até regularização explícita.
-- **Rollback atualizado:** guarda anti-drift do rollback agora também exige o
-  marcador `link.tenant_id IS DISTINCT FROM owner` no corpo instalado antes de
-  reverter — não reverte um corpo divergente.
+- **Rollback atualizado (rev 2.2):** guarda anti-drift por hashes md5 exatos de
+  `pg_get_functiondef` (ver seção 2) — drift com marcadores preservados é
+  rejeitado atomicamente, comprovado no laboratório.
 
 ## 5. Status
 
-- **PASS:** preparação e validação local (candidata funcional, rollback exato,
-  evidência de brecha e de correção).
-- **NO-GO instalação:** backup/restauração de produção não comprovados; provas
-  JWT/RLS A/B reais pendentes (sessões externas indisponíveis neste ambiente).
-  Instalação exige preflight, backup comprovado e autorização específica.
+- **PASS:** preparação e validação local rev 2.2 (candidata funcional sobre
+  corpos reais, matriz M1–M12, rollback com guarda de hash exata, fidelidade do
+  corpo da Entrega 1 por hash de produção).
+- **Autorização e backup:** o usuário autorizou a continuação do projeto e
+  assume a responsabilidade pelo backup de produção (registrado em 2026-10-18);
+  não será solicitada nova autorização de backup. Isso NÃO equivale à
+  homologação: testes locais em PostgreSQL descartável não certificam JWT/RLS
+  real.
+- **NO-GO instalação:** provas JWT/RLS A/B reais pendentes (sessões externas
+  indisponíveis neste ambiente). Instalação exige preflight e autorização
+  específica de aplicação.
