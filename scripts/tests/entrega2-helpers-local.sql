@@ -98,4 +98,110 @@ BEGIN
   RAISE NOTICE 'PASS fase4: revogação dinâmica respeitada';
 END $$;
 
+-- ===== FASE 5: réplica laboratorial de b2b_commercial_context() (rev 2.1) =====
+-- Dependências mínimas stubadas: user_roles, organizations, entitlements,
+-- platform_actor_access_ready, h15_actor_organization, b2b_phase1_partner_visible.
+CREATE TABLE lab.user_roles(user_id uuid, role text);
+CREATE TABLE lab.organizations(id uuid, partner_account_id uuid, ativo boolean, status text);
+CREATE TABLE lab.entitlements(user_id uuid, feature_key text);
+CREATE FUNCTION lab.actor_ready(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$;
+CREATE FUNCTION lab.actor_org() RETURNS uuid LANGUAGE sql STABLE AS
+$$ SELECT NULLIF(current_setting('lab.actor_org', true),'')::uuid $$;
+CREATE FUNCTION lab.phase1_visible(uuid, boolean) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$;
+
+-- Corpo espelho da candidata rev 2.1 (com stubs no lugar das funções privadas).
+CREATE FUNCTION lab.b2b_commercial_context() RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS
+$ctx$
+DECLARE u uuid:=lab.uid(); org uuid; role_name text; link record; owner uuid; legacy uuid; mode text;
+BEGIN
+ IF u IS NULL OR NOT lab.actor_ready(u) THEN RETURN NULL; END IF;
+ org:=lab.actor_org();
+ IF org IS NULL OR (SELECT count(*) FROM lab.user_roles r WHERE r.user_id=u)<>1 THEN RETURN NULL; END IF;
+ SELECT r.role::text INTO role_name FROM lab.user_roles r WHERE r.user_id=u;
+ IF role_name NOT IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN RETURN NULL; END IF;
+ IF (SELECT count(*) FROM lab.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL)<>1 THEN RETURN NULL; END IF;
+ SELECT pu.partner_id,pu.papel,pu.tenant_id INTO link FROM lab.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
+ IF link.papel IS DISTINCT FROM (CASE WHEN role_name='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END) THEN RETURN NULL; END IF;
+ SELECT pa.commercial_owner_organization_id INTO owner FROM lab.partner_accounts pa
+ WHERE pa.id=link.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
+ IF owner IS NULL THEN RETURN NULL; END IF;
+ IF link.tenant_id IS NULL OR link.tenant_id IS DISTINCT FROM owner THEN RETURN NULL; END IF;
+ IF NOT EXISTS(SELECT 1 FROM lab.entitlements e WHERE e.user_id=u AND e.feature_key='catalogo_precos') THEN RETURN NULL; END IF;
+ SELECT o.partner_account_id INTO legacy FROM lab.organizations o WHERE o.id=org AND o.ativo IS TRUE AND o.status='ativa';
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ IF owner=org THEN
+   IF legacy IS NOT NULL AND legacy IS DISTINCT FROM link.partner_id THEN RETURN NULL; END IF;
+   mode:='commercial_owner';
+ ELSIF legacy=link.partner_id AND COALESCE(lab.phase1_visible(link.partner_id,true),false) THEN
+   mode:='legacy_partner_tenant';
+ ELSE RETURN NULL;
+ END IF;
+ RETURN jsonb_build_object('partner_id',link.partner_id,'organization_id',org,
+   'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,'mode',mode);
+END $ctx$;
+
+-- Fixtures de contexto: U1 gestor elegível (parceiro A, owner aa).
+INSERT INTO lab.user_roles VALUES ('10000000-0000-4000-8000-000000000001','parceiro_b2b');
+INSERT INTO lab.entitlements VALUES ('10000000-0000-4000-8000-000000000001','catalogo_precos');
+-- Org do ator = owner (modo commercial_owner) e org legada distinta (modo legacy_partner_tenant).
+INSERT INTO lab.organizations VALUES
+  ('a0000000-0000-4000-8000-0000000000aa', NULL, true, 'ativa'),
+  ('a0000000-0000-4000-8000-0000000000cc', 'a0000000-0000-4000-8000-0000000000a1', true, 'ativa');
+
+DO $$
+DECLARE c jsonb;
+BEGIN
+  -- 5.1 commercial_owner: org do ator = owner
+  PERFORM set_config('lab.actor','10000000-0000-4000-8000-000000000001',true);
+  PERFORM set_config('lab.actor_org','a0000000-0000-4000-8000-0000000000aa',true);
+  c := lab.b2b_commercial_context();
+  ASSERT c->>'mode' = 'commercial_owner', '5.1 modo commercial_owner esperado';
+
+  -- 5.2 legacy_partner_tenant REAL: org do ator (cc) != owner (aa), org legada ao parceiro
+  PERFORM set_config('lab.actor_org','a0000000-0000-4000-8000-0000000000cc',true);
+  c := lab.b2b_commercial_context();
+  ASSERT c->>'mode' = 'legacy_partner_tenant', '5.2 modo legacy_partner_tenant esperado (owner diverge da org do ator)';
+  ASSERT c->>'commercial_owner_organization_id' = 'a0000000-0000-4000-8000-0000000000aa', '5.2 owner comercial preservado';
+
+  -- 5.3 tenant mismatch: vínculo com tenant_id divergente do owner => NULL (lacuna fechada)
+  UPDATE lab.partner_users SET tenant_id='a0000000-0000-4000-8000-0000000000dd'
+    WHERE user_id='10000000-0000-4000-8000-000000000001';
+  ASSERT lab.b2b_commercial_context() IS NULL, '5.3 tenant mismatch deve falhar fechado';
+  UPDATE lab.partner_users SET tenant_id='a0000000-0000-4000-8000-0000000000aa'
+    WHERE user_id='10000000-0000-4000-8000-000000000001';
+
+  -- 5.4 tenant NULL no vínculo => NULL
+  UPDATE lab.partner_users SET tenant_id=NULL WHERE user_id='10000000-0000-4000-8000-000000000001';
+  ASSERT lab.b2b_commercial_context() IS NULL, '5.4 tenant NULL deve falhar fechado';
+  UPDATE lab.partner_users SET tenant_id='a0000000-0000-4000-8000-0000000000aa'
+    WHERE user_id='10000000-0000-4000-8000-000000000001';
+
+  -- 5.5 owner NULL (parceiro b1) => NULL mesmo com vínculo não revogado
+  UPDATE lab.partner_users SET partner_id='a0000000-0000-4000-8000-0000000000b1'
+    WHERE user_id='10000000-0000-4000-8000-000000000001';
+  ASSERT lab.b2b_commercial_context() IS NULL, '5.5 owner NULL deve falhar fechado';
+  UPDATE lab.partner_users SET partner_id='a0000000-0000-4000-8000-0000000000a1'
+    WHERE user_id='10000000-0000-4000-8000-000000000001';
+
+  -- 5.6 revogado => NULL (contagem 0)
+  UPDATE lab.partner_users SET revoked_at=now() WHERE user_id='10000000-0000-4000-8000-000000000001';
+  ASSERT lab.b2b_commercial_context() IS NULL, '5.6 revogado deve falhar fechado';
+  UPDATE lab.partner_users SET revoked_at=NULL WHERE user_id='10000000-0000-4000-8000-000000000001';
+
+  -- 5.7 multi-vínculo não revogado (U6) => NULL (contagem 2+, fail-closed)
+  INSERT INTO lab.user_roles VALUES ('10000000-0000-4000-8000-000000000006','parceiro_b2b');
+  INSERT INTO lab.entitlements VALUES ('10000000-0000-4000-8000-000000000006','catalogo_precos');
+  PERFORM set_config('lab.actor','10000000-0000-4000-8000-000000000006',true);
+  ASSERT lab.b2b_commercial_context() IS NULL, '5.7 multi-vínculo deve falhar fechado';
+
+  -- 5.8 revogação parcial em multi-vínculo: 1 revogado + 1 ativo => conta 1, resolve
+  UPDATE lab.partner_users SET revoked_at=now()
+    WHERE user_id='10000000-0000-4000-8000-000000000006'
+      AND ctid IN (SELECT ctid FROM lab.partner_users WHERE user_id='10000000-0000-4000-8000-000000000006' LIMIT 1);
+  c := lab.b2b_commercial_context();
+  ASSERT c IS NOT NULL, '5.8 um vínculo ativo entre vários deve resolver';
+
+  RAISE NOTICE 'PASS fase5: contexto do portal com coerência de tenant fail-closed';
+END $$;
+
 ROLLBACK;
