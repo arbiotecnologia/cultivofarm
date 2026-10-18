@@ -1,8 +1,34 @@
-# Fase F1 — Fundação aditiva de `partner_users` — 2026-10-18 (PREPARADA, NÃO APLICADA) — REVISÃO PÓS-AUDITORIA EXTERNA
+# Fase F1 — Fundação aditiva de `partner_users` — 2026-10-18 (APLICADA EM HOMOLOG, PRODUÇÃO INTOCADA) — REVISÃO PÓS-AUDITORIA EXTERNA
 
-Ref canônico: `swzpzcwiasxmjutrmvkm` (produção). Homolog: `vrlcdwmlytukrjezrrnf`.
-**Nenhum DDL/DML executado. Nenhuma migration aplicada. Nada publicado.**
-"Verificado" = observado via SELECT read-only nesta rodada; "Pendente" = aguarda execução/aprovação.
+Ref canônico: `swzpzcwiasxmjutrmvkm` (produção, **NÃO tocada**). Homolog: `vrlcdwmlytukrjezrrnf`.
+**Produção sem qualquer DDL/DML. Nada publicado.**
+"Verificado" = observado via SELECT read-only nesta rodada; "Hospedado" = executado pelo auditor externo em homolog e reportado com evidência; "Pendente" = aguarda execução/aprovação.
+
+> **REGISTRO DE HOSPEDAGEM 2026-10-18 (auditor externo, homolog `vrlcdwmlytukrjezrrnf`):**
+> Migrations aplicadas com `success: true`, nesta ordem:
+> 1. `cultivofarm_pref1_partner_owner_homolog_only_20261018` — coluna `commercial_owner_organization_id uuid NULL` (1 parceiro sem owner, intencional).
+> 2. `cultivofarm_pref12_guards_partner_users_homolog_20261018` — schema/state `cf_user_guards_v1` + 3 guards reais e triggers.
+> 3. `cultivofarm_f1_partner_users_additive_homolog_20261018` — F1 aditiva (6 colunas novas, 2 triggers).
+>
+> **Testes T1–T6 executados em homolog** (blocos DO transacionais de
+> `vinculos-b2b-f1-testes-20261018.sql`): cada chamada concluiu **sem exception**
+> e com **ROLLBACK** — nenhum dado persistido. Auditoria pós-testes confirmou:
+> - `partner_users` segue com **0 linhas** (base homolog sem vínculos);
+> - **5 triggers** presentes: `a00_cf_user_gate`, `a00_cf_user_no_truncate`,
+>   `a10_partner_users_derive_tenant`, `a20_partner_users_bump_version`, `z90_cf_touch_profile`;
+> - constraints `revocation_coherence`, `validity_window`, `version_positive` ativas;
+> - `UNIQUE(user_id)` **preservada**;
+> - índices `idx_partner_users_tenant_id` e `idx_partner_users_active` presentes;
+> - **0 vínculos órfãos**.
+>
+> **Limites desta evidência (não extrapolar):**
+> - T1–T6 foram executados com role privilegiada em blocos DO — **NÃO** são prova de
+>   RLS em sessões reais de usuários (Admin A/B, parceiro, produtor). Teste A/B de
+>   RLS **não realizado** e segue **obrigatório** antes de qualquer cutover.
+> - Homolog continua sem espelhar produção: **279 vs 286 tabelas**, 0 vs 2 vínculos,
+>   e **sem guards em `profiles`/`user_roles`/`user_clientes`** (produção tem).
+> - Homologação global **não declarada**; F2 (mudanças em policies) permanece
+>   **BLOQUEADA** até paridade de segurança e teste A/B.
 
 > **REVISÃO 2026-10-18 (auditoria externa):** homolog NÃO possui
 > `partner_accounts.commercial_owner_organization_id` — a F1 v1 falharia em
