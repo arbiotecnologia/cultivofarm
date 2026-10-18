@@ -161,12 +161,25 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       // Se o servidor informou orçamento (server_remaining_ms), desconta o
       // round-trip monotônico completo e nunca excede leaseMs nem o boundary
       // do servidor; orçamento já consumido pelo RTT expira imediatamente.
-      const rtt = deps.now() - requestStart;
-      const effectiveLeaseMs = typeof result.server_remaining_ms === "number"
-        ? Math.min(leaseMs, result.server_remaining_ms - rtt)
-        : leaseMs;
+      // Contrato v6: campo ausente/null => apenas leaseMs local. Valor
+      // presente porém não numérico finito ou negativo => resposta inválida,
+      // falha fechada (não silencia para lease local).
+      const budget = result.server_remaining_ms;
+      let effectiveLeaseMs: number;
+      if (budget === undefined || budget === null) {
+        effectiveLeaseMs = leaseMs;
+      } else if (typeof budget !== "number" || !Number.isFinite(budget) || budget < 0) {
+        expire("error"); return;
+      } else {
+        effectiveLeaseMs = Math.min(leaseMs, budget - (deps.now() - requestStart));
+      }
       if (effectiveLeaseMs <= 0) { expire("timeout"); return; }
-      leaseUntil = requestStart + effectiveLeaseMs;
+      // O deadline precisa ser finito E estritamente futuro ANTES de qualquer
+      // transição para valid: RTT alto pode consumir o orçamento mesmo com
+      // effectiveLeaseMs > 0 (ex.: budget 7, RTT 4 => deadline em t+3 < now).
+      const deadline = requestStart + effectiveLeaseMs;
+      if (!Number.isFinite(deadline) || deadline <= deps.now()) { expire("timeout"); return; }
+      leaseUntil = deadline;
       requestUntil = 0;
       const changed = fingerprint !== null && fingerprint !== result.fingerprint;
       fingerprint = result.fingerprint;
