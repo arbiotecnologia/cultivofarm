@@ -65,4 +65,21 @@ describe("attachment authorization at completion, without Auth rerender", () => 
     expect(create).not.toHaveBeenCalled(); expect(h.result.current.urls).toEqual({});
     h.unmount(); create.mockRestore(); l.monitor.stop();
   });
+  it("does not retain an opener response after deadline or download a previously prepared Blob", async () => {
+    const l = await lease(); let resolve: (b: Blob) => void = () => {};
+    state.download.mockImplementation(() => new Promise<Blob>(r => { resolve = r; }));
+    const h = renderHook(() => useAuthenticatedAttachmentOpener("file", "bucket"));
+    let request: Promise<void> | undefined;
+    act(() => { request = h.result.current.open("file.pdf", vi.fn()); });
+    l.expire(); await act(async () => { resolve(new Blob(["late"])); await request; });
+    expect(URL.createObjectURL).not.toHaveBeenCalled(); expect(h.result.current.urls).toEqual({});
+    l.monitor.revalidate(); await act(async () => { await Promise.resolve(); });
+    state.download.mockResolvedValue(new Blob(["prepared"]));
+    await act(async () => h.result.current.open("file.pdf", vi.fn()));
+    expect(h.result.current.urls["file.pdf"]).toBe("blob:local");
+    l.monitor.expireNow("offline");
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click");
+    h.result.current.download("file.pdf", "file.pdf"); expect(click).not.toHaveBeenCalled();
+    h.unmount(); click.mockRestore(); l.monitor.stop();
+  });
 });
