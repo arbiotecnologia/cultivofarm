@@ -96,7 +96,7 @@ ALTER TABLE partner_users DROP CONSTRAINT partner_users_user_id_key;
 INSERT INTO partner_users VALUES(auth.uid(),'22222222-2222-4222-8222-222222222222','tecnico','cccccccc-cccc-4ccc-8ccc-cccccccccccc',now(),NULL);
 SELECT local_assert('multiple unrevoked fail closed',platform_private.b2b_commercial_context() IS NULL);
 UPDATE partner_users SET revoked_at=now() WHERE partner_id='22222222-2222-4222-8222-222222222222';
-SELECT local_assert('one plus revoked history',platform_private.b2b_commercial_context()->>'mode'='legacy_partner_tenant');
+SELECT local_assert('known legacy scope still counts revoked history',platform_private.b2b_commercial_context() IS NULL);
 INSERT INTO user_roles VALUES(auth.uid(),'administrador');
 SELECT local_assert('mixed role denied',platform_private.b2b_commercial_context() IS NULL);
 DELETE FROM public.user_roles WHERE user_id=auth.uid() AND role='administrador';
