@@ -74,3 +74,14 @@ de outras colunas/tabelas precisa de preflight próprio.
   (T5 agora falha explicitamente se ausente — a falha é o detector).
 - Execução real de PRÉ-F1/F1/T1–T7 em homolog — aguarda auditoria independente
   e autorização; nada foi aplicado por este agente.
+
+## 7. Atualização PRÉ-F1.2 (mesma data, auditoria externa)
+
+Auditor externo confirmou: homolog tem **0 triggers** em `partner_users` e
+**não tem** o schema `cf_user_guards_v1`. PRÉ-F1 v1 (só a coluna) é insuficiente.
+Ver `vinculos-b2b-pref1-2-guards-paridade-20261018.review.md`: inventário
+read-only completo dos guards em produção (6 funções, tabela `state`, triggers
+em 5 tabelas, grants fechados), proposta de reconciliação em passos isolados
+(P0–P5) com backup/checkpoints/rollback, e validação local em Postgres 17.9
+descartável: PRÉ-F1, F1, T1–T7, teste negativo (F1 sem PRÉ-F1 aborta) e
+rollback — todos PASS. Ordem corrigida: **PRÉ-F1 → PRÉ-F1.2 → F1 → T1–T7**.
