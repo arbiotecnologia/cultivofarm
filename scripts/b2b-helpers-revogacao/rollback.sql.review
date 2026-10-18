@@ -1,30 +1,68 @@
--- ROLLBACK — Restaura os 3 helpers aos corpos live revisados (pré-candidata).
--- Fail-closed: aborta se o hash ATUAL não for o pré (ou seja, se a candidata
--- não foi aplicada ou se houve drift posterior). Não toca em ACL/owner.
+-- ROLLBACK v2 — Restaura os 3 helpers aos corpos live pré-candidata.
+-- Fail-closed ESTRITO: exige o hash POST EXATO de CADA função ANTES de
+-- qualquer alteração (drift, ausência ou corpo alheio => aborta sem tocar).
+-- Após restaurar, verifica os hashes PRE EXATOS + ACL/owner/search_path.
+-- Transação atômica com lock_timeout/statement_timeout.
 --
--- Hashes esperados no retorno (pós-rollback = pré-candidata):
+-- Hashes POST exigidos antes (estado esperado = candidata v2 aplicada):
+--   public.get_b2b_user_role_for_partner(uuid,uuid)  27efcdaf40dc0e5287abd4cf418a6571
+--   public.is_valid_b2b_partner_user(uuid,uuid)      01ca51531eea52aab65c9d8138dd88d3
+--   platform_private.b2b_actor_scope(uuid)           09b184da91c59f8b1f9be72217f8c37e
+-- Hashes PRE esperados após (live revisado):
 --   public.get_b2b_user_role_for_partner(uuid,uuid)  b2596473d00151ef41b4b2ce82e044cb
 --   public.is_valid_b2b_partner_user(uuid,uuid)      7b17274fb6dce728741a2a9c77710a76
 --   platform_private.b2b_actor_scope(uuid)           c85cb35201682c3c86b9a327d24c8482
 
 BEGIN;
 
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+
+-- Guarda PRÉ-ROLLBACK: hash POST EXATO + ACL + owner + search_path de cada
+-- função. Qualquer divergência (drift, ausência, código alheio) aborta SEM
+-- escrever — o rollback NUNCA sobrescreve corpo que não seja o POST exato.
 DO $$
 DECLARE
-  v_pre CONSTANT jsonb := jsonb_build_object(
-    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'b2596473d00151ef41b4b2ce82e044cb',
-    'public.is_valid_b2b_partner_user(uuid,uuid)',    '7b17274fb6dce728741a2a9c77710a76',
-    'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
+  v_post CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', '27efcdaf40dc0e5287abd4cf418a6571',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    '01ca51531eea52aab65c9d8138dd88d3',
+    'platform_private.b2b_actor_scope(uuid)',         '09b184da91c59f8b1f9be72217f8c37e'
+  );
+  v_acl CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'platform_private.b2b_actor_scope(uuid)',         'postgres=X/postgres,service_role=X/postgres'
+  );
+  v_cfg CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'search_path=public',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'search_path=public',
+    'platform_private.b2b_actor_scope(uuid)',         'search_path=public, pg_temp'
   );
   v_sig text;
-  v_md5 text;
+  v_md5 text; v_acl_now text; v_cfg_now text; v_owner text;
 BEGIN
-  FOR v_sig IN SELECT jsonb_object_keys(v_pre) LOOP
-    SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5
-      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  FOR v_sig IN SELECT jsonb_object_keys(v_post) LOOP
+    SELECT md5(pg_get_functiondef(p.oid)),
+           (SELECT string_agg(a::text, ',' ORDER BY a::text) FROM unnest(p.proacl) a),
+           (SELECT string_agg(c, ',' ORDER BY c) FROM unnest(p.proconfig) c),
+           r.rolname
+      INTO v_md5, v_acl_now, v_cfg_now, v_owner
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      JOIN pg_roles r ON r.oid = p.proowner
      WHERE p.oid = to_regprocedure(v_sig);
-    IF v_md5 IS NOT DISTINCT FROM (v_pre ->> v_sig) THEN
-      RAISE EXCEPTION 'ROLLBACK RECUSADO: % já está no corpo pré-candidata (nada a reverter) ou drift detectado. Abortando.', v_sig;
+    IF v_md5 IS DISTINCT FROM (v_post ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK RECUSADO: % não está no hash POST exato da candidata v2 (esperado %, atual %). Drift/ausência/corpo alheio — abortando sem escrever.',
+        v_sig, v_post ->> v_sig, COALESCE(v_md5, '<ausente>');
+    END IF;
+    IF v_acl_now IS DISTINCT FROM (v_acl ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK RECUSADO: ACL de % diverge (% != %). Abortando.', v_sig, v_acl_now, v_acl ->> v_sig;
+    END IF;
+    IF v_cfg_now IS DISTINCT FROM (v_cfg ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK RECUSADO: search_path de % diverge (% != %). Abortando.', v_sig, v_cfg_now, v_cfg ->> v_sig;
+    END IF;
+    IF v_owner IS DISTINCT FROM 'postgres' THEN
+      RAISE EXCEPTION 'ROLLBACK RECUSADO: owner de % diverge (%). Abortando.', v_sig, v_owner;
     END IF;
   END LOOP;
 END $$;
@@ -89,7 +127,8 @@ AS $function$
          EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
 $function$;
 
--- Confere retorno aos hashes pré-candidata.
+-- Verificação PÓS-ROLLBACK: hash PRE EXATO + ACL/owner/search_path de cada
+-- função. Qualquer divergência => exceção => transação aborta.
 DO $$
 DECLARE
   v_pre CONSTANT jsonb := jsonb_build_object(
@@ -97,18 +136,44 @@ DECLARE
     'public.is_valid_b2b_partner_user(uuid,uuid)',    '7b17274fb6dce728741a2a9c77710a76',
     'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
   );
+  v_acl CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'platform_private.b2b_actor_scope(uuid)',         'postgres=X/postgres,service_role=X/postgres'
+  );
+  v_cfg CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'search_path=public',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'search_path=public',
+    'platform_private.b2b_actor_scope(uuid)',         'search_path=public, pg_temp'
+  );
   v_sig text;
-  v_md5 text;
+  v_md5 text; v_acl_now text; v_cfg_now text; v_owner text;
 BEGIN
   FOR v_sig IN SELECT jsonb_object_keys(v_pre) LOOP
-    SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5
-      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    SELECT md5(pg_get_functiondef(p.oid)),
+           (SELECT string_agg(a::text, ',' ORDER BY a::text) FROM unnest(p.proacl) a),
+           (SELECT string_agg(c, ',' ORDER BY c) FROM unnest(p.proconfig) c),
+           r.rolname
+      INTO v_md5, v_acl_now, v_cfg_now, v_owner
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      JOIN pg_roles r ON r.oid = p.proowner
      WHERE p.oid = to_regprocedure(v_sig);
     IF v_md5 IS DISTINCT FROM (v_pre ->> v_sig) THEN
-      RAISE EXCEPTION 'ROLLBACK FALHOU: hash de % não retornou ao pré (atual %)', v_sig, COALESCE(v_md5, '<ausente>');
+      RAISE EXCEPTION 'ROLLBACK FALHOU: hash de % não retornou ao PRE exato (esperado %, atual %).',
+        v_sig, v_pre ->> v_sig, COALESCE(v_md5, '<ausente>');
+    END IF;
+    IF v_acl_now IS DISTINCT FROM (v_acl ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK FALHOU: ACL de % diverge (% != %).', v_sig, v_acl_now, v_acl ->> v_sig;
+    END IF;
+    IF v_cfg_now IS DISTINCT FROM (v_cfg ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK FALHOU: search_path de % diverge (% != %).', v_sig, v_cfg_now, v_cfg ->> v_sig;
+    END IF;
+    IF v_owner IS DISTINCT FROM 'postgres' THEN
+      RAISE EXCEPTION 'ROLLBACK FALHOU: owner de % diverge (%).', v_sig, v_owner;
     END IF;
   END LOOP;
-  RAISE NOTICE 'ROLLBACK OK: 3 helpers restaurados aos hashes pré-candidata';
+  RAISE NOTICE 'ROLLBACK OK: 3 helpers restaurados aos hashes PRE exatos';
 END $$;
 
 COMMIT;
