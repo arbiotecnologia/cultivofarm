@@ -23,3 +23,8 @@
 - [x] Comparar modelos e documentar preferência PUC canônica/PTC transitória, 17 critérios, backlog/gates e SQL aditivo bloqueado.
 - [x] Revisar preflight/rollback; 14 checks estruturais locais, 4 testes focados em duas rodadas e lint novo exit 0; sem escrita hosted/prova RLS.
 - [ ] Instalação futura: depende de aceite da semântica, contrato ator/alvo e provas hospedadas A/B; não autorizada neste turno.
+
+## F2-B3.1 — contrato em etapas sem alterar grants
+- [ ] Reconfirmar baseline read-only, writers/readers, cascades e limites de origem server-owned.
+- [ ] Preparar metadata neutra sem FK/uso autorizador, preflight, rollback e decisão B3.2.
+- [ ] Executar testes PostgreSQL descartável de esquema, parent delete, colisões e preservação; registrar limites e blockers.
