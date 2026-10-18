@@ -61,7 +61,7 @@ beforeEach(()=>{vi.useFakeTimers();s.gate=true;s.roles=['cliente_produtor'];s.or
 afterEach(()=>{cleanup();vi.useRealTimers();});
 describe('produtor sessão aberta candidata',()=>{
  it.each(['/app','/portal'])('%s pending inicial/valid/revoke/retry/restore mantém URL e remove contagens',async path=>{
-  let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup(path);await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Talhões')).toBeNull();expect(screen.queryByText('redirect indevido')).toBeNull();resolve?.(O);await tick();expect(screen.getByTestId('selected').textContent).toBe(C);expect(screen.getByText('Talhões')).toBeTruthy();
+  let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup(path);await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Talhões')).toBeNull();expect(screen.queryByText('redirect indevido')).toBeNull();resolve?.(O);await tick();expect(screen.getByTestId('selected').textContent).toBe(C);expect(screen.getByText('Talhões')).toBeTruthy();expect(screen.getByText('Talhões').closest('div')?.textContent).toContain('2');
   s.ids=[];await tick(10000);paused(path,qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(path,qc);
   s.ids=[C];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByTestId('selected').textContent).toBe(C);expect(screen.getByTestId('url').textContent).toBe(path);
  });
