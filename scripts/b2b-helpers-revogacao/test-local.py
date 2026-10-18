@@ -218,7 +218,7 @@ PRE = {
 }
 POST = {
  'public.get_b2b_user_role_for_partner(uuid,uuid)': '27efcdaf40dc0e5287abd4cf418a6571',
- 'public.is_valid_b2b_partner_user(uuid,uuid)': '01ca51531eea52aab65c9d8138dd88d3',
+ 'public.is_valid_b2b_partner_user(uuid,uuid)': '93520101987e599280460d3dadcf3a9f',
  'platform_private.b2b_actor_scope(uuid)': '09b184da91c59f8b1f9be72217f8c37e',
 }
 
