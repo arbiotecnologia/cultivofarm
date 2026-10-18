@@ -10,3 +10,9 @@
 - [x] Preparar baseline, matriz e candidatas B1a/B1b com preflight e rollback; B1a somente gate NO-GO por contrato não provado.
 - [x] Executar regressões no PostgreSQL descartável e registrar limites e próximo gate (35 asserts novos, 2 testes Vitest passaram).
 - [ ] Liberar candidata instalável: bloqueada por contrato de gestão/cleanup e provas RLS A/B/legado hospedadas; exige próximo recorte e autorização independente.
+
+## F2-B2 — projeção técnica contida
+- [ ] Auditar sync/validação, writers, políticas e leitores no ref canônico, sem escritas.
+- [ ] Preparar correção mínima revisável, baseline, rollback e preflight sem reabrir PUC.
+- [ ] Testar projeção, resíduos, repetição, isolamento e concorrência em PostgreSQL descartável.
+- [ ] Registrar efeitos/limites e PASS/NO-GO por contrato, sem execução hosted/publicação.
