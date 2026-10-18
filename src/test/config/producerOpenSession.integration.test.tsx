@@ -49,7 +49,7 @@ import PortalDashboard from '@/pages/portal/PortalDashboard';
 import { usePortalCliente } from '@/hooks/usePortalCliente';
 import { producerContextProbe } from '@/lib/authz/producerContextProbe';
 function Location(){return <output data-testid="url">{useLocation().pathname}</output>;}
-function Selection(){const c=usePortalCliente();const a=useAuth();return <><output data-testid="selected">{c.clienteId}</output><output data-testid="clients">{c.clientes.map(c=>c.id).join(',')}</output><button onClick={()=>c.setClienteAtivo(D)}>Selecionar B</button><button onClick={()=>a.revalidateAuthz()}>Revalidar</button></>;}
+function Selection(){const c=usePortalCliente();const a=useAuth();return <><output data-testid="epoch">{a.authzEpoch}</output><output data-testid="selected">{c.clienteId}</output><output data-testid="clients">{c.clientes.map(c=>c.id).join(',')}</output><button onClick={()=>c.setClienteAtivo(D)}>Selecionar B</button><button onClick={()=>a.revalidateAuthz()}>Revalidar</button></>;}
 async function tick(ms=0){await act(async()=>{await vi.advanceTimersByTimeAsync(ms);});for(let i=0;i<10;i++)await act(async()=>{await vi.advanceTimersByTimeAsync(1);});}
 function setup(path:string){const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><Location/><Routes>
  <Route element={<AppPortalGuard/>}><Route element={<MobileLayout/>}><Route path="/app" element={<><Selection/><MobileDashboardProdutor/></>}/></Route></Route>
