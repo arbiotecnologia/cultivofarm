@@ -185,6 +185,10 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       fingerprint = result.fingerprint;
       setState("valid");
       armLeaseDeadline();
+      // O relógio pode cruzar o deadline entre a pré-checagem e o arm do
+      // timer (armLeaseDeadline expira nesse caso): nenhum callback de época
+      // nem poll pode sair após a expiração.
+      if (state !== "valid" || generation !== myGen) return;
       if (changed) deps.onEpochChange(result);
       schedulePoll();
     } catch {

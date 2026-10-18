@@ -385,14 +385,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const row = (Array.isArray(data) ? data[0] : data) as
           | { eligible?: boolean; fingerprint?: string | null; server_remaining_ms?: number | null }
           | null;
+        // Orçamento do servidor (boundary temporal do vetor); o monitor
+        // desconta o RTT monotônico antes de conceder a lease.
+        // Contrato v6: ausente/null => lease local. Valor PRESENTE porém não
+        // numérico finito/nonnegative NÃO pode ser rebaixado para null aqui
+        // (isso concederia lease local indevida): repassa o valor bruto e o
+        // monitor falha fechado.
+        const rawBudget = row?.server_remaining_ms;
         return {
           eligible: row?.eligible === true,
           fingerprint: row?.fingerprint ?? null,
-          // Orçamento do servidor (boundary temporal do vetor); o monitor
-          // desconta o RTT monotônico antes de conceder a lease.
-          server_remaining_ms: typeof row?.server_remaining_ms === "number"
-            ? row.server_remaining_ms
-            : null,
+          server_remaining_ms: rawBudget === undefined || rawBudget === null
+            ? null
+            : (rawBudget as number),
         };
       },
       // Relógio MONOTÔNICO: mudanças de relógio do sistema não estendem lease.
