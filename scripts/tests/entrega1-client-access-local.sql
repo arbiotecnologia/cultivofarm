@@ -178,8 +178,14 @@ BEGIN
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-0000000000d1'), 'U4 parceiro inativo deve ser bloqueado';
   -- tenant divergente do owner bloqueado
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-0000000000a1'), 'U6 tenant divergente deve ser bloqueado';
-  -- legacy sem owner preservado
+  -- legacy sem owner preservado (tenant NULL)
   ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-0000000000c1'), 'U3 legacy sem owner deve continuar autorizado';
+  -- REVISÃO 1.1: legacy owner NULL com tenant divergente do cliente bloqueado; coerente preservado
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000007','20000000-0000-4000-8000-0000000000c1'), 'U7 legacy tenant B em cliente tenant A deve ser bloqueado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000008','20000000-0000-4000-8000-0000000000c1'), 'U8 legacy tenant coerente deve continuar autorizado';
+  -- técnico legacy: tenant divergente do cliente bloqueado; coerente preservado
+  ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000013','20000000-0000-4000-8000-0000000000c1'), 'T13 legacy tenant divergente deve ser bloqueado';
+  ASSERT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000014','20000000-0000-4000-8000-0000000000c1'), 'T14 legacy tenant coerente deve continuar autorizado';
   -- cross-tenant: U1 (parceiro A) não acessa cliente do parceiro B
   ASSERT NOT lab.can_user_access_cliente('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-0000000000b1'), 'cross-parceiro deve ser bloqueado';
   -- técnico com PUC ativa e vínculo vigente preservado
