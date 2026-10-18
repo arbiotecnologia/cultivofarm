@@ -1,10 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
 ## 18/10 23:15 — monitor/anexos, recorte crítico após 24b5f807
-- [ ] Inventariar UI/emissores/Storage e demonstrar falha de resposta tardia com lease consumida.
-- [ ] Corrigir somente o fluxo existente, testar adversários e preparar rollback guardado; preservar gates/B2B/Edges.
-- [ ] Executar provas PostgreSQL locais de writers/stamps/ordem/concorrência/ABA com corpos disponíveis e limites explícitos.
-- [ ] Registrar resultados, pré-requisitos e evidência independente pendente, sem hosted/publicação.
+- [x] Inventariar UI/emissores/Storage documentado e demonstrar falha de resposta tardia com lease consumida (4/4 testes falharam antes).
+- [x] Corrigir somente fences existentes, testar adversários e preparar artefatos/rollback SHA256 fail-closed; gates/B2B/Edges intactos.
+- [x] Executar PostgreSQL descartável com guards/candidata e writer histórico integrais: stamps, ordem, concorrência, ABA, snapshot/tempo e inversão 40P01.
+- [x] Registrar resultados e limites em docs/auditorias/monitor-anexos-criticos-20261018.review.md, sem hosted/publicação.
+- [ ] Certificação global/anexos: bloqueada por captura atual live de Storage/Edges/writers completos, closure de snapshot/tempo/locks e testes HTTP/JWT/sessões independentes; não autorizada nesta fase.
 
 - [x] Confirmar baseline e consumidores read-only no ref canônico.
 - [x] Preparar candidata escalar, rollback exato e pré-prova sem executar em banco hospedado.

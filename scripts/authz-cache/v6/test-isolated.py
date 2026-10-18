@@ -129,6 +129,22 @@ try:
  run(f"BEGIN;SET LOCAL lock_timeout='2s';UPDATE organizations SET status='ativa' WHERE id='{A}';COMMIT;")
  assert w1.wait()==0
  check(f"SELECT authz_revision={revision}::bigint+2 AND status='ativa' FROM organizations WHERE id='{A}'")
+ # Demonstrate snapshot boundary honestly: two SQL sessions, no reader mock.
+ reader=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ reader.stdin.write(f"SET application_name='v6_snapshot_reader';BEGIN ISOLATION LEVEL REPEATABLE READ;SELECT authz_revision FROM organizations WHERE id='{A}';SELECT pg_sleep(.5);SELECT authz_revision FROM organizations WHERE id='{A}';COMMIT;");reader.stdin.close()
+ deadline=time.monotonic()+3
+ while run("SELECT count(*)>0 FROM pg_stat_activity WHERE application_name='v6_snapshot_reader' AND wait_event='PgSleep'")!='t':
+  assert time.monotonic()<deadline;time.sleep(.01)
+ run(f"UPDATE organizations SET status='revoked' WHERE id='{A}';UPDATE organizations SET status='ativa' WHERE id='{A}';")
+ assert reader.wait()==0
+ values=[v for v in reader.stdout.read().splitlines() if v.strip()]
+ assert len(values)==2 and values[0]==values[1],values
+ count+=1
+ check(f"SELECT authz_revision={values[0]}::bigint+2 FROM organizations WHERE id='{A}'")
+ # now() validity in an old transaction is not wall-clock validity/TTL proof.
+ run("BEGIN;CREATE TEMP TABLE temporal_fixture(until timestamptz);INSERT INTO temporal_fixture VALUES(clock_timestamp()+interval '100ms');SELECT pg_sleep(.15);DO $$ BEGIN IF NOT (SELECT now()<until AND clock_timestamp()>until FROM temporal_fixture) THEN RAISE EXCEPTION 'temporal proof failed';END IF;END $$;ROLLBACK;")
+ count+=1
+ print('REPRODUCED snapshot-held ABA and transaction now() past wall-clock boundary; global reader contract still unproved.')
  # Full rollback stays closed, without extracting/skipping its first guard.
  snapshot=run("SELECT md5(pg_get_functiondef('authz_entity_v6.stamp()'::regprocedure))")
  run((HERE/'row-rollback.sql.review').read_text(encoding='utf-8'),'v6_rollback_requires_independent_gate_and_manifest_review')

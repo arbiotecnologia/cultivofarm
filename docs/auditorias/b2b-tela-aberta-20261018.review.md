@@ -2,6 +2,11 @@
 
 ## Resultado e escopo
 
+Adendo crítico 23:15 após baseline `24b5f807`: revisão/correção local de fences
+de anexos e provas PostgreSQL em
+`docs/auditorias/monitor-anexos-criticos-20261018.review.md`. Não altera o aceite
+publicado abaixo, monitor, flags, Edges ou contratos globais; não é nova homologação.
+
 O monitor EXISTENTE no AuthProvider agora admite rollout **somente B2B exclusivo**
 (`parceiro_b2b` ou `parceiro_b2b_tecnico`). Usa a RPC EXISTENTE
 `get_my_commercial_partner_context` pelo cliente canônico. Não instala fingerprint,
