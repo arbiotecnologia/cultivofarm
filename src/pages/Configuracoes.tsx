@@ -154,7 +154,7 @@ export default function Configuracoes() {
   const [pagina, setPagina] = useState(1);
 
   const {
-    data: allUsers = { items: [] as any[], total: 0 },
+    data: allUsers = { items: [] as UsuarioListado[], total: 0 },
     isLoading: usersLoading,
     isError: usersError,
     isFetching: usersFetching,
@@ -205,7 +205,7 @@ export default function Configuracoes() {
     !["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"].includes(candidate),
   );
   function toggleRole(roles: string[], r: string, on: boolean): string[] {
-    let next = new Set(roles);
+    const next = new Set(roles);
     if (on) {
       next.add(r);
     } else {
