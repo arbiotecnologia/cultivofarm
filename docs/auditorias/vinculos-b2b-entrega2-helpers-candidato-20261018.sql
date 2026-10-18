@@ -130,7 +130,8 @@ BEGIN
      OR position('CASE WHEN count(*) = 1 THEN (array_agg(pu.papel))[1]' IN d2) = 0 THEN
     RAISE EXCEPTION 'entrega2_postcondition_get_partner_papel_failed';
   END IF;
-  IF position('pu.revoked_at IS NULL' IN d3) = 0 THEN
+  IF position('pu.revoked_at IS NULL' IN d3) = 0
+     OR position('link.tenant_id IS DISTINCT FROM owner' IN d3) = 0 THEN
     RAISE EXCEPTION 'entrega2_postcondition_b2b_commercial_context_failed';
   END IF;
 END
