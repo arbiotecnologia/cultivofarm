@@ -40,6 +40,7 @@ describe("attachment authorization at completion, without Auth rerender", () => 
     const l = await lease(); const h = renderHook(() => useStorageAccessScope("file"));
     const current = h.result.current.capture(); expect(current()).toBe(true);
     l.expire(); expect(l.monitor.state()).toBe("valid"); expect(current()).toBe(false);
+    expect(h.result.current.ready).toBe(false);
     h.unmount(); l.monitor.stop();
   });
   it("does not expose a signed URL completed after deadline", async () => {

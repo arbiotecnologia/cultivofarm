@@ -33,5 +33,5 @@ export function useStorageAccessScope(resource: string) {
     const epoch = state.current.epoch;
     return () => ready && state.current.mounted && state.current.scope === scope && state.current.epoch === epoch && (check.current?.() ?? true);
   };
-  return { ready, scope, capture };
+  return { get ready() { return ready && (check.current?.() ?? true); }, scope, capture };
 }

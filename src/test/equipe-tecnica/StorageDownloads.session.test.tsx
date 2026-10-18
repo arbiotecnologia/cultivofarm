@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null,
   profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
-  roles: ["administrador"], role: "administrador", loading: false }));
+  roles: ["administrador"], role: "administrador", loading: false, checkAuthzAccess: (): boolean => true }));
 const mocks = vi.hoisted(() => ({ sign: vi.fn(), query: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
@@ -25,6 +25,7 @@ const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arqui
 beforeEach(() => {
   auth.user = { id: "A" }; auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
   auth.roles = ["administrador"]; auth.loading = false;
+  auth.checkAuthzAccess = () => true;
   mocks.query.mockReset().mockResolvedValue({ data: [doc], error: null }); mocks.sign.mockReset();
 });
 describe("delayed Storage downloads", () => {
@@ -35,6 +36,22 @@ describe("delayed Storage downloads", () => {
     ["delivery", () => <ConfirmacaoEntregaPanel entrega={{ id: "E", status: "cancelada" }} />],
   ] as const;
   for (const [name, component] of views) {
+    it(`${name}: does not open delayed signed URL after lease expires without rerender`, async () => {
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const h = render(<MemoryRouter><QueryClientProvider client={client}>{component()}</QueryClientProvider></MemoryRouter>);
+      await screen.findByText("PRIVATE_DOC");
+      let resolve: (v: unknown) => void = () => {};
+      mocks.sign.mockImplementation(() => new Promise(r => { resolve = r; }));
+      const open = vi.spyOn(window, "open").mockImplementation(() => null);
+      const download = screen.getAllByRole("button").find(b => b.querySelector("svg.lucide-download"));
+      if (!download) throw new Error("download missing");
+      fireEvent.click(download); await waitFor(() => expect(mocks.sign).toHaveBeenCalledTimes(1));
+      auth.checkAuthzAccess = () => false; // callback reads current monitor, no Auth rerender
+      await act(async () => resolve({ data: { signedUrl: "https://example.invalid/late" }, error: null }));
+      expect(open).not.toHaveBeenCalled();
+      fireEvent.click(download); expect(mocks.sign).toHaveBeenCalledTimes(1);
+      open.mockRestore(); h.unmount(); client.clear();
+    });
     for (const change of ["tenant", "logout", "roles", "inactive"] as const) {
       it(`${name}: discards URL and document on ${change}`, async () => {
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
