@@ -158,20 +158,27 @@ export default function Configuracoes() {
     isError: usersError,
     isFetching: usersFetching,
     refetch: refetchUsers,
+    error: usersErrorDetail,
   } = useQuery({
     queryKey: ["admin-users", profile?.organization_id, user?.id, debouncedSearchTerm, filterRole, filterStatus, pagina],
-    enabled: isAdmin,
+    enabled: isAdmin && !!profile?.organization_id && !!user?.id,
+    // Mantém a página anterior visível durante a recarga (mesmo escopo identidade+tenant):
+    // a lista nunca "some" após ativar/desativar um usuário.
+    placeholderData: (prev, prevQuery) =>
+      prevQuery && prevQuery.queryKey[1] === profile?.organization_id && prevQuery.queryKey[2] === user?.id ? prev : undefined,
     queryFn: async () => {
       // O contrato server-side retorna user_id e updated_at para edição otimista.
-      const { data, error } = await (supabase as any).rpc("tenant_admin_list_users", {
+      const { data, error } = await supabase.rpc("tenant_admin_list_users" as never, {
         p_search: debouncedSearchTerm.trim() || null,
         p_role: filterRole === "all" ? null : filterRole,
         p_active: filterStatus === "all" ? null : filterStatus === "ativo",
         p_offset: (pagina - 1) * USUARIOS_POR_PAGINA,
         p_limit: USUARIOS_POR_PAGINA,
-      });
+      } as never);
       if (error) throw error;
-      return { items: data?.items ?? [], total: Number(data?.total ?? 0) };
+      const payload = (data ?? {}) as { items?: unknown; total?: unknown };
+      if (!Array.isArray(payload.items)) throw new Error("Resposta da listagem de usuários inválida.");
+      return { items: payload.items as any[], total: Number(payload.total ?? 0) };
     },
   });
 
