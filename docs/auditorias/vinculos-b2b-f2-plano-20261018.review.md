@@ -4,6 +4,38 @@ Ref canônico: `swzpzcwiasxmjutrmvkm` (produção, intocada). Homolog: `vrlcdwml
 **Este arquivo é apenas desenho/checklist. Nenhum SQL de F2 foi escrito para execução,
 nenhuma alteração em produção ou homolog neste turno, nada publicado.**
 
+## 0.1 ATUALIZAÇÃO 2026-10-18 — F1 APLICADA EM PRODUÇÃO (revisão read-only de F2)
+
+**Fatos confirmados read-only por este agente em produção** (relatório completo: `vinculos-b2b-f1-pos-implantacao-prod-20261018.review.md`): migration `cultivofarm_f1_partner_users_additive_production_20261018` aplicada pelo auditor externo; 2 vínculos preservados, 1 com `tenant_id NULL` (parceiro sintético AUDIT-CF, owner NULL), 0 divergências, 0 revogados, version 1–2, 5 triggers, checks e `UNIQUE(user_id)` preservados. **B1 está RESOLVIDO.** Permanecem NO-GO: B2, B3, B4, B5.
+
+### Revisão read-only de F2 sobre produção (nada aplicado)
+
+**Foco 1 — Parceiro legado sem tenant (P1/B4).** O vínculo sem tenant pertence ao parceiro sintético AUDIT-CF (`commercial_owner_organization_id` NULL). **Não atribuir tenant sem prova e não cortar acesso real por suposição.** Fluxo de regularização proposto (decisão do proprietário, com trilha auditável):
+1. Confirmar a natureza do parceiro AUDIT-CF (sintético de auditoria × operacional).
+2. Se sintético/obsoleto: **arquivar** — revogar o vínculo via RPC de revogação da F2 (`revoked_at/revoked_by/revoke_reason`, bump `version`, auditoria), sem apagar histórico.
+3. Se operacional: **regularizar** — definir `commercial_owner_organization_id` do parceiro + backfill do `tenant_id` do vínculo em transação única auditada.
+4. Em ambos os caminhos, registrar ata (quem, quando, motivo, uuid mascarado).
+
+**Foco 2 — Helpers escalares `LIMIT 1`.** `get_user_partner_id()` e `get_partner_papel()` retornam 1 parceiro sem ordenação nem filtro de tenant. Com `UNIQUE(user_id)` vigente isso é deterministicamente seguro hoje (no máximo 1 vínculo por usuário), mas: (a) não filtram `revoked_at`/`tenant_id` — vínculo revogado ou sem tenant pode continuar autorizando; (b) qualquer evolução futura torna o `LIMIT 1` ambíguo. F2 deve: exigir vínculo **ativo** (`revoked_at IS NULL`) e, após decisão do item 2 da seção 2, `tenant_id IS NOT NULL`; criar variantes contextuais (`p_partner_id` explícito) antes de qualquer cutover.
+
+**Foco 3 — Política de isolamento.** As 29 policies dependentes dos helpers (inventário F0) herdam automaticamente a correção dos helpers — mas devem ser revalidadas par a par no teste A/B (tenant A × B, parceiro A × B, produtor, técnico, interno). Nenhuma policy será reescrita em F2 sem evidência do teste A/B.
+
+**Foco 4 — Prevenção de novos vínculos sem owner.** Gate da seção 2 (INSERT fail-closed `partner_without_tenant`, UPDATE `tenant_removal_forbidden`) passa a ser o **primeiro item executável de F2**, pois fecha a única via de criação de novos vínculos "sem território" enquanto P1 não é regularizado.
+
+**Policies/RPCs afetadas em F2 (mapa revisável):**
+- Funções: `get_user_partner_id()`, `get_partner_papel()` (correção fail-closed), `partner_users_derive_tenant()` (gate de tenant), novas RPCs de criar/revogar/regularizar vínculo.
+- Policies: as 29 que chamam os helpers (sem reescrita individual — herdam a correção; validação via A/B).
+- Áreas a revalidar pós-F2: pedidos B2B (`partner_orders*`), financeiro (`partner_financial_settings`, recebíveis), storage (F0: sem referência direta a `partner_users` — revalidar), fiscal (mock, sem ações externas).
+
+**Gates para abrir execução de F2 (todos obrigatórios):** B2 (paridade de guards em homolog — depende do bootstrap C0–C2), B3 (RLS A/B com sessões reais), B4 (P1 regularizado ou arquivado com ata), B5 (gate de tenant aprovado), autorização expressa do proprietário.
+
+**Prompt SQL revisável por fases (a gerar somente após gates):**
+- **F2-a:** gate de tenant no trigger de derivação (INSERT/UPDATE fail-closed) + testes transacionais.
+- **F2-b:** helpers fail-closed (ativo + tenant) + variantes contextuais + testes.
+- **F2-c:** RPCs de gestão de vínculo (criar/revogar/regularizar) + histórico append-only com RLS fechada.
+- **F2-d:** invalidação imediata pós-revogação + alinhamento de cache (lease 15s).
+Cada fase com rollback próprio, revisão independente e aplicação primeiro em homolog.
+
 ## 0. Estado de entrada (fatos hospedados em homolog, reportados pelo auditor externo)
 
 - PRÉ-F1, PRÉ-F1.2 e F1 aplicadas em homolog com `success: true`; T1–T6 transacionais

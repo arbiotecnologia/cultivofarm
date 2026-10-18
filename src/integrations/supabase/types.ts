@@ -14902,21 +14902,39 @@ export type Database = {
           id: string
           papel: string
           partner_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          tenant_id: string | null
           user_id: string
+          valid_from: string
+          version: number
         }
         Insert: {
           created_at?: string
           id?: string
           papel?: string
           partner_id: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          tenant_id?: string | null
           user_id: string
+          valid_from?: string
+          version?: number
         }
         Update: {
           created_at?: string
           id?: string
           papel?: string
           partner_id?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          tenant_id?: string | null
           user_id?: string
+          valid_from?: string
+          version?: number
         }
         Relationships: [
           {
