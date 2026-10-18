@@ -47,8 +47,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
   (nunca `LIMIT 1` aleatório; `min(uuid)` não existe em PostgreSQL — corrigido
   durante os testes locais).
 - **Fase B — `get_partner_papel(uuid)`:** mesma regra para o alvo parametrizado.
-- **Fase C — `b2b_commercial_context()`:** adiciona `pu.revoked_at IS NULL` à
-  contagem e à seleção do vínculo; demais guardas preservadas.
+- **Fase C — `b2b_commercial_context()` (rev 2.1, pós-revisão externa):**
+  adiciona `pu.revoked_at IS NULL` à contagem e à seleção do vínculo **e fecha a
+  lacuna de coerência de tenant apontada pela revisão externa**: o `SELECT` do
+  vínculo passa a trazer `pu.tenant_id` e, imediatamente após o guarda de owner,
+  exige `link.tenant_id IS NOT NULL AND link.tenant_id = owner`. Antes, um
+  vínculo com tenant alterado continuava autorizando o portal enquanto os
+  escalares já negariam — divergência de regra entre portal e helpers.
+  Semântica `legacy_partner_tenant` preservada: owner é o owner **comercial** do
+  parceiro e pode divergir da `organization_id` do ator; exige-se
+  `tenant_id = owner comercial`, nunca `tenant_id = org do ator`. Contagem 0/2+
+  considera todos os vínculos não revogados (fail-closed).
 - Guards de hash anti-drift dos 3 corpos baseline; pós-condições read-only;
   assinaturas, ACL, SECURITY DEFINER e search_path preservados.
 
