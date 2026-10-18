@@ -383,9 +383,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = (await supabase.rpc("get_my_authz_fingerprint" as never)) as { data: unknown; error: Error | null };
         if (error) throw error;
         const row = (Array.isArray(data) ? data[0] : data) as
-          | { eligible?: boolean; fingerprint?: string | null }
+          | { eligible?: boolean; fingerprint?: string | null; server_remaining_ms?: number | null }
           | null;
-        return { eligible: row?.eligible === true, fingerprint: row?.fingerprint ?? null };
+        return {
+          eligible: row?.eligible === true,
+          fingerprint: row?.fingerprint ?? null,
+          // Orçamento do servidor (boundary temporal do vetor); o monitor
+          // desconta o RTT monotônico antes de conceder a lease.
+          server_remaining_ms: typeof row?.server_remaining_ms === "number"
+            ? row.server_remaining_ms
+            : null,
+        };
       },
       // Relógio MONOTÔNICO: mudanças de relógio do sistema não estendem lease.
       now: () => performance.now(),

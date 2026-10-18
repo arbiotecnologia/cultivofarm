@@ -303,4 +303,80 @@ describe("authzEpochMonitor", () => {
     expect(monitor.state()).toBe("expired");
     expect(deps.onExpire).toHaveBeenCalledWith("ineligible");
   });
+
+  it("server_remaining_ms menor que leaseMs encurta a autorização (boundary do servidor)", async () => {
+    const { monitor, fetcher, advance } = setup();
+    fetcher.mockResolvedValue({ eligible: true, fingerprint: "A", server_remaining_ms: 5_000 });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.checkAccess()).toBe(true);
+    await advance(5_001); // boundary do servidor vence antes da lease local de 15s
+    expect(monitor.state()).toBe("expired");
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("server_remaining_ms consumido pelo RTT monotônico expira imediatamente", async () => {
+    let clock = 0;
+    let resolveFetch!: (v: AuthzFingerprintResult) => void;
+    const { monitor } = setup({
+      now: () => clock,
+      fetcher: () => new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }),
+    });
+    monitor.start();
+    clock = 4_000; // RTT de 4s em voo
+    resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 3_000 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("expired");
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("server_remaining_ms desconta RTT: resposta em t4 com budget 15s autoriza só até t15", async () => {
+    let clock = 0;
+    let resolveFetch!: (v: AuthzFingerprintResult) => void;
+    const { monitor } = setup({
+      now: () => clock,
+      fetcher: () => new Promise<AuthzFingerprintResult>((res) => { resolveFetch = res; }),
+    });
+    monitor.start();
+    clock = 4_000;
+    resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 15_000 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.checkAccess()).toBe(true);
+    clock = 14_999;
+    expect(monitor.checkAccess()).toBe(true);
+    clock = 15_000; // requestStart(0) + (15s - 4s RTT) = 11s... mas boundary do servidor é 15s
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("sem server_remaining_ms mantém lease local padrão de 15s", async () => {
+    const { monitor, fetcher, advance } = setup();
+    fetcher.mockResolvedValue({ eligible: true, fingerprint: "A", server_remaining_ms: null });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    await advance(14_999);
+    expect(monitor.checkAccess()).toBe(true);
+    await advance(2);
+    expect(monitor.checkAccess()).toBe(false);
+  });
+
+  it("revogação e restauração: ineligible fecha, fingerprint novo reabre após revalidate", async () => {
+    const { monitor, fetcher, deps, advance } = setup();
+    fetcher.mockResolvedValueOnce({ eligible: true, fingerprint: "A", server_remaining_ms: 15_000 });
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.checkAccess()).toBe(true);
+    // Revogação no servidor: próximo poll retorna ineligible.
+    fetcher.mockResolvedValueOnce({ eligible: false, fingerprint: null });
+    await advance(10_000);
+    expect(monitor.state()).toBe("expired");
+    expect(deps.onExpire).toHaveBeenCalledWith("ineligible");
+    expect(monitor.checkAccess()).toBe(false);
+    // Restauração: revalidate explícito com fingerprint novo reabre.
+    fetcher.mockResolvedValueOnce({ eligible: true, fingerprint: "B", server_remaining_ms: 15_000 });
+    monitor.revalidate();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(monitor.state()).toBe("valid");
+    expect(monitor.currentFingerprint()).toBe("B");
+    expect(monitor.checkAccess()).toBe(true);
+  });
 });
