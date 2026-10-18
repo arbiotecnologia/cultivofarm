@@ -187,3 +187,25 @@ hosted, nenhuma publicação, PUC/PTC e contratos intocados.
 - Rollback manual documentado
   (`vinculos-b2b-entrega2-helpers-rollback-20261018.sql`) sob avaliação; não
   executado.
+
+## Adendo 2026-10-18 (rev monitor + evidência tenant B)
+
+### Evidência real limitada — tenant B (renato_cunha22@hotmail.com, 8f57c7dd-0557-4041-b401-7a00f7244626)
+- Listas de clientes e parceiros de B aparecem VAZIAS na sessão B; banco confirmou B com zero registros e A com 3 clientes / 4 parceiros (3 ativos). Ou seja: o vazio é ausência real de cadastro próprio de B, NÃO prova de isolamento negativo — falta um positivo de cadastro próprio de B.
+- Configurações/Usuários em B mostrou apenas 2 usuários de B (antes, admin A mostrava seus 6); cliente de A aberto na sessão B retornou "Cliente não encontrado". Escopo honesto: teste real limitado, NÃO matriz A/B completa.
+
+### Gate da foundation de cache de autorização — PERMANECE FECHADO
+- Consulta live independente confirma: `get_my_authz_fingerprint` e `get_my_authz_fingerprint_v6` NÃO existem no pg_proc de produção. `AUTHZ_CACHE_FOUNDATION_ENABLED` DEVE permanecer `false`.
+- Candidatos v6 existentes (somente review local, não instalados):
+  - Reader: `scripts/authz-cache/v6/reader.sql.review` (rollback: `scripts/authz-cache/v6/reader-rollback.sql.review`)
+  - Preflight monotônico dos writers: `scripts/authz-cache/writer-preflight-readonly.sql` (design: `scripts/authz-cache/monotonic.sql.review`, testes: `monotonic-tests.sql.review`, rollback: `monotonic-rollback.sql.review`)
+  - Contenção de anexos/buckets: `scripts/authz-cache/v6/attachments.sql.review` (+ `attachments-preflight.sql.review`, `attachments-rollback.sql.review`)
+
+### Correções do monitor (rev 2672bb6 → ajuste pós-revisão)
+- `src/lib/authz/authzEpochMonitor.ts`: `server_remaining_ms` ausente/null => lease local; presente porém não numérico finito ou negativo => falha fechada ("error"). Deadline calculado e verificado finito E estritamente futuro ANTES de transição para valid/fingerprint/epoch; sem poll nem callbacks após expiração (caso RTT 4s + budget 7s => deadline t+3 < now).
+- `src/test/config/authzEpochMonitor.test.ts`: novos casos NaN/Infinity/negativo, deadline consumido com effective>0, ausência de valid/epoch/poll após expiry. 28/28.
+- `src/test/config/authzFoundation.integration.test.tsx`: teste renomeado para "sessão única sem Broadcast" — monta UMA sessão; isolamento entre duas sessões reais NÃO é coberto.
+- Verificação: vitest 40/40 exit 0; `npx tsgo --noEmit` exit 0; build OK. Testes locais NÃO são prova de JWT/RLS real.
+
+### Riscos residuais
+- Monitor NÃO está ativo em produção (gate fechado); riscos de integração (fingerprint RPC ausente, preflight monotônico e contenção de anexos pendentes) NÃO estão homologados. Rollback local: reverter monitor, useAuth e testes.
