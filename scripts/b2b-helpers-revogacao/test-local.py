@@ -149,7 +149,8 @@ GRANT EXECUTE ON FUNCTION platform_private.b2b_actor_scope(uuid) TO service_role
 
 # ---- Identidades da fixture ----
 U_OK, U_TEC, U_REV, U_2LINK, U_0LINK, U_WRONGT, U_OWNERNULL, U_INACT, U_DEL, \
-U_BADPAPEL, U_2ROLES, U_INTERNAL, U_LEGACY, U_ORGINACT = [uid(i) for i in range(1, 15)]
+U_BADPAPEL, U_2ROLES, U_INTERNAL, U_LEGACY, U_ORGINACT, U_GESTOR_ADMIN, \
+U_LEGACYB2B = [uid(i) for i in range(1, 17)]
 P_OK, P_INACT, P_DEL, P_OWNERNULL, P_LEGACY = uid(20), uid(21), uid(22), uid(23), uid(24)
 ORG_OWNER, ORG_OTHER, ORG_LEGACY, ORG_INACT = uid(30), uid(31), uid(32), uid(33)
 
@@ -179,7 +180,9 @@ INSERT INTO public.profiles(user_id, organization_id, ativo) VALUES
   ('{U_2ROLES}', '{ORG_OWNER}', true),
   ('{U_INTERNAL}', '{ORG_OTHER}', true),
   ('{U_LEGACY}', '{ORG_LEGACY}', true),
-  ('{U_ORGINACT}', '{ORG_INACT}', true);
+  ('{U_ORGINACT}', '{ORG_INACT}', true),
+  ('{U_GESTOR_ADMIN}', '{ORG_OWNER}', true),
+  ('{U_LEGACYB2B}', '{ORG_LEGACY}', true);
 INSERT INTO public.user_roles(user_id, role) VALUES
   ('{U_OK}', 'parceiro_b2b'),
   ('{U_TEC}', 'parceiro_b2b_tecnico'),
@@ -194,7 +197,10 @@ INSERT INTO public.user_roles(user_id, role) VALUES
   ('{U_2ROLES}', 'parceiro_b2b_tecnico'),
   ('{U_INTERNAL}', 'administrador'),
   ('{U_LEGACY}', 'administrador'),
-  ('{U_ORGINACT}', 'parceiro_b2b');
+  ('{U_ORGINACT}', 'parceiro_b2b'),
+  ('{U_GESTOR_ADMIN}', 'parceiro_b2b'),
+  ('{U_GESTOR_ADMIN}', 'administrador'),
+  ('{U_LEGACYB2B}', 'parceiro_b2b');
 INSERT INTO public.partner_users(partner_id, user_id, papel, tenant_id, revoked_at) VALUES
   ('{P_OK}', '{U_OK}', 'gestor', '{ORG_OWNER}', NULL),
   ('{P_OK}', '{U_TEC}', 'tecnico', '{ORG_OWNER}', NULL),
@@ -207,7 +213,9 @@ INSERT INTO public.partner_users(partner_id, user_id, papel, tenant_id, revoked_
   ('{P_DEL}', '{U_DEL}', 'gestor', '{ORG_OWNER}', NULL),
   ('{P_OK}', '{U_BADPAPEL}', 'gestor', '{ORG_OWNER}', NULL),
   ('{P_OK}', '{U_2ROLES}', 'gestor', '{ORG_OWNER}', NULL),
-  ('{P_OK}', '{U_ORGINACT}', 'gestor', '{ORG_OWNER}', NULL);
+  ('{P_OK}', '{U_ORGINACT}', 'gestor', '{ORG_OWNER}', NULL),
+  ('{P_OK}', '{U_GESTOR_ADMIN}', 'gestor', '{ORG_OWNER}', NULL),
+  ('{P_LEGACY}', '{U_LEGACYB2B}', 'gestor', '{ORG_OWNER}', NULL);
 INSERT INTO public.entitlements_fixture(user_id) VALUES ('{U_OK}'), ('{U_TEC}');
 """
 
