@@ -809,20 +809,39 @@ export default function Configuracoes() {
                       <DialogTrigger asChild>
                         <Button><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
+                      <DialogContent className="max-w-md flex flex-col max-h-[85vh] gap-0 overflow-hidden p-0">
+                        <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
                           <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
+                          <div className="pt-2">
+                            <Label id="tipo-cadastro-label">Tipo de cadastro</Label>
+                            <div role="radiogroup" aria-labelledby="tipo-cadastro-label" className="grid grid-cols-3 gap-2 mt-1">
+                              {([
+                                { kind: "internal" as UserRegistrationKind, titulo: "Interno", descricao: "Equipe da empresa" },
+                                { kind: "b2b" as UserRegistrationKind, titulo: "Parceiro B2B", descricao: "Gestor do parceiro comercial" },
+                                { kind: "producer" as UserRegistrationKind, titulo: "Cliente Produtor", descricao: "Vinculado a clientes" },
+                              ]).map(opcao => (
+                                <button
+                                  key={opcao.kind}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={registrationKind === opcao.kind}
+                                  disabled={createUser.isPending}
+                                  onClick={() => changeKind(opcao.kind)}
+                                  className={`rounded-md border p-2 text-left transition-colors disabled:opacity-50 ${registrationKind === opcao.kind ? "border-primary bg-primary/10" : "border-border hover:bg-accent"}`}
+                                >
+                                  <span className="block text-sm font-medium">{opcao.titulo}</span>
+                                  <span className="block text-xs text-muted-foreground">{opcao.descricao}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </DialogHeader>
-                        <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+                        <div className="space-y-3 flex-1 overflow-y-auto px-6 py-4">
                           {createResumo && (
                             <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
                               {createResumo}
-                            </div>
+                             </div>
                           )}
-                          <div><Label>Tipo de cadastro</Label><Select value={registrationKind} onValueChange={value => changeKind(value as UserRegistrationKind)} disabled={createUser.isPending}>
-                            <SelectTrigger aria-label="Tipo de cadastro"><SelectValue /></SelectTrigger><SelectContent>
-                              <SelectItem value="internal">Interno</SelectItem><SelectItem value="b2b">Parceiro B2B — Gestor (cliente comercial da empresa)</SelectItem><SelectItem value="producer">Cliente Produtor</SelectItem>
-                            </SelectContent></Select></div>
                           {registrationKind !== "internal" && <>
 <p role="status" className="text-sm text-muted-foreground">{EXTERNAL_USER_ACTIVATION_REVIEWED
                               ? "Cadastro externo liberado: perfil externo exclusivo, vínculo obrigatório com um registro da própria empresa e primeiro acesso definido pelo titular. Técnico B2B permanece indisponível."
@@ -897,6 +916,8 @@ export default function Configuracoes() {
                             </>
                           )}
 
+                        </div>
+                        <div className="shrink-0 border-t px-6 py-4">
                           <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending || (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED)}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
                           </Button>
