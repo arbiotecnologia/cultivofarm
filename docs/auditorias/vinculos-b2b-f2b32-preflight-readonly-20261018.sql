@@ -119,3 +119,16 @@ SELECT relation::regclass::text,mode,granted,count(*) FROM pg_locks
 WHERE relation IN ('public.partner_user_clients'::regclass,'public.partner_technician_clients'::regclass)
 GROUP BY relation,mode,granted ORDER BY relation,mode,granted;
 SELECT count(*) AS prepared_transaction_count FROM pg_prepared_xacts;
+
+-- Default ACL NÃO se reaplica ao ADD COLUMN, mas rege objetos futuros/recriação de views.
+SELECT pg_get_userbyid(d.defaclrole) AS owner,n.nspname,d.defaclobjtype::text,d.defaclacl::text
+FROM pg_default_acl d LEFT JOIN pg_namespace n ON n.oid=d.defaclnamespace
+ORDER BY owner,n.nspname,d.defaclobjtype;
+-- Antes de rollback: recusar TODA dependência das colunas, inclusive automática.
+-- DROP COLUMN RESTRICT sozinho remove índices/constraints locais com dependência auto.
+SELECT a.attname,d.deptype::text,pg_describe_object(d.classid,d.objid,d.objsubid) AS dependent
+FROM pg_attribute a JOIN pg_depend d ON d.refclassid='pg_class'::regclass
+ AND d.refobjid=a.attrelid AND d.refobjsubid=a.attnum
+WHERE a.attrelid='public.partner_technician_clients'::regclass
+ AND a.attname IN ('grant_origin','source_puc_id') AND NOT a.attisdropped
+ORDER BY a.attname,dependent;
