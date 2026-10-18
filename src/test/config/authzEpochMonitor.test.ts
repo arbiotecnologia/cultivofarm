@@ -342,9 +342,10 @@ describe("authzEpochMonitor", () => {
     resolveFetch({ eligible: true, fingerprint: "A", server_remaining_ms: 15_000 });
     await vi.advanceTimersByTimeAsync(0);
     expect(monitor.checkAccess()).toBe(true);
-    clock = 14_999;
+    // lease concedida = requestStart(0) + min(15s, 15s - 4s RTT) = 11s
+    clock = 10_999;
     expect(monitor.checkAccess()).toBe(true);
-    clock = 15_000; // requestStart(0) + (15s - 4s RTT) = 11s... mas boundary do servidor é 15s
+    clock = 11_000;
     expect(monitor.checkAccess()).toBe(false);
   });
 
