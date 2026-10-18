@@ -80,8 +80,8 @@ try:
  def denied(label,u,sql,mutate=''):
   run(f"BEGIN;{fixtures}{mutate}SET LOCAL ROLE authenticated;SET LOCAL fixture.actor='{u}';{sql};ROLLBACK;",'row-level security');results.append(label)
  scenario('baseline synthetic admin FSF reads AR children despite hidden parent',UB,f"SELECT (SELECT count(*) FROM partner_orders WHERE id='{OA}')||':'||(SELECT count(*) FROM partner_order_messages WHERE id='{MA}')||':'||(SELECT count(*) FROM partner_order_message_attachments WHERE id='{AA}')",'0:1:1')
- run((HERE/'candidate.sql.review').read_text())
  run((HERE/'live-counters.sql.review').read_text())
+ run((HERE/'candidate.sql.review').read_text())
  # Candidata v2 inclui ALTER ... SECURITY INVOKER: o residual está fechado.
  # Pré-candidata o mesmo corpo DEFINER vazaria '1' para FSF; pós-candidata a
  # RLS filha + policies RESTRICTIVE contenham a contagem ao próprio tenant.
