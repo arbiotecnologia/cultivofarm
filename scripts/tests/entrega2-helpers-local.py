@@ -137,7 +137,7 @@ CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid, boolean) RETUR
 def extract_bodies(candidate_sql: str) -> list[str]:
     """Extrai os 3 CREATE OR REPLACE FUNCTION reais da candidata (sem os guards)."""
     bodies = re.findall(
-        r'CREATE OR REPLACE FUNCTION (?:public|platform_private)\.[a-z_]+\(.*?\$function\$;',
+        r'CREATE OR REPLACE FUNCTION (?:public|platform_private)\.[a-z0-9_]+\(.*?\$function\$;',
         candidate_sql, flags=re.S)
     assert len(bodies) == 3, f'esperava 3 corpos, extraiu {len(bodies)}'
     return bodies
