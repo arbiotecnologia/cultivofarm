@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuthzEpochMonitor } from "@/lib/authz/authzEpochMonitor";
 
-const state = vi.hoisted(() => ({ check: () => true, sign: vi.fn(), download: vi.fn() }));
+const state = vi.hoisted(() => ({ check: (): boolean => true, sign: vi.fn(), download: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
   user: { id: "actor" }, profile: { user_id: "actor", organization_id: "tenant", ativo: true, senha_provisoria: false },
   roles: ["parceiro_b2b"], loading: false, authzReady: true, authzEpoch: 0,
