@@ -42,8 +42,10 @@ DECLARE
   v_md5 text; v_acl_now text; v_cfg_now text; v_owner text;
 BEGIN
   FOR v_sig IN SELECT jsonb_object_keys(v_post) LOOP
-    SELECT md5(pg_get_functiondef(p.oid)), p.proacl::text,
-           array_to_string(p.proconfig, ', '), r.rolname
+    SELECT md5(pg_get_functiondef(p.oid)),
+           (SELECT string_agg(a::text, ',' ORDER BY a::text) FROM unnest(p.proacl) a),
+           (SELECT string_agg(c, ',' ORDER BY c) FROM unnest(p.proconfig) c),
+           r.rolname
       INTO v_md5, v_acl_now, v_cfg_now, v_owner
       FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -148,8 +150,10 @@ DECLARE
   v_md5 text; v_acl_now text; v_cfg_now text; v_owner text;
 BEGIN
   FOR v_sig IN SELECT jsonb_object_keys(v_pre) LOOP
-    SELECT md5(pg_get_functiondef(p.oid)), p.proacl::text,
-           array_to_string(p.proconfig, ', '), r.rolname
+    SELECT md5(pg_get_functiondef(p.oid)),
+           (SELECT string_agg(a::text, ',' ORDER BY a::text) FROM unnest(p.proacl) a),
+           (SELECT string_agg(c, ',' ORDER BY c) FROM unnest(p.proconfig) c),
+           r.rolname
       INTO v_md5, v_acl_now, v_cfg_now, v_owner
       FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
