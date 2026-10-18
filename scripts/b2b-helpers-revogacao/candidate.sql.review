@@ -12,6 +12,9 @@
 --   * Papel consistente com role B2B ÚNICA do usuário:
 --       papel 'gestor'  <=> role parceiro_b2b (e NÃO parceiro_b2b_tecnico)
 --       papel 'tecnico' <=> role parceiro_b2b_tecnico (e NÃO parceiro_b2b)
+--   * Cardinalidade de ROLES (contrato E2 b2b_commercial_context): o usuário
+--     deve ter EXATAMENTE 1 linha em user_roles NO TOTAL (qualquer role).
+--     gestor+administrador, ou qualquer combinação 2+, falha fechado.
 --   * get_b2b_user_role_for_partner REUTILIZA is_valid (sem ciclo: is_valid
 --     não chama get_role) e não resolve vínculo arbitrário (sem LIMIT 1).
 --   * b2b_actor_scope valida user_partner com a MESMA folha; partner_valid
@@ -107,6 +110,9 @@ AS $function$
       AND pa.deleted_at IS NULL
       AND pa.commercial_owner_organization_id IS NOT NULL
       AND pu.tenant_id = pa.commercial_owner_organization_id
+      AND (SELECT count(*)
+             FROM public.user_roles ur
+            WHERE ur.user_id = p_user_id) = 1
       AND (
         (pu.papel = 'gestor'
           AND public.has_role(p_user_id, 'parceiro_b2b'::app_role)
