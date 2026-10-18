@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:47 — ativação financeira autorizada
+- [x] Habilitar somente financeiro exclusivo, preservando produtor/B2B e Blob/global fechados.
+- [x] Validar drafts/revogação/gates (185/185) e rollback financeiro false sem perder outro recorte; 5 manifests antigos fail-closed, stage4/4.
+- [x] Entregar financial-preview-release e docs/auditorias/financeiro-preview-ativacao-20261018.review.md para revisão final externa; sem DDL/Edge/publicação ou homologação alegada.
+- [ ] Revisão final/publicação/login real financeiro aguardam auditor/conector; preflight integral produção PASS informado pelo proprietário.
+
 ## 18/10 23:42 — continuidade de drafts por confirmação
 - [x] Reproduzir remount periódico (6 FAIL antes) e limitar refresh por confirmação ao B2B publicado.
 - [x] Testar drafts por dois polls, mudança real/revoke/roles/inativação/expiração/revalidação/identity e restore sem ressuscitar drafts (183/183).
@@ -15,7 +21,7 @@
 - [x] Preparar menor extensão no monitor único com gate fechado, preservando B2B/produtor/RBAC e dados órfãos.
 - [x] Testar /financeiro aberto, inativação/restore/roles/timeout/respostas tardias; entregar candidatos/rollback/preflight (108/108 + 2/2).
 - [x] Documentar resultados e limites separados de revogação por entidade/entitlements, sem DDL/deploy/publicação.
-- [ ] Gate financeiro/login real: bloqueado por preflight integral, revisão/ativação e validação independente; false mantido.
+- [x] Gate financeiro autorizado/ativado 23:47 após preflight integral PASS informado; login real/revisão final externa pendentes acima.
 
 ## 18/10 23:24 — produtor tela aberta, candidata limitada
 - [x] Registrar evidência independente e confirmar RPC canônica self/h15/RLS que preserve múltiplos clientes.

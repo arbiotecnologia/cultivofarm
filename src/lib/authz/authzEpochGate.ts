@@ -9,5 +9,6 @@ export const AUTHZ_CACHE_ROLLOUT_SCOPE: "b2b-context" | "external-fingerprint" =
 // Does not enable global fingerprint/v6 or authenticated attachment Blobs.
 export const PRODUCER_CONTEXT_MONITOR_ENABLED: boolean = true;
 
-// Financial-only principal readiness, not global entity/entitlement monitoring.
-export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = false;
+// Financial-only activation authorized 2026-10-18 23:47 after draft regressions
+// and auditor-reported canonical preflight; not global entity/entitlement monitoring.
+export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = true;

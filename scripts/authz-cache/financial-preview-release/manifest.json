@@ -1,0 +1,33 @@
+{
+  "baseline_commit": "aa1bad7a29b03f249aca209fa5941d4a12611e33",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "receipt": "Owner authorization 2026-10-18 23:47: financial-only frontend activation after draft fix; auditor reported integral financial/producer production preflights PASS; no publication/DDL/Edge; real-login certification pending",
+  "files": [
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "candidate": "financial-gate.on.review",
+      "rollback": "financial-gate.off.review",
+      "pre_sha256": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5",
+      "post_sha256": "b46c1992d3c89bd133a0e73dca6e465e9023cd043442e2461532100b753ca0bf"
+    }
+  ],
+  "activation": {
+    "path": "src/lib/authz/authzEpochGate.ts",
+    "candidate": "financial-gate.on.review",
+    "rollback": "financial-gate.off.review",
+    "pre_sha256": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5",
+    "post_sha256": "b46c1992d3c89bd133a0e73dca6e465e9023cd043442e2461532100b753ca0bf"
+  },
+  "protected_sha256": {
+    "src/hooks/useAuth.tsx": "e848f1054c0fbb3941bf69225741d159895e2a8abdc669a3ba7d86092999c7e3",
+    "src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
+    "src/lib/authz/internalContextProbe.ts": "a0dd03e8c89781b6048d3ea6dcd32f0988a561d9558f8763a497cb89a74f420f",
+    "src/lib/authz/producerContextProbe.ts": "45ca35467c461f6431aae0943f55cc5d6ffda922f2cf7c10d7d1fffdda279bc7",
+    "src/lib/authz/b2bContextProbe.ts": "171a8ed48d1bdfefcb5600f02ce574e1dff558f2c1c0dad04c75fb0303751d61",
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/components/guards/B2BRouteGuard.tsx": "7b067389a7cc60fcfc929a17e183e0eb57d130c8ebff54e2633d728ad1b28926",
+    "scripts/authz-cache/financial-open-session/preflight-readonly.sql.review": "af275f061285cbc054f590fb685b3964771917f99e047dc658b403e63aacd4da",
+    "scripts/authz-cache/producer-open-session/preflight-readonly.sql.review": "a274481a4f22d096de1c8903db230f42c505bd9858b999672bfda3366b007c31"
+  }
+}

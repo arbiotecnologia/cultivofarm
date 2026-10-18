@@ -49,7 +49,7 @@ describe('financeiro sessão aberta candidata',()=>{
  it('timeout descarta confirmação tardia',async()=>{const qc=setup();await tick();let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});await tick(15001);paused(qc);resolve?.(O);await tick();paused(qc);});
  it('offline/restore descarta R$999 de consulta antiga',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();Object.defineProperty(navigator,'onLine',{value:false});act(()=>window.dispatchEvent(new Event('offline')));await tick();paused(qc);Object.defineProperty(navigator,'onLine',{value:true});act(()=>window.dispatchEvent(new Event('online')));await tick();resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('R$ 999,00')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
  it('gate fechado preserva baseline sem monitor financeiro',async()=>{s.gate=false;setup();await tick(30000);expect(s.h15).toBe(0);expect(screen.getByText('Menu financeiro')).toBeTruthy();});
- it('login administrador não entra no recorte financeiro',async()=>{s.roles=['administrador'];setup();await tick(30000);expect(s.h15).toBe(0);});
+ it.each([{roles:['administrador']},{roles:['financeiro','administrador']},{roles:['financeiro','consultor_tecnico']}])('login não exclusivo $roles não entra no recorte financeiro',async ({roles})=>{s.roles=roles;setup();await tick(30000);expect(s.h15).toBe(0);});
 });
 describe('probe financeiro self/readiness',()=>{
  it.each([false,'true',null])('has_role estritamente true: %j negado',async allowed=>{s.roleAllowed=allowed;expect((await internalContextProbe(U,O)).eligible).toBe(false);});
