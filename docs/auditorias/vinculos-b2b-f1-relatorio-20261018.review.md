@@ -73,7 +73,7 @@ Ref canônico: `swzpzcwiasxmjutrmvkm` (produção, **NÃO tocada**). Homolog: `v
 
 Rollback completo documentado no rodapé da migration (DROP de triggers/funções/índices/constraints/colunas). **Seguro** porque F1 não remove nem altera nada pré-existente; dados pré-F1 são preservados. Diferente do Cutover, aqui o rollback é undo trivial.
 
-## 5. Testes SQL (arquivo dedicado; execução PENDENTE de homologação)
+## 5. Testes SQL (T1–T6 EXECUTADOS em homolog pelo auditor externo — ver registro de hospedagem no topo)
 
 - **T1** INSERT deriva tenant do parceiro; defaults `valid_from`/`version=1`.
 - **T2** tenant divergente rejeitado (fail-closed).
@@ -83,7 +83,7 @@ Rollback completo documentado no rodapé da migration (DROP de triggers/funçõe
 - **T6** backfill idempotente, 0 divergências.
 - **T7** pré-checagem read-only de prontidão do Cutover (parceiros sem tenant; vínculos excedentes).
 
-Todos transacionais (BEGIN/ROLLBACK) — não persistem dados. **Não executados nesta rodada**: exigem a migration aplicada (homolog) e role privilegiada; aplicar em produção está fora da autorização desta fase.
+Todos transacionais (BEGIN/ROLLBACK) — não persistem dados. **T1–T6 executados em homolog pelo auditor externo** (sem exception, ROLLBACK, 0 linhas persistidas). T7 (pré-checagem read-only de Cutover) segue pendente e só faz sentido contra produção. **Ressalva:** execução com role privilegiada — não substitui teste A/B de RLS com sessões reais, que permanece pendente e obrigatório.
 
 ## 6. Evidências de integridade do repositório
 
