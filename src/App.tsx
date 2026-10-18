@@ -244,7 +244,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 }
 
 
-function ProtectedRoutes() {
+export function ProtectedRoutes() {
   const { user, role, loading, error, refresh, signOut } = useAuth();
   const location = useLocation();
 
@@ -279,7 +279,9 @@ function ProtectedRoutes() {
     return <Navigate to={homePath} replace />;
   }
 
-  return <AppLayout />;
+  // Boundary precedes RoleGuard/sidebar: cached roles must never leave an
+  // inactive monitored principal navigating while its children are hidden.
+  return <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>;
 }
 
 export function PortalGuard() {

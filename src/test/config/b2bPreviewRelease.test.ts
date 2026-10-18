@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 
 describe("Liberação limitada do auditor 2026-10-18 22:55 — configuração real sem mocks", () => {
@@ -14,5 +14,8 @@ describe("Liberação limitada do auditor 2026-10-18 22:55 — configuração re
   });
   it("mantém a candidata do produtor fechada até liberação", () => {
     expect(PRODUCER_CONTEXT_MONITOR_ENABLED).toBe(false);
+  });
+  it("mantém a candidata financeira fechada até liberação", () => {
+    expect(FINANCIAL_CONTEXT_MONITOR_ENABLED).toBe(false);
   });
 });

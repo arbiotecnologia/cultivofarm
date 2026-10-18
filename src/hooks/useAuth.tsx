@@ -6,9 +6,10 @@ import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
-import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 import { producerContextProbe } from "@/lib/authz/producerContextProbe";
+import { internalContextProbe } from "@/lib/authz/internalContextProbe";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -354,17 +355,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Foundation de cache de autorização (mesma identidade). Um único monitor
   // por AuthProvider, atrás de gate próprio FECHADO até revisão; sem provider
   // paralelo e sem BroadcastChannel entre sessões. Callback de auth permanece
-  // síncrono; o monitor roda fora dele e SOMENTE para perfis EXTERNOS após o
-  // Auth estar pronto (perfil+roles carregados) — usuários internos nunca
-  // criam monitor.
+  // síncrono; recortes adicionais produtor/financeiro têm gates próprios.
+  // Sem revisão v6/global nem monitor de entidades/entitlements.
   const [authzEpoch, setAuthzEpoch] = useState(0);
   const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
   const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
   const b2bContextOnly = AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context";
   const producerContextOnly = b2bContextOnly && PRODUCER_CONTEXT_MONITOR_ENABLED &&
     roles.length === 1 && roles[0] === "cliente_produtor";
+  const financialContextOnly = b2bContextOnly && FINANCIAL_CONTEXT_MONITOR_ENABLED &&
+    roles.length === 1 && roles[0] === "financeiro";
   const isExternalUser = b2bContextOnly
-    ? producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+    ? financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
     profile.senha_provisoria === false && !!profile.organization_id;
@@ -390,6 +392,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
+        if (financialContextOnly) {
+          return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "");
+        }
         if (producerContextOnly) {
           return producerContextProbe(user?.id ?? "", profile?.organization_id ?? "");
         }
