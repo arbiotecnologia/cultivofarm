@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import {
+  carregarUsuariosAdmin,
+  definirStatusUsuario,
+  montarArgsListagem,
+  RPC_LISTAR_USUARIOS,
+  RPC_STATUS_USUARIO,
+} from "@/lib/configuracoes/usuariosListQuery";
 
 const page = readFileSync("src/pages/Configuracoes.tsx", "utf8");
 const edge = readFileSync("supabase/functions/create-user/index.ts", "utf8");
