@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   auth: { user: { id: "A" } as { id: string } | null,
     profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
-    roles: ["financeiro"], loading: false },
+    roles: ["financeiro"], loading: false, authzReady: true, authzEpoch: 0 },
   pending: false, calls: [] as string[], resolve: [] as Array<(value: unknown) => void>,
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
@@ -29,6 +29,7 @@ beforeEach(() => {
   state.auth.user = { id: "A" };
   Object.assign(state.auth.profile, { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false });
   state.auth.roles = ["financeiro"]; state.auth.loading = false;
+  state.auth.authzReady = true; state.auth.authzEpoch = 0;
   state.pending = false; state.calls = []; state.resolve = [];
 });
 function setup() {
@@ -45,7 +46,7 @@ describe("B2B financial session isolation — mocked server, real QueryClient", 
     expect(state.calls).toContain("partner_orders");
     hook.unmount(); client.clear();
   });
-  for (const change of ["identity", "tenant", "logout", "inactive", "mismatch", "loading", "roles", "provisional", "noorg"] as const) {
+  for (const change of ["identity", "tenant", "logout", "inactive", "mismatch", "loading", "roles", "provisional", "noorg", "authzPending", "authzEpoch"] as const) {
     it(`hides all previous financial caches immediately: ${change}`, async () => {
       const { hook, client } = setup();
       await waitFor(() => expect(hook.result.current.kpi.data).toEqual({ own: 1 }));
@@ -59,6 +60,8 @@ describe("B2B financial session isolation — mocked server, real QueryClient", 
       if (change === "roles") state.auth.roles = [];
       if (change === "provisional") state.auth.profile.senha_provisoria = true;
       if (change === "noorg") state.auth.profile.organization_id = "";
+      if (change === "authzPending") state.auth.authzReady = false;
+      if (change === "authzEpoch") state.auth.authzEpoch += 1;
       hook.rerender();
       expect(hook.result.current.list.data).toBeUndefined();
       expect(hook.result.current.kpi.data).toBeUndefined();

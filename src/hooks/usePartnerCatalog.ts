@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { resolverUnidadePreco, type UnidadePreco } from "@/lib/catalogo/unidades";
 import { round2 } from "@/lib/catalogo/formatUnidades";
@@ -59,13 +59,14 @@ const num = (v: unknown): number | null => {
 };
 
 export function usePartnerCatalog(partnerId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-catalog-secure", partnerId],
     enabled: !!partnerId,
     queryFn: async (): Promise<CatalogItem[]> => {
+      if (!partnerId) return [];
       const { data, error } = await supabase.rpc(
         "get_partner_catalog_secure" as any,
-        { p_partner_id: partnerId! },
+        { p_partner_id: partnerId },
       );
       if (error) throw error;
       return (data ?? []).map((r: any) => {

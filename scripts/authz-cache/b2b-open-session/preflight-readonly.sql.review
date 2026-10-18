@@ -1,0 +1,59 @@
+-- Auditor only. Explicit canonical ref must be validated by the operator BEFORE
+-- opening a connection. SELECT-only, no migrations/fixtures/write/DDL.
+-- Whole file with psql -X -v ON_ERROR_STOP=1 -f. Save output for review, NOT approval.
+BEGIN TRANSACTION READ ONLY;
+SET LOCAL statement_timeout = '15s';
+SET LOCAL lock_timeout = '3s';
+-- Real SQL rejection, not a printed PASS label. Check exact installed bodies,
+-- owners/search_path/ACL for the reviewed 3 helpers. Missing/drift divides by 0.
+WITH expected(signature,hash,acl,cfg) AS (VALUES
+ ('public.get_b2b_user_role_for_partner(uuid,uuid)','27efcdaf40dc0e5287abd4cf418a6571',
+ 'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=public'),
+ ('public.is_valid_b2b_partner_user(uuid,uuid)','93520101987e599280460d3dadcf3a9f',
+ 'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres','search_path=public'),
+ ('platform_private.b2b_actor_scope(uuid)','09b184da91c59f8b1f9be72217f8c37e',
+ 'postgres=X/postgres,service_role=X/postgres','search_path=public, pg_temp'))
+SELECT 1 / CASE WHEN count(*)=3 AND bool_and(coalesce(
+ md5(pg_get_functiondef(p.oid))=e.hash AND r.rolname='postgres' AND
+ p.provolatile='s' AND p.prosecdef AND
+ (SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(p.proacl) a)=e.acl AND
+ array_to_string(p.proconfig,',')=e.cfg,false)) THEN 1 ELSE 0 END AS exact_baseline_guard
+FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.signature)
+LEFT JOIN pg_roles r ON r.oid=p.proowner;
+WITH expected(signature,hash) AS (VALUES
+ ('public.get_b2b_user_role_for_partner(uuid,uuid)','27efcdaf40dc0e5287abd4cf418a6571'),
+ ('public.is_valid_b2b_partner_user(uuid,uuid)','93520101987e599280460d3dadcf3a9f'),
+ ('platform_private.b2b_actor_scope(uuid)','09b184da91c59f8b1f9be72217f8c37e'),
+ ('public.get_user_partner_id(uuid)','b334c3a454ebc4233d3b9e0d0a700d78'),
+ ('platform_private.b2b_commercial_context()','a31d198c9a9fc9a5e7c397ab36fe0fa4'))
+SELECT e.signature,e.hash expected_hash,md5(pg_get_functiondef(p.oid)) actual_hash,
+ coalesce(md5(pg_get_functiondef(p.oid))=e.hash,false) hash_matches,
+ r.rolname owner,p.proacl,p.proconfig,p.provolatile,p.prosecdef,
+ has_function_privilege('authenticated',p.oid,'EXECUTE') authenticated_execute,
+ has_function_privilege('anon',p.oid,'EXECUTE') anon_execute
+FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.signature)
+LEFT JOIN pg_roles r ON r.oid=p.proowner ORDER BY e.signature;
+-- Wrapper body/ACL need independent exact capture: no invented golden hash.
+SELECT p.oid::regprocedure signature,pg_get_functiondef(p.oid) definition,
+ md5(pg_get_functiondef(p.oid)) hash,p.proacl,p.proconfig,p.provolatile,p.prosecdef,
+ r.rolname owner
+FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+WHERE p.oid=to_regprocedure('public.get_my_commercial_partner_context()');
+SELECT c.oid::regclass relation,c.relrowsecurity,c.relforcerowsecurity
+FROM pg_class c WHERE c.oid IN ('public.partner_users'::regclass,
+ 'public.partner_accounts'::regclass,'public.partner_orders'::regclass,
+ 'public.partner_order_messages'::regclass,'public.partner_order_message_attachments'::regclass);
+SELECT schemaname,tablename,policyname,permissive,roles,cmd,qual,with_check
+FROM pg_policies WHERE schemaname='public' AND tablename IN
+ ('partner_users','partner_accounts','partner_orders','partner_order_messages','partner_order_message_attachments')
+ORDER BY tablename,policyname;
+-- Existing canonical readiness/visibility/entitlements remain authoritative.
+-- Output is an inventory, NOT temporal/concurrent/JWT/Storage certification.
+SELECT p.oid::regprocedure signature,md5(pg_get_functiondef(p.oid)) hash,
+ p.proacl,p.proconfig,p.provolatile,p.prosecdef,pg_get_functiondef(p.oid) definition
+FROM pg_proc p WHERE p.oid IN
+ (to_regprocedure('platform_private.platform_actor_access_ready(uuid)'),
+ to_regprocedure('public.h15_actor_organization()'),
+ to_regprocedure('platform_private.entitlements_for_user(uuid)'),
+ to_regprocedure('platform_private.b2b_phase1_partner_visible(uuid,boolean)'));
+ROLLBACK;

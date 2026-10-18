@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -57,7 +58,7 @@ export interface PartnerSimulation {
 
 export function usePartnerSimulations(partnerId: string | null | undefined) {
   const { user } = useAuth();
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-simulations", partnerId, user?.id],
     enabled: !!partnerId,
     queryFn: async (): Promise<PartnerSimulation[]> => {
@@ -74,7 +75,7 @@ export function usePartnerSimulations(partnerId: string | null | undefined) {
 
 export function usePartnerSimulationItems(simulationId: string | null) {
   const { user, role } = useAuth();
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["partner-simulation-items", simulationId, user?.id, role],
     enabled: !!simulationId,
     queryFn: async () => {
