@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION public.get_user_partner_id()
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   SELECT partner_id FROM public.partner_users WHERE user_id = auth.uid() LIMIT 1;
 $function$;
 
@@ -13,7 +13,7 @@ CREATE OR REPLACE FUNCTION public.get_partner_papel(_user_id uuid)
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   SELECT papel FROM public.partner_users WHERE user_id = _user_id LIMIT 1;
 $function$;
 
@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, 
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   SELECT CASE
     WHEN public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role) THEN 'parceiro_b2b_tecnico'
     WHEN public.has_role(p_user_id, 'parceiro_b2b'::app_role) THEN 'parceiro_b2b'
@@ -38,7 +38,7 @@ CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_pa
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   SELECT EXISTS (
     SELECT 1
     FROM public.partner_users pu

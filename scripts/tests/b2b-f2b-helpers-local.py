@@ -44,7 +44,6 @@ CREATE FUNCTION public.local_assert(label text,ok boolean) RETURNS void LANGUAGE
         baseline=(DOCS/'vinculos-b2b-f2b-baseline-20261018.sql').read_text()
         grants='\n'.join(f'REVOKE ALL ON FUNCTION public.{s} FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.{s} TO authenticated,service_role;' for s in ['get_user_partner_id()','get_partner_papel(uuid)','get_b2b_user_role_for_partner(uuid,uuid)','is_valid_b2b_partner_user(uuid,uuid)'])
         run(setup+baseline+grants)
-        print(run("SELECT version(), md5(pg_get_functiondef('public.get_user_partner_id()'::regprocedure)), pg_get_functiondef('public.get_user_partner_id()'::regprocedure);").stdout)
         candidate=(DOCS/'vinculos-b2b-f2b-migracao-20261018.sql').read_text()
         # Full preflight parses/runs, refuses absent policy manifest (no invented approval).
         rejected=run(candidate,False)
