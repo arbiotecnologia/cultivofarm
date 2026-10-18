@@ -25,6 +25,8 @@
 - [ ] Instalação futura: depende de aceite da semântica, contrato ator/alvo e provas hospedadas A/B; não autorizada neste turno.
 
 ## F2-B3.1 — contrato em etapas sem alterar grants
-- [ ] Reconfirmar baseline read-only, writers/readers, cascades e limites de origem server-owned.
-- [ ] Preparar metadata neutra sem FK/uso autorizador, preflight, rollback e decisão B3.2.
-- [ ] Executar testes PostgreSQL descartável de esquema, parent delete, colisões e preservação; registrar limites e blockers.
+- [x] Reconfirmar baseline read-only: PUC/PTC 0/0, 29 policies por helpers, 59 entradas no manifesto; writers/cascades e limites de origem documentados.
+- [x] Preparar metadata neutra sem FK/uso autorizador, preflight/rollback gated e relatório de decisão B3.2.
+- [x] Executar 22 checks PostgreSQL descartável, arquivos completos sob baseline sintético e 4 suites Vitest; lint focado exit 0, sem prova hosted.
+- [ ] B3.2 instalação neutra externa: aguarda autorização/revisão, backup, destino e preflight sem drift/consumers; agente não executa.
+- [ ] Origem/cleanup/cutover: NO-GO por contrato ator/source estável/colisões/revogação e provas JWT/RLS A/B/legado/Storage pendentes.
