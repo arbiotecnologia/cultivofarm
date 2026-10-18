@@ -12,7 +12,8 @@
 - [ ] Liberar candidata instalável: bloqueada por contrato de gestão/cleanup e provas RLS A/B/legado hospedadas; exige próximo recorte e autorização independente.
 
 ## F2-B2 — projeção técnica contida
-- [ ] Auditar sync/validação, writers, políticas e leitores no ref canônico, sem escritas.
-- [ ] Preparar correção mínima revisável, baseline, rollback e preflight sem reabrir PUC.
-- [ ] Testar projeção, resíduos, repetição, isolamento e concorrência em PostgreSQL descartável.
-- [ ] Registrar efeitos/limites e PASS/NO-GO por contrato, sem execução hosted/publicação.
+- [x] Auditar sync/validação, writers, políticas e leitores no ref canônico, sem escritas.
+- [x] Preparar experimento mínimo revisável, baseline, rollback e preflight bloqueado sem reabrir PUC.
+- [x] Testar projeção, resíduos, repetição, isolamento e concorrência em PostgreSQL descartável (23 checks; três suites focadas passaram).
+- [x] Registrar efeitos/limites e PASS/NO-GO por contrato, sem execução hosted/publicação.
+- [ ] Autorizar pacote instalável F2-B2: bloqueado por proveniência PTC compartilhada, contrato de ator/cleanup e revogação fora do sync; exige decisão e revisão independentes.
