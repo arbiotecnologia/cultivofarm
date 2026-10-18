@@ -41,12 +41,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 
 `docs/auditorias/vinculos-b2b-entrega2-helpers-candidato-20261018.sql`:
 
-- **Fase A — `get_user_partner_id()`:** elegibilidade completa (revoked_at IS NULL,
-  parceiro ativo/não deletado, owner NOT NULL, tenant_id = owner) e fail-closed em
-  0 ou 2+ vínculos via `CASE WHEN count(*) = 1 THEN (array_agg(...))[1] END`
-  (nunca `LIMIT 1` aleatório; `min(uuid)` não existe em PostgreSQL — corrigido
-  durante os testes locais).
-- **Fase B — `get_partner_papel(uuid)`:** mesma regra para o alvo parametrizado.
+- **Fase A — `get_user_partner_id()` (rev 2.2, pós-revisão externa):** fail-closed
+  em DUAS etapas, uniforme com a Fase C: (1) conta TODOS os vínculos NÃO
+  revogados — 0 ou 2+ ⇒ NULL, antes de qualquer elegibilidade; (2) só então exige
+  que o vínculo único seja elegível (parceiro ativo/não deletado, owner NOT NULL,
+  tenant_id = owner). Na rev 2.1 a contagem era só de elegíveis: com 2 não
+  revogados (1 elegível + 1 inelegível) o escalar autorizava e o portal negava —
+  divergência corrigida. `LEFT JOIN` garante que vínculo com parceiro inexistente
+  continue contado (fail-closed). Um vínculo ativo + históricos revogados
+  continua resolvendo (revogados não entram na contagem).
+- **Fase B — `get_partner_papel(uuid)` (rev 2.2):** mesma regra em duas etapas
+  para o alvo parametrizado.
 - **Fase C — `b2b_commercial_context()` (rev 2.1, pós-revisão externa):**
   adiciona `pu.revoked_at IS NULL` à contagem e à seleção do vínculo **e fecha a
   lacuna de coerência de tenant apontada pela revisão externa**: o `SELECT` do
