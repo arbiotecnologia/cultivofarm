@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:42 — continuidade de drafts por confirmação
+- [ ] Reproduzir remount periódico e limitar refresh por confirmação ao B2B publicado.
+- [ ] Testar drafts por dois polls, mudança real/revoke/roles/inativação/expiração/revalidação e restore sem ressuscitar drafts.
+- [ ] Preparar delta/rollback e resultados; produtor true, financeiro false, anexos preservados; preflight produtor integral PASS informado pelo auditor.
+
 ## 18/10 23:37 — preferência produtor e ativação limitada
 - [x] Separar preferência estável de autorização/cache por epoch e provar B sobrevivendo dois polls, revogação parcial e isolamento UID/tenant (2/2 FAIL antes, PASS após).
 - [x] Ativar somente produtor após regressões/preflight de fonte, registrar delta/hashes/rollback (146/146 + stage2/2); financeiro/global/Blob fechados, sem hosted/publicação.
