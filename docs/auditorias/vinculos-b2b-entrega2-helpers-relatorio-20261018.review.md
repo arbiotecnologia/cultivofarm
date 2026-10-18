@@ -81,28 +81,46 @@ pela guarda de hash — a guarda anterior por `position()` o aceitaria.
 ## 3. Testes locais (PostgreSQL descartável, paridade de colunas live)
 
 `scripts/tests/entrega2-helpers-local.sql` + `.py` + Vitest
-`src/test/saas/entrega2-helpers-postgres.test.ts`:
+`src/test/saas/entrega2-helpers-postgres.test.ts` (rev 2.2):
 
-- **Fase 1 (baseline):** brechas reproduzidas — revogado, owner NULL e parceiro
-  inativo ainda resolvem parceiro/papel.
-- **Fase 3 (candidata):** elegível preservado; revogado, owner NULL, parceiro
-  inativo, tenant divergente, multi-vínculo (2+) e sem vínculo → todos NULL
-  (fail-closed).
-- **Fase 4:** revogação dinâmica fecha imediatamente; restauração reabre.
-- Iterações de correção durante o teste: `HAVING` sem `GROUP BY` (inválido) →
-  `CASE WHEN count(*)=1`; `min(uuid)` inexistente → `array_agg(...)[1]`.
-- **Fase 5 (contexto do portal, réplica da rev 2.1):** 5.1 `commercial_owner`
-  (org do ator = owner) resolve; 5.2 `legacy_partner_tenant` real (org do ator
-  `cc` ≠ owner `aa`, org legada ao parceiro) resolve com owner comercial
-  preservado; 5.3 tenant mismatch → NULL (lacuna fechada); 5.4 tenant NULL →
-  NULL; 5.5 owner NULL → NULL; 5.6 revogado → NULL; 5.7 multi-vínculo 2+ →
-  NULL; 5.8 revogação parcial (1 ativo entre vários) → resolve.
-- **Candidata real executada em PostgreSQL descartável** (stubs mínimos de
-  `auth.uid`, `platform_private.*`, `h15_actor_organization`; guards de hash
-  hospedados neutralizados apenas no lab): os 3 corpos compilam, executam
-  (retorno NULL com ator anônimo) e as pós-condições textuais de corpo —
-  incluindo `link.tenant_id IS DISTINCT FROM owner` — são satisfeitas.
+- **Corpos REAIS, sem duplicação:** o runner extrai os 3 `CREATE OR REPLACE
+  FUNCTION` diretamente do arquivo da candidata e os instala no PostgreSQL
+  descartável — a matriz roda sobre o SQL que seria aplicado, não sobre réplica.
+  O corpo real instalado da Entrega 1 (`can_user_access_cliente(uuid,uuid)`) é
+  embutido e sua fidelidade é provada por hash: `md5(pg_get_functiondef)` no lab
+  = `4e0c374caa04bb9bf9fac9cc4e6723f1`, idêntico ao de produção.
+- **Matriz M1–M12 (todas PASS):** M1 elegível/`commercial_owner`; M2
+  `legacy_partner_tenant` real (org do ator ≠ owner comercial, owner preservado);
+  M3 contextual cliente (ramo `parceiro_b2b` do corpo real da Entrega 1
+  autoriza cliente na carteira válida); M4 owner NULL → NULL nos três; M5
+  tenant NULL → NULL; M6 tenant mismatch → NULL; M7/M7b parceiro inativo e
+  deletado → NULL; M8 dois elegíveis → NULL; **M9 um elegível + um inelegível
+  NÃO revogado → NULL nos três** (divergência da rev 2.1 eliminada); M10 um
+  ativo + um revogado (histórico) → resolve; M11 revogação dinâmica fecha
+  escalar, portal e acesso contextual ao cliente, restauração reabre; M12 alvo
+  terceiro (callers internos) elegível/revogado.
+- **Rollback:** 5a instalação exata aceita e baseline restaurado (comprovado por
+  retorno ao comportamento `LIMIT 1`); 5b drift com marcadores preservados
+  rejeitado atomicamente.
+- **Iterações de correção durante os testes:** regex de extração `[a-z_]+`
+  excluía `b2b_commercial_context` (dígitos) → `[a-z0-9_]+`; iterações
+  anteriores: `HAVING` sem `GROUP BY` → `CASE WHEN count(*)=1`; `min(uuid)`
+  inexistente → `array_agg(...)[1]`.
 - **Vitest 1/1 passou.**
+
+### 3.1 Evidência `valid_from` (auditoria sem inventar regra)
+
+- `partner_users.valid_from` existe no schema live, mas **nenhuma função de
+  acesso o aplica a vínculos B2B**: os três helpers baseline não o referenciam;
+  o corpo instalado da Entrega 1 usa `valid_from`/`valid_until` apenas no ramo
+  `user_clientes` (usuários internos), não nos ramos B2B. Busca live em
+  `pg_proc` por `valid_from` + `partner_users` retornou apenas
+  `can_user_access_cliente` (ramo interno), `rpc_b2b_list_selectable_payment_plans`,
+  `tenant_admin_user_links` e `user_edit_f2_version` — nenhum contrato existente
+  exige `valid_from` em `partner_users`.
+- **Decisão:** a candidata NÃO adiciona filtro de `valid_from` — seria regra
+  nova sem contrato comprovado. Registrado como observação para recorte futuro
+  (definir semântica de vigência de vínculo B2B antes de qualquer enforce).
 
 ## 4. Impacto e compatibilidade
 
