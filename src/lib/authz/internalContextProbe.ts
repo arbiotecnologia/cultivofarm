@@ -9,7 +9,10 @@ export async function internalContextProbe(userId: string, organizationId: strin
   if (orgError) throw new Error("internal_probe_unavailable");
   if (!userId || !organizationId || org !== organizationId) return deny();
   const { data: profile, error: profileError } = await supabase.from("profiles")
-    .select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle();
+    .select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle() as unknown as {
+      data: { user_id?: unknown; organization_id?: unknown; ativo?: unknown; senha_provisoria?: unknown } | null;
+      error: unknown;
+    };
   if (profileError) throw new Error("internal_probe_unavailable");
   if (profile?.user_id !== userId || profile.organization_id !== organizationId ||
     profile.ativo !== true || profile.senha_provisoria !== false) return deny();
