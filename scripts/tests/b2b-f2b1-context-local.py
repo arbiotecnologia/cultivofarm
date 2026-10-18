@@ -28,11 +28,11 @@ CREATE TABLE partner_accounts(id uuid PRIMARY KEY,commercial_owner_organization_
 CREATE TABLE partner_users(user_id uuid,partner_id uuid,papel text,tenant_id uuid,valid_from timestamptz,revoked_at timestamptz,CONSTRAINT partner_users_user_id_key UNIQUE(user_id));
 CREATE TABLE partner_clients(partner_id uuid,cliente_id uuid,active boolean);
 CREATE TABLE partner_user_clients(user_id uuid,partner_id uuid,cliente_id uuid,user_role text,active boolean);
-CREATE FUNCTION platform_private.platform_actor_access_ready(u uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM profiles WHERE user_id=u AND ativo AND NOT senha_provisoria) AND coalesce(current_setting('test.fresh',true),'true')='true' $$;
-CREATE FUNCTION h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT organization_id FROM profiles WHERE user_id=auth.uid() AND platform_private.platform_actor_access_ready(user_id) $$;
+CREATE FUNCTION platform_private.platform_actor_access_ready(u uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=u AND ativo AND NOT senha_provisoria) AND coalesce(current_setting('test.fresh',true),'true')='true' $$;
+CREATE FUNCTION h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() AND platform_private.platform_actor_access_ready(user_id) $$;
 CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql AS $$ SELECT 'catalogo_precos' WHERE coalesce(current_setting('test.entitled',true),'true')='true' $$;
-CREATE FUNCTION has_role(u uuid,r app_role) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM user_roles WHERE user_id=u AND role=r) AND platform_private.platform_actor_access_ready(u) $$;
-CREATE FUNCTION is_platform_superadmin(u uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT has_role(u,'superadmin') $$;
+CREATE FUNCTION has_role(u uuid,r app_role) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=u AND role=r) AND platform_private.platform_actor_access_ready(u) $$;
+CREATE FUNCTION is_platform_superadmin(u uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT public.has_role(u,'superadmin') $$;
 CREATE FUNCTION local_assert(label text,ok boolean) RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAIL %',label; END IF; RAISE NOTICE 'PASS %',label; END $$;
 """)
         baseline=(D/(P+'baseline-20261018.sql')).read_text()
@@ -99,7 +99,7 @@ UPDATE partner_users SET revoked_at=now() WHERE partner_id='22222222-2222-4222-8
 SELECT local_assert('one plus revoked history',platform_private.b2b_commercial_context()->>'mode'='legacy_partner_tenant');
 INSERT INTO user_roles VALUES(auth.uid(),'administrador');
 SELECT local_assert('mixed role denied',platform_private.b2b_commercial_context() IS NULL);
-DELETE FROM user_roles WHERE user_id=auth.uid() AND role='administrador';
+DELETE FROM public.user_roles WHERE user_id=auth.uid() AND role='administrador';
 UPDATE profiles SET organization_id='cccccccc-cccc-4ccc-8ccc-cccccccccccc' WHERE user_id=auth.uid();
 SELECT local_assert('tenant C no legacy proof',platform_private.b2b_commercial_context() IS NULL);
 -- BASELINE trigger demonstration: SQL target differs from actor, not impersonation proof.
