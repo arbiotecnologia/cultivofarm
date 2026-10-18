@@ -29,7 +29,8 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     if (table === "partner_product_prices") return chain(state.prices());
     return chain({ data: [] });
   },
-  rpc: async (name: string) => {
+  rpc: (name: string) => {
+    const request = (async () => {
     if (name === "get_my_commercial_partner_context") {
       state.contextCalls++;
       const override = state.override; state.override = undefined;
@@ -43,6 +44,8 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     if (name === "get_partner_catalog_secure") return state.catalog();
     if (name === "b2b_read_simulations") return state.simulations();
     throw new Error(`unexpected RPC: ${name}`);
+    })();
+    return Object.assign(request, { abortSignal: () => request });
   },
 } }));
 // Test the actual Blob ownership hook, fake download transport (no buckets opened).
