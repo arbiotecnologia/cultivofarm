@@ -1,0 +1,181 @@
+-- CANDIDATA — Correção de revogação nos 3 helpers B2B (revogação ignorada)
+-- Escopo: SOMENTE os 3 helpers abaixo. Sem funções paralelas, sem contratos
+-- novos, sem UI, sem mudança de RLS, sem reabrir PUC/PTC, sem DDL hosted por
+-- este agente. Aplicação exclusivamente pelo auditor via Supabase.
+--
+-- Alinhamento com Entrega 2 (E2):
+--   * Contar TODOS os vínculos não revogados ANTES da elegibilidade;
+--     0 ou 2+ falham fechado.
+--   * Vínculo elegível exige parceiro ativo, não deletado, owner NÃO nulo
+--     (commercial_owner_organization_id) e tenant_id = owner.
+--   * Acesso interno/legacy permitido é preservado; NENHUMA expansão de acesso.
+--   * Sem recursão: b2b_commercial_context chama b2b_phase1_partner_visible
+--     -> b2b_actor_scope; portanto b2b_actor_scope NÃO chama o context de volta.
+--
+-- Guarda fail-closed: aborta se qualquer hash pré divergir do live revisado.
+
+BEGIN;
+
+DO $$
+DECLARE
+  v_expected CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'b2596473d00151ef41b4b2ce82e044cb',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    '7b17274fb6dce728741a2a9c77710a76',
+    'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
+  );
+  v_sig text;
+  v_md5 text;
+BEGIN
+  FOR v_sig IN SELECT jsonb_object_keys(v_expected) LOOP
+    SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE p.oid = to_regprocedure(v_sig);
+    IF v_md5 IS DISTINCT FROM (v_expected ->> v_sig) THEN
+      RAISE EXCEPTION 'PREFLIGHT FALHOU: hash de % diverge (esperado %, atual %). Abortando sem escrever.',
+        v_sig, v_expected ->> v_sig, COALESCE(v_md5, '<ausente>');
+    END IF;
+  END LOOP;
+END $$;
+
+-- 1) get_b2b_user_role_for_partner: ignora vínculo revogado.
+--    Assinatura, owner, linguagem, SECURITY DEFINER, search_path e ACL
+--    preservados (CREATE OR REPLACE não altera owner/ACL).
+CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT CASE
+    WHEN public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role) THEN 'parceiro_b2b_tecnico'
+    WHEN public.has_role(p_user_id, 'parceiro_b2b'::app_role) THEN 'parceiro_b2b'
+    ELSE NULL
+  END
+  FROM public.partner_users pu
+  WHERE pu.user_id = p_user_id AND pu.partner_id = p_partner_id
+    AND pu.revoked_at IS NULL
+  LIMIT 1;
+$function$;
+
+-- 2) is_valid_b2b_partner_user: vínculo não revogado + parceiro ativo E não
+--    deletado (alinha com E2: ativo, deleted_at IS NULL).
+CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+    WHERE pu.user_id = p_user_id
+      AND pu.partner_id = p_partner_id
+      AND pu.revoked_at IS NULL
+      AND pa.ativo = true
+      AND pa.deleted_at IS NULL
+      AND (
+        public.has_role(p_user_id, 'parceiro_b2b'::app_role)
+        OR public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role)
+      )
+  );
+$function$;
+
+-- 3) platform_private.b2b_actor_scope: cardinalidade/elegibilidade alinhadas
+--    à E2 SEM mudar a assinatura (mesmas 6 colunas de saída):
+--      * user_partner_count = contagem de TODOS os vínculos NÃO revogados
+--        (0 ou 2+ => falha fechada nos consumidores, como na E2);
+--      * user_partner = partner_id SOMENTE quando há exatamente 1 vínculo não
+--        revogado E ele é elegível (parceiro ativo, não deletado, owner não
+--        nulo, tenant_id = owner); caso contrário NULL (falha fechada);
+--      * partner_valid (parceiro da ORGANIZAÇÃO do ator) passa a exigir owner
+--        não nulo além de ativo/não deletado — endurecimento, sem expansão;
+--      * profile_ok, org_partner e has_catalog preservados (acesso
+--        interno/legacy intacto).
+CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
+ RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  WITH pr AS (
+    SELECT o.partner_account_id
+      FROM public.profiles p JOIN public.organizations o ON o.id = p.organization_id
+     WHERE p.user_id = _uid AND p.ativo = true AND o.ativo = true AND o.status = 'ativa'
+     LIMIT 1
+  ), pu AS (
+    -- TODOS os vínculos não revogados (cardinalidade antes da elegibilidade)
+    SELECT count(*)::int c FROM public.partner_users WHERE user_id = _uid AND revoked_at IS NULL
+  ), pue AS (
+    -- Vínculo elegível: exatamente 1 não revogado, parceiro ativo/não deletado,
+    -- owner não nulo e tenant_id = owner
+    SELECT pu1.partner_id
+      FROM public.partner_users pu1
+      JOIN public.partner_accounts pa ON pa.id = pu1.partner_id
+     WHERE pu1.user_id = _uid
+       AND pu1.revoked_at IS NULL
+       AND pa.ativo = true
+       AND pa.deleted_at IS NULL
+       AND pa.commercial_owner_organization_id IS NOT NULL
+       AND pu1.tenant_id = pa.commercial_owner_organization_id
+     LIMIT 1
+  )
+  SELECT EXISTS (SELECT 1 FROM pr),
+         (SELECT partner_account_id FROM pr),
+         CASE WHEN (SELECT c FROM pu) = 1 THEN (SELECT partner_id FROM pue) ELSE NULL END,
+         (SELECT c FROM pu),
+         EXISTS (SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id = pr.partner_account_id
+                  WHERE pa.ativo = true AND pa.deleted_at IS NULL
+                    AND pa.commercial_owner_organization_id IS NOT NULL),
+         EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
+$function$;
+
+-- Verificação pós: hashes mudaram (corpos novos) e ACL/owner/search_path
+-- permanecem idênticos ao pré. Falha => ROLLBACK manual pelo auditor.
+DO $$
+DECLARE
+  v_pre CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'b2596473d00151ef41b4b2ce82e044cb',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    '7b17274fb6dce728741a2a9c77710a76',
+    'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
+  );
+  v_acl CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}',
+    'platform_private.b2b_actor_scope(uuid)',         '{postgres=X/postgres,service_role=X/postgres}'
+  );
+  v_cfg CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'search_path=public',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'search_path=public',
+    'platform_private.b2b_actor_scope(uuid)',         'search_path=public, pg_temp'
+  );
+  v_sig text;
+  v_md5 text; v_acl_now text; v_cfg_now text; v_owner text;
+BEGIN
+  FOR v_sig IN SELECT jsonb_object_keys(v_pre) LOOP
+    SELECT md5(p.prosrc), p.proacl::text, array_to_string(p.proconfig, ', '), r.rolname
+      INTO v_md5, v_acl_now, v_cfg_now, v_owner
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      JOIN pg_roles r ON r.oid = p.proowner
+     WHERE p.oid = to_regprocedure(v_sig);
+    IF v_md5 IS NULL THEN
+      RAISE EXCEPTION 'PÓS FALHOU: % ausente após aplicação', v_sig;
+    END IF;
+    IF v_md5 = (v_pre ->> v_sig) THEN
+      RAISE EXCEPTION 'PÓS FALHOU: hash de % não mudou (corpo não foi substituído)', v_sig;
+    END IF;
+    IF v_acl_now IS DISTINCT FROM (v_acl ->> v_sig) THEN
+      RAISE EXCEPTION 'PÓS FALHOU: ACL de % diverge (% != %)', v_sig, v_acl_now, v_acl ->> v_sig;
+    END IF;
+    IF v_cfg_now IS DISTINCT FROM (v_cfg ->> v_sig) THEN
+      RAISE EXCEPTION 'PÓS FALHOU: search_path de % diverge (% != %)', v_sig, v_cfg_now, v_cfg ->> v_sig;
+    END IF;
+    IF v_owner IS DISTINCT FROM 'postgres' THEN
+      RAISE EXCEPTION 'PÓS FALHOU: owner de % diverge (%)', v_sig, v_owner;
+    END IF;
+  END LOOP;
+  RAISE NOTICE 'PÓS OK: 3 helpers substituídos, ACL/owner/search_path preservados';
+END $$;
+
+COMMIT;

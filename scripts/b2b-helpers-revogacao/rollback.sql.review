@@ -1,0 +1,114 @@
+-- ROLLBACK — Restaura os 3 helpers aos corpos live revisados (pré-candidata).
+-- Fail-closed: aborta se o hash ATUAL não for o pré (ou seja, se a candidata
+-- não foi aplicada ou se houve drift posterior). Não toca em ACL/owner.
+--
+-- Hashes esperados no retorno (pós-rollback = pré-candidata):
+--   public.get_b2b_user_role_for_partner(uuid,uuid)  b2596473d00151ef41b4b2ce82e044cb
+--   public.is_valid_b2b_partner_user(uuid,uuid)      7b17274fb6dce728741a2a9c77710a76
+--   platform_private.b2b_actor_scope(uuid)           c85cb35201682c3c86b9a327d24c8482
+
+BEGIN;
+
+DO $$
+DECLARE
+  v_pre CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'b2596473d00151ef41b4b2ce82e044cb',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    '7b17274fb6dce728741a2a9c77710a76',
+    'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
+  );
+  v_sig text;
+  v_md5 text;
+BEGIN
+  FOR v_sig IN SELECT jsonb_object_keys(v_pre) LOOP
+    SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE p.oid = to_regprocedure(v_sig);
+    IF v_md5 IS NOT DISTINCT FROM (v_pre ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK RECUSADO: % já está no corpo pré-candidata (nada a reverter) ou drift detectado. Abortando.', v_sig;
+    END IF;
+  END LOOP;
+END $$;
+
+-- Corpos EXATOS do live revisado (pré-candidata):
+
+CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT CASE
+    WHEN public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role) THEN 'parceiro_b2b_tecnico'
+    WHEN public.has_role(p_user_id, 'parceiro_b2b'::app_role) THEN 'parceiro_b2b'
+    ELSE NULL
+  END
+  FROM public.partner_users pu
+  WHERE pu.user_id = p_user_id AND pu.partner_id = p_partner_id
+  LIMIT 1;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+    WHERE pu.user_id = p_user_id
+      AND pu.partner_id = p_partner_id
+      AND pa.ativo = true
+      AND (
+        public.has_role(p_user_id, 'parceiro_b2b'::app_role)
+        OR public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role)
+      )
+  );
+$function$;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
+ RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  WITH pr AS (
+    SELECT o.partner_account_id
+      FROM public.profiles p JOIN public.organizations o ON o.id = p.organization_id
+     WHERE p.user_id = _uid AND p.ativo = true AND o.ativo = true AND o.status = 'ativa'
+     LIMIT 1
+  ), pu AS (
+    SELECT count(*)::int c, min(partner_id::text)::uuid pid FROM public.partner_users WHERE user_id = _uid
+  )
+  SELECT EXISTS (SELECT 1 FROM pr),
+         (SELECT partner_account_id FROM pr),
+         (SELECT pid FROM pu), (SELECT c FROM pu),
+         EXISTS (SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id = pr.partner_account_id
+                  WHERE pa.ativo = true AND pa.deleted_at IS NULL),
+         EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
+$function$;
+
+-- Confere retorno aos hashes pré-candidata.
+DO $$
+DECLARE
+  v_pre CONSTANT jsonb := jsonb_build_object(
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'b2596473d00151ef41b4b2ce82e044cb',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    '7b17274fb6dce728741a2a9c77710a76',
+    'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
+  );
+  v_sig text;
+  v_md5 text;
+BEGIN
+  FOR v_sig IN SELECT jsonb_object_keys(v_pre) LOOP
+    SELECT md5(pg_get_functiondef(p.oid)) INTO v_md5
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE p.oid = to_regprocedure(v_sig);
+    IF v_md5 IS DISTINCT FROM (v_pre ->> v_sig) THEN
+      RAISE EXCEPTION 'ROLLBACK FALHOU: hash de % não retornou ao pré (atual %)', v_sig, COALESCE(v_md5, '<ausente>');
+    END IF;
+  END LOOP;
+  RAISE NOTICE 'ROLLBACK OK: 3 helpers restaurados aos hashes pré-candidata';
+END $$;
+
+COMMIT;
