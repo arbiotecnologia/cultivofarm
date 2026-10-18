@@ -47,7 +47,7 @@ END $$;
 
 -- ===== FASE 2: aplica a candidata (CREATE OR REPLACE, mesmos corpos do SQL real, schema lab) =====
 CREATE OR REPLACE FUNCTION lab.get_user_partner_id() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'lab' AS
-$$ SELECT CASE WHEN count(*) = 1 THEN min(pu.partner_id) END FROM lab.partner_users pu
+$$ SELECT CASE WHEN count(*) = 1 THEN (array_agg(pu.partner_id))[1] END FROM lab.partner_users pu
    JOIN lab.partner_accounts pa ON pa.id = pu.partner_id
    WHERE pu.user_id = lab.uid()
      AND pu.revoked_at IS NULL
@@ -56,7 +56,7 @@ $$ SELECT CASE WHEN count(*) = 1 THEN min(pu.partner_id) END FROM lab.partner_us
      AND pu.tenant_id IS NOT NULL
      AND pu.tenant_id = pa.commercial_owner_organization_id $$;
 CREATE OR REPLACE FUNCTION lab.get_partner_papel(_user_id uuid) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'lab' AS
-$$ SELECT CASE WHEN count(*) = 1 THEN min(pu.papel) END FROM lab.partner_users pu
+$$ SELECT CASE WHEN count(*) = 1 THEN (array_agg(pu.papel))[1] END FROM lab.partner_users pu
    JOIN lab.partner_accounts pa ON pa.id = pu.partner_id
    WHERE pu.user_id = _user_id
      AND pu.revoked_at IS NULL
