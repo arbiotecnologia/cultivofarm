@@ -18,7 +18,10 @@ import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 
-beforeEach(() => { state.check = () => true; state.sign.mockReset(); state.download.mockReset(); });
+beforeEach(() => {
+  state.check = () => true; state.sign.mockReset(); state.download.mockReset();
+  vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:local"), revokeObjectURL: vi.fn() }));
+});
 
 async function lease() {
   let clock = 0;
