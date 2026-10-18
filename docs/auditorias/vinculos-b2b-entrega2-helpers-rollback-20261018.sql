@@ -12,8 +12,8 @@ BEGIN
   d1 := pg_get_functiondef('public.get_user_partner_id()'::regprocedure);
   d2 := pg_get_functiondef('public.get_partner_papel(uuid)'::regprocedure);
   d3 := pg_get_functiondef('platform_private.b2b_commercial_context()'::regprocedure);
-  IF position('HAVING count(*) = 1' IN d1) = 0
-     OR position('HAVING count(*) = 1' IN d2) = 0
+  IF position('CASE WHEN count(*) = 1 THEN min(pu.partner_id)' IN d1) = 0
+     OR position('CASE WHEN count(*) = 1 THEN min(pu.papel)' IN d2) = 0
      OR position('pu.revoked_at IS NULL)<>1' IN d3) = 0 THEN
     RAISE EXCEPTION 'entrega2_rollback_antidrift: corpos divergem do instalado; abortando';
   END IF;
