@@ -1,17 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "./useStorageAccessScope";
 import { useAuthenticatedBlobUrls } from "./useAuthenticatedBlobUrls";
 import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 
 function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: string = "consultor-arquivos") {
-  const { user, profile, roles, loading: authLoading, authzReady = true, authzEpoch = 0 } = useAuth();
-  // Foundation de cache (mesma identidade): lease pendente/expirada esconde
-  // URLs assinadas; época no escopo impede que respostas antigas reabram.
-  const ready = !authLoading && !!user?.id && profile?.user_id === user.id &&
-    profile.ativo === true && profile.senha_provisoria !== true &&
-    !!profile.organization_id && roles.length > 0 && authzReady;
-  const scope = JSON.stringify([ready, user?.id, profile?.organization_id, [...roles].sort(), bucket, paths, authzEpoch]);
+  const access = useStorageAccessScope(JSON.stringify(["signed-attachments", bucket, paths]));
+  const { ready, scope } = access;
   const currentScope = useRef(scope);
   currentScope.current = scope;
   const generation = useRef(0);
@@ -21,7 +16,8 @@ function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: strin
   useEffect(() => {
     let cancelado = false;
     const gen = ++generation.current;
-    const isCurrent = () => !cancelado && gen === generation.current && currentScope.current === scope;
+    const authorized = access.capture();
+    const isCurrent = () => !cancelado && gen === generation.current && currentScope.current === scope && authorized();
     setResult({ scope, urls: {}, loading: ready, error: null });
 
     const fetchUrls = async () => {
@@ -29,7 +25,7 @@ function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: strin
       const validPaths = Array.from(
         new Set(paths.filter((p): p is string => typeof p === "string" && p.length > 0)),
       );
-      if (!ready || validPaths.length === 0) {
+      if (!isCurrent() || validPaths.length === 0) {
         setResult({ scope, urls: {}, loading: false, error: null });
         return;
       }
