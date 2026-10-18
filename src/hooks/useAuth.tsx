@@ -432,7 +432,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeoutFn: (h) => window.clearTimeout(h as number),
       isVisible: () => document.visibilityState === "visible",
       isOnline: () => navigator.onLine,
-      refreshOnConfirmation: b2bContextOnly,
+      // Preserve published B2B confirmation refresh. Producer/financial renew
+      // the lease without remount on identical observed context; real changes,
+      // explicit revalidation, expiry and identity still retire the view.
+      // No claim of detecting an unobserved transient ABA between polls.
+      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly,
       onStateChange: (next) => {
         if (next === "pending" || next === "expired") {
           void queryClient.cancelQueries();
@@ -450,7 +454,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         generationRef.current += 1;
         void queryClient.cancelQueries();
         queryClient.clear();
-        // Only an untrusted client preference survives producer confirmation.
+        // Only an untrusted client preference survives producer context changes.
         // Membership/cache authorization still expires with every epoch.
         clearActivePortalContext({ preserveClientPreference: producerContextOnly });
         if (!producerContextOnly) window.dispatchEvent(new Event("portal-client-preferences-cleared"));

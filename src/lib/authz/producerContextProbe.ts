@@ -28,6 +28,6 @@ export async function producerContextProbe(userId: string, organizationId: strin
   if (finalError) throw new Error("producer_probe_unavailable");
   if (finalOrg !== organizationId || !rows.length) return deny();
   // Preserve ALL eligible clients. Sorted set is observation, not a revision,
-  // no server budget/ABA guarantee; monitor refreshes even identical confirmations.
+  // no server budget/ABA guarantee; identical confirmation renews only the lease.
   return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, [...new Set(rows.map(row => row.id))].sort()]) };
 }

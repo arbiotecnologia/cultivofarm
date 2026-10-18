@@ -27,7 +27,7 @@ export async function internalContextProbe(userId: string, organizationId: strin
   const { data: finalOrg, error: finalError } = await rpc.call(supabase, "h15_actor_organization");
   if (finalError) throw new Error("internal_probe_unavailable");
   if (finalOrg !== organizationId) return deny();
-  // No revision/budget fabrication: repeated confirmation refreshes existing
-  // monitor caches. Separate statements cannot prove transient ABA/snapshot.
+  // No revision/budget fabrication: identical observation renews only the lease.
+  // Separate statements cannot prove transient ABA/snapshot.
   return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, ["financeiro"]]) };
 }
