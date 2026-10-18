@@ -1,0 +1,44 @@
+{
+  "baseline_commit": "673f248ab206f6f276bb1c1306bb15985559285a",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "receipt": "User 2026-10-18 23:42: identical producer/financial confirmations preserve view/draft; producer integral live preflight PASS reported by auditor; producer true, financial false, no publication/DDL",
+  "files": [
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "candidate": "1.candidate.review",
+      "rollback": "1.rollback.review",
+      "pre_sha256": "462eed44dbaa6706a2392e730570d216534221e576c9ea48329b338ccc7114c2",
+      "post_sha256": "e848f1054c0fbb3941bf69225741d159895e2a8abdc669a3ba7d86092999c7e3"
+    },
+    {
+      "path": "src/lib/authz/producerContextProbe.ts",
+      "candidate": "2.candidate.review",
+      "rollback": "2.rollback.review",
+      "pre_sha256": "f46e511ebb45ea085305f0a61913c10499c9755f3f478f187560f45b4f406efb",
+      "post_sha256": "45ca35467c461f6431aae0943f55cc5d6ffda922f2cf7c10d7d1fffdda279bc7"
+    },
+    {
+      "path": "src/lib/authz/internalContextProbe.ts",
+      "candidate": "3.candidate.review",
+      "rollback": "3.rollback.review",
+      "pre_sha256": "01199d7297fe604ddae5cef2b4ae7512425983d9a20aeff2e2e33c58b6a61ce3",
+      "post_sha256": "a0dd03e8c89781b6048d3ea6dcd32f0988a561d9558f8763a497cb89a74f420f"
+    }
+  ],
+  "activation": {
+    "path": "src/lib/authz/authzEpochGate.ts",
+    "candidate": "gate.current.review",
+    "rollback": "gate.current.review",
+    "pre_sha256": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5",
+    "post_sha256": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5"
+  },
+  "protected_sha256": {
+    "src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
+    "src/lib/authz/b2bContextProbe.ts": "171a8ed48d1bdfefcb5600f02ce574e1dff558f2c1c0dad04c75fb0303751d61",
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/components/guards/B2BRouteGuard.tsx": "7b067389a7cc60fcfc929a17e183e0eb57d130c8ebff54e2633d728ad1b28926",
+    "scripts/authz-cache/producer-open-session/preflight-readonly.sql.review": "a274481a4f22d096de1c8903db230f42c505bd9858b999672bfda3366b007c31",
+    "src/lib/authz/authzEpochGate.ts": "673dae66c9565f00f04073be64585c82a561b7a504124cd024ec2b5f45d1c3b5"
+  }
+}
