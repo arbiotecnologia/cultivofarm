@@ -47,3 +47,8 @@
 - [x] Decisão: receipt privado novo mínimo (não estender partner_audit_logs); candidata B1 bloqueada.
 - [x] Simulação PG descartável 17/17.
 - [ ] Instalação B1+: bloqueada por backup/restauração, revisão externa e provas JWT/RLS A/B.
+
+## Entrega Operacional 1 — can_user_access_cliente(uuid,uuid)
+- [x] Auditoria read-only: brechas revogação/parceiro inativo/PTC órfão confirmadas; baseline md5 c610786f.
+- [x] Candidata + rollback + preflight em docs/auditorias/vinculos-b2b-entrega1-*; testes PG descartável 4 fases PASS.
+- [ ] Instalação: NO-GO até backup/restauração comprovados e provas JWT/RLS A/B; containment PUC e 12 policies intactos.
