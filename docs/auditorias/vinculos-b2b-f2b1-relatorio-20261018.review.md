@@ -97,15 +97,15 @@ Não combinar com candidata escalar owner-only anterior: ela não preserva legad
 
 Comando: `bun run test -- src/test/saas/b2b-f2b1-context-postgres.test.ts src/test/saas/b2b-f2b-helpers-postgres.test.ts`.
 
-Resultado da rodada: **2 arquivos / 2 testes passaram**, PostgreSQL 17.9 descartável por socket local. Novo harness `scripts/tests/b2b-f2b1-context-local.py`: **32 asserts SQL**, rollback por hash exato; anterior **26 asserts / 2 hashes**. Não comparar “32” com 32 logins ou políticas reais.
+Resultado final às 17:57 UTC: **2 arquivos / 2 testes passaram**, PostgreSQL 17.9 descartável por socket local. Novo harness `scripts/tests/b2b-f2b1-context-local.py`: **35 asserts SQL**, rollback por hash exato; anterior **26 asserts / 2 hashes**. Não comparar “35” com 35 logins ou políticas reais.
 
 Novo teste executa bodies reais baseline/candidata; Auth, h15, role e entitlements são dependências sintéticas claramente identificadas, **não mocks para obter homologação**. Baseline de scope/guard/projeção/trigger e helpers por par é SQL real capturado. Preflight B1a recusa containment ausente; B1b recusa manifest das 29 ausente no schema local. Não foi provada instalação integral do preflight contra todas policies hospedadas.
 
-Asserts cobrem owner/projeção, revogado, vigência, tenant NULL/divergente, legado válido e tenant legado preservado, parceiro errado/inativo/deletado, perfil inativo/provisório, entitlement, papel técnico/mismatch, 2+, histórico e bloqueio persistente do scope legado, roles mistas, tenant estrangeiro, ator distinto de alvo, elegibilidade de alvo não sendo autoridade do ator, defeitos baseline de revogado/cleanup inativo, admin/superadmin/no actor/anon ACL.
+Asserts cobrem owner/projeção, revogado, vigência, tenant NULL/divergente, legado válido e tenant legado preservado, parceiro errado/inativo/deletado, perfil inativo/provisório, entitlement, papel técnico/mismatch, 2+, histórico e bloqueio persistente do scope legado, roles mistas, tenant estrangeiro, ator distinto de alvo, elegibilidade de alvo não sendo autoridade do ator, defeitos baseline de revogado/cleanup inativo, admin/superadmin/no actor/anon ACL. A rodada final também executou sync real: criação de PTC, resíduo ativo após mudança de assignment_type e overload de cliente autorizando alvo técnico revogado foram reproduzidos no schema descartável. São testes do defeito baseline, não correções instaladas nem exploração com sessão real.
 
 Falhas iniciais corrigidas: search_path dos doubles locais; expectativa de histórico legado falhou por dependência real e virou **teste do bloqueador**, não alegação de suporte. Exceptions aceitas apenas no erro esperado, com flag que exige rejeição; nenhuma exceção genérica conta PASS.
 
-**Não realizados:** DDL/DML/pre-prova hosted, login/logout/MFA/JWT, RLS real A/B, writer autorizado de terceiros, cleanup real, concorrência/idempotência hosted, Storage autenticado/TTL, financeiro/fiscal reais, portal/cache após revogação. Build automático observado OK; typecheck segue harness automático sem alegar comando manual. Lint não executado, sem PASS global.
+**Não realizados:** DDL/DML/pre-prova hosted, login/logout/MFA/JWT, RLS real A/B, writer autorizado de terceiros, cleanup real, concorrência/idempotência hosted, Storage autenticado/TTL, financeiro/fiscal reais, portal/cache após revogação. Build automático observado OK em `/tmp/observability/build-errors.log`; typecheck separado sem evidência nesta rodada, portanto não declarado PASS. Lint global não certificado; sem PASS global de aplicação.
 
 ## 8. Próximo recorte seguro
 
