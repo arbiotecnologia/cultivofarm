@@ -66,8 +66,17 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 - Guards de hash anti-drift dos 3 corpos baseline; pós-condições read-only;
   assinaturas, ACL, SECURITY DEFINER e search_path preservados.
 
-**Rollback:** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
-— restaura os 3 corpos baseline exatos com anti-drift e verificação de hash.
+**Rollback (rev 2.2):** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
+— restaura os 3 corpos baseline exatos. A guarda anti-drift foi substituída de
+marcadores `position()` por **hashes md5 exatos de `pg_get_functiondef`** dos 3
+corpos candidatos, computados pelo PostgreSQL no laboratório e gravados no
+arquivo pelo runner de teste (seção `BEGIN/END HASH GUARD`):
+`get_user_partner_id` = `b334c3a454ebc4233d3b9e0d0a700d78`,
+`get_partner_papel` = `f84f898ead03dfd646ece50d16baf909`,
+`b2b_commercial_context` = `a31d198c9a9fc9a5e7c397ab36fe0fa4`.
+Prova no laboratório: um drift que **preserva os antigos marcadores textuais**
+(predicado tautológico adicionado, marcadores intactos) é rejeitado atomicamente
+pela guarda de hash — a guarda anterior por `position()` o aceitaria.
 
 ## 3. Testes locais (PostgreSQL descartável, paridade de colunas live)
 
