@@ -18,7 +18,7 @@ monitor real com relógio injetado; não prova exploração JWT/Storage live.
 Correção nos mesmos hooks: `useStorageAccessScope` reconsulta
 `checkAuthzAccess` existente no ready e no capture (antes/depois do await),
 sem novo autorizador. `useSignedUrls` reutiliza esse fence; Blob/opener também
-rechec am início/conclusão. Lifecycle em layout effect impede que StrictMode
+rechecam início/conclusão. Lifecycle em layout effect impede que StrictMode
 capture uma geração já desmontada; teste StrictMode existente preservado.
 Produtor/internos continuam sem monitor neste rollout: o check existente é
 no-op para eles, não inventamos lease ou promessa de revogação global.
@@ -147,3 +147,32 @@ há risco de resposta tardia retornando. Não tratar rollback como revogação d
    não declarar todas sessões internas/produtor revogáveis com rollout B2B.
 
 Resultados finais ficam no bloco abaixo; homologação global NÃO concluída.
+
+## Validação final desta rodada
+
+- Vitest direcionado: **234/234 PASS, 17 arquivos** (`src/test/equipe-tecnica`,
+  authzEpochMonitor, authzFoundation.integration, b2bOpenSession.integration,
+  b2bPreviewReleaseGate e ClienteDocumentosTab.formSubmit). Inclui 5 adversários
+  novos com monitor real, 4 componentes reais com lease expirada sem rerender,
+  resposta tardia/novo início/Blob preparado/StrictMode e regressão B2B.
+- PostgreSQL local: **38 checks PASS**, incluindo rejeições esperadas e
+  reproduções de riscos, **não 38 aprovações de autorização**. 21 checks do
+  harness original passaram antes da extensão; completo estendido não usa
+  réplica de writer/revision/guard no lugar dos corpos capturados.
+- Rollback/staging: **2/2 unittest PASS** (hash/bytes e drift antes de output).
+  Manifest contém SHA256 PRE/POST fixos dos 4 hooks; testes não os recalculam
+  para substituir os goldens. Nenhum arquivo Edge é incluído/aplicado.
+- Build/typecheck **automáticos**: `build OK` em 2026-10-18T23:23:21Z;
+  nenhum build/typecheck manual. Erro inicial de inferência literal no teste
+  novo corrigido, e regressão StrictMode identificada/corrigida sem enfraquecer teste.
+- `git diff --check` PASS, flags/monitor/signer Edge/runtime fora dos 4 hooks
+  preservados em relação à baseline. Nenhum teste HTTP/JWT ou login real desta
+  rodada. Relatório não converte inspeção local/relato antigo em prova live.
+
+Paths de revisão: `scripts/authz-cache/attachment-lease-review/` (manifest,
+candidate/rollback por hook, stage.py, test_stage.py, preflight-readonly.sql);
+`src/test/equipe-tecnica/attachmentLeaseDeadline.test.tsx`;
+`src/test/equipe-tecnica/StorageDownloads.session.test.tsx`;
+`scripts/authz-cache/v6/test-isolated.py` e fontes fixas nele enumeradas.
+O relatório existente de aceite B2B possui apenas link para este adendo;
+roadmap conserva dependências externas abertas nominalmente.
