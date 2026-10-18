@@ -29,9 +29,9 @@ DECLARE
     'platform_private.b2b_actor_scope(uuid)',         '09b184da91c59f8b1f9be72217f8c37e'
   );
   v_acl CONSTANT jsonb := jsonb_build_object(
-    'public.get_b2b_user_role_for_partner(uuid,uuid)', '{authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres}',
-    'public.is_valid_b2b_partner_user(uuid,uuid)',    '{authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres}',
-    'platform_private.b2b_actor_scope(uuid)',         '{postgres=X/postgres,service_role=X/postgres}'
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'platform_private.b2b_actor_scope(uuid)',         'postgres=X/postgres,service_role=X/postgres'
   );
   v_cfg CONSTANT jsonb := jsonb_build_object(
     'public.get_b2b_user_role_for_partner(uuid,uuid)', 'search_path=public',
@@ -137,9 +137,9 @@ DECLARE
     'platform_private.b2b_actor_scope(uuid)',         'c85cb35201682c3c86b9a327d24c8482'
   );
   v_acl CONSTANT jsonb := jsonb_build_object(
-    'public.get_b2b_user_role_for_partner(uuid,uuid)', '{authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres}',
-    'public.is_valid_b2b_partner_user(uuid,uuid)',    '{authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres}',
-    'platform_private.b2b_actor_scope(uuid)',         '{postgres=X/postgres,service_role=X/postgres}'
+    'public.get_b2b_user_role_for_partner(uuid,uuid)', 'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'public.is_valid_b2b_partner_user(uuid,uuid)',    'authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',
+    'platform_private.b2b_actor_scope(uuid)',         'postgres=X/postgres,service_role=X/postgres'
   );
   v_cfg CONSTANT jsonb := jsonb_build_object(
     'public.get_b2b_user_role_for_partner(uuid,uuid)', 'search_path=public',
