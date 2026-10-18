@@ -54,5 +54,9 @@ WITH expected(sig,h) AS (VALUES
 SELECT e.sig,md5(pg_get_functiondef(p.oid)) AS actual_md5,
  (md5(pg_get_functiondef(p.oid))=e.h) IS TRUE AS body_ok,p.proacl,p.proconfig,p.provolatile,p.prosecdef
 FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.sig);
+-- Pré-candidata, rpc_partner_message_counters DEVE estar prosecdef=true;
+-- pós-candidata, prosecdef=false com md5 de corpo e proacl INALTERADOS.
+SELECT p.prosecdef AS counters_secdef, md5(pg_get_functiondef(p.oid)) AS counters_md5, p.proacl AS counters_acl
+FROM pg_proc p WHERE p.oid='public.rpc_partner_message_counters(uuid)'::regprocedure;
 -- ACLs must remain captured closed: authenticated only authorized callable
 -- wrappers, b2b_actor_scope has postgres/service-only; never add grants.
