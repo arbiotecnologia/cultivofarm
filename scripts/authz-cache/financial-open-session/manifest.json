@@ -40,5 +40,10 @@
     "rollback": "financial-gate.deactivation.review",
     "pre_sha256": "b176c387bf2e92224ca9e86b4b2e749906d70a6f655db3d58109e0d3c8f1aad5",
     "post_sha256": "c369cf940c88149c0c5469733bd25aaf8d4393113944054d7c51b333e385d487"
+  },
+  "review_hashes": {
+    "preflight-readonly.sql.review": "af275f061285cbc054f590fb685b3964771917f99e047dc658b403e63aacd4da",
+    "stage.py": "3284c6583c38131654c480b971354be4e7026bc5d6cfe7d88d2f418a7c1833bf",
+    "test_stage.py": "699320bc96ef24a4c661fa1cd812c8c2f6ae9e2ed39b8dd28f4e831110a1b168"
   }
 }
