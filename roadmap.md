@@ -1,9 +1,14 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:42 — continuidade de drafts por confirmação
+- [x] Reproduzir remount periódico (6 FAIL antes) e limitar refresh por confirmação ao B2B publicado.
+- [x] Testar drafts por dois polls, mudança real/revoke/roles/inativação/expiração/revalidação/identity e restore sem ressuscitar drafts (183/183).
+- [x] Preparar delta/rollback e resultados em principal-draft-release e docs/auditorias/principal-drafts-20261018.review.md (stage2/2); produtor true, financeiro false, anexos preservados; preflight produtor integral PASS informado pelo auditor.
+
 ## 18/10 23:37 — preferência produtor e ativação limitada
 - [x] Separar preferência estável de autorização/cache por epoch e provar B sobrevivendo dois polls, revogação parcial e isolamento UID/tenant (2/2 FAIL antes, PASS após).
 - [x] Ativar somente produtor após regressões/preflight de fonte, registrar delta/hashes/rollback (146/146 + stage2/2); financeiro/global/Blob fechados, sem hosted/publicação.
-- [ ] Live preflight/revisão/login real produtor: aguardam auditor, antes da publicação externa.
+- [ ] Revisão delta/login real produtor aguardam auditor antes da publicação externa; preflight integral produção PASS informado 23:42.
 
 ## 18/10 23:32 — inativação interna financeira, candidata limitada
 - [x] Registrar evidência real independente e inventariar autoridade self/h15/readiness/roles + guards internos.
