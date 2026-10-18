@@ -99,3 +99,36 @@ tolerante (revoga de PUBLIC sempre; de anon/authenticated só se existirem).
    registrando saídas (prova hospedada).
 3. F1 em produção somente com aprovação explícita; T7 read-only antes/depois.
 4. PENDÊNCIA P1 (parceiro sem tenant) segue NO-GO do Cutover.
+
+## 7. Atualização 17:02 UTC — SQL executável PRÉ-F1.2 entregue
+
+**PRÉ-F1 aplicada em homolog pelo auditor externo** (migration
+`cultivofarm_pref1_partner_owner_homolog_only_20261018`, auditada: coluna
+uuid nullable sem default, 1 parceiro sem owner intencional). Produção intocada.
+
+Novo arquivo: `vinculos-b2b-pref1-2-migracao-homolog-20261018.sql` — P0–P3
+executável, corpos **verbatim** de produção (overloads verificados: 1 oid por
+função; `acquire_gate`/`touch_related_profiles` SECURITY DEFINER,
+`block_truncate` INVOKER, todos `search_path=''`, owner postgres, EXECUTE só
+owner). Preflight P0 aborta em qualquer divergência (schema existente,
+`auth.uid()` ausente, tabelas referenciadas ausentes, PRÉ-F1 faltando,
+triggers já presentes). Rollback explícito sem `DROP SCHEMA CASCADE`.
+Teste de fumaça transacional (BEGIN/ROLLBACK) incluído no rodapé.
+Funções `acquire_invitation_gate`, `touch_invitation_profiles`,
+`require_admin`, `advance_stamp` e triggers das outras 4 tabelas ficam para
+um P4 futuro — fora do escopo desta fase.
+
+**Validação local (Postgres 17.9 descartável simulando homolog pós-PRÉ-F1):**
+
+| Verificação | Resultado |
+|---|---|
+| PRÉ-F1.2 P0–P3 | **PASS** — `pref12_p0 OK` + `pref12 OK: schema, state, 3 funções e 3 triggers replicados` |
+| Smoke 1: gate incrementa revision | **PASS** (0 → 1) |
+| Smoke 2: TRUNCATE bloqueado | **PASS** (`user_bulk_truncate_forbidden`) |
+| Smoke 3: UPDATE dispara gate+touch | **PASS** |
+| Teste negativo: reexecução | **ABORTA** no P0 (`schema cf_user_guards_v1 já existe`) |
+| Rollback completo | **PASS** — 3 triggers, 3 funções, state e schema removidos, COMMIT limpo |
+
+**Pendente:** revisão externa do SQL executável e aplicação hospedada em
+homolog (PRÉ-F1.2 → F1 → T1–T7) com saídas registradas. Nada aplicado ou
+publicado por este agente.
