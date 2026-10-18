@@ -101,7 +101,9 @@ novo é SELECT-only/inventário+guard, não um harness de concorrência sintéti
   gestor/técnico, revoke→restore sem reload, timeout/offline/erro/aba oculta/foco,
   cache/DOM, consultas antigas, objectURL real, tuple igual, ABA OBSERVADO e
   perfis excluídos/gate false. Não JWT/RLS/Storage HTTP real.
-- Regressões direcionadas: resultados finais registrados após execução; sem
+- Regressões direcionadas: **175/175 testes, 11 arquivos PASS**; **6/6 guardas
+  Python PASS**; build/typecheck automáticos mais recentes `build OK`
+  (`2026-10-18T22:50:45Z`), sem execução manual. Sem
   novo ciclo de milhares de testes. Correção complementar de resolução TS do
   import do guard real em d51-5: caminho relativo de TESTE, Edge intacta.
 - d51-4 continua `Configuracoes.tsx`→`usuariosListQuery.ts`, não `useAuth`.
@@ -112,3 +114,18 @@ novo é SELECT-only/inventário+guard, não um harness de concorrência sintéti
   aberta/implantação dependem do auditor. Nenhum login/revogação hosted pelo agente.
 - Commit é gerenciado automaticamente pelo ambiente; não criar commit por Git
   nem inventar hash antes de disponível.
+
+### Artefatos exatos
+
+- `scripts/authz-cache/b2b-open-session/preflight-readonly.sql.review`
+- `scripts/authz-cache/b2b-open-session/stage-review.py`
+- `scripts/authz-cache/b2b-open-session/manifest.json` (hashes fixos de fontes;
+  testes nunca regeneram goldens)
+- `scripts/tests/b2b-open-session-stage.test.py`
+- `src/test/config/b2bOpenSession.integration.test.tsx`
+- `docs/auditorias/b2b-tela-aberta-20261018.review.md`
+
+Rollback de gate apenas **staged**, não aplicado; preflight SQL não executado
+em PostgreSQL local/hosted nesta etapa. O staging tem testes sintéticos de receipt
+e nunca fabrica aprovação do auditor. `git log` observado durante a rodada não
+é prova de commit final desta entrega.
