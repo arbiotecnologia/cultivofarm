@@ -209,3 +209,29 @@ hosted, nenhuma publicação, PUC/PTC e contratos intocados.
 
 ### Riscos residuais
 - Monitor NÃO está ativo em produção (gate fechado); riscos de integração (fingerprint RPC ausente, preflight monotônico e contenção de anexos pendentes) NÃO estão homologados. Rollback local: reverter monitor, useAuth e testes.
+
+## Adendo 2026-10-18 (rev 2 do monitor — parser do fetcher + janela do arm)
+
+Revisão independente de integração encontrou dois bypasses residuais, ambos corrigidos sem novo fluxo:
+
+### 1. Parser do fetcher em `src/hooks/useAuth.tsx` rebaixava valor inválido para null
+- Antes: `typeof row?.server_remaining_ms === 'number' ? ... : null` transformava string/objeto/bool presente em `null`, e o monitor concedia lease local indevida.
+- Agora: ausente/null => `null` (contrato v6, lease local); valor PRESENTE é repassado bruto ao monitor, que falha fechado em não numérico/não finito/negativo. Sem fallback.
+- Teste de integração AuthProvider (`authzFoundation.integration.test.tsx`): RPC entregando string `"15000"`, objeto `{ms:15000}` e booleano `true` => conteúdo sensível OCULTO, "Sessão de acesso pausada", sem poll agendado (fpCalls permanece 1 após 30s), sem fallback de lease local.
+
+### 2. Janela entre pré-checagem e arm do timer no monitor
+- O relógio monotônico podia cruzar o deadline entre a pré-checagem (deadline futuro) e `armLeaseDeadline()`: o estado ia a `valid`, o timer expirava, mas `onEpochChange` e `schedulePoll` ainda eram chamados.
+- Agora: após `armLeaseDeadline()`, re-checa `state === "valid" && generation === myGen` ANTES de `onEpochChange`/`schedulePoll`. Nenhum callback de época nem poll sai após expiração.
+- Teste unitário com relógio injetado (`authzEpochMonitor.test.ts`): `onStateChange` avança o relógio além do deadline dentro de `setState("valid")` => expira com "timeout", sem epoch change, sem poll (fetchCalls não cresce).
+
+### Verificação
+- Vitest focado: 44/44 (29 monitor + 15 integração), exit 0.
+- Suíte completa: 7820 passed, 8 failed em 5 arquivos PRÉ-EXISTENTES e não relacionados (canonicalTypesGuard, cultivofarm-runtime.static, d51-4/d51-5, etapasVisita) — confirmado que não importam nem dependem dos arquivos alterados (ex.: d51-4 exige string `rpc("tenant_admin_list_users"` ausente já no HEAD).
+- `npx tsgo --noEmit` exit 0; build OK.
+- Testes locais NÃO são prova de JWT/RLS real; monitor NÃO está ativo em produção.
+
+### Evidência externa registrada (não é aprovação)
+- Captura externa de 52 corpos/ACL/hashes de writers live em `auditoria-20261018/writers-live-20261018.json` (workspace do auditor). Registrada como evidência; NÃO constitui aprovação de concorrência nem autoriza abrir gate.
+
+### Gates inalterados
+- `AUTHZ_CACHE_FOUNDATION_ENABLED` permanece `false`; `get_my_authz_fingerprint`/`_v6` ausentes no pg_proc; nenhuma publicação, DDL ou DML hosted neste recorte. Risco NÃO é nulo: integração permanece não homologada.
