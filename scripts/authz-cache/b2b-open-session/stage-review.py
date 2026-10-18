@@ -27,27 +27,28 @@ def stage(manifest, receipt, output):
                   "legacy_signed_urls_excluded", "rollback_client_drain_reviewed", "auditor_release"):
         if receipt.get(field) is not True:
             raise ValueError("approval_missing:" + field)
-    if receipt.get("manifest_sha256") != sha(json.dumps(manifest, sort_keys=True).encode()):
+    if receipt.get("manifest_sha256") != sha(json.dumps(manifest, sort_keys=True).encode("utf-8")):
         raise ValueError("receipt_manifest_mismatch")
     for path, expected in manifest["files"].items():
         if (ROOT / path).resolve() != ROOT / path or Path(path).is_absolute():
             raise ValueError("manifest_path_invalid")
         if sha((ROOT / path).read_bytes()) != expected:
             raise ValueError("source_drift:" + path)
-    gate = (ROOT / GATE).read_text()
+    gate_bytes = (ROOT / GATE).read_bytes()
+    gate = gate_bytes.decode("utf-8")
     marker = "export const AUTHZ_CACHE_FOUNDATION_ENABLED: boolean = false;"
     if gate.count(marker) != 1 or ' = "b2b-context";' not in gate:
         raise ValueError("gate_baseline_mismatch")
     output.mkdir(parents=True, exist_ok=True)
     # Deliberately not .ts in src; auditor must review the exact delta and release.
-    candidate = gate.replace(marker, marker.replace("false", "true"))
-    (output / "gate-candidate.ts.review").write_text(candidate)
-    (output / "gate-rollback.ts.review").write_text(gate)
-    (output / "gate-guards.json").write_text(json.dumps({
-        "project_ref": REF, "scope": "b2b-context", "pre_sha256": sha(gate.encode()),
-        "post_sha256": sha(candidate.encode()), "rollback_requires_exact_post": True,
+    candidate_bytes = gate.replace(marker, marker.replace("false", "true")).encode("utf-8")
+    (output / "gate-candidate.ts.review").write_bytes(candidate_bytes)
+    (output / "gate-rollback.ts.review").write_bytes(gate_bytes)
+    (output / "gate-guards.json").write_bytes((json.dumps({
+        "project_ref": REF, "scope": "b2b-context", "pre_sha256": sha(gate_bytes),
+        "post_sha256": sha(candidate_bytes), "rollback_requires_exact_post": True,
         "rollback_requires_client_drain": True, "applied": False,
-    }, indent=2) + "\n")
+    }, indent=2) + "\n").encode("utf-8"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        stage(json.loads((HERE / "manifest.json").read_text()), json.loads(args.receipt.read_text()), args.output)
+        stage(json.loads((HERE / "manifest.json").read_bytes().decode("utf-8")),
+              json.loads(args.receipt.read_bytes().decode("utf-8")), args.output)
     except (ValueError, OSError) as error:
         raise SystemExit(str(error))
