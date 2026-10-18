@@ -1,0 +1,30 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "scope": "b2b-context",
+  "manifest_sha256": "124f97e16d2b4717de106cf57b6504468a1dc48f0d1ea2ea5403617f0709fa4f",
+  "canonical_rpc_reviewed": true,
+  "rls_rpc_denials_reviewed": true,
+  "bounded_observation_accepted": true,
+  "legacy_signed_urls_excluded": true,
+  "rollback_client_drain_reviewed": true,
+  "auditor_release": true,
+  "release_scope": "preview_only_not_publication",
+  "source": "Liberação expressa de Renato S. Cunha / auditor no chat, 2026-10-18 22:55 UTC; receipt/staging guardados informados pelo auditor. Registro de autorização, não recaptura pelo agente.",
+  "reviewed_commit": "ffd299e9",
+  "independent_checks": {
+    "manifest": "17/17 informado pelo auditor",
+    "monitor": "9/9 + 4/4 padrão + 4/4 refreshOnConfirmationtrue informado pelo auditor",
+    "preflight": "integral READ ONLY executado externamente no projeto canônico com assinatura get_user_partner_id() corrigida",
+    "get_user_partner_id_md5": "b334c3a454ebc4233d3b9e0d0a700d78",
+    "context_md5": "a31d198c9a9fc9a5e7c397ab36fe0fa4",
+    "wrapper_invoker_md5": "a40e2efac2d503a1840896ac8b458ce9",
+    "policies_checksum": "cc8cc0e7107010774a86906273d3fd09"
+  },
+  "poll_ms": 10000,
+  "lease_ms": 15000,
+  "blob_enabled": false,
+  "v6_released": false,
+  "real_open_session_test": "pending_auditor",
+  "publication_authorized": false,
+  "rollback_condition": "Exact POST hash and stop/drain monitored clients; staged guard requirements remain unchanged."
+}

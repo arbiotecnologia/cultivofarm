@@ -1,0 +1,9 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "scope": "b2b-context",
+  "pre_sha256": "38d2bdf7b1302ed5dbac3f6cd86105991ac9813996183d27a81c5d3d7e159d5d",
+  "post_sha256": "8405d4354dfe2504b088a75fd048d1162f567b95365a6d6c1d9cf1ab9bd75e1b",
+  "rollback_requires_exact_post": true,
+  "rollback_requires_client_drain": true,
+  "applied": false
+}

@@ -1,4 +1,4 @@
-# Revogação B2B com tela aberta — candidata mínima, gate false
+# Revogação B2B com tela aberta — liberada somente na prévia
 
 ## Resultado e escopo
 
@@ -6,8 +6,48 @@ O monitor EXISTENTE no AuthProvider agora admite rollout **somente B2B exclusivo
 (`parceiro_b2b` ou `parceiro_b2b_tecnico`). Usa a RPC EXISTENTE
 `get_my_commercial_partner_context` pelo cliente canônico. Não instala fingerprint,
 resolver, tabela, revision ledger, grants, RLS ou Edge. Nenhuma operação hosted ou
-publicação pelo agente. `AUTHZ_CACHE_FOUNDATION_ENABLED=false` permanece no runtime;
+publicação pelo agente. `AUTHZ_CACHE_FOUNDATION_ENABLED=true` somente na prévia por liberação expressa 22:55;
 Blob/principal/troca de vínculos não foram ativados.
+
+### Liberação limitada 22:55 UTC — estado atual
+
+- Auditor autorizou exclusivamente habilitar a prévia, após revisão `ffd299e9`:
+  17/17 hashes, monitor 9/9 + 4/4 padrão + 4/4 refreshOnConfirmationtrue PASS
+  informados externamente. Preflight integral READ ONLY executado pelo auditor
+  no projeto canônico; assinatura de inventário corrigida para `get_user_partner_id()`.
+- Confirmados externamente: helper `b334c3a454ebc4233d3b9e0d0a700d78`, contexto
+  `a31d198c9a9fc9a5e7c397ab36fe0fa4`, wrapper INVOKER
+  `a40e2efac2d503a1840896ac8b458ce9`, policies checksum
+  `cc8cc0e7107010774a86906273d3fd09`, ACL/owner/config/helpers preservados.
+  Login revogado negou após reload/restaurado; admin B negado portal. Não é
+  conclusão do teste de revogação sem reload, que será feito pelo auditor.
+- Receipt: `scripts/authz-cache/b2b-open-session/receipt-preview-20261018-2255.json`.
+  Registra autorização no chat e aceita 10s poll/15s lease em navegador ativo,
+  signedURLs já divulgadas excluídas, rollback com drenagem; não inventa execução
+  live pelo agente ou homologação. Publicação e v6 amplo NÃO liberados.
+- Manifest permanece baseline de staging **false**, com somente hash estático do
+  preflight corrigido; receipt assina seu SHA256 canônico. Não atualizar baseline
+  para true: preserva reprodução do staging com baseline original e rejeita
+  reaplicação automática no runtime já habilitado (`source_drift`).
+- Staging gerado fora do runtime em `/tmp/b2b-preview-release-20261018-2255`,
+  cópias de revisão persistidas em
+  `scripts/authz-cache/b2b-open-session/staged-preview-20261018-2255/`:
+  `gate-candidate.ts.review`, `gate-rollback.ts.review`, `gate-guards.json`.
+  Guard `applied:false` descreve a geração (script não aplica); runtime promovido
+  separadamente por delta único false→true, sem alteração de comentários/corpos.
+  PRE SHA256 `38d2bdf7b1302ed5dbac3f6cd86105991ac9813996183d27a81c5d3d7e159d5d`;
+  POST SHA256 `8405d4354dfe2504b088a75fd048d1162f567b95365a6d6c1d9cf1ab9bd75e1b`.
+- Demais seções de preparação abaixo são histórico anterior à liberação; as
+  pendências de revisão live ali listadas foram satisfeitas para ESTE recorte
+  conforme receipt, não para v6/global. Prova JWT sem reload aguarda auditor.
+- Validação local da ativação: **76/76 testes, 4 arquivos PASS**, incluindo 3
+  assertions de configuração real sem mocks (gate true/scope B2B/Blob false),
+  29 integração B2B, 29 monitor e 15 fingerprint histórico mockado; esse último
+  não ativa v6 no runtime. **6/6 guardas Python PASS**. Build/typecheck automático
+  `build OK` em `2026-10-18T22:56:03Z`; nenhuma execução manual de build/typecheck.
+  POST runtime idêntico ao candidato, rollback PRE exato e demais fontes do
+  manifest preservadas. Preflight SHA256 corrigido:
+  `eabe50fafee25d13ec182d1083ecf62be9dad66b192b68a591b30347d1c19e16`.
 
 Backend dos três helpers: aplicado pelo auditor, migration `20261018222908`,
 commit `80e8347`, hashes/ACL/RLS e SQL independentes aprovados externamente;
@@ -90,7 +130,7 @@ pelo agente nem confundido com prova de sessão aberta.
    resultados, inclusive wrapper cuja assinatura não garante seu corpo/ACL.
 2. Rever negativos/positivos reais dos resolvers/RLS; assinar receipt com campos
    obrigatórios do `stage-review.py`, scope b2b-context e hash do manifest.
-   Captura/snapshot não equivale a aprovação. Não há receipt aprovado no repo.
+   Captura/snapshot não equivale a aprovação. Receipt limitado 22:55 registrado acima.
 3. `stage-review.py --receipt <arquivo-revisado> --output /tmp/<staging>` apenas
    gera candidato e rollback de gate **fora do runtime** + hashes PRE/POST.
    Não pode escrever no projeto, publicar ou executar banco.
@@ -138,8 +178,8 @@ novo é SELECT-only/inventário+guard, não um harness de concorrência sintéti
   Prova parent ampla anterior é histórica; nesta rodada não reexecutada.
   Cinco falhas antigas fora deste recorte não resolvidas; não declarar auditoria global.
 - Browser autenticado: integração Supabase externa não gerenciada, sem sessão
-  restaurável; gate false impede exercitar o rollout real. Prova JWT tela
-  aberta/implantação dependem do auditor. Nenhum login/revogação hosted pelo agente.
+  restaurável pelo agente; prévia agora habilitada para teste JWT em tela aberta
+  pelo auditor. Nenhum login/revogação hosted pelo agente; publicação não autorizada.
 - Commit é gerenciado automaticamente pelo ambiente; não criar commit por Git
   nem inventar hash antes de disponível.
 
