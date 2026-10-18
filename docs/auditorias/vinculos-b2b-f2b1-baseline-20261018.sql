@@ -33,6 +33,25 @@ BEGIN
  RETURN jsonb_build_object('partner_id',link.partner_id,'organization_id',org,
    'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,'mode',mode);
 END $function$;
+-- Corpo de sincronização atual, coletado read-only; não autoriza ator.
+CREATE OR REPLACE FUNCTION public.sync_puc_to_ptc_fn()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.assignment_type = 'tecnico'
+     AND (NEW.user_role = 'parceiro_b2b_tecnico' OR public.has_role(NEW.user_id, 'parceiro_b2b_tecnico'::app_role))
+  THEN
+    INSERT INTO public.partner_technician_clients (partner_id, technician_user_id, cliente_id, assigned_by, active, notes)
+    VALUES (NEW.partner_id, NEW.user_id, NEW.cliente_id, NEW.assigned_by, NEW.active, NEW.notes)
+    ON CONFLICT (partner_id, technician_user_id, cliente_id)
+    DO UPDATE SET active = EXCLUDED.active, updated_at = now(), notes = EXCLUDED.notes;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
  RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
  LANGUAGE sql

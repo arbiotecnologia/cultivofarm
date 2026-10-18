@@ -7,6 +7,8 @@ SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';
 DO $gate$
 BEGIN
  IF current_user<>'postgres' THEN RAISE EXCEPTION 'F2B1_EXECUTOR_NOT_REVIEWED'; END IF;
+ IF to_regprocedure('public.validate_partner_user_client_fn()') IS NULL OR to_regprocedure('public.sync_puc_to_ptc_fn()') IS NULL
+ THEN RAISE EXCEPTION 'F2B1_ASSIGNMENT_BASELINE_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.validate_partner_user_client_fn()'::regprocedure))<>'dcafec82ec7147ab67ce17ab934d3619'
  OR md5(pg_get_functiondef('public.sync_puc_to_ptc_fn()'::regprocedure))<>'4dc955897950bf70ee8e1072bbae1ff2'
  THEN RAISE EXCEPTION 'F2B1_ASSIGNMENT_BASELINE_DRIFT'; END IF;

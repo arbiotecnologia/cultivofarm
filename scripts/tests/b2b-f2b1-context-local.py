@@ -41,9 +41,9 @@ CREATE FUNCTION local_assert(label text,ok boolean) RETURNS void LANGUAGE plpgsq
         run('\n'.join(f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC; GRANT EXECUTE ON FUNCTION {s} TO authenticated,service_role;' for s in signatures))
         run('REVOKE EXECUTE ON FUNCTION platform_private.b2b_actor_scope(uuid) FROM authenticated;')
         rejected_a=run((D/(P+'b1a-migracao-20261018.sql')).read_text(),False)
-        if 'F2B1_ASSIGNMENT_BASELINE_DRIFT' not in rejected_a.stderr:
-            raise RuntimeError('B1a must refuse absent sync trigger baseline: '+rejected_a.stderr)
-        print('PASS B1a refused missing assignment baseline')
+        if 'F2B1_CONTAINMENT_DRIFT' not in rejected_a.stderr:
+            raise RuntimeError('B1a must refuse absent restrictive policy: '+rejected_a.stderr)
+        print('PASS B1a refused missing restrictive containment')
         # Full candidate preflight must refuse missing production policy manifest.
         candidate=(D/(P+'b1b-migracao-20261018.sql')).read_text()
         rejection=run(candidate,False)
