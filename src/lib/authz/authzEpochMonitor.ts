@@ -23,6 +23,14 @@
 export interface AuthzFingerprintResult {
   eligible: boolean;
   fingerprint: string | null;
+  /**
+   * Orçamento de validade calculado no servidor (ms até o próximo boundary
+   * temporal do vetor de autorização; ver authz_reader_v6.core). Quando
+   * presente, a lease concedida é min(leaseMs, server_remaining_ms - RTT
+   * monotônico): o cliente NUNCA se autoriza além do boundary do servidor.
+   * Ausente/null => apenas leaseMs local.
+   */
+  server_remaining_ms?: number | null;
 }
 
 export type AuthzMonitorState = "idle" | "pending" | "valid" | "expired" | "stopped";
@@ -150,7 +158,15 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
 
       if (requestTimer !== null) { deps.clearTimeoutFn(requestTimer); requestTimer = null; }
       // Renew ONLY after a valid response, conservatively from request start.
-      leaseUntil = requestUntil;
+      // Se o servidor informou orçamento (server_remaining_ms), desconta o
+      // round-trip monotônico completo e nunca excede leaseMs nem o boundary
+      // do servidor; orçamento já consumido pelo RTT expira imediatamente.
+      const rtt = deps.now() - requestStart;
+      const effectiveLeaseMs = typeof result.server_remaining_ms === "number"
+        ? Math.min(leaseMs, result.server_remaining_ms - rtt)
+        : leaseMs;
+      if (effectiveLeaseMs <= 0) { expire("timeout"); return; }
+      leaseUntil = requestStart + effectiveLeaseMs;
       requestUntil = 0;
       const changed = fingerprint !== null && fingerprint !== result.fingerprint;
       fingerprint = result.fingerprint;
