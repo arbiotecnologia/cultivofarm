@@ -13,6 +13,8 @@ def stage(destination,mode='candidate'):
     a=m['activation']
     for k,h in [('candidate','post_sha256'),('rollback','pre_sha256')]:
         if sha((HERE/a[k]).read_bytes())!=a[h]:raise ValueError('activation_drift')
+    for path,expected in m['protected_sha256'].items():
+        if sha((ROOT/path).read_bytes())!=expected:raise ValueError('protected_drift:'+path)
     if mode=='activation':items=[a]
     elif mode in ('candidate','rollback'):items=m['files']
     else:raise ValueError('invalid mode')
