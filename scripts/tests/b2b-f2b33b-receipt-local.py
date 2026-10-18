@@ -14,8 +14,8 @@ def main():
     started = False
     try:
         subprocess.run(pre + ['initdb', '-D', str(data), '-U', 'postgres', '-A', 'trust'], check=True, capture_output=True)
-        subprocess.run(pre + ['pg_ctl', '-D', str(data), '-o', f'-k {tmp} -p {PORT} -c listen_addresses=', '-w', 'start'],
-                       check=True, capture_output=True)
+        subprocess.run(pre + ['pg_ctl', '-D', str(data), '-l', str(tmp / 'server.log'),
+                              '-o', f'-k {tmp} -h "" -p {PORT}', '-w', 'start'], check=True, capture_output=True)
         started = True
         sql = (ROOT / 'scripts/tests/b2b-f2b33b-receipt-local.sql').read_text()
         r = subprocess.run(['psql', '-X', '-h', str(tmp), '-p', PORT, '-U', 'postgres', '-d', 'postgres',
