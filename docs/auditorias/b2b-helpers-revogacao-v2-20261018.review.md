@@ -94,5 +94,16 @@ sem nova arquitetura/ledger. Aplicação exclusivamente pelo auditor via Supabas
 - Harness local não prova JWT/RLS hosted nem `b2b_commercial_context`.
 - Risco não é nulo: helpers corrigidos ainda NÃO aplicados em produção;
   monitor de época inativo (gate false); integração não homologada.
-- As 3 assertions de autorização da suíte ampla (d51-4 ×2, d51-5) permanecem
-  ABERTAS — falhas pré-existentes, fora deste escopo.
+- As 3 assertions de autorização da suíte ampla (d51-4 ×2, d51-5) foram
+  CORRIGIDAS em etapa posterior (somente testes, sem tocar runtime das Edges):
+  d51-4 prova o wiring real `Configuracoes.tsx` → `usuariosListQuery.ts`
+  (RPCs `tenant_admin_list_users`/`tenant_admin_set_user_active`, query key
+  tenant/user, client RPC fake com erro e `user_id` divergente); d51-5 testa
+  comportamentalmente o guard real `_shared/catalog-superadmin-guard.ts`
+  (importado via alias `@edge-shared` no vitest) e a ordem antes do
+  service-role em ambas as Edges. Suíte `src/test/security` 30/30 arquivos,
+  427/427 testes; tsgo limpo. As demais 5 falhas pré-existentes da suíte
+  ampla (não relacionadas a autorização) permanecem abertas.
+- Correção de evidência: relatório anterior atribuiu d51-4 a
+  `auth/useAuth.tsx`; a fonte real é a página `Configuracoes.tsx` delegando
+  aos helpers de `src/lib/configuracoes/usuariosListQuery.ts`.
