@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:37 — preferência produtor e ativação limitada
+- [ ] Separar preferência estável de autorização/cache por epoch e provar B sobrevivendo dois polls, revogação parcial e isolamento UID/tenant.
+- [ ] Ativar somente produtor após regressões/preflight de fonte, registrar delta/hashes/rollback; financeiro/global/Blob fechados, sem hosted/publicação.
+
 ## 18/10 23:32 — inativação interna financeira, candidata limitada
 - [x] Registrar evidência real independente e inventariar autoridade self/h15/readiness/roles + guards internos.
 - [x] Preparar menor extensão no monitor único com gate fechado, preservando B2B/produtor/RBAC e dados órfãos.
