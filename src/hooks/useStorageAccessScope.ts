@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 /** Presentation/request fencing only. Server authorization remains mandatory. */
@@ -24,7 +24,7 @@ export function useStorageAccessScope(resource: string) {
     state.current.scope = scope;
     state.current.epoch += 1;
   }
-  useEffect(() => {
+  useLayoutEffect(() => {
     const current = state.current;
     current.mounted = true;
     return () => { current.mounted = false; current.epoch += 1; };
