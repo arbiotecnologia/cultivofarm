@@ -106,8 +106,12 @@ INSERT INTO lab.user_roles VALUES
   ('10000000-0000-4000-8000-000000000004','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000005','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000006','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000007','parceiro_b2b'),
+  ('10000000-0000-4000-8000-000000000008','parceiro_b2b'),
   ('10000000-0000-4000-8000-000000000011','parceiro_b2b_tecnico'),
   ('10000000-0000-4000-8000-000000000012','parceiro_b2b_tecnico'),
+  ('10000000-0000-4000-8000-000000000013','parceiro_b2b_tecnico'),
+  ('10000000-0000-4000-8000-000000000014','parceiro_b2b_tecnico'),
   ('10000000-0000-4000-8000-000000000099','administrador');
 
 -- Técnico: T11 com PUC ativa via vínculo próprio em A; T12 só com PTC direct sem vínculo partner_users.
@@ -117,6 +121,21 @@ INSERT INTO lab.partner_user_clients VALUES
   ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000011', '20000000-0000-4000-8000-0000000000a1', true);
 INSERT INTO lab.partner_technician_clients VALUES
   ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000012', '20000000-0000-4000-8000-0000000000a1', true);
+
+-- REVISÃO 1.1: legado owner NULL com tenant divergente do cliente (cross-tenant legacy).
+-- U7: parceiro legacy C, tenant_id=B, cliente c1 do tenant A -> deve ser BLOQUEADO.
+-- U8: parceiro legacy C, tenant_id=A, cliente c1 do tenant A -> preservado.
+INSERT INTO lab.partner_users VALUES
+  ('10000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000bb', NULL),
+  ('10000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
+-- T13: técnico legacy com tenant B e PUC no cliente do tenant A -> bloqueado.
+-- T14: técnico legacy com tenant A e PUC no cliente do tenant A -> preservado.
+INSERT INTO lab.partner_users VALUES
+  ('10000000-0000-4000-8000-000000000013', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000bb', NULL),
+  ('10000000-0000-4000-8000-000000000014', 'a0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
+INSERT INTO lab.partner_user_clients VALUES
+  ('a0000000-0000-4000-8000-0000000000c1', '10000000-0000-4000-8000-000000000013', '20000000-0000-4000-8000-0000000000c1', true),
+  ('a0000000-0000-4000-8000-0000000000c1', '10000000-0000-4000-8000-000000000014', '20000000-0000-4000-8000-0000000000c1', true);
 
 -- ===== FASE 1: prova da brecha no corpo BASELINE =====
 DO $$
@@ -135,9 +154,9 @@ DO $$
 DECLARE
   d text;
   m1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true';
-  r1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN lab.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND (\n          (pa.commercial_owner_organization_id IS NOT NULL\n           AND pu.tenant_id IS NOT NULL\n           AND pu.tenant_id = pa.commercial_owner_organization_id)\n          OR pa.commercial_owner_organization_id IS NULL\n        )';
+  r1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN lab.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND (\n          (pa.commercial_owner_organization_id IS NOT NULL\n           AND pu.tenant_id IS NOT NULL\n           AND pu.tenant_id = pa.commercial_owner_organization_id)\n          OR (pa.commercial_owner_organization_id IS NULL\n              AND (pu.tenant_id IS NULL\n                   OR pu.tenant_id = (SELECT c.organization_id FROM lab.clientes c WHERE c.id = _cliente_id)))\n        )';
   m2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n    )), false);';
-  r2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      JOIN lab.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN lab.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      JOIN lab.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN lab.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n    )), false);';
+  r2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      JOIN lab.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN lab.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n        AND (\n          (pa2.commercial_owner_organization_id IS NOT NULL\n           AND pu2.tenant_id IS NOT NULL\n           AND pu2.tenant_id = pa2.commercial_owner_organization_id)\n          OR (pa2.commercial_owner_organization_id IS NULL\n              AND (pu2.tenant_id IS NULL\n                   OR pu2.tenant_id = (SELECT c2.organization_id FROM lab.clientes c2 WHERE c2.id = _cliente_id)))\n        )\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      JOIN lab.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN public.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n        AND (\n          (pa3.commercial_owner_organization_id IS NOT NULL\n           AND pu3.tenant_id IS NOT NULL\n           AND pu3.tenant_id = pa3.commercial_owner_organization_id)\n          OR (pa3.commercial_owner_organization_id IS NULL\n              AND (pu3.tenant_id IS NULL\n                   OR pu3.tenant_id = (SELECT c3.organization_id FROM lab.clientes c3 WHERE c3.id = _cliente_id)))\n        )\n    )), false);';
 BEGIN
   SELECT pg_get_functiondef('lab.can_user_access_cliente(uuid,uuid)'::regprocedure) INTO d;
   ASSERT (length(d)-length(replace(d,m1,'')))/length(m1) = 1, 'marcador b2b divergente';
