@@ -43,8 +43,12 @@ class Tests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as t:
                 for mode in ('candidate', 'rollback', 'activation'):
                     out = Path(t) / mode
-                    # Historical B2B staging has a different API; handled separately below.
                     if name == 'b2b-open-session':
+                        manifest = json.loads((stage_path.parent / 'manifest.json').read_bytes())
+                        receipt = json.loads((stage_path.parent / 'receipt-preview-20261018-2255.json').read_bytes())
+                        with self.assertRaisesRegex(ValueError, 'source_drift|receipt_manifest_mismatch'):
+                            old.stage(manifest, receipt, out)
+                        self.assertFalse(out.exists())
                         continue
                     with self.assertRaises(ValueError):
                         old.stage(out, mode)
