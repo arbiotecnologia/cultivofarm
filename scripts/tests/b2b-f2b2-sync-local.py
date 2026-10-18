@@ -49,8 +49,8 @@ def main():
   before=snapshot(); run("UPDATE partner_user_clients SET assignment_type='tecnico';")
   if before['ptc']!=snapshot()['ptc']: raise RuntimeError('ACTIVE PTC IDEMPOTENCY FAIL')
   check('repeated active no PTC timestamp churn',"(SELECT count(*) FROM partner_technician_clients)=1"); audit(before,'idempotent active')
-  before=snapshot(); run("BEGIN; INSERT INTO partner_user_clients(user_id,partner_id,cliente_id,user_role,active,assignment_type) VALUES('44444444-4444-4444-8444-444444444444','11111111-1111-4111-8111-111111111111','88888888-8888-4888-8888-888888888888','parceiro_b2b_tecnico',true,'tecnico');")
-  # Sessions are fresh per run: persistent transaction cannot span calls. Use one call with assert + rollback.
+  before=snapshot()
+  # Sessions are fresh per run: assert and rollback belong in the same call.
   run("BEGIN; INSERT INTO partner_user_clients(user_id,partner_id,cliente_id,user_role,active,assignment_type) VALUES('44444444-4444-4444-8444-444444444444','11111111-1111-4111-8111-111111111111','88888888-8888-4888-8888-888888888888','parceiro_b2b_tecnico',true,'tecnico'); SELECT local_assert('candidate technical INSERT creates PTC',(SELECT active FROM partner_technician_clients WHERE cliente_id='88888888-8888-4888-8888-888888888888')); ROLLBACK;")
   passed+=1
   if before!=snapshot(): raise RuntimeError('INSERT fixture rollback changed state')
