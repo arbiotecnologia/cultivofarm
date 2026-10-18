@@ -11,7 +11,9 @@ fases, rollback e testes locais. **Nenhum DDL/DML hosted, nenhuma publicação.*
 SELECT partner_id FROM public.partner_users WHERE user_id = auth.uid() LIMIT 1;
 ```
 Sem `revoked_at`, sem validação de parceiro/owner/tenant, `LIMIT 1` arbitrário em
-multi-vínculo. **28 policies** dependem dele (verificadas via `pg_policy`):
+multi-vínculo. **31 policies** referenciam os 3 helpers no total (evidência live
+externa 2026-10-18 via `pg_policy` com `pg_get_expr` sobre qual/check); destas,
+**28 policies** dependem de `get_user_partner_id`:
 commercial_campaigns (3), partner_catalog_access_logs, partner_clients,
 partner_engagement_metrics, partner_order_idempotency, partner_order_items,
 partner_order_message_attachments (2), partner_order_messages (2),
@@ -66,17 +68,21 @@ entrega. Ramos internos e técnicos já endurecidos anteriormente, intocados.
 - Guards de hash anti-drift dos 3 corpos baseline; pós-condições read-only;
   assinaturas, ACL, SECURITY DEFINER e search_path preservados.
 
-**Rollback (rev 2.2):** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
-— restaura os 3 corpos baseline exatos. A guarda anti-drift foi substituída de
-marcadores `position()` por **hashes md5 exatos de `pg_get_functiondef`** dos 3
-corpos candidatos, computados pelo PostgreSQL no laboratório e gravados no
-arquivo pelo runner de teste (seção `BEGIN/END HASH GUARD`):
+**Rollback (rev 2.3):** `docs/auditorias/vinculos-b2b-entrega2-helpers-rollback-20261018.sql`
+— restaura os 3 corpos baseline exatos. A guarda anti-drift usa **hashes md5
+exatos de `pg_get_functiondef`** dos 3 corpos candidatos, **fixos e commitados**
+(seção `BEGIN/END HASH GUARD`):
 `get_user_partner_id` = `b334c3a454ebc4233d3b9e0d0a700d78`,
 `get_partner_papel` = `f84f898ead03dfd646ece50d16baf909`,
 `b2b_commercial_context` = `a31d198c9a9fc9a5e7c397ab36fe0fa4`.
-Prova no laboratório: um drift que **preserva os antigos marcadores textuais**
-(predicado tautológico adicionado, marcadores intactos) é rejeitado atomicamente
-pela guarda de hash — a guarda anterior por `position()` o aceitaria.
+**Correção da revisão externa ffca65827:** o runner de teste NÃO regrava mais
+esses hashes — ele os verifica contra constantes fixas e FALHA se divergirem.
+Geração de hashes existe apenas como modo explícito separado
+(`--generate-hashes`, só imprime; nunca usado pelo teste).
+Prova no laboratório: o **arquivo de rollback inteiro** é executado contra um
+drift que **preserva os antigos marcadores textuais** (predicado tautológico
+adicionado, marcadores intactos) e é rejeitado atomicamente — após a falha, os
+corpos permanecem os da candidata (nada revertido), comprovado por hash.
 
 ## 3. Testes locais (PostgreSQL descartável, paridade de colunas live)
 
