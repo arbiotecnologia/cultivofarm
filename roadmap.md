@@ -42,3 +42,8 @@
 - [x] Definir evolução compatível/source/CAS/revogação e leitores; SQL com recusa, mandato/representação física pendentes explícitos.
 - [x] Executar 44 checks PG com 6 disputas entre sessões; 4 testes Vitest PASS, lint focado exit 0, limites documentados.
 - [ ] Instalação: bloqueada por backup/restauração, contratos hospedados e provas JWT/RLS A/B; nenhuma execução autorizada.
+## F2-B3.3-B — mandato/receipts, somente preparação
+- [x] ACL efetiva assign/unassign fechada; writers/revokers e leitores inventariados read-only.
+- [x] Decisão: receipt privado novo mínimo (não estender partner_audit_logs); candidata B1 bloqueada.
+- [x] Simulação PG descartável 17/17.
+- [ ] Instalação B1+: bloqueada por backup/restauração, revisão externa e provas JWT/RLS A/B.
