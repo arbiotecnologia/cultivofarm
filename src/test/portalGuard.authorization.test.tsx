@@ -34,6 +34,9 @@ const authState: AuthState = {
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
     ...authState,
+    authzReady: true,
+    authzEpoch: 0,
+    authzState: "valid",
     session: null,
     profile: null,
     signOut: vi.fn(),

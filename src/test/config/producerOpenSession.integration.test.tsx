@@ -41,6 +41,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
+import { PortalGuard } from '@/App';
 import MobileLayout from '@/pages/app/MobileLayout';
 import MobileDashboardProdutor from '@/pages/app/MobileDashboardProdutor';
 import PortalLayout from '@/pages/portal/PortalLayout';
@@ -52,7 +53,7 @@ function Selection(){const c=usePortalCliente();const a=useAuth();return <><outp
 async function tick(ms=0){await act(async()=>{await vi.advanceTimersByTimeAsync(ms);});for(let i=0;i<10;i++)await act(async()=>{await vi.advanceTimersByTimeAsync(1);});}
 function setup(path:string){const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><Location/><Routes>
  <Route element={<AppPortalGuard/>}><Route element={<MobileLayout/>}><Route path="/app" element={<><Selection/><MobileDashboardProdutor/></>}/></Route></Route>
- <Route element={<AuthzEpochBoundary><PortalLayout/></AuthzEpochBoundary>}><Route path="/portal" element={<><Selection/><PortalDashboard/></>}/></Route>
+ <Route element={<PortalGuard/>}><Route path="/portal" element={<><Selection/><PortalDashboard/></>}/></Route>
  <Route path="/sem-permissao" element={<div>redirect indevido</div>}/>
  </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);return qc;}
 function paused(path:string,qc:QueryClient){expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();expect(screen.queryByTestId('selected')).toBeNull();expect(screen.getByTestId('url').textContent).toBe(path);expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);}
