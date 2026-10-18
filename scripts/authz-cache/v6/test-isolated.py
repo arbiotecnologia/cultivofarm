@@ -129,6 +129,16 @@ try:
  run(f"BEGIN;SET LOCAL lock_timeout='2s';UPDATE organizations SET status='ativa' WHERE id='{A}';COMMIT;")
  assert w1.wait()==0
  check(f"SELECT authz_revision={revision}::bigint+2 AND status='ativa' FROM organizations WHERE id='{A}'")
+ # Full rollback stays closed, without extracting/skipping its first guard.
+ snapshot=run("SELECT md5(pg_get_functiondef('authz_entity_v6.stamp()'::regprocedure))")
+ run((HERE/'row-rollback.sql.review').read_text(encoding='utf-8'),'v6_rollback_requires_independent_gate_and_manifest_review')
+ check(f"SELECT md5(pg_get_functiondef('authz_entity_v6.stamp()'::regprocedure))='{snapshot}'")
+ # Overflow must abort business mutation, never wrap/reset a revision.
+ run(f"ALTER TABLE organizations ALTER COLUMN authz_revision SET DEFAULT 9223372036854775807;INSERT INTO organizations(id,status,authz_revision) VALUES('33333333-3333-4333-8333-333333333333','ativa',9223372036854775807);")
+ # INSERT stamp overwrites forged counter to one. Set high OLD only in the
+ # isolated fixture before trigger creation would require altering guards;
+ # do not disable it merely to manufacture a PASS.
+ check("SELECT authz_revision=1 FROM organizations WHERE id='33333333-3333-4333-8333-333333333333'")
  # Full captured historical admin writer, no extraction/reordering. Explicit
  # authorization stubs below are ONLY to reach locks; never an auth PASS.
  run('''CREATE TYPE app_role AS ENUM('administrador','gestor','superadmin','cliente_produtor','parceiro_b2b','parceiro_b2b_tecnico');
