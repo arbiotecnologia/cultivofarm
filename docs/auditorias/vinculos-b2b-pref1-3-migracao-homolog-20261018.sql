@@ -33,7 +33,8 @@ BEGIN
     RAISE EXCEPTION 'PREF13_PRECOND: funções PRÉ-F1.2 incompletas (%/3)', v_count; END IF;
   IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
              WHERE n.nspname='cf_user_guards_v1' AND p.proname='acquire_gate'
-               AND (NOT p.prosecdef OR p.proconfig IS NULL OR NOT 'search_path='=ANY(p.proconfig))) THEN
+               AND (NOT p.prosecdef OR p.proconfig IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%'))) THEN
     RAISE EXCEPTION 'PREF13_DIVERGENCE: acquire_gate sem SECURITY DEFINER/search_path esperados'; END IF;
 
   -- P0.3 Tabelas alvo existem
