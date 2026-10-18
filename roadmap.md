@@ -36,3 +36,9 @@
 - [x] Documentar checklist de backup recuperável e decisão de adiar metadata; recuperação real NÃO realizada.
 - [x] Desenhar B3.3 server-owned com RPCs fechados, ator/alvo, colisões e fronteiras transacionais; prompts e 12 checks locais (não contrato funcional implementado).
 - [ ] Implantação: NO-GO; auditor não possui backup/snapshot recuperável comprovado, nem provas reais JWT/RLS A/B.
+
+## F2-B3.3-A — contratos coordenados, somente preparação
+- [x] Reconfirmar RPCs/ACL, guards/locks e writer direto read-only no destino canônico (0/0, 29 policies).
+- [x] Definir evolução compatível/source/CAS/revogação e leitores; SQL com recusa, mandato/representação física pendentes explícitos.
+- [x] Executar 44 checks PG com 6 disputas entre sessões; 4 testes Vitest PASS, lint focado exit 0, limites documentados.
+- [ ] Instalação: bloqueada por backup/restauração, contratos hospedados e provas JWT/RLS A/B; nenhuma execução autorizada.
