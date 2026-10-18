@@ -40,7 +40,7 @@ STABLE
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
-  SELECT pu.partner_id
+  SELECT CASE WHEN count(*) = 1 THEN min(pu.partner_id) END
   FROM public.partner_users pu
   JOIN public.partner_accounts pa ON pa.id = pu.partner_id
   WHERE pu.user_id = auth.uid()
@@ -48,9 +48,7 @@ AS $function$
     AND pa.ativo = true AND pa.deleted_at IS NULL
     AND pa.commercial_owner_organization_id IS NOT NULL
     AND pu.tenant_id IS NOT NULL
-    AND pu.tenant_id = pa.commercial_owner_organization_id
-  HAVING count(*) = 1
-  LIMIT 1;
+    AND pu.tenant_id = pa.commercial_owner_organization_id;
 $function$;
 
 -- FASE B: get_partner_papel(uuid) — idem, para o alvo informado (callers internos).
@@ -61,7 +59,7 @@ STABLE
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
-  SELECT pu.papel
+  SELECT CASE WHEN count(*) = 1 THEN min(pu.papel) END
   FROM public.partner_users pu
   JOIN public.partner_accounts pa ON pa.id = pu.partner_id
   WHERE pu.user_id = _user_id
@@ -69,9 +67,7 @@ AS $function$
     AND pa.ativo = true AND pa.deleted_at IS NULL
     AND pa.commercial_owner_organization_id IS NOT NULL
     AND pu.tenant_id IS NOT NULL
-    AND pu.tenant_id = pa.commercial_owner_organization_id
-  HAVING count(*) = 1
-  LIMIT 1;
+    AND pu.tenant_id = pa.commercial_owner_organization_id;
 $function$;
 
 -- FASE C: b2b_commercial_context() — adiciona revoked_at IS NULL à contagem e ao
