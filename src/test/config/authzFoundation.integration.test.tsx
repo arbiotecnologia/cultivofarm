@@ -318,6 +318,26 @@ describe("foundation de cache — integração AuthProvider + boundary", () => {
     expect(screen.getByText("Sessão de acesso pausada")).toBeTruthy();
   });
 
+  it.each([
+    ["string", "15000"],
+    ["objeto", { ms: 15000 }],
+    ["booleano", true],
+  ])("RPC com server_remaining_ms %s: conteúdo oculto, SEM fallback de lease local", async (_label, budget) => {
+    // O fetcher NÃO pode rebaixar valor presente inválido para null (isso
+    // concederia lease local indevida): repassa ao monitor, que falha fechado.
+    nextFp({ eligible: true, fingerprint: "fpA", server_remaining_ms: budget });
+    renderPortal();
+    await flush();
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    expect(screen.getByText("Sessão de acesso pausada")).toBeTruthy();
+    // Sem fallback: nem após janelas de poll o conteúdo aparece.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(screen.queryByText("conteúdo sensível")).toBeNull();
+    expect(fpCalls).toBe(1); // nenhum poll foi agendado
+  });
+
   it("regressão: usuário INTERNO não cria monitor nem chama o RPC", async () => {
     currentRoles = ["administrador"];
     renderPortal();
