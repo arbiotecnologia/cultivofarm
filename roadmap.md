@@ -61,7 +61,8 @@
 - [ ] Backup/restauração de produção: não comprovado — comprovar antes de próxima migração.
 
 ## Entrega 2 — próximo recorte read-only (revogação B2B remanescente)
-- [ ] Auditar helpers escalares get_user_partner_id/get_partner_papel (LIMIT 1 sem revoked_at/owner; fail-closed 0/2+).
-- [ ] Auditar platform_private.b2b_commercial_context e overload can_user_access_cliente(uuid).
-- [ ] Auditar leitores diretos partner_users/PTC (31 funções lexicais, 6 policies diretas, 29 via helpers).
-- [ ] Preparar SQL candidato por fase + testes locais; SEM DDL/DML hosted, sem publicar, sem reabrir RPCs/PUC containment.
+- [x] Auditar helpers escalares get_user_partner_id/get_partner_papel (LIMIT 1 sem revoked_at/owner; fail-closed 0/2+) — brechas confirmadas, 30 policies dependentes mapeadas.
+- [x] Auditar platform_private.b2b_commercial_context (sem revoked_at na contagem/seleção) e overload can_user_access_cliente(uuid) (herda endurecimento da Fase A, sem alteração própria).
+- [x] Preparar SQL candidato por fase (A/B/C) + rollback exato + testes locais (Vitest 1/1 passou); SEM DDL/DML hosted, sem publicar, sem reabrir RPCs/PUC containment.
+- [ ] Instalação Entrega 2: NO-GO — backup/restore e provas JWT/RLS A/B pendentes; exige autorização específica.
+- [ ] Auditar leitores diretos partner_users/PTC remanescentes (31 funções lexicais, 6 policies diretas) — próximo recorte.
