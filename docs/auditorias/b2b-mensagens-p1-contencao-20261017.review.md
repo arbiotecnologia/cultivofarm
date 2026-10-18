@@ -61,3 +61,11 @@ Rollback contém somente DROP das duas policies, em ordem filha antes mensagem, 
 Hosted BEGIN/ROLLBACK com identidades reais **não executado**: ferramenta disponível read_query aceita somente SELECT; migration é persistente e não será usada para ensaio disfarçado. Auditor precisa executar script transacional num canal SQL canônico autorizado, após revisar candidata e fixtures de schema integral. Não falta senha/token do usuário e nenhum é solicitado.
 
 Cache/Blob gates false, vínculos fechados; cache/ledger suspensos. Assinatura, pagamento, perfis, Auth/SMTP preservados. Sem instalação/publicação/deploy/novos buckets. SHA HEAD observado `c90ef69b94262e747ef21f80e8ee139dec32ef59`, sem commit manual.
+## Adendo 2026-10-18 — fechamento P1 (candidata v2, producao canonica)
+
+- Escopo confirmado pelo proprietario: trabalho EXCLUSIVO em producao swzpzcwiasxmjutrmvkm; dados atuais sao de testes; homolog nao e dependencia.
+- Residual `rpc_partner_message_counters` fechado na candidata v2: `ALTER FUNCTION ... SECURITY INVOKER` minimo, preservando corpo (md5 5b049aa45efddf8aff1b92b14a759a46), assinatura, owner e ACL (postgres/service/authenticated). A contagem passa a ser contida pela RLS filha + 2 policies RESTRICTIVE; o guard interno de permissao permanece como defesa em profundidade.
+- Compatibilidade com helpers Entrega 2 rev 2.3 verificada: `get_user_partner_id` (b334c3a4...) e `b2b_commercial_context` (a31d198c...) respeitam revoked_at/tenant_id e NAO sao sobrescritos; preflight atualizado para esses hashes + `get_partner_papel` (f84f898e...).
+- Harness local atualizado aos contratos atuais: fixtures com revoked_at, cardinalidade 0/2+ fechada, contadores INVOKER contidos (FSF nao conta AR; admin AR positivo), revogacao nega e restauracao devolve partner original. Suite local PASS exit 0 — laboratorio sintetico, NAO prova JWT/RLS hosted.
+- Teste hosted BEGIN/ROLLBACK preparado em `scripts/b2b-message-p1/hosted-test-begin-rollback.sql.review` com identidades reais Admin AR/FSF (variaveis psql obrigatorias), fixtures AR em transacao, triggers ativas, sem simulacao de emissor fiscal. Se fixture legitima for bloqueada, o script falha com o erro exato em vez de fabricar PASS.
+- NADA aplicado pelo agente: candidata, preflight, rollback e teste hosted aguardam revisao e aplicacao pelo auditor via Supabase.

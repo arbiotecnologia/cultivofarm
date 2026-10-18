@@ -15,9 +15,17 @@ CREATE OR REPLACE FUNCTION public.is_platform_superadmin(_user_id uuid)
  RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
  SELECT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=_user_id AND r.role='superadmin'::public.app_role)
 $function$;
+-- Corpo pós-Entrega 2 rev 2.3 (live md5 b334c3a454ebc4233d3b9e0d0a700d78):
+-- conta TODOS os vínculos não revogados; zero ou 2+ falham fechado (NULL).
 CREATE OR REPLACE FUNCTION public.get_user_partner_id()
  RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $function$
- SELECT partner_id FROM public.partner_users WHERE user_id=auth.uid() LIMIT 1;
+ SELECT CASE WHEN count(*)=1 THEN min(partner_id::text)::uuid ELSE NULL::uuid END
+ FROM public.partner_users WHERE user_id=auth.uid() AND revoked_at IS NULL;
+$function$;
+CREATE OR REPLACE FUNCTION public.get_partner_papel()
+ RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $function$
+ SELECT CASE WHEN count(*)=1 THEN min(papel) ELSE NULL::text END
+ FROM public.partner_users WHERE user_id=auth.uid() AND revoked_at IS NULL;
 $function$;
 CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()
  RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
@@ -31,7 +39,7 @@ CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
  WITH pr AS (
  SELECT o.partner_account_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
  WHERE p.user_id=_uid AND p.ativo=true AND o.ativo=true AND o.status='ativa' LIMIT 1
- ), pu AS (SELECT count(*)::int c,min(partner_id::text)::uuid pid FROM public.partner_users WHERE user_id=_uid)
+ ), pu AS (SELECT count(*)::int c,min(partner_id::text)::uuid pid FROM public.partner_users WHERE user_id=_uid AND revoked_at IS NULL)
  SELECT EXISTS(SELECT 1 FROM pr),(SELECT partner_account_id FROM pr),(SELECT pid FROM pu),(SELECT c FROM pu),
  EXISTS(SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id=pr.partner_account_id WHERE pa.ativo=true AND pa.deleted_at IS NULL),
  EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key='catalogo_precos');
