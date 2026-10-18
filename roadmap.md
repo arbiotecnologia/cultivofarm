@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 18/10 23:15 — monitor/anexos, recorte crítico após 24b5f807
+- [ ] Inventariar UI/emissores/Storage e demonstrar falha de resposta tardia com lease consumida.
+- [ ] Corrigir somente o fluxo existente, testar adversários e preparar rollback guardado; preservar gates/B2B/Edges.
+- [ ] Executar provas PostgreSQL locais de writers/stamps/ordem/concorrência/ABA com corpos disponíveis e limites explícitos.
+- [ ] Registrar resultados, pré-requisitos e evidência independente pendente, sem hosted/publicação.
+
 - [x] Confirmar baseline e consumidores read-only no ref canônico.
 - [x] Preparar candidata escalar, rollback exato e pré-prova sem executar em banco hospedado.
 - [x] Validar localmente e registrar PASS/NO-GO por subfase.
