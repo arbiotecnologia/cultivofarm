@@ -1,0 +1,34 @@
+{
+  "baseline": "24b5f80716e8c22abeebf97dff69114319cb162a",
+  "scope": "attachment existing fences only; B2B gate/scope and Blob unchanged; no automatic apply",
+  "files": [
+    {
+      "path": "src/hooks/useStorageAccessScope.ts",
+      "pre_sha256": "987f3935d124e8e7a80a926c9917f90027507f0ed96a6e17b2da456650203bbd",
+      "post_sha256": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+      "candidate": "useStorageAccessScope.ts.candidate.review",
+      "rollback": "useStorageAccessScope.ts.rollback.review"
+    },
+    {
+      "path": "src/hooks/useSignedUrls.ts",
+      "pre_sha256": "3acd59eb8b13b3f0a5edfa08286fc2558da4cfade7b713f87776c0358e667fbb",
+      "post_sha256": "728bc5b6e6d2e3a1b4dedbe880bc4a89011aa4d750f51383e1b47b098b91b4ea",
+      "candidate": "useSignedUrls.ts.candidate.review",
+      "rollback": "useSignedUrls.ts.rollback.review"
+    },
+    {
+      "path": "src/hooks/useAuthenticatedBlobUrls.ts",
+      "pre_sha256": "cdf69e06804eedd3611302b22e7d3968c2acf4eaacc449ca956f164cee0c6373",
+      "post_sha256": "8ef20f33a63dcd070db9f7da71f8dc56db09d1c9c86948a38ee20ef5344641b4",
+      "candidate": "useAuthenticatedBlobUrls.ts.candidate.review",
+      "rollback": "useAuthenticatedBlobUrls.ts.rollback.review"
+    },
+    {
+      "path": "src/hooks/useAuthenticatedAttachmentOpener.ts",
+      "pre_sha256": "847836cb5deb08f53c1a849a16701db41e09759c9105142c3093ce1c769985a3",
+      "post_sha256": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421",
+      "candidate": "useAuthenticatedAttachmentOpener.ts.candidate.review",
+      "rollback": "useAuthenticatedAttachmentOpener.ts.rollback.review"
+    }
+  ]
+}
