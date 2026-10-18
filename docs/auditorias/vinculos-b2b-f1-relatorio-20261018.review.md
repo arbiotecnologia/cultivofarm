@@ -1,8 +1,34 @@
-# Fase F1 — Fundação aditiva de `partner_users` — 2026-10-18 (PREPARADA, NÃO APLICADA) — REVISÃO PÓS-AUDITORIA EXTERNA
+# Fase F1 — Fundação aditiva de `partner_users` — 2026-10-18 (APLICADA EM HOMOLOG, PRODUÇÃO INTOCADA) — REVISÃO PÓS-AUDITORIA EXTERNA
 
-Ref canônico: `swzpzcwiasxmjutrmvkm` (produção). Homolog: `vrlcdwmlytukrjezrrnf`.
-**Nenhum DDL/DML executado. Nenhuma migration aplicada. Nada publicado.**
-"Verificado" = observado via SELECT read-only nesta rodada; "Pendente" = aguarda execução/aprovação.
+Ref canônico: `swzpzcwiasxmjutrmvkm` (produção, **NÃO tocada**). Homolog: `vrlcdwmlytukrjezrrnf`.
+**Produção sem qualquer DDL/DML. Nada publicado.**
+"Verificado" = observado via SELECT read-only nesta rodada; "Hospedado" = executado pelo auditor externo em homolog e reportado com evidência; "Pendente" = aguarda execução/aprovação.
+
+> **REGISTRO DE HOSPEDAGEM 2026-10-18 (auditor externo, homolog `vrlcdwmlytukrjezrrnf`):**
+> Migrations aplicadas com `success: true`, nesta ordem:
+> 1. `cultivofarm_pref1_partner_owner_homolog_only_20261018` — coluna `commercial_owner_organization_id uuid NULL` (1 parceiro sem owner, intencional).
+> 2. `cultivofarm_pref12_guards_partner_users_homolog_20261018` — schema/state `cf_user_guards_v1` + 3 guards reais e triggers.
+> 3. `cultivofarm_f1_partner_users_additive_homolog_20261018` — F1 aditiva (6 colunas novas, 2 triggers).
+>
+> **Testes T1–T6 executados em homolog** (blocos DO transacionais de
+> `vinculos-b2b-f1-testes-20261018.sql`): cada chamada concluiu **sem exception**
+> e com **ROLLBACK** — nenhum dado persistido. Auditoria pós-testes confirmou:
+> - `partner_users` segue com **0 linhas** (base homolog sem vínculos);
+> - **5 triggers** presentes: `a00_cf_user_gate`, `a00_cf_user_no_truncate`,
+>   `a10_partner_users_derive_tenant`, `a20_partner_users_bump_version`, `z90_cf_touch_profile`;
+> - constraints `revocation_coherence`, `validity_window`, `version_positive` ativas;
+> - `UNIQUE(user_id)` **preservada**;
+> - índices `idx_partner_users_tenant_id` e `idx_partner_users_active` presentes;
+> - **0 vínculos órfãos**.
+>
+> **Limites desta evidência (não extrapolar):**
+> - T1–T6 foram executados com role privilegiada em blocos DO — **NÃO** são prova de
+>   RLS em sessões reais de usuários (Admin A/B, parceiro, produtor). Teste A/B de
+>   RLS **não realizado** e segue **obrigatório** antes de qualquer cutover.
+> - Homolog continua sem espelhar produção: **279 vs 286 tabelas**, 0 vs 2 vínculos,
+>   e **sem guards em `profiles`/`user_roles`/`user_clientes`** (produção tem).
+> - Homologação global **não declarada**; F2 (mudanças em policies) permanece
+>   **BLOQUEADA** até paridade de segurança e teste A/B.
 
 > **REVISÃO 2026-10-18 (auditoria externa):** homolog NÃO possui
 > `partner_accounts.commercial_owner_organization_id` — a F1 v1 falharia em
@@ -47,7 +73,7 @@ Ref canônico: `swzpzcwiasxmjutrmvkm` (produção). Homolog: `vrlcdwmlytukrjezrr
 
 Rollback completo documentado no rodapé da migration (DROP de triggers/funções/índices/constraints/colunas). **Seguro** porque F1 não remove nem altera nada pré-existente; dados pré-F1 são preservados. Diferente do Cutover, aqui o rollback é undo trivial.
 
-## 5. Testes SQL (arquivo dedicado; execução PENDENTE de homologação)
+## 5. Testes SQL (T1–T6 EXECUTADOS em homolog pelo auditor externo — ver registro de hospedagem no topo)
 
 - **T1** INSERT deriva tenant do parceiro; defaults `valid_from`/`version=1`.
 - **T2** tenant divergente rejeitado (fail-closed).
@@ -57,7 +83,7 @@ Rollback completo documentado no rodapé da migration (DROP de triggers/funçõe
 - **T6** backfill idempotente, 0 divergências.
 - **T7** pré-checagem read-only de prontidão do Cutover (parceiros sem tenant; vínculos excedentes).
 
-Todos transacionais (BEGIN/ROLLBACK) — não persistem dados. **Não executados nesta rodada**: exigem a migration aplicada (homolog) e role privilegiada; aplicar em produção está fora da autorização desta fase.
+Todos transacionais (BEGIN/ROLLBACK) — não persistem dados. **T1–T6 executados em homolog pelo auditor externo** (sem exception, ROLLBACK, 0 linhas persistidas). T7 (pré-checagem read-only de Cutover) segue pendente e só faz sentido contra produção. **Ressalva:** execução com role privilegiada — não substitui teste A/B de RLS com sessões reais, que permanece pendente e obrigatório.
 
 ## 6. Evidências de integridade do repositório
 
@@ -66,13 +92,17 @@ Nenhum código TypeScript/React foi alterado nesta fase (somente arquivos SQL/do
 ## 7. Critérios PASS / NO-GO para liberar F2 (Guards)
 
 **PASS exige TODOS:**
-1. Migration F1 revisada e aprovada pelo proprietário.
-2. Aplicação em homolog `vrlcdwmlytukrjezrrnf` + T1–T6 PASS com saída registrada (prova hospedada).
-3. Aplicação em produção aprovada e executada com T7 read-only antes/depois (0 divergências).
-4. PENDÊNCIA P1 (parceiro sem tenant) com dono e prazo definidos.
+1. Migration F1 revisada e aprovada pelo proprietário. ✅ (aplicada pelo auditor externo)
+2. Aplicação em homolog `vrlcdwmlytukrjezrrnf` + T1–T6 PASS com saída registrada (prova hospedada). ✅ **HOSPEDADO 2026-10-18** (ver registro no topo) — com a ressalva de que foi SQL privilegiado, não RLS em sessões reais.
+3. Aplicação em produção aprovada e executada com T7 read-only antes/depois (0 divergências). ⏳ **PENDENTE** — produção segue intocada.
+4. PENDÊNCIA P1 (parceiro sem tenant) com dono e prazo definidos. ⏳ **PENDENTE**.
+5. **NOVO:** Paridade de segurança homolog×produção — homolog ainda sem guards em `profiles`/`user_roles`/`user_clientes` e 279 vs 286 tabelas. ⏳ **PENDENTE** (PRÉ-F1.3).
+6. **NOVO:** Teste A/B de RLS com sessões reais em homolog. ⏳ **PENDENTE**.
+7. **NOVO:** Gate fail-closed para vínculos sem tenant (análise de bypass do CHECK nullable) — desenhado em `vinculos-b2b-f2-plano-20261018.review.md` seção 2. ⏳ **PENDENTE**.
 
 **NO-GO (bloqueia F2):**
-- Qualquer falha de T1–T6 em homolog.
+- Itens 3–7 acima não concluídos. **F2 permanece BLOQUEADA nesta rodada.**
+- Qualquer falha de T1–T6 em homolog (não ocorreu).
 - Recusa de aprovação da migration em produção.
 - Descoberta de consumidor de `partner_users` não inventariado na F0 que quebre com as colunas novas (risco avaliado como baixo: colunas aditivas com defaults).
 
