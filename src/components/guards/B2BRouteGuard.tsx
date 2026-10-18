@@ -17,7 +17,7 @@ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
  * Este gate visual não substitui entitlements, RLS ou autorização de cada RPC.
  */
 export function B2BRouteGuard({ children }: { children: ReactNode }) {
-  const { user, loading, roles } = useAuth();
+  const { user, loading, roles, authzReady = true } = useAuth();
   const own = useMyPartner();
   const location = useLocation();
   const { data, ready, isLoading, isError } = useAvailableContexts();
@@ -29,6 +29,7 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
     data?.has_b2b_access === true && data.available_contexts.includes("b2b");
   const denied =
     !loading &&
+    authzReady &&
     !!user &&
     !isLoading && !own.isLoading &&
     (!ready || isError || !hasPartnerContext);
@@ -54,6 +55,9 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
   if (!user) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
+
+  // Keep retry reachable on the SAME URL, before disabled readers look denied.
+  if (!authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
 
   if (!ready || isError) {
     return <Navigate to="/sem-permissao" replace />;

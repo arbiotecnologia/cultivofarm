@@ -78,7 +78,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("@/lib/authz/authzEpochGate", () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true }));
+vi.mock("@/lib/authz/authzEpochGate", () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: "external-fingerprint" }));
 vi.mock("@/lib/portalBroadcast", () => ({
   subscribePortalEvents: () => () => {},
   broadcastPortalEvent: () => {},

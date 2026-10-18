@@ -23,12 +23,12 @@ export interface AvailableContexts {
  * quem determina é `public.get_my_available_portal_contexts()`.
  */
 export function useAvailableContexts() {
-  const { user, profile, roles, loading } = useAuth();
+  const { user, profile, roles, loading, authzReady = true, authzEpoch = 0 } = useAuth();
   const queryClient = useQueryClient();
   const ready = !loading && !!user?.id && profile?.user_id === user.id &&
     profile.ativo === true && profile.senha_provisoria === false &&
-    !!profile.organization_id && roles.length > 0;
-  const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort()]);
+    !!profile.organization_id && roles.length > 0 && authzReady;
+  const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort(), authzEpoch]);
   const current = useRef({ scope, mounted: true, epoch: 0 });
   if (current.current.scope !== scope) {
     current.current.scope = scope;

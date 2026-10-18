@@ -6,7 +6,8 @@ import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
-import { AUTHZ_CACHE_FOUNDATION_ENABLED } from "@/lib/authz/authzEpochGate";
+import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE } from "@/lib/authz/authzEpochGate";
+import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -357,15 +358,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authzEpoch, setAuthzEpoch] = useState(0);
   const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
   const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
-  const isExternalUser = roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+  const b2bContextOnly = AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context";
+  const isExternalUser = b2bContextOnly
+    ? roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico")
+    : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+  const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
+    profile.senha_provisoria === false && !!profile.organization_id;
   // Gate de criação via ref: o refresh() disparado pela mudança de época
   // alterna `loading` e NÃO pode derrubar/recriar o monitor (isso consumiria
   // respostas fora de ordem e duplicaria polls). O efeito roda quando a
   // identidade externa é resolvida (roles carregam junto do perfil).
   const authzMonitorGateRef = useRef(false);
   authzMonitorGateRef.current =
-    AUTHZ_CACHE_FOUNDATION_ENABLED && !loading && !!user?.id && !!profile && isExternalUser;
-  const principalScope = JSON.stringify([user?.id, profile?.organization_id, isExternalUser]);
+    AUTHZ_CACHE_FOUNDATION_ENABLED && !loading && principalReady && isExternalUser;
+  const principalScope = JSON.stringify([user?.id, profile?.organization_id, principalReady, [...roles].sort(), isExternalUser]);
   const [initializedPrincipal, setInitializedPrincipal] = useState("");
   useEffect(() => {
     // Initial profile and roles can arrive in different renders. Latch only
@@ -380,6 +386,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
+        if (b2bContextOnly) {
+          const { data, error } = await supabase.rpc("get_my_commercial_partner_context");
+          if (error) throw new Error("b2b_probe_unavailable");
+          return b2bContextProbe(data, profile?.organization_id ?? "", roles[0] ?? "");
+        }
         const { data, error } = (await supabase.rpc("get_my_authz_fingerprint" as never)) as { data: unknown; error: Error | null };
         if (error) throw error;
         const row = (Array.isArray(data) ? data[0] : data) as
@@ -406,7 +417,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeoutFn: (h) => window.clearTimeout(h as number),
       isVisible: () => document.visibilityState === "visible",
       isOnline: () => navigator.onLine,
-      onStateChange: (next) => setAuthzState(next),
+      refreshOnConfirmation: b2bContextOnly,
+      onStateChange: (next) => {
+        if (next === "pending" || next === "expired") {
+          void queryClient.cancelQueries();
+          queryClient.clear();
+          setAuthzEpoch((e) => e + 1);
+        }
+        setAuthzState(next);
+      },
       onEpochChange: () => {
         // Nova época (fingerprint mudou): geração++, cancela/limpa consultas,
         // limpa seleção de portal e preferências compartilhadas, incrementa a
@@ -465,12 +484,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!!user && !loading && (!isExternalUser ||
-      (initializedPrincipal === principalScope && authzState === "valid" &&
+      (principalReady && initializedPrincipal === principalScope && authzState === "valid" &&
         (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     !isExternalUser ||
-    (authzMonitorRef.current?.checkAccess() ?? false);
+    (!loading && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
   const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
 
   const signOut = async () => {

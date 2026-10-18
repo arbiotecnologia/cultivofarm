@@ -49,6 +49,8 @@ export interface AuthzEpochMonitorDeps {
   onStateChange?: (state: AuthzMonitorState) => void;
   pollMs?: number;
   leaseMs?: number;
+  /** No monotonic revision: retire old view/cache on every confirmation. */
+  refreshOnConfirmation?: boolean;
 }
 
 export interface AuthzEpochMonitor {
@@ -181,7 +183,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       if (!Number.isFinite(deadline) || deadline <= deps.now()) { expire("timeout"); return; }
       leaseUntil = deadline;
       requestUntil = 0;
-      const changed = fingerprint !== null && fingerprint !== result.fingerprint;
+      const changed = fingerprint !== null && (fingerprint !== result.fingerprint || deps.refreshOnConfirmation === true);
       fingerprint = result.fingerprint;
       setState("valid");
       armLeaseDeadline();
@@ -190,6 +192,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       // nem poll pode sair após a expiração.
       if (state !== "valid" || generation !== myGen) return;
       if (changed) deps.onEpochChange(result);
+      if (state !== "valid" || generation !== myGen) return;
       schedulePoll();
     } catch {
       if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return;
