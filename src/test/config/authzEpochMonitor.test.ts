@@ -350,10 +350,11 @@ describe("authzEpochMonitor", () => {
   });
 
   it("sem server_remaining_ms mantém lease local padrão de 15s", async () => {
-    const { monitor, fetcher, advance } = setup();
+    const { monitor, fetcher, advance, setVisible } = setup();
     fetcher.mockResolvedValue({ eligible: true, fingerprint: "A", server_remaining_ms: null });
     monitor.start();
     await vi.advanceTimersByTimeAsync(0);
+    setVisible(false); // sem poll em aba oculta: lease original não é renovada
     await advance(14_999);
     expect(monitor.checkAccess()).toBe(true);
     await advance(2);
