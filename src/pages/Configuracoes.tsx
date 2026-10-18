@@ -241,16 +241,16 @@ export default function Configuracoes() {
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
       if (bloqueio) throw new ErroStatusLocal(bloqueio);
-      const { data, error } = await (supabase as any).rpc("tenant_admin_set_user_active", {
-        p_user_id: userId,
-        p_active: ativo,
-      });
-      if (error) throw error;
-      if (data?.success !== true || data?.user_id !== userId) throw new ErroStatusLocal("Não foi possível confirmar a atualização do status.");
+      try {
+        await definirStatusUsuario(supabase, userId, ativo);
+      } catch (e) {
+        throw e instanceof Error && !(e instanceof ErroStatusLocal) ? e : e;
+      }
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-links"] });
       toast({ title: "Status do usuário atualizado" });
     },
     onError: (e: unknown) => {
