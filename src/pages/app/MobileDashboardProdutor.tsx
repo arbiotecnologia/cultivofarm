@@ -25,83 +25,83 @@ export default function MobileDashboardProdutor() {
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
   const logoUrl = config?.logo_url || null;
 
-  const { data: talhoes } = useQuery({
+  const { data: talhoes } = useScopedPortalQuery({
     queryKey: ["mobile-prod-talhoes", clienteId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return 0;
       const { count } = await supabase
         .from("talhoes")
         .select("*, fazendas!inner(cliente_id)", { count: "exact", head: true })
-        .eq("fazendas.cliente_id", clienteId);
+        .eq("fazendas.cliente_id", clienteId).abortSignal(signal);
       return count || 0;
     },
     enabled: !!clienteId,
   });
 
-  const { data: recomendacoes } = useQuery({
+  const { data: recomendacoes } = useScopedPortalQuery({
     queryKey: ["mobile-prod-recom", clienteId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return 0;
       const { count } = await supabase
         .from("registros_consultor")
         .select("*", { count: "exact", head: true })
         .eq("cliente_id", clienteId)
-        .in("status", ["aprovado", "convertido_os"]);
+        .in("status", ["aprovado", "convertido_os"]).abortSignal(signal);
       return count || 0;
     },
     enabled: !!clienteId,
   });
 
-  const { data: osAtivas } = useQuery({
+  const { data: osAtivas } = useScopedPortalQuery({
     queryKey: ["mobile-prod-os", clienteId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return 0;
       const { count } = await supabase
         .from("ordens_servico")
         .select("*", { count: "exact", head: true })
         .eq("cliente_id", clienteId)
-        .not("status", "in", '("finalizada","entregue")');
+        .not("status", "in", '("finalizada","entregue")').abortSignal(signal);
       return count || 0;
     },
     enabled: !!clienteId,
   });
 
-  const { data: entregasPendentes } = useQuery({
+  const { data: entregasPendentes } = useScopedPortalQuery({
     queryKey: ["mobile-prod-entregas", clienteId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return 0;
       const { count } = await supabase
         .from("entregas")
         .select("*", { count: "exact", head: true })
         .eq("cliente_id", clienteId)
-        .neq("status", "entregue");
+        .neq("status", "entregue").abortSignal(signal);
       return count || 0;
     },
     enabled: !!clienteId,
   });
 
-  const { data: entregasRealizadas } = useQuery({
+  const { data: entregasRealizadas } = useScopedPortalQuery({
     queryKey: ["mobile-prod-entregas-realizadas", clienteId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return 0;
       const { count } = await supabase
         .from("entregas")
         .select("*", { count: "exact", head: true })
         .eq("cliente_id", clienteId)
-        .eq("status", "entregue");
+        .eq("status", "entregue").abortSignal(signal);
       return count || 0;
     },
     enabled: !!clienteId,
   });
 
-  const { data: aplicacoes } = useQuery({
+  const { data: aplicacoes } = useScopedPortalQuery({
     queryKey: ["mobile-prod-aplicacoes", clienteId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       if (!clienteId) return 0;
       const { count } = await supabase
         .from("aplicacoes")
         .select("*, ordens_servico!inner(cliente_id)", { count: "exact", head: true })
-        .eq("ordens_servico.cliente_id", clienteId);
+        .eq("ordens_servico.cliente_id", clienteId).abortSignal(signal);
       return count || 0;
     },
     enabled: !!clienteId,
