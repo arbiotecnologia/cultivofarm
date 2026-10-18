@@ -12,7 +12,7 @@ SELECT table_name, column_name FROM information_schema.columns
 WHERE table_schema='public' AND (
   (table_name='partner_users' AND column_name IN ('user_id','partner_id','tenant_id','revoked_at')) OR
   (table_name='partner_accounts' AND column_name IN ('id','ativo','deleted_at','commercial_owner_organization_id')) OR
-  (table_name='partner_user_clients' AND column_name IN ('partner_id','user_id','cliente_id','active','revoked_at')) OR
+  (table_name='partner_user_clients' AND column_name IN ('partner_id','user_id','cliente_id','active')) OR -- SEM revoked_at (confirmado live 2026-10-18)
   (table_name='partner_technician_clients' AND column_name IN ('partner_id','technician_user_id','cliente_id','active')) OR
   (table_name='partner_clients' AND column_name IN ('partner_id','cliente_id','active'))
 ) ORDER BY 1,2;

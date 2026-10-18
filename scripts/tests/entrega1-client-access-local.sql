@@ -11,7 +11,7 @@ CREATE TABLE lab.user_roles(user_id uuid, role lab.app_role);
 CREATE TABLE lab.partner_accounts(id uuid, ativo boolean, deleted_at timestamptz, commercial_owner_organization_id uuid);
 CREATE TABLE lab.partner_users(user_id uuid, partner_id uuid, tenant_id uuid, revoked_at timestamptz);
 CREATE TABLE lab.partner_clients(partner_id uuid, cliente_id uuid, active boolean);
-CREATE TABLE lab.partner_user_clients(partner_id uuid, user_id uuid, cliente_id uuid, active boolean, revoked_at timestamptz);
+CREATE TABLE lab.partner_user_clients(partner_id uuid, user_id uuid, cliente_id uuid, active boolean); -- sem revoked_at: paridade exata com live
 CREATE TABLE lab.partner_technician_clients(partner_id uuid, technician_user_id uuid, cliente_id uuid, active boolean);
 CREATE TABLE lab.user_clientes(user_id uuid, cliente_id uuid, is_active boolean, revoked_at timestamptz, valid_from timestamptz, valid_until timestamptz);
 
@@ -107,7 +107,7 @@ INSERT INTO lab.user_roles VALUES
 INSERT INTO lab.partner_users VALUES
   ('10000000-0000-4000-8000-000000000011', 'a0000000-0000-4000-8000-0000000000a1', 'a0000000-0000-4000-8000-0000000000aa', NULL);
 INSERT INTO lab.partner_user_clients VALUES
-  ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000011', '20000000-0000-4000-8000-0000000000a1', true, NULL);
+  ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000011', '20000000-0000-4000-8000-0000000000a1', true);
 INSERT INTO lab.partner_technician_clients VALUES
   ('a0000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-000000000012', '20000000-0000-4000-8000-0000000000a1', true);
 
@@ -130,7 +130,7 @@ DECLARE
   m1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true';
   r1 text := E'      SELECT 1 FROM lab.partner_clients pc\n      JOIN lab.partner_users pu ON pu.partner_id = pc.partner_id\n      JOIN lab.partner_accounts pa ON pa.id = pu.partner_id\n      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true\n        AND pu.revoked_at IS NULL\n        AND pa.ativo = true AND pa.deleted_at IS NULL\n        AND (\n          (pa.commercial_owner_organization_id IS NOT NULL\n           AND pu.tenant_id IS NOT NULL\n           AND pu.tenant_id = pa.commercial_owner_organization_id)\n          OR pa.commercial_owner_organization_id IS NULL\n        )';
   m2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n    )), false);';
-  r2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      JOIN lab.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN lab.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND puc.revoked_at IS NULL\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      JOIN lab.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN lab.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n    )), false);';
+  r2 text := E'      SELECT 1 FROM lab.partner_user_clients puc\n      JOIN lab.partner_users pu2 ON pu2.partner_id = puc.partner_id AND pu2.user_id = puc.user_id\n      JOIN lab.partner_accounts pa2 ON pa2.id = puc.partner_id\n      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true\n        AND pu2.revoked_at IS NULL\n        AND pa2.ativo = true AND pa2.deleted_at IS NULL\n    ) OR EXISTS (\n      SELECT 1 FROM lab.partner_technician_clients ptc\n      JOIN lab.partner_users pu3 ON pu3.partner_id = ptc.partner_id AND pu3.user_id = ptc.technician_user_id\n      JOIN lab.partner_accounts pa3 ON pa3.id = ptc.partner_id\n      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true\n        AND pu3.revoked_at IS NULL\n        AND pa3.ativo = true AND pa3.deleted_at IS NULL\n    )), false);';
 BEGIN
   SELECT pg_get_functiondef('lab.can_user_access_cliente(uuid,uuid)'::regprocedure) INTO d;
   ASSERT (length(d)-length(replace(d,m1,'')))/length(m1) = 1, 'marcador b2b divergente';

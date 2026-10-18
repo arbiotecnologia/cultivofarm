@@ -13,7 +13,8 @@ BEGIN
     INTO v_definition;
   -- Só reverte se o corpo instalado contém as marcas da candidata (não reverte drift desconhecido).
   IF position('pu.revoked_at IS NULL' IN v_definition) = 0
-     OR position('puc.revoked_at IS NULL' IN v_definition) = 0 THEN
+     OR position('pu2.revoked_at IS NULL' IN v_definition) = 0
+     OR position('pu3.revoked_at IS NULL' IN v_definition) = 0 THEN
     RAISE EXCEPTION 'entrega1_rollback_refuse_unknown_body';
   END IF;
 END

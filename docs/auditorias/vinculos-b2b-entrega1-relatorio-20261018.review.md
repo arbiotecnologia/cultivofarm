@@ -12,6 +12,40 @@ Base: commit dafd9abd (pós F2-B3.3-B). Destino de leitura: Supabase canônico `
 - **12 policies** referenciam o overload `(uuid,uuid)`: aprovacoes_tecnicas, clientes, fazendas, ordens_servico_onfarm_status_history, registros_consultor (SELECT+UPDATE), registros_consultor_arquivos, registros_consultor_recomendacoes, solicitacoes_atribuicoes, visita_diagnosticos, visitas_checkin, visitas_logs.
 - Estado de dados: `partner_users` = 1 vínculo, não revogado, **elegível** (tenant_id = owner do parceiro, parceiro ativo); PUC = 0, PTC = 0. Ou seja: o endurecimento **não corta nenhum acesso legítimo existente hoje**.
 
+## 1.1 Errata 2026-10-18 — coluna fantasma `puc.revoked_at` (bloqueante, corrigida)
+
+Auditor independente confirmou via `information_schema` live em produção que
+`public.partner_user_clients` **não possui** `revoked_at` (colunas reais: id,
+partner_id, user_id, cliente_id, user_role, assignment_type, active, notes,
+assigned_by, assigned_at, can_monitor, can_create_simulation, created_at,
+updated_at). A versão inicial da candidata referenciava `puc.revoked_at IS NULL`;
+PL/pgSQL compilaria, mas o EXECUTE falharia no ramo `parceiro_b2b_tecnico` — e o
+laboratório sintético havia criado a coluna inexistente, configurando **falso PASS
+de paridade**. Erro registrado e corrigido:
+
+- **Candidata**: removido `puc.revoked_at`; revogação verificada exclusivamente no
+  vínculo `partner_users` (`pu2.revoked_at`/`pu3.revoked_at`), mantendo
+  `puc.active`/`ptc.active` e `pa2/pa3` ativo + não deletado.
+- **Pós-condição da candidata e anti-drift do rollback** agora exigem
+  `pu2.revoked_at` e `pu3.revoked_at` (não mais `puc.revoked_at`).
+- **Preflight read-only**: colunas de PUC corrigidas para as 4 usadas
+  (`partner_id`, `user_id`, `cliente_id`, `active`), sem `revoked_at`.
+- **Laboratório**: `lab.partner_user_clients` recriada **sem** `revoked_at`
+  (paridade exata com live); fixture ajustado para 4 colunas; marcador `r2`
+  corrigido. O log SQL da fase 2 foi verificado: não há mais referência a
+  `puc.revoked_at` no corpo instalado (não apenas substituição textual — o
+  laboratório agora reproduz as colunas exatas do catálogo live).
+- **Varredura de outras referências fantasma** (catálogo live re-verificado por
+  este agente em 2026-10-18): `partner_technician_clients` também não tem
+  `revoked_at` (não era referenciado); `partner_users` possui `revoked_at`,
+  `tenant_id`, `valid_from`, `version` (F1); `partner_accounts` possui `ativo`,
+  `deleted_at`, `commercial_owner_organization_id`; `partner_clients` possui
+  `active`. Nenhuma outra referência a coluna inexistente permanece.
+- **Teste local reexecutado após a correção**: 4 fases verificadas (baseline com
+  brechas → candidata endurecida → rollback exato → anti-drift), incluindo EXECUTE
+  real do overload com papéis B2B, vínculo revogado, PTC direct órfão, legacy sem
+  owner e cross-tenant — todas as expectativas conferem.
+
 ## 2. Decisão de desenho
 
 - **Não impor self-only**: o overload autoriza ALVO terceiro por desenho (callers internos e policies passam `_user_id` arbitrário). Endurecer por vínculo do alvo, nunca por `auth.uid()`.
