@@ -10,6 +10,35 @@ if spec is None or spec.loader is None:
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 class StageTests(unittest.TestCase):
+    def test_activation_forbidden(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for mode in ('activation', 'deactivation'):
+                with self.assertRaisesRegex(ValueError, 'invalid_mode'):
+                    module.stage(Path(tmp)/mode, mode)
+                self.assertFalse((Path(tmp)/mode).exists())
+
+    def test_artifact_drift_refused_before_output(self):
+        original = module.HERE
+        manifest = json.loads((HERE/'manifest.json').read_bytes())
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                mirror = Path(tmp)/'artifact'
+                mirror.mkdir()
+                (mirror/'manifest.json').write_bytes((HERE/'manifest.json').read_bytes())
+                for path in manifest['artifact_sha256']:
+                    target = mirror/path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes((HERE/path).read_bytes())
+                target.write_bytes(target.read_bytes()+b'drift')
+                module.HERE = mirror
+                for mode in ('candidate', 'rollback'):
+                    out = Path(tmp)/mode
+                    with self.assertRaisesRegex(ValueError, 'artifact_drift'):
+                        module.stage(out, mode)
+                    self.assertFalse(out.exists())
+        finally:
+            module.HERE = original
+
     def test_byte_exact_four_modes(self):
         manifest = json.loads((HERE / 'manifest.json').read_bytes())
         for mode in ('candidate', 'rollback'):
