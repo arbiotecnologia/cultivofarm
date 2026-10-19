@@ -153,9 +153,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPrimaryRole(null);
   };
 
-  const fetchProfileAndRole = async (userId: string, generation?: number) => {
+  const loadDiagnostic = (event: "load_restart" | "load_timeout", startedAt: number) =>
+    recordAuthzDiagnostic({ event, state: "pending", reason: event === "load_timeout" ? "timeout" : null,
+      visible: document.visibilityState === "visible", online: navigator.onLine,
+      rttMs: performance.now() - startedAt, leaseRemainingMs: null, requestRemainingMs: null });
+  const failLoad = () => {
+    loadedUserIdRef.current = null;
+    renewalRef.current = null;
+    clearIdentityState();
+    setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
+    setLoading(false);
+  };
+
+  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0): Promise<void> => {
     const gen = generation ?? generationRef.current;
-    const isCurrent = () => mountedRef.current && gen === generationRef.current;
+    const seq = ++loaderSeqRef.current;
+    const startedAt = performance.now();
+    let timedOut = false;
+    // Watchdog: a hung transport ends in an explicit, recoverable error. The
+    // loader is retired first, so a late answer is never adopted.
+    const watchdog = setTimeout(() => {
+      if (!mountedRef.current || seq !== loaderSeqRef.current) return;
+      timedOut = true;
+      loaderSeqRef.current++;
+      loadDiagnostic("load_timeout", startedAt);
+      failLoad();
+    }, AUTH_LOAD_TIMEOUT_MS);
+    const isCurrent = () => mountedRef.current && !timedOut && seq === loaderSeqRef.current && gen === generationRef.current;
+    // Fenced by a non-loader event (expiry/epoch/Retry) with no successor
+    // loader scheduled: discard this answer, re-read freshly (bounded).
+    const yieldStale = () => {
+      if (!mountedRef.current || timedOut || seq !== loaderSeqRef.current || timerRef.current !== null ||
+        activeUserIdRef.current !== userId) return;
+      if (restarts >= AUTH_LOAD_MAX_RESTARTS) { loaderSeqRef.current++; failLoad(); return; }
+      loadDiagnostic("load_restart", startedAt);
+      void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
+    };
     try {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -163,8 +196,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("user_id", userId)
         .maybeSingle();
 
+      if (!isCurrent()) return yieldStale();
       if (profileError) throw profileError;
-      if (!isCurrent()) return;
 
       const profile = profileData as Profile | null;
       
