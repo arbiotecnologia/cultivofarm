@@ -1,21 +1,28 @@
-# Programação inicial — revisão local, execução fechada
+# Programação inicial manual — executável para revisão externa
 
-Recupera somente `rpc_programar_os_v1` e o diálogo existente. Não autoaprova, não insere programação/lote, não reprograma data diferente. Repetição idêntica retorna replay sem evento novo. Actor, tenant, readiness, feature, papéis e cadeia corrente são verificados antes/depois dos locks. B2B/vínculos, família inelegível, programação ambígua, responsável não comprovado e estados avançados permanecem negados.
+Recupera somente `rpc_programar_os_v1(uuid,text,date)` e o diálogo existente. OS manual previamente aprovada, uma programação aguardando já existente, responsável UUID/texto vazio, item biológico e actor/tenant/readiness/SaaS/RBAC/cadeia corrente obrigatórios. Não autoaprova, fabrica, cria programação/lote, reprograma data diferente nem libera B2B/onfarm/entrega/aplicação já vinculada. Replay idêntico não cria evento.
 
-**NÃO executar a candidata como liberação.** Possui exceção incondicional `PROGRAMAR_SUPPLEMENTAL_REVIEW_REQUIRED` e não contém GRANT/REVOKE. ACL authenticated/anon fechadas. O auditor precisa resolver e congelar catálogo transitivo SaaS/refresh e concorrência antes de qualquer aplicação/liberação específica. Não substituir essa exceção por GUC, claims ou flag de autorização.
+**Não aplicado/publicado.** Auditor deve revisar e executar PRE integral. A candidata não depende mais de TEMP TABLE nem exceção incondicional: PRE → definição → ACL mínima somente dessa RPC para authenticated → POST → COMMIT; erro aborta tudo. Nenhuma outra RPC recebe EXECUTE.
 
-PRE/POST verificam contratos já observados após aprovação/reader implantados; não certificam dependências suplementares ausentes. Fonte UI fixa: commits completos e6a67/c30af no manifesto; rollback UI SHA d181e5… diferente do candidato. Reversão SQL usa definição exata capturada na mesma sessão e hash a42d6…, nunca a reconstrução textual de referência `rollback/rpc.sql.review`. Se snapshot não existir, recusa. Nenhum ledger applied novo.
+Rollback autocontido, inclusive em outra conexão: POST → definição EXATA `a42d6b07f51e6dacf41096f6cefb8163` → ACL `{postgres=X/postgres,service_role=X/postgres}` → PRE → COMMIT. Definição e ACL restauradas/verificadas localmente em conexão independente; não usa HEAD móvel, não chama corpo antigo e não desfaz dados/histórico de programação já realizada. Baseline UI fixo e6a67/c30af no manifest; pre/post distintos.
 
-## Verificação
+## Catálogo transitivo e travas
 
-- `python3 test-local.py`: PostgreSQL descartável, Auth/schema simulados. Helper corrente efetivo, trigger clássico byte-exato por hash, onfarm transcrito semanticamente. Não monta todos triggers nem JWT/RLS hospedados.
-- `python3 assemble.py`: verifica proteção e baselines Git imutáveis; monta SQL/manifesto/hashes sem conexão.
-- `python3 test_stage.py`: bytes candidato/reversão e recusas de baseline/destino.
-- `stage.py candidate|rollback /tmp/destino-vazio`: apenas UI revisada, fora do checkout.
-- `snapshot/`: checkout fonte para checker independente, produzido pelo exportador existente. App/node typecheck não executados aqui.
+Capturas SELECT do ref canônico em `catalog.json`, `transitive-catalog.json`, `schema-catalog.json`, `refresh-catalog.json`: definições/schema, nunca tokens ou dados privados. PRE/POST preservam contratos aprovados e acrescentam fingerprints de entitlements, readiness/invites, has_role, todos 23 triggers de OS/programação, constraints/FKs, índices, schema e views transitivas do refresh.
 
-## Bloqueios restantes
+Removidos SHARE globais de links/lotes/subscriptions/overrides. OS/programação FOR UPDATE e FKs imediatas cercam inserção/movimentação para o alvo. Organização FOR UPDATE mais rows da empresa cercam subscription/override. Mantidos SHARE com timeout em invites (user_id sem FK), onfarm (colisão ID sem FK manual) e quatro tabelas globais do catálogo publicado. Não retirar SaaS nem substituir phantoms por advisory/GUC.
 
-SHARE locks conservadores em lotes/links/SaaS impedem alguns phantoms, porém são globais: latência, ordem entre writers, deadlocks e refresh interno precisam ensaio completo. Timeout de espera 3s no RPC; não é homologação de concorrência full-schema. Entitlement possui dependências transitivas ainda sem fingerprints. Inserções de identidade/links externos e ABA não estão certificadas. Divergência profiles.id/user_id do responsável permanece fail-closed. Fabricação/CQ/estoque, anexos, TOKEN_REFRESHED real, v6 e contratos não são liberados.
+`refresh_esteira_laboratorio` continua global e fechado ao cliente. Preservados dois refreshes internos existentes (programação pelo downstream + OS); retirado somente UPDATE redundante da programação, sem refresh explícito extra. Não reescrever/desativar triggers/views. Lock timeout 3s; instalação statement_timeout 15s. Disputa real de REFRESH local abortou status/evento integralmente. Carga, latência e ordem de writers externos NÃO certificadas.
 
-Sem DDL/DML hosted, publicação, fixture nova, alteração de roles/perfis ou pacotes aprovados. Próximo passo é revisão independente focal desses bloqueios, não recriação da OS B.
+## Evidências
+
+- `python3 test-local.py` executa `test-real-local.py`, substituindo o harness anterior com helpers VOLATILE fake.
+- 32 verificações locais em `real-test-results.json`: STABLE/readiness/entitlements reais, todos 23 triggers alvo, views reais do refresh; inactive/profile, role deletion, SaaS, tenant/alçadas, aberta sem autoaprovação, B2B, replay, duas conexões, FK link/lote, refresh/timeout, baseline/ACL exatos e SET ROLE authenticated/anon.
+- Schema local: todos tipos/colunas públicos, PK/UNIQUE/FKs capturadas, CHECKs alvo/Auth/SaaS/referências. Não é clone de todos os triggers/policies alheios ao recorte. Auth UID/JWT sintéticos e SET ROLE local NÃO são JWT hosted.
+- Vitest programação/aprovação 33/33; warnings preexistentes de descrição do diálogo, sem falhas.
+- `assemble.py`: pacotes protegidos/commits fixos; `test_stage.py`: 5/5; `stage.py candidate|rollback /tmp/destino-vazio`: só fonte UI.
+- `snapshot/` e `delta.patch`: fonte atual e delta contra c30af fixo para checker; materialização verifica todos bytes. Typecheck app/node reservado ao checker (não executado manualmente); build automático consultar log.
+
+**PRE/POST integral hosted: UNVERIFIED. Authenticated path: UNVERIFIED.** Ensaio local de restauração da definição/ACL não equivale a execução integral da migration em schema hospedado. Prévia pública não forneceu prova autenticada. Histórico, anexos, TOKEN_REFRESHED real, revogação hosted de papéis, v6/contratos não recebem PASS. Recibos externos anteriores permanecem distintos.
+
+Sem DDL/DML hosted, deploy/publicação, nova fixture hospedada, alteração OS B/produto/roles/perfis ou pacotes c30af/e6a67. Duas chamadas indevidas vazias ao tool run_sql foram rejeitadas antes de qualquer execução (nenhum SQL/DML enviado); preservado registro desta limitação no relatório. Auditor revisa/aplica com preflight fail-closed.

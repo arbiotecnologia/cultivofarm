@@ -33,6 +33,7 @@
 - Internal expected-role probes accept only frozen reviewed singleton or exact paired scopes and copy expectations before await; scope helpers only select monitoring, never grant authority — prevents silent role adoption.
 - Exclusive operator login reuses the typed internal probe and canonical role home without inventing portal contexts; open-session scopes share the existing AuthProvider monitor — avoids expanding technical RBAC.
 - OS eligibility decodes live family/dose at the canonical SDK boundary when generated types lag; submit revalidates manufacturing semantics — prevents inferred eligibility and unchecked casts.
+- OS programming candidates replace only the canonical RPC with a fixed self-contained rollback; manual initial scheduling reuses downstream triggers and parent/FK fences while retaining invite/catalog locks — avoids autoapproval, extra children and extra refresh.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.
