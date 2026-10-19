@@ -1,9 +1,15 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 02:43 — anexos de RecibosList
+- [x] Cercar listagem, cancelamento e download existentes por ator/tenant/roles/epoch/recurso; usar locator canônico e opener autenticado, sem URL arbitrária.
+- [x] Testar races, expiração, identidade, geração/existente e duplicação: 231/231; preflight SELECT-only não executado, staging5/5, rollback/hashes e relatório; build automático OK, typecheck independente final exit0.
+- [ ] Revisão independente e homologação financeiro A/admin B aguardam proprietário; não publicar/recarregar/criar recibos ou pagamentos.
+- [x] Inventário somente registrado: global v6, pdfAplicacao signer600/sem fence e guard final entrega-termo-pdf seguem fora desta correção.
+
 ## 19/10 02:20 — renovação antecipada RTT multipapel
 - [x] Agendar renovação antes do deadline confirmado só no par exato (RTT/margem/jitter/piso 1s), sem estender lease nem aceitar resposta tardia.
 - [x] Testes RTT3s contínuo, variável, alto, orçamento curto, tardia, erros/role/offline, clock suspenso, coalescência; mutação prova falha sem a opção; staging5/5, manifest 76/8.
-- [ ] Revisão externa e publicação dependem do proprietário; não recarregar abas.
+- [x] Proprietário informou HEAD71decc2d publicado/homologado multipapel; abas não recarregadas por esta execução.
 
 ## 19/10 02:07 — pausas ambientais multipapel
 - [x] Corrigir foco/visibility e polling hidden somente no recorte exato, preservando deadline15s/fail-closed e B2B.

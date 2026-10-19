@@ -1,5 +1,5 @@
 import { formatDateDisplay } from "@/lib/date-utils";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,16 @@ import { toast } from "sonner";
 import { Download, XCircle, Loader2, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { brl as fmt } from "@/lib/financial/format";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
 
 interface Receipt {
   id: string;
+  organization_id: string;
+  receipt_year: number;
+  storage_bucket: string | null;
   receipt_number: string;
   payment_date: string;
   amount: number;
@@ -31,11 +38,69 @@ interface Receipt {
   method?: { name?: string } | null;
 }
 
+function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; tenant: string; listScope: string }) {
+  const resource = JSON.stringify(["receipt-pdf", listScope, receipt]);
+  const access = useStorageAccessScope(resource);
+  const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
+  const request = useRef<AbortController | null>(null);
+  const [busy, setBusy] = useState(false);
+  let path = "";
+  try { path = financialReceiptLocator(receipt, tenant); } catch { /* fail closed */ }
+  useLayoutEffect(() => {
+    setBusy(false);
+    return () => { request.current?.abort(); request.current = null; };
+  }, [access.scope]);
+  const download = async () => {
+    const current = access.capture();
+    if (!current() || !path || request.current) return;
+    // Prepared bytes are downloaded only on a new, synchronous user click.
+    if (opener.urls[path]) { if (current()) opener.download(path, `${receipt.receipt_number}.pdf`); return; }
+    const controller = new AbortController();
+    request.current = controller;
+    const valid = () => current() && !controller.signal.aborted && request.current === controller;
+    const timeout = setTimeout(() => {
+      if (request.current !== controller) return;
+      controller.abort(); request.current = null;
+      if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
+    }, 15_000);
+    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+    setBusy(true);
+    try {
+      if (!receipt.storage_path) {
+        if (!valid()) return;
+        const { data, error } = await supabase.functions.invoke("generate-financial-receipt", {
+          body: { receipt_id: receipt.id }, signal: controller.signal,
+        });
+        if (!valid()) return;
+        // Edge currently returns {url, path, receipt_number}; never consume url.
+        if (error || data?.path !== path || data?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
+      }
+      if (!valid()) return;
+      // The canonical opener owns download timeout/abort; this timer covers Edge only.
+      clearTimeout(timeout);
+      await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
+      if (!valid()) return;
+    } catch {
+      if (valid()) toast.error("Recibo indisponível");
+    } finally {
+      clearTimeout(timeout);
+      if (request.current === controller) {
+        request.current = null;
+        if (current()) setBusy(false);
+      }
+    }
+  };
+  const prepared = !!path && !!opener.urls[path];
+  return <Button size="sm" variant="outline" onClick={download} disabled={!access.ready || !path || busy || opener.loadingPaths.includes(path)}
+    title={prepared ? "Baixar PDF" : "Preparar PDF"} aria-label={prepared ? "Baixar PDF" : "Preparar PDF"}>
+    {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+  </Button>;
+}
 
 
 export default function RecibosList() {
-  const [rows, setRows] = useState<Receipt[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+  const tenant = profile?.organization_id ?? "";
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -44,68 +109,101 @@ export default function RecibosList() {
   const [cancelOpen, setCancelOpen] = useState<Receipt | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    let q = supabase
-      .from("financial_receipts" as any)
-      .select("*, customer:customer_id(nome, razao_social), method:payment_method_id(name)")
-      .order("issued_at", { ascending: false })
-      .limit(500);
-    if (from) q = q.gte("payment_date", from);
-    if (to) q = q.lte("payment_date", to);
-    if (statusFilter) q = q.eq("status", statusFilter);
-    if (numberFilter) q = q.ilike("receipt_number", `%${numberFilter}%`);
-    if (customerFilter) q = q.eq("customer_id", customerFilter);
-    const { data, error } = await q;
-    if (error) toast.error(error.message);
-    setRows((data as any) ?? []);
-    setLoading(false);
-  };
+  const resource = JSON.stringify(["financial-receipts", from, to, statusFilter, numberFilter, customerFilter]);
+  const access = useStorageAccessScope(resource);
+  const [result, setResult] = useState({ scope: "", rows: [] as Receipt[], loading: false });
+  const [refresh, setRefresh] = useState(0);
+  const pendingCancel = useRef<AbortController | null>(null);
+  const dialogEpoch = useRef(0);
+  useLayoutEffect(() => {
+    setCancelOpen(null); setReason(""); setBusy(false); dialogEpoch.current++;
+    return () => { pendingCancel.current?.abort(); pendingCancel.current = null; dialogEpoch.current++; };
+  }, [access.scope]);
   useEffect(() => {
-    load();
-    /* eslint-disable-next-line */
-  }, [from, to, statusFilter, numberFilter, customerFilter]);
+    const current = access.capture();
+    const controller = new AbortController();
+    const valid = () => current() && !controller.signal.aborted;
+    if (!valid()) return;
+    setResult({ scope: access.scope, rows: [], loading: true });
+    const timeout = setTimeout(() => {
+      controller.abort();
+      if (current()) { setResult({ scope: access.scope, rows: [], loading: false }); toast.error("Recibos indisponíveis"); }
+    }, 15_000);
+    const load = async () => {
+      try {
+        if (!valid()) return;
+        let q = supabase
+          .from("financial_receipts" as any)
+          .select("*, customer:customer_id(nome, razao_social), method:payment_method_id(name)")
+          .eq("organization_id", tenant)
+          .order("issued_at", { ascending: false })
+          .limit(500);
+        if (from) q = q.gte("payment_date", from);
+        if (to) q = q.lte("payment_date", to);
+        if (statusFilter) q = q.eq("status", statusFilter);
+        if (numberFilter) q = q.ilike("receipt_number", `%${numberFilter}%`);
+        if (customerFilter) q = q.eq("customer_id", customerFilter);
+        if (!valid()) return;
+        const { data, error } = await q.abortSignal(controller.signal);
+        if (!valid()) return;
+        const receipts = (data ?? []) as unknown as Receipt[];
+        if (error || receipts.some(r => r.organization_id !== tenant)) throw new Error("Recibos indisponíveis");
+        if (valid()) setResult({ scope: access.scope, rows: receipts, loading: false });
+      } catch {
+        if (valid()) { toast.error("Recibos indisponíveis"); setResult({ scope: access.scope, rows: [], loading: false }); }
+      } finally { clearTimeout(timeout); }
+    };
+    void load();
+    return () => { controller.abort(); clearTimeout(timeout); };
+    // Scope includes actor, tenant, roles, epoch and all filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access.scope, refresh]);
 
-  const download = async (r: Receipt) => {
-    try {
-      if (!r.storage_path) {
-        const { data, error } = await supabase.functions.invoke("generate-financial-receipt", {
-          body: { receipt_id: r.id },
-        });
-        if (error) throw error;
-        if ((data as any)?.url) window.open((data as any).url, "_blank");
-      } else {
-        const { data } = await supabase.storage
-          .from("financial-receipts")
-          .createSignedUrl(r.storage_path, 3600);
-        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-      }
-    } catch (e: any) {
-      toast.error(e.message);
-    }
+  const visible = access.ready && result.scope === access.scope;
+  const rows = visible ? result.rows : [];
+  const loading = visible && result.loading;
+  const selectCancel = (receipt: Receipt | null) => {
+    if (pendingCancel.current) return;
+    dialogEpoch.current++;
+    setCancelOpen(receipt); setReason("");
   };
-
   const cancel = async () => {
-    if (!cancelOpen) return;
-    if (reason.trim().length < 5) {
-      toast.error("Motivo precisa ter ao menos 5 caracteres");
-      return;
-    }
+    const current = access.capture();
+    const receipt = cancelOpen;
+    const epoch = dialogEpoch.current;
+    const submittedReason = reason;
+    if (!current() || !receipt || receipt.organization_id !== tenant || !rows.includes(receipt) || pendingCancel.current) return;
+    if (submittedReason.trim().length < 5) { toast.error("Motivo precisa ter ao menos 5 caracteres"); return; }
+    const controller = new AbortController(); pendingCancel.current = controller;
+    const valid = () => current() && !controller.signal.aborted && pendingCancel.current === controller && dialogEpoch.current === epoch;
+    const timeout = setTimeout(() => {
+      if (pendingCancel.current !== controller) return;
+      controller.abort(); pendingCancel.current = null;
+      if (current()) { setBusy(false); toast.error("Não foi possível confirmar o cancelamento. Consulte o recibo antes de tentar novamente."); }
+    }, 15_000);
+    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
-    const { error } = await supabase.rpc("cancel_financial_receipt", {
-      _receipt_id: cancelOpen.id,
-      _reason: reason,
-    });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      if (!valid()) return;
+      const { error } = await supabase.rpc("cancel_financial_receipt", {
+        _receipt_id: receipt.id, _reason: submittedReason,
+      }).abortSignal(controller.signal);
+      if (!valid()) return;
+      if (error) throw new Error("Cancelamento indisponível");
+      if (!valid()) return;
+      toast.success("Recibo cancelado");
+      if (!valid()) return;
+      setCancelOpen(null); setReason("");
+      if (valid()) setRefresh(n => n + 1);
+    } catch {
+      if (valid()) toast.error("Cancelamento indisponível");
+    } finally {
+      clearTimeout(timeout);
+      if (pendingCancel.current === controller) {
+        pendingCancel.current = null;
+        if (current()) setBusy(false);
+      }
     }
-    toast.success("Recibo cancelado");
-    setCancelOpen(null);
-    setReason("");
-    load();
   };
 
   return (
@@ -169,9 +267,7 @@ export default function RecibosList() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">{r.authenticity_code}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <Button size="sm" variant="outline" onClick={() => download(r)} title="Baixar PDF">
-                          <Download className="w-4 h-4" />
-                        </Button>
+                        <ReceiptDownload key={JSON.stringify([access.scope, r])} receipt={r} tenant={tenant} listScope={access.scope} />
                         {r.receivable_id && (
                           <Button asChild size="sm" variant="outline" title="Abrir recebimento">
                             <Link to={`/financeiro/receber?id=${r.receivable_id}`}>
@@ -180,7 +276,7 @@ export default function RecibosList() {
                           </Button>
                         )}
                         {!isCanceled && (
-                          <Button size="sm" variant="outline" onClick={() => setCancelOpen(r)} title="Cancelar">
+                          <Button size="sm" variant="outline" onClick={() => { if (access.capture()()) selectCancel(r); }} disabled={!access.ready || busy} title="Cancelar" aria-label="Cancelar">
                             <XCircle className="w-4 h-4" />
                           </Button>
                         )}
@@ -197,7 +293,7 @@ export default function RecibosList() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!cancelOpen} onOpenChange={(o) => !o && setCancelOpen(null)}>
+      <Dialog open={access.ready && !!cancelOpen} onOpenChange={(o) => !o && selectCancel(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Cancelar recibo {cancelOpen?.receipt_number}</DialogTitle>
@@ -210,8 +306,8 @@ export default function RecibosList() {
             placeholder="Informe o motivo (mín. 5 caracteres)"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelOpen(null)}>Voltar</Button>
-            <Button variant="destructive" onClick={cancel} disabled={busy}>
+            <Button variant="outline" onClick={() => selectCancel(null)} disabled={busy}>Voltar</Button>
+            <Button variant="destructive" onClick={cancel} disabled={busy || !access.ready}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Confirmar cancelamento
             </Button>
           </DialogFooter>
