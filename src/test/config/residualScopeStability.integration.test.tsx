@@ -27,6 +27,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
 import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
 import { internalContextProbe } from '@/lib/authz/internalContextProbe';

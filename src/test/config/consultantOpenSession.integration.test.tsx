@@ -33,6 +33,9 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
  })();return Object.assign(request,{abortSignal:()=>request});}
 }}));
 import { AuthProvider } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
 import MobileLayout from '@/pages/app/MobileLayout';
 import { ProtectedRoutes } from '@/App';

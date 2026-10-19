@@ -27,6 +27,9 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
  }
 }}));
 import { AuthProvider } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import { ProtectedRoutes } from '@/App';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';

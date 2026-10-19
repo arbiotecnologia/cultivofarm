@@ -55,6 +55,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 function AuthSpy() { s.auth = useAuth(); return null; }
 import { ProtectedRoutes, RoleGuard } from '@/App';
 import MobileLayout from '@/pages/app/MobileLayout';

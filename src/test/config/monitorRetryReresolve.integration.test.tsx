@@ -39,6 +39,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
 import { resolveEffectiveRouteRole } from '@/lib/navigation/portalRoleContext';
 const PATHS = ['/dashboard/geral', '/financeiro/receber', '/app/registrar'];

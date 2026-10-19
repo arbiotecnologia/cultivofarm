@@ -38,6 +38,9 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
  })();return Object.assign(request,{abortSignal:()=>request});}
 }}));
 import { AuthProvider } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import OrdensServico from '@/pages/OrdensServico';
 import MobileLogin from '@/pages/app/MobileLogin';
 import SelecionarPortal from '@/pages/SelecionarPortal';
