@@ -208,6 +208,25 @@ describe('never-resolving transport (independent evidence 18:14): deadlines and 
   });
 });
 
+describe('independent review 1875eb: Retry loader select(*) never resolves', () => {
+  it('pair → gestor; fresh read answers, loader profiles hangs; after 60 s + transport back, new Retry recovers gestor', async () => {
+    setup(); await tick(3000);
+    s.roles = ['gestor']; focus(); await tick(3000);
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    s.hangNext = 'profiles'; s.hangSkip = 1; // fresh read passes; loader select('*') never resolves
+    retry(); await tick(60000);
+    expect(s.hangNext).toBe('');
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    // Transport is back: a new Retry is not swallowed by a stuck single-flight.
+    const btn = screen.queryByRole('button', { name: 'Tentar novamente' });
+    if (btn) retry(); else fireEvent.click(screen.getByRole('button', { name: /tentar/i }));
+    await tick(8000);
+    expect(loadingText()).toBeNull();
+    expect(screen.getByText('Contas a receber')).toBeTruthy();
+  });
+});
+
 describe('company admin latency: 3 s probes stay valid; 8 s probe is the expected fail-closed pause', () => {
   it('admin at /financeiro/receber: 1.5 s/call for 3 min no pause; 4 s/call pauses with numeric diag; Retry recovers', async () => {
     s.roles = ['administrador']; s.lat = 1500;

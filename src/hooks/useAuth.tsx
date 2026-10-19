@@ -278,7 +278,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       failLoad();
     } finally {
       clearTimeout(watchdog);
-    }
+      settle();
+    } })();
+    // Late body completions after the deadline stay fenced by isCurrent().
+    return Promise.race([body, settled]);
   };
 
   const refresh = async () => {
