@@ -1,0 +1,31 @@
+{
+  "baseline": "ba13f5ad9f88e8d681daf46313b29c2ed545b97e",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "mode": "review-only; no runtime application",
+  "files": [
+    {
+      "path": "src/components/financeiro/DocumentosPanel.tsx",
+      "candidate": "DocumentosPanel.candidate.review",
+      "rollback": "DocumentosPanel.rollback.review",
+      "pre_sha256": "503935abd1b270a2cf565e7d8e5ab0dd399d0d482515f434d306fc6afc9461fa",
+      "post_sha256": "ff829485d7524e8254ded6e7d58db0398121c36381083083d54ec59362b198b4"
+    },
+    {
+      "path": "src/lib/financeiro/documentStoragePath.ts",
+      "candidate": "documentStoragePath.candidate.review",
+      "rollback": null,
+      "pre_sha256": null,
+      "post_sha256": "0979d9d51d42bfb31e24e7dcd3d0acbb7d5ccb1f1ed76faf20944f07558989b8"
+    }
+  ],
+  "protected": {
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/hooks/useAuth.tsx": "e848f1054c0fbb3941bf69225741d159895e2a8abdc669a3ba7d86092999c7e3",
+    "src/lib/authz/authzEpochGate.ts": "b46c1992d3c89bd133a0e73dca6e465e9023cd043442e2461532100b753ca0bf",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
+    "src/hooks/useSignedUrls.ts": "728bc5b6e6d2e3a1b4dedbe880bc4a89011aa4d750f51383e1b47b098b91b4ea",
+    "src/hooks/useAuthenticatedBlobUrls.ts": "8ef20f33a63dcd070db9f7da71f8dc56db09d1c9c86948a38ee20ef5344641b4",
+    "src/hooks/useAuthenticatedAttachmentOpener.ts": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421"
+  }
+}
