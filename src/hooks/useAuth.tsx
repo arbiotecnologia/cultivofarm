@@ -357,6 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         } else {
           generationRef.current += 1;
+          retryRevalidateRef.current = false;
           if (timerRef.current) {
             clearTimeout(timerRef.current);
             timerRef.current = null;
@@ -384,6 +385,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(initialSession);
           setUser(initialSession.user);
           lastUserId = initialSession.user.id;
+          activeUserIdRef.current = initialSession.user.id;
           if (loadedUserIdRef.current !== initialSession.user.id) {
             scheduleLoad(initialSession.user.id);
           }
@@ -409,6 +411,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       effectCancelled = true;
       generationRef.current += 1;
       loadedUserIdRef.current = null;
+      activeUserIdRef.current = null;
+      retryRevalidateRef.current = false;
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
