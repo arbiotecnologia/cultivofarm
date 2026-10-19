@@ -1,0 +1,594 @@
+--- a/supabase/functions/entrega-termo-pdf/index.ts
++++ b/supabase/functions/entrega-termo-pdf/index.ts
+@@ -1,6 +1,6 @@
+ // Renderiza e serve o PDF do Termo de Entrega EXCLUSIVAMENTE a partir do snapshot assinado.
+ // Nunca lê o estado atual das tabelas de negócio para compor o documento.
+-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
++import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+ import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+ 
+ const corsHeaders = {
+@@ -10,7 +10,8 @@
+ };
+ 
+ const BUCKET = "entrega-termos";
+-const SIGNED_URL_TTL = 120; // segundos — janela curta
++const MAX_PDF_BYTES = 15 * 1024 * 1024;
++const DOWNLOAD_DEADLINE_MS = 15_000;
+ 
+ function json(body: unknown, status = 200) {
+   return new Response(JSON.stringify(body), {
+@@ -20,7 +21,7 @@
+ }
+ 
+ async function sha256Hex(bytes: Uint8Array): Promise<string> {
+-  const digest = await crypto.subtle.digest("SHA-256", bytes);
++  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
+   return Array.from(new Uint8Array(digest))
+     .map((b) => b.toString(16).padStart(2, "0"))
+     .join("");
+@@ -143,6 +144,81 @@
+   return await pdf.save();
+ }
+ 
++// Cliente sem tipos gerados de banco (mesmo padrao das demais Edges).
++// deno-lint-ignore no-explicit-any
++type Sdk = any;
++type Vigente = { id: string; entrega_id: string; versao: number; pdf_path: string; pdf_hash: string };
++
++/**
++ * Prova completa e fresca: usuario vivo e perfil ativo (token do proprio usuario),
++ * visibilidade do termo sob RLS e vigencia (assinado, nao cancelado, nao substituido).
++ * Snapshot anterior nunca autoriza: a chamada final compara path/hash com o inicial.
++ */
++async function provarAcesso(userClient: Sdk, admin: Sdk, userId: string, termoId: string):
++  Promise<{ ok: true; termo: Vigente } | { ok: false; status: number; error: string }> {
++  const { data: perfil, error: perfilErr } = await userClient
++    .from("profiles").select("user_id, ativo, senha_provisoria, organization_id")
++    .eq("user_id", userId).maybeSingle();
++  if (perfilErr || !perfil || perfil.ativo !== true || perfil.senha_provisoria === true || !perfil.organization_id)
++    return { ok: false, status: 403, error: "acesso_negado" };
++  const { data: visivel, error: visErr } = await userClient
++    .from("entrega_termos").select("id").eq("id", termoId).maybeSingle();
++  if (visErr || !visivel) return { ok: false, status: 403, error: "acesso_negado" };
++  const { data: termo, error: termoErr } = await admin
++    .from("entrega_termos")
++    .select("id, entrega_id, versao, status, cancelado_em, assinado_em, pdf_path, pdf_hash")
++    .eq("id", termoId).maybeSingle();
++  if (termoErr || !termo) return { ok: false, status: 404, error: "termo_nao_encontrado" };
++  if (termo.status === "cancelado" || termo.cancelado_em) return { ok: false, status: 409, error: "termo_cancelado" };
++  const { data: sucessor, error: sucErr } = await admin
++    .from("entrega_termos").select("id").eq("substitui_termo_id", termoId).limit(1).maybeSingle();
++  if (sucErr) return { ok: false, status: 503, error: "vigencia_indisponivel" };
++  if (sucessor) return { ok: false, status: 409, error: "termo_substituido" };
++  if (termo.status !== "assinado" || !termo.assinado_em) return { ok: false, status: 409, error: "termo_nao_assinado" };
++  if (!termo.pdf_path) return { ok: false, status: 409, error: "pdf_nao_gerado" };
++  if (!termo.pdf_hash) return { ok: false, status: 409, error: "pdf_integridade_indisponivel" };
++  return { ok: true, termo: termo as Vigente };
++}
++
++/** Download binario: sem URL portadora, sem assinatura e sem evento de comunicacao. */
++async function servirPdf(req: Request, userClient: Sdk, admin: Sdk, userId: string, termoId: string): Promise<Response> {
++  const fail = (status: number, error: string) => new Response(JSON.stringify({ error }), {
++    status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
++  });
++  const controller = new AbortController();
++  const abort = () => controller.abort();
++  req.signal?.addEventListener("abort", abort, { once: true });
++  const timer = setTimeout(abort, DOWNLOAD_DEADLINE_MS);
++  try {
++    const antes = await provarAcesso(userClient, admin, userId, termoId);
++    if (!antes.ok) return fail(antes.status, antes.error);
++    if (controller.signal.aborted) return fail(504, "download_indisponivel");
++    // Bucket privado sem policy de leitura ao usuario: a leitura de bytes usa o
++    // servico SOMENTE apos a prova acima e e re-provada antes de responder.
++    const { data: blob, error } = await admin.storage.from(BUCKET).download(antes.termo.pdf_path);
++    if (controller.signal.aborted) return fail(504, "download_indisponivel");
++    if (error || !blob) return fail(404, "pdf_indisponivel");
++    if (blob.size <= 0 || blob.size > MAX_PDF_BYTES) return fail(413, "pdf_indisponivel");
++    const bytes = new Uint8Array(await blob.arrayBuffer());
++    if (await sha256Hex(bytes) !== antes.termo.pdf_hash) return fail(409, "pdf_hash_divergente");
++    const depois = await provarAcesso(userClient, admin, userId, termoId);
++    if (!depois.ok) return fail(depois.status, depois.error);
++    if (depois.termo.pdf_path !== antes.termo.pdf_path || depois.termo.pdf_hash !== antes.termo.pdf_hash)
++      return fail(409, "termo_alterado");
++    if (controller.signal.aborted) return fail(504, "download_indisponivel");
++    return new Response(bytes, { status: 200, headers: { ...corsHeaders,
++      "Content-Type": "application/pdf", "Cache-Control": "private, no-store",
++      "X-Content-Type-Options": "nosniff",
++      "Content-Disposition": `attachment; filename="termo-entrega-v${Number(antes.termo.versao) || 0}.pdf"`,
++    } });
++  } catch {
++    return fail(controller.signal.aborted ? 504 : 500, "download_indisponivel");
++  } finally {
++    clearTimeout(timer);
++    req.signal?.removeEventListener("abort", abort);
++  }
++}
++
+ Deno.serve(async (req) => {
+   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+@@ -154,12 +230,18 @@
+     const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+       global: { headers: { Authorization: authHeader } },
+     });
+-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+-    if (claimsErr || !claims?.claims) return json({ error: "unauthorized" }, 401);
++    // Verificacao viva no Auth (sessao/usuario existentes), nao apenas assinatura local do JWT.
++    const { data: userData, error: userErr } = await userClient.auth.getUser(authHeader.slice(7));
++    const userId = userData?.user?.id;
++    if (userErr || !userId) return json({ error: "unauthorized" }, 401);
+ 
+     const body = await req.json().catch(() => ({}));
+     const termoId = typeof body?.termo_id === "string" ? body.termo_id : null;
+-    const action = body?.action === "signed_url" ? "signed_url" : "generate";
++    // Clientes antigos: URL portadora desativada de forma explicita (410), sem assinar.
++    if (body?.action === "signed_url") return json({ error: "signed_url_desativada" }, 410);
++    if (body?.action !== undefined && body.action !== "generate" && body.action !== "download")
++      return json({ error: "acao_invalida" }, 400);
++    const action = body?.action === "download" ? "download" : "generate";
+     if (!termoId || !/^[0-9a-f-]{36}$/i.test(termoId)) return json({ error: "termo_id_invalido" }, 400);
+ 
+     // Autorizacao por vinculo: leitura sob RLS com o token do usuario.
+@@ -172,6 +254,7 @@
+     if (!visivel) return json({ error: "acesso_negado" }, 403);
+ 
+     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
++    if (action === "download") return await servirPdf(req, userClient, admin, userId, termoId);
+ 
+     const { data: termo, error: termoErr } = await admin
+       .from("entrega_termos")
+@@ -194,15 +277,6 @@
+ 
+     if (termo.status !== "assinado" || !termo.assinado_em) return json({ error: "termo_nao_assinado" }, 409);
+ 
+-    if (action === "signed_url") {
+-      if (!termo.pdf_path) return json({ error: "pdf_nao_gerado" }, 409);
+-      const { data: signed, error: signErr } = await admin.storage
+-        .from(BUCKET)
+-        .createSignedUrl(termo.pdf_path, SIGNED_URL_TTL);
+-      if (signErr || !signed?.signedUrl) return json({ error: "falha_signed_url" }, 500);
+-      return json({ signed_url: signed.signedUrl, expires_in: SIGNED_URL_TTL, pdf_hash: termo.pdf_hash });
+-    }
+-
+     // --- generate (idempotente) ---
+     if (termo.pdf_path) {
+       const { data: existing } = await admin.storage.from(BUCKET).download(termo.pdf_path);
+--- a/src/components/entregas/TermoEntregaPanel.tsx
++++ b/src/components/entregas/TermoEntregaPanel.tsx
+@@ -13,6 +13,8 @@
+ import { formatDateTimeDisplay } from "@/lib/date-utils";
+ import { parseQuantidadeConferencia } from "@/lib/entregas/quantidadeConferencia";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
++import { downloadTermoPdf } from "@/lib/entregas/termoPdfDownload";
+ 
+ type ConfStatus = "aceito" | "recusado" | "pendente";
+ 
+@@ -46,7 +48,7 @@
+ 
+ const MSG_ERRO_GENERICA = "Não foi possível concluir a operação. Tente novamente.";
+ const MSG_ERRO_CARREGAR = "Não foi possível carregar a conferência e o termo desta entrega.";
+-const MSG_PDF_SEM_LINK = "Não foi possível obter o link do documento. Tente novamente.";
++const MSG_PDF_INDISPONIVEL = "Não foi possível preparar o termo. Atualize a página e tente novamente.";
+ 
+ /** Erros conhecidos viram texto amigável; desconhecidos nunca expõem detalhe interno. */
+ function traduzirErro(msg: string | undefined): string {
+@@ -135,6 +137,13 @@
+ 
+   const termo = access.ready ? termoQuery.data as any : undefined;
+   const assinado = termo?.status === "assinado";
++  // Snapshot do termo exibido: qualquer mudança (versão/status/PDF) troca o
++  // escopo, aborta o preparo e revoga o Blob já preparado.
++  const pdf = useAuthenticatedAttachmentOpener(
++    JSON.stringify(["termo-pdf", entregaId, termo?.id ?? null, termo?.versao ?? null, termo?.status ?? null, termo?.pdf_path ?? null, termo?.pdf_hash ?? null]),
++    "entrega-termos",
++    downloadTermoPdf,
++  );
+ 
+   const itens = itensQuery.data ?? [];
+   const valorDe = (id: string, campo: "status" | "quantidade" | "motivo") => {
+@@ -263,7 +272,7 @@
+     });
+ 
+   const pdfMutation = useMutation({
+-    mutationFn: async ({ action, termoId }: { action: "generate" | "signed_url"; termoId: string }) => {
++    mutationFn: async ({ action, termoId }: { action: "generate"; termoId: string }) => {
+       const { data, error } = await supabase.functions.invoke("entrega-termo-pdf", {
+         body: { termo_id: termoId, action },
+       });
+@@ -282,15 +291,20 @@
+       toast({ title: "PDF do termo disponível" });
+     });
+ 
+-  const baixarPdf = () =>
+-    run(async ({ vivo }) => {
+-      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de baixar o PDF.");
+-      const res = await pdfMutation.mutateAsync({ action: "signed_url", termoId: termo.id });
+-      if (!vivo()) return;
+-      // Ausência de link é falha explícita: nunca silêncio.
+-      if (!res?.signed_url) throw new ErroValidacao(MSG_PDF_SEM_LINK);
+-      window.open(res.signed_url, "_blank", "noopener,noreferrer");
++  const prepararPdf = () => {
++    if (!termo?.id || busy) return;
++    const entregaDaOperacao = entregaId;
++    void pdf.open(termo.id, () => {
++      // Termo pode ter sido cancelado/substituído: relê o estado, sem detalhe técnico.
++      invalidar(entregaDaOperacao);
++      toast({ title: "Não foi possível concluir", description: MSG_PDF_INDISPONIVEL, variant: "destructive" });
+     });
++  };
++
++  const baixarPdf = () => {
++    if (!termo?.id) return;
++    pdf.download(termo.id, `termo-entrega-v${Number(termo.versao) || 0}.pdf`);
++  };
+ 
+   const cancelarTermo = () =>
+     run(async ({ vivo, entregaDaOperacao }) => {
+@@ -472,9 +486,18 @@
+                   Gerar PDF do termo
+                 </Button>
+               ) : (
+-                <Button variant="outline" onClick={baixarPdf} disabled={busy} className="min-h-10">
+-                  <Download className="h-4 w-4 mr-1" aria-hidden="true" /> Baixar termo assinado
+-                </Button>
++                pdf.urls[termo.id] ? (
++                  <Button type="button" variant="outline" onClick={baixarPdf} disabled={busy} className="min-h-10">
++                    <Download className="h-4 w-4 mr-1" aria-hidden="true" /> Baixar termo assinado
++                  </Button>
++                ) : (
++                  <Button type="button" variant="outline" onClick={prepararPdf}
++                    disabled={busy || !pdf.ready || pdf.loadingPaths.includes(termo.id)} className="min-h-10">
++                    {pdf.loadingPaths.includes(termo.id)
++                      ? <Loader2 className="h-4 w-4 mr-1 animate-spin" aria-hidden="true" />
++                      : <Download className="h-4 w-4 mr-1" aria-hidden="true" />} Preparar termo assinado
++                  </Button>
++                )
+               )}
+             </div>
+             <div className="space-y-2">
+--- a/src/hooks/useAuthenticatedAttachmentOpener.ts
++++ b/src/hooks/useAuthenticatedAttachmentOpener.ts
+@@ -2,8 +2,12 @@
+ import { useStorageAccessScope } from "./useStorageAccessScope";
+ import { ATTACHMENT_LIMITS, downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
+ 
+-/** Scoped ownership for explicit downloads; never signs or falls back remotely. */
+-export function useAuthenticatedAttachmentOpener(resource: string, bucket: string) {
++export type AttachmentLoader = (path: string, signal: AbortSignal) => Promise<Blob>;
++
++/** Scoped ownership for explicit downloads; never signs or falls back remotely.
++ * `load` defaults to the authenticated Storage transport; callers that must go
++ * through a canonical Edge may pass their own binary loader (same fences). */
++export function useAuthenticatedAttachmentOpener(resource: string, bucket: string, load?: AttachmentLoader) {
+   const access = useStorageAccessScope(resource);
+   const controllers = useRef(new Map<string, AbortController>());
+   const urls = useRef(new Map<string, { url: string; bytes: number }>());
+@@ -28,7 +32,7 @@
+     controllers.current.set(path, controller);
+     publish();
+     try {
+-      const blob = await downloadAuthenticatedAttachment(bucket, path, controller.signal);
++      const blob = await (load ?? ((p: string, s: AbortSignal) => downloadAuthenticatedAttachment(bucket, p, s)))(path, controller.signal);
+       if (!current() || controller.signal.aborted) return;
+       if (blob.size > ATTACHMENT_LIMITS.fileBytes || blob.size > ATTACHMENT_LIMITS.totalBytes) throw new Error("Anexo indisponível");
+       const total = () => [...urls.current.values()].reduce((sum, item) => sum + item.bytes, 0);
+--- /dev/null
++++ b/src/lib/entregas/termoPdfDownload.ts
+@@ -0,0 +1,24 @@
++import { supabase } from "@/integrations/supabase/client";
++
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++const unavailable = () => new Error("Documento indisponível");
++const MAX_BYTES = 15 * 1024 * 1024;
++
++/**
++ * Binário do termo pela Edge canônica `entrega-termo-pdf` (action "download").
++ * Sem URL portadora, sem assinatura de Storage e sem fallback: qualquer falha
++ * vira erro neutro. Autorização e vigência são provadas no servidor.
++ */
++export async function downloadTermoPdf(termoId: string, signal: AbortSignal): Promise<Blob> {
++  if (!UUID.test(termoId) || signal.aborted) throw unavailable();
++  try {
++    const { data, error } = await supabase.functions.invoke("entrega-termo-pdf", {
++      body: { termo_id: termoId, action: "download" }, signal,
++    });
++    if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
++    if (data.size < 5 || data.size > MAX_BYTES) throw unavailable();
++    const magic = new TextDecoder().decode(new Uint8Array(await data.slice(0, 5).arrayBuffer()));
++    if (magic !== "%PDF-" || signal.aborted) throw unavailable();
++    return new Blob([await data.arrayBuffer()], { type: "application/pdf" });
++  } catch { throw unavailable(); }
++}
+--- /dev/null
++++ b/src/test/entregas/termoPdfDownload.test.tsx
+@@ -0,0 +1,141 @@
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++
++// Componente real + hook real de escopo/Blob; Auth e Edge simulados. Não é homologação real.
++const T = "33333333-3333-4333-8333-333333333333";
++const auth = vi.hoisted(() => ({
++  user: { id: "A" } as { id: string } | null,
++  profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
++  roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: 0,
++  checkAuthzAccess: (): boolean => m.lease,
++}));
++const m = vi.hoisted(() => ({ lease: true, invoke: vi.fn(), sign: vi.fn(), toast: vi.fn(), termo: {} as Record<string, unknown> }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
++vi.mock("@/hooks/use-toast", () => ({ toast: m.toast, useToast: () => ({ toast: m.toast }) }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: {
++  from: (t: string) => {
++    const r = t === "entrega_termos" ? { data: m.termo, error: null } : { data: [], error: null };
++    const q: Record<string, unknown> = {};
++    for (const n of ["select", "eq", "order", "limit"]) q[n] = () => q;
++    q.maybeSingle = async () => r;
++    q.then = (a: (v: unknown) => unknown, b: (v: unknown) => unknown) => Promise.resolve(r).then(a, b);
++    return q;
++  },
++  rpc: vi.fn(),
++  functions: { invoke: m.invoke },
++  storage: { from: () => ({ createSignedUrl: m.sign, createSignedUrls: m.sign, download: m.sign }) },
++} }));
++import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";
++
++const pdf = () => new Blob(["%PDF-1.7 ok"], { type: "application/pdf" });
++const termo = (o: Record<string, unknown> = {}) => ({ id: T, versao: 2, status: "assinado", cobertura: "total", snapshot_hash: "s",
++  assinado_em: "2026-10-19T00:00:00Z", recebedor_nome: "R", pdf_path: "E/T/v2/x.pdf", pdf_hash: "h", ...o });
++let n = 0;
++if (!Blob.prototype.arrayBuffer) {
++  Blob.prototype.arrayBuffer = function (this: Blob) {
++    return new Promise<ArrayBuffer>((ok) => { const r = new FileReader(); r.onload = () => ok(r.result as ArrayBuffer); r.readAsArrayBuffer(this); });
++  };
++}
++let qc: QueryClient;
++beforeEach(() => {
++  Object.assign(auth, { user: { id: "A" }, roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => m.lease }); m.lease = true;
++  auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
++  m.invoke.mockReset().mockResolvedValue({ data: pdf(), error: null }); m.sign.mockReset(); m.toast.mockReset();
++  m.termo = termo(); n = 0;
++  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => `blob:${++n}`) });
++  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
++  vi.spyOn(window, "open").mockImplementation(() => null);
++});
++function mount() {
++  qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  const ui = () => <QueryClientProvider client={qc}><TermoEntregaPanel entregaId="E" /></QueryClientProvider>;
++  const r = render(ui());
++  return { rerender: () => r.rerender(ui()) };
++}
++const preparar = async () => fireEvent.click(await screen.findByRole("button", { name: /Preparar termo assinado/ }));
++const noBearer = () => {
++  expect(m.sign).not.toHaveBeenCalled(); expect(window.open).not.toHaveBeenCalled();
++  for (const c of m.invoke.mock.calls) expect(c[1].body.action).not.toBe("signed_url");
++};
++
++describe("TermoEntregaPanel: PDF binário autenticado em duas etapas", () => {
++  it("happy path: prepara pela Edge download e só baixa após novo clique", async () => {
++    mount(); const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
++    await preparar();
++    const baixar = await screen.findByRole("button", { name: /Baixar termo assinado/ });
++    expect(m.invoke).toHaveBeenCalledWith("entrega-termo-pdf", expect.objectContaining({ body: { termo_id: T, action: "download" }, signal: expect.any(AbortSignal) }));
++    expect(click).not.toHaveBeenCalled();
++    fireEvent.click(baixar); expect(click).toHaveBeenCalledTimes(1);
++    noBearer(); click.mockRestore();
++  });
++  it("erro da Edge (cancelado/negado): toast neutro, sem URL e relê o termo", async () => {
++    m.invoke.mockResolvedValue({ data: null, error: new Error("termo_cancelado secreto") });
++    mount(); await preparar();
++    await waitFor(() => expect(m.toast).toHaveBeenCalled());
++    expect(JSON.stringify(m.toast.mock.calls)).not.toMatch(/secreto|termo_cancelado/);
++    expect(screen.queryByRole("button", { name: /Baixar termo/ })).toBeNull();
++    expect(URL.createObjectURL).not.toHaveBeenCalled(); noBearer();
++  });
++  it("resposta que não é PDF é rejeitada", async () => {
++    m.invoke.mockResolvedValue({ data: new Blob(['{"signed_url":"https://x"}']), error: null });
++    mount(); await preparar();
++    await waitFor(() => expect(m.toast).toHaveBeenCalled());
++    expect(URL.createObjectURL).not.toHaveBeenCalled(); noBearer();
++  });
++  it.each([
++    ["tenant", () => { auth.profile = { ...auth.profile, organization_id: "OB" }; }],
++    ["papéis", () => { auth.roles = ["gestor"]; }],
++    ["época", () => { auth.authzEpoch = 1; }],
++  ])("mudança de %s durante o preparo descarta a resposta tardia", async (_n, mudar) => {
++    let resolve!: (v: unknown) => void;
++    m.invoke.mockImplementation((_f: string, o: { signal: AbortSignal }) => new Promise((r) => { resolve = r; void o; }));
++    const h = mount(); await preparar();
++    await waitFor(() => expect(m.invoke).toHaveBeenCalled());
++    const signal = m.invoke.mock.calls[0][1].signal as AbortSignal;
++    act(() => { mudar(); h.rerender(); });
++    expect(signal.aborted).toBe(true);
++    await act(async () => { resolve({ data: pdf(), error: null }); });
++    expect(URL.createObjectURL).not.toHaveBeenCalled();
++    expect(screen.queryByRole("button", { name: /Baixar termo/ })).toBeNull(); expect(m.toast).not.toHaveBeenCalled();
++  });
++  it("lease vencida após preparo: clique antigo não baixa", async () => {
++    const h = mount(); const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
++    await preparar(); const baixar = await screen.findByRole("button", { name: /Baixar termo assinado/ });
++    m.lease = false;
++    fireEvent.click(baixar); expect(click).not.toHaveBeenCalled();
++    h.rerender(); expect(screen.queryByRole("button", { name: /Baixar termo/ })).toBeNull();
++    click.mockRestore();
++  });
++  it("lease vencida antes do clique de preparo: nenhuma requisição", async () => {
++    mount(); await screen.findByRole("button", { name: /Preparar termo assinado/ });
++    m.lease = false; await preparar();
++    expect(m.invoke).not.toHaveBeenCalled();
++  });
++  it("papel retirado após preparo revoga o Blob", async () => {
++    const h = mount(); await preparar(); await screen.findByRole("button", { name: /Baixar termo assinado/ });
++    act(() => { auth.roles = ["gestor"]; h.rerender(); });
++    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1");
++    expect(screen.queryByRole("button", { name: /Baixar termo/ })).toBeNull();
++  });
++  it("termo cancelado/substituído após preparo revoga o Blob e oculta o download", async () => {
++    mount(); await preparar(); await screen.findByRole("button", { name: /Baixar termo assinado/ });
++    m.termo = termo({ status: "cancelado", motivo_cancelamento: "erro" });
++    await act(async () => { await qc.invalidateQueries(); });
++    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1"));
++    expect(screen.queryByRole("button", { name: /Baixar termo/ })).toBeNull();
++    expect(screen.queryByRole("button", { name: /Preparar termo/ })).toBeNull();
++  });
++  it("logout após preparo revoga o Blob", async () => {
++    const h = mount(); await preparar(); await screen.findByRole("button", { name: /Baixar termo assinado/ });
++    act(() => { auth.user = null; h.rerender(); });
++    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1");
++  });
++  it("gerar PDF continua idempotente pela mesma Edge (generate)", async () => {
++    m.termo = termo({ pdf_path: null, pdf_hash: null });
++    m.invoke.mockResolvedValue({ data: { replay: true }, error: null });
++    mount(); fireEvent.click(await screen.findByRole("button", { name: /Gerar PDF do termo/ }));
++    await waitFor(() => expect(m.invoke).toHaveBeenCalledWith("entrega-termo-pdf", { body: { termo_id: T, action: "generate" } }));
++    noBearer();
++  });
++});
+--- /dev/null
++++ b/src/test/entregas/termoPdfEdge.test.ts
+@@ -0,0 +1,143 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { readFileSync } from "node:fs";
++import { createHash } from "node:crypto";
++import ts from "typescript";
++
++// Edge candidata real (transpilada), com SDK/Storage falsos. Não é homologação JWT/RLS.
++const SRC = "supabase/functions/entrega-termo-pdf/index.ts";
++const TERMO = "33333333-3333-4333-8333-333333333333";
++const BYTES = new TextEncoder().encode("%PDF-1.7 termo assinado");
++const HASH = createHash("sha256").update(BYTES).digest("hex");
++type Row = Record<string, unknown> | null;
++type Handler = (req: Request) => Promise<Response>;
++
++let st: {
++  user: string | null; perfil: Row[]; visivel: Row[]; termo: Row[]; sucessor: Row[];
++  bytes: Uint8Array; onDownload?: () => void;
++};
++const calls = { download: vi.fn(), sign: vi.fn(), rpc: vi.fn(), upload: vi.fn() };
++const next = (q: Row[]) => (q.length > 1 ? q.shift()! : q[0]);
++
++function client(kind: "user" | "admin") {
++  return {
++    auth: { getUser: async () => (st.user ? { data: { user: { id: st.user } }, error: null } : { data: { user: null }, error: new Error("x") }) },
++    from: (table: string) => {
++      const f: Record<string, unknown> = {};
++      const q: Record<string, unknown> = {};
++      for (const m of ["select", "limit", "order"]) q[m] = () => q;
++      q.eq = (c: string, v: unknown) => { f[c] = v; return q; };
++      q.maybeSingle = async () => {
++        if (table === "profiles") return { data: next(st.perfil), error: null };
++        if (kind === "user") return { data: next(st.visivel), error: null };
++        if ("substitui_termo_id" in f) return { data: next(st.sucessor), error: null };
++        return { data: next(st.termo), error: null };
++      };
++      return q;
++    },
++    rpc: async (...a: unknown[]) => { calls.rpc(...a); return { data: null, error: null }; },
++    storage: { from: () => ({
++      download: async (p: string) => { calls.download(p); st.onDownload?.(); const b = st.bytes; return { data: { size: b.byteLength, arrayBuffer: async () => b.slice().buffer }, error: null }; },
++      createSignedUrl: calls.sign, upload: calls.upload, remove: vi.fn(),
++    }) },
++  };
++}
++
++function load(): Handler {
++  const code = ts.transpileModule(readFileSync(SRC, "utf8").replace(/^import[\s\S]*?;\s*/gm, ""),
++    { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
++  let h: Handler | undefined;
++  const Deno = { env: { get: () => "isolated" }, serve: (fn: Handler) => { h = fn; } };
++  const createClient = (_u: string, key: string, o?: unknown) => client(o ? "user" : key === "isolated" && !o ? "admin" : "admin");
++  new Function("Deno", "createClient", "PDFDocument", "StandardFonts", "rgb", code)(Deno, createClient, {}, {}, () => 0);
++  return h!;
++}
++const call = (body: unknown, auth = "Bearer t") => load()(new Request("https://edge.invalid", {
++  method: "POST", headers: { Authorization: auth, "Content-Type": "application/json" }, body: JSON.stringify(body),
++}));
++const termoOk = () => ({ id: TERMO, entrega_id: "E", versao: 2, status: "assinado", cancelado_em: null, assinado_em: "2026-10-19", pdf_path: "E/T/v2/termo-x.pdf", pdf_hash: HASH });
++
++beforeEach(() => {
++  Object.values(calls).forEach((c) => c.mockReset());
++  st = { user: "U", perfil: [{ user_id: "U", ativo: true, senha_provisoria: false, organization_id: "OA" }],
++    visivel: [{ id: TERMO }], termo: [termoOk()], sucessor: [null], bytes: BYTES };
++});
++
++describe("entrega-termo-pdf candidata: download binário autenticado", () => {
++  it("serve os bytes verificados por hash, sem assinar URL nem publicar evento", async () => {
++    const r = await call({ termo_id: TERMO, action: "download" });
++    expect(r.status).toBe(200);
++    expect(r.headers.get("Content-Type")).toBe("application/pdf");
++    expect(r.headers.get("Cache-Control")).toBe("private, no-store");
++    expect(Buffer.from(await r.arrayBuffer()).toString()).toBe("%PDF-1.7 termo assinado");
++    expect(calls.sign).not.toHaveBeenCalled(); expect(calls.rpc).not.toHaveBeenCalled();
++  });
++  it("cliente antigo signed_url recebe 410 sem tocar Storage", async () => {
++    expect((await call({ termo_id: TERMO, action: "signed_url" })).status).toBe(410);
++    expect(calls.download).not.toHaveBeenCalled(); expect(calls.sign).not.toHaveBeenCalled();
++  });
++  it("ação desconhecida não cai em generate", async () => {
++    expect((await call({ termo_id: TERMO, action: "outra" })).status).toBe(400);
++    expect(calls.upload).not.toHaveBeenCalled(); expect(calls.rpc).not.toHaveBeenCalled();
++  });
++  it("sem bearer ou usuário inválido no Auth: 401", async () => {
++    expect((await call({ termo_id: TERMO, action: "download" }, "")).status).toBe(401);
++    st.user = null;
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(401);
++    expect(calls.download).not.toHaveBeenCalled();
++  });
++  it("outro tenant (RLS não enxerga o termo): 403 antes do Storage", async () => {
++    st.visivel = [null];
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
++    expect(calls.download).not.toHaveBeenCalled();
++  });
++  it.each([["inativo", { ativo: false }], ["senha provisória", { senha_provisoria: true }], ["sem tenant", { organization_id: null }]])(
++    "perfil %s: 403", async (_n, patch) => {
++      st.perfil = [{ ...st.perfil[0], ...patch }];
++      expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
++      expect(calls.download).not.toHaveBeenCalled();
++    });
++  it("termo cancelado ou substituído: 409 sem bytes", async () => {
++    st.termo = [{ ...termoOk(), status: "cancelado", cancelado_em: "x" }];
++    const a = await call({ termo_id: TERMO, action: "download" });
++    expect(a.status).toBe(409); expect((await a.json()).error).toBe("termo_cancelado");
++    st.termo = [termoOk()]; st.sucessor = [{ id: "S" }];
++    const b = await call({ termo_id: TERMO, action: "download" });
++    expect(b.status).toBe(409); expect((await b.json()).error).toBe("termo_substituido");
++    expect(calls.download).not.toHaveBeenCalled();
++  });
++  it("hash divergente: 409 e nenhum byte", async () => {
++    st.bytes = new TextEncoder().encode("%PDF-adulterado");
++    const r = await call({ termo_id: TERMO, action: "download" });
++    expect(r.status).toBe(409); expect((await r.json()).error).toBe("pdf_hash_divergente");
++  });
++  it("PDF sem hash registrado falha fechado", async () => {
++    st.termo = [{ ...termoOk(), pdf_hash: null }];
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(409);
++    expect(calls.download).not.toHaveBeenCalled();
++  });
++  it("revogação de acesso durante o download: re-prova nega a resposta", async () => {
++    st.visivel = [{ id: TERMO }, null];
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
++  });
++  it("perfil desativado durante o download: 403", async () => {
++    st.perfil = [st.perfil[0], { ...st.perfil[0], ativo: false }];
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
++  });
++  it("termo cancelado/substituído durante o download: 409", async () => {
++    st.termo = [termoOk(), { ...termoOk(), status: "cancelado", cancelado_em: "x" }];
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(409);
++    st.termo = [termoOk()]; st.sucessor = [null, { id: "S" }];
++    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(409);
++  });
++  it("PDF trocado durante o download: 409 termo_alterado", async () => {
++    st.termo = [termoOk(), { ...termoOk(), pdf_path: "E/T/v2/outro.pdf" }];
++    const r = await call({ termo_id: TERMO, action: "download" });
++    expect(r.status).toBe(409); expect((await r.json()).error).toBe("termo_alterado");
++  });
++  it("generate replay idempotente preservado, sem evento", async () => {
++    st.termo = [{ ...termoOk(), snapshot: {} }];
++    const r = await call({ termo_id: TERMO, action: "generate" });
++    expect(await r.json()).toMatchObject({ replay: true, pdf_hash: HASH });
++    expect(calls.upload).not.toHaveBeenCalled(); expect(calls.rpc).not.toHaveBeenCalled();
++  });
++});
