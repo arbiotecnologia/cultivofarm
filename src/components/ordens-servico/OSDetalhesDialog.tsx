@@ -3,7 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RastreabilidadeProducaoTab } from "./RastreabilidadeProducaoTab";
 import { formatOS } from "@/lib/osLabel";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, History } from "lucide-react";
+import { Check, History } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Props {
   os: any;
@@ -12,6 +18,42 @@ interface Props {
 }
 
 export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
+  const { roles = [] } = useAuth();
+  const access = useStorageAccessScope(JSON.stringify(["os-approval", os?.id, os?.origem, open]));
+  const pending = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [approvedId, setApprovedId] = useState<string | null>(null);
+  useEffect(() => { setApprovedId(null); }, [os?.id, open, access.scope]);
+  const approve = async () => {
+    if (!os || !open || pending.current || !access.ready ||
+      !roles.some((role) => role === "administrador" || role === "gestor") ||
+      os.status !== "aberta" || os.origem === "b2b" || os.partner_order_id || os.partner_order_item_id) return;
+    const current = access.capture();
+    const id = os.id;
+    pending.current = true;
+    setSaving(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12_000);
+    try {
+      const { data, error } = await supabase.rpc("rpc_aprovar_os_v1", {
+        p_os_id: id, p_origem: os.origem === "onfarm" ? "onfarm" : "manual",
+      }).abortSignal(controller.signal);
+      if (!current()) return;
+      if (error || !data || typeof data !== "object" || Array.isArray(data) ||
+        data.success !== true || data.status !== "aprovada") {
+        toast.error("Não foi possível aprovar a OS. Verifique sua autorização e a programação vinculada.");
+        return;
+      }
+      setApprovedId(id);
+      toast.success("OS aprovada.");
+    } catch {
+      if (current()) toast.error("Não foi possível confirmar a aprovação. Consulte a OS antes de tentar novamente.");
+    } finally {
+      clearTimeout(timeout);
+      pending.current = false;
+      if (current()) setSaving(false);
+    }
+  };
   if (!os) return null;
 
   const partner = (os as any)?.partner_orders?.partner_accounts;
@@ -42,8 +84,14 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
                 {os.origem === 'onfarm' ? 'Visita Técnica' : 'Manual'}
               </Badge>
               <Badge className="h-6 bg-primary/10 text-primary border-primary/20">
-                {(os.status || "Não informado").replace(/_/g, ' ').toUpperCase()}
+                {(approvedId === os.id ? "aprovada" : os.status || "Não informado").replace(/_/g, ' ').toUpperCase()}
               </Badge>
+              {os.status === "aberta" && approvedId !== os.id && os.origem !== "b2b" && !os.partner_order_id && !os.partner_order_item_id &&
+                roles.some((role) => role === "administrador" || role === "gestor") && (
+                <Button onClick={() => void approve()} disabled={saving || !access.ready}>
+                  <Check className="h-4 w-4 mr-2" />Aprovar OS
+                </Button>
+              )}
             </div>
           </div>
         </DialogHeader>

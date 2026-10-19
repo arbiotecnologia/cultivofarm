@@ -2,7 +2,7 @@
 
 ## Evidência externa, não reexecução pelo agente
 
-Auditor aplicou `application_canonical_recovery_20261019` em `swzpzcwiasxmjutrmvkm`: candidata638ad55 SHA54b9ad6cd32368149c3956de58c6affb314e39a60e5af7789bda0c7a6bd72fe1 (execute_roles).76168eff renomeia variável/docs, corpos iguais. Postflight integral16 funções/schema/ACL PASS: RPCf8bc9d5f000abef7f13e6ca340988734, Storagedaefb183522e2ee7f730e0db243f4827, helper04067ba43cea3eed845a1fd3735061e0 preservado. applications/evidence/preparations0; privada RLStrue/ACLpostgresonly.
+Auditor aplicou `application_canonical_recovery_20261019` em `swzpzcwiasxmjutrmvkm`: candidata638ad55 SHA54b9ad6cd32368149c3956de58c6affb314e39a60e5af7789bda0c7a6bd72fe1 (execute_roles).76168eff renomeia variável/docs, corpos iguais. Postflight integral16 funções/schema/ACL PASS: RPCf8bc9d5f000abef7f13e6ca340988734, Storagedaefb183522e2ee7f730e0db243f4823, helper04067ba43cea3eed845a1fd3735061e0 preservado. applications/evidence/preparations0; privada RLStrue/ACLpostgresonly.
 
 Publicação76168eff deployment878d2654-90c8-49a3-8993-ec1526938fe2 confirmada pelo auditor no painel e nova aba B, bundle index-Dew52uBQ.js; originais A/B sem reload. Independentes tsc app após diagnóstico+OS EXIT0, tsc node EXIT0,228 testes recuperação/PDF/monitor e25 OS PASS. Recibos referem-se ao publicado, não às alterações desta entrega.
 
@@ -39,3 +39,6 @@ SDK gerado não inclui familia_catalogo live: query usa filter no cliente canôn
 - Preflight/seed/rollback fixture novos NÃO executados em catálogo equivalente nem hosted; revisão deve confirmar fingerprint/colunas/triggers antes de persistência. Não chamar este seed implantável certificado.
 - Divergência literal a reconciliar: auditor informou Storage POST terminando4827, enquanto pacote SQL congelado e recibos locais anteriores terminam4823. Nenhum corpo/hash do pacote foi alterado para ocultar diferença; auditor deve confirmar valor exato. RPC/helper conforme informados, sem reaplicação.
 - Sem nova DDL/DML hosted, publicação, Edge, reload/login, pagamentos, contratos ou v6. Sem prova positiva real nova: sessão publicada não contém esta candidata, e OS elegível depende de operações fechadas.
+
+## Complemento auditor — base ff80ad
+1671 hashes sem divergência, tsc app/node EXIT0 e93/93 independentes para ff80ad, não para esta revisão posterior. Deployment solicitado a25497c3-d44c-4765-aed9-887875a127be informado pending; sem consulta de conclusão. Seed1986af48-709f-4bf4-85b4-3c9ed8a61019 ensaio ROLLBACK PASS seguido COMMIT PASS e pós-consulta biológico/dose100/B2Bfalse/preçosNULL informados; não reaplicado. Storage4827 foi transcrição; correto4823. Nenhuma OS criada até o relato.

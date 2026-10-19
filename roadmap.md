@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 14:01 — recuperação focal aprovação OS
+- [ ] Registrar recibos1671/tscapp+node/93 e seed implantado externamente; corrigir transcrição Storage4823 sem reaplicar.
+- [ ] Auditar RPC/guards/locks/triggers atuais e preparar correção efetiva do primeiro bloqueio seguro com preflight/rollback.
+- [ ] Testar aprovação A/B, negações/replay/revogação/concorrência local e UI existente; manter programação/lote/CQ/avanço fechados se não seguros.
+- [ ] Entregar hashes e dependências exatas; sem hosted DDL/DML/publicação, mudança de sessão/role/monitor/v6/contratos.
+
 ## 19/10 13:46 — pré-requisito produto fabricável e diagnóstico
 - [x] Registrar implantação/publicação e recibos independentes informados, com findings e limites reais; relatório aplicacao-prerequisito-produto-1346.review.md.
 - [x] Seleção/validação biológico + dose finita positiva/decoder fail-closed e erro23514;93/93 testes dirigidos, build automático OK. Checker novo aguarda auditor, snapshot1671/26 partes materializado byte-exato.
