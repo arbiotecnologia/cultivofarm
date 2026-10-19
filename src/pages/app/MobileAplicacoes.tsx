@@ -87,9 +87,9 @@ export default function MobileAplicacoes() {
         .order("created_at", { ascending: false })
         .limit(100);
       
-      if (!rectifyId) {
-        q = q.not("status", "eq", "finalizada");
-      }
+      q = q.in("status", rectifyId
+        ? ["entregue", "pronto_entrega", "envase", "finalizada"]
+        : ["entregue", "pronto_entrega", "envase"]);
       
       if (isProdutor && clienteId) q = q.eq("cliente_id", clienteId);
       const { data, error } = await q;
