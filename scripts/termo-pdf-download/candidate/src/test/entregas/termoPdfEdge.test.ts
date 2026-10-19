@@ -68,7 +68,7 @@ describe("entrega-termo-pdf candidata: download binário autenticado", () => {
     expect(r.status).toBe(200);
     expect(r.headers.get("Content-Type")).toBe("application/pdf");
     expect(r.headers.get("Cache-Control")).toBe("private, no-store");
-    expect(new Uint8Array(await r.arrayBuffer())).toEqual(BYTES);
+    expect(Buffer.from(await r.arrayBuffer()).toString()).toBe("%PDF-1.7 termo assinado");
     expect(calls.sign).not.toHaveBeenCalled(); expect(calls.rpc).not.toHaveBeenCalled();
   });
   it("cliente antigo signed_url recebe 410 sem tocar Storage", async () => {
