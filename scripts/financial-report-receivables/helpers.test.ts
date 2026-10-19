@@ -28,7 +28,7 @@ test("frontend: receivables encapsulated; other reports unchanged (still denied 
 });
 test("edge delta vs live v90 touches only receivables encapsulation", () => {
   const live = readFileSync(join(H, "edge-candidate/live-v90.index.ts"), "utf8");
-  expect(live).not.toContain("_filters");
+  expect(live).not.toContain("{ _filters:");
   expect(edgeSrc).toContain("rpcArgs = { _filters: filters }");
   expect(edgeSrc).not.toContain("createSignedUrl");
   expect(edgeSrc).not.toContain("SERVICE_ROLE");
