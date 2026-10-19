@@ -2,8 +2,9 @@
 
 ## 19/10 14:54 — programação inicial canônica
 - [x] Registrar recibos externos de implantação aprovação/reader, publicação e6a67/c30af e inativação/retry A/B; roles intactas, sem homologação TOKEN_REFRESHED/anexos.
-- [ ] Recuperar RPC existente sem autoaprovação/reprogramação, com guardas, travas e replay; UI detalhes existente, pacotes aprovados preservados.
-- [ ] Preparar fonte fixa e6a67/c30af, PRE/POST/rollback, testes negativos/revogação/concorrência e snapshot checker.
+- [x] Recuperar candidata RPC existente sem autoaprovação/reprogramação; UI detalhes, guarda/fence/replay e pacotes aprovados preservados. EXECUTE ainda fechado.
+- [x] Preparar fonte fixa e6a67/c30af, PRE/POST/rollback exato de sessão, testes locais negativos/revogação/concorrência e exportação checker.
+- [ ] Auditor: fechar catálogo transitivo SaaS/refresh e concorrência full-schema/locks globais; candidata recusa execução por exceção incondicional até revisão específica.
 - [ ] Auditor: revisão/implantação e homologação real programação; fabricação/CQ/estoque/anexos/v6/contratos não liberados. Sem hosted/publicação pelo agente.
 
 ## 19/10 14:22 — correção funcional monitor/Cockpit

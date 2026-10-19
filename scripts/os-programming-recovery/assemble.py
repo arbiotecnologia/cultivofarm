@@ -32,7 +32,8 @@ def guard(post=False):
  # The reader already installed by the auditor stays unchanged; operations stay closed.
  result=result.replace('END $guard$;',"""IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure) IS DISTINCT FROM '36ef75405315a11e47fee042d6a575cb' THEN RAISE EXCEPTION 'READER_DRIFT'; END IF;
 END $guard$;""")
- return result
+ cockpit=(ROOT/'scripts/cockpit-status-renewal/postflight-readonly.sql').read_text()
+ return result+cockpit[cockpit.index('DO $guard$'):cockpit.index("SELECT '36ef")]
 def main():
  verify_protected()
  pre=guard();post=guard(True)
@@ -42,7 +43,8 @@ def main():
  # No release artifact: supplementary dependencies lack immutable observed fingerprints.
  # Candidate refuses execution rather than relying on a comment to block rollout.
  closed="DO $release$ BEGIN RAISE EXCEPTION 'PROGRAMAR_SUPPLEMENTAL_REVIEW_REQUIRED'; END $release$;\n"
- (H/'candidate.sql.review').write_text(header+pre+closed+(H/'rpc.sql.review').read_text()+post+'COMMIT;\n')
+ capture="CREATE TEMP TABLE programar_exact_baseline ON COMMIT PRESERVE ROWS AS SELECT pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure) definition;\n"
+ (H/'candidate.sql.review').write_text(header+pre+closed+capture+(H/'rpc.sql.review').read_text()+post+'COMMIT;\n')
  # Same-session snapshot is authoritative; reconstructed body is reference only.
  # A future auditor-reviewed application must capture this before replacement.
  (H/'rollback.sql.review').write_text(header+post+"DO $restore$ DECLARE saved text; BEGIN\nIF to_regclass('pg_temp.programar_exact_baseline') IS NULL THEN RAISE EXCEPTION 'EXACT_BASELINE_NOT_CAPTURED'; END IF;\nSELECT definition INTO saved FROM pg_temp.programar_exact_baseline;\nIF md5(saved) IS DISTINCT FROM 'a42d6b07f51e6dacf41096f6cefb8163' THEN RAISE EXCEPTION 'BASELINE_DRIFT'; END IF;\nEXECUTE saved; END $restore$;\n"+pre+'COMMIT;\n')

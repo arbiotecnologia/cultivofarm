@@ -11,6 +11,17 @@ const os = { id: "00000000-0000-4000-8000-000000000001", origem: "manual", statu
 const props = { os, open: true, onOpenChange: () => {} };
 beforeEach(() => { vi.clearAllMocks(); f.roles = ["administrador"]; f.current = true; f.epoch = 0; f.rpc.mockResolvedValue({ data: { success: true, status: "programada" }, error: null }); });
 describe("programação inicial existente — transporte fake, não homologação", () => {
+  it.each(["onfarm", "on_farm", "ordem_servico_onfarm"])("%s mantém origem onfarm", async (origem) => {
+    render(<OSDetalhesDialog {...props} os={{ ...os, origem }} />);
+    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
+    await waitFor(() => expect(f.rpc).toHaveBeenCalledWith("rpc_programar_os_v1", { p_os_id: os.id, p_origem: "onfarm", p_data_programada: "2026-10-20" }));
+  });
+  it("nega origem desconhecida sem inferir tabela", () => {
+    render(<OSDetalhesDialog {...props} os={{ ...os, origem: "unknown" }} />);
+    expect(screen.queryByRole("button", { name: "Programar OS" })).toBeNull();
+    expect(f.rpc).not.toHaveBeenCalled();
+  });
   it.each(["administrador", "gestor", "producao"])("%s envia data explícita uma vez, sem aprovação/fabricação", async (role) => {
     f.roles = [role];
     let finish: (value: unknown) => void = () => {};

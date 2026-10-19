@@ -37,13 +37,15 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
   const [approvedId, setApprovedId] = useState<string | null>(null);
   const [programmedId, setProgrammedId] = useState<string | null>(null);
   const [programDate, setProgramDate] = useState("");
+  const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
+    ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
   useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); }, [os?.id, open, access.scope]);
-  const canProgram = !!os && open && access.ready && os.origem !== "b2b" &&
+  const canProgram = !!os && open && access.ready && programOrigin !== null &&
     !os.partner_order_id && !os.partner_order_item_id && programmedId !== os.id &&
     (os.status === "aprovada" || approvedId === os.id) &&
     roles.some((role) => role === "administrador" || role === "gestor" || role === "producao");
   const program = async () => {
-    if (!canProgram || pending.current || !/^\d{4}-\d{2}-\d{2}$/.test(programDate)) return;
+    if (!canProgram || !programOrigin || pending.current || !/^\d{4}-\d{2}-\d{2}$/.test(programDate)) return;
     const current = access.capture();
     const id = os.id;
     const date = programDate;
@@ -53,7 +55,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
     const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
       const { data, error } = await programOSRPC("rpc_programar_os_v1", {
-        p_os_id: id, p_origem: os.origem === "onfarm" ? "onfarm" : "manual", p_data_programada: date,
+        p_os_id: id, p_origem: programOrigin, p_data_programada: date,
       }).abortSignal(controller.signal);
       if (!current()) return;
       if (error || !data || typeof data !== "object" || Array.isArray(data) ||
