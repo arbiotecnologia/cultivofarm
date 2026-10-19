@@ -41,5 +41,5 @@ describe('Ordens de serviço seguras', () => {
    expect(erroOS({code:'42501',message:'LAB_ITEM_NOT_MANUFACTURABLE'})).toContain('permissão');
  });
  it('mantém falha parcial e trava síncrona', () => { const src = readFileSync('src/pages/OrdensServico.tsx','utf8'); expect(src).toContain('results.some(result => result.error)'); expect(src).toContain('savingRef.current = true'); expect(src).not.toContain('toast.success("Dados atualizados'); expect(src).not.toContain('.update('); });
- it('rastreio separa origem e propaga erros', () => { const src = readFileSync('src/components/ordens-servico/RastreabilidadeProducaoTab.tsx','utf8'); expect(src).toContain('["os-trace", osTipo, osId]'); expect(src).toContain('if (result.error) throw result.error'); expect(src).toContain('!lote?.id ? { data: [] }'); });
+ it('rastreio usa somente o leitor canônico', () => { const src = readFileSync('src/components/ordens-servico/RastreabilidadeProducaoTab.tsx','utf8'); expect(src).toContain('COCKPIT_LIST_RPC'); expect(src).not.toContain('.from('); expect(src).toContain('cockpit_trace_ambiguous'); });
 });
