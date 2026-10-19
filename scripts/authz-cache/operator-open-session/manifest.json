@@ -1,0 +1,175 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "baseline_commit": "ff1366ec710ed209732743418470978a7a27e007",
+  "scope": "exclusive operador_onfarm; candidate gate OFF",
+  "source_sha256": {
+    "src/lib/authz/authzEpochGate.ts": "698e8a8387cb212c7afaafa2d90e7a813aac7eea9bc2994e857d4b34fc822f8e",
+    "src/lib/authz/internalContextProbe.ts": "df3e7d2c3ef6d385e4d555a4701f791a88eb8d8e85a9abb8f17f16b46d0ecddb",
+    "src/hooks/useAuth.tsx": "f394c695a2f28ac69a8688899082173ac1b33838043bf10a79b0c490e5594ee9",
+    "src/App.tsx": "c1e8729cab1fef9d188d2a3be6094849c55f01342ec27338bde5536a3502d5c1",
+    "src/hooks/useAvailableContexts.ts": "dd35fbd84a132e67656b00c1ab6ebb9536fc83d09d654ee68aac70552bc09238",
+    "src/pages/SelecionarPortal.tsx": "7325ede7c13d31c9c87b05aa1ba7bc881a28266d95c7efef57ff6c660082732b",
+    "src/pages/AcessoPendente.tsx": "75633d2aa85e85539225f91a4b963b64808fd3da1b129c6f3d6ea6848825078f",
+    "src/test/config/producerOpenSession.integration.test.tsx": "3b7837e26298be74af7a779cb2a27dd2953e6f7776362fc679e09224d1cac09b",
+    "src/test/config/financialOpenSession.integration.test.tsx": "cc78f050ab05bb8d71430d34ad36311088c35f762036f55cfb1f7cfc36466fad",
+    "src/test/config/companyAdminOpenSession.integration.test.tsx": "cf459564c487dcaf3f0233e9142c1e130195e92ac9353664d59642fe7ed48cc3",
+    "src/test/config/b2bOpenSession.integration.test.tsx": "61e4eeb7802e6bdf9ac63e656e56d3241c32c8f92798dea3fa1503f871e08389",
+    "src/test/config/authzFoundation.integration.test.tsx": "6bff458ad5e19cc26fa1a40fe630648f06e774da63806e0aef73ff7627df543b",
+    "src/test/config/consultantOpenSession.integration.test.tsx": "2962ddc43891f266faebd17bba4eaf0e0ad7fdb8da9476081ad3947823d4d936",
+    "src/test/config/operatorOpenSession.integration.test.tsx": "8eb4cae73fb289a0ff723fdc0ddaeddd41c84c471b8cf15abc1bdaba8c99660c",
+    "src/test/config/operatorGate.test.ts": "547e1cdc4310b75e15ee33bb0ba06617175a6a1d4c4c35d6aa0e6049f22695d7",
+    "src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
+    "src/lib/authz/b2bContextProbe.ts": "171a8ed48d1bdfefcb5600f02ce574e1dff558f2c1c0dad04c75fb0303751d61",
+    "src/lib/authz/producerContextProbe.ts": "45ca35467c461f6431aae0943f55cc5d6ffda922f2cf7c10d7d1fffdda279bc7",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
+    "src/lib/permissions.ts": "4d8442b166e46596532b7fdd8bad2582171a52a223250065cd23ba25a5591b97",
+    "src/components/guards/AppPortalGuard.tsx": "19ea5c4d1d83d687bbc48c0761bb7184ff4140bcf83f71072b1c67a312023d7d",
+    "src/components/authz/AuthzEpochBoundary.tsx": "a1189fb22a3e39f5d5af460ffe8c75d726c892f34e5414a7c0adac3ee91b3d4a",
+    "src/pages/CockpitLaboratorio.tsx": "04f032f4f3aff9a34cba482a76150a7f1ef1b562a206450a159428ab1b044890",
+    "src/components/cockpit/CockpitConsulta.tsx": "cc1b9e663cb5b4014df97125c5dd79ac25452a884cd7113ac99a6c4f0ec599cc",
+    "src/hooks/useCockpitQuery.ts": "3e8988cbdd745d5515501ffdcf2254d6b31a063b0150000d8854adae00baae4c",
+    "src/test/config/consultantGate.test.ts": "b509ebea988a95f566acc84a39c61e2fc09fc46c0ab361f983d794163181ce51",
+    "src/components/financeiro/DocumentosPanel.tsx": "ff829485d7524e8254ded6e7d58db0398121c36381083083d54ec59362b198b4",
+    "src/lib/financeiro/documentStoragePath.ts": "0979d9d51d42bfb31e24e7dcd3d0acbb7d5ccb1f1ed76faf20944f07558989b8",
+    "docs/auditorias/comprovante-baixa-20261019.review.md": "f788a3a04281e24a36522c505a2edeff56f5adc6ae47168fad5ff5638539df26",
+    "docs/auditorias/comprovante-entrega-fase1.md": "55dd3d5a7e79d9dfb39b24ce2eb07d10ff4916961451d3adb57cbaf54d9e4dfd",
+    "docs/auditorias/comprovante-entrega-fase2.md": "d6609686fbbbe16250c7edf2c8998fedd71f0f74257a6cacf1734e471b212213",
+    "docs/auditorias/comprovante-entrega-fase3-1a-operador.md": "23d4c3805d624896394f835e6cdc96fe35a8f6f2099594f34e888f343ff9c7a4",
+    "docs/auditorias/comprovante-entrega-fase3-layout.md": "62bf59a8ca7e672e76e172681a906d71f37253b396381b60c1f3919316eec7cf",
+    "restoration/homologacao-h7/h7o-inventario/pre-state-defs/rpc_validar_comprovante_entrega.sql": "d0417705ea71b11875d37d4beb5ce55a2e6525773ccf14fe52877d402a943328",
+    "restoration/os-e2e/17-migration-20260903000000_comprovante_entrega_documento_v1.sql": "feecd8ca45b7dfad64589d238e3a84b7b31ba39d97f3f1081248f1cc341d78b8",
+    "restoration/os-e2e/18-migration-20260903010000_comprovante_cepas_fix.sql": "33df696f94d46970248c50b86eb5e73ce43c71b327e76cc77af89df68f3c7df9",
+    "restoration/os-e2e/19-migration-20260903020000_comprovante_tipo_canonico.sql": "8d02886b686ec4b52c8e986c04b8f2afbe60b2de56bafe1c3ced234f24d317c4",
+    "restoration/os-e2e/20-migration-20260903030000_comprovante_os_volume_v1.sql": "f5e2d5590584f3f8f55d623e6e49b9ce055cf42fee7c19e8ee79c88f5c81e71f",
+    "restoration/os-e2e/21-migration-20260903040000_comprovante_origem_pedido_v1.sql": "e81b973b5e9bee6b877b199828c3a3c3ef2d9afa11228dd7741d8a9b3fd7620a",
+    "restoration/os-e2e/33-comprovante-20260903.sql": "7b2afa1b975d587505aa57c919168dcca060637ee7cd407a314a4be8047c7d2e",
+    "restoration/os-e2e/34-comprovante-origem-20260903.sql": "d1fb3c7e7678fef4b749765011c2b76c15bf900458720d8767a374a3c6dceba2",
+    "scripts/authz-cache/payment-proof-release/anexarComprovanteBaixa.ts.candidate.review": "e5ff09f134e47da302d28eb16bec8eac0ae13bf0fb90a2115c3325445035a584",
+    "scripts/authz-cache/payment-proof-release/anexarComprovanteBaixa.ts.rollback.review": "ef413cf38040e9c064f256760f8990a8d1ceae5750ef8597dc83d2041073b1ad",
+    "src/components/entregas/EntregaComprovantePanel.tsx": "2aebbd424ad25aeb339d9f2deb50f9170d92972323d1c34516a216c084ee1779",
+    "src/components/entregas/QRCodeComprovante.tsx": "8b544c82b090b68eec1e8a78ac6df82bd899eaa1e807e7b2891c21948881fa90",
+    "src/lib/comprovanteEntregaPdf.ts": "cc59044bf0017de5ed3b7bc9aaa626a45a070e7ca688ad42e340cd3cb523bbb1",
+    "src/lib/entregas/anexoComprovante.ts": "4f52708d4657723a66e2d0cf61ce0fc680b59ad6c899325b6bb644fd576509e0",
+    "src/lib/financeiro/comprovantesReceber.ts": "75b58f092899a527f2180ba5c4e41f3f6fd03ae1e8ec31028074c1f9979b47f5",
+    "src/lib/financial/anexarComprovanteBaixa.ts": "e5ff09f134e47da302d28eb16bec8eac0ae13bf0fb90a2115c3325445035a584",
+    "src/test/entregas/anexoComprovante.test.tsx": "14c798614e91bc370d574ab2e42adc91da9bd3a81a516eb774976fc00790c8c1",
+    "src/test/entregas/anexoComprovanteConcorrencia.test.tsx": "4052513e2845e68e5b337300b3caa85d93b4b444fc1915ede5d6fae955058f25",
+    "src/test/entregas/assinaturaComprovante.test.tsx": "f37b466b15d44a20aaa3cb66c47f8cec0408491614d255783b17e3e4a58b022a",
+    "src/test/entregas/comprovanteEntregaPdf.test.ts": "0d31cacd9b558a89e4533fb54e66e60b2b2ebb6d45d0e0bc1184af4287f0ad6e",
+    "src/test/financeiro/comprovanteBaixaIdempotencia.test.ts": "eb9c91f1fee9ad46cddc18d8471af1c4e71ff9c8da7cf7a85591f95ba4f7814d",
+    "supabase/migrations/20260903000000_comprovante_entrega_documento_v1.sql": "feecd8ca45b7dfad64589d238e3a84b7b31ba39d97f3f1081248f1cc341d78b8",
+    "supabase/migrations/20260903010000_comprovante_cepas_fix.sql": "33df696f94d46970248c50b86eb5e73ce43c71b327e76cc77af89df68f3c7df9",
+    "supabase/migrations/20260903020000_comprovante_tipo_canonico.sql": "8d02886b686ec4b52c8e986c04b8f2afbe60b2de56bafe1c3ced234f24d317c4",
+    "supabase/migrations/20260903030000_comprovante_os_volume_v1.sql": "f5e2d5590584f3f8f55d623e6e49b9ce055cf42fee7c19e8ee79c88f5c81e71f",
+    "supabase/migrations/20260903040000_comprovante_origem_pedido_v1.sql": "e81b973b5e9bee6b877b199828c3a3c3ef2d9afa11228dd7741d8a9b3fd7620a"
+  },
+  "artifact_sha256": {
+    "preflight-readonly.sql.review": "5afa4c9624adf390958c708f032ff77bfc98aca40a290adb92023a2ffdcb4717",
+    "rollback/src/App.tsx": "6ec7d1aa97e86524d76af944b277645f24c77678a229c7d00134f7caace7ef73",
+    "rollback/src/hooks/useAuth.tsx": "99fe63c6f0956477986cd8ebbec76f96b09a969fbd2d6ebbf1087d0f8d03829e",
+    "rollback/src/hooks/useAvailableContexts.ts": "79e6c8adf3531c2c2aa63831fa6998c8939d1f3d77a304bee02fd38ec83ce946",
+    "rollback/src/pages/SelecionarPortal.tsx": "6ca12d9e7600df781dc28420bd09ed0ee2b26e7b181edbaf2cf001d143398ac1",
+    "rollback/src/pages/AcessoPendente.tsx": "af32960b3aba0f828d20b167344ec450dd2c0907180e4435837787077fd5d84a",
+    "rollback/src/test/config/producerOpenSession.integration.test.tsx": "80eb7c0a274dd0bfefb22ad12316621828e825b09f7a3f9623618ec1974f70ee",
+    "rollback/src/test/config/financialOpenSession.integration.test.tsx": "aed2a823dcebc02d7fa67998ea8a9358358443c9d9e029296004f5752d90d075",
+    "rollback/src/test/config/companyAdminOpenSession.integration.test.tsx": "666fdff7f5828741850f651ebc1c7981619dbc86d853786eea6d0a8c4abfc661",
+    "rollback/src/test/config/b2bOpenSession.integration.test.tsx": "bcec0c2c417e9376e6353fe6ed3e037103c0dbf3507074f7ee62e404d2ee6556",
+    "rollback/src/test/config/authzFoundation.integration.test.tsx": "adcce3d8a49a1e28c64254ceca19d88b8642820c5090bfda3fc7852a78023fe2",
+    "rollback/src/test/config/consultantOpenSession.integration.test.tsx": "be121995ebe736b619443d074fdfad1a2279ed584607d113822960b3443dcbdc",
+    "rollback/src/lib/authz/authzEpochGate.ts": "76e3a220c49855cb22f6aa4ef9f29627ad3f32e6482ad39822d2ab9c55e9c1f6",
+    "rollback/src/lib/authz/internalContextProbe.ts": "8bf300d19d0686618d55f58b1f3340e8e2f66ae34d47dbb6a2efc5e160abc441",
+    "candidate/src/App.tsx": "c1e8729cab1fef9d188d2a3be6094849c55f01342ec27338bde5536a3502d5c1",
+    "candidate/src/hooks/useAuth.tsx": "f394c695a2f28ac69a8688899082173ac1b33838043bf10a79b0c490e5594ee9",
+    "candidate/src/hooks/useAvailableContexts.ts": "dd35fbd84a132e67656b00c1ab6ebb9536fc83d09d654ee68aac70552bc09238",
+    "candidate/src/pages/SelecionarPortal.tsx": "7325ede7c13d31c9c87b05aa1ba7bc881a28266d95c7efef57ff6c660082732b",
+    "candidate/src/pages/AcessoPendente.tsx": "75633d2aa85e85539225f91a4b963b64808fd3da1b129c6f3d6ea6848825078f",
+    "candidate/src/test/config/producerOpenSession.integration.test.tsx": "3b7837e26298be74af7a779cb2a27dd2953e6f7776362fc679e09224d1cac09b",
+    "candidate/src/test/config/financialOpenSession.integration.test.tsx": "cc78f050ab05bb8d71430d34ad36311088c35f762036f55cfb1f7cfc36466fad",
+    "candidate/src/test/config/companyAdminOpenSession.integration.test.tsx": "cf459564c487dcaf3f0233e9142c1e130195e92ac9353664d59642fe7ed48cc3",
+    "candidate/src/test/config/b2bOpenSession.integration.test.tsx": "61e4eeb7802e6bdf9ac63e656e56d3241c32c8f92798dea3fa1503f871e08389",
+    "candidate/src/test/config/authzFoundation.integration.test.tsx": "6bff458ad5e19cc26fa1a40fe630648f06e774da63806e0aef73ff7627df543b",
+    "candidate/src/test/config/consultantOpenSession.integration.test.tsx": "2962ddc43891f266faebd17bba4eaf0e0ad7fdb8da9476081ad3947823d4d936",
+    "candidate/src/test/config/operatorOpenSession.integration.test.tsx": "8eb4cae73fb289a0ff723fdc0ddaeddd41c84c471b8cf15abc1bdaba8c99660c",
+    "candidate/src/test/config/operatorGate.test.ts": "547e1cdc4310b75e15ee33bb0ba06617175a6a1d4c4c35d6aa0e6049f22695d7",
+    "candidate/src/lib/authz/authzEpochGate.ts": "698e8a8387cb212c7afaafa2d90e7a813aac7eea9bc2994e857d4b34fc822f8e",
+    "candidate/src/lib/authz/internalContextProbe.ts": "df3e7d2c3ef6d385e4d555a4701f791a88eb8d8e85a9abb8f17f16b46d0ecddb"
+  },
+  "files": [
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "candidate": "candidate/src/lib/authz/authzEpochGate.ts",
+      "rollback": "rollback/src/lib/authz/authzEpochGate.ts"
+    },
+    {
+      "path": "src/lib/authz/internalContextProbe.ts",
+      "candidate": "candidate/src/lib/authz/internalContextProbe.ts",
+      "rollback": "rollback/src/lib/authz/internalContextProbe.ts"
+    },
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "candidate": "candidate/src/hooks/useAuth.tsx",
+      "rollback": "rollback/src/hooks/useAuth.tsx"
+    },
+    {
+      "path": "src/App.tsx",
+      "candidate": "candidate/src/App.tsx",
+      "rollback": "rollback/src/App.tsx"
+    },
+    {
+      "path": "src/hooks/useAvailableContexts.ts",
+      "candidate": "candidate/src/hooks/useAvailableContexts.ts",
+      "rollback": "rollback/src/hooks/useAvailableContexts.ts"
+    },
+    {
+      "path": "src/pages/SelecionarPortal.tsx",
+      "candidate": "candidate/src/pages/SelecionarPortal.tsx",
+      "rollback": "rollback/src/pages/SelecionarPortal.tsx"
+    },
+    {
+      "path": "src/pages/AcessoPendente.tsx",
+      "candidate": "candidate/src/pages/AcessoPendente.tsx",
+      "rollback": "rollback/src/pages/AcessoPendente.tsx"
+    },
+    {
+      "path": "src/test/config/producerOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/producerOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/producerOpenSession.integration.test.tsx"
+    },
+    {
+      "path": "src/test/config/financialOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/financialOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/financialOpenSession.integration.test.tsx"
+    },
+    {
+      "path": "src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/companyAdminOpenSession.integration.test.tsx"
+    },
+    {
+      "path": "src/test/config/b2bOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/b2bOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/b2bOpenSession.integration.test.tsx"
+    },
+    {
+      "path": "src/test/config/authzFoundation.integration.test.tsx",
+      "candidate": "candidate/src/test/config/authzFoundation.integration.test.tsx",
+      "rollback": "rollback/src/test/config/authzFoundation.integration.test.tsx"
+    },
+    {
+      "path": "src/test/config/consultantOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/consultantOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/consultantOpenSession.integration.test.tsx"
+    },
+    {
+      "path": "src/test/config/operatorOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/operatorOpenSession.integration.test.tsx",
+      "rollback": null
+    },
+    {
+      "path": "src/test/config/operatorGate.test.ts",
+      "candidate": "candidate/src/test/config/operatorGate.test.ts",
+      "rollback": null
+    }
+  ]
+}

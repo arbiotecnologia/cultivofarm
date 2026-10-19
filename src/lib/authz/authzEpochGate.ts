@@ -18,3 +18,6 @@ export const COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: boolean = true;
 
 // Exclusive tenant technical consultant; OFF until independent review.
 export const CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = true;
+
+// Exclusive tenant operator candidate; independent review required before ON.
+export const OPERATOR_CONTEXT_MONITOR_ENABLED: boolean = false;

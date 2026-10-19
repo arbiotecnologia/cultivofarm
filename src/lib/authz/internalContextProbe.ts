@@ -2,10 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AuthzFingerprintResult } from "./authzEpochMonitor";
 
 /** Limited exclusive tenant principal observation. RLS/RBAC remain server-owned. */
-export async function internalContextProbe(userId: string, organizationId: string, expectedRole: "financeiro" | "administrador" | "consultor_tecnico" = "financeiro"): Promise<AuthzFingerprintResult> {
+export async function internalContextProbe(userId: string, organizationId: string, expectedRole: "financeiro" | "administrador" | "consultor_tecnico" | "operador_onfarm" = "financeiro"): Promise<AuthzFingerprintResult> {
   const deny = () => ({ eligible: false, fingerprint: null });
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) ||
-    !userId || (expectedRole !== "financeiro" && expectedRole !== "administrador" && expectedRole !== "consultor_tecnico")) return deny();
+    !userId || (expectedRole !== "financeiro" && expectedRole !== "administrador" && expectedRole !== "consultor_tecnico" && expectedRole !== "operador_onfarm")) return deny();
   const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
   const { data: org, error: orgError } = await rpc.call(supabase, "h15_actor_organization");
   if (orgError) throw new Error("internal_probe_unavailable");
