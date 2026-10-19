@@ -1,13 +1,16 @@
 {
   "hosted_writes": false,
   "auth_transport": "synthetic UID/JWT; no authenticated hosted request",
-  "schema": "all public captured columns/types + captured PK/UNIQUE/CHECK/FKs; all 23 target triggers; real refresh view chain; not every unrelated trigger/policy",
+  "schema": "all public captured columns/types, all PK/UNIQUE/FKs and CHECKs of target/auth/SaaS/reference tables; all 23 target triggers; real refresh view chain; not every unrelated trigger/policy",
   "passed": [
     "real STABLE profile revocation",
     "real STABLE role deletion",
     "real SaaS revoked",
     "onfarm closed",
     "explicit date required",
+    "responsible NULL only",
+    "wrong tenant denied",
+    "foreign caller missing row same denial",
     "manual approved programs",
     "actual downstream no lot or extra child",
     "actual MV refresh reflects programmed",
@@ -19,7 +22,9 @@
     "wait then profile revocation real STABLE no write",
     "wait then role revocation real STABLE no write",
     "wait then subscription revocation real STABLE no write",
-    "real immediate FK lot insertion fenced by parent"
+    "real immediate FK link insertion fenced by parent",
+    "real immediate FK lot insertion fenced by parent",
+    "real global MV contention timeout rolls back whole operation"
   ],
-  "candidate_md5": "1ef97c2fb7462e7bf9eca289d1821b80"
+  "candidate_md5": "e374f0ba1698b37523b890dc91682eaf"
 }

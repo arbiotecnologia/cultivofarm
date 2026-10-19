@@ -128,7 +128,7 @@ def main():
    holder.communicate(timeout=10);out=writer.communicate(timeout=10);assert writer.returncode==0,out
    results.append('real immediate FK '+table+' insertion fenced by parent')
   reset()
-  holder=start("SET application_name='mvholder';BEGIN;LOCK TABLE mv_esteira_laboratorio IN ACCESS EXCLUSIVE MODE;SELECT pg_sleep(4);ROLLBACK;")
+  holder=start("SET application_name='mvholder';BEGIN;REFRESH MATERIALIZED VIEW mv_esteira_laboratorio;SELECT pg_sleep(4);ROLLBACK;")
   wait('mvholder',"wait_event='PgSleep'")
   denied=run(actor+'SELECT '+call+';',False)
   holder.communicate(timeout=10)
