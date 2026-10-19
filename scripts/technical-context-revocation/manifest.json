@@ -1,0 +1,50 @@
+{
+  "baseline": "db1eee7c826ff7c43da756047cadac744767bd84",
+  "files": [
+    {
+      "path": "src/components/guards/AppPortalGuard.tsx",
+      "pre_sha256": "90c2598f4a71f32088f8ebf4f91bc17224ca34829c385953359b3bc6a20cb28f",
+      "post_sha256": "422f89c85218c90b4cee0a0da3c3bb9bee562c71f6ebcfdea195ea050f02d183"
+    },
+    {
+      "path": "src/components/guards/TechnicalFeatureGuard.tsx",
+      "pre_sha256": "83a79319d91db3e303685e5acf4f61c757987ff091cdb0c6ce78e93dedccadfa",
+      "post_sha256": "0aa538129bec101dad31bdf680884a1e45bfed2c392ffd3952a7b66db74b3905"
+    },
+    {
+      "path": "src/components/guards/TechnicalRouteGuard.tsx",
+      "pre_sha256": "957f62257f55e19d7b1e0052c5b65ccfa8323e78e5beb11793a0e02b8d972326",
+      "post_sha256": "6087fe9d686e47f7e787822a1503ad9bd018eadd47c2b207f6a815cf1ccd52b0"
+    },
+    {
+      "path": "src/pages/app/MobileLayout.tsx",
+      "pre_sha256": "607ab5706a6139321da88e1638f5abb465a2c23b63148b051d66fd6b445dbd9c",
+      "post_sha256": "1fba03f98817dd9cef40a1f8f4d1ca3b7915805f18c7ebc32c1379a30c786749"
+    },
+    {
+      "path": "src/test/config/portalContextRecovery.integration.test.tsx",
+      "pre_sha256": "dffe009e47ad6b131810578f4937ed171083112f8a8b87dc093de4feb7efed45",
+      "post_sha256": "0517194ffd1f6046a3ad73df874b730ea09aa03a8a47560b94c1e24e403f6295"
+    },
+    {
+      "path": "src/test/config/retryLoadingRace.integration.test.tsx",
+      "pre_sha256": "b73fc71b9981f060d3bec53fc3f7064ddd751b318f4cf2df04903f49525d6734",
+      "post_sha256": "973a6e63f9393ee16b3607420fec3b4ddebe62e5631dfb91d8d26346685012ea"
+    },
+    {
+      "path": "src/test/multiportal.guards.test.tsx",
+      "pre_sha256": "c09bd37c93569a9591c8bda74f0ab0cef4ea59d8b96eccfe48a0065ae4463fe1",
+      "post_sha256": "289cd10dd8e9b1d2ad5619bdd1699f785f9f37a024842aca36d4c97d819ef755"
+    },
+    {
+      "path": "src/test/multiportal.featureGuards.test.tsx",
+      "pre_sha256": "ea66d941e02420071423432ad0d57f547fa06b2a271c136e5f98a080a8dec563",
+      "post_sha256": "2b71f3d7d19abe83ee3ac2e222759f261e772bac52ca959c56bff423ebff66a9"
+    },
+    {
+      "path": "AGENTS.md",
+      "pre_sha256": "7fc3a8f70f4e833569fac06b67fa3af48857e19e550d48a605bd3bd3d1afd166",
+      "post_sha256": "7fc3a8f70f4e833569fac06b67fa3af48857e19e550d48a605bd3bd3d1afd166"
+    }
+  ]
+}
