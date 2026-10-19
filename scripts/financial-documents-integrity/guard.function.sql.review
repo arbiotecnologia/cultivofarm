@@ -62,7 +62,7 @@ BEGIN
   IF NEW.owner_type IN ('FINANCIAL_RECEIPT','REPORT_EXPORT') THEN
     IF v_path IS NULL OR NEW.storage_path IS DISTINCT FROM v_path
       OR v_parts[1] <> NEW.organization_id::text
-      OR v_bucket IS DISTINCT FROM CASE WHEN NEW.owner_type = 'FINANCIAL_RECEIPT' THEN 'financial-receipts' ELSE 'financial-reports' END THEN
+      OR v_bucket IS DISTINCT FROM (CASE WHEN NEW.owner_type = 'FINANCIAL_RECEIPT' THEN 'financial-receipts' ELSE 'financial-reports' END) THEN
       RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
     END IF;
   ELSIF array_length(v_parts, 1) <> 3 OR v_parts[1] <> NEW.owner_type
