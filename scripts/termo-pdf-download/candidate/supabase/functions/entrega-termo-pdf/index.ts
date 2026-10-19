@@ -188,6 +188,9 @@ async function provarAcesso(userClient: Sdk, admin: Sdk, userId: string, termoId
     .select("id, entrega_id, versao, status, cancelado_em, assinado_em, pdf_path, pdf_hash")
     .eq("id", termoId).maybeSingle();
   if (termoErr || !termo) return { ok: false, status: 404, error: "termo_nao_encontrado" };
+  // Tenant antes de qualquer status: outro tenant nunca aprende cancelado/substituido.
+  const org = await provarTenant(userClient, admin, userId, termo.entrega_id);
+  if (!org) return { ok: false, status: 403, error: "acesso_negado" };
   if (termo.status === "cancelado" || termo.cancelado_em) return { ok: false, status: 409, error: "termo_cancelado" };
   const { data: sucessor, error: sucErr } = await admin
     .from("entrega_termos").select("id").eq("substitui_termo_id", termoId).limit(1).maybeSingle();
@@ -196,8 +199,6 @@ async function provarAcesso(userClient: Sdk, admin: Sdk, userId: string, termoId
   if (termo.status !== "assinado" || !termo.assinado_em) return { ok: false, status: 409, error: "termo_nao_assinado" };
   if (!termo.pdf_path) return { ok: false, status: 409, error: "pdf_nao_gerado" };
   if (!termo.pdf_hash) return { ok: false, status: 409, error: "pdf_integridade_indisponivel" };
-  const org = await provarTenant(userClient, admin, userId, termo.entrega_id);
-  if (!org) return { ok: false, status: 403, error: "acesso_negado" };
   return { ok: true, termo: { ...(termo as Omit<Vigente, "organization_id">), organization_id: org } };
 }
 
