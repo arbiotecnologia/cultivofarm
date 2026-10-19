@@ -1,5 +1,19 @@
 # Recuperação focal de aprovação OS — candidata, não implantada
 
+## P0 revisão14:18 — alias de catálogo e rollback UI corrigidos
+
+**A validade anteriormente alegada do rollback UI fica retirada.** Auditor encontrou42703 `record c has no field relowner` no PRE integral: o record PL/pgSQL `c` colidia com alias `pg_class c`. Corrigiu apenas `table_acl_rls` para `class_row` e informou **PRE PASS20 funções+schema/triggers/policies/indexes/ACL/RLS** em produção READ ONLY, sem alterar hashes/expectativas. Essa evidência é do auditor; nesta rodada não executamos nenhuma operação hosted. Candidata44be9a **não implantada**.
+
+Propagado o alias no assembler e nos quatro SQL: PRE/candidate/rollback/POST. Corpos das RPC/helper, `post-hashes.json`, expectativas de ACL/RLS/schema e assinatura continuam idênticos. Novos SHA256: candidata `e90775f3f6f26194d7e3b3cf53eab1c92b9447cc54bbd122371c7233ff6b1d8e`; rollback SQL `d079910091f81e9cad72150df789d1cbeec76b16758481177c1d8797e7ec6b1d`; PRE `4395b9f5f6c34b66f29145bec56921131f9ec78e01528c57ed8aefac15ca1cf4`; POST `048d4c72b522b6f91a9cd3a956e1df83bbc0034ab1eca5b23fcea7cd8019ceb1`. Os hashes históricos abaixo identificam pacotes anteriores, não os SQL corrigidos.
+
+Rollback `rollback/OSDetalhesDialog.tsx` recuperado via `git show ff80adabd0d70eebd7d7da641831f7d020647814:src/components/ordens-servico/OSDetalhesDialog.tsx`, **byte-exato SHA2569c20bd608f1cd8109df806ea4cc5db829ce3a9aaadd20e652e856d024cc0bc37** informado pelo auditor. Não usa HEAD móvel e não contém a ação Aprovar adicionada na candidata. Manifest pre corrigido para9c20bd..., post permanece d181e5...; commit baseline registrado. Stage fixa commit e digest independentemente do manifesto, exige pre≠post e escopo único, recusa manifesto rehashado para HEAD/pre=post e candidata reapresentada como rollback. Nunca altera checkout em uso.
+
+Validações locais: **PG138/138**, com os quatro SQL completos byte-exatos recusando catálogo reduzido por BODY_DRIFT atomicamente. Como isso antes ocultava o erro tardio de catálogo, o harness adicional extrai e executa **cada uma das6 expressões IF table_acl_rls emitidas sem mudar expectativa**, mantendo record `c` vivo; todas alcançam DRIFT esperado em catálogo reduzido e reproduzem42703 quando somente alias é mutado para `c`. Isso demonstra a correção específica, **não PASS integral em catálogo equivalente**. Staging **8/8**, incluindo comparação com Git commit exato e negativos com destino intacto. Vitest aprovação+AuthProvider/opener **42/42**; build automático14:19:39Z OK, checker app/node novo não executado (runtime app intocado). Sem certificação JWT/HTTP/homologação real, sem DDL/DML hosted/publicação.
+
+Rollback UI agora tem prova local byte-exata e negativos; rollback SQL continua condicionado a POST integral real sem drift, não testado com sucesso em catálogo integral equivalente. Antes de implantar auditor deve repetir PRE dos bytes novos e revisar candidata/POST/rollback. Manifest/SHA256SUMS atualizados sem afrouxar nenhum contrato. Snapshot typecheck anterior preservado, não corresponde aos scripts/tests atualizados.
+
+OS real `18ea0531-ef73-4dbf-9b58-b064cfc50d0e`, produto sintético e monitor/runtime permanecem intocados. Continuação reutiliza essa OS; programação/avanço seguem fechados. Diagnóstico/lifecycle posterior segue proposta não implementada, sem restaurar bytes sob incerteza.
+
 ## Complemento real14:13 e regressão local14:17
 
 Auditor informou versão publicada com bundle `index-CznUV5-v.js` e criação pela sessão real admin B da **OS-2026-000001**, id `18ea0531-ef73-4dbf-9b58-b064cfc50d0e`, aberta, volume100, produto sintético existente. **Não criar outra OS nem reaplicar seed**. Isso atualiza o relato anterior de nenhuma OS criada/pending, mas NÃO prova implantação da candidata de aprovação deste pacote, elegibilidade de aplicação ou homologação de anexo/revogação.
