@@ -23,7 +23,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
   const pending = useRef(false);
   const [saving, setSaving] = useState(false);
   const [approvedId, setApprovedId] = useState<string | null>(null);
-  useEffect(() => { setApprovedId(null); }, [os?.id, open, access.scope]);
+  useEffect(() => { setApprovedId(null); setSaving(false); }, [os?.id, open, access.scope]);
   const approve = async () => {
     if (!os || !open || pending.current || !access.ready ||
       !roles.some((role) => role === "administrador" || role === "gestor") ||

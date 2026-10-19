@@ -4,6 +4,8 @@ import json
 H=Path(__file__).resolve().parent
 # Exact live READ ONLY observations, no ACL widening except the one reviewed RPC.
 CONTRACTS=[
+('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f','s',False,'search_path=""',['authenticated','postgres','service_role']),
+('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','s',False,'search_path=""',['authenticated','postgres','service_role']),
 ('public.rpc_aprovar_os_v1(uuid,text)','d65be82dbf38ec429b7377bd6873ba47','v',True,'search_path=""',['postgres']),
 ('private.assert_os_approval_scope(uuid,text)','8c3142a07b3f310082309ef50f8b32dd','v',True,'search_path=""',['postgres']),
 ('private.guard_os_separate_approval()','f00397fe862e611fbfa0eba3911d95c6','v',True,'search_path=""',['postgres']),
