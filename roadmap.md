@@ -1,7 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## Revogação técnica efetiva — baseline db1eee, 22:12
-- [ ] Reproduzir payload real gestor/dupla/consultor e revogação em Perfil real; corrigir quatro leitores técnicos sem flags legadas, pacote/rollback contra db1eee, suíte pertinente.
+- [x] Reproduzir semântica real (5/15 FAIL antes), corrigir quatro leitores técnicos pela lista canônica e administrador explícito; Perfil/Retry real com transporte fake e MobileLayout independente, 343/343 em 12 arquivos; pacote/rollback contra db1eee verificados isoladamente, build OK. Monitor/banco/dados intocados.
 - [ ] Homologação real pós-correção: aguarda revisão/publicação externa; 82 testes + tsc anteriores não provaram semântica da RPC nem revogação parcial real (falhou 22:11).
 
 ## Contextos técnicos indisponíveis — baseline 2f95d5be

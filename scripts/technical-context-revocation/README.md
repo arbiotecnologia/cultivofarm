@@ -13,7 +13,7 @@ Baseline publicada fixa: `db1eee7c826ff7c43da756047cadac744767bd84`, bundle info
 ## Provas locais e limites
 - Harness real AuthProvider/query/guard/MobileLayout/MobilePerfil, transporte fake com semântica real: antes da correção **5/15 falharam**, incluindo gestor indevidamente permitido, Retry pós-revogação e retorno tardio. Não JWT/RLS ou banco real.
 - Matriz gestor `{available_contexts:['admin'],has_technical_access:true,is_admin:true,has_b2b_access:true}` nega Técnico; dupla com admin+technical e consultor com technical permitem; administrador explícito preservado.
-- Testes de cada guarda e MobileLayout independente do AppPortalGuard, Perfil real após perda de cada papel, timeout/erro/invalidação/epoch/resposta antiga e não-loop de leitores aninhados. Resultados finais registrados após execução.
+- Testes de cada guarda e MobileLayout independente do AppPortalGuard, Perfil real após perda de cada papel, timeout/erro/invalidação/epoch/resposta antiga e não-loop de leitores aninhados: **343/343 em 12 arquivos**, build automático OK. Typechecks independentes não executados manualmente neste ambiente.
 - Typechecks app/node independentes deste delta dependem de recibo do auditor/harness; não confundir build automático com types. Estabilidade do gateway e renovação natural permanecem pendentes e não são corrigidas por esta mudança.
 
 ## Revisão e rollback
