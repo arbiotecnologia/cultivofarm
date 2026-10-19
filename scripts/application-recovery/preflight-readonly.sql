@@ -14,7 +14,7 @@ FOR c IN SELECT * FROM (VALUES ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,
  THEN RAISE EXCEPTION 'application_dependency_drift: %',c.sig; END IF;
  SELECT array_agg(DISTINCT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END ORDER BY CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END)
  INTO roles FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.privilege_type='EXECUTE';
- IF roles IS DISTINCT FROM CASE WHEN c.closed THEN ARRAY['postgres'] ELSE ARRAY['authenticated','postgres','service_role'] END
+ IF roles IS DISTINCT FROM (CASE WHEN c.closed THEN ARRAY['postgres'] ELSE ARRAY['authenticated','postgres','service_role'] END)
  OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.privilege_type='EXECUTE' AND (a.grantor<>p.proowner OR (a.grantee<>p.proowner AND a.is_grantable)))
  THEN RAISE EXCEPTION 'application_dependency_acl_drift: %',c.sig; END IF;
 END LOOP;
