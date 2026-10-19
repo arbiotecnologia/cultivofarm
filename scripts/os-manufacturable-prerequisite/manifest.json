@@ -1,0 +1,77 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "scope": "OS eligibility and admin expire console only; seed REVIEW ONLY",
+  "files": [
+    {
+      "path": "src/pages/OrdensServico.tsx",
+      "pre": "ea6d7f220d83b9034fe6f9cce0c217b8af3799ee26ed710bc2b412e6da4861d6",
+      "post": "779662ab0de6327b989811ac0796d3cdd877733518d472129864d1fe9e882b82",
+      "rollback": "rollback/OrdensServico.tsx"
+    },
+    {
+      "path": "src/lib/ordens-servico/validacao.ts",
+      "pre": "74606298aedccbde6ede730f955310ff8c222b371c154d41ab8ee11f6acb6464",
+      "post": "6659835fdc927ed99e84439c0bb7a4ed743349c22addb7732688cb11fac93a77",
+      "rollback": "rollback/validacao.ts"
+    },
+    {
+      "path": "src/lib/authz/localDiagnostics.ts",
+      "pre": "e83f3ad5e90ff7481861942ec1ad733f8cca72c198714dd67b7cd712d76318d4",
+      "post": "46b4d79565d930ca8f4fce8e5a6ad1a904eb2f01ab9725564d3e7b7b943b3e4e",
+      "rollback": "rollback/localDiagnostics.ts"
+    }
+  ],
+  "protected": {
+    "src/hooks/useAuth.tsx": "77a78df03e525ff260f7086660349fbba6c4067ea639b9231c41c43ebcc4e583",
+    "src/lib/authz/authzEpochMonitor.ts": "5d53239663f65556e5581ba5d8cc7188721c08dc6e020d01a62d941810888a31",
+    "src/lib/authz/authzEpochGate.ts": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/lib/pdfAplicacao.ts": "3a936385f1f5618483f4ad83e3aefe35745c30eef64b5e5023ec7e4fb686e756",
+    "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
+    "scripts/application-recovery/candidate.sql.review": "dbb947cd26eb33403f07c5fcf515fe5068e69b20eaa9103d73947355ef20341a",
+    "scripts/application-recovery/rollback.sql.review": "2057081a6c8f09c1ee60fe54e86e58fea6d7171fa1e40dbd6169df3aa476b60c",
+    "scripts/application-recovery/preflight-readonly.sql": "669701e36e8e0bc9d567014da285fef80dfbe03ffeac419c0798509fcf735f46",
+    "scripts/application-recovery/postflight.sql.review": "0498ea819da11e76517d17961fc758e7ce0f6cd82f1b030609292b66b1ac8393"
+  },
+  "artifacts": {
+    "scripts/os-manufacturable-prerequisite/fixture-rollback.sql.review": "6d5ee0d4c4914e583558f19ab1ae04693f3d9134f0bc3eef2345339ffb81820d",
+    "scripts/os-manufacturable-prerequisite/fixture-product.sql.review": "0932bc8f92c10ba1866ac7704bcd2ad8173fcfb992054d84439903181c1f78eb",
+    "scripts/os-manufacturable-prerequisite/stage.py": "be018a628b72ae67233bd6613e6d1f10d236672132f255af3688d2dd3dc2385d",
+    "scripts/os-manufacturable-prerequisite/test_stage.py": "8b28c35a490e6559cbba9370f6391be80b657ca4eced47295ed2becfd53ba7fc",
+    "scripts/os-manufacturable-prerequisite/preflight-readonly.sql": "275f0ccb8f5fe87b3d754a52e833ca11f097b578c7bab0b70e74e993db43a2fb",
+    "scripts/os-manufacturable-prerequisite/rollback/OrdensServico.tsx": "ea6d7f220d83b9034fe6f9cce0c217b8af3799ee26ed710bc2b412e6da4861d6",
+    "scripts/os-manufacturable-prerequisite/rollback/validacao.ts": "74606298aedccbde6ede730f955310ff8c222b371c154d41ab8ee11f6acb6464",
+    "scripts/os-manufacturable-prerequisite/rollback/localDiagnostics.ts": "e83f3ad5e90ff7481861942ec1ad733f8cca72c198714dd67b7cd712d76318d4",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-001.utf8.txt": "2dfba53b08e2734ffa9983479613eb82003537814b9effda00b5de06e3e2d62e",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-002.utf8.txt": "703f38b38ca5efbeadfca4911497955032e237a87bffa14c09eb3af7771647c5",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-003.utf8.txt": "4f4b2a465516750bd8096d431c91b0777bda7fab800d56b57d1d67b6c6a6606a",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-004.utf8.txt": "b8acf4b5b22f90fe2b56cfb34bb8549c7452edbbbf8dd35a6a1772b914e08a47",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-005.utf8.txt": "93332eb8eeb5d1770ecd7ac334da9c40cca46dff5ee89dc2c181a6c324d2b785",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-006.utf8.txt": "98d48550057ffd8ebc4f8cd45d068d941b446bea2aaf0b28509122594b66346e",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-007.utf8.txt": "99b5ab2f80ada7fce73b98792a1c4c12cd4651c74545980104d4a0a95be78c1e",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-008.utf8.txt": "df8ffcb0698f154a96256c3a58e607845ed89e0118768227b0e730f0420c2ebb",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-009.utf8.txt": "3b52fceaef018544db801cbe40fac6ee8d020a064cca99e04f902645730b06bd",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-010.utf8.txt": "ff511ecc45ea622778abcc46ad65e7e90aaffb8d1c5cb66706664124d8c7424e",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-011.utf8.txt": "548e1c12acde9207c4cd779dfe1f56c8a4ed799c155359640e68b9007cc42e2d",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-012.utf8.txt": "0ba840f764f6059564ca350a8d2b41974413b216911b868f91eba27ab9a3e186",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-013.utf8.txt": "8ca297be45dd132e369026ba1de646f594d93d277e30fc3e925061d5807f7380",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-014.utf8.txt": "1b76f67196d2b89f1a953e7485d0e9c2f7ad46fd7dca8bfa90635284aee2b600",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-015.utf8.txt": "9ffda0724cad01d44e61d902e02950e8601f5a7352e610d738d4980f908ea479",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-016.utf8.txt": "40873bdb493c6bde430f0a3108e934fc18f323441e42fac5311a610da1d79810",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-017.utf8.txt": "96c5215a1ade20c99e0b76980922e69a1221dea82c54c75a7a3c45c20a87c295",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-018.utf8.txt": "77157bdd73223913c32d8570cfc8c51af83cce2c731daebfc1db213f08007256",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-019.utf8.txt": "a352d1e60f2aa7e3e8f3519c6c6bebb2015fc7d1cb5f6fdaac6680c9b6c2a944",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-020.utf8.txt": "e2f7562323d6f9834cf2f4460f0103175c2bd9e016370a3afd8637a3d6d11a9f",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-021.utf8.txt": "c598786326f3475cbb1e0433ace470d86920a977ba8c6b8173db197e19270ffc",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-022.utf8.txt": "7d30f3d2088506b796b20364c36c199fe682cc7bfcc8431f7ae23bde3824b725",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-023.utf8.txt": "093e757817778b376aa3e6c6328e891e236a7d7a8a126d9813650a86d58cf871",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-024.utf8.txt": "38e2a4645518ecb45cb4b7cb24f5ee893e11da9e7ef26fce40f495cf1ebb79ac",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-025.utf8.txt": "40c257202046ca3bfe20cd594bb19d0a37371996b6e993a2296b6e61ae4ed701",
+    "scripts/os-manufacturable-prerequisite/typecheck-snapshot/part-026.utf8.txt": "2293578cd3fac44377ddde92f70a6741bd873fccd445691df0f5d18d1580e337",
+    "src/test/ordens-servico/validacao.test.ts": "2c64037ad17ec479e1a6a828ef0e8c427cfdbf6f6e6d0a4d31a16e6056e7118a",
+    "src/test/ordens-servico/formProgression.test.tsx": "a668a742b1270525ff71b9dcd14764a51872e69c317fc291a9798e5ea9fb1033",
+    "src/test/config/authzDiagnostics.test.ts": "82308fc2159d32d497580af208bdef2f92e5f39a666b8289e05cb0a5598dbd90",
+    "docs/auditorias/aplicacao-prerequisito-produto-1346.review.md": "d5608256648680d5c013caf8e6ee9b2756a18c3c4ef07a1df684711cb8df3ad0",
+    "scripts/authz-diagnostics/README.md": "f3967dd55a65a25049945e261446217918548632fb75a0cf97f4b053a695fd57"
+  }
+}

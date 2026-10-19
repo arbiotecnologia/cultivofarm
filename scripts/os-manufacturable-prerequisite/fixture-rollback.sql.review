@@ -1,0 +1,11 @@
+-- REVIEW ONLY, default rollback rehearsal. Never deletes a referenced test product.
+BEGIN;
+SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='30s';
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'canonical_ref_required'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.produtos WHERE id='1986af48-709f-4bf4-85b4-3c9ed8a61019' AND nome='TESTE AUDITORIA BIOLOGICO APLICACAO 20261019' AND codigo='AUD-APP-20261019-01' AND familia_catalogo='biologico' AND classe_catalogo='inoculante' AND dose_ml_ha=100 AND b2b_enabled=false AND descricao='SINTETICO: somente auditoria de aplicacao; sem venda ou fabricacao real.') THEN RAISE EXCEPTION 'fixture_identity_drift'; END IF;
+ IF EXISTS(SELECT 1 FROM public.ordens_servico WHERE produto_id='1986af48-709f-4bf4-85b4-3c9ed8a61019') OR EXISTS(SELECT 1 FROM public.ordens_servico_onfarm WHERE produto_id='1986af48-709f-4bf4-85b4-3c9ed8a61019') OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE produto_usado_id='1986af48-709f-4bf4-85b4-3c9ed8a61019') THEN RAISE EXCEPTION 'fixture_referenced_preserve'; END IF;
+END $$;
+DELETE FROM public.produtos WHERE id='1986af48-709f-4bf4-85b4-3c9ed8a61019' AND codigo='AUD-APP-20261019-01';
+-- Other FK references fail safely; never cascade or delete parents/history.
+ROLLBACK;

@@ -32,6 +32,7 @@
 - Financial-document review candidates extend the existing table with an integrity trigger after its tenant guard, preserving Storage/RLS/softdelete — closes foreign-owner metadata without a parallel writer.
 - Internal expected-role probes accept only frozen reviewed singleton or exact paired scopes and copy expectations before await; scope helpers only select monitoring, never grant authority — prevents silent role adoption.
 - Exclusive operator login reuses the typed internal probe and canonical role home without inventing portal contexts; open-session scopes share the existing AuthProvider monitor — avoids expanding technical RBAC.
+- OS eligibility decodes live family/dose at the canonical SDK boundary when generated types lag; submit revalidates manufacturing semantics — prevents inferred eligibility and unchecked casts.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

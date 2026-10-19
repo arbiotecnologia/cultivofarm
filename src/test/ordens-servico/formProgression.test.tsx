@@ -8,6 +8,7 @@ const fixture = vi.hoisted(() => ({
   farm: "46bea8e9-79fc-440b-bdb5-76f40ba4550f",
   field: "806d9789-a87e-4e25-8d59-aa9eea24dabe",
   insert: vi.fn(),
+  products: [] as { id: string; nome: string; familia_catalogo: string | null; dose_ml_ha: number | null }[],
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ roles: ["administrador"] }) }));
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
@@ -18,8 +19,9 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     const data = table === "clientes" ? [{ id: fixture.client, nome: "Cliente B" }]
       : table === "fazendas" ? [{ id: fixture.farm, nome: "Fazenda B", cliente_id: fixture.client }]
       : table === "talhoes" ? [{ id: fixture.field, nome: "Talhão B", fazenda_id: fixture.farm, area_hectares: 12 }]
+      : table === "produtos" ? fixture.products
       : [];
-    const query = { select: () => query, gte: () => query, order: () => query, limit: () => query,
+    const query = { select: () => query, gte: () => query, filter: () => query, order: () => query, limit: () => query,
       then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve),
       insert: fixture.insert };
     return query;
@@ -30,11 +32,32 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  fixture.products = [];
   // JSDOM lacks browser scrolling; keep the real Radix controls and keyboard flow.
   Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
 });
 afterEach(() => { Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView"); });
 describe("Nova OS — progressão do formulário real com transporte fake, sem escrita hosted", () => {
+  it("filtra familyNULL/dose100 e biológico sem dose, deixando somente sintético fabricável", async () => {
+    fixture.products = [
+      { id: "70705eb6-0230-5e32-9e43-2b2998194d67", nome: "Legado sem família", familia_catalogo: null, dose_ml_ha: 100 },
+      { id: "00000000-0000-4000-8000-000000000002", nome: "Biológico sem dose", familia_catalogo: "biologico", dose_ml_ha: null },
+      { id: "00000000-0000-4000-8000-000000000003", nome: "Sintético elegível", familia_catalogo: "biologico", dose_ml_ha: 100 },
+    ];
+    render(<MemoryRouter><OrdensServico /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Nova OS" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Nova OS" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(within(dialog).getAllByRole("combobox")[3], { key: "ArrowDown" });
+    expect(await screen.findByRole("option", { name: "Sintético elegível (100 mL/ha)" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /Legado sem família/ })).toBeNull();
+    expect(screen.queryByRole("option", { name: /Biológico sem dose/ })).toBeNull();
+    fireEvent.click(screen.getByRole("option", { name: "Sintético elegível (100 mL/ha)" }));
+    const form = dialog.querySelector("form");
+    if (!form) throw new Error("Formulário ausente");
+    fireEvent.submit(form);
+    expect(fixture.insert).not.toHaveBeenCalled();
+  });
   it("permite escolher fazenda e talhão antes de completar o submit", async () => {
     render(<MemoryRouter><OrdensServico /></MemoryRouter>);
     const open = screen.getByRole("button", { name: "Nova OS" });

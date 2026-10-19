@@ -17,13 +17,18 @@ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
   const event = ["request", "response", "expire", "environment", "stale"].includes(sample.event) ? sample.event : "expire";
   const state = ["idle", "pending", "valid", "expired", "stopped"].includes(sample.state) ? sample.state : "expired";
   const reason = sample.reason && ["error", "offline", "timeout", "ineligible"].includes(sample.reason) ? sample.reason : null;
-  records.push({ event, state, reason, visible: sample.visible === true, online: sample.online === true,
-    rttMs: number(sample.rttMs), leaseRemainingMs: number(sample.leaseRemainingMs), requestRemainingMs: number(sample.requestRemainingMs) });
+  const record: AuthzDiagnostic = { event, state, reason, visible: sample.visible === true, online: sample.online === true,
+    rttMs: number(sample.rttMs), leaseRemainingMs: number(sample.leaseRemainingMs), requestRemainingMs: number(sample.requestRemainingMs) };
+  records.push(record);
   if (records.length > 80) records.shift();
+  // Only real allowlisted expiry events; telemetry remains local and cannot affect authority.
+  if (sample.event === "expire") {
+    try { console.warn("cultivo-authz-expire", { ...record }); } catch { /* observer failure must not affect expiry */ }
+  }
 }
 export const readAuthzDiagnostics = (): AuthzDiagnostic[] => records.map(record => ({ ...record }));
 export const clearAuthzDiagnostics = (): void => { records.length = 0; };
-// Manual console read only; no persistence/network/automatic console output.
+// Manual ring read plus sanitized expire warning; no persistence or network delivery.
 if (typeof window !== "undefined") {
   Object.defineProperty(window, "cultivoAuthzDiagnostics", { configurable: true, value: readAuthzDiagnostics });
 }

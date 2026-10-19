@@ -33,15 +33,33 @@ export const schemaOS = z.object({
   data_programada: z.string().refine(v => v === '' || /^\d{4}-\d{2}-\d{2}$/.test(v) && diaSP(v) === v),
   prioridade: z.enum(['baixa', 'media', 'alta']),
 });
+export function produtoFabricavelOS(produto: { familia_catalogo?: string | null; dose_ml_ha: number | null }): boolean {
+  return produto.familia_catalogo === 'biologico' && typeof produto.dose_ml_ha === 'number' && Number.isFinite(produto.dose_ml_ha) && produto.dose_ml_ha > 0;
+}
+/** Generated SDK catalog types lack the live family column; validate the actual response. */
+export function lerProdutosFabricaveisOS(raw: unknown): { id: string; nome: string; dose_ml_ha: number; familia_catalogo: string }[] {
+  if (!Array.isArray(raw)) throw new Error('invalid_product_catalog');
+  return raw.flatMap(row => {
+    if (!row || typeof row !== 'object' || typeof row.id !== 'string' || typeof row.nome !== 'string' ||
+      !(row.familia_catalogo === null || typeof row.familia_catalogo === 'string') ||
+      !(row.dose_ml_ha === null || typeof row.dose_ml_ha === 'number')) throw new Error('invalid_product_catalog');
+    return row.familia_catalogo === 'biologico' && typeof row.dose_ml_ha === 'number' && produtoFabricavelOS(row)
+      ? [{ id: row.id, nome: row.nome, familia_catalogo: row.familia_catalogo, dose_ml_ha: row.dose_ml_ha }] : [];
+  });
+}
 export function validarOS(form: unknown, refs: {
   clientes: {id: string}[]; fazendas: {id: string; cliente_id: string}[];
   talhoes: {id: string; fazenda_id: string}[];
-  produtos: {id: string; dose_ml_ha: number | null}[]; microrganismos: {id: string; dose_ml_ha: number | null}[];
+  produtos: {id: string; dose_ml_ha: number | null; familia_catalogo?: string | null}[]; microrganismos: {id: string; dose_ml_ha: number | null}[];
 }) {
   const parsed = schemaOS.safeParse(form);
   if (!parsed.success) return 'Revise os campos obrigatórios, área positiva, prioridade e data válida.';
   const f = parsed.data;
   if (!refs.clientes.some(c => c.id === f.cliente_id) || !refs.fazendas.some(v => v.id === f.fazenda_id && v.cliente_id === f.cliente_id) || !refs.talhoes.some(t => t.id === f.talhao_id && t.fazenda_id === f.fazenda_id)) return 'Cliente, fazenda e talhão devem estar vinculados.';
+  if (f.tipo_item === 'produto') {
+    const produto = refs.produtos.find(p => p.id === f.produto_id);
+    if (!produto || !produtoFabricavelOS(produto)) return 'Selecione um produto biológico com dose válida para fabricação.';
+  }
   const item = f.tipo_item === 'produto' ? refs.produtos.find(p => p.id === f.produto_id) : refs.microrganismos.find(p => p.id === f.microrganismo_id);
   const dose = item?.dose_ml_ha;
   if (!item || typeof dose !== 'number' || !Number.isFinite(dose) || dose <= 0 || !Number.isFinite(dose * f.area_hectares)) return 'Selecione um item com dose válida e volume positivo.';
@@ -49,6 +67,7 @@ export function validarOS(form: unknown, refs: {
 }
 export function erroOS(error: unknown) {
   const code = (error as {code?: string})?.code;
+  if (code === '23514' && (error as {message?: string})?.message === 'LAB_ITEM_NOT_MANUFACTURABLE') return 'O item selecionado não é fabricável. Selecione um produto biológico ou microrganismo válido e sincronize o catálogo.';
   if (code === '42501') return 'Sem permissão para esta operação.';
   if (code === '23505') return 'Conflito: esta ordem já pode ter sido registrada. Sincronize antes de continuar.';
   return 'Não foi possível confirmar a operação. Sincronize e confira o histórico antes de tentar novamente.';

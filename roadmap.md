@@ -1,12 +1,19 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 13:46 — pré-requisito produto fabricável e diagnóstico
+- [x] Registrar implantação/publicação e recibos independentes informados, com findings e limites reais; relatório aplicacao-prerequisito-produto-1346.review.md.
+- [x] Seleção/validação biológico + dose finita positiva/decoder fail-closed e erro23514;93/93 testes dirigidos, build automático OK. Checker novo aguarda auditor, snapshot1671/26 partes materializado byte-exato.
+- [x] Preparar seed sintético novo revisável/default ROLLBACK e plano dependente de aprovação/avanço fechados, sem reclassificar reais/status artificial/produção.
+- [ ] Ensaio de seed em catálogo equivalente e persistência/homologação própria: depende do auditor e recuperação canônica aprovação/avanço; NÃO certificados.
+- [x] Emitir somente expire sanitizado em console local sem mudar lease/escopo; staging4/4+export7/7, rollback/hash dedicado. Sem hosted DDL/DML/publicação/contratos/v6.
+
 ## 19/10 13:35 — P0 sintaxe da guarda SQL
 - [x] CASE parentetizado e variável ACL renomeada para evitar42702, expectativas intactas; mutação reproduziu42601. Quatro SQL completos byte-exatos sem substituir guarda recusam schema reduzido comP0001; PG107/107, hashes atualizados. Sem produção/publicação.
 - [x] Auditor informou13:37 preflight hosted READ ONLY integral PASS16 funções/ACL/search_path/owner/schema/triggers/policies; applications0/evidence0/receipt_destination_free=true. CASE e v_executor_roles propagados, fingerprint intacto; RPC fechada, sem DDL/DML. Evidência auditor recovery-preflight-corrected2-readonly.json; não é implantação/homologação positiva nem catálogo equivalente local.
 
 ## 19/10 13:32 — seleção de fazenda na Nova OS
 - [x] Removida validação circular somente no combo Fazenda: saving/papel/cliente presente nas referências/carregamento/erro. Progressão no formulário e Radix reais com transporte fake; submit incompleto segue negado;25/25 testes dirigidos. Sem criar OS/publicar/DDL; pais B informados preservados.
-- [ ] Proprietário conferir seleção na sessão real após implantação própria; sem publicação pelo agente. Checker informado vale para snapshot estável anterior, não certifica esta alteração.
+- [x] Auditor confirmou progressão real cliente→fazenda→talhão no publicado76168eff; insert negado por item não fabricável, OS0. Não é positivo aplicação/anexo.
 - [x] Auditor informou checker repetido no snapshot estável EXIT0 e monitor105/105 independente; não é homologação real nem valida alterações posteriores.
 
 ## 19/10 13:01 — recuperação canônica de aplicações

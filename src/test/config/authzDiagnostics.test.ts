@@ -2,9 +2,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuthzEpochMonitor } from "@/lib/authz/authzEpochMonitor";
 import { clearAuthzDiagnostics, readAuthzDiagnostics, recordAuthzDiagnostic, type AuthzDiagnostic } from "@/lib/authz/localDiagnostics";
 
-beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(0); clearAuthzDiagnostics(); });
-afterEach(() => { vi.useRealTimers(); clearAuthzDiagnostics(); });
+beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(0); clearAuthzDiagnostics(); vi.spyOn(console, "warn").mockImplementation(() => {}); });
+afterEach(() => { vi.useRealTimers(); clearAuthzDiagnostics(); vi.restoreAllMocks(); });
 describe("local admin monitor diagnostics — synthetic timing, not live cause attribution", () => {
+  it("warns only expiry with reconstructed allowlist, never tokens or arbitrary event input", () => {
+    const value = { event: "expire", state: "valid", reason: "timeout", visible: false, online: true,
+      rttMs: 3000, leaseRemainingMs: -25000, requestRemainingMs: -24000,
+      token: "SECRET", url: "https://private.example", fingerprint: "SECRET", user_id: "SECRET" };
+    recordAuthzDiagnostic(value as AuthzDiagnostic);
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith("cultivo-authz-expire", {
+      event: "expire", state: "valid", reason: "timeout", visible: false, online: true,
+      rttMs: 3000, leaseRemainingMs: -25000, requestRemainingMs: -24000,
+    });
+    for (const event of ["response", "request", "environment", "stale", "attacker"]) recordAuthzDiagnostic({ ...value, event } as AuthzDiagnostic);
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/SECRET|https:/);
+  });
+  it("console failure does not escape the diagnostic callback", () => {
+    vi.mocked(console.warn).mockImplementation(() => { throw new Error("unavailable"); });
+    expect(() => recordAuthzDiagnostic({ event: "expire", state: "expired", reason: "offline", visible: true, online: false,
+      rttMs: null, leaseRemainingMs: 0, requestRemainingMs: null })).not.toThrow();
+    expect(readAuthzDiagnostics()).toHaveLength(1);
+  });
   it("RTT3s over90s preserves15s authority and emits only bounded nonidentity metrics", async () => {
     const expire = vi.fn();
     const monitor = createAuthzEpochMonitor({
