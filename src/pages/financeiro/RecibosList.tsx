@@ -63,6 +63,7 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
       controller.abort(); request.current = null;
       if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
     }, 15_000);
+    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
     try {
       if (!receipt.storage_path) {
@@ -180,6 +181,7 @@ export default function RecibosList() {
       controller.abort(); pendingCancel.current = null;
       if (current()) { setBusy(false); toast.error("Não foi possível confirmar o cancelamento. Consulte o recibo antes de tentar novamente."); }
     }, 15_000);
+    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
     try {
       if (!valid()) return;

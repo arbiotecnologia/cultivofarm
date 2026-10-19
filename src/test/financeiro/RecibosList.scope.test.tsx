@@ -116,6 +116,22 @@ describe("existing receipt list and cancellation with real scope", () => {
   });
 });
 describe("receipt PDFs use real authenticated opener, never remote URL", () => {
+  it("prepared bytes cannot be newly downloaded after lease expiration", async () => {
+    const ui = setup(); fireEvent.click(await ui.findByRole("button", { name: "Preparar PDF" }));
+    const button = await ui.findByRole("button", { name: "Baixar PDF" });
+    fake.check = () => false; fireEvent.click(button);
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+    fake.ready = false; ui.context();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:receipt");
+    expect(ui.queryByRole("button", { name: "Baixar PDF" })).toBeNull();
+  });
+  it("list refresh aborts an in-flight download when the receipt snapshot changes", async () => {
+    const late = deferred(); fake.download.mockReturnValue(late.promise);
+    const ui = setup(); fireEvent.click(await ui.findByRole("button", { name: "Preparar PDF" }));
+    await submit(ui); await waitFor(() => expect(fake.list).toHaveBeenCalledTimes(2));
+    expect(fake.download.mock.calls[0][2].aborted).toBe(true);
+    await settle(late, new Blob(["old"])); expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
   it.each([false, true])("prepares %s generated PDF, explicit second click downloads and unmount revokes Blob", async generated => {
     if (generated) fake.list.mockResolvedValue(response({ storage_path: null })); const ui = setup();
     fireEvent.click(await ui.findByRole("button", { name: "Preparar PDF" }));
