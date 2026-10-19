@@ -1,16 +1,22 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 00:36 — administrador de empresa em tela aberta
+- [x] Preparar recorte exclusivo no monitor único/probe compartilhado e boundary do shell, gate admin false.
+- [x] Testar drafts/modais, revoke/restore, roles/tenant/timeout/tardios e regressões publicados: 275/275 sintéticos e staging4/4; typecheck/build automáticos OK.
+- [x] Entregar preflight read-only integral, hashes/ACL/RLS e staging/rollback protegido; evidências externas/limites em administrador-tela-aberta-20261019.review.md.
+- [ ] Preflight/ativação/homologação real admin aguardam revisão do proprietário, sem publicar/DDL/Edge.
+
 ## 19/10 00:24 — comprovante de baixa no fluxo existente
 - [x] Registrar aplicação externa financial_document_owner_integrity_20261019, probes SQL versus login B real.
 - [x] Corrigir path owner-first idempotente e fences upload/metadados/callback, preservando a baixa registrada.
 - [x] Testar retry/efeitos parciais/revogação/timeout: 229/229, stage2/2; rollback byte-exato só helper/diálogo e relatório comprovante-baixa-20261019.review.md; sem hosted DML.
-- [ ] Upload real financeiro A após migration aguarda sessão/revisão do proprietário; sem pagamento/cobrança real.
+- [ ] Comprovante de baixa vigente NÃO homologado: recebimento A estornado/legados orgNULL; sem registrar nova baixa para testar.
 
 ## 19/10 00:11 — integridade server-side financial_documents
 - [x] Inventariar oito owner_types/callers e capturar contratos live; contagens sem expor linhas.
 - [x] Preparar candidata/preflight/postflight/rollback integrais em scripts/financial-documents-integrity, sem aplicar hosted.
 - [x] Testar PG local RLS/claims iat atual: 252 checks, oito owners e atomicidade; regressões 159/159. Relatório SERVER com limites/aceite independente.
-- [x] Auditor informou aplicação e pre/postflight PASS; login B real sem contas/anexos A, sem prova HTTP signer. Upload A pós-migration pendente (sessão do proprietário).
+- [x] Auditor informou aplicação/pre/postflight PASS, login B real sem contas/anexos A e upload/abertura Outro A pós-migration PASS; sem prova HTTP signer nem comprovante de baixa.
 
 ## 18/10 23:59 — anexos financeiros no fluxo existente
 - [x] Corrigir path/basename e fences upload/remove/metadados; contrato/trigger atual confirmado SELECT-only canônico, servidor e monitores inalterados.

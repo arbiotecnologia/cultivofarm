@@ -1,0 +1,133 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "baseline_commit": "07d27698fff1026c09cffe2c4859ea59592aca5e",
+  "state": "CANDIDATE_ADMIN_FALSE_NOT_LIVE_CERTIFIED",
+  "files": [
+    {
+      "path": "src/App.tsx",
+      "candidate": "candidate/src/App.tsx",
+      "rollback": "rollback/src/App.tsx",
+      "pre_sha256": "b78004916c5cfb69fb91ff0675edd0d8fa5ef9949256b2bcf70247817c828b55",
+      "post_sha256": "c1d2a0be7c53f780c0c9be3b3daa3df271fa733be99428593ed9da71f87601ca"
+    },
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "candidate": "candidate/src/hooks/useAuth.tsx",
+      "rollback": "rollback/src/hooks/useAuth.tsx",
+      "pre_sha256": "e848f1054c0fbb3941bf69225741d159895e2a8abdc669a3ba7d86092999c7e3",
+      "post_sha256": "4d34378c3b77b88846ec1e3a35925b3daee6ad13938b53d25f26c8aaf5b5cac7"
+    },
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "candidate": "candidate/src/lib/authz/authzEpochGate.ts",
+      "rollback": "rollback/src/lib/authz/authzEpochGate.ts",
+      "pre_sha256": "b46c1992d3c89bd133a0e73dca6e465e9023cd043442e2461532100b753ca0bf",
+      "post_sha256": "b0147f033b4fe9403bb7da53d104aa53fad391baab4f8c7d2457a1fca42be67f"
+    },
+    {
+      "path": "src/lib/authz/internalContextProbe.ts",
+      "candidate": "candidate/src/lib/authz/internalContextProbe.ts",
+      "rollback": "rollback/src/lib/authz/internalContextProbe.ts",
+      "pre_sha256": "a0dd03e8c89781b6048d3ea6dcd32f0988a561d9558f8763a497cb89a74f420f",
+      "post_sha256": "2f8394d69e4997e5be690a8a28706462f74d9101bd02295d35ad1ed7bad1d1b6"
+    },
+    {
+      "path": "src/test/config/authzFoundation.integration.test.tsx",
+      "candidate": "candidate/src/test/config/authzFoundation.integration.test.tsx",
+      "rollback": "rollback/src/test/config/authzFoundation.integration.test.tsx",
+      "pre_sha256": "3cea0f8fd99d6253420ff9f801b111deb193ddcea1bbe9a922b5f2d4441a5255",
+      "post_sha256": "e26dcc2c74885926f15ee275ccb3dc750fc6f72a2d992c54a93b22193ede3acd"
+    },
+    {
+      "path": "src/test/config/b2bOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/b2bOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/b2bOpenSession.integration.test.tsx",
+      "pre_sha256": "cb174b19db5d339b8c3fe4a5af083beb79fff8f98cb3f6a19389d02e0073560a",
+      "post_sha256": "85c58d02e8421135dcc1b6e53e84f2c57bc5fc654f1552eb26ea00ed31cf4f0b"
+    },
+    {
+      "path": "src/test/config/producerOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/producerOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/producerOpenSession.integration.test.tsx",
+      "pre_sha256": "159c02fc5cc3ff015b1646dee5a0332b62e101b9e3d26d82f1ee40b20f9ee45e",
+      "post_sha256": "4dca51ed638583e12aa1436198f4f2943234f94c9d5bf93b7a51801b68685f0c"
+    },
+    {
+      "path": "src/test/config/financialOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/financialOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/financialOpenSession.integration.test.tsx",
+      "pre_sha256": "9585e0eb55f6044a877b615d456c6d08d405235163916afea4c88f769369a43d",
+      "post_sha256": "9cbe9b55b68df3b001dc97bf9afc9dcdfdbb3b422698bdc66d0dcaeae23fbab1"
+    },
+    {
+      "path": "src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "rollback": null,
+      "pre_sha256": null,
+      "post_sha256": "c7ac7f6363e49cb4a3f15ed732c880199170091e0a3dc3942798384356ade39f"
+    },
+    {
+      "path": "src/test/config/companyAdminGate.test.ts",
+      "candidate": "candidate/src/test/config/companyAdminGate.test.ts",
+      "rollback": null,
+      "pre_sha256": null,
+      "post_sha256": "71ee70b421930ddc067599e5606116e55a4caef152fafaee38900622e56a630d"
+    }
+  ],
+  "source_sha256": {
+    "src/App.tsx": "c1d2a0be7c53f780c0c9be3b3daa3df271fa733be99428593ed9da71f87601ca",
+    "src/hooks/useAuth.tsx": "4d34378c3b77b88846ec1e3a35925b3daee6ad13938b53d25f26c8aaf5b5cac7",
+    "src/lib/authz/authzEpochGate.ts": "b0147f033b4fe9403bb7da53d104aa53fad391baab4f8c7d2457a1fca42be67f",
+    "src/lib/authz/internalContextProbe.ts": "2f8394d69e4997e5be690a8a28706462f74d9101bd02295d35ad1ed7bad1d1b6",
+    "src/test/config/authzFoundation.integration.test.tsx": "e26dcc2c74885926f15ee275ccb3dc750fc6f72a2d992c54a93b22193ede3acd",
+    "src/test/config/b2bOpenSession.integration.test.tsx": "85c58d02e8421135dcc1b6e53e84f2c57bc5fc654f1552eb26ea00ed31cf4f0b",
+    "src/test/config/producerOpenSession.integration.test.tsx": "4dca51ed638583e12aa1436198f4f2943234f94c9d5bf93b7a51801b68685f0c",
+    "src/test/config/financialOpenSession.integration.test.tsx": "9cbe9b55b68df3b001dc97bf9afc9dcdfdbb3b422698bdc66d0dcaeae23fbab1",
+    "src/test/config/companyAdminOpenSession.integration.test.tsx": "c7ac7f6363e49cb4a3f15ed732c880199170091e0a3dc3942798384356ade39f",
+    "src/test/config/companyAdminGate.test.ts": "71ee70b421930ddc067599e5606116e55a4caef152fafaee38900622e56a630d",
+    "src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
+    "src/lib/authz/producerContextProbe.ts": "45ca35467c461f6431aae0943f55cc5d6ffda922f2cf7c10d7d1fffdda279bc7",
+    "src/lib/authz/b2bContextProbe.ts": "171a8ed48d1bdfefcb5600f02ce574e1dff558f2c1c0dad04c75fb0303751d61",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/lib/authz/authenticatedAttachment.ts": "99331e08889a25782400914e4a113e36fc6dc1155539932eccef3d5f2e4ca098",
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/components/guards/B2BRouteGuard.tsx": "7b067389a7cc60fcfc929a17e183e0eb57d130c8ebff54e2633d728ad1b28926",
+    "src/components/authz/AuthzEpochBoundary.tsx": "a1189fb22a3e39f5d5af460ffe8c75d726c892f34e5414a7c0adac3ee91b3d4a",
+    "src/components/financeiro/DocumentosPanel.tsx": "ff829485d7524e8254ded6e7d58db0398121c36381083083d54ec59362b198b4",
+    "src/lib/financial/anexarComprovanteBaixa.ts": "e5ff09f134e47da302d28eb16bec8eac0ae13bf0fb90a2115c3325445035a584",
+    "src/components/financeiro/BaixaDialog.tsx": "07c639c37046171456846378d0f264f06febb550b628d6df78f2df53fbe4c29b",
+    "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454"
+  },
+  "artifact_sha256": {
+    "rollback/src/App.tsx": "b78004916c5cfb69fb91ff0675edd0d8fa5ef9949256b2bcf70247817c828b55",
+    "candidate/src/App.tsx": "c1d2a0be7c53f780c0c9be3b3daa3df271fa733be99428593ed9da71f87601ca",
+    "rollback/src/hooks/useAuth.tsx": "e848f1054c0fbb3941bf69225741d159895e2a8abdc669a3ba7d86092999c7e3",
+    "candidate/src/hooks/useAuth.tsx": "4d34378c3b77b88846ec1e3a35925b3daee6ad13938b53d25f26c8aaf5b5cac7",
+    "rollback/src/lib/authz/authzEpochGate.ts": "b46c1992d3c89bd133a0e73dca6e465e9023cd043442e2461532100b753ca0bf",
+    "candidate/src/lib/authz/authzEpochGate.ts": "b0147f033b4fe9403bb7da53d104aa53fad391baab4f8c7d2457a1fca42be67f",
+    "rollback/src/lib/authz/internalContextProbe.ts": "a0dd03e8c89781b6048d3ea6dcd32f0988a561d9558f8763a497cb89a74f420f",
+    "candidate/src/lib/authz/internalContextProbe.ts": "2f8394d69e4997e5be690a8a28706462f74d9101bd02295d35ad1ed7bad1d1b6",
+    "rollback/src/test/config/authzFoundation.integration.test.tsx": "3cea0f8fd99d6253420ff9f801b111deb193ddcea1bbe9a922b5f2d4441a5255",
+    "candidate/src/test/config/authzFoundation.integration.test.tsx": "e26dcc2c74885926f15ee275ccb3dc750fc6f72a2d992c54a93b22193ede3acd",
+    "rollback/src/test/config/b2bOpenSession.integration.test.tsx": "cb174b19db5d339b8c3fe4a5af083beb79fff8f98cb3f6a19389d02e0073560a",
+    "candidate/src/test/config/b2bOpenSession.integration.test.tsx": "85c58d02e8421135dcc1b6e53e84f2c57bc5fc654f1552eb26ea00ed31cf4f0b",
+    "rollback/src/test/config/producerOpenSession.integration.test.tsx": "159c02fc5cc3ff015b1646dee5a0332b62e101b9e3d26d82f1ee40b20f9ee45e",
+    "candidate/src/test/config/producerOpenSession.integration.test.tsx": "4dca51ed638583e12aa1436198f4f2943234f94c9d5bf93b7a51801b68685f0c",
+    "rollback/src/test/config/financialOpenSession.integration.test.tsx": "9585e0eb55f6044a877b615d456c6d08d405235163916afea4c88f769369a43d",
+    "candidate/src/test/config/financialOpenSession.integration.test.tsx": "9cbe9b55b68df3b001dc97bf9afc9dcdfdbb3b422698bdc66d0dcaeae23fbab1",
+    "candidate/src/test/config/companyAdminOpenSession.integration.test.tsx": "c7ac7f6363e49cb4a3f15ed732c880199170091e0a3dc3942798384356ade39f",
+    "candidate/src/test/config/companyAdminGate.test.ts": "71ee70b421930ddc067599e5606116e55a4caef152fafaee38900622e56a630d",
+    "activation.ts.review": "2a7a99f4d76a83ca8b32ae74f84f448e2704a31afafea3886d36e4caa2ad6623",
+    "deactivation.ts.review": "b0147f033b4fe9403bb7da53d104aa53fad391baab4f8c7d2457a1fca42be67f",
+    "preflight-readonly.sql.review": "a96142a405b6670bd394066bb2caa7e4c657f746a3cfdda6d3d464e1327c9fc7",
+    "stage.py": "0c1958e8341044891d7dd9212aea10038941f229bbfce01df3c5255124ef2395",
+    "test_stage.py": "40448ae89317d89bdae88919f6a50d27e364ba5f88b58277ecbfe7f0543f4f6c"
+  },
+  "activation": {
+    "path": "src/lib/authz/authzEpochGate.ts",
+    "candidate": "activation.ts.review",
+    "rollback": "deactivation.ts.review",
+    "pre_sha256": "b0147f033b4fe9403bb7da53d104aa53fad391baab4f8c7d2457a1fca42be67f",
+    "post_sha256": "2a7a99f4d76a83ca8b32ae74f84f448e2704a31afafea3886d36e4caa2ad6623"
+  }
+}
