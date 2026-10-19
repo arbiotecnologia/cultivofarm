@@ -4,6 +4,7 @@ import { cockpitReaderStatus } from "@/lib/cockpit/readerStatus";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 
 interface Props {
   osId: string;
@@ -11,9 +12,12 @@ interface Props {
   numeroOS?: string | null;
   /** Bumped by the parent after a confirmed canonical write. */
   refreshKey?: number;
+  /** Reports the current authorized reader row (or null while unavailable/pending/error). Never authorizes. */
+  onItem?: (item: TraceItem | null) => void;
 }
 
-interface TraceItem {
+export interface TraceItem {
+  programacao_id?: string | null;
   os_id: string; origem_os: string; numero_os?: string | null; status_os?: string | null;
   status_esteira_oficial?: string | null; data_programada?: string | null; codigo_lote?: string | null;
   volume_solicitado_l?: number | null; responsavel_nome?: string | null;
@@ -26,7 +30,7 @@ const label = (value?: string | null) => value ? value.replace(/_/g, " ") : "Nã
  * late-response fences). Direct view/table reads stay closed; it never
  * authorizes an operation nor claims full traceability.
  */
-export function RastreabilidadeProducaoTab({ osId, osTipo, numeroOS, refreshKey = 0 }: Props) {
+export function RastreabilidadeProducaoTab({ osId, osTipo, numeroOS, refreshKey = 0, onItem }: Props) {
   const origem = osTipo === "onfarm" ? "onfarm" : osTipo === "manual" ? "manual" : null;
   const busca = typeof numeroOS === "string" ? numeroOS.trim() : "";
   const filters = { p_busca: busca, p_stages: null, p_origens: origem ? [origem] : null, p_prioridades: null, p_incluir_finalizadas: true, p_limit: 200, p_offset: 0 };
@@ -45,6 +49,10 @@ export function RastreabilidadeProducaoTab({ osId, osTipo, numeroOS, refreshKey 
       return matches[0] ?? null;
     },
   });
+
+  const reported = query.available && !query.isPending && !query.isError ? query.data ?? null : null;
+  useEffect(() => { onItem?.(reported); }, [onItem, reported]);
+  useEffect(() => () => onItem?.(null), [onItem]);
 
   if (!origem || !busca) return <p role="status">Consulta de rastreabilidade indisponível para esta OS.</p>;
   if (!query.available) return <p role="status">Consulta de rastreabilidade indisponível para o contexto atual.</p>;

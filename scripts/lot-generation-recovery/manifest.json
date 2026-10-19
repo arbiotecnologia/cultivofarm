@@ -1,0 +1,41 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "baseline_commit": "3eeb3212bcb42d606e924ba8b2cc21399d93d5f6",
+  "signature": "public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",
+  "pre_functiondef_md5": "d37a0e478e01277ba61f70397b1d44f9",
+  "post_functiondef_md5": "43f8db9c2fbb7890f88df9c941d96131",
+  "pre_acl": "{postgres=X/postgres,service_role=X/postgres}",
+  "post_acl": "{postgres=X/postgres,authenticated=X/postgres}",
+  "hosted_executed": false,
+  "published": false,
+  "runtime": {
+    "src/hooks/useEsteiraLaboratorio.ts": {
+      "pre": "a82d5598c6aa5d7d400a2a99869c2368cea9d997b10a8df35b56d8b6167546b0",
+      "post": "e05abc535d5349cba595f3229f5a597df8d5fc9ef07e33ddb43d6197ca61c615",
+      "rollback": "rollback/src/hooks/useEsteiraLaboratorio.ts.review"
+    },
+    "src/components/cockpit/GerarLoteDialog.tsx": {
+      "pre": "d2e9f61f520e652c48b77e6484509378538b9279fb22a9c43be4e580028e41f4",
+      "post": "f6b5d2220f6519a1ff4ea4cdec8d98dcce3be14a9ef4a8d82fc4415ce0dbacb9",
+      "rollback": "rollback/src/components/cockpit/GerarLoteDialog.tsx.review"
+    },
+    "src/components/ordens-servico/OSDetalhesDialog.tsx": {
+      "pre": "4ddecb39d747a62eb309d2f5474c4c9ea14ada665ad098f0a6cf6fda9ec74112",
+      "post": "8a1d446079cadd1317901458f322893a388f6f1af7c919844ba5a2eef1727f76",
+      "rollback": "rollback/src/components/ordens-servico/OSDetalhesDialog.tsx.review"
+    },
+    "src/components/ordens-servico/RastreabilidadeProducaoTab.tsx": {
+      "pre": "196f230d3d39298854367e664588b7a7b32a937a64a0fe3e2428a7eecbe17e8f",
+      "post": "2c6a817b4226a9695bb393395e242ec4fadb3fe5719a712df14530075f7eb0c1",
+      "rollback": "rollback/src/components/ordens-servico/RastreabilidadeProducaoTab.tsx.review"
+    },
+    "src/test/lotes/geracao-codigo.test.ts": {
+      "pre": "79aba0be39d75d5bd729c58df9fbb5baafca1436bf50903bba0fc8ea4a253aa2",
+      "post": "a7d4b11b558a93d51e64766ad93d8f6a7908fccca816b7a0110dd85df38f94b3",
+      "rollback": "rollback/src/test/lotes/geracao-codigo.test.ts.review"
+    }
+  },
+  "new_test_files": {
+    "src/test/lotes/gerar-lote-fences.test.tsx": "0f5fe3308eff10a717a12c9397dbbff63ba679d2d050659e84429924e5426851"
+  }
+}

@@ -25,8 +25,8 @@ describe('Geração canônica de código de lote — frontend', () => {
     expect(dialog).toContain('LT-AAAA-0000');
   });
   it('mantém trava contra clique duplo', () => {
-    expect(dialog).toContain('if (saving) return;');
-    expect(dialog).toContain('disabled={saving}');
+    expect(dialog).toContain('if (pending.current || !access.ready || volumeMl === null) return;');
+    expect(dialog).toContain('disabled={saving || !access.ready || volumeMl === null}');
   });
   it('a RPC é chamada sem codigo_lote, produto_id e microrganismo_id', () => {
     expect(chamada).not.toMatch(/codigo_lote:/);
@@ -38,10 +38,10 @@ describe('Geração canônica de código de lote — frontend', () => {
     expect(hook).toContain('!Number.isFinite(volume) || volume <= 0');
   });
   it('usa exclusivamente o código devolvido pelo servidor', () => {
-    expect(hook).toContain("codigo_lote: data?.codigo_lote");
+    expect(hook).toContain("codigo_lote: data.codigo_lote as string");
   });
   it('idempotência: replay não é tratado como novo lote', () => {
-    expect(hook).toContain('if (data?.replay)');
+    expect(hook).toContain('if (data.replay) toast.info');
   });
   it('traduz conflito, recusa de código e permissão', () => {
     expect(traduzErroCockpit('COCKPIT_LOTE_CODIGO_CONFLITO')).toMatch(/ao mesmo tempo/);
