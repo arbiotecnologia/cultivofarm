@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 13:32 — seleção de fazenda na Nova OS
+- [x] Removida validação circular somente no combo Fazenda: saving/papel/cliente presente nas referências/carregamento/erro. Progressão no formulário e Radix reais com transporte fake; submit incompleto segue negado;25/25 testes dirigidos. Sem criar OS/publicar/DDL; pais B informados preservados.
+- [ ] Proprietário conferir seleção na sessão real após implantação própria; sem publicação pelo agente. Checker informado vale para snapshot estável anterior, não certifica esta alteração.
+- [x] Auditor informou checker repetido no snapshot estável EXIT0 e monitor105/105 independente; não é homologação real nem valida alterações posteriores.
+
 ## 19/10 13:01 — recuperação canônica de aplicações
 - [x] Revisão13:25: paridade carteira mixed-role/responsável/status OS, mobile coerente e diagnóstico admin ring80 sem PII/lease alterada; PG104/104 e Vitest194/194. Pai B real preservado; avanço canônico fechado é blocker positivo, sem bypass. Recibo externo tsc app EXIT0/119 independentes válido só no snapshot anterior1668.
 - [x] Recibo final revisão13:25 em docs/auditorias/aplicacao-recuperacao-revisao-1325-receipt.md: staging recuperação4/4+diagnóstico4/4, snapshot novo1670/26 partes byte-exato. Checker novo aguarda auditor; build automático não é typecheck.

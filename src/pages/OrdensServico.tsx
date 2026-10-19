@@ -412,7 +412,7 @@ export default function OrdensServico() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Fazenda *</Label>
-                    <Select value={form.fazenda_id} onValueChange={(v) => setForm({...form, fazenda_id: v, talhao_id: "", area_hectares: ""})} disabled={saving || !canCreate || !!validarOS(form, { clientes, fazendas, talhoes, produtos, microrganismos }) || !form.cliente_id}>
+                    <Select value={form.fazenda_id} onValueChange={(v) => setForm({...form, fazenda_id: v, talhao_id: "", area_hectares: ""})} disabled={saving || !canCreate || !loaded || loadError || isRefreshing || !clientes.some((c) => c.id === form.cliente_id)}>
                       <SelectTrigger className="h-11 sm:h-10 text-base sm:text-sm"><SelectValue placeholder="Fazenda" /></SelectTrigger>
                       <SelectContent>{filteredFazendas.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}</SelectContent>
                     </Select>
