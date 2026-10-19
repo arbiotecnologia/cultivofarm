@@ -1,0 +1,74 @@
+CREATE OR REPLACE FUNCTION public.guard_financial_document_integrity()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $function$
+DECLARE
+  v_org uuid; v_parent_org uuid; v_uid uuid := auth.uid();
+  v_path text; v_bucket text; v_parts text[]; v_soft_delete boolean := false;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.organization_id IS DISTINCT FROM OLD.organization_id
+      OR NEW.owner_type IS DISTINCT FROM OLD.owner_type
+      OR NEW.owner_id IS DISTINCT FROM OLD.owner_id
+      OR NEW.uploaded_by IS DISTINCT FROM OLD.uploaded_by THEN
+      RAISE EXCEPTION 'financial_document_identity_immutable' USING ERRCODE = '42501';
+    END IF;
+    v_soft_delete := OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL
+      AND (to_jsonb(NEW) - ARRAY['deleted_at','deleted_by','delete_reason'])
+        = (to_jsonb(OLD) - ARRAY['deleted_at','deleted_by','delete_reason']);
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'financial_document_tenant_required' USING ERRCODE = '42501';
+  END IF;
+  IF v_uid IS NOT NULL THEN
+    v_org := public.h15_actor_organization();
+    IF v_org IS NULL OR v_org <> NEW.organization_id OR NOT public.is_financial_staff(v_uid) THEN
+      RAISE EXCEPTION 'financial_document_actor_denied' USING ERRCODE = '42501';
+    END IF;
+    IF TG_OP = 'INSERT' AND NEW.uploaded_by IS DISTINCT FROM v_uid THEN
+      RAISE EXCEPTION 'financial_document_author_denied' USING ERRCODE = '42501';
+    END IF;
+  ELSIF NOT (current_setting('role', true) = 'service_role'
+    OR (current_setting('role', true) = 'none' AND session_user = 'postgres')) THEN
+    RAISE EXCEPTION 'financial_document_actor_required' USING ERRCODE = '42501';
+  END IF;
+  CASE NEW.owner_type
+    WHEN 'RECEIVABLE' THEN SELECT organization_id INTO v_parent_org FROM public.accounts_receivable WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'PAYABLE' THEN SELECT organization_id INTO v_parent_org FROM public.accounts_payable WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'DELIVERY' THEN SELECT organization_id INTO v_parent_org FROM public.entregas WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'FISCAL_INVOICE' THEN SELECT organization_id INTO v_parent_org FROM public.fiscal_invoices WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'PAYMENT_RECEIVABLE' THEN SELECT organization_id INTO v_parent_org FROM public.receivable_payments WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'PAYMENT_PAYABLE' THEN SELECT organization_id INTO v_parent_org FROM public.payable_payments WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'FINANCIAL_RECEIPT' THEN SELECT organization_id, storage_path, storage_bucket INTO v_parent_org, v_path, v_bucket FROM public.financial_receipts WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'REPORT_EXPORT' THEN SELECT organization_id, storage_path, storage_bucket INTO v_parent_org, v_path, v_bucket FROM public.financial_report_exports WHERE id = NEW.owner_id FOR SHARE;
+    ELSE RAISE EXCEPTION 'financial_document_owner_denied' USING ERRCODE = '42501';
+  END CASE;
+  IF v_parent_org IS NULL OR v_parent_org <> NEW.organization_id THEN
+    RAISE EXCEPTION 'financial_document_owner_denied' USING ERRCODE = '42501';
+  END IF;
+  IF NEW.fiscal_invoice_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.fiscal_invoices WHERE id = NEW.fiscal_invoice_id AND organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'financial_document_fiscal_reference_denied' USING ERRCODE = '42501'; END IF;
+  IF NEW.fiscal_event_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.fiscal_events WHERE id = NEW.fiscal_event_id AND organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'financial_document_fiscal_reference_denied' USING ERRCODE = '42501'; END IF;
+  -- Preserve canonical tombstoning of an unchanged legacy locator. Owner/tenant
+  -- and identity still must be valid; NULL-tenant legacy never passes.
+  IF v_soft_delete THEN RETURN NEW; END IF;
+  IF NOT coalesce(public.storage1_path_strict(NEW.storage_path), false) THEN
+    RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
+  END IF;
+  v_parts := string_to_array(NEW.storage_path, '/');
+  IF NEW.owner_type IN ('FINANCIAL_RECEIPT','REPORT_EXPORT') THEN
+    IF v_path IS NULL OR NEW.storage_path IS DISTINCT FROM v_path
+      OR v_parts[1] <> NEW.organization_id::text
+      OR v_bucket IS DISTINCT FROM CASE WHEN NEW.owner_type = 'FINANCIAL_RECEIPT' THEN 'financial-receipts' ELSE 'financial-reports' END THEN
+      RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
+    END IF;
+  ELSIF array_length(v_parts, 1) <> 3 OR v_parts[1] <> NEW.owner_type
+    OR v_parts[2] <> NEW.owner_id::text OR length(v_parts[3]) = 0 THEN
+    RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
