@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 01:47 — gestor + consultor exatos
-- [ ] Candidata OFF no monitor/probe existentes, boundaries desktop/Campo/seletor, sem ampliar RBAC.
-- [ ] Testes dirigidos de papéis/readiness/drafts/portais/tardios, staging/rollback/preflight fixos.
+- [x] Candidata OFF no monitor/probe existentes, boundaries desktop/Campo/seletor, sem ampliar RBAC.
+- [x] 550/550 testes dirigidos/regressões PASS, staging6/6/SHA PASS, preflight fixo não executado e rollback original protegido.
 - [ ] Preflight/revisão/ativação/publicação/homologação real dependem do proprietário; typecheck depende de recibo.
 
 ## 19/10 01:25 — operador onfarm exclusivo
