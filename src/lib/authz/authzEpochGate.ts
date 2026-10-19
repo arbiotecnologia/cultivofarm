@@ -23,4 +23,4 @@ export const CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = true;
 export const OPERATOR_CONTEXT_MONITOR_ENABLED: boolean = true;
 
 // Exact tenant gestor + consultor_tecnico candidate; independent review before ON.
-export const MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = false;
+export const MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = true;
