@@ -1,0 +1,104 @@
+-- REVIEW ONLY. Auditor MUST prove canonical ref swzpzcwiasxmjutrmvkm externally.
+-- SQL database name/GUC cannot establish project identity. No automated application.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+SET LOCAL statement_timeout='15s';
+SET LOCAL idle_in_transaction_session_timeout='30s';
+DO $guard$ DECLARE p record; r record; actual text[]; BEGIN
+ IF current_user <> 'postgres' THEN RAISE EXCEPTION 'application_integrity_operator_denied'; END IF;
+ FOR r IN SELECT * FROM (VALUES
+ ('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84',ARRAY['search_path=""']::text[],true,'s'),
+ ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881',ARRAY['search_path=""']::text[],true,'s'),
+ ('platform_private.has_role(uuid,app_role)','c5af5b55de6d79da9b73a33948746ae2',ARRAY['search_path=""']::text[],true,'s'),
+ ('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c',ARRAY['search_path=""']::text[],false,'s'),
+ ('public.has_role(uuid,app_role)','4d90e93d521a4819d9085f28d742030f',ARRAY['search_path=""']::text[],false,'s'),
+ ('public.fn_authz_uid_scope_ok(uuid)','00a9a4d4a075d756d312d69778493b39',ARRAY['search_path=public, pg_temp']::text[],true,'s'),
+ ('public.is_operational_staff(uuid)','f4b093c506cb05d39aa466bae94a6df8',ARRAY['search_path=public']::text[],true,'s'),
+ ('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c',ARRAY['search_path=public']::text[],true,'v'),
+ ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])','46d342a71f4712056782cf3d976154a5',ARRAY['search_path=""']::text[],false,'v'),
+ ('public.can_user_access_aplicacao(uuid)','b05590fbbc62efb107ed8b551cd08b3f',ARRAY['search_path=public']::text[],true,'s')
+ ) AS expected(signature,digest,config,definer,volatility) LOOP
+  SELECT * INTO p FROM pg_proc WHERE oid=to_regprocedure(r.signature);
+  IF NOT FOUND OR md5(pg_get_functiondef(p.oid))<>r.digest OR pg_get_userbyid(p.proowner)<>'postgres'
+    OR p.proconfig IS DISTINCT FROM r.config OR p.prosecdef IS DISTINCT FROM r.definer
+    OR p.provolatile::text<>r.volatility THEN RAISE EXCEPTION 'application_integrity_function_drift: %',r.signature; END IF;
+  SELECT array_agg(grantee::regrole::text||':'||privilege_type||':'||is_grantable::text||':'||grantor::regrole::text ORDER BY grantee::regrole::text)
+   INTO actual FROM aclexplode(p.proacl);
+  IF actual IS DISTINCT FROM ARRAY['authenticated:EXECUTE:false:postgres','postgres:EXECUTE:false:postgres','service_role:EXECUTE:false:postgres'] THEN
+   RAISE EXCEPTION 'application_integrity_acl_drift: %',r.signature; END IF;
+ END LOOP;
+ -- Required persisted origins. On-farm deliberately has no organization_id today.
+ FOR r IN SELECT * FROM (VALUES ('aplicacoes','id'),('aplicacoes','organization_id'),('aplicacoes','ordem_servico_id'),('aplicacoes','ordem_servico_onfarm_id'),('ordens_servico','id'),('ordens_servico','organization_id'),('ordens_servico','cliente_id'),('ordens_servico_onfarm','id'),('ordens_servico_onfarm','cliente_id'),('clientes','id'),('clientes','organization_id')) AS required(tab,col) LOOP
+  IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('public.'||r.tab) AND attname=r.col AND atttypid='uuid'::regtype AND NOT attisdropped) THEN RAISE EXCEPTION 'application_integrity_column_drift'; END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.ordens_servico_onfarm'::regclass AND attname='organization_id' AND NOT attisdropped) THEN RAISE EXCEPTION 'application_integrity_onfarm_contract_changed'; END IF;
+END $guard$;
+-- Changes only the existing helper, preserving its role/membership branch.
+CREATE OR REPLACE FUNCTION public.can_user_access_aplicacao(_aplicacao_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT COALESCE(
+    _aplicacao_id IS NOT NULL
+    AND auth.uid() IS NOT NULL
+    AND EXISTS (
+      SELECT 1
+      FROM public.aplicacoes a
+      LEFT JOIN public.ordens_servico os ON os.id = a.ordem_servico_id
+      LEFT JOIN public.clientes c ON c.id = os.cliente_id
+      LEFT JOIN public.ordens_servico_onfarm oso ON oso.id = a.ordem_servico_onfarm_id
+      LEFT JOIN public.clientes co ON co.id = oso.cliente_id
+      WHERE a.id = _aplicacao_id
+        AND a.organization_id = public.h15_actor_organization()
+        -- Every present parent must exist and remain in the application's tenant.
+        AND (a.ordem_servico_id IS NULL OR (
+          os.id IS NOT NULL AND os.organization_id = a.organization_id
+          AND c.id IS NOT NULL AND c.organization_id = a.organization_id
+        ))
+        -- On-farm has no organization_id: its persisted client is the tenant origin.
+        AND (a.ordem_servico_onfarm_id IS NULL OR (
+          oso.id IS NOT NULL AND co.id IS NOT NULL
+          AND co.organization_id = a.organization_id
+        ))
+        AND (
+          public.is_operational_staff(auth.uid())
+          OR public.has_role(auth.uid(), 'financeiro'::app_role)
+          OR os.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))
+          OR oso.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))
+        )
+    ), false
+  );
+$function$;
+-- POSTCHECK
+DO $guard$ DECLARE p record; r record; actual text[]; BEGIN
+ IF current_user <> 'postgres' THEN RAISE EXCEPTION 'application_integrity_operator_denied'; END IF;
+ FOR r IN SELECT * FROM (VALUES
+ ('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84',ARRAY['search_path=""']::text[],true,'s'),
+ ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881',ARRAY['search_path=""']::text[],true,'s'),
+ ('platform_private.has_role(uuid,app_role)','c5af5b55de6d79da9b73a33948746ae2',ARRAY['search_path=""']::text[],true,'s'),
+ ('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c',ARRAY['search_path=""']::text[],false,'s'),
+ ('public.has_role(uuid,app_role)','4d90e93d521a4819d9085f28d742030f',ARRAY['search_path=""']::text[],false,'s'),
+ ('public.fn_authz_uid_scope_ok(uuid)','00a9a4d4a075d756d312d69778493b39',ARRAY['search_path=public, pg_temp']::text[],true,'s'),
+ ('public.is_operational_staff(uuid)','f4b093c506cb05d39aa466bae94a6df8',ARRAY['search_path=public']::text[],true,'s'),
+ ('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c',ARRAY['search_path=public']::text[],true,'v'),
+ ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])','46d342a71f4712056782cf3d976154a5',ARRAY['search_path=""']::text[],false,'v'),
+ ('public.can_user_access_aplicacao(uuid)','04067ba43cea3eed845a1fd3735061e0',ARRAY['search_path=public']::text[],true,'s')
+ ) AS expected(signature,digest,config,definer,volatility) LOOP
+  SELECT * INTO p FROM pg_proc WHERE oid=to_regprocedure(r.signature);
+  IF NOT FOUND OR md5(pg_get_functiondef(p.oid))<>r.digest OR pg_get_userbyid(p.proowner)<>'postgres'
+    OR p.proconfig IS DISTINCT FROM r.config OR p.prosecdef IS DISTINCT FROM r.definer
+    OR p.provolatile::text<>r.volatility THEN RAISE EXCEPTION 'application_integrity_function_drift: %',r.signature; END IF;
+  SELECT array_agg(grantee::regrole::text||':'||privilege_type||':'||is_grantable::text||':'||grantor::regrole::text ORDER BY grantee::regrole::text)
+   INTO actual FROM aclexplode(p.proacl);
+  IF actual IS DISTINCT FROM ARRAY['authenticated:EXECUTE:false:postgres','postgres:EXECUTE:false:postgres','service_role:EXECUTE:false:postgres'] THEN
+   RAISE EXCEPTION 'application_integrity_acl_drift: %',r.signature; END IF;
+ END LOOP;
+ -- Required persisted origins. On-farm deliberately has no organization_id today.
+ FOR r IN SELECT * FROM (VALUES ('aplicacoes','id'),('aplicacoes','organization_id'),('aplicacoes','ordem_servico_id'),('aplicacoes','ordem_servico_onfarm_id'),('ordens_servico','id'),('ordens_servico','organization_id'),('ordens_servico','cliente_id'),('ordens_servico_onfarm','id'),('ordens_servico_onfarm','cliente_id'),('clientes','id'),('clientes','organization_id')) AS required(tab,col) LOOP
+  IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('public.'||r.tab) AND attname=r.col AND atttypid='uuid'::regtype AND NOT attisdropped) THEN RAISE EXCEPTION 'application_integrity_column_drift'; END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.ordens_servico_onfarm'::regclass AND attname='organization_id' AND NOT attisdropped) THEN RAISE EXCEPTION 'application_integrity_onfarm_contract_changed'; END IF;
+END $guard$;
+COMMIT;

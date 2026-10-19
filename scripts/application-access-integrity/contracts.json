@@ -1,0 +1,101 @@
+[
+  {
+    "signature": "platform_private.platform_actor_access_ready(uuid)",
+    "md5": "048249c0c2106c3761e26eacb8d0de84",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=\"\""
+    ],
+    "definer": true,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "platform_private.h15_actor_organization()",
+    "md5": "64e10608403238a41a9baf92857ca881",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=\"\""
+    ],
+    "definer": true,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "platform_private.has_role(uuid,app_role)",
+    "md5": "c5af5b55de6d79da9b73a33948746ae2",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=\"\""
+    ],
+    "definer": true,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "h15_actor_organization()",
+    "md5": "55edafec08bcc84a00f1526c14334a2c",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=\"\""
+    ],
+    "definer": false,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "has_role(uuid,app_role)",
+    "md5": "4d90e93d521a4819d9085f28d742030f",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=\"\""
+    ],
+    "definer": false,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "fn_authz_uid_scope_ok(uuid)",
+    "md5": "00a9a4d4a075d756d312d69778493b39",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "definer": true,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "is_operational_staff(uuid)",
+    "md5": "f4b093c506cb05d39aa466bae94a6df8",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=public"
+    ],
+    "definer": true,
+    "volatility": "s",
+    "owner": "postgres"
+  },
+  {
+    "signature": "get_cliente_ids_for_user(uuid)",
+    "md5": "c80d5900692d960f649d0a9f7850fe2c",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=public"
+    ],
+    "definer": true,
+    "volatility": "v",
+    "owner": "postgres"
+  },
+  {
+    "signature": "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",
+    "md5": "46d342a71f4712056782cf3d976154a5",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "config": [
+      "search_path=\"\""
+    ],
+    "definer": false,
+    "volatility": "v",
+    "owner": "postgres"
+  }
+]
