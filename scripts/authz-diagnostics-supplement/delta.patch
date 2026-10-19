@@ -1,0 +1,73 @@
+--- a/src/lib/authz/localDiagnostics.ts
++++ b/src/lib/authz/localDiagnostics.ts
+@@ -23,7 +23,9 @@
+   if (records.length > 80) records.shift();
+   // Only real allowlisted expiry events; telemetry remains local and cannot affect authority.
+   if (sample.event === "expire") {
+-    try { console.warn("cultivo-authz-expire", { ...record }); } catch { /* observer failure must not affect expiry */ }
++    try { console.warn("cultivo-authz-expire", JSON.stringify(record)); } catch { /* observer failure must not affect expiry */ }
++  } else if (sample.event === "auth_refresh" || sample.event === "auth_reconfirmed") {
++    try { console.info("cultivo-authz-renewal", JSON.stringify(record)); } catch { /* observer failure must not affect reconfirmation */ }
+   }
+ }
+ export const readAuthzDiagnostics = (): AuthzDiagnostic[] => records.map(record => ({ ...record }));
+--- a/src/test/config/authzDiagnostics.test.ts
++++ b/src/test/config/authzDiagnostics.test.ts
+@@ -2,7 +2,7 @@
+ import { createAuthzEpochMonitor } from "@/lib/authz/authzEpochMonitor";
+ import { clearAuthzDiagnostics, readAuthzDiagnostics, recordAuthzDiagnostic, type AuthzDiagnostic } from "@/lib/authz/localDiagnostics";
+ 
+-beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(0); clearAuthzDiagnostics(); vi.spyOn(console, "warn").mockImplementation(() => {}); });
++beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(0); clearAuthzDiagnostics(); vi.spyOn(console, "warn").mockImplementation(() => {}); vi.spyOn(console, "info").mockImplementation(() => {}); });
+ afterEach(() => { vi.useRealTimers(); clearAuthzDiagnostics(); vi.restoreAllMocks(); });
+ describe("local admin monitor diagnostics — synthetic timing, not live cause attribution", () => {
+   it("warns only expiry with reconstructed allowlist, never tokens or arbitrary event input", () => {
+@@ -10,13 +10,46 @@
+       rttMs: 3000, leaseRemainingMs: -25000, requestRemainingMs: -24000,
+       token: "SECRET", url: "https://private.example", fingerprint: "SECRET", user_id: "SECRET" };
+     recordAuthzDiagnostic(value as AuthzDiagnostic);
+-    expect(console.warn).toHaveBeenCalledExactlyOnceWith("cultivo-authz-expire", {
++    expect(console.warn).toHaveBeenCalledExactlyOnceWith("cultivo-authz-expire", JSON.stringify({
+       event: "expire", state: "valid", reason: "timeout", visible: false, online: true,
+       rttMs: 3000, leaseRemainingMs: -25000, requestRemainingMs: -24000,
+-    });
++    }));
++    const logged = vi.mocked(console.warn).mock.calls[0]?.[1];
++    expect(typeof logged).toBe("string");
++    expect(JSON.parse(logged)).toEqual(readAuthzDiagnostics()[0]);
+     for (const event of ["response", "request", "environment", "stale", "auth_refresh", "auth_reconfirmed", "attacker"]) recordAuthzDiagnostic({ ...value, event } as AuthzDiagnostic);
+     expect(console.warn).toHaveBeenCalledTimes(1);
+     expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/SECRET|https:/);
++  });
++  it.each(["auth_refresh", "auth_reconfirmed"] as const)("serializes %s without private inputs", event => {
++    recordAuthzDiagnostic({ event, state: "valid", reason: null, visible: true, online: true,
++      rttMs: 3000, leaseRemainingMs: 12000, requestRemainingMs: null, token: "SECRET", url: "SECRET", fingerprint: "SECRET", user_id: "SECRET" } as AuthzDiagnostic);
++    const logged = vi.mocked(console.info).mock.calls[0]?.[1];
++    expect(console.info).toHaveBeenCalledExactlyOnceWith("cultivo-authz-renewal", JSON.stringify(readAuthzDiagnostics()[0]));
++    expect(typeof logged).toBe("string");
++    expect(JSON.parse(logged)).toEqual(readAuthzDiagnostics()[0]);
++    expect(logged).not.toContain("SECRET");
++    expect(console.warn).not.toHaveBeenCalled();
++  });
++  it("throwing renewal observer does not interrupt reconfirmation or extend authority", async () => {
++    vi.mocked(console.info).mockImplementation(() => { throw new Error("unavailable"); });
++    let clock = 0;
++    const monitor = createAuthzEpochMonitor({ fetcher: async () => ({ eligible: true, fingerprint: "same" }),
++      now: () => clock, isVisible: () => true, isOnline: () => true,
++      setTimeoutFn: (cb, ms) => setTimeout(cb, ms), clearTimeoutFn: h => clearTimeout(h as ReturnType<typeof setTimeout>),
++      onExpire: vi.fn(), onEpochChange: vi.fn(), onStateChange: state => {
++        if (state === "valid") recordAuthzDiagnostic({ event: "auth_reconfirmed", state, reason: null,
++          visible: true, online: true, rttMs: 0, leaseRemainingMs: 15000, requestRemainingMs: null });
++      } });
++    expect(() => recordAuthzDiagnostic({ event: "auth_refresh", state: "pending", reason: null,
++      visible: true, online: true, rttMs: null, leaseRemainingMs: null, requestRemainingMs: null })).not.toThrow();
++    monitor.start(); await vi.advanceTimersByTimeAsync(0);
++    expect(monitor.checkAccess()).toBe(true);
++    monitor.revalidate(); await vi.advanceTimersByTimeAsync(0);
++    expect(monitor.state()).toBe("valid");
++    expect(console.info).toHaveBeenCalledTimes(3);
++    clock = 15000; expect(monitor.checkAccess()).toBe(false);
++    monitor.stop();
+   });
+   it("console failure does not escape the diagnostic callback", () => {
+     vi.mocked(console.warn).mockImplementation(() => { throw new Error("unavailable"); });
