@@ -2,7 +2,7 @@
 // Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
@@ -78,13 +78,13 @@ function NestedContextReader() {
   const { data } = useAvailableContexts();
   return data?.available_contexts.includes('technical') ? <span>Técnico campo</span> : null;
 }
-function setup(path = '/financeiro/receber', child: React.ReactNode = <span>Técnico campo</span>) {
+function setup(path = '/financeiro/receber', child: React.ReactNode = <span>Técnico campo</span>, appGuard = true) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={qc}><AuthProvider><AuthSpy /><MemoryRouter initialEntries={[path]}><Url /><Routes>
     <Route element={<ProtectedRoutes />}>
       <Route path="/financeiro/receber" element={<RoleGuard><span>Contas a receber</span></RoleGuard>} />
     </Route>
-    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={child} /><Route path="/app/perfil" element={<MobilePerfil />} /></Route></Route>
+    <Route element={appGuard ? <AppPortalGuard /> : <Outlet />}><Route element={<MobileLayout />}><Route path="/app" element={child} /><Route path="/app/perfil" element={<MobilePerfil />} /></Route></Route>
     <Route path="/sem-permissao" element={<Link to="/app">Ir ao técnico</Link>} />
   </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
   return qc;
@@ -121,6 +121,12 @@ afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.useRealTimer
 
 
 describe('real provider + contexts query + app guard + mobile: uncertainty is not denial', () => {
+  it.each([['gestor'], ['gestor', 'consultor_tecnico'], ['consultor_tecnico'], ['administrador']])('MobileLayout independently enforces canonical list for %j', async (...roles) => {
+    s.roles = roles; setup('/app/perfil', undefined, false); await tick(4000);
+    const allowed = roles.includes('consultor_tecnico') || roles.includes('administrador');
+    expect(screen.getByTestId('url').textContent).toBe(allowed ? '/app/perfil' : '/sem-permissao');
+    expect(!!screen.queryByText('Meu Perfil')).toBe(allowed);
+  });
   it.each([['gestor'], ['gestor', 'consultor_tecnico'], ['consultor_tecnico'], ['administrador']])('real RPC semantics with roles %j at Perfil', async (...roles) => {
     s.roles = roles; setup('/app/perfil'); await tick(4000);
     const allowed = roles.includes('consultor_tecnico') || roles.includes('administrador');
