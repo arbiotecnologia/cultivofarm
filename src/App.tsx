@@ -247,7 +247,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
 
 
 export function ProtectedRoutes() {
-  const { user, role, roles = [], profile, loading, error, refresh, signOut } = useAuth();
+  const { user, role, roles = [], profile, loading, error, refresh, signOut, authzLatchBlocked = false } = useAuth();
   const location = useLocation();
 
   useSystemConfig();
