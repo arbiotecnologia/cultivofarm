@@ -93,6 +93,8 @@ describe("generate-financial-report CANDIDATE — no signature, private locator"
     const expected = (live.slice(0, signStart) + candidate.slice(signStart, candidate.indexOf("    const { data: exportId")) + live.slice(signEnd))
       .replace("JSON.stringify({ url: signed?.signedUrl, path, row_count: rows.length })", 'JSON.stringify({ bucket: "financial-reports", path, export_id: exportId, row_count: rows.length })');
     expect(candidate).toBe(expected);
+    const inserted = candidate.slice(signStart, candidate.indexOf("    const { data: exportId")).split("\n").filter((l) => l.trim());
+    expect(inserted.every((l) => l.trim().startsWith("//"))).toBe(true);
   });
   it.each(["PDF", "XLSX", "CSV"])("%s success returns {bucket,path,export_id,row_count} after upload+audit, never signs", async (format) => {
     const s = setup(); const response = await s.invoke({ ...valid, format }); expect(response.status).toBe(200);
