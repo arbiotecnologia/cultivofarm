@@ -8,7 +8,7 @@ import { useState } from 'react';
 const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002', C='00000000-0000-4000-8000-000000000003', D='00000000-0000-4000-8000-000000000004';
 const s=vi.hoisted(()=>({gate:true,roles:['cliente_produtor'],org:'00000000-0000-4000-8000-000000000002',ids:['00000000-0000-4000-8000-000000000003'] as unknown, rowOrg:undefined as string|undefined, h15:0,hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),error:false}));
 function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
-vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',FINANCIAL_CONTEXT_MONITOR_ENABLED:false,get PRODUCER_CONTEXT_MONITOR_ENABLED(){return s.gate;}}));
+vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',FINANCIAL_CONTEXT_MONITOR_ENABLED:false,get PRODUCER_CONTEXT_MONITOR_ENABLED(){return s.gate;}}));
 vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
 vi.mock('@/lib/accessAuditLog',()=>({logAccessDeniedOnce:()=>{},routeGroupFromPath:()=> 'producer'}));
 vi.mock('@/hooks/useOfflineSync',()=>({useOfflineSync:()=>({isOnline:true,pendingCount:0,syncing:false,syncAll:()=>{}})}));
