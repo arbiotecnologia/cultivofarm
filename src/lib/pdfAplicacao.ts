@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL } from "@/integrations/supabase/client";
+import { ATTACHMENT_LIMITS, downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
 import { formatDateDisplay, formatDateTimeDisplay, formatTimeDisplay } from "@/lib/date-utils";
 import { formatOS } from "./osLabel";
 
@@ -11,7 +12,68 @@ export interface AplicacaoPdfData {
   doseRecomendada?: number;
 }
 
-export async function generateAplicacaoPdf(data: AplicacaoPdfData): Promise<jsPDF> {
+export interface AplicacaoPdfAccess {
+  current: () => boolean;
+  signal: AbortSignal;
+  applicationId: string;
+  tenantId: string;
+}
+
+export function assertAplicacaoPdfAccess(access: AplicacaoPdfAccess) {
+  if (access.signal.aborted || !access.current()) throw new Error("PDF indisponível");
+}
+
+/** Fence even transports which settle after abort; never publish their late result. */
+export async function awaitAplicacaoPdf<T>(access: AplicacaoPdfAccess, run: () => PromiseLike<T>): Promise<T> {
+  assertAplicacaoPdfAccess(access);
+  let abort: () => void = () => {};
+  try {
+    const result = await Promise.race([
+      Promise.resolve().then(() => { assertAplicacaoPdfAccess(access); return run(); }),
+      new Promise<never>((_, reject) => {
+        abort = () => reject(new Error("PDF indisponível"));
+        access.signal.addEventListener("abort", abort, { once: true });
+        if (access.signal.aborted) abort();
+      }),
+    ]);
+    assertAplicacaoPdfAccess(access);
+    return result;
+  } finally { access.signal.removeEventListener("abort", abort); }
+}
+
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** Local syntax/association validation only; Storage's parent/tenant RLS is mandatory. */
+export function aplicacaoEvidencePath(path: unknown, origin: unknown): string {
+  if (typeof path !== "string" || typeof origin !== "string" || path.length > 1024 || /[%\\\s\x00-\x1f\x7f]/.test(path)) throw new Error("PDF indisponível");
+  const parts = path.split("/");
+  if (parts.length !== 3 || !uuid.test(parts[0]) || !uuid.test(parts[1]) || parts[1] !== origin || !/^[A-Za-z0-9_.-]+$/.test(parts[2]) || [".", ".."].includes(parts[2])) throw new Error("PDF indisponível");
+  return path;
+}
+
+export function aplicacaoLogoPath(url: string): string {
+  // Only the locator emitted by AparenciaTab; never fetch the URL itself.
+  const prefix = `${SUPABASE_URL}/storage/v1/object/public/logos/`;
+  if (!url.startsWith(prefix)) throw new Error("PDF indisponível");
+  const path = url.slice(prefix.length);
+  if (!/^platform\/[A-Za-z0-9_-]+\.(png|jpe?g|webp)$/i.test(path)) throw new Error("PDF indisponível");
+  return path;
+}
+
+export async function generateAplicacaoPdf(data: AplicacaoPdfData, access: AplicacaoPdfAccess): Promise<jsPDF> {
+  assertAplicacaoPdfAccess(access);
+  if (data.aplicacao.id !== access.applicationId) throw new Error("PDF indisponível");
+  // Prove access to the application now, not just possession of a UI snapshot.
+  const application = await awaitAplicacaoPdf(access, () => supabase.from("aplicacoes")
+    .select("id, organization_id").eq("id", access.applicationId).eq("organization_id", access.tenantId)
+    .abortSignal(access.signal).maybeSingle());
+  if (application.error || application.data?.id !== access.applicationId || application.data.organization_id !== access.tenantId) throw new Error("PDF indisponível");
+  let totalBytes = 0;
+  const imageData = async (bucket: string, path: string) => {
+    const blob = await awaitAplicacaoPdf(access, () => downloadAuthenticatedAttachment(bucket, path, access.signal));
+    totalBytes += blob.size;
+    if (!blob.size || totalBytes > ATTACHMENT_LIMITS.totalBytes || blob.size > ATTACHMENT_LIMITS.fileBytes) throw new Error("PDF indisponível");
+    return await awaitAplicacaoPdf(access, () => blobAsDataUrl(blob, access.signal));
+  };
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -25,14 +87,10 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData): Promise<jsPD
   
   // Try to add logo if available
   if (data.empresa.logoUrl) {
-    try {
-      const logoBase64 = await fetchAsDataUrl(data.empresa.logoUrl);
+      const logoBase64 = await imageData("logos", aplicacaoLogoPath(data.empresa.logoUrl));
       if (logoBase64) {
         doc.addImage(logoBase64, "PNG", margin, 10, 40, 40, undefined, "FAST");
       }
-    } catch (e) {
-      console.error("Error adding logo to PDF:", e);
-    }
   }
 
   doc.setTextColor(255, 255, 255);
@@ -169,16 +227,17 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData): Promise<jsPD
   }
 
   // Evidence Gallery
-  const { data: vinculos } = await supabase
+  const { data: vinculos, error: evidenceError } = await awaitAplicacaoPdf(access, () => supabase
     .from("aplicacao_evidencias_vinculos")
     .select(`
       evidencia:evidencia_id (
-        *,
+        tipo, storage_path, legenda, versao_origem_id, aplicacao_id,
         aplicacoes_origem:aplicacoes!aplicacao_evidencias_versao_origem_id_fkey(versao)
       )
     `)
     .eq("aplicacao_id", a.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true }).limit(ATTACHMENT_LIMITS.files + 1).abortSignal(access.signal));
+  if (evidenceError || !vinculos || vinculos.length > ATTACHMENT_LIMITS.files) throw new Error("PDF indisponível");
 
   const evidencias = vinculos?.map((v: any) => v.evidencia).filter((e: any) => e.tipo === "foto") || [];
 
@@ -198,15 +257,9 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData): Promise<jsPD
 
     for (let i = 0; i < evidencias.length; i++) {
       const ev = evidencias[i];
-      try {
-        const { data: s } = await supabase.storage
-          .from("aplicacao-evidencias")
-          .createSignedUrl(ev.storage_path, 600);
-        
-        if (!s?.signedUrl) continue;
-        
-        const dataUrl = await fetchAsDataUrl(s.signedUrl);
-        if (!dataUrl) continue;
+        assertAplicacaoPdfAccess(access);
+        const path = aplicacaoEvidencePath(ev.storage_path, ev.versao_origem_id || ev.aplicacao_id);
+        const dataUrl = await imageData("aplicacao-evidencias", path);
 
         if (y + rowHeight > pageHeight - margin) {
           doc.addPage();
@@ -234,9 +287,6 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData): Promise<jsPD
           col = 0;
           y += rowHeight;
         }
-      } catch (e) {
-        console.error("Error adding evidence image:", e);
-      }
     }
   }
 
@@ -253,20 +303,19 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData): Promise<jsPD
     );
   }
 
+  assertAplicacaoPdfAccess(access);
   return doc;
 }
 
-async function fetchAsDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
+function blobAsDataUrl(blob: Blob, signal: AbortSignal): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const finish = () => signal.removeEventListener("abort", abort);
+    const abort = () => { reader.abort(); finish(); reject(new Error("PDF indisponível")); };
+    reader.onload = () => { finish(); typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("PDF indisponível")); };
+    reader.onerror = () => { finish(); reject(new Error("PDF indisponível")); };
+    signal.addEventListener("abort", abort, { once: true });
+    if (signal.aborted) { abort(); return; }
+    reader.readAsDataURL(blob);
+  });
 }
