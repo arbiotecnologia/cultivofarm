@@ -46,7 +46,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
       }).abortSignal(controller.signal);
       if (!current()) return;
       if (error || !data || typeof data !== "object" || Array.isArray(data) ||
-        data.success !== true || data.status !== "aprovada") {
+        !("success" in data) || data.success !== true || !("status" in data) || data.status !== "aprovada") {
         toast.error("Não foi possível aprovar a OS. Verifique sua autorização e a programação vinculada.");
         return;
       }
