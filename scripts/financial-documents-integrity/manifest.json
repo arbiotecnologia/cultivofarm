@@ -1,0 +1,127 @@
+{
+  "baseline": "cc62c3dceb61d799722813f620fbe42f994c180e",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "function_post_md5": "acad7f5119cd53c52a0d9383ff24e0a2",
+  "function_pre": "absent",
+  "policy_pre_post_md5": "2f1f0ad0472b8ec17b2841767f8416c7",
+  "existing_triggers_pre_post_md5": "364a1ac7fc3c82f25e595afeef9059ae",
+  "contracts": [
+    {
+      "signature": "financial_storage_object_permitted(text,text)",
+      "md5": "d03da0efc828ed0f99259c75390c6d13",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "fn_audit_financial_documents()",
+      "md5": "5f9283679efe1b6503ece3ebb3f748b8",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_authz_uid_scope_ok(uuid)",
+      "md5": "00a9a4d4a075d756d312d69778493b39",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "fn_financial_audit()",
+      "md5": "46f777c2020ff9a059a80ae6dab4bd12",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "guard_tenant_organization_id()",
+      "md5": "d01a740c1e3e02407131d2b9228bf658",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "h15_actor_organization()",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "has_role(uuid,app_role)",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "is_financial_staff(uuid)",
+      "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "platform_private.h15_actor_organization()",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.has_role(uuid,app_role)",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.platform_actor_access_ready(uuid)",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "rpc_financial_document_soft_delete(uuid,text)",
+      "md5": "bfce59fb3e68309d6d306a9c712fd1f3",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "storage1_path_strict(text)",
+      "md5": "94164fa3b90088b0a1f16ac465a635d4",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    }
+  ]
+}
