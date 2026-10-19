@@ -1,9 +1,15 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 12:13 — PDF de aplicações
+- [x] Proteger PDF e ambos callers existentes por escopo, transporte autenticado, abort/timeout/limites e clique síncrono cercado, sem URLs assinadas/arbitrárias.
+- [x] Testes144/144, staging7/7, candidata/rollback/hash/preflight SELECT-only não executado e inventário v6; build automático OK. Typecheck separado não certificado: harness automático sem recibo individual.
+- [ ] Revisão/preflight/homologação real PDF aplicação dependem de auditor e fixture aplicação/foto/ator técnico autorizado; financeiro A não é positivo técnico presumido. Sem publicação/banco/reload.
+- [x] Auditor informou base f91728b publicada e homologação real limitada recibos/financeiro/admin: PDF A renderizado, busca B vazia, inativação/retry/restore e estabilidade96s; sem prova JWT direto/global.
+
 ## 19/10 02:57 — ambiente financeiro/admin exclusivo
 - [x] Reutilizar somente as opções ambientais revisadas no financeiro/admin empresa exclusivos; preservar monitor/probes, produtor/B2B/outros gates e recibos/Edges.
 - [x] Testar drafts/opener com alternância ambiental e RTT3s >=90s, negação/tardios/offline/timeout/restore:312/312; candidata/rollback/preflight não executado/staging5/5; typecheck exit0/build automático OK.
-- [ ] Revisão independente e homologação real aguardam proprietário; A/B autenticados preservados, sem login/reload/publicação automática.
+- [x] Proprietário informou base f91728b publicada/homologada REAL no recorte financeiro/admin/recibos às12:13; A/B preservados, sem prova JWT direto/global.
 
 ## 19/10 02:43 — anexos de RecibosList
 - [x] Cercar listagem, cancelamento e download existentes por ator/tenant/roles/epoch/recurso; usar locator canônico e opener autenticado, sem URL arbitrária.

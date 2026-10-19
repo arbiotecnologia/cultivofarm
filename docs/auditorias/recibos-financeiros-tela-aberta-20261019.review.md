@@ -1,5 +1,8 @@
 # Recibos financeiros — candidata restrita de anexos
 
+## Atualização independente 19/10 12:13
+Base f91728b publicada: auditor informou homologação REAL limitada recibos/financeiro/admin. PDF autenticado A salvo/renderizado; B busca REC-2026-000001 vazia; A inativado12:07:39Z retirou Baixar PDF/retry negado/restore12:08:05Z somente Preparar PDF; B inativado12:08:25Z/retry negado/restore12:08:56Z filtro limpo. A/B ativos, roles originais, estáveis96s após restore. Sem novo pagamento, login/reload ou prova JWT direto/global. Substitui a pendência de homologação deste recorte abaixo, preservando relato histórico; não homologa PDF de aplicação nem signer adversarial HTTP. A fase atual está em pdf-aplicacao-anexos-20261019.review.md.
+
 ## Base e autorização
 Base publicada/homologada multipapel informada: `71decc2d2b6b2028b9ca2170e8f1344bee9d0b48`.
 Somente frontend, testes e artefatos; nenhuma operação hosted, DDL, Edge deploy, publicação, reload, criação de recibo/pagamento ou alteração de perfil foi executada. Destino obrigatório de qualquer verificação posterior: `swzpzcwiasxmjutrmvkm`. Contratos permanecem fora do recorte.

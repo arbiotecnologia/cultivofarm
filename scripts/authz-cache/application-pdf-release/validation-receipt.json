@@ -1,0 +1,35 @@
+{
+  "baseline": "f91728b513a6672e6c09c5cc4b49385b9d5549d8",
+  "tests": {
+    "files": 6,
+    "passed": 144,
+    "failed": 0,
+    "source": "targeted-tests.log",
+    "transport": "fake; not hosted JWT/RLS or real login"
+  },
+  "staging": {
+    "passed": 7,
+    "failed": 0
+  },
+  "build": {
+    "status": "PASS automatic harness",
+    "receipt": "build-harness-receipt.log",
+    "entry": "2026-10-19T12:23:28Z"
+  },
+  "typecheck": {
+    "status": "automatic harness build OK; separate explicit typecheck NOT certified",
+    "reason": "manual build/typecheck prohibited by harness instruction; no independent per-command exit receipt",
+    "tsgo_available": "7.0.0-dev.20260320.1"
+  },
+  "pdf_visual_qa": {
+    "pages": 2,
+    "inspected": true,
+    "issues": "initial synthetic PNG CRC invalid, replaced by valid PNG; final two pages no overlap/clipping",
+    "not_business_data": true
+  },
+  "preflight": "SELECT-only prepared, not executed; canonical swzpzcwiasxmjutrmvkm must be proven externally",
+  "real_application_pdf": "NOT homologated; authorized application/photo/technical actor fixture required",
+  "global_v6": "NO-GO; unchanged",
+  "historical_suite": "six historical failures not rerun/not recertified",
+  "no_hosted_sql_edge_publish_reload_login_payments": true
+}
