@@ -17,6 +17,7 @@ let st: {
   user: string | null; perfil: Row[]; visivel: Row[]; termo: Row[]; sucessor: Row[];
   actorOrg: (string | null)[]; entrega: Row[]; cliente: Row[];
   bytes: Uint8Array; onDownload?: () => void;
+  authPending?: boolean;
   fetchImpl?: (url: string, init: RequestInit) => Promise<Response>;
 };
 const calls = { download: vi.fn(), legacyDownload: vi.fn(), sign: vi.fn(), rpc: vi.fn(), upload: vi.fn() };
@@ -32,7 +33,7 @@ const next = <V,>(q: V[]): V => (q.length > 1 ? q.shift()! : q[0]);
 
 function client(kind: "user" | "admin") {
   return {
-    auth: { getUser: async () => (st.user ? { data: { user: { id: st.user } }, error: null } : { data: { user: null }, error: new Error("x") }) },
+    auth: { getUser: async () => st.authPending ? new Promise(() => {}) : (st.user ? { data: { user: { id: st.user } }, error: null } : { data: { user: null }, error: new Error("x") }) },
     from: (table: string) => {
       const f: Record<string, unknown> = {};
       const q: Record<string, unknown> = {};
@@ -223,12 +224,13 @@ describe("entrega-termo-pdf candidata: download binário autenticado", () => {
     expect((await p).status).toBe(504);
     expect(calls.download).not.toHaveBeenCalled();
   });
-  it("Auth pendurado: 504 sem consultar termo", async () => {
+  it("Auth pendurado: 504 sem consultar termo nem Storage", async () => {
     vi.useFakeTimers();
-    const p = load()(new Request("https://edge.invalid", { method: "POST", headers: { Authorization: "Bearer t" },
-      body: JSON.stringify({ termo_id: TERMO, action: "download" }) }));
-    void p;
-    st.user = "U";
+    st.authPending = true;
+    const p = call({ termo_id: TERMO, action: "download" });
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect((await p).status).toBe(504);
+    expect(calls.download).not.toHaveBeenCalled();
   });
   it("stream que para no meio sem terminar: 504, bytes descartados", async () => {
     vi.useFakeTimers();
