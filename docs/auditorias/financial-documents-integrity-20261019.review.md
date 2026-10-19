@@ -46,3 +46,8 @@ Regressões frontend **9 arquivos / 159 testes PASS**: painel, Storage d51-5, so
 - FOR SHARE pode competir/deadlock com writers parent→documento; nenhum certificado global de lock order/ABA. Referências fiscais secundárias são leitura no statement, não promessa universal de serialização.
 - Perfil/roles/parent podem mudar entre operações; não há snapshot global. Storage/metadata não formam transação única; órfãos possíveis sem cleanup destrutivo. URLs já emitidas/bytes baixados não são revogados por esta guarda.
 - Aplicação/homologação dependem do auditor/proprietário: login B real solicitado, testes upload/abertura/revoke/restore A/B com dados autorizados. SQL local não é hosted/JWT/browser. Sem auditoria global/contratos concluídos; Blob/global v6 fechados e monitores publicados preservados.
+## Conclusão local desta candidata
+
+- PostgreSQL local: **252/252 checks PASS**, reprodução baseline seguida de negativa admin B/owner A; candidata, postflight e rollback integrais PASS; preflight executado no baseline vazio e após rollback com dados sintéticos inconsistentes, somente contagens. Atomicidade e hashes fixos preservados. Legado orgNULL por ID explícito falha 42501 na guarda canônica; não é atribuído tenant.
+- Vitest **159/159**, staging frontend publicado **4/4**, staging a905 **2/2**, diff whitespace PASS. Builds automáticos mais recentes sem erro; sem comandos manuais de build/typecheck.
+- Candidate/rollback nunca executados em produção, sem deploy Edge/publicação. Testes não usam login real ou JWT assinado. Login B/homologação independente e implantação aguardam proprietário/auditor.
