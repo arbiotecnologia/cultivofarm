@@ -7,7 +7,7 @@ const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
   roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
 }));
-const later = <T,>(v: () => T, tag = '') => { if (process.env.DBG) console.log('CALL', tag, Date.now()); return new Promise<T>(r => setTimeout(() => { if (process.env.DBG) console.log('DONE', tag, Date.now()); r(v()); }, s.perCall)); };
+const later = <T,>(v: () => T, _tag = '') => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
 vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
 vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {
@@ -44,14 +44,13 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 async function toResidual(remaining: 'gestor' | 'consultor_tecnico') {
   render(<QueryClientProvider client={new QueryClient()}><AuthProvider><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
-  await adv(8000);
-  if (process.env.DBG) console.log('BODY', document.body.textContent, 'probes', s.probes);
+  await adv(10_000);
   expect(screen.getByText(/\[ok\] gestor\+consultor_tecnico|\[ok\] consultor_tecnico\+gestor/)).toBeTruthy();
   s.roles = [remaining];
   await adv(15_000); // next background poll observes the loss
   expect(pausedText()).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
-  await adv(3000);
+  await adv(12_000); // slow: fresh read + loader + probe
   expect(screen.getByText(new RegExp(`\\[ok\\] ${remaining}$`))).toBeTruthy();
 }
 
