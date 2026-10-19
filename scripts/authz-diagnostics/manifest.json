@@ -50,6 +50,8 @@
     "src/test/equipe-tecnica/pdfAplicacao.scope.test.tsx": "3a1aa5ef7f593392c94d7503c13546d6b609a27a52ef9ec9278f7b59dfc33803"
   },
   "artifacts": {
-    "README.md": "16f5893f4ec07b1d001815a73fdab04b8800dd0c6b2407c5f9ad37681f74d052"
+    "README.md": "16f5893f4ec07b1d001815a73fdab04b8800dd0c6b2407c5f9ad37681f74d052",
+    "stage.py": "5ed134d62df69518a185c77a504e719bb19981a43879bdeb36ba47d06c0ec3d0",
+    "test_stage.py": "5b724aaa11f65932fb56a9b044ec8ffae24c448653ed2ad756eeed9d8abca436"
   }
 }
