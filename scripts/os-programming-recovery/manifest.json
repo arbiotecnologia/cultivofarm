@@ -84,15 +84,16 @@
     "src/pages/OrdensServico.tsx": "bf21df73f8f4ab5e25d928990d50c14c8f40a5b794205cf8a7aac988b0b5f5e6"
   },
   "artifacts": {
-    "README.md": "6070249e2703823c7c9f27a8fdedfe71efc09bbd4a5c019aaff9a29843b22326",
+    "README.md": "2a9920a53164c08b811e76a1f58f49d9d04f753ec2ebdfce1e27bba994d1410a",
     "assemble.py": "9c7a5b81be224fcf83d441eea2dad67a4f9eca93df5268f134816dba49a7cc40",
     "candidate.sql.review": "1bd5e0ad6b7180ecba154f63f47f598725fe0c2e97fa5dc7640b3eaed9a36dfa",
     "catalog.json": "5ee08483a4cb51101cb02f19997059e734ff61cfc91ad9716c1ad1a9cd886877",
+    "delta.patch": "795dbedd2bcc2b3914493fc44188c1816f53030acc2b597ebe069900f16dff76",
     "post-hashes.json": "6f48b6b757e697affdd977227dc6a051d9998d5526e1d6117beed41f0b309d1d",
     "postflight-readonly.sql": "93896ce4204719a084373c6e34bbbf0987217f79f13955e4ea44a442448c8d33",
     "preflight-readonly.sql": "71c06a218f628a70baf9e57e726f9788fd90658eb8cfb6c439e1f36ec8a11ace",
     "protected.json": "3cd7baf86e2bd9d54e3d451500d70d650f25b763b6fa739fe66dfc72392b2016",
-    "real-test-results.json": "fd3967dd147824ae6e99fbd3d8c108a6dfc5784b88b6811d02b73334379da081",
+    "real-test-results.json": "d0f49489a9cf14b64c1c2af1f971a634f40035efdc0133b518612092a34c0a38",
     "refresh-catalog.json": "f14bd1e0dcc140b5fc8dc5c696c2883599106941c8ef89832065964a1f921190",
     "rollback/OSDetalhesDialog.tsx": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
     "rollback/rpc.sql.review": "7d8579126ee6378ea166a1d8b6997fbd2df0dc01d3d87631eaff35f2d91089f3",

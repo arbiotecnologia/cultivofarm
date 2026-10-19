@@ -1,0 +1,186 @@
+diff --git a/src/components/ordens-servico/OSDetalhesDialog.tsx b/src/components/ordens-servico/OSDetalhesDialog.tsx
+index f7662bc6..3b44a15d 100644
+--- a/src/components/ordens-servico/OSDetalhesDialog.tsx
++++ b/src/components/ordens-servico/OSDetalhesDialog.tsx
+@@ -3,13 +3,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { RastreabilidadeProducaoTab } from "./RastreabilidadeProducaoTab";
+ import { formatOS } from "@/lib/osLabel";
+ import { Badge } from "@/components/ui/badge";
+-import { Check, History } from "lucide-react";
++import { CalendarCheck, Check, History } from "lucide-react";
+ import { useEffect, useRef, useState } from "react";
+ import { Button } from "@/components/ui/button";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { supabase } from "@/integrations/supabase/client";
+ import { toast } from "sonner";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
+ 
+ // Canonical client schema snapshot predates this installed, closed RPC.
+ // Narrow only its existing audited signature; no second client or broad any.
+@@ -17,6 +19,10 @@ const approveOSRPC = supabase.rpc.bind(supabase) as unknown as (
+   name: "rpc_aprovar_os_v1", args: { p_os_id: string; p_origem: string },
+ ) => ReturnType<typeof supabase.rpc>;
+ 
++const programOSRPC = supabase.rpc.bind(supabase) as unknown as (
++  name: "rpc_programar_os_v1", args: { p_os_id: string; p_origem: string; p_data_programada: string },
++) => ReturnType<typeof supabase.rpc>;
++
+ interface Props {
+   os: any;
+   open: boolean;
+@@ -29,7 +35,45 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
+   const pending = useRef(false);
+   const [saving, setSaving] = useState(false);
+   const [approvedId, setApprovedId] = useState<string | null>(null);
+-  useEffect(() => { setApprovedId(null); setSaving(false); }, [os?.id, open, access.scope]);
++  const [programmedId, setProgrammedId] = useState<string | null>(null);
++  const [programDate, setProgramDate] = useState("");
++  const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
++    ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
++  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); }, [os?.id, open, access.scope]);
++  const canProgram = !!os && open && access.ready && programOrigin === "manual" &&
++    !os.partner_order_id && !os.partner_order_item_id && programmedId !== os.id &&
++    (os.status === "aprovada" || approvedId === os.id) &&
++    roles.some((role) => role === "administrador" || role === "gestor" || role === "producao");
++  const program = async () => {
++    if (!canProgram || !programOrigin || pending.current || !/^\d{4}-\d{2}-\d{2}$/.test(programDate)) return;
++    const current = access.capture();
++    const id = os.id;
++    const date = programDate;
++    pending.current = true;
++    setSaving(true);
++    const controller = new AbortController();
++    const timeout = setTimeout(() => controller.abort(), 12_000);
++    try {
++      const { data, error } = await programOSRPC("rpc_programar_os_v1", {
++        p_os_id: id, p_origem: programOrigin, p_data_programada: date,
++      }).abortSignal(controller.signal);
++      if (!current()) return;
++      if (error || !data || typeof data !== "object" || Array.isArray(data) ||
++        !("success" in data) || data.success !== true || !("status" in data) || data.status !== "programada") {
++        toast.error("Não foi possível programar a OS. Confira sua autorização e a programação existente.");
++        return;
++      }
++      setProgrammedId(id);
++      setProgramDate("");
++      toast.success("OS programada. Fabricação não iniciada.");
++    } catch {
++      if (current()) toast.error("Programação não confirmada. Consulte a OS antes de tentar novamente.");
++    } finally {
++      clearTimeout(timeout);
++      pending.current = false;
++      if (current()) setSaving(false);
++    }
++  };
+   const approve = async () => {
+     if (!os || !open || pending.current || !access.ready ||
+       !roles.some((role) => role === "administrador" || role === "gestor") ||
+@@ -90,7 +134,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
+                 {os.origem === 'onfarm' ? 'Visita Técnica' : 'Manual'}
+               </Badge>
+               <Badge className="h-6 bg-primary/10 text-primary border-primary/20">
+-                {(approvedId === os.id ? "aprovada" : os.status || "Não informado").replace(/_/g, ' ').toUpperCase()}
++                {(programmedId === os.id ? "programada" : approvedId === os.id ? "aprovada" : os.status || "Não informado").replace(/_/g, ' ').toUpperCase()}
+               </Badge>
+               {os.status === "aberta" && approvedId !== os.id && os.origem !== "b2b" && !os.partner_order_id && !os.partner_order_item_id &&
+                 roles.some((role) => role === "administrador" || role === "gestor") && (
+@@ -102,6 +146,19 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
+           </div>
+         </DialogHeader>
+ 
++        {canProgram && (
++          <div className="flex flex-wrap items-end gap-3 px-4 sm:px-6 py-3 border-b">
++            <div className="space-y-1">
++              <Label htmlFor="os-program-date">Data programada</Label>
++              <Input id="os-program-date" type="date" value={programDate} disabled={saving}
++                onChange={(event) => setProgramDate(event.target.value)} className="w-44" />
++            </div>
++            <Button onClick={() => void program()} disabled={saving || !programDate}>
++              <CalendarCheck className="h-4 w-4 mr-2" />Programar OS
++            </Button>
++          </div>
++        )}
++
+         <div className="flex-1 overflow-hidden">
+           <Tabs defaultValue="rastreabilidade" className="h-full flex flex-col">
+             <div className="px-4 sm:px-6 border-b bg-muted/20">
+diff --git a/src/test/ordens-servico/programming.test.tsx b/src/test/ordens-servico/programming.test.tsx
+new file mode 100644
+index 00000000..b331fdd2
+--- /dev/null
++++ b/src/test/ordens-servico/programming.test.tsx
+@@ -0,0 +1,71 @@
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { OSDetalhesDialog } from "@/components/ordens-servico/OSDetalhesDialog";
++const f = vi.hoisted(() => ({ roles: ["administrador"], current: true, epoch: 0, rpc: vi.fn(), success: vi.fn(), error: vi.fn() }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ roles: f.roles }) }));
++vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => ({ ready: f.current, scope: String(f.epoch), capture: () => { const epoch = f.epoch; return () => f.current && epoch === f.epoch; } }) }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...args: unknown[]) => ({ abortSignal: () => f.rpc(...args) }) } }));
++vi.mock("sonner", () => ({ toast: { success: f.success, error: f.error } }));
++vi.mock("@/components/ordens-servico/RastreabilidadeProducaoTab", () => ({ RastreabilidadeProducaoTab: () => null }));
++const os = { id: "00000000-0000-4000-8000-000000000001", origem: "manual", status: "aprovada" };
++const props = { os, open: true, onOpenChange: () => {} };
++beforeEach(() => { vi.clearAllMocks(); f.roles = ["administrador"]; f.current = true; f.epoch = 0; f.rpc.mockResolvedValue({ data: { success: true, status: "programada" }, error: null }); });
++describe("programação inicial existente — transporte fake, não homologação", () => {
++  it.each(["onfarm", "on_farm", "ordem_servico_onfarm"])("%s permanece fechado no primeiro recorte", (origem) => {
++    render(<OSDetalhesDialog {...props} os={{ ...os, origem }} />);
++    expect(f.rpc).not.toHaveBeenCalled();
++    expect(screen.queryByRole("button", { name: "Programar OS" })).toBeNull();
++  });
++  it("nega origem desconhecida sem inferir tabela", () => {
++    render(<OSDetalhesDialog {...props} os={{ ...os, origem: "unknown" }} />);
++    expect(screen.queryByRole("button", { name: "Programar OS" })).toBeNull();
++    expect(f.rpc).not.toHaveBeenCalled();
++  });
++  it.each(["administrador", "gestor", "producao"])("%s envia data explícita uma vez, sem aprovação/fabricação", async (role) => {
++    f.roles = [role];
++    let finish: (value: unknown) => void = () => {};
++    f.rpc.mockImplementation(() => new Promise((r) => { finish = r; }));
++    render(<OSDetalhesDialog {...props} />);
++    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
++    expect(f.rpc).not.toHaveBeenCalled();
++    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
++    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
++    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
++    expect(f.rpc).toHaveBeenCalledTimes(1);
++    expect(f.rpc).toHaveBeenCalledWith("rpc_programar_os_v1", { p_os_id: os.id, p_origem: "manual", p_data_programada: "2026-10-20" });
++    await act(async () => finish({ data: { success: true, status: "programada" }, error: null }));
++    expect(f.success).toHaveBeenCalledTimes(1);
++  });
++  it.each(["administrativo", "financeiro", "consultor_tecnico", "operador_onfarm", "parceiro_b2b"])("nega %s", (role) => {
++    f.roles = [role]; render(<OSDetalhesDialog {...props} />);
++    expect(screen.queryByRole("button", { name: "Programar OS" })).toBeNull();
++    expect(f.rpc).not.toHaveBeenCalled();
++  });
++  it.each(["aberta", "programada", "em_producao", "finalizada"])("não programa estado %s", (status) => {
++    render(<OSDetalhesDialog {...props} os={{ ...os, status }} />);
++    expect(screen.queryByRole("button", { name: "Programar OS" })).toBeNull();
++    expect(f.rpc).not.toHaveBeenCalled();
++  });
++  it.each([{ origem: "b2b" }, { partner_order_id: "linked" }, { partner_order_item_id: "linked" }])("nega vínculos B2B", (linked) => {
++    render(<OSDetalhesDialog {...props} os={{ ...os, ...linked }} />);
++    expect(screen.queryByRole("button", { name: "Programar OS" })).toBeNull();
++  });
++  it.each([{ data: null, error: { code: "42501" } }, { data: { success: false }, error: null }, { data: { success: true, status: "em_producao" }, error: null }])("não confirma negativa/resposta incompatível", async (result) => {
++    f.rpc.mockResolvedValue(result); render(<OSDetalhesDialog {...props} />);
++    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
++    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
++    await waitFor(() => expect(f.error).toHaveBeenCalledTimes(1)); expect(f.success).not.toHaveBeenCalled();
++  });
++  it("descarta resposta e data após troca/revogação de escopo", async () => {
++    let finish: (value: unknown) => void = () => {};
++    f.rpc.mockImplementation(() => new Promise((r) => { finish = r; }));
++    const view = render(<OSDetalhesDialog {...props} />);
++    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
++    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
++    f.current = false; f.epoch++; view.rerender(<OSDetalhesDialog {...props} />);
++    await act(async () => finish({ data: { success: true, status: "programada" }, error: null }));
++    f.current = true; view.rerender(<OSDetalhesDialog {...props} />);
++    expect(screen.getByLabelText("Data programada")).toHaveValue("");
++    expect(f.success).not.toHaveBeenCalled(); expect(f.error).not.toHaveBeenCalled();
++  });
++});
+\ No newline at end of file

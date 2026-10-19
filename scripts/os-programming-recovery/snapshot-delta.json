@@ -1,0 +1,15 @@
+{
+  "fixed_baseline": "c30af10c472255c919d167bc555c4f757eedaff0",
+  "previous_snapshot_sha256": "e9aae9993b56efac6e5512aaccb7111f0ce707de970f82b8713e8f33e93f6561",
+  "final_snapshot_sha256": "8e924d7cdc0c53be425111b635f260060e2451f030859d36769d5777779c4276",
+  "changed": {
+    "src/components/ordens-servico/OSDetalhesDialog.tsx": {
+      "pre": "4f65da468e14fe0f08456e32344ba38051364536ca387a0b9405a8ad72c04c1e",
+      "post": "de47586a8cb15a35b549ac407768257420764d776239b02e1c2dbb3f4e08664b"
+    },
+    "src/test/ordens-servico/programming.test.tsx": {
+      "pre": "6733b7a2f074023d1e738e852aa3c495791bad00db906f20131b25d37dbe1d9f",
+      "post": "fabf839a3926bc286d0997cac0a85c22d56c55a7035ccb62a28292bd7d858562"
+    }
+  }
+}
