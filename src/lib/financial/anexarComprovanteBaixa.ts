@@ -106,34 +106,32 @@ export async function anexarComprovanteBaixa(
     const existente = await lookup();
     assertCurrent();
     if (existente?.error) throw existente.error;
-    if (existente?.data?.id) return "reused";
+    if (existente?.data?.id) { await confirmActor(); return "reused"; }
 
-  // 2) upload no caminho determinístico. `upsert` evita erro "já existe" quando
-  //    o arquivo subiu e apenas o insert falhou — não apaga outro comprovante,
-  //    pois o caminho é exclusivo desta tentativa lógica.
+    // Retry preserves the same logical object; no deletion or new payment.
     await confirmActor();
     const up = await client.storage.from("financial-docs").upload(path, file, { upsert: true });
     assertCurrent();
     if (up?.error) throw up.error;
     await confirmActor();
 
-  // 3) registro do documento; corrida no mesmo path é tratada como reuso.
-  const ins = await client.from("financial_documents").insert({
-    owner_type: ownerType,
-    owner_id: paymentId,
-    document_type: "RECEIPT",
-    file_name: file.name,
-    storage_path: path,
-    mime_type: file.type ?? null,
-    file_size: file.size ?? null,
-    uploaded_by: uploadedBy,
-  });
+    const ins = await client.from("financial_documents").insert({
+      owner_type: ownerType,
+      owner_id: paymentId,
+      document_type: "RECEIPT",
+      file_name: file.name,
+      storage_path: path,
+      mime_type: file.type ?? null,
+      file_size: file.size ?? null,
+      uploaded_by: uploadedBy,
+    });
     assertCurrent();
+    await confirmActor();
     if (ins?.error) {
       if (isUniqueViolation(ins.error)) {
         const existing = await lookup();
         assertCurrent();
-        if (!existing?.error && existing?.data?.id) return "reused";
+        if (!existing?.error && existing?.data?.id) { await confirmActor(); return "reused"; }
       }
       throw ins.error;
     }
