@@ -289,7 +289,7 @@ export function ProtectedRoutes() {
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const operatorBoundary = OPERATOR_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "operador_onfarm" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
-  return (FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro") || companyAdminBoundary || consultantBoundary || operatorBoundary ||
+  return authzLatchBlocked || (FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro") || companyAdminBoundary || consultantBoundary || operatorBoundary ||
     (MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id))
     ? <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>
     : <AppLayout />;

@@ -71,6 +71,8 @@ interface AuthContextType {
   checkAuthzAccess: () => boolean;
   /** Revalidação manual (botão "Tentar novamente"). */
   revalidateAuthz: () => void;
+  /** Monitored session re-resolved into an unmonitored/other-tenant scope: stays paused until fresh login. */
+  authzLatchBlocked: boolean;
   setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
   takeSafeOSDraft: () => SafeOSRenewalDraft | null;
 }
@@ -91,6 +93,7 @@ const AuthContext = createContext<AuthContextType>({
   authzState: "idle",
   checkAuthzAccess: () => true,
   revalidateAuthz: () => {},
+  authzLatchBlocked: false,
   setSafeOSDraft: () => {},
   takeSafeOSDraft: () => null,
 });
@@ -614,21 +617,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     renewalRef.current = null;
     safeDraftRef.current = null;
     const gen = ++generationRef.current;
-    loadedUserIdRef.current = uid;
     void queryClient.cancelQueries();
     queryClient.clear();
     clearActivePortalContext();
     window.dispatchEvent(new Event("portal-client-preferences-cleared"));
     setAuthzEpoch((e) => e + 1);
-    setLoading(true);
+    const cachedRoles = [...roles].sort();
+    const cachedOrg = profile?.organization_id ?? null;
+    const isCurrent = () => mountedRef.current && gen === generationRef.current;
     const run = (async () => {
       try {
+        // Fresh observation only decides whether re-resolution is needed; it
+        // never grants authority. Errors/inactive keep the published path
+        // (probe denies, view stays paused, no sign-out on retry).
+        let fresh: string[] | null = null;
+        let freshOrg: unknown = null;
+        let active = false;
+        try {
+          const { data: p, error: pe } = await supabase.from("profiles")
+            .select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle();
+          const { data: r, error: re } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+          if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
+            active = (p as { ativo?: unknown }).ativo === true;
+            freshOrg = (p as { organization_id?: unknown }).organization_id;
+            fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
+          }
+        } catch { fresh = null; }
+        if (!isCurrent()) return;
+        const same = fresh !== null && freshOrg === cachedOrg &&
+          fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
+        if (fresh === null || !active || same) {
+          authzMonitorRef.current?.revalidate();
+          return;
+        }
+        // Divergent active set/tenant: re-resolve via the existing loader.
+        loadedUserIdRef.current = uid;
+        setLoading(true);
         await fetchProfileAndRole(uid, gen);
+        if (!isCurrent()) return;
+        authzMonitorRef.current?.revalidate();
       } finally {
         retryInFlightRef.current = null;
       }
-      if (!mountedRef.current || gen !== generationRef.current) return;
-      authzMonitorRef.current?.revalidate();
     })();
     retryInFlightRef.current = run;
   };
@@ -671,6 +701,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authzReady,
         authzEpoch,
         authzState: latchBlocked && !loading ? "expired" : authzState,
+        authzLatchBlocked: latchBlocked && !loading,
         checkAuthzAccess,
         revalidateAuthz,
         setSafeOSDraft,
