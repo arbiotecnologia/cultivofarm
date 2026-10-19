@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 00:57 — consultor técnico em tela aberta
-- [ ] Preparar extensão exclusiva no monitor/probe existente e boundary Campo inteiro/desktop, gate consultor OFF.
-- [ ] Executar lógica/probe/boundary/drafts/revogação e regressões; separar falhas atuais de históricas.
-- [ ] Entregar preflight read-only, hashes fixos, staging/rollback protegidos e relatório; sem banco/Edge/publicação.
+- [x] Preparar extensão exclusiva no monitor/probe existente e boundary Campo inteiro/desktop, gate consultor OFF.
+- [x] Executar 56 testes consultor, 258 regressões monitor/gates e 106 anexos; suíte ampla tem mesmas 6 falhas da base (8101 vs 8045 PASS), sem falha nova observada.
+- [x] Entregar preflight read-only não executado, hashes fixos e staging/rollback6/6; relatório consultor-tela-aberta-20261019.review.md; sem banco/Edge/publicação.
+- [ ] Typecheck com recibo separado depende do harness; build automático OK, não presumir typecheck independente.
 - [ ] Revisão independente, ativação e homologação real consultor aguardam o proprietário.
 
 ## 19/10 00:36 — administrador de empresa em tela aberta
