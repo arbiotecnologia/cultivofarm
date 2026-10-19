@@ -1,5 +1,5 @@
 {
-  "passed": 53,
+  "passed": 62,
   "failed": 0,
   "cases": [
     "unprepared Storage denied",
@@ -54,12 +54,21 @@
     "stale rectification denied",
     "concurrent replay exactly once",
     "competing rectification one winner",
-    "expired preparation denied"
+    "expired preparation denied",
+    "full hosted candidate refuses reduced catalog atomically",
+    "full hosted rollback refuses reduced catalog atomically",
+    "exact baseline hashes verified locally",
+    "candidate post failure rolls back private table",
+    "full localized candidate installs exact hashes",
+    "rollback post failure atomic",
+    "rollback exact closed baseline",
+    "rollback preserves receipt/history",
+    "rollback remains closed"
   ],
   "hashes": {
     "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])": "990fb351076582f099a49663e2146ddd",
     "can_user_access_aplicacao(uuid)": "04067ba43cea3eed845a1fd3735061e0",
     "platform_private.storage1_application_allowed(text,text)": "4265fe941e813c01bbcb11aa950c4fc6"
   },
-  "limitations": "Reduced schema/RLS/auth emulation. Storage.objects synthetic, not real SDK upload/bytes/JWT/browser. No hosted writes."
+  "limitations": "Reduced schema/RLS/auth emulation. Storage.objects synthetic, not real SDK upload/bytes/JWT/browser. Full hosted guard refuses reduced catalog; full install/rollback use explicit local-only guard substitutions. No hosted writes."
 }
