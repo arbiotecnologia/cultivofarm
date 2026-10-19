@@ -1,0 +1,39 @@
+{
+  "package": "monitor-attachments-hotfix",
+  "baseline_commit": "3eeb3212bcb42d606e924ba8b2cc21399d93d5f6",
+  "scope": "frontend only; no SQL, no publish, no role/data mutation",
+  "excluded": "lot-generation candidate frontend (GerarLoteDialog/OSDetalhesDialog/useEsteiraLaboratorio/lot tests) stays in working tree, NOT part of this delta",
+  "files": [
+    {
+      "path": "src/lib/authz/authzEpochMonitor.ts",
+      "baseline_sha256": "5d53239663f65556e5581ba5d8cc7188721c08dc6e020d01a62d941810888a31",
+      "candidate_sha256": "72b26f0aa94caae2a94cc0c34a1d8297227b3e7388b30a7c3c574db38f96d1a9"
+    },
+    {
+      "path": "src/components/financeiro/DocumentosPanel.tsx",
+      "baseline_sha256": "ff829485d7524e8254ded6e7d58db0398121c36381083083d54ec59362b198b4",
+      "candidate_sha256": "41df51eeb017cd87e7314a0a4e298a40b56c52ab234409f9818ddfe7c993b0ff"
+    },
+    {
+      "path": "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+      "baseline_sha256": "60261bd006598487825e534e0153da4c1b44d2563853c9bab16fef93a08d155b",
+      "candidate_sha256": "f9bc5a0ef840e28c779528146bf27d46e15f04c7a8da52d3999c98cf15bd3807"
+    },
+    {
+      "path": "src/test/config/authzEarlyRenewal.test.ts",
+      "baseline_sha256": "5ae88cf4c1a8621fe7a1f84c07ea5dd15852b3a700944c59252a656788ffd857",
+      "candidate_sha256": "f3dce525c17ee7dc00ef4bf2aa992531fc7cabd235bfb04fac88181004ae7921"
+    },
+    {
+      "path": "src/test/equipe-tecnica/StorageDownloads.session.test.tsx",
+      "baseline_sha256": "4f49ef3fc4334daf948b08aebc9595e5d707e9a4e96daaff7b7dd04289fbe4ff",
+      "candidate_sha256": "b637de92074d9bf6ecff290edf528e825c5fa7505bc088fc79dd27183977f638"
+    },
+    {
+      "path": "src/test/financeiro/FinancialAuthenticatedDownloads.test.tsx",
+      "baseline_sha256": null,
+      "candidate_sha256": "9c7387ced2cb26f5f7d7ca6c7fa0a0498d59ccae084470a94a85d49a60573f1c"
+    }
+  ],
+  "patch_sha256": "311750778042b6ce6fc35415c93821e6901e491b6e34a62ac7a8dfbdbd99d74e"
+}
