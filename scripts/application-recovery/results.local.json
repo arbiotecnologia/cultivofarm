@@ -1,5 +1,5 @@
 {
-  "passed": 104,
+  "passed": 107,
   "failed": 0,
   "cases": [
     "unprepared Storage denied",
@@ -97,8 +97,11 @@
     "concurrent replay exactly once",
     "competing rectification one winner",
     "expired preparation denied",
-    "full hosted candidate refuses reduced catalog atomically",
-    "full hosted rollback refuses reduced catalog atomically",
+    "byte-exact preflight-readonly.sql compiles full guard and refuses schema drift atomically",
+    "byte-exact candidate.sql.review compiles full guard and refuses schema drift atomically",
+    "byte-exact rollback.sql.review compiles full guard and refuses schema drift atomically",
+    "byte-exact postflight.sql.review compiles full guard and refuses schema drift atomically",
+    "original CASE mutation reproduces SQLSTATE42601 without writes",
     "exact baseline hashes verified locally",
     "candidate post failure rolls back private table",
     "full localized candidate installs exact hashes",

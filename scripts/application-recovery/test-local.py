@@ -1,6 +1,6 @@
 """Disposable PostgreSQL: real SQL bodies, reduced tables/resolvers, emulated claims, NOT JWT/hosted."""
 from pathlib import Path
-import tempfile, subprocess, os, json, uuid, concurrent.futures, re
+import tempfile, subprocess, os, json, uuid, concurrent.futures, re, hashlib
 HERE=Path(__file__).resolve().parent
 BASE=HERE.parent/'application-access-integrity'
 def main():
@@ -118,8 +118,24 @@ def main():
   expired=str(uuid.uuid4());rpc(expired,p);run(sql=f"UPDATE platform_private.application_save_preparations SET expires_at=clock_timestamp()-interval '1 second' WHERE application_id='{expired}';");rpc(expired,p,'finalize',ok=False);passed.append('expired preparation denied')
   # Whole review files run unchanged and refuse this reduced schema before any write.
   def snapshot():return run(sql="SELECT oid::regprocedure,md5(pg_get_functiondef(oid)),proacl::text,proconfig FROM pg_proc WHERE oid IN ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])'::regprocedure,'platform_private.storage1_application_allowed(text,text)'::regprocedure,'public.can_user_access_aplicacao(uuid)'::regprocedure) ORDER BY oid;")
-  installed=snapshot();run(file=HERE/'candidate.sql.review',ok=False);assert snapshot()==installed;passed.append('full hosted candidate refuses reduced catalog atomically')
-  run(file=HERE/'rollback.sql.review',ok=False);assert snapshot()==installed;passed.append('full hosted rollback refuses reduced catalog atomically')
+  installed=snapshot()
+  byte_exact=[]
+  for name in ['preflight-readonly.sql','candidate.sql.review','rollback.sql.review','postflight.sql.review']:
+   source=HERE/name;data=source.read_bytes()
+   result=subprocess.run(cmd+['-v','VERBOSITY=verbose','-f',str(source)],text=True,capture_output=True)
+   assert result.returncode!=0 and 'P0001' in result.stderr and 'application_schema_policy_trigger_drift' in result.stderr,result.stderr
+   assert '42601' not in result.stderr and snapshot()==installed and source.read_bytes()==data
+   passed.append('byte-exact '+name+' compiles full guard and refuses schema drift atomically')
+   byte_exact.append(dict(path=name,sha256=hashlib.sha256(data).hexdigest(),exit=result.returncode,sqlstate='P0001',result='application_schema_policy_trigger_drift',guard_substituted=False))
+  # Mutation: the original unparenthesized CASE must reproduce the reported parser failure.
+  source=(HERE/'preflight-readonly.sql').read_text()
+  parenthesized="(CASE WHEN c.closed THEN ARRAY['postgres'] ELSE ARRAY['authenticated','postgres','service_role'] END)"
+  assert parenthesized in source
+  temp=t/'original-syntax-defect.sql';temp.write_text(source.replace(parenthesized,parenthesized[1:-1]))
+  result=subprocess.run(cmd+['-v','VERBOSITY=verbose','-f',str(temp)],text=True,capture_output=True)
+  assert result.returncode!=0 and '42601' in result.stderr,result.stderr
+  assert snapshot()==installed;passed.append('original CASE mutation reproduces SQLSTATE42601 without writes')
+  (HERE/'results.byte-exact.json').write_text(json.dumps(dict(files=byte_exact,original_mutation_sqlstate='42601',limitation='Real PostgreSQL parser, unchanged complete files; reduced catalog causes expected drift. Not equivalent full production catalog or successful full guard/installation.'),indent=2)+'\n')
   # Local-only guard substitutions are explicit: production hashes never auto-blessed.
   def localize(text,pre,post):
    guards=list(re.finditer(r'DO \$guard\$.*?END \$guard\$;',text,re.S));assert len(guards)==2
