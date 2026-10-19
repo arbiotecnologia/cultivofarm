@@ -21,7 +21,7 @@ Confirmações idênticas renovam apenas lease, preservando draft/modal sem refr
 
 `bun run test --` com integrações admin/financeiro/produtor/B2B/foundation, gates reais, B2B release, painel de anexos, comprovante e diálogo: **10 arquivos / 241 testes PASS**. Admin usa AuthProvider, monitor, ProtectedRoutes, AppLayout, boundary e QueryClient reais; página admin e transportes/session são stubs explícitos. Prova pending sem menus/dados, dois polls idênticos com draft/modal, inativação/role/tenant, retry negado/restore, timeout/offline/tardios, UID novo, papéis compostos/org inválida, has_role estritamente true e erros em cada leitura canônica. **Não é usuário autenticado real, JWT/RLS, Storage ou homologação SQL**. Warnings JSDOM/Recharts preexistentes não falharam.
 
-Build/typecheck são automáticos do harness, não executados manualmente. Resultado atual deve ser confirmado no último registro antes da entrega. O gate admin false impede alegar correção já ativa em produção/preview; teste live gate-on depende da revisão/ativação do proprietário.
+Regressões adicionais do monitor e deadline de anexos: **2 arquivos / 34 testes PASS**, total **275 testes PASS**. Staging local **4/4 PASS** (quatro modos, drift, destinos protegidos e bytes). Build/typecheck automáticos do harness: último registro `2026-10-19T00:42:52Z build OK`, não executados manualmente. O gate admin false impede alegar correção já ativa em produção/preview; teste live gate-on depende da revisão/ativação do proprietário.
 
 ## Preflight e staging/rollback
 

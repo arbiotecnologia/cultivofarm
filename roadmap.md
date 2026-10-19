@@ -2,7 +2,7 @@
 
 ## 19/10 00:36 — administrador de empresa em tela aberta
 - [x] Preparar recorte exclusivo no monitor único/probe compartilhado e boundary do shell, gate admin false.
-- [x] Testar drafts/modais, revoke/restore, roles/tenant/timeout/tardios e regressões publicados: 241/241 sintéticos.
+- [x] Testar drafts/modais, revoke/restore, roles/tenant/timeout/tardios e regressões publicados: 275/275 sintéticos e staging4/4; typecheck/build automáticos OK.
 - [x] Entregar preflight read-only integral, hashes/ACL/RLS e staging/rollback protegido; evidências externas/limites em administrador-tela-aberta-20261019.review.md.
 - [ ] Preflight/ativação/homologação real admin aguardam revisão do proprietário, sem publicar/DDL/Edge.
 
