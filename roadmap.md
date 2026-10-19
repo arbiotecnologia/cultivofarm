@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## Contextos técnicos indisponíveis — baseline 2f95d5be
-- [ ] Corrigir falsa negativa em /app durante limpeza por época, consulta pendente/erro; conteúdo oculto e Retry canônico.
-- [ ] Testar provider/guardas/query reais com transporte fake, negativa explícita, revogação parcial, tardios e timeout; pacote/rollback fixo.
+- [x] Corrigir falsa negativa em /app durante limpeza por época, consulta pendente/erro; conteúdo oculto e Retry canônico, guardas técnicas filhas coerentes.
+- [x] 302/302 provider/guardas/query reais com transporte fake; negativa explícita, revogação parcial, tardios e timeout; scripts/monitor-context-recovery e rollback byte-exato contra 2f95d5be verificado isoladamente.
 - [ ] Homologação real e estabilidade externa: dependem de revisão/publicação e sessões do auditor; sem SQL/publicação pelo agente.
 
 ## 19/10 18:10 — Retry/renovação sem loading infinito (pacote monitor-retry-loading contra 84edf6c)
