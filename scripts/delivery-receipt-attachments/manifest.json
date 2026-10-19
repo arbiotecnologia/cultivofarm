@@ -9,22 +9,36 @@
       "pre": "ba8ce3511ecb84f1e0c15e58f7cb51b3c2b1ca0c668c200a15d0f9a050d22b58",
       "post": "966f33e965657fd915371400fba31cdc28a68709aca15f83e0d8184bed2845a8"
     },
+    "src/components/clientes/ClienteDocumentosTab.tsx": {
+      "pre": "a6e42ef41c2eef316e09fef41761f0dbe1a9ced5decab1703cddadf24962243f",
+      "post": "340c305a5ec3ed28f6b27696f794a24db086d56186a2d1772181ebf288da9176"
+    },
     "src/test/entregas/painelEvidencias.test.tsx": {
       "pre": "cb34830f88282f79e1bf40866419571f896bda03c11b03385abc7dedc834dbab",
       "post": "87c13fd80011992e028a6945efa45c25bada9436909ecfc2fc6b7851f1b83eec"
     },
+    "src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx": {
+      "pre": "f358ce2f0946c24deaee8ce00f35448c19846c94457de9c83b67719c86f3fbdb",
+      "post": "645808e3a2a71feccaf5c9d7b03a6d283f71a89cc6ca0633ea6b09bd34fdc596"
+    },
+    "src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx": {
+      "pre": "699cc26892ee26d50a574f0ad52b75bc550255053516dced987d75328d9fec73",
+      "post": "a4296573dc91e4f016c3a31e5e50021bf092e0d2ccd8a5923d1f36b31760a0c6"
+    },
     "src/test/equipe-tecnica/StorageDownloads.session.test.tsx": {
       "pre": "b637de92074d9bf6ecff290edf528e825c5fa7505bc088fc79dd27183977f638",
-      "post": "09aeed456d43c9ad253b23a19d1515187feb69b3eba2594c29df827ddb6fdcf9"
+      "post": null
     }
   },
   "added": {
     "src/lib/entregas/comprovanteLocator.ts": "8ab85fa6120581d37209d21e85b22ac37f652f80cb577af7dfa9579634d1988a",
-    "src/test/entregas/comprovanteDownloadAutenticado.test.tsx": "f4d22ee5b49bb5cc003f1329ce8fe025a75237f3ecb90db8bca1854365af0848"
+    "src/test/entregas/comprovanteDownloadAutenticado.test.tsx": "f4d22ee5b49bb5cc003f1329ce8fe025a75237f3ecb90db8bca1854365af0848",
+    "src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx": "e32e777af0a4c1e4e79ab742fda510ebf939ee549c66b7fb77fad90e69d9beac"
   },
   "untouched_runtime": [
     "src/hooks/useAuthenticatedAttachmentOpener.ts",
     "src/lib/authz/authenticatedAttachment.ts",
+    "src/lib/authz/attachmentBlobGate.ts",
     "src/hooks/useAuth.tsx"
   ],
   "sql": null,
