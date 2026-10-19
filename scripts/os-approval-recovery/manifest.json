@@ -31,7 +31,7 @@
     "scripts/os-approval-recovery/stage.py": "6cb45395fecfdc997c4c170978159a2ac66892488069dfcebcb0e3bb6c5b3325",
     "scripts/os-approval-recovery/test-local.py": "b2896d117fd30a487f7061f4a00bd12e247e06b2a86f982d7b35b6e74eb94118",
     "scripts/os-approval-recovery/test_stage.py": "374f93f81181a361e9e4c8383b84404f088ea13548a881bddb68daa6d7884168",
-    "docs/auditorias/os-aprovacao-recuperacao-20261019.review.md": "b95b3e6b106ede24b09b49b82de6478ad3ec0d922314addae05f62f289444329"
+    "docs/auditorias/os-aprovacao-recuperacao-20261019.review.md": "fea5b838a3a4bb822f06373fcb491acca273802fb8407fb662b76cafabac705c"
   },
   "baseline_commit": "ff80adabd0d70eebd7d7da641831f7d020647814"
 }
