@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { anexarComprovanteBaixa } from "@/lib/financial/anexarComprovanteBaixa";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Upload, FileText, X } from "lucide-react";
 import { hojeSaoPaulo } from "@/lib/financeiro/contasReceber";
@@ -59,6 +60,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   // H6-002: chave de idempotencia por tentativa de baixa (evita baixa duplicada em duplo clique/retry)
   const idempotencyRef = useRef<string>(crypto.randomUUID());
   const receber = kind === "receivable";
+  const storageAccess = useStorageAccessScope(`baixa:${kind}:${installment?.id}:${open}`);
 
   const today = hojeSaoPaulo();
   const empty: any = { payment_date: today, amount: 0, payment_method_id: "", bank_account_id: "", discount_amount: 0, interest_amount: 0, penalty_amount: 0, notes: "" };
@@ -150,7 +152,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     retry: false,
-    mutationFn: async (vars?: { repetir?: boolean; token?: number }) => {
+    mutationFn: async (vars?: { repetir?: boolean; token?: number; isCurrent?: () => boolean }) => {
+      const isCurrent = vars?.isCurrent ?? (() => false);
+      if (!isCurrent()) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
       const repetir = !receber && !!vars?.repetir;
 
@@ -173,6 +177,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             file,
             uploadedBy: user.id,
             organizationId: profile.organization_id,
+            isCurrent,
           });
         } catch {
           throw erroAnexo(
@@ -293,16 +298,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
 
       if (file) {
-        if (!profile?.organization_id) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
         try {
+          if (!user || !profile?.organization_id || !isCurrent()) throw new Error("Contexto expirado");
           await anexarComprovanteBaixa(supabase, {
             ownerType,
             paymentId: paymentId as unknown as string,
             idempotencyKey: idempotencyRef.current,
             file,
-            uploadedBy: user!.id,
+            uploadedBy: user.id,
             organizationId: profile.organization_id,
+            isCurrent,
           });
         } catch {
           // Baixa persistida, comprovante não: estado explícito de falha parcial.
@@ -316,7 +322,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
       return { ok: true as const };
     },
-    onSuccess: (r: any) => {
+    onSuccess: (r: any, vars) => {
+      if (!vars?.isCurrent?.()) return;
       if (r?.ignorado) return;
       invalidarTudo();
       if (!receber && !r?.reenvio) {
@@ -349,7 +356,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         enviandoRef.current = false;
       }
     },
-    onError: (e: unknown) => {
+    onError: (e: unknown, vars) => {
+      if (!vars?.isCurrent?.()) return;
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
       if (receber) {
@@ -403,7 +411,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     enviandoRef.current = true;
     const token = donoRef.current + 1;
     donoRef.current = token;
-    save.mutate({ ...vars, token });
+    save.mutate({ ...vars, token, isCurrent: storageAccess.capture() });
   }
 
   /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
