@@ -36,12 +36,12 @@ function deadline(ms: number, parent?: AbortSignal | null): Deadline {
       (e) => { signal.removeEventListener("abort", on); reject(e); },
     );
   });
-  const run = (b: any) => wait(typeof b?.abortSignal === "function" ? b.abortSignal(signal) : b);
+  const run = <T = any,>(b: any): Promise<T> => wait<T>(typeof b?.abortSignal === "function" ? b.abortSignal(signal) : b);
   return { signal, wait, run, dispose: () => { clearTimeout(timer); parent?.removeEventListener("abort", abort); } };
 }
 
 /** Bytes do bucket privado via transporte abortavel, com limite aplicado durante o stream. */
-async function lerPdfLimitado(d: Deadline, path: string): Promise<{ ok: true; bytes: Uint8Array } | { ok: false; status: number }> {
+async function lerPdfLimitado(d: Deadline, path: string): Promise<{ ok: true; bytes: Uint8Array<ArrayBuffer> } | { ok: false; status: number }> {
   const base = Deno.env.get("SUPABASE_URL")!; const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const url = `${base}/storage/v1/object/authenticated/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`;
   const res: Response = await d.wait(fetch(url, { headers: { Authorization: `Bearer ${key}`, apikey: key }, signal: d.signal }));
@@ -59,7 +59,7 @@ async function lerPdfLimitado(d: Deadline, path: string): Promise<{ ok: true; by
     }
   } catch (e) { reader.cancel().catch(() => {}); throw e; }
   if (total <= 0) return { ok: false, status: 404 };
-  const bytes = new Uint8Array(total); let off = 0;
+  const bytes = new Uint8Array(new ArrayBuffer(total)); let off = 0;
   for (const part of parts) { bytes.set(part, off); off += part.byteLength; }
   return { ok: true, bytes };
 }
