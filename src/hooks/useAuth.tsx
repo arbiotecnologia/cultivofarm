@@ -680,7 +680,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // and epoch-keyed content (Blobs revoked on unmount) are retired.
     renewalRef.current = null;
     safeDraftRef.current = null;
-    const gen = ++generationRef.current;
+    // Fences in-flight loader answers (the latest loader re-reads freshly).
+    ++generationRef.current;
     void queryClient.cancelQueries();
     queryClient.clear();
     clearActivePortalContext();
@@ -688,7 +689,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthzEpoch((e) => e + 1);
     const cachedRoles = [...roles].sort();
     const cachedOrg = profile?.organization_id ?? null;
-    const isCurrent = () => mountedRef.current && gen === generationRef.current;
+    // Retry yields only to identity change/sign-out/unmount or a newer loader
+    // (TOKEN_REFRESHED/refresh). Monitor expiry is NOT a reason to abandon it:
+    // an expired old-scope poll must not cancel the re-resolution.
+    const seqAtStart = loaderSeqRef.current;
+    const isCurrent = () => mountedRef.current && activeUserIdRef.current === uid &&
+      loaderSeqRef.current === seqAtStart && timerRef.current === null;
     const run = (async () => {
       try {
         // Fresh observation only decides whether re-resolution is needed; it
@@ -697,32 +703,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let fresh: string[] | null = null;
         let freshOrg: unknown = null;
         let active = false;
+        let deadline: ReturnType<typeof setTimeout> | undefined;
         try {
-          const { data: p, error: pe } = await supabase.from("profiles")
-            .select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle();
-          const { data: r, error: re } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+          // Bounded: a hung read ends as "unavailable" (probe path), never an endless Retry.
+          const timeout = new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error("retry_read_timeout")), AUTH_LOAD_TIMEOUT_MS); });
+          const [{ data: p, error: pe }, { data: r, error: re }] = await Promise.race([Promise.all([
+            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle(),
+            supabase.from("user_roles").select("role").eq("user_id", uid),
+          ]), timeout]);
           if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
             active = (p as { ativo?: unknown }).ativo === true;
             freshOrg = (p as { organization_id?: unknown }).organization_id;
             fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
           }
-        } catch { fresh = null; }
+        } catch { fresh = null; } finally { clearTimeout(deadline); }
         if (!isCurrent()) return;
         const same = fresh !== null && freshOrg === cachedOrg &&
           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
         // Empty set stays on the paused probe path (no error-screen detour).
         // Tenant changes are never adopted by Retry (fresh login or the
-        // TOKEN_REFRESHED path re-resolves them with their own probe).
-        if (fresh === null || fresh.length === 0 || !active || same || freshOrg !== cachedOrg) {
+        // TOKEN_REFRESHED path re-resolves them with their own probe). With no
+        // cached tenant (earlier load failure) this is a first resolution and
+        // the new scope's probe re-proves the tenant.
+        if (fresh === null || fresh.length === 0 || !active || same || (cachedOrg !== null && freshOrg !== cachedOrg)) {
           authzMonitorRef.current?.revalidate();
           return;
         }
-        // Divergent active set/tenant: re-resolve via the existing loader.
+        // Divergent active set: re-resolve via the existing loader. The
+        // monitor for the resulting scope is (re)started after commit, never
+        // the old-scope monitor from this closure.
         loadedUserIdRef.current = uid;
+        retryRevalidateRef.current = true;
         setLoading(true);
-        await fetchProfileAndRole(uid, gen);
-        if (!isCurrent()) return;
-        authzMonitorRef.current?.revalidate();
+        await fetchProfileAndRole(uid, generationRef.current);
       } finally {
         retryInFlightRef.current = null;
         if (mountedRef.current) setRetryPending(false);
