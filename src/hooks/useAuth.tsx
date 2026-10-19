@@ -298,13 +298,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
     // como macrotask separada.
     const scheduleLoad = (userId: string) => {
-      const gen = ++generationRef.current;
+      ++generationRef.current;
       loadedUserIdRef.current = userId;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        if (effectCancelled || !mountedRef.current || gen !== generationRef.current) return;
-        void fetchProfileAndRole(userId, gen);
+        // A newer schedule clears this timer; sign-out clears it too. Other
+        // fences (expiry/Retry/epoch) are not loaders: still load, under the
+        // CURRENT generation, so loading always ends.
+        if (effectCancelled || !mountedRef.current || activeUserIdRef.current !== userId) return;
+        void fetchProfileAndRole(userId, generationRef.current);
       }, 0);
     };
 
@@ -318,6 +321,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         const nextUserId = session?.user?.id ?? null;
+        activeUserIdRef.current = nextUserId;
         const identityChanged = !!(lastUserId && lastUserId !== nextUserId);
         const authorizationChanged = event === "TOKEN_REFRESHED" || event === "USER_UPDATED";
         if (identityChanged || authorizationChanged || !nextUserId) {
