@@ -219,7 +219,7 @@ describe("BaixaDialog payable — resultado incerto sobrevive a fechar/reabrir",
   it("resolução tardia após a incerteza não registra sucesso nem nova RPC", async () => {
     let resolver: (v: any) => void = () => {};
     rpcMock.mockImplementation(() => new Promise((res) => { resolver = res; }));
-    const view = abrirDialog();
+    abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
     await selecionarMetodo();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
@@ -250,7 +250,7 @@ describe("BaixaDialog payable — reenvio de comprovante pendente", () => {
       error: null,
     };
     anexarMock.mockRejectedValueOnce(new Error("upload falhou"));
-    abrirDialog();
+    const view = abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
     await selecionarMetodo();
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
