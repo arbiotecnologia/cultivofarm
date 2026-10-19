@@ -32,7 +32,9 @@
     "open OS no autoapproval",
     "real immediate FK link insertion fenced by parent",
     "real immediate FK lot insertion fenced by parent",
-    "real global MV contention timeout rolls back whole operation"
+    "real global MV contention timeout rolls back whole operation",
+    "local authenticated SQL role canonical RPC after minimal grant",
+    "local anon remains denied"
   ],
   "candidate_md5": "e374f0ba1698b37523b890dc91682eaf"
 }

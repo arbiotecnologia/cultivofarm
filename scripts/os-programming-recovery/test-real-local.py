@@ -155,6 +155,14 @@ def main():
   assert denied.returncode and 'lock timeout' in denied.stderr,denied.stderr
   assert run(f"SELECT status FROM ordens_servico WHERE id={O}; SELECT count(*) FROM laboratorio_esteira_eventos;").stdout.strip()=='aprovada\n0'
   results.append('real global MV contention timeout rolls back whole operation')
+  reset()
+  # Canonical RPC with SQL role authenticated; synthetic claims, NOT a hosted JWT.
+  run("GRANT USAGE ON SCHEMA public TO authenticated; GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO authenticated;")
+  out=run(actor+'SET ROLE authenticated;SELECT '+call+';')
+  assert '"success": true' in out.stdout,out
+  results.append('local authenticated SQL role canonical RPC after minimal grant')
+  out=run(actor+'SET ROLE anon;SELECT '+call+';',False);assert out.returncode
+  results.append('local anon remains denied')
   report={'hosted_writes':False,'auth_transport':'synthetic UID/JWT; no authenticated hosted request','schema':'all public captured columns/types, all PK/UNIQUE/FKs and CHECKs of target/auth/SaaS/reference tables; all 23 target triggers; real refresh view chain; not every unrelated trigger/policy','passed':results,'candidate_md5':hash}
   (H/'real-test-results.json').write_text(json.dumps(report,indent=2)+'\n')
   print(json.dumps(report,indent=2))
