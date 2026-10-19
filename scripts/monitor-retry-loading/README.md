@@ -50,3 +50,11 @@ restauração. Não marcar homologado sem esse recibo.
 - Retry cujo carregador nunca responde: o Retry não espera mais o carregador (loading mantém readiness fechada; o carregador tem
   prazo próprio), então `retryInFlightRef` é liberado; erro explícito, sem autoridade antiga; respostas tardias descartadas.
 - AdminB real: pending timeout 15005 ms (17:55:37 e 17:56:26) = rede acima do lease de 15 s → bloqueio seguro esperado; lease não estendido.
+
+## Adendo 18:25 — revisão 1875eb (Retry divergente, `profiles.select('*')` infinito)
+- Causa: o watchdog limpava a UI, mas a Promise do carregador seguia pendente; o `finally` do Retry não rodava e
+  `retryInFlightRef`/`retryPending` ficavam presos (novo Retry ignorado, readiness false).
+- Correção: o carregador devolve `Promise.race([corpo, prazo])` — SEMPRE resolve até 20 s (também quando substituído);
+  o corpo tardio continua cercado por `isCurrent()` (titular/geração/prazo). Retry volta a AGUARDAR o carregador e libera o single-flight.
+- Teste novo (0 ms e 500 ms/chamada): par→gestor, leitura fresca responde, só `select('*')` nunca resolve, 60 s, transporte volta,
+  `revalidateAuthz` → `authzReady === true`. Variante sem a garantia de término (forma 1875eb): 2/2 falham; candidato 17/17.

@@ -177,7 +177,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let timedOut = false;
     // Watchdog: a hung transport ends in an explicit, recoverable error. The
     // loader is retired first, so a late answer is never adopted.
+    // The returned promise ALWAYS settles by the deadline (owned-loader
+    // contract): awaiting callers such as Retry release their single-flight
+    // even when the transport never answers.
+    let settle!: () => void;
+    const settled = new Promise<void>(resolve => { settle = resolve; });
     const watchdog = setTimeout(() => {
+      settle();
       if (!mountedRef.current || seq !== loaderSeqRef.current) return;
       timedOut = true;
       loaderSeqRef.current++;
@@ -194,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadDiagnostic("load_restart", startedAt);
       void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
     };
-    try {
+    const body = (async () => { try {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -272,7 +278,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       failLoad();
     } finally {
       clearTimeout(watchdog);
-    }
+      settle();
+    } })();
+    // Late body completions after the deadline stay fenced by isCurrent().
+    return Promise.race([body, settled]);
   };
 
   const refresh = async () => {
@@ -749,9 +758,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadedUserIdRef.current = uid;
         retryRevalidateRef.current = true;
         setLoading(true);
-        // Not awaited: `loading` keeps readiness closed and the loader owns its
-        // own deadline, so a hung transport can never pin Retry's single-flight.
-        void fetchProfileAndRole(uid, generationRef.current);
+        // Awaited: the owned loader always settles by its deadline, so the
+        // single-flight is released in finally even if the transport hangs.
+        await fetchProfileAndRole(uid, generationRef.current);
       } finally {
         retryInFlightRef.current = null;
         if (mountedRef.current) setRetryPending(false);
