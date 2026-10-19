@@ -13,11 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, MapPin, AlertTriangle, Sprout, FlaskConical, Cloud, Camera, X, ImageIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { dataLocal, validarAplicacao } from "@/lib/aplicacoes/validacao";
-import { EvidenciasUploader, uploadEvidencias, limparObjetosEvidencias, PendingEvidencia } from "./EvidenciasUploader";
+import { EvidenciasUploader, PendingEvidencia } from "./EvidenciasUploader";
 import { validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
 
-import { dependentesNovaOS, totalAplicacao, unidadeAplicacao } from "@/lib/aplicacoes/unidades";
-import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
+import { dependentesNovaOS, totalAplicacao, unidadeAplicacao, UNIDADE_EXECUCAO_CANONICA } from "@/lib/aplicacoes/unidades";
+import { applicationAttempt, salvarAplicacao, type ApplicationAttempt } from "@/lib/aplicacoes/salvar";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
 
 const MODOS = ["Pulverização foliar", "Aplicação no colo da planta", "Via solo", "Tratamento de semente", "Sulco de plantio", "Jato dirigido"];
 const RESULTADOS = [
@@ -39,10 +41,12 @@ interface Props {
 export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId, onSuccess }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { finalizarOS } = useEsteiraLaboratorio();
+  const access = useStorageAccessScope(`application-form:${open}:${rectifyId || "new"}`);
+  const attemptRef = useRef<ApplicationAttempt>();
 
 
   const [osId, setOsId] = useState(defaultOsId || "");
+  const resource = useStorageAccessScope(`application-save:${open}:${rectifyId || "new"}:${osId}`);
   const [dataAplicacao, setDataAplicacao] = useState(dataLocal().slice(0, 10));
   const [horaInicio, setHoraInicio] = useState<string>(dataLocal());
   const [horaFim, setHoraFim] = useState<string>("");
@@ -50,6 +54,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   const [modoAplicacao, setModoAplicacao] = useState("");
   const [loteId, setLoteId] = useState("");
   const [doseAplicada, setDoseAplicada] = useState("");
+  const [doseUnidade, setDoseUnidade] = useState("");
   const [volumeCalda, setVolumeCalda] = useState("");
   const [areaAplicada, setAreaAplicada] = useState("");
   const [equipamento, setEquipamento] = useState("");
@@ -72,10 +77,12 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
   // Busca dados da aplicação para retificação
   const { data: aplicacaoOriginal, isLoading: loadingOriginal } = useQuery({
-    queryKey: ["aplicacao", rectifyId],
-    enabled: !!rectifyId && open,
+    queryKey: ["aplicacao", rectifyId, access.scope],
+    enabled: !!rectifyId && open && access.ready,
     queryFn: async () => {
+      const current = access.capture();
       const { data, error } = await supabase.from("aplicacoes").select("*").eq("id", rectifyId).single();
+      if (!current()) throw new Error("Acesso alterado");
       if (error) throw error;
       return data;
     },
@@ -83,9 +90,10 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
   // Busca evidências da aplicação original para reutilizar
   const { data: evidenciasOriginais = [] } = useQuery({
-    queryKey: ["aplicacao-evidencias", rectifyId],
-    enabled: !!rectifyId && open,
+    queryKey: ["aplicacao-evidencias", rectifyId, access.scope],
+    enabled: !!rectifyId && open && access.ready,
     queryFn: async () => {
+      const current = access.capture();
       const { data, error } = await supabase
         .from("aplicacao_evidencias_vinculos")
         .select(`
@@ -95,10 +103,14 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
         `)
         .eq("aplicacao_id", rectifyId);
         
+      if (!current()) throw new Error("Acesso alterado");
       if (error) throw error;
       return data?.map((d: any) => d.evidencia).filter(Boolean) || [];
     },
   });
+
+  const inherited = useAuthenticatedBlobUrls(evidenciasOriginais.map(e => e.storage_path), "aplicacao-evidencias", { enabled: open && access.ready });
+  useEffect(() => { attemptRef.current = undefined; }, [resource.scope]);
 
   useEffect(() => {
     if (evidenciasOriginais.length && rectifyId) {
@@ -136,19 +148,22 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   useEffect(() => { if (defaultOsId) setOsId(defaultOsId); }, [defaultOsId]);
 
   const { data: ordens = [] } = useQuery({
-    queryKey: ["os-para-aplicar", rectifyId ? "rect" : "nova"],
-    enabled: open,
+    queryKey: ["os-para-aplicar", rectifyId ? "rect" : "nova", access.scope],
+    enabled: open && access.ready,
     queryFn: async () => {
+      const current = access.capture();
       // Em retificação a OS já foi finalizada; ela precisa continuar selecionável.
       const status = rectifyId
         ? ["entregue", "pronto_entrega", "envase", "finalizada"]
         : ["entregue", "pronto_entrega", "envase"];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("ordens_servico")
         .select("id, cliente_id, area_hectares, volume_total_ml, status, clientes(nome), fazendas(nome), talhoes(nome), produtos(id, nome, dose_ml_ha)")
         .in("status", status as any)
         .order("created_at", { ascending: false })
         .limit(200);
+      if (!current()) throw new Error("Acesso alterado");
+      if (error) throw error;
       return data || [];
     },
   });
@@ -157,29 +172,33 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   const osSel = ordens.find((o: any) => o.id === osId);
 
   const { data: lotes = [] } = useQuery({
-    queryKey: ["lotes-produto", (osSel as any)?.produtos?.id],
-    enabled: !!(osSel as any)?.produtos?.id,
+    queryKey: ["lotes-produto", (osSel as any)?.produtos?.id, access.scope],
+    enabled: !!(osSel as any)?.produtos?.id && access.ready,
     queryFn: async () => {
+      const current = access.capture();
       const { data } = await supabase.from("lotes").select("id, codigo_lote, volume_produzido, status")
         .eq("produto_id", (osSel as any).produtos.id).order("created_at", { ascending: false }).limit(50);
+      if (!current()) throw new Error("Acesso alterado");
       return data || [];
     },
   });
 
   const { data: profiles = [] } = useQuery({
-    queryKey: ["profiles-aplicador"],
-    enabled: open,
+    queryKey: ["profiles-aplicador", access.scope],
+    enabled: open && access.ready,
     queryFn: async () => {
+      const current = access.capture();
       const { data } = await supabase.from("profiles").select("user_id, nome").eq("ativo", true).order("nome").limit(200);
+      if (!current()) throw new Error("Acesso alterado");
       return data || [];
     },
   });
 
   // ordens_servico não possui unidade nem vínculo de prescrição; dose_ml_ha
   // do catálogo não prova a unidade da recomendação desta OS.
-  const unidade = unidadeAplicacao(null);
+  const unidade = unidadeAplicacao(doseUnidade);
   const erroUnidade = osId
-    ? "A OS não informa uma unidade inequívoca da recomendação. Registro bloqueado até que esse vínculo esteja disponível."
+    ? "Selecione a unidade da dose real"
     : "Selecione a OS";
   const total = totalAplicacao(doseAplicada, areaAplicada, unidade?.dose);
   const volumeTotal = total?.valor ?? 0;
@@ -191,6 +210,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
     const limpos = dependentesNovaOS();
     setOsId(id);
     setDoseAplicada(limpos.dose);
+    setDoseUnidade("");
     setAreaAplicada(limpos.area);
     setLoteId(limpos.lote);
     setVolumeCalda(limpos.calda);
@@ -209,6 +229,8 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
   const submit = async () => {
     if (submittingRef.current) return;
+    if (!resource.ready || !osSel) return;
+    const current = resource.capture();
     if (!unidade) return toast.error(erroUnidade);
     if (loteId && !lotes.some(l => l.id === loteId)) return toast.error("Selecione um lote do produto da OS");
     const erro = validarAplicacao({
@@ -234,9 +256,6 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
     submittingRef.current = true;
     setSaving(true);
-    // O id é gerado antes do upload: os objetos já nascem no caminho definitivo.
-    const aplicacaoId = crypto.randomUUID();
-    let caminhosEnviados: string[] = [];
     try {
       const aplicacaoData = {
         ordem_servico_id: osId,
@@ -249,6 +268,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
         produto_usado_id: (osSel as any)?.produtos?.id || null,
         lote_usado_id: loteId || null,
         dose_aplicada: Number(doseAplicada),
+        dose_unidade: doseUnidade,
         volume_calda_l_ha: volumeCalda ? Number(volumeCalda) : null,
         volume_total_aplicado_ml: unidade.total === "mL" ? volumeTotal : null,
         area_aplicada_ha: Number(areaAplicada),
@@ -267,78 +287,32 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
         motivo_retificacao: motivoRetificacao.trim() || null,
       };
 
-      const enviadas = evidencias.length && osSel
-        ? await uploadEvidencias(evidencias, aplicacaoId, (osSel as any).cliente_id)
-        : [];
-      caminhosEnviados = enviadas.map(e => e.storage_path);
-
-      // Persistência atômica: aplicação, versionamento, evidências novas e mantidas.
-      const { error: rpcErro } = await (supabase as any).rpc("rpc_salvar_aplicacao_v1", {
-        p_aplicacao_id: aplicacaoId,
-        p_payload: aplicacaoData,
-        p_rectify_id: rectifyId || null,
-        p_evidencias: enviadas,
-        p_evidencias_manter: rectifyId ? evidenciasParaManter : [],
-      });
-      if (rpcErro) throw rpcErro;
-      caminhosEnviados = [];
-
-      // Passos pós-registro NÃO invalidam o cadastro já salvo.
-      try {
-        const { data: osProg } = await supabase.from("programacao_producao").select("id").eq("ordem_servico_id", osId).limit(1).maybeSingle();
-        if (osProg) {
-          await finalizarOS(osProg.id, osId, "manual");
-        } else {
-          const { error: avancoErro } = await (supabase as any).rpc("rpc_avancar_esteira_laboratorio", {
-            p_os_id: osId,
-            p_origem: "manual",
-            p_etapa_destino: "finalizada",
-            p_programacao_id: null,
-          });
-          if (avancoErro) throw avancoErro;
-        }
-      } catch {
-        toast.warning("Aplicação salva, mas a OS não pôde ser finalizada. Finalize pelo Cockpit.");
-      }
-
-      if (osSel) {
-        try {
-          const { error: notifErro } = await (supabase as any).rpc("rpc_create_portal_notification_secure", {
-            _cliente_id: (osSel as any).cliente_id,
-            _tipo: rectifyId ? "alerta" : "aplicacao",
-            _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-            _mensagem: rectifyId
-              ? `O registro de aplicação de ${(osSel as any).produtos?.nome || "produto"} foi corrigido.`
-              : `Aplicação de ${(osSel as any).produtos?.nome || "produto"} registrada em ${(osSel as any).fazendas?.nome || ""} / ${(osSel as any).talhoes?.nome || ""}`,
-            _link: null,
-            _source_type: "aplicacao",
-            _source_id: aplicacaoId,
-            _idempotency_key: `aplic-dialog-${aplicacaoId}-${rectifyId ? "rect" : "new"}`,
-          });
-          if (notifErro) throw notifErro;
-        } catch {
-          toast.warning("Aplicação salva, mas o produtor não foi notificado.");
-        }
-      }
+      // rpc_salvar_aplicacao_v1 prepares the exact upload manifest, then commits atomically.
+      const keep = rectifyId ? evidenciasParaManter : [];
+      attemptRef.current = applicationAttempt(aplicacaoData, rectifyId || null, evidencias, keep, (osSel as any).cliente_id, attemptRef.current);
+      await salvarAplicacao(attemptRef.current, aplicacaoData, rectifyId || null, evidencias, keep, current);
+      if (!current()) return;
 
       toast.success(rectifyId ? "Aplicação retificada com sucesso" : "Aplicação registrada com sucesso");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
       qc.invalidateQueries({ queryKey: ["os-para-aplicar"] });
       qc.invalidateQueries({ queryKey: ["aplicacao", rectifyId] });
+      if (!current()) return;
       onSuccess?.();
+      if (!current()) return;
       onOpenChange(false);
     } catch (e: any) {
-      await limparObjetosEvidencias(caminhosEnviados);
-      toast.error(e.message || "Erro ao salvar");
+      // No limparObjetosEvidencias: a timeout may have committed metadata already.
+      if (current()) toast.error(e.message || "Erro ao salvar");
     } finally {
       submittingRef.current = false;
-      setSaving(false);
+      if (current()) setSaving(false);
     }
   };
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && access.ready} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{rectifyId ? `Retificar Aplicação (v${(aplicacaoOriginal?.versao || 1) + 1})` : "Registrar Aplicação em Campo"}</DialogTitle>
@@ -429,6 +403,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="space-y-1.5"><Label>Unidade da dose real *</Label><Select value={doseUnidade} onValueChange={setDoseUnidade} disabled={saving}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value={UNIDADE_EXECUCAO_CANONICA}>mL/ha</SelectItem></SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Dose real{unidade ? ` (${unidade.dose})` : " (unidade não informada)"} *</Label><Input type="number" value={doseAplicada} onChange={(e) => setDoseAplicada(e.target.value)} /></div>
               <div className="space-y-1.5"><Label>Área aplicada (ha) *</Label><Input type="number" value={areaAplicada} onChange={(e) => setAreaAplicada(e.target.value)} /></div>
               <div className="space-y-1.5"><Label>Calda (L/ha)</Label><Input type="number" value={volumeCalda} onChange={(e) => setVolumeCalda(e.target.value)} /></div>
@@ -500,7 +475,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
                     return (
                       <div key={ev.id} className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${mantendo ? 'border-primary/50 shadow-sm' : 'border-transparent opacity-30 grayscale'}`}>
                         {ev.tipo === 'foto' ? (
-                          <img src={ev.url} alt="" className="w-full h-full object-cover" />
+                          <img src={inherited.urls[ev.storage_path]} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-muted">
                             <FileText className="h-5 w-5 text-muted-foreground" />
@@ -545,7 +520,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
           {osId && !unidade && <p role="alert" className="text-sm text-destructive">{erroUnidade}</p>}
           <Button className="w-full h-11" onClick={submit} disabled={saving || !osId || !unidade}>
-            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : "Registrar e finalizar OS"}
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : "Registrar aplicação"}
           </Button>
         </div>
       </DialogContent>

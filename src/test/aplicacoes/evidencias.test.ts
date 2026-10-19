@@ -91,22 +91,8 @@ describe("evidências de aplicação", () => {
     expect(ACCEPT_EVIDENCIAS).toContain("image/heic");
   });
 
-  it("formulários usam a RPC atômica e limpam objetos em falha", () => {
-    for (const arq of ["src/components/aplicacao/AplicacaoFormDialog.tsx", "src/pages/app/MobileAplicacoes.tsx"]) {
-      const src = readFileSync(arq, "utf8");
-      expect(src).toContain("rpc_salvar_aplicacao_v1");
-      expect(src).toContain("limparObjetosEvidencias");
-      expect(src).toContain("validarMotivoRetificacao");
-      expect(src).not.toContain('.from("aplicacoes").insert');
-    }
-  });
-
-  it("mobile finaliza a OS pela esteira e nunca por update direto", () => {
-    const src = readFileSync("src/pages/app/MobileAplicacoes.tsx", "utf8");
-    expect(src).toContain("rpc_avancar_esteira_laboratorio");
-    expect(src).not.toContain('.from("ordens_servico").update');
-    expect(src).toContain("_source_type: \"aplicacao\"");
-  });
+  // Effects now exercised in salvar.test.ts. Old source assertions incorrectly
+  // required commercial finalization/notifications and destructive timeout cleanup.
 
   it("card não regrava email_envio após sucesso da função de envio", () => {
     const src = readFileSync("src/components/aplicacao/AplicacaoCard.tsx", "utf8");

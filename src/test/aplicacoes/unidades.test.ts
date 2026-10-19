@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { dependentesNovaOS, totalAplicacao, unidadeAplicacao } from "@/lib/aplicacoes/unidades";
+import { dependentesNovaOS, totalAplicacao, unidadeAplicacao, UNIDADE_EXECUCAO_CANONICA } from "@/lib/aplicacoes/unidades";
 import { dataLocal, validarAplicacao } from "@/lib/aplicacoes/validacao";
 
 describe("unidades e horários de aplicação", () => {
+  it("execução explícita mL/ha produz mL sem inferir recomendação", () => {
+    expect(UNIDADE_EXECUCAO_CANONICA).toBe("mL/ha");
+    expect(totalAplicacao("2", "3", UNIDADE_EXECUCAO_CANONICA)).toEqual({ valor: 6, unidade: "mL" });
+  });
   it.each(["mL", "L", "kg", "g", "unidade"])("preserva %s sem conversão", u => {
     expect(totalAplicacao("2", "3", `${u}/ha`)).toEqual({ valor: 6, unidade: u });
   });

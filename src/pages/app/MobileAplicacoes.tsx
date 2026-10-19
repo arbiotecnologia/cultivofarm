@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Droplets, MapPin, Camera, X, AlertTriangle, History } from "lucide-react";
 import { toast } from "sonner";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
-import { uploadEvidencias, limparObjetosEvidencias, PendingEvidencia } from "@/components/aplicacao/EvidenciasUploader";
+import { PendingEvidencia } from "@/components/aplicacao/EvidenciasUploader";
 import { ACCEPT_EVIDENCIAS, normalizarArquivoCamera, tipoEvidencia, validarArquivoEvidencia, validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
 import { validarAplicacao } from "@/lib/aplicacoes/validacao";
+import { applicationAttempt, salvarAplicacao, type ApplicationAttempt } from "@/lib/aplicacoes/salvar";
+import { UNIDADE_EXECUCAO_CANONICA } from "@/lib/aplicacoes/unidades";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 
 const MODOS = ["Pulverização foliar", "Aplicação no colo da planta", "Via solo", "Tratamento de semente", "Sulco de plantio", "Jato dirigido"];
@@ -34,6 +37,11 @@ export default function MobileAplicacoes() {
   const isProdutor = role === "cliente_produtor";
 
   const [osId, setOsId] = useState("");
+  const [doseUnidade, setDoseUnidade] = useState("");
+  const access = useStorageAccessScope(`mobile-application:${rectifyId || "new"}:${clienteId}:${osId}`);
+  const attemptRef = useRef<ApplicationAttempt>();
+  const lock = useRef(false);
+  useEffect(() => { attemptRef.current = undefined; }, [access.scope]);
   const [horaInicio, setHoraInicio] = useState(new Date().toISOString());
   const [horaFim, setHoraFim] = useState("");
   const [doseAplicada, setDoseAplicada] = useState("");
@@ -57,19 +65,22 @@ export default function MobileAplicacoes() {
 
   // Busca dados da aplicação para retificação
   const { data: aplicacaoOriginal, isLoading: loadingOriginal } = useQuery({
-    queryKey: ["mobile-aplicacao", rectifyId],
-    enabled: !!rectifyId,
+    queryKey: ["mobile-aplicacao", rectifyId, access.scope],
+    enabled: !!rectifyId && access.ready,
     queryFn: async () => {
+      const current = access.capture();
       const { data, error } = await supabase.from("aplicacoes").select("*").eq("id", rectifyId).single();
+      if (!current()) throw new Error("Acesso alterado");
       if (error) throw error;
       return data;
     },
   });
 
   const { data: ordens } = useQuery({
-    queryKey: ["mobile-os-aplicacao", isProdutor ? clienteId : "all"],
-    enabled: !isProdutor || !!clienteId,
+    queryKey: ["mobile-os-aplicacao", isProdutor ? clienteId : "all", access.scope],
+    enabled: access.ready && (!isProdutor || !!clienteId),
     queryFn: async () => {
+      const current = access.capture();
       let q = supabase
         .from("ordens_servico")
         .select("id, cliente_id, area_hectares, status, produtos(id, nome, dose_ml_ha), clientes(nome), fazendas(nome), talhoes(nome)")
@@ -81,7 +92,9 @@ export default function MobileAplicacoes() {
       }
       
       if (isProdutor && clienteId) q = q.eq("cliente_id", clienteId);
-      const { data } = await q;
+      const { data, error } = await q;
+      if (!current()) throw new Error("Acesso alterado");
+      if (error) throw error;
       return data || [];
     },
   });
@@ -110,7 +123,6 @@ export default function MobileAplicacoes() {
 
   useEffect(() => {
     if (osSel && !rectifyId) {
-      if (!doseAplicada && osSel.produtos?.dose_ml_ha) setDoseAplicada(String(osSel.produtos.dose_ml_ha));
       if (!areaAplicada && osSel.area_hectares) setAreaAplicada(String(osSel.area_hectares));
     }
   }, [osId, osSel, rectifyId]);
@@ -124,8 +136,7 @@ export default function MobileAplicacoes() {
     );
   }, [rectifyId]);
 
-  const doseRec = Number(osSel?.produtos?.dose_ml_ha || 0);
-  const desvio = doseRec ? Math.abs((Number(doseAplicada) - doseRec) / doseRec) * 100 : 0;
+  const desvio = 0; // No recommendation snapshot: today's catalog is not an execution authority.
 
   const addFiles = (files: FileList | null, daCamera = false) => {
     if (!files?.length) return;
@@ -155,7 +166,9 @@ export default function MobileAplicacoes() {
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (lock.current || !access.ready || !osSel) return;
+    const current = access.capture();
+    if (doseUnidade !== UNIDADE_EXECUCAO_CANONICA) return toast.error("Selecione a unidade da dose real");
     const horaFimAgora = new Date().toISOString();
     const erro = validarAplicacao({
       osId,
@@ -177,9 +190,7 @@ export default function MobileAplicacoes() {
     }
 
     setSubmitting(true);
-    // Id gerado antes do upload: os objetos já nascem no caminho definitivo.
-    const aplicacaoId = crypto.randomUUID();
-    let caminhosEnviados: string[] = [];
+    lock.current = true;
     try {
       const aplicacaoData = {
         ordem_servico_id: osId,
@@ -190,6 +201,7 @@ export default function MobileAplicacoes() {
         modo_aplicacao: modoAplicacao || null,
         produto_usado_id: osSel?.produtos?.id || null,
         dose_aplicada: Number(doseAplicada),
+        dose_unidade: doseUnidade,
         area_aplicada_ha: Number(areaAplicada),
         volume_calda_l_ha: volumeCalda ? Number(volumeCalda) : null,
         volume_total_aplicado_ml: Number(doseAplicada) * Number(areaAplicada) || null,
@@ -205,69 +217,27 @@ export default function MobileAplicacoes() {
         motivo_retificacao: motivoRetificacao.trim() || null,
       };
 
-      const enviadas = evidencias.length && osSel
-        ? await uploadEvidencias(evidencias, aplicacaoId, osSel.cliente_id)
-        : [];
-      caminhosEnviados = enviadas.map(e => e.storage_path);
-
-      const { error: rpcErro } = await (supabase as any).rpc("rpc_salvar_aplicacao_v1", {
-        p_aplicacao_id: aplicacaoId,
-        p_payload: aplicacaoData,
-        p_rectify_id: rectifyId || null,
-        p_evidencias: enviadas,
-        p_evidencias_manter: [],
-      });
-      if (rpcErro) throw rpcErro;
-      caminhosEnviados = [];
-
-      // Passos pós-registro não desfazem o cadastro já salvo.
-      try {
-        const { data: prog } = await supabase
-          .from("programacao_producao").select("id").eq("ordem_servico_id", osId).limit(1).maybeSingle();
-        const { error: avancoErro } = await (supabase as any).rpc("rpc_avancar_esteira_laboratorio", {
-          p_os_id: osId,
-          p_origem: "manual",
-          p_etapa_destino: "finalizada",
-          p_programacao_id: prog?.id || null,
-        });
-        if (avancoErro) throw avancoErro;
-      } catch {
-        toast.warning("Aplicação salva, mas a OS não pôde ser finalizada.");
-      }
-
-      if (osSel) {
-        try {
-          const { error: notifErro } = await (supabase as any).rpc("rpc_create_portal_notification_secure", {
-            _cliente_id: osSel.cliente_id,
-            _tipo: rectifyId ? "alerta" : "aplicacao",
-            _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-            _mensagem: rectifyId
-              ? `Registro corrigido: ${osSel.produtos?.nome || "Produto"} em ${osSel.talhoes?.nome}`
-              : `${osSel.produtos?.nome || "Produto"} aplicado em ${osSel.fazendas?.nome} / ${osSel.talhoes?.nome}`,
-            _link: null,
-            _source_type: "aplicacao",
-            _source_id: aplicacaoId,
-            _idempotency_key: `mobile-aplic-${aplicacaoId}-${rectifyId ? "rect" : "new"}`,
-          });
-          if (notifErro) throw notifErro;
-        } catch {
-          toast.warning("Aplicação salva, mas o produtor não foi notificado.");
-        }
-      }
+      // Preserve server's frozen time fields on retry; a new completion time is not a new application.
+      const payload = attemptRef.current ? { ...aplicacaoData, hora_fim: attemptRef.current.payload.hora_fim,
+        data_aplicacao: attemptRef.current.payload.data_aplicacao } : aplicacaoData;
+      attemptRef.current = applicationAttempt(payload, rectifyId || null, evidencias, [], osSel.cliente_id, attemptRef.current);
+      await salvarAplicacao(attemptRef.current, payload, rectifyId || null, evidencias, [], current);
+      if (!current()) return;
 
       toast.success(rectifyId ? "Aplicação retificada!" : "Aplicação registrada!");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
+      if (!current()) return;
       navigate("/app");
     } catch (err: any) {
-      await limparObjetosEvidencias(caminhosEnviados);
-      toast.error(err.message || "Erro ao registrar");
+      if (current()) toast.error(err.message || "Erro ao registrar");
     } finally {
-      setSubmitting(false);
+      lock.current = false;
+      if (current()) setSubmitting(false);
     }
   };
 
 
-  if (loadingOriginal) {
+  if (!access.ready || loadingOriginal) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -296,7 +266,7 @@ export default function MobileAplicacoes() {
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">Ordem de Serviço *</Label>
-        <Select value={osId} onValueChange={setOsId} disabled={!!rectifyId}>
+        <Select value={osId} onValueChange={id => { setOsId(id); setDoseUnidade(""); setDoseAplicada(""); setAreaAplicada(""); setVolumeCalda(""); setEvidencias([]); }} disabled={!!rectifyId || submitting}>
           <SelectTrigger className="h-11"><SelectValue placeholder="Selecione a OS" /></SelectTrigger>
           <SelectContent>
             {ordens?.map((os: any) => (
@@ -310,11 +280,12 @@ export default function MobileAplicacoes() {
 
       {osSel && (
         <div className="bg-muted/40 rounded-lg p-3 text-xs space-y-1">
-          <p><strong>Recomendado:</strong> {osSel.produtos?.dose_ml_ha || "—"} mL/ha · {osSel.area_hectares || "—"} ha</p>
+          <p><strong>Área OS:</strong> {osSel.area_hectares || "—"} ha</p>
           <p className="text-muted-foreground">{osSel.fazendas?.nome} › {osSel.talhoes?.nome}</p>
         </div>
       )}
 
+      <div className="space-y-2"><Label>Unidade da dose real *</Label><Select value={doseUnidade} onValueChange={setDoseUnidade} disabled={submitting}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value={UNIDADE_EXECUCAO_CANONICA}>mL/ha</SelectItem></SelectContent></Select></div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-sm">Dose real (mL/ha) *</Label>

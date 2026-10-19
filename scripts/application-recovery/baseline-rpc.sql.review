@@ -1,0 +1,4 @@
+CREATE OR REPLACE FUNCTION public.rpc_salvar_aplicacao_v1(p_aplicacao_id uuid,p_payload jsonb,p_rectify_id uuid DEFAULT NULL,p_evidencias jsonb DEFAULT '[]'::jsonb,p_evidencias_manter uuid[] DEFAULT '{}'::uuid[]) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $function$
+BEGIN
+ RAISE EXCEPTION 'STORAGE2_APPLICATION_CONTRACT_UNAVAILABLE' USING ERRCODE='42501';
+END $function$;

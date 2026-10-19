@@ -1,0 +1,82 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "scope": "existing application RPC/form recovery only; review candidate, no hosted write/publish",
+  "files": [
+    {
+      "path": "src/components/aplicacao/AplicacaoFormDialog.tsx",
+      "post": "c9ccfc47776cf578582566e712f61266ad6527afd1626fd7f9e89969d0127ee6",
+      "pre": "9e0640c843cc2b0f9085f9a78df88bde32301bf0abdac425fedcca77c8a0b88f",
+      "rollback": "rollback/src/components/aplicacao/AplicacaoFormDialog.tsx"
+    },
+    {
+      "path": "src/pages/app/MobileAplicacoes.tsx",
+      "post": "5c7525b598456e0acab1e2806c42ae94c7a21f2aa2d2bf10da966ee14b660849",
+      "pre": "59f26e630ec117f984e76c25e8d4d36965937fc06e930d13e3107ce5fbe31505",
+      "rollback": "rollback/src/pages/app/MobileAplicacoes.tsx"
+    },
+    {
+      "path": "src/lib/aplicacoes/unidades.ts",
+      "post": "d63024004c3586a0d799307937d93064e536d8f8275ccd0cf93e9c91eade933a",
+      "pre": "05489fb940e74a2ff0e66710eab36ed809283261c2fb5f31d494eee1dcfe4801",
+      "rollback": "rollback/src/lib/aplicacoes/unidades.ts"
+    },
+    {
+      "path": "src/lib/aplicacoes/salvar.ts",
+      "post": "314b7ac2d2fc77933e92c338782b20583c7479188cbdec18554f704afe49948c",
+      "pre": null,
+      "rollback": null
+    }
+  ],
+  "protected": {
+    "src/hooks/useAuth.tsx": "39bab659c1491eeaab800e0a09ef2e4ba8f6bfc214793a0011ce4c2dfc6fcc76",
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/hooks/useAuthenticatedAttachmentOpener.ts": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421",
+    "src/hooks/useAuthenticatedBlobUrls.ts": "8ef20f33a63dcd070db9f7da71f8dc56db09d1c9c86948a38ee20ef5344641b4",
+    "src/hooks/useSignedUrls.ts": "728bc5b6e6d2e3a1b4dedbe880bc4a89011aa4d750f51383e1b47b098b91b4ea",
+    "src/lib/authz/authenticatedAttachment.ts": "99331e08889a25782400914e4a113e36fc6dc1155539932eccef3d5f2e4ca098",
+    "src/lib/authz/authzEpochGate.ts": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7",
+    "src/lib/authz/authzEpochMonitor.ts": "45622480f70e0242e1b1a5cbf182854ff105a9b9dc0d334e41b36cf89ebb1943",
+    "src/lib/authz/internalContextProbe.ts": "691c9707acfa5717262090ed57fae7496fd6404181dc7802a2e12b44fe066470",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/pages/financeiro/RecibosList.tsx": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed",
+    "src/lib/financeiro/receiptStorageLocator.ts": "aee75517faff16a462c2b5fc40147d5f985b152fb9c6731d71358a627619c6b3",
+    "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
+    "src/lib/aplicacoes/evidencias.ts": "2bf460148dd9826dd522669894f57d6b28e723cfb8b857a9f8878edf4ba0df55",
+    "src/pages/Aplicacoes.tsx": "d1ee1226a8788c8f92238709333c32065ddf97471ef25d0b0524713459a2ccbf",
+    "src/pages/portal/PortalAplicacoes.tsx": "64b42f075a73ed0d5f3f84ca6e07dfad3f604469fe9c737fb9583574ba78286d",
+    "src/components/aplicacao/EvidenciasUploader.tsx": "5daa1a512dbce02636f04f72b99e2c81b2a28b1acaa56c47464197707f9313f4",
+    "supabase/functions/enviar-pdf-aplicacao/index.ts": "cead240d70ccc759219b853ee1cae4fc50796a15faec0f5d3eddf952f12647d5",
+    "supabase/functions/entrega-termo-pdf/index.ts": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
+    "src/lib/pdfAplicacao.ts": "3a936385f1f5618483f4ad83e3aefe35745c30eef64b5e5023ec7e4fb686e756",
+    "src/components/aplicacao/AplicacaoCard.tsx": "182a3bdaf6fe5fa1d3114c3e1e022112e9a0bfc3a3eb60245c831b8ed8a3e3e1",
+    "src/test/equipe-tecnica/pdfAplicacao.scope.test.tsx": "3a1aa5ef7f593392c94d7503c13546d6b609a27a52ef9ec9278f7b59dfc33803"
+  },
+  "artifacts": {
+    "README.md": "9b40af21ff96a31eb0f125eba0cb3914354b1ceba644bed464f32a012434db7a",
+    "assemble.py": "8f37d8428ee4c65425b5f7944314dec423d15bb94d541e6ab1ecbc932497fda9",
+    "baseline-rpc.sql.review": "30662f6069613cd97d70ee10b28221871413a1d27097357c7704633c1189fb52",
+    "baseline-storage.sql.review": "0f0ea01f3e273c2fe011b5512e3fae4ddd615402c50fd6864ad51373cad3bf6c",
+    "candidate.sql.review": "37812f0fe151d00b49d5a6fca394c85bfed6b8183e62a779a3c6994d24cfbca7",
+    "checkout-inputs.json": "af6ee8c900e5dd19b561b94a138b281dfcdbd6b6e4a86413439a458bd122863d",
+    "contracts.json": "34b42f2cbe7ce3428feb369132316fe105b7a4a408466014480a2d038b9935b1",
+    "export-checkout.py": "133c9d00dc0d676258bfb94587a53ca31c0ae83c19e481c27f00d6a9c65715b9",
+    "fixtures-ab.review.md": "1f1be9c69d39b759addfad72f706f6edf13a8c42b0588cac41765ed5adb62e7a",
+    "function.sql.review": "9188ba39cb3fe731dbf8082906e3c0f7776206307fe871e00ed3aa434d1f1852",
+    "local-setup.sql": "6ca12265dc6f9c314efad8259bbb027cd8d5437c594f941c02b547abcb9368a8",
+    "post-hashes.local.json": "686d203f55390224a1ef1fc7578f637aac5f324d58cb206c40bfaf2ccdeed7aa",
+    "postflight.sql.review": "967ea8e0293066ae9c14736ce6f85dc7e6569f3693c6648df88f5114d446f4dd",
+    "preflight-readonly.sql": "ce1bb16bd6ad80bc3f20553f841e2ecfc568db075a89321e21c624f55aae9ff8",
+    "results.local.json": "3fc0de4f9750f8e7855d4497c144c59a1ba19536ba70842518d39706f1231b22",
+    "rollback/src/components/aplicacao/AplicacaoFormDialog.tsx": "9e0640c843cc2b0f9085f9a78df88bde32301bf0abdac425fedcca77c8a0b88f",
+    "rollback/src/components/aplicacao/EvidenciasUploader.tsx": "5daa1a512dbce02636f04f72b99e2c81b2a28b1acaa56c47464197707f9313f4",
+    "rollback/src/lib/aplicacoes/unidades.ts": "05489fb940e74a2ff0e66710eab36ed809283261c2fb5f31d494eee1dcfe4801",
+    "rollback/src/pages/app/MobileAplicacoes.tsx": "59f26e630ec117f984e76c25e8d4d36965937fc06e930d13e3107ce5fbe31505",
+    "rollback.sql.review": "d5290eee0bfb883837a470ce1a17676a7470a20109712f8fba8abd5b4e8ab4fb",
+    "setup.sql.review": "9716ceae0f37ad9c2eebe73c48d866c7612f936d14d52415aef3252e502aef9c",
+    "stage.py": "bcbbce837a0eb7172edf3f1fcab1505b205c1176775ebc51b18e21c894924642",
+    "storage.sql.review": "ba66e17e3e993c7d4f3a8c80b6616c8b24fdbdf58483717ada3988f4d200d355",
+    "test-local.py": "f383d7070bfeedea515e27d8eca27665440dac33c96fb9620712a5bbe05a37f4",
+    "test_stage.py": "4af87cd90e1c91a946ef7aca25f959b7138611b8ae2d2e02103fda04653146f3",
+    "typecheck-independent.md": "ddca5dfd50cb9444688e9f527a13dfa5850345b6bf88d593a99d473b3f5638f4"
+  }
+}

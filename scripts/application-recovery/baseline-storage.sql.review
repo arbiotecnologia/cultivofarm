@@ -1,0 +1,16 @@
+CREATE OR REPLACE FUNCTION platform_private.storage1_application_allowed(p_name text,p_action text) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid; v_client uuid; v_app uuid; v_a public.aplicacoes%ROWTYPE; v_os_client uuid; v_os_org uuid; v_staff boolean;
+BEGIN
+ IF auth.uid() IS NULL OR p_action IS NULL OR NOT public.storage1_path_strict(p_name) OR p_action NOT IN ('select','insert','update','delete') THEN RETURN false; END IF;
+ v_org:=public.h15_actor_organization(); IF v_org IS NULL THEN RETURN false; END IF;
+ IF p_name !~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/[A-Za-z0-9_.-]+$' THEN RETURN false; END IF;
+ BEGIN v_client:=split_part(p_name,'/',1)::uuid; v_app:=split_part(p_name,'/',2)::uuid; EXCEPTION WHEN invalid_text_representation THEN RETURN false; END;
+ SELECT * INTO v_a FROM public.aplicacoes WHERE id=v_app;
+ IF NOT FOUND OR v_a.organization_id IS DISTINCT FROM v_org OR (v_a.ordem_servico_id IS NULL)=(v_a.ordem_servico_onfarm_id IS NULL) THEN RETURN false; END IF;
+ IF v_a.ordem_servico_id IS NOT NULL THEN SELECT os.cliente_id,os.organization_id INTO v_os_client,v_os_org FROM public.ordens_servico os WHERE os.id=v_a.ordem_servico_id;
+ ELSE SELECT os.cliente_id,c.organization_id INTO v_os_client,v_os_org FROM public.ordens_servico_onfarm os JOIN public.clientes c ON c.id=os.cliente_id WHERE os.id=v_a.ordem_servico_onfarm_id; END IF;
+ IF v_os_client IS DISTINCT FROM v_client OR v_os_org IS DISTINCT FROM v_org OR NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=v_client AND c.organization_id=v_org) THEN RETURN false; END IF;
+ v_staff:=NOT public.has_role(auth.uid(),'aplicador') OR public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'administrativo') OR public.has_role(auth.uid(),'consultor_tecnico') OR v_a.responsavel_id=auth.uid() OR v_client=ANY(public.get_cliente_ids_for_user(auth.uid()));
+ IF p_action='select' THEN RETURN v_staff AND public.can_user_access_aplicacao(v_app); END IF;
+ RETURN v_staff AND v_a.is_latest IS TRUE AND public.can_user_manage_aplicacao(v_app);
+END; $$;

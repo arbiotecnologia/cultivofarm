@@ -1,0 +1,41 @@
+-- Existing Storage1 resolver: insert accepts only a live actor-owned, predeclared locator.
+CREATE OR REPLACE FUNCTION platform_private.storage1_application_allowed(p_name text,p_action text)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $function$
+DECLARE org uuid; r platform_private.application_save_preparations%ROWTYPE; a public.aplicacoes%ROWTYPE;
+ client uuid; os_org uuid; product uuid; staff boolean;
+BEGIN
+ IF auth.uid() IS NULL OR public.storage1_path_strict(p_name) IS DISTINCT FROM true OR p_action IS NULL
+ OR p_action NOT IN ('select','insert','update','delete') OR p_name !~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/[A-Za-z0-9_.-]+$' THEN RETURN false; END IF;
+ org:=public.h15_actor_organization(); IF org IS NULL THEN RETURN false; END IF;
+ SELECT * INTO r FROM platform_private.application_save_preparations WHERE application_id=split_part(p_name,'/',2)::uuid;
+ IF p_action='insert' AND r.application_id IS NOT NULL THEN
+ IF r.actor_id IS DISTINCT FROM auth.uid() OR r.organization_id IS DISTINCT FROM org OR r.committed_at IS NOT NULL
+ OR r.expires_at<=clock_timestamp() OR r.client_id::text IS DISTINCT FROM split_part(p_name,'/',1)
+ OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(r.manifest) ev WHERE ev->>'storage_path'=p_name)
+ OR public.can_user_create_aplicacao_for_cliente(r.client_id) IS DISTINCT FROM true THEN RETURN false; END IF;
+ IF r.payload->>'ordem_servico_id' IS NOT NULL THEN
+ SELECT cliente_id,organization_id,produto_id INTO client,os_org,product FROM public.ordens_servico WHERE id=(r.payload->>'ordem_servico_id')::uuid;
+ ELSE SELECT os.cliente_id,c.organization_id,os.produto_id INTO client,os_org,product FROM public.ordens_servico_onfarm os JOIN public.clientes c ON c.id=os.cliente_id WHERE os.id=(r.payload->>'ordem_servico_onfarm_id')::uuid; END IF;
+ RETURN client=r.client_id AND os_org=org AND product::text=r.payload->>'produto_usado_id'
+ AND EXISTS(SELECT 1 FROM public.clientes WHERE id=client AND organization_id=org)
+ AND EXISTS(SELECT 1 FROM public.produtos WHERE id=product AND ativo IS TRUE)
+ AND (r.rectify_id IS NULL OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE id=r.rectify_id AND organization_id=org AND is_latest IS TRUE)
+ AND public.can_user_manage_aplicacao(r.rectify_id) AND public.can_user_access_aplicacao(r.rectify_id));
+ END IF;
+ SELECT * INTO a FROM public.aplicacoes WHERE id=split_part(p_name,'/',2)::uuid;
+ IF NOT FOUND OR a.organization_id IS DISTINCT FROM org OR (a.ordem_servico_id IS NULL)=(a.ordem_servico_onfarm_id IS NULL) THEN RETURN false; END IF;
+ IF a.ordem_servico_id IS NOT NULL THEN SELECT cliente_id,organization_id INTO client,os_org FROM public.ordens_servico WHERE id=a.ordem_servico_id;
+ ELSE SELECT os.cliente_id,c.organization_id INTO client,os_org FROM public.ordens_servico_onfarm os JOIN public.clientes c ON c.id=os.cliente_id WHERE os.id=a.ordem_servico_onfarm_id; END IF;
+ IF client::text IS DISTINCT FROM split_part(p_name,'/',1) OR os_org IS DISTINCT FROM org
+ OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=client AND organization_id=org) THEN RETURN false; END IF;
+ staff:=NOT public.has_role(auth.uid(),'aplicador') OR public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor')
+ OR public.has_role(auth.uid(),'administrativo') OR public.has_role(auth.uid(),'consultor_tecnico') OR a.responsavel_id=auth.uid()
+ OR client=ANY(public.get_cliente_ids_for_user(auth.uid()));
+ IF p_action='select' THEN RETURN staff AND public.can_user_access_aplicacao(a.id); END IF;
+ -- Finalized objects are immutable. Deletion remains denied when metadata references bytes.
+ IF p_action IN ('insert','update') THEN RETURN false; END IF;
+ RETURN staff AND a.is_latest IS TRUE AND public.can_user_manage_aplicacao(a.id)
+ AND NOT EXISTS(SELECT 1 FROM public.aplicacao_evidencias WHERE storage_path=p_name);
+EXCEPTION WHEN invalid_text_representation THEN RETURN false;
+END;
+$function$;
