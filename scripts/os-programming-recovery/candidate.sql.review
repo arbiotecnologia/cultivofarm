@@ -1,0 +1,175 @@
+-- REVIEW ONLY, NOT APPLIED. Canonical external Supabase only; no fixture writes.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+SET LOCAL statement_timeout='15s';
+DO $guard$
+DECLARE c record; p record; v_executor_roles text[];
+BEGIN
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+ FOR c IN SELECT * FROM (VALUES
+('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.rpc_aprovar_os_v1(uuid,text)','1023b9d5210534bee16147e2ce29ee12','v',true,'search_path=""',ARRAY['authenticated','postgres']::text[]),
+('private.assert_os_approval_scope(uuid,text)','f478fba6b5ecc18f4355bcfcfb0c3def','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.guard_os_separate_approval()','f00397fe862e611fbfa0eba3911d95c6','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.h7n_esteira_laboratorio()','bad38b5200629cc887767e62b7a46e40','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.technical_actor_ready(uuid)','b5d0994b6eb976b14122cd2a1ec798cf','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public._saas_user_has_feature(uuid,text)','501dd958e117d2df8a4d38f6bcbeed04','s',true,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('platform_private.lab_item_is_manufacturable(uuid,uuid)','853595394240e8f2a61ac2d621118271','s',true,'search_path=""',ARRAY['postgres']::text[]),
+('public.fn_cockpit_norm_origem(text)','701ba8da92fc3df9ea0e5270ab5e74b2','i',false,'search_path=public, pg_temp',ARRAY['PUBLIC','anon','authenticated','postgres','service_role']::text[]),
+('public.fn_sync_os_classica_downstream()','06e64b76968f91e19f03b24363ac610a','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public.check_os_status_transition()','496a214d87fc831a53b2f16d3524ddea','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.rpc_programar_os_v1(uuid,text,date)','a42d6b07f51e6dacf41096f6cefb8163','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.fn_avancar_etapa_esteira(text,uuid,uuid,text,uuid)','7ed490f667efcd6e50eb7a2a061899b6','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public._avancar_os_status(text,uuid,text)','3da8242d67462c916a2d971f5ea7bb97','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.fn_create_programacao_on_os_classica_insert()','27b31332cebda532e2d99d9547f9b67c','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public.guard_tenant_organization_id()','d01a740c1e3e02407131d2b9228bf658','v',false,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('public.can_user_access_aplicacao(uuid)','04067ba43cea3eed845a1fd3735061e0','s',true,'search_path=public',ARRAY['authenticated','postgres','service_role']::text[])
+ ) x(sig,hash,vol,sec,config,acl) LOOP
+ SELECT *,pg_get_functiondef(oid) definition INTO p FROM pg_proc WHERE oid=to_regprocedure(c.sig);
+ IF p.oid IS NULL OR md5(p.definition) IS DISTINCT FROM c.hash OR p.provolatile::text IS DISTINCT FROM c.vol OR p.prosecdef IS DISTINCT FROM c.sec OR p.proconfig IS DISTINCT FROM ARRAY[c.config] OR (SELECT rolname FROM pg_roles WHERE oid=p.proowner) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'OS_PROGRAMMING_BODY_DRIFT:%',c.sig; END IF;
+ SELECT array_agg(CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE r.rolname END ORDER BY CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE r.rolname END) INTO v_executor_roles FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a LEFT JOIN pg_roles r ON r.oid=a.grantee WHERE a.privilege_type='EXECUTE';
+ IF v_executor_roles IS DISTINCT FROM c.acl OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantor<>p.proowner OR a.is_grantable) THEN RAISE EXCEPTION 'OS_PROGRAMMING_ACL_DRIFT:%',c.sig; END IF;
+ END LOOP;
+IF (SELECT md5(string_agg(table_name||':'||column_name||':'||udt_name||':'||is_nullable||':'||coalesce(column_default,''),E'\n' ORDER BY table_name,ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos','profiles','user_roles','organizations','clientes','fazendas','talhoes','lotes','produtos','microrganismos','production_order_link')) IS DISTINCT FROM '437b65caa297b4b7bb89500d9898d76f' THEN RAISE EXCEPTION 'OS_PROGRAMMING_schema_DRIFT'; END IF;
+IF (SELECT md5(string_agg(t.tgrelid::regclass::text||':'||t.tgname||':'||t.tgenabled::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgrelid::regclass::text,t.tgname)) FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.ordens_servico'::regclass,'public.ordens_servico_onfarm'::regclass,'public.programacao_producao'::regclass)) IS DISTINCT FROM '393b62456231e126a9cf166a75ac8292' THEN RAISE EXCEPTION 'OS_PROGRAMMING_triggers_DRIFT'; END IF;
+IF (SELECT md5(string_agg(tablename||':'||policyname||':'||permissive||':'||roles::text||':'||cmd||':'||coalesce(qual,'')||':'||coalesce(with_check,''),E'\n' ORDER BY tablename,policyname)) FROM pg_policies WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos')) IS DISTINCT FROM '46dd55536a5e91359cdcd6a9baa11647' THEN RAISE EXCEPTION 'OS_PROGRAMMING_policies_DRIFT'; END IF;
+IF (SELECT md5(string_agg(tablename||':'||indexname||':'||indexdef,E'\n' ORDER BY tablename,indexname)) FROM pg_indexes WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','profiles','user_roles')) IS DISTINCT FROM '1f6dc84fe58153f1cc210d9b47b6ebb8' THEN RAISE EXCEPTION 'OS_PROGRAMMING_indexes_DRIFT'; END IF;
+IF (SELECT md5(string_agg(class_row.relname||':'||class_row.relrowsecurity||':'||class_row.relforcerowsecurity||':'||coalesce(class_row.relacl::text,'')||':'||r.rolname,E'\n' ORDER BY class_row.relname)) FROM pg_class class_row JOIN pg_roles r ON r.oid=class_row.relowner WHERE class_row.relnamespace='public'::regnamespace AND class_row.relname IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos','profiles','user_roles','organizations','clientes','fazendas','talhoes','lotes')) IS DISTINCT FROM '5a50a214ad6ffb8d758a239c175e951d' THEN RAISE EXCEPTION 'OS_PROGRAMMING_table_acl_rls_DRIFT'; END IF;
+IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure) IS DISTINCT FROM '36ef75405315a11e47fee042d6a575cb' THEN RAISE EXCEPTION 'READER_DRIFT'; END IF;
+END $guard$;
+DO $guard$ BEGIN
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure) IS DISTINCT FROM '36ef75405315a11e47fee042d6a575cb' THEN RAISE EXCEPTION 'READER_SOURCE_DRIFT'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure AND (prosecdef OR pg_get_userbyid(proowner)<>'postgres' OR proacl::text IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR proconfig IS DISTINCT FROM ARRAY['search_path=""'])) THEN RAISE EXCEPTION 'READER_SECURITY_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('private.h7n_esteira_laboratorio()'::regprocedure)) IS DISTINCT FROM 'bad38b5200629cc887767e62b7a46e40' OR md5(pg_get_functiondef('public.fn_cockpit_stage(text)'::regprocedure)) IS DISTINCT FROM '1f49fef3faeb479dcc92ed46391ab877' THEN RAISE EXCEPTION 'CHAIN_BODY_DRIFT'; END IF;
+ IF md5(pg_get_viewdef('public.vw_esteira_laboratorio'::regclass,true)) IS DISTINCT FROM 'd72d5df7bacffdf8f4fc4282b804ab90' OR md5(pg_get_viewdef('public._src_vw_esteira_laboratorio'::regclass,true)) IS DISTINCT FROM 'c71226f594d27d92833686212415ccec' OR md5(pg_get_viewdef('public.vw_os_integridade_esteira'::regclass,true)) IS DISTINCT FROM 'e8331dbe2bc538cf21fad123fb43f19b' THEN RAISE EXCEPTION 'VIEW_CHAIN_DRIFT'; END IF;
+END $guard$;
+DO $release$ BEGIN RAISE EXCEPTION 'PROGRAMAR_SUPPLEMENTAL_REVIEW_REQUIRED'; END $release$;
+CREATE TEMP TABLE programar_exact_baseline ON COMMIT PRESERVE ROWS AS SELECT pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure) definition;
+CREATE OR REPLACE FUNCTION public.rpc_programar_os_v1(p_os_id uuid,p_origem text,p_data_programada date DEFAULT NULL::date)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE
+ v_uid uuid:=auth.uid(); v_org uuid; v_origin text; v_os record;
+ v_pp public.programacao_producao%ROWTYPE; v_before jsonb; v_after jsonb;
+ v_count integer; v_canonical text; v_status text;
+BEGIN
+ -- Local wait bound also applies to normal SDK calls, not only migration transaction.
+ PERFORM pg_catalog.set_config('lock_timeout','3s',true);
+ -- O helper corrente valida a cadeia completa atual, não a MV; antes de status/replay.
+ v_org:=platform_private.h15_actor_organization();
+ IF v_uid IS NULL OR v_org IS NULL OR public.technical_actor_ready(v_uid) IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE THEN
+ RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ BEGIN v_origin:=public.fn_cockpit_norm_origem(p_origem); EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END;
+ v_canonical:=CASE WHEN v_origin='onfarm' THEN 'onfarm' ELSE 'manual' END;
+ IF p_os_id IS NULL OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=v_canonical) THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Authoritative phantom fences: conservative table locks, bounded by review transaction.
+ -- Never use this path from REPEATABLE READ: stale snapshots cannot reauthorize.
+ IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'PROGRAMAR_ISOLATION_DENIED' USING ERRCODE='42501'; END IF;
+ LOCK TABLE public.production_order_link,public.lotes IN SHARE MODE;
+ LOCK TABLE public.organization_subscriptions,public.organization_feature_overrides,public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.saas_modules IN SHARE MODE;
+ IF v_canonical='manual' THEN
+ SELECT o.organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.status::text status,o.volume_total_ml,o.data_programada os_date,o.partner_order_id,o.partner_order_item_id,o.origem INTO v_os FROM public.ordens_servico o WHERE o.id=p_os_id FOR UPDATE;
+ ELSE
+ SELECT NULL::uuid organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.status::text status,o.volume_total_ml,NULL::date os_date,NULL::uuid partner_order_id,NULL::uuid partner_order_item_id,'onfarm'::text origem INTO v_os FROM public.ordens_servico_onfarm o WHERE o.id=p_os_id FOR UPDATE;
+ END IF;
+ IF v_os.id IS NULL OR (v_canonical='manual' AND v_os.organization_id IS DISTINCT FROM v_org) THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Locks sobre referências atuais. Revalidação posterior impede respostas antigas.
+ PERFORM 1 FROM public.profiles WHERE user_id=v_uid OR id IN (SELECT responsavel_id FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id) ORDER BY user_id FOR SHARE;
+ PERFORM 1 FROM public.user_roles WHERE user_id=v_uid ORDER BY role::text FOR SHARE;
+ PERFORM 1 FROM public.organizations WHERE id=v_org FOR SHARE;
+ PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id FOR SHARE;
+ PERFORM 1 FROM public.fazendas WHERE id=v_os.fazenda_id FOR SHARE;
+ PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;
+ PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;
+ PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;
+ PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
+ IF public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=v_canonical) THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- B2B/links acionam sync comercial/planejamento/notificações não homologados.
+ IF v_origin='b2b' OR v_os.origem='b2b' OR v_os.partner_order_id IS NOT NULL OR v_os.partner_order_item_id IS NOT NULL
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN
+ RETURN jsonb_build_object('success',false,'message','Programação B2B indisponível até validação dos efeitos associados.'); END IF;
+ SELECT count(*) INTO v_count FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;
+ IF v_count<>1 THEN RETURN jsonb_build_object('success',false,'message','Programação existente não comprovada; revisão necessária.'); END IF;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;
+ IF NOT ((v_pp.organization_id=v_org AND ((v_canonical='manual' AND v_pp.ordem_servico_id=p_os_id AND v_pp.ordem_servico_onfarm_id IS NULL) OR (v_canonical='onfarm' AND v_pp.ordem_servico_onfarm_id=p_os_id AND v_pp.ordem_servico_id IS NULL)) AND v_pp.produto_id IS NOT DISTINCT FROM v_os.produto_id AND v_pp.microrganismo_id IS NOT DISTINCT FROM v_os.microrganismo_id) IS TRUE) THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- FK responsável usa profiles.id; helper legado usa user_id. Não reinterpretar silenciosamente.
+ IF v_pp.responsavel_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.profiles p WHERE p.id=v_pp.responsavel_id AND p.organization_id=v_org AND p.ativo IS TRUE) THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF v_os.status IS NULL OR v_os.status NOT IN ('aprovada','programada') THEN RETURN jsonb_build_object('success',false,'message','A OS deve estar previamente aprovada; esta ação não aprova nem inicia fabricação.'); END IF;
+ IF platform_private.lab_item_is_manufacturable(v_os.produto_id,v_os.microrganismo_id) IS NOT TRUE THEN RETURN jsonb_build_object('success',false,'message','Item não elegível ao laboratório biológico.'); END IF;
+ IF v_pp.status::text IS DISTINCT FROM 'aguardando' OR EXISTS(SELECT 1 FROM public.lotes WHERE programacao_id=v_pp.id) THEN RETURN jsonb_build_object('success',false,'message','A programação já avançou; operação indisponível.'); END IF;
+ IF p_data_programada IS NULL OR NOT isfinite(p_data_programada) THEN RETURN jsonb_build_object('success',false,'message','Informe uma data válida, sem inferência automática.'); END IF;
+ v_before:=jsonb_build_object('status_os',v_os.status,'data_os',v_os.os_date,'data_programacao',v_pp.data_programada,'status_programacao',v_pp.status,'volume_os',v_os.volume_total_ml,'volume_programacao',v_pp.volume_necessario);
+ IF v_os.status='programada' AND v_pp.data_programada IS NOT DISTINCT FROM p_data_programada AND (v_canonical='onfarm' OR v_os.os_date IS NOT DISTINCT FROM p_data_programada) THEN RETURN jsonb_build_object('success',true,'replay',true,'status','programada','message','Programação já corresponde à data informada.'); END IF;
+ -- Three-argument contract: only first scheduling and identical-state replay.
+ -- Different date on a programmed OS is denied, preventing delayed A/B/A retries.
+ IF v_os.status='programada' THEN RETURN jsonb_build_object('success',false,'message','OS já programada. Alteração de data indisponível neste contrato.'); END IF;
+ -- Sem INSERT de programação/lote: usa somente programação previamente criada pelo fluxo.
+ IF v_canonical='manual' THEN UPDATE public.ordens_servico SET status='programada',data_programada=p_data_programada WHERE id=p_os_id;
+ ELSE UPDATE public.ordens_servico_onfarm SET status='programada' WHERE id=p_os_id; END IF;
+ UPDATE public.programacao_producao SET data_programada=p_data_programada WHERE id=v_pp.id AND organization_id=v_org;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE id=v_pp.id;
+ IF v_pp.organization_id IS DISTINCT FROM v_org OR v_pp.status::text IS DISTINCT FROM 'aguardando' OR v_pp.data_programada IS DISTINCT FROM p_data_programada OR EXISTS(SELECT 1 FROM public.lotes WHERE programacao_id=v_pp.id)
+ OR public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=v_canonical) THEN RAISE EXCEPTION 'PROGRAMAR_POSTCONDITION_FAILED'; END IF;
+ v_after:=jsonb_build_object('status_os','programada','data_os',CASE WHEN v_canonical='manual' THEN p_data_programada ELSE NULL END,'data_programacao',v_pp.data_programada,'status_programacao',v_pp.status,'volume_os',v_os.volume_total_ml,'volume_programacao',v_pp.volume_necessario);
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)
+ VALUES(p_os_id,v_canonical,v_pp.id,v_os.status,'programada','programar_os',v_uid,jsonb_build_object('organization_id',v_org,'before',v_before,'after',v_after,'actor',v_uid,'at',clock_timestamp(),'manufacturing_started',false)::text);
+ -- Refresh interno existente por trigger permanece; nenhum refresh adicional/client-side.
+ RETURN jsonb_build_object('success',true,'replay',false,'status','programada','message','Data programada; fabricação não iniciada.');
+END $function$;
+DO $guard$
+DECLARE c record; p record; v_executor_roles text[];
+BEGIN
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+ FOR c IN SELECT * FROM (VALUES
+('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.rpc_aprovar_os_v1(uuid,text)','1023b9d5210534bee16147e2ce29ee12','v',true,'search_path=""',ARRAY['authenticated','postgres']::text[]),
+('private.assert_os_approval_scope(uuid,text)','f478fba6b5ecc18f4355bcfcfb0c3def','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.guard_os_separate_approval()','f00397fe862e611fbfa0eba3911d95c6','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.h7n_esteira_laboratorio()','bad38b5200629cc887767e62b7a46e40','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.technical_actor_ready(uuid)','b5d0994b6eb976b14122cd2a1ec798cf','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public._saas_user_has_feature(uuid,text)','501dd958e117d2df8a4d38f6bcbeed04','s',true,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('platform_private.lab_item_is_manufacturable(uuid,uuid)','853595394240e8f2a61ac2d621118271','s',true,'search_path=""',ARRAY['postgres']::text[]),
+('public.fn_cockpit_norm_origem(text)','701ba8da92fc3df9ea0e5270ab5e74b2','i',false,'search_path=public, pg_temp',ARRAY['PUBLIC','anon','authenticated','postgres','service_role']::text[]),
+('public.fn_sync_os_classica_downstream()','06e64b76968f91e19f03b24363ac610a','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public.check_os_status_transition()','496a214d87fc831a53b2f16d3524ddea','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.rpc_programar_os_v1(uuid,text,date)','1c20127966dccb78aee9a1145511340a','v',true,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('public.fn_avancar_etapa_esteira(text,uuid,uuid,text,uuid)','7ed490f667efcd6e50eb7a2a061899b6','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public._avancar_os_status(text,uuid,text)','3da8242d67462c916a2d971f5ea7bb97','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.fn_create_programacao_on_os_classica_insert()','27b31332cebda532e2d99d9547f9b67c','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public.guard_tenant_organization_id()','d01a740c1e3e02407131d2b9228bf658','v',false,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('public.can_user_access_aplicacao(uuid)','04067ba43cea3eed845a1fd3735061e0','s',true,'search_path=public',ARRAY['authenticated','postgres','service_role']::text[])
+ ) x(sig,hash,vol,sec,config,acl) LOOP
+ SELECT *,pg_get_functiondef(oid) definition INTO p FROM pg_proc WHERE oid=to_regprocedure(c.sig);
+ IF p.oid IS NULL OR md5(p.definition) IS DISTINCT FROM c.hash OR p.provolatile::text IS DISTINCT FROM c.vol OR p.prosecdef IS DISTINCT FROM c.sec OR p.proconfig IS DISTINCT FROM ARRAY[c.config] OR (SELECT rolname FROM pg_roles WHERE oid=p.proowner) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'OS_PROGRAMMING_BODY_DRIFT:%',c.sig; END IF;
+ SELECT array_agg(CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE r.rolname END ORDER BY CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE r.rolname END) INTO v_executor_roles FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a LEFT JOIN pg_roles r ON r.oid=a.grantee WHERE a.privilege_type='EXECUTE';
+ IF v_executor_roles IS DISTINCT FROM c.acl OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantor<>p.proowner OR a.is_grantable) THEN RAISE EXCEPTION 'OS_PROGRAMMING_ACL_DRIFT:%',c.sig; END IF;
+ END LOOP;
+IF (SELECT md5(string_agg(table_name||':'||column_name||':'||udt_name||':'||is_nullable||':'||coalesce(column_default,''),E'\n' ORDER BY table_name,ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos','profiles','user_roles','organizations','clientes','fazendas','talhoes','lotes','produtos','microrganismos','production_order_link')) IS DISTINCT FROM '437b65caa297b4b7bb89500d9898d76f' THEN RAISE EXCEPTION 'OS_PROGRAMMING_schema_DRIFT'; END IF;
+IF (SELECT md5(string_agg(t.tgrelid::regclass::text||':'||t.tgname||':'||t.tgenabled::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgrelid::regclass::text,t.tgname)) FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.ordens_servico'::regclass,'public.ordens_servico_onfarm'::regclass,'public.programacao_producao'::regclass)) IS DISTINCT FROM '393b62456231e126a9cf166a75ac8292' THEN RAISE EXCEPTION 'OS_PROGRAMMING_triggers_DRIFT'; END IF;
+IF (SELECT md5(string_agg(tablename||':'||policyname||':'||permissive||':'||roles::text||':'||cmd||':'||coalesce(qual,'')||':'||coalesce(with_check,''),E'\n' ORDER BY tablename,policyname)) FROM pg_policies WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos')) IS DISTINCT FROM '46dd55536a5e91359cdcd6a9baa11647' THEN RAISE EXCEPTION 'OS_PROGRAMMING_policies_DRIFT'; END IF;
+IF (SELECT md5(string_agg(tablename||':'||indexname||':'||indexdef,E'\n' ORDER BY tablename,indexname)) FROM pg_indexes WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','profiles','user_roles')) IS DISTINCT FROM '1f6dc84fe58153f1cc210d9b47b6ebb8' THEN RAISE EXCEPTION 'OS_PROGRAMMING_indexes_DRIFT'; END IF;
+IF (SELECT md5(string_agg(class_row.relname||':'||class_row.relrowsecurity||':'||class_row.relforcerowsecurity||':'||coalesce(class_row.relacl::text,'')||':'||r.rolname,E'\n' ORDER BY class_row.relname)) FROM pg_class class_row JOIN pg_roles r ON r.oid=class_row.relowner WHERE class_row.relnamespace='public'::regnamespace AND class_row.relname IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos','profiles','user_roles','organizations','clientes','fazendas','talhoes','lotes')) IS DISTINCT FROM '5a50a214ad6ffb8d758a239c175e951d' THEN RAISE EXCEPTION 'OS_PROGRAMMING_table_acl_rls_DRIFT'; END IF;
+IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure) IS DISTINCT FROM '36ef75405315a11e47fee042d6a575cb' THEN RAISE EXCEPTION 'READER_DRIFT'; END IF;
+END $guard$;
+DO $guard$ BEGIN
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure) IS DISTINCT FROM '36ef75405315a11e47fee042d6a575cb' THEN RAISE EXCEPTION 'READER_SOURCE_DRIFT'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)'::regprocedure AND (prosecdef OR pg_get_userbyid(proowner)<>'postgres' OR proacl::text IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR proconfig IS DISTINCT FROM ARRAY['search_path=""'])) THEN RAISE EXCEPTION 'READER_SECURITY_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('private.h7n_esteira_laboratorio()'::regprocedure)) IS DISTINCT FROM 'bad38b5200629cc887767e62b7a46e40' OR md5(pg_get_functiondef('public.fn_cockpit_stage(text)'::regprocedure)) IS DISTINCT FROM '1f49fef3faeb479dcc92ed46391ab877' THEN RAISE EXCEPTION 'CHAIN_BODY_DRIFT'; END IF;
+ IF md5(pg_get_viewdef('public.vw_esteira_laboratorio'::regclass,true)) IS DISTINCT FROM 'd72d5df7bacffdf8f4fc4282b804ab90' OR md5(pg_get_viewdef('public._src_vw_esteira_laboratorio'::regclass,true)) IS DISTINCT FROM 'c71226f594d27d92833686212415ccec' OR md5(pg_get_viewdef('public.vw_os_integridade_esteira'::regclass,true)) IS DISTINCT FROM 'e8331dbe2bc538cf21fad123fb43f19b' THEN RAISE EXCEPTION 'VIEW_CHAIN_DRIFT'; END IF;
+END $guard$;
+COMMIT;

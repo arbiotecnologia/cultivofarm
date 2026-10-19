@@ -1,0 +1,49 @@
+CREATE OR REPLACE FUNCTION public.rpc_programar_os_v1(p_os_id uuid,p_origem text,p_data_programada date DEFAULT NULL::date)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $function$
+DECLARE v_user_id uuid; v_role text; v_status text; v_status_inicial text; v_onfarm boolean;
+ v_product uuid; v_micro uuid;
+BEGIN
+ v_user_id:=auth.uid();
+ IF v_user_id IS NULL THEN RETURN jsonb_build_object('success',false,'message','Não autenticado'); END IF;
+ SELECT role::text INTO v_role FROM public.user_roles WHERE user_id=v_user_id
+ AND role IN ('administrador','gestor','producao','administrativo') LIMIT 1;
+ IF v_role IS NULL THEN RETURN jsonb_build_object('success',false,'message','Seu perfil não possui permissão para programar ordens de serviço.'); END IF;
+ IF p_origem IN ('manual','b2b') THEN
+  v_onfarm:=false;
+  SELECT status::text,produto_id,microrganismo_id INTO v_status,v_product,v_micro
+   FROM public.ordens_servico WHERE id=p_os_id FOR UPDATE;
+ ELSIF p_origem='onfarm' THEN
+  v_onfarm:=true;
+  SELECT status::text,produto_id,microrganismo_id INTO v_status,v_product,v_micro
+   FROM public.ordens_servico_onfarm WHERE id=p_os_id FOR UPDATE;
+ ELSE RETURN jsonb_build_object('success',false,'message','Origem de OS inválida: '||coalesce(p_origem,'null')); END IF;
+ IF v_status IS NULL THEN RETURN jsonb_build_object('success',false,'message','Ordem de serviço não encontrada.'); END IF;
+ v_status_inicial:=v_status;
+ IF v_status IN ('finalizada','cancelada') THEN RETURN jsonb_build_object('success',false,'message','Operação não permitida: OS já está '||v_status); END IF;
+ IF v_status NOT IN ('aberta','aprovada','programada') THEN RETURN jsonb_build_object('success',false,'status',v_status,'message','OS já avançou além da programação. Status atual: '||v_status); END IF;
+ -- Já programada: alteração de data não reclassifica nem refabrica histórico.
+ IF v_status<>'programada' AND NOT platform_private.lab_item_is_manufacturable(v_product,v_micro) THEN
+  RETURN jsonb_build_object('success',false,'message','Somente produtos biológicos e microrganismos podem gerar fabricação laboratorial.'); END IF;
+ IF v_status='aberta' THEN
+  IF v_onfarm THEN UPDATE public.ordens_servico_onfarm SET status='aprovada' WHERE id=p_os_id;
+  ELSE UPDATE public.ordens_servico SET status='aprovada' WHERE id=p_os_id; END IF;
+  v_status:='aprovada';
+ END IF;
+ IF v_status='aprovada' THEN
+  IF v_onfarm THEN UPDATE public.ordens_servico_onfarm SET status='programada' WHERE id=p_os_id;
+  ELSE UPDATE public.ordens_servico SET status='programada' WHERE id=p_os_id; END IF;
+  v_status:='programada';
+ END IF;
+ IF p_data_programada IS NOT NULL THEN
+  IF v_onfarm THEN UPDATE public.programacao_producao SET data_programada=p_data_programada WHERE ordem_servico_onfarm_id=p_os_id;
+  ELSE
+   UPDATE public.ordens_servico SET data_programada=p_data_programada WHERE id=p_os_id;
+   UPDATE public.programacao_producao SET data_programada=p_data_programada WHERE ordem_servico_id=p_os_id;
+  END IF;
+ END IF;
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,etapa_anterior,etapa_nova,acao,usuario_id,observacao)
+ VALUES(p_os_id,p_origem,v_status_inicial,v_status,'programar_os',v_user_id,
+ CASE WHEN p_data_programada IS NULL THEN NULL ELSE 'data_programada='||p_data_programada::text END);
+ PERFORM public.refresh_esteira_laboratorio();
+ RETURN jsonb_build_object('success',true,'status',v_status,'message',CASE WHEN v_status_inicial='programada' THEN 'Programação atualizada' ELSE 'OS programada com sucesso' END);
+END $function$;
