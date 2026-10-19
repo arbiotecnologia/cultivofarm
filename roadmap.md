@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 02:57 — ambiente financeiro/admin exclusivo
-- [ ] Reutilizar somente as opções ambientais revisadas no financeiro/admin empresa exclusivos; preservar monitor/probes, produtor/B2B/outros gates e recibos/Edges.
-- [ ] Testar drafts/opener com alternância ambiental e RTT3s >=90s, negação/tardios/offline/timeout/restore; entregar candidata/rollback/preflight/staging e recibos de testes/typecheck/build.
+- [x] Reutilizar somente as opções ambientais revisadas no financeiro/admin empresa exclusivos; preservar monitor/probes, produtor/B2B/outros gates e recibos/Edges.
+- [x] Testar drafts/opener com alternância ambiental e RTT3s >=90s, negação/tardios/offline/timeout/restore:312/312; candidata/rollback/preflight não executado/staging5/5; typecheck exit0/build automático OK.
 - [ ] Revisão independente e homologação real aguardam proprietário; A/B autenticados preservados, sem login/reload/publicação automática.
 
 ## 19/10 02:43 — anexos de RecibosList
