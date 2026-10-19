@@ -2,7 +2,7 @@
 
 ## Evidência externa, não reexecução pelo agente
 
-Auditor aplicou `application_canonical_recovery_20261019` em `swzpzcwiasxmjutrmvkm`: candidata638ad55 SHA54b9ad6cd32368149c3956de58c6affb314e39a60e5af7789bda0c7a6bd72fe1 (execute_roles).76168eff renomeia variável/docs, corpos iguais. Postflight integral16 funções/schema/ACL PASS: RPCf8bc9d5f000abef7f13e6ca340988734, Storagedaefb183522e2ee7f730e0db243f4823, helper04067ba43cea3eed845a1fd3735061e0 preservado. applications/evidence/preparations0; privada RLStrue/ACLpostgresonly.
+Auditor aplicou `application_canonical_recovery_20261019` em `swzpzcwiasxmjutrmvkm`: candidata638ad55 SHA54b9ad6cd32368149c3956de58c6affb314e39a60e5af7789bda0c7a6bd72fe1 (execute_roles).76168eff renomeia variável/docs, corpos iguais. Postflight integral16 funções/schema/ACL PASS: RPCf8bc9d5f000abef7f13e6ca340988734, Storagedaefb183522e2ee7f730e0db243f4827, helper04067ba43cea3eed845a1fd3735061e0 preservado. applications/evidence/preparations0; privada RLStrue/ACLpostgresonly.
 
 Publicação76168eff deployment878d2654-90c8-49a3-8993-ec1526938fe2 confirmada pelo auditor no painel e nova aba B, bundle index-Dew52uBQ.js; originais A/B sem reload. Independentes tsc app após diagnóstico+OS EXIT0, tsc node EXIT0,228 testes recuperação/PDF/monitor e25 OS PASS. Recibos referem-se ao publicado, não às alterações desta entrega.
 
@@ -28,3 +28,6 @@ Leituras hosted pelo agente validaram ref pelo fiscal_environment_marker, schema
 4. Homologação aplicação/PDF/anexo/revogação depende da OS elegível canônica e sessões reais; nenhum PASS positivo inventado com seed, claims ou timers.
 
 Rollback frontend somente os três arquivos listados no manifesto próprio com checagem POST antes de restaurar; não usar rollback antigo do pacote recuperação/diagnóstico para remover funcionalidades já publicadas. Pacotes SQL/PDF anteriores preservados byte-exatos; novos hashes em manifesto dedicado.
+## Tipagem e limite da candidata
+
+SDK gerado não inclui familia_catalogo live: query usa filter no cliente canônico; resposta unknown decodificada estruturalmente falha fechado se família faltar. Não editar types gerados ou adotar erro select como Produto. Build automático não é recibo app; checker independente novo aguarda auditor.
