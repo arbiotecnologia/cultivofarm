@@ -212,7 +212,8 @@ describe('never-resolving transport (independent evidence 18:14): deadlines and 
 });
 
 describe('independent review 1875eb: Retry loader select(*) never resolves', () => {
-  it('pair → gestor; fresh read answers, loader profiles hangs; after 60 s + transport back, new Retry recovers gestor', async () => {
+  it.each([0, 500])('pair → gestor (%i ms/call); fresh read answers, loader select(*) hangs; after 60 s new Retry → ready', async (lat) => {
+    s.lat = lat;
     setup(); await tick(3000);
     s.roles = ['gestor']; focus(); await tick(3000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
