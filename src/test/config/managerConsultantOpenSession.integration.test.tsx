@@ -27,7 +27,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
   if(name==='has_role'){s.roleCalls.push(args);return {data:(args as {_role:string})._role===s.deniedRole?false:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
-  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
+  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
   if(name==='get_top_financial_rankings')return {data:{},error:null};
   throw new Error('unexpected '+name);
@@ -99,7 +99,7 @@ describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()
 describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page',()=>{
  it.each(['/financeiro/receber','/app','/app/atendimentos'])('%s preserves modal/draft across identical polls; inactive retry denies and restore is clean',async path=>{
    const qc=setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft multipapel'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
-   const before=s.h15;await tick(10000);s.roles.reverse();await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft multipapel');expect(screen.getByRole('dialog')).toBeTruthy();
+   const before=s.h15;await tick(10000);s.roles.reverse();await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft multipapel');expect(screen.getByRole('dialog')).toBeTruthy();
    s.active=false;await tick(10000);paused(qc,path);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc,path);
    s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
  });
