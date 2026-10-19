@@ -8,7 +8,7 @@ const s = vi.hoisted(() => ({
   h15Org: undefined as string | undefined,
   roles: ['gestor', 'consultor_tecnico'] as string[],
   offline: false, rtt: 0, roleReads: 0, profileReads: 0,
-  hold: undefined as undefined | Promise<void>,
+  hold: undefined as undefined | Promise<void>, active: true, hasRoleCalls: [] as string[],
 }));
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 function chain(table: string) {
@@ -17,7 +17,7 @@ function chain(table: string) {
     if (s.rtt && table === 'user_roles') await wait(s.rtt);
     if (s.hold && table === 'user_roles') await s.hold;
     if (s.offline) return { data: null, error: { message: 'offline' } };
-    if (table === 'profiles') return { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null };
+    if (table === 'profiles') return { data: { user_id: s.uid, organization_id: s.org, ativo: s.active, senha_provisoria: false, nome: 'B' }, error: null };
     if (table === 'user_roles') { s.roleReads++; return { data: s.roles.map(role => ({ role })), error: null }; }
     return { data: [], error: null };
   };
@@ -34,13 +34,19 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   rpc: async (name: string, args?: { _role: string }) => {
     if (s.offline) return { data: null, error: { message: 'offline' } };
     if (name === 'h15_actor_organization') return { data: s.h15Org ?? s.org, error: null };
-    if (name === 'has_role') return { data: s.roles.includes(args!._role), error: null };
+    if (name === 'has_role') { s.hasRoleCalls.push(args!._role); return { data: s.active && s.roles.includes(args!._role), error: null }; }
     throw new Error('unexpected ' + name);
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
-function Probe() { const { authzEpoch } = useAuth(); return <span>Conteúdo sensível {authzEpoch}</span>; }
+import { resolveEffectiveRouteRole } from '@/lib/navigation/portalRoleContext';
+const PATHS = ['/dashboard/geral', '/financeiro/receber', '/app/registrar'];
+function Probe() {
+  const { authzEpoch, roles, primaryRole, checkAuthzAccess } = useAuth();
+  const allowed = PATHS.filter(path => resolveEffectiveRouteRole({ roles, primaryRole, path, activeContext: null } as never).allowed);
+  return <span>Conteúdo sensível {authzEpoch} [{checkAuthzAccess() ? 'ok' : 'no'}] {allowed.join(',')}</span>;
+}
 const flush = async (ms = 20) => { await act(async () => { await wait(ms); }); };
 async function mount() {
   const qc = new QueryClient();
@@ -57,28 +63,67 @@ async function changeRolesAndPoll(next: string[]) {
 const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };
 const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
 
-beforeEach(() => { s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
+beforeEach(() => { s.active = true; s.hasRoleCalls = []; s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
 afterEach(() => cleanup());
 
 describe('Retry re-resolves identity (gestor+consultor)', () => {
-  it('subset gestor-only stays paused after Retry re-reads roles (no bypass)', async () => {
+  it('pair → gestor: Retry re-reads roles, residual gestor probe validates, only gestor routes', async () => {
     const qc = await mount();
-    expect(screen.getByText(/Conteúdo sensível/)).toBeTruthy();
     await changeRolesAndPoll(['gestor']);
     paused();
     expect(qc.getQueryData(['cache-sensivel'])).toBeUndefined();
-    const before = s.roleReads;
-    await retry();
-    expect(s.roleReads).toBeGreaterThan(before); // fresh read, not cached roles
-    paused();
-    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
-    expect(screen.getByText(/Suas permissões foram alteradas/)).toBeTruthy();
+    const before = s.roleReads; s.hasRoleCalls = [];
+    await retry(120);
+    expect(s.roleReads).toBeGreaterThan(before);
+    expect(s.hasRoleCalls).toEqual(['gestor']); // live role check of the remaining role
+    const txt = screen.getByText(/Conteúdo sensível/).textContent!;
+    expect(txt).toContain('[ok]');
+    expect(txt).toContain('/dashboard/geral,/financeiro/receber');
+    expect(txt).not.toContain('/app/registrar');
   });
-  it.each([[['consultor_tecnico']], [['gestor', 'consultor_tecnico', 'financeiro']], [[]], [['papel_desconhecido']]])('roles %j remain paused', async (next) => {
+  it('pair → consultor: only consultor routes after validated re-resolution', async () => {
+    await mount();
+    await changeRolesAndPoll(['consultor_tecnico']);
+    paused();
+    await retry(120);
+    const txt = screen.getByText(/Conteúdo sensível/).textContent!;
+    expect(txt).toContain('/app/registrar');
+    expect(txt).not.toContain('/dashboard/geral');
+    expect(txt).not.toContain('/financeiro/receber');
+  });
+  it('residual gestor later losing gestor pauses again (probe keeps watching)', async () => {
+    await mount();
+    await changeRolesAndPoll(['gestor']);
+    await retry(120);
+    expect(screen.getByText(/Conteúdo sensível/)).toBeTruthy();
+    await changeRolesAndPoll([]);
+    paused();
+    await retry();
+    paused();
+  });
+  it('residual is denied while the remaining role is inactive', async () => {
+    await mount();
+    await changeRolesAndPoll(['gestor']);
+    s.active = false;
+    await retry(120);
+    paused();
+  });
+  it.each([[['gestor', 'consultor_tecnico', 'financeiro']], [[]], [['papel_desconhecido']], [['financeiro']]])('roles %j remain paused', async (next) => {
     await mount();
     await changeRolesAndPoll(next);
     await retry();
     paused();
+  });
+  it('Retry closes readiness synchronously before any await', async () => {
+    await mount();
+    await changeRolesAndPoll(['gestor']);
+    s.roles = ['gestor', 'consultor_tecnico'];
+    let release!: () => void; s.hold = new Promise<void>(r => { release = r; });
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+    paused();
+    expect(screen.queryByText('[ok]')).toBeNull();
+    s.hold = undefined; release(); await flush(120);
+    expect(screen.getByText(/\[ok\]/)).toBeTruthy();
   });
   it('restore of the exact set recovers via Retry with a new epoch', async () => {
     await mount();
@@ -123,7 +168,7 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     let release!: () => void; s.hold = new Promise<void>(r => { release = r; });
     fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
     await flush();
-    s.roles = ['gestor']; s.hold = undefined; release();
+    s.roles = []; s.hold = undefined; release();
     await flush(80);
     paused();
   });
@@ -138,6 +183,6 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     paused();
     s.roles = ['gestor']; s.h15Org = undefined;
     await retry(80);
-    paused();
+    paused(); // tenant divergence is never adopted by Retry
   });
 });
