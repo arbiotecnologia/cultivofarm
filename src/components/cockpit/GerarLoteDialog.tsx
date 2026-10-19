@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { FlaskConical, Package } from "lucide-react";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
-import { MoneyInput } from "@/components/ui/money-input";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 export interface GerarLoteTarget {
   programacao_id: string;
@@ -17,6 +17,7 @@ export interface GerarLoteTarget {
   produto_id?: string | null;
   microrganismo_id?: string | null;
   produto_nome?: string;
+  /** Demanda da OS em LITROS (o banco guarda mL). */
   volume_solicitado?: number;
 }
 
@@ -27,64 +28,61 @@ interface Props {
   onCreated?: () => void;
 }
 
+const EMPTY = { volume_produzido: "", responsavel_producao: "", tanque: "", observacoes_tecnicas: "" };
+
+/** Litros digitados (vírgula ou ponto) -> mL; null se inválido. */
+export function litrosParaMl(value: string): number | null {
+  const raw = value.trim().replace(",", ".");
+  if (!/^\d+(\.\d{1,6})?$/.test(raw)) return null;
+  const ml = Math.round(Number(raw) * 1000 * 1000) / 1000;
+  return Number.isFinite(ml) && ml > 0 ? ml : null;
+}
+
 export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props) {
   const { gerarLote } = useEsteiraLaboratorio();
+  const access = useStorageAccessScope(JSON.stringify(["gerar-lote", target?.programacao_id, target?.os_id, open]));
+  const pending = useRef(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    volume_produzido: "",
-    responsavel_producao: "",
-    tanque: "",
-    custo_producao_estimado: "",
-    observacoes_tecnicas: "",
-  });
+  const [form, setForm] = useState(EMPTY);
 
+  // Nova sessão/época/tenant/alvo: descarta rascunho e trava.
   useEffect(() => {
-    if (open && target) {
-      setForm({
-        volume_produzido: target.volume_solicitado ? String(target.volume_solicitado) : "",
-        responsavel_producao: "",
-        tanque: "",
-        custo_producao_estimado: "",
-        observacoes_tecnicas: "",
-      });
-    }
-  }, [open, target]);
+    pending.current = false;
+    setSaving(false);
+    setForm(open && target ? { ...EMPTY, volume_produzido: target.volume_solicitado ? String(target.volume_solicitado) : "" } : EMPTY);
+  }, [open, target, access.scope]);
 
   if (!target) return null;
   const isMicro = !!target.microrganismo_id && !target.produto_id;
+  const volumeMl = litrosParaMl(form.volume_produzido);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (pending.current || !access.ready || volumeMl === null) return;
+    const current = access.capture();
+    pending.current = true;
     setSaving(true);
     try {
-      // O código do lote, o produto e o microrganismo são definidos
-      // exclusivamente pelo servidor a partir da programação bloqueada.
-      const loteData = {
+      // Código, produto, microrganismo, tenant e data são definidos pelo servidor.
+      const result = await gerarLote({
         programacao_id: target.programacao_id,
-        volume_produzido: form.volume_produzido ? Number(form.volume_produzido) * 1000 : null,
-        responsavel_producao: form.responsavel_producao || null,
-        tanque: form.tanque || null,
-        custo_producao_estimado: form.custo_producao_estimado ? Number(form.custo_producao_estimado) : 0,
-        observacoes_tecnicas: form.observacoes_tecnicas || null,
-      };
-      const result = await gerarLote(loteData, target.os_id, target.origem);
-      if (result) {
-        setForm({
-          volume_produzido: "",
-          responsavel_producao: "",
-          tanque: "",
-          custo_producao_estimado: "",
-          observacoes_tecnicas: "",
-        });
-        onOpenChange(false);
-        onCreated?.();
-      }
+        volume_produzido: volumeMl,
+        responsavel_producao: form.responsavel_producao,
+        tanque: form.tanque,
+        observacoes_tecnicas: form.observacoes_tecnicas,
+      }, target.os_id, target.origem, current);
+      if (!current() || !result) return;
+      setForm(EMPTY);
+      onOpenChange(false);
+      onCreated?.();
     } finally {
-      setSaving(false);
+      pending.current = false;
+      if (current()) setSaving(false);
     }
   };
 
+  const demanda = Number(target.volume_solicitado || 0);
+  const produzidoL = volumeMl === null ? 0 : volumeMl / 1000;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,87 +105,49 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
             <p className="text-xs text-muted-foreground">
               O código do lote é gerado automaticamente pelo sistema no momento do registro,
               no padrão <span className="font-mono">LT-AAAA-0000</span>. Ele será exibido após a confirmação.
+              Registrar o lote não inicia controle de qualidade, envase nem estoque.
             </p>
           </div>
 
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Volume Produzido (L)</Label>
+              <Label htmlFor="lote-volume">Volume Produzido (L)</Label>
               <Input
-                type="number"
+                id="lote-volume"
+                inputMode="decimal"
                 value={form.volume_produzido}
+                disabled={saving}
                 onChange={(e) => setForm({ ...form, volume_produzido: e.target.value })}
               />
-              {(() => {
-                const demanda = Number(target.volume_solicitado || 0);
-                const produzido = Number(form.volume_produzido || 0);
-                if (!demanda) return null;
-                const delta = produzido - demanda;
-                if (!produzido) {
-                  return (
-                    <p className="text-xs text-muted-foreground">
-                      Demanda da OS: <span className="font-mono-data font-semibold">{demanda} L</span>
-                    </p>
-                  );
-                }
-                if (delta === 0) {
-                  return (
-                    <p className="text-xs text-primary">
-                      Produção conforme demanda ({demanda} L).
-                    </p>
-                  );
-                }
-                if (delta > 0) {
-                  return (
-                    <p className="text-xs text-primary">
-                      Excedente: <span className="font-mono-data font-semibold">+{delta} L</span> irão
-                      para estoque livre (demanda {demanda} L).
-                    </p>
-                  );
-                }
-                return (
-                  <p className="text-xs text-amber-600 dark:text-amber-500">
-                    Faltam <span className="font-mono-data font-semibold">{Math.abs(delta)} L</span> para
-                    atender a demanda de {demanda} L.
-                  </p>
-                );
-              })()}
+              {form.volume_produzido && volumeMl === null ? (
+                <p className="text-xs text-destructive">Informe um volume em litros maior que zero.</p>
+              ) : demanda > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Demanda da OS: <span className="font-mono-data font-semibold">{demanda.toLocaleString("pt-BR")} L</span>
+                  {produzidoL > 0 && produzidoL !== demanda ? ` · informado ${produzidoL.toLocaleString("pt-BR")} L` : ""}
+                </p>
+              ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label>Tanque</Label>
-              <Input value={form.tanque} onChange={(e) => setForm({ ...form, tanque: e.target.value })} placeholder="Ex: TQ-01" />
-            </div>
-          </div>
-
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Responsável</Label>
-              <Input
-                value={form.responsavel_producao}
-                onChange={(e) => setForm({ ...form, responsavel_producao: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Custo Estimado</Label>
-              <MoneyInput
-                value={form.custo_producao_estimado}
-                onValueChange={(v) => setForm({ ...form, custo_producao_estimado: String(v) })}
-              />
+              <Label htmlFor="lote-tanque">Tanque</Label>
+              <Input id="lote-tanque" maxLength={60} value={form.tanque} disabled={saving} onChange={(e) => setForm({ ...form, tanque: e.target.value })} placeholder="Ex: TQ-01" />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Observações Técnicas</Label>
-            <Input
-              value={form.observacoes_tecnicas}
-              onChange={(e) => setForm({ ...form, observacoes_tecnicas: e.target.value })}
-              placeholder="Notas sobre a inoculação, etc."
-            />
+            <Label htmlFor="lote-responsavel">Responsável</Label>
+            <Input id="lote-responsavel" maxLength={200} value={form.responsavel_producao} disabled={saving}
+              onChange={(e) => setForm({ ...form, responsavel_producao: e.target.value })} />
           </div>
 
-          <Button type="submit" className="w-full h-11 font-bold" disabled={saving}>
+          <div className="space-y-1.5">
+            <Label htmlFor="lote-obs">Observações Técnicas</Label>
+            <Input id="lote-obs" maxLength={2000} value={form.observacoes_tecnicas} disabled={saving}
+              onChange={(e) => setForm({ ...form, observacoes_tecnicas: e.target.value })}
+              placeholder="Notas sobre a inoculação, etc." />
+          </div>
+
+          <Button type="submit" className="w-full h-11 font-bold" disabled={saving || !access.ready || volumeMl === null}>
             {saving ? "Gerando..." : "Registrar Lote"}
           </Button>
         </form>
