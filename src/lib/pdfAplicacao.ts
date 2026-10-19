@@ -241,7 +241,8 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData, access: Aplic
     .order("created_at", { ascending: true }).limit(ATTACHMENT_LIMITS.files + 1).abortSignal(access.signal));
   if (evidenceError || !vinculos || vinculos.length > ATTACHMENT_LIMITS.files) throw new Error("PDF indisponível");
 
-  const evidencias = vinculos?.map((v: any) => v.evidencia).filter((e: any) => e.tipo === "foto") || [];
+  if (vinculos.some(v => !v.evidencia)) throw new Error("PDF indisponível");
+  const evidencias = vinculos.map((v: any) => v.evidencia).filter((e: any) => e.tipo === "foto");
 
   if (evidencias && evidencias.length > 0) {
     doc.addPage();

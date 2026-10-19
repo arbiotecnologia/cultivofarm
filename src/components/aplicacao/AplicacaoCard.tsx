@@ -41,7 +41,7 @@ interface Props {
 
 export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = true }: Props) {
   const { role, profile } = useAuth();
-  const access = useStorageAccessScope(`aplicacao:${a.id}`);
+  const access = useStorageAccessScope(JSON.stringify(["aplicacao-pdf", a, doseRecomendada]));
   const operation = useRef<AbortController | null>(null);
   useLayoutEffect(() => {
     setDownloading(false);
@@ -49,6 +49,8 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
     setEmailDialogOpen(false);
     setEmailDestinatario(a.email_envio || "");
     setNomeDestinatario("");
+    setEmailSubject(`Relatório de Aplicação - ${a.os?.fazendas?.nome || "Fazenda"} - ${formatDateDisplay(a.data_aplicacao)}`);
+    setEmailMessage(`Olá,\n\nSegue em anexo o relatório detalhado da aplicação realizada em ${formatDateDisplay(a.data_aplicacao)} no talhão ${a.os?.talhoes?.nome || "—"}.\n\nProduto: ${a.os?.produtos?.nome || "—"}\nResponsável: ${a.responsavel || "—"}\n\nQualquer dúvida, estamos à disposição.`);
     return () => { operation.current?.abort(); operation.current = null; };
   }, [access.scope]);
   const beginPdf = () => {
@@ -242,7 +244,8 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8 text-muted-foreground hover:text-primary" 
-                  onClick={() => setEmailDialogOpen(true)}
+                  onClick={() => { if (access.ready) setEmailDialogOpen(true); }}
+                  disabled={downloading || sendingEmail || !access.ready}
                   title="Enviar por E-mail"
                 >
                   <Mail className="h-4 w-4" />

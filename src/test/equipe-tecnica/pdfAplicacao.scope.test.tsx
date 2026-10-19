@@ -94,14 +94,14 @@ describe("both existing application PDF callers use real scope", () => {
     expect(email ? fake.edge : fake.saves).toHaveBeenCalledTimes(1);
   });
   for (const email of [false, true]) {
-    it.each(["uid", "tenant", "roles", "epoch", "resource", "lease", "unmount"])(`rejects late config in ${email ? "email" : "download"} on %s`, async change => {
+    it.each(["uid", "tenant", "roles", "epoch", "resource", "snapshot", "lease", "unmount"])(`rejects late config in ${email ? "email" : "download"} on %s`, async change => {
       const late = deferred(); fake.query.mockReturnValueOnce(late.promise); const ui = setup(); await start(ui, email);
       if (change === "uid") fake.uid = "B";
       if (change === "tenant") fake.tenant = "other";
       if (change === "roles") fake.roles = ["financeiro"];
       if (change === "epoch") fake.epoch++;
       if (change === "lease") fake.check = () => false;
-      if (change === "unmount") ui.unmount(); else ui.change(change === "resource" ? { ...app, id: ORIGIN } : undefined);
+      if (change === "unmount") ui.unmount(); else ui.change(change === "resource" ? { ...app, id: ORIGIN } : change === "snapshot" ? { ...app, observacoes: "Nova versão" } : undefined);
       await act(async () => { late.resolve({ data: { nome_empresa: "Farm" } }); });
       expect(fake.saves).not.toHaveBeenCalled(); expect(fake.edge).not.toHaveBeenCalled(); expect(fake.success).not.toHaveBeenCalled();
       if (change !== "lease") expect(fake.signals[0].aborted).toBe(true);
@@ -110,6 +110,20 @@ describe("both existing application PDF callers use real scope", () => {
   it("blocks duplicate local operations", async () => {
     const late = deferred(); fake.query.mockReturnValue(late.promise); const ui = setup(); fireEvent.click(ui.getByTitle("Baixar PDF")); fireEvent.click(ui.getByTitle("Baixar PDF"));
     await waitFor(() => expect(fake.query).toHaveBeenCalledTimes(1)); ui.unmount();
+  });
+  it("does not reopen UI after late email response under another epoch", async () => {
+    const late = deferred(); fake.edge.mockReturnValue(late.promise); const ui = setup(); await start(ui, true);
+    await waitFor(() => expect(fake.edge).toHaveBeenCalled()); fake.epoch++; ui.change();
+    await act(async () => { late.resolve({ data: { emailSent: true } }); }); expect(fake.success).not.toHaveBeenCalled(); expect(fake.saves).not.toHaveBeenCalled();
+  });
+  it("suppresses a returned document immediately before save if access expired", async () => {
+    fake.query.mockImplementation(async table => {
+      if (table === "aplicacoes") return { data: { id: APP, organization_id: fake.tenant } };
+      if (table === "configuracoes_sistema") return { data: { nome_empresa: "Farm" } };
+      fake.check = () => false; return { data: [] };
+    });
+    const ui = setup(); await start(ui, false);
+    await act(async () => { await Promise.resolve(); }); expect(fake.saves).not.toHaveBeenCalled(); expect(fake.success).not.toHaveBeenCalled();
   });
   it("timeout aborts the operation and discards late result", async () => {
     vi.useFakeTimers(); const late = deferred(); fake.query.mockReturnValue(late.promise); const ui = setup(); await start(ui, false);
