@@ -75,3 +75,38 @@ function paused(qc:QueryClient, path='/financeiro/receber'){
 }
 beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;s.rtt=0;bytes.download.mockReset();bytes.download.mockResolvedValue(new Blob(['pdf']));vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:prepared');vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>{});localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();});
+for(const role of ['financeiro','administrador']) describe(role+' exclusive environment, fake transport not hosted',()=>{
+ it('RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch',async()=>{
+  s.roles=[role];s.rtt=1500;setup();await tick(6100);
+  fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho preservado'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
+  const epoch=screen.getByTestId('epoch').textContent;const before=s.h15;
+  for(let i=0;i<900;i++){
+   if(i%100===0){Object.defineProperty(document,'visibilityState',{value:i%200===0?'hidden':'visible'});act(()=>{document.dispatchEvent(new Event('visibilitychange'));if(i%200!==0)window.dispatchEvent(new Event('focus'));});}
+   await act(async()=>{await vi.advanceTimersByTimeAsync(100);});
+   expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();expect(screen.getByTestId('epoch').textContent).toBe(epoch);
+  }
+  expect(s.h15).toBeGreaterThan(before+16);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho preservado');expect(screen.getByRole('dialog')).toBeTruthy();expect(screen.getByRole('button',{name:'Baixar PDF'})).toBeTruthy();expect(bytes.download).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button',{name:'Baixar PDF'}));expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+ });
+ it('coalesces focus+visibility with in-flight poll, does not erase draft',async()=>{
+  s.roles=[role];setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'coalesce'}});
+  let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);await tick(10000);const before=s.h15;
+  act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('online'));});await tick();expect(s.h15).toBe(before);
+  expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('coalesce');resolve?.(O);await tick();
+ });
+ it.each(['inactive','role','denied','error','offline','timeout'])('%s clears draft/cache/bytes, denies retry, restore is clean',async reason=>{
+  s.roles=[role];const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'não restaurar'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
+  let resolve:((v:unknown)=>void)|undefined;
+  if(reason==='inactive')s.active=false;if(reason==='role')s.roles=[];if(reason==='denied')s.roleAllowed=false;if(reason==='error')s.error=true;if(reason==='offline')Object.defineProperty(navigator,'onLine',{value:false});if(reason==='timeout')s.hold=()=>new Promise(r=>resolve=r);
+  act(()=>{window.dispatchEvent(new Event(reason==='offline'?'offline':'focus'));document.dispatchEvent(new Event('visibilitychange'));});await tick(reason==='timeout'?15001:0);paused(qc);expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:prepared');
+  resolve?.(O);await tick();paused(qc);
+  if(reason==='timeout')s.hold=()=>new Promise(()=>{});
+  fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick(reason==='timeout'?15001:0);paused(qc);
+  s.active=true;s.roles=[role];s.roleAllowed=true;s.error=false;s.hold=undefined;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();
+  expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
+ });
+ it('late prepared PDF after lease expiry cannot create Blob or restore UI',async()=>{
+  s.roles=[role];const qc=setup();await tick();let resolve:((v:Blob)=>void)|undefined;bytes.download.mockImplementation(()=>new Promise(r=>resolve=r));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));
+  s.hold=()=>new Promise(()=>{});await tick(15001);paused(qc);resolve?.(new Blob(['late']));await tick();expect(URL.createObjectURL).not.toHaveBeenCalled();paused(qc);
+ });
+});
