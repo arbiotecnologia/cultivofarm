@@ -131,7 +131,7 @@ def build(live_md5=LIVE, post_md5=None):
             "REVOKE ALL ON FUNCTION platform_private.entrega_termo_tenant_ok(uuid) FROM PUBLIC, anon, authenticated, service_role;\n" +
             run(gerar) + run(assinar) + run(cancelar) +
             "".join(f"REVOKE EXECUTE ON FUNCTION {s} FROM PUBLIC, anon, authenticated;\n" for s in SERVICE_ONLY) +
-            "REVOKE TRUNCATE, REFERENCES, TRIGGER ON TABLE public.entrega_termos FROM authenticated;\n"
+            "REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos FROM authenticated;\n"
             f"CREATE POLICY entrega_termos_tenant_isolation ON public.entrega_termos AS RESTRICTIVE FOR ALL TO authenticated\n"
             f"  USING ({POLICY_EXPR})\n  WITH CHECK ({POLICY_EXPR});\n")
     post = None
@@ -144,7 +144,7 @@ def build(live_md5=LIVE, post_md5=None):
           run(B["rpc_entrega_gerar_termo_v1"]) + run(B["rpc_entrega_assinar_termo_v1"]) + run(B["rpc_entrega_cancelar_termo_v1"]) +
           "DROP FUNCTION platform_private.entrega_termo_tenant_ok(uuid);\n" +
           "".join(f"GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n" for s in SERVICE_ONLY) +
-          "GRANT TRUNCATE, REFERENCES, TRIGGER ON TABLE public.entrega_termos TO authenticated;\n" +
+          "GRANT TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos TO authenticated;\n" +
           state_checks("ROLLBACK-POST", live_md5, PRE_ACL, TABLE_ACL_BASE, False))
     return pre, cand, post, rb
 

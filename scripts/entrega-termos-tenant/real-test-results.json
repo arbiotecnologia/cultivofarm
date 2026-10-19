@@ -60,7 +60,7 @@
   },
   {
    "name": "postflight PASS após candidata",
-   "pass": false
+   "pass": true
   },
   {
    "name": "preflight agora FALHA (não reaplicável)",
@@ -204,19 +204,19 @@
   },
   {
    "name": "rollback PASS (pré/pós internos)",
-   "pass": false
+   "pass": true
   },
   {
    "name": "rollback restaura md5 LIVE public.rpc_entrega_gerar_termo_v1(uuid,text)",
-   "pass": false
+   "pass": true
   },
   {
    "name": "rollback restaura md5 LIVE public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)",
-   "pass": false
+   "pass": true
   },
   {
    "name": "rollback restaura md5 LIVE public.rpc_entrega_cancelar_termo_v1(uuid,text)",
-   "pass": false
+   "pass": true
   },
   {
    "name": "rollback restaura md5 LIVE public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)",
@@ -232,11 +232,11 @@
   },
   {
    "name": "após rollback, preflight volta a PASS",
-   "pass": false
+   "pass": true
   },
   {
    "name": "após rollback, exposição baseline volta (reversível)",
-   "pass": false
+   "pass": true
   },
   {
    "name": "rollback repetido FALHA fechado",
@@ -244,7 +244,7 @@
   },
   {
    "name": "reaplicação após rollback PASS",
-   "pass": false
+   "pass": true
   }
  ]
 }
