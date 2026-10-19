@@ -1,9 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 01:47 — gestor + consultor exatos
+- [x] Revisão terminal06df9901/68hashes/stage6/6/26probes fake e preflight integral canônico PASS informados pelo proprietário; autorizada só ativação da flag.
+- [ ] Ativar somente multipapel, atualizar gate real, preparar staging ativo isolado/rollback original e executar regressões pertinentes.
 - [x] Candidata OFF no monitor/probe existentes, boundaries desktop/Campo/seletor, sem ampliar RBAC.
 - [x] 550/550 testes dirigidos/regressões PASS, staging6/6/SHA PASS, preflight fixo não executado e rollback original protegido.
-- [ ] Preflight/revisão/ativação/publicação/homologação real dependem do proprietário; typecheck depende de recibo.
+- [ ] Publicação/homologação real de inativação/perda individual dependem do proprietário; typecheck depende de recibo.
 
 ## 19/10 01:25 — operador onfarm exclusivo
 - [x] Ativação autorizada 01:34: somente gate operador true/assertion real, demais fontes src byte-exatas; provas OFF intactas, staging ativo5/5 e regressões397/397 PASS; build OK/typecheck sem recibo.
