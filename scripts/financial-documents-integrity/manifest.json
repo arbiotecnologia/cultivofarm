@@ -123,5 +123,18 @@
         "search_path=\"\""
       ]
     }
-  ]
+  ],
+  "sha256": {
+    "baseline-functions.sql": "44e32c9dff4992783e1e76316b060d399655e6ea3d00fb0d6193458ce26e7cb9",
+    "callers.md": "d908990c5797c7969616bced2f1ebf5ccb7e75c7cd78a42a6752bb6cffc3d388",
+    "candidate.sql.review": "694d7b4928bd7dc74d6868a3e87c277383f3c0eeb9dd1511fbe2fdb69b2fab16",
+    "contracts-guard.sql.review": "d28fd51a02f4a10c9594cd0441c5c7a8529caff5bab6005af0214798a4b0bfa3",
+    "guard.function.sql.review": "176a19379aa5623f78320ccb96eb4100c9912dbd90c87ef5b2becda0bfdf6f25",
+    "local-baseline.sql": "17bad32760252cbc65c3f369b844db838ab6a9fdf3ff3ae836c22fae55493e65",
+    "local-setup.sql": "ac411142f00f32f211249af44426ee7f00e975056c831d03dccf746d94b853a6",
+    "postflight.sql.review": "f466f1c9f2c6536dd0b7f2240b44f1fa924b387385eb4b5d66da62831a5eb312",
+    "preflight.sql.review": "7e468c3c3b36b07690cccc5408678dd1d57fe52a9c4fb19c518de21804ebac9e",
+    "rollback.sql.review": "6c9cc9496dcedf3e817353e96506a8a734f1263016aa97cd79a05f9fb3c2f649",
+    "test-local.py": "529a85beb60672786a9f5e6a1afb72930ddb45e21aba06bccf961dd2c288322d"
+  }
 }
