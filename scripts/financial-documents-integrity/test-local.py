@@ -102,7 +102,6 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
             sql += "RESET ROLE;"+ok(typ+' canonical tombstone persisted',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE owner_type='{typ}' AND deleted_at IS NOT NULL AND deleted_by='{UID_A}')")+actor(UID_A)
         sql += actor(UID_B)+ok('admin B current iat ready',f"public.h15_actor_organization()='{ORG_B}'")+err('reported admin B foreign owner exploit',insert(0,author=UID_B))
         sql += "RESET ROLE; SELECT set_config('request.jwt.claims',jsonb_build_object('sub','"+UID_B+"','role','authenticated','iat',0)::text,false); SET ROLE authenticated;"+ok('iat0 fails readiness','public.h15_actor_organization() IS NULL')+err('iat0 denies insert',insert(0,2,author=UID_B))
-        sql += actor(UID_A)+err('owner type mutation',"UPDATE public.financial_documents SET owner_type='PAYABLE'") if False else ''
         sql += actor(UID_A)+err('unsupported owner',"INSERT INTO public.financial_documents(owner_type,owner_id,document_type,file_name,storage_path,uploaded_by) VALUES('UNKNOWN','"+parent(0)+"','OTHER','file.txt','x/y/z','"+UID_A+"')")
         sql += 'RESET ROLE;'+f"UPDATE public.profiles SET ativo=false WHERE user_id='{UID_A}';"+actor(UID_A)+err('inactive actor denied',insert(0))
         sql += 'RESET ROLE;'+f"UPDATE public.profiles SET ativo=true WHERE user_id='{UID_A}'; DELETE FROM public.user_roles WHERE user_id='{UID_A}';"+actor(UID_A)+err('role removed denied',insert(0))
@@ -120,7 +119,7 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
         sql += "CREATE TRIGGER zz_financial_document_integrity BEFORE INSERT OR UPDATE ON public.financial_documents FOR EACH ROW EXECUTE FUNCTION public.guard_financial_document_integrity();"
         sql += actor(UID_A)+"SELECT public.rpc_financial_document_soft_delete((SELECT id FROM public.financial_documents WHERE storage_path LIKE '%/legacy.txt'),'legado local');"
         sql += ok('valid legacy locator softdelete without reparent','NOT EXISTS(SELECT 1 FROM public.financial_documents WHERE storage_path LIKE \'%/legacy.txt\')')
-        sql += 'RESET ROLE; DROP TRIGGER zz_financial_document_integrity ON public.financial_documents;'+insert(0,path=f'RECEIVABLE/{parent(0)}/null-legacy.txt')+';'
+        sql += 'RESET ROLE; DROP TRIGGER zz_financial_document_integrity ON public.financial_documents; ALTER TABLE public.financial_documents DISABLE TRIGGER tenant_organization_guard;'+insert(0,path=f'RECEIVABLE/{parent(0)}/null-legacy.txt')+'; ALTER TABLE public.financial_documents ENABLE TRIGGER tenant_organization_guard;'
         sql += "CREATE TRIGGER zz_financial_document_integrity BEFORE INSERT OR UPDATE ON public.financial_documents FOR EACH ROW EXECUTE FUNCTION public.guard_financial_document_integrity();"
         sql += actor(UID_A)+ok('NULL legacy invisible',"NOT EXISTS(SELECT 1 FROM public.financial_documents WHERE storage_path LIKE '%null-legacy.txt')")
         sql += err('canonical softdelete NULL legacy denied',"SELECT public.rpc_financial_document_soft_delete((SELECT id FROM public.financial_documents WHERE storage_path LIKE '%null-legacy.txt'),'local')",'22023')
