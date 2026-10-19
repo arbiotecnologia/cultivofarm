@@ -7,5 +7,5 @@
   "postflight.sql.review": "f40367e3affdb6629c10596657660000d19b2e395a745c925daad009d7a4b27b",
   "preflight-readonly.sql": "c08336741eefea8843e6b18ea3571d1fef2aff4deae027e65e13818cd541c616",
   "rollback.sql.review": "593557255fb824424d776ad86552e6101e6b035e39a3616d4b8d0e52c8c4801f",
-  "test-local.py": "132b88e0e40d63ba8043ba1db3b3d17b55bf5f5ca46c90de889db9a71aef0679"
+  "test-local.py": "fa922bf49785af11b6541599927b4448297f18795bd0075c5245d142b017dcc7"
 }
