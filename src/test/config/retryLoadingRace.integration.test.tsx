@@ -180,6 +180,34 @@ describe('Retry / renewal generation conflicts never leave an endless loading (5
   });
 });
 
+describe('never-resolving transport (independent evidence 18:14): deadlines and single-flight release', () => {
+  it('TOKEN_REFRESHED with profiles never resolving: after 60 s no spinner, readiness closed, recoverable', async () => {
+    setup(); await tick(3000);
+    s.hangNext = 'profiles'; tokenRefreshed(); await tick(60000);
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    expect(screen.getByText(/Falha ao carregar dados do usuário/)).toBeTruthy();
+  });
+  it('Retry fresh read never resolving: after 60 s transport returns and a new Retry recovers', async () => {
+    await pairThenLoseGestor();
+    s.hangNext = 'profiles'; retry(); await tick(60000);
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    retry(); await tick(8000);
+    await expectConsultorRecovered();
+  });
+  it('Retry loader never resolving: single-flight released, no old authority, new Retry recovers', async () => {
+    await pairThenLoseGestor();
+    retry(); await tick(600); s.hangNext = 'profiles'; await tick(60000); // fresh read done, loader profile hangs
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    const btn = screen.queryByRole('button', { name: 'Tentar novamente' });
+    if (btn) { retry(); await tick(8000); await expectConsultorRecovered(); }
+    else expect(screen.getByText(/Falha ao carregar dados do usuário/)).toBeTruthy();
+  });
+});
+
 describe('company admin latency: 3 s probes stay valid; 8 s probe is the expected fail-closed pause', () => {
   it('admin at /financeiro/receber: 1.5 s/call for 3 min no pause; 4 s/call pauses with numeric diag; Retry recovers', async () => {
     s.roles = ['administrador']; s.lat = 1500;
