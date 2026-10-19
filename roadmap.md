@@ -306,3 +306,9 @@
 - [ ] Aplicação hosted + publicação: aguarda auditor (não executado pelo agente).
 - [ ] Homologação real no navegador com admin B (OS 18ea0531): aguarda aplicação.
 - [ ] Revisar escrita direta em `lotes` por policies RLS fora do RPC (bypass conhecido).
+
+## Hotfix monitor + downloads financeiros 2026-10-19 (prioridade crítica)
+- [x] Piso de renovação 5 s → 7,5 s (spike real 5094 ms); lease 15 s/single-flight/fail-closed inalterados; testes 5,1–7 s e 8 s fail-closed.
+- [x] DocumentosPanel e HistoricoExportacoes sem signed URL: abridor autenticado Preparar/Baixar, snapshot no recurso, fences e revogação de Blob.
+- [x] Pacote isolado sobre 3eeb3212: `scripts/monitor-attachments-hotfix/` (patch, baseline, rollback, manifest, hashes); tsgo app/node 0; 137/137 focados.
+- [ ] Publicação e homologação real (renovação natural com rascunho, download A/B, negação): aguarda auditor.
