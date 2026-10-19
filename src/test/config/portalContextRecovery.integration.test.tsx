@@ -1,7 +1,7 @@
 // Real AuthProvider/monitor/probe/ProtectedRoutes/RoleGuard/AppPortalGuard/AppLayout/MobileLayout.
 // Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
@@ -33,6 +33,7 @@ vi.mock('@/components/AppSidebar', () => ({ AppSidebar: () => <nav>Menu desktop<
 vi.mock('@/components/portal/PortalTopBar', () => ({ PortalTopBar: ({ brandTitle }: { brandTitle: string }) => <header>{brandTitle}</header> }));
 vi.mock('@/lib/accessAuditLog', () => ({ logAccessDeniedOnce: () => {}, routeGroupFromPath: () => 'technical' }));
 vi.mock('@/hooks/useOfflineSync', () => ({ useOfflineSync: () => ({ isOnline: true, pendingCount: 0, syncing: false, syncAll: () => {} }) }));
+vi.mock('@/hooks/usePushSubscription', () => ({ usePushSubscription: () => ({ isSupported: false, subscription: null, deliveryAvailable: false, unsubscribe: () => {}, isLoading: false }) }));
 vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ status: 'ready', features: new Set(['ordens_producao', 'estoque_embalagens', 'contas_receber']) }) }));
 vi.mock('@/components/app/OfflineIndicator', () => ({ OfflineIndicator: () => null }));
 vi.mock('@/components/app/PendingMediaRecovery', () => ({ PendingMediaRecovery: () => null }));
@@ -68,16 +69,22 @@ function AuthSpy() { s.auth = useAuth(); return null; }
 import { ProtectedRoutes, RoleGuard } from '@/App';
 import MobileLayout from '@/pages/app/MobileLayout';
 import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
+import MobilePerfil from '@/pages/app/MobilePerfil';
+import { useAvailableContexts } from '@/hooks/useAvailableContexts';
 import { readAuthzDiagnostics, clearAuthzDiagnostics } from '@/lib/authz/localDiagnostics';
 
 function Url() { return <output data-testid="url">{useLocation().pathname}</output>; }
-function setup(path = '/financeiro/receber') {
+function NestedContextReader() {
+  const { data } = useAvailableContexts();
+  return data?.has_technical_access ? <span>Técnico campo</span> : null;
+}
+function setup(path = '/financeiro/receber', child: React.ReactNode = <span>Técnico campo</span>) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={qc}><AuthProvider><AuthSpy /><MemoryRouter initialEntries={[path]}><Url /><Routes>
     <Route element={<ProtectedRoutes />}>
       <Route path="/financeiro/receber" element={<RoleGuard><span>Contas a receber</span></RoleGuard>} />
     </Route>
-    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={<span>Técnico campo</span>} /></Route></Route>
+    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={child} /></Route></Route>
     <Route path="/sem-permissao" element={<Link to="/app">Ir ao técnico</Link>} />
   </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
   return qc;
@@ -110,10 +117,36 @@ beforeEach(() => {
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 
 describe('real provider + contexts query + app guard + mobile: uncertainty is not denial', () => {
+  it.each(['default-reader', 'mobile-perfil'])('%s stabilizes after load, focus and epoch without mount-refetch loop', async kind => {
+    const label = kind === 'mobile-perfil' ? 'Meu Perfil' : 'Técnico campo';
+    const qc = setup('/app', kind === 'mobile-perfil' ? <MobilePerfil /> : <NestedContextReader />);
+    await tick(12000);
+    expect(s.contextsCalls).toBeLessThan(5);
+    expect(screen.getByText(label)).toBeTruthy();
+    let calls = s.contextsCalls;
+    s.contextsMode = 'hold';
+    act(() => { focusManager.setFocused(false); focusManager.setFocused(true); });
+    await tick(100);
+    expect(screen.queryByText(label)).toBeNull();
+    expect(screen.getByTestId('url').textContent).toBe('/app');
+    s.contextsMode = 'valid'; s.contextRelease?.(); await tick(12000);
+    expect(s.contextsCalls - calls).toBeGreaterThan(0);
+    expect(s.contextsCalls - calls).toBeLessThan(5);
+    expect(screen.getByText(label)).toBeTruthy();
+    calls = s.contextsCalls;
+    s.contextsMode = 'hold'; tokenRefreshed(); await tick(4000);
+    expect(screen.queryByText(label)).toBeNull();
+    s.contextsMode = 'valid'; s.contextRelease?.(); await tick(12000);
+    expect(s.contextsCalls - calls).toBeGreaterThan(0);
+    expect(s.contextsCalls - calls).toBeLessThan(5);
+    expect(screen.getByText(label)).toBeTruthy();
+    expect(screen.getByTestId('url').textContent).toBe('/app');
+    qc.clear();
+  });
   it('epoch cleanup pending → valid with context pending → valid keeps /app', async () => {
     const qc = setup('/app'); await tick(3000);
     expect(screen.getByText('Técnico campo')).toBeTruthy();
