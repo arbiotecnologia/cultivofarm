@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { writeFileSync } from "node:fs";
 
 const fake = vi.hoisted(() => ({ uid: "actor", tenant: "007bb519-cba0-4704-be2c-cb93ad010048", epoch: 0, roles: ["administrador"], ready: true,
   check: (): boolean => true, query: vi.fn(), download: vi.fn(), edge: vi.fn(), success: vi.fn(), error: vi.fn(), saves: vi.fn(), signals: [] as AbortSignal[] }));
@@ -57,6 +58,7 @@ describe("application PDF authenticated assets", () => {
     const doc = await generateAplicacaoPdf({ aplicacao: app, empresa: { nome: "Cultivo Farm", logoUrl: "https://swzpzcwiasxmjutrmvkm.supabase.co/storage/v1/object/public/logos/platform/logo-123.png" } }, fence());
     expect(fake.download.mock.calls.map(c => c.slice(0, 2))).toEqual([["logos", "platform/logo-123.png"], ["aplicacao-evidencias", evidence.storage_path]]);
     expect(doc.getNumberOfPages()).toBe(2);
+    if (process.env.APPLICATION_PDF_QA === "1") writeFileSync("/tmp/pdf-aplicacao/report.pdf", Buffer.from(doc.output("arraybuffer")));
   });
   it.each(["denied", "foreign", "wrong-id"])("requires current server application read: %s", async kind => {
     fake.query.mockResolvedValue(kind === "denied" ? { error: { message: "denied" } } : { data: { id: kind === "wrong-id" ? ORIGIN : APP, organization_id: kind === "foreign" ? "other" : fake.tenant } });
