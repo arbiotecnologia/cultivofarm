@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -84,14 +84,17 @@ describe("tentativa incerta de pagamento — persistência mínima", () => {
 
 /* ------------------------------ BaixaDialog payable ------------------------------ */
 
-const { rpcMock, fromMock, anexarMock } = vi.hoisted(() => ({
+const { rpcMock, fromMock, anexarMock, actor, successMock } = vi.hoisted(() => ({
   rpcMock: vi.fn(),
   fromMock: vi.fn(),
   anexarMock: vi.fn(),
+  successMock: vi.fn(),
+  actor: { current: true, org: "org-1", uid: "u1" },
 }));
+vi.mock("sonner", () => ({ toast: { success: successMock, error: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "u1" }, profile: { user_id: "u1", organization_id: "org-1", ativo: true }, roles: ["financeiro"], loading: false }),
+  useAuth: () => ({ user: { id: actor.uid }, profile: { user_id: actor.uid, organization_id: actor.org, ativo: true }, roles: ["financeiro"], loading: false, checkAuthzAccess: () => actor.current }),
 }));
 vi.mock("@/lib/financial/anexarComprovanteBaixa", () => ({ anexarComprovanteBaixa: anexarMock }));
 
@@ -133,6 +136,7 @@ const UUID = "00000000-0000-4000-8000-000000000001";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  actor.current = true; actor.org = "org-1"; actor.uid = "u1";
   localStorage.clear();
   resultados = {
     financial_settings: { data: { require_receipt_on_payable_payment: false }, error: null },
@@ -277,5 +281,43 @@ describe("BaixaDialog payable — reenvio de comprovante pendente", () => {
       anexarMock.mock.calls[0][1].idempotencyKey,
     );
     expect(anexarMock.mock.calls[1][1].paymentId).toBe(UUID);
+  });
+
+  it.each(["revoke", "tenant", "uid", "unmount"])("reenvio tardio %s não publica sucesso/callback nem nova baixa", async mode => {
+    await chegarEmPendente();
+    let resolve: (() => void) | undefined;
+    anexarMock.mockImplementationOnce(() => new Promise<void>(r => { resolve = r; }));
+    fireEvent.click(screen.getByRole("button", { name: /Reenviar comprovante/i }));
+    await waitFor(() => expect(anexarMock).toHaveBeenCalledTimes(2));
+    const scope = anexarMock.mock.calls[1][1].isCurrent;
+    if (mode === "revoke") actor.current = false;
+    else if (mode === "tenant" || mode === "uid") {
+      if (mode === "tenant") actor.org = "org-2"; else actor.uid = "u2";
+      // A separate render updates the same hook instance through props.
+      fireEvent.change(screen.getByLabelText(/Observações/i), { target: { value: "fence" } });
+    } else {
+      // RTL cleanup unmounts the actual hook instance.
+      const { cleanup } = await import("@testing-library/react"); cleanup();
+    }
+    expect(scope()).toBe(false);
+    await act(async () => { resolve?.(); });
+    expect(successMock).not.toHaveBeenCalled(); expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("baixa confirmada limpa journal apesar de expirar durante anexo, sem sucesso tardio", async () => {
+    let resolve: (() => void) | undefined;
+    anexarMock.mockImplementationOnce(() => new Promise<void>(r => { resolve = r; }));
+    abrirDialog(); await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
+    await selecionarMetodo();
+    const input = document.querySelector('input[type="file"]');
+    if (!input) throw new Error("file input missing");
+    fireEvent.change(input, { target: { files: [new File(["x"], "comp.pdf")] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    await waitFor(() => expect(anexarMock).toHaveBeenCalledTimes(1));
+    expect(localStorage.getItem(chaveTentativaPagar("u1", "inst-1"))).not.toBeNull();
+    actor.current = false;
+    await act(async () => { resolve?.(); });
+    expect(localStorage.getItem(chaveTentativaPagar("u1", "inst-1"))).toBeNull();
+    expect(successMock).not.toHaveBeenCalled(); expect(rpcMock).toHaveBeenCalledTimes(1);
   });
 });
