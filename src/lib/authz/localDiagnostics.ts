@@ -1,6 +1,6 @@
 /** Local bounded diagnostics only: never identity, URLs, fingerprints, payloads or error text. */
 export interface AuthzDiagnostic {
-  event: "request" | "response" | "expire" | "environment" | "stale";
+  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed";
   state: string;
   reason: "error" | "offline" | "timeout" | "ineligible" | null;
   visible: boolean;
@@ -14,7 +14,7 @@ const number = (value: unknown): number | null => typeof value === "number" && N
   ? Math.round(Math.max(-3_600_000, Math.min(3_600_000, value))) : null;
 export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
   // Reconstruct the allowlist, never spread untrusted input into diagnostics.
-  const event = ["request", "response", "expire", "environment", "stale"].includes(sample.event) ? sample.event : "expire";
+  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed"].includes(sample.event) ? sample.event : "expire";
   const state = ["idle", "pending", "valid", "expired", "stopped"].includes(sample.state) ? sample.state : "expired";
   const reason = sample.reason && ["error", "offline", "timeout", "ineligible"].includes(sample.reason) ? sample.reason : null;
   const record: AuthzDiagnostic = { event, state, reason, visible: sample.visible === true, online: sample.online === true,

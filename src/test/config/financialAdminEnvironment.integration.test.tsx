@@ -4,11 +4,11 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthenticatedAttachmentOpener } from '@/hooks/useAuthenticatedAttachmentOpener';
 const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002';
 const s=vi.hoisted(()=>({uid:'00000000-0000-4000-8000-000000000001',authListener:undefined as undefined|((event:string,session:{user:{id:string}})=>void),gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['gestor','consultor_tecnico'],org:'00000000-0000-4000-8000-000000000002' as string|null,finalOrg:undefined as string|undefined,h15:0,error:false,fail:'',hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined, roleCalls:[] as unknown[], deniedRole:'', preferenceHold:undefined as undefined|(()=>Promise<unknown>), rtt:0}));
-function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
+function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal','gte','limit'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
 vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,FINANCIAL_CONTEXT_MONITOR_ENABLED: true, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: true, get MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED(){return s.gate;}, AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',PRODUCER_CONTEXT_MONITOR_ENABLED:false,CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED:false}));
 vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
 vi.mock('@/hooks/useSystemConfig',()=>({useSystemConfig:()=>({defaults:{nome_empresa:'Cultivo Farm'}})}));
@@ -20,10 +20,13 @@ vi.mock('@/hooks/useOfflineSync',()=>({useOfflineSync:()=>({isOnline:true,pendin
 vi.mock('@/hooks/useEntitlements',()=>({useEntitlements:()=>({status:'ready',features:new Set(['ordens_producao','estoque_embalagens','contas_receber'])})}));
 vi.mock('@/components/app/OfflineIndicator',()=>({OfflineIndicator:()=>null}));
 vi.mock('@/components/app/PendingMediaRecovery',()=>({PendingMediaRecovery:()=>null}));
+vi.mock('@/components/ordens-servico/OSDetalhesDialog',()=>({OSDetalhesDialog:()=>null}));
+vi.mock('@/components/faturamento/BaseFaturamentoSection',()=>({BaseFaturamentoSection:()=>null}));
 vi.mock('@/components/ui/sidebar',()=>({SidebarProvider:({children}:{children:React.ReactNode})=><>{children}</>,SidebarTrigger:()=>null}));
 vi.mock('@/integrations/supabase/client',()=>({supabase:{
  auth:{getSession:async()=>({data:{session:{user:{id:s.uid}}}}),onAuthStateChange:(listener:typeof s.authListener)=>{s.authListener=listener;return {data:{subscription:{unsubscribe(){s.authListener=undefined;}}}};},signOut:async()=>{}},
  from:(t:string)=>chain(()=>t==='profiles'?{data:{user_id:s.rowUid??s.uid,organization_id:s.org,ativo:s.active,senha_provisoria:s.password,nome:'Operador'},error:s.fail==='profiles'?{}:null}:t==='user_roles'?{data:s.roles.map(role=>({role})),error:s.fail==='user_roles'?{}:null}:{data:[]}),
+ channel:()=>{const c={on:()=>c,subscribe:()=>c};return c;},removeChannel:vi.fn(),
  rpc:(name:string,args:unknown)=>{const request=(async()=>{
   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
@@ -35,6 +38,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
  })();return Object.assign(request,{abortSignal:()=>request});}
 }}));
 import { AuthProvider } from '@/hooks/useAuth';
+import OrdensServico from '@/pages/OrdensServico';
 import MobileLogin from '@/pages/app/MobileLogin';
 import SelecionarPortal from '@/pages/SelecionarPortal';
 import AcessoPendente from '@/pages/AcessoPendente';
@@ -53,12 +57,13 @@ function Location(){return <output data-testid="url">{useLocation().pathname}</o
 const bytes=vi.hoisted(()=>({download:vi.fn()}));
 vi.mock('@/lib/authz/authenticatedAttachment',async original=>({...await original<typeof import('@/lib/authz/authenticatedAttachment')>(),downloadAuthenticatedAttachment:(...args:unknown[])=>bytes.download(...args)}));
 function Prepared(){const {authzEpoch}=useAuth();const opener=useAuthenticatedAttachmentOpener('environment-receipt','financial-receipts');const path=O+'/2026/REC-2026-000001.pdf';return <><output data-testid="epoch">{authzEpoch}</output><button onClick={()=>void opener.open(path,()=>{})}>Preparar PDF</button>{opener.urls[path]&&<button onClick={()=>opener.download(path,'recibo.pdf')}>Baixar PDF</button>}</>;}
-function Draft(){const [draft,setDraft]=useState(''); const [modal,setModal]=useState(false);return <><input aria-label="Rascunho operador" value={draft} onChange={e=>setDraft(e.target.value)}/><button onClick={()=>setModal(true)}>Abrir modal</button>{modal&&<div role="dialog">Modal em edição</div>}</>;}
+function Draft(){const {setSafeOSDraft,takeSafeOSDraft}=useAuth();const [receipt]=useState(()=>takeSafeOSDraft());const [draft,setDraft]=useState(''); const [modal,setModal]=useState(receipt?.open??false);useEffect(()=>{setSafeOSDraft(modal?{open:true,tipo_item:'produto',modo_aplicacao:'foliar',prioridade:'media'}:null);return ()=>setSafeOSDraft(null);},[modal]);return <><input aria-label="Rascunho operador" value={draft} onChange={e=>setDraft(e.target.value)}/><button onClick={()=>setModal(true)}>Abrir modal</button>{modal&&<div role="dialog">Modal em edição</div>}</>;}
 function Switch(){return <><Link to="/selecionar-portal?intent=switch">Trocar portal</Link></>;}
 function setup(path='/financeiro/receber'){
  const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});
  render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><Location/><Routes>
  <Route element={<ProtectedRoutes/>}>{['/financeiro/receber','/dashboard/geral'].map(path=><Route key={path} path={path} element={<RoleGuard><Switch/><Draft/><Prepared/><CockpitFixture/></RoleGuard>}/>)}</Route>
+ <Route element={<ProtectedRoutes/>}><Route path="/ordens-servico" element={<RoleGuard><OrdensServico/></RoleGuard>}/></Route>
  <Route element={<AppPortalGuard/>}><Route element={<MobileLayout/>}>{['/app','/app/atendimentos','/app/registrar'].map(path=><Route key={path} path={path} element={<><Switch/><Draft/><Prepared/><CockpitFixture/></>}/>)}</Route></Route>
  <Route path="/selecionar-portal" element={<SelecionarPortal/>}/><Route path="/sem-permissao" element={<div>negado</div>}/>
  </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);return qc;
@@ -76,7 +81,7 @@ function paused(qc:QueryClient, path='/financeiro/receber'){
 beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;s.rtt=0;bytes.download.mockReset();bytes.download.mockResolvedValue(new Blob(['pdf']));Object.defineProperty(URL,'createObjectURL',{configurable:true,value:vi.fn(()=> 'blob:prepared')});Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:vi.fn()});vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>{});localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();});
 for(const role of ['financeiro','administrador']) describe(role+' exclusive environment, fake transport not hosted',()=>{
- it('TOKEN_REFRESHED identical principal currently retires modal/draft/cache/bytes without lease expiry; SIGNED_IN cannot restore them',async()=>{
+ it('TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return',async()=>{
   s.roles=[role];const qc=setup();await tick();
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft before refresh'}});
   fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
@@ -91,12 +96,13 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
   expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);
   await tick();act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();
   expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');
-  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(screen.getByRole('dialog')).toBeTruthy();
   expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
   expect(warnings.mock.calls.some(call=>call[0]==='cultivo-authz-expire')).toBe(false);
  });
  it('TOKEN_REFRESHED discards late old-scope attachment while same-scope reauthorization awaits3s',async()=>{
   s.roles=[role];setup();await tick();let answer:((value:Blob)=>void)|undefined;
+  fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
   bytes.download.mockImplementation(()=>new Promise(resolve=>answer=resolve));
   fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));s.rtt=1500;
   act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));await tick();
@@ -105,17 +111,20 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
   expect(URL.createObjectURL).not.toHaveBeenCalled();
   expect(screen.queryByRole('textbox')).toBeNull();
   await tick(3100);expect(screen.getByRole('textbox')).toBeTruthy();
+  expect(screen.getByRole('dialog')).toBeTruthy();
   expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
  });
  it.each(['role','tenant','revoked'])('TOKEN_REFRESHED %s change never revives previous draft or prepared bytes',async reason=>{
   s.roles=[role];const qc=setup();await tick();
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'old scope'}});
+  fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
   fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
   if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else s.roleAllowed=false;
   act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));
   expect(screen.queryByRole('textbox')).toBeNull();
   expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);
   await tick();expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
+  expect(screen.queryByRole('dialog')).toBeNull();
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:prepared');
   if(reason==='revoked')paused(qc);
   if(reason==='tenant')expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');
@@ -170,5 +179,28 @@ describe('suspended monotonic clock, exclusive scopes',()=>{
   fireEvent.click(screen.getByRole('button',{name:'Baixar PDF'}));expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
   s.hold=()=>new Promise(()=>{});act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await act(async()=>{await Promise.resolve();});
   expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);now.mockRestore();
+ });
+});
+describe('Nova OS real owner with actual AuthProvider, fake transport only',()=>{
+ it('RTT3s TOKEN_REFRESHED restores non-sensitive item choice/modal, discards area/date and cannot submit',async()=>{
+  s.roles=['administrador'];setup('/ordens-servico');await tick();
+  fireEvent.click(screen.getByRole('button',{name:'Nova OS'}));
+  fireEvent.click(screen.getByRole('button',{name:'Microrganismo'}));
+  fireEvent.change(screen.getByRole('spinbutton',{name:'Área em hectares'}),{target:{value:'100'}});
+  s.rtt=1500;act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));await tick();
+  expect(screen.queryByRole('dialog')).toBeNull();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();
+  await tick(3100);
+  expect(screen.getByRole('dialog')).toBeTruthy();
+  expect(screen.getByRole('spinbutton',{name:'Área em hectares'})).toHaveValue(null);
+  expect(screen.getByText('Microrganismo *')).toBeTruthy();
+  expect(screen.getByRole('button',{name:'Criar Ordem de Serviço'})).toBeDisabled();
+ });
+ it.each(['USER_UPDATED','identity','timeout'])('%s destroys opt-in receipt and never reopens modal',async reason=>{
+  s.roles=['administrador'];setup('/ordens-servico');await tick();fireEvent.click(screen.getByRole('button',{name:'Nova OS'}));
+  if(reason==='identity'){s.uid='00000000-0000-4000-8000-000000000003';}
+  if(reason==='timeout')s.hold=()=>new Promise(()=>{});
+  act(()=>s.authListener?.(reason==='USER_UPDATED'?'USER_UPDATED':'TOKEN_REFRESHED',{user:{id:s.uid}}));
+  await tick(reason==='timeout'?15001:0);
+  expect(screen.queryByRole('dialog')).toBeNull();
  });
 });

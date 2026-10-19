@@ -14,7 +14,7 @@ describe("local admin monitor diagnostics — synthetic timing, not live cause a
       event: "expire", state: "valid", reason: "timeout", visible: false, online: true,
       rttMs: 3000, leaseRemainingMs: -25000, requestRemainingMs: -24000,
     });
-    for (const event of ["response", "request", "environment", "stale", "attacker"]) recordAuthzDiagnostic({ ...value, event } as AuthzDiagnostic);
+    for (const event of ["response", "request", "environment", "stale", "auth_refresh", "auth_reconfirmed", "attacker"]) recordAuthzDiagnostic({ ...value, event } as AuthzDiagnostic);
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/SECRET|https:/);
   });
