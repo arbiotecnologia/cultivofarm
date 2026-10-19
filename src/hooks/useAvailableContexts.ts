@@ -5,6 +5,9 @@ import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { useAuth } from "@/hooks/useAuth";
 import { PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 
+import { internalContextProbe } from "@/lib/authz/internalContextProbe";
+import { getHomeForRole } from "@/lib/permissions";
+
 export type PortalContext = "b2b" | "technical" | "admin";
 
 export interface AvailableContexts {
@@ -24,7 +27,7 @@ export interface AvailableContexts {
  * quem determina é `public.get_my_available_portal_contexts()`.
  */
 export function useAvailableContexts() {
-  const { user, profile, roles, loading, authzReady = true, authzEpoch = 0 } = useAuth();
+  const { user, profile, roles, loading, authzReady = true, authzEpoch = 0, checkAuthzAccess } = useAuth();
   const queryClient = useQueryClient();
   const ready = !loading && !!user?.id && profile?.user_id === user.id &&
     profile.ativo === true && profile.senha_provisoria === false &&
@@ -75,8 +78,26 @@ export function useAvailableContexts() {
       };
     },
   });
-  return { ...result, data: ready ? result.data : undefined, ready, scope,
-    isLoading: loading || (ready && result.isLoading) };
+  // Canonical internal home, never a fabricated technical portal context.
+  const exclusiveOperator = roles.length === 1 && roles[0] === "operador_onfarm";
+  const operatorHomeQuery = useQuery({
+    queryKey: ["operator-login-home", scope], enabled: ready && exclusiveOperator,
+    staleTime: 0, gcTime: 0, retry: false,
+    queryFn: async ({ signal }) => {
+      const epoch = current.current.epoch;
+      const observation = await internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", "operador_onfarm");
+      if (signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch || !checkAuthzAccess()) throw new Error("operator_home_context_changed");
+      if (observation.eligible !== true) throw new Error("operator_home_denied");
+      return getHomeForRole("operador_onfarm");
+    },
+  });
+  return { ...result, exclusiveOperator,
+    operatorHome: ready && exclusiveOperator && !operatorHomeQuery.isFetching && !operatorHomeQuery.isError ? operatorHomeQuery.data : undefined,
+    isError: result.isError || (exclusiveOperator && operatorHomeQuery.isError),
+    isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
+    refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
+    data: ready ? result.data : undefined, ready, scope,
+    isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
 
 }
 

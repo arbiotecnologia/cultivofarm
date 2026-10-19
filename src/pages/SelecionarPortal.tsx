@@ -32,7 +32,7 @@ export default function SelecionarPortal() {
   const { signOut, user, profile } = useAuth();
   const [params] = useSearchParams();
   const manual = params.get("intent") === "switch";
-  const { data, isLoading, isError, refetch, isFetching, ready, scope } = useAvailableContexts();
+  const { data, isLoading, isError, refetch, isFetching, ready, scope, exclusiveOperator, operatorHome } = useAvailableContexts();
   const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState<PortalContext | null>(null);
 
@@ -59,6 +59,10 @@ export default function SelecionarPortal() {
   // revalidando (isFetching) ou em erro transitório.
   useEffect(() => {
     if (!ready || !data || submitting || isLoading || isFetching || isError) return;
+    if (exclusiveOperator) {
+      if (operatorHome) navigate(operatorHome, { replace: true });
+      return;
+    }
     const ctxs = data.available_contexts;
 
     if (ctxs.length === 0) {
@@ -71,7 +75,7 @@ export default function SelecionarPortal() {
       void registerLoginRedirect(target);
       navigate(PORTAL_CONTEXT_HOME[target], { replace: true });
     }
-  }, [data, submitting, navigate, isLoading, isFetching, isError, ready, manual]);
+  }, [data, submitting, navigate, isLoading, isFetching, isError, ready, manual, exclusiveOperator, operatorHome]);
 
   async function pick(ctx: PortalContext) {
     if (lock.current || !ready || !data?.available_contexts.includes(ctx)) return;
