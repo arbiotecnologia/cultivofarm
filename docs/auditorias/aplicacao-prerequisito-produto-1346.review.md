@@ -31,3 +31,11 @@ Rollback frontend somente os três arquivos listados no manifesto próprio com c
 ## Tipagem e limite da candidata
 
 SDK gerado não inclui familia_catalogo live: query usa filter no cliente canônico; resposta unknown decodificada estruturalmente falha fechado se família faltar. Não editar types gerados ou adotar erro select como Produto. Build automático não é recibo app; checker independente novo aguarda auditor.
+
+## Recibo local final
+
+- Vitest dirigido:5 arquivos/93 testes PASS (OS/decoder/diagnóstico/financeiro-admin ambiental/monitor); transporte fake, não Auth/JWT/homologação real. RTT3s≥90s e suspensão de clock incluídos nas regressões existentes; nenhum limite alterado.
+- Staging4/4 e export7/7 PASS. Build automático último13:55:14Z OK; checker efetivo app/node desta entrega NÃO EXECUTADO pelo agente (proibição de typecheck manual). Snapshot novo1671 arquivos/26 partes em scripts/os-manufacturable-prerequisite/typecheck-snapshot, manifesto SHA b7a2726027989d1234ed63395869ea372221021f3e3a8d940583aa27819d7a9c, materializado byte a byte em /tmp. Auditor usa materialize.py existente, instala com scripts desabilitados e executa tsc -p tsconfig.app.json --noEmit e tsc -p tsconfig.node.json --noEmit.
+- Preflight/seed/rollback fixture novos NÃO executados em catálogo equivalente nem hosted; revisão deve confirmar fingerprint/colunas/triggers antes de persistência. Não chamar este seed implantável certificado.
+- Divergência literal a reconciliar: auditor informou Storage POST terminando4827, enquanto pacote SQL congelado e recibos locais anteriores terminam4823. Nenhum corpo/hash do pacote foi alterado para ocultar diferença; auditor deve confirmar valor exato. RPC/helper conforme informados, sem reaplicação.
+- Sem nova DDL/DML hosted, publicação, Edge, reload/login, pagamentos, contratos ou v6. Sem prova positiva real nova: sessão publicada não contém esta candidata, e OS elegível depende de operações fechadas.
