@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 00:36 — administrador de empresa em tela aberta
+- [ ] Preparar recorte exclusivo no monitor único e probe canônico compartilhado, gate admin false.
+- [ ] Testar drafts/modais, revoke/restore, roles/tenant/timeout/tardios e regressões publicados.
+- [ ] Entregar preflight read-only integral, hashes/ACL/RLS e staging/rollback protegido; registrar evidências externas e limites.
+- [ ] Preflight/ativação/homologação real admin aguardam revisão do proprietário, sem publicar/DDL/Edge.
+
 ## 19/10 00:24 — comprovante de baixa no fluxo existente
 - [x] Registrar aplicação externa financial_document_owner_integrity_20261019, probes SQL versus login B real.
 - [x] Corrigir path owner-first idempotente e fences upload/metadados/callback, preservando a baixa registrada.

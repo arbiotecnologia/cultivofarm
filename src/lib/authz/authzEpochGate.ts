@@ -12,3 +12,6 @@ export const PRODUCER_CONTEXT_MONITOR_ENABLED: boolean = true;
 // Financial-only activation authorized 2026-10-18 23:47 after draft regressions
 // and auditor-reported canonical preflight; not global entity/entitlement monitoring.
 export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = true;
+
+// Company administrator only; candidate remains OFF pending owner preflight/review.
+export const COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: boolean = false;

@@ -1,9 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AuthzFingerprintResult } from "./authzEpochMonitor";
 
-/** Limited financial principal observation. RLS/RBAC remain server-owned. */
-export async function internalContextProbe(userId: string, organizationId: string): Promise<AuthzFingerprintResult> {
+/** Limited exclusive tenant principal observation. RLS/RBAC remain server-owned. */
+export async function internalContextProbe(userId: string, organizationId: string, expectedRole: "financeiro" | "administrador" = "financeiro"): Promise<AuthzFingerprintResult> {
   const deny = () => ({ eligible: false, fingerprint: null });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) ||
+    !userId || (expectedRole !== "financeiro" && expectedRole !== "administrador")) return deny();
   const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
   const { data: org, error: orgError } = await rpc.call(supabase, "h15_actor_organization");
   if (orgError) throw new Error("internal_probe_unavailable");
@@ -20,8 +22,8 @@ export async function internalContextProbe(userId: string, organizationId: strin
   if (rolesError) throw new Error("internal_probe_unavailable");
   // Do not adopt a new/mixed role using a cached principal. Pause until the
   // original role is restored, or a fresh login resolves the new RBAC context.
-  if (!Array.isArray(roles) || roles.length !== 1 || roles[0]?.role !== "financeiro") return deny();
-  const { data: allowed, error: roleError } = await supabase.rpc("has_role", { _user_id: userId, _role: "financeiro" });
+  if (!Array.isArray(roles) || roles.length !== 1 || roles[0]?.role !== expectedRole) return deny();
+  const { data: allowed, error: roleError } = await supabase.rpc("has_role", { _user_id: userId, _role: expectedRole });
   if (roleError) throw new Error("internal_probe_unavailable");
   if (allowed !== true) return deny();
   const { data: finalOrg, error: finalError } = await rpc.call(supabase, "h15_actor_organization");
@@ -29,5 +31,5 @@ export async function internalContextProbe(userId: string, organizationId: strin
   if (finalOrg !== organizationId) return deny();
   // No revision/budget fabrication: identical observation renews only the lease.
   // Separate statements cannot prove transient ABA/snapshot.
-  return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, ["financeiro"]]) };
+  return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, [expectedRole]]) };
 }
