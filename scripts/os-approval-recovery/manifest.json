@@ -30,6 +30,7 @@
     "scripts/os-approval-recovery/scope.sql.review": "5e43d14cd307194b75838604fd844d1ee32cca61aebfd7c26a0f0d062b89e459",
     "scripts/os-approval-recovery/stage.py": "502abecc6f1a6365e9c4c99fd73d9a1ffc5560681c6ae9d2926b43e15bef23f2",
     "scripts/os-approval-recovery/test-local.py": "3ab7ebdd61d8dbe3aa63ca6f6dc9dd8d5db004f55268f2d993db654dd82a7fcc",
-    "scripts/os-approval-recovery/test_stage.py": "81097961a9f02c85d96a53a7a24e92029aca2b907af708227e6a6356307380f6"
+    "scripts/os-approval-recovery/test_stage.py": "81097961a9f02c85d96a53a7a24e92029aca2b907af708227e6a6356307380f6",
+    "docs/auditorias/os-aprovacao-recuperacao-20261019.review.md": "1029946d166d686e76e20c470e3cf1ed5c417a1e6ae2e486ae64960b4daddc84"
   }
 }
