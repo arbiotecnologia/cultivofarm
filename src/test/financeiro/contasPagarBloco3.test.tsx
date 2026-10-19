@@ -219,7 +219,7 @@ describe("BaixaDialog payable — resultado incerto sobrevive a fechar/reabrir",
   it("resolução tardia após a incerteza não registra sucesso nem nova RPC", async () => {
     let resolver: (v: any) => void = () => {};
     rpcMock.mockImplementation(() => new Promise((res) => { resolver = res; }));
-    abrirDialog();
+    const view = abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
     await selecionarMetodo();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
@@ -258,6 +258,7 @@ describe("BaixaDialog payable — reenvio de comprovante pendente", () => {
     fireEvent.change(input, { target: { files: [arquivo] } });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await screen.findByRole("button", { name: /Reenviar comprovante/i });
+    return view;
   }
 
   it("falha do anexo não torna o pagamento incerto e não gera nova RPC", async () => {
@@ -284,7 +285,7 @@ describe("BaixaDialog payable — reenvio de comprovante pendente", () => {
   });
 
   it.each(["revoke", "tenant", "uid", "unmount"])("reenvio tardio %s não publica sucesso/callback nem nova baixa", async mode => {
-    await chegarEmPendente();
+    const view = await chegarEmPendente();
     let resolve: (() => void) | undefined;
     anexarMock.mockImplementationOnce(() => new Promise<void>(r => { resolve = r; }));
     fireEvent.click(screen.getByRole("button", { name: /Reenviar comprovante/i }));
@@ -294,7 +295,7 @@ describe("BaixaDialog payable — reenvio de comprovante pendente", () => {
     else if (mode === "tenant" || mode === "uid") {
       if (mode === "tenant") actor.org = "org-2"; else actor.uid = "u2";
       // A separate render updates the same hook instance through props.
-      fireEvent.change(screen.getByLabelText(/Observações/i), { target: { value: "fence" } });
+      view.rerender(<QueryClientProvider client={new QueryClient()}><BaixaDialog open onClose={() => {}} kind="payable" installment={PARCELA_75} /></QueryClientProvider>);
     } else {
       // RTL cleanup unmounts the actual hook instance.
       const { cleanup } = await import("@testing-library/react"); cleanup();
