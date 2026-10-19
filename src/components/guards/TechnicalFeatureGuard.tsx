@@ -2,7 +2,7 @@ import { ReactNode, useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { PortalContextFreshnessProvider, useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { PortalContextUnavailable } from "./PortalContextUnavailable";
@@ -39,7 +39,7 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
 
   if (!user) return <Navigate to="/app/login" state={{ from: location.pathname }} replace />;
 
-  if (isAdmin) return <>{children ?? <Outlet />}</>;
+  if (isAdmin) return <PortalContextFreshnessProvider value={true}>{children ?? <Outlet />}</PortalContextFreshnessProvider>;
 
   if (isError || !data) return <PortalContextUnavailable refetch={refetch} />;
 
@@ -53,7 +53,7 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
     );
   }
 
-  return <>{children ?? <Outlet />}</>;
+  return <PortalContextFreshnessProvider value={true}>{children ?? <Outlet />}</PortalContextFreshnessProvider>;
 }
 
 export default TechnicalFeatureGuard;

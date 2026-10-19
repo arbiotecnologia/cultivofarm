@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
@@ -9,6 +9,11 @@ import { internalContextProbe } from "@/lib/authz/internalContextProbe";
 import { getHomeForRole } from "@/lib/permissions";
 
 export type PortalContext = "b2b" | "technical" | "admin";
+
+// Technical guards own freshness. Descendant readers (including switch/menu
+// hooks) inherit their policy without changing default readers in other portals.
+const PortalContextFreshness = createContext(false);
+export const PortalContextFreshnessProvider = PortalContextFreshness.Provider;
 
 export interface AvailableContexts {
   available_contexts: PortalContext[];
@@ -27,6 +32,8 @@ export interface AvailableContexts {
  * quem determina é `public.get_my_available_portal_contexts()`.
  */
 export function useAvailableContexts({ requireFresh = false }: { requireFresh?: boolean } = {}) {
+  const inheritedFreshness = useContext(PortalContextFreshness);
+  requireFresh = requireFresh || inheritedFreshness;
   const { user, profile, roles, loading, authzReady = true, authzEpoch = 0, checkAuthzAccess } = useAuth();
   const queryClient = useQueryClient();
   const ready = !loading && !!user?.id && profile?.user_id === user.id &&

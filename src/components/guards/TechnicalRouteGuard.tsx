@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { PortalContextFreshnessProvider, useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { PortalContextUnavailable } from "./PortalContextUnavailable";
 
@@ -38,7 +38,7 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
   // Admin mantém fluxo legado — verifica a lista completa de roles para
   // cobrir administradores com papéis adicionais atribuídos.
   if (roles.includes("administrador")) {
-    return <>{children}</>;
+    return <PortalContextFreshnessProvider value={true}>{children}</PortalContextFreshnessProvider>;
   }
 
   if (isError || !data) {
@@ -55,7 +55,7 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <PortalContextFreshnessProvider value={true}>{children}</PortalContextFreshnessProvider>;
 }
 
 export default TechnicalRouteGuard;

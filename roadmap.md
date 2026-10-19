@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## Contextos técnicos indisponíveis — baseline 2f95d5be
+- [ ] Revisão bloqueante 22:02: corrigir ciclo dos leitores default aninhados (MobilePerfil e useSwitchPortal), testar carga/foco/epoch e atualizar pacote/rollback; sem banco/monitor/publicação.
 - [x] Corrigir falsa negativa em /app durante limpeza por época, consulta pendente/erro; conteúdo oculto e Retry canônico, guardas técnicas filhas coerentes.
 - [x] 302/302 provider/guardas/query reais com transporte fake; negativa explícita, revogação parcial, tardios e timeout; scripts/monitor-context-recovery e rollback byte-exato contra 2f95d5be verificado isoladamente.
 - [ ] Homologação real e estabilidade externa: dependem de revisão/publicação e sessões do auditor; sem SQL/publicação pelo agente.
