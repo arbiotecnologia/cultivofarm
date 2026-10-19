@@ -17,4 +17,3 @@ GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated,service_role
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 ALTER TABLE public.aplicacoes ENABLE ROW LEVEL SECURITY;
 -- Mirrors the relevant helper call, not a complete hosted policy reproduction.
-CREATE POLICY local_application_read ON public.aplicacoes FOR SELECT TO authenticated USING (public.can_user_access_aplicacao(id));
