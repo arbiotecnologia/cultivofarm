@@ -16,7 +16,7 @@ vi.mock('@/components/AppSidebar',()=>({AppSidebar:()=> <nav>Menu desktop</nav>}
 vi.mock('@/components/portal/PortalTopBar',()=>({PortalTopBar:({brandTitle}:{brandTitle:string})=><header>{brandTitle}</header>}));
 vi.mock('@/lib/accessAuditLog',()=>({logAccessDeniedOnce:()=>{},routeGroupFromPath:()=> 'technical'}));
 vi.mock('@/hooks/useOfflineSync',()=>({useOfflineSync:()=>({isOnline:true,pendingCount:0,syncing:false,syncAll:()=>{}})}));
-vi.mock('@/hooks/useEntitlements',()=>({useEntitlements:()=>({status:'ready',features:new Set(['ordens_producao','estoque_embalagens'])})}));
+vi.mock('@/hooks/useEntitlements',()=>({useEntitlements:()=>({status:'ready',features:new Set(['ordens_producao','estoque_embalagens','contas_receber'])})}));
 vi.mock('@/components/app/OfflineIndicator',()=>({OfflineIndicator:()=>null}));
 vi.mock('@/components/app/PendingMediaRecovery',()=>({PendingMediaRecovery:()=>null}));
 vi.mock('@/components/ui/sidebar',()=>({SidebarProvider:({children}:{children:React.ReactNode})=><>{children}</>,SidebarTrigger:()=>null}));
