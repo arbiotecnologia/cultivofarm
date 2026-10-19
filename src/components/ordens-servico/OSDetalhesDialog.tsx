@@ -11,6 +11,12 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Canonical client schema snapshot predates this installed, closed RPC.
+// Narrow only its existing audited signature; no second client or broad any.
+const approveOSRPC = supabase.rpc.bind(supabase) as unknown as (
+  name: "rpc_aprovar_os_v1", args: { p_os_id: string; p_origem: string },
+) => ReturnType<typeof supabase.rpc>;
+
 interface Props {
   os: any;
   open: boolean;
@@ -35,7 +41,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
-      const { data, error } = await supabase.rpc("rpc_aprovar_os_v1", {
+      const { data, error } = await approveOSRPC("rpc_aprovar_os_v1", {
         p_os_id: id, p_origem: os.origem === "onfarm" ? "onfarm" : "manual",
       }).abortSignal(controller.signal);
       if (!current()) return;
