@@ -1,9 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 00:24 — comprovante de baixa no fluxo existente
-- [ ] Registrar aplicação externa financial_document_owner_integrity_20261019, probes SQL versus login B real.
-- [ ] Corrigir path owner-first idempotente e fences upload/metadados/callback, preservando a baixa registrada.
-- [ ] Testar retry/efeitos parciais/revogação/timeout, regressões, rollback exato e riscos sem hosted DML.
+- [x] Registrar aplicação externa financial_document_owner_integrity_20261019, probes SQL versus login B real.
+- [x] Corrigir path owner-first idempotente e fences upload/metadados/callback, preservando a baixa registrada.
+- [x] Testar retry/efeitos parciais/revogação/timeout: 229/229, stage2/2; rollback byte-exato só helper/diálogo e relatório comprovante-baixa-20261019.review.md; sem hosted DML.
 - [ ] Upload real financeiro A após migration aguarda sessão/revisão do proprietário; sem pagamento/cobrança real.
 
 ## 19/10 00:11 — integridade server-side financial_documents
@@ -16,7 +16,7 @@
 - [x] Corrigir path/basename e fences upload/remove/metadados; contrato/trigger atual confirmado SELECT-only canônico, servidor e monitores inalterados.
 - [x] Regressões 186/186 (49 casos anexos) + staging4/4 e a905 2/2; rollback apenas painel, monitores preservados.
 - [x] Evidência independente pós-publicação drafts >35s/revoke→pause/retry/restore registrada; financeiro 2 retries com causa desconhecida, sem alegar homologação de anexos.
-- [ ] Revisão/publicação e upload/JWT/Storage reais da candidata dependem do auditor; sem escrita hosted/publicação pelo agente.
+- [x] Auditor revisou/publicou cc62c3d (deployment5d25d61e), upload/abertura A reais PASS e revoke/restore registrados; pós-migration upload A continua pendente acima, sem escrita hosted/publicação pelo agente.
 
 ## 18/10 23:47 — ativação financeira autorizada
 - [x] Habilitar somente financeiro exclusivo, preservando produtor/B2B e Blob/global fechados.
