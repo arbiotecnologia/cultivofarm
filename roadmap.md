@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 15:09 — revisão programação 622048
+- [ ] Substituir TEMP rollback por baseline byte-exato/autocontido a42d6 e ACL postgres/service_role; preservar pacotes c30af/e6a67.
+- [ ] Fechar catálogo transitivo real SaaS/invites/refresh, reduzir SHARE com FK/row locks e restringir primeiro recorte manual/responsável NULL.
+- [ ] Testar corpos reais STABLE/triggers, concorrência, PRE/POST/rollback; entregar SQL executável revisável, snapshot/delta e limitações, sem aplicar/publicar.
+
 ## 19/10 14:54 — programação inicial canônica
 - [x] Registrar recibos externos de implantação aprovação/reader, publicação e6a67/c30af e inativação/retry A/B; roles intactas, sem homologação TOKEN_REFRESHED/anexos.
 - [x] Recuperar candidata RPC existente sem autoaprovação/reprogramação; UI detalhes, guarda/fence/replay e pacotes aprovados preservados. EXECUTE ainda fechado.
