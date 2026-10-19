@@ -1,10 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 14:13 — complemento real OS/lifecycle
-- [ ] Registrar OS B real já criada/bundle; não duplicar OS/seed.
-- [ ] Diagnosticar origem do badge programada versus OS aberta, mantendo ações fechadas.
-- [ ] Reproduzir TOKEN_REFRESHED no AuthProvider real e testar mesmos escopos/alterações/tardias; propor correção limitada posterior sem preservar bytes em incerteza.
-- [ ] Entregar evidência/limites e preservar pacote SQL OS byte-exato, sem hosted DDL/DML/publicação.
+- [x] OS B real/bundle registrados; SELECT canônico confirma aberta/1 programação aguardando/0 lotes. NÃO duplicar OS/seed.
+- [x] Badge deriva da presença do filho na view, não status OS; hashes live registrados, consulta-only/ações fechadas preservadas.
+- [x] TOKEN_REFRESHED reproduz perda sem expiry;12 casos AuthProvider/opener real e transporte fake;101/101 PASS. Proposta posterior limitada/dados não sensíveis descrita, runtime intocado.
+- [x] Relatório atualizado/proposta lifecycle posterior; hashes SQL/manifest intactos/staging4/4. Sem hosted DDL/DML/publicação; checker novo não certificado.
 
 ## 19/10 14:01 — recuperação focal aprovação OS
 - [x] Recibos1671/tscapp+node/93 e seed implantado externo registrados; Storage4823 corrigido sem reaplicar.
