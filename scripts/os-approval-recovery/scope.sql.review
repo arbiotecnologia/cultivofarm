@@ -18,7 +18,7 @@ BEGIN
  SELECT NULL::uuid organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,'onfarm'::text origem,NULL::uuid partner_order_id,NULL::uuid partner_order_item_id INTO v_os FROM public.ordens_servico_onfarm o WHERE id=p_os_id FOR UPDATE;
  END IF;
  IF v_os.id IS NULL OR (p_origin='manual' AND v_os.organization_id IS DISTINCT FROM v_org) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
- PERFORM 1 FROM public.profiles WHERE user_id=v_uid FOR SHARE;
+ PERFORM 1 FROM public.profiles WHERE user_id=v_uid OR id IN (SELECT responsavel_id FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id) ORDER BY user_id FOR SHARE;
  PERFORM 1 FROM public.organizations WHERE id=v_org FOR SHARE;
  -- Lock existing role rows; canonical has_role remains authority, never client claims.
  PERFORM 1 FROM public.user_roles WHERE user_id=v_uid ORDER BY role::text FOR SHARE;
@@ -27,7 +27,6 @@ BEGIN
  PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;
  PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;
  PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;
- PERFORM 1 FROM public.profiles WHERE id IN (SELECT responsavel_id FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id) ORDER BY user_id FOR SHARE;
  PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
  IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org OR public.technical_actor_ready(v_uid) IS NOT TRUE
  OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE

@@ -7,6 +7,8 @@ import os
 import subprocess
 import tempfile
 import shutil
+import concurrent.futures
+import time
 ROOT=Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location('fixture',ROOT/'scripts/tests/cockpit-live-source-local.py')
 f=importlib.util.module_from_spec(spec); spec.loader.exec_module(f)
@@ -144,6 +146,17 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
     compat=importlib.util.module_from_spec(compat_spec); compat_spec.loader.exec_module(compat)
     extra_sql,extra_labels=compat.extend(f.q); sql+=extra_sql; labels+=extra_labels
     sql+="SELECT oid::regprocedure,md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid IN ('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure,'private.assert_os_approval_scope(uuid,text)'::regprocedure);"
+    # Positive B uses synthetic local identifiers, never hosted fixtures.
+    sql+=f"SELECT set_config('t.org',{B},false); INSERT INTO clientes VALUES({f.q(12)},{B},'Synthetic B'); INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(70)},{f.q(12)},{P},{B}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({f.q(71)},{B},{f.q(70)},{P});"
+    check('B approves own',f"(SELECT status FROM ordens_servico WHERE id={f.q(70)})='aprovada'",f"SELECT public.rpc_aprovar_os_v1({f.q(70)},'manual');")
+    deny('B approved replay denied after readiness revoke',f"PERFORM public.rpc_aprovar_os_v1({f.q(70)},'manual')","SELECT set_config('t.ready','false',false);","SELECT set_config('t.ready','true',false);")
+    deny('B2B alias denied on ordinary B',f"PERFORM public.rpc_aprovar_os_v1({f.q(70)},'b2b')")
+    deny('B replay A cross tenant',f"PERFORM public.rpc_aprovar_os_v1({f.q(35)},'manual')")
+    # Grant only the reviewed RPC; no client ACL on private helper or programming.
+    sql+="GRANT EXECUTE ON FUNCTION public.rpc_aprovar_os_v1(uuid,text) TO authenticated; GRANT USAGE ON SCHEMA auth TO authenticated;"
+    check('review ACL helper private',"NOT has_function_privilege('authenticated','private.assert_os_approval_scope(uuid,text)','EXECUTE') AND NOT has_function_privilege('anon','public.rpc_aprovar_os_v1(uuid,text)','EXECUTE')")
+    check('authenticated B actual SQL role replay',f"(public.rpc_aprovar_os_v1({f.q(70)},'manual')->>'replay')::boolean",'SET ROLE authenticated;')
+    sql+='RESET ROLE;'
     tmp=Path(tempfile.mkdtemp(prefix='approval-local-',dir='/tmp')); tmp.chmod(0o777)
     pre=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []; started=False
     try:
@@ -152,7 +165,54 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
         path=tmp/'test.sql'; path.write_text(sql); path.chmod(0o644)
         r=subprocess.run(['psql','-h',str(tmp),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1','-f',str(path)],capture_output=True,text=True)
         if r.returncode: raise SystemExit(r.stdout[-1500:]+r.stderr[-2000:])
-        print(r.stdout[-1400:]); print(r.stderr); print('Assertions:',len(labels),'PASS; exact candidate/3 hash-matched triggers; Auth/schema SIMULATED, hosted fullpreflight/RLS NOT tested')
+        print(r.stdout[-1400:]); print(r.stderr);
+        command=['psql','-X','-h',str(tmp),'-p','55494','-U','postgres','-v','ON_ERROR_STOP=1','-At']
+        def run(text=None,file=None,ok=True):
+            result=subprocess.run(command+(['-f',str(file)] if file else []),input=text,text=True,capture_output=True)
+            if (result.returncode==0)!=ok: raise RuntimeError(result.stdout[-1200:]+result.stderr[-2000:])
+            return result
+        # The COMPLETE immutable files parse and fail closed against reduced catalog.
+        # This is explicitly not a full equivalent-schema pre/postflight PASS.
+        run("CREATE TABLE public.fiscal_environment_marker(project_ref text); INSERT INTO public.fiscal_environment_marker VALUES('swzpzcwiasxmjutrmvkm');")
+        for name in ['preflight-readonly.sql','candidate.sql.review','rollback.sql.review','postflight-readonly.sql']:
+            before=run("SELECT md5(pg_get_functiondef('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure))||':'||proacl::text FROM pg_proc WHERE oid='public.rpc_aprovar_os_v1(uuid,text)'::regprocedure;").stdout
+            result=run(file=ROOT/'scripts/os-approval-recovery'/name,ok=False)
+            if 'syntax error' in result.stderr or 'ambiguous' in result.stderr or 'OS_APPROVAL_BODY_DRIFT' not in result.stderr: raise RuntimeError(result.stderr)
+            after=run("SELECT md5(pg_get_functiondef('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure))||':'||proacl::text FROM pg_proc WHERE oid='public.rpc_aprovar_os_v1(uuid,text)'::regprocedure;").stdout
+            assert before==after,name
+            labels.append('whole byte-exact '+name+' reduced-catalog refusal atomic')
+        # Actual local roles table owns has_role here (emulated h15 remains NOT JWT).
+        run(f"CREATE OR REPLACE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $b$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $b$; INSERT INTO user_roles VALUES({U},'administrador');")
+        actor=f"SELECT set_config('t.uid',{U},false),set_config('t.org',{B},false),set_config('t.ready','true',false),set_config('t.feature','true',false);"
+        for i in [80,82]:
+            run(actor+f"INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(i)},{f.q(12)},{P},{B}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({f.q(i+1)},{B},{f.q(i)},{P});")
+        def approve(i): return run(actor+f"SET ROLE authenticated; SELECT public.rpc_aprovar_os_v1({f.q(i)},'manual');").stdout
+        with concurrent.futures.ThreadPoolExecutor(2) as pool:
+            outcomes=list(pool.map(approve,[80,80]))
+        assert sum('"replay": false' in o for o in outcomes)==1 and sum('"replay": true' in o for o in outcomes)==1,outcomes
+        assert run(f"SELECT count(*) FROM laboratorio_esteira_eventos WHERE os_id={f.q(80)} AND acao='aprovar_os';").stdout.strip()=='1'
+        labels.append('concurrent authenticated approval exactly one audit')
+        # Hold canonical role lock; DELETE commits while approver waits, then recheck denies.
+        lock=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        lock.stdin.write(f"BEGIN; DELETE FROM public.user_roles WHERE user_id={U}; SELECT 'locked';\n");lock.stdin.flush()
+        while lock.stdout.readline().strip()!='locked': pass
+        with concurrent.futures.ThreadPoolExecutor(1) as pool:
+            future=pool.submit(lambda: run(actor+f"SET ROLE authenticated; SELECT public.rpc_aprovar_os_v1({f.q(82)},'manual');",ok=False))
+            time.sleep(.15)
+            lock.stdin.write('COMMIT;\n');lock.stdin.close()
+            result=future.result(timeout=10)
+        assert 'OS_APPROVAL_SCOPE_DENIED' in result.stderr
+        assert run(f"SELECT status FROM ordens_servico WHERE id={f.q(82)};").stdout.strip()=='aberta'
+        labels.append('role revoke commits during lock wait denied without audit')
+        # Exact baseline restoration bodies, then explicit ACL closure; data retained.
+        count=run('SELECT count(*) FROM laboratorio_esteira_eventos;').stdout
+        run(file=ROOT/'scripts/os-approval-recovery/rollback/scope.sql.review')
+        run(file=ROOT/'scripts/os-approval-recovery/rollback/rpc.sql.review')
+        run('REVOKE EXECUTE ON FUNCTION public.rpc_aprovar_os_v1(uuid,text) FROM authenticated;')
+        assert count==run('SELECT count(*) FROM laboratorio_esteira_eventos;').stdout
+        assert run("SELECT md5(pg_get_functiondef('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure));").stdout.strip()=='d65be82dbf38ec429b7377bd6873ba47'
+        assert run("SELECT md5(pg_get_functiondef('private.assert_os_approval_scope(uuid,text)'::regprocedure));").stdout.strip()=='8c3142a07b3f310082309ef50f8b32dd'
+        labels.append('rollback exact baseline body closed ACL preserves audit/history') print('Assertions:',len(labels),'PASS; candidate bodies/3 hash-matched triggers; complete guarded files refuse reduced catalog; Auth/schema SIMULATED, hosted fullpreflight/RLS NOT tested')
     finally:
         if started: subprocess.run(pre+['pg_ctl','-D',str(tmp/'d'),'stop','-m','immediate'],capture_output=True)
         shutil.rmtree(tmp,ignore_errors=True)
