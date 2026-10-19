@@ -6,7 +6,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
-MANIFEST_SHA256 = 'afbcd75883acf82c0baaa3ef3a41448148fa575db6cdfb5a5b05936ef7d26f18'
+MANIFEST_SHA256 = '60664131b97586ecc0ed334473f0fe1c81180c6476bfe61972aaa038f779725a'
 GATE = 'src/lib/authz/authzEpochGate.ts'
 ON = b'MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = true;'
 OFF = b'MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = false;'
