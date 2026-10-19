@@ -10,7 +10,7 @@ import { PortalContextUnavailable } from "./PortalContextUnavailable";
 
 /**
  * TechnicalFeatureGuard — protege rotas exclusivas do Portal Técnico
- * dentro da árvore `/app/*`. Autorização baseada em `has_technical_access`
+ * dentro da árvore `/app/*`. Autorização baseada em `technical` na lista
  * retornado pela RPC segura; admin mantém acesso legado.
  */
 export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
@@ -19,8 +19,8 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
   const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
 
   const isAdmin = roles.includes("administrador");
-  const hasTechnical = !!data?.has_technical_access;
-  const denied = !loading && authzReady && !!user && !isLoading && !isFetching && !isError && !isAdmin && data?.has_technical_access === false;
+  const hasTechnical = data?.available_contexts.includes("technical") === true;
+  const denied = !loading && authzReady && !!user && !isLoading && !isFetching && !isError && !isAdmin && !!data && !hasTechnical;
 
   useEffect(() => {
     if (denied) {

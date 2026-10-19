@@ -1,0 +1,43 @@
+- SaaS gates only restrict via isPathEntitled plus role/link guards; platform writes use platform_* INVOKER RPCs — prevents bypass.
+- App.tsx snapshots never replace guards/RLS; redirects merge query/hash, target wins — prevents broken aliases.
+- Subscription keys survive remounts; tenant reads bound reconciliation/refresh, no auto-retry writes — prevents stuck UI/duplicates.
+- Organizations writes require SECURITY DEFINER RPCs issuing platform_private.authz_tickets (txid), enforced by triggers; GUC flags never authorize — prevents bypass.
+- Provisioned-admin password links use canonical SMTP and invitation fencing; operator recovery links stay disabled — only holders define passwords.
+- Operational invites use server-fixed `https://app.cultivofarm.com.br/reset-password`; Origin only authorizes, never builds redirects — prevents localhost fallback/open redirects.
+- Global communication requires server `is_platform_superadmin`; tenant admins have no UI/endpoint access; workers use service-only RPCs — preserves tenant/secret isolation.
+- Version detection compares production meta ID (fallback entry script); AuthProvider owns controls, navigation needs a click; `/sw.js` cleans up, `/push-sw.js` only pushes — prevents stale shells.
+- Organization creation requires an immutable CNPJ lookup/review snapshot and CNPJ re-entry before RPC — blocks stale-tab/autofill bypass of reviewed E01.
+- Commercial plans offer the global active catalog in audited DRAFTs; all runtime checks share one server-side resolver over linked published snapshots, overrides are idempotent, and payments stay OFF.
+- Recovery links diagnose first-access state server-side and use exactly one password finalizer; the legacy mandatory-password screen remains a fallback barrier — prevents duplicate password definition.
+- Executive RPCs deny unproven scopes family-wide; kept reads require h15. UI preserves unavailability/scoped caches and never mounts blocked actions — prevents leaks.
+- Tenant admin derives org server-side; identity/tenant immutable, unowned links closed. create-user uses actor bearer, compensation, fixed Auth codes; ref lock releases in finally — prevents leaks/reentry.
+- Stock requires h15/RBAC/feature, finite positive quantities, tenant refs, private txid; only reviewed motor/batch have client ACL; receipts and sorted locks prevent replay leaks.
+- Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
+- `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
+- Published versions are immutable; successors start DRAFT. Publishing closes only predecessor `effective_to` under `saas_plan_version_supersede` ticket — preserves snapshots/history.
+- Name/email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins stay separate — prevents parallel writes.
+- Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target/Auth/JWT/expiry/retry checks and audits stay server-side — avoids bypass.
+- Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
+- Logout/renewal clears identity/cache; reload stays outside callbacks — avoids stale roles/deadlocks.
+- B2B credit RPCs use the canonical partner guard before the service-only calculator; financial settings require restrictive active-tenant policies for reads/writes — prevents cross-tenant credit access.
+- B2B keeps tenant policies/private cores; titles reuse installments. Technical writes reuse active actor/partner/client assignments with zero-finance guards; headers/items use price-free RPCs — prevents leakage and duplication.
+- Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
+- Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
+<!-- LOVABLE:BEGIN -->
+- Desktop/mobile recovery share one form and the existing canonical redirect policy, with synchronous pending lock and account-neutral states — prevents divergent recovery and local duplicate sends.
+- Storage UI and delayed file openings share an identity/tenant/role/resource generation fence; server authorization remains mandatory — prevents stale-session disclosure.
+- Commercial B2B context is an actor-derived fenced RPC with exclusive role and unique partner link; unreviewed channels remain closed — prevents sibling-partner disclosure.
+- Users external drafts stay review-gated and actor-fenced; server receipt/provisioner owns all grants and authority.
+- Tenant SMTP tests reuse the existing Edge/protocol/outbox with private job tickets; hosted IP/TLS pinning stays gated until proven — prevents global release and unscoped secrets.
+- Financial-document review candidates extend the existing table with an integrity trigger after its tenant guard, preserving Storage/RLS/softdelete — closes foreign-owner metadata without a parallel writer.
+- Internal expected-role probes accept only frozen reviewed singleton or exact paired scopes and copy expectations before await; scope helpers only select monitoring, never grant authority — prevents silent role adoption.
+- Exclusive operator login reuses the typed internal probe and canonical role home without inventing portal contexts; open-session scopes share the existing AuthProvider monitor — avoids expanding technical RBAC.
+- OS eligibility decodes live family/dose at the canonical SDK boundary when generated types lag; submit revalidates manufacturing semantics — prevents inferred eligibility and unchecked casts.
+- OS programming/lot candidates replace only the canonical RPC with a fixed self-contained rollback, revalidate actor/tenant/SaaS after locks, reuse existing dialogs with pre/post-await session fences — avoids autoapproval, stale writes and parallel flows.
+<!-- LOVABLE:END -->
+- Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
+- Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.
+- Cockpit consultation mounts only the scoped list RPC; operations, child readers and ACL stay closed — prevents secondary reads and mutations.
+- OS approval and generator open INSERT guards stay atomic; preserve links/snapshots, deny unresolved B2B approval — prevents bypass.
+- External users reuse receipts/provisioner, ACL closed — no fork.
+- External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
