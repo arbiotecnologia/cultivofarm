@@ -33,7 +33,8 @@ def sub(text, old, new):
 gerar = sub(B["rpc_entrega_gerar_termo_v1"],
     "  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || p_entrega_id::text, 0));\n",
     "  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || p_entrega_id::text, 0));\n" + GUARD +
-    "  IF NOT platform_private.entrega_termo_tenant_ok(p_entrega_id) THEN RAISE EXCEPTION 'sem_permissao'; END IF;\n")
+    "  IF NOT public.is_delivery_staff(v_uid) OR NOT platform_private.entrega_termo_tenant_ok(p_entrega_id) THEN\n"
+    "    RAISE EXCEPTION 'sem_permissao';\n  END IF;\n")
 assinar = sub(B["rpc_entrega_assinar_termo_v1"],
     "  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;\n\n  PERFORM pg_advisory_xact_lock",
     "  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;\n" + GUARD +
@@ -48,7 +49,12 @@ assinar = sub(assinar,
 cancelar = sub(B["rpc_entrega_cancelar_termo_v1"],
     "  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;\n",
     "  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;\n" + GUARD +
-    "  IF NOT platform_private.entrega_termo_tenant_ok(v_t.entrega_id) THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;\n")
+    "  IF NOT platform_private.entrega_termo_tenant_ok(v_t.entrega_id) THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;\n"
+    "  -- Revalida o papel após o lock da linha.\n"
+    "  IF NOT (public.has_role(v_uid,'administrador'::public.app_role)\n"
+    "          OR public.has_role(v_uid,'gestor'::public.app_role)\n"
+    "          OR public.has_role(v_uid,'administrativo'::public.app_role)) THEN\n"
+    "    RAISE EXCEPTION 'sem_permissao';\n  END IF;\n")
 
 HELPER = """CREATE FUNCTION platform_private.entrega_termo_tenant_ok(p_entrega_id uuid)
  RETURNS boolean
