@@ -117,7 +117,9 @@ describe('bounded auto-recovery of a transient timeout (pair scope)', () => {
 
   it('manual Retry during backoff: single-flight, timer cancelled', async () => {
     await settledValid();
-    s.perCall = 16_000; await adv(16_500);
+    s.perCall = 16_000;
+    for (let i = 0; i < 80 && !paused(); i++) await adv(250); // inside backoff window
+    expect(paused()).toBeTruthy();
     s.perCall = 50;
     const before = s.probes;
     const btn = screen.getByRole('button', { name: 'Tentar novamente' });
