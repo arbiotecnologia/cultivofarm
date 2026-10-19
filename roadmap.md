@@ -1,10 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 00:36 — administrador de empresa em tela aberta
+- [x] Ativar somente admin com bytes revisados 62ddc9bc; 275 testes + staging-active4/4 PASS, typecheck/build automático OK; provas false preservadas, sem publicação.
 - [x] Preparar recorte exclusivo no monitor único/probe compartilhado e boundary do shell, gate admin false.
 - [x] Testar drafts/modais, revoke/restore, roles/tenant/timeout/tardios e regressões publicados: 275/275 sintéticos e staging4/4; typecheck/build automáticos OK.
 - [x] Entregar preflight read-only integral, hashes/ACL/RLS e staging/rollback protegido; evidências externas/limites em administrador-tela-aberta-20261019.review.md.
-- [ ] Preflight/ativação/homologação real admin aguardam revisão do proprietário, sem publicar/DDL/Edge.
+- [x] Auditor informou preflight canônico integral/45hashes/stage4/4 PASS e autorizou ativação admin true; adendo de ativação registrado.
+- [ ] Publicação pelo conector e homologação real admin em tela aberta aguardam o proprietário; sem DDL/Edge/publicação pelo agente.
 
 ## 19/10 00:24 — comprovante de baixa no fluxo existente
 - [x] Registrar aplicação externa financial_document_owner_integrity_20261019, probes SQL versus login B real.
