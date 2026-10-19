@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 13:01 — recuperação canônica de aplicações
+- [ ] Complemento13:17: exportação UTF-8 gzip/base64 em partes ~200KB do código atual/config/lock/assets, manifesto SHA e materialização independente; GitHub antigo não é fonte, sem checker manual ou runtime alterado.
 - [x] Auditar RPC fechada, unidades, referências, triggers/RLS/Storage reais; preparar manifest privado pelo mesmo RPC antes de upload, sem aplicação parcial/bucket aberto.
 - [x] Candidata SQL guardada16 funções/schema/rollback fechado, desktop/mobile cercados, PostgreSQL local62/62 e Vitest119/119; roteiro fixtures A/B. Não é seed hosted completo nem homologação de SDK/JWT/trigger completo; riscos/writers/Storage legacy explicitados no relatório.
 - [x] Checkout completo recuperável/config/lock e inventário SHA disponibilizados pelo export-checkout.py; checker app não executado (proibição do ambiente), types NÃO CERTIFICADOS.
