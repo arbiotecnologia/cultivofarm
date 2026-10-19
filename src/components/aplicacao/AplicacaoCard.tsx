@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Sprout, FlaskConical, Cloud, User, Gauge, Droplets, History, Edit, AlertCircle, FileDown, Loader2, Mail, Send } from "lucide-react";
 import { EvidenciasGallery } from "./EvidenciasGallery";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AplicacaoFormDialog } from "./AplicacaoFormDialog";
 import { useAuth } from "@/hooks/useAuth";
-import { generateAplicacaoPdf } from "@/lib/pdfAplicacao";
+import { generateAplicacaoPdf, assertAplicacaoPdfAccess, awaitAplicacaoPdf, type AplicacaoPdfAccess } from "@/lib/pdfAplicacao";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { ATTACHMENT_LIMITS } from "@/lib/authz/authenticatedAttachment";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -38,7 +40,26 @@ interface Props {
 }
 
 export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = true }: Props) {
-  const { role, user } = useAuth();
+  const { role, profile } = useAuth();
+  const access = useStorageAccessScope(`aplicacao:${a.id}`);
+  const operation = useRef<AbortController | null>(null);
+  useLayoutEffect(() => {
+    setDownloading(false);
+    setSendingEmail(false);
+    setEmailDialogOpen(false);
+    setEmailDestinatario(a.email_envio || "");
+    setNomeDestinatario("");
+    return () => { operation.current?.abort(); operation.current = null; };
+  }, [access.scope]);
+  const beginPdf = () => {
+    const current = access.capture();
+    if (!current() || operation.current || !profile?.organization_id) return null;
+    const controller = new AbortController();
+    operation.current = controller;
+    const timeout = setTimeout(() => controller.abort(), ATTACHMENT_LIMITS.timeoutMs);
+    const fence: AplicacaoPdfAccess = { current, signal: controller.signal, applicationId: a.id, tenantId: profile.organization_id };
+    return { fence, finish: () => { clearTimeout(timeout); if (operation.current === controller) operation.current = null; } };
+  };
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -85,13 +106,17 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
       return;
     }
 
+    const attempt = beginPdf();
+    if (!attempt) return;
+    const { fence } = attempt;
     try {
       setSendingEmail(true);
       
-      const { data: config } = await supabase
+      const { data: config, error: configError } = await awaitAplicacaoPdf(fence, () => supabase
         .from("configuracoes_sistema")
         .select("nome_empresa, logo_url")
-        .maybeSingle();
+        .abortSignal(fence.signal).maybeSingle());
+      if (configError) throw new Error("PDF indisponível");
 
       const doc = await generateAplicacaoPdf({
         empresa: {
@@ -100,12 +125,14 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
         },
         aplicacao: a,
         doseRecomendada
-      });
+      }, fence);
+      assertAplicacaoPdfAccess(fence);
 
       const pdfBase64 = doc.output("datauristring").split(",")[1];
       const filename = `aplicacao_${a.os?.fazendas?.nome || "registro"}_${a.data_aplicacao}.pdf`.replace(/\s+/g, "_");
 
-      const { data, error } = await supabase.functions.invoke("enviar-pdf-aplicacao", {
+      const { data, error } = await awaitAplicacaoPdf(fence, () => supabase.functions.invoke("enviar-pdf-aplicacao", {
+        signal: fence.signal,
         body: {
           pdfBase64,
           fileName: filename,
@@ -120,9 +147,10 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
           customSubject: emailSubject,
           customMessage: emailMessage
         }
-      });
+      }));
 
       if (error) throw error;
+      assertAplicacaoPdfAccess(fence);
 
       // Registro em aplicacao_emails e em aplicacoes.email_envio é feito
       // server-side pela Edge Function enviar-pdf-aplicacao. Nenhum update
@@ -131,26 +159,31 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
 
 
 
+      assertAplicacaoPdfAccess(fence);
       toast.success(data.emailSent ? "Relatório enviado por e-mail!" : "Link gerado! (E-mail não pôde ser disparado no momento)");
       setEmailDialogOpen(false);
     } catch (error) {
-      console.error("Error sending PDF by email:", error);
-      toast.error("Erro ao enviar e-mail.");
+      if (fence.current() && !fence.signal.aborted) toast.error("Erro ao enviar e-mail.");
     } finally {
-      setSendingEmail(false);
+      attempt.finish();
+      if (fence.current()) setSendingEmail(false);
     }
   };
 
   const handleDownloadPdf = async () => {
 
+    const attempt = beginPdf();
+    if (!attempt) return;
+    const { fence } = attempt;
     try {
       setDownloading(true);
       
       // Get company config
-      const { data: config } = await supabase
+      const { data: config, error: configError } = await awaitAplicacaoPdf(fence, () => supabase
         .from("configuracoes_sistema")
         .select("nome_empresa, logo_url")
-        .maybeSingle();
+        .abortSignal(fence.signal).maybeSingle());
+      if (configError) throw new Error("PDF indisponível");
 
       const doc = await generateAplicacaoPdf({
         empresa: {
@@ -159,16 +192,19 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
         },
         aplicacao: a,
         doseRecomendada
-      });
+      }, fence);
+      assertAplicacaoPdfAccess(fence);
 
       const filename = `aplicacao_${a.os?.fazendas?.nome}_${a.os?.talhoes?.nome}_${a.data_aplicacao}.pdf`.replace(/\s+/g, "_");
+      assertAplicacaoPdfAccess(fence);
       doc.save(filename);
+      assertAplicacaoPdfAccess(fence);
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      toast.error("Erro ao gerar PDF.");
+      if (fence.current() && !fence.signal.aborted) toast.error("Erro ao gerar PDF.");
     } finally {
-      setDownloading(false);
+      attempt.finish();
+      if (fence.current()) setDownloading(false);
     }
   };
   
@@ -217,7 +253,7 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
                   size="icon" 
                   className="h-8 w-8 text-muted-foreground hover:text-primary" 
                   onClick={handleDownloadPdf}
-                  disabled={downloading}
+                  disabled={downloading || sendingEmail || !access.ready}
                   title="Baixar PDF"
                 >
                   {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
@@ -304,7 +340,7 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
               <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancelar</Button>
               <Button 
                 onClick={handleSendEmail} 
-                disabled={sendingEmail}
+                disabled={sendingEmail || downloading || !access.ready}
                 className="gap-2"
               >
                 {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
