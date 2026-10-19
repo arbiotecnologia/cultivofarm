@@ -21,6 +21,18 @@ function setup() {
   return { h, client };
 }
 describe("contextos com QueryClient real", () => {
+  it("fora da árvore técnica o leitor padrão mantém refetch ao remontar", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const first = renderHook(() => useAvailableContexts(), { wrapper });
+    await waitFor(() => expect(first.result.current.data?.has_technical_access).toBe(true));
+    const calls = rpc.mock.calls.length;
+    first.unmount();
+    const second = renderHook(() => useAvailableContexts(), { wrapper });
+    await waitFor(() => expect(rpc.mock.calls.length).toBe(calls + 1));
+    await waitFor(() => expect(second.result.current.isFetching).toBe(false));
+    second.unmount(); client.clear();
+  });
   for (const change of ["identity", "tenant", "roles", "logout", "inactive", "mismatch", "loading", "provisional"] as const) {
     it(`oculta dados imediatamente em ${change}`, async () => {
       const { h, client } = setup();

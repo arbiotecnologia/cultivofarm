@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { CONSULTANT_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
@@ -71,7 +72,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     return <Navigate to="/app/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (isAdmin || isProducer) return <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>;
+  if (isAdmin || isProducer) return <PortalContextFreshnessProvider value={true}><AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary></PortalContextFreshnessProvider>;
 
   if (isError || !data) {
     return <PortalContextUnavailable refetch={refetch} />;
@@ -87,9 +88,9 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     );
   }
 
-  return monitoredTechnical
+  return <PortalContextFreshnessProvider value={true}>{monitoredTechnical
     ? <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>
-    : <>{children ?? <Outlet />}</>;
+    : <>{children ?? <Outlet />}</>}</PortalContextFreshnessProvider>;
 }
 
 export default AppPortalGuard;

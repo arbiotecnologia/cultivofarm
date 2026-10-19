@@ -1,183 +1,30 @@
-diff --git a/src/components/guards/AppPortalGuard.tsx b/src/components/guards/AppPortalGuard.tsx
-index 9bfd8948..dbcc4957 100644
---- a/src/components/guards/AppPortalGuard.tsx
-+++ b/src/components/guards/AppPortalGuard.tsx
-@@ -8,6 +8,7 @@ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
- import { CONSULTANT_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
- 
- import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
-+import { PortalContextUnavailable } from "./PortalContextUnavailable";
- 
- /**
-  * AppPortalGuard — protege a árvore `/app/*`.
-@@ -24,7 +25,7 @@ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
- export function AppPortalGuard({ children }: { children?: ReactNode }) {
-   const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
-   const location = useLocation();
--  const { data, isLoading, isError } = useAvailableContexts();
-+  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
- 
-   const isAdmin = roles.includes("administrador") || !!data?.is_admin;
-   const isProducer = roles.includes("cliente_produtor");
-@@ -37,9 +38,11 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
-     (!monitoredTechnical || authzReady) &&
-     !!user &&
-     !isLoading &&
-+    !isFetching &&
-+    !isError &&
-     !isAdmin &&
-     !isProducer &&
--    (isError || !data?.has_technical_access);
-+    data?.has_technical_access === false;
- 
-   useEffect(() => {
-     if (denied) {
-@@ -52,7 +55,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
-     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
-   }
- 
--  if (loading || (user && isLoading)) {
-+  if (loading || (user && (isLoading || isFetching))) {
-     return (
-       <div
-         className="min-h-dvh flex items-center justify-center bg-background"
-@@ -70,8 +73,8 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
- 
-   if (isAdmin || isProducer) return <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>;
- 
--  if (isError) {
--    return <Navigate to="/sem-permissao" replace />;
-+  if (isError || !data) {
-+    return <PortalContextUnavailable refetch={refetch} />;
-   }
- 
-   if (!data?.has_technical_access) {
-diff --git a/src/components/guards/PortalContextUnavailable.tsx b/src/components/guards/PortalContextUnavailable.tsx
-new file mode 100644
-index 00000000..0aa9802e
---- /dev/null
-+++ b/src/components/guards/PortalContextUnavailable.tsx
-@@ -0,0 +1,16 @@
-+import { ErrorRecovery } from "@/components/ErrorRecovery";
-+import { useAuth } from "@/hooks/useAuth";
-+
-+/** Unavailable is not denied. The reviewed monitor's Retry re-resolves authority. */
-+export function PortalContextUnavailable({ refetch }: { refetch: () => unknown }) {
-+  const { revalidateAuthz, authzEpoch = 0 } = useAuth();
-+  return <ErrorRecovery
-+    title="Não foi possível confirmar este acesso"
-+    message="A consulta de acesso está indisponível no momento. Tente novamente."
-+    onRetry={() => {
-+      revalidateAuthz();
-+      // Gate-off/legacy scope has no monitored epoch transition to restart its query.
-+      if (authzEpoch === 0) void refetch();
-+    }}
-+  />;
-+}
-\ No newline at end of file
-diff --git a/src/components/guards/TechnicalFeatureGuard.tsx b/src/components/guards/TechnicalFeatureGuard.tsx
-index d898238c..887935e9 100644
---- a/src/components/guards/TechnicalFeatureGuard.tsx
-+++ b/src/components/guards/TechnicalFeatureGuard.tsx
-@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
- import { useAuth } from "@/hooks/useAuth";
- import { useAvailableContexts } from "@/hooks/useAvailableContexts";
- import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
-+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
-+import { PortalContextUnavailable } from "./PortalContextUnavailable";
- 
- /**
-  * TechnicalFeatureGuard — protege rotas exclusivas do Portal Técnico
-@@ -11,13 +13,13 @@ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
-  * retornado pela RPC segura; admin mantém acesso legado.
-  */
- export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
--  const { user, roles, loading } = useAuth();
-+  const { user, roles, loading, authzReady = true } = useAuth();
-   const location = useLocation();
--  const { data, isLoading, isError } = useAvailableContexts();
-+  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
- 
-   const isAdmin = roles.includes("administrador");
-   const hasTechnical = !!data?.has_technical_access;
--  const denied = !loading && !!user && !isLoading && !isAdmin && (isError || !hasTechnical);
-+  const denied = !loading && authzReady && !!user && !isLoading && !isFetching && !isError && !isAdmin && data?.has_technical_access === false;
- 
-   useEffect(() => {
-     if (denied) {
-@@ -25,7 +27,9 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
-     }
-   }, [denied, location.pathname]);
- 
--  if (loading || (user && isLoading)) {
-+  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
-+
-+  if (loading || (user && (isLoading || isFetching))) {
-     return (
-       <div className="min-h-dvh flex items-center justify-center bg-background" role="status" aria-live="polite">
-         <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
-@@ -37,7 +41,9 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
- 
-   if (isAdmin) return <>{children ?? <Outlet />}</>;
- 
--  if (!hasTechnical || isError) {
-+  if (isError || !data) return <PortalContextUnavailable refetch={refetch} />;
-+
-+  if (!hasTechnical) {
-     return (
-       <Navigate
-         to="/sem-permissao"
-diff --git a/src/components/guards/TechnicalRouteGuard.tsx b/src/components/guards/TechnicalRouteGuard.tsx
-index 9690d2b9..64c22c04 100644
---- a/src/components/guards/TechnicalRouteGuard.tsx
-+++ b/src/components/guards/TechnicalRouteGuard.tsx
-@@ -3,6 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
- import { Loader2 } from "lucide-react";
- import { useAuth } from "@/hooks/useAuth";
- import { useAvailableContexts } from "@/hooks/useAvailableContexts";
-+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
-+import { PortalContextUnavailable } from "./PortalContextUnavailable";
- 
- /**
-  * TechnicalRouteGuard — protege rotas do Portal Técnico.
-@@ -11,11 +13,13 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
-  * Nunca considera "todo admin como técnico"; admin acessa pelo fluxo legado.
-  */
- export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
--  const { user, roles, loading } = useAuth();
-+  const { user, roles, loading, authzReady = true } = useAuth();
-   const location = useLocation();
--  const { data, isLoading, isError } = useAvailableContexts();
-+  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
- 
--  if (loading || (user && isLoading)) {
-+  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
-+
-+  if (loading || (user && (isLoading || isFetching))) {
-     return (
-       <div
-         className="min-h-dvh flex items-center justify-center bg-background"
-@@ -37,8 +41,8 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
-     return <>{children}</>;
-   }
- 
--  if (isError) {
--    return <Navigate to="/sem-permissao" replace />;
-+  if (isError || !data) {
-+    return <PortalContextUnavailable refetch={refetch} />;
-   }
- 
-   if (!data?.has_technical_access) {
-diff --git a/src/hooks/useAvailableContexts.ts b/src/hooks/useAvailableContexts.ts
-index a80bafff..6532b56a 100644
 --- a/src/hooks/useAvailableContexts.ts
 +++ b/src/hooks/useAvailableContexts.ts
-@@ -26,12 +26,12 @@ export interface AvailableContexts {
+@@ -1,4 +1,5 @@
+-import { useEffect, useRef } from "react";
++import { useContext, useEffect, useRef } from "react";
++import { PortalContextFreshness } from "@/lib/portalContextFreshness";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { clearActivePortalContext } from "@/lib/activePortalContext";
+@@ -9,6 +10,9 @@
+ import { getHomeForRole } from "@/lib/permissions";
+ 
+ export type PortalContext = "b2b" | "technical" | "admin";
++
++// Technical guards own freshness. Descendant readers (including switch/menu
++// hooks) inherit their policy without changing default readers in other portals.
+ 
+ export interface AvailableContexts {
+   available_contexts: PortalContext[];
+@@ -26,12 +30,14 @@
   * A decisão de portal nunca depende de localStorage nem do frontend —
   * quem determina é `public.get_my_available_portal_contexts()`.
   */
 -export function useAvailableContexts() {
 +export function useAvailableContexts({ requireFresh = false }: { requireFresh?: boolean } = {}) {
++  const inheritedFreshness = useContext(PortalContextFreshness);
++  requireFresh = requireFresh || inheritedFreshness;
    const { user, profile, roles, loading, authzReady = true, authzEpoch = 0, checkAuthzAccess } = useAuth();
    const queryClient = useQueryClient();
    const ready = !loading && !!user?.id && profile?.user_id === user.id &&
@@ -187,7 +34,7 @@ index a80bafff..6532b56a 100644
    const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort(), authzEpoch]);
    const current = useRef({ scope, mounted: true, epoch: 0 });
    if (current.current.scope !== scope) {
-@@ -57,14 +57,36 @@ export function useAvailableContexts() {
+@@ -57,14 +63,36 @@
      staleTime: 0,
      gcTime: 2 * 60_000,
      retry: 1,
@@ -226,7 +73,7 @@ index a80bafff..6532b56a 100644
        const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";
        const contexts = Array.isArray(raw.available_contexts) ? raw.available_contexts.filter(valid) : [];
        return {
-@@ -97,7 +119,8 @@ export function useAvailableContexts() {
+@@ -97,7 +125,8 @@
      isError: result.isError || (exclusiveOperator && operatorHomeQuery.isError),
      isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
      refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
@@ -236,11 +83,207 @@ index a80bafff..6532b56a 100644
      isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
  
  }
-diff --git a/src/pages/app/MobileLayout.tsx b/src/pages/app/MobileLayout.tsx
-index f35bb6a4..89ad0b12 100644
+--- a/src/components/guards/AppPortalGuard.tsx
++++ b/src/components/guards/AppPortalGuard.tsx
+@@ -3,11 +3,13 @@
+ import { Loader2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
++import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
+ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
+ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+ import { CONSULTANT_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+ 
+ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
++import { PortalContextUnavailable } from "./PortalContextUnavailable";
+ 
+ /**
+  * AppPortalGuard — protege a árvore `/app/*`.
+@@ -24,7 +26,7 @@
+ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+   const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
+   const location = useLocation();
+-  const { data, isLoading, isError } = useAvailableContexts();
++  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
+ 
+   const isAdmin = roles.includes("administrador") || !!data?.is_admin;
+   const isProducer = roles.includes("cliente_produtor");
+@@ -37,9 +39,11 @@
+     (!monitoredTechnical || authzReady) &&
+     !!user &&
+     !isLoading &&
++    !isFetching &&
++    !isError &&
+     !isAdmin &&
+     !isProducer &&
+-    (isError || !data?.has_technical_access);
++    data?.has_technical_access === false;
+ 
+   useEffect(() => {
+     if (denied) {
+@@ -52,7 +56,7 @@
+     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+   }
+ 
+-  if (loading || (user && isLoading)) {
++  if (loading || (user && (isLoading || isFetching))) {
+     return (
+       <div
+         className="min-h-dvh flex items-center justify-center bg-background"
+@@ -68,10 +72,10 @@
+     return <Navigate to="/app/login" state={{ from: location.pathname }} replace />;
+   }
+ 
+-  if (isAdmin || isProducer) return <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>;
++  if (isAdmin || isProducer) return <PortalContextFreshnessProvider value={true}><AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary></PortalContextFreshnessProvider>;
+ 
+-  if (isError) {
+-    return <Navigate to="/sem-permissao" replace />;
++  if (isError || !data) {
++    return <PortalContextUnavailable refetch={refetch} />;
+   }
+ 
+   if (!data?.has_technical_access) {
+@@ -84,9 +88,9 @@
+     );
+   }
+ 
+-  return monitoredTechnical
++  return <PortalContextFreshnessProvider value={true}>{monitoredTechnical
+     ? <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>
+-    : <>{children ?? <Outlet />}</>;
++    : <>{children ?? <Outlet />}</>}</PortalContextFreshnessProvider>;
+ }
+ 
+ export default AppPortalGuard;
+--- a/src/components/guards/TechnicalRouteGuard.tsx
++++ b/src/components/guards/TechnicalRouteGuard.tsx
+@@ -3,6 +3,9 @@
+ import { Loader2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
++import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
++import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
++import { PortalContextUnavailable } from "./PortalContextUnavailable";
+ 
+ /**
+  * TechnicalRouteGuard — protege rotas do Portal Técnico.
+@@ -11,11 +14,13 @@
+  * Nunca considera "todo admin como técnico"; admin acessa pelo fluxo legado.
+  */
+ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
+-  const { user, roles, loading } = useAuth();
++  const { user, roles, loading, authzReady = true } = useAuth();
+   const location = useLocation();
+-  const { data, isLoading, isError } = useAvailableContexts();
++  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
+ 
+-  if (loading || (user && isLoading)) {
++  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
++
++  if (loading || (user && (isLoading || isFetching))) {
+     return (
+       <div
+         className="min-h-dvh flex items-center justify-center bg-background"
+@@ -34,11 +39,11 @@
+   // Admin mantém fluxo legado — verifica a lista completa de roles para
+   // cobrir administradores com papéis adicionais atribuídos.
+   if (roles.includes("administrador")) {
+-    return <>{children}</>;
++    return <PortalContextFreshnessProvider value={true}>{children}</PortalContextFreshnessProvider>;
+   }
+ 
+-  if (isError) {
+-    return <Navigate to="/sem-permissao" replace />;
++  if (isError || !data) {
++    return <PortalContextUnavailable refetch={refetch} />;
+   }
+ 
+   if (!data?.has_technical_access) {
+@@ -51,7 +56,7 @@
+     );
+   }
+ 
+-  return <>{children}</>;
++  return <PortalContextFreshnessProvider value={true}>{children}</PortalContextFreshnessProvider>;
+ }
+ 
+ export default TechnicalRouteGuard;
+--- a/src/components/guards/TechnicalFeatureGuard.tsx
++++ b/src/components/guards/TechnicalFeatureGuard.tsx
+@@ -3,7 +3,10 @@
+ import { Loader2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
++import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
+ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
++import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
++import { PortalContextUnavailable } from "./PortalContextUnavailable";
+ 
+ /**
+  * TechnicalFeatureGuard — protege rotas exclusivas do Portal Técnico
+@@ -11,13 +14,13 @@
+  * retornado pela RPC segura; admin mantém acesso legado.
+  */
+ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
+-  const { user, roles, loading } = useAuth();
++  const { user, roles, loading, authzReady = true } = useAuth();
+   const location = useLocation();
+-  const { data, isLoading, isError } = useAvailableContexts();
++  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
+ 
+   const isAdmin = roles.includes("administrador");
+   const hasTechnical = !!data?.has_technical_access;
+-  const denied = !loading && !!user && !isLoading && !isAdmin && (isError || !hasTechnical);
++  const denied = !loading && authzReady && !!user && !isLoading && !isFetching && !isError && !isAdmin && data?.has_technical_access === false;
+ 
+   useEffect(() => {
+     if (denied) {
+@@ -25,7 +28,9 @@
+     }
+   }, [denied, location.pathname]);
+ 
+-  if (loading || (user && isLoading)) {
++  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
++
++  if (loading || (user && (isLoading || isFetching))) {
+     return (
+       <div className="min-h-dvh flex items-center justify-center bg-background" role="status" aria-live="polite">
+         <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+@@ -35,9 +40,11 @@
+ 
+   if (!user) return <Navigate to="/app/login" state={{ from: location.pathname }} replace />;
+ 
+-  if (isAdmin) return <>{children ?? <Outlet />}</>;
++  if (isAdmin) return <PortalContextFreshnessProvider value={true}>{children ?? <Outlet />}</PortalContextFreshnessProvider>;
+ 
+-  if (!hasTechnical || isError) {
++  if (isError || !data) return <PortalContextUnavailable refetch={refetch} />;
++
++  if (!hasTechnical) {
+     return (
+       <Navigate
+         to="/sem-permissao"
+@@ -47,7 +54,7 @@
+     );
+   }
+ 
+-  return <>{children ?? <Outlet />}</>;
++  return <PortalContextFreshnessProvider value={true}>{children ?? <Outlet />}</PortalContextFreshnessProvider>;
+ }
+ 
+ export default TechnicalFeatureGuard;
 --- a/src/pages/app/MobileLayout.tsx
 +++ b/src/pages/app/MobileLayout.tsx
-@@ -16,6 +16,8 @@ import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
+@@ -8,6 +8,7 @@
+ import { PendingMediaRecovery } from "@/components/app/PendingMediaRecovery";
+ 
+ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
++import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
+ import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
+ import { useEffect } from "react";
+ import { itemsForPlatform } from "@/config/navigation";
+@@ -16,6 +17,8 @@
  import { useSystemConfig } from "@/hooks/useSystemConfig";
  import { useEntitlements } from "@/hooks/useEntitlements";
  import { isPathEntitled } from "@/lib/saas/featureRouteMap";
@@ -249,7 +292,7 @@ index f35bb6a4..89ad0b12 100644
  
  // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
  // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
-@@ -32,12 +34,12 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
+@@ -32,12 +35,12 @@
  }));
  
  export default function MobileLayout() {
@@ -264,7 +307,7 @@ index f35bb6a4..89ad0b12 100644
    const { config, defaults } = useSystemConfig();
    const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
  
-@@ -54,14 +56,16 @@ export default function MobileLayout() {
+@@ -54,14 +57,16 @@
  
    // Semeia contexto visual quando ausente (fluxos legados sem passar pelo seletor).
    useEffect(() => {
@@ -284,25 +327,57 @@ index f35bb6a4..89ad0b12 100644
      return (
        <div className="min-h-screen flex items-center justify-center bg-background">
          <div className="animate-pulse text-muted-foreground text-lg">Carregando...</div>
-@@ -71,6 +75,8 @@ export default function MobileLayout() {
+@@ -70,6 +75,8 @@
+   }
  
    if (!user) return <Navigate to="/app/login" replace />;
- 
-+  if (!isProdutor && !isAdmin && (isError || !contexts)) return <PortalContextUnavailable refetch={refetch} />;
 +
++  if (!isProdutor && !isAdmin && (isError || !contexts)) return <PortalContextUnavailable refetch={refetch} />;
+ 
    // Sem produtor e sem acesso técnico e sem admin → não deveria estar aqui.
    if (!isProdutor && !hasTechnical && !isAdmin) {
-     return <Navigate to="/sem-permissao" replace />;
-diff --git a/src/test/config/portalContextRecovery.integration.test.tsx b/src/test/config/portalContextRecovery.integration.test.tsx
-new file mode 100644
-index 00000000..86fe6d68
+@@ -82,7 +89,7 @@
+   const isConsultor = !isProducerMode;
+ 
+   return (
+-    <div className="min-h-screen bg-background flex flex-col">
++    <PortalContextFreshnessProvider value={true}><div className="min-h-screen bg-background flex flex-col">
+       {/* Offline indicator */}
+       <OfflineIndicator
+         isOnline={isOnline}
+@@ -150,6 +157,6 @@
+           })}
+         </div>
+       </nav>
+-    </div>
++    </div></PortalContextFreshnessProvider>
+   );
+ }
 --- /dev/null
++++ b/src/components/guards/PortalContextUnavailable.tsx
+@@ -0,0 +1,16 @@
++import { ErrorRecovery } from "@/components/ErrorRecovery";
++import { useAuth } from "@/hooks/useAuth";
++
++/** Unavailable is not denied. The reviewed monitor's Retry re-resolves authority. */
++export function PortalContextUnavailable({ refetch }: { refetch: () => unknown }) {
++  const { revalidateAuthz, authzEpoch = 0 } = useAuth();
++  return <ErrorRecovery
++    title="Não foi possível confirmar este acesso"
++    message="A consulta de acesso está indisponível no momento. Tente novamente."
++    onRetry={() => {
++      revalidateAuthz();
++      // Gate-off/legacy scope has no monitored epoch transition to restart its query.
++      if (authzEpoch === 0) void refetch();
++    }}
++  />;
++}--- /dev/null
 +++ b/src/test/config/portalContextRecovery.integration.test.tsx
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,203 @@
 +// Real AuthProvider/monitor/probe/ProtectedRoutes/RoleGuard/AppPortalGuard/AppLayout/MobileLayout.
 +// Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
 +import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 +import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 +import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 +const s = vi.hoisted(() => ({
@@ -334,6 +409,7 @@ index 00000000..86fe6d68
 +vi.mock('@/components/portal/PortalTopBar', () => ({ PortalTopBar: ({ brandTitle }: { brandTitle: string }) => <header>{brandTitle}</header> }));
 +vi.mock('@/lib/accessAuditLog', () => ({ logAccessDeniedOnce: () => {}, routeGroupFromPath: () => 'technical' }));
 +vi.mock('@/hooks/useOfflineSync', () => ({ useOfflineSync: () => ({ isOnline: true, pendingCount: 0, syncing: false, syncAll: () => {} }) }));
++vi.mock('@/hooks/usePushSubscription', () => ({ usePushSubscription: () => ({ isSupported: false, subscription: null, deliveryAvailable: false, unsubscribe: () => {}, isLoading: false }) }));
 +vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ status: 'ready', features: new Set(['ordens_producao', 'estoque_embalagens', 'contas_receber']) }) }));
 +vi.mock('@/components/app/OfflineIndicator', () => ({ OfflineIndicator: () => null }));
 +vi.mock('@/components/app/PendingMediaRecovery', () => ({ PendingMediaRecovery: () => null }));
@@ -369,16 +445,22 @@ index 00000000..86fe6d68
 +import { ProtectedRoutes, RoleGuard } from '@/App';
 +import MobileLayout from '@/pages/app/MobileLayout';
 +import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
++import MobilePerfil from '@/pages/app/MobilePerfil';
++import { useAvailableContexts } from '@/hooks/useAvailableContexts';
 +import { readAuthzDiagnostics, clearAuthzDiagnostics } from '@/lib/authz/localDiagnostics';
 +
 +function Url() { return <output data-testid="url">{useLocation().pathname}</output>; }
-+function setup(path = '/financeiro/receber') {
++function NestedContextReader() {
++  const { data } = useAvailableContexts();
++  return data?.has_technical_access ? <span>Técnico campo</span> : null;
++}
++function setup(path = '/financeiro/receber', child: React.ReactNode = <span>Técnico campo</span>) {
 +  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 +  render(<QueryClientProvider client={qc}><AuthProvider><AuthSpy /><MemoryRouter initialEntries={[path]}><Url /><Routes>
 +    <Route element={<ProtectedRoutes />}>
 +      <Route path="/financeiro/receber" element={<RoleGuard><span>Contas a receber</span></RoleGuard>} />
 +    </Route>
-+    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={<span>Técnico campo</span>} /></Route></Route>
++    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={child} /></Route></Route>
 +    <Route path="/sem-permissao" element={<Link to="/app">Ir ao técnico</Link>} />
 +  </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
 +  return qc;
@@ -411,10 +493,36 @@ index 00000000..86fe6d68
 +  Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
 +  Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
 +});
-+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
++afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.useRealTimers(); vi.restoreAllMocks(); });
 +
 +
 +describe('real provider + contexts query + app guard + mobile: uncertainty is not denial', () => {
++  it.each(['default-reader', 'mobile-perfil'])('%s stabilizes after load, focus and epoch without mount-refetch loop', async kind => {
++    const label = kind === 'mobile-perfil' ? 'Meu Perfil' : 'Técnico campo';
++    const qc = setup('/app', kind === 'mobile-perfil' ? <MobilePerfil /> : <NestedContextReader />);
++    await tick(12000);
++    expect(s.contextsCalls).toBeLessThan(5);
++    expect(screen.getByText(label)).toBeTruthy();
++    let calls = s.contextsCalls;
++    s.contextsMode = 'hold';
++    act(() => { focusManager.setFocused(false); focusManager.setFocused(true); });
++    await tick(100);
++    expect(screen.queryByText(label)).toBeNull();
++    expect(screen.getByTestId('url').textContent).toBe('/app');
++    s.contextsMode = 'valid'; s.contextRelease?.(); await tick(12000);
++    expect(s.contextsCalls - calls).toBeGreaterThan(0);
++    expect(s.contextsCalls - calls).toBeLessThan(5);
++    expect(screen.getByText(label)).toBeTruthy();
++    calls = s.contextsCalls;
++    s.contextsMode = 'hold'; tokenRefreshed(); await tick(4000);
++    expect(screen.queryByText(label)).toBeNull();
++    s.contextsMode = 'valid'; s.contextRelease?.(); await tick(12000);
++    expect(s.contextsCalls - calls).toBeGreaterThan(0);
++    expect(s.contextsCalls - calls).toBeLessThan(5);
++    expect(screen.getByText(label)).toBeTruthy();
++    expect(screen.getByTestId('url').textContent).toBe('/app');
++    qc.clear();
++  });
 +  it('epoch cleanup pending → valid with context pending → valid keeps /app', async () => {
 +    const qc = setup('/app'); await tick(3000);
 +    expect(screen.getByText('Técnico campo')).toBeTruthy();
@@ -469,11 +577,9 @@ index 00000000..86fe6d68
 +    expect(screen.getByTestId('url').textContent).toBe('/sem-permissao');
 +  });
 +});
-diff --git a/src/test/multiportal.contexts.session.test.tsx b/src/test/multiportal.contexts.session.test.tsx
-index a6993ef2..330e5188 100644
 --- a/src/test/multiportal.contexts.session.test.tsx
 +++ b/src/test/multiportal.contexts.session.test.tsx
-@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
+@@ -2,7 +2,7 @@
  import { act, renderHook, waitFor } from "@testing-library/react";
  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
  import { StrictMode, type ReactNode } from "react";
@@ -482,7 +588,7 @@ index a6993ef2..330e5188 100644
  const rpc = vi.hoisted(() => vi.fn());
  vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
  vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc } }));
-@@ -11,6 +11,7 @@ const response = { data: { available_contexts: ["admin", "technical"], has_techn
+@@ -11,6 +11,7 @@
  beforeEach(() => {
    auth.user = { id: "A" }; Object.assign(auth.profile, { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false });
    auth.roles = ["gestor", "consultor_tecnico"]; auth.loading = false; rpc.mockReset();
@@ -490,7 +596,26 @@ index a6993ef2..330e5188 100644
    rpc.mockImplementation(() => ({ abortSignal: () => Promise.resolve(response) }));
  });
  function setup() {
-@@ -56,4 +57,23 @@ describe("contextos com QueryClient real", () => {
+@@ -20,6 +21,18 @@
+   return { h, client };
+ }
+ describe("contextos com QueryClient real", () => {
++  it("fora da árvore técnica o leitor padrão mantém refetch ao remontar", async () => {
++    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
++    const first = renderHook(() => useAvailableContexts(), { wrapper });
++    await waitFor(() => expect(first.result.current.data?.has_technical_access).toBe(true));
++    const calls = rpc.mock.calls.length;
++    first.unmount();
++    const second = renderHook(() => useAvailableContexts(), { wrapper });
++    await waitFor(() => expect(rpc.mock.calls.length).toBe(calls + 1));
++    await waitFor(() => expect(second.result.current.isFetching).toBe(false));
++    second.unmount(); client.clear();
++  });
+   for (const change of ["identity", "tenant", "roles", "logout", "inactive", "mismatch", "loading", "provisional"] as const) {
+     it(`oculta dados imediatamente em ${change}`, async () => {
+       const { h, client } = setup();
+@@ -56,4 +69,23 @@
      expect(rpc).not.toHaveBeenCalled(); expect(h.result.current.ready).toBe(false);
      h.unmount(); client.clear();
    });
@@ -514,11 +639,9 @@ index a6993ef2..330e5188 100644
 +    h.unmount(); client.clear();
 +  });
  });
-diff --git a/src/test/multiportal.featureGuards.test.tsx b/src/test/multiportal.featureGuards.test.tsx
-index 8541d9ed..9f7dbf49 100644
 --- a/src/test/multiportal.featureGuards.test.tsx
 +++ b/src/test/multiportal.featureGuards.test.tsx
-@@ -181,12 +181,14 @@ describe("TechnicalFeatureGuard", () => {
+@@ -181,12 +181,14 @@
      expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
    });
  
@@ -535,3 +658,30 @@ index 8541d9ed..9f7dbf49 100644
    });
  
    it("transição loading → autorizado mantém ordem dos hooks", () => {
+--- /dev/null
++++ b/src/lib/portalContextFreshness.ts
+@@ -0,0 +1,5 @@
++import { createContext } from "react";
++
++// Query lifecycle only, never authorization or cached portal grants.
++export const PortalContextFreshness = createContext(false);
++export const PortalContextFreshnessProvider = PortalContextFreshness.Provider;--- a/src/test/config/b2bOpenSession.integration.test.tsx
++++ b/src/test/config/b2bOpenSession.integration.test.tsx
+@@ -40,7 +40,7 @@
+       const ctx = state.context as Record<string, unknown> | null;
+       return { data: ctx ? { id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, papel: ctx.papel, mode: ctx.mode } : null };
+     }
+-    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true } };
++    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true, has_technical_access: false } };
+     if (name === "get_partner_catalog_secure") return state.catalog();
+     if (name === "b2b_read_simulations") return state.simulations();
+     throw new Error(`unexpected RPC: ${name}`);
+--- a/src/hooks/AGENTS.md
++++ b/src/hooks/AGENTS.md
+@@ -1,5 +1,6 @@
+ - Notification caches, reads, counters and mutations require resolved Auth, a matching active profile, tenant, roles and individual portal recipient; server RLS remains authoritative to prevent stale-context disclosure.
+ - Portal client selection must fence late requests and scope remembered selection by identity/tenant, so logout or organization changes cannot reuse previous client data.
++- Technical guards/layout provide inherited context-query freshness to all descendant readers, including default consumers and portal-switch hooks; other portals keep defaults — prevents stale mount/refetch/hide loops without weakening uncertainty hiding.
+ - Portal client preferences use a same-tab external-store subscription inside the existing hook, not a second provider; each instance still resolves current authorized membership — keeps selection synchronized without caching authority.
+ - Existing portal readers share the request-scope query wrapper and mutation effects capture per-request fences; RPC/RLS authority is unchanged — prevents stale actor results and cache invalidation.
+ - Push stays explicitly unavailable: no automatic worker registration, permission requests or subscription writes; only inspect the same-origin push worker and revoke browser-local subscriptions — avoids false activation and deleting unproven server ownership.

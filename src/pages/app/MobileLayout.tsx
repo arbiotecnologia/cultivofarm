@@ -8,6 +8,7 @@ import { OfflineIndicator } from "@/components/app/OfflineIndicator";
 import { PendingMediaRecovery } from "@/components/app/PendingMediaRecovery";
 
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
 import { itemsForPlatform } from "@/config/navigation";
@@ -88,7 +89,7 @@ export default function MobileLayout() {
   const isConsultor = !isProducerMode;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <PortalContextFreshnessProvider value={true}><div className="min-h-screen bg-background flex flex-col">
       {/* Offline indicator */}
       <OfflineIndicator
         isOnline={isOnline}
@@ -156,6 +157,6 @@ export default function MobileLayout() {
           })}
         </div>
       </nav>
-    </div>
+    </div></PortalContextFreshnessProvider>
   );
 }
