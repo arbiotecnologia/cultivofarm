@@ -17,7 +17,7 @@ Removidos SHARE globais de links/lotes/subscriptions/overrides. OS/programação
 ## Evidências
 
 - `python3 test-local.py` executa `test-real-local.py`, substituindo o harness anterior com helpers VOLATILE fake.
-- 38 verificações locais em `real-test-results.json`: STABLE/readiness/entitlements reais, todos 23 triggers alvo, views reais do refresh; inactive/profile, role deletion, SaaS, tenant/alçadas, aberta sem autoaprovação, B2B, replay, duas conexões, FK link/lote, refresh/timeout, baseline/ACL exatos e SET ROLE authenticated/anon.
+- 40 verificações locais em `real-test-results.json`: STABLE/readiness/entitlements reais, todos 23 triggers alvo, views reais do refresh; inactive/profile, role deletion, SaaS, tenant/alçadas, aberta sem autoaprovação, B2B, replay, duas conexões, FK link/lote, refresh/timeout, baseline/ACL exatos e SET ROLE authenticated/anon. Baseline a42d6 e fingerprint entitlements conferidos ANTES de montar rollback.
 - Schema local: todos tipos/colunas públicos, PK/UNIQUE/FKs capturadas, CHECKs alvo/Auth/SaaS/referências. Não é clone de todos os triggers/policies alheios ao recorte. Auth UID/JWT sintéticos e SET ROLE local NÃO são JWT hosted.
 - Vitest focal OS 71/71 (inclui programação/aprovação); warnings preexistentes de descrição do diálogo, sem falhas.
 - `assemble.py`: pacotes protegidos/commits fixos; `test_stage.py`: 6/6; `stage.py candidate|rollback /tmp/destino-vazio`: só fonte UI.
@@ -25,4 +25,6 @@ Removidos SHARE globais de links/lotes/subscriptions/overrides. OS/programação
 
 **PRE/POST integral hosted: UNVERIFIED. Authenticated path: UNVERIFIED.** Ensaio local de restauração da definição/ACL não equivale a execução integral da migration em schema hospedado. Prévia pública não forneceu prova autenticada. Histórico, anexos, TOKEN_REFRESHED real, revogação hosted de papéis, v6/contratos não recebem PASS. Recibos externos anteriores permanecem distintos.
 
-Sem DDL/DML hosted, deploy/publicação, nova fixture hospedada, alteração OS B/produto/roles/perfis ou pacotes c30af/e6a67. Uma chamada indevida vazia ao tool run_sql foram rejeitadas antes de qualquer execução (nenhum SQL/DML enviado); preservado registro desta limitação no relatório. Auditor revisa/aplica com preflight fail-closed.
+Recibo independente informado às 15:28: PRE 622048 hosted PASS somente para o conjunto já coberto, Vitest 53/53 PASS, tsc app ainda rodando. Não equivale a PRE suplementar atual/POST ou typecheck concluído. Os dois corpos fornecidos coincidem com as capturas utilizadas, sem mudança de semântica; somente terminador SQL acrescentado à fonte de rollback.
+
+Sem DDL/DML hosted, deploy/publicação, nova fixture hospedada, alteração OS B/produto/roles/perfis ou pacotes c30af/e6a67. Uma chamada indevida vazia ao tool run_sql foi rejeitada antes de qualquer execução (nenhum SQL/DML enviado); preservado registro desta limitação no relatório. Auditor revisa/aplica com preflight fail-closed.

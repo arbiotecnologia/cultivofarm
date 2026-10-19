@@ -1,0 +1,13 @@
+{
+  "source": "owner-reported independent audit, 2026-10-19 15:28 UTC",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted_pre_622048": "PASS only for previously covered predicates; not supplemental current PRE",
+  "independent_vitest": {"passed": 53, "total": 53},
+  "tsc_app": "RUNNING, no completed result reported",
+  "rollback_pg_get_functiondef_md5": "a42d6b07f51e6dacf41096f6cefb8163",
+  "rollback_acl": "{postgres=X/postgres,service_role=X/postgres}",
+  "entitlements_pg_get_functiondef_md5": "7f4ec7facaebbdf35444dd490fdebe56",
+  "supplied_definitions": "match previously captured bodies; no baseline semantics changed",
+  "agent_hosted_writes": false,
+  "authenticated_path": "UNVERIFIED"
+}
