@@ -30,7 +30,7 @@ const { rpcMock, fromMock, anexarMock } = vi.hoisted(() => ({
   anexarMock: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" }, profile: { user_id: "u1", organization_id: "org-1", ativo: true }, roles: ["financeiro"], loading: false }) }));
 vi.mock("@/lib/financial/anexarComprovanteBaixa", () => ({ anexarComprovanteBaixa: anexarMock }));
 
 import { BaixaDialog } from "@/components/financeiro/BaixaDialog";

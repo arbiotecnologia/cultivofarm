@@ -22,7 +22,7 @@ const { rpcMock, fromMock, anexarMock } = vi.hoisted(() => ({
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "u1" }, profile: { organization_id: "org-1" } }),
+  useAuth: () => ({ user: { id: "u1" }, profile: { user_id: "u1", organization_id: "org-1", ativo: true }, roles: ["financeiro"], loading: false }),
 }));
 vi.mock("@/lib/financial/anexarComprovanteBaixa", () => ({ anexarComprovanteBaixa: anexarMock }));
 
