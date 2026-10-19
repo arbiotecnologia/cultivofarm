@@ -129,9 +129,12 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     await mount();
     const epoch0 = screen.getByText(/Conteúdo sensível/).textContent;
     await changeRolesAndPoll(['gestor']);
-    await retry(); paused();
-    s.roles = ['gestor', 'consultor_tecnico'];
-    await retry();
+    await retry(120);
+    expect(screen.getByText(/Conteúdo sensível/).textContent).not.toContain('/app/registrar');
+    await changeRolesAndPoll(['gestor', 'consultor_tecnico']); // residual probe rejects superset of gestor
+    paused();
+    await retry(120);
+    expect(screen.getByText(/Conteúdo sensível/).textContent).toContain('/app/registrar');
     const txt = screen.getByText(/Conteúdo sensível/).textContent;
     expect(txt).not.toBe(epoch0);
   });
