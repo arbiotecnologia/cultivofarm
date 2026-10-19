@@ -160,7 +160,7 @@
   },
   {
    "name": "assinar: auditoria registrada uma vez",
-   "pass": false
+   "pass": true
   },
   {
    "name": "assinar: perfil inativo → termo_nao_encontrado",

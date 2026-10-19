@@ -163,7 +163,8 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
             **{s: md5(s) for s in A.SIGS3}}
     (H / "post-hashes.json").write_text(json.dumps(post, indent=2) + "\n")
     _, cand2, postsql, rb = A.build(post_md5=post)
-    check("postflight PASS após candidata", psql(localize(postsql), ok=False).returncode == 0)
+    pf = psql(localize(postsql), ok=False); print(pf.stderr[-400:]) if pf.returncode else None
+    check("postflight PASS após candidata", pf.returncode == 0)
     check("preflight agora FALHA (não reaplicável)", psql(localize(pre), ok=False).returncode != 0)
     check("candidata reaplicada FALHA fechado no preflight", psql(localize(cand2), ok=False).returncode != 0)
 
@@ -203,7 +204,7 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     check("assinar: replay divergente → idempotency_payload_mismatch", "idempotency_payload_mismatch" in err(p))
     p = tx(UA, f"SELECT public.rpc_entrega_assinar_termo_v1('{TA}', {sig}, 'k1'); SELECT public.rpc_entrega_assinar_termo_v1('{TA}', {sig}, 'k2');")
     check("assinar: segunda chave → termo_ja_assinado", "termo_ja_assinado" in err(p))
-    p = tx(UA, f"SELECT public.rpc_entrega_assinar_termo_v1('{TA}', {sig}, 'k1'); SELECT count(*) FROM public.financial_audit_log WHERE action='DELIVERY_TERM_SIGNED';")
+    p = tx(UA, f"SELECT public.rpc_entrega_assinar_termo_v1('{TA}', {sig}, 'k1'); RESET ROLE; SELECT count(*) FROM public.financial_audit_log WHERE action='DELIVERY_TERM_SIGNED';")
     check("assinar: auditoria registrada uma vez", val(p).splitlines()[-1] == "1")
     p = tx(UX, f"SELECT public.rpc_entrega_assinar_termo_v1('{TA}', {sig}, 'k1');"); check("assinar: perfil inativo → termo_nao_encontrado", "termo_nao_encontrado" in err(p))
 
@@ -221,7 +222,8 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     check("registrar PDF: service_role continua funcionando", val(p) == "false")
 
     # ---------- Rollback ----------
-    check("rollback PASS (pré/pós internos)", psql(localize(rb), ok=False).returncode == 0)
+    rbp = psql(localize(rb), ok=False); print(rbp.stderr[-400:]) if rbp.returncode else None
+    check("rollback PASS (pré/pós internos)", rbp.returncode == 0)
     for s in exact: check(f"rollback restaura md5 LIVE {s}", md5(s) == A.LIVE[s])
     check("após rollback, preflight volta a PASS", psql(localize(pre), ok=False).returncode == 0)
     check("após rollback, exposição baseline volta (reversível)", val(tx(UA, f"SELECT count(*) FROM public.entrega_termos WHERE id='{TB}';")) == "1")
