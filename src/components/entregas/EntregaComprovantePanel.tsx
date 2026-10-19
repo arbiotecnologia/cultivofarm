@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -603,25 +605,28 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     });
   };
 
-  const abrirComprovanteArquivo = async () => {
-    if (!access.ready) return;
-    const current = access.capture();
-    try {
-      const { data, error } = await supabase.storage
-        .from("entrega-documentos")
-        .createSignedUrl(comprovante.arquivo_path, 300);
-      if (!current()) return;
-      if (error || !data?.signedUrl) throw new Error("sem-url");
-      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-    } catch {
-      if (!current()) return;
-      toast({
-        title: "Não foi possível abrir o comprovante",
-        description: "O link seguro do arquivo não pôde ser gerado. Tente novamente.",
-        variant: "destructive",
-      });
-    }
+  // Snapshot do comprovante exibido: troca de registro/escopo descarta bytes.
+  const arquivoLocator = deliveryReceiptLocator(entrega?.id, comprovante?.arquivo_path);
+  const anexoOpener = useAuthenticatedAttachmentOpener(
+    JSON.stringify(["delivery-receipt", entrega?.id ?? null, comprovante?.id ?? null, comprovante?.arquivo_path ?? null]),
+    DELIVERY_RECEIPT_BUCKET,
+  );
+  const erroComprovanteArquivo = () => toast({
+    title: "Não foi possível preparar o comprovante",
+    description: "O arquivo está indisponível no momento. Tente novamente.",
+    variant: "destructive",
+  });
+  const prepararComprovanteArquivo = () => {
+    if (!access.ready || !anexoOpener.ready) return;
+    if (!arquivoLocator) { erroComprovanteArquivo(); return; }
+    void anexoOpener.open(arquivoLocator, erroComprovanteArquivo);
   };
+  const baixarComprovanteArquivo = () => {
+    if (!arquivoLocator) return;
+    anexoOpener.download(arquivoLocator, arquivoLocator.split("/").pop() || "comprovante");
+  };
+  const comprovantePreparado = !!arquivoLocator && !!anexoOpener.urls[arquivoLocator];
+  const comprovantePreparando = !!arquivoLocator && anexoOpener.loadingPaths.includes(arquivoLocator);
 
   // Mesmo documento sempre: abre o formulário já existente, nunca gera outro.
   const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank", "noopener,noreferrer");
@@ -748,9 +753,16 @@ export function EntregaComprovantePanel({ entrega }: Props) {
               />
             )}
             {comprovante?.arquivo_path && (
-              <Button size="sm" variant="ghost" onClick={abrirComprovanteArquivo}>
-                <ExternalLink className="h-4 w-4 mr-1" /> Visualizar comprovante
-              </Button>
+              comprovantePreparado ? (
+                <Button size="sm" variant="ghost" onClick={baixarComprovanteArquivo}>
+                  <ExternalLink className="h-4 w-4 mr-1" /> Baixar comprovante
+                </Button>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={prepararComprovanteArquivo} disabled={comprovantePreparando}>
+                  {comprovantePreparando ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-1" />}
+                  Preparar comprovante
+                </Button>
+              )
             )}
           </>
         )}

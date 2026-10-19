@@ -9,6 +9,9 @@ import { brl } from "@/lib/financial/format";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
+import { Loader2 } from "lucide-react";
 
 const TIPO_LABEL: Record<string, string> = {
   RECIBO_ASSINADO: "Recibo assinado",
@@ -68,16 +71,21 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
   });
 
 
-  const baixar = async (path: string, nome: string) => {
-    if (!access.ready) return;
-    const current = access.capture();
-    const { data, error } = await supabase.storage.from("entrega-documentos").createSignedUrl(path, 60);
-    if (!current()) return;
-    if (error || !data?.signedUrl) {
-      toast({ title: "Não foi possível abrir o arquivo", description: error?.message, variant: "destructive" });
-      return;
-    }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  // Snapshot da lista exibida: troca de documentos/escopo descarta bytes.
+  const opener = useAuthenticatedAttachmentOpener(
+    JSON.stringify(["delivery-documents", entrega?.id ?? null, docs.map((d) => [d.id, d.arquivo_path])]),
+    DELIVERY_RECEIPT_BUCKET,
+  );
+  const erroArquivo = () => toast({
+    title: "Não foi possível preparar o arquivo",
+    description: "O arquivo está indisponível no momento. Tente novamente.",
+    variant: "destructive",
+  });
+  const preparar = (path: unknown) => {
+    if (!access.ready || !opener.ready) return;
+    const locator = deliveryReceiptLocator(entrega?.id, path);
+    if (!locator) { erroArquivo(); return; }
+    void opener.open(locator, erroArquivo);
   };
 
   if (!entrega) return null;
@@ -178,9 +186,22 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
                     <span className="truncate">{d.nome_arquivo}</span>
                     <span className="text-muted-foreground whitespace-nowrap">{formatDateDisplay(d.uploaded_at)}</span>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => baixar(d.arquivo_path, d.nome_arquivo)}>
-                    <Download className="h-4 w-4" />
-                  </Button>
+                  {(() => {
+                    const locator = deliveryReceiptLocator(entrega.id, d.arquivo_path);
+                    if (locator && opener.urls[locator]) {
+                      return (
+                        <Button size="sm" variant="ghost" aria-label={`Baixar ${d.nome_arquivo}`} onClick={() => opener.download(locator, d.nome_arquivo || "anexo")}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      );
+                    }
+                    const busy = !!locator && opener.loadingPaths.includes(locator);
+                    return (
+                      <Button size="sm" variant="ghost" aria-label={`Preparar ${d.nome_arquivo}`} disabled={busy} onClick={() => preparar(d.arquivo_path)}>
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                      </Button>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

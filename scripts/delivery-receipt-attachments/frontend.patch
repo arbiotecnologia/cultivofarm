@@ -1,0 +1,385 @@
+diff --git a/src/components/entregas/ConfirmacaoEntregaPanel.tsx b/src/components/entregas/ConfirmacaoEntregaPanel.tsx
+index 0dd368cf..ef979c45 100644
+--- a/src/components/entregas/ConfirmacaoEntregaPanel.tsx
++++ b/src/components/entregas/ConfirmacaoEntregaPanel.tsx
+@@ -9,6 +9,9 @@ import { brl } from "@/lib/financial/format";
+ import { toast } from "@/hooks/use-toast";
+ import { useNavigate } from "react-router-dom";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
++import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
++import { Loader2 } from "lucide-react";
+ 
+ const TIPO_LABEL: Record<string, string> = {
+   RECIBO_ASSINADO: "Recibo assinado",
+@@ -68,16 +71,21 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
+   });
+ 
+ 
+-  const baixar = async (path: string, nome: string) => {
+-    if (!access.ready) return;
+-    const current = access.capture();
+-    const { data, error } = await supabase.storage.from("entrega-documentos").createSignedUrl(path, 60);
+-    if (!current()) return;
+-    if (error || !data?.signedUrl) {
+-      toast({ title: "Não foi possível abrir o arquivo", description: error?.message, variant: "destructive" });
+-      return;
+-    }
+-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
++  // Snapshot da lista exibida: troca de documentos/escopo descarta bytes.
++  const opener = useAuthenticatedAttachmentOpener(
++    JSON.stringify(["delivery-documents", entrega?.id ?? null, docs.map((d) => [d.id, d.arquivo_path])]),
++    DELIVERY_RECEIPT_BUCKET,
++  );
++  const erroArquivo = () => toast({
++    title: "Não foi possível preparar o arquivo",
++    description: "O arquivo está indisponível no momento. Tente novamente.",
++    variant: "destructive",
++  });
++  const preparar = (path: unknown) => {
++    if (!access.ready || !opener.ready) return;
++    const locator = deliveryReceiptLocator(entrega?.id, path);
++    if (!locator) { erroArquivo(); return; }
++    void opener.open(locator, erroArquivo);
+   };
+ 
+   if (!entrega) return null;
+@@ -178,9 +186,22 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
+                     <span className="truncate">{d.nome_arquivo}</span>
+                     <span className="text-muted-foreground whitespace-nowrap">{formatDateDisplay(d.uploaded_at)}</span>
+                   </div>
+-                  <Button size="sm" variant="ghost" onClick={() => baixar(d.arquivo_path, d.nome_arquivo)}>
+-                    <Download className="h-4 w-4" />
+-                  </Button>
++                  {(() => {
++                    const locator = deliveryReceiptLocator(entrega.id, d.arquivo_path);
++                    if (locator && opener.urls[locator]) {
++                      return (
++                        <Button size="sm" variant="ghost" aria-label={`Baixar ${d.nome_arquivo}`} onClick={() => opener.download(locator, d.nome_arquivo || "anexo")}>
++                          <Download className="h-4 w-4" />
++                        </Button>
++                      );
++                    }
++                    const busy = !!locator && opener.loadingPaths.includes(locator);
++                    return (
++                      <Button size="sm" variant="ghost" aria-label={`Preparar ${d.nome_arquivo}`} disabled={busy} onClick={() => preparar(d.arquivo_path)}>
++                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
++                      </Button>
++                    );
++                  })()}
+                 </div>
+               ))}
+             </div>
+diff --git a/src/components/entregas/EntregaComprovantePanel.tsx b/src/components/entregas/EntregaComprovantePanel.tsx
+index d715e632..57f171d4 100644
+--- a/src/components/entregas/EntregaComprovantePanel.tsx
++++ b/src/components/entregas/EntregaComprovantePanel.tsx
+@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
++import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
+ import { Card } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+@@ -603,25 +605,28 @@ export function EntregaComprovantePanel({ entrega }: Props) {
+     });
+   };
+ 
+-  const abrirComprovanteArquivo = async () => {
+-    if (!access.ready) return;
+-    const current = access.capture();
+-    try {
+-      const { data, error } = await supabase.storage
+-        .from("entrega-documentos")
+-        .createSignedUrl(comprovante.arquivo_path, 300);
+-      if (!current()) return;
+-      if (error || !data?.signedUrl) throw new Error("sem-url");
+-      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+-    } catch {
+-      if (!current()) return;
+-      toast({
+-        title: "Não foi possível abrir o comprovante",
+-        description: "O link seguro do arquivo não pôde ser gerado. Tente novamente.",
+-        variant: "destructive",
+-      });
+-    }
++  // Snapshot do comprovante exibido: troca de registro/escopo descarta bytes.
++  const arquivoLocator = deliveryReceiptLocator(entrega?.id, comprovante?.arquivo_path);
++  const anexoOpener = useAuthenticatedAttachmentOpener(
++    JSON.stringify(["delivery-receipt", entrega?.id ?? null, comprovante?.id ?? null, comprovante?.arquivo_path ?? null]),
++    DELIVERY_RECEIPT_BUCKET,
++  );
++  const erroComprovanteArquivo = () => toast({
++    title: "Não foi possível preparar o comprovante",
++    description: "O arquivo está indisponível no momento. Tente novamente.",
++    variant: "destructive",
++  });
++  const prepararComprovanteArquivo = () => {
++    if (!access.ready || !anexoOpener.ready) return;
++    if (!arquivoLocator) { erroComprovanteArquivo(); return; }
++    void anexoOpener.open(arquivoLocator, erroComprovanteArquivo);
++  };
++  const baixarComprovanteArquivo = () => {
++    if (!arquivoLocator) return;
++    anexoOpener.download(arquivoLocator, arquivoLocator.split("/").pop() || "comprovante");
+   };
++  const comprovantePreparado = !!arquivoLocator && !!anexoOpener.urls[arquivoLocator];
++  const comprovantePreparando = !!arquivoLocator && anexoOpener.loadingPaths.includes(arquivoLocator);
+ 
+   // Mesmo documento sempre: abre o formulário já existente, nunca gera outro.
+   const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank", "noopener,noreferrer");
+@@ -748,9 +753,16 @@ export function EntregaComprovantePanel({ entrega }: Props) {
+               />
+             )}
+             {comprovante?.arquivo_path && (
+-              <Button size="sm" variant="ghost" onClick={abrirComprovanteArquivo}>
+-                <ExternalLink className="h-4 w-4 mr-1" /> Visualizar comprovante
+-              </Button>
++              comprovantePreparado ? (
++                <Button size="sm" variant="ghost" onClick={baixarComprovanteArquivo}>
++                  <ExternalLink className="h-4 w-4 mr-1" /> Baixar comprovante
++                </Button>
++              ) : (
++                <Button size="sm" variant="ghost" onClick={prepararComprovanteArquivo} disabled={comprovantePreparando}>
++                  {comprovantePreparando ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-1" />}
++                  Preparar comprovante
++                </Button>
++              )
+             )}
+           </>
+         )}
+diff --git a/src/test/entregas/painelEvidencias.test.tsx b/src/test/entregas/painelEvidencias.test.tsx
+index fdf759b2..52641148 100644
+--- a/src/test/entregas/painelEvidencias.test.tsx
++++ b/src/test/entregas/painelEvidencias.test.tsx
+@@ -114,7 +114,7 @@ describe("EntregaComprovantePanel — estado fresco do servidor", () => {
+     expect(screen.queryByRole("button", { name: /Imprimir formulário/ })).not.toBeInTheDocument();
+   });
+ 
+-  it("falha do link assinado mostra aviso amigável e não abre janela", async () => {
++  it("caminho fora do contrato falha fechado com aviso neutro, sem baixar nem abrir janela", async () => {
+     fromMock.mockImplementation((tabela: string) =>
+       tabela === "entregas"
+         ? chain({ data: { id: "e1", comprovante_status: "anexado", validation_token: null } })
+@@ -124,11 +124,12 @@ describe("EntregaComprovantePanel — estado fresco do servidor", () => {
+ 
+     render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+ 
+-    fireEvent.click(await screen.findByRole("button", { name: /Visualizar comprovante/ }));
++    fireEvent.click(await screen.findByRole("button", { name: /Preparar comprovante/ }));
+ 
+     await waitFor(() => expect(toastMock).toHaveBeenCalled());
+     const arg = toastMock.mock.calls.at(-1)?.[0];
+-    expect(arg.title).toBe("Não foi possível abrir o comprovante");
++    expect(arg.title).toBe("Não foi possível preparar o comprovante");
++    expect(storageFrom).not.toHaveBeenCalled();
+     expect(JSON.stringify(arg)).not.toContain("x");
+     expect(abrir).not.toHaveBeenCalled();
+     abrir.mockRestore();
+diff --git a/src/test/equipe-tecnica/StorageDownloads.session.test.tsx b/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
+index a0f7483d..d697288b 100644
+--- a/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
++++ b/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
+@@ -16,7 +16,6 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+   }, storage: { from: () => ({ createSignedUrl: mocks.sign }) },
+ } }));
+ import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
+-import { ConfirmacaoEntregaPanel } from "@/components/entregas/ConfirmacaoEntregaPanel";
+ const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arquivo: "PRIVATE_DOC", tipo: "outro", tipo_documento: "OUTRO",
+   report_title: "PRIVATE_DOC", report_type: "monthly", status: "SUCCESS", generated_at: "2026-10-08", uploaded_at: "2026-10-08",
+   storage_path: "OA/report.pdf", arquivo_path: "OA/report.pdf" };
+@@ -29,7 +28,6 @@ beforeEach(() => {
+ describe("delayed Storage downloads", () => {
+   const views = [
+     ["customer", () => <ClienteDocumentosTab clienteId="C" />],
+-    ["delivery", () => <ConfirmacaoEntregaPanel entrega={{ id: "E", status: "cancelada" }} />],
+   ] as const;
+   for (const [name, component] of views) {
+     it(`${name}: does not open delayed signed URL after lease expires without rerender`, async () => {
+diff --git a/src/lib/entregas/comprovanteLocator.ts b/src/lib/entregas/comprovanteLocator.ts
+new file mode 100644
+index 00000000..5ab94922
+--- /dev/null
++++ b/src/lib/entregas/comprovanteLocator.ts
+@@ -0,0 +1,15 @@
++const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
++const PATH = new RegExp(`^entregas/(${UUID})/comprovantes/${UUID}\\.[a-z0-9]{1,10}$`, "i");
++
++/**
++ * Locator contract only (paths written by the existing upload flows).
++ * Tenant/role authorization stays in Storage RLS (`storage1_delivery_allowed`).
++ * Anything else — other prefixes, another delivery, traversal — fails closed.
++ */
++export function deliveryReceiptLocator(entregaId: string | null | undefined, path: unknown): string | null {
++  if (typeof entregaId !== "string" || typeof path !== "string") return null;
++  const match = PATH.exec(path);
++  return match && match[1].toLowerCase() === entregaId.toLowerCase() ? path : null;
++}
++
++export const DELIVERY_RECEIPT_BUCKET = "entrega-documentos";
+diff --git a/src/test/entregas/comprovanteDownloadAutenticado.test.tsx b/src/test/entregas/comprovanteDownloadAutenticado.test.tsx
+new file mode 100644
+index 00000000..dccf4b35
+--- /dev/null
++++ b/src/test/entregas/comprovanteDownloadAutenticado.test.tsx
+@@ -0,0 +1,158 @@
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { MemoryRouter } from "react-router-dom";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
++
++const E = "11111111-1111-4111-8111-111111111111";
++const PATH = `entregas/${E}/comprovantes/22222222-2222-4222-8222-222222222222.pdf`;
++const auth = vi.hoisted(() => ({
++  user: { id: "A" } as { id: string } | null,
++  profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
++  roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: 0,
++  checkAuthzAccess: (): boolean => true,
++}));
++const m = vi.hoisted(() => ({ download: vi.fn(), sign: vi.fn(), storageFrom: vi.fn(), toast: vi.fn(), rows: {} as Record<string, unknown> }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
++vi.mock("@/hooks/use-toast", () => ({ toast: m.toast, useToast: () => ({ toast: m.toast }) }));
++vi.mock("@/lib/authz/authenticatedAttachment", () => ({
++  ATTACHMENT_LIMITS: { files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024 },
++  downloadAuthenticatedAttachment: m.download,
++}));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: {
++  from: (t: string) => {
++    const r = m.rows[t] ?? { data: null, error: null };
++    const q: Record<string, unknown> = {};
++    for (const n of ["select", "eq", "order", "limit"]) q[n] = () => q;
++    q.maybeSingle = async () => r;
++    q.then = (a: (v: unknown) => unknown, b: (v: unknown) => unknown) => Promise.resolve(r).then(a, b);
++    return q;
++  },
++  rpc: vi.fn(),
++  storage: { from: (b: string) => { m.storageFrom(b); return { createSignedUrl: m.sign, createSignedUrls: m.sign }; } },
++} }));
++vi.mock("@/components/entregas/EntregaChecklistPanel", () => ({ EntregaChecklistPanel: () => null }));
++vi.mock("@/components/entregas/EntregaOcorrenciasPanel", () => ({ EntregaOcorrenciasPanel: () => null }));
++import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";
++import { ConfirmacaoEntregaPanel } from "@/components/entregas/ConfirmacaoEntregaPanel";
++
++let blobN = 0;
++beforeEach(() => {
++  Object.assign(auth, { user: { id: "A" }, roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true });
++  auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
++  m.download.mockReset().mockResolvedValue(new Blob(["%PDF"]));
++  m.sign.mockReset(); m.storageFrom.mockReset(); m.toast.mockReset();
++  m.rows = {
++    entregas: { data: { id: E, comprovante_status: "anexado", validation_token: null }, error: null },
++    entrega_comprovantes: { data: { id: "C1", numero_formulario: "AR-ENT-1", arquivo_path: PATH }, error: null },
++    entrega_documentos: { data: [{ id: "D1", tipo_documento: "COMPROVANTE", nome_arquivo: "recibo.pdf", arquivo_path: PATH, uploaded_at: "2026-10-19" }], error: null },
++  };
++  blobN = 0;
++  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => `blob:${++blobN}`) });
++  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
++});
++
++const views = [
++  ["EntregaComprovantePanel", () => <EntregaComprovantePanel entrega={{ id: E }} />, /Preparar comprovante/, /Baixar comprovante/, "22222222-2222-4222-8222-222222222222.pdf"],
++  ["ConfirmacaoEntregaPanel", () => <ConfirmacaoEntregaPanel entrega={{ id: E, status: "cancelada" }} />, /Preparar recibo/, /Baixar recibo/, "recibo.pdf"],
++] as const;
++
++function mount(view: () => JSX.Element) {
++  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  const tree = () => <MemoryRouter><QueryClientProvider client={client}>{view()}</QueryClientProvider></MemoryRouter>;
++  const h = render(tree());
++  return { ...h, again: () => h.rerender(tree()) };
++}
++
++describe("locator de comprovante de entrega", () => {
++  it("aceita só entregas/<entrega>/comprovantes/<uuid>.<ext> da própria entrega", () => {
++    expect(deliveryReceiptLocator(E, PATH)).toBe(PATH);
++    for (const bad of ["p.pdf", `entregas/${E}/assinaturas/22222222-2222-4222-8222-222222222222.png`,
++      `entregas/33333333-3333-4333-8333-333333333333/comprovantes/22222222-2222-4222-8222-222222222222.pdf`,
++      `entregas/${E}/comprovantes/../x.pdf`, `/entregas/${E}/comprovantes/22222222-2222-4222-8222-222222222222.pdf`, null, 1]) {
++      expect(deliveryReceiptLocator(E, bad)).toBeNull();
++    }
++    expect(deliveryReceiptLocator(null, PATH)).toBeNull();
++  });
++});
++
++for (const [name, view, prep, dl, fileName] of views) describe(name, () => {
++  it("happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada", async () => {
++    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
++      expect(this.href).toBe("blob:1"); expect(this.download).toBe(fileName);
++    });
++    const open = vi.spyOn(window, "open").mockImplementation(() => null);
++    const h = mount(view);
++    fireEvent.click(await screen.findByRole("button", { name: prep }));
++    await screen.findByRole("button", { name: dl });
++    expect(m.download).toHaveBeenCalledWith("entrega-documentos", PATH, expect.any(AbortSignal));
++    expect(click).not.toHaveBeenCalled();
++    fireEvent.click(screen.getByRole("button", { name: dl }));
++    expect(click).toHaveBeenCalledTimes(1);
++    expect(m.sign).not.toHaveBeenCalled(); expect(m.storageFrom).not.toHaveBeenCalled(); expect(open).not.toHaveBeenCalled();
++    h.unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1");
++    click.mockRestore(); open.mockRestore();
++  });
++
++  it("erro de download: aviso neutro, sem blob nem URL", async () => {
++    m.download.mockRejectedValue(new Error("token=SEGREDO"));
++    mount(view);
++    fireEvent.click(await screen.findByRole("button", { name: prep }));
++    await waitFor(() => expect(m.toast).toHaveBeenCalled());
++    expect(JSON.stringify(m.toast.mock.calls)).not.toContain("SEGREDO");
++    expect(URL.createObjectURL).not.toHaveBeenCalled();
++    expect(screen.queryByRole("button", { name: dl })).toBeNull();
++    expect(m.sign).not.toHaveBeenCalled();
++  });
++
++  it("caminho fora do contrato: nenhuma requisição e aviso neutro", async () => {
++    m.rows.entrega_comprovantes = { data: { id: "C1", arquivo_path: "OB/x.pdf" }, error: null };
++    m.rows.entrega_documentos = { data: [{ id: "D1", tipo_documento: "OUTRO", nome_arquivo: "recibo.pdf", arquivo_path: "OB/x.pdf" }], error: null };
++    mount(view);
++    fireEvent.click(await screen.findByRole("button", { name: prep }));
++    await waitFor(() => expect(m.toast).toHaveBeenCalled());
++    expect(m.download).not.toHaveBeenCalled(); expect(m.sign).not.toHaveBeenCalled();
++  });
++
++  for (const change of ["tenant", "roles", "epoch", "lease"] as const) {
++    const apply = () => {
++      if (change === "tenant") auth.profile = { ...auth.profile, organization_id: "OB" };
++      if (change === "roles") auth.roles = ["gestor"];
++      if (change === "epoch") auth.authzEpoch = 1;
++      if (change === "lease") auth.checkAuthzAccess = () => false;
++    };
++    it(`${change} alterado durante o download descarta bytes tardios`, async () => {
++      let resolve: (b: Blob) => void = () => {};
++      m.download.mockImplementation((_b: string, _p: string, signal: AbortSignal) => new Promise((r, j) => { resolve = r; signal.addEventListener("abort", () => j(new Error("abort"))); }));
++      const h = mount(view);
++      fireEvent.click(await screen.findByRole("button", { name: prep }));
++      await waitFor(() => expect(m.download).toHaveBeenCalledTimes(1));
++      apply(); h.again();
++      await act(async () => resolve(new Blob(["late"])));
++      expect(URL.createObjectURL).not.toHaveBeenCalled();
++      expect(screen.queryByRole("button", { name: dl })).toBeNull();
++      expect(m.toast).not.toHaveBeenCalled();
++    });
++    it(`${change} alterado após preparo revoga o blob e bloqueia o clique antigo`, async () => {
++      const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
++      const h = mount(view);
++      fireEvent.click(await screen.findByRole("button", { name: prep }));
++      const old = await screen.findByRole("button", { name: dl });
++      apply(); h.again();
++      if (change !== "lease") await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1"));
++      fireEvent.click(old);
++      expect(click).not.toHaveBeenCalled();
++      expect(screen.queryByRole("button", { name: dl })).toBeNull();
++      click.mockRestore();
++    });
++  }
++
++  it("sem arquivo: nenhum botão de preparo nem requisição", async () => {
++    m.rows.entrega_comprovantes = { data: { id: "C1", numero_formulario: "AR-ENT-1", arquivo_path: null }, error: null };
++    m.rows.entrega_documentos = { data: [], error: null };
++    mount(view);
++    await waitFor(() => expect(screen.queryByText(/AR-ENT-1|Nenhum documento anexado/)).not.toBeNull());
++    expect(screen.queryByRole("button", { name: prep })).toBeNull();
++    expect(m.download).not.toHaveBeenCalled(); expect(m.sign).not.toHaveBeenCalled();
++  });
++});

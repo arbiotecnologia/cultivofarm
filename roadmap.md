@@ -352,3 +352,5 @@
 ## 19/10 17:20 — revogação parcial + latência (pacote scripts/monitor-partial-revocation, baseline 1c2f29e)
 - [x] Escopo residual monitorado gestor/consultor após par; Retry fecha readiness antes de await; 1390/1392 (2 preexistentes); rollback byte-exato.
 - [ ] Homologação real B sem reload: retirar consultor→gestor; retirar gestor→consultor; estabilidade pós-renovação.
+
+- [ ] Comprovantes de entrega via abridor autenticado (pacote scripts/delivery-receipt-attachments) — aguarda revisão independente e homologação real.

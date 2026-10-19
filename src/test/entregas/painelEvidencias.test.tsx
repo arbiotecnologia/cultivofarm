@@ -114,7 +114,7 @@ describe("EntregaComprovantePanel — estado fresco do servidor", () => {
     expect(screen.queryByRole("button", { name: /Imprimir formulário/ })).not.toBeInTheDocument();
   });
 
-  it("falha do link assinado mostra aviso amigável e não abre janela", async () => {
+  it("caminho fora do contrato falha fechado com aviso neutro, sem baixar nem abrir janela", async () => {
     fromMock.mockImplementation((tabela: string) =>
       tabela === "entregas"
         ? chain({ data: { id: "e1", comprovante_status: "anexado", validation_token: null } })
@@ -124,11 +124,12 @@ describe("EntregaComprovantePanel — estado fresco do servidor", () => {
 
     render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
 
-    fireEvent.click(await screen.findByRole("button", { name: /Visualizar comprovante/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Preparar comprovante/ }));
 
     await waitFor(() => expect(toastMock).toHaveBeenCalled());
     const arg = toastMock.mock.calls.at(-1)?.[0];
-    expect(arg.title).toBe("Não foi possível abrir o comprovante");
+    expect(arg.title).toBe("Não foi possível preparar o comprovante");
+    expect(storageFrom).not.toHaveBeenCalled();
     expect(JSON.stringify(arg)).not.toContain("x");
     expect(abrir).not.toHaveBeenCalled();
     abrir.mockRestore();

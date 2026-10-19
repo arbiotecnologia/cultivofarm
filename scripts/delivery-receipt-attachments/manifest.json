@@ -1,0 +1,32 @@
+{
+  "baseline": "0b964c475531fc8c0a5d5c7f2d453defa3efe528",
+  "modified": {
+    "src/components/entregas/EntregaComprovantePanel.tsx": {
+      "pre": "2aebbd424ad25aeb339d9f2deb50f9170d92972323d1c34516a216c084ee1779",
+      "post": "ff50c405b8d28cf758e33d7d568045f0a92c68d0194fcfd95389a2f89b169107"
+    },
+    "src/components/entregas/ConfirmacaoEntregaPanel.tsx": {
+      "pre": "ba8ce3511ecb84f1e0c15e58f7cb51b3c2b1ca0c668c200a15d0f9a050d22b58",
+      "post": "966f33e965657fd915371400fba31cdc28a68709aca15f83e0d8184bed2845a8"
+    },
+    "src/test/entregas/painelEvidencias.test.tsx": {
+      "pre": "cb34830f88282f79e1bf40866419571f896bda03c11b03385abc7dedc834dbab",
+      "post": "87c13fd80011992e028a6945efa45c25bada9436909ecfc2fc6b7851f1b83eec"
+    },
+    "src/test/equipe-tecnica/StorageDownloads.session.test.tsx": {
+      "pre": "b637de92074d9bf6ecff290edf528e825c5fa7505bc088fc79dd27183977f638",
+      "post": "09aeed456d43c9ad253b23a19d1515187feb69b3eba2594c29df827ddb6fdcf9"
+    }
+  },
+  "added": {
+    "src/lib/entregas/comprovanteLocator.ts": "8ab85fa6120581d37209d21e85b22ac37f652f80cb577af7dfa9579634d1988a",
+    "src/test/entregas/comprovanteDownloadAutenticado.test.tsx": "f4d22ee5b49bb5cc003f1329ce8fe025a75237f3ecb90db8bca1854365af0848"
+  },
+  "untouched_runtime": [
+    "src/hooks/useAuthenticatedAttachmentOpener.ts",
+    "src/lib/authz/authenticatedAttachment.ts",
+    "src/hooks/useAuth.tsx"
+  ],
+  "sql": null,
+  "publish": false
+}

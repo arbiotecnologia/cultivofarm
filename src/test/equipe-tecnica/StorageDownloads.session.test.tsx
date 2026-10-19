@@ -16,7 +16,6 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   }, storage: { from: () => ({ createSignedUrl: mocks.sign }) },
 } }));
 import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
-import { ConfirmacaoEntregaPanel } from "@/components/entregas/ConfirmacaoEntregaPanel";
 const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arquivo: "PRIVATE_DOC", tipo: "outro", tipo_documento: "OUTRO",
   report_title: "PRIVATE_DOC", report_type: "monthly", status: "SUCCESS", generated_at: "2026-10-08", uploaded_at: "2026-10-08",
   storage_path: "OA/report.pdf", arquivo_path: "OA/report.pdf" };
@@ -29,7 +28,6 @@ beforeEach(() => {
 describe("delayed Storage downloads", () => {
   const views = [
     ["customer", () => <ClienteDocumentosTab clienteId="C" />],
-    ["delivery", () => <ConfirmacaoEntregaPanel entrega={{ id: "E", status: "cancelada" }} />],
   ] as const;
   for (const [name, component] of views) {
     it(`${name}: does not open delayed signed URL after lease expires without rerender`, async () => {
