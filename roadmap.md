@@ -2,7 +2,7 @@
 
 ## 19/10 15:28 — evidência complementar independente
 - [x] Registrar PRE 622048 hosted PASS limitado ao conjunto anteriormente coberto e Vitest independente 53/53; não estender à guarda suplementar atual.
-- [ ] Conferir baseline fornecido a42d6 e entitlements reais no harness ANTES de remontar rollback autocontido; preservar semântica, ACL e produção.
+- [x] Baseline fornecido a42d6 e entitlements 7f4ec7 conferidos no harness ANTES da montagem; 40/40 verificações locais, staging 6/6 e 22 hashes PASS; semântica, ACL baseline e produção preservadas.
 - [ ] Auditor: concluir tsc app ainda em execução, PRE suplementar/POST atual e homologação real; sem aplicação/publicação pelo agente.
 
 ## 19/10 15:09 — revisão programação 622048
