@@ -6,10 +6,10 @@ import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
-import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 import { producerContextProbe } from "@/lib/authz/producerContextProbe";
-import { internalContextProbe } from "@/lib/authz/internalContextProbe";
+import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -374,8 +374,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const operatorContextOnly = b2bContextOnly && OPERATOR_CONTEXT_MONITOR_ENABLED &&
     roles.length === 1 && roles[0] === "operador_onfarm" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+  const managerConsultantContextOnly = b2bContextOnly && MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED &&
+    isManagerConsultantScope(roles, profile?.organization_id);
   const isExternalUser = b2bContextOnly
-    ? operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+    ? managerConsultantContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
     profile.senha_provisoria === false && !!profile.organization_id;
@@ -401,8 +403,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
-        if (financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
-          return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
+        if (managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
+          return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", managerConsultantContextOnly ? MANAGER_CONSULTANT_ROLES : operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
         }
         if (producerContextOnly) {
           return producerContextProbe(user?.id ?? "", profile?.organization_id ?? "");
@@ -445,7 +447,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.
       // No claim of detecting an unobserved transient ABA between polls.
-      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly,
+      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly,
       onStateChange: (next) => {
         if (next === "pending" || next === "expired") {
           void queryClient.cancelQueries();

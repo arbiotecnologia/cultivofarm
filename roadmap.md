@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 01:47 — gestor + consultor exatos
+- [ ] Candidata OFF no monitor/probe existentes, boundaries desktop/Campo/seletor, sem ampliar RBAC.
+- [ ] Testes dirigidos de papéis/readiness/drafts/portais/tardios, staging/rollback/preflight fixos.
+- [ ] Preflight/revisão/ativação/publicação/homologação real dependem do proprietário; typecheck depende de recibo.
+
 ## 19/10 01:25 — operador onfarm exclusivo
 - [x] Ativação autorizada 01:34: somente gate operador true/assertion real, demais fontes src byte-exatas; provas OFF intactas, staging ativo5/5 e regressões397/397 PASS; build OK/typecheck sem recibo.
 - [x] Estender somente monitor/probe/ProtectedRoutes existentes, gate operador OFF e recortes publicados preservados.
@@ -7,7 +12,7 @@
 - [x] Testar drafts/revogação/restore/tardios/foco/guards/login: 446/446 finais; 8 falhas novas de cache corrigidas; seis históricas não reexecutadas globalmente.
 - [x] Entregar preflight read-only não executado, manifest fixo/staging6/6/rollback e relatório operador-tela-aberta-20261019.review.md.
 - [x] Proprietário informou revisão terminal 423afc90, 89 hashes, staging6/6, 45 probes fake e preflight integral canônico PASS; autorizou somente gate operador true.
-- [ ] Publicação/homologação real operador, redirecionamento e cockpit consulta aguardam proprietário; typecheck sem recibo não certificado.
+- [x] Proprietário informou base publicada751ba501 e operador A homologado real+redirecionamento PASS, perfil restaurado; typecheck sem recibo não certificado.
 
 ## 19/10 00:57 — consultor técnico em tela aberta
 - [x] Preparar extensão exclusiva no monitor/probe existente e boundary Campo inteiro/desktop, gate consultor OFF.

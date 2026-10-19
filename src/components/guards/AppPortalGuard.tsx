@@ -5,7 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
-import { CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { CONSULTANT_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+
+import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
 
 /**
  * AppPortalGuard — protege a árvore `/app/*`.
@@ -28,9 +30,11 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   const isProducer = roles.includes("cliente_produtor");
   const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+  const isMonitoredManagerConsultant = MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id);
+  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant;
   const denied =
     !loading &&
-    (!isMonitoredConsultant || authzReady) &&
+    (!monitoredTechnical || authzReady) &&
     !!user &&
     !isLoading &&
     !isAdmin &&
@@ -44,7 +48,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   }, [denied, location.pathname]);
 
   // Pause before readers depending on authzReady; retry stays on this URL.
-  if (!loading && user && (isProducer || isMonitoredConsultant) && !authzReady) {
+  if (!loading && user && (isProducer || monitoredTechnical) && !authzReady) {
     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
   }
 
@@ -80,7 +84,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     );
   }
 
-  return isMonitoredConsultant
+  return monitoredTechnical
     ? <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>
     : <>{children ?? <Outlet />}</>;
 }

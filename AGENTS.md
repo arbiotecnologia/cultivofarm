@@ -30,6 +30,7 @@
 - Users external drafts stay review-gated and actor-fenced; server receipt/provisioner owns all grants and authority.
 - Tenant SMTP tests reuse the existing Edge/protocol/outbox with private job tickets; hosted IP/TLS pinning stays gated until proven — prevents global release and unscoped secrets.
 - Financial-document review candidates extend the existing table with an integrity trigger after its tenant guard, preserving Storage/RLS/softdelete — closes foreign-owner metadata without a parallel writer.
+- Internal expected-role probes accept only frozen reviewed singleton or exact paired scopes and copy expectations before await; scope helpers only select monitoring, never grant authority — prevents silent role adoption.
 - Exclusive operator login reuses the typed internal probe and canonical role home without inventing portal contexts; open-session scopes share the existing AuthProvider monitor — avoids expanding technical RBAC.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
