@@ -20,6 +20,8 @@
 // * Mudança de fingerprint (revogação, troca de vínculo, A→B→A via
 //   profile.updated_at monotônico) notifica onEpochChange UMA vez por época.
 
+import type { AuthzDiagnostic } from "./localDiagnostics";
+
 export interface AuthzFingerprintResult {
   eligible: boolean;
   fingerprint: string | null;
@@ -62,6 +64,8 @@ export interface AuthzEpochMonitorDeps {
   renewBeforeDeadline?: boolean;
   /** Jitter source in [0,1); injected by tests. Jitter only renews EARLIER. */
   random?: () => number;
+  /** Optional observer only. Must never affect authority, timing or callbacks. */
+  onDiagnostic?: (sample: AuthzDiagnostic) => void;
 }
 
 // Early-renewal bounds (renewBeforeDeadline only).
@@ -103,6 +107,17 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   let inFlightGeneration: number | null = null;
   // Conservative RTT estimate: never below the latest sample, decays slowly.
   let rttEstimate: number | null = null;
+  let lastRequestStart: number | null = null;
+  const diagnostic = (event: AuthzDiagnostic["event"], reason: AuthzDiagnostic["reason"] = null) => {
+    if (!deps.onDiagnostic) return;
+    try {
+      const now = deps.now();
+      deps.onDiagnostic({ event, state, reason, visible: deps.isVisible(), online: deps.isOnline(),
+        rttMs: lastRequestStart === null ? null : now - lastRequestStart,
+        leaseRemainingMs: leaseUntil === 0 ? null : leaseUntil - now,
+        requestRemainingMs: requestUntil === 0 ? null : requestUntil - now });
+    } catch { /* Diagnostics never alter authorization. */ }
+  };
 
   const setState = (next: AuthzMonitorState) => {
     if (state === next) return;
@@ -118,6 +133,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
 
   const expire = (reason: "error" | "offline" | "timeout" | "ineligible") => {
     if (state === "stopped") return;
+    diagnostic("expire", reason);
     // Invalida a geração: resultado em voo nunca reabre dados após expirar.
     generation++;
     clearTimers();
@@ -180,6 +196,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     const myGen = ++generation;
     inFlightGeneration = myGen;
     const requestStart = deps.now();
+    lastRequestStart = requestStart;
     if (pollTimer !== null) { deps.clearTimeoutFn(pollTimer); pollTimer = null; }
     if (requestTimer !== null) deps.clearTimeoutFn(requestTimer);
     // Explicit retry never keeps content visible while revalidating.
@@ -190,13 +207,15 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       setState("pending");
     }
     requestUntil = requestStart + leaseMs;
+    diagnostic("request");
     requestTimer = deps.setTimeoutFn(() => {
       if (generation === myGen && state !== "stopped") expire("timeout");
     }, leaseMs);
 
     try {
       const result = await deps.fetcher();
-      if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return; // resposta antiga
+      if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) { diagnostic("stale"); return; }
+      diagnostic("response");
       if (deps.now() >= requestUntil || (state === "valid" && deps.now() >= leaseUntil)) {
         expire("timeout"); return;
       }
@@ -262,6 +281,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     },
     revalidateEnvironment() {
       if (state === "stopped") return;
+      diagnostic("environment");
       if (!deps.isOnline()) { expire("offline"); return; }
       // Check deadline BEFORE deduplication: a suspended in-flight request
       // cannot keep old authority alive when focus and visibility resume.

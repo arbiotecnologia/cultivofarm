@@ -9,6 +9,7 @@ import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 import { producerContextProbe } from "@/lib/authz/producerContextProbe";
+import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
 import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
 import {
   createAuthzEpochMonitor,
@@ -452,6 +453,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Reviewed scopes only: renew before the confirmed deadline using observed
       // RTT (no lease extension; late answers still fail closed).
       renewBeforeDeadline: environmentalContextOnly,
+      // Company-admin only, local numeric/boolean allowlist; no identity or transport data.
+      onDiagnostic: companyAdminContextOnly ? recordAuthzDiagnostic : undefined,
       // Preserve published B2B confirmation refresh. Producer/financial renew
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.
@@ -508,6 +511,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       authzMonitorRef.current = null;
       monitor.stop();
+      if (companyAdminContextOnly) clearAuthzDiagnostics();
       setAuthzState("idle");
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
