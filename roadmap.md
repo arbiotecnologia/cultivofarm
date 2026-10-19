@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 01:25 — operador onfarm exclusivo
+- [ ] Estender somente monitor/probe/ProtectedRoutes existentes, gate operador OFF e recortes publicados preservados.
+- [ ] Corrigir seleção/acesso pendente para home canônica somente após readiness self/h15/role exclusivo, sem criar contexto técnico.
+- [ ] Testar drafts, revogação/restore, erros/tardios/foco, guards e negativos de redirecionamento; executar regressões focadas.
+- [ ] Entregar preflight read-only não executado, hashes fixos, staging/rollback e relatório com limites; revisão/ativação/homologação operador dependem do proprietário.
+
 ## 19/10 00:57 — consultor técnico em tela aberta
 - [x] Preparar extensão exclusiva no monitor/probe existente e boundary Campo inteiro/desktop, gate consultor OFF.
 - [x] Executar 56 testes consultor, 258 regressões monitor/gates e 106 anexos; suíte ampla tem mesmas 6 falhas da base (8101 vs 8045 PASS), sem falha nova observada.
@@ -7,7 +13,7 @@
 - [ ] Typecheck com recibo separado depende do harness; build automático OK, não presumir typecheck independente.
 - [x] Auditor informou revisão d509430a/76hashes/staging6/6/probes12+12+9 e preflight integral canônico PASS; ativar somente consultor true, provas OFF intactas.
 - [x] Ativação: 364/364 regressões e staging-active5/5 PASS; demais runtime byte-exatos, sem repetir suíte ampla/banco/Edge/publicação.
-- [ ] Publicação conector e homologação real consultor aguardam o proprietário; sessões abertas não comprovam pós-ativação.
+- [x] Proprietário informou base publicada ff1366ec/bundle avQj65a e homologação real consultor draft/poll/revoke/retry negado/restore.
 
 ## 19/10 00:36 — administrador de empresa em tela aberta
 - [x] Ativar somente admin com bytes revisados 62ddc9bc; 275 testes + staging-active4/4 PASS, typecheck/build automático OK; provas false preservadas, sem publicação.
