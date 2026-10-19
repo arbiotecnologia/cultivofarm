@@ -89,10 +89,18 @@ def main():
   for status in ['entregue','pronto_entrega','envase']:
    run(sql=f"UPDATE ordens_servico SET status='{status}' WHERE id='{O}';")
    rpc(str(uuid.uuid4()),p);passed.append('new OS status positive '+status)
+  ON='88888888-8888-4888-8888-888888888888'
+  run(sql=f"INSERT INTO ordens_servico_onfarm(id,cliente_id,produto_id,status) VALUES('{ON}','{C}','{P}','entregue');")
+  onp=dict(p,ordem_servico_id=None,ordem_servico_onfarm_id=ON)
+  rpc(str(uuid.uuid4()),onp);passed.append('onfarm delivered positive')
+  for status in ['aberta','cancelada','finalizada']:
+   run(sql=f"UPDATE ordens_servico_onfarm SET status='{status}' WHERE id='{ON}';")
+   denied('onfarm new status denied '+status,onp)
   pending_status=str(uuid.uuid4());spath=f'{C}/{pending_status}/{uuid.uuid4()}.png';se=[dict(ev[0],storage_path=spath)]
   rpc(pending_status,p,ev=se);run(sql=f"UPDATE ordens_servico SET status='aberta' WHERE id='{O}';")
   obj(path=spath,ok=False);rpc(pending_status,p,'finalize',se,ok=False);passed.append('OS status regressed upload finalize denied')
   run(sql=f"UPDATE ordens_servico SET status='finalizada' WHERE id='{O}';")
+  # A finalized OS may rectify only a real authorized predecessor, never create new.
   eid=run(sql='SELECT id FROM aplicacao_evidencias;');rect=str(uuid.uuid4());rp=dict(p,motivo_retificacao='Correção sintética')
   rpc(rect,rp,rect=id,keep=[eid]);rpc(rect,rp,'finalize',rect=id,keep=[eid]);check('inheritance keeps original locator',f"(SELECT count(*) FROM aplicacao_evidencias)=1 AND (SELECT count(*) FROM aplicacao_evidencias_vinculos)=2 AND (SELECT storage_path FROM aplicacao_evidencias)='{path}' AND (SELECT is_latest FROM aplicacoes WHERE id='{id}')=false")
   rpc(rect,rp,'finalize',rect=id,keep=[eid]);passed.append('rectification replay allowed after predecessor closed')

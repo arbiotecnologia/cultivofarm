@@ -1,6 +1,6 @@
 # Tipagem efetiva e checkout recuperável
 
-**App NÃO CERTIFICADO nesta entrega.** Não foi executado checker manual: a instrução do ambiente proíbe builds/typechecks manuais. O comando raiz `tsc --noEmit` com `files:[]` e references não certifica `src`; Vite/SWC transpila e verifica bundling, não tipos semânticos. O log automático pode reportar erros de tipos, mas não identifica versão/comando/projeto/exit code suficiente para recibo independente.
+**Recibo externo informado13:25:** auditor recuperou exportação1668 arquivos byte a byte e executou `tsc -p tsconfig.app.json --noEmit`, primeira execução EXIT0; Vitest119/119 reexecutados PASS. Vale para os inputs daquela exportação (manifesto a44fe574cc7893540b5449c2d6b0a9cca749101f3398e89048e23b0dff5dbbd8), não certifica automaticamente os novos inputs da revisão13:25. Versão/log completo do checker não foram anexados nesta mensagem. Nenhum checker manual foi executado pelo agente: instrução do ambiente proíbe builds/typechecks manuais. Raiz `tsc --noEmit` com `files:[]`/references não certifica `src`; Vite/SWC não verifica tipos semânticos.
 
 O erro inicial na chamada da RPC (assinatura LIVE ausente do tipo canônico gerado) foi corrigido com adaptação tipada restrita do método do **mesmo** cliente; nenhum arquivo gerado foi alterado nem cliente paralelo criado. Build automático posterior OK não é PASS de checker app.
 
