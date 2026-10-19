@@ -631,7 +631,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (retryInFlightRef.current) return;
     setRetryPending(true);
-    authzMonitorRef.current?.expireNow("timeout");
     // Synchronous fence before any await: drafts, caches, portal selection
     // and epoch-keyed content (Blobs revoked on unmount) are retired.
     renewalRef.current = null;
