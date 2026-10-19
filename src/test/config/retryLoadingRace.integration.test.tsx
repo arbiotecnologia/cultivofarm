@@ -7,10 +7,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
   roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
-  hangNext: '' as string, h15: 0,
+  hangNext: '' as string, h15: 0, holdNext: '' as string, release: undefined as undefined | (() => void),
 }));
 const later = <T,>(v: () => T, tag: string) => {
   if (s.hangNext === tag) { s.hangNext = ''; return new Promise<T>(() => {}); }
+  if (s.holdNext === tag) { s.holdNext = ''; return new Promise<T>(r => { s.release = () => r(v()); }); }
   return s.lat ? new Promise<T>(r => setTimeout(() => r(v()), s.lat)) : Promise.resolve(v());
 };
 function chain(t: string) {
@@ -92,7 +93,7 @@ async function expectConsultorRecovered() {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
+  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
   vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
@@ -152,5 +153,49 @@ describe('Retry / renewal generation conflicts never leave an endless loading (5
     retry(); await tick(8000);
     expect(loadingText()).toBeNull();
     expect(screen.getByText('Técnico campo')).toBeTruthy();
+  });
+  it('late profile answer after the loader deadline is never adopted', async () => {
+    setup(); await tick(3000);
+    s.holdNext = 'profiles'; tokenRefreshed(); await tick(21000);
+    expect(screen.getByText(/Falha ao carregar dados do usuário/)).toBeTruthy();
+    s.release?.(); await tick(2000);
+    expect(screen.getByText(/Falha ao carregar dados do usuário/)).toBeTruthy();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    expect(readAuthzDiagnostics().some(d => d.event === 'load_timeout' && (d.rttMs ?? 0) >= 20000)).toBe(true);
+  });
+  it('cross-tenant change during Retry is not adopted: stays paused, no spinner', async () => {
+    await pairThenLoseGestor();
+    s.org = '00000000-0000-4000-8000-000000000009';
+    retry(); await tick(8000);
+    expect(loadingText()).toBeNull();
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+  });
+  it('zero roles during Retry stays paused (no spinner, no financial)', async () => {
+    await pairThenLoseGestor();
+    s.roles = [];
+    retry(); await tick(8000);
+    expect(loadingText()).toBeNull();
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+  });
+});
+
+describe('company admin latency: 3 s probes stay valid; 8 s probe is the expected fail-closed pause', () => {
+  it('admin at /financeiro/receber: 1.5 s/call for 3 min no pause; 4 s/call pauses with numeric diag; Retry recovers', async () => {
+    s.roles = ['administrador']; s.lat = 1500;
+    setup(); await tick(6000);
+    expect(screen.getByText('Contas a receber')).toBeTruthy();
+    for (let i = 0; i < 18; i++) { await tick(10000); expect(screen.queryByText('Sessão de acesso pausada')).toBeNull(); }
+    expect(screen.getByText('Contas a receber')).toBeTruthy();
+    s.lat = 4000; await tick(40000);
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    const exp = readAuthzDiagnostics().filter(d => d.event === 'expire').at(-1)!;
+    expect(exp.reason).toBe('timeout');
+    // In-flight request outlived the whole pre-reserved margin (>= 7.5 s floor): expected safe failure.
+    expect(exp.rttMs! + (exp.leaseRemainingMs ?? 0)).toBeGreaterThanOrEqual(7500);
+    expect(JSON.stringify(readAuthzDiagnostics())).not.toMatch(/0000-4000|administrador/);
+    s.lat = 500; retry(); await tick(8000);
+    expect(loadingText()).toBeNull();
+    expect(screen.getByText('Contas a receber')).toBeTruthy();
   });
 });
