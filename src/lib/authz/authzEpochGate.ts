@@ -17,4 +17,4 @@ export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = true;
 export const COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: boolean = true;
 
 // Exclusive tenant technical consultant; OFF until independent review.
-export const CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = false;
+export const CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = true;
