@@ -1,0 +1,6 @@
+{
+  "platform_private.entrega_termo_tenant_ok(uuid)": "8ef541cf6a657757a1a615df54f12aa5",
+  "public.rpc_entrega_gerar_termo_v1(uuid,text)": "5cae3ef77dbb9a84bbc60b1bb78b465b",
+  "public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)": "22aac68dad25313ef85fd0a86c8538be",
+  "public.rpc_entrega_cancelar_termo_v1(uuid,text)": "ae8bbae2a6f509da287f48883104bbf7"
+}
