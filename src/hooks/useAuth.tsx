@@ -636,6 +636,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     renewalRef.current = null;
     safeDraftRef.current = null;
+    monitoredLatchRef.current = null;
     // Gate-off remains a no-op. Fence requests before asynchronous logout.
     authzMonitorRef.current?.stop();
     try {
