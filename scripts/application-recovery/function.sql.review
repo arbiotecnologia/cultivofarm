@@ -1,0 +1,180 @@
+-- REVIEW ONLY: the existing RPC owns prepare/finalize; legacy_closed stays inaccessible.
+CREATE OR REPLACE FUNCTION public.rpc_salvar_aplicacao_v1(p_aplicacao_id uuid, p_payload jsonb, p_rectify_id uuid DEFAULT NULL::uuid, p_evidencias jsonb DEFAULT '[]'::jsonb, p_evidencias_manter uuid[] DEFAULT '{}'::uuid[])
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $function$
+DECLARE
+ u uuid:=auth.uid(); org uuid; client uuid; product uuid; os_org uuid;
+ osid uuid; onid uuid; lot uuid; responsible uuid; phase text; canonical jsonb;
+ r platform_private.application_save_preparations%ROWTYPE;
+ original public.aplicacoes%ROWTYPE; a public.aplicacoes%ROWTYPE;
+ ev jsonb; e public.aplicacao_evidencias%ROWTYPE; obj storage.objects%ROWTYPE;
+ kept uuid; k text; n numeric; lo numeric; hi numeric; root uuid; ver integer:=1;
+ expected text; ev_id uuid; moment date; start_at timestamptz; end_at timestamptz;
+ manifest jsonb; count_files integer; own_role boolean; name_responsible text;
+BEGIN
+ -- Never parse/replay a receipt before proving current actor readiness.
+ IF u IS NULL THEN RAISE EXCEPTION 'application_auth_required' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=u FOR SHARE;
+ org:=public.h15_actor_organization();
+ IF org IS NULL THEN RAISE EXCEPTION 'application_actor_denied' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.organizations WHERE id=org FOR SHARE;
+ PERFORM 1 FROM public.user_roles WHERE user_id=u ORDER BY role FOR SHARE;
+ PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=u FOR SHARE;
+ IF p_aplicacao_id IS NULL OR jsonb_typeof(p_payload) IS DISTINCT FROM 'object'
+ OR jsonb_typeof(p_evidencias) IS DISTINCT FROM 'array' OR p_evidencias_manter IS NULL
+ OR octet_length(p_payload::text)>32768 OR octet_length(p_evidencias::text)>32768 THEN
+ RAISE EXCEPTION 'application_payload_invalid' USING ERRCODE='22023'; END IF;
+ phase:=p_payload->>'_phase';
+ IF phase IS NULL OR phase NOT IN ('prepare','finalize') THEN RAISE EXCEPTION 'application_phase_required' USING ERRCODE='22023'; END IF;
+ canonical:=p_payload-'_phase';
+ IF EXISTS(SELECT 1 FROM jsonb_object_keys(canonical) key WHERE key NOT IN (
+ 'ordem_servico_id','ordem_servico_onfarm_id','data_aplicacao','hora_inicio','hora_fim','responsavel_id','responsavel',
+ 'modo_aplicacao','produto_usado_id','lote_usado_id','dose_aplicada','dose_unidade','volume_calda_l_ha',
+ 'volume_total_aplicado_ml','area_aplicada_ha','equipamento','equipamento_modelo','bico_tipo','pressao_bar',
+ 'temperatura_c','umidade_pct','vento_kmh','condicoes_climaticas','latitude','longitude','resultado_inicial',
+ 'observacoes','created_by','motivo_retificacao')) THEN RAISE EXCEPTION 'application_unknown_field' USING ERRCODE='22023'; END IF;
+ IF canonical->>'created_by' IS DISTINCT FROM u::text OR canonical->>'dose_unidade' IS DISTINCT FROM 'mL/ha'
+ THEN RAISE EXCEPTION 'application_author_or_unit_invalid' USING ERRCODE='42501'; END IF;
+ osid:=nullif(canonical->>'ordem_servico_id','')::uuid;
+ onid:=nullif(canonical->>'ordem_servico_onfarm_id','')::uuid;
+ IF num_nonnulls(osid,onid)<>1 THEN RAISE EXCEPTION 'application_origin_invalid' USING ERRCODE='22023'; END IF;
+ -- Lock every persisted authority before receipt lookup. Locks prevent UPDATE/DELETE races;
+ -- they do not invent membership, roles or a tenant for NULL legacy rows.
+ IF osid IS NOT NULL THEN
+ SELECT cliente_id,produto_id,organization_id INTO client,product,os_org FROM public.ordens_servico WHERE id=osid FOR SHARE;
+ ELSE
+ SELECT cliente_id,produto_id INTO client,product FROM public.ordens_servico_onfarm WHERE id=onid FOR SHARE;
+ SELECT organization_id INTO os_org FROM public.clientes WHERE id=client;
+ END IF;
+ IF client IS NULL OR os_org IS DISTINCT FROM org OR product IS NULL THEN RAISE EXCEPTION 'application_origin_denied' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.clientes WHERE id=client AND organization_id=org FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'application_client_denied' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.user_clientes WHERE user_id=u AND cliente_id=client ORDER BY id FOR SHARE;
+ IF public.can_user_create_aplicacao_for_cliente(client) IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_create_denied' USING ERRCODE='42501'; END IF;
+ IF (public.has_role(u,'cliente_produtor') OR public.has_role(u,'consultor_tecnico') OR public.has_role(u,'tecnico_agronomo'))
+ AND NOT (public.has_role(u,'administrador') OR public.has_role(u,'gestor') OR public.has_role(u,'administrativo'))
+ AND NOT client=ANY(public.get_cliente_ids_for_user(u)) THEN RAISE EXCEPTION 'application_membership_denied' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.produtos WHERE id=product AND ativo IS TRUE FOR SHARE;
+ IF NOT FOUND OR nullif(canonical->>'produto_usado_id','')::uuid IS DISTINCT FROM product THEN RAISE EXCEPTION 'application_product_denied' USING ERRCODE='42501'; END IF;
+ lot:=nullif(canonical->>'lote_usado_id','')::uuid;
+ IF lot IS NOT NULL THEN
+ PERFORM 1 FROM public.lotes WHERE id=lot AND produto_id=product AND organization_id=org AND status='aprovado' FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'application_lot_denied' USING ERRCODE='42501'; END IF; END IF;
+ responsible:=nullif(canonical->>'responsavel_id','')::uuid;
+ SELECT nome INTO name_responsible FROM public.profiles WHERE user_id=responsible AND organization_id=org
+ AND ativo IS TRUE AND senha_provisoria IS FALSE FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'application_responsible_denied' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.user_roles WHERE user_id=responsible ORDER BY role FOR SHARE;
+ IF NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=responsible AND role::text IN
+ ('administrador','gestor','administrativo','consultor_tecnico','tecnico_agronomo','aplicador','operador_onfarm','cliente_produtor'))
+ OR platform_private.platform_actor_access_ready(responsible) IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_responsible_denied' USING ERRCODE='42501'; END IF;
+ own_role:=public.has_role(u,'administrador') OR public.has_role(u,'gestor') OR public.has_role(u,'administrativo') OR public.has_role(u,'consultor_tecnico');
+ IF NOT own_role AND responsible IS DISTINCT FROM u THEN RAISE EXCEPTION 'application_responsible_denied' USING ERRCODE='42501'; END IF;
+ -- Preserve Storage1's applicator restriction; do not make RPC metadata a bypass.
+ IF public.has_role(u,'aplicador') AND NOT own_role AND responsible IS DISTINCT FROM u
+ AND NOT client=ANY(public.get_cliente_ids_for_user(u)) THEN RAISE EXCEPTION 'application_applicator_denied' USING ERRCODE='42501'; END IF;
+ FOR k,lo,hi IN SELECT * FROM (VALUES
+ ('dose_aplicada',0::numeric,NULL::numeric),('area_aplicada_ha',0::numeric,NULL::numeric),
+ ('volume_calda_l_ha',0::numeric,NULL::numeric),('volume_total_aplicado_ml',0::numeric,NULL::numeric),
+ ('pressao_bar',0::numeric,NULL::numeric),('temperatura_c',-50::numeric,70::numeric),('umidade_pct',0::numeric,100::numeric),
+ ('vento_kmh',0::numeric,250::numeric),('latitude',-90::numeric,90::numeric),('longitude',-180::numeric,180::numeric)) bounds LOOP
+ IF canonical->>k IS NULL THEN
+ IF k IN ('dose_aplicada','area_aplicada_ha','volume_total_aplicado_ml') THEN RAISE EXCEPTION 'application_numeric_required' USING ERRCODE='22023'; END IF;
+ ELSE
+ IF jsonb_typeof(canonical->k) IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'application_numeric_invalid' USING ERRCODE='22023'; END IF;
+ n:=(canonical->>k)::numeric;
+ IF n::text IN ('NaN','Infinity','-Infinity') OR n<lo OR (hi IS NOT NULL AND n>hi)
+ OR (k IN ('dose_aplicada','area_aplicada_ha','volume_total_aplicado_ml') AND n<=0) THEN RAISE EXCEPTION 'application_numeric_bounds' USING ERRCODE='22023'; END IF;
+ END IF;
+ END LOOP;
+ IF (canonical->>'volume_total_aplicado_ml')::numeric IS DISTINCT FROM (canonical->>'dose_aplicada')::numeric*(canonical->>'area_aplicada_ha')::numeric
+ THEN RAISE EXCEPTION 'application_total_invalid' USING ERRCODE='22023'; END IF;
+ moment:=(canonical->>'data_aplicacao')::date;
+ start_at:=nullif(canonical->>'hora_inicio','')::timestamptz; end_at:=nullif(canonical->>'hora_fim','')::timestamptz;
+ IF moment IS NULL OR NOT isfinite(moment) OR (start_at IS NOT NULL AND NOT isfinite(start_at))
+ OR (end_at IS NOT NULL AND (NOT isfinite(end_at) OR start_at IS NULL OR end_at<=start_at)) THEN RAISE EXCEPTION 'application_time_invalid' USING ERRCODE='22023'; END IF;
+ IF p_rectify_id IS NULL AND cardinality(p_evidencias_manter)>0 THEN RAISE EXCEPTION 'application_inheritance_denied' USING ERRCODE='42501'; END IF;
+ count_files:=jsonb_array_length(p_evidencias)+cardinality(p_evidencias_manter);
+ IF count_files>20 OR cardinality(p_evidencias_manter)<>(SELECT count(DISTINCT x) FROM unnest(p_evidencias_manter)x)
+ THEN RAISE EXCEPTION 'application_evidence_limit' USING ERRCODE='22023'; END IF;
+ manifest:='[]'::jsonb;
+ FOR ev IN SELECT value FROM jsonb_array_elements(p_evidencias) LOOP
+ IF jsonb_typeof(ev) IS DISTINCT FROM 'object' OR EXISTS(SELECT 1 FROM jsonb_object_keys(ev) key WHERE key NOT IN ('tipo','storage_path','legenda','mime','tamanho_bytes'))
+ THEN RAISE EXCEPTION 'application_evidence_invalid' USING ERRCODE='22023'; END IF;
+ expected:=CASE ev->>'mime' WHEN 'image/jpeg' THEN 'jpg' WHEN 'image/png' THEN 'png' WHEN 'image/webp' THEN 'webp'
+ WHEN 'image/heic' THEN 'heic' WHEN 'image/heif' THEN 'heif' WHEN 'application/pdf' THEN 'pdf'
+ WHEN 'video/mp4' THEN 'mp4' WHEN 'video/webm' THEN 'webm' WHEN 'video/quicktime' THEN 'mov'
+ WHEN 'audio/mpeg' THEN 'mp3' WHEN 'audio/mp4' THEN 'm4a' WHEN 'audio/wav' THEN 'wav' WHEN 'audio/ogg' THEN 'ogg' WHEN 'audio/webm' THEN 'webm' END;
+ IF expected IS NULL OR public.storage1_path_strict(ev->>'storage_path') IS DISTINCT FROM true
+ OR split_part(ev->>'storage_path','/',1) IS DISTINCT FROM client::text
+ OR split_part(ev->>'storage_path','/',2) IS DISTINCT FROM p_aplicacao_id::text
+ OR split_part(ev->>'storage_path','/',3) !~ ('^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.'||expected||'$')
+ OR jsonb_typeof(ev->'tamanho_bytes') IS DISTINCT FROM 'number' OR (ev->>'tamanho_bytes')::numeric NOT BETWEEN 1 AND 10485760
+ OR (ev->>'tamanho_bytes')::numeric<>trunc((ev->>'tamanho_bytes')::numeric)
+ OR coalesce(char_length(ev->>'legenda'),0)>1000
+ OR ev->>'tipo' IS DISTINCT FROM (CASE WHEN ev->>'mime' LIKE 'image/%' THEN 'foto' WHEN ev->>'mime' LIKE 'video/%' THEN 'video' WHEN ev->>'mime' LIKE 'audio/%' THEN 'audio' ELSE 'documento' END)
+ THEN RAISE EXCEPTION 'application_evidence_invalid' USING ERRCODE='22023'; END IF;
+ manifest:=manifest||jsonb_build_array(ev);
+ END LOOP;
+ IF jsonb_array_length(manifest)<>(SELECT count(DISTINCT value->>'storage_path') FROM jsonb_array_elements(manifest)) THEN RAISE EXCEPTION 'application_evidence_duplicate' USING ERRCODE='22023'; END IF;
+ -- One writer per application; then one writer per original version. No global cache.
+ PERFORM pg_advisory_xact_lock(hashtextextended('application-save:'||p_aplicacao_id::text,0));
+ SELECT * INTO r FROM platform_private.application_save_preparations WHERE application_id=p_aplicacao_id FOR UPDATE;
+ IF FOUND AND (r.actor_id IS DISTINCT FROM u OR r.organization_id IS DISTINCT FROM org OR r.payload IS DISTINCT FROM canonical
+ OR r.rectify_id IS DISTINCT FROM p_rectify_id OR r.manifest IS DISTINCT FROM manifest OR r.keep_ids IS DISTINCT FROM p_evidencias_manter)
+ THEN RAISE EXCEPTION 'application_receipt_mismatch' USING ERRCODE='42501'; END IF;
+ IF p_rectify_id IS NOT NULL THEN
+ SELECT * INTO original FROM public.aplicacoes WHERE id=p_rectify_id FOR UPDATE;
+ IF NOT FOUND OR original.organization_id IS DISTINCT FROM org OR public.can_user_manage_aplicacao(p_rectify_id) IS DISTINCT FROM true
+ OR public.can_user_access_aplicacao(p_rectify_id) IS DISTINCT FROM true
+ OR original.ordem_servico_id IS DISTINCT FROM osid OR original.ordem_servico_onfarm_id IS DISTINCT FROM onid
+ THEN RAISE EXCEPTION 'application_rectification_denied' USING ERRCODE='42501'; END IF;
+ IF (r.application_id IS NULL OR r.committed_at IS NULL) AND original.is_latest IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_version_conflict' USING ERRCODE='40001'; END IF;
+ IF char_length(btrim(coalesce(canonical->>'motivo_retificacao',''))) NOT BETWEEN 5 AND 1000 THEN RAISE EXCEPTION 'application_reason_invalid' USING ERRCODE='22023'; END IF;
+ root:=coalesce(original.parent_id,original.id); ver:=original.versao+1;
+ END IF;
+ -- Validate inherited objects through their immutable origin, never rewritten paths.
+ FOREACH kept IN ARRAY p_evidencias_manter LOOP
+ SELECT ae.* INTO e FROM public.aplicacao_evidencias ae JOIN public.aplicacao_evidencias_vinculos v ON v.evidencia_id=ae.id
+ WHERE v.aplicacao_id=p_rectify_id AND ae.id=kept FOR SHARE OF ae,v;
+ IF NOT FOUND OR e.aplicacao_id IS DISTINCT FROM e.versao_origem_id
+ OR public.can_user_access_aplicacao(e.versao_origem_id) IS DISTINCT FROM true
+ OR split_part(e.storage_path,'/',1) IS DISTINCT FROM client::text OR split_part(e.storage_path,'/',2) IS DISTINCT FROM e.versao_origem_id::text
+ OR public.storage1_path_strict(e.storage_path) IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_inheritance_denied' USING ERRCODE='42501'; END IF;
+ SELECT * INTO obj FROM storage.objects WHERE bucket_id='aplicacao-evidencias' AND name=e.storage_path FOR SHARE;
+ IF NOT FOUND OR obj.metadata->>'mimetype' IS DISTINCT FROM e.mime OR nullif(obj.metadata->>'size','')::bigint IS DISTINCT FROM e.tamanho_bytes
+ THEN RAISE EXCEPTION 'application_inherited_object_invalid' USING ERRCODE='42501'; END IF;
+ END LOOP;
+ IF public.h15_actor_organization() IS DISTINCT FROM org OR public.can_user_create_aplicacao_for_cliente(client) IS DISTINCT FROM true
+ THEN RAISE EXCEPTION 'application_actor_denied' USING ERRCODE='42501'; END IF;
+ IF r.committed_at IS NOT NULL THEN
+ SELECT * INTO a FROM public.aplicacoes WHERE id=p_aplicacao_id AND organization_id=org AND created_by=u;
+ IF NOT FOUND OR public.can_user_access_aplicacao(p_aplicacao_id) IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_replay_denied' USING ERRCODE='42501'; END IF;
+ RETURN jsonb_build_object('success',true,'created',false,'id',a.id,'versao',a.versao,'phase','finalized'); END IF;
+ IF r.application_id IS NOT NULL AND r.expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'application_preparation_expired' USING ERRCODE='42501'; END IF;
+ IF phase='prepare' THEN
+ IF r.application_id IS NULL THEN
+ IF EXISTS(SELECT 1 FROM public.aplicacoes WHERE id=p_aplicacao_id) THEN RAISE EXCEPTION 'application_identity_conflict' USING ERRCODE='42501'; END IF;
+ INSERT INTO platform_private.application_save_preparations(application_id,actor_id,organization_id,client_id,payload,rectify_id,manifest,keep_ids,expires_at)
+ VALUES(p_aplicacao_id,u,org,client,canonical,p_rectify_id,manifest,p_evidencias_manter,clock_timestamp()+interval '15 minutes'); END IF;
+ RETURN jsonb_build_object('success',true,'id',p_aplicacao_id,'phase','prepared'); END IF;
+ IF r.application_id IS NULL THEN RAISE EXCEPTION 'application_preparation_required' USING ERRCODE='42501'; END IF;
+ FOR ev IN SELECT value FROM jsonb_array_elements(manifest) LOOP
+ SELECT * INTO obj FROM storage.objects WHERE bucket_id='aplicacao-evidencias' AND name=ev->>'storage_path' FOR SHARE;
+ IF NOT FOUND OR coalesce(obj.owner_id,obj.owner::text) IS DISTINCT FROM u::text
+ OR obj.metadata->>'mimetype' IS DISTINCT FROM ev->>'mime' OR nullif(obj.metadata->>'size','')::bigint IS DISTINCT FROM (ev->>'tamanho_bytes')::bigint
+ OR obj.version IS NULL THEN RAISE EXCEPTION 'application_object_denied' USING ERRCODE='42501'; END IF;
+ END LOOP;
+ -- Metadata and latest-version switch are a single transaction. No OS/communications effects.
+ IF p_rectify_id IS NOT NULL THEN UPDATE public.aplicacoes SET is_latest=false WHERE id=p_rectify_id; END IF;
+ INSERT INTO public.aplicacoes(id,organization_id,ordem_servico_id,ordem_servico_onfarm_id,data_aplicacao,hora_inicio,hora_fim,responsavel_id,responsavel,modo_aplicacao,produto_usado_id,lote_usado_id,dose_aplicada,volume_calda_l_ha,volume_total_aplicado_ml,area_aplicada_ha,equipamento,equipamento_modelo,bico_tipo,pressao_bar,temperatura_c,umidade_pct,vento_kmh,condicoes_climaticas,latitude,longitude,resultado_inicial,observacoes,created_by,parent_id,versao,motivo_retificacao,is_latest)
+ VALUES(p_aplicacao_id,org,osid,onid,moment,start_at,end_at,responsible,name_responsible,nullif(btrim(canonical->>'modo_aplicacao'),''),product,lot,(canonical->>'dose_aplicada')::numeric,(canonical->>'volume_calda_l_ha')::numeric,(canonical->>'volume_total_aplicado_ml')::numeric,(canonical->>'area_aplicada_ha')::numeric,nullif(btrim(canonical->>'equipamento'),''),nullif(btrim(canonical->>'equipamento_modelo'),''),nullif(btrim(canonical->>'bico_tipo'),''),(canonical->>'pressao_bar')::numeric,(canonical->>'temperatura_c')::numeric,(canonical->>'umidade_pct')::numeric,(canonical->>'vento_kmh')::numeric,nullif(btrim(canonical->>'condicoes_climaticas'),''),(canonical->>'latitude')::numeric,(canonical->>'longitude')::numeric,nullif(canonical->>'resultado_inicial',''),nullif(btrim(canonical->>'observacoes'),''),u,root,ver,CASE WHEN p_rectify_id IS NULL THEN NULL ELSE btrim(canonical->>'motivo_retificacao') END,true);
+ FOR ev IN SELECT value FROM jsonb_array_elements(manifest) LOOP
+ INSERT INTO public.aplicacao_evidencias(aplicacao_id,tipo,storage_path,legenda,mime,tamanho_bytes,created_by,versao_origem_id)
+ VALUES(p_aplicacao_id,ev->>'tipo',ev->>'storage_path',nullif(btrim(ev->>'legenda'),''),ev->>'mime',(ev->>'tamanho_bytes')::bigint,u,p_aplicacao_id) RETURNING id INTO ev_id;
+ INSERT INTO public.aplicacao_evidencias_vinculos(aplicacao_id,evidencia_id) VALUES(p_aplicacao_id,ev_id);
+ END LOOP;
+ FOREACH kept IN ARRAY p_evidencias_manter LOOP INSERT INTO public.aplicacao_evidencias_vinculos(aplicacao_id,evidencia_id) VALUES(p_aplicacao_id,kept); END LOOP;
+ UPDATE platform_private.application_save_preparations SET committed_at=clock_timestamp() WHERE application_id=p_aplicacao_id;
+ RETURN jsonb_build_object('success',true,'created',true,'id',p_aplicacao_id,'versao',ver,'phase','finalized');
+END;
+$function$;

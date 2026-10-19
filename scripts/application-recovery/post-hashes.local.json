@@ -1,0 +1,1 @@
+{ "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])" : "990fb351076582f099a49663e2146ddd", "can_user_access_aplicacao(uuid)" : "04067ba43cea3eed845a1fd3735061e0", "platform_private.storage1_application_allowed(text,text)" : "4265fe941e813c01bbcb11aa950c4fc6" }

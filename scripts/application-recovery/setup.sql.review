@@ -1,0 +1,11 @@
+-- Private receipts, no API exposure. Preserved by rollback: no destructive cleanup.
+CREATE TABLE platform_private.application_save_preparations (
+ application_id uuid PRIMARY KEY, actor_id uuid NOT NULL, organization_id uuid NOT NULL,
+ client_id uuid NOT NULL, payload jsonb NOT NULL, rectify_id uuid,
+ manifest jsonb NOT NULL, keep_ids uuid[] NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp(), expires_at timestamptz NOT NULL,
+ committed_at timestamptz
+);
+REVOKE ALL ON platform_private.application_save_preparations FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.application_save_preparations ENABLE ROW LEVEL SECURITY;
+-- Only postgres-owned validated RPC/Storage1 may read/write. No client policy/grant.

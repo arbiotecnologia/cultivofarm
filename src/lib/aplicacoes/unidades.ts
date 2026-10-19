@@ -17,3 +17,6 @@ export function totalAplicacao(dose: string, area: string, unidade: unknown) {
 export function dependentesNovaOS() {
   return { dose: "", area: "", lote: "", calda: "" };
 }
+
+/** Explicit execution input, not a recommendation inferred from today's catalog. */
+export const UNIDADE_EXECUCAO_CANONICA = "mL/ha";
