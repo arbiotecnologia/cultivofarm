@@ -2,7 +2,7 @@
 
 ## 19/10 01:47 — gestor + consultor exatos
 - [x] Revisão terminal06df9901/68hashes/stage6/6/26probes fake e preflight integral canônico PASS informados pelo proprietário; autorizada só ativação da flag.
-- [ ] Ativar somente multipapel, atualizar gate real, preparar staging ativo isolado/rollback original e executar regressões pertinentes.
+- [x] Ativação exclusiva multipapel true/assertion real; demais runtime byte-exatos, 68 hashes OFF intactos, staging ativo5/5 e regressões378/378 PASS; build OK/typecheck sem recibo.
 - [x] Candidata OFF no monitor/probe existentes, boundaries desktop/Campo/seletor, sem ampliar RBAC.
 - [x] 550/550 testes dirigidos/regressões PASS, staging6/6/SHA PASS, preflight fixo não executado e rollback original protegido.
 - [ ] Publicação/homologação real de inativação/perda individual dependem do proprietário; typecheck depende de recibo.
