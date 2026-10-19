@@ -73,7 +73,7 @@ def supplemental(post=False):
   cols=[x for x in d['columns'] if x['table']==table]
   data='\n'.join(x['name']+':'+x['type']+':'+str(x['notnull']).lower()+':'+(x['default'] or '')+':'+x['identity']+':'+x['generated'] for x in cols)
   digest=hashlib.md5(data.encode()).hexdigest()
-  lines.append(f"IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),'')||':'||a.attidentity||':'||a.attgenerated,E'\\n' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.{table}'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '{digest}' THEN RAISE EXCEPTION 'SUPPLEMENTAL_SCHEMA_DRIFT'; END IF;")
+  lines.append(f"IF (SELECT md5(string_agg(a.attname::text||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),'')||':'||a.attidentity::text||':'||a.attgenerated::text,E'\\n' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.{table}'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '{digest}' THEN RAISE EXCEPTION 'SUPPLEMENTAL_SCHEMA_DRIFT'; END IF;")
  # Policy expressions/role names are checked by the unchanged aggregate baseline guard.
  # Do not fingerprint polroles OIDs: role OIDs are installation-local, not portable.
  lines.append('END $supplement$;')
