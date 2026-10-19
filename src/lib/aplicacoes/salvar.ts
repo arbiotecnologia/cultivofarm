@@ -28,6 +28,12 @@ export async function salvarAplicacao(attempt: ApplicationAttempt, payload: Reco
   pending: PendingEvidencia[], keep: string[], current: () => boolean, timeoutMs = 20000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const bounded = <T,>(request: PromiseLike<T>): Promise<T> => new Promise((resolve, reject) => {
+    const abort = () => reject(new Error("Operação interrompida; confirme o acesso antes de tentar novamente."));
+    if (controller.signal.aborted) { abort(); return; }
+    controller.signal.addEventListener("abort", abort, { once: true });
+    Promise.resolve(request).then(resolve, reject).finally(() => controller.signal.removeEventListener("abort", abort));
+  });
   const assert = () => { if (!current() || controller.signal.aborted) throw new Error("Acesso expirado ou operação interrompida. Confirme o acesso antes de tentar novamente."); };
   const args = { p_aplicacao_id: attempt.id, p_rectify_id: rectifyId, p_evidencias: attempt.evidence, p_evidencias_manter: keep };
   // Generated database types currently omit this existing hosted signature.
@@ -36,7 +42,7 @@ export async function salvarAplicacao(attempt: ApplicationAttempt, payload: Reco
     { abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: Error | null }> } };
   const call = async (phase: "prepare" | "finalize") => {
     assert();
-    const { data, error } = await rpcClient.rpc("rpc_salvar_aplicacao_v1", { ...args, p_payload: { ...attempt.payload, _phase: phase } }).abortSignal(controller.signal);
+    const { data, error } = await bounded(rpcClient.rpc("rpc_salvar_aplicacao_v1", { ...args, p_payload: { ...attempt.payload, _phase: phase } }).abortSignal(controller.signal));
     assert();
     if (error) throw error;
     const receipt = data as { success?: boolean; id?: string; phase?: string } | null;
@@ -54,8 +60,8 @@ export async function salvarAplicacao(attempt: ApplicationAttempt, payload: Reco
       if (attempt.uploaded.has(metadata.storage_path)) continue;
       // Storage upload cannot reliably be aborted by this SDK version. Fence late completion;
       // retain a locator for retry and never automatically delete an unknown committed object.
-      const { error } = await supabase.storage.from("aplicacao-evidencias").upload(metadata.storage_path, item.file,
-        { contentType: metadata.mime, upsert: false });
+      const { error } = await bounded(supabase.storage.from("aplicacao-evidencias").upload(metadata.storage_path, item.file,
+        { contentType: metadata.mime, upsert: false }));
       assert();
       if (error && !["409", "Duplicate"].includes(String((error as { statusCode?: string }).statusCode || ""))) throw error;
       attempt.uploaded.add(metadata.storage_path);
