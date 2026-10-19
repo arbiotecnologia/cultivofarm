@@ -31,7 +31,7 @@ def guard(post=False):
   if post and sig.startswith('public.rpc_salvar_aplicacao_v1'):md5=hashes['rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])'];sec=True
   if post and sig.startswith('platform_private.storage1_application_allowed'):md5=hashes['platform_private.storage1_application_allowed(text,text)']
   rows.append('('+','.join([quote(sig),quote(md5),'true' if sec else 'false',quote(vol),quote(config),'true' if 'legacy_closed' in sig else 'false'])+')')
- return """DO $guard$ DECLARE c record; p record; execute_roles text[]; BEGIN
+ return """DO $guard$ DECLARE c record; p record; v_executor_roles text[]; BEGIN
 IF ("""+schema+""") IS DISTINCT FROM 'ab90301d6806c9777da6ecceb7b953f8' THEN RAISE EXCEPTION 'application_schema_policy_trigger_drift'; END IF;
 FOR c IN SELECT * FROM (VALUES """+','.join(rows)+""") v(sig,hash,sec,vol,config,closed) LOOP
  SELECT * INTO p FROM pg_proc WHERE oid=to_regprocedure(c.sig);
@@ -40,8 +40,8 @@ FOR c IN SELECT * FROM (VALUES """+','.join(rows)+""") v(sig,hash,sec,vol,config
  OR p.prosecdef IS DISTINCT FROM c.sec OR p.provolatile::text IS DISTINCT FROM c.vol OR p.proconfig IS DISTINCT FROM ARRAY[c.config]::text[]
  THEN RAISE EXCEPTION 'application_dependency_drift: %',c.sig; END IF;
  SELECT array_agg(DISTINCT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END ORDER BY CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END)
- INTO execute_roles FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.privilege_type='EXECUTE';
- IF execute_roles IS DISTINCT FROM (CASE WHEN c.closed THEN ARRAY['postgres'] ELSE ARRAY['authenticated','postgres','service_role'] END)
+ INTO v_executor_roles FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.privilege_type='EXECUTE';
+ IF v_executor_roles IS DISTINCT FROM (CASE WHEN c.closed THEN ARRAY['postgres'] ELSE ARRAY['authenticated','postgres','service_role'] END)
  OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.privilege_type='EXECUTE' AND (a.grantor<>p.proowner OR (a.grantee<>p.proowner AND a.is_grantable)))
  THEN RAISE EXCEPTION 'application_dependency_acl_drift: %',c.sig; END IF;
 END LOOP;

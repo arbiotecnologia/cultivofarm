@@ -2,7 +2,7 @@
   "files": [
     {
       "path": "preflight-readonly.sql",
-      "sha256": "b9f4b47eb393b4b9fcb446a66110f7add3677b51be11b7b5b2d2f3a6706a3031",
+      "sha256": "669701e36e8e0bc9d567014da285fef80dfbe03ffeac419c0798509fcf735f46",
       "exit": 3,
       "sqlstate": "P0001",
       "result": "application_schema_policy_trigger_drift",
@@ -10,7 +10,7 @@
     },
     {
       "path": "candidate.sql.review",
-      "sha256": "54b9ad6cd32368149c3956de58c6affb314e39a60e5af7789bda0c7a6bd72fe1",
+      "sha256": "dbb947cd26eb33403f07c5fcf515fe5068e69b20eaa9103d73947355ef20341a",
       "exit": 3,
       "sqlstate": "P0001",
       "result": "application_schema_policy_trigger_drift",
@@ -18,7 +18,7 @@
     },
     {
       "path": "rollback.sql.review",
-      "sha256": "f2a620ef1ee1a7fcc153504499a1069dc703d8a0fe575428e98ca6a45a907701",
+      "sha256": "2057081a6c8f09c1ee60fe54e86e58fea6d7171fa1e40dbd6169df3aa476b60c",
       "exit": 3,
       "sqlstate": "P0001",
       "result": "application_schema_policy_trigger_drift",
@@ -26,7 +26,7 @@
     },
     {
       "path": "postflight.sql.review",
-      "sha256": "98356def053352ba0bc17e027777095ff6fc9e4b6d4d714abe009c29d8867339",
+      "sha256": "0498ea819da11e76517d17961fc758e7ce0f6cd82f1b030609292b66b1ac8393",
       "exit": 3,
       "sqlstate": "P0001",
       "result": "application_schema_policy_trigger_drift",
