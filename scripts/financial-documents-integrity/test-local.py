@@ -133,10 +133,10 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
         run(file=HERE/'rollback.sql.review'); assert snap() == baseline; passed += 1
         # Inject POST failure into temporary full script (original and goldens unchanged).
         source = (HERE/'candidate.sql.review').read_bytes(); broken = tmp/'post-failure.sql'
-        broken.write_bytes(source.replace(b'acad7f5119cd53c52a0d9383ff24e0a2',b'00000000000000000000000000000000'))
+        broken.write_bytes(source.replace(b'62452456944c53935fde9f15da7bac8e',b'00000000000000000000000000000000'))
         run(file=broken,success=False); assert snap() == baseline; passed += 1
         run(file=HERE/'rollback.sql.review',success=False); assert snap() == baseline; passed += 1
-        assert manifest['function_post_md5'] == 'acad7f5119cd53c52a0d9383ff24e0a2'
+        assert manifest['function_post_md5'] == '62452456944c53935fde9f15da7bac8e'
         print(json.dumps({'pass_checks':passed,'full_candidate_rollback':True,'local_pg':'17','claims':'synthetic current iat; not login/JWT','tmp':str(tmp)},indent=2))
     finally:
         subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'-m','immediate','stop'],capture_output=True)
