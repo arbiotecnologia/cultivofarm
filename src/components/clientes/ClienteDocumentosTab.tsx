@@ -27,7 +27,6 @@ import { FileIcon, Upload, Trash2, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 
 type ClienteDocumento = Database["public"]["Tables"]["cliente_documentos"]["Row"];
@@ -54,9 +53,21 @@ interface Props {
 export function ClienteDocumentosTab({ clienteId }: Props) {
   const { profile } = useAuth();
   const access = useStorageAccessScope(`cliente:${clienteId}`);
-  const attachmentOpener = useAuthenticatedAttachmentOpener(`cliente:${clienteId}`, "clientes-docs");
   const [result, setResult] = useState<{ scope: string; docs: ClienteDocumento[] }>({ scope: "", docs: [] });
   const docs = access.ready && result.scope === access.scope ? result.docs : [];
+  // Snapshot da lista exibida: troca de documentos/escopo aborta e revoga bytes.
+  const attachmentOpener = useAuthenticatedAttachmentOpener(
+    JSON.stringify(["cliente-docs", clienteId, docs.map((d) => [d.id, d.arquivo_path])]),
+    "clientes-docs",
+  );
+  // Contrato de caminho apenas; tenant/papel são decididos pela Storage RLS.
+  const locator = (path: unknown) => {
+    const org = profile?.organization_id;
+    if (typeof path !== "string" || !org || !clienteId) return null;
+    const prefix = `${org}/clientes/${clienteId}/`;
+    if (!path.startsWith(prefix) || path.split("/").some((part) => !part || part === "." || part === "..")) return null;
+    return path;
+  };
   const [loading, setLoading] = useState(false);
   const [tipo, setTipo] = useState<DocumentoTipo | "">("");
   const [descricao, setDescricao] = useState("");
@@ -154,20 +165,17 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
     }
   };
 
-  const handleDownload = async (doc: ClienteDocumento) => {
-    if (!access.ready) return;
-    const current = access.capture();
-    if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
-      if (attachmentOpener.urls[doc.arquivo_path]) { attachmentOpener.download(doc.arquivo_path, doc.nome); return; }
-      await attachmentOpener.open(doc.arquivo_path, () => toast.error("Documento indisponível"));
-      return;
-    }
-    const { data, error } = await supabase.storage
-      .from("clientes-docs")
-      .createSignedUrl(doc.arquivo_path, 60);
-    if (!current()) return;
-    if (error || !data) return toast.error(error?.message || "Erro ao gerar link");
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  const erroDocumento = () => toast.error("Documento indisponível no momento. Tente novamente.");
+  const handlePrepare = (doc: ClienteDocumento) => {
+    if (!access.ready || !attachmentOpener.ready) return;
+    const path = locator(doc.arquivo_path);
+    if (!path) { erroDocumento(); return; }
+    void attachmentOpener.open(path, erroDocumento);
+  };
+  // Só por clique explícito, depois do preparo.
+  const handleDownload = (doc: ClienteDocumento) => {
+    const path = locator(doc.arquivo_path);
+    if (path) attachmentOpener.download(path, doc.nome || "documento");
   };
 
   const handleDelete = async (doc: ClienteDocumento) => {
@@ -292,18 +300,20 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDownload(doc)}
-                      disabled={AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.loadingPaths.includes(doc.arquivo_path)}
-                      title={AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.urls[doc.arquivo_path] ? "Baixar arquivo" : "Baixar"}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    {AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.loadingPaths.includes(doc.arquivo_path) && <span role="status">Carregando</span>}
-                    {AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.urls[doc.arquivo_path] && <span role="status">Pronto para baixar</span>}
+                    {(() => {
+                      const path = locator(doc.arquivo_path);
+                      const ready = !!path && !!attachmentOpener.urls[path];
+                      const busy = !!path && attachmentOpener.loadingPaths.includes(path);
+                      return ready ? (
+                        <Button type="button" variant="ghost" size="sm" aria-label={`Baixar ${doc.nome}`} onClick={() => handleDownload(doc)}>
+                          <Download className="h-4 w-4 mr-1" /> Baixar
+                        </Button>
+                      ) : (
+                        <Button type="button" variant="ghost" size="sm" aria-label={`Preparar ${doc.nome}`} disabled={busy} onClick={() => handlePrepare(doc)}>
+                          {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileIcon className="h-4 w-4 mr-1" />} Preparar
+                        </Button>
+                      );
+                    })()}
                     <Button
                       type="button"
                       variant="ghost"
