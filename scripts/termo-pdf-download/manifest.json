@@ -1,0 +1,33 @@
+{
+  "baseline": "6493e1eea35a91ba6d42ccbf70b6f6de2508b52d",
+  "modified": {
+    "supabase/functions/entrega-termo-pdf/index.ts": {
+      "pre": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
+      "post": "35431df33f48cacf11a985665da80eefa863d502cd24353f88880a38953d8abc"
+    },
+    "src/components/entregas/TermoEntregaPanel.tsx": {
+      "pre": "358ca74162031acbe51218fc685e67b0233a9b07dc3fca6129f986285fd8b910",
+      "post": "32be299551518ca0c31bdc2bccc4a4f3d8a40a9c183567b7e867fb67d086df83"
+    },
+    "src/hooks/useAuthenticatedAttachmentOpener.ts": {
+      "pre": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421",
+      "post": "d856705376603bd63437bdaecd328dbb2d36fa0f97dab711182395e842b9932c"
+    }
+  },
+  "added": {
+    "src/lib/entregas/termoPdfDownload.ts": "c1ac9f4eb600867c38757792b6fbc1fa72ab09da6ac2ed5bc726cac28eb6f45f",
+    "src/test/entregas/termoPdfDownload.test.tsx": "610c2fc1e40326f0cab6afeb47d2b016d6856a37dce910ed720305c0ad040b72",
+    "src/test/entregas/termoPdfEdge.test.ts": "42218f3612852c307d84aca58027755eba2922f83c64b0624167597e155a64a5"
+  },
+  "untouched_runtime": [
+    "src/hooks/useStorageAccessScope.ts",
+    "src/lib/authz/authenticatedAttachment.ts",
+    "src/lib/authz/attachmentBlobGate.ts",
+    "src/hooks/useAuth.tsx",
+    "src/lib/authz/authzEpochMonitor.ts"
+  ],
+  "sql": null,
+  "rls_or_policy_changes": null,
+  "deploy": false,
+  "publish": false
+}
