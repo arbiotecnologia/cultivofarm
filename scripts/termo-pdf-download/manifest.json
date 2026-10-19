@@ -3,7 +3,7 @@
   "modified": {
     "supabase/functions/entrega-termo-pdf/index.ts": {
       "pre": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
-      "post": "35431df33f48cacf11a985665da80eefa863d502cd24353f88880a38953d8abc"
+      "post": "ee20aa6ad761ba4560f0dbe218a3924ab037cceb61b31b8b6bb62ea20c262e26"
     },
     "src/components/entregas/TermoEntregaPanel.tsx": {
       "pre": "358ca74162031acbe51218fc685e67b0233a9b07dc3fca6129f986285fd8b910",
@@ -17,7 +17,7 @@
   "added": {
     "src/lib/entregas/termoPdfDownload.ts": "c1ac9f4eb600867c38757792b6fbc1fa72ab09da6ac2ed5bc726cac28eb6f45f",
     "src/test/entregas/termoPdfDownload.test.tsx": "610c2fc1e40326f0cab6afeb47d2b016d6856a37dce910ed720305c0ad040b72",
-    "src/test/entregas/termoPdfEdge.test.ts": "42218f3612852c307d84aca58027755eba2922f83c64b0624167597e155a64a5"
+    "src/test/entregas/termoPdfEdge.test.ts": "7dc083005dd6a88c39cec209552b4f64796486977554ab1b4cfa50616b4bb10d"
   },
   "untouched_runtime": [
     "src/hooks/useStorageAccessScope.ts",
@@ -29,5 +29,8 @@
   "sql": null,
   "rls_or_policy_changes": null,
   "deploy": false,
-  "publish": false
+  "publish": false,
+  "open_defects": [
+    "RLS-DEFECT-entrega_termos.md"
+  ]
 }
