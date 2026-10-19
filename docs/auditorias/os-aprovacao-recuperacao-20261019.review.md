@@ -1,5 +1,35 @@
 # Recuperação focal de aprovação OS — candidata, não implantada
 
+## Complemento real14:13 e regressão local14:17
+
+Auditor informou versão publicada com bundle `index-CznUV5-v.js` e criação pela sessão real admin B da **OS-2026-000001**, id `18ea0531-ef73-4dbf-9b58-b064cfc50d0e`, aberta, volume100, produto sintético existente. **Não criar outra OS nem reaplicar seed**. Isso atualiza o relato anterior de nenhuma OS criada/pending, mas NÃO prova implantação da candidata de aprovação deste pacote, elegibilidade de aplicação ou homologação de anexo/revogação.
+
+SELECT canônico desta rodada confirmou apenas a fixture identificada: status aberta, tenantB e produto esperados, **uma programação aguardando e zero lotes**. Marcador de ref validado antes das leituras: `swzpzcwiasxmjutrmvkm`. Sessões A/B não foram acessadas/recarregadas/modificadas; nenhuma escrita hosted ocorreu.
+
+### Badge: origem demonstrada, não autoridade de avanço
+
+`vw_os_integridade_esteira` MD5 `e8331dbe2bc538cf21fad123fb43f19b` determina `WHEN ed.programacao_id IS NOT NULL THEN 'programada'`, sem exigir `status_os=programada`. `_src_vw_esteira_laboratorio` MD5 `c71226f594d27d92833686212415ccec` preserva esse resultado, salvo override em_producao. O INSERT canônico cria filho aguardando mesmo quando OS aberta. A consulta efetivamente montada é `CockpitConsulta`, que exibe `status_esteira_oficial` da lista protegida; o workspace operacional não é montado. Logo o badge descreve a presença do filho, **não demonstra aprovação/programação da OS**. Não modificar view, mapeamento canônico ou liberar ações por esse badge. A aprovação candidata usa OS aberta/autoridade server-side, nunca badge como autorização. A revisão futura de programação precisa distinguir filho preparado de agendamento confirmado e os efeitos downstream; segue fechada.
+
+### Lifecycle Auth: reprodução separada de expiry
+
+Evidência fornecida: initial14:02:26.384Z; TOKEN_REFRESHED14:02:57.244Z; UI Verificando acesso/perda de modal e draft; SIGNED_IN14:03:05.332Z; sem cultivo-authz-expire. Nenhum papel revogado nesta rodada. **Não atribuir todas as pausas reais ao mesmo motivo**; logs completos/latência real/suspensão ainda não certificados.
+
+`useAuth.tsx` atualmente trata TOKEN_REFRESHED e USER_UPDATED como authorizationChanged: limpa preferência/cache/perfil/roles, coloca loading e agenda carregamento fora do callback. Isso desmonta o monitor e a página mesmo quando a identidade/escopo confirmados posteriormente são iguais. Regressão com **AuthProvider/monitor/boundaries/opener reais e transporte fake** reproduz a perda imediata de draft/modal/cache/Blob sem warning expiry, e SIGNED_IN posterior não recupera estado antigo. Não houve mudança de runtime para preservar bytes sob incerteza.
+
+`src/test/config/financialAdminEnvironment.integration.test.tsx` acrescenta12 casos (financeiro/admin): principal igual; confirmação com RTT3s e PDF antigo tardio; mudanças role/tenant e has_role revogado; h15 positivo antigo que retorna depois da renovação/negação atual. Controles existentes continuam cobrindo90s RTT3s/foco/visibility, lease15s e retorno de aba suspensa com timers parados. **101/101 Vitest em6 arquivos PASS** (inclui diálogo aprovação), staging SQL4/4 PASS. Não é JWT/RLS hospedado nem reprodução browser da sessão real. Build automático observado14:16:36Z OK; nenhum checker manual app/node nesta entrega, recibo anterior não transfere a teste alterado.
+
+### Proposta limitada posterior ao pacote OS — não ativada
+
+1. Diagnóstico local de lifecycle no AuthProvider existente, separado de cultivo-authz-expire: ring bounded e allowlist de evento Auth, fase reset/scheduled/confirmed/stale/failure, booleanos sameIdentity/sameConfirmedScope, visibility/online, deltas monotônicos de carga/lease. Sem UID/tenant/roles/fingerprint/PII/token/URL/erro bruto, sem envio ou persistência. Não reutilizar ausência de warning expiry como prova de ausência de invalidação Auth; cleanup atual limpa o ring de monitor.
+2. Manter bloqueio imediato de ações, invalidação de requisições e descarte de cache/Blob durante renovação. Mesmo UID NÃO autoriza preservar dados. Propor somente buffer temporário de campos não sensíveis da OS/modal enquanto UI protegida está desmontada; só restaurar após perfil/roles próprios+h15 final e lease fresh válidos, escopo canônico exatamente igual e mesma geração. Nunca restaurar respostas/downloads/bytes/consulta ou usar token claims como autoridade. Revogação/erro/timeout/scope change/retry explícito/logout descartam o buffer. Sem estender lease ou criar monitor/novo gate.
+3. Implementar somente depois de concluir/revisar pacote OS e matriz de campos seguros; sem generalização automática B2B/outros papéis. Nesta entrega a regressão caracteriza o comportamento atual e sua segurança, **não afirma correção de disponibilidade**. Diagnóstico novo e buffer ainda não implementados.
+
+Financeiro A permanece no preview antigo segundo auditor. Seu seletor OS vazio enquanto OS B está aberta/inelegível **não prova isolamento**. Aprovação A/B, aplicação/anexo/revogação reais continuam pendentes. Contratos/v6 não avançados.
+
+### Integridade preservada
+
+Nenhum arquivo do pacote SQL/staging/manifest/snapshot foi alterado. Hashes rechecados: candidata `2c3d28f33e0199ceadfd6706d1574e390ae5cd1f747e1afce9a7870c08fbedb8`; rollback `ccb3cb8ff9f6b1b7a6d2851c151d1a88fd74730666ce002035aee2114821c7c5`; PRE `ab026d8d859101e83c7b4197ab94e0b060a38a8230cb1f0a558a28d55d83521f`; POST `6ae5413fe435be05a78812fa99007dec472ab3bcbcc104eee6f67f09e8121728`; manifest `b05b79f860426faaff85a3b6b1310e09d7f1abb9b2aef177b9dfdd62f26429c6`. Rollback desta rodada complementar: remover apenas12 novos casos do teste e este complemento documental; runtime/DDL permanecem intocados. Uma consulta SELECT de catálogo teve42601 por parentização e foi substituída por leitura right(...) simples; nenhuma mutação aconteceu. Não confundir isso com execução dos SQL de migração/preflight.
+
 ## Resultado e recorte
 
 Primeiro bloqueio efetivo tratado: `rpc_aprovar_os_v1(uuid,text)` já existe, mas EXECUTE está somente com postgres. Não foi feito apenas GRANT: candidata substitui **essa RPC** e **seu helper privado existente** para negar alias B2B, comprovar tenant da OS manual diretamente, ordenar locks de perfis (ator/responsáveis) e bloquear alteração das roles existentes durante aprovação. Mantém h15, readiness, SaaS `ordens_producao`, `has_role` administrador/gestor, reader scoped h7n, fabricação biológica, cardinalidade/tenant/pais da programação, responsável ativo e ausência de lote. Reautoriza antes de replay e após UPDATE. Sem endpoint/resolver novo, fabricação, data artificial ou OS avançada por INSERT.
@@ -56,10 +86,10 @@ Bloqueios ainda fechados:
 1. Auditor valida ref e executa `preflight-readonly.sql` integral. Qualquer drift: parar, não ajustar expectativa para passar.
 2. Revisar candidata/rollback e limites locks, então aplicar apenas candidata aprovação. Reexecutar POST integral. Não seed novamente, não abrir RPCs de programação/avanço nem alterar roles/sessões.
 3. Publicar diálogo somente após aceite/POST pelo proprietário; staging não publica.
-4. Na sessão admin B mantida, Nova OS existente: cliente `cc586e4a-8953-4f3c-9a38-57e3665d1667`, fazenda `46bea8e9-79fc-440b-bdb5-76f40ba4550f`, talhão `806d9789-a87e-4e25-8d59-aa9eea24dabe`, org `8f57c7dd-0557-4041-b401-7a00f7244626`, produto sintético já criado `1986af48-709f-4bf4-85b4-3c9ed8a61019` biológico/dose100. Área e data reais do formulário; nome/observação de teste. Submit deve criar **aberta** e filho automático aguardando tenant B; não fabricar/inserir OS avançada.
+4. Na sessão admin B mantida, reutilizar **OS-2026-000001/id18ea0531-ef73-4dbf-9b58-b064cfc50d0e**, já criada pelo auditor. Confirmar aberta/filho aguardando e produto sintético existente; não criar outra OS/filho nem inserir status avançado.
 5. Abrir detalhes→Aprovar OS. Confirmar aprovada, uma auditoria, filho aguardando, nenhum lote/produção/entrega. Testar replay e SQL claims com iat fresco/ROLLBACK separado; não chamá-lo login real. Sessão A não pode aprovar/ver OS B; perfis não alterados pelo agente. Revogação A/B é teste real futuro conduzido pelo auditor, não realizado aqui.
 6. **Parar em aprovada.** Programada→produção→CQ→envase→pronto_entrega/aplicação permanece dependente das revisões acima. Não concluir homologação positiva PDF/anexos/aplicação/revogação. Contratos B2B não avançados.
 
 ## Recibos externos preservados
 
-Auditor confirmou1671 hashes zero divergência, tsc app/node EXIT0 e93/93 da candidata ff80ad. Deployment solicitado `a25497c3-d44c-4765-aed9-887875a127be` informado **pending**, sem nova confirmação pelo agente. Seed sintético já ensaiado ROLLBACK PASS e COMMIT PASS/pós-consulta; não reaplicado. Nenhuma OS ainda no relato. Findings anteriores continuam; não afirmar projeto sem risco/findings. Sessões reais A/B não acessadas/recarregadas ou modificadas nesta entrega.
+Auditor confirmou1671 hashes zero divergência, tsc app/node EXIT0 e93/93 da candidata ff80ad. Relato inicial deployment pending/nenhuma OS é histórico, atualizado pelo complemento14:13 com bundle publicado e OS criada. Isso não certifica implantação da candidata aprovação. Seed sintético já ensaiado ROLLBACK PASS e COMMIT PASS/pós-consulta; não reaplicado. Findings anteriores continuam; não afirmar projeto sem risco/findings. Sessões reais A/B não acessadas/recarregadas ou modificadas nesta entrega.
