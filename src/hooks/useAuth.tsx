@@ -229,12 +229,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("role")
         .eq("user_id", userId);
 
+      if (!isCurrent()) return yieldStale();
+
       if (roleError) {
         console.error("Error fetching roles:", roleError);
         throw roleError;
       }
-
-      if (!isCurrent()) return;
 
       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
       const primary = pickPrimaryRole(userRoles);
@@ -261,14 +261,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     } catch (err: unknown) {
       console.error("Erro ao carregar perfil/função:", err);
-      if (!isCurrent()) return;
+      if (!isCurrent()) return yieldStale();
       // Falha de autorização/carregamento limpa papéis antigos e libera nova
       // tentativa (não marca o usuário como já carregado).
-      loadedUserIdRef.current = null;
-      renewalRef.current = null;
-      clearIdentityState();
-      setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
-      setLoading(false);
+      failLoad();
+    } finally {
+      clearTimeout(watchdog);
     }
   };
 
