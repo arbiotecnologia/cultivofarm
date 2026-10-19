@@ -692,7 +692,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     // roles entram via isExternalUser (booleano estável); loading/profile
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
-    // entram via authzMonitorGateRef — refresh() não recria o monitor.
   }, [initializedPrincipal, principalScope, queryClient]);
 
   // Retry re-resolution settled: an unchanged scope re-polls its existing
