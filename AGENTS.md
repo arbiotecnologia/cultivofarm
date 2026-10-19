@@ -29,6 +29,7 @@
 - Commercial B2B context is an actor-derived fenced RPC with exclusive role and unique partner link; unreviewed channels remain closed — prevents sibling-partner disclosure.
 - Users external drafts stay review-gated and actor-fenced; server receipt/provisioner owns all grants and authority.
 - Tenant SMTP tests reuse the existing Edge/protocol/outbox with private job tickets; hosted IP/TLS pinning stays gated until proven — prevents global release and unscoped secrets.
+- Financial-document review candidates extend the existing table with an integrity trigger after its tenant guard, preserving Storage/RLS/softdelete — closes foreign-owner metadata without a parallel writer.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

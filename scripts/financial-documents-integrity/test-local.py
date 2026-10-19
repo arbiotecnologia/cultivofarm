@@ -32,6 +32,8 @@ def err(label, sql, code='42501'):
 
 def main():
     manifest = json.loads((HERE/'manifest.json').read_bytes().decode('utf-8'))
+    for name,digest in manifest.get('sha256',{}).items():
+        assert hashlib.sha256((HERE/name).read_bytes()).hexdigest() == digest, name
     tmp = Path(tempfile.mkdtemp(prefix='findocs-integrity-',dir='/tmp')); tmp.chmod(0o777)
     prefix = ['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid() == 0 else []
     cmd = ['psql','-X','-h',str(tmp),'-p','55484','-U','postgres','-v','ON_ERROR_STOP=1']
