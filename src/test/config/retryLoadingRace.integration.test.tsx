@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
   roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
-  hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, release: undefined as undefined | (() => void),
+  hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, release: undefined as undefined | (() => void),
 }));
 const later = <T,>(v: () => T, tag: string) => {
   if (s.hangNext === tag) { if (s.hangSkip > 0) s.hangSkip--; else { s.hangNext = ''; return new Promise<T>(() => {}); } }
@@ -16,8 +16,10 @@ const later = <T,>(v: () => T, tag: string) => {
 };
 function chain(t: string) {
   const q: Record<string, unknown> = {};
-  for (const n of ['select', 'eq', 'is', 'filter', 'in', 'not', 'neq', 'order', 'abortSignal']) q[n] = () => q;
-  const run = () => later(() => t === 'profiles'
+  let cols = '';
+  for (const n of ['eq', 'is', 'filter', 'in', 'not', 'neq', 'order', 'abortSignal']) q[n] = () => q;
+  q.select = (c: string) => { cols = c; return q; };
+  const run = () => (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
     ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
     : t === 'user_roles' ? { data: s.roles.map(role => ({ role })), error: null } : { data: [], error: null }, t);
   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
@@ -93,7 +95,7 @@ async function expectConsultorRecovered() {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
+  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
   vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
@@ -213,9 +215,9 @@ describe('independent review 1875eb: Retry loader select(*) never resolves', () 
     setup(); await tick(3000);
     s.roles = ['gestor']; focus(); await tick(3000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
-    s.hangNext = 'profiles'; s.hangSkip = 1; // fresh read passes; loader select('*') never resolves
+    s.hangStar = true; // fresh select(user_id,organization_id,ativo) answers; only loader select('*') never resolves
     retry(); await tick(60000);
-    expect(s.hangNext).toBe('');
+    expect(s.hangStar).toBe(false);
     expect(loadingText()).toBeNull();
     expect(screen.queryByText('Contas a receber')).toBeNull();
     // Transport is back: a new Retry is not swallowed by a stuck single-flight.
