@@ -44,8 +44,8 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   rpc: (name: string, args?: { _role: string }) => {
     const p = later(() => {
       if (name === 'get_my_available_portal_contexts') {
-        const tech = s.roles.includes('consultor_tecnico'); const adm = s.roles.includes('gestor');
-        return { data: { available_contexts: [...(adm ? ['admin'] : []), ...(tech ? ['technical'] : [])], has_technical_access: tech, is_admin: false, must_select_context: adm && tech }, error: null };
+        const tech = s.roles.includes('consultor_tecnico'); const adm = s.roles.some(r => ['gestor', 'administrador'].includes(r));
+        return { data: { available_contexts: [...(adm ? ['admin'] : []), ...(tech ? ['technical'] : [])], has_technical_access: adm || tech, is_admin: adm, has_b2b_access: adm, must_select_context: adm && tech }, error: null };
       }
       if (name === 'has_role') return { data: s.roles.includes(args!._role), error: null };
       if (name === 'h15_actor_organization') { s.h15++; return { data: s.org, error: null }; }

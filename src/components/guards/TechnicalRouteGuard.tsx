@@ -46,7 +46,7 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
     return <PortalContextUnavailable refetch={refetch} />;
   }
 
-  if (!data?.has_technical_access) {
+  if (!data.available_contexts.includes("technical")) {
     return (
       <Navigate
         to="/sem-permissao"

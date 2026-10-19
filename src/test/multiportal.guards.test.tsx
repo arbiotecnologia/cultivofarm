@@ -49,6 +49,7 @@ type ContextsState = {
   ready: boolean;
   data: {
     has_b2b_access: boolean;
+    is_admin?: boolean;
     has_technical_access: boolean;
     available_contexts: string[];
     default_context: string | null;
@@ -168,6 +169,12 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("AppPortalGuard", () => {
+  it("nega gestor com payload legado verdadeiro e apenas admin canônico", () => {
+    authState.roles = ["gestor"];
+    if (contextsState.data) Object.assign(contextsState.data, { available_contexts: ["admin"], has_technical_access: true, is_admin: true, has_b2b_access: true });
+    renderAppGuard();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
   it("libera administrador mesmo sem acesso técnico na RPC", () => {
     authState.roles = ["administrador"];
     authState.primaryRole = "administrador";
@@ -188,6 +195,7 @@ describe("AppPortalGuard", () => {
     authState.roles = ["consultor_tecnico"];
     authState.primaryRole = "consultor_tecnico";
     contextsState.data!.has_technical_access = true;
+    if (contextsState.data) contextsState.data.available_contexts = ["technical"];
     renderAppGuard();
     expect(screen.getByText("APP_OK")).toBeInTheDocument();
   });

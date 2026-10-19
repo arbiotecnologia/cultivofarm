@@ -18,7 +18,7 @@ import { PortalContextUnavailable } from "./PortalContextUnavailable";
  * - Sessão obrigatória.
  * - Administrador mantém acesso legado.
  * - Cliente-produtor mantém `/app/*` (fluxo produtor mobile).
- * - Demais usuários dependem de `has_technical_access` retornado pela RPC.
+ * - Demais usuários dependem de `technical` na lista canônica da RPC.
  * - B2B sem Técnico → `/sem-permissao`.
  *
  * A autorização NUNCA depende de `primaryRole` nem de `isMobileProfile`.
@@ -28,7 +28,8 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   const location = useLocation();
   const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
 
-  const isAdmin = roles.includes("administrador") || !!data?.is_admin;
+  const isAdmin = roles.includes("administrador");
+  const hasTechnical = data?.available_contexts.includes("technical") === true;
   const isProducer = roles.includes("cliente_produtor");
   const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
@@ -43,7 +44,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     !isError &&
     !isAdmin &&
     !isProducer &&
-    data?.has_technical_access === false;
+    !!data && !hasTechnical;
 
   useEffect(() => {
     if (denied) {
@@ -78,7 +79,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     return <PortalContextUnavailable refetch={refetch} />;
   }
 
-  if (!data?.has_technical_access) {
+  if (!hasTechnical) {
     return (
       <Navigate
         to="/sem-permissao"

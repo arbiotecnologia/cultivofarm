@@ -45,7 +45,7 @@ export default function MobileLayout() {
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
 
   const isProdutor = roles.includes("cliente_produtor");
-  const hasTechnical = !!contexts?.has_technical_access;
+  const hasTechnical = contexts?.available_contexts.includes("technical") === true;
   const isAdmin = roles.includes("administrador");
   const activeCtx = getActivePortalContext();
   // Modo técnico: usuário escolheu técnico E realmente tem acesso técnico.

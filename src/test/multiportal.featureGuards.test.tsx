@@ -64,6 +64,7 @@ vi.mock("@/lib/accessAuditLog", () => ({
 }));
 
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
+import { TechnicalRouteGuard } from "@/components/guards/TechnicalRouteGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
 
 function resetState() {
@@ -124,6 +125,20 @@ function renderGuard(
 // TechnicalFeatureGuard
 // ---------------------------------------------------------------------------
 describe("TechnicalFeatureGuard", () => {
+  for (const Guard of [TechnicalFeatureGuard, TechnicalRouteGuard]) {
+    it.each([
+      { roles: ["gestor"], contexts: ["admin"], allowed: false },
+      { roles: ["gestor", "consultor_tecnico"], contexts: ["admin", "technical"], allowed: true },
+      { roles: ["consultor_tecnico"], contexts: ["technical"], allowed: true },
+      { roles: ["administrador"], contexts: ["admin"], allowed: true },
+    ])(`${Guard.name} respects canonical list $contexts with roles $roles`, ({ roles, contexts, allowed }) => {
+      authState.roles = roles;
+      if (contextsState.data) Object.assign(contextsState.data, { available_contexts: contexts, has_technical_access: true, is_admin: true, has_b2b_access: true });
+      renderGuard(Guard, "/app/registrar");
+      expect(!!screen.queryByText("CONTENT_OK")).toBe(allowed);
+      expect(!!screen.queryByText("SEM_PERMISSAO")).toBe(!allowed);
+    });
+  }
   it("mostra loader enquanto auth carrega", () => {
     authState.loading = true;
     renderGuard(TechnicalFeatureGuard, "/app/registrar");
@@ -154,6 +169,7 @@ describe("TechnicalFeatureGuard", () => {
   it("libera técnico autorizado pela RPC", () => {
     authState.roles = ["consultor_tecnico"];
     contextsState.data!.has_technical_access = true;
+    if (contextsState.data) contextsState.data.available_contexts = ["technical"];
     renderGuard(TechnicalFeatureGuard, "/app/checkin");
     expect(screen.getByText("CONTENT_OK")).toBeInTheDocument();
     expect(logSpy).not.toHaveBeenCalled();
@@ -197,6 +213,7 @@ describe("TechnicalFeatureGuard", () => {
     contextsState.isLoading = false;
     authState.roles = ["consultor_tecnico"];
     contextsState.data!.has_technical_access = true;
+    if (contextsState.data) contextsState.data.available_contexts = ["technical"];
     rerender(
       <MemoryRouter initialEntries={["/app/registrar"]}>
         <Routes>
