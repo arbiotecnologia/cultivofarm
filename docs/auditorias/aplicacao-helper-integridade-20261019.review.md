@@ -18,5 +18,18 @@ Resultado final: **PostgreSQL local71/71**, regressão PDF44/44 e staging preser
 Reprodução baseline UUID ausente; positivos manual/onfarm/sem OS/dois pais/nove roles/produtor. Negativos app/OS/cliente ausente ou estrangeiro/orgNULL, dois pais com um estrangeiro, vínculo revogado/expirado/futuro, perfil inativo/provisório/sem tenant, empresa inativa/papel removido sem vínculo, processing/iat antigo, sem uid/anon. Leitura via policy, tenant A→B/revoke→restore na própria transação e writer fechado. Drift ACL/dependência, reapply/rollback fora de ordem e falha POST em cópia temporária de ambos arquivos demonstram atomicidade. Não prova concorrência/ABA global/HTTP Storage. Recibo final em results.local.json.
 
 ## PDF/tipagem e bloqueios
+Complemento informado pelo auditor em 19/10 12:35 UTC: **30 hashes, staging7/7 e 13 casos independentes PDF PASS**, incluindo resposta3s e abort tardio. Evidência independente informada, não executada novamente nesta entrega; não equivale a login/HTTP real ou homologação global.
+
+Dependências LIVE confirmadas pelo auditor (coincidem com contracts.json e guardas existentes; nenhuma atualização de SQL necessária):
+- `platform_private.h15_actor_organization()` — `64e10608403238a41a9baf92857ca881`.
+- `public.h15_actor_organization()` — `55edafec08bcc84a00f1526c14334a2c`.
+- `platform_private.platform_actor_access_ready(uuid)` — `048249c0c2106c3761e26eacb8d0de84`.
+- `public.is_operational_staff(uuid)` — `f4b093c506cb05d39aa466bae94a6df8`.
+- `public.get_cliente_ids_for_user(uuid)` — `c80d5900692d960f649d0a9f7850fe2c`.
+- Writer fechado `public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])` — `46d342a71f4712056782cf3d976154a5`.
+
+**Pendência manage, fora da alteração:** auditor informa que o helper de manage exige existência mas não tenant; Storage1 atual já exige tenant/pai. Essa proteção do caminho Storage1 não certifica todos os callers de manage. Não alterado, não ampliar candidata indiscriminadamente; exige revisão específica de callers/autoridade antes de eventual correção. Auditor aplicará a candidata de leitura após revisão; produção permanece sem DDL/publicação nesta entrega.
+
 PDF d155925 e pacote application-pdf-release byte-exatos, sem runtime/Edge/monitor/gates. Retificação: build Vite/SWC não é typecheck; sem recibo de checker. `typecheck-independent.md` e independent-inputs.json fornecem configuração/entradas/hash/comandos para auditoria externa; typecheck **não certificado**.
+Recibo explícito em results.local.json: `tsconfig.app.json` requerido mas **não executado**, checked_project/command/compiler_version/exit_code nulos. Nenhum projeto app certificado; sucesso de `tsc --noEmit` raiz com files vazio/references não é prova de app.
 Auditor informa produção sem aplicações/evidências; homologação PDF bloqueada por fixture ausente e writer fechado. Não INSERT/novo fluxo/perfil; v6 global NO-GO por schemas/revisões ausentes. Sessões A/B não acessadas/recarregadas, pagamentos/contratos/publicação intocados.

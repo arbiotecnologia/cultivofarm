@@ -22,6 +22,7 @@ Logo é locator público emitido por AparenciaTab: URL canônica `/storage/v1/ob
 Tipos gerados locais antecedem organization_id em aplicações; leitura usa select* e filter explícito, valida linha real sem regenerar binding/tipos. Preflight exige coluna real e contratos. Evidência com relação oculta/null falha fechada.
 
 ## Validação
+Complemento auditor 19/10 12:35 UTC: 30 hashes + staging7/7 + 13 casos independentes PDF PASS, incluindo resposta3s e abort tardio; confirmação informada, não nova execução local ou homologação real. Typecheck raiz (`tsc --noEmit`, files vazio/references) não comprova app; `tsconfig.app.json` não executado nesta entrega, sem PASS de tipos. Recibo detalhado no pacote application-access-integrity; artefatos originais PDF preservados.
 Resultados finais e recibos em `scripts/authz-cache/application-pdf-release/validation-receipt.json`.
 Testes com componentes/scope/gerador reais, transporte e relógio controlados: positivos sem foto e com logo/foto herdada; ambas ações; tenant/id errado, RLS negada, URL/path inválido, contagem/tamanho, offline, abort/timeout, epoch/ator/tenant/papel/recurso/snapshot/unmount, late query/bytes/Edge, clique final e limpeza URL. Não são JWT/RLS hosted ou login real.
 Skill PDF: fixture PNG inicial tinha CRC inválido e foi substituída por PNG sintético válido. Duas páginas do PDF gerado pelo jsPDF real foram convertidas por pdftoppm e inspecionadas: sem sobreposição/corte, tabelas/rodapés legíveis; foto/logo são blocos sintéticos verdes, não evidências reais. Nenhum arquivo comercial foi exportado.
