@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('live_fixture', ROOT / 'scripts/tests/cockpit-live-source-local.py')
@@ -188,7 +189,31 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
         after=subprocess.run(connection+["SELECT count(*) FROM laboratorio_esteira_eventos;"],capture_output=True,text=True,check=True)
         assert after.stdout.strip()=='3', after.stdout
         print('PASS two local connections same-date one write one replay; PASS one new audit event')
-        print('Assertions:',len(labels)+2,'Auth/schema SIMULATED; full preflight and hosted RLS NOT tested. Local concurrency only same-target/same-date.')
+        # Revoke a local fixture while the programming request waits for the OS lock.
+        # Deliberately VOLATILE fake helpers: this proves rechecks, not hosted STABLE semantics.
+        for column in ['role','profile']:
+            subprocess.run(connection+[f"UPDATE ordens_servico SET status='aprovada',data_programada=NULL WHERE id={O}; UPDATE programacao_producao SET data_programada=NULL WHERE id={PP};"],capture_output=True,text=True,check=True)
+            holder=subprocess.Popen(connection+[f"SET application_name='program_test_holder'; BEGIN; SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE; SELECT pg_sleep(2); COMMIT;"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            def wait_for(expr):
+                deadline=time.monotonic()+5
+                while time.monotonic()<deadline:
+                    out=subprocess.run(connection+[expr],capture_output=True,text=True,check=True).stdout.strip()
+                    if out=='t':return
+                    time.sleep(0.03)
+                raise AssertionError('local lock wait not observed')
+            wait_for("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='program_test_holder' AND wait_event='PgSleep');")
+            waiting=subprocess.Popen(connection+["SET application_name='program_test_waiting';"+actor+invocation],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            wait_for("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='program_test_waiting' AND wait_event_type='Lock');")
+            change=f'DELETE FROM user_roles WHERE user_id={U};' if column=='role' else f'UPDATE profiles SET ativo=false WHERE user_id={U};'
+            restore=f"INSERT INTO user_roles VALUES({U},'administrador');" if column=='role' else f'UPDATE profiles SET ativo=true WHERE user_id={U};'
+            subprocess.run(connection+[change],capture_output=True,text=True,check=True)
+            ho=holder.communicate(timeout=10);wo=waiting.communicate(timeout=10)
+            assert holder.returncode==0 and waiting.returncode!=0 and 'PROGRAMAR_SCOPE_DENIED' in wo[1],(ho,wo)
+            state=subprocess.run(connection+[f"SELECT (SELECT status='aprovada' AND data_programada IS NULL FROM ordens_servico WHERE id={O}) AND (SELECT count(*) FROM laboratorio_esteira_eventos)=3;"],capture_output=True,text=True,check=True).stdout.strip()
+            assert state=='t',state
+            subprocess.run(connection+[restore],capture_output=True,text=True,check=True)
+            print('PASS local wait then revoke',column,'no write/event')
+        print('Assertions:',len(labels)+4,'Auth/schema SIMULATED; full preflight and hosted RLS NOT tested. Local same-target concurrency and volatile-fake revocation only.')
     finally:
         if started: subprocess.run(pre+['pg_ctl','-D',str(tmp/'d'),'stop','-m','immediate'],capture_output=True)
         shutil.rmtree(tmp,ignore_errors=True)
