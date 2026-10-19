@@ -1,11 +1,13 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 01:25 — operador onfarm exclusivo
+- [ ] Ativação autorizada 01:34: somente gate operador true, assertion real e staging ativo isolado; preservar provas OFF e executar regressões pertinentes.
 - [x] Estender somente monitor/probe/ProtectedRoutes existentes, gate operador OFF e recortes publicados preservados.
 - [x] Corrigir seleção/acesso pendente para home canônica somente após readiness self/h15/role exclusivo, sem criar contexto técnico.
 - [x] Testar drafts/revogação/restore/tardios/foco/guards/login: 446/446 finais; 8 falhas novas de cache corrigidas; seis históricas não reexecutadas globalmente.
 - [x] Entregar preflight read-only não executado, manifest fixo/staging6/6/rollback e relatório operador-tela-aberta-20261019.review.md.
-- [ ] Revisão independente, preflight canônico/ativação e homologação operador aguardam proprietário; typecheck sem recibo não certificado.
+- [x] Proprietário informou revisão terminal 423afc90, 89 hashes, staging6/6, 45 probes fake e preflight integral canônico PASS; autorizou somente gate operador true.
+- [ ] Publicação/homologação real operador, redirecionamento e cockpit consulta aguardam proprietário; typecheck sem recibo não certificado.
 
 ## 19/10 00:57 — consultor técnico em tela aberta
 - [x] Preparar extensão exclusiva no monitor/probe existente e boundary Campo inteiro/desktop, gate consultor OFF.
