@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 02:43 — anexos de RecibosList
+- [ ] Cercar listagem, cancelamento e download existentes por ator/tenant/roles/epoch/recurso; usar locator canônico e opener autenticado, sem URL arbitrária.
+- [ ] Testar races, expiração, identidade, geração/existente e duplicação; entregar preflight SELECT-only, staging/rollback/hashes e recibos disponíveis.
+- [ ] Revisão independente e homologação financeiro A/admin B aguardam proprietário; não publicar/recarregar/criar recibos ou pagamentos.
+- [ ] Inventário somente: global v6, pdfAplicacao signer600/sem fence e guard final entrega-termo-pdf seguem fora desta correção.
+
 ## 19/10 02:20 — renovação antecipada RTT multipapel
 - [x] Agendar renovação antes do deadline confirmado só no par exato (RTT/margem/jitter/piso 1s), sem estender lease nem aceitar resposta tardia.
 - [x] Testes RTT3s contínuo, variável, alto, orçamento curto, tardia, erros/role/offline, clock suspenso, coalescência; mutação prova falha sem a opção; staging5/5, manifest 76/8.
