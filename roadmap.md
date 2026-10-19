@@ -1,15 +1,16 @@
 # F2-B — auditoria e preparação revisável
 
 ## 18/10 23:59 — anexos financeiros no fluxo existente
-- [ ] Corrigir path/basename e fences upload/remove/metadados sem alterar servidor ou monitores.
-- [ ] Executar regressões adversariais e preparar rollback exato da candidata.
-- [ ] Registrar evidência independente pós-publicação de drafts/revoke/restore e limites; entrega para revisão externa, sem publicar.
+- [x] Corrigir path/basename e fences upload/remove/metadados; contrato/trigger atual confirmado SELECT-only canônico, servidor e monitores inalterados.
+- [x] Regressões 186/186 (49 casos anexos) + staging4/4 e a905 2/2; rollback apenas painel, monitores preservados.
+- [x] Evidência independente pós-publicação drafts >35s/revoke→pause/retry/restore registrada; financeiro 2 retries com causa desconhecida, sem alegar homologação de anexos.
+- [ ] Revisão/publicação e upload/JWT/Storage reais da candidata dependem do auditor; sem escrita hosted/publicação pelo agente.
 
 ## 18/10 23:47 — ativação financeira autorizada
 - [x] Habilitar somente financeiro exclusivo, preservando produtor/B2B e Blob/global fechados.
 - [x] Validar drafts/revogação/gates (185/185) e rollback financeiro false sem perder outro recorte; 5 manifests antigos fail-closed, stage4/4.
 - [x] Entregar financial-preview-release e docs/auditorias/financeiro-preview-ativacao-20261018.review.md para revisão final externa; sem DDL/Edge/publicação ou homologação alegada.
-- [ ] Revisão final/publicação/login real financeiro aguardam auditor/conector; preflight integral produção PASS informado pelo proprietário.
+- [x] Publicação e sessão real financeira informadas pelo auditor: drafts >35s, pause sem reload, restore sem draft (2 retries, causa desconhecida); registro em anexos-financeiros-20261019.review.md. Não certifica anexos/global.
 
 ## 18/10 23:42 — continuidade de drafts por confirmação
 - [x] Reproduzir remount periódico (6 FAIL antes) e limitar refresh por confirmação ao B2B publicado.
@@ -19,7 +20,7 @@
 ## 18/10 23:37 — preferência produtor e ativação limitada
 - [x] Separar preferência estável de autorização/cache por epoch e provar B sobrevivendo dois polls, revogação parcial e isolamento UID/tenant (2/2 FAIL antes, PASS após).
 - [x] Ativar somente produtor após regressões/preflight de fonte, registrar delta/hashes/rollback (146/146 + stage2/2); financeiro/global/Blob fechados, sem hosted/publicação.
-- [ ] Revisão delta/login real produtor aguardam auditor antes da publicação externa; preflight integral produção PASS informado 23:42.
+- [x] Publicação e sessão real produtor informadas pelo auditor: draft >35s, pause sem reload, restore draft vazio; registro em anexos-financeiros-20261019.review.md. Não certifica anexos/global.
 
 ## 18/10 23:32 — inativação interna financeira, candidata limitada
 - [x] Registrar evidência real independente e inventariar autoridade self/h15/readiness/roles + guards internos.
