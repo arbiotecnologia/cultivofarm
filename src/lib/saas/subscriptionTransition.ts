@@ -74,7 +74,8 @@ export function createSubscriptionTransition(io: TransitionIO, rpcMs = 15_000, r
         const response = await bounded((signal) => io.write(value, key, signal), rpcMs);
         if (response.error) {
           // Explicit database rejections are definitive; transport/auth errors are not.
-          if (response.error.code && /^(22|23|40|42|P0)/.test(response.error.code)) {
+          // PT409 exato: conflito de negócio não-retentável (substitui 40001 no core). Só este PT*.
+          if (response.error.code && (/^(22|23|40|42|P0)/.test(response.error.code) || response.error.code === "PT409")) {
             throw Object.assign(new Error(response.error.message ?? "platform_rpc_error"), { definitive: true });
           }
           throw new Error("transport_result_unknown");
