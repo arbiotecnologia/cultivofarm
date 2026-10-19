@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 00:57 — consultor técnico em tela aberta
+- [ ] Preparar extensão exclusiva no monitor/probe existente e boundary Campo inteiro/desktop, gate consultor OFF.
+- [ ] Executar lógica/probe/boundary/drafts/revogação e regressões; separar falhas atuais de históricas.
+- [ ] Entregar preflight read-only, hashes fixos, staging/rollback protegidos e relatório; sem banco/Edge/publicação.
+- [ ] Revisão independente, ativação e homologação real consultor aguardam o proprietário.
+
 ## 19/10 00:36 — administrador de empresa em tela aberta
 - [x] Ativar somente admin com bytes revisados 62ddc9bc; 275 testes + staging-active4/4 PASS, typecheck/build automático OK; provas false preservadas, sem publicação.
 - [x] Preparar recorte exclusivo no monitor único/probe compartilhado e boundary do shell, gate admin false.
