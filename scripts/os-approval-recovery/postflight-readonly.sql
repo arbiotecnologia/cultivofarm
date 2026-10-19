@@ -5,8 +5,10 @@ DECLARE c record; p record; v_executor_roles text[];
 BEGIN
  IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
  FOR c IN SELECT * FROM (VALUES
+('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
 ('public.rpc_aprovar_os_v1(uuid,text)','1023b9d5210534bee16147e2ce29ee12','v',true,'search_path=""',ARRAY['authenticated','postgres']::text[]),
-('private.assert_os_approval_scope(uuid,text)','8e1fe11aa500155232aa8c6417e1b749','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.assert_os_approval_scope(uuid,text)','f478fba6b5ecc18f4355bcfcfb0c3def','v',true,'search_path=""',ARRAY['postgres']::text[]),
 ('private.guard_os_separate_approval()','f00397fe862e611fbfa0eba3911d95c6','v',true,'search_path=""',ARRAY['postgres']::text[]),
 ('private.h7n_esteira_laboratorio()','bad38b5200629cc887767e62b7a46e40','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
 ('public.technical_actor_ready(uuid)','b5d0994b6eb976b14122cd2a1ec798cf','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),

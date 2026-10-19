@@ -5,6 +5,8 @@ DECLARE c record; p record; v_executor_roles text[];
 BEGIN
  IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
  FOR c IN SELECT * FROM (VALUES
+('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
 ('public.rpc_aprovar_os_v1(uuid,text)','d65be82dbf38ec429b7377bd6873ba47','v',true,'search_path=""',ARRAY['postgres']::text[]),
 ('private.assert_os_approval_scope(uuid,text)','8c3142a07b3f310082309ef50f8b32dd','v',true,'search_path=""',ARRAY['postgres']::text[]),
 ('private.guard_os_separate_approval()','f00397fe862e611fbfa0eba3911d95c6','v',true,'search_path=""',ARRAY['postgres']::text[]),
