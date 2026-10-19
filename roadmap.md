@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 15:28 — evidência complementar independente
+- [x] Registrar PRE 622048 hosted PASS limitado ao conjunto anteriormente coberto e Vitest independente 53/53; não estender à guarda suplementar atual.
+- [ ] Conferir baseline fornecido a42d6 e entitlements reais no harness ANTES de remontar rollback autocontido; preservar semântica, ACL e produção.
+- [ ] Auditor: concluir tsc app ainda em execução, PRE suplementar/POST atual e homologação real; sem aplicação/publicação pelo agente.
+
 ## 19/10 15:09 — revisão programação 622048
 - [x] Substituir TEMP rollback por baseline byte-exato/autocontido a42d6 e ACL postgres/service_role; preservar pacotes c30af/e6a67.
 - [x] Fechar catálogo transitivo real SaaS/invites/refresh, reduzir SHARE com FK/row locks e restringir primeiro recorte manual/responsável NULL.

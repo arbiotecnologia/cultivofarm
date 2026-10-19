@@ -86,6 +86,14 @@ def main():
   test('different date denied',f"(public.rpc_programar_os_v1({O},'manual','2026-10-21')->>'success')='false'")
   hash=run("SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure));").stdout.strip()
   (H/'post-hashes.json').write_text(json.dumps({'public.rpc_programar_os_v1(uuid,text,date)':hash},indent=2)+'\n')
+  # Supplied 15:28 baseline is the captured body, with only a SQL terminator added.
+  # Verify canonical pg_get_functiondef BEFORE the assembler builds any rollback.
+  run((H/'rollback/rpc.sql.review').read_text())
+  assert run("SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure));").stdout.strip()=='a42d6b07f51e6dacf41096f6cefb8163'
+  results.append('supplied baseline pg_get_functiondef a42d6 verified before assembly')
+  assert run("SELECT md5(pg_get_functiondef('platform_private.entitlements_for_user(uuid)'::regprocedure));").stdout.strip()=='7f4ec7facaebbdf35444dd490fdebe56'
+  results.append('supplied real STABLE entitlements definition fingerprint matches capture')
+  run((H/'rpc.sql.review').read_text())
   # Compile/evaluate every supplemental catalog SELECT against the real local schema.
   # Missing fingerprints are expected in this partial clone; SQL errors are not.
   spec=importlib.util.spec_from_file_location('program_assemble',H/'assemble.py')
