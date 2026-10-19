@@ -443,6 +443,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeoutFn: (h) => window.clearTimeout(h as number),
       isVisible: () => document.visibilityState === "visible",
       isOnline: () => navigator.onLine,
+      // Limited paired scope: hidden polling is best effort; suspension still
+      // expires the monotonic lease. Other scopes retain published behavior.
+      pollWhenHidden: managerConsultantContextOnly,
       // Preserve published B2B confirmation refresh. Producer/financial renew
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.
@@ -484,9 +487,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     authzMonitorRef.current = monitor;
-    const onFocus = () => monitor.revalidate();
-    const onVisibility = () => { if (document.visibilityState === "visible") monitor.revalidate(); };
-    const onOnline = () => monitor.revalidate();
+    const onEnvironment = () => managerConsultantContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
+    const onFocus = onEnvironment;
+    const onVisibility = () => { if (document.visibilityState === "visible") onEnvironment(); };
+    const onOnline = onEnvironment;
     // Offline expira IMEDIATAMENTE — resultado em voo de geração antiga não
     // reabre dados (o monitor invalida a geração no expire).
     const onOffline = () => monitor.expireNow("offline");

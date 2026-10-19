@@ -51,12 +51,16 @@ export interface AuthzEpochMonitorDeps {
   leaseMs?: number;
   /** No monotonic revision: retire old view/cache on every confirmation. */
   refreshOnConfirmation?: boolean;
+  /** Reviewed scope only: attempt polling in hidden tabs, never extend a lease without confirmation. */
+  pollWhenHidden?: boolean;
 }
 
 export interface AuthzEpochMonitor {
   start: () => void;
   stop: () => void;
   revalidate: () => void;
+  /** Environmental signal: retain only a still-confirmed lease and coalesce in-flight requests. */
+  revalidateEnvironment: () => void;
   /** Expira imediatamente (evento offline do navegador). */
   expireNow: (reason: "offline" | "error") => void;
   state: () => AuthzMonitorState;
@@ -77,6 +81,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   let pollTimer: unknown = null;
   let leaseTimer: unknown = null;
   let requestTimer: unknown = null;
+  let inFlightGeneration: number | null = null;
 
   const setState = (next: AuthzMonitorState) => {
     if (state === next) return;
@@ -97,6 +102,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     clearTimers();
     leaseUntil = 0;
     requestUntil = 0;
+    inFlightGeneration = null;
     setState("expired");
     deps.onExpire(reason);
   };
@@ -120,7 +126,8 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       pollTimer = null;
       if (state === "stopped") return;
       if (!deps.isOnline()) { expire("offline"); return; }
-      if (state === "valid" && deps.isVisible() && deps.now() < leaseUntil) {
+      if (state === "valid" && deps.now() >= leaseUntil) { expire("timeout"); return; }
+      if (state === "valid" && (deps.pollWhenHidden || deps.isVisible()) && deps.now() < leaseUntil) {
         void poll(false);
       } else {
         schedulePoll();
@@ -135,10 +142,11 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     if (state === "valid" && deps.now() >= leaseUntil) expire("timeout");
 
     const myGen = ++generation;
+    inFlightGeneration = myGen;
     const requestStart = deps.now();
     if (pollTimer !== null) { deps.clearTimeoutFn(pollTimer); pollTimer = null; }
     if (requestTimer !== null) deps.clearTimeoutFn(requestTimer);
-    // Explicit focus/retry never keeps content visible while revalidating.
+    // Explicit retry never keeps content visible while revalidating.
     // Background polling keeps ONLY the previously confirmed deadline.
     if (explicit || state !== "valid") {
       leaseUntil = 0;
@@ -197,6 +205,8 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     } catch {
       if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return;
       expire("error");
+    } finally {
+      if (inFlightGeneration === myGen) inFlightGeneration = null;
     }
   };
 
@@ -213,6 +223,15 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     revalidate() {
       if (state === "stopped") return;
       void poll(true);
+    },
+    revalidateEnvironment() {
+      if (state === "stopped") return;
+      if (!deps.isOnline()) { expire("offline"); return; }
+      // Check deadline BEFORE deduplication: a suspended in-flight request
+      // cannot keep old authority alive when focus and visibility resume.
+      if (state === "valid" && deps.now() >= leaseUntil) expire("timeout");
+      if (inFlightGeneration !== null) return;
+      void poll(false);
     },
     expireNow(reason) {
       if (state === "stopped") return;
