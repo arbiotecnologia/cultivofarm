@@ -1,0 +1,74 @@
+{
+  "baseline": "71decc2d2b6b2028b9ca2170e8f1344bee9d0b48",
+  "scope": "receipt-list only; review staging never applies; no Edge/SQL/gate changes",
+  "files": [
+    {
+      "path": "src/pages/financeiro/RecibosList.tsx",
+      "pre_sha256": "8b2791244f32173dcbcb82a5baa25ad531a9edfc31e6a839509da89f140fba4b",
+      "post_sha256": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed",
+      "candidate": "RecibosList.tsx.candidate.review",
+      "rollback": "RecibosList.tsx.rollback.review"
+    },
+    {
+      "path": "src/lib/financeiro/receiptStorageLocator.ts",
+      "pre_sha256": null,
+      "post_sha256": "aee75517faff16a462c2b5fc40147d5f985b152fb9c6731d71358a627619c6b3",
+      "candidate": "receiptStorageLocator.ts.candidate.review",
+      "rollback": null
+    }
+  ],
+  "protected": [
+    {
+      "path": "src/hooks/useStorageAccessScope.ts",
+      "sha256": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b"
+    },
+    {
+      "path": "src/hooks/useAuthenticatedAttachmentOpener.ts",
+      "sha256": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421"
+    },
+    {
+      "path": "src/hooks/useSignedUrls.ts",
+      "sha256": "728bc5b6e6d2e3a1b4dedbe880bc4a89011aa4d750f51383e1b47b098b91b4ea"
+    },
+    {
+      "path": "src/hooks/useAuthenticatedBlobUrls.ts",
+      "sha256": "8ef20f33a63dcd070db9f7da71f8dc56db09d1c9c86948a38ee20ef5344641b4"
+    },
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "sha256": "646b115144c37e0201310b93269f31a551c803752afb268503773fbd95c64a43"
+    },
+    {
+      "path": "src/lib/authz/authzEpochMonitor.ts",
+      "sha256": "45622480f70e0242e1b1a5cbf182854ff105a9b9dc0d334e41b36cf89ebb1943"
+    },
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "sha256": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7"
+    },
+    {
+      "path": "src/lib/authz/attachmentBlobGate.ts",
+      "sha256": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2"
+    },
+    {
+      "path": "src/lib/authz/authenticatedAttachment.ts",
+      "sha256": "99331e08889a25782400914e4a113e36fc6dc1155539932eccef3d5f2e4ca098"
+    },
+    {
+      "path": "src/integrations/supabase/client.ts",
+      "sha256": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454"
+    },
+    {
+      "path": "supabase/functions/generate-financial-receipt/index.ts",
+      "sha256": "45913bfbc8aefe59c27868806a947f0e5b8c94e39f57212b27694e1536f9b4a0"
+    },
+    {
+      "path": "supabase/functions/entrega-termo-pdf/index.ts",
+      "sha256": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f"
+    },
+    {
+      "path": "src/lib/pdfAplicacao.ts",
+      "sha256": "bf6c0e02074acbaf5ad90a98ecfbc89a9d385506bc2420d9f5e4dd70c7b5f729"
+    }
+  ]
+}
