@@ -1,6 +1,6 @@
 /** Local bounded diagnostics only: never identity, URLs, fingerprints, payloads or error text. */
 export interface AuthzDiagnostic {
-  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout";
+  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout" | "auto_retry";
   state: string;
   reason: "error" | "offline" | "timeout" | "ineligible" | null;
   visible: boolean;
@@ -14,7 +14,7 @@ const number = (value: unknown): number | null => typeof value === "number" && N
   ? Math.round(Math.max(-3_600_000, Math.min(3_600_000, value))) : null;
 export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
   // Reconstruct the allowlist, never spread untrusted input into diagnostics.
-  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout"].includes(sample.event) ? sample.event : "expire";
+  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout", "auto_retry"].includes(sample.event) ? sample.event : "expire";
   const state = ["idle", "pending", "valid", "expired", "stopped"].includes(sample.state) ? sample.state : "expired";
   const reason = sample.reason && ["error", "offline", "timeout", "ineligible"].includes(sample.reason) ? sample.reason : null;
   const record: AuthzDiagnostic = { event, state, reason, visible: sample.visible === true, online: sample.online === true,
@@ -26,7 +26,7 @@ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
     try { console.warn("cultivo-authz-expire", JSON.stringify(record)); } catch { /* observer failure must not affect expiry */ }
   } else if (sample.event === "auth_refresh" || sample.event === "auth_reconfirmed") {
     try { console.info("cultivo-authz-renewal", JSON.stringify(record)); } catch { /* observer failure must not affect reconfirmation */ }
-  } else if (sample.event === "load_restart" || sample.event === "load_timeout") {
+  } else if (sample.event === "load_restart" || sample.event === "load_timeout" || sample.event === "auto_retry") {
     // Profile/roles loader lifecycle: elapsed ms only (rttMs); no identity.
     try { console.info("cultivo-authz-load", JSON.stringify(record)); } catch { /* observer failure must not affect loading */ }
   }

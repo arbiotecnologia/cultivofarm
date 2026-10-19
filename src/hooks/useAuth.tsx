@@ -690,7 +690,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-    // roles entram via isExternalUser (booleano estável); loading/profile
+  const revalidateAuthz = () => {
+    cancelAutoRecovery();
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
   }, [initializedPrincipal, principalScope, queryClient]);
 
