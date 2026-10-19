@@ -1,0 +1,208 @@
+diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
+index 844c3691..bb967cfc 100644
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -12,6 +12,7 @@ import { producerContextProbe } from "@/lib/authz/producerContextProbe";
+ import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
+ import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSRenewalDraft";
+ import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
++import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
+ import {
+   createAuthzEpochMonitor,
+   type AuthzEpochMonitor,
+@@ -144,6 +145,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   const loaderSeqRef = useRef(0);
+   const activeUserIdRef = useRef<string | null>(null);
+   const retryRevalidateRef = useRef(false);
++  const revalidateAuthzRef = useRef<() => void>(() => {});
++  const autoRecoveryRef = useRef<{ userId: string | null; s: AutoRecoveryState }>({ userId: null, s: initialAutoRecovery() });
++  const autoRecoveryTimerRef = useRef<number | null>(null);
++  const cancelAutoRecovery = () => {
++    if (autoRecoveryTimerRef.current !== null) window.clearTimeout(autoRecoveryTimerRef.current);
++    autoRecoveryTimerRef.current = null;
++  };
+   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
+   const takeSafeOSDraft = () => {
+     const receipt = renewalRef.current;
+@@ -501,6 +509,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   // Reuse the reviewed environmental policy only for these monitored scopes.
+   // This selects scheduling, never grants authority or changes probe contracts.
+   const environmentalContextOnly = managerConsultantContextOnly || residualContextOnly || financialContextOnly || companyAdminContextOnly;
++  // Auto-recovery limited to the scopes already homologated (pair/residual/admin/finance).
++  const autoRecoveryScope = environmentalContextOnly;
+   const isExternalUser = b2bContextOnly
+     ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+@@ -584,6 +594,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       // No claim of detecting an unobserved transient ABA between polls.
+       refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly && !residualContextOnly,
+       onStateChange: (next) => {
++        if (next === "valid") {
++          if (autoRecoveryRef.current.userId !== (user?.id ?? null)) autoRecoveryRef.current = { userId: user?.id ?? null, s: initialAutoRecovery() };
++          autoRecoveryRef.current.s = autoRecoveryOnValid(autoRecoveryRef.current.s, performance.now());
++        }
+         if (next === "valid" && renewalRef.current) {
+           const receipt = renewalRef.current;
+           if (receipt.scope === principalScope && receipt.fingerprint === monitor.currentFingerprint() && monitor.checkAccess()) {
+@@ -618,7 +632,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         setAuthzEpoch((e) => e + 1);
+         void refresh();
+       },
+-      onExpire: () => {
++      onExpire: (reason) => {
+         renewalRef.current = null;
+         // Erro/offline/timeout/ineligible: geração++ (respostas em voo não
+         // reabrem), cancela consultas e limpa seleção. O ESTADO reativo
+@@ -628,6 +642,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         void queryClient.cancelQueries();
+         clearActivePortalContext();
+         window.dispatchEvent(new Event("portal-client-preferences-cleared"));
++        // Bounded auto-recovery of a transient timeout only (reviewed scopes).
++        // It schedules the SAME canonical Retry; the view stays hidden meanwhile.
++        cancelAutoRecovery();
++        const uid = user?.id ?? null;
++        if (autoRecoveryRef.current.userId !== uid) autoRecoveryRef.current = { userId: uid, s: initialAutoRecovery() };
++        const decision = autoRecoveryOnExpire(autoRecoveryRef.current.s, reason, autoRecoveryScope, performance.now());
++        autoRecoveryRef.current.s = decision.next;
++        if (decision.delayMs !== null && uid) {
++          const scopeAtExpire = principalScope;
++          autoRecoveryTimerRef.current = window.setTimeout(() => {
++            autoRecoveryTimerRef.current = null;
++            if (!mountedRef.current || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
++              authzMonitorRef.current !== monitor || monitor.state() !== "expired" || retryInFlightRef.current) return;
++            recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "timeout",
++              visible: document.visibilityState === "visible", online: navigator.onLine,
++              rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
++            revalidateAuthzRef.current();
++          }, decision.delayMs);
++        }
+       },
+     });
+     authzMonitorRef.current = monitor;
+@@ -647,6 +680,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     window.addEventListener("offline", onOffline);
+     monitor.start();
+     return () => {
++      cancelAutoRecovery();
+       authzMonitorRef.current = null;
+       monitor.stop();
+       if (companyAdminContextOnly && !renewalRef.current) clearAuthzDiagnostics();
+@@ -691,6 +725,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   // not cached roles), single-flight and generation-fenced. Same scope then
+   // re-polls the same monitor; a different scope recreates or stays paused.
+   const revalidateAuthz = () => {
++    cancelAutoRecovery();
+     const uid = user?.id;
+     const current = monitoredLatchRef.current;
+     if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
+@@ -769,7 +804,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     retryInFlightRef.current = run;
+   };
+ 
++  revalidateAuthzRef.current = revalidateAuthz;
++
+   const signOut = async () => {
++    cancelAutoRecovery();
++    autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
+     renewalRef.current = null;
+     safeDraftRef.current = null;
+     monitoredLatchRef.current = null;
+diff --git a/src/lib/authz/localDiagnostics.ts b/src/lib/authz/localDiagnostics.ts
+index 6d343c70..bd9aaf78 100644
+--- a/src/lib/authz/localDiagnostics.ts
++++ b/src/lib/authz/localDiagnostics.ts
+@@ -1,6 +1,6 @@
+ /** Local bounded diagnostics only: never identity, URLs, fingerprints, payloads or error text. */
+ export interface AuthzDiagnostic {
+-  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout";
++  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout" | "auto_retry";
+   state: string;
+   reason: "error" | "offline" | "timeout" | "ineligible" | null;
+   visible: boolean;
+@@ -14,7 +14,7 @@ const number = (value: unknown): number | null => typeof value === "number" && N
+   ? Math.round(Math.max(-3_600_000, Math.min(3_600_000, value))) : null;
+ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
+   // Reconstruct the allowlist, never spread untrusted input into diagnostics.
+-  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout"].includes(sample.event) ? sample.event : "expire";
++  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout", "auto_retry"].includes(sample.event) ? sample.event : "expire";
+   const state = ["idle", "pending", "valid", "expired", "stopped"].includes(sample.state) ? sample.state : "expired";
+   const reason = sample.reason && ["error", "offline", "timeout", "ineligible"].includes(sample.reason) ? sample.reason : null;
+   const record: AuthzDiagnostic = { event, state, reason, visible: sample.visible === true, online: sample.online === true,
+@@ -26,7 +26,7 @@ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
+     try { console.warn("cultivo-authz-expire", JSON.stringify(record)); } catch { /* observer failure must not affect expiry */ }
+   } else if (sample.event === "auth_refresh" || sample.event === "auth_reconfirmed") {
+     try { console.info("cultivo-authz-renewal", JSON.stringify(record)); } catch { /* observer failure must not affect reconfirmation */ }
+-  } else if (sample.event === "load_restart" || sample.event === "load_timeout") {
++  } else if (sample.event === "load_restart" || sample.event === "load_timeout" || sample.event === "auto_retry") {
+     // Profile/roles loader lifecycle: elapsed ms only (rttMs); no identity.
+     try { console.info("cultivo-authz-load", JSON.stringify(record)); } catch { /* observer failure must not affect loading */ }
+   }
+diff --git a/src/test/config/companyAdminOpenSession.integration.test.tsx b/src/test/config/companyAdminOpenSession.integration.test.tsx
+index 462560d7..5ddb3faa 100644
+--- a/src/test/config/companyAdminOpenSession.integration.test.tsx
++++ b/src/test/config/companyAdminOpenSession.integration.test.tsx
+@@ -46,7 +46,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('administrador sessão aberta candidata',()=>{
+  it('nova identidade não herda draft e descarta resposta tardia da identidade anterior',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft identidade antiga'}});s.uid='00000000-0000-4000-8000-000000000003';act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('R$ 999,00')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
+- it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['administrador'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
++ it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);if(reason==='expiração'){/* one-shot hung probe = transient timeout: bounded auto-recovery re-verifies via canonical Retry; draft is discarded, never restored */await tick(30000);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['administrador'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
+  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Menu administrador')).toBeNull();resolve?.(O);await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();
+   s.active=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe('/financeiro/receber');
+diff --git a/src/test/config/financialOpenSession.integration.test.tsx b/src/test/config/financialOpenSession.integration.test.tsx
+index 14cd08b1..dea2ee0e 100644
+--- a/src/test/config/financialOpenSession.integration.test.tsx
++++ b/src/test/config/financialOpenSession.integration.test.tsx
+@@ -43,7 +43,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('financeiro sessão aberta candidata',()=>{
+  it('nova identidade não herda draft e descarta resposta tardia da identidade anterior',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft identidade antiga'}});s.uid='00000000-0000-4000-8000-000000000003';act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('R$ 999,00')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
+- it.each(['inativação','role','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();s.active=true;s.roles=['financeiro'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
++ it.each(['inativação','role','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);if(reason==='expiração'){/* one-shot hung probe = transient timeout: bounded auto-recovery re-verifies via canonical Retry; draft is discarded, never restored */await tick(30000);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}paused(qc);expect(screen.queryByRole('textbox')).toBeNull();s.active=true;s.roles=['financeiro'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
+  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Menu financeiro')).toBeNull();resolve?.(O);await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();
+   s.active=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe('/financeiro');
+diff --git a/src/lib/authz/transientTimeoutRecovery.ts b/src/lib/authz/transientTimeoutRecovery.ts
+new file mode 100644
+index 00000000..40cc97b6
+--- /dev/null
++++ b/src/lib/authz/transientTimeoutRecovery.ts
+@@ -0,0 +1,37 @@
++// Bounded automatic recovery of a TRANSIENT monitor timeout (reviewed
++// environmental scopes only). Pure policy: it only decides WHEN to call the
++// same canonical revalidateAuthz used by the Retry button. It never grants
++// authority, never extends the lease and never reopens anything by itself.
++
++export const AUTO_RECOVERY_BACKOFF_MS = Object.freeze([1_500, 4_000] as const);
++/** Budget is restored only after a valid view held this long (no reset per timeout). */
++export const AUTO_RECOVERY_STABLE_RESET_MS = 60_000;
++
++export type ExpireReason = "error" | "offline" | "timeout" | "ineligible";
++
++export interface AutoRecoveryState {
++  attempts: number;
++  /** Monotonic time of the last valid confirmation start (null = never/after stop). */
++  validSince: number | null;
++  /** Permanently off until a stable valid period / new identity. */
++  halted: boolean;
++}
++
++export const initialAutoRecovery = (): AutoRecoveryState => ({ attempts: 0, validSince: null, halted: false });
++
++export function onValid(s: AutoRecoveryState, now: number): AutoRecoveryState {
++  return s.validSince === null ? { ...s, validSince: now } : s;
++}
++
++/**
++ * Returns the backoff (ms) for the next automatic attempt, or null when the
++ * expiry must stay paused (manual Retry still works). Only "timeout" in an
++ * eligible scope is recoverable; ineligible/error/offline halt the budget.
++ */
++export function onExpire(s: AutoRecoveryState, reason: ExpireReason, eligibleScope: boolean, now: number): { next: AutoRecoveryState; delayMs: number | null } {
++  const stable = s.validSince !== null && now - s.validSince >= AUTO_RECOVERY_STABLE_RESET_MS;
++  const base: AutoRecoveryState = stable ? { attempts: 0, validSince: null, halted: false } : { ...s, validSince: null };
++  if (!eligibleScope || reason !== "timeout") return { next: { ...base, halted: true }, delayMs: null };
++  if (base.halted || base.attempts >= AUTO_RECOVERY_BACKOFF_MS.length) return { next: base, delayMs: null };
++  return { next: { ...base, attempts: base.attempts + 1 }, delayMs: AUTO_RECOVERY_BACKOFF_MS[base.attempts] };
++}

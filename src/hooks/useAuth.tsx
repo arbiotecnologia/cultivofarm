@@ -12,6 +12,7 @@ import { producerContextProbe } from "@/lib/authz/producerContextProbe";
 import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
 import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSRenewalDraft";
 import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
+import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -144,6 +145,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loaderSeqRef = useRef(0);
   const activeUserIdRef = useRef<string | null>(null);
   const retryRevalidateRef = useRef(false);
+  const revalidateAuthzRef = useRef<() => void>(() => {});
+  const autoRecoveryRef = useRef<{ userId: string | null; s: AutoRecoveryState }>({ userId: null, s: initialAutoRecovery() });
+  const autoRecoveryTimerRef = useRef<number | null>(null);
+  const cancelAutoRecovery = () => {
+    if (autoRecoveryTimerRef.current !== null) window.clearTimeout(autoRecoveryTimerRef.current);
+    autoRecoveryTimerRef.current = null;
+  };
   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
   const takeSafeOSDraft = () => {
     const receipt = renewalRef.current;
@@ -501,6 +509,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Reuse the reviewed environmental policy only for these monitored scopes.
   // This selects scheduling, never grants authority or changes probe contracts.
   const environmentalContextOnly = managerConsultantContextOnly || residualContextOnly || financialContextOnly || companyAdminContextOnly;
+  // Auto-recovery limited to the scopes already homologated (pair/residual/admin/finance).
+  const autoRecoveryScope = environmentalContextOnly;
   const isExternalUser = b2bContextOnly
     ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
@@ -584,6 +594,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // No claim of detecting an unobserved transient ABA between polls.
       refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly && !residualContextOnly,
       onStateChange: (next) => {
+        if (next === "valid") {
+          if (autoRecoveryRef.current.userId !== (user?.id ?? null)) autoRecoveryRef.current = { userId: user?.id ?? null, s: initialAutoRecovery() };
+          autoRecoveryRef.current.s = autoRecoveryOnValid(autoRecoveryRef.current.s, performance.now());
+        }
         if (next === "valid" && renewalRef.current) {
           const receipt = renewalRef.current;
           if (receipt.scope === principalScope && receipt.fingerprint === monitor.currentFingerprint() && monitor.checkAccess()) {
@@ -618,7 +632,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthzEpoch((e) => e + 1);
         void refresh();
       },
-      onExpire: () => {
+      onExpire: (reason) => {
         renewalRef.current = null;
         // Erro/offline/timeout/ineligible: geração++ (respostas em voo não
         // reabrem), cancela consultas e limpa seleção. O ESTADO reativo
@@ -628,6 +642,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void queryClient.cancelQueries();
         clearActivePortalContext();
         window.dispatchEvent(new Event("portal-client-preferences-cleared"));
+        // Bounded auto-recovery of a transient timeout only (reviewed scopes).
+        // It schedules the SAME canonical Retry; the view stays hidden meanwhile.
+        cancelAutoRecovery();
+        const uid = user?.id ?? null;
+        if (autoRecoveryRef.current.userId !== uid) autoRecoveryRef.current = { userId: uid, s: initialAutoRecovery() };
+        const decision = autoRecoveryOnExpire(autoRecoveryRef.current.s, reason, autoRecoveryScope, performance.now());
+        autoRecoveryRef.current.s = decision.next;
+        if (decision.delayMs !== null && uid) {
+          const scopeAtExpire = principalScope;
+          autoRecoveryTimerRef.current = window.setTimeout(() => {
+            autoRecoveryTimerRef.current = null;
+            if (!mountedRef.current || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
+              authzMonitorRef.current !== monitor || monitor.state() !== "expired" || retryInFlightRef.current) return;
+            recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "timeout",
+              visible: document.visibilityState === "visible", online: navigator.onLine,
+              rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+            revalidateAuthzRef.current();
+          }, decision.delayMs);
+        }
       },
     });
     authzMonitorRef.current = monitor;
@@ -647,6 +680,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("offline", onOffline);
     monitor.start();
     return () => {
+      cancelAutoRecovery();
       authzMonitorRef.current = null;
       monitor.stop();
       if (companyAdminContextOnly && !renewalRef.current) clearAuthzDiagnostics();
@@ -691,6 +725,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // not cached roles), single-flight and generation-fenced. Same scope then
   // re-polls the same monitor; a different scope recreates or stays paused.
   const revalidateAuthz = () => {
+    cancelAutoRecovery();
     const uid = user?.id;
     const current = monitoredLatchRef.current;
     if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
@@ -769,7 +804,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retryInFlightRef.current = run;
   };
 
+  revalidateAuthzRef.current = revalidateAuthz;
+
   const signOut = async () => {
+    cancelAutoRecovery();
+    autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
     renewalRef.current = null;
     safeDraftRef.current = null;
     monitoredLatchRef.current = null;

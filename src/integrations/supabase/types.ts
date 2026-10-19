@@ -22510,6 +22510,7 @@ export type Database = {
         }
         Returns: string
       }
+      internal_actor_context_v1: { Args: never; Returns: Json }
       is_active_visit_participant: {
         Args: { p_registro_id: string; p_user_id: string }
         Returns: boolean
