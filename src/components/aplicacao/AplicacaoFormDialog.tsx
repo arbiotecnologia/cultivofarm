@@ -198,7 +198,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   // do catálogo não prova a unidade da recomendação desta OS.
   const unidade = unidadeAplicacao(doseUnidade);
   const erroUnidade = osId
-    ? "A OS não informa uma unidade inequívoca da recomendação. Registro bloqueado até que esse vínculo esteja disponível."
+    ? "Selecione a unidade da dose real"
     : "Selecione a OS";
   const total = totalAplicacao(doseAplicada, areaAplicada, unidade?.dose);
   const volumeTotal = total?.valor ?? 0;
@@ -297,7 +297,9 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
       qc.invalidateQueries({ queryKey: ["os-para-aplicar"] });
       qc.invalidateQueries({ queryKey: ["aplicacao", rectifyId] });
+      if (!current()) return;
       onSuccess?.();
+      if (!current()) return;
       onOpenChange(false);
     } catch (e: any) {
       // No limparObjetosEvidencias: a timeout may have committed metadata already.

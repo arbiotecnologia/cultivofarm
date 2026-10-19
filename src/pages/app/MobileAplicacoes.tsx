@@ -226,6 +226,7 @@ export default function MobileAplicacoes() {
 
       toast.success(rectifyId ? "Aplicação retificada!" : "Aplicação registrada!");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
+      if (!current()) return;
       navigate("/app");
     } catch (err: any) {
       if (current()) toast.error(err.message || "Erro ao registrar");

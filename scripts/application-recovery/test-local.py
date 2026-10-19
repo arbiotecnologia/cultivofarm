@@ -1,6 +1,6 @@
 """Disposable PostgreSQL: real SQL bodies, reduced tables/resolvers, emulated claims, NOT JWT/hosted."""
 from pathlib import Path
-import tempfile, subprocess, os, json, uuid, concurrent.futures
+import tempfile, subprocess, os, json, uuid, concurrent.futures, re
 HERE=Path(__file__).resolve().parent
 BASE=HERE.parent/'application-access-integrity'
 def main():
@@ -75,7 +75,35 @@ def main():
   with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(competing,[left,right]))
   assert sorted(results)==[False,True];passed.append('competing rectification one winner')
   expired=str(uuid.uuid4());rpc(expired,p);run(sql=f"UPDATE platform_private.application_save_preparations SET expires_at=clock_timestamp()-interval '1 second' WHERE application_id='{expired}';");rpc(expired,p,'finalize',ok=False);passed.append('expired preparation denied')
-  report=dict(passed=len(passed),failed=0,cases=passed,hashes=json.loads(hashes),limitations='Reduced schema/RLS/auth emulation. Storage.objects synthetic, not real SDK upload/bytes/JWT/browser. No hosted writes.')
+  # Whole review files run unchanged and refuse this reduced schema before any write.
+  def snapshot():return run(sql="SELECT oid::regprocedure,md5(pg_get_functiondef(oid)),proacl::text,proconfig FROM pg_proc WHERE oid IN ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])'::regprocedure,'platform_private.storage1_application_allowed(text,text)'::regprocedure,'public.can_user_access_aplicacao(uuid)'::regprocedure) ORDER BY oid;")
+  installed=snapshot();run(file=HERE/'candidate.sql.review',ok=False);assert snapshot()==installed;passed.append('full hosted candidate refuses reduced catalog atomically')
+  run(file=HERE/'rollback.sql.review',ok=False);assert snapshot()==installed;passed.append('full hosted rollback refuses reduced catalog atomically')
+  # Local-only guard substitutions are explicit: production hashes never auto-blessed.
+  def localize(text,pre,post):
+   guards=list(re.finditer(r'DO \$guard\$.*?END \$guard\$;',text,re.S));assert len(guards)==2
+   expected=[pre,post];out='';cursor=0
+   for i,m in enumerate(guards):
+    hashes=expected[i]
+    assertions=' OR '.join("md5(pg_get_functiondef('"+sig+"'::regprocedure)) IS DISTINCT FROM '"+h+"'" for sig,h in hashes.items())
+    out+=text[cursor:m.start()]+"DO $$BEGIN IF "+assertions+" THEN RAISE EXCEPTION 'LOCAL_REDUCED_GUARD_DRIFT'; END IF; END$$;";cursor=m.end()
+   return out+text[cursor:]
+  post=json.loads(hashes);baseline=dict(post)
+  run(file=HERE/'baseline-rpc.sql.review');run(file=HERE/'baseline-storage.sql.review')
+  baseline=json.loads(run(sql="SELECT json_object_agg(oid::regprocedure::text,md5(pg_get_functiondef(oid))) FROM pg_proc WHERE oid IN ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])'::regprocedure,'platform_private.storage1_application_allowed(text,text)'::regprocedure,'public.can_user_access_aplicacao(uuid)'::regprocedure);"))
+  assert baseline['rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])']=='46d342a71f4712056782cf3d976154a5'
+  assert baseline['platform_private.storage1_application_allowed(text,text)']=='fa4f590bec955e4a254a906fbda82e20'
+  passed.append('exact baseline hashes verified locally')
+  # Existing receipts stay preserved; local candidate starts with a clean private receipt table.
+  run(sql='ALTER TABLE platform_private.application_save_preparations RENAME TO local_preserved_receipts;')
+  before=snapshot();temp=t/'candidate.sql';text=localize((HERE/'candidate.sql.review').read_text(),baseline,post)
+  temp.write_text(text.replace('-- POSTCHECK',"DO $$BEGIN RAISE EXCEPTION 'forced_post_failure'; END$$;\n-- POSTCHECK"));run(file=temp,ok=False);assert snapshot()==before;check('candidate post failure rolls back private table',"to_regclass('platform_private.application_save_preparations') IS NULL")
+  temp.write_text(text);run(file=temp);assert snapshot()==installed;passed.append('full localized candidate installs exact hashes')
+  temp.write_text(localize((HERE/'rollback.sql.review').read_text(),post,baseline).replace('-- POSTCHECK',"DO $$BEGIN RAISE EXCEPTION 'forced_rollback_failure'; END$$;\n-- POSTCHECK"));run(file=temp,ok=False);assert snapshot()==installed;passed.append('rollback post failure atomic')
+  temp.write_text(localize((HERE/'rollback.sql.review').read_text(),post,baseline));run(file=temp);assert snapshot()==before;passed.append('rollback exact closed baseline')
+  check('rollback preserves receipt/history',"to_regclass('platform_private.application_save_preparations') IS NOT NULL AND (SELECT count(*) FROM aplicacoes)>0")
+  run(sql="SELECT set_config('request.jwt.claims','{}',false); SET ROLE authenticated; SELECT public.rpc_salvar_aplicacao_v1(NULL,'{}');",ok=False);passed.append('rollback remains closed')
+  report=dict(passed=len(passed),failed=0,cases=passed,hashes=json.loads(hashes),limitations='Reduced schema/RLS/auth emulation. Storage.objects synthetic, not real SDK upload/bytes/JWT/browser. Full hosted guard refuses reduced catalog; full install/rollback use explicit local-only guard substitutions. No hosted writes.')
   (HERE/'results.local.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n');print(json.dumps(report,indent=2,ensure_ascii=False))
  finally:subprocess.run(prefix+['pg_ctl','-D',str(t/'data'),'stop','-m','immediate'],capture_output=True)
 if __name__=='__main__':main()
