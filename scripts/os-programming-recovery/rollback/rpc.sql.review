@@ -1,5 +1,9 @@
-CREATE OR REPLACE FUNCTION public.rpc_programar_os_v1(p_os_id uuid,p_origem text,p_data_programada date DEFAULT NULL::date)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $function$
+CREATE OR REPLACE FUNCTION public.rpc_programar_os_v1(p_os_id uuid, p_origem text, p_data_programada date DEFAULT NULL::date)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
 DECLARE v_user_id uuid; v_role text; v_status text; v_status_inicial text; v_onfarm boolean;
  v_product uuid; v_micro uuid;
 BEGIN
@@ -46,4 +50,5 @@ BEGIN
  CASE WHEN p_data_programada IS NULL THEN NULL ELSE 'data_programada='||p_data_programada::text END);
  PERFORM public.refresh_esteira_laboratorio();
  RETURN jsonb_build_object('success',true,'status',v_status,'message',CASE WHEN v_status_inicial='programada' THEN 'Programação atualizada' ELSE 'OS programada com sucesso' END);
-END $function$;
+END $function$
+;

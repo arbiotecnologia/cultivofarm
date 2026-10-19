@@ -1,0 +1,3100 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "enums": {
+    "app_role": [
+      "administrador",
+      "tecnico_agronomo",
+      "producao",
+      "administrativo",
+      "gestor",
+      "cliente_produtor",
+      "consultor_tecnico",
+      "aplicador",
+      "operador_onfarm",
+      "financeiro",
+      "gestor_comercial",
+      "parceiro_b2b",
+      "parceiro_b2b_tecnico",
+      "superadmin"
+    ],
+    "status_os": [
+      "aberta",
+      "aprovada",
+      "programada",
+      "em_producao",
+      "em_cq",
+      "envase",
+      "aguardando_reserva",
+      "pronto_entrega",
+      "entregue",
+      "finalizada"
+    ],
+    "nivel_risco": [
+      "baixo",
+      "medio",
+      "alto",
+      "critico"
+    ],
+    "status_lote": [
+      "em_producao",
+      "aguardando_cq",
+      "aprovado",
+      "reprovado"
+    ],
+    "tipo_alerta": [
+      "praga",
+      "doenca",
+      "daninha",
+      "nematoide",
+      "estresse_hidrico"
+    ],
+    "tipo_visita": [
+      "vistoria_inicial",
+      "retorno",
+      "monitoramento",
+      "pos_aplicacao",
+      "emergencia",
+      "acompanhamento_programado"
+    ],
+    "resultado_cq": [
+      "aprovado",
+      "reprovado"
+    ],
+    "tipo_checkin": [
+      "chegada_fazenda",
+      "chegada_talhao",
+      "inicio_visita",
+      "checkout"
+    ],
+    "tipo_produto": [
+      "inseticida",
+      "fungicida",
+      "solo",
+      "inoculante",
+      "solubilizador"
+    ],
+    "nivel_pressao": [
+      "baixo",
+      "medio",
+      "alto",
+      "severo"
+    ],
+    "partner_porte": [
+      "pequeno",
+      "medio",
+      "grande"
+    ],
+    "prioridade_os": [
+      "baixa",
+      "media",
+      "alta"
+    ],
+    "status_alerta": [
+      "ativo",
+      "monitoramento",
+      "encerrado"
+    ],
+    "tipo_problema": [
+      "praga",
+      "doenca",
+      "solo",
+      "nutricao",
+      "nematoide"
+    ],
+    "cliente_status": [
+      "prospect",
+      "ativo",
+      "inativo",
+      "bloqueado_financeiro"
+    ],
+    "status_checkin": [
+      "realizado",
+      "inconsistente",
+      "validado"
+    ],
+    "status_entrega": [
+      "separado",
+      "em_rota",
+      "entregue",
+      "cancelada"
+    ],
+    "status_estoque": [
+      "disponivel",
+      "reservado",
+      "expedido",
+      "estornado"
+    ],
+    "tipo_embalagem": [
+      "frasco_1L",
+      "bombona_5L",
+      "bombona_20L"
+    ],
+    "risco_produtivo": [
+      "baixo",
+      "medio",
+      "alto",
+      "critico"
+    ],
+    "cliente_doc_tipo": [
+      "contrato_social",
+      "procuracao",
+      "car_mapa",
+      "outro",
+      "cnh",
+      "cartao_cnpj",
+      "inscricao_produtor",
+      "rg",
+      "comprovante_endereco"
+    ],
+    "nivel_severidade": [
+      "baixo",
+      "medio",
+      "alto"
+    ],
+    "partner_segmento": [
+      "cooperativa",
+      "revenda_agro",
+      "consultoria",
+      "industria",
+      "produtor_direto",
+      "outro"
+    ],
+    "status_aprovacao": [
+      "pendente",
+      "aprovado",
+      "reprovado",
+      "solicitar_ajuste",
+      "ajuste_solicitado",
+      "reaberto"
+    ],
+    "status_os_onfarm": [
+      "aberta",
+      "aprovada",
+      "programada",
+      "em_producao",
+      "em_cq",
+      "envase",
+      "aguardando_reserva",
+      "pronto_entrega",
+      "entregue",
+      "finalizada",
+      "cancelada"
+    ],
+    "comunicacao_canal": [
+      "email",
+      "whatsapp",
+      "in_app",
+      "push"
+    ],
+    "estrategia_manejo": [
+      "biologico",
+      "manejo_integrado",
+      "monitoramento",
+      "correcao_operacional",
+      "ajuste_aplicacao",
+      "ajuste_janela",
+      "outro"
+    ],
+    "partner_type_enum": [
+      "distribuidor",
+      "revenda",
+      "cooperativa",
+      "produtor_parceiro",
+      "canal_estrategico",
+      "representante"
+    ],
+    "status_atribuicao": [
+      "atribuida",
+      "aceita",
+      "recusada",
+      "concluida"
+    ],
+    "status_diagnostico": [
+      "novo",
+      "em_analise",
+      "diagnostico_concluido"
+    ],
+    "status_programacao": [
+      "aguardando",
+      "em_producao",
+      "aguardando_cq",
+      "aprovado"
+    ],
+    "tipo_microrganismo": [
+      "bacteria",
+      "fungo",
+      "levedura",
+      "consorcio"
+    ],
+    "urgencia_consultor": [
+      "baixa",
+      "media",
+      "alta",
+      "critica"
+    ],
+    "cliente_tipo_pessoa": [
+      "fisica",
+      "juridica"
+    ],
+    "access_level_tecnico": [
+      "read",
+      "execute",
+      "manage"
+    ],
+    "order_message_author": [
+      "parceiro",
+      "comercial",
+      "admin"
+    ],
+    "partner_order_status": [
+      "rascunho",
+      "pendente",
+      "solicitado",
+      "em_analise_comercial",
+      "aprovado",
+      "reprovado",
+      "em_producao",
+      "produzido",
+      "aguardando_entrega",
+      "confirmado",
+      "em_separacao",
+      "enviado",
+      "entregue",
+      "faturado",
+      "cancelado",
+      "aguardando_aprovacao_credito",
+      "aguardando_ajuste_comercial",
+      "aguardando_itens",
+      "reprovado_sem_itens",
+      "aguardando_cotacao"
+    ],
+    "ponto_area_consultor": [
+      "entrada_talhao",
+      "bordadura",
+      "centro_area",
+      "reboleira",
+      "outro"
+    ],
+    "objetivo_recomendacao": [
+      "preventivo",
+      "corretivo",
+      "reducao_pressao",
+      "tratamento_solo",
+      "reequilibrio_biologico",
+      "suporte_fisiologico",
+      "manejo_integrado"
+    ],
+    "partner_contact_setor": [
+      "comercial",
+      "financeiro",
+      "operacional",
+      "tecnico",
+      "administrativo",
+      "outro"
+    ],
+    "partner_order_priority": [
+      "normal",
+      "urgente",
+      "programado"
+    ],
+    "tipo_arquivo_consultor": [
+      "foto",
+      "audio",
+      "pdf"
+    ],
+    "tipo_demanda_consultor": [
+      "praga",
+      "doenca",
+      "planta_daninha",
+      "nematoide",
+      "solo",
+      "nutricao_biologica",
+      "manejo_preventivo",
+      "manejo_corretivo",
+      "outro"
+    ],
+    "faturamento_base_status": [
+      "PENDENTE",
+      "LIBERADO_FATURAMENTO",
+      "FATURADO_PARCIAL",
+      "FATURADO_TOTAL",
+      "CANCELADO"
+    ],
+    "necessidade_intervencao": [
+      "monitorar",
+      "intervir_ate_7_dias",
+      "intervir_ate_3_dias",
+      "intervir_imediatamente"
+    ],
+    "tipo_notificacao_portal": [
+      "informativo",
+      "alerta",
+      "entrega",
+      "recomendacao",
+      "aplicacao",
+      "sistema"
+    ],
+    "modo_aplicacao_consultor": [
+      "foliar",
+      "aplicacao_no_colo_da_planta",
+      "via_solo",
+      "tratamento_semente",
+      "sulco_plantio",
+      "jato_dirigido",
+      "outro"
+    ],
+    "saas_subscription_status": [
+      "TRIAL",
+      "ACTIVE",
+      "PAST_DUE",
+      "SUSPENDED",
+      "CANCELLED",
+      "EXPIRED"
+    ],
+    "comunicacao_evento_status": [
+      "received",
+      "processed",
+      "skipped"
+    ],
+    "comunicacao_outbox_status": [
+      "pending",
+      "processing",
+      "sent",
+      "failed",
+      "cancelled",
+      "skipped",
+      "dead_letter"
+    ],
+    "partner_regime_tributario": [
+      "simples",
+      "lucro_presumido",
+      "lucro_real",
+      "mei",
+      "isento"
+    ],
+    "status_registro_consultor": [
+      "rascunho",
+      "em_andamento",
+      "finalizado",
+      "enviado_aprovacao",
+      "aprovado",
+      "convertido_os",
+      "arquivado",
+      "reprovado"
+    ],
+    "production_planning_status": [
+      "aguardando_planejamento",
+      "planejado",
+      "em_producao",
+      "produzido",
+      "entregue",
+      "cancelado",
+      "replanejar"
+    ],
+    "categoria_arquivo_consultor": [
+      "praga",
+      "doenca",
+      "planta_daninha",
+      "nematoide",
+      "solo",
+      "aplicacao",
+      "geral",
+      "laudo",
+      "documento_cliente",
+      "recomendacao_anexa",
+      "checkin",
+      "vistoria",
+      "retorno"
+    ],
+    "comunicacao_template_status": [
+      "draft",
+      "active",
+      "archived"
+    ],
+    "natureza_registro_consultor": [
+      "ocorrencia",
+      "visita"
+    ],
+    "categoria_problema_consultor": [
+      "insetos_praga",
+      "doencas_fungicas",
+      "doencas_bacterianas",
+      "nematoides",
+      "plantas_daninhas",
+      "desequilibrio_biologico_solo",
+      "baixa_vitalidade",
+      "falha_estande",
+      "fitotoxidade",
+      "outro"
+    ],
+    "recomendacao_comentario_autor_tipo": [
+      "produtor",
+      "tecnico",
+      "gestor",
+      "admin"
+    ]
+  },
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "clientes"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cpf_cnpj",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "telefone",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "clientes"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "clientes"
+    },
+    {
+      "name": "tipo_pessoa",
+      "type": "cliente_tipo_pessoa",
+      "table": "clientes"
+    },
+    {
+      "name": "razao_social",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "nome_fantasia",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "inscricao_estadual",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "inscricao_municipal",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "site",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "segmento",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_cep",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_logradouro",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_numero",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_complemento",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_bairro",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_municipio",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_estado",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_latitude",
+      "type": "numeric",
+      "table": "clientes"
+    },
+    {
+      "name": "endereco_longitude",
+      "type": "numeric",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_mesmo_endereco",
+      "type": "boolean",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_cep",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_logradouro",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_numero",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_complemento",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_bairro",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_municipio",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "cobranca_estado",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "contato_financeiro_nome",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "contato_financeiro_email",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "contato_financeiro_telefone",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "status_cliente",
+      "type": "cliente_status",
+      "table": "clientes"
+    },
+    {
+      "name": "tags",
+      "type": "text[]",
+      "table": "clientes"
+    },
+    {
+      "name": "limite_credito",
+      "type": "numeric",
+      "table": "clientes"
+    },
+    {
+      "name": "condicao_pagamento",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "banco_nome",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "banco_agencia",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "banco_conta",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "banco_tipo_conta",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "banco_pix_chave",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "banco_pix_tipo",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "telefones",
+      "type": "text[]",
+      "table": "clientes"
+    },
+    {
+      "name": "codigo_cliente",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "marca_nome",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "marca_logo_url",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "marca_cor_primaria",
+      "type": "text",
+      "table": "clientes"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "clientes"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "lote_id",
+      "type": "uuid",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "ph",
+      "type": "numeric",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "aparencia",
+      "type": "text",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "odor",
+      "type": "text",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "concentracao",
+      "type": "numeric",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "contaminacao",
+      "type": "text",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "data_analise",
+      "type": "date",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "responsavel",
+      "type": "text",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "resultado",
+      "type": "resultado_cq",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "responsavel_id",
+      "type": "uuid",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "seq",
+      "type": "bigint",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "controle_qualidade"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "fazendas"
+    },
+    {
+      "name": "cliente_id",
+      "type": "uuid",
+      "table": "fazendas"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "municipio",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "estado",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "area_total",
+      "type": "numeric",
+      "table": "fazendas"
+    },
+    {
+      "name": "latitude",
+      "type": "numeric",
+      "table": "fazendas"
+    },
+    {
+      "name": "longitude",
+      "type": "numeric",
+      "table": "fazendas"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "fazendas"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "fazendas"
+    },
+    {
+      "name": "codigo_referencia",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "consultor_responsavel_id",
+      "type": "uuid",
+      "table": "fazendas"
+    },
+    {
+      "name": "area_produtiva",
+      "type": "numeric",
+      "table": "fazendas"
+    },
+    {
+      "name": "tipo_exploracao",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "inscricao_estadual_produtor",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "car",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "nirf",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "endereco_acesso",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "ponto_referencia",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "distancia_sede_km",
+      "type": "numeric",
+      "table": "fazendas"
+    },
+    {
+      "name": "responsavel_local_nome",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "responsavel_local_telefone",
+      "type": "text",
+      "table": "fazendas"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "fazendas"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "fazendas"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "origem_os",
+      "type": "text",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "os_id",
+      "type": "uuid",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "programacao_id",
+      "type": "uuid",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "lote_id",
+      "type": "uuid",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "etapa_anterior",
+      "type": "text",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "etapa_nova",
+      "type": "text",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "acao",
+      "type": "text",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "observacao",
+      "type": "text",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "usuario_id",
+      "type": "uuid",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "laboratorio_esteira_eventos"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "lotes"
+    },
+    {
+      "name": "codigo_lote",
+      "type": "text",
+      "table": "lotes"
+    },
+    {
+      "name": "produto_id",
+      "type": "uuid",
+      "table": "lotes"
+    },
+    {
+      "name": "programacao_id",
+      "type": "uuid",
+      "table": "lotes"
+    },
+    {
+      "name": "volume_produzido",
+      "type": "numeric",
+      "table": "lotes"
+    },
+    {
+      "name": "data_producao",
+      "type": "date",
+      "table": "lotes"
+    },
+    {
+      "name": "responsavel_producao",
+      "type": "text",
+      "table": "lotes"
+    },
+    {
+      "name": "tanque",
+      "type": "text",
+      "table": "lotes"
+    },
+    {
+      "name": "status",
+      "type": "status_lote",
+      "table": "lotes"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "lotes"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "lotes"
+    },
+    {
+      "name": "microrganismo_id",
+      "type": "uuid",
+      "table": "lotes"
+    },
+    {
+      "name": "custo_producao_estimado",
+      "type": "numeric",
+      "table": "lotes"
+    },
+    {
+      "name": "observacoes_tecnicas",
+      "type": "text",
+      "table": "lotes"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "lotes"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "microrganismos"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "tipo",
+      "type": "tipo_microrganismo",
+      "table": "microrganismos"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "microrganismos"
+    },
+    {
+      "name": "nome_cientifico",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "concentracao_ufc_ml",
+      "type": "numeric",
+      "table": "microrganismos"
+    },
+    {
+      "name": "concentracao_label",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "dose_ml_ha",
+      "type": "numeric",
+      "table": "microrganismos"
+    },
+    {
+      "name": "valor_dose_brl",
+      "type": "numeric(10,2)",
+      "table": "microrganismos"
+    },
+    {
+      "name": "fornecedor",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "safra_referencia",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "producao_on_farm",
+      "type": "boolean",
+      "table": "microrganismos"
+    },
+    {
+      "name": "meio_cultivo",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "funcao_agronomica",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "microrganismos"
+    },
+    {
+      "name": "b2b_enabled",
+      "type": "boolean",
+      "table": "microrganismos"
+    },
+    {
+      "name": "codigo",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "descricao",
+      "type": "text",
+      "table": "microrganismos"
+    },
+    {
+      "name": "preco_tabela",
+      "type": "numeric(12,2)",
+      "table": "microrganismos"
+    },
+    {
+      "name": "valor_litro_brl",
+      "type": "numeric",
+      "table": "microrganismos"
+    },
+    {
+      "name": "product_id",
+      "type": "uuid",
+      "table": "microrganismos"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "microrganismos"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "cliente_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "fazenda_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "talhao_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "produto_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "volume_total_ml",
+      "type": "numeric",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "area_hectares",
+      "type": "numeric",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "data_programada",
+      "type": "date",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "prioridade",
+      "type": "prioridade_os",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "status",
+      "type": "status_os",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "microrganismo_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "tipo_item",
+      "type": "text",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "modo_aplicacao",
+      "type": "text",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "numero_os",
+      "type": "text",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "partner_order_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "partner_order_item_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "origem",
+      "type": "text",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "ordens_servico"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "registro_consultor_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "aprovacao_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "cliente_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "fazenda_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "talhao_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "produto_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "dose_ml_ha",
+      "type": "numeric",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "area_hectares",
+      "type": "numeric",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "volume_total_ml",
+      "type": "numeric",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "modo_aplicacao",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "data_recomendada",
+      "type": "date",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "prioridade",
+      "type": "prioridade_os",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "status",
+      "type": "status_os_onfarm",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "lote_pre_os_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "numero_os",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "solicitacao_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "consultor_responsavel",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "cultura_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "fase_fenologica",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "problema_principal",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "diagnostico",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "recomendacao_tecnica",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "observacoes_adicionais",
+      "type": "text",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "microrganismo_id",
+      "type": "uuid",
+      "table": "ordens_servico_onfarm"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "feature_id",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "mode",
+      "type": "text",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "limit_value",
+      "type": "numeric",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "starts_at",
+      "type": "timestamp with time zone",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "ends_at",
+      "type": "timestamp with time zone",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "reason",
+      "type": "text",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "ended_by",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "end_reason",
+      "type": "text",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "idempotency_key",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "end_idempotency_key",
+      "type": "uuid",
+      "table": "organization_feature_overrides"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "plan_id",
+      "type": "uuid",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "status",
+      "type": "saas_subscription_status",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "billing_cycle",
+      "type": "text",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "trial_ends_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "current_period_start",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "current_period_end",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "cancel_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "cancelled_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "suspended_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "plan_version_id",
+      "type": "uuid",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "price_snapshot",
+      "type": "numeric(14,2)",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "currency_snapshot",
+      "type": "text",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "billing_cycle_snapshot",
+      "type": "text",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "limits_snapshot",
+      "type": "jsonb",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "features_snapshot",
+      "type": "jsonb",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "state_changed_at",
+      "type": "timestamp with time zone",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "last_correlation_id",
+      "type": "uuid",
+      "table": "organization_subscriptions"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "organizations"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "partner_account_id",
+      "type": "uuid",
+      "table": "organizations"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "organizations"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "organizations"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "organizations"
+    },
+    {
+      "name": "responsavel_user_id",
+      "type": "uuid",
+      "table": "organizations"
+    },
+    {
+      "name": "responsavel_definido_em",
+      "type": "timestamp with time zone",
+      "table": "organizations"
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "razao_social",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "nome_fantasia",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "cnpj",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "cnpj_normalizado",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "email_corporativo",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "onboarding_dados",
+      "type": "jsonb",
+      "table": "organizations"
+    },
+    {
+      "name": "fuso_horario",
+      "type": "text",
+      "table": "organizations"
+    },
+    {
+      "name": "onboarding_concluido_em",
+      "type": "timestamp with time zone",
+      "table": "organizations"
+    },
+    {
+      "name": "ativada_em",
+      "type": "timestamp with time zone",
+      "table": "organizations"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "cpf_cnpj",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "telefone",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "modo_acesso",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "responsavel_principal",
+      "type": "boolean",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "invited_by",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "concluido_em",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "request_id",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "attempt_count",
+      "type": "integer",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "lease_token",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "lease_expires_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "auth_created_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "last_error_code",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_delivery_status",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_attempt_count",
+      "type": "integer",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_idempotency_key",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_lease_token",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_lease_expires_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_last_attempt_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_accepted_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_failed_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_next_attempt_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "email_last_error_code",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "access_operation_id",
+      "type": "uuid",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "access_operation_kind",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "access_operation_status",
+      "type": "text",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "access_requested_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "access_expires_at",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "access_valid_after",
+      "type": "timestamp with time zone",
+      "table": "platform_org_admin_invites"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "production_order_link"
+    },
+    {
+      "name": "partner_order_id",
+      "type": "uuid",
+      "table": "production_order_link"
+    },
+    {
+      "name": "partner_order_item_id",
+      "type": "uuid",
+      "table": "production_order_link"
+    },
+    {
+      "name": "planning_id",
+      "type": "uuid",
+      "table": "production_order_link"
+    },
+    {
+      "name": "ordem_servico_id",
+      "type": "uuid",
+      "table": "production_order_link"
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "production_order_link"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "production_order_link"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "produtos"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "tipo",
+      "type": "tipo_produto",
+      "table": "produtos"
+    },
+    {
+      "name": "dose_ml_ha",
+      "type": "numeric",
+      "table": "produtos"
+    },
+    {
+      "name": "descricao",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "modo_acao",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "produtos"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "produtos"
+    },
+    {
+      "name": "codigo",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "funcao_completa",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "modo_aplicacao",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "valor_ha_brl",
+      "type": "numeric(10,2)",
+      "table": "produtos"
+    },
+    {
+      "name": "versao_catalogo",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "produtos"
+    },
+    {
+      "name": "e_insumo",
+      "type": "boolean",
+      "table": "produtos"
+    },
+    {
+      "name": "estoque_minimo",
+      "type": "numeric",
+      "table": "produtos"
+    },
+    {
+      "name": "b2b_enabled",
+      "type": "boolean",
+      "table": "produtos"
+    },
+    {
+      "name": "valor_dose_brl",
+      "type": "numeric",
+      "table": "produtos"
+    },
+    {
+      "name": "valor_litro_brl",
+      "type": "numeric",
+      "table": "produtos"
+    },
+    {
+      "name": "familia_catalogo",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "classe_catalogo",
+      "type": "text",
+      "table": "produtos"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "profiles"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid",
+      "table": "profiles"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "profiles"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "profiles"
+    },
+    {
+      "name": "telefone",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "cargo",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "cpf_cnpj",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "profiles"
+    },
+    {
+      "name": "cliente_id",
+      "type": "uuid",
+      "table": "profiles"
+    },
+    {
+      "name": "crea",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "especialidade",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "data_admissao",
+      "type": "date",
+      "table": "profiles"
+    },
+    {
+      "name": "observacoes_internas",
+      "type": "text",
+      "table": "profiles"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "profiles"
+    },
+    {
+      "name": "senha_provisoria",
+      "type": "boolean",
+      "table": "profiles"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "ordem_servico_id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "produto_id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "volume_necessario",
+      "type": "numeric",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "data_programada",
+      "type": "date",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "responsavel",
+      "type": "text",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "status",
+      "type": "status_programacao",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "ordem_servico_onfarm_id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "microrganismo_id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "responsavel_id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "programacao_producao"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "saas_features"
+    },
+    {
+      "name": "module_id",
+      "type": "uuid",
+      "table": "saas_features"
+    },
+    {
+      "name": "key",
+      "type": "text",
+      "table": "saas_features"
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "table": "saas_features"
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "saas_features"
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "table": "saas_features"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "saas_features"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "saas_features"
+    },
+    {
+      "name": "commercializable",
+      "type": "boolean",
+      "table": "saas_features"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "saas_modules"
+    },
+    {
+      "name": "key",
+      "type": "text",
+      "table": "saas_modules"
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "table": "saas_modules"
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "saas_modules"
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "table": "saas_modules"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "saas_modules"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "saas_modules"
+    },
+    {
+      "name": "plan_version_id",
+      "type": "uuid",
+      "table": "saas_plan_version_features"
+    },
+    {
+      "name": "feature_id",
+      "type": "uuid",
+      "table": "saas_plan_version_features"
+    },
+    {
+      "name": "enabled",
+      "type": "boolean",
+      "table": "saas_plan_version_features"
+    },
+    {
+      "name": "limit_value",
+      "type": "numeric",
+      "table": "saas_plan_version_features"
+    },
+    {
+      "name": "config",
+      "type": "jsonb",
+      "table": "saas_plan_version_features"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_version_features"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "plan_id",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "version_number",
+      "type": "integer",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "name_snapshot",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "description_snapshot",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "price_amount",
+      "type": "numeric(14,2)",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "currency",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "billing_cycle",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "limits_snapshot",
+      "type": "jsonb",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "features_snapshot",
+      "type": "jsonb",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "effective_from",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "effective_to",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "published_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "publication_reason",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "correlation_id",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "trial_days",
+      "type": "integer",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "revision",
+      "type": "integer",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "draft_key",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "publish_key",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "archived_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "archived_by",
+      "type": "uuid",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "archive_reason",
+      "type": "text",
+      "table": "saas_plan_versions"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "talhoes"
+    },
+    {
+      "name": "fazenda_id",
+      "type": "uuid",
+      "table": "talhoes"
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "talhoes"
+    },
+    {
+      "name": "area_hectares",
+      "type": "numeric",
+      "table": "talhoes"
+    },
+    {
+      "name": "cultura_id",
+      "type": "uuid",
+      "table": "talhoes"
+    },
+    {
+      "name": "historico_pragas",
+      "type": "text",
+      "table": "talhoes"
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "table": "talhoes"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "talhoes"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "talhoes"
+    },
+    {
+      "name": "tipo_manejo_agua",
+      "type": "text",
+      "table": "talhoes"
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "talhoes"
+    },
+    {
+      "name": "safra_atual_id",
+      "type": "uuid",
+      "table": "talhoes"
+    },
+    {
+      "name": "latitude",
+      "type": "numeric(10,7)",
+      "table": "talhoes"
+    },
+    {
+      "name": "longitude",
+      "type": "numeric(10,7)",
+      "table": "talhoes"
+    },
+    {
+      "name": "localizacao_referencia",
+      "type": "text",
+      "table": "talhoes"
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "talhoes"
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "user_roles"
+    },
+    {
+      "name": "user_id",
+      "type": "uuid",
+      "table": "user_roles"
+    },
+    {
+      "name": "role",
+      "type": "app_role",
+      "table": "user_roles"
+    }
+  ],
+  "triggers": [
+    {
+      "body": "CREATE OR REPLACE FUNCTION private.guard_os_separate_approval()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_origin text; v_org uuid;\nBEGIN\n IF TG_OP='INSERT' THEN\n -- Cria\u00e7\u00e3o normal exclusivamente aberta, inclusive pelo servi\u00e7o/DEFINER.\n -- NULL e qualquer estado avan\u00e7ado n\u00e3o podem saltar a aprova\u00e7\u00e3o humana.\n -- Sem whitelist service_role, flags GUC ou reparo de hist\u00f3ricos.\n IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN NEW;\n END IF;\n IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;\n v_origin:=CASE TG_TABLE_NAME WHEN 'ordens_servico' THEN 'manual' WHEN 'ordens_servico_onfarm' THEN 'onfarm' END;\n IF TG_WHEN='BEFORE' THEN\n -- Um \u00fanico UPDATE n\u00e3o pode substituir a identidade/refer\u00eancias e aprovar o estado anterior.\n IF (to_jsonb(NEW)-ARRAY['status','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at']) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n v_org:=private.assert_os_approval_scope(OLD.id,v_origin);\n RETURN NEW;\n END IF;\n IF OLD.status::text='aberta' THEN\n v_org:=private.assert_os_approval_scope(NEW.id,v_origin);\n INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)\n SELECT NEW.id,v_origin,pp.id,'aberta','aprovada','aprovar_os',auth.uid(),jsonb_build_object(\n 'organization_id',v_org,'before',jsonb_build_object('status',OLD.status,'volume',OLD.volume_total_ml,'data_os',to_jsonb(OLD)->'data_programada'),\n 'after',jsonb_build_object('status',NEW.status,'volume',NEW.volume_total_ml,'data_os',to_jsonb(NEW)->'data_programada'),\n 'programacao',jsonb_build_object('id',pp.id,'status',pp.status,'data',pp.data_programada,'volume',pp.volume_necessario),\n 'actor',auth.uid(),'at',clock_timestamp(),'manufacturing_started',false,'commercial_completed',false)::text\n FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "hash": "f00397fe862e611fbfa0eba3911d95c6",
+      "name": "aa_guard_separate_approval",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER aa_guard_separate_approval BEFORE INSERT OR UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "d01a740c1e3e02407131d2b9228bf658",
+      "name": "tenant_organization_guard",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.check_os_item_ref()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.produto_id IS NULL AND NEW.microrganismo_id IS NULL THEN\n    RAISE EXCEPTION 'Ordem de Servi\u00e7o precisa de produto_id OU microrganismo_id';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "d059f0014afe15e9d9405fc54a478f2e",
+      "name": "trg_check_os_item_ref",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_check_os_item_ref BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION check_os_item_ref()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.check_os_status_transition()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  status_order text[] := ARRAY['aberta', 'aprovada', 'programada', 'em_producao', 'em_cq', 'envase', 'aguardando_reserva', 'pronto_entrega', 'entregue', 'finalizada'];\n  old_idx int;\n  new_idx int;\n  cq_count int;\n  v_lote_id uuid;\nBEGIN\n  -- Se o status n\u00e3o mudou, permite\n  IF (OLD.status::text = NEW.status::text) THEN\n    RETURN NEW;\n  END IF;\n\n  -- Se o novo status \u00e9 'cancelada', permite\n  IF (NEW.status::text = 'cancelada') THEN\n    RETURN NEW;\n  END IF;\n\n  -- Valida\u00e7\u00e3o espec\u00edfica: Bloquear avan\u00e7o para 'envase' se o CQ n\u00e3o estiver aprovado\n  IF (NEW.status::text = 'envase') THEN\n    -- Encontrar o lote associado a esta OS OnFarm\n    -- A rela\u00e7\u00e3o \u00e9 OS -> Programa\u00e7\u00e3o -> Lote\n    SELECT l.id INTO v_lote_id\n    FROM public.lotes l\n    JOIN public.programacao_producao pp ON l.programacao_id = pp.id\n    WHERE pp.ordem_servico_onfarm_id = NEW.id\n    LIMIT 1;\n\n    -- Se n\u00e3o encontrar por ordem_servico_onfarm_id, tenta pelo ordem_servico_id (caso seja OS padr\u00e3o)\n    IF v_lote_id IS NULL THEN\n        SELECT l.id INTO v_lote_id\n        FROM public.lotes l\n        JOIN public.programacao_producao pp ON l.programacao_id = pp.id\n        WHERE pp.ordem_servico_id = NEW.id\n        LIMIT 1;\n    END IF;\n\n    IF v_lote_id IS NOT NULL THEN\n        -- Verificar se existe controle de qualidade aprovado para este lote\n        -- Assumindo que o enum de resultado do CQ possui 'aprovado'\n        SELECT count(*) INTO cq_count\n        FROM public.controle_qualidade\n        WHERE lote_id = v_lote_id AND resultado::text = 'aprovado';\n\n        IF cq_count = 0 THEN\n            RAISE EXCEPTION 'N\u00e3o \u00e9 poss\u00edvel avan\u00e7ar para ENVASE: O lote vinculado a esta Ordem de Servi\u00e7o ainda n\u00e3o possui um laudo de Controle de Qualidade APROVADO.'\n            USING ERRCODE = 'check_violation';\n        END IF;\n    ELSE\n        -- Se n\u00e3o h\u00e1 lote/programa\u00e7\u00e3o, mas tentou ir para envase, pode ser inconsist\u00eancia de dados\n        -- Mas se o fluxo operacional permite envase sem lote em casos raros, poder\u00edamos ignorar.\n        -- Para garantir seguran\u00e7a, vamos exigir o lote se estiver na fase de produ\u00e7\u00e3o.\n        RAISE EXCEPTION 'N\u00e3o \u00e9 poss\u00edvel avan\u00e7ar para ENVASE: Nenhum lote de produ\u00e7\u00e3o foi localizado para esta Ordem de Servi\u00e7o.'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n\n  -- Encontra os \u00edndices na esteira\n  SELECT i INTO old_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = OLD.status::text;\n  SELECT i INTO new_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = NEW.status::text;\n\n  -- Valida\u00e7\u00f5es:\n  -- 1. Se o status antigo ou novo n\u00e3o est\u00e3o na lista (e n\u00e3o \u00e9 cancelamento), lan\u00e7a erro\n  IF old_idx IS NULL OR new_idx IS NULL THEN\n    RAISE EXCEPTION 'Status inv\u00e1lido ou transi\u00e7\u00e3o n\u00e3o permitida para o fluxo operacional.';\n  END IF;\n\n  -- 2. Permite apenas avan\u00e7ar 1 posi\u00e7\u00e3o por vez\n  IF new_idx <> old_idx + 1\n     AND NOT (new_idx = old_idx + 2 AND status_order[old_idx + 1] = 'aguardando_reserva') THEN\n    RAISE EXCEPTION 'Transi\u00e7\u00e3o de status inv\u00e1lida na esteira de produ\u00e7\u00e3o: % -> %. A pr\u00f3xima etapa obrigat\u00f3ria \u00e9 %.', \n      OLD.status::text, NEW.status::text, status_order[old_idx + 1];\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "496a214d87fc831a53b2f16d3524ddea",
+      "name": "trg_check_os_status_transition",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_check_os_status_transition BEFORE UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION check_os_status_transition()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public._comunicacao_trg_os_pronto_retirada()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_idem text;\nBEGIN\n  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status = 'pronto_entrega'::public.status_os THEN\n    v_idem := 'os_pronto_retirada:ordens_servico:' || NEW.id::text;\n    PERFORM public._comunicacao_publish_system_event(\n      'produto_pronto_retirada','ordens_servico', NEW.id, '{}'::jsonb, v_idem);\n  END IF;\n  RETURN NEW;\nEND$function$\n",
+      "hash": "b0340dbc6fa5c5f880f0881ad845cb52",
+      "name": "trg_comunicacao_os_pronto_retirada",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_comunicacao_os_pronto_retirada AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.status IS DISTINCT FROM old.status)) EXECUTE FUNCTION _comunicacao_trg_os_pronto_retirada()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.fn_create_programacao_on_os_classica_insert()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.status::text NOT IN ('aberta','aprovada','programada') THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.produto_id IS NULL AND NEW.microrganismo_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id = NEW.id) THEN\n    RETURN NEW;\n  END IF;\n  INSERT INTO public.programacao_producao\n    (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)\n  VALUES\n    (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,\n     COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id);\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "27b31332cebda532e2d99d9547f9b67c",
+      "name": "trg_create_programacao_on_os_insert",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_create_programacao_on_os_insert AFTER INSERT ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_create_programacao_on_os_classica_insert()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION platform_private.trg_lab_os_biological_only()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF TG_OP='UPDATE' AND NEW.produto_id IS NOT DISTINCT FROM OLD.produto_id\n    AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;\n  PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);\n  RETURN NEW;\nEND $function$\n",
+      "hash": "75b55313502aecaf7226cd0a235f1a4f",
+      "name": "trg_lab_os_biological_only",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_lab_os_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_os_biological_only()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.trg_os_sync_partner_order_fn()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_partner_order_id uuid; v_total int; v_done int; v_in_prod int;\n v_new_status public.partner_order_status; v_old_status public.partner_order_status; v_nonlab int;\nBEGIN\n v_partner_order_id:=coalesce(NEW.partner_order_id,OLD.partner_order_id);\n IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;\n IF TG_OP='UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;\n SELECT count(*),count(*) FILTER(WHERE status IN ('pronto_entrega','entregue','finalizada')),\n count(*) FILTER(WHERE status IN ('em_producao','em_cq','envase','programada')) INTO v_total,v_done,v_in_prod\n FROM public.ordens_servico WHERE partner_order_id=v_partner_order_id;\n SELECT count(*) INTO v_nonlab FROM public.partner_order_items i WHERE i.order_id=v_partner_order_id\n AND NOT platform_private.lab_item_is_manufacturable(i.product_id,i.microrganismo_id);\n SELECT status INTO v_old_status FROM public.partner_orders WHERE id=v_partner_order_id;\n IF v_total>0 AND v_done=v_total AND v_nonlab=0 THEN v_new_status:='produzido';\n ELSIF v_in_prod>0 THEN v_new_status:='em_producao';\n ELSE v_new_status:=v_old_status; END IF;\n -- Pedido misto nunca \u00e9 declarado integralmente produzido apenas por conclus\u00e3o das OS biol\u00f3gicas.\n IF v_new_status IS DISTINCT FROM v_old_status THEN\n  UPDATE public.partner_orders SET status=v_new_status,updated_at=now() WHERE id=v_partner_order_id;\n  UPDATE public.production_planning SET status=v_new_status::text::public.production_planning_status,updated_at=now() WHERE partner_order_id=v_partner_order_id;\n  INSERT INTO public.production_timeline_events(partner_order_id,event_type,meta) VALUES(v_partner_order_id,\n  CASE WHEN v_new_status='produzido' THEN 'producao_finalizada' ELSE 'producao_iniciada' END,jsonb_build_object('from',v_old_status,'to',v_new_status));\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "hash": "d219a4922c0c6d2a464175dc61bdf5a3",
+      "name": "trg_os_sync_partner_order",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_os_sync_partner_order AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.origem = 'b2b'::text)) EXECUTE FUNCTION trg_os_sync_partner_order_fn()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.tg_protect_os_structural_fields()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.origem IS DISTINCT FROM OLD.origem\n     OR NEW.partner_order_id IS DISTINCT FROM OLD.partner_order_id\n     OR NEW.partner_order_item_id IS DISTINCT FROM OLD.partner_order_item_id\n     OR NEW.produto_id IS DISTINCT FROM OLD.produto_id\n     OR NEW.numero_os IS DISTINCT FROM OLD.numero_os\n  THEN\n    RAISE EXCEPTION 'Campos estruturais da OS (origem, v\u00ednculo B2B, produto, n\u00famero) n\u00e3o podem ser alterados.';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "8c9c5436e1f0091706a4ff17c9f365fa",
+      "name": "trg_protect_os_structural_fields",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_protect_os_structural_fields BEFORE UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION tg_protect_os_structural_fields()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.tg_recalc_planning_from_os()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_po uuid;\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT l.partner_order_id INTO v_po\n    FROM public.production_order_link l\n   WHERE l.ordem_servico_id = NEW.id\n   LIMIT 1;\n\n  IF v_po IS NOT NULL THEN\n    PERFORM public.recalc_partner_order_production(v_po);\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "ac8746e2c142d33bfb9e4f3c6d5daf6d",
+      "name": "trg_recalc_planning_from_os",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_recalc_planning_from_os AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION tg_recalc_planning_from_os()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "hash": "2f361c1fd9de578cf45796d82f3754e0",
+      "name": "trg_refresh_esteira_ordens_servico",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_refresh_esteira_ordens_servico AFTER INSERT OR DELETE OR UPDATE ON public.ordens_servico FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usu\u00e1rio ativo e empresa s\u00e3o obrigat\u00f3rios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade n\u00e3o contratada ou assinatura indispon\u00edvel'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+      "hash": "13ed48832f81cbb35434688ca35fda4b",
+      "name": "trg_saas_gate",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('ordens_producao')"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.set_numero_os_regular()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.numero_os IS NULL OR NEW.numero_os = '' THEN\n    NEW.numero_os := 'OS-' || to_char(COALESCE(NEW.created_at, now()), 'YYYY')\n      || '-' || lpad(nextval('public.ordens_servico_seq')::text, 6, '0');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "e132d714014a46dfbe38670920182ef0",
+      "name": "trg_set_numero_os_regular",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_set_numero_os_regular BEFORE INSERT ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION set_numero_os_regular()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.fn_sync_os_classica_downstream()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_prog_id uuid;\n  v_lote_id uuid;\nBEGIN\n  IF (OLD.status IS NOT DISTINCT FROM NEW.status) THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT id INTO v_prog_id FROM public.programacao_producao\n   WHERE ordem_servico_id = NEW.id ORDER BY created_at DESC LIMIT 1;\n\n  IF v_prog_id IS NULL\n     AND NEW.status::text IN ('aprovada','programada','em_producao','em_cq','envase','pronto_entrega','entregue','finalizada')\n     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN\n    INSERT INTO public.programacao_producao\n      (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)\n    VALUES\n      (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,\n       COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id)\n    RETURNING id INTO v_prog_id;\n  END IF;\n\n  IF v_prog_id IS NOT NULL THEN\n    SELECT id INTO v_lote_id FROM public.lotes\n      WHERE programacao_id = v_prog_id ORDER BY created_at DESC LIMIT 1;\n  END IF;\n\n  CASE NEW.status::text\n    WHEN 'aprovada' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'aguardando' WHERE id = v_prog_id;\n      END IF;\n    WHEN 'programada' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao\n           SET status = 'aguardando',\n               data_programada = COALESCE(NEW.data_programada, data_programada, CURRENT_DATE)\n         WHERE id = v_prog_id;\n      END IF;\n    WHEN 'em_producao' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'em_producao' WHERE id = v_prog_id;\n      END IF;\n      IF v_lote_id IS NULL AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN\n        INSERT INTO public.lotes (codigo_lote, produto_id, microrganismo_id, programacao_id, status, volume_produzido, data_producao)\n        VALUES (public.gerar_codigo_lote(), NEW.produto_id, NEW.microrganismo_id, v_prog_id,\n                'em_producao', NEW.volume_total_ml, CURRENT_DATE);\n      END IF;\n    WHEN 'em_cq' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'aguardando_cq' WHERE id = v_prog_id;\n      END IF;\n      IF v_lote_id IS NOT NULL THEN\n        UPDATE public.lotes SET status = 'aguardando_cq' WHERE id = v_lote_id;\n      END IF;\n    WHEN 'envase' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'aprovado' WHERE id = v_prog_id;\n      END IF;\n    ELSE\n      NULL;\n  END CASE;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "06e64b76968f91e19f03b24363ac610a",
+      "name": "trg_sync_os_classica_downstream",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_sync_os_classica_downstream AFTER UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_sync_os_classica_downstream()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public._sync_planning_from_os()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_partner_order_id uuid;\n  v_planning_id uuid;\n  v_total int;\n  v_done int;\n  v_in_prod int;\nBEGIN\n  v_partner_order_id := COALESCE(NEW.partner_order_id, OLD.partner_order_id);\n  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;\n\n  SELECT id INTO v_planning_id FROM public.production_planning WHERE partner_order_id = v_partner_order_id;\n  IF v_planning_id IS NULL THEN RETURN NEW; END IF;\n\n  SELECT COUNT(*),\n         COUNT(*) FILTER (WHERE status IN ('finalizada','entregue','pronto_entrega')),\n         COUNT(*) FILTER (WHERE status IN ('em_producao','em_cq','envase','programada'))\n    INTO v_total, v_done, v_in_prod\n  FROM public.ordens_servico WHERE partner_order_id = v_partner_order_id;\n\n  IF v_total = 0 THEN RETURN NEW; END IF;\n\n  IF v_done = v_total THEN\n    UPDATE public.production_planning SET status='produzido', updated_at=now()\n      WHERE id=v_planning_id AND status <> 'produzido';\n  ELSIF v_in_prod > 0 THEN\n    UPDATE public.production_planning SET status='em_producao', updated_at=now()\n      WHERE id=v_planning_id AND status NOT IN ('em_producao','produzido','entregue');\n  END IF;\n\n  RETURN NEW;\nEND\n$function$\n",
+      "hash": "0e79d2c5c352a41f147a62bb1ae5afe4",
+      "name": "trg_sync_planning_from_os",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER trg_sync_planning_from_os AFTER INSERT OR UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.partner_order_id IS NOT NULL)) EXECUTE FUNCTION _sync_planning_from_os()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "hash": "b1930ed5bca3be839f783c6202ab8147",
+      "name": "update_os_updated_at",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER update_os_updated_at BEFORE UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION private.guard_os_separate_approval()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_origin text; v_org uuid;\nBEGIN\n IF TG_OP='INSERT' THEN\n -- Cria\u00e7\u00e3o normal exclusivamente aberta, inclusive pelo servi\u00e7o/DEFINER.\n -- NULL e qualquer estado avan\u00e7ado n\u00e3o podem saltar a aprova\u00e7\u00e3o humana.\n -- Sem whitelist service_role, flags GUC ou reparo de hist\u00f3ricos.\n IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN NEW;\n END IF;\n IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;\n v_origin:=CASE TG_TABLE_NAME WHEN 'ordens_servico' THEN 'manual' WHEN 'ordens_servico_onfarm' THEN 'onfarm' END;\n IF TG_WHEN='BEFORE' THEN\n -- Um \u00fanico UPDATE n\u00e3o pode substituir a identidade/refer\u00eancias e aprovar o estado anterior.\n IF (to_jsonb(NEW)-ARRAY['status','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at']) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n v_org:=private.assert_os_approval_scope(OLD.id,v_origin);\n RETURN NEW;\n END IF;\n IF OLD.status::text='aberta' THEN\n v_org:=private.assert_os_approval_scope(NEW.id,v_origin);\n INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)\n SELECT NEW.id,v_origin,pp.id,'aberta','aprovada','aprovar_os',auth.uid(),jsonb_build_object(\n 'organization_id',v_org,'before',jsonb_build_object('status',OLD.status,'volume',OLD.volume_total_ml,'data_os',to_jsonb(OLD)->'data_programada'),\n 'after',jsonb_build_object('status',NEW.status,'volume',NEW.volume_total_ml,'data_os',to_jsonb(NEW)->'data_programada'),\n 'programacao',jsonb_build_object('id',pp.id,'status',pp.status,'data',pp.data_programada,'volume',pp.volume_necessario),\n 'actor',auth.uid(),'at',clock_timestamp(),'manufacturing_started',false,'commercial_completed',false)::text\n FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "hash": "f00397fe862e611fbfa0eba3911d95c6",
+      "name": "zz_audit_separate_approval",
+      "table": "ordens_servico",
+      "definition": "CREATE TRIGGER zz_audit_separate_approval AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "d01a740c1e3e02407131d2b9228bf658",
+      "name": "tenant_organization_guard",
+      "table": "programacao_producao",
+      "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION platform_private.trg_lab_programming_biological_only()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF TG_OP='UPDATE' AND NEW.produto_id IS NOT DISTINCT FROM OLD.produto_id\n                    AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;\n  PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);\n  RETURN NEW;\nEND $function$\n",
+      "hash": "d253b17831afaacef106b5c5e1efbb29",
+      "name": "trg_lab_programming_biological_only",
+      "table": "programacao_producao",
+      "definition": "CREATE TRIGGER trg_lab_programming_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_programming_biological_only()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.fn_notify_lab_on_programacao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ DECLARE org uuid; prod text; cli text; BEGIN\n IF NEW.status::text<>'aguardando' THEN RETURN NEW; END IF;\n org:=platform_private.notification_source_org('programacao_producao',NEW.id);\n IF org IS NULL THEN RETURN NEW; END IF;\n SELECT nome INTO prod FROM public.produtos WHERE id=NEW.produto_id;\n SELECT c.nome INTO cli FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id AND c.organization_id=org WHERE o.id=NEW.ordem_servico_id;\n INSERT INTO public.notificacoes_operacionais(usuario_id,tipo,titulo,mensagem,link,source_type,source_id)\n SELECT DISTINCT ur.user_id,'nova_demanda_producao','Nova demanda de produ\u00e7\u00e3o',coalesce(prod,'Bioinsumo')||coalesce(' \u00b7 '||cli,'')||coalesce(' \u00b7 '||round(NEW.volume_necessario/1000.0,1)::text||' L',''),'/pcp?coluna=aguardando','programacao_producao',NEW.id\n FROM public.user_roles ur WHERE ur.role IN ('producao','administrador','gestor') AND platform_private.notification_user_ok(ur.user_id,org);\n RETURN NEW; END $function$\n",
+      "hash": "c910c1466bbc06328e3eb9f5b2b132ca",
+      "name": "trg_notify_lab_on_programacao",
+      "table": "programacao_producao",
+      "definition": "CREATE TRIGGER trg_notify_lab_on_programacao AFTER INSERT ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION fn_notify_lab_on_programacao()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "hash": "2f361c1fd9de578cf45796d82f3754e0",
+      "name": "trg_refresh_esteira_programacao",
+      "table": "programacao_producao",
+      "definition": "CREATE TRIGGER trg_refresh_esteira_programacao AFTER INSERT OR DELETE OR UPDATE ON public.programacao_producao FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.validate_responsavel_producao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid;\n  v_ok boolean;\nBEGIN\n  IF NEW.responsavel_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT user_id INTO v_user_id\n  FROM public.profiles\n  WHERE id = NEW.responsavel_id;\n\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Respons\u00e1vel inv\u00e1lido: perfil n\u00e3o encontrado'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM public.user_roles\n    WHERE user_id = v_user_id\n      AND role::text IN ('administrador','gestor','operador_onfarm','producao')\n  ) INTO v_ok;\n\n  IF NOT v_ok THEN\n    RAISE EXCEPTION 'Respons\u00e1vel inv\u00e1lido: perfil sem permiss\u00e3o para produ\u00e7\u00e3o do laborat\u00f3rio'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "hash": "443795794c2cb18b295239a0c81021c6",
+      "name": "trg_validate_responsavel_producao",
+      "table": "programacao_producao",
+      "definition": "CREATE TRIGGER trg_validate_responsavel_producao BEFORE INSERT OR UPDATE OF responsavel_id ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION validate_responsavel_producao()"
+    },
+    {
+      "body": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "hash": "b1930ed5bca3be839f783c6202ab8147",
+      "name": "update_programacao_updated_at",
+      "table": "programacao_producao",
+      "definition": "CREATE TRIGGER update_programacao_updated_at BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    }
+  ],
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "sig": "refresh_esteira_laboratorio()",
+      "hash": "bbb2e580bfc6ffddfa833f950c38e0f3",
+      "definition": "CREATE OR REPLACE FUNCTION public.refresh_esteira_laboratorio()\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  REFRESH MATERIALIZED VIEW public.mv_esteira_laboratorio;\nEND;\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "sig": "rpc_programar_os_v1(uuid,text,date)",
+      "hash": "a42d6b07f51e6dacf41096f6cefb8163",
+      "definition": "CREATE OR REPLACE FUNCTION public.rpc_programar_os_v1(p_os_id uuid, p_origem text, p_data_programada date DEFAULT NULL::date)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE v_user_id uuid; v_role text; v_status text; v_status_inicial text; v_onfarm boolean;\n v_product uuid; v_micro uuid;\nBEGIN\n v_user_id:=auth.uid();\n IF v_user_id IS NULL THEN RETURN jsonb_build_object('success',false,'message','N\u00e3o autenticado'); END IF;\n SELECT role::text INTO v_role FROM public.user_roles WHERE user_id=v_user_id\n AND role IN ('administrador','gestor','producao','administrativo') LIMIT 1;\n IF v_role IS NULL THEN RETURN jsonb_build_object('success',false,'message','Seu perfil n\u00e3o possui permiss\u00e3o para programar ordens de servi\u00e7o.'); END IF;\n IF p_origem IN ('manual','b2b') THEN\n  v_onfarm:=false;\n  SELECT status::text,produto_id,microrganismo_id INTO v_status,v_product,v_micro\n   FROM public.ordens_servico WHERE id=p_os_id FOR UPDATE;\n ELSIF p_origem='onfarm' THEN\n  v_onfarm:=true;\n  SELECT status::text,produto_id,microrganismo_id INTO v_status,v_product,v_micro\n   FROM public.ordens_servico_onfarm WHERE id=p_os_id FOR UPDATE;\n ELSE RETURN jsonb_build_object('success',false,'message','Origem de OS inv\u00e1lida: '||coalesce(p_origem,'null')); END IF;\n IF v_status IS NULL THEN RETURN jsonb_build_object('success',false,'message','Ordem de servi\u00e7o n\u00e3o encontrada.'); END IF;\n v_status_inicial:=v_status;\n IF v_status IN ('finalizada','cancelada') THEN RETURN jsonb_build_object('success',false,'message','Opera\u00e7\u00e3o n\u00e3o permitida: OS j\u00e1 est\u00e1 '||v_status); END IF;\n IF v_status NOT IN ('aberta','aprovada','programada') THEN RETURN jsonb_build_object('success',false,'status',v_status,'message','OS j\u00e1 avan\u00e7ou al\u00e9m da programa\u00e7\u00e3o. Status atual: '||v_status); END IF;\n -- J\u00e1 programada: altera\u00e7\u00e3o de data n\u00e3o reclassifica nem refabrica hist\u00f3rico.\n IF v_status<>'programada' AND NOT platform_private.lab_item_is_manufacturable(v_product,v_micro) THEN\n  RETURN jsonb_build_object('success',false,'message','Somente produtos biol\u00f3gicos e microrganismos podem gerar fabrica\u00e7\u00e3o laboratorial.'); END IF;\n IF v_status='aberta' THEN\n  IF v_onfarm THEN UPDATE public.ordens_servico_onfarm SET status='aprovada' WHERE id=p_os_id;\n  ELSE UPDATE public.ordens_servico SET status='aprovada' WHERE id=p_os_id; END IF;\n  v_status:='aprovada';\n END IF;\n IF v_status='aprovada' THEN\n  IF v_onfarm THEN UPDATE public.ordens_servico_onfarm SET status='programada' WHERE id=p_os_id;\n  ELSE UPDATE public.ordens_servico SET status='programada' WHERE id=p_os_id; END IF;\n  v_status:='programada';\n END IF;\n IF p_data_programada IS NOT NULL THEN\n  IF v_onfarm THEN UPDATE public.programacao_producao SET data_programada=p_data_programada WHERE ordem_servico_onfarm_id=p_os_id;\n  ELSE\n   UPDATE public.ordens_servico SET data_programada=p_data_programada WHERE id=p_os_id;\n   UPDATE public.programacao_producao SET data_programada=p_data_programada WHERE ordem_servico_id=p_os_id;\n  END IF;\n END IF;\n INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,etapa_anterior,etapa_nova,acao,usuario_id,observacao)\n VALUES(p_os_id,p_origem,v_status_inicial,v_status,'programar_os',v_user_id,\n CASE WHEN p_data_programada IS NULL THEN NULL ELSE 'data_programada='||p_data_programada::text END);\n PERFORM public.refresh_esteira_laboratorio();\n RETURN jsonb_build_object('success',true,'status',v_status,'message',CASE WHEN v_status_inicial='programada' THEN 'Programa\u00e7\u00e3o atualizada' ELSE 'OS programada com sucesso' END);\nEND $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "sig": "platform_private.h15_actor_organization()",
+      "hash": "64e10608403238a41a9baf92857ca881",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "sig": "_saas_user_has_feature(uuid,text)",
+      "hash": "501dd958e117d2df8a4d38f6bcbeed04",
+      "definition": "CREATE OR REPLACE FUNCTION public._saas_user_has_feature(_uid uuid, _feature_key text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM platform_private.entitlements_for_user(_uid) e\n    WHERE e.feature_key = _feature_key\n  )\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "sig": "platform_private.entitlements_for_user(uuid)",
+      "hash": "7f4ec7facaebbdf35444dd490fdebe56",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(_uid uuid)\n RETURNS TABLE(module_key text, feature_key text, limit_value numeric, config jsonb)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  WITH actor AS (\n    SELECT p.organization_id\n    FROM public.profiles p\n    JOIN public.organizations org\n      ON org.id = p.organization_id\n     AND org.ativo IS TRUE\n    WHERE p.user_id = _uid\n      AND p.ativo IS TRUE\n      AND p.organization_id IS NOT NULL\n    ORDER BY p.created_at, p.organization_id\n    LIMIT 1\n  ), current_subscription AS (\n    SELECT s.organization_id, s.plan_version_id\n    FROM public.organization_subscriptions s\n    JOIN actor a ON a.organization_id = s.organization_id\n    JOIN public.saas_plan_versions v\n      ON v.id = s.plan_version_id\n     AND v.status = 'PUBLISHED'\n     AND v.effective_from <= now()\n     AND (v.effective_to IS NULL OR v.effective_to > now())\n    WHERE s.plan_version_id IS NOT NULL\n      AND (\n        s.status = 'ACTIVE'\n        OR (s.status = 'TRIAL' AND s.trial_ends_at IS NOT NULL AND s.trial_ends_at > now())\n      )\n      AND (s.cancel_at IS NULL OR s.cancel_at > now())\n    ORDER BY s.started_at DESC, s.id DESC\n    LIMIT 1\n  ), candidates AS (\n    SELECT f.id AS feature_id, f.module_id, f.key AS feature_key,\n           vf.enabled AS base_enabled, vf.limit_value AS base_limit, vf.config AS base_config\n    FROM current_subscription s\n    JOIN public.saas_plan_version_features vf ON vf.plan_version_id = s.plan_version_id\n    JOIN public.saas_features f ON f.id = vf.feature_id AND f.active IS TRUE\n    UNION\n    SELECT f.id, f.module_id, f.key, false, NULL::numeric, NULL::jsonb\n    FROM current_subscription s\n    JOIN public.organization_feature_overrides o ON o.organization_id = s.organization_id\n    JOIN public.saas_features f ON f.id = o.feature_id AND f.active IS TRUE\n    WHERE o.ended_at IS NULL\n      AND o.starts_at <= now()\n      AND (o.ends_at IS NULL OR o.ends_at > now())\n  ), effective AS (\n    SELECT DISTINCT ON (c.feature_id)\n      c.feature_id, c.module_id, c.feature_key,\n      CASE\n        WHEN o.mode = 'REVOKE' THEN false\n        WHEN o.mode = 'GRANT' THEN true\n        ELSE c.base_enabled\n      END AS enabled,\n      CASE\n        WHEN o.mode = 'GRANT' THEN o.limit_value\n        WHEN o.mode = 'REVOKE' THEN NULL::numeric\n        ELSE c.base_limit\n      END AS effective_limit,\n      c.base_config AS effective_config\n    FROM candidates c\n    CROSS JOIN current_subscription s\n    LEFT JOIN LATERAL (\n      SELECT x.mode, x.limit_value\n      FROM public.organization_feature_overrides x\n      WHERE x.organization_id = s.organization_id\n        AND x.feature_id = c.feature_id\n        AND x.ended_at IS NULL\n        AND x.starts_at <= now()\n        AND (x.ends_at IS NULL OR x.ends_at > now())\n      ORDER BY x.created_at DESC, x.id DESC\n      LIMIT 1\n    ) o ON true\n    ORDER BY c.feature_id\n  )\n  SELECT m.key::text, e.feature_key::text, e.effective_limit::numeric, e.effective_config\n  FROM effective e\n  JOIN public.saas_modules m ON m.id = e.module_id AND m.active IS TRUE\n  WHERE e.enabled IS TRUE\n  ORDER BY m.key, e.feature_key\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "sig": "platform_private.platform_actor_access_ready(uuid)",
+      "hash": "048249c0c2106c3761e26eacb8d0de84",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)\n AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "sig": "has_role(uuid,app_role)",
+      "hash": "4d90e93d521a4819d9085f28d742030f",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.has_role(_user_id,_role); $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "sig": "technical_actor_ready(uuid)",
+      "hash": "b5d0994b6eb976b14122cd2a1ec798cf",
+      "definition": "CREATE OR REPLACE FUNCTION public.technical_actor_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT CASE WHEN p_user IS NULL OR p_user IS DISTINCT FROM auth.uid()\n   OR COALESCE((auth.jwt()->>'iat') ~ '^[0-9]{1,10}$',false) IS FALSE THEN false\n ELSE CASE WHEN (auth.jwt()->>'iat')::bigint <= 0 THEN false\n ELSE platform_private.h15_actor_organization() IS NOT NULL\n AND platform_private.platform_actor_access_ready(p_user) END END;\n$function$\n"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "lotes_codigo_lote_key",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "UNIQUE (codigo_lote)"
+    },
+    {
+      "name": "lotes_item_chk",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "CHECK (((produto_id IS NOT NULL) OR (microrganismo_id IS NOT NULL)))"
+    },
+    {
+      "name": "lotes_microrganismo_id_fkey",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)"
+    },
+    {
+      "name": "lotes_organization_id_fkey",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "lotes_pkey",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "lotes_produto_id_fkey",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "FOREIGN KEY (produto_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "lotes_programacao_id_fkey",
+      "table": "lotes",
+      "deferred": false,
+      "definition": "FOREIGN KEY (programacao_id) REFERENCES programacao_producao(id)"
+    },
+    {
+      "name": "ordens_servico_audit_positive_numbers_v1",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "CHECK ((((volume_total_ml IS NULL) OR ((volume_total_ml > (0)::numeric) AND ((volume_total_ml)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])))) AND ((area_hectares IS NULL) OR ((area_hectares > (0)::numeric) AND ((area_hectares)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text]))))))"
+    },
+    {
+      "name": "ordens_servico_cliente_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (cliente_id) REFERENCES clientes(id)"
+    },
+    {
+      "name": "ordens_servico_fazenda_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (fazenda_id) REFERENCES fazendas(id)"
+    },
+    {
+      "name": "ordens_servico_microrganismo_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)"
+    },
+    {
+      "name": "ordens_servico_organization_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "ordens_servico_origem_check",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "CHECK ((origem = ANY (ARRAY['agronomica'::text, 'b2b'::text])))"
+    },
+    {
+      "name": "ordens_servico_origem_required_fields",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "CHECK ((((origem = 'agronomica'::text) AND (cliente_id IS NOT NULL) AND (fazenda_id IS NOT NULL) AND (talhao_id IS NOT NULL)) OR ((origem = 'b2b'::text) AND (partner_order_item_id IS NOT NULL))))"
+    },
+    {
+      "name": "ordens_servico_partner_order_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (partner_order_id) REFERENCES partner_orders(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "ordens_servico_partner_order_item_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (partner_order_item_id) REFERENCES partner_order_items(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "ordens_servico_partner_order_item_unique",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "UNIQUE (partner_order_item_id)"
+    },
+    {
+      "name": "ordens_servico_pkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "ordens_servico_produto_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (produto_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "ordens_servico_talhao_id_fkey",
+      "table": "ordens_servico",
+      "deferred": false,
+      "definition": "FOREIGN KEY (talhao_id) REFERENCES talhoes(id)"
+    },
+    {
+      "name": "programacao_producao_item_chk",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "CHECK (((produto_id IS NOT NULL) OR (microrganismo_id IS NOT NULL)))"
+    },
+    {
+      "name": "programacao_producao_microrganismo_id_fkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)"
+    },
+    {
+      "name": "programacao_producao_ordem_servico_id_fkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "programacao_producao_ordem_servico_onfarm_id_fkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "FOREIGN KEY (ordem_servico_onfarm_id) REFERENCES ordens_servico_onfarm(id)"
+    },
+    {
+      "name": "programacao_producao_organization_id_fkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "programacao_producao_pkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "programacao_producao_produto_id_fkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "FOREIGN KEY (produto_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "programacao_producao_responsavel_id_fkey",
+      "table": "programacao_producao",
+      "deferred": false,
+      "definition": "FOREIGN KEY (responsavel_id) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_order_link_ordem_servico_id_fkey",
+      "table": "production_order_link",
+      "deferred": false,
+      "definition": "FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_link_partner_order_id_fkey",
+      "table": "production_order_link",
+      "deferred": false,
+      "definition": "FOREIGN KEY (partner_order_id) REFERENCES partner_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_link_partner_order_item_id_fkey",
+      "table": "production_order_link",
+      "deferred": false,
+      "definition": "FOREIGN KEY (partner_order_item_id) REFERENCES partner_order_items(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_link_partner_order_item_id_key",
+      "table": "production_order_link",
+      "deferred": false,
+      "definition": "UNIQUE (partner_order_item_id)"
+    },
+    {
+      "name": "production_order_link_pkey",
+      "table": "production_order_link",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_link_planning_id_fkey",
+      "table": "production_order_link",
+      "deferred": false,
+      "definition": "FOREIGN KEY (planning_id) REFERENCES production_planning(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "saas_features_key_format",
+      "table": "saas_features",
+      "deferred": false,
+      "definition": "CHECK ((key ~ '^[a-z][a-z0-9_.]{1,95}$'::text))"
+    },
+    {
+      "name": "saas_features_key_unique",
+      "table": "saas_features",
+      "deferred": false,
+      "definition": "UNIQUE (key)"
+    },
+    {
+      "name": "saas_features_module_id_fkey",
+      "table": "saas_features",
+      "deferred": false,
+      "definition": "FOREIGN KEY (module_id) REFERENCES saas_modules(id) ON UPDATE RESTRICT ON DELETE RESTRICT"
+    },
+    {
+      "name": "saas_features_name_nonblank",
+      "table": "saas_features",
+      "deferred": false,
+      "definition": "CHECK ((btrim(name) <> ''::text))"
+    },
+    {
+      "name": "saas_features_pkey",
+      "table": "saas_features",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "org_subscriptions_billing_cycle_valid",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((billing_cycle IS NULL) OR (billing_cycle = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'semiannual'::text, 'annual'::text, 'custom'::text]))))"
+    },
+    {
+      "name": "org_subscriptions_cancelled_consistency",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((status <> 'CANCELLED'::saas_subscription_status) OR (cancelled_at IS NOT NULL)))"
+    },
+    {
+      "name": "org_subscriptions_currency_snapshot_format",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((currency_snapshot IS NULL) OR (currency_snapshot ~ '^[A-Z]{3}$'::text)))"
+    },
+    {
+      "name": "org_subscriptions_cycle_snapshot_valid",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((billing_cycle_snapshot IS NULL) OR (billing_cycle_snapshot = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'semiannual'::text, 'annual'::text, 'custom'::text]))))"
+    },
+    {
+      "name": "org_subscriptions_features_snapshot_array",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((features_snapshot IS NULL) OR (jsonb_typeof(features_snapshot) = 'array'::text)))"
+    },
+    {
+      "name": "org_subscriptions_limits_snapshot_object",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((limits_snapshot IS NULL) OR (jsonb_typeof(limits_snapshot) = 'object'::text)))"
+    },
+    {
+      "name": "org_subscriptions_period_order",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((current_period_start IS NULL) OR (current_period_end IS NULL) OR (current_period_end > current_period_start)))"
+    },
+    {
+      "name": "org_subscriptions_price_snapshot_nonnegative",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((price_snapshot IS NULL) OR (price_snapshot >= (0)::numeric)))"
+    },
+    {
+      "name": "org_subscriptions_suspended_consistency",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "CHECK (((status <> 'SUSPENDED'::saas_subscription_status) OR (suspended_at IS NOT NULL)))"
+    },
+    {
+      "name": "organization_subscriptions_organization_id_fkey",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON UPDATE RESTRICT ON DELETE RESTRICT"
+    },
+    {
+      "name": "organization_subscriptions_pkey",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "organization_subscriptions_plan_id_fkey",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "FOREIGN KEY (plan_id) REFERENCES saas_plans(id) ON UPDATE RESTRICT ON DELETE RESTRICT"
+    },
+    {
+      "name": "organization_subscriptions_plan_version_id_fkey",
+      "table": "organization_subscriptions",
+      "deferred": false,
+      "definition": "FOREIGN KEY (plan_version_id) REFERENCES saas_plan_versions(id) ON UPDATE RESTRICT ON DELETE RESTRICT"
+    },
+    {
+      "name": "ofo_period_chk",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "CHECK (((ends_at IS NULL) OR (ends_at > starts_at)))"
+    },
+    {
+      "name": "organization_feature_overrides_feature_id_fkey",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "FOREIGN KEY (feature_id) REFERENCES saas_features(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "organization_feature_overrides_limit_value_check",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "CHECK (((limit_value IS NULL) OR (limit_value >= (0)::numeric)))"
+    },
+    {
+      "name": "organization_feature_overrides_mode_check",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "CHECK ((mode = ANY (ARRAY['GRANT'::text, 'REVOKE'::text])))"
+    },
+    {
+      "name": "organization_feature_overrides_organization_id_fkey",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "organization_feature_overrides_pkey",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "organization_feature_overrides_reason_check",
+      "table": "organization_feature_overrides",
+      "deferred": false,
+      "definition": "CHECK ((length(btrim(reason)) >= 5))"
+    },
+    {
+      "name": "platform_org_admin_invites_email_attempt_count_chk",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "CHECK (((email_attempt_count >= 0) AND (email_attempt_count <= 50)))"
+    },
+    {
+      "name": "platform_org_admin_invites_email_delivery_status_chk",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "CHECK ((email_delivery_status = ANY (ARRAY['pending'::text, 'sending'::text, 'accepted'::text, 'failed'::text, 'ambiguous'::text])))"
+    },
+    {
+      "name": "platform_org_admin_invites_email_error_code_chk",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "CHECK (((email_last_error_code IS NULL) OR ((length(email_last_error_code) >= 1) AND (length(email_last_error_code) <= 80))))"
+    },
+    {
+      "name": "platform_org_admin_invites_modo_acesso_check",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "CHECK ((modo_acesso = ANY (ARRAY['link'::text, 'senha_temporaria'::text])))"
+    },
+    {
+      "name": "platform_org_admin_invites_organization_id_fkey",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "platform_org_admin_invites_pkey",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "platform_org_admin_invites_status_chk",
+      "table": "platform_org_admin_invites",
+      "deferred": false,
+      "definition": "CHECK ((status = ANY (ARRAY['pendente'::text, 'processando'::text, 'falhou'::text, 'ativo'::text])))"
+    },
+    {
+      "name": "saas_plan_version_features_config_object",
+      "table": "saas_plan_version_features",
+      "deferred": false,
+      "definition": "CHECK (((config IS NULL) OR (jsonb_typeof(config) = 'object'::text)))"
+    },
+    {
+      "name": "saas_plan_version_features_feature_id_fkey",
+      "table": "saas_plan_version_features",
+      "deferred": false,
+      "definition": "FOREIGN KEY (feature_id) REFERENCES saas_features(id) ON UPDATE RESTRICT ON DELETE RESTRICT"
+    },
+    {
+      "name": "saas_plan_version_features_limit_nonnegative",
+      "table": "saas_plan_version_features",
+      "deferred": false,
+      "definition": "CHECK (((limit_value IS NULL) OR (limit_value >= (0)::numeric)))"
+    },
+    {
+      "name": "saas_plan_version_features_pkey",
+      "table": "saas_plan_version_features",
+      "deferred": false,
+      "definition": "PRIMARY KEY (plan_version_id, feature_id)"
+    },
+    {
+      "name": "saas_plan_version_features_plan_version_id_fkey",
+      "table": "saas_plan_version_features",
+      "deferred": false,
+      "definition": "FOREIGN KEY (plan_version_id) REFERENCES saas_plan_versions(id) ON UPDATE RESTRICT ON DELETE RESTRICT"
+    }
+  ]
+}
