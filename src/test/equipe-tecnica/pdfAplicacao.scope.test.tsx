@@ -30,7 +30,7 @@ const ORIGIN = "00000000-0000-4000-8000-000000000002";
 const CLIENT = "00000000-0000-4000-8000-000000000003";
 const app = { id: APP, data_aplicacao: "2026-10-19", is_latest: true, os: { fazendas: { nome: "Fazenda teste" }, talhoes: { nome: "Talhão teste" } } };
 const evidence = { tipo: "foto", storage_path: `${CLIENT}/${ORIGIN}/foto.png`, aplicacao_id: ORIGIN, versao_origem_id: ORIGIN, legenda: "Evidência herdada" };
-const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aGZkAAAAASUVORK5CYII="), c => c.charCodeAt(0));
+const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGM0avJmoCVgoqnpoxaMWjBqwagFoxaMWjBqwagFoxaMWjBqARUBAKKsAT8I4F0iAAAAAElFTkSuQmCC"), c => c.charCodeAt(0));
 function deferred() { let resolve: (v: any) => void = () => {}; const promise = new Promise<any>(r => { resolve = r; }); return { promise, resolve }; }
 function fence(): AplicacaoPdfAccess { return { current: () => fake.check(), signal: new AbortController().signal, applicationId: APP, tenantId: fake.tenant }; }
 beforeEach(() => {
