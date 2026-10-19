@@ -120,6 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const safeDraftRef = useRef<SafeOSRenewalDraft | null>(null);
   const renewalRef = useRef<{ draft: SafeOSRenewalDraft; scope: string; fingerprint: string; confirmed: boolean } | null>(null);
   const resolvedScopeRef = useRef("");
+  // Monitored-session latch: once this session observed a monitored scope,
+  // a later re-resolution into an unmonitored/unknown/empty scope or another
+  // tenant stays paused until a fresh login (no bypass via gestor-only).
+  const monitoredLatchRef = useRef<{ userId: string; orgId: string } | null>(null);
+  const retryInFlightRef = useRef<Promise<void> | null>(null);
   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
   const takeSafeOSDraft = () => {
     const receipt = renewalRef.current;
@@ -285,6 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             visible: document.visibilityState === "visible", online: navigator.onLine,
             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
         }
+        if (identityChanged || !nextUserId) monitoredLatchRef.current = null;
         if (identityChanged || authorizationChanged || !nextUserId) {
           clearActivePortalContext();
           queryClient.clear();
@@ -546,6 +552,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     authzMonitorRef.current = monitor;
+    if (!monitoredLatchRef.current && user?.id && profile?.organization_id) {
+      monitoredLatchRef.current = { userId: user.id, orgId: profile.organization_id };
+    }
     const onEnvironment = () => environmentalContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
     const onFocus = onEnvironment;
     const onVisibility = () => { if (document.visibilityState === "visible") onEnvironment(); };
@@ -577,16 +586,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // readiness — evita flash de conteúdo sensível antes de saber se o perfil é
   // externo. Perfil interno → pronto sem monitor; externo → pronto SOMENTE
   // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
+  const latch = monitoredLatchRef.current;
+  const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id &&
+    (!isExternalUser || latch.orgId !== profile?.organization_id);
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    (!!user && !loading && (!isExternalUser ||
+    (!!user && !loading && !latchBlocked && (!isExternalUser ||
       (principalReady && initializedPrincipal === principalScope && authzState === "valid" &&
         (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    !isExternalUser ||
-    (!loading && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
-  const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
+    (!latchBlocked && !isExternalUser) ||
+    (!loading && !latchBlocked && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
+  // Retry re-resolves profile/roles through the existing loader (fresh reads,
+  // not cached roles), single-flight and generation-fenced. Same scope then
+  // re-polls the same monitor; a different scope recreates or stays paused.
+  const revalidateAuthz = () => {
+    const uid = user?.id;
+    const current = monitoredLatchRef.current;
+    if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
+      authzMonitorRef.current?.revalidate();
+      return;
+    }
+    if (retryInFlightRef.current) return;
+    // Synchronous fence before any await: drafts, caches, portal selection
+    // and epoch-keyed content (Blobs revoked on unmount) are retired.
+    renewalRef.current = null;
+    safeDraftRef.current = null;
+    const gen = ++generationRef.current;
+    loadedUserIdRef.current = uid;
+    void queryClient.cancelQueries();
+    queryClient.clear();
+    clearActivePortalContext();
+    window.dispatchEvent(new Event("portal-client-preferences-cleared"));
+    setAuthzEpoch((e) => e + 1);
+    setLoading(true);
+    const run = (async () => {
+      try {
+        await fetchProfileAndRole(uid, gen);
+      } finally {
+        retryInFlightRef.current = null;
+      }
+      if (!mountedRef.current || gen !== generationRef.current) return;
+      authzMonitorRef.current?.revalidate();
+    })();
+    retryInFlightRef.current = run;
+  };
 
   const signOut = async () => {
     renewalRef.current = null;
@@ -624,7 +669,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refresh,
         authzReady,
         authzEpoch,
-        authzState,
+        authzState: latchBlocked && !loading ? "expired" : authzState,
         checkAuthzAccess,
         revalidateAuthz,
         setSafeOSDraft,
