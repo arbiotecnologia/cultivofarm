@@ -133,6 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Retry closes readiness synchronously, before any await.
   const [retryPending, setRetryPending] = useState(false);
   const retryInFlightRef = useRef<Promise<void> | null>(null);
+  // Loader ownership is separate from the result fence (generationRef): an
+  // expiry/epoch/Retry fence discards in-flight answers, but the latest loader
+  // still has to end loading (fresh re-read, bounded, or explicit error).
+  const loaderSeqRef = useRef(0);
+  const activeUserIdRef = useRef<string | null>(null);
+  const retryRevalidateRef = useRef(false);
   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
   const takeSafeOSDraft = () => {
     const receipt = renewalRef.current;
