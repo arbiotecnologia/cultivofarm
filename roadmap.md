@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 13:01 — recuperação canônica de aplicações
+- [x] Complemento13:17: exportação atual1668 arquivos (inclui imports transitivos fora src) em26 partes UTF-8 ≤200KB; manifesto a44fe574cc7893540b5449c2d6b0a9cca749101f3398e89048e23b0dff5dbbd8, materialização integral byte-exata e7/7 testes. GitHub antigo não usado; checker app não executado/runtime preservado. Instruções tsc -p app + install --ignore-scripts no pacote.
 - [x] Auditar RPC fechada, unidades, referências, triggers/RLS/Storage reais; preparar manifest privado pelo mesmo RPC antes de upload, sem aplicação parcial/bucket aberto.
 - [x] Candidata SQL guardada16 funções/schema/rollback fechado, desktop/mobile cercados, PostgreSQL local62/62 e Vitest119/119; roteiro fixtures A/B. Não é seed hosted completo nem homologação de SDK/JWT/trigger completo; riscos/writers/Storage legacy explicitados no relatório.
 - [x] Checkout completo recuperável/config/lock e inventário SHA disponibilizados pelo export-checkout.py; checker app não executado (proibição do ambiente), types NÃO CERTIFICADOS.
