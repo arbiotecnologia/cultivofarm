@@ -1,0 +1,304 @@
+diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
+index c6064b77..629c20ae 100644
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -18,6 +18,11 @@ import {
+   type AuthzMonitorState,
+ } from "@/lib/authz/authzEpochMonitor";
+ 
++/** Profile/roles loader bound: unrelated to the 15 s authorization lease. */
++const AUTH_LOAD_TIMEOUT_MS = 20_000;
++/** Fresh re-reads after a non-loader fence before an explicit error. */
++const AUTH_LOAD_MAX_RESTARTS = 3;
++
+ /** Papéis EXTERNOS monitorados pela foundation de cache (mesma identidade). */
+ const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
+   "cliente_produtor",
+@@ -133,6 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   // Retry closes readiness synchronously, before any await.
+   const [retryPending, setRetryPending] = useState(false);
+   const retryInFlightRef = useRef<Promise<void> | null>(null);
++  // Loader ownership is separate from the result fence (generationRef): an
++  // expiry/epoch/Retry fence discards in-flight answers, but the latest loader
++  // still has to end loading (fresh re-read, bounded, or explicit error).
++  const loaderSeqRef = useRef(0);
++  const activeUserIdRef = useRef<string | null>(null);
++  const retryRevalidateRef = useRef(false);
+   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
+   const takeSafeOSDraft = () => {
+     const receipt = renewalRef.current;
+@@ -147,9 +158,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     setPrimaryRole(null);
+   };
+ 
+-  const fetchProfileAndRole = async (userId: string, generation?: number) => {
++  const loadDiagnostic = (event: "load_restart" | "load_timeout", startedAt: number) =>
++    recordAuthzDiagnostic({ event, state: "pending", reason: event === "load_timeout" ? "timeout" : null,
++      visible: document.visibilityState === "visible", online: navigator.onLine,
++      rttMs: performance.now() - startedAt, leaseRemainingMs: null, requestRemainingMs: null });
++  const failLoad = () => {
++    loadedUserIdRef.current = null;
++    renewalRef.current = null;
++    clearIdentityState();
++    setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
++    setLoading(false);
++  };
++
++  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0): Promise<void> => {
+     const gen = generation ?? generationRef.current;
+-    const isCurrent = () => mountedRef.current && gen === generationRef.current;
++    const seq = ++loaderSeqRef.current;
++    const startedAt = performance.now();
++    let timedOut = false;
++    // Watchdog: a hung transport ends in an explicit, recoverable error. The
++    // loader is retired first, so a late answer is never adopted.
++    const watchdog = setTimeout(() => {
++      if (!mountedRef.current || seq !== loaderSeqRef.current) return;
++      timedOut = true;
++      loaderSeqRef.current++;
++      loadDiagnostic("load_timeout", startedAt);
++      failLoad();
++    }, AUTH_LOAD_TIMEOUT_MS);
++    const isCurrent = () => mountedRef.current && !timedOut && seq === loaderSeqRef.current && gen === generationRef.current;
++    // Fenced by a non-loader event (expiry/epoch/Retry) with no successor
++    // loader scheduled: discard this answer, re-read freshly (bounded).
++    const yieldStale = () => {
++      if (!mountedRef.current || timedOut || seq !== loaderSeqRef.current || timerRef.current !== null ||
++        activeUserIdRef.current !== userId) return;
++      if (restarts >= AUTH_LOAD_MAX_RESTARTS) { loaderSeqRef.current++; failLoad(); return; }
++      loadDiagnostic("load_restart", startedAt);
++      void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
++    };
+     try {
+       const { data: profileData, error: profileError } = await supabase
+         .from("profiles")
+@@ -157,8 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         .eq("user_id", userId)
+         .maybeSingle();
+ 
++      if (!isCurrent()) return yieldStale();
+       if (profileError) throw profileError;
+-      if (!isCurrent()) return;
+ 
+       const profile = profileData as Profile | null;
+       
+@@ -190,13 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         .select("role")
+         .eq("user_id", userId);
+ 
++      if (!isCurrent()) return yieldStale();
++
+       if (roleError) {
+         console.error("Error fetching roles:", roleError);
+         throw roleError;
+       }
+ 
+-      if (!isCurrent()) return;
+-
+       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
+       const primary = pickPrimaryRole(userRoles);
+ 
+@@ -222,14 +266,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       setLoading(false);
+     } catch (err: unknown) {
+       console.error("Erro ao carregar perfil/função:", err);
+-      if (!isCurrent()) return;
++      if (!isCurrent()) return yieldStale();
+       // Falha de autorização/carregamento limpa papéis antigos e libera nova
+       // tentativa (não marca o usuário como já carregado).
+-      loadedUserIdRef.current = null;
+-      renewalRef.current = null;
+-      clearIdentityState();
+-      setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
+-      setLoading(false);
++      failLoad();
++    } finally {
++      clearTimeout(watchdog);
+     }
+   };
+ 
+@@ -261,13 +303,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
+     // como macrotask separada.
+     const scheduleLoad = (userId: string) => {
+-      const gen = ++generationRef.current;
++      ++generationRef.current;
+       loadedUserIdRef.current = userId;
+       if (timerRef.current) clearTimeout(timerRef.current);
+       timerRef.current = setTimeout(() => {
+         timerRef.current = null;
+-        if (effectCancelled || !mountedRef.current || gen !== generationRef.current) return;
+-        void fetchProfileAndRole(userId, gen);
++        // A newer schedule clears this timer; sign-out clears it too. Other
++        // fences (expiry/Retry/epoch) are not loaders: still load, under the
++        // CURRENT generation, so loading always ends.
++        if (effectCancelled || !mountedRef.current || activeUserIdRef.current !== userId) return;
++        void fetchProfileAndRole(userId, generationRef.current);
+       }, 0);
+     };
+ 
+@@ -281,6 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         setUser(session?.user ?? null);
+ 
+         const nextUserId = session?.user?.id ?? null;
++        activeUserIdRef.current = nextUserId;
+         const identityChanged = !!(lastUserId && lastUserId !== nextUserId);
+         const authorizationChanged = event === "TOKEN_REFRESHED" || event === "USER_UPDATED";
+         if (identityChanged || authorizationChanged || !nextUserId) {
+@@ -316,6 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+ 
+         } else {
+           generationRef.current += 1;
++          retryRevalidateRef.current = false;
+           if (timerRef.current) {
+             clearTimeout(timerRef.current);
+             timerRef.current = null;
+@@ -343,6 +390,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+           setSession(initialSession);
+           setUser(initialSession.user);
+           lastUserId = initialSession.user.id;
++          activeUserIdRef.current = initialSession.user.id;
+           if (loadedUserIdRef.current !== initialSession.user.id) {
+             scheduleLoad(initialSession.user.id);
+           }
+@@ -368,6 +416,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       effectCancelled = true;
+       generationRef.current += 1;
+       loadedUserIdRef.current = null;
++      activeUserIdRef.current = null;
++      retryRevalidateRef.current = false;
+       if (timerRef.current) {
+         clearTimeout(timerRef.current);
+         timerRef.current = null;
+@@ -517,8 +567,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       // Reviewed scopes only: renew before the confirmed deadline using observed
+       // RTT (no lease extension; late answers still fail closed).
+       renewBeforeDeadline: environmentalContextOnly,
+-      // Company-admin only, local numeric/boolean allowlist; no identity or transport data.
+-      onDiagnostic: companyAdminContextOnly ? recordAuthzDiagnostic : undefined,
++      // Reviewed environmental scopes, local numeric/boolean allowlist; no identity or transport data.
++      onDiagnostic: environmentalContextOnly ? recordAuthzDiagnostic : undefined,
+       // Preserve published B2B confirmation refresh. Producer/financial renew
+       // the lease without remount on identical observed context; real changes,
+       // explicit revalidation, expiry and identity still retire the view.
+@@ -601,6 +651,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     // entram via authzMonitorGateRef — refresh() não recria o monitor.
+   }, [initializedPrincipal, principalScope, queryClient]);
+ 
++  // Retry re-resolution settled: an unchanged scope re-polls its existing
++  // expired monitor; a changed scope already started its own monitor above.
++  useEffect(() => {
++    if (loading || !retryRevalidateRef.current) return;
++    retryRevalidateRef.current = false;
++    const monitor = authzMonitorRef.current;
++    if (monitor && monitor.state() === "expired") monitor.revalidate();
++  }, [loading, principalScope, initializedPrincipal]);
++
+   // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
+   // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
+   // readiness — evita flash de conteúdo sensível antes de saber se o perfil é
+@@ -635,7 +694,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     // and epoch-keyed content (Blobs revoked on unmount) are retired.
+     renewalRef.current = null;
+     safeDraftRef.current = null;
+-    const gen = ++generationRef.current;
++    // Fences in-flight loader answers (the latest loader re-reads freshly).
++    ++generationRef.current;
+     void queryClient.cancelQueries();
+     queryClient.clear();
+     clearActivePortalContext();
+@@ -643,7 +703,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     setAuthzEpoch((e) => e + 1);
+     const cachedRoles = [...roles].sort();
+     const cachedOrg = profile?.organization_id ?? null;
+-    const isCurrent = () => mountedRef.current && gen === generationRef.current;
++    // Retry yields only to identity change/sign-out/unmount or a newer loader
++    // (TOKEN_REFRESHED/refresh). Monitor expiry is NOT a reason to abandon it:
++    // an expired old-scope poll must not cancel the re-resolution.
++    const seqAtStart = loaderSeqRef.current;
++    const isCurrent = () => mountedRef.current && activeUserIdRef.current === uid &&
++      loaderSeqRef.current === seqAtStart && timerRef.current === null;
+     const run = (async () => {
+       try {
+         // Fresh observation only decides whether re-resolution is needed; it
+@@ -652,32 +717,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         let fresh: string[] | null = null;
+         let freshOrg: unknown = null;
+         let active = false;
++        let deadline: ReturnType<typeof setTimeout> | undefined;
+         try {
+-          const { data: p, error: pe } = await supabase.from("profiles")
+-            .select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle();
+-          const { data: r, error: re } = await supabase.from("user_roles").select("role").eq("user_id", uid);
++          // Bounded: a hung read ends as "unavailable" (probe path), never an endless Retry.
++          const timeout = new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error("retry_read_timeout")), AUTH_LOAD_TIMEOUT_MS); });
++          const [{ data: p, error: pe }, { data: r, error: re }] = await Promise.race([Promise.all([
++            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle(),
++            supabase.from("user_roles").select("role").eq("user_id", uid),
++          ]), timeout]);
+           if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
+             active = (p as { ativo?: unknown }).ativo === true;
+             freshOrg = (p as { organization_id?: unknown }).organization_id;
+             fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
+           }
+-        } catch { fresh = null; }
++        } catch { fresh = null; } finally { clearTimeout(deadline); }
+         if (!isCurrent()) return;
+         const same = fresh !== null && freshOrg === cachedOrg &&
+           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
+         // Empty set stays on the paused probe path (no error-screen detour).
+         // Tenant changes are never adopted by Retry (fresh login or the
+-        // TOKEN_REFRESHED path re-resolves them with their own probe).
+-        if (fresh === null || fresh.length === 0 || !active || same || freshOrg !== cachedOrg) {
++        // TOKEN_REFRESHED path re-resolves them with their own probe). With no
++        // cached tenant (earlier load failure) this is a first resolution and
++        // the new scope's probe re-proves the tenant.
++        if (fresh === null || fresh.length === 0 || !active || same || (cachedOrg !== null && freshOrg !== cachedOrg)) {
+           authzMonitorRef.current?.revalidate();
+           return;
+         }
+-        // Divergent active set/tenant: re-resolve via the existing loader.
++        // Divergent active set: re-resolve via the existing loader. The
++        // monitor for the resulting scope is (re)started after commit, never
++        // the old-scope monitor from this closure.
+         loadedUserIdRef.current = uid;
++        retryRevalidateRef.current = true;
+         setLoading(true);
+-        await fetchProfileAndRole(uid, gen);
+-        if (!isCurrent()) return;
+-        authzMonitorRef.current?.revalidate();
++        await fetchProfileAndRole(uid, generationRef.current);
+       } finally {
+         retryInFlightRef.current = null;
+         if (mountedRef.current) setRetryPending(false);
+diff --git a/src/lib/authz/localDiagnostics.ts b/src/lib/authz/localDiagnostics.ts
+index be110c84..6d343c70 100644
+--- a/src/lib/authz/localDiagnostics.ts
++++ b/src/lib/authz/localDiagnostics.ts
+@@ -1,6 +1,6 @@
+ /** Local bounded diagnostics only: never identity, URLs, fingerprints, payloads or error text. */
+ export interface AuthzDiagnostic {
+-  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed";
++  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout";
+   state: string;
+   reason: "error" | "offline" | "timeout" | "ineligible" | null;
+   visible: boolean;
+@@ -14,7 +14,7 @@ const number = (value: unknown): number | null => typeof value === "number" && N
+   ? Math.round(Math.max(-3_600_000, Math.min(3_600_000, value))) : null;
+ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
+   // Reconstruct the allowlist, never spread untrusted input into diagnostics.
+-  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed"].includes(sample.event) ? sample.event : "expire";
++  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout"].includes(sample.event) ? sample.event : "expire";
+   const state = ["idle", "pending", "valid", "expired", "stopped"].includes(sample.state) ? sample.state : "expired";
+   const reason = sample.reason && ["error", "offline", "timeout", "ineligible"].includes(sample.reason) ? sample.reason : null;
+   const record: AuthzDiagnostic = { event, state, reason, visible: sample.visible === true, online: sample.online === true,
+@@ -26,6 +26,9 @@ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
+     try { console.warn("cultivo-authz-expire", JSON.stringify(record)); } catch { /* observer failure must not affect expiry */ }
+   } else if (sample.event === "auth_refresh" || sample.event === "auth_reconfirmed") {
+     try { console.info("cultivo-authz-renewal", JSON.stringify(record)); } catch { /* observer failure must not affect reconfirmation */ }
++  } else if (sample.event === "load_restart" || sample.event === "load_timeout") {
++    // Profile/roles loader lifecycle: elapsed ms only (rttMs); no identity.
++    try { console.info("cultivo-authz-load", JSON.stringify(record)); } catch { /* observer failure must not affect loading */ }
+   }
+ }
+ export const readAuthzDiagnostics = (): AuthzDiagnostic[] => records.map(record => ({ ...record }));
