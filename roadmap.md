@@ -320,3 +320,8 @@
 - [x] Frontend ReportShell: locator validado + abridor autenticado Preparar/Baixar (compatível com Edge v89); 444 testes focais, tsgo 0.
 - [x] Edge candidata sem assinatura em `scripts/financial-report-locator/edge/` (fora do deploy automático) + teste de delta exato.
 - [ ] Capturar bytes LIVE v89 (sha ab4d5682…) e implantar candidata após publicação do frontend: auditor.
+
+## 19/10 16:53 — relatório Contas a Receber
+- [x] Documentação: LIVE v89 byte-idêntica ao repo-baseline; hash anterior era do pacote. Fonte da Edge sincronizada com v90.
+- [x] Pacote `scripts/financial-report-receivables/`: preflight/candidata/rollback/postflight, Edge e telas `.review`; 27/27 SQL local + 6/6 helpers.
+- [ ] Auditor: revisão independente, aplicar SQL, implantar Edge, integrar telas, typecheck e homologação real A/B. Demais 9 relatórios seguem fechados.
