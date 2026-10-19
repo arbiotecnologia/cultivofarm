@@ -312,7 +312,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && access.ready} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{rectifyId ? `Retificar Aplicação (v${(aplicacaoOriginal?.versao || 1) + 1})` : "Registrar Aplicação em Campo"}</DialogTitle>
