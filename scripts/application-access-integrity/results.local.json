@@ -4,5 +4,14 @@
   "postgres": "17 local unix socket",
   "limitations": "reduced schema/policy; auth claims emulators, not JWT/login/hosted",
   "pdf_staging_passed": 7,
-  "typecheck": "NOT certified"
+  "typecheck": "NOT certified",
+  "typecheck_app": {
+    "required_project": "tsconfig.app.json",
+    "executed": false,
+    "checked_project": null,
+    "command": null,
+    "compiler_version": null,
+    "exit_code": null,
+    "reason": "No separate checker execution allowed by environment; root references and Vite/SWC are not app typecheck evidence"
+  }
 }
