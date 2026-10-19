@@ -217,7 +217,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function RoleGuard({ children }: { children: React.ReactNode }) {
+export function RoleGuard({ children }: { children: React.ReactNode }) {
   const { role, roles } = useAuth();
   const location = useLocation();
   const entitlements = useEntitlements();

@@ -16,7 +16,7 @@ vi.mock('@/components/AppSidebar',()=>({AppSidebar:()=> <nav>Menu desktop</nav>}
 vi.mock('@/components/portal/PortalTopBar',()=>({PortalTopBar:({brandTitle}:{brandTitle:string})=><header>{brandTitle}</header>}));
 vi.mock('@/lib/accessAuditLog',()=>({logAccessDeniedOnce:()=>{},routeGroupFromPath:()=> 'technical'}));
 vi.mock('@/hooks/useOfflineSync',()=>({useOfflineSync:()=>({isOnline:true,pendingCount:0,syncing:false,syncAll:()=>{}})}));
-vi.mock('@/hooks/useEntitlements',()=>({useEntitlements:()=>({status:'active',features:[]})}));
+vi.mock('@/hooks/useEntitlements',()=>({useEntitlements:()=>({status:'ready',features:new Set(['ordens_producao','estoque_embalagens'])})}));
 vi.mock('@/components/app/OfflineIndicator',()=>({OfflineIndicator:()=>null}));
 vi.mock('@/components/app/PendingMediaRecovery',()=>({PendingMediaRecovery:()=>null}));
 vi.mock('@/components/ui/sidebar',()=>({SidebarProvider:({children}:{children:React.ReactNode})=><>{children}</>,SidebarTrigger:()=>null}));
@@ -37,7 +37,7 @@ import MobileLogin from '@/pages/app/MobileLogin';
 import SelecionarPortal from '@/pages/SelecionarPortal';
 import AcessoPendente from '@/pages/AcessoPendente';
 
-import { ProtectedRoutes } from '@/App';
+import { ProtectedRoutes, RoleGuard } from '@/App';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
