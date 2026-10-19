@@ -4,27 +4,27 @@
     {
       "path": "src/hooks/useAvailableContexts.ts",
       "pre_sha256": "dd35fbd84a132e67656b00c1ab6ebb9536fc83d09d654ee68aac70552bc09238",
-      "post_sha256": "746e840c7ca09a0ef8854ce6039deb9fa4fe630520d0280425fbeda901843a11"
+      "post_sha256": "86988d2b28fbc98fbfc7df1537ff90114ec2c4aba0f9e7dc8f510e7f1f640b3a"
     },
     {
       "path": "src/components/guards/AppPortalGuard.tsx",
       "pre_sha256": "1331c258e77fb7ae3564adec1d87371072ba92c1057d4f582e2444449a9ce2c5",
-      "post_sha256": "1bf7bd5d28e2fb95cdba2d8bdba9fde78c9a7d0bcf2621ab5583b26ec02e0363"
+      "post_sha256": "90c2598f4a71f32088f8ebf4f91bc17224ca34829c385953359b3bc6a20cb28f"
     },
     {
       "path": "src/components/guards/TechnicalRouteGuard.tsx",
       "pre_sha256": "758207818078f08c4f4fc2df04f7ff56cda290a6d2f271181d8d3175860c5c34",
-      "post_sha256": "ff36131d9ea28472f9670b8de2b7e65c2833e34675e2289e88133f2d472ac984"
+      "post_sha256": "957f62257f55e19d7b1e0052c5b65ccfa8323e78e5beb11793a0e02b8d972326"
     },
     {
       "path": "src/components/guards/TechnicalFeatureGuard.tsx",
       "pre_sha256": "b0b4172301527d03a6a9d4081614b09897c10fe5d6207d716947ba5bdc2e4342",
-      "post_sha256": "2d596ace4a925b521e9fcf3d1beebf08124899c8d5f6e739c39572f5867bee5a"
+      "post_sha256": "83a79319d91db3e303685e5acf4f61c757987ff091cdb0c6ce78e93dedccadfa"
     },
     {
       "path": "src/pages/app/MobileLayout.tsx",
       "pre_sha256": "8aad4a0525a067758f4124eea3424b7a1cf20e946bb87243d7c56765d55c62dd",
-      "post_sha256": "3ef99d80108c4153c584d7dd185b9fe227807c31b111a7dfc1215ace59e91109"
+      "post_sha256": "607ab5706a6139321da88e1638f5abb465a2c23b63148b051d66fd6b445dbd9c"
     },
     {
       "path": "src/components/guards/PortalContextUnavailable.tsx",
@@ -34,17 +34,37 @@
     {
       "path": "src/test/config/portalContextRecovery.integration.test.tsx",
       "pre_sha256": null,
-      "post_sha256": "e4fdba48ee52108df401fde1ed3f645fc9c0ebdecb8c02b0049f6d1c7c6f9903"
+      "post_sha256": "dffe009e47ad6b131810578f4937ed171083112f8a8b87dc093de4feb7efed45"
     },
     {
       "path": "src/test/multiportal.contexts.session.test.tsx",
       "pre_sha256": "ea9c7bed4fad2efcb1aea0fe054a72b3f74dec1f03700794f3e22b7864e93780",
-      "post_sha256": "a16349dd9c1507b3bb883ab0a5dda90f16349df61bdedda8c78803d0ec3ce96b"
+      "post_sha256": "1e5949dbe9c3545772af29e66504bdbcb548d56cff1f481b80811fea7b75b002"
     },
     {
       "path": "src/test/multiportal.featureGuards.test.tsx",
       "pre_sha256": "514f64dc84eb23d01d48ef0b94baca96291ebcaa3e18cdb436a1fb68e03ff56c",
       "post_sha256": "ea66d941e02420071423432ad0d57f547fa06b2a271c136e5f98a080a8dec563"
+    },
+    {
+      "path": "src/lib/portalContextFreshness.ts",
+      "pre_sha256": null,
+      "post_sha256": "0fe26be335f0c51f3097a74457bf77942d0718fc531af9384f842b58b3c2546b"
+    },
+    {
+      "path": "src/test/config/b2bOpenSession.integration.test.tsx",
+      "pre_sha256": "81d82cd25eb3d4401531274480302e1c0e70876aa8f460751afa5e983c2fd8c9",
+      "post_sha256": "82300f305ac26dfb1080d7ee30db5ff799829c5595457c39f1e4419bdc62967d"
+    },
+    {
+      "path": "AGENTS.md",
+      "pre_sha256": "7fc3a8f70f4e833569fac06b67fa3af48857e19e550d48a605bd3bd3d1afd166",
+      "post_sha256": "7fc3a8f70f4e833569fac06b67fa3af48857e19e550d48a605bd3bd3d1afd166"
+    },
+    {
+      "path": "src/hooks/AGENTS.md",
+      "pre_sha256": "898717916d7416348c590c22d16e03060d88ed9d4def50330aa1238d6afb7d50",
+      "post_sha256": "d3978d94afafd04965d6ddab698f94bcc78796c5704764c9dd631e90be5c556d"
     }
   ]
 }
