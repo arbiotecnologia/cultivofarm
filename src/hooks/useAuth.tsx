@@ -648,7 +648,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const same = fresh !== null && freshOrg === cachedOrg &&
           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
         // Empty set stays on the paused probe path (no error-screen detour).
-        if (fresh === null || fresh.length === 0 || !active || same) {
+        // Tenant changes are never adopted by Retry (fresh login or the
+        // TOKEN_REFRESHED path re-resolves them with their own probe).
+        if (fresh === null || fresh.length === 0 || !active || same || freshOrg !== cachedOrg) {
           authzMonitorRef.current?.revalidate();
           return;
         }
