@@ -126,7 +126,7 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
       if (loss === "tenant") state.auth.profile.organization_id = "";
       if (loss === "authError") state.auth.error = "erro auth com perfil anterior persistente";
       view.rerender(element());
-      for (const name of ["Gerar prévia", "PDF", "Excel", "CSV", "Imprimir"]) {
+      for (const name of ["Gerar prévia", "Preparar PDF", "Preparar Excel", "Preparar CSV", "Imprimir"]) {
         const button = screen.getByRole("button", { name }); expect(button).toBeDisabled(); fireEvent.click(button);
       }
       expect(state.rpc).toHaveBeenCalledTimes(1); expect(state.invoke).not.toHaveBeenCalled(); expect(window.print).not.toHaveBeenCalled();
