@@ -1,0 +1,724 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index 3fac8d20..49c727c7 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -247,7 +247,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
+ 
+ 
+ export function ProtectedRoutes() {
+-  const { user, role, roles = [], profile, loading, error, refresh, signOut } = useAuth();
++  const { user, role, roles = [], profile, loading, error, refresh, signOut, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
+   const location = useLocation();
+ 
+   useSystemConfig();
+@@ -289,7 +289,7 @@ export function ProtectedRoutes() {
+     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+   const operatorBoundary = OPERATOR_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "operador_onfarm" &&
+     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+-  return (FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro") || companyAdminBoundary || consultantBoundary || operatorBoundary ||
++  return authzLatchBlocked || authzResidualScope || (FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro") || companyAdminBoundary || consultantBoundary || operatorBoundary ||
+     (MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id))
+     ? <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>
+     : <AppLayout />;
+diff --git a/src/components/authz/AuthzEpochBoundary.tsx b/src/components/authz/AuthzEpochBoundary.tsx
+index 4b3f0b6b..5baa4927 100644
+--- a/src/components/authz/AuthzEpochBoundary.tsx
++++ b/src/components/authz/AuthzEpochBoundary.tsx
+@@ -19,7 +19,7 @@ import { Loader2, ShieldAlert } from "lucide-react";
+  *   rascunhos, seleções e objectURLs via cleanup de unmount dos consumidores.
+  */
+ export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
+-  const { authzReady, authzEpoch, authzState, revalidateAuthz } = useAuth();
++  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked } = useAuth();
+ 
+   if (!AUTHZ_CACHE_FOUNDATION_ENABLED) return <>{children}</>;
+ 
+@@ -40,6 +40,8 @@ export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
+             <CardDescription>
+               {checking
+                 ? "Estamos confirmando suas permissões. Isso leva apenas alguns segundos."
++                : authzLatchBlocked
++                ? "Suas permissões foram alteradas. Saia e entre novamente para continuar com o novo acesso."
+                 : "Não foi possível confirmar suas permissões no momento. Verifique sua conexão e tente novamente."}
+             </CardDescription>
+           </CardHeader>
+diff --git a/src/components/guards/AppPortalGuard.tsx b/src/components/guards/AppPortalGuard.tsx
+index 94f13790..9bfd8948 100644
+--- a/src/components/guards/AppPortalGuard.tsx
++++ b/src/components/guards/AppPortalGuard.tsx
+@@ -22,7 +22,7 @@ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
+  * A autorização NUNCA depende de `primaryRole` nem de `isMobileProfile`.
+  */
+ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+-  const { user, profile, roles, loading, authzReady = true } = useAuth();
++  const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
+   const location = useLocation();
+   const { data, isLoading, isError } = useAvailableContexts();
+ 
+@@ -31,7 +31,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+   const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
+     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+   const isMonitoredManagerConsultant = MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id);
+-  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant;
++  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant || authzResidualScope;
+   const denied =
+     !loading &&
+     (!monitoredTechnical || authzReady) &&
+@@ -48,7 +48,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+   }, [denied, location.pathname]);
+ 
+   // Pause before readers depending on authzReady; retry stays on this URL.
+-  if (!loading && user && (isProducer || monitoredTechnical) && !authzReady) {
++  if (!loading && user && (isProducer || monitoredTechnical || authzLatchBlocked) && !authzReady) {
+     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+   }
+ 
+diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
+index 5a519194..c6064b77 100644
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -71,6 +71,10 @@ interface AuthContextType {
+   checkAuthzAccess: () => boolean;
+   /** Revalidação manual (botão "Tentar novamente"). */
+   revalidateAuthz: () => void;
++  /** Monitored session re-resolved into an unmonitored scope: stays paused until fresh login. */
++  authzLatchBlocked: boolean;
++  /** Gestor or consultor left from a monitored pair in this session: monitored by the same probe. */
++  authzResidualScope: boolean;
+   setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
+   takeSafeOSDraft: () => SafeOSRenewalDraft | null;
+ }
+@@ -91,6 +95,8 @@ const AuthContext = createContext<AuthContextType>({
+   authzState: "idle",
+   checkAuthzAccess: () => true,
+   revalidateAuthz: () => {},
++  authzLatchBlocked: false,
++  authzResidualScope: false,
+   setSafeOSDraft: () => {},
+   takeSafeOSDraft: () => null,
+ });
+@@ -120,6 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   const safeDraftRef = useRef<SafeOSRenewalDraft | null>(null);
+   const renewalRef = useRef<{ draft: SafeOSRenewalDraft; scope: string; fingerprint: string; confirmed: boolean } | null>(null);
+   const resolvedScopeRef = useRef("");
++  // Monitored-session latch: once this session observed a monitored scope,
++  // a later re-resolution into an unmonitored/unknown/empty scope stays
++  // paused until a fresh login (no bypass via gestor-only).
++  const monitoredLatchRef = useRef<{ userId: string; paired: boolean } | null>(null);
++  // Retry closes readiness synchronously, before any await.
++  const [retryPending, setRetryPending] = useState(false);
++  const retryInFlightRef = useRef<Promise<void> | null>(null);
+   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
+   const takeSafeOSDraft = () => {
+     const receipt = renewalRef.current;
+@@ -285,6 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+             visible: document.visibilityState === "visible", online: navigator.onLine,
+             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+         }
++        if (identityChanged || !nextUserId) monitoredLatchRef.current = null;
+         if (identityChanged || authorizationChanged || !nextUserId) {
+           clearActivePortalContext();
+           queryClient.clear();
+@@ -414,11 +428,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+   const managerConsultantContextOnly = b2bContextOnly && MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED &&
+     isManagerConsultantScope(roles, profile?.organization_id);
++  // Residual scope: same session/identity that was monitored as the gestor+
++  // consultor pair, now freshly resolved to exactly ONE of the pair's roles.
++  // Same provider/probe and guards; fresh logins keep the published behavior.
++  const residualLatch = monitoredLatchRef.current;
++  const residualRole: "gestor" | "consultor_tecnico" | null =
++    b2bContextOnly && MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && !!residualLatch?.paired &&
++    residualLatch.userId === user?.id && roles.length === 1 &&
++    (roles[0] === "gestor" || roles[0] === "consultor_tecnico") &&
++    typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id)
++      ? roles[0] as "gestor" | "consultor_tecnico" : null;
++  const residualContextOnly = residualRole !== null;
+   // Reuse the reviewed environmental policy only for these monitored scopes.
+   // This selects scheduling, never grants authority or changes probe contracts.
+-  const environmentalContextOnly = managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly;
++  const environmentalContextOnly = managerConsultantContextOnly || residualContextOnly || financialContextOnly || companyAdminContextOnly;
+   const isExternalUser = b2bContextOnly
+-    ? managerConsultantContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
++    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
+     profile.senha_provisoria === false && !!profile.organization_id;
+@@ -445,6 +470,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+     }
+     const monitor = createAuthzEpochMonitor({
+       fetcher: async () => {
++        if (residualRole) return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", residualRole);
+         if (managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
+           return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", managerConsultantContextOnly ? MANAGER_CONSULTANT_ROLES : operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
+         }
+@@ -497,7 +523,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       // the lease without remount on identical observed context; real changes,
+       // explicit revalidation, expiry and identity still retire the view.
+       // No claim of detecting an unobserved transient ABA between polls.
+-      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly,
++      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly && !residualContextOnly,
+       onStateChange: (next) => {
+         if (next === "valid" && renewalRef.current) {
+           const receipt = renewalRef.current;
+@@ -546,6 +572,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       },
+     });
+     authzMonitorRef.current = monitor;
++    if (user?.id && (!monitoredLatchRef.current || monitoredLatchRef.current.userId !== user.id)) {
++      monitoredLatchRef.current = { userId: user.id, paired: managerConsultantContextOnly };
++    } else if (monitoredLatchRef.current && managerConsultantContextOnly) monitoredLatchRef.current.paired = true;
+     const onEnvironment = () => environmentalContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
+     const onFocus = onEnvironment;
+     const onVisibility = () => { if (document.visibilityState === "visible") onEnvironment(); };
+@@ -577,20 +606,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   // readiness — evita flash de conteúdo sensível antes de saber se o perfil é
+   // externo. Perfil interno → pronto sem monitor; externo → pronto SOMENTE
+   // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
++  const latch = monitoredLatchRef.current;
++  // Tenant changes are re-proven by the new scope's own probe (h15); only an
++  // unmonitored/empty/unknown re-resolution is held.
++  const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
+   const authzReady =
+     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
+-    (!!user && !loading && (!isExternalUser ||
++    (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
+       (principalReady && initializedPrincipal === principalScope && authzState === "valid" &&
+         (authzMonitorRef.current?.checkAccess() ?? false))));
+   const checkAuthzAccess = () =>
+     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
+-    !isExternalUser ||
+-    (!loading && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
+-  const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
++    (!latchBlocked && !isExternalUser) ||
++    (!loading && !latchBlocked && !retryPending && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
++  // Retry re-resolves profile/roles through the existing loader (fresh reads,
++  // not cached roles), single-flight and generation-fenced. Same scope then
++  // re-polls the same monitor; a different scope recreates or stays paused.
++  const revalidateAuthz = () => {
++    const uid = user?.id;
++    const current = monitoredLatchRef.current;
++    if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
++      authzMonitorRef.current?.revalidate();
++      return;
++    }
++    if (retryInFlightRef.current) return;
++    setRetryPending(true);
++    // Synchronous fence before any await: drafts, caches, portal selection
++    // and epoch-keyed content (Blobs revoked on unmount) are retired.
++    renewalRef.current = null;
++    safeDraftRef.current = null;
++    const gen = ++generationRef.current;
++    void queryClient.cancelQueries();
++    queryClient.clear();
++    clearActivePortalContext();
++    window.dispatchEvent(new Event("portal-client-preferences-cleared"));
++    setAuthzEpoch((e) => e + 1);
++    const cachedRoles = [...roles].sort();
++    const cachedOrg = profile?.organization_id ?? null;
++    const isCurrent = () => mountedRef.current && gen === generationRef.current;
++    const run = (async () => {
++      try {
++        // Fresh observation only decides whether re-resolution is needed; it
++        // never grants authority. Errors/inactive keep the published path
++        // (probe denies, view stays paused, no sign-out on retry).
++        let fresh: string[] | null = null;
++        let freshOrg: unknown = null;
++        let active = false;
++        try {
++          const { data: p, error: pe } = await supabase.from("profiles")
++            .select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle();
++          const { data: r, error: re } = await supabase.from("user_roles").select("role").eq("user_id", uid);
++          if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
++            active = (p as { ativo?: unknown }).ativo === true;
++            freshOrg = (p as { organization_id?: unknown }).organization_id;
++            fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
++          }
++        } catch { fresh = null; }
++        if (!isCurrent()) return;
++        const same = fresh !== null && freshOrg === cachedOrg &&
++          fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
++        // Empty set stays on the paused probe path (no error-screen detour).
++        // Tenant changes are never adopted by Retry (fresh login or the
++        // TOKEN_REFRESHED path re-resolves them with their own probe).
++        if (fresh === null || fresh.length === 0 || !active || same || freshOrg !== cachedOrg) {
++          authzMonitorRef.current?.revalidate();
++          return;
++        }
++        // Divergent active set/tenant: re-resolve via the existing loader.
++        loadedUserIdRef.current = uid;
++        setLoading(true);
++        await fetchProfileAndRole(uid, gen);
++        if (!isCurrent()) return;
++        authzMonitorRef.current?.revalidate();
++      } finally {
++        retryInFlightRef.current = null;
++        if (mountedRef.current) setRetryPending(false);
++      }
++    })();
++    retryInFlightRef.current = run;
++  };
+ 
+   const signOut = async () => {
+     renewalRef.current = null;
+     safeDraftRef.current = null;
++    monitoredLatchRef.current = null;
+     // Gate-off remains a no-op. Fence requests before asynchronous logout.
+     authzMonitorRef.current?.stop();
+     try {
+@@ -624,7 +723,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         refresh,
+         authzReady,
+         authzEpoch,
+-        authzState,
++        authzState: latchBlocked && !loading ? "expired" : authzState,
++        authzLatchBlocked: latchBlocked && !loading,
++        authzResidualScope: residualContextOnly,
+         checkAuthzAccess,
+         revalidateAuthz,
+         setSafeOSDraft,
+diff --git a/src/lib/authz/internalContextProbe.ts b/src/lib/authz/internalContextProbe.ts
+index b0a8ebe5..34c85092 100644
+--- a/src/lib/authz/internalContextProbe.ts
++++ b/src/lib/authz/internalContextProbe.ts
+@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
+ import type { AuthzFingerprintResult } from "./authzEpochMonitor";
+ 
+ export const MANAGER_CONSULTANT_ROLES = Object.freeze(["gestor", "consultor_tecnico"] as const);
+-type InternalSingleRole = "financeiro" | "administrador" | "consultor_tecnico" | "operador_onfarm";
++// "gestor" single is only requested by the residual scope after a monitored pair.
++type InternalSingleRole = "financeiro" | "administrador" | "consultor_tecnico" | "operador_onfarm" | "gestor";
+ export type InternalExpectedRoles = InternalSingleRole | typeof MANAGER_CONSULTANT_ROLES;
+ 
+ /** Scope selection only, never server authority; duplicates/subsets/supersets fail. */
+@@ -16,39 +17,48 @@ export async function internalContextProbe(userId: string, organizationId: strin
+   const deny = () => ({ eligible: false, fingerprint: null });
+   // Copy before any await; caller mutation cannot change the expected authority.
+   const expected = typeof expectedRole === "string" ? [expectedRole] : Array.isArray(expectedRole) ? [...expectedRole] : [];
+-  const allowed = expected.length === 1
+-    ? ["financeiro", "administrador", "consultor_tecnico", "operador_onfarm"].includes(expected[0])
++  // A single role is accepted only as a string; one-element arrays fail.
++  const allowed = typeof expectedRole === "string"
++    ? ["financeiro", "administrador", "consultor_tecnico", "operador_onfarm", "gestor"].includes(expected[0])
+     : isManagerConsultantScope(expected, organizationId);
+   const sortedExpected = Object.freeze([...expected].sort());
+   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) ||
+     !userId || !allowed) return deny();
+   const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+-  const { data: org, error: orgError } = await rpc.call(supabase, "h15_actor_organization");
+-  if (orgError) throw new Error("internal_probe_unavailable");
+-  if (!userId || !organizationId || org !== organizationId) return deny();
+-  const { data: profile, error: profileError } = await supabase.from("profiles")
+-    .select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle() as unknown as {
+-      data: { user_id?: unknown; organization_id?: unknown; ativo?: unknown; senha_provisoria?: unknown } | null;
+-      error: unknown;
+-    };
+-  if (profileError) throw new Error("internal_probe_unavailable");
++  // Latency: 2 sequential waves instead of 4+N round trips (no new RPC, no
++  // grant change). Wave 1 reads org/profile/roles in parallel; reads grant
++  // nothing and the decision is taken only after all arrive. Wave 2 runs only
++  // after the exact set matched: has_role per role, a fresh roles re-read and
++  // the final h15 bracket, in parallel — a change landing during wave 1 is
++  // still observed. Any transport error fails closed as unavailable.
++  const readRoles = () => supabase.from("user_roles").select("role").eq("user_id", userId) as unknown as Promise<{ data: unknown; error: unknown }>;
++  const exactSet = (rows: unknown) => {
++    if (!Array.isArray(rows) || rows.length !== sortedExpected.length) return false;
++    const actual = rows.map(row => (row as { role?: unknown } | null)?.role);
++    return new Set(actual).size === actual.length && sortedExpected.every(role => actual.includes(role));
++  };
++  const [orgResult, profileResult, rolesResult] = await Promise.all([
++    rpc.call(supabase, "h15_actor_organization"),
++    supabase.from("profiles").select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle() as unknown as Promise<{
++      data: { user_id?: unknown; organization_id?: unknown; ativo?: unknown; senha_provisoria?: unknown } | null; error: unknown }>,
++    readRoles(),
++  ]);
++  if (orgResult.error || profileResult.error || rolesResult.error) throw new Error("internal_probe_unavailable");
++  if (orgResult.data !== organizationId) return deny();
++  const profile = profileResult.data;
+   if (profile?.user_id !== userId || profile.organization_id !== organizationId ||
+     profile.ativo !== true || profile.senha_provisoria !== false) return deny();
+-  const { data: roles, error: rolesError } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+-  if (rolesError) throw new Error("internal_probe_unavailable");
+   // Do not adopt a new/mixed role using a cached principal. Pause until the
+   // original role is restored, or a fresh login resolves the new RBAC context.
+-  if (!Array.isArray(roles) || roles.length !== sortedExpected.length) return deny();
+-  const actual = roles.map(row => row?.role);
+-  if (new Set(actual).size !== actual.length || !sortedExpected.every(role => actual.includes(role))) return deny();
+-  for (const role of sortedExpected) {
+-    const { data: roleAllowed, error: roleError } = await supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole | "gestor" });
+-    if (roleError) throw new Error("internal_probe_unavailable");
+-    if (roleAllowed !== true) return deny();
+-  }
+-  const { data: finalOrg, error: finalError } = await rpc.call(supabase, "h15_actor_organization");
+-  if (finalError) throw new Error("internal_probe_unavailable");
+-  if (finalOrg !== organizationId) return deny();
++  if (!exactSet(rolesResult.data)) return deny();
++  const [finalResult, rolesAgain, ...roleChecks] = await Promise.all([
++    rpc.call(supabase, "h15_actor_organization"),
++    readRoles(),
++    ...sortedExpected.map(role =>
++      supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole }) as unknown as Promise<{ data: unknown; error: unknown }>),
++  ]);
++  if (finalResult.error || rolesAgain.error || roleChecks.some(r => r.error)) throw new Error("internal_probe_unavailable");
++  if (roleChecks.some(r => r.data !== true) || !exactSet(rolesAgain.data) || finalResult.data !== organizationId) return deny();
+   // No revision/budget fabrication: identical observation renews only the lease.
+   // Separate statements cannot prove transient ABA/snapshot.
+   return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, sortedExpected]) };
+diff --git a/src/pages/SelecionarPortal.tsx b/src/pages/SelecionarPortal.tsx
+index 39a3f17f..ba01a5ab 100644
+--- a/src/pages/SelecionarPortal.tsx
++++ b/src/pages/SelecionarPortal.tsx
+@@ -31,8 +31,8 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
+ }
+ 
+ export default function SelecionarPortal() {
+-  const { roles, profile } = useAuth();
+-  return MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
++  const { roles, profile, authzLatchBlocked, authzResidualScope } = useAuth();
++  return authzLatchBlocked || authzResidualScope || MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
+     ? <AuthzEpochBoundary><SelecionarPortalContent /></AuthzEpochBoundary>
+     : <SelecionarPortalContent />;
+ }
+diff --git a/src/test/config/managerConsultantOpenSession.integration.test.tsx b/src/test/config/managerConsultantOpenSession.integration.test.tsx
+index 207a1b6c..53b2218d 100644
+--- a/src/test/config/managerConsultantOpenSession.integration.test.tsx
++++ b/src/test/config/managerConsultantOpenSession.integration.test.tsx
+@@ -105,7 +105,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
+  });
+  it.each(['manager_loss','consultant_loss','duplicate','additional','superadmin','external','tenant','null','provisional','error','manager_denied','consultant_denied'])('%s pauses without silently adopting cached authority',async reason=>{
+    const qc=setup();await tick();if(reason==='manager_loss')s.roles=['consultor_tecnico'];if(reason==='consultant_loss')s.roles=['gestor'];if(reason==='duplicate')s.roles=['gestor','gestor'];if(reason==='additional')s.roles.push('administrador');if(reason==='superadmin')s.roles.push('superadmin');if(reason==='external')s.roles.push('parceiro_b2b');if(reason==='tenant')s.org=U;if(reason==='null')s.org=null;if(reason==='provisional')s.password=true;if(reason==='error')s.error=true;if(reason==='manager_denied')s.deniedRole='gestor';if(reason==='consultant_denied')s.deniedRole='consultor_tecnico';
+-   await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
++   await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();
++   // Owner 19/10 17:20: pair→single remaining role is re-resolved and monitored (residual scope).
++   if(reason==='manager_loss'||reason==='consultant_loss'){expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();return;}
++   paused(qc);
+    s.roles=['gestor','consultor_tecnico'];s.org=O;s.password=false;s.error=false;s.deniedRole='';fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('Menu desktop')).toBeTruthy();
+  });
+  it.each(['/financeiro/receber','/app/registrar','/selecionar-portal'])('%s environmental check keeps confirmed view only until deadline; late response cannot reopen',async path=>{
+@@ -127,7 +130,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
+    const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'não recuperar'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+    if(reason==='error')s.error=true;else if(reason==='offline')Object.defineProperty(navigator,'onLine',{value:false});else s.roles=s.roles.filter(r=>r!==reason);
+    act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await tick();paused(qc);
+-   fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
++   fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();
++   // Residual remaining role recovers via validated re-resolution; previous draft/modal never revive.
++   if(reason==='gestor'||reason==='consultor_tecnico'){expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();const box=screen.queryByRole('textbox') as HTMLInputElement|null;if(box)expect(box.value).toBe('');return;}
++   paused(qc);
+    s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it.each(['/financeiro/receber','/app/registrar'])('%s constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses',async path=>{
+diff --git a/src/test/config/monitorRetryReresolve.integration.test.tsx b/src/test/config/monitorRetryReresolve.integration.test.tsx
+new file mode 100644
+index 00000000..c82cba7b
+--- /dev/null
++++ b/src/test/config/monitorRetryReresolve.integration.test.tsx
+@@ -0,0 +1,191 @@
++// Real AuthProvider + monitor + AuthzEpochBoundary; only Supabase transport is fake (not JWT/RLS).
++import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++const s = vi.hoisted(() => ({
++  uid: '00000000-0000-4000-8000-000000000001',
++  org: '00000000-0000-4000-8000-000000000002' as string | null,
++  h15Org: undefined as string | undefined,
++  roles: ['gestor', 'consultor_tecnico'] as string[],
++  offline: false, rtt: 0, roleReads: 0, profileReads: 0,
++  hold: undefined as undefined | Promise<void>, active: true, hasRoleCalls: [] as string[],
++}));
++const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
++function chain(table: string) {
++  const run = async () => {
++    if (table === 'profiles') s.profileReads++;
++    if (s.rtt && table === 'user_roles') await wait(s.rtt);
++    if (s.hold && table === 'user_roles') await s.hold;
++    if (s.offline) return { data: null, error: { message: 'offline' } };
++    if (table === 'profiles') return { data: { user_id: s.uid, organization_id: s.org, ativo: s.active, senha_provisoria: false, nome: 'B' }, error: null };
++    if (table === 'user_roles') { s.roleReads++; return { data: s.roles.map(role => ({ role })), error: null }; }
++    return { data: [], error: null };
++  };
++  const q: Record<string, unknown> = {};
++  for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
++  q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
++  return q;
++}
++vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
++vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
++vi.mock('@/integrations/supabase/client', () => ({ supabase: {
++  auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
++  from: (t: string) => chain(t),
++  rpc: async (name: string, args?: { _role: string }) => {
++    if (s.offline) return { data: null, error: { message: 'offline' } };
++    if (name === 'h15_actor_organization') return { data: s.h15Org ?? s.org, error: null };
++    if (name === 'has_role') { s.hasRoleCalls.push(args!._role); return { data: s.active && s.roles.includes(args!._role), error: null }; }
++    throw new Error('unexpected ' + name);
++  },
++} }));
++import { AuthProvider, useAuth } from '@/hooks/useAuth';
++import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
++import { resolveEffectiveRouteRole } from '@/lib/navigation/portalRoleContext';
++const PATHS = ['/dashboard/geral', '/financeiro/receber', '/app/registrar'];
++function Probe() {
++  const { authzEpoch, roles, primaryRole, checkAuthzAccess } = useAuth();
++  const allowed = PATHS.filter(path => resolveEffectiveRouteRole({ roles, primaryRole, path, activeContext: null } as never).allowed);
++  return <span>Conteúdo sensível {authzEpoch} [{checkAuthzAccess() ? 'ok' : 'no'}] {allowed.join(',')}</span>;
++}
++const flush = async (ms = 20) => { await act(async () => { await wait(ms); }); };
++async function mount() {
++  const qc = new QueryClient();
++  qc.setQueryData(['cache-sensivel'], 'x');
++  render(<QueryClientProvider client={qc}><AuthProvider><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
++  await flush(60);
++  return qc;
++}
++// Simulates the real removal: next monitor poll observes the new set and pauses.
++async function changeRolesAndPoll(next: string[]) {
++  s.roles = next;
++  await act(async () => { window.dispatchEvent(new Event('focus')); await wait(40); });
++}
++const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };
++const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
++
++beforeEach(() => { s.active = true; s.hasRoleCalls = []; s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
++afterEach(() => cleanup());
++
++describe('Retry re-resolves identity (gestor+consultor)', () => {
++  it('pair → gestor: Retry re-reads roles, residual gestor probe validates, only gestor routes', async () => {
++    const qc = await mount();
++    await changeRolesAndPoll(['gestor']);
++    paused();
++    expect(qc.getQueryData(['cache-sensivel'])).toBeUndefined();
++    const before = s.roleReads; s.hasRoleCalls = [];
++    await retry(120);
++    expect(s.roleReads).toBeGreaterThan(before);
++    expect(s.hasRoleCalls).toEqual(['gestor']); // live role check of the remaining role
++    const txt = screen.getByText(/Conteúdo sensível/).textContent!;
++    expect(txt).toContain('[ok]');
++    expect(txt).toContain('/dashboard/geral,/financeiro/receber');
++    expect(txt).not.toContain('/app/registrar');
++  });
++  it('pair → consultor: only consultor routes after validated re-resolution', async () => {
++    await mount();
++    await changeRolesAndPoll(['consultor_tecnico']);
++    paused();
++    await retry(120);
++    const txt = screen.getByText(/Conteúdo sensível/).textContent!;
++    expect(txt).toContain('/app/registrar');
++    expect(txt).not.toContain('/dashboard/geral');
++    expect(txt).not.toContain('/financeiro/receber');
++  });
++  it('residual gestor later losing gestor pauses again (probe keeps watching)', async () => {
++    await mount();
++    await changeRolesAndPoll(['gestor']);
++    await retry(120);
++    expect(screen.getByText(/Conteúdo sensível/)).toBeTruthy();
++    await changeRolesAndPoll([]);
++    paused();
++    await retry();
++    paused();
++  });
++  it('residual is denied while the remaining role is inactive', async () => {
++    await mount();
++    await changeRolesAndPoll(['gestor']);
++    s.active = false;
++    await retry(120);
++    paused();
++  });
++  it.each([[['gestor', 'consultor_tecnico', 'financeiro']], [[]], [['papel_desconhecido']], [['financeiro']]])('roles %j remain paused', async (next) => {
++    await mount();
++    await changeRolesAndPoll(next);
++    await retry();
++    paused();
++  });
++  it('Retry closes readiness synchronously before any await', async () => {
++    await mount();
++    await changeRolesAndPoll(['gestor']);
++    s.roles = ['gestor', 'consultor_tecnico'];
++    let release!: () => void; s.hold = new Promise<void>(r => { release = r; });
++    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
++    paused();
++    expect(screen.queryByText('[ok]')).toBeNull();
++    s.hold = undefined; release(); await flush(120);
++    expect(screen.getByText(/\[ok\]/)).toBeTruthy();
++  });
++  it('restore of the exact set recovers via Retry with a new epoch', async () => {
++    await mount();
++    const epoch0 = screen.getByText(/Conteúdo sensível/).textContent;
++    await changeRolesAndPoll(['gestor']);
++    await retry(120);
++    expect(screen.getByText(/Conteúdo sensível/).textContent).not.toContain('/app/registrar');
++    await changeRolesAndPoll(['gestor', 'consultor_tecnico']); // residual probe rejects superset of gestor
++    paused();
++    await retry(120);
++    expect(screen.getByText(/Conteúdo sensível/).textContent).toContain('/app/registrar');
++    const txt = screen.getByText(/Conteúdo sensível/).textContent;
++    expect(txt).not.toBe(epoch0);
++  });
++  it('offline during Retry stays paused; later Retry recovers', async () => {
++    await mount();
++    await changeRolesAndPoll(['gestor']);
++    s.roles = ['gestor', 'consultor_tecnico']; s.offline = true;
++    await retry(); paused();
++    s.offline = false;
++    await retry(80);
++    expect(screen.getByText(/Conteúdo sensível/)).toBeTruthy();
++  });
++  it('3s latency: content hidden until reconfirmed; double click is single-flight', async () => {
++    await mount();
++    await changeRolesAndPoll(['gestor']);
++    s.roles = ['gestor', 'consultor_tecnico']; s.rtt = 3000;
++    const before = s.profileReads;
++    vi.useFakeTimers({ shouldAdvanceTime: true });
++    try {
++      const button = screen.getByRole('button', { name: 'Tentar novamente' });
++      fireEvent.click(button); fireEvent.click(button);
++      paused();
++      await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
++      expect(s.profileReads - before).toBe(1); // single-flight loader
++      paused();
++      await act(async () => { await vi.advanceTimersByTimeAsync(20000); });
++    } finally { vi.useRealTimers(); }
++    expect(screen.getByText(/Conteúdo sensível/)).toBeTruthy();
++  });
++  it('race: role removed again while Retry is in flight stays paused', async () => {
++    await mount();
++    await changeRolesAndPoll(['gestor']);
++    s.roles = ['gestor', 'consultor_tecnico'];
++    let release!: () => void; s.hold = new Promise<void>(r => { release = r; });
++    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
++    await flush();
++    s.roles = []; s.hold = undefined; release();
++    await flush(80);
++    paused();
++  });
++  it('cross-tenant: old cache never survives; new tenant only after its own probe, gestor-only there stays paused', async () => {
++    const qc = await mount();
++    s.org = '00000000-0000-4000-8000-0000000000bb';
++    await changeRolesAndPoll(['gestor', 'consultor_tecnico']);
++    paused();
++    expect(qc.getQueryData(['cache-sensivel'])).toBeUndefined();
++    s.h15Org = '00000000-0000-4000-8000-000000000002'; // server still says A
++    await retry(80);
++    paused();
++    s.roles = ['gestor']; s.h15Org = undefined;
++    await retry(80);
++    paused(); // tenant divergence is never adopted by Retry
++  });
++});
+diff --git a/src/test/config/internalProbeLatency.test.ts b/src/test/config/internalProbeLatency.test.ts
+new file mode 100644
+index 00000000..8060ffb8
+--- /dev/null
++++ b/src/test/config/internalProbeLatency.test.ts
+@@ -0,0 +1,112 @@
++// Real monitor + real internalContextProbe (current and d767eb23 baseline) with fake
++// per-call transport latency and fake clock. Not browser-suspension nor JWT/RLS proof.
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++const s = vi.hoisted(() => ({
++  perCall: 100, roles: ['gestor', 'consultor_tecnico'] as string[], org: '00000000-0000-4000-8000-000000000002',
++  hasRole: true, fail: '' as string, calls: [] as string[], depth: 0, maxDepth: 0, rolesAfterFirstRead: undefined as string[] | undefined, roleReads: 0,
++}));
++const delayed = <T,>(name: string, value: () => T) => {
++  s.calls.push(name); s.depth++; s.maxDepth = Math.max(s.maxDepth, s.depth);
++  return new Promise<T>(r => setTimeout(() => { s.depth--; r(value()); }, s.perCall));
++};
++vi.mock('@/integrations/supabase/client', () => ({ supabase: {
++  from: (t: string) => {
++    const q: Record<string, unknown> = {};
++    for (const n of ['select', 'eq']) q[n] = () => q;
++    const run = () => delayed(t, () => {
++      if (t === 'profiles') return { data: { user_id: U, organization_id: s.org, ativo: true, senha_provisoria: false }, error: s.fail === 'profiles' ? {} : null };
++      s.roleReads++;
++      const roles = s.roleReads > 1 && s.rolesAfterFirstRead ? s.rolesAfterFirstRead : s.roles;
++      return { data: roles.map(role => ({ role })), error: s.fail === 'roles' ? {} : null };
++    });
++    q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, rj?: (e: unknown) => unknown) => run().then(f, rj);
++    return q;
++  },
++  rpc: (name: string) => delayed(name, () => name === 'has_role'
++    ? { data: s.hasRole, error: s.fail === 'has_role' ? {} : null }
++    : { data: s.org, error: s.fail === 'h15' ? {} : null }),
++} }));
++const U = '00000000-0000-4000-8000-000000000001';
++import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
++import { internalContextProbe, MANAGER_CONSULTANT_ROLES } from '@/lib/authz/internalContextProbe';
++import { internalContextProbe as baselineProbe } from '../../../scripts/monitor-partial-revocation/baseline/src/lib/authz/internalContextProbe';
++
++function run(probe: typeof internalContextProbe) {
++  const onExpire = vi.fn();
++  const fetcher = vi.fn(() => probe(U, s.org, MANAGER_CONSULTANT_ROLES));
++  const monitor = createAuthzEpochMonitor({
++    fetcher, now: () => Date.now(), isOnline: () => true, isVisible: () => true, pollWhenHidden: true, renewBeforeDeadline: true,
++    random: () => 0, setTimeoutFn: (cb, ms) => setTimeout(cb, ms), clearTimeoutFn: h => clearTimeout(h as ReturnType<typeof setTimeout>),
++    onExpire, onEpochChange: vi.fn(), onStateChange: vi.fn(),
++  });
++  monitor.start();
++  return { monitor, onExpire, fetcher };
++}
++beforeEach(() => { vi.useFakeTimers(); s.perCall = 100; s.roles = ['gestor', 'consultor_tecnico']; s.hasRole = true; s.fail = ''; s.calls = []; s.depth = 0; s.maxDepth = 0; s.rolesAfterFirstRead = undefined; s.roleReads = 0; });
++afterEach(() => vi.useRealTimers());
++
++describe('probe round trips', () => {
++  it('pair costs 2 sequential RTTs (baseline 6): 1290 ms/call ≈ 2.6 s instead of the observed 7.74 s', async () => {
++    s.perCall = 1290;
++    const t0 = Date.now(); let t1 = 0;
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { t1 = Date.now(); return v; });
++    await vi.advanceTimersByTimeAsync(10_000);
++    await expect(p).resolves.toMatchObject({ eligible: true });
++    expect(t1 - t0).toBe(2580);
++    const b0 = Date.now(); let b1 = 0;
++    const b = baselineProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { b1 = Date.now(); return v; });
++    await vi.advanceTimersByTimeAsync(10_000);
++    await expect(b).resolves.toMatchObject({ eligible: true });
++    expect(b1 - b0).toBe(7740);
++  });
++  it('has_role never runs before the exact set matched', async () => {
++    s.roles = ['gestor'];
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
++    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++    expect(s.calls).not.toContain('has_role');
++  });
++  it.each([
++    ['role removed while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor']; }],
++    ['role gained while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor', 'consultor_tecnico', 'administrador']; }],
++    ['has_role denies', () => { s.hasRole = false; }],
++  ])('%s denies', async (_n, arrange) => {
++    arrange();
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
++    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++  });
++  it.each(['profiles', 'roles', 'has_role', 'h15'])('transport error %s fails closed', async fail => {
++    s.fail = fail;
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES);
++    const settled = p.catch(e => e);
++    await vi.advanceTimersByTimeAsync(1000);
++    expect(String(await settled)).toContain('internal_probe_unavailable');
++  });
++});
++
++describe('monitor stability with the real probe', () => {
++  it('reproduces the real failure on the baseline: low RTT then 1290 ms/call (7.74 s) expires', async () => {
++    const { onExpire } = run(baselineProbe);
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    s.perCall = 1290;
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).toHaveBeenCalled();
++  });
++  it('current probe: same transition stays valid over 10 min of prolonged cycles, lease unchanged', async () => {
++    const { monitor, onExpire, fetcher } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(60_000);
++    s.perCall = 1290;
++    await vi.advanceTimersByTimeAsync(600_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(true);
++    expect(fetcher.mock.calls.length).toBeLessThan(600_000 / 1000); // bounded cadence
++  });
++  it('negative: 4 s per call (8 s probe) still expires; late answer never revives', async () => {
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(30_000);
++    s.perCall = 4000;
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(false);
++  });
++});

@@ -29,7 +29,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
 const U = '00000000-0000-4000-8000-000000000001';
 import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
 import { internalContextProbe, MANAGER_CONSULTANT_ROLES } from '@/lib/authz/internalContextProbe';
-import { internalContextProbe as baselineProbe } from '../../../scripts/monitor-retry-reresolve/baseline/src/lib/authz/internalContextProbe';
+import { internalContextProbe as baselineProbe } from '../../../scripts/monitor-partial-revocation/baseline/src/lib/authz/internalContextProbe';
 
 function run(probe: typeof internalContextProbe) {
   const onExpire = vi.fn();

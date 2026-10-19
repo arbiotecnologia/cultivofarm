@@ -31,8 +31,8 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
 }
 
 export default function SelecionarPortal() {
-  const { roles, profile, authzLatchBlocked } = useAuth();
-  return authzLatchBlocked || MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
+  const { roles, profile, authzLatchBlocked, authzResidualScope } = useAuth();
+  return authzLatchBlocked || authzResidualScope || MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
     ? <AuthzEpochBoundary><SelecionarPortalContent /></AuthzEpochBoundary>
     : <SelecionarPortalContent />;
 }
