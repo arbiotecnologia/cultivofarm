@@ -2,7 +2,7 @@
   "package": "monitor-attachments-hotfix",
   "baseline_commit": "3eeb3212bcb42d606e924ba8b2cc21399d93d5f6",
   "scope": "frontend only; no SQL, no publish, no role/data mutation",
-  "excluded": "lot-generation candidate frontend (GerarLoteDialog/OSDetalhesDialog/useEsteiraLaboratorio/lot tests) stays in working tree, NOT part of this delta",
+  "excluded": "Lot-generation frontend restored to 3eeb3212 bytes in HEAD; candidate kept as .review under scripts/lot-generation-recovery/frontend-candidate/",
   "files": [
     {
       "path": "src/lib/authz/authzEpochMonitor.ts",
@@ -35,5 +35,14 @@
       "candidate_sha256": "9c7387ced2cb26f5f7d7ca6c7fa0a0498d59ccae084470a94a85d49a60573f1c"
     }
   ],
-  "patch_sha256": "311750778042b6ce6fc35415c93821e6901e491b6e34a62ac7a8dfbdbd99d74e"
+  "patch_sha256": "311750778042b6ce6fc35415c93821e6901e491b6e34a62ac7a8dfbdbd99d74e",
+  "head_runtime_delta_vs_baseline": [
+    "src/lib/authz/authzEpochMonitor.ts",
+    "src/components/financeiro/DocumentosPanel.tsx",
+    "src/components/financeiro/relatorios/HistoricoExportacoes.tsx",
+    "src/test/config/authzEarlyRenewal.test.ts",
+    "src/test/equipe-tecnica/StorageDownloads.session.test.tsx",
+    "src/test/financeiro/FinancialAuthenticatedDownloads.test.tsx"
+  ],
+  "publishable_head": true
 }

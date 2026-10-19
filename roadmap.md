@@ -312,3 +312,6 @@
 - [x] DocumentosPanel e HistoricoExportacoes sem signed URL: abridor autenticado Preparar/Baixar, snapshot no recurso, fences e revogação de Blob.
 - [x] Pacote isolado sobre 3eeb3212: `scripts/monitor-attachments-hotfix/` (patch, baseline, rollback, manifest, hashes); tsgo app/node 0; 137/137 focados.
 - [ ] Publicação e homologação real (renovação natural com rascunho, download A/B, negação): aguarda auditor.
+- [x] HEAD publicável: runtimes/testes de lote restaurados a 3eeb (candidato em `.review`); delta runtime = 6 arquivos do hotfix; 435/435 focados, tsgo app/node 0.
+- [ ] ReportShell/Edge generate-financial-report v89 ainda usa signed URL 1 h: próximo pacote.
+- [ ] Imports legados de types.ts em 5 arquivos (2 testes de guarda falham também em 3eeb).
