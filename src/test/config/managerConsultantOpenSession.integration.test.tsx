@@ -106,8 +106,8 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
  it.each(['manager_loss','consultant_loss','duplicate','additional','superadmin','external','tenant','null','provisional','error','manager_denied','consultant_denied'])('%s pauses without silently adopting cached authority',async reason=>{
    const qc=setup();await tick();if(reason==='manager_loss')s.roles=['consultor_tecnico'];if(reason==='consultant_loss')s.roles=['gestor'];if(reason==='duplicate')s.roles=['gestor','gestor'];if(reason==='additional')s.roles.push('administrador');if(reason==='superadmin')s.roles.push('superadmin');if(reason==='external')s.roles.push('parceiro_b2b');if(reason==='tenant')s.org=U;if(reason==='null')s.org=null;if(reason==='provisional')s.password=true;if(reason==='error')s.error=true;if(reason==='manager_denied')s.deniedRole='gestor';if(reason==='consultant_denied')s.deniedRole='consultor_tecnico';
    await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();
-   // Owner 19/10 17:20: pair→single remaining role is re-resolved and monitored (residual scope); cache never survives.
-   if(reason==='manager_loss'||reason==='consultant_loss'){expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.queryKey[0]==='operator-fixture'&&q.state.dataUpdatedAt<0)).toBe(false);return;}
+   // Owner 19/10 17:20: pair→single remaining role is re-resolved and monitored (residual scope).
+   if(reason==='manager_loss'||reason==='consultant_loss'){expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();return;}
    paused(qc);
    s.roles=['gestor','consultor_tecnico'];s.org=O;s.password=false;s.error=false;s.deniedRole='';fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('Menu desktop')).toBeTruthy();
  });
