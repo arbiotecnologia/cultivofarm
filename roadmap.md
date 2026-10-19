@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 18:10 — Retry/renovação sem loading infinito (pacote monitor-retry-loading contra 84edf6c)
+- [x] Reproduzir: expiração do monitor antigo cancela Retry e deixa carregador órfão; requisição travada sem prazo (4/12 falham na baseline).
+- [x] Dono do carregamento separado do fence, releitura limitada, prazo 20 s, Retry só cede a carregador novo/identidade; 12/12, tsgo app/node OK.
+- [x] Log numérico load_restart/load_timeout; 7838 ms classificado como falha segura (ida ≥ lease/2).
+- [ ] Auditor: revisão/publicação e homologação real (retirar só gestor em /financeiro/receber, renovação natural, restauração). Bloqueio: sessão real externa.
+
 ## 19/10 15:29 — suplemento diagnóstico separado
 - [x] Serializar motivos/renovações allowlist em console local; ring80 e autoridade intactos; 27 testes PASS e artefato isolado baseline c30af/rollback exato em scripts/authz-diagnostics-supplement.
 - [x] Revalidar programação sem modificar históricos: 40 checks PostgreSQL descartável, 95 testes OS/AuthProvider e staging candidata/rollback PASS com baseline original em árvore temporária. Stager histórico recusa diagnóstico novo; deltas separados, sem atualizar hashes protegidos. Build automático OK; typecheck externo pendente.
