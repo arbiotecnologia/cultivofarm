@@ -48,14 +48,16 @@ afterEach(() => vi.useRealTimers());
 describe('probe round trips', () => {
   it('pair costs 2 sequential RTTs (baseline 6): 1290 ms/call ≈ 2.6 s instead of the observed 7.74 s', async () => {
     s.perCall = 1290;
-    const t0 = Date.now(); const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES);
-    await vi.advanceTimersByTimeAsync(3000);
+    const t0 = Date.now(); let t1 = 0;
+    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { t1 = Date.now(); return v; });
+    await vi.advanceTimersByTimeAsync(10_000);
     await expect(p).resolves.toMatchObject({ eligible: true });
-    expect(Date.now() - t0).toBeLessThan(3000);
-    const b0 = Date.now(); const b = baselineProbe(U, s.org, MANAGER_CONSULTANT_ROLES);
-    await vi.advanceTimersByTimeAsync(8000);
+    expect(t1 - t0).toBe(2580);
+    const b0 = Date.now(); let b1 = 0;
+    const b = baselineProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { b1 = Date.now(); return v; });
+    await vi.advanceTimersByTimeAsync(10_000);
     await expect(b).resolves.toMatchObject({ eligible: true });
-    expect(Date.now() - b0).toBeGreaterThanOrEqual(7740);
+    expect(b1 - b0).toBe(7740);
   });
   it('has_role never runs before the exact set matched', async () => {
     s.roles = ['gestor'];

@@ -218,6 +218,73 @@ index 5a519194..420a396e 100644
          checkAuthzAccess,
          revalidateAuthz,
          setSafeOSDraft,
+diff --git a/src/lib/authz/internalContextProbe.ts b/src/lib/authz/internalContextProbe.ts
+index b0a8ebe5..7f030926 100644
+--- a/src/lib/authz/internalContextProbe.ts
++++ b/src/lib/authz/internalContextProbe.ts
+@@ -23,32 +23,40 @@ export async function internalContextProbe(userId: string, organizationId: strin
+   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) ||
+     !userId || !allowed) return deny();
+   const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+-  const { data: org, error: orgError } = await rpc.call(supabase, "h15_actor_organization");
+-  if (orgError) throw new Error("internal_probe_unavailable");
+-  if (!userId || !organizationId || org !== organizationId) return deny();
+-  const { data: profile, error: profileError } = await supabase.from("profiles")
+-    .select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle() as unknown as {
+-      data: { user_id?: unknown; organization_id?: unknown; ativo?: unknown; senha_provisoria?: unknown } | null;
+-      error: unknown;
+-    };
+-  if (profileError) throw new Error("internal_probe_unavailable");
++  // Latency: 2 sequential waves instead of 4+N round trips (no new RPC, no
++  // grant change). Wave 1 reads org/profile/roles in parallel; reads grant
++  // nothing and the decision is taken only after all arrive. Wave 2 runs only
++  // after the exact set matched: has_role per role, a fresh roles re-read and
++  // the final h15 bracket, in parallel — a change landing during wave 1 is
++  // still observed. Any transport error fails closed as unavailable.
++  const readRoles = () => supabase.from("user_roles").select("role").eq("user_id", userId) as unknown as Promise<{ data: unknown; error: unknown }>;
++  const exactSet = (rows: unknown) => {
++    if (!Array.isArray(rows) || rows.length !== sortedExpected.length) return false;
++    const actual = rows.map(row => (row as { role?: unknown } | null)?.role);
++    return new Set(actual).size === actual.length && sortedExpected.every(role => actual.includes(role));
++  };
++  const [orgResult, profileResult, rolesResult] = await Promise.all([
++    rpc.call(supabase, "h15_actor_organization"),
++    supabase.from("profiles").select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle() as unknown as Promise<{
++      data: { user_id?: unknown; organization_id?: unknown; ativo?: unknown; senha_provisoria?: unknown } | null; error: unknown }>,
++    readRoles(),
++  ]);
++  if (orgResult.error || profileResult.error || rolesResult.error) throw new Error("internal_probe_unavailable");
++  if (orgResult.data !== organizationId) return deny();
++  const profile = profileResult.data;
+   if (profile?.user_id !== userId || profile.organization_id !== organizationId ||
+     profile.ativo !== true || profile.senha_provisoria !== false) return deny();
+-  const { data: roles, error: rolesError } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+-  if (rolesError) throw new Error("internal_probe_unavailable");
+   // Do not adopt a new/mixed role using a cached principal. Pause until the
+   // original role is restored, or a fresh login resolves the new RBAC context.
+-  if (!Array.isArray(roles) || roles.length !== sortedExpected.length) return deny();
+-  const actual = roles.map(row => row?.role);
+-  if (new Set(actual).size !== actual.length || !sortedExpected.every(role => actual.includes(role))) return deny();
+-  for (const role of sortedExpected) {
+-    const { data: roleAllowed, error: roleError } = await supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole | "gestor" });
+-    if (roleError) throw new Error("internal_probe_unavailable");
+-    if (roleAllowed !== true) return deny();
+-  }
+-  const { data: finalOrg, error: finalError } = await rpc.call(supabase, "h15_actor_organization");
+-  if (finalError) throw new Error("internal_probe_unavailable");
+-  if (finalOrg !== organizationId) return deny();
++  if (!exactSet(rolesResult.data)) return deny();
++  const [finalResult, rolesAgain, ...roleChecks] = await Promise.all([
++    rpc.call(supabase, "h15_actor_organization"),
++    readRoles(),
++    ...sortedExpected.map(role =>
++      supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole | "gestor" }) as unknown as Promise<{ data: unknown; error: unknown }>),
++  ]);
++  if (finalResult.error || rolesAgain.error || roleChecks.some(r => r.error)) throw new Error("internal_probe_unavailable");
++  if (roleChecks.some(r => r.data !== true) || !exactSet(rolesAgain.data) || finalResult.data !== organizationId) return deny();
+   // No revision/budget fabrication: identical observation renews only the lease.
+   // Separate statements cannot prove transient ABA/snapshot.
+   return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, sortedExpected]) };
 diff --git a/src/pages/SelecionarPortal.tsx b/src/pages/SelecionarPortal.tsx
 index 39a3f17f..3af5df38 100644
 --- a/src/pages/SelecionarPortal.tsx
@@ -233,6 +300,124 @@ index 39a3f17f..3af5df38 100644
      ? <AuthzEpochBoundary><SelecionarPortalContent /></AuthzEpochBoundary>
      : <SelecionarPortalContent />;
  }
+diff --git a/src/test/config/internalProbeLatency.test.ts b/src/test/config/internalProbeLatency.test.ts
+new file mode 100644
+index 00000000..d82f59d4
+--- /dev/null
++++ b/src/test/config/internalProbeLatency.test.ts
+@@ -0,0 +1,112 @@
++// Real monitor + real internalContextProbe (current and d767eb23 baseline) with fake
++// per-call transport latency and fake clock. Not browser-suspension nor JWT/RLS proof.
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++const s = vi.hoisted(() => ({
++  perCall: 100, roles: ['gestor', 'consultor_tecnico'] as string[], org: '00000000-0000-4000-8000-000000000002',
++  hasRole: true, fail: '' as string, calls: [] as string[], depth: 0, maxDepth: 0, rolesAfterFirstRead: undefined as string[] | undefined, roleReads: 0,
++}));
++const delayed = <T,>(name: string, value: () => T) => {
++  s.calls.push(name); s.depth++; s.maxDepth = Math.max(s.maxDepth, s.depth);
++  return new Promise<T>(r => setTimeout(() => { s.depth--; r(value()); }, s.perCall));
++};
++vi.mock('@/integrations/supabase/client', () => ({ supabase: {
++  from: (t: string) => {
++    const q: Record<string, unknown> = {};
++    for (const n of ['select', 'eq']) q[n] = () => q;
++    const run = () => delayed(t, () => {
++      if (t === 'profiles') return { data: { user_id: U, organization_id: s.org, ativo: true, senha_provisoria: false }, error: s.fail === 'profiles' ? {} : null };
++      s.roleReads++;
++      const roles = s.roleReads > 1 && s.rolesAfterFirstRead ? s.rolesAfterFirstRead : s.roles;
++      return { data: roles.map(role => ({ role })), error: s.fail === 'roles' ? {} : null };
++    });
++    q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, rj?: (e: unknown) => unknown) => run().then(f, rj);
++    return q;
++  },
++  rpc: (name: string) => delayed(name, () => name === 'has_role'
++    ? { data: s.hasRole, error: s.fail === 'has_role' ? {} : null }
++    : { data: s.org, error: s.fail === 'h15' ? {} : null }),
++} }));
++const U = '00000000-0000-4000-8000-000000000001';
++import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
++import { internalContextProbe, MANAGER_CONSULTANT_ROLES } from '@/lib/authz/internalContextProbe';
++import { internalContextProbe as baselineProbe } from '../../../scripts/monitor-retry-reresolve/baseline/src/lib/authz/internalContextProbe';
++
++function run(probe: typeof internalContextProbe) {
++  const onExpire = vi.fn();
++  const fetcher = vi.fn(() => probe(U, s.org, MANAGER_CONSULTANT_ROLES));
++  const monitor = createAuthzEpochMonitor({
++    fetcher, now: () => Date.now(), isOnline: () => true, isVisible: () => true, pollWhenHidden: true, renewBeforeDeadline: true,
++    random: () => 0, setTimeoutFn: (cb, ms) => setTimeout(cb, ms), clearTimeoutFn: h => clearTimeout(h as ReturnType<typeof setTimeout>),
++    onExpire, onEpochChange: vi.fn(), onStateChange: vi.fn(),
++  });
++  monitor.start();
++  return { monitor, onExpire, fetcher };
++}
++beforeEach(() => { vi.useFakeTimers(); s.perCall = 100; s.roles = ['gestor', 'consultor_tecnico']; s.hasRole = true; s.fail = ''; s.calls = []; s.depth = 0; s.maxDepth = 0; s.rolesAfterFirstRead = undefined; s.roleReads = 0; });
++afterEach(() => vi.useRealTimers());
++
++describe('probe round trips', () => {
++  it('pair costs 2 sequential RTTs (baseline 6): 1290 ms/call ≈ 2.6 s instead of the observed 7.74 s', async () => {
++    s.perCall = 1290;
++    const t0 = Date.now(); let t1 = 0;
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { t1 = Date.now(); return v; });
++    await vi.advanceTimersByTimeAsync(10_000);
++    await expect(p).resolves.toMatchObject({ eligible: true });
++    expect(t1 - t0).toBe(2580);
++    const b0 = Date.now(); let b1 = 0;
++    const b = baselineProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { b1 = Date.now(); return v; });
++    await vi.advanceTimersByTimeAsync(10_000);
++    await expect(b).resolves.toMatchObject({ eligible: true });
++    expect(b1 - b0).toBe(7740);
++  });
++  it('has_role never runs before the exact set matched', async () => {
++    s.roles = ['gestor'];
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
++    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++    expect(s.calls).not.toContain('has_role');
++  });
++  it.each([
++    ['role removed while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor']; }],
++    ['role gained while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor', 'consultor_tecnico', 'administrador']; }],
++    ['has_role denies', () => { s.hasRole = false; }],
++  ])('%s denies', async (_n, arrange) => {
++    arrange();
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
++    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++  });
++  it.each(['profiles', 'roles', 'has_role', 'h15'])('transport error %s fails closed', async fail => {
++    s.fail = fail;
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES);
++    const settled = p.catch(e => e);
++    await vi.advanceTimersByTimeAsync(1000);
++    expect(String(await settled)).toContain('internal_probe_unavailable');
++  });
++});
++
++describe('monitor stability with the real probe', () => {
++  it('reproduces the real failure on the baseline: low RTT then 1290 ms/call (7.74 s) expires', async () => {
++    const { onExpire } = run(baselineProbe);
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    s.perCall = 1290;
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).toHaveBeenCalled();
++  });
++  it('current probe: same transition stays valid over 10 min of prolonged cycles, lease unchanged', async () => {
++    const { monitor, onExpire, fetcher } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(60_000);
++    s.perCall = 1290;
++    await vi.advanceTimersByTimeAsync(600_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(true);
++    expect(fetcher.mock.calls.length).toBeLessThan(600_000 / 1000); // bounded cadence
++  });
++  it('negative: 4 s per call (8 s probe) still expires; late answer never revives', async () => {
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(30_000);
++    s.perCall = 4000;
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(false);
++  });
++});
 diff --git a/src/test/config/monitorRetryReresolve.integration.test.tsx b/src/test/config/monitorRetryReresolve.integration.test.tsx
 new file mode 100644
 index 00000000..b23dc518
@@ -380,5 +565,123 @@ index 00000000..b23dc518
 +    s.roles = ['gestor']; s.h15Org = undefined;
 +    await retry(80);
 +    paused();
++  });
++});
+diff --git a/src/test/config/internalProbeLatency.test.ts b/src/test/config/internalProbeLatency.test.ts
+new file mode 100644
+index 00000000..d82f59d4
+--- /dev/null
++++ b/src/test/config/internalProbeLatency.test.ts
+@@ -0,0 +1,112 @@
++// Real monitor + real internalContextProbe (current and d767eb23 baseline) with fake
++// per-call transport latency and fake clock. Not browser-suspension nor JWT/RLS proof.
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++const s = vi.hoisted(() => ({
++  perCall: 100, roles: ['gestor', 'consultor_tecnico'] as string[], org: '00000000-0000-4000-8000-000000000002',
++  hasRole: true, fail: '' as string, calls: [] as string[], depth: 0, maxDepth: 0, rolesAfterFirstRead: undefined as string[] | undefined, roleReads: 0,
++}));
++const delayed = <T,>(name: string, value: () => T) => {
++  s.calls.push(name); s.depth++; s.maxDepth = Math.max(s.maxDepth, s.depth);
++  return new Promise<T>(r => setTimeout(() => { s.depth--; r(value()); }, s.perCall));
++};
++vi.mock('@/integrations/supabase/client', () => ({ supabase: {
++  from: (t: string) => {
++    const q: Record<string, unknown> = {};
++    for (const n of ['select', 'eq']) q[n] = () => q;
++    const run = () => delayed(t, () => {
++      if (t === 'profiles') return { data: { user_id: U, organization_id: s.org, ativo: true, senha_provisoria: false }, error: s.fail === 'profiles' ? {} : null };
++      s.roleReads++;
++      const roles = s.roleReads > 1 && s.rolesAfterFirstRead ? s.rolesAfterFirstRead : s.roles;
++      return { data: roles.map(role => ({ role })), error: s.fail === 'roles' ? {} : null };
++    });
++    q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, rj?: (e: unknown) => unknown) => run().then(f, rj);
++    return q;
++  },
++  rpc: (name: string) => delayed(name, () => name === 'has_role'
++    ? { data: s.hasRole, error: s.fail === 'has_role' ? {} : null }
++    : { data: s.org, error: s.fail === 'h15' ? {} : null }),
++} }));
++const U = '00000000-0000-4000-8000-000000000001';
++import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
++import { internalContextProbe, MANAGER_CONSULTANT_ROLES } from '@/lib/authz/internalContextProbe';
++import { internalContextProbe as baselineProbe } from '../../../scripts/monitor-retry-reresolve/baseline/src/lib/authz/internalContextProbe';
++
++function run(probe: typeof internalContextProbe) {
++  const onExpire = vi.fn();
++  const fetcher = vi.fn(() => probe(U, s.org, MANAGER_CONSULTANT_ROLES));
++  const monitor = createAuthzEpochMonitor({
++    fetcher, now: () => Date.now(), isOnline: () => true, isVisible: () => true, pollWhenHidden: true, renewBeforeDeadline: true,
++    random: () => 0, setTimeoutFn: (cb, ms) => setTimeout(cb, ms), clearTimeoutFn: h => clearTimeout(h as ReturnType<typeof setTimeout>),
++    onExpire, onEpochChange: vi.fn(), onStateChange: vi.fn(),
++  });
++  monitor.start();
++  return { monitor, onExpire, fetcher };
++}
++beforeEach(() => { vi.useFakeTimers(); s.perCall = 100; s.roles = ['gestor', 'consultor_tecnico']; s.hasRole = true; s.fail = ''; s.calls = []; s.depth = 0; s.maxDepth = 0; s.rolesAfterFirstRead = undefined; s.roleReads = 0; });
++afterEach(() => vi.useRealTimers());
++
++describe('probe round trips', () => {
++  it('pair costs 2 sequential RTTs (baseline 6): 1290 ms/call ≈ 2.6 s instead of the observed 7.74 s', async () => {
++    s.perCall = 1290;
++    const t0 = Date.now(); let t1 = 0;
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { t1 = Date.now(); return v; });
++    await vi.advanceTimersByTimeAsync(10_000);
++    await expect(p).resolves.toMatchObject({ eligible: true });
++    expect(t1 - t0).toBe(2580);
++    const b0 = Date.now(); let b1 = 0;
++    const b = baselineProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { b1 = Date.now(); return v; });
++    await vi.advanceTimersByTimeAsync(10_000);
++    await expect(b).resolves.toMatchObject({ eligible: true });
++    expect(b1 - b0).toBe(7740);
++  });
++  it('has_role never runs before the exact set matched', async () => {
++    s.roles = ['gestor'];
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
++    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++    expect(s.calls).not.toContain('has_role');
++  });
++  it.each([
++    ['role removed while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor']; }],
++    ['role gained while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor', 'consultor_tecnico', 'administrador']; }],
++    ['has_role denies', () => { s.hasRole = false; }],
++  ])('%s denies', async (_n, arrange) => {
++    arrange();
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
++    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++  });
++  it.each(['profiles', 'roles', 'has_role', 'h15'])('transport error %s fails closed', async fail => {
++    s.fail = fail;
++    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES);
++    const settled = p.catch(e => e);
++    await vi.advanceTimersByTimeAsync(1000);
++    expect(String(await settled)).toContain('internal_probe_unavailable');
++  });
++});
++
++describe('monitor stability with the real probe', () => {
++  it('reproduces the real failure on the baseline: low RTT then 1290 ms/call (7.74 s) expires', async () => {
++    const { onExpire } = run(baselineProbe);
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    s.perCall = 1290;
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).toHaveBeenCalled();
++  });
++  it('current probe: same transition stays valid over 10 min of prolonged cycles, lease unchanged', async () => {
++    const { monitor, onExpire, fetcher } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(60_000);
++    s.perCall = 1290;
++    await vi.advanceTimersByTimeAsync(600_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(true);
++    expect(fetcher.mock.calls.length).toBeLessThan(600_000 / 1000); // bounded cadence
++  });
++  it('negative: 4 s per call (8 s probe) still expires; late answer never revives', async () => {
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(30_000);
++    s.perCall = 4000;
++    await vi.advanceTimersByTimeAsync(60_000);
++    expect(onExpire).toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(false);
 +  });
 +});
