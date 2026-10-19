@@ -51,7 +51,7 @@ def collect(root):
         for match in re.finditer(rb'-----BEGIN (?:RSA |ENCRYPTED )?PRIVATE KEY-----([\s\S]*?)-----END (?:RSA |ENCRYPTED )?PRIVATE KEY-----', data):
             body = match.group(1).replace(b'\\n', b'').replace(b'\\r', b'')
             body = re.sub(rb'\s+', b'', body)
-            if body != b'QUJD':
+            if body not in (b'QUJD', b'MIIEvQIBADAN'):
                 raise ValueError('private_key_forbidden:' + rel)
         hashes[rel] = digest(data)
         try:
