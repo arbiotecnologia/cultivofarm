@@ -36,7 +36,7 @@ const adv = async (ms: number) => { await act(async () => { await vi.advanceTime
 const pausedText = () => screen.queryByText('Sessão de acesso pausada');
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
   s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
