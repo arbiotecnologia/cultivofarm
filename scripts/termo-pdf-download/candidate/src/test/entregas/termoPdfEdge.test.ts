@@ -17,7 +17,7 @@ let st: {
   bytes: Uint8Array; onDownload?: () => void;
 };
 const calls = { download: vi.fn(), sign: vi.fn(), rpc: vi.fn(), upload: vi.fn() };
-const next = (q: Row[]) => (q.length > 1 ? q.shift()! : q[0]);
+const next = <V,>(q: V[]): V => (q.length > 1 ? q.shift()! : q[0]);
 
 function client(kind: "user" | "admin") {
   return {
