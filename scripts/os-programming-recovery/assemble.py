@@ -25,7 +25,7 @@ def guard(post=False):
   if sig in posts: digest=posts[sig]
   if sig=='public.rpc_aprovar_os_v1(uuid,text)': roles=['authenticated','postgres']
   if sig=='public.rpc_programar_os_v1(uuid,text,date)' and post:
-   digest=new_hash;config='search_path=""';roles=['authenticated','postgres']
+   digest=new_hash;config='search_path=""'
   rewritten.append((sig,digest,vol,sec,config,roles))
  m.CONTRACTS=rewritten
  result=m.guard(False).replace('OS_APPROVAL_','OS_PROGRAMMING_')
@@ -39,9 +39,13 @@ def main():
  header="-- REVIEW ONLY, NOT APPLIED. Canonical external Supabase only; no fixture writes.\nBEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL statement_timeout='15s';\n"
  (H/'preflight-readonly.sql').write_text('BEGIN READ ONLY;\n'+pre+"SELECT 'PRE PASS, supplemental SaaS/refresh review still required' result;\nROLLBACK;\n")
  (H/'postflight-readonly.sql').write_text('BEGIN READ ONLY;\n'+post+"SELECT 'POST PASS' result;\nROLLBACK;\n")
- (H/'candidate.sql.review').write_text(header+pre+(H/'rpc.sql.review').read_text()+"REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM PUBLIC,anon,service_role;\nGRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO authenticated;\n"+post+'COMMIT;\n')
- # Reversal revokes first, never makes the vulnerable old body callable.
- (H/'rollback.sql.review').write_text(header+post+"REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM authenticated;\n"+(H/'rollback/rpc.sql.review').read_text()+"GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO service_role;\n"+pre+'COMMIT;\n')
+ # No release artifact: supplementary dependencies lack immutable observed fingerprints.
+ # Candidate refuses execution rather than relying on a comment to block rollout.
+ closed="DO $release$ BEGIN RAISE EXCEPTION 'PROGRAMAR_SUPPLEMENTAL_REVIEW_REQUIRED'; END $release$;\n"
+ (H/'candidate.sql.review').write_text(header+pre+closed+(H/'rpc.sql.review').read_text()+post+'COMMIT;\n')
+ # Same-session snapshot is authoritative; reconstructed body is reference only.
+ # A future auditor-reviewed application must capture this before replacement.
+ (H/'rollback.sql.review').write_text(header+post+"DO $restore$ DECLARE saved text; BEGIN\nIF to_regclass('pg_temp.programar_exact_baseline') IS NULL THEN RAISE EXCEPTION 'EXACT_BASELINE_NOT_CAPTURED'; END IF;\nSELECT definition INTO saved FROM pg_temp.programar_exact_baseline;\nIF md5(saved) IS DISTINCT FROM 'a42d6b07f51e6dacf41096f6cefb8163' THEN RAISE EXCEPTION 'BASELINE_DRIFT'; END IF;\nEXECUTE saved; END $restore$;\n"+pre+'COMMIT;\n')
  artifact_paths=[p for p in H.rglob('*') if p.is_file() and '__pycache__' not in p.parts and 'snapshot' not in p.parts and p.name not in ['manifest.json','SHA256SUMS']]
  manifest={'canonical_ref':'swzpzcwiasxmjutrmvkm','baseline_commit':BASELINE,'approval_commit':APPROVAL,'hosted_executed':False,'release_gate':'AUDITOR REVIEW REQUIRED: supplemental SaaS dependency catalog and global-refresh concurrency not certified; do not execute solely from local tests','runtime':{'path':UI,'pre':UI_PRE,'post':sha(ROOT/UI),'rollback':'rollback/OSDetalhesDialog.tsx'},'protected':json.loads((H/'protected.json').read_text()),'artifacts':{p.relative_to(H).as_posix():sha(p) for p in sorted(artifact_paths)}}
  (H/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

@@ -19,6 +19,8 @@ def main():
     sql = fixture.SETUP + r'''
 CREATE TABLE organizations(id uuid PRIMARY KEY,ativo boolean);
 CREATE TABLE user_roles(user_id uuid,role app_role);
+CREATE OR REPLACE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE sql VOLATILE AS $$SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2)$$;
+CREATE OR REPLACE FUNCTION public.technical_actor_ready(uuid) RETURNS boolean LANGUAGE sql VOLATILE AS $$SELECT $1 IS NOT NULL AND nullif(current_setting('t.ready',true),'')::boolean AND EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo IS TRUE)$$;
 CREATE TABLE organization_subscriptions(id uuid,organization_id uuid);
 CREATE TABLE organization_feature_overrides(id uuid,organization_id uuid);
 CREATE TABLE saas_plan_versions(id uuid); CREATE TABLE saas_plan_version_features(id uuid); CREATE TABLE saas_features(id uuid); CREATE TABLE saas_modules(id uuid);
@@ -119,7 +121,9 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
     deny('foreign indistinguishable',f"SELECT set_config('t.org',{B},false);",f"SELECT set_config('t.org',{A},false);")
     deny('missing same denial',invocation=f"public.rpc_programar_os_v1({q(99)},'manual','2026-10-20')")
     for role in ['administrativo','financeiro','consultor_tecnico','operador_onfarm','superadmin']:
-        deny(role,f"SELECT set_config('t.role','{role}',false);","SELECT set_config('t.role','administrador',false);")
+        deny(role,f"UPDATE user_roles SET role='{role}' WHERE user_id={U};",f"UPDATE user_roles SET role='administrador' WHERE user_id={U};")
+    deny('actual fixture role deletion',f'DELETE FROM user_roles WHERE user_id={U};',f"INSERT INTO user_roles VALUES({U},'administrador');")
+    deny('actual fixture inactive profile',f'UPDATE profiles SET ativo=false WHERE user_id={U};',f'UPDATE profiles SET ativo=true WHERE user_id={U};')
     for key in ['ready','feature']:
         for value in ['false','']:
             deny(key+' '+(value or 'NULL'),f"SELECT set_config('t.{key}','{value}',false);",f"SELECT set_config('t.{key}','true',false);")
@@ -166,6 +170,9 @@ SELECT set_config('t.uid',{U},false),set_config('t.org',{A},false),set_config('t
         r=subprocess.run(['psql','-h',str(tmp),'-p','55493','-U','postgres','-v','ON_ERROR_STOP=1','-f',str(f)],capture_output=True,text=True)
         if r.returncode: raise SystemExit(r.stdout[-4000:]+r.stderr[-1500:])
         print(r.stderr)
+        # PostgreSQL canonical serialization, not a Python guess of pg_get_functiondef.
+        observed=subprocess.run(['psql','-h',str(tmp),'-p','55493','-U','postgres','-At','-c',"SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure));"],capture_output=True,text=True,check=True).stdout.strip()
+        (ROOT/'scripts/os-programming-recovery/post-hashes.json').write_text(json.dumps({'public.rpc_programar_os_v1(uuid,text,date)':observed},indent=2)+'\n')
         # Reset only local synthetic fixture. Production OS never touched.
         subprocess.run(['psql','-h',str(tmp),'-p','55493','-U','postgres','-v','ON_ERROR_STOP=1','-c',f"UPDATE ordens_servico SET status='aprovada',data_programada=NULL WHERE id={O}; UPDATE programacao_producao SET data_programada=NULL WHERE id={PP};"],check=True,capture_output=True)
         # Two real local connections, same target/date. Each restores simulated actor.

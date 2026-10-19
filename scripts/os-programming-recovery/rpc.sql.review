@@ -5,6 +5,8 @@ DECLARE
  v_pp public.programacao_producao%ROWTYPE; v_before jsonb; v_after jsonb;
  v_count integer; v_canonical text; v_status text;
 BEGIN
+ -- Local wait bound also applies to normal SDK calls, not only migration transaction.
+ PERFORM pg_catalog.set_config('lock_timeout','3s',true);
  -- O helper corrente valida a cadeia completa atual, não a MV; antes de status/replay.
  v_org:=platform_private.h15_actor_organization();
  IF v_uid IS NULL OR v_org IS NULL OR public.technical_actor_ready(v_uid) IS NOT TRUE
