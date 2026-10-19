@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 14:18 — P0 alias e rollback approval
+- [ ] Corrigir alias pg_class class_row no assembler/PRE/candidate/rollback/POST sem mudar expectativas.
+- [ ] Recuperar baseline diálogo ff80adabd0d70eebd7d7da641831f7d020647814 SHA9c20bd..., corrigir manifest/stage e negativos.
+- [ ] Testar SQL completos/expressão de catálogo e staging; registrar PRE PASS externo e limites sem hosted/publicação.
+
 ## 19/10 14:13 — complemento real OS/lifecycle
 - [x] OS B real/bundle registrados; SELECT canônico confirma aberta/1 programação aguardando/0 lotes. NÃO duplicar OS/seed.
 - [x] Badge deriva da presença do filho na view, não status OS; hashes live registrados, consulta-only/ações fechadas preservadas.
