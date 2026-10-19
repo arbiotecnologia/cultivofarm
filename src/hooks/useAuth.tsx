@@ -71,7 +71,7 @@ interface AuthContextType {
   checkAuthzAccess: () => boolean;
   /** Revalidação manual (botão "Tentar novamente"). */
   revalidateAuthz: () => void;
-  /** Monitored session re-resolved into an unmonitored/other-tenant scope: stays paused until fresh login. */
+  /** Monitored session re-resolved into an unmonitored scope: stays paused until fresh login. */
   authzLatchBlocked: boolean;
   setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
   takeSafeOSDraft: () => SafeOSRenewalDraft | null;
@@ -124,9 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const renewalRef = useRef<{ draft: SafeOSRenewalDraft; scope: string; fingerprint: string; confirmed: boolean } | null>(null);
   const resolvedScopeRef = useRef("");
   // Monitored-session latch: once this session observed a monitored scope,
-  // a later re-resolution into an unmonitored/unknown/empty scope or another
-  // tenant stays paused until a fresh login (no bypass via gestor-only).
-  const monitoredLatchRef = useRef<{ userId: string; orgId: string } | null>(null);
+  // a later re-resolution into an unmonitored/unknown/empty scope stays
+  // paused until a fresh login (no bypass via gestor-only).
+  const monitoredLatchRef = useRef<{ userId: string } | null>(null);
   const retryInFlightRef = useRef<Promise<void> | null>(null);
   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
   const takeSafeOSDraft = () => {
@@ -555,8 +555,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     authzMonitorRef.current = monitor;
-    if (!monitoredLatchRef.current && user?.id && profile?.organization_id) {
-      monitoredLatchRef.current = { userId: user.id, orgId: profile.organization_id };
+    if (!monitoredLatchRef.current && user?.id) {
+      monitoredLatchRef.current = { userId: user.id };
     }
     const onEnvironment = () => environmentalContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
     const onFocus = onEnvironment;
@@ -590,8 +590,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // externo. Perfil interno → pronto sem monitor; externo → pronto SOMENTE
   // com monitor "valid" (lease rechecada no acesso via checkAuthzAccess).
   const latch = monitoredLatchRef.current;
-  const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id &&
-    (!isExternalUser || latch.orgId !== profile?.organization_id);
+  // Tenant changes are re-proven by the new scope's own probe (h15); only an
+  // unmonitored/empty/unknown re-resolution is held.
+  const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!!user && !loading && !latchBlocked && (!isExternalUser ||
@@ -646,7 +647,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isCurrent()) return;
         const same = fresh !== null && freshOrg === cachedOrg &&
           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
-        if (fresh === null || !active || same) {
+        // Empty set stays on the paused probe path (no error-screen detour).
+        if (fresh === null || fresh.length === 0 || !active || same) {
           authzMonitorRef.current?.revalidate();
           return;
         }

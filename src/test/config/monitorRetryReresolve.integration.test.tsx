@@ -14,7 +14,7 @@ const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 function chain(table: string) {
   const run = async () => {
     if (table === 'profiles') s.profileReads++;
-    if (s.rtt) await wait(s.rtt);
+    if (s.rtt && table === 'user_roles') await wait(s.rtt);
     if (s.hold && table === 'user_roles') await s.hold;
     if (s.offline) return { data: null, error: { message: 'offline' } };
     if (table === 'profiles') return { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null };
@@ -32,7 +32,6 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
   from: (t: string) => chain(t),
   rpc: async (name: string, args?: { _role: string }) => {
-    if (s.rtt) await wait(s.rtt);
     if (s.offline) return { data: null, error: { message: 'offline' } };
     if (name === 'h15_actor_organization') return { data: s.h15Org ?? s.org, error: null };
     if (name === 'has_role') return { data: s.roles.includes(args!._role), error: null };
@@ -127,10 +126,16 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     await flush(80);
     paused();
   });
-  it('cross-tenant re-resolution stays paused until fresh login', async () => {
-    await mount();
+  it('cross-tenant: old cache never survives; new tenant only after its own probe, gestor-only there stays paused', async () => {
+    const qc = await mount();
     s.org = '00000000-0000-4000-8000-0000000000bb';
     await changeRolesAndPoll(['gestor', 'consultor_tecnico']);
+    paused();
+    expect(qc.getQueryData(['cache-sensivel'])).toBeUndefined();
+    s.h15Org = '00000000-0000-4000-8000-000000000002'; // server still says A
+    await retry(80);
+    paused();
+    s.roles = ['gestor']; s.h15Org = undefined;
     await retry(80);
     paused();
   });
