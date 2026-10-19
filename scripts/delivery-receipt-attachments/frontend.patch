@@ -1,78 +1,6 @@
-diff --git a/src/components/entregas/ConfirmacaoEntregaPanel.tsx b/src/components/entregas/ConfirmacaoEntregaPanel.tsx
-index 0dd368cf..ef979c45 100644
---- a/src/components/entregas/ConfirmacaoEntregaPanel.tsx
-+++ b/src/components/entregas/ConfirmacaoEntregaPanel.tsx
-@@ -9,6 +9,9 @@ import { brl } from "@/lib/financial/format";
- import { toast } from "@/hooks/use-toast";
- import { useNavigate } from "react-router-dom";
- import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
-+import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
-+import { Loader2 } from "lucide-react";
- 
- const TIPO_LABEL: Record<string, string> = {
-   RECIBO_ASSINADO: "Recibo assinado",
-@@ -68,16 +71,21 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
-   });
- 
- 
--  const baixar = async (path: string, nome: string) => {
--    if (!access.ready) return;
--    const current = access.capture();
--    const { data, error } = await supabase.storage.from("entrega-documentos").createSignedUrl(path, 60);
--    if (!current()) return;
--    if (error || !data?.signedUrl) {
--      toast({ title: "Não foi possível abrir o arquivo", description: error?.message, variant: "destructive" });
--      return;
--    }
--    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-+  // Snapshot da lista exibida: troca de documentos/escopo descarta bytes.
-+  const opener = useAuthenticatedAttachmentOpener(
-+    JSON.stringify(["delivery-documents", entrega?.id ?? null, docs.map((d) => [d.id, d.arquivo_path])]),
-+    DELIVERY_RECEIPT_BUCKET,
-+  );
-+  const erroArquivo = () => toast({
-+    title: "Não foi possível preparar o arquivo",
-+    description: "O arquivo está indisponível no momento. Tente novamente.",
-+    variant: "destructive",
-+  });
-+  const preparar = (path: unknown) => {
-+    if (!access.ready || !opener.ready) return;
-+    const locator = deliveryReceiptLocator(entrega?.id, path);
-+    if (!locator) { erroArquivo(); return; }
-+    void opener.open(locator, erroArquivo);
-   };
- 
-   if (!entrega) return null;
-@@ -178,9 +186,22 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
-                     <span className="truncate">{d.nome_arquivo}</span>
-                     <span className="text-muted-foreground whitespace-nowrap">{formatDateDisplay(d.uploaded_at)}</span>
-                   </div>
--                  <Button size="sm" variant="ghost" onClick={() => baixar(d.arquivo_path, d.nome_arquivo)}>
--                    <Download className="h-4 w-4" />
--                  </Button>
-+                  {(() => {
-+                    const locator = deliveryReceiptLocator(entrega.id, d.arquivo_path);
-+                    if (locator && opener.urls[locator]) {
-+                      return (
-+                        <Button size="sm" variant="ghost" aria-label={`Baixar ${d.nome_arquivo}`} onClick={() => opener.download(locator, d.nome_arquivo || "anexo")}>
-+                          <Download className="h-4 w-4" />
-+                        </Button>
-+                      );
-+                    }
-+                    const busy = !!locator && opener.loadingPaths.includes(locator);
-+                    return (
-+                      <Button size="sm" variant="ghost" aria-label={`Preparar ${d.nome_arquivo}`} disabled={busy} onClick={() => preparar(d.arquivo_path)}>
-+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-+                      </Button>
-+                    );
-+                  })()}
-                 </div>
-               ))}
-             </div>
-diff --git a/src/components/entregas/EntregaComprovantePanel.tsx b/src/components/entregas/EntregaComprovantePanel.tsx
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/components/entregas/EntregaComprovantePanel.tsx b/src/components/entregas/EntregaComprovantePanel.tsx
 index d715e632..57f171d4 100644
---- a/src/components/entregas/EntregaComprovantePanel.tsx
+--- a/scripts/delivery-receipt-attachments/baseline/src/components/entregas/EntregaComprovantePanel.tsx
 +++ b/src/components/entregas/EntregaComprovantePanel.tsx
 @@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
@@ -150,9 +78,181 @@ index d715e632..57f171d4 100644
              )}
            </>
          )}
-diff --git a/src/test/entregas/painelEvidencias.test.tsx b/src/test/entregas/painelEvidencias.test.tsx
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/components/entregas/ConfirmacaoEntregaPanel.tsx b/src/components/entregas/ConfirmacaoEntregaPanel.tsx
+index 0dd368cf..ef979c45 100644
+--- a/scripts/delivery-receipt-attachments/baseline/src/components/entregas/ConfirmacaoEntregaPanel.tsx
++++ b/src/components/entregas/ConfirmacaoEntregaPanel.tsx
+@@ -9,6 +9,9 @@ import { brl } from "@/lib/financial/format";
+ import { toast } from "@/hooks/use-toast";
+ import { useNavigate } from "react-router-dom";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
++import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
++import { Loader2 } from "lucide-react";
+ 
+ const TIPO_LABEL: Record<string, string> = {
+   RECIBO_ASSINADO: "Recibo assinado",
+@@ -68,16 +71,21 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
+   });
+ 
+ 
+-  const baixar = async (path: string, nome: string) => {
+-    if (!access.ready) return;
+-    const current = access.capture();
+-    const { data, error } = await supabase.storage.from("entrega-documentos").createSignedUrl(path, 60);
+-    if (!current()) return;
+-    if (error || !data?.signedUrl) {
+-      toast({ title: "Não foi possível abrir o arquivo", description: error?.message, variant: "destructive" });
+-      return;
+-    }
+-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
++  // Snapshot da lista exibida: troca de documentos/escopo descarta bytes.
++  const opener = useAuthenticatedAttachmentOpener(
++    JSON.stringify(["delivery-documents", entrega?.id ?? null, docs.map((d) => [d.id, d.arquivo_path])]),
++    DELIVERY_RECEIPT_BUCKET,
++  );
++  const erroArquivo = () => toast({
++    title: "Não foi possível preparar o arquivo",
++    description: "O arquivo está indisponível no momento. Tente novamente.",
++    variant: "destructive",
++  });
++  const preparar = (path: unknown) => {
++    if (!access.ready || !opener.ready) return;
++    const locator = deliveryReceiptLocator(entrega?.id, path);
++    if (!locator) { erroArquivo(); return; }
++    void opener.open(locator, erroArquivo);
+   };
+ 
+   if (!entrega) return null;
+@@ -178,9 +186,22 @@ export function ConfirmacaoEntregaPanel({ entrega }: Props) {
+                     <span className="truncate">{d.nome_arquivo}</span>
+                     <span className="text-muted-foreground whitespace-nowrap">{formatDateDisplay(d.uploaded_at)}</span>
+                   </div>
+-                  <Button size="sm" variant="ghost" onClick={() => baixar(d.arquivo_path, d.nome_arquivo)}>
+-                    <Download className="h-4 w-4" />
+-                  </Button>
++                  {(() => {
++                    const locator = deliveryReceiptLocator(entrega.id, d.arquivo_path);
++                    if (locator && opener.urls[locator]) {
++                      return (
++                        <Button size="sm" variant="ghost" aria-label={`Baixar ${d.nome_arquivo}`} onClick={() => opener.download(locator, d.nome_arquivo || "anexo")}>
++                          <Download className="h-4 w-4" />
++                        </Button>
++                      );
++                    }
++                    const busy = !!locator && opener.loadingPaths.includes(locator);
++                    return (
++                      <Button size="sm" variant="ghost" aria-label={`Preparar ${d.nome_arquivo}`} disabled={busy} onClick={() => preparar(d.arquivo_path)}>
++                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
++                      </Button>
++                    );
++                  })()}
+                 </div>
+               ))}
+             </div>
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/components/clientes/ClienteDocumentosTab.tsx b/src/components/clientes/ClienteDocumentosTab.tsx
+index f29b6872..3349164a 100644
+--- a/scripts/delivery-receipt-attachments/baseline/src/components/clientes/ClienteDocumentosTab.tsx
++++ b/src/components/clientes/ClienteDocumentosTab.tsx
+@@ -27,7 +27,6 @@ import { FileIcon, Upload, Trash2, Download, Loader2 } from "lucide-react";
+ import { toast } from "sonner";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+ import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ 
+ type ClienteDocumento = Database["public"]["Tables"]["cliente_documentos"]["Row"];
+@@ -54,9 +53,21 @@ interface Props {
+ export function ClienteDocumentosTab({ clienteId }: Props) {
+   const { profile } = useAuth();
+   const access = useStorageAccessScope(`cliente:${clienteId}`);
+-  const attachmentOpener = useAuthenticatedAttachmentOpener(`cliente:${clienteId}`, "clientes-docs");
+   const [result, setResult] = useState<{ scope: string; docs: ClienteDocumento[] }>({ scope: "", docs: [] });
+   const docs = access.ready && result.scope === access.scope ? result.docs : [];
++  // Snapshot da lista exibida: troca de documentos/escopo aborta e revoga bytes.
++  const attachmentOpener = useAuthenticatedAttachmentOpener(
++    JSON.stringify(["cliente-docs", clienteId, docs.map((d) => [d.id, d.arquivo_path])]),
++    "clientes-docs",
++  );
++  // Contrato de caminho apenas; tenant/papel são decididos pela Storage RLS.
++  const locator = (path: unknown) => {
++    const org = profile?.organization_id;
++    if (typeof path !== "string" || !org || !clienteId) return null;
++    const prefix = `${org}/clientes/${clienteId}/`;
++    if (!path.startsWith(prefix) || path.split("/").some((part) => !part || part === "." || part === "..")) return null;
++    return path;
++  };
+   const [loading, setLoading] = useState(false);
+   const [tipo, setTipo] = useState<DocumentoTipo | "">("");
+   const [descricao, setDescricao] = useState("");
+@@ -154,20 +165,17 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
+     }
+   };
+ 
+-  const handleDownload = async (doc: ClienteDocumento) => {
+-    if (!access.ready) return;
+-    const current = access.capture();
+-    if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+-      if (attachmentOpener.urls[doc.arquivo_path]) { attachmentOpener.download(doc.arquivo_path, doc.nome); return; }
+-      await attachmentOpener.open(doc.arquivo_path, () => toast.error("Documento indisponível"));
+-      return;
+-    }
+-    const { data, error } = await supabase.storage
+-      .from("clientes-docs")
+-      .createSignedUrl(doc.arquivo_path, 60);
+-    if (!current()) return;
+-    if (error || !data) return toast.error(error?.message || "Erro ao gerar link");
+-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
++  const erroDocumento = () => toast.error("Documento indisponível no momento. Tente novamente.");
++  const handlePrepare = (doc: ClienteDocumento) => {
++    if (!access.ready || !attachmentOpener.ready) return;
++    const path = locator(doc.arquivo_path);
++    if (!path) { erroDocumento(); return; }
++    void attachmentOpener.open(path, erroDocumento);
++  };
++  // Só por clique explícito, depois do preparo.
++  const handleDownload = (doc: ClienteDocumento) => {
++    const path = locator(doc.arquivo_path);
++    if (path) attachmentOpener.download(path, doc.nome || "documento");
+   };
+ 
+   const handleDelete = async (doc: ClienteDocumento) => {
+@@ -292,18 +300,20 @@ export function ClienteDocumentosTab({ clienteId }: Props) {
+                     </div>
+                   </div>
+                   <div className="flex gap-1 shrink-0">
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      size="icon"
+-                      onClick={() => handleDownload(doc)}
+-                      disabled={AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.loadingPaths.includes(doc.arquivo_path)}
+-                      title={AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.urls[doc.arquivo_path] ? "Baixar arquivo" : "Baixar"}
+-                    >
+-                      <Download className="h-4 w-4" />
+-                    </Button>
+-                    {AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.loadingPaths.includes(doc.arquivo_path) && <span role="status">Carregando</span>}
+-                    {AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && attachmentOpener.urls[doc.arquivo_path] && <span role="status">Pronto para baixar</span>}
++                    {(() => {
++                      const path = locator(doc.arquivo_path);
++                      const ready = !!path && !!attachmentOpener.urls[path];
++                      const busy = !!path && attachmentOpener.loadingPaths.includes(path);
++                      return ready ? (
++                        <Button type="button" variant="ghost" size="sm" aria-label={`Baixar ${doc.nome}`} onClick={() => handleDownload(doc)}>
++                          <Download className="h-4 w-4 mr-1" /> Baixar
++                        </Button>
++                      ) : (
++                        <Button type="button" variant="ghost" size="sm" aria-label={`Preparar ${doc.nome}`} disabled={busy} onClick={() => handlePrepare(doc)}>
++                          {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileIcon className="h-4 w-4 mr-1" />} Preparar
++                        </Button>
++                      );
++                    })()}
+                     <Button
+                       type="button"
+                       variant="ghost"
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/test/entregas/painelEvidencias.test.tsx b/src/test/entregas/painelEvidencias.test.tsx
 index fdf759b2..52641148 100644
---- a/src/test/entregas/painelEvidencias.test.tsx
+--- a/scripts/delivery-receipt-attachments/baseline/src/test/entregas/painelEvidencias.test.tsx
 +++ b/src/test/entregas/painelEvidencias.test.tsx
 @@ -114,7 +114,7 @@ describe("EntregaComprovantePanel — estado fresco do servidor", () => {
      expect(screen.queryByRole("button", { name: /Imprimir formulário/ })).not.toBeInTheDocument();
@@ -178,26 +278,162 @@ index fdf759b2..52641148 100644
      expect(JSON.stringify(arg)).not.toContain("x");
      expect(abrir).not.toHaveBeenCalled();
      abrir.mockRestore();
-diff --git a/src/test/equipe-tecnica/StorageDownloads.session.test.tsx b/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
-index a0f7483d..d697288b 100644
---- a/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
-+++ b/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
-@@ -16,7 +16,6 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-   }, storage: { from: () => ({ createSignedUrl: mocks.sign }) },
- } }));
- import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx b/src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx
+index 34cdd809..089f82b7 100644
+--- a/scripts/delivery-receipt-attachments/baseline/src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx
++++ b/src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx
+@@ -6,7 +6,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+ 
+ const DOC = {
+   id: "d1", cliente_id: "c1", nome: "cnh.pdf", tipo: "cnh",
+-  arquivo_path: "org/clientes/c1/cnh/x.pdf", tamanho_bytes: 1024,
++  arquivo_path: "o1/clientes/c1/cnh/x.pdf", tamanho_bytes: 1024,
+   uploaded_at: "2026-10-01T00:00:00Z", descricao: null,
+ };
+ 
+@@ -47,11 +47,12 @@ function renderInForm() {
+ describe("ClienteDocumentosTab dentro de form pai", () => {
+   beforeEach(() => { vi.clearAllMocks(); });
+ 
+-  it("Baixar não submete o form pai", async () => {
++  it("Preparar não submete o form pai nem assina URL", async () => {
+     const onSubmit = renderInForm();
+-    const btn = await screen.findByTitle("Baixar");
++    const btn = await screen.findByRole("button", { name: /Preparar cnh.pdf/ });
+     fireEvent.click(btn);
+-    await waitFor(() => expect(createSignedUrl).toHaveBeenCalled());
++    await new Promise((r) => setTimeout(r, 20));
++    expect(createSignedUrl).not.toHaveBeenCalled();
+     expect(onSubmit).toHaveBeenCalledTimes(0);
+   });
+ 
+@@ -66,7 +67,7 @@ describe("ClienteDocumentosTab dentro de form pai", () => {
+ 
+   it("Enviar com arquivo sem tipo nega por validação sem submeter", async () => {
+     const onSubmit = renderInForm();
+-    await screen.findByTitle("Baixar");
++    await screen.findByRole("button", { name: /Preparar cnh.pdf/ });
+     const input = document.getElementById("doc-file") as HTMLInputElement;
+     fireEvent.change(input, { target: { files: [new File(["x"], "a.pdf", { type: "application/pdf" })] } });
+     const enviar = screen.getByRole("button", { name: /Enviar$/ });
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx b/src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx
+index 4d999d22..3f47153a 100644
+--- a/scripts/delivery-receipt-attachments/baseline/src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx
++++ b/src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx
+@@ -30,14 +30,14 @@ beforeEach(() => {
+   mocks.download.mockReset().mockResolvedValue(new Blob(["private"]));
+   mocks.sign.mockReset().mockResolvedValue({ data: { signedUrl: "https://legacy.invalid/file" } });
+   mocks.toast.mockReset();
+-  mocks.query.mockResolvedValue({ data: [{ id: "D", nome: "Documento", tipo: "cnh", arquivo_path: "private/a.pdf" }], error: null });
++  mocks.query.mockResolvedValue({ data: [{ id: "D", nome: "Documento", tipo: "cnh", arquivo_path: "OA/clientes/R1/cnh/a.pdf" }], error: null });
+   Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:owned") });
+   Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+   vi.spyOn(window, "open").mockImplementation(() => null);
+ });
+ for (const consumer of ["cliente", "pedido"] as const) {
+   const component = (id: string) => consumer === "cliente" ? <ClienteDocumentosTab clienteId={id} /> : <OrderMessagesPanel orderId={id} authorType="parceiro" />;
+-  const trigger = () => consumer === "cliente" ? screen.getByTitle(/^Baixar/) : screen.getByRole("button", { name: /Anexo pedido/ });
++  const trigger = () => consumer === "cliente" ? screen.getByRole("button", { name: /^(Preparar|Baixar) Documento/ }) : screen.getByRole("button", { name: /Anexo pedido/ });
+   it(`${consumer}: prepara uma vez, download explícito sem popup e revoga ao desmontar`, async () => {
+     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+     const h = render(component("R1"));
+@@ -45,7 +45,7 @@ for (const consumer of ["cliente", "pedido"] as const) {
+     fireEvent.click(trigger());
+     await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(1));
+     expect(window.open).not.toHaveBeenCalled(); expect(click).not.toHaveBeenCalled();
+-    await waitFor(() => expect(trigger().textContent + trigger().getAttribute("title")).toMatch(/Baixar arquivo/));
++    await waitFor(() => expect(trigger().textContent + trigger().getAttribute("title") + trigger().getAttribute("aria-label")).toMatch(/Baixar/));
+     fireEvent.click(trigger()); fireEvent.click(trigger());
+     expect(click).toHaveBeenCalledTimes(2);
+     expect(mocks.download).toHaveBeenCalledTimes(1); expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+diff --git a/scripts/delivery-receipt-attachments/baseline/src/test/equipe-tecnica/StorageDownloads.session.test.tsx b/scripts/delivery-receipt-attachments/baseline/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
+deleted file mode 100644
+index a0f7483d..00000000
+--- a/scripts/delivery-receipt-attachments/baseline/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
++++ /dev/null
+@@ -1,81 +0,0 @@
+-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+-import { MemoryRouter } from "react-router-dom";
+-import { beforeEach, describe, expect, it, vi } from "vitest";
+-const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null,
+-  profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
+-  roles: ["administrador"], role: "administrador", loading: false, checkAuthzAccess: (): boolean => true }));
+-const mocks = vi.hoisted(() => ({ sign: vi.fn(), query: vi.fn() }));
+-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
+-vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+-  from: () => {
+-    const q: Record<string, unknown> = {};
+-    for (const name of ["select", "eq", "is", "order", "limit", "gte", "lte"]) q[name] = () => q;
+-    q.then = (resolve: (v: unknown) => unknown, reject: (v: unknown) => unknown) => mocks.query().then(resolve, reject);
+-    return q;
+-  }, storage: { from: () => ({ createSignedUrl: mocks.sign }) },
+-} }));
+-import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
 -import { ConfirmacaoEntregaPanel } from "@/components/entregas/ConfirmacaoEntregaPanel";
- const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arquivo: "PRIVATE_DOC", tipo: "outro", tipo_documento: "OUTRO",
-   report_title: "PRIVATE_DOC", report_type: "monthly", status: "SUCCESS", generated_at: "2026-10-08", uploaded_at: "2026-10-08",
-   storage_path: "OA/report.pdf", arquivo_path: "OA/report.pdf" };
-@@ -29,7 +28,6 @@ beforeEach(() => {
- describe("delayed Storage downloads", () => {
-   const views = [
-     ["customer", () => <ClienteDocumentosTab clienteId="C" />],
+-const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arquivo: "PRIVATE_DOC", tipo: "outro", tipo_documento: "OUTRO",
+-  report_title: "PRIVATE_DOC", report_type: "monthly", status: "SUCCESS", generated_at: "2026-10-08", uploaded_at: "2026-10-08",
+-  storage_path: "OA/report.pdf", arquivo_path: "OA/report.pdf" };
+-beforeEach(() => {
+-  auth.user = { id: "A" }; auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
+-  auth.roles = ["administrador"]; auth.loading = false;
+-  auth.checkAuthzAccess = () => true;
+-  mocks.query.mockReset().mockResolvedValue({ data: [doc], error: null }); mocks.sign.mockReset();
+-});
+-describe("delayed Storage downloads", () => {
+-  const views = [
+-    ["customer", () => <ClienteDocumentosTab clienteId="C" />],
 -    ["delivery", () => <ConfirmacaoEntregaPanel entrega={{ id: "E", status: "cancelada" }} />],
-   ] as const;
-   for (const [name, component] of views) {
-     it(`${name}: does not open delayed signed URL after lease expires without rerender`, async () => {
+-  ] as const;
+-  for (const [name, component] of views) {
+-    it(`${name}: does not open delayed signed URL after lease expires without rerender`, async () => {
+-      let leaseValid = true;
+-      auth.checkAuthzAccess = () => leaseValid;
+-      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+-      const h = render(<MemoryRouter><QueryClientProvider client={client}>{component()}</QueryClientProvider></MemoryRouter>);
+-      await screen.findByText("PRIVATE_DOC");
+-      let resolve: (v: unknown) => void = () => {};
+-      mocks.sign.mockImplementation(() => new Promise(r => { resolve = r; }));
+-      const open = vi.spyOn(window, "open").mockImplementation(() => null);
+-      const download = screen.getAllByRole("button").find(b => b.querySelector("svg.lucide-download"));
+-      if (!download) throw new Error("download missing");
+-      fireEvent.click(download); await waitFor(() => expect(mocks.sign).toHaveBeenCalledTimes(1));
+-      leaseValid = false; // same callback reads current monitor, no Auth rerender
+-      await act(async () => resolve({ data: { signedUrl: "https://example.invalid/late" }, error: null }));
+-      expect(open).not.toHaveBeenCalled();
+-      fireEvent.click(download); expect(mocks.sign).toHaveBeenCalledTimes(1);
+-      open.mockRestore(); h.unmount(); client.clear();
+-    });
+-    for (const change of ["tenant", "logout", "roles", "inactive"] as const) {
+-      it(`${name}: discards URL and document on ${change}`, async () => {
+-        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+-        const tree = () => <MemoryRouter><QueryClientProvider client={client}>{component()}</QueryClientProvider></MemoryRouter>;
+-        const h = render(tree());
+-        await screen.findByText("PRIVATE_DOC");
+-        let resolve: (v: unknown) => void = () => {};
+-        mocks.sign.mockImplementation(() => new Promise(r => { resolve = r; }));
+-        const open = vi.spyOn(window, "open").mockImplementation(() => null);
+-        const buttons = screen.getAllByRole("button");
+-        const download = buttons.find(b => b.querySelector("svg.lucide-download"));
+-        expect(download).toBeTruthy();
+-        if (!download) throw new Error("download missing");
+-        fireEvent.click(download);
+-        await waitFor(() => expect(mocks.sign).toHaveBeenCalledTimes(1));
+-        mocks.query.mockImplementation(() => new Promise(() => {}));
+-        if (change === "tenant") auth.profile.organization_id = "OB";
+-        if (change === "logout") auth.user = null;
+-        if (change === "roles") auth.roles = [];
+-        if (change === "inactive") auth.profile.ativo = false;
+-        h.rerender(tree());
+-        expect(screen.queryByText("PRIVATE_DOC")).toBeNull();
+-        await act(async () => { resolve({ data: { signedUrl: "https://example.invalid/private" }, error: null }); });
+-        expect(open).not.toHaveBeenCalled();
+-        open.mockRestore(); h.unmount(); client.clear();
+-      });
+-    }
+-  }
+-});
+\ No newline at end of file
 diff --git a/src/lib/entregas/comprovanteLocator.ts b/src/lib/entregas/comprovanteLocator.ts
 new file mode 100644
 index 00000000..5ab94922
@@ -382,4 +618,92 @@ index 00000000..dccf4b35
 +    expect(screen.queryByRole("button", { name: prep })).toBeNull();
 +    expect(m.download).not.toHaveBeenCalled(); expect(m.sign).not.toHaveBeenCalled();
 +  });
++});
+diff --git a/src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx b/src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx
+new file mode 100644
+index 00000000..22feb060
+--- /dev/null
++++ b/src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx
+@@ -0,0 +1,82 @@
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++
++// Gate global permanece FALSE: o componente deve usar o abridor autenticado mesmo assim.
++const m = vi.hoisted(() => ({
++  download: vi.fn(), sign: vi.fn(), toast: vi.fn(), path: "OA/clientes/C1/cnh/a.pdf",
++  auth: { user: { id: "A" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
++    roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: (): boolean => true },
++}));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => m.auth }));
++vi.mock("@/lib/authz/authenticatedAttachment", () => ({
++  ATTACHMENT_LIMITS: { files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024 }, downloadAuthenticatedAttachment: m.download,
++}));
++vi.mock("sonner", () => ({ toast: { error: m.toast, success: vi.fn() } }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: {
++  from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: "D", nome: "Documento.pdf", tipo: "cnh", arquivo_path: m.path }], error: null }) }) }) }),
++  storage: { from: () => ({ createSignedUrl: m.sign, createSignedUrls: m.sign }) },
++} }));
++import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
++import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
++
++beforeEach(() => {
++  m.path = "OA/clientes/C1/cnh/a.pdf";
++  Object.assign(m.auth, { roles: ["administrador"], authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true });
++  m.auth.profile = { ...m.auth.profile, organization_id: "OA" };
++  m.download.mockReset().mockResolvedValue(new Blob(["%PDF"])); m.sign.mockReset(); m.toast.mockReset();
++  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:1") });
++  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
++});
++const tree = () => <form onSubmit={submit}><ClienteDocumentosTab clienteId="C1" /></form>;
++const submit = vi.fn((e: React.FormEvent) => e.preventDefault());
++
++describe("ClienteDocumentosTab — abridor autenticado incondicional", () => {
++  it("gate global segue fechado e happy path prepara/baixa sem URL assinada, popup ou submit", async () => {
++    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
++    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
++      expect(this.href).toBe("blob:1"); expect(this.download).toBe("Documento.pdf");
++    });
++    const open = vi.spyOn(window, "open").mockImplementation(() => null);
++    render(tree());
++    fireEvent.click(await screen.findByRole("button", { name: /Preparar Documento/ }));
++    fireEvent.click(await screen.findByRole("button", { name: /Baixar Documento/ }));
++    expect(m.download).toHaveBeenCalledWith("clientes-docs", m.path, expect.any(AbortSignal));
++    expect(click).toHaveBeenCalledTimes(1);
++    expect(m.sign).not.toHaveBeenCalled(); expect(open).not.toHaveBeenCalled(); expect(submit).not.toHaveBeenCalled();
++    click.mockRestore(); open.mockRestore();
++  });
++  it("caminho de outra empresa/cliente falha fechado sem requisição", async () => {
++    m.path = "OB/clientes/C1/cnh/a.pdf";
++    render(tree());
++    fireEvent.click(await screen.findByRole("button", { name: /Preparar Documento/ }));
++    expect(m.toast).toHaveBeenCalledTimes(1);
++    expect(JSON.stringify(m.toast.mock.calls)).not.toMatch(/OB|clientes/);
++    expect(m.download).not.toHaveBeenCalled(); expect(m.sign).not.toHaveBeenCalled();
++  });
++  it("erro neutro sem detalhes do transporte", async () => {
++    m.download.mockRejectedValue(new Error("token=SEGREDO"));
++    render(tree());
++    fireEvent.click(await screen.findByRole("button", { name: /Preparar Documento/ }));
++    await waitFor(() => expect(m.toast).toHaveBeenCalledTimes(1));
++    expect(JSON.stringify(m.toast.mock.calls)).not.toContain("SEGREDO"); expect(m.sign).not.toHaveBeenCalled();
++  });
++  for (const change of ["tenant", "roles", "epoch", "lease"] as const) {
++    it(`${change} após preparo revoga/oculta e bloqueia clique antigo`, async () => {
++      const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
++      const h = render(tree());
++      fireEvent.click(await screen.findByRole("button", { name: /Preparar Documento/ }));
++      const old = await screen.findByRole("button", { name: /Baixar Documento/ });
++      if (change === "tenant") m.auth.profile = { ...m.auth.profile, organization_id: "OB" };
++      if (change === "roles") m.auth.roles = ["gestor"];
++      if (change === "epoch") m.auth.authzEpoch = 1;
++      if (change === "lease") m.auth.checkAuthzAccess = () => false;
++      await act(async () => h.rerender(tree()));
++      if (change !== "lease") expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1");
++      fireEvent.click(old);
++      expect(click).not.toHaveBeenCalled();
++      expect(screen.queryByRole("button", { name: /Baixar Documento/ })).toBeNull();
++      expect(m.sign).not.toHaveBeenCalled();
++      click.mockRestore();
++    });
++  }
 +});

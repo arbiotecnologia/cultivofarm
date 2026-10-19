@@ -6,7 +6,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const DOC = {
   id: "d1", cliente_id: "c1", nome: "cnh.pdf", tipo: "cnh",
-  arquivo_path: "org/clientes/c1/cnh/x.pdf", tamanho_bytes: 1024,
+  arquivo_path: "o1/clientes/c1/cnh/x.pdf", tamanho_bytes: 1024,
   uploaded_at: "2026-10-01T00:00:00Z", descricao: null,
 };
 
@@ -47,11 +47,12 @@ function renderInForm() {
 describe("ClienteDocumentosTab dentro de form pai", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("Baixar não submete o form pai", async () => {
+  it("Preparar não submete o form pai nem assina URL", async () => {
     const onSubmit = renderInForm();
-    const btn = await screen.findByTitle("Baixar");
+    const btn = await screen.findByRole("button", { name: /Preparar cnh.pdf/ });
     fireEvent.click(btn);
-    await waitFor(() => expect(createSignedUrl).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(createSignedUrl).not.toHaveBeenCalled();
     expect(onSubmit).toHaveBeenCalledTimes(0);
   });
 
@@ -66,7 +67,7 @@ describe("ClienteDocumentosTab dentro de form pai", () => {
 
   it("Enviar com arquivo sem tipo nega por validação sem submeter", async () => {
     const onSubmit = renderInForm();
-    await screen.findByTitle("Baixar");
+    await screen.findByRole("button", { name: /Preparar cnh.pdf/ });
     const input = document.getElementById("doc-file") as HTMLInputElement;
     fireEvent.change(input, { target: { files: [new File(["x"], "a.pdf", { type: "application/pdf" })] } });
     const enviar = screen.getByRole("button", { name: /Enviar$/ });
