@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 15:29 — suplemento diagnóstico separado
+- [ ] Serializar motivos/renovações allowlist em console local; ring80 e autoridade intactos; testes e artefato isolado baseline c30af/rollback exato.
+- [ ] Revalidar pacote programação sem modificar seus artefatos históricos; registrar limite da sobreposição diagnóstica.
+- [ ] Renovação real/anexos: aguardam observação com rascunho e homologação externa; evento 15:09:12 sem motivo legível não comprova timeout.
+
 ## 19/10 15:28 — evidência complementar independente
 - [x] Registrar PRE 622048 hosted PASS limitado ao conjunto anteriormente coberto e Vitest independente 53/53; não estender à guarda suplementar atual.
 - [x] Baseline fornecido a42d6 e entitlements 7f4ec7 conferidos no harness ANTES da montagem; 40/40 verificações locais, staging 6/6 e 22 hashes PASS; semântica, ACL baseline e produção preservadas.
