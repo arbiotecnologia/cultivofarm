@@ -16,6 +16,8 @@ import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { PortalContextUnavailable } from "@/components/guards/PortalContextUnavailable";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
 // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
@@ -32,12 +34,12 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
 }));
 
 export default function MobileLayout() {
-  const { user, primaryRole, roles, loading } = useAuth();
+  const { user, primaryRole, roles, loading, authzReady = true } = useAuth();
   const entitlements = useEntitlements();
   const location = useLocation();
   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
   const navigate = useNavigate();
-  const { data: contexts } = useAvailableContexts();
+  const { data: contexts, isLoading: contextsLoading, isFetching, isError, refetch } = useAvailableContexts({ requireFresh: true });
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
 
@@ -54,14 +56,16 @@ export default function MobileLayout() {
 
   // Semeia contexto visual quando ausente (fluxos legados sem passar pelo seletor).
   useEffect(() => {
-    if (activeCtx) return;
+    if (activeCtx || !authzReady || contextsLoading || isFetching || isError) return;
     if (!user) return;
     if (isTechnicalMode) setActivePortalContext("technical");
     else if (isProducerMode) setActivePortalContext("producer");
     else if (isAdmin) setActivePortalContext("admin");
-  }, [activeCtx, user, isTechnicalMode, isProducerMode, isAdmin]);
+  }, [activeCtx, user, isTechnicalMode, isProducerMode, isAdmin, authzReady, contextsLoading, isFetching, isError]);
 
-  if (loading) {
+  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+
+  if (loading || (user && (contextsLoading || isFetching))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground text-lg">Carregando...</div>
@@ -70,6 +74,8 @@ export default function MobileLayout() {
   }
 
   if (!user) return <Navigate to="/app/login" replace />;
+
+  if (!isProdutor && !isAdmin && (isError || !contexts)) return <PortalContextUnavailable refetch={refetch} />;
 
   // Sem produtor e sem acesso técnico e sem admin → não deveria estar aqui.
   if (!isProdutor && !hasTechnical && !isAdmin) {

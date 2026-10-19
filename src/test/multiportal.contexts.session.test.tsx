@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, type ReactNode } from "react";
-const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["gestor", "consultor_tecnico"], loading: false }));
+const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["gestor", "consultor_tecnico"], loading: false, checkAuthzAccess: (): boolean => true }));
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc } }));
@@ -11,6 +11,7 @@ const response = { data: { available_contexts: ["admin", "technical"], has_techn
 beforeEach(() => {
   auth.user = { id: "A" }; Object.assign(auth.profile, { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false });
   auth.roles = ["gestor", "consultor_tecnico"]; auth.loading = false; rpc.mockReset();
+  auth.checkAuthzAccess = () => true;
   rpc.mockImplementation(() => ({ abortSignal: () => Promise.resolve(response) }));
 });
 function setup() {
@@ -54,6 +55,25 @@ describe("contextos com QueryClient real", () => {
     auth.profile.ativo = false;
     const { h, client } = setup();
     expect(rpc).not.toHaveBeenCalled(); expect(h.result.current.ready).toBe(false);
+    h.unmount(); client.clear();
+  });
+  it("lease vencida sem rerender rejeita resposta antes de adotar contextos", async () => {
+    let valid = true;
+    auth.checkAuthzAccess = () => valid;
+    let resolve: ((value: typeof response) => void) | undefined;
+    rpc.mockImplementation(() => ({ abortSignal: () => new Promise(r => { resolve = r; }) }));
+    const { h, client } = setup();
+    valid = false;
+    await act(async () => { resolve?.(response); });
+    expect(h.result.current.data).toBeUndefined();
+    expect(client.getQueryCache().getAll().some(q => q.state.data !== undefined)).toBe(false);
+    h.unmount(); client.clear();
+  });
+  it.each([null, {}, { available_contexts: [], has_technical_access: "false" }])("payload inválido %j não se torna negativa explícita", async data => {
+    rpc.mockImplementation(() => ({ abortSignal: () => Promise.resolve({ data, error: null }) }));
+    const { h, client } = setup();
+    await waitFor(() => expect(h.result.current.isError).toBe(true), { timeout: 3000 });
+    expect(h.result.current.data).toBeUndefined();
     h.unmount(); client.clear();
   });
 });

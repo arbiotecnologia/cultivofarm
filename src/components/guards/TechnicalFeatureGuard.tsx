@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { PortalContextUnavailable } from "./PortalContextUnavailable";
 
 /**
  * TechnicalFeatureGuard — protege rotas exclusivas do Portal Técnico
@@ -11,13 +13,13 @@ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
  * retornado pela RPC segura; admin mantém acesso legado.
  */
 export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
-  const { user, roles, loading } = useAuth();
+  const { user, roles, loading, authzReady = true } = useAuth();
   const location = useLocation();
-  const { data, isLoading, isError } = useAvailableContexts();
+  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
 
   const isAdmin = roles.includes("administrador");
   const hasTechnical = !!data?.has_technical_access;
-  const denied = !loading && !!user && !isLoading && !isAdmin && (isError || !hasTechnical);
+  const denied = !loading && authzReady && !!user && !isLoading && !isFetching && !isError && !isAdmin && data?.has_technical_access === false;
 
   useEffect(() => {
     if (denied) {
@@ -25,7 +27,9 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
     }
   }, [denied, location.pathname]);
 
-  if (loading || (user && isLoading)) {
+  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+
+  if (loading || (user && (isLoading || isFetching))) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background" role="status" aria-live="polite">
         <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
@@ -37,7 +41,9 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
 
   if (isAdmin) return <>{children ?? <Outlet />}</>;
 
-  if (!hasTechnical || isError) {
+  if (isError || !data) return <PortalContextUnavailable refetch={refetch} />;
+
+  if (!hasTechnical) {
     return (
       <Navigate
         to="/sem-permissao"

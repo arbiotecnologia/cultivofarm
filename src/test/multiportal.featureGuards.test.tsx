@@ -181,12 +181,14 @@ describe("TechnicalFeatureGuard", () => {
     expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
   });
 
-  it("bloqueia quando a RPC retorna erro", () => {
+  it("oculta conteúdo sem negação definitiva quando a RPC retorna erro", () => {
     authState.roles = ["consultor_tecnico"];
     contextsState.isError = true;
     contextsState.data = undefined;
     renderGuard(TechnicalFeatureGuard, "/app/registrar");
-    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+    expect(screen.queryByText("SEM_PERMISSAO")).not.toBeInTheDocument();
+    expect(screen.queryByText("CONTENT_OK")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
 
   it("transição loading → autorizado mantém ordem dos hooks", () => {

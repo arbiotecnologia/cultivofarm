@@ -26,12 +26,12 @@ export interface AvailableContexts {
  * A decisão de portal nunca depende de localStorage nem do frontend —
  * quem determina é `public.get_my_available_portal_contexts()`.
  */
-export function useAvailableContexts() {
+export function useAvailableContexts({ requireFresh = false }: { requireFresh?: boolean } = {}) {
   const { user, profile, roles, loading, authzReady = true, authzEpoch = 0, checkAuthzAccess } = useAuth();
   const queryClient = useQueryClient();
   const ready = !loading && !!user?.id && profile?.user_id === user.id &&
     profile.ativo === true && profile.senha_provisoria === false &&
-    !!profile.organization_id && roles.length > 0 && authzReady;
+    !!profile.organization_id && roles.length > 0 && authzReady && (checkAuthzAccess?.() ?? true);
   const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort(), authzEpoch]);
   const current = useRef({ scope, mounted: true, epoch: 0 });
   if (current.current.scope !== scope) {
@@ -57,14 +57,36 @@ export function useAvailableContexts() {
     staleTime: 0,
     gcTime: 2 * 60_000,
     retry: 1,
+    // Parent guard owns the query; mounting its child must not start another
+    // stale refetch/unmount cycle. Focus/invalidation still refresh normally.
+    refetchOnMount: requireFresh ? false : true,
     refetchOnWindowFocus: true,
     queryFn: async ({ signal }): Promise<AvailableContexts> => {
       if (!ready) throw new Error("portal_context_not_ready");
       const epoch = current.current.epoch;
-      const { data, error } = await supabase.rpc("get_my_available_portal_contexts").abortSignal(signal);
-      if (signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch) throw new Error("portal_context_changed");
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      signal.addEventListener("abort", abort, { once: true });
+      let deadline: ReturnType<typeof setTimeout> | undefined;
+      let response;
+      try {
+        response = await Promise.race([
+          supabase.rpc("get_my_available_portal_contexts").abortSignal(controller.signal),
+          new Promise<never>((_, reject) => {
+            deadline = setTimeout(() => { controller.abort(); reject(new Error("portal_context_timeout")); }, 15_000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(deadline);
+        signal.removeEventListener("abort", abort);
+      }
+      const { data, error } = response;
+      if (signal.aborted || controller.signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch || !(checkAuthzAccess?.() ?? true)) throw new Error("portal_context_changed");
       if (error) throw new Error("portal_context_unavailable");
+      // Absent/malformed payload is unavailable, never an explicit denial.
+      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("portal_context_unavailable");
       const raw = (data ?? {}) as unknown as Partial<AvailableContexts>;
+      if (!Array.isArray(raw.available_contexts) || typeof raw.has_technical_access !== "boolean") throw new Error("portal_context_unavailable");
       const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";
       const contexts = Array.isArray(raw.available_contexts) ? raw.available_contexts.filter(valid) : [];
       return {
@@ -97,7 +119,8 @@ export function useAvailableContexts() {
     isError: result.isError || (exclusiveOperator && operatorHomeQuery.isError),
     isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
     refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
-    data: ready ? result.data : undefined, ready, scope,
+    // Do not expose a previous successful grant during a refetch or after error.
+    data: ready && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
     isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
 
 }

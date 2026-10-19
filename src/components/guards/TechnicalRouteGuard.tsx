@@ -3,6 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { PortalContextUnavailable } from "./PortalContextUnavailable";
 
 /**
  * TechnicalRouteGuard — protege rotas do Portal Técnico.
@@ -11,11 +13,13 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
  * Nunca considera "todo admin como técnico"; admin acessa pelo fluxo legado.
  */
 export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
-  const { user, roles, loading } = useAuth();
+  const { user, roles, loading, authzReady = true } = useAuth();
   const location = useLocation();
-  const { data, isLoading, isError } = useAvailableContexts();
+  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
 
-  if (loading || (user && isLoading)) {
+  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+
+  if (loading || (user && (isLoading || isFetching))) {
     return (
       <div
         className="min-h-dvh flex items-center justify-center bg-background"
@@ -37,8 +41,8 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  if (isError) {
-    return <Navigate to="/sem-permissao" replace />;
+  if (isError || !data) {
+    return <PortalContextUnavailable refetch={refetch} />;
   }
 
   if (!data?.has_technical_access) {
