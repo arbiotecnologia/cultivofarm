@@ -1,0 +1,6 @@
+{
+ "engine": "PostgreSQL local 17 disposable, synthetic auth GUC, NOT hosted",
+ "passed": 30,
+ "total": 30,
+ "failed": []
+}

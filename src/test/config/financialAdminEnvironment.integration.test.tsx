@@ -31,13 +31,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
   if(name==='has_role'){s.roleCalls.push(args);return {data:(args as {_role:string})._role===s.deniedRole?false:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
-  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
+  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
   if(name==='get_top_financial_rankings')return {data:{},error:null};
   throw new Error('unexpected '+name);
  })();return Object.assign(request,{abortSignal:()=>request});}
 }}));
 import { AuthProvider } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import OrdensServico from '@/pages/OrdensServico';
 import MobileLogin from '@/pages/app/MobileLogin';
 import SelecionarPortal from '@/pages/SelecionarPortal';
@@ -138,7 +141,7 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
   paused(qc);answer?.(O);await tick();paused(qc);
  });
  it('RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch',async()=>{
-  s.roles=[role];s.rtt=1500;setup();await tick(3000);await tick(3000);
+  s.roles=[role];s.rtt=3000;setup();await tick(3000);await tick(3000);
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho preservado'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
   const epoch=screen.getByTestId('epoch').textContent;const before=s.h15;
   for(let i=0;i<900;i++){
@@ -146,7 +149,7 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
    await act(async()=>{await vi.advanceTimersByTimeAsync(100);});
    expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();expect(screen.getByTestId('epoch').textContent).toBe(epoch);
   }
-  expect(s.h15).toBeGreaterThan(before+16);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho preservado');expect(screen.getByRole('dialog')).toBeTruthy();expect(screen.getByRole('button',{name:'Baixar PDF'})).toBeTruthy();expect(bytes.download).toHaveBeenCalledTimes(1);
+  expect(s.h15).toBeGreaterThan(before+8);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho preservado');expect(screen.getByRole('dialog')).toBeTruthy();expect(screen.getByRole('button',{name:'Baixar PDF'})).toBeTruthy();expect(bytes.download).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole('button',{name:'Baixar PDF'}));expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
  });
  it('coalesces focus+visibility with in-flight poll, does not erase draft',async()=>{

@@ -55,6 +55,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid, (_uid, role) => s.roles.includes(role)); // one fake RTT per probe
 function AuthSpy() { s.auth = useAuth(); return null; }
 import { ProtectedRoutes, RoleGuard } from '@/App';
 import MobileLayout from '@/pages/app/MobileLayout';
@@ -231,15 +234,16 @@ describe('independent review 1875eb: Retry loader select(*) never resolves', () 
 });
 
 describe('company admin latency: 3 s probes stay valid; 8 s probe is the expected fail-closed pause', () => {
-  it('admin at /financeiro/receber: 1.5 s/call for 3 min no pause; 4 s/call pauses with numeric diag; Retry recovers', async () => {
+  it('admin at /financeiro/receber: 3 s single-RTT probe for 3 min no pause; 8 s pauses with numeric diag; Retry recovers', async () => {
     s.roles = ['administrador']; s.lat = 1500;
     setup(); await tick(6000);
+    s.lat = 3000; // the probe is now one RTT: 3 s/call = 3 s probe
     expect(screen.getByText('Contas a receber')).toBeTruthy();
     for (let i = 0; i < 18; i++) { await tick(10000); expect(screen.queryByText('Sessão de acesso pausada')).toBeNull(); }
     expect(screen.getByText('Contas a receber')).toBeTruthy();
     expect(readAuthzDiagnostics().some(d => d.event === 'expire')).toBe(false); // ~3 s probes: no undue pause
     clearAuthzDiagnostics();
-    s.lat = 4000; await tick(40000);
+    s.lat = 8000; await tick(40000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
     const exp = readAuthzDiagnostics().filter(d => d.event === 'expire').at(-1)!;
     expect(exp.reason).toBe('timeout');

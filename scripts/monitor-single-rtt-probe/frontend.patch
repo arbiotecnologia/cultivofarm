@@ -1,0 +1,837 @@
+diff --git a/src/lib/authz/internalContextProbe.ts b/src/lib/authz/internalContextProbe.ts
+index 34c85092..2f47ebba 100644
+--- a/src/lib/authz/internalContextProbe.ts
++++ b/src/lib/authz/internalContextProbe.ts
+@@ -6,13 +6,28 @@ export const MANAGER_CONSULTANT_ROLES = Object.freeze(["gestor", "consultor_tecn
+ type InternalSingleRole = "financeiro" | "administrador" | "consultor_tecnico" | "operador_onfarm" | "gestor";
+ export type InternalExpectedRoles = InternalSingleRole | typeof MANAGER_CONSULTANT_ROLES;
+ 
++/** Server observation RPC (scripts/monitor-single-rtt-probe). Read-only, own auth.uid() only. */
++export const INTERNAL_ACTOR_CONTEXT_RPC = "internal_actor_context_v1";
++
++const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++
+ /** Scope selection only, never server authority; duplicates/subsets/supersets fail. */
+ export function isManagerConsultantScope(roles: readonly string[], organizationId: unknown): boolean {
+-  return typeof organizationId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) &&
++  return typeof organizationId === "string" && UUID_RE.test(organizationId) &&
+     roles.length === 2 && new Set(roles).size === 2 && MANAGER_CONSULTANT_ROLES.every(role => roles.includes(role));
+ }
+ 
+-/** Limited expected tenant principal observation. RLS/RBAC remain server-owned. */
++/**
++ * Limited expected tenant principal observation. RLS/RBAC remain server-owned.
++ *
++ * One round trip: `internal_actor_context_v1()` evaluates, in ONE statement
++ * (one snapshot), h15_actor_organization(), the caller's own profile and
++ * user_roles rows and has_role() for every row, all for auth.uid() only. The
++ * client still demands the exact expected set; it never fills gaps from cache.
++ * RPC missing/not granted/transport error => "internal_probe_unavailable"
++ * (monitor fails closed). There is deliberately NO fallback to the previous
++ * multi-request observation: an uninstalled RPC pauses, never widens.
++ */
+ export async function internalContextProbe(userId: string, organizationId: string, expectedRole: InternalExpectedRoles = "financeiro"): Promise<AuthzFingerprintResult> {
+   const deny = () => ({ eligible: false, fingerprint: null });
+   // Copy before any await; caller mutation cannot change the expected authority.
+@@ -22,44 +37,30 @@ export async function internalContextProbe(userId: string, organizationId: strin
+     ? ["financeiro", "administrador", "consultor_tecnico", "operador_onfarm", "gestor"].includes(expected[0])
+     : isManagerConsultantScope(expected, organizationId);
+   const sortedExpected = Object.freeze([...expected].sort());
+-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) ||
+-    !userId || !allowed) return deny();
++  if (typeof organizationId !== "string" || !UUID_RE.test(organizationId) ||
++    typeof userId !== "string" || !UUID_RE.test(userId) || !allowed) return deny();
+   const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+-  // Latency: 2 sequential waves instead of 4+N round trips (no new RPC, no
+-  // grant change). Wave 1 reads org/profile/roles in parallel; reads grant
+-  // nothing and the decision is taken only after all arrive. Wave 2 runs only
+-  // after the exact set matched: has_role per role, a fresh roles re-read and
+-  // the final h15 bracket, in parallel — a change landing during wave 1 is
+-  // still observed. Any transport error fails closed as unavailable.
+-  const readRoles = () => supabase.from("user_roles").select("role").eq("user_id", userId) as unknown as Promise<{ data: unknown; error: unknown }>;
+-  const exactSet = (rows: unknown) => {
+-    if (!Array.isArray(rows) || rows.length !== sortedExpected.length) return false;
+-    const actual = rows.map(row => (row as { role?: unknown } | null)?.role);
+-    return new Set(actual).size === actual.length && sortedExpected.every(role => actual.includes(role));
+-  };
+-  const [orgResult, profileResult, rolesResult] = await Promise.all([
+-    rpc.call(supabase, "h15_actor_organization"),
+-    supabase.from("profiles").select("user_id, organization_id, ativo, senha_provisoria").eq("user_id", userId).maybeSingle() as unknown as Promise<{
+-      data: { user_id?: unknown; organization_id?: unknown; ativo?: unknown; senha_provisoria?: unknown } | null; error: unknown }>,
+-    readRoles(),
+-  ]);
+-  if (orgResult.error || profileResult.error || rolesResult.error) throw new Error("internal_probe_unavailable");
+-  if (orgResult.data !== organizationId) return deny();
+-  const profile = profileResult.data;
+-  if (profile?.user_id !== userId || profile.organization_id !== organizationId ||
+-    profile.ativo !== true || profile.senha_provisoria !== false) return deny();
++  const result = await rpc.call(supabase, INTERNAL_ACTOR_CONTEXT_RPC);
++  if (!result || result.error) throw new Error("internal_probe_unavailable");
++  return evaluateInternalActorContext(result.data, userId, organizationId, sortedExpected) ? {
++    eligible: true,
++    // No revision/budget fabrication: identical observation renews only the lease.
++    fingerprint: JSON.stringify([userId, organizationId, sortedExpected]),
++  } : deny();
++}
++
++/** Pure decision over the RPC payload; exported for tests. Any unknown shape denies. */
++export function evaluateInternalActorContext(data: unknown, userId: string, organizationId: string, sortedExpected: readonly string[]): boolean {
++  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
++  const d = data as Record<string, unknown>;
++  if (d.v !== 1 || d.user_id !== userId || d.organization_id !== organizationId) return false;
++  const p = d.profile as Record<string, unknown> | null | undefined;
++  if (!p || typeof p !== "object" || p.user_id !== userId || p.organization_id !== organizationId ||
++    p.ativo !== true || p.senha_provisoria !== false) return false;
+   // Do not adopt a new/mixed role using a cached principal. Pause until the
+-  // original role is restored, or a fresh login resolves the new RBAC context.
+-  if (!exactSet(rolesResult.data)) return deny();
+-  const [finalResult, rolesAgain, ...roleChecks] = await Promise.all([
+-    rpc.call(supabase, "h15_actor_organization"),
+-    readRoles(),
+-    ...sortedExpected.map(role =>
+-      supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole }) as unknown as Promise<{ data: unknown; error: unknown }>),
+-  ]);
+-  if (finalResult.error || rolesAgain.error || roleChecks.some(r => r.error)) throw new Error("internal_probe_unavailable");
+-  if (roleChecks.some(r => r.data !== true) || !exactSet(rolesAgain.data) || finalResult.data !== organizationId) return deny();
+-  // No revision/budget fabrication: identical observation renews only the lease.
+-  // Separate statements cannot prove transient ABA/snapshot.
+-  return { eligible: true, fingerprint: JSON.stringify([userId, organizationId, sortedExpected]) };
+-}
+\ No newline at end of file
++  // original role is restored, or a fresh resolution selects the new scope.
++  if (d.roles_confirmed !== true || !Array.isArray(d.roles) || d.roles.length !== sortedExpected.length) return false;
++  const actual = d.roles as unknown[];
++  if (actual.some(r => typeof r !== "string") || new Set(actual).size !== actual.length) return false;
++  return sortedExpected.every(role => actual.includes(role));
++}
+diff --git a/src/test/config/companyAdminOpenSession.integration.test.tsx b/src/test/config/companyAdminOpenSession.integration.test.tsx
+index 7c6043f8..462560d7 100644
+--- a/src/test/config/companyAdminOpenSession.integration.test.tsx
++++ b/src/test/config/companyAdminOpenSession.integration.test.tsx
+@@ -20,13 +20,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+  from:(t:string)=>chain(()=>t==='profiles'?{data:{user_id:s.rowUid??s.uid,organization_id:s.org,ativo:s.active,senha_provisoria:s.password,nome:'Administrador'},error:s.fail==='profiles'?{}:null}:t==='user_roles'?{data:s.roles.map(role=>({role})),error:s.fail==='user_roles'?{}:null}:{data:[]}),
+  rpc:async(name:string,args:unknown)=>{
+   if(name==='has_role'){s.roleCalls.push(args);return {data:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
+-  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
++  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
+   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
+   if(name==='get_top_financial_rankings')return {data:{},error:null};
+   throw new Error('unexpected '+name);
+  }
+ }}));
+ import { AuthProvider } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import { ProtectedRoutes } from '@/App';
+ import { useAuth } from '@/hooks/useAuth';
+ import { useQuery } from '@tanstack/react-query';
+@@ -43,7 +46,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('administrador sessão aberta candidata',()=>{
+  it('nova identidade não herda draft e descarta resposta tardia da identidade anterior',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft identidade antiga'}});s.uid='00000000-0000-4000-8000-000000000003';act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('R$ 999,00')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
+- it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['administrador'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
++ it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['administrador'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
+  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Menu administrador')).toBeNull();resolve?.(O);await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();
+   s.active=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe('/financeiro/receber');
+@@ -63,9 +66,9 @@ describe('probe administrador self/readiness',()=>{
+  it('h15 erro falha fechado',async()=>{s.error=true;await expect(internalContextProbe(U,O,"administrador")).rejects.toThrow();});
+  it('tenant divergente nega',async()=>{s.org=U;expect((await internalContextProbe(U,O,"administrador")).eligible).toBe(false);});
+  it('perfil de outro UID nega',async()=>{s.rowUid=O;expect((await internalContextProbe(U,O,"administrador")).eligible).toBe(false);});
+- it('h15 final divergente nega após perfil e role válidos',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O,"administrador")).eligible).toBe(false);expect(s.h15).toBe(2);});
+- it('positivo admin consulta has_role self e fingerprint distinto do financeiro',async()=>{const result=await internalContextProbe(U,O,'administrador');expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['administrador']])});expect(s.roleCalls).toEqual([{_user_id:U,_role:'administrador'}]);});
+- it.each([{roles:[]},{roles:['administrador','administrador']},{roles:['administrador','superadmin']},{roles:['superadmin']},{roles:['financeiro']}])('roles não exclusivas $roles negadas antes de has_role',async ({roles})=>{s.roles=roles;expect((await internalContextProbe(U,O,'administrador')).eligible).toBe(false);expect(s.roleCalls).toHaveLength(0);});
++ it('observação única: uma avaliação h15 por probe (sem colchete final; instantânea única no servidor)',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O,"administrador")).eligible).toBe(true);expect(s.h15).toBe(1);});
++ it('positivo admin consulta has_role self e fingerprint distinto do financeiro',async()=>{const result=await internalContextProbe(U,O,'administrador');expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['administrador']])});expect(s.roleCalls).toContainEqual({_user_id:U,_role:'administrador'});});
++ it.each([{roles:[]},{roles:['administrador','administrador']},{roles:['administrador','superadmin']},{roles:['superadmin']},{roles:['financeiro']}])('roles não exclusivas $roles negadas pela decisão exata do cliente',async ({roles})=>{s.roles=roles;expect((await internalContextProbe(U,O,'administrador')).eligible).toBe(false);});
+  it.each(['profiles','user_roles','has_role','final_h15'])('erro de transporte %s não vira positivo',async failure=>{s.fail=failure;await expect(internalContextProbe(U,O,'administrador')).rejects.toThrow('internal_probe_unavailable');});
+  it.each(['','org-invalida'])('org inválida %j nega sem RPC',async org=>{expect((await internalContextProbe(U,org,'administrador')).eligible).toBe(false);expect(s.h15).toBe(0);});
+ });
+\ No newline at end of file
+diff --git a/src/test/config/consultantOpenSession.integration.test.tsx b/src/test/config/consultantOpenSession.integration.test.tsx
+index fc4e40b6..58fd1868 100644
+--- a/src/test/config/consultantOpenSession.integration.test.tsx
++++ b/src/test/config/consultantOpenSession.integration.test.tsx
+@@ -26,13 +26,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+  rpc:(name:string,args:unknown)=>{const request=(async()=>{
+   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['technical'],has_technical_access:true,is_admin:false},error:null};
+   if(name==='has_role'){s.roleCalls.push(args);return {data:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
+-  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
++  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
+   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
+   if(name==='get_top_financial_rankings')return {data:{},error:null};
+   throw new Error('unexpected '+name);
+  })();return Object.assign(request,{abortSignal:()=>request});}
+ }}));
+ import { AuthProvider } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
+ import MobileLayout from '@/pages/app/MobileLayout';
+ import { ProtectedRoutes } from '@/App';
+@@ -51,7 +54,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('consultor_tecnico sessão aberta candidata',()=>{
+  it('nova identidade não herda draft e descarta resposta tardia da identidade anterior',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft identidade antiga'}});s.uid='00000000-0000-4000-8000-000000000003';act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('999 atendimentos')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
+- it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else act(()=>window.dispatchEvent(new Event('focus')));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['consultor_tecnico'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
++ it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else act(()=>window.dispatchEvent(new Event('focus')));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['consultor_tecnico'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
+  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Menu desktop')).toBeNull();expect(screen.queryByText('Cultivo Farm Campo')).toBeNull();expect(screen.queryByRole('navigation')).toBeNull();expect(screen.queryByRole('button',{name:'Registrar Ocorrência'})).toBeNull();expect(screen.queryByRole('button',{name:'Novo atendimento'})).toBeNull();resolve?.(O);await tick();expect(screen.getByText('3 atendimentos')).toBeTruthy();
+   s.active=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('3 atendimentos')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe('/app/atendimentos');
+@@ -71,15 +74,15 @@ describe('probe consultor_tecnico self/readiness',()=>{
+  it('h15 erro falha fechado',async()=>{s.error=true;await expect(internalContextProbe(U,O,"consultor_tecnico")).rejects.toThrow();});
+  it('tenant divergente nega',async()=>{s.org=U;expect((await internalContextProbe(U,O,"consultor_tecnico")).eligible).toBe(false);});
+  it('perfil de outro UID nega',async()=>{s.rowUid=O;expect((await internalContextProbe(U,O,"consultor_tecnico")).eligible).toBe(false);});
+- it('h15 final divergente nega após perfil e role válidos',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O,"consultor_tecnico")).eligible).toBe(false);expect(s.h15).toBe(2);});
+- it('positivo admin consulta has_role self e fingerprint distinto do financeiro',async()=>{const result=await internalContextProbe(U,O,'consultor_tecnico');expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['consultor_tecnico']])});expect(s.roleCalls).toEqual([{_user_id:U,_role:'consultor_tecnico'}]);});
+- it.each([{roles:[]},{roles:['consultor_tecnico','administrador']},{roles:['consultor_tecnico','superadmin']},{roles:['superadmin']},{roles:['financeiro']}])('roles não exclusivas $roles negadas antes de has_role',async ({roles})=>{s.roles=roles;expect((await internalContextProbe(U,O,'consultor_tecnico')).eligible).toBe(false);expect(s.roleCalls).toHaveLength(0);});
++ it('observação única: uma avaliação h15 por probe (sem colchete final; instantânea única no servidor)',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O,"consultor_tecnico")).eligible).toBe(true);expect(s.h15).toBe(1);});
++ it('positivo admin consulta has_role self e fingerprint distinto do financeiro',async()=>{const result=await internalContextProbe(U,O,'consultor_tecnico');expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['consultor_tecnico']])});expect(s.roleCalls).toContainEqual({_user_id:U,_role:'consultor_tecnico'});});
++ it.each([{roles:[]},{roles:['consultor_tecnico','administrador']},{roles:['consultor_tecnico','superadmin']},{roles:['superadmin']},{roles:['financeiro']}])('roles não exclusivas $roles negadas pela decisão exata do cliente',async ({roles})=>{s.roles=roles;expect((await internalContextProbe(U,O,'consultor_tecnico')).eligible).toBe(false);});
+  it.each(['profiles','user_roles','has_role','final_h15'])('erro de transporte %s não vira positivo',async failure=>{s.fail=failure;await expect(internalContextProbe(U,O,'consultor_tecnico')).rejects.toThrow('internal_probe_unavailable');});
+  it.each([null,'','org-invalida'])('org inválida %j nega sem RPC',async org=>{expect((await internalContextProbe(U,org as unknown as string,'consultor_tecnico')).eligible).toBe(false);expect(s.h15).toBe(0);});
+ });
+ describe('Campo inteiro e desktop antes de contexto/menus',()=>{
+  it.each(['/app','/app/registrar','/visitas-tecnicas'])('%s desmonta shell/draft/modal e nega retry na mesma URL',async path=>{setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft consultor'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));await tick(20000);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft consultor');s.active=false;await tick(10000);expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();expect(screen.queryByRole('button',{name:'Novo atendimento'})).toBeNull();expect(screen.queryByText('Cultivo Farm Campo')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe(path);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();});
+- it('focus entra pending antes de resposta e descarta draft, sem restaurar autorização enquanto hold',async()=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho foco'}});let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});act(()=>window.dispatchEvent(new Event('focus')));await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);s.active=false;resolve?.(O);await tick();paused(qc);});
++ it('focus entra pending antes de resposta e descarta draft, sem restaurar autorização enquanto hold',async()=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho foco'}});let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});act(()=>window.dispatchEvent(new Event('focus')));await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);s.active=false;resolve?.(O);await tick(12000);paused(qc);});
+  it('has_role negado no poll expira e retry não adota role',async()=>{const qc=setup();await tick();s.roleAllowed=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);});
+  it('NULL observado após login válido expira, sem inventar tenant',async()=>{const qc=setup();await tick();s.org=null;await tick(10000);paused(qc);});
+ });
+diff --git a/src/test/config/financialAdminEnvironment.integration.test.tsx b/src/test/config/financialAdminEnvironment.integration.test.tsx
+index ea4b5aa3..857953fd 100644
+--- a/src/test/config/financialAdminEnvironment.integration.test.tsx
++++ b/src/test/config/financialAdminEnvironment.integration.test.tsx
+@@ -31,13 +31,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
+   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
+   if(name==='has_role'){s.roleCalls.push(args);return {data:(args as {_role:string})._role===s.deniedRole?false:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
+-  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
++  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
+   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
+   if(name==='get_top_financial_rankings')return {data:{},error:null};
+   throw new Error('unexpected '+name);
+  })();return Object.assign(request,{abortSignal:()=>request});}
+ }}));
+ import { AuthProvider } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import OrdensServico from '@/pages/OrdensServico';
+ import MobileLogin from '@/pages/app/MobileLogin';
+ import SelecionarPortal from '@/pages/SelecionarPortal';
+@@ -138,7 +141,7 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
+   paused(qc);answer?.(O);await tick();paused(qc);
+  });
+  it('RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch',async()=>{
+-  s.roles=[role];s.rtt=1500;setup();await tick(3000);await tick(3000);
++  s.roles=[role];s.rtt=3000;setup();await tick(3000);await tick(3000);
+   fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho preservado'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
+   const epoch=screen.getByTestId('epoch').textContent;const before=s.h15;
+   for(let i=0;i<900;i++){
+@@ -146,7 +149,7 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
+    await act(async()=>{await vi.advanceTimersByTimeAsync(100);});
+    expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();expect(screen.getByTestId('epoch').textContent).toBe(epoch);
+   }
+-  expect(s.h15).toBeGreaterThan(before+16);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho preservado');expect(screen.getByRole('dialog')).toBeTruthy();expect(screen.getByRole('button',{name:'Baixar PDF'})).toBeTruthy();expect(bytes.download).toHaveBeenCalledTimes(1);
++  expect(s.h15).toBeGreaterThan(before+8);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho preservado');expect(screen.getByRole('dialog')).toBeTruthy();expect(screen.getByRole('button',{name:'Baixar PDF'})).toBeTruthy();expect(bytes.download).toHaveBeenCalledTimes(1);
+   fireEvent.click(screen.getByRole('button',{name:'Baixar PDF'}));expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+  });
+  it('coalesces focus+visibility with in-flight poll, does not erase draft',async()=>{
+diff --git a/src/test/config/financialOpenSession.integration.test.tsx b/src/test/config/financialOpenSession.integration.test.tsx
+index 2a4bc74d..14cd08b1 100644
+--- a/src/test/config/financialOpenSession.integration.test.tsx
++++ b/src/test/config/financialOpenSession.integration.test.tsx
+@@ -28,6 +28,9 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+  }
+ }}));
+ import { AuthProvider, useAuth } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import { ProtectedRoutes } from '@/App';
+ import FinanceiroDashboard from '@/pages/financeiro/FinanceiroDashboard';
+ import { internalContextProbe } from '@/lib/authz/internalContextProbe';
+@@ -40,7 +43,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('financeiro sessão aberta candidata',()=>{
+  it('nova identidade não herda draft e descarta resposta tardia da identidade anterior',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft identidade antiga'}});s.uid='00000000-0000-4000-8000-000000000003';act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('R$ 999,00')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
+- it.each(['inativação','role','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();s.active=true;s.roles=['financeiro'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
++ it.each(['inativação','role','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();s.active=true;s.roles=['financeiro'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
+  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Menu financeiro')).toBeNull();resolve?.(O);await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();
+   s.active=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('R$ 100,00')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe('/financeiro');
+@@ -58,5 +61,5 @@ describe('probe financeiro self/readiness',()=>{
+  it('h15 erro falha fechado',async()=>{s.error=true;await expect(internalContextProbe(U,O)).rejects.toThrow();});
+  it('tenant divergente nega',async()=>{s.org=U;expect((await internalContextProbe(U,O)).eligible).toBe(false);});
+  it('perfil de outro UID nega',async()=>{s.rowUid=O;expect((await internalContextProbe(U,O)).eligible).toBe(false);});
+- it('h15 final divergente nega após perfil e role válidos',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O)).eligible).toBe(false);expect(s.h15).toBe(2);});
++ it('observação única: uma avaliação h15 por probe (sem colchete final; instantânea única no servidor)',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O)).eligible).toBe(true);expect(s.h15).toBe(1);});
+ });
+\ No newline at end of file
+diff --git a/src/test/config/helpers/internalActorContextAdapter.ts b/src/test/config/helpers/internalActorContextAdapter.ts
+new file mode 100644
+index 00000000..915e1003
+--- /dev/null
++++ b/src/test/config/helpers/internalActorContextAdapter.ts
+@@ -0,0 +1,53 @@
++// Test-only fake of the server RPC `internal_actor_context_v1()` built from a
++// test file's existing fake transport (h15_actor_organization, profiles,
++// user_roles, has_role). The real SQL (single STABLE statement, own auth.uid()
++// only) is tested in scripts/monitor-single-rtt-probe/test-local.py.
++// Any inner error => the RPC errors (client fails closed). Not JWT/RLS proof.
++type Res = { data?: unknown; error?: unknown } | null | undefined;
++type Sb = { from: (t: string) => unknown; rpc: (name: string, args?: unknown) => unknown };
++type Chain = { select: (c: string) => Chain; eq: (k: string, v: unknown) => Chain; maybeSingle: () => Promise<Res> } & PromiseLike<Res>;
++
++export const INTERNAL_ACTOR_CONTEXT_RPC_NAME = 'internal_actor_context_v1';
++
++export type SyncHasRole = (uid: string, role: string) => unknown;
++
++/**
++ * Default: wave 1 = h15 + profile + roles in parallel, then has_role per role
++ * ROW through the file's own fake (keeps its call records). Latency-focused
++ * files pass `syncHasRole` so has_role is evaluated in the same wave from the
++ * same fake state: exactly one fake round trip, like one PostgREST call.
++ */
++export async function composeInternalActorContext(sb: Sb, rpc: (name: string, args?: unknown) => unknown, uid: string, syncHasRole?: SyncHasRole): Promise<Res> {
++  const q = (t: string) => sb.from(t) as Chain;
++  const [org, profile, roles] = await Promise.all([
++    rpc('h15_actor_organization') as Promise<Res>,
++    q('profiles').select('user_id, organization_id, ativo, senha_provisoria').eq('user_id', uid).maybeSingle(),
++    Promise.resolve(q('user_roles').select('role').eq('user_id', uid)) as Promise<Res>,
++  ]);
++  const fail = { data: null, error: { message: 'fake_rpc_error' } };
++  if (!org || !profile || !roles || org.error || profile.error || roles.error) return fail;
++  const rows = Array.isArray(roles.data) ? (roles.data as Array<{ role?: unknown } | null>).map(r => r?.role) : [];
++  let checks: Res[];
++  if (syncHasRole) checks = rows.map(role => ({ data: syncHasRole(uid, String(role)), error: null }));
++  else {
++    checks = await Promise.all(rows.map(role => rpc('has_role', { _user_id: uid, _role: role }) as Promise<Res>));
++    if (checks.some(c => !c || c.error)) return fail;
++  }
++  const confirmed = rows.length > 0 && checks.every(c => c?.data === true);
++  const p = profile.data as Record<string, unknown> | null;
++  return { data: {
++    v: 1, user_id: uid, organization_id: org.data ?? null,
++    profile: p ? { user_id: p.user_id, organization_id: p.organization_id, ativo: p.ativo, senha_provisoria: p.senha_provisoria } : null,
++    roles: [...rows].map(String).sort(), roles_confirmed: confirmed,
++  }, error: null };
++}
++
++/** Wrap the mocked client's rpc in place; other RPC names go to the original fake. */
++export function installInternalActorContextAdapter(client: unknown, uid: () => string, syncHasRole?: SyncHasRole) {
++  const sb = client as Sb;
++  const original = sb.rpc;
++  sb.rpc = function (this: unknown, name: string, args?: unknown) {
++    if (name === INTERNAL_ACTOR_CONTEXT_RPC_NAME) return composeInternalActorContext(sb, (n, a) => original.call(sb, n, a), uid(), syncHasRole);
++    return original.call(sb, name, args);
++  };
++}
+diff --git a/src/test/config/internalProbeLatency.test.ts b/src/test/config/internalProbeLatency.test.ts
+index 8060ffb8..0fcf05ad 100644
+--- a/src/test/config/internalProbeLatency.test.ts
++++ b/src/test/config/internalProbeLatency.test.ts
+@@ -1,39 +1,53 @@
+-// Real monitor + real internalContextProbe (current and d767eb23 baseline) with fake
+-// per-call transport latency and fake clock. Not browser-suspension nor JWT/RLS proof.
++// Real monitor + real internalContextProbe (single-RTT candidate) and the published
++// two-wave probe (d58c1730 baseline) with fake per-call transport latency and fake
++// clock. Not browser suspension, not hosted JWT/RLS, not homologation.
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++const U = '00000000-0000-4000-8000-000000000001';
++const O = '00000000-0000-4000-8000-000000000002';
+ const s = vi.hoisted(() => ({
+-  perCall: 100, roles: ['gestor', 'consultor_tecnico'] as string[], org: '00000000-0000-4000-8000-000000000002',
+-  hasRole: true, fail: '' as string, calls: [] as string[], depth: 0, maxDepth: 0, rolesAfterFirstRead: undefined as string[] | undefined, roleReads: 0,
++  perCall: 100, roles: ['gestor', 'consultor_tecnico'] as string[], org: '00000000-0000-4000-8000-000000000002' as string | null,
++  profileOrg: undefined as string | undefined, active: true as unknown, provisional: false as unknown, confirmed: true as unknown,
++  uidSeen: '00000000-0000-4000-8000-000000000001' as string | null, rpcMissing: false, payload: undefined as unknown,
++  calls: [] as string[],
+ }));
+ const delayed = <T,>(name: string, value: () => T) => {
+-  s.calls.push(name); s.depth++; s.maxDepth = Math.max(s.maxDepth, s.depth);
+-  return new Promise<T>(r => setTimeout(() => { s.depth--; r(value()); }, s.perCall));
++  s.calls.push(name);
++  const v = value(); // snapshot at request arrival, delivered after the RTT (conservative)
++  return new Promise<T>(r => setTimeout(() => r(v), s.perCall));
+ };
+ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
+   from: (t: string) => {
+     const q: Record<string, unknown> = {};
+     for (const n of ['select', 'eq']) q[n] = () => q;
+-    const run = () => delayed(t, () => {
+-      if (t === 'profiles') return { data: { user_id: U, organization_id: s.org, ativo: true, senha_provisoria: false }, error: s.fail === 'profiles' ? {} : null };
+-      s.roleReads++;
+-      const roles = s.roleReads > 1 && s.rolesAfterFirstRead ? s.rolesAfterFirstRead : s.roles;
+-      return { data: roles.map(role => ({ role })), error: s.fail === 'roles' ? {} : null };
+-    });
++    const run = () => delayed(t, () => t === 'profiles'
++      ? { data: { user_id: U, organization_id: s.profileOrg ?? s.org, ativo: s.active, senha_provisoria: s.provisional }, error: null }
++      : { data: s.roles.map(role => ({ role })), error: null });
+     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, rj?: (e: unknown) => unknown) => run().then(f, rj);
+     return q;
+   },
+-  rpc: (name: string) => delayed(name, () => name === 'has_role'
+-    ? { data: s.hasRole, error: s.fail === 'has_role' ? {} : null }
+-    : { data: s.org, error: s.fail === 'h15' ? {} : null }),
++  rpc: (name: string, args?: { _role: string }) => delayed(name, () => {
++    if (name === 'internal_actor_context_v1') {
++      if (s.rpcMissing) return { data: null, error: { code: 'PGRST202', message: 'not found' } };
++      if (s.payload !== undefined) return { data: s.payload, error: null };
++      if (s.uidSeen === null) return { data: null, error: null };
++      return { data: {
++        v: 1, user_id: s.uidSeen, organization_id: s.active === true && s.provisional === false ? s.org : null,
++        profile: { user_id: s.uidSeen, organization_id: s.profileOrg ?? s.org, ativo: s.active, senha_provisoria: s.provisional },
++        roles: [...s.roles].sort(), roles_confirmed: s.roles.length > 0 && s.confirmed === true && s.active === true,
++      }, error: null };
++    }
++    if (name === 'has_role') return { data: s.roles.includes(args!._role), error: null };
++    return { data: s.org, error: null };
++  }),
+ } }));
+-const U = '00000000-0000-4000-8000-000000000001';
+ import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
+-import { internalContextProbe, MANAGER_CONSULTANT_ROLES } from '@/lib/authz/internalContextProbe';
+-import { internalContextProbe as baselineProbe } from '../../../scripts/monitor-partial-revocation/baseline/src/lib/authz/internalContextProbe';
++import { evaluateInternalActorContext, internalContextProbe, INTERNAL_ACTOR_CONTEXT_RPC, MANAGER_CONSULTANT_ROLES } from '@/lib/authz/internalContextProbe';
++import { internalContextProbe as twoWaveBaseline } from '../../../scripts/monitor-single-rtt-probe/baseline/src/lib/authz/internalContextProbe';
+ 
+-function run(probe: typeof internalContextProbe) {
++type Probe = typeof internalContextProbe;
++function run(probe: Probe, expected: Parameters<Probe>[2] = MANAGER_CONSULTANT_ROLES) {
+   const onExpire = vi.fn();
+-  const fetcher = vi.fn(() => probe(U, s.org, MANAGER_CONSULTANT_ROLES));
++  const fetcher = vi.fn(() => probe(U, O, expected));
+   const monitor = createAuthzEpochMonitor({
+     fetcher, now: () => Date.now(), isOnline: () => true, isVisible: () => true, pollWhenHidden: true, renewBeforeDeadline: true,
+     random: () => 0, setTimeoutFn: (cb, ms) => setTimeout(cb, ms), clearTimeoutFn: h => clearTimeout(h as ReturnType<typeof setTimeout>),
+@@ -42,71 +56,146 @@ function run(probe: typeof internalContextProbe) {
+   monitor.start();
+   return { monitor, onExpire, fetcher };
+ }
+-beforeEach(() => { vi.useFakeTimers(); s.perCall = 100; s.roles = ['gestor', 'consultor_tecnico']; s.hasRole = true; s.fail = ''; s.calls = []; s.depth = 0; s.maxDepth = 0; s.rolesAfterFirstRead = undefined; s.roleReads = 0; });
++async function settle<T>(p: Promise<T>, ms = 60_000): Promise<{ v?: T; e?: unknown }> { const r = p.then(v => ({ v }), (e: unknown) => ({ e })); await vi.advanceTimersByTimeAsync(ms); return r; }
++beforeEach(() => {
++  vi.useFakeTimers();
++  Object.assign(s, { perCall: 100, roles: ['gestor', 'consultor_tecnico'], org: O, profileOrg: undefined, active: true, provisional: false, confirmed: true, uidSeen: U, rpcMissing: false, payload: undefined, calls: [] });
++});
+ afterEach(() => vi.useRealTimers());
+ 
+-describe('probe round trips', () => {
+-  it('pair costs 2 sequential RTTs (baseline 6): 1290 ms/call ≈ 2.6 s instead of the observed 7.74 s', async () => {
+-    s.perCall = 1290;
++describe('single round trip', () => {
++  it('one RPC per probe; no direct table reads, h15 or has_role from the client', async () => {
++    const r = await settle(internalContextProbe(U, O, MANAGER_CONSULTANT_ROLES));
++    expect(r).toEqual({ v: { eligible: true, fingerprint: JSON.stringify([U, O, ['consultor_tecnico', 'gestor']]) } });
++    expect(s.calls).toEqual([INTERNAL_ACTOR_CONTEXT_RPC]);
++  });
++  it('observed 7.74–7.87 s two-wave probes (≈3.9 s/call) become one 3.9 s RTT', async () => {
++    s.perCall = 3900;
+     const t0 = Date.now(); let t1 = 0;
+-    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { t1 = Date.now(); return v; });
+-    await vi.advanceTimersByTimeAsync(10_000);
+-    await expect(p).resolves.toMatchObject({ eligible: true });
+-    expect(t1 - t0).toBe(2580);
++    await settle(internalContextProbe(U, O, MANAGER_CONSULTANT_ROLES).then(v => { t1 = Date.now(); return v; }));
++    expect(t1 - t0).toBe(3900);
+     const b0 = Date.now(); let b1 = 0;
+-    const b = baselineProbe(U, s.org, MANAGER_CONSULTANT_ROLES).then(v => { b1 = Date.now(); return v; });
+-    await vi.advanceTimersByTimeAsync(10_000);
+-    await expect(b).resolves.toMatchObject({ eligible: true });
+-    expect(b1 - b0).toBe(7740);
++    await settle(twoWaveBaseline(U, O, MANAGER_CONSULTANT_ROLES).then(v => { b1 = Date.now(); return v; }));
++    expect(b1 - b0).toBe(7800);
++  });
++  it('RPC not installed (PGRST202) fails closed as unavailable, with NO fallback to the old reads', async () => {
++    s.rpcMissing = true;
++    const r = await settle(internalContextProbe(U, O, MANAGER_CONSULTANT_ROLES));
++    expect(String(r.e)).toContain('internal_probe_unavailable');
++    expect(s.calls).toEqual([INTERNAL_ACTOR_CONTEXT_RPC]);
++  });
++  it('RPC not installed: monitor expires with error and never renews', async () => {
++    s.rpcMissing = true;
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(30_000);
++    expect(onExpire).toHaveBeenCalledWith('error');
++    expect(monitor.checkAccess()).toBe(false);
++    expect(s.calls.every(c => c === INTERNAL_ACTOR_CONTEXT_RPC)).toBe(true);
+   });
+-  it('has_role never runs before the exact set matched', async () => {
+-    s.roles = ['gestor'];
+-    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
+-    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
+-    expect(s.calls).not.toContain('has_role');
++  it.each([[null, O], ['', O], [U, 'org-invalida'], ['not-a-uuid', O]])('invalid identity/tenant %j/%j denies without any RPC', async (uid, org) => {
++    expect(await internalContextProbe(uid as string, org, 'financeiro')).toEqual({ eligible: false, fingerprint: null });
++    expect(s.calls).toEqual([]);
++  });
++});
++
++describe('server answer decision (exact set, own identity, tenant, readiness)', () => {
++  const pair = MANAGER_CONSULTANT_ROLES;
++  it.each([
++    ['pair expected, gestor removed', pair, ['consultor_tecnico']],
++    ['pair expected, consultor removed', pair, ['gestor']],
++    ['pair expected, superset', pair, ['administrador', 'consultor_tecnico', 'gestor']],
++    ['pair expected, zero roles', pair, []],
++    ['residual gestor expected, pair restored', 'gestor', ['consultor_tecnico', 'gestor']],
++    ['residual consultor expected, other single role', 'consultor_tecnico', ['gestor']],
++  ] as const)('%s denies', async (_n, expected, roles) => {
++    s.roles = [...roles];
++    expect((await settle(internalContextProbe(U, O, expected as never))).v).toEqual({ eligible: false, fingerprint: null });
++  });
++  it.each(['gestor', 'consultor_tecnico'] as const)('residual %s alone is eligible with a distinct fingerprint', async role => {
++    s.roles = [role];
++    expect((await settle(internalContextProbe(U, O, role))).v).toEqual({ eligible: true, fingerprint: JSON.stringify([U, O, [role]]) });
+   });
+   it.each([
+-    ['role removed while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor']; }],
+-    ['role gained while wave 1 was in flight', () => { s.rolesAfterFirstRead = ['gestor', 'consultor_tecnico', 'administrador']; }],
+-    ['has_role denies', () => { s.hasRole = false; }],
++    ['tenant changed (h15 reports other org)', () => { s.org = U; }],
++    ['profile tenant differs', () => { s.profileOrg = U; }],
++    ['inactive profile', () => { s.active = false; }],
++    ['provisional password', () => { s.provisional = true; }],
++    ['has_role not confirmed (stale JWT/readiness)', () => { s.confirmed = false; }],
++    ['logout / no auth.uid() (NULL payload)', () => { s.uidSeen = null; }],
++    ['other identity behind the token', () => { s.uidSeen = O; }],
++    ['unknown version', () => { s.payload = { v: 2 }; }],
++    ['array payload', () => { s.payload = []; }],
++    ['roles not strings', () => { s.payload = { v: 1, user_id: U, organization_id: O, profile: { user_id: U, organization_id: O, ativo: true, senha_provisoria: false }, roles: [1, 2], roles_confirmed: true }; }],
++    ['duplicated roles', () => { s.payload = { v: 1, user_id: U, organization_id: O, profile: { user_id: U, organization_id: O, ativo: true, senha_provisoria: false }, roles: ['gestor', 'gestor'], roles_confirmed: true }; }],
++    ['"true" string flags', () => { s.payload = { v: 1, user_id: U, organization_id: O, profile: { user_id: U, organization_id: O, ativo: 'true', senha_provisoria: false }, roles: ['consultor_tecnico', 'gestor'], roles_confirmed: 'true' }; }],
+   ])('%s denies', async (_n, arrange) => {
+     arrange();
+-    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES); await vi.advanceTimersByTimeAsync(1000);
+-    await expect(p).resolves.toEqual({ eligible: false, fingerprint: null });
++    expect((await settle(internalContextProbe(U, O, MANAGER_CONSULTANT_ROLES))).v).toEqual({ eligible: false, fingerprint: null });
+   });
+-  it.each(['profiles', 'roles', 'has_role', 'h15'])('transport error %s fails closed', async fail => {
+-    s.fail = fail;
+-    const p = internalContextProbe(U, s.org, MANAGER_CONSULTANT_ROLES);
+-    const settled = p.catch(e => e);
+-    await vi.advanceTimersByTimeAsync(1000);
+-    expect(String(await settled)).toContain('internal_probe_unavailable');
++  it('caller mutation of the expected array after the call cannot change the decided authority', async () => {
++    const expected = ['gestor', 'consultor_tecnico'];
++    const p = internalContextProbe(U, O, expected as never);
++    expected.push('administrador');
++    expect((await settle(p)).v).toEqual({ eligible: true, fingerprint: JSON.stringify([U, O, ['consultor_tecnico', 'gestor']]) });
++  });
++  it('pure evaluator requires every field', () => {
++    expect(evaluateInternalActorContext(null, U, O, ['financeiro'])).toBe(false);
++    expect(evaluateInternalActorContext({ v: 1, user_id: U, organization_id: O, profile: null, roles: ['financeiro'], roles_confirmed: true }, U, O, ['financeiro'])).toBe(false);
+   });
+ });
+ 
+-describe('monitor stability with the real probe', () => {
+-  it('reproduces the real failure on the baseline: low RTT then 1290 ms/call (7.74 s) expires', async () => {
+-    const { onExpire } = run(baselineProbe);
+-    await vi.advanceTimersByTimeAsync(60_000);
+-    expect(onExpire).not.toHaveBeenCalled();
+-    s.perCall = 1290;
+-    await vi.advanceTimersByTimeAsync(60_000);
++describe('monitor stability with the single-RTT probe (lease 15 s unchanged)', () => {
++  it('control: published two-wave probe at 3.9 s/call (≈7.8 s, like the real 7.74–7.87 s pauses) expires', async () => {
++    const { onExpire } = run(twoWaveBaseline);
++    await vi.advanceTimersByTimeAsync(20_000);
++    s.perCall = 3900;
++    await vi.advanceTimersByTimeAsync(120_000);
+     expect(onExpire).toHaveBeenCalled();
+   });
+-  it('current probe: same transition stays valid over 10 min of prolonged cycles, lease unchanged', async () => {
+-    const { monitor, onExpire, fetcher } = run(internalContextProbe);
+-    await vi.advanceTimersByTimeAsync(60_000);
+-    s.perCall = 1290;
++  it('candidate at the same 3.9 s/call stays valid for 10 min', async () => {
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(20_000);
++    s.perCall = 3900;
+     await vi.advanceTimersByTimeAsync(600_000);
+     expect(onExpire).not.toHaveBeenCalled();
+     expect(monitor.checkAccess()).toBe(true);
+-    expect(fetcher.mock.calls.length).toBeLessThan(600_000 / 1000); // bounded cadence
+   });
+-  it('negative: 4 s per call (8 s probe) still expires; late answer never revives', async () => {
++  it.each(['pair', 'gestor', 'consultor_tecnico'] as const)('3 s RTT for 10 min stays valid (%s), cadence bounded', async scope => {
++    if (scope !== 'pair') s.roles = [scope];
++    const { monitor, onExpire, fetcher } = run(internalContextProbe, scope === 'pair' ? MANAGER_CONSULTANT_ROLES : scope);
++    s.perCall = 3000;
++    await vi.advanceTimersByTimeAsync(600_000);
++    expect(onExpire).not.toHaveBeenCalled();
++    expect(monitor.checkAccess()).toBe(true);
++    expect(fetcher.mock.calls.length).toBeLessThan(600_000 / 1000);
++  });
++  it('partial revocation during 3 s RTT is observed by the next confirmation and pauses', async () => {
+     const { monitor, onExpire } = run(internalContextProbe);
++    s.perCall = 3000;
+     await vi.advanceTimersByTimeAsync(30_000);
+-    s.perCall = 4000;
++    s.roles = ['consultor_tecnico'];
++    await vi.advanceTimersByTimeAsync(16_000);
++    expect(onExpire).toHaveBeenCalledWith('ineligible');
++    expect(monitor.checkAccess()).toBe(false);
++  });
++  it('8 s RTT still pauses (sustained RTT ≥ ~7 s cannot renew within a 15 s lease); late answers never revive', async () => {
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(30_000);
++    s.perCall = 8000;
+     await vi.advanceTimersByTimeAsync(60_000);
+     expect(onExpire).toHaveBeenCalled();
+     expect(monitor.checkAccess()).toBe(false);
++    await vi.advanceTimersByTimeAsync(30_000);
++    expect(monitor.checkAccess()).toBe(false);
++  });
++  it.each([15_000, 15_008, 20_000])('%i ms RTT (≥ lease) times out and stays paused; answer after the deadline is ignored', async rtt => {
++    const { monitor, onExpire } = run(internalContextProbe);
++    await vi.advanceTimersByTimeAsync(30_000);
++    s.perCall = rtt;
++    await vi.advanceTimersByTimeAsync(rtt + 30_000);
++    expect(onExpire).toHaveBeenCalledWith('timeout');
++    expect(monitor.checkAccess()).toBe(false);
++    await vi.advanceTimersByTimeAsync(rtt * 2);
++    expect(monitor.checkAccess()).toBe(false);
+   });
+ });
+diff --git a/src/test/config/managerConsultantOpenSession.integration.test.tsx b/src/test/config/managerConsultantOpenSession.integration.test.tsx
+index 53b2218d..1778a99a 100644
+--- a/src/test/config/managerConsultantOpenSession.integration.test.tsx
++++ b/src/test/config/managerConsultantOpenSession.integration.test.tsx
+@@ -27,13 +27,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
+   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
+   if(name==='has_role'){s.roleCalls.push(args);return {data:(args as {_role:string})._role===s.deniedRole?false:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
+-  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
++  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
+   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
+   if(name==='get_top_financial_rankings')return {data:{},error:null};
+   throw new Error('unexpected '+name);
+  })();return Object.assign(request,{abortSignal:()=>request});}
+ }}));
+ import { AuthProvider } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import MobileLogin from '@/pages/app/MobileLogin';
+ import SelecionarPortal from '@/pages/SelecionarPortal';
+ import AcessoPendente from '@/pages/AcessoPendente';
+@@ -75,13 +78,13 @@ describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()
+  it.each([['gestor','consultor_tecnico'],['consultor_tecnico','gestor']])('ordered fingerprint and both canonical has_role: %j',async (...roles)=>{
+    s.roles=roles;const result=await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES);
+    expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['consultor_tecnico','gestor']])});
+-   expect(s.roleCalls).toEqual([{_user_id:U,_role:'consultor_tecnico'},{_user_id:U,_role:'gestor'}]);
++   expect(s.roleCalls).toHaveLength(2);expect(s.roleCalls).toEqual(expect.arrayContaining([{_user_id:U,_role:'consultor_tecnico'},{_user_id:U,_role:'gestor'}]));
+  });
+  it.each([[],['gestor'],['consultor_tecnico'],['gestor','gestor'],['consultor_tecnico','consultor_tecnico'],['gestor','consultor_tecnico','administrador'],['gestor','consultor_tecnico','superadmin'],['gestor','parceiro_b2b'],['gestor','consultor_tecnico','parceiro_b2b']])('reject actual roles %j',async (...roles)=>{
+-   s.roles=roles;expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);expect(s.roleCalls).toHaveLength(0);
++   s.roles=roles;expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);
+  });
+  it.each(['gestor','consultor_tecnico'])('canonical has_role denial for %s',async role=>{s.deniedRole=role;expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);});
+- it.each(['inactive','provisional','tenant','null','uid','final_h15'])('readiness %s denies',async reason=>{
++ it.each(['inactive','provisional','tenant','null','uid'])('readiness %s denies',async reason=>{
+    if(reason==='inactive')s.active=false;if(reason==='provisional')s.password=true;if(reason==='tenant')s.org=U;if(reason==='null')s.org=null;if(reason==='uid')s.rowUid=O;if(reason==='final_h15')s.finalOrg=U;
+    expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);
+  });
+@@ -99,7 +102,7 @@ describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()
+ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page',()=>{
+  it.each(['/financeiro/receber','/app','/app/atendimentos'])('%s preserves modal/draft across identical polls; inactive retry denies and restore is clean',async path=>{
+    const qc=setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft multipapel'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+-   const before=s.h15;await tick(10000);s.roles.reverse();await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft multipapel');expect(screen.getByRole('dialog')).toBeTruthy();
++   const before=s.h15;await tick(10000);s.roles.reverse();await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft multipapel');expect(screen.getByRole('dialog')).toBeTruthy();
+    s.active=false;await tick(10000);paused(qc,path);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc,path);
+    s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
+  });
+@@ -120,9 +123,9 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
+  it.each(['/financeiro/receber','/app/registrar'])('%s hidden polls and simultaneous focus/visibility preserve drafts and modal on identical fingerprint',async path=>{
+    setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho entre abas'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+    Object.defineProperty(document,'visibilityState',{value:'hidden'});act(()=>document.dispatchEvent(new Event('visibilitychange')));const before=s.h15;
+-   await tick(10000);await tick(10000);expect(s.h15).toBe(before+4);
++   await tick(10000);await tick(10000);expect(s.h15).toBe(before+2);
+    let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);Object.defineProperty(document,'visibilityState',{value:'visible'});
+-   act(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});await tick();expect(s.h15).toBe(before+5);
++   act(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});await tick();expect(s.h15).toBe(before+3);
+    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho entre abas');expect(screen.getByRole('dialog')).toBeTruthy();
+    resolve?.(O);await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho entre abas');expect(screen.getByRole('dialog')).toBeTruthy();
+  });
+@@ -137,10 +140,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
+    s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it.each(['/financeiro/receber','/app/registrar'])('%s constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses',async path=>{
+-   s.rtt=1500;const qc=setup(path);await tick(3000);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
++   s.rtt=3000;const qc=setup(path);await tick(3000);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+    const before=s.h15;
+    for(let i=0;i<600;i++){await act(async()=>{await vi.advanceTimersByTimeAsync(100);});expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();}
+-   expect(s.h15).toBeGreaterThanOrEqual(before+12);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho rtt3');expect(screen.getByRole('dialog')).toBeTruthy();
++   expect(s.h15).toBeGreaterThanOrEqual(before+6);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho rtt3');expect(screen.getByRole('dialog')).toBeTruthy();
+    s.active=false;await tick(12000);paused(qc,path);
+  });
+  it('explicit revalidate still retires a draft under a valid lease',async()=>{
+@@ -163,8 +166,8 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
+  it('gate OFF keeps candidate inactive',async()=>{s.gate=false;setup();await tick(30000);expect(s.h15).toBe(0);expect(screen.getByText('Menu desktop')).toBeTruthy();});
+ });
+ describe('paired scope initial boundaries fail closed',()=>{
+- it.each(['gestor','consultor_tecnico'])('loss %s observed before first confirmation never mounts desktop',async role=>{
+-   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();s.roles=s.roles.filter(r=>r!==role);resolve?.(O);await tick();paused(qc);
++ it.each(['gestor','consultor_tecnico'])('loss %s committed after the single server snapshot is observed by the next confirmation (<= lease) and clears',async role=>{
++   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();s.roles=s.roles.filter(r=>r!==role);resolve?.(O);await tick(12000);paused(qc);
+  });
+  it.each([['gestor'],['gestor','consultor_tecnico','administrador'],['gestor','consultor_tecnico','superadmin'],['gestor','parceiro_b2b']])('non-allowlisted login %j does not create paired monitor',async (...roles)=>{s.roles=roles;setup();await tick(30000);expect(s.h15).toBe(0);});
+  it('duplicate pair at login is denied by raw server roles, despite legacy normalization',async()=>{s.roles=['gestor','consultor_tecnico','gestor'];const qc=setup();await tick();paused(qc);});
+diff --git a/src/test/config/monitorRetryReresolve.integration.test.tsx b/src/test/config/monitorRetryReresolve.integration.test.tsx
+index c82cba7b..9522f0b7 100644
+--- a/src/test/config/monitorRetryReresolve.integration.test.tsx
++++ b/src/test/config/monitorRetryReresolve.integration.test.tsx
+@@ -39,6 +39,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
+   },
+ } }));
+ import { AuthProvider, useAuth } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
+ import { resolveEffectiveRouteRole } from '@/lib/navigation/portalRoleContext';
+ const PATHS = ['/dashboard/geral', '/financeiro/receber', '/app/registrar'];
+diff --git a/src/test/config/operatorOpenSession.integration.test.tsx b/src/test/config/operatorOpenSession.integration.test.tsx
+index 4b1ebac9..fbcc4752 100644
+--- a/src/test/config/operatorOpenSession.integration.test.tsx
++++ b/src/test/config/operatorOpenSession.integration.test.tsx
+@@ -26,13 +26,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+  rpc:(name:string,args:unknown)=>{const request=(async()=>{
+   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:[],has_technical_access:false,is_admin:false},error:null};
+   if(name==='has_role'){s.roleCalls.push(args);return {data:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
+-  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
++  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
+   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
+   if(name==='get_top_financial_rankings')return {data:{},error:null};
+   throw new Error('unexpected '+name);
+  })();return Object.assign(request,{abortSignal:()=>request});}
+ }}));
+ import { AuthProvider } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
+ import MobileLogin from '@/pages/app/MobileLogin';
+ import SelecionarPortal from '@/pages/SelecionarPortal';
+ import AcessoPendente from '@/pages/AcessoPendente';
+@@ -53,7 +56,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('operador_onfarm sessão aberta candidata',()=>{
+  it('nova identidade não herda draft e descarta resposta tardia da identidade anterior',async()=>{let resolve:((v:unknown)=>void)|undefined;s.late=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft identidade antiga'}});s.uid='00000000-0000-4000-8000-000000000003';act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');resolve?.({data:{total_receivable_expected:999},error:null});await tick();expect(screen.queryByText('999 OS')).toBeNull();expect(JSON.stringify(qc.getQueryCache().getAll().map(q=>q.state.data))).not.toContain('999');});
+- it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else act(()=>window.dispatchEvent(new Event('focus')));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['operador_onfarm'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
++ it.each(['inativação','role','tenant','expiração','revalidação'])('preserva draft por dois polls; %s descarta e restore não recupera',async reason=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'lançamento em elaboração'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));const before=s.h15;await tick(10000);await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect(screen.getByRole('dialog')).toBeTruthy();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('lançamento em elaboração');if(reason==='inativação')s.active=false;else if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else if(reason==='expiração')s.hold=()=>new Promise(()=>{});else act(()=>window.dispatchEvent(new Event('focus')));if(reason==='revalidação'){await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');return;}await tick(reason==='expiração'?15001:10000);paused(qc);expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();s.active=true;s.org=O;s.roles=['operador_onfarm'];fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');});
+  it('pending/valid/inativação/retry/restore remove valores e navegação na mesma URL',async()=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByText('Menu desktop')).toBeNull();expect(screen.queryByText('Cultivo Farm Campo')).toBeNull();expect(screen.queryByRole('navigation')).toBeNull();expect(screen.queryByRole('button',{name:'Registrar Ocorrência'})).toBeNull();expect(screen.queryByRole('button',{name:'Atualizar consulta'})).toBeNull();resolve?.(O);await tick();expect(screen.getByText('0 OS')).toBeTruthy();
+   s.active=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('0 OS')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe('/cockpit-laboratorio');
+@@ -73,15 +76,15 @@ describe('probe operador_onfarm self/readiness',()=>{
+  it('h15 erro falha fechado',async()=>{s.error=true;await expect(internalContextProbe(U,O,"operador_onfarm")).rejects.toThrow();});
+  it('tenant divergente nega',async()=>{s.org=U;expect((await internalContextProbe(U,O,"operador_onfarm")).eligible).toBe(false);});
+  it('perfil de outro UID nega',async()=>{s.rowUid=O;expect((await internalContextProbe(U,O,"operador_onfarm")).eligible).toBe(false);});
+- it('h15 final divergente nega após perfil e role válidos',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O,"operador_onfarm")).eligible).toBe(false);expect(s.h15).toBe(2);});
+- it('positivo operador consulta has_role self e fingerprint distinto do financeiro',async()=>{const result=await internalContextProbe(U,O,'operador_onfarm');expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['operador_onfarm']])});expect(s.roleCalls).toEqual([{_user_id:U,_role:'operador_onfarm'}]);});
+- it.each([{roles:[]},{roles:['operador_onfarm','administrador']},{roles:['operador_onfarm','superadmin']},{roles:['superadmin']},{roles:['financeiro']}])('roles não exclusivas $roles negadas antes de has_role',async ({roles})=>{s.roles=roles;expect((await internalContextProbe(U,O,'operador_onfarm')).eligible).toBe(false);expect(s.roleCalls).toHaveLength(0);});
++ it('observação única: uma avaliação h15 por probe (sem colchete final; instantânea única no servidor)',async()=>{s.finalOrg=U;expect((await internalContextProbe(U,O,"operador_onfarm")).eligible).toBe(true);expect(s.h15).toBe(1);});
++ it('positivo operador consulta has_role self e fingerprint distinto do financeiro',async()=>{const result=await internalContextProbe(U,O,'operador_onfarm');expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['operador_onfarm']])});expect(s.roleCalls).toContainEqual({_user_id:U,_role:'operador_onfarm'});});
++ it.each([{roles:[]},{roles:['operador_onfarm','administrador']},{roles:['operador_onfarm','superadmin']},{roles:['superadmin']},{roles:['financeiro']}])('roles não exclusivas $roles negadas pela decisão exata do cliente',async ({roles})=>{s.roles=roles;expect((await internalContextProbe(U,O,'operador_onfarm')).eligible).toBe(false);});
+  it.each(['profiles','user_roles','has_role','final_h15'])('erro de transporte %s não vira positivo',async failure=>{s.fail=failure;await expect(internalContextProbe(U,O,'operador_onfarm')).rejects.toThrow('internal_probe_unavailable');});
+  it.each([null,'','org-invalida'])('org inválida %j nega sem RPC',async org=>{expect((await internalContextProbe(U,org as unknown as string,'operador_onfarm')).eligible).toBe(false);expect(s.h15).toBe(0);});
+ });
+ describe('Desktop operador antes de menus e guard de rota',()=>{
+  it.each(['/cockpit-laboratorio','/estoque'])('%s desmonta shell/draft/modal e nega retry na mesma URL',async path=>{setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft operador'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));await tick(20000);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft operador');s.active=false;await tick(10000);expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();expect(screen.queryByRole('button',{name:'Atualizar consulta'})).toBeNull();expect(screen.queryByText('Cultivo Farm Campo')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();expect(screen.getByTestId('url').textContent).toBe(path);s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();});
+- it('focus entra pending antes de resposta e descarta draft, sem restaurar autorização enquanto hold',async()=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho foco'}});let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});act(()=>window.dispatchEvent(new Event('focus')));await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);s.active=false;resolve?.(O);await tick();paused(qc);});
++ it('focus entra pending antes de resposta e descarta draft, sem restaurar autorização enquanto hold',async()=>{const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho foco'}});let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>{resolve=r;});act(()=>window.dispatchEvent(new Event('focus')));await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);s.active=false;resolve?.(O);await tick(12000);paused(qc);});
+  it('has_role negado no poll expira e retry não adota role',async()=>{const qc=setup();await tick();s.roleAllowed=false;await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);});
+  it('NULL observado após login válido expira, sem inventar tenant',async()=>{const qc=setup();await tick();s.org=null;await tick(10000);paused(qc);});
+ });
+@@ -90,7 +93,7 @@ describe('login operador: componentes reais e transporte fake, não login hosted
+  it.each(['/app/login','/selecionar-portal','/acesso-pendente'])('%s abre home canônica sem contexto technical',async path=>{s.gate=false;setup(path);await tick();expect(screen.getByTestId('url').textContent).toBe('/cockpit-laboratorio');expect(s.roleCalls).toContainEqual({_user_id:U,_role:'operador_onfarm'});expect(localStorage.getItem('active_portal_context')).toBeNull();});
+  it('login gate ON abre cockpit sem contexto técnico',async()=>{setup('/app/login');await tick();expect(screen.getByTestId('url').textContent).toBe('/cockpit-laboratorio');expect(screen.getByRole('button',{name:'Atualizar consulta'})).toBeTruthy();});
+  it('atualizar acesso revalida autorização negada e depois abre home',async()=>{s.gate=false;s.roleAllowed=false;setup('/acesso-pendente');await tick();expect(screen.getByTestId('url').textContent).toBe('/acesso-pendente');s.roleAllowed=true;fireEvent.click(screen.getByRole('button',{name:'Atualizar acesso'}));await tick();expect(screen.getByTestId('url').textContent).toBe('/cockpit-laboratorio');});
+- it.each(['inactive','mixed','external','provisional','null_org','has_role','h15','final_h15','mismatched_uid'])('%s não redireciona ao cockpit',async reason=>{s.gate=false;if(reason==='inactive')s.active=false;if(reason==='mixed')s.roles=['operador_onfarm','consultor_tecnico'];if(reason==='external')s.roles=['parceiro_b2b'];if(reason==='provisional')s.password=true;if(reason==='null_org')s.org=null;if(reason==='has_role')s.roleAllowed=false;if(reason==='h15')s.error=true;if(reason==='final_h15')s.finalOrg=U;if(reason==='mismatched_uid')s.rowUid=O;setup('/selecionar-portal');await tick();expect(screen.getByTestId('url').textContent).not.toBe('/cockpit-laboratorio');expect(screen.queryByText('Menu desktop')).toBeNull();});
++ it.each(['inactive','mixed','external','provisional','null_org','has_role','h15','mismatched_uid'])('%s não redireciona ao cockpit',async reason=>{s.gate=false;if(reason==='inactive')s.active=false;if(reason==='mixed')s.roles=['operador_onfarm','consultor_tecnico'];if(reason==='external')s.roles=['parceiro_b2b'];if(reason==='provisional')s.password=true;if(reason==='null_org')s.org=null;if(reason==='has_role')s.roleAllowed=false;if(reason==='h15')s.error=true;if(reason==='final_h15')s.finalOrg=U;if(reason==='mismatched_uid')s.rowUid=O;setup('/selecionar-portal');await tick();expect(screen.getByTestId('url').textContent).not.toBe('/cockpit-laboratorio');expect(screen.queryByText('Menu desktop')).toBeNull();});
+  it.each(['tenant','unmount'])('home tardia após %s é descartada',async reason=>{s.gate=false;let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);setup('/selecionar-portal');await tick();if(reason==='unmount')cleanup();else {s.org=U;s.roleAllowed=false;act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));await tick();}resolve?.(O);await tick();expect(screen.queryByText('Menu desktop')).toBeNull();});
+  it('resposta tardia da home após troca UID não redireciona',async()=>{s.gate=false;let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);setup('/selecionar-portal');await tick();s.uid=O;s.roles=['parceiro_b2b'];act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();resolve?.(O);await tick();expect(screen.getByTestId('url').textContent).not.toBe('/cockpit-laboratorio');});
+ });
+diff --git a/src/test/config/residualScopeStability.integration.test.tsx b/src/test/config/residualScopeStability.integration.test.tsx
+index a4b40e82..e9f802e7 100644
+--- a/src/test/config/residualScopeStability.integration.test.tsx
++++ b/src/test/config/residualScopeStability.integration.test.tsx
+@@ -27,6 +27,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
+   },
+ } }));
+ import { AuthProvider, useAuth } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid, (_uid, role) => s.roles.includes(role)); // one fake RTT per probe
+ import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
+ import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
+ import { internalContextProbe } from '@/lib/authz/internalContextProbe';
+@@ -55,9 +58,9 @@ async function toResidual(remaining: 'gestor' | 'consultor_tecnico') {
+ }
+ 
+ describe.each(['gestor', 'consultor_tecnico'] as const)('pair → %s residual stability (3 s/probe)', remaining => {
+-  it('fast → slow (1.5 s/call = 3 s probe) stays valid for 10 min of cycles; lease 15 s untouched', async () => {
++  it('fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched', async () => {
+     await toResidual(remaining);
+-    s.perCall = 1500;
++    s.perCall = 3000;
+     const before = s.probes;
+     for (let i = 0; i < 60; i++) { await adv(10_000); expect(pausedText()).toBeNull(); }
+     expect(screen.getByText(/\[ok\]/)).toBeTruthy();
+@@ -70,9 +73,9 @@ describe.each(['gestor', 'consultor_tecnico'] as const)('pair → %s residual st
+     await toResidual(remaining);
+     for (let i = 0; i < 30; i++) { await adv(10_000); expect(pausedText()).toBeNull(); }
+   });
+-  it('negative: 4 s/call (8 s probe) still pauses; late answers do not revive', async () => {
++  it('negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive', async () => {
+     await toResidual(remaining);
+-    s.perCall = 4000;
++    s.perCall = 8000;
+     await adv(60_000);
+     expect(pausedText()).toBeTruthy();
+     expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
+@@ -81,7 +84,7 @@ describe.each(['gestor', 'consultor_tecnico'] as const)('pair → %s residual st
+ 
+ describe('control: same real probe without early renewal (published cadence) expires', () => {
+   it.each(['gestor', 'consultor_tecnico'] as const)('%s, 3 s probe + 10 s poll ≥ 15 s lease', async role => {
+-    s.roles = [role]; s.perCall = 1500;
++    s.roles = [role]; s.perCall = 3000;
+     const onExpire = vi.fn();
+     const monitor = createAuthzEpochMonitor({
+       fetcher: () => internalContextProbe(s.uid, s.org, role), now: () => performance.now(),
+diff --git a/src/test/config/retryLoadingRace.integration.test.tsx b/src/test/config/retryLoadingRace.integration.test.tsx
+index 6bcf9f3a..e0950d6a 100644
+--- a/src/test/config/retryLoadingRace.integration.test.tsx
++++ b/src/test/config/retryLoadingRace.integration.test.tsx
+@@ -55,6 +55,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
+   },
+ } }));
+ import { AuthProvider, useAuth } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid, (_uid, role) => s.roles.includes(role)); // one fake RTT per probe
+ function AuthSpy() { s.auth = useAuth(); return null; }
+ import { ProtectedRoutes, RoleGuard } from '@/App';
+ import MobileLayout from '@/pages/app/MobileLayout';
+@@ -231,15 +234,16 @@ describe('independent review 1875eb: Retry loader select(*) never resolves', ()
+ });
+ 
+ describe('company admin latency: 3 s probes stay valid; 8 s probe is the expected fail-closed pause', () => {
+-  it('admin at /financeiro/receber: 1.5 s/call for 3 min no pause; 4 s/call pauses with numeric diag; Retry recovers', async () => {
++  it('admin at /financeiro/receber: 3 s single-RTT probe for 3 min no pause; 8 s pauses with numeric diag; Retry recovers', async () => {
+     s.roles = ['administrador']; s.lat = 1500;
+     setup(); await tick(6000);
++    s.lat = 3000; // the probe is now one RTT: 3 s/call = 3 s probe
+     expect(screen.getByText('Contas a receber')).toBeTruthy();
+     for (let i = 0; i < 18; i++) { await tick(10000); expect(screen.queryByText('Sessão de acesso pausada')).toBeNull(); }
+     expect(screen.getByText('Contas a receber')).toBeTruthy();
+     expect(readAuthzDiagnostics().some(d => d.event === 'expire')).toBe(false); // ~3 s probes: no undue pause
+     clearAuthzDiagnostics();
+-    s.lat = 4000; await tick(40000);
++    s.lat = 8000; await tick(40000);
+     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+     const exp = readAuthzDiagnostics().filter(d => d.event === 'expire').at(-1)!;
+     expect(exp.reason).toBe('timeout');

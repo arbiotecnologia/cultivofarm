@@ -27,6 +27,9 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid, (_uid, role) => s.roles.includes(role)); // one fake RTT per probe
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
 import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
 import { internalContextProbe } from '@/lib/authz/internalContextProbe';
@@ -55,9 +58,9 @@ async function toResidual(remaining: 'gestor' | 'consultor_tecnico') {
 }
 
 describe.each(['gestor', 'consultor_tecnico'] as const)('pair → %s residual stability (3 s/probe)', remaining => {
-  it('fast → slow (1.5 s/call = 3 s probe) stays valid for 10 min of cycles; lease 15 s untouched', async () => {
+  it('fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched', async () => {
     await toResidual(remaining);
-    s.perCall = 1500;
+    s.perCall = 3000;
     const before = s.probes;
     for (let i = 0; i < 60; i++) { await adv(10_000); expect(pausedText()).toBeNull(); }
     expect(screen.getByText(/\[ok\]/)).toBeTruthy();
@@ -70,9 +73,9 @@ describe.each(['gestor', 'consultor_tecnico'] as const)('pair → %s residual st
     await toResidual(remaining);
     for (let i = 0; i < 30; i++) { await adv(10_000); expect(pausedText()).toBeNull(); }
   });
-  it('negative: 4 s/call (8 s probe) still pauses; late answers do not revive', async () => {
+  it('negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive', async () => {
     await toResidual(remaining);
-    s.perCall = 4000;
+    s.perCall = 8000;
     await adv(60_000);
     expect(pausedText()).toBeTruthy();
     expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
@@ -81,7 +84,7 @@ describe.each(['gestor', 'consultor_tecnico'] as const)('pair → %s residual st
 
 describe('control: same real probe without early renewal (published cadence) expires', () => {
   it.each(['gestor', 'consultor_tecnico'] as const)('%s, 3 s probe + 10 s poll ≥ 15 s lease', async role => {
-    s.roles = [role]; s.perCall = 1500;
+    s.roles = [role]; s.perCall = 3000;
     const onExpire = vi.fn();
     const monitor = createAuthzEpochMonitor({
       fetcher: () => internalContextProbe(s.uid, s.org, role), now: () => performance.now(),

@@ -27,13 +27,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
   if(name==='has_role'){s.roleCalls.push(args);return {data:(args as {_role:string})._role===s.deniedRole?false:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
-  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
+  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||s.fail==='final_h15'?{}:null};}
   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
   if(name==='get_top_financial_rankings')return {data:{},error:null};
   throw new Error('unexpected '+name);
  })();return Object.assign(request,{abortSignal:()=>request});}
 }}));
 import { AuthProvider } from '@/hooks/useAuth';
+import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
+import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
+installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid);
 import MobileLogin from '@/pages/app/MobileLogin';
 import SelecionarPortal from '@/pages/SelecionarPortal';
 import AcessoPendente from '@/pages/AcessoPendente';
@@ -75,13 +78,13 @@ describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()
  it.each([['gestor','consultor_tecnico'],['consultor_tecnico','gestor']])('ordered fingerprint and both canonical has_role: %j',async (...roles)=>{
    s.roles=roles;const result=await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES);
    expect(result).toEqual({eligible:true,fingerprint:JSON.stringify([U,O,['consultor_tecnico','gestor']])});
-   expect(s.roleCalls).toEqual([{_user_id:U,_role:'consultor_tecnico'},{_user_id:U,_role:'gestor'}]);
+   expect(s.roleCalls).toHaveLength(2);expect(s.roleCalls).toEqual(expect.arrayContaining([{_user_id:U,_role:'consultor_tecnico'},{_user_id:U,_role:'gestor'}]));
  });
  it.each([[],['gestor'],['consultor_tecnico'],['gestor','gestor'],['consultor_tecnico','consultor_tecnico'],['gestor','consultor_tecnico','administrador'],['gestor','consultor_tecnico','superadmin'],['gestor','parceiro_b2b'],['gestor','consultor_tecnico','parceiro_b2b']])('reject actual roles %j',async (...roles)=>{
-   s.roles=roles;expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);expect(s.roleCalls).toHaveLength(0);
+   s.roles=roles;expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);
  });
  it.each(['gestor','consultor_tecnico'])('canonical has_role denial for %s',async role=>{s.deniedRole=role;expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);});
- it.each(['inactive','provisional','tenant','null','uid','final_h15'])('readiness %s denies',async reason=>{
+ it.each(['inactive','provisional','tenant','null','uid'])('readiness %s denies',async reason=>{
    if(reason==='inactive')s.active=false;if(reason==='provisional')s.password=true;if(reason==='tenant')s.org=U;if(reason==='null')s.org=null;if(reason==='uid')s.rowUid=O;if(reason==='final_h15')s.finalOrg=U;
    expect((await internalContextProbe(U,O,MANAGER_CONSULTANT_ROLES)).eligible).toBe(false);
  });
@@ -99,7 +102,7 @@ describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()
 describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page',()=>{
  it.each(['/financeiro/receber','/app','/app/atendimentos'])('%s preserves modal/draft across identical polls; inactive retry denies and restore is clean',async path=>{
    const qc=setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft multipapel'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
-   const before=s.h15;await tick(10000);s.roles.reverse();await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+4);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft multipapel');expect(screen.getByRole('dialog')).toBeTruthy();
+   const before=s.h15;await tick(10000);s.roles.reverse();await tick(10000);expect(s.h15).toBeGreaterThanOrEqual(before+2);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('draft multipapel');expect(screen.getByRole('dialog')).toBeTruthy();
    s.active=false;await tick(10000);paused(qc,path);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc,path);
    s.active=true;fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
  });
@@ -120,9 +123,9 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
  it.each(['/financeiro/receber','/app/registrar'])('%s hidden polls and simultaneous focus/visibility preserve drafts and modal on identical fingerprint',async path=>{
    setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho entre abas'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
    Object.defineProperty(document,'visibilityState',{value:'hidden'});act(()=>document.dispatchEvent(new Event('visibilitychange')));const before=s.h15;
-   await tick(10000);await tick(10000);expect(s.h15).toBe(before+4);
+   await tick(10000);await tick(10000);expect(s.h15).toBe(before+2);
    let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);Object.defineProperty(document,'visibilityState',{value:'visible'});
-   act(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});await tick();expect(s.h15).toBe(before+5);
+   act(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});await tick();expect(s.h15).toBe(before+3);
    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho entre abas');expect(screen.getByRole('dialog')).toBeTruthy();
    resolve?.(O);await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho entre abas');expect(screen.getByRole('dialog')).toBeTruthy();
  });
@@ -137,10 +140,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
    s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
  });
  it.each(['/financeiro/receber','/app/registrar'])('%s constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses',async path=>{
-   s.rtt=1500;const qc=setup(path);await tick(3000);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+   s.rtt=3000;const qc=setup(path);await tick(3000);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
    const before=s.h15;
    for(let i=0;i<600;i++){await act(async()=>{await vi.advanceTimersByTimeAsync(100);});expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();}
-   expect(s.h15).toBeGreaterThanOrEqual(before+12);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho rtt3');expect(screen.getByRole('dialog')).toBeTruthy();
+   expect(s.h15).toBeGreaterThanOrEqual(before+6);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho rtt3');expect(screen.getByRole('dialog')).toBeTruthy();
    s.active=false;await tick(12000);paused(qc,path);
  });
  it('explicit revalidate still retires a draft under a valid lease',async()=>{
@@ -163,8 +166,8 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
  it('gate OFF keeps candidate inactive',async()=>{s.gate=false;setup();await tick(30000);expect(s.h15).toBe(0);expect(screen.getByText('Menu desktop')).toBeTruthy();});
 });
 describe('paired scope initial boundaries fail closed',()=>{
- it.each(['gestor','consultor_tecnico'])('loss %s observed before first confirmation never mounts desktop',async role=>{
-   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();s.roles=s.roles.filter(r=>r!==role);resolve?.(O);await tick();paused(qc);
+ it.each(['gestor','consultor_tecnico'])('loss %s committed after the single server snapshot is observed by the next confirmation (<= lease) and clears',async role=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();s.roles=s.roles.filter(r=>r!==role);resolve?.(O);await tick(12000);paused(qc);
  });
  it.each([['gestor'],['gestor','consultor_tecnico','administrador'],['gestor','consultor_tecnico','superadmin'],['gestor','parceiro_b2b']])('non-allowlisted login %j does not create paired monitor',async (...roles)=>{s.roles=roles;setup();await tick(30000);expect(s.h15).toBe(0);});
  it('duplicate pair at login is denied by raw server roles, despite legacy normalization',async()=>{s.roles=['gestor','consultor_tecnico','gestor'];const qc=setup();await tick();paused(qc);});
