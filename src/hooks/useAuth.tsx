@@ -561,7 +561,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       authzMonitorRef.current = null;
       monitor.stop();
-      if (companyAdminContextOnly) clearAuthzDiagnostics();
+      if (companyAdminContextOnly && !renewalRef.current) clearAuthzDiagnostics();
       setAuthzState("idle");
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);

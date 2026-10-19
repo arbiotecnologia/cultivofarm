@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 14:22 — correção funcional monitor/Cockpit
-- [ ] Corrigir status aberta/aprovada no reader canônico com candidata isolada, PRE/POST/rollback e hashes; quatro SQL approval e dados reais intocados.
-- [ ] Implementar reconfirmação TOKEN_REFRESHED com fence e continuidade somente de enums não sensíveis/modal Nova OS; descartar IDs, texto livre, arquivos/cache/respostas antigas.
-- [ ] Testar AuthProvider real/transporte fake RTT3s e mudanças de identidade/roles/tenant/revogação/tardios; registrar limites sem PASS hosted.
+- [x] Status fiel na lista do reader canônico; candidata isolada alinha filtro SQL, PRE/POST/rollback/hashes; quatro SQL approval/dados reais intocados.
+- [x] Reconfirmação TOKEN_REFRESHED com fence e continuidade somente de enums não sensíveis/modal Nova OS; IDs/texto/área/data/arquivos/cache/respostas antigas descartados.
+- [x] AuthProvider real/fake RTT3s e mudanças/tardios:92 focais+382 regressões PASS; PG reduzido status/filtro/A/B/NULL/rollback e recusa catálogo incompleto. Relatório monitor-cockpit-20261019-1422.review.md.
+- [ ] Auditor: PRE/implantação/POST SQL separado, checker independente app/node e homologação real monitor/Cockpit/anexos; sem sessão automática external_unmanaged. Filtro server-side antigo até implantação.
 
 ## 19/10 14:18 — P0 alias e rollback approval
 - [x] Alias class_row corrigido assembler/PRE/candidate/rollback/POST; corpos/expectativas intactos.
