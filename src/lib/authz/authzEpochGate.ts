@@ -14,4 +14,4 @@ export const PRODUCER_CONTEXT_MONITOR_ENABLED: boolean = true;
 export const FINANCIAL_CONTEXT_MONITOR_ENABLED: boolean = true;
 
 // Company administrator only; candidate remains OFF pending owner preflight/review.
-export const COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: boolean = false;
+export const COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: boolean = true;
