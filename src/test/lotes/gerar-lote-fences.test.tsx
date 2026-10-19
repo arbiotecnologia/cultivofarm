@@ -60,7 +60,8 @@ describe("GerarLoteDialog — cercas de sessão e resposta", () => {
     let finish: (v: unknown) => void = () => {};
     f.rpc.mockImplementation(() => new Promise((r) => { finish = r; }));
     render(<GerarLoteDialog open target={target} onOpenChange={() => {}} />);
-    submit(); submit();
+    const button = screen.getByRole("button", { name: "Registrar Lote" });
+    fireEvent.click(button); fireEvent.submit(button.closest("form")!);
     expect(f.rpc).toHaveBeenCalledTimes(1);
     await act(async () => finish(ok));
   });
