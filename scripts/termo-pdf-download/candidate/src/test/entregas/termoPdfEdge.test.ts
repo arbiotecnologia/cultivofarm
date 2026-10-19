@@ -50,7 +50,7 @@ function client(kind: "user" | "admin") {
       return q;
     },
     rpc: async (...a: unknown[]) => {
-      if (kind === "user" && a[0] === "h15_actor_organization") return { data: next(st.actorOrg), error: null };
+      if (kind === "user" && a[0] === "h15_actor_organization") { const v = next(st.actorOrg); return v === "PENDING" ? new Promise(() => {}) : { data: v, error: null }; }
       calls.rpc(...a); return { data: null, error: null };
     },
     storage: { from: () => ({
@@ -217,8 +217,7 @@ describe("entrega-termo-pdf candidata: download binário autenticado", () => {
   });
   it("consulta pendurada (tenant canônico nunca resolve): 504, sem Storage", async () => {
     vi.useFakeTimers();
-    const pend = new Promise<string>(() => {});
-    st.actorOrg = [pend as unknown as string];
+    st.actorOrg = ["PENDING"];
     const p = call({ termo_id: TERMO, action: "download" });
     await vi.advanceTimersByTimeAsync(15_001);
     expect((await p).status).toBe(504);
@@ -244,7 +243,7 @@ describe("entrega-termo-pdf candidata: download binário autenticado", () => {
   });
   it("Content-Length acima do limite: 413 sem ler o corpo", async () => {
     let pulled = false;
-    st.fetchImpl = async () => new Response(new ReadableStream({ pull(c) { pulled = true; c.enqueue(new Uint8Array(1)); } }),
+    st.fetchImpl = async () => new Response(new ReadableStream({ pull(c) { pulled = true; c.enqueue(new Uint8Array(1)); } }, { highWaterMark: 0 }),
       { status: 200, headers: { "content-length": String(16 * 1024 * 1024) } });
     expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(413);
     expect(pulled).toBe(false);
