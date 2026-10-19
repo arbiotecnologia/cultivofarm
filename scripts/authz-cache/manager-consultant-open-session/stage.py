@@ -16,7 +16,7 @@ def stage(destination, mode):
     if destination.exists() and any(destination.iterdir()):
         raise ValueError('empty_destination_required')
     raw_manifest = (HERE / 'manifest.json').read_bytes()
-    if sha(raw_manifest) != 'MANIFEST_FIXED_SHA':
+    if sha(raw_manifest) != 'd5d2973717496a4d3a4ed9e41b3f9b29503a4a5c0b87b86f14e49f09729425f2':
         raise ValueError('manifest_drift')
     m = json.loads(raw_manifest.decode('utf-8'))
     if m['canonical_ref'] != 'swzpzcwiasxmjutrmvkm':
