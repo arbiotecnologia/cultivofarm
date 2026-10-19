@@ -1,0 +1,5 @@
+7b8a55cda084d7bd0f9acb1161e6c8d97342f9387f92c8d5ea0fb5b4084784ee  stage-active.py
+5d15800cec4607967f172e5dc62efedf03287026b2f678bb70795a1acdbf92c1  test_stage_active.py
+d5d2973717496a4d3a4ed9e41b3f9b29503a4a5c0b87b86f14e49f09729425f2  manifest.json
+2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7  ../../../src/lib/authz/authzEpochGate.ts
+9b7f840b1e887bb11e7d147e619cc4d384104b072534490123ee9e91c00046ae  ../../../src/test/config/managerConsultantGate.test.ts
