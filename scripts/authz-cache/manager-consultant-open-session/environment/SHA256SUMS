@@ -1,0 +1,13 @@
+0428721b1aa2358e54d98e4bf5b1703089c435186690b26af65c3553d736d059  ../../../../AGENTS.md
+c84d72198e2a18012b1286b62c0c637cb2ad7804eef759abaac0bec9e1bdfb18  ../../../../docs/auditorias/gestor-consultor-tela-aberta-20261019.review.md
+1ab423c713f6723bd2212c0114e13b7c27c1b4ae17eaa9f9de7b62a190536f28  ../../../../roadmap.md
+24fc7df51843d49ee6ffd9a08aa8eac4ae38108e9b91e0e247d6536f1f33e728  candidate/src/hooks/useAuth.tsx
+ff7cedd841248e995e9897805c09b0941b4e0a1cc08e11cf019b0d9372cfafcb  candidate/src/lib/authz/authzEpochMonitor.ts
+b1503f9072be5bfb9d75ef4697613a51c71612a00d4706a8048fea9ec1e56f44  candidate/src/test/config/authzEnvironment.test.ts
+81e581743af0f8fb835d2bbc3d6e183af6b2a5c39d40e6b43d4848da26ee6430  candidate/src/test/config/managerConsultantOpenSession.integration.test.tsx
+afbcd75883acf82c0baaa3ef3a41448148fa575db6cdfb5a5b05936ef7d26f18  manifest.json
+16c68ef7e48731fbdc24995b92daa5a05fefe756ef50def2c44b7f7449724ad6  rollback/src/hooks/useAuth.tsx
+715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57  rollback/src/lib/authz/authzEpochMonitor.ts
+f8a4af91cf82637eb0a2f381082ba61a8df8df8c3dc5602deb84d978e53fee61  rollback/src/test/config/managerConsultantOpenSession.integration.test.tsx
+7f1d1fcfe4a60b37e8ce4b674c72602e98ad0624f222de4729bd9c5052201ecd  stage.py
+b25f6f067994556974069dfd72b17024765c9962cc3c448fecc23284f34e0e70  test_stage.py

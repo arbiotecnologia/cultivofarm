@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 02:07 — pausas ambientais multipapel
+- [x] Corrigir foco/visibility e polling hidden somente no recorte exato, preservando deadline15s/fail-closed e B2B.
+- [x] Relógio fake/drafts/layouts/timeout/offline/perda de papel/tardios:399/399 PASS; candidata/rollback da base exatos, manifest separado75fontes/7artefatos e staging5/5 PASS; build automático OK, typecheck não certificado.
+- [ ] Revisão independente e publicação/homologação da correção dependem do proprietário; não recarregar sessões reais.
+
 ## 19/10 01:47 — gestor + consultor exatos
 - [x] Revisão terminal06df9901/68hashes/stage6/6/26probes fake e preflight integral canônico PASS informados pelo proprietário; autorizada só ativação da flag.
 - [x] Ativação exclusiva multipapel true/assertion real; demais runtime byte-exatos, 68 hashes OFF intactos, staging ativo5/5 e regressões378/378 PASS; build OK/typecheck sem recibo.

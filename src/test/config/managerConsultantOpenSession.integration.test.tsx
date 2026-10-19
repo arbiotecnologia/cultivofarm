@@ -55,7 +55,7 @@ function setup(path='/financeiro/receber'){
  const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});
  render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><Location/><Routes>
  <Route element={<ProtectedRoutes/>}>{['/financeiro/receber','/dashboard/geral'].map(path=><Route key={path} path={path} element={<RoleGuard><Switch/><Draft/><CockpitFixture/></RoleGuard>}/>)}</Route>
- <Route element={<AppPortalGuard/>}><Route element={<MobileLayout/>}>{['/app','/app/atendimentos'].map(path=><Route key={path} path={path} element={<><Switch/><Draft/><CockpitFixture/></>}/>)}</Route></Route>
+ <Route element={<AppPortalGuard/>}><Route element={<MobileLayout/>}>{['/app','/app/atendimentos','/app/registrar'].map(path=><Route key={path} path={path} element={<><Switch/><Draft/><CockpitFixture/></>}/>)}</Route></Route>
  <Route path="/selecionar-portal" element={<SelecionarPortal/>}/><Route path="/sem-permissao" element={<div>negado</div>}/>
  </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);return qc;
 }
@@ -108,8 +108,31 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
    await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
    s.roles=['gestor','consultor_tecnico'];s.org=O;s.password=false;s.error=false;s.deniedRole='';fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('Menu desktop')).toBeTruthy();
  });
- it.each(['/financeiro/receber','/app','/selecionar-portal'])('%s focus hides all controls before response; timeout discards late confirmation',async path=>{
-   const qc=setup(path);await tick();let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);act(()=>window.dispatchEvent(new Event('focus')));await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();expect(screen.queryByRole('navigation')).toBeNull();expect(screen.queryByRole('group',{name:'Portais disponíveis'})).toBeNull();await tick(15001);paused(qc,path);resolve?.(O);await tick();paused(qc,path);
+ it.each(['/financeiro/receber','/app/registrar','/selecionar-portal'])('%s environmental check keeps confirmed view only until deadline; late response cannot reopen',async path=>{
+   const qc=setup(path);await tick();let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);const before=s.h15;
+   act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await tick();expect(s.h15).toBe(before+1);expect(screen.queryByText('Verificando seu acesso')).toBeNull();
+   if(path==='/selecionar-portal')expect(screen.getByRole('button',{name:'Acessar Gestão'})).toBeTruthy();else expect(screen.getByRole('textbox')).toBeTruthy();
+   await tick(15001);paused(qc,path);resolve?.(O);await tick();paused(qc,path);
+ });
+ it.each(['/financeiro/receber','/app/registrar'])('%s hidden polls and simultaneous focus/visibility preserve drafts and modal on identical fingerprint',async path=>{
+   setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho entre abas'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+   Object.defineProperty(document,'visibilityState',{value:'hidden'});act(()=>document.dispatchEvent(new Event('visibilitychange')));const before=s.h15;
+   await tick(10000);await tick(10000);expect(s.h15).toBe(before+4);
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);Object.defineProperty(document,'visibilityState',{value:'visible'});
+   act(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});await tick();expect(s.h15).toBe(before+5);
+   expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho entre abas');expect(screen.getByRole('dialog')).toBeTruthy();
+   resolve?.(O);await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho entre abas');expect(screen.getByRole('dialog')).toBeTruthy();
+ });
+ it.each(['gestor','consultor_tecnico','error','offline'])('environmental %s denies, clears drafts/cache and restore stays clean',async reason=>{
+   const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'não recuperar'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+   if(reason==='error')s.error=true;else if(reason==='offline')Object.defineProperty(navigator,'onLine',{value:false});else s.roles=s.roles.filter(r=>r!==reason);
+   act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await tick();paused(qc);
+   fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
+   s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
+ });
+ it('explicit revalidate still retires a draft under a valid lease',async()=>{
+   function Explicit(){const {revalidateAuthz}=useAuth();return <button onClick={revalidateAuthz}>Revalidar explicitamente</button>;}
+   const qc=new QueryClient();render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter><Explicit/><AppPortalGuard><Draft/></AppPortalGuard></MemoryRouter></AuthProvider></QueryClientProvider>);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft explícito'}});fireEvent.click(screen.getByRole('button',{name:'Revalidar explicitamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');
  });
  it('selector offers legitimate choices, both transitions remain authorized, revoke hides selector',async()=>{
    const qc=setup('/selecionar-portal');await tick();expect(screen.getByRole('button',{name:'Acessar Gestão'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Acessar Portal Técnico'}));await tick();expect(screen.getByTestId('url').textContent).toBe('/app');
