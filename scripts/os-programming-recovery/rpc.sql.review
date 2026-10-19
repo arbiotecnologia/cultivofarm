@@ -24,7 +24,8 @@ BEGIN
  -- Immediate FK checks take KEY SHARE on the locked OS/program parent.
  -- No table locks on production links or lots; parent UPDATE prevents new target references.
  -- Invites have NO user/profile FK: retain bounded SHARE against insert phantoms.
- LOCK TABLE public.platform_org_admin_invites IN SHARE MODE;
+ LOCK TABLE public.platform_org_admin_invites,public.ordens_servico_onfarm IN SHARE MODE;
+ -- Onfarm IDs have no FK to manual OS: retain phantom fence against a duplicate ID.
  -- Global published catalog still requires phantom protection; never drop SaaS gate.
  LOCK TABLE public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.saas_modules IN SHARE MODE;
  SELECT o.organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.status::text status,o.volume_total_ml,o.data_programada os_date,o.partner_order_id,o.partner_order_item_id,o.origem INTO v_os FROM public.ordens_servico o WHERE o.id=p_os_id FOR UPDATE;
@@ -55,9 +56,10 @@ BEGIN
  SELECT * INTO v_pp FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;
  IF NOT ((v_pp.organization_id=v_org AND ((v_canonical='manual' AND v_pp.ordem_servico_id=p_os_id AND v_pp.ordem_servico_onfarm_id IS NULL) OR (v_canonical='onfarm' AND v_pp.ordem_servico_onfarm_id=p_os_id AND v_pp.ordem_servico_id IS NULL)) AND v_pp.produto_id IS NOT DISTINCT FROM v_os.produto_id AND v_pp.microrganismo_id IS NOT DISTINCT FROM v_os.microrganismo_id) IS TRUE) THEN RAISE EXCEPTION 'PROGRAMAR_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  -- FK responsável usa profiles.id; helper legado usa user_id. Não reinterpretar silenciosamente.
- IF v_pp.responsavel_id IS NOT NULL THEN RETURN jsonb_build_object('success',false,'message','Responsável não nulo indisponível neste recorte.'); END IF;
+ IF v_pp.responsavel_id IS NOT NULL OR nullif(btrim(v_pp.responsavel),'') IS NOT NULL THEN RETURN jsonb_build_object('success',false,'message','Responsável não nulo indisponível neste recorte.'); END IF;
  IF v_os.status IS NULL OR v_os.status NOT IN ('aprovada','programada') THEN RETURN jsonb_build_object('success',false,'message','A OS deve estar previamente aprovada; esta ação não aprova nem inicia fabricação.'); END IF;
  IF platform_private.lab_item_is_manufacturable(v_os.produto_id,v_os.microrganismo_id) IS NOT TRUE THEN RETURN jsonb_build_object('success',false,'message','Item não elegível ao laboratório biológico.'); END IF;
+ IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=p_os_id) OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE ordem_servico_id=p_os_id) THEN RETURN jsonb_build_object('success',false,'message','OS com entrega/aplicação já vinculada indisponível neste recorte.'); END IF;
  IF v_pp.status::text IS DISTINCT FROM 'aguardando' OR EXISTS(SELECT 1 FROM public.lotes WHERE programacao_id=v_pp.id) THEN RETURN jsonb_build_object('success',false,'message','A programação já avançou; operação indisponível.'); END IF;
  IF p_data_programada IS NULL OR NOT isfinite(p_data_programada) THEN RETURN jsonb_build_object('success',false,'message','Informe uma data válida, sem inferência automática.'); END IF;
  v_before:=jsonb_build_object('status_os',v_os.status,'data_os',v_os.os_date,'data_programacao',v_pp.data_programada,'status_programacao',v_pp.status,'volume_os',v_os.volume_total_ml,'volume_programacao',v_pp.volume_necessario);

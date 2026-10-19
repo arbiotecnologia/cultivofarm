@@ -36,6 +36,7 @@ def setup():
  sql+=f"INSERT INTO clientes(id,nome,codigo_cliente,organization_id) VALUES({C},'local','LOCAL',{A}); INSERT INTO produtos(id,nome,tipo,familia_catalogo) VALUES({P},'local bio','fungicida','biologico');\n"
  sql+=f"INSERT INTO fazendas(id,nome,cliente_id,organization_id) VALUES({q(21)},'local',{C},{A}); INSERT INTO talhoes(id,nome,fazenda_id,area_hectares,organization_id) VALUES({q(22)},'local',{q(21)},1,{A});\n"
  sql+=f"INSERT INTO saas_plans(id,name,key) VALUES({PLAN},'local','local'); INSERT INTO saas_modules(id,key,name) VALUES({M},'local','local'); INSERT INTO saas_features(id,module_id,key,name) VALUES({F},{M},'ordens_producao','local'); INSERT INTO saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,price_amount,currency,billing_cycle,trial_days,published_at,features_snapshot) VALUES({V},{PLAN},1,'local','PUBLISHED',now()-interval '1 day',1,'BRL','monthly',14,now(),'[\"ordens_producao\"]'); INSERT INTO saas_plan_version_features(plan_version_id,feature_id,enabled) VALUES({V},{F},true); INSERT INTO organization_subscriptions(id,organization_id,plan_id,plan_version_id,status) VALUES({SUB},{A},{PLAN},{V},'ACTIVE');\n"
+ sql+=f"INSERT INTO partner_accounts(id,razao_social) VALUES({q(81)},'local'); INSERT INTO partner_orders(id,numero,partner_id) VALUES({q(82)},'LOCAL-PB',{q(81)}); INSERT INTO partner_order_items(id,order_id,quantidade) VALUES({q(83)},{q(82)},1); INSERT INTO production_planning(id,partner_order_id,partner_id) VALUES({q(84)},{q(82)},{q(81)});\n"
  sql+=f"INSERT INTO ordens_servico(id,numero_os,cliente_id,fazenda_id,talhao_id,produto_id,organization_id,status,volume_total_ml) VALUES({O},'LOCAL-1',{C},{q(21)},{q(22)},{P},{A},'aprovada',100); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({PP},{A},{O},{P},100);\n"
  for trg in c['triggers']:sql+=trg['definition']+';\n'
  sql+=(H/'rpc.sql.review').read_text()
@@ -68,6 +69,15 @@ def main():
   deny('real SaaS revoked',f"UPDATE organization_subscriptions SET status='EXPIRED' WHERE id={SUB};",f"UPDATE organization_subscriptions SET status='ACTIVE' WHERE id={SUB};")
   test('onfarm closed',f"(public.rpc_programar_os_v1({O},'onfarm','2026-10-20')->>'success')='false'")
   test('explicit date required',f"(public.rpc_programar_os_v1({O},'manual',NULL)->>'success')='false'")
+  for label,change,expr in [
+   ('responsible NULL only',f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};",f"({call}->>'success')='false'"),
+   ('wrong tenant denied',f"UPDATE profiles SET organization_id={B} WHERE user_id={U};",None),
+   ('open OS never autoapproved',f"ALTER TABLE ordens_servico DISABLE TRIGGER ALL; UPDATE ordens_servico SET status='aberta' WHERE id={O}; ALTER TABLE ordens_servico ENABLE TRIGGER ALL;",f"({call}->>'success')='false' AND (SELECT status FROM ordens_servico WHERE id={O})='aberta'"),
+   ('foreign caller missing row same denial','',None),
+  ]:
+   invocation=call if label!='foreign caller missing row same denial' else f"public.rpc_programar_os_v1({q(99)},'manual','2026-10-20')"
+   code=f"IF ({expr}) IS NOT TRUE THEN RAISE EXCEPTION 'BAD'; END IF;" if expr else f"BEGIN PERFORM {invocation}; RAISE EXCEPTION 'BAD'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;"
+   run(actor+'BEGIN;'+change+f'DO $$BEGIN {code} END$$;ROLLBACK;');results.append(label)
   test('manual approved programs',f"({call}->>'success')='true'")
   test('actual downstream no lot or extra child',f"(SELECT count(*) FROM programacao_producao)=1 AND NOT EXISTS(SELECT 1 FROM lotes) AND (SELECT volume_total_ml FROM ordens_servico WHERE id={O})=100 AND (SELECT volume_necessario FROM programacao_producao WHERE id={PP})=100")
   test('actual MV refresh reflects programmed',f"EXISTS(SELECT 1 FROM mv_esteira_laboratorio WHERE os_id={O} AND status_os='programada' AND data_programada='2026-10-20')")
@@ -112,13 +122,21 @@ def main():
    assert run(f"SELECT status FROM ordens_servico WHERE id={O};").stdout.strip()=='aprovada'
    results.append('wait then '+name+' revocation real STABLE no write')
   # Immediate FK insertion waits behind parent row UPDATE; no global link/lot SHARE.
-  for table,insert in [('lot',f"INSERT INTO lotes(id,codigo_lote,produto_id,programacao_id,status,volume_produzido,data_producao) VALUES({q(92)},'LOCAL-LOT',{P},{PP},'em_producao',100,current_date);")]:
+  for table,insert in [('link',f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(91)},{O},{q(82)},{q(83)},{q(84)});"),('lot',f"INSERT INTO lotes(id,codigo_lote,produto_id,programacao_id,status,volume_produzido,data_producao) VALUES({q(92)},'LOCAL-LOT',{P},{PP},'em_producao',100,current_date);")]:
    reset();parent='ordens_servico' if table=='link' else 'programacao_producao';id=O if table=='link' else PP
    holder=start(f"SET application_name='holder';BEGIN;SELECT id FROM {parent} WHERE id={id} FOR UPDATE;SELECT pg_sleep(1);ROLLBACK;");wait('holder',"wait_event='PgSleep'")
    writer=start("SET application_name='writer';"+insert);wait('writer',"wait_event_type='Lock'")
    holder.communicate(timeout=10);out=writer.communicate(timeout=10);assert writer.returncode==0,out
    results.append('real immediate FK '+table+' insertion fenced by parent')
-  report={'hosted_writes':False,'auth_transport':'synthetic UID/JWT; no authenticated hosted request','schema':'all public captured columns/types + captured PK/UNIQUE/CHECK/FKs; all 23 target triggers; real refresh view chain; not every unrelated trigger/policy','passed':results,'candidate_md5':hash}
+  reset()
+  holder=start("SET application_name='mvholder';BEGIN;LOCK TABLE mv_esteira_laboratorio IN ACCESS EXCLUSIVE MODE;SELECT pg_sleep(4);ROLLBACK;")
+  wait('mvholder',"wait_event='PgSleep'")
+  denied=run(actor+'SELECT '+call+';',False)
+  holder.communicate(timeout=10)
+  assert denied.returncode and 'lock timeout' in denied.stderr,denied.stderr
+  assert run(f"SELECT status FROM ordens_servico WHERE id={O}; SELECT count(*) FROM laboratorio_esteira_eventos;").stdout.strip()=='aprovada\n0'
+  results.append('real global MV contention timeout rolls back whole operation')
+  report={'hosted_writes':False,'auth_transport':'synthetic UID/JWT; no authenticated hosted request','schema':'all public captured columns/types, all PK/UNIQUE/FKs and CHECKs of target/auth/SaaS/reference tables; all 23 target triggers; real refresh view chain; not every unrelated trigger/policy','passed':results,'candidate_md5':hash}
   (H/'real-test-results.json').write_text(json.dumps(report,indent=2)+'\n')
   print(json.dumps(report,indent=2))
  finally:
