@@ -27,9 +27,11 @@ interface Props {
   os: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Existing list reader refresh; called only after a confirmed, still-current write. */
+  onChanged?: () => void;
 }
 
-export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
+export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
   const { roles = [] } = useAuth();
   const access = useStorageAccessScope(JSON.stringify(["os-approval", os?.id, os?.origem, open]));
   const pending = useRef(false);
@@ -37,6 +39,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
   const [approvedId, setApprovedId] = useState<string | null>(null);
   const [programmedId, setProgrammedId] = useState<string | null>(null);
   const [programDate, setProgramDate] = useState("");
+  const [traceRefresh, setTraceRefresh] = useState(0);
   const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
     ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
   useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); }, [os?.id, open, access.scope]);
@@ -66,6 +69,8 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
       setProgrammedId(id);
       setProgramDate("");
       toast.success("OS programada. Fabricação não iniciada.");
+      setTraceRefresh((value) => value + 1);
+      onChanged?.();
     } catch {
       if (current()) toast.error("Programação não confirmada. Consulte a OS antes de tentar novamente.");
     } finally {
@@ -96,6 +101,8 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
       }
       setApprovedId(id);
       toast.success("OS aprovada.");
+      setTraceRefresh((value) => value + 1);
+      onChanged?.();
     } catch {
       if (current()) toast.error("Não foi possível confirmar a aprovação. Consulte a OS antes de tentar novamente.");
     } finally {
@@ -181,7 +188,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 py-4">
               <TabsContent value="rastreabilidade" className="mt-0 h-full">
-                <RastreabilidadeProducaoTab osId={os.id} osTipo={os.origem} />
+                <RastreabilidadeProducaoTab osId={os.id} osTipo={os.origem} numeroOS={os.numero_os} refreshKey={traceRefresh} />
               </TabsContent>
             </div>
           </Tabs>

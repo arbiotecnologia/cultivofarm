@@ -1,0 +1,14 @@
+baseline 95fdfc8b; rollback = restaurar bytes de rollback/*.review e remover src/test/ordens-servico/trace.test.tsx
+de47586a8cb15a35b549ac407768257420764d776239b02e1c2dbb3f4e08664b  scripts/os-detail-refresh-trace/rollback/OSDetalhesDialog.tsx.review
+bf21df73f8f4ab5e25d928990d50c14c8f40a5b794205cf8a7aac988b0b5f5e6  scripts/os-detail-refresh-trace/rollback/OrdensServico.tsx.review
+432ee12770549fdc59846dfe5211d2afbc105b70ea1d81a3bd34de37d1262689  scripts/os-detail-refresh-trace/rollback/RastreabilidadeProducaoTab.tsx.review
+fabf839a3926bc286d0997cac0a85c22d56c55a7035ccb62a28292bd7d858562  scripts/os-detail-refresh-trace/rollback/programming.test.tsx.review
+2c64037ad17ec479e1a6a828ef0e8c427cfdbf6f6e6d0a4d31a16e6056e7118a  scripts/os-detail-refresh-trace/rollback/validacao.test.ts.review
+4ddecb39d747a62eb309d2f5474c4c9ea14ada665ad098f0a6cf6fda9ec74112  src/components/ordens-servico/OSDetalhesDialog.tsx
+196f230d3d39298854367e664588b7a7b32a937a64a0fe3e2428a7eecbe17e8f  src/components/ordens-servico/RastreabilidadeProducaoTab.tsx
+07f2727ba7889cffc23fd4133d4361637207fa2da734e5a0c1741b5488f69b7d  src/pages/OrdensServico.tsx
+97e13775c62f29eac647a1577b946bd02634a4b815359350e327b6a72a1f89f2  src/test/ordens-servico/approval.test.tsx
+a668a742b1270525ff71b9dcd14764a51872e69c317fc291a9798e5ea9fb1033  src/test/ordens-servico/formProgression.test.tsx
+932f04c287a219053463a0550bd693288c0fa76ada4f604efed61e4b5ebf32b5  src/test/ordens-servico/programming.test.tsx
+9eea3117f71ec374f3f8f087f0c0543bdeeb7ab7e1d3666f53d13b7aafe6b726  src/test/ordens-servico/trace.test.tsx
+81fec80c10d0ee1f38910786a952d3c71c3f7bb18e89943a6cf64a2836127e44  src/test/ordens-servico/validacao.test.ts

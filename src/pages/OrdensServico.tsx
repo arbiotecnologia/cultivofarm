@@ -851,6 +851,7 @@ export default function OrdensServico() {
         os={selectedOS} 
         open={detailsOpen} 
         onOpenChange={setDetailsOpen} 
+        onChanged={() => void fetchAll()}
       />
     </div>
     </>
