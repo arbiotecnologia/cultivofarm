@@ -21,7 +21,7 @@ function json(body: unknown, status = 200) {
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -144,7 +144,9 @@ async function renderPdf(termo: Record<string, any>): Promise<Uint8Array> {
   return await pdf.save();
 }
 
-type Sdk = ReturnType<typeof createClient>;
+// Cliente sem tipos gerados de banco (mesmo padrao das demais Edges).
+// deno-lint-ignore no-explicit-any
+type Sdk = any;
 type Vigente = { id: string; entrega_id: string; versao: number; pdf_path: string; pdf_hash: string };
 
 /**
