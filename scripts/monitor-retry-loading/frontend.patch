@@ -1,5 +1,5 @@
 diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
-index c6064b77..3ec0f728 100644
+index c6064b77..844c3691 100644
 --- a/src/hooks/useAuth.tsx
 +++ b/src/hooks/useAuth.tsx
 @@ -18,6 +18,11 @@ import {
@@ -27,7 +27,7 @@ index c6064b77..3ec0f728 100644
    const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
    const takeSafeOSDraft = () => {
      const receipt = renewalRef.current;
-@@ -147,9 +158,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -147,18 +158,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      setPrimaryRole(null);
    };
  
@@ -47,12 +47,19 @@ index c6064b77..3ec0f728 100644
 +  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0): Promise<void> => {
      const gen = generation ?? generationRef.current;
 -    const isCurrent = () => mountedRef.current && gen === generationRef.current;
+-    try {
 +    const seq = ++loaderSeqRef.current;
 +    const startedAt = performance.now();
 +    let timedOut = false;
 +    // Watchdog: a hung transport ends in an explicit, recoverable error. The
 +    // loader is retired first, so a late answer is never adopted.
++    // The returned promise ALWAYS settles by the deadline (owned-loader
++    // contract): awaiting callers such as Retry release their single-flight
++    // even when the transport never answers.
++    let settle!: () => void;
++    const settled = new Promise<void>(resolve => { settle = resolve; });
 +    const watchdog = setTimeout(() => {
++      settle();
 +      if (!mountedRef.current || seq !== loaderSeqRef.current) return;
 +      timedOut = true;
 +      loaderSeqRef.current++;
@@ -69,10 +76,10 @@ index c6064b77..3ec0f728 100644
 +      loadDiagnostic("load_restart", startedAt);
 +      void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
 +    };
-     try {
++    const body = (async () => { try {
        const { data: profileData, error: profileError } = await supabase
          .from("profiles")
-@@ -157,8 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+         .select("*")
          .eq("user_id", userId)
          .maybeSingle();
  
@@ -82,7 +89,7 @@ index c6064b77..3ec0f728 100644
  
        const profile = profileData as Profile | null;
        
-@@ -190,13 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -190,13 +240,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          .select("role")
          .eq("user_id", userId);
  
@@ -98,7 +105,7 @@ index c6064b77..3ec0f728 100644
        const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
        const primary = pickPrimaryRole(userRoles);
  
-@@ -222,14 +266,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -222,15 +272,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
        setLoading(false);
      } catch (err: unknown) {
        console.error("Erro ao carregar perfil/função:", err);
@@ -111,13 +118,18 @@ index c6064b77..3ec0f728 100644
 -      clearIdentityState();
 -      setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
 -      setLoading(false);
+-    }
 +      failLoad();
 +    } finally {
 +      clearTimeout(watchdog);
-     }
++      settle();
++    } })();
++    // Late body completions after the deadline stay fenced by isCurrent().
++    return Promise.race([body, settled]);
    };
  
-@@ -261,13 +303,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   const refresh = async () => {
+@@ -261,13 +312,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
      // como macrotask separada.
      const scheduleLoad = (userId: string) => {
@@ -137,7 +149,7 @@ index c6064b77..3ec0f728 100644
        }, 0);
      };
  
-@@ -281,6 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -281,6 +335,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          setUser(session?.user ?? null);
  
          const nextUserId = session?.user?.id ?? null;
@@ -145,7 +157,7 @@ index c6064b77..3ec0f728 100644
          const identityChanged = !!(lastUserId && lastUserId !== nextUserId);
          const authorizationChanged = event === "TOKEN_REFRESHED" || event === "USER_UPDATED";
          if (identityChanged || authorizationChanged || !nextUserId) {
-@@ -316,6 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -316,6 +371,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  
          } else {
            generationRef.current += 1;
@@ -153,7 +165,7 @@ index c6064b77..3ec0f728 100644
            if (timerRef.current) {
              clearTimeout(timerRef.current);
              timerRef.current = null;
-@@ -343,6 +390,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -343,6 +399,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
            setSession(initialSession);
            setUser(initialSession.user);
            lastUserId = initialSession.user.id;
@@ -161,7 +173,7 @@ index c6064b77..3ec0f728 100644
            if (loadedUserIdRef.current !== initialSession.user.id) {
              scheduleLoad(initialSession.user.id);
            }
-@@ -368,6 +416,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -368,6 +425,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
        effectCancelled = true;
        generationRef.current += 1;
        loadedUserIdRef.current = null;
@@ -170,7 +182,7 @@ index c6064b77..3ec0f728 100644
        if (timerRef.current) {
          clearTimeout(timerRef.current);
          timerRef.current = null;
-@@ -517,8 +567,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -517,8 +576,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
        // Reviewed scopes only: renew before the confirmed deadline using observed
        // RTT (no lease extension; late answers still fail closed).
        renewBeforeDeadline: environmentalContextOnly,
@@ -181,7 +193,7 @@ index c6064b77..3ec0f728 100644
        // Preserve published B2B confirmation refresh. Producer/financial renew
        // the lease without remount on identical observed context; real changes,
        // explicit revalidation, expiry and identity still retire the view.
-@@ -601,6 +651,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -601,6 +660,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      // entram via authzMonitorGateRef — refresh() não recria o monitor.
    }, [initializedPrincipal, principalScope, queryClient]);
  
@@ -197,7 +209,7 @@ index c6064b77..3ec0f728 100644
    // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
    // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
    // readiness — evita flash de conteúdo sensível antes de saber se o perfil é
-@@ -635,7 +694,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -635,7 +703,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      // and epoch-keyed content (Blobs revoked on unmount) are retired.
      renewalRef.current = null;
      safeDraftRef.current = null;
@@ -207,7 +219,7 @@ index c6064b77..3ec0f728 100644
      void queryClient.cancelQueries();
      queryClient.clear();
      clearActivePortalContext();
-@@ -643,7 +703,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -643,7 +712,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      setAuthzEpoch((e) => e + 1);
      const cachedRoles = [...roles].sort();
      const cachedOrg = profile?.organization_id ?? null;
@@ -221,7 +233,7 @@ index c6064b77..3ec0f728 100644
      const run = (async () => {
        try {
          // Fresh observation only decides whether re-resolution is needed; it
-@@ -652,32 +717,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -652,32 +726,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          let fresh: string[] | null = null;
          let freshOrg: unknown = null;
          let active = false;
@@ -267,9 +279,9 @@ index c6064b77..3ec0f728 100644
 -        await fetchProfileAndRole(uid, gen);
 -        if (!isCurrent()) return;
 -        authzMonitorRef.current?.revalidate();
-+        // Not awaited: `loading` keeps readiness closed and the loader owns its
-+        // own deadline, so a hung transport can never pin Retry's single-flight.
-+        void fetchProfileAndRole(uid, generationRef.current);
++        // Awaited: the owned loader always settles by its deadline, so the
++        // single-flight is released in finally even if the transport hangs.
++        await fetchProfileAndRole(uid, generationRef.current);
        } finally {
          retryInFlightRef.current = null;
          if (mountedRef.current) setRetryPending(false);
