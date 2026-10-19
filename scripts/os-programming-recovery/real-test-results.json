@@ -16,6 +16,8 @@
     "actual MV refresh reflects programmed",
     "same date replay exactly one event",
     "different date denied",
+    "supplied baseline pg_get_functiondef a42d6 verified before assembly",
+    "supplied real STABLE entitlements definition fingerprint matches capture",
     "every supplemental catalog predicate compiles and evaluates",
     "intact preflight-readonly.sql rejects incomplete clone without definition/ACL changes",
     "intact candidate.sql.review rejects incomplete clone without definition/ACL changes",

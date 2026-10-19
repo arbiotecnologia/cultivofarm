@@ -84,16 +84,17 @@
     "src/pages/OrdensServico.tsx": "bf21df73f8f4ab5e25d928990d50c14c8f40a5b794205cf8a7aac988b0b5f5e6"
   },
   "artifacts": {
-    "README.md": "2a9920a53164c08b811e76a1f58f49d9d04f753ec2ebdfce1e27bba994d1410a",
+    "README.md": "efaefd678863cb7ee7d9e0cee620c745bf57397a0d044a4700c28d3f0b019a45",
     "assemble.py": "9c7a5b81be224fcf83d441eea2dad67a4f9eca93df5268f134816dba49a7cc40",
     "candidate.sql.review": "1bd5e0ad6b7180ecba154f63f47f598725fe0c2e97fa5dc7640b3eaed9a36dfa",
     "catalog.json": "5ee08483a4cb51101cb02f19997059e734ff61cfc91ad9716c1ad1a9cd886877",
     "delta.patch": "795dbedd2bcc2b3914493fc44188c1816f53030acc2b597ebe069900f16dff76",
+    "independent-receipt-1528.json": "745a05a7982fb526238ac2ae4c8c96cb17ef7411ed80fd1ce0dc647896caaaaf",
     "post-hashes.json": "6f48b6b757e697affdd977227dc6a051d9998d5526e1d6117beed41f0b309d1d",
     "postflight-readonly.sql": "93896ce4204719a084373c6e34bbbf0987217f79f13955e4ea44a442448c8d33",
     "preflight-readonly.sql": "71c06a218f628a70baf9e57e726f9788fd90658eb8cfb6c439e1f36ec8a11ace",
     "protected.json": "3cd7baf86e2bd9d54e3d451500d70d650f25b763b6fa739fe66dfc72392b2016",
-    "real-test-results.json": "d0f49489a9cf14b64c1c2af1f971a634f40035efdc0133b518612092a34c0a38",
+    "real-test-results.json": "36bdb8c6735989b85be0e1d826ec43eda8cd1d53cbc22f2bb2bea993d28ede59",
     "refresh-catalog.json": "f14bd1e0dcc140b5fc8dc5c696c2883599106941c8ef89832065964a1f921190",
     "rollback/OSDetalhesDialog.tsx": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
     "rollback/rpc.sql.review": "7d8579126ee6378ea166a1d8b6997fbd2df0dc01d3d87631eaff35f2d91089f3",
@@ -102,7 +103,7 @@
     "schema-catalog.json": "a4b5c0e791dcff10b2a041c6a9fb6eb88531d1bb9ea4a0270454954f367afab9",
     "stage.py": "491c8923dbd0e8cf688161604a6f1e5fe7a9288dc1e234b56f72b0e108e19e92",
     "test-local.py": "8078ca46405afc1e0847a2e49492f9762a899e8700b1e8d845aa58358763277c",
-    "test-real-local.py": "40302158c715914390036e148ebde28c07e504fd84d53f948d499900abf29c2e",
+    "test-real-local.py": "95570257fd16fe9c244383bfe5bac9d85d4ad21d40a397f7210068eaa7fe4fb8",
     "test_stage.py": "a97dbc424bc6c92c7097b46f5e7e9927893be878ce7452a7ed9c7faf44ded9f7",
     "transitive-catalog.json": "85cd5a10160fd4609ddacc26f72c8f666fed62d1a7186e49d099b96e716a486f"
   }
