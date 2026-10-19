@@ -330,4 +330,5 @@
 - [x] Receivables: typecheck app/node dos 3 candidatos .review sobre cópia temporária EXIT 0; nada aplicado/publicado.
 - [x] Monitor: Retry com leitura fresca, single-flight/fences, trava de sessão monitorada contra gestor-only/0/desconhecidos/superset; pacote scripts/monitor-retry-reresolve/ com rollback byte-exato (d767eb23). 10/10 novos, config 979/981 (2 preexistentes).
 - [ ] Testes do Edge generate-financial-report (8) ainda esperam assinatura v89; runtime já é v90 — atualizar expectativas em revisão própria.
-- [ ] Homologação real: retirada só gestor e só consultor; anexos; renovação natural com draft integral (área zera por contrato).
+- [x] Achado 17:00 (timeout rtt 7740 após renovação): probe reduzida de 4+N para 2 idas sequenciais, sem lease/piso/grants novos; 12 testes de latência/negativos.
+- [ ] Homologação real: estabilidade pós-renovação; retirada só gestor e só consultor; anexos; draft integral não coberto (área zera por contrato).
