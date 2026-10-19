@@ -354,5 +354,5 @@
 - [ ] Homologação real B sem reload: retirar consultor→gestor; retirar gestor→consultor; estabilidade pós-renovação.
 
 - [ ] Comprovantes de entrega via abridor autenticado (pacote scripts/delivery-receipt-attachments) — aguarda revisão independente e homologação real.
-- [ ] Termo de entrega PDF binário autenticado (pacote scripts/termo-pdf-download, baseline 6493e1, NÃO aplicado) — aguarda revisão independente, captura do hash LIVE da Edge, implantação Edge→frontend e homologação real A/B.
-- [ ] Defeito RLS entrega_termos_select: staff sem predicado de tenant (scripts/termo-pdf-download/RLS-DEFECT-entrega_termos.md) — migração mínima RESTRICTIVE posterior, aguarda autorização/revisão; Edge não fecha a exposição REST.
+- [ ] Termo de entrega PDF binário autenticado (pacote scripts/termo-pdf-download, baseline 6493e1, NÃO aplicado; rev.2 com prazo/stream reais) — aguarda revisão independente, implantação Edge→frontend e homologação real A/B.
+- [ ] Isolamento entrega_termos REST/RPC (scripts/entrega-termos-tenant, candidata SQL NÃO aplicada, local 61/61) — aguarda revisão independente, preflight hosted e autorização; inclui registrar_pdf/snapshot/cobertura service-only e REVOKE TRUNCATE/REFERENCES/TRIGGER/MAINTAIN.
