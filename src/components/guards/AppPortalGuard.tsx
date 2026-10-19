@@ -22,7 +22,7 @@ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
  * A autorização NUNCA depende de `primaryRole` nem de `isMobileProfile`.
  */
 export function AppPortalGuard({ children }: { children?: ReactNode }) {
-  const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false } = useAuth();
+  const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
   const location = useLocation();
   const { data, isLoading, isError } = useAvailableContexts();
 
@@ -31,7 +31,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const isMonitoredManagerConsultant = MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id);
-  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant;
+  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant || authzResidualScope;
   const denied =
     !loading &&
     (!monitoredTechnical || authzReady) &&

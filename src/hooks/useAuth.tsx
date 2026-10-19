@@ -73,6 +73,8 @@ interface AuthContextType {
   revalidateAuthz: () => void;
   /** Monitored session re-resolved into an unmonitored scope: stays paused until fresh login. */
   authzLatchBlocked: boolean;
+  /** Gestor or consultor left from a monitored pair in this session: monitored by the same probe. */
+  authzResidualScope: boolean;
   setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
   takeSafeOSDraft: () => SafeOSRenewalDraft | null;
 }
@@ -94,6 +96,7 @@ const AuthContext = createContext<AuthContextType>({
   checkAuthzAccess: () => true,
   revalidateAuthz: () => {},
   authzLatchBlocked: false,
+  authzResidualScope: false,
   setSafeOSDraft: () => {},
   takeSafeOSDraft: () => null,
 });
@@ -126,7 +129,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Monitored-session latch: once this session observed a monitored scope,
   // a later re-resolution into an unmonitored/unknown/empty scope stays
   // paused until a fresh login (no bypass via gestor-only).
-  const monitoredLatchRef = useRef<{ userId: string } | null>(null);
+  const monitoredLatchRef = useRef<{ userId: string; paired: boolean } | null>(null);
+  // Retry closes readiness synchronously, before any await.
+  const [retryPending, setRetryPending] = useState(false);
   const retryInFlightRef = useRef<Promise<void> | null>(null);
   const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
   const takeSafeOSDraft = () => {
@@ -423,11 +428,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const managerConsultantContextOnly = b2bContextOnly && MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED &&
     isManagerConsultantScope(roles, profile?.organization_id);
+  // Residual scope: same session/identity that was monitored as the gestor+
+  // consultor pair, now freshly resolved to exactly ONE of the pair's roles.
+  // Same provider/probe and guards; fresh logins keep the published behavior.
+  const residualLatch = monitoredLatchRef.current;
+  const residualRole: "gestor" | "consultor_tecnico" | null =
+    b2bContextOnly && MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && !!residualLatch?.paired &&
+    residualLatch.userId === user?.id && roles.length === 1 &&
+    (roles[0] === "gestor" || roles[0] === "consultor_tecnico") &&
+    typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id)
+      ? roles[0] as "gestor" | "consultor_tecnico" : null;
+  const residualContextOnly = residualRole !== null;
   // Reuse the reviewed environmental policy only for these monitored scopes.
   // This selects scheduling, never grants authority or changes probe contracts.
-  const environmentalContextOnly = managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly;
+  const environmentalContextOnly = managerConsultantContextOnly || residualContextOnly || financialContextOnly || companyAdminContextOnly;
   const isExternalUser = b2bContextOnly
-    ? managerConsultantContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
     profile.senha_provisoria === false && !!profile.organization_id;
@@ -454,6 +470,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const monitor = createAuthzEpochMonitor({
       fetcher: async () => {
+        if (residualRole) return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", residualRole);
         if (managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
           return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", managerConsultantContextOnly ? MANAGER_CONSULTANT_ROLES : operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
         }
@@ -506,7 +523,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.
       // No claim of detecting an unobserved transient ABA between polls.
-      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly,
+      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly && !residualContextOnly,
       onStateChange: (next) => {
         if (next === "valid" && renewalRef.current) {
           const receipt = renewalRef.current;
@@ -555,9 +572,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     authzMonitorRef.current = monitor;
-    if (!monitoredLatchRef.current && user?.id) {
-      monitoredLatchRef.current = { userId: user.id };
-    }
+    if (user?.id && (!monitoredLatchRef.current || monitoredLatchRef.current.userId !== user.id)) {
+      monitoredLatchRef.current = { userId: user.id, paired: managerConsultantContextOnly };
+    } else if (monitoredLatchRef.current && managerConsultantContextOnly) monitoredLatchRef.current.paired = true;
     const onEnvironment = () => environmentalContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
     const onFocus = onEnvironment;
     const onVisibility = () => { if (document.visibilityState === "visible") onEnvironment(); };
@@ -595,13 +612,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    (!!user && !loading && !latchBlocked && (!isExternalUser ||
+    (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
       (principalReady && initializedPrincipal === principalScope && authzState === "valid" &&
         (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!latchBlocked && !isExternalUser) ||
-    (!loading && !latchBlocked && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
+    (!loading && !latchBlocked && !retryPending && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
   // Retry re-resolves profile/roles through the existing loader (fresh reads,
   // not cached roles), single-flight and generation-fenced. Same scope then
   // re-polls the same monitor; a different scope recreates or stays paused.
@@ -613,6 +630,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (retryInFlightRef.current) return;
+    setRetryPending(true);
+    authzMonitorRef.current?.expireNow("timeout");
     // Synchronous fence before any await: drafts, caches, portal selection
     // and epoch-keyed content (Blobs revoked on unmount) are retired.
     renewalRef.current = null;
@@ -662,6 +681,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authzMonitorRef.current?.revalidate();
       } finally {
         retryInFlightRef.current = null;
+        if (mountedRef.current) setRetryPending(false);
       }
     })();
     retryInFlightRef.current = run;
@@ -706,6 +726,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authzEpoch,
         authzState: latchBlocked && !loading ? "expired" : authzState,
         authzLatchBlocked: latchBlocked && !loading,
+        authzResidualScope: residualContextOnly,
         checkAuthzAccess,
         revalidateAuthz,
         setSafeOSDraft,

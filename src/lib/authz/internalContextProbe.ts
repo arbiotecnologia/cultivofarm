@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AuthzFingerprintResult } from "./authzEpochMonitor";
 
 export const MANAGER_CONSULTANT_ROLES = Object.freeze(["gestor", "consultor_tecnico"] as const);
-type InternalSingleRole = "financeiro" | "administrador" | "consultor_tecnico" | "operador_onfarm";
+// "gestor" single is only requested by the residual scope after a monitored pair.
+type InternalSingleRole = "financeiro" | "administrador" | "consultor_tecnico" | "operador_onfarm" | "gestor";
 export type InternalExpectedRoles = InternalSingleRole | typeof MANAGER_CONSULTANT_ROLES;
 
 /** Scope selection only, never server authority; duplicates/subsets/supersets fail. */
@@ -17,7 +18,7 @@ export async function internalContextProbe(userId: string, organizationId: strin
   // Copy before any await; caller mutation cannot change the expected authority.
   const expected = typeof expectedRole === "string" ? [expectedRole] : Array.isArray(expectedRole) ? [...expectedRole] : [];
   const allowed = expected.length === 1
-    ? ["financeiro", "administrador", "consultor_tecnico", "operador_onfarm"].includes(expected[0])
+    ? ["financeiro", "administrador", "consultor_tecnico", "operador_onfarm", "gestor"].includes(expected[0])
     : isManagerConsultantScope(expected, organizationId);
   const sortedExpected = Object.freeze([...expected].sort());
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId) ||
@@ -53,7 +54,7 @@ export async function internalContextProbe(userId: string, organizationId: strin
     rpc.call(supabase, "h15_actor_organization"),
     readRoles(),
     ...sortedExpected.map(role =>
-      supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole | "gestor" }) as unknown as Promise<{ data: unknown; error: unknown }>),
+      supabase.rpc("has_role", { _user_id: userId, _role: role as InternalSingleRole }) as unknown as Promise<{ data: unknown; error: unknown }>),
   ]);
   if (finalResult.error || rolesAgain.error || roleChecks.some(r => r.error)) throw new Error("internal_probe_unavailable");
   if (roleChecks.some(r => r.data !== true) || !exactSet(rolesAgain.data) || finalResult.data !== organizationId) return deny();
