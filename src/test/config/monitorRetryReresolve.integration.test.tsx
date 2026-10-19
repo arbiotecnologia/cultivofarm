@@ -7,12 +7,13 @@ const s = vi.hoisted(() => ({
   org: '00000000-0000-4000-8000-000000000002' as string | null,
   h15Org: undefined as string | undefined,
   roles: ['gestor', 'consultor_tecnico'] as string[],
-  offline: false, rtt: 0, roleReads: 0,
+  offline: false, rtt: 0, roleReads: 0, profileReads: 0,
   hold: undefined as undefined | Promise<void>,
 }));
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 function chain(table: string) {
   const run = async () => {
+    if (table === 'profiles') s.profileReads++;
     if (s.rtt) await wait(s.rtt);
     if (s.hold && table === 'user_roles') await s.hold;
     if (s.offline) return { data: null, error: { message: 'offline' } };
@@ -102,16 +103,17 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     await mount();
     await changeRolesAndPoll(['gestor']);
     s.roles = ['gestor', 'consultor_tecnico']; s.rtt = 3000;
-    const before = s.roleReads;
+    const before = s.profileReads;
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+      const button = screen.getByRole('button', { name: 'Tentar novamente' });
+      fireEvent.click(button); fireEvent.click(button);
       paused();
       await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+      expect(s.profileReads - before).toBe(1); // single-flight loader
       paused();
       await act(async () => { await vi.advanceTimersByTimeAsync(20000); });
     } finally { vi.useRealTimers(); }
-    expect(s.roleReads - before).toBe(1);
     expect(screen.getByText(/Conteúdo sensível/)).toBeTruthy();
   });
   it('race: role removed again while Retry is in flight stays paused', async () => {
