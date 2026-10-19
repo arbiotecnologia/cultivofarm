@@ -15,7 +15,7 @@ SELECT p.oid::regprocedure AS signature,p.proowner::regrole,p.proacl,p.proconfig
 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 WHERE n.nspname='public' AND p.proname IN ('cancel_financial_receipt',
  'financial_storage_object_permitted','h15_actor_organization','is_financial_staff','has_role')
-ORDER BY signature::text;
+ORDER BY p.oid::regprocedure::text;
 SELECT t.tgrelid::regclass,t.tgname,t.tgenabled,pg_get_triggerdef(t.oid),
  md5(pg_get_triggerdef(t.oid)),t.tgfoid::regprocedure,md5(pg_get_functiondef(t.tgfoid))
 FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid='public.financial_receipts'::regclass

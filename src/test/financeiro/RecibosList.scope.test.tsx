@@ -127,6 +127,7 @@ describe("receipt PDFs use real authenticated opener, never remote URL", () => {
   });
   it("list refresh aborts an in-flight download when the receipt snapshot changes", async () => {
     const late = deferred(); fake.download.mockReturnValue(late.promise);
+    fake.list.mockResolvedValueOnce(response()).mockResolvedValue(response({ status: "CANCELED" }));
     const ui = setup(); fireEvent.click(await ui.findByRole("button", { name: "Preparar PDF" }));
     await submit(ui); await waitFor(() => expect(fake.list).toHaveBeenCalledTimes(2));
     expect(fake.download.mock.calls[0][2].aborted).toBe(true);
