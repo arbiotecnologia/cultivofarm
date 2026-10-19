@@ -749,7 +749,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadedUserIdRef.current = uid;
         retryRevalidateRef.current = true;
         setLoading(true);
-        await fetchProfileAndRole(uid, generationRef.current);
+        // Not awaited: `loading` keeps readiness closed and the loader owns its
+        // own deadline, so a hung transport can never pin Retry's single-flight.
+        void fetchProfileAndRole(uid, generationRef.current);
       } finally {
         retryInFlightRef.current = null;
         if (mountedRef.current) setRetryPending(false);

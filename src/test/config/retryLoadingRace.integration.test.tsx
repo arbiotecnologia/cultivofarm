@@ -7,10 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
   roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
-  hangNext: '' as string, h15: 0, holdNext: '' as string, release: undefined as undefined | (() => void),
+  hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, release: undefined as undefined | (() => void),
 }));
 const later = <T,>(v: () => T, tag: string) => {
-  if (s.hangNext === tag) { s.hangNext = ''; return new Promise<T>(() => {}); }
+  if (s.hangNext === tag) { if (s.hangSkip > 0) s.hangSkip--; else { s.hangNext = ''; return new Promise<T>(() => {}); } }
   if (s.holdNext === tag) { s.holdNext = ''; return new Promise<T>(r => { s.release = () => r(v()); }); }
   return s.lat ? new Promise<T>(r => setTimeout(() => r(v()), s.lat)) : Promise.resolve(v());
 };
@@ -93,7 +93,7 @@ async function expectConsultorRecovered() {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
+  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
   vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
@@ -177,6 +177,34 @@ describe('Retry / renewal generation conflicts never leave an endless loading (5
     retry(); await tick(8000);
     expect(loadingText()).toBeNull();
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+  });
+});
+
+describe('never-resolving transport (independent evidence 18:14): deadlines and single-flight release', () => {
+  it('TOKEN_REFRESHED with profiles never resolving: after 60 s no spinner, readiness closed, recoverable', async () => {
+    setup(); await tick(3000);
+    s.hangNext = 'profiles'; tokenRefreshed(); await tick(60000);
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    expect(screen.getByText(/Falha ao carregar dados do usuário/)).toBeTruthy();
+  });
+  it('Retry fresh read never resolving: after 60 s transport returns and a new Retry recovers', async () => {
+    await pairThenLoseGestor();
+    s.hangNext = 'profiles'; retry(); await tick(60000);
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    retry(); await tick(8000);
+    await expectConsultorRecovered();
+  });
+  it('Retry loader never resolving: deadline ends loading with explicit error, no old authority', async () => {
+    await pairThenLoseGestor();
+    s.hangNext = 'profiles'; s.hangSkip = 1; // Retry fresh read passes, its loader's profile read hangs
+    retry(); await tick(60000);
+    expect(s.hangNext).toBe('');
+    expect(loadingText()).toBeNull();
+    expect(screen.queryByText('Contas a receber')).toBeNull();
+    expect(screen.getByText(/Falha ao carregar dados do usuário/)).toBeTruthy();
   });
 });
 

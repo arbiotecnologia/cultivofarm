@@ -1,5 +1,5 @@
 diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
-index c6064b77..629c20ae 100644
+index c6064b77..3ec0f728 100644
 --- a/src/hooks/useAuth.tsx
 +++ b/src/hooks/useAuth.tsx
 @@ -18,6 +18,11 @@ import {
@@ -221,7 +221,7 @@ index c6064b77..629c20ae 100644
      const run = (async () => {
        try {
          // Fresh observation only decides whether re-resolution is needed; it
-@@ -652,32 +717,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+@@ -652,32 +717,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          let fresh: string[] | null = null;
          let freshOrg: unknown = null;
          let active = false;
@@ -267,7 +267,9 @@ index c6064b77..629c20ae 100644
 -        await fetchProfileAndRole(uid, gen);
 -        if (!isCurrent()) return;
 -        authzMonitorRef.current?.revalidate();
-+        await fetchProfileAndRole(uid, generationRef.current);
++        // Not awaited: `loading` keeps readiness closed and the loader owns its
++        // own deadline, so a hung transport can never pin Retry's single-flight.
++        void fetchProfileAndRole(uid, generationRef.current);
        } finally {
          retryInFlightRef.current = null;
          if (mountedRef.current) setRetryPending(false);
