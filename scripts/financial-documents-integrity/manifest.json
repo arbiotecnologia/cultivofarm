@@ -135,6 +135,6 @@
     "postflight.sql.review": "f466f1c9f2c6536dd0b7f2240b44f1fa924b387385eb4b5d66da62831a5eb312",
     "preflight.sql.review": "7e468c3c3b36b07690cccc5408678dd1d57fe52a9c4fb19c518de21804ebac9e",
     "rollback.sql.review": "6c9cc9496dcedf3e817353e96506a8a734f1263016aa97cd79a05f9fb3c2f649",
-    "test-local.py": "529a85beb60672786a9f5e6a1afb72930ddb45e21aba06bccf961dd2c288322d"
+    "test-local.py": "c6c118fe2077f392c6cf5c6f211533de411a2acc73f01268d22a0ad5e2e5475f"
   }
 }

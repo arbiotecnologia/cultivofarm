@@ -155,7 +155,7 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
         sql += "CREATE TRIGGER zz_financial_document_integrity BEFORE INSERT OR UPDATE ON public.financial_documents FOR EACH ROW EXECUTE FUNCTION public.guard_financial_document_integrity();"
         sql += actor(UID_A)+ok('NULL legacy invisible',"NOT EXISTS(SELECT 1 FROM public.financial_documents WHERE storage_path LIKE '%null-legacy.txt')")
         sql += err('canonical softdelete NULL legacy denied',"SELECT public.rpc_financial_document_soft_delete((SELECT id FROM public.financial_documents WHERE storage_path LIKE '%null-legacy.txt'),'local')",'22023')
-        sql += "RESET ROLE; SELECT id AS null_id FROM public.financial_documents WHERE storage_path LIKE '%null-legacy.txt'\n\\gset\n"+actor(UID_A)+"SELECT pg_temp.err('explicit NULL legacy id denied','SELECT public.rpc_financial_document_soft_delete('''||:'null_id'||''',''local'')','P0002'); RESET ROLE;"
+        sql += "RESET ROLE; SELECT id AS null_id FROM public.financial_documents WHERE storage_path LIKE '%null-legacy.txt'\n\\gset\n"+actor(UID_A)+"SELECT pg_temp.err('explicit NULL legacy id denied','SELECT public.rpc_financial_document_soft_delete('''||:'null_id'||''',''local'')','42501'); RESET ROLE;"
         run(sql=sql)
         # Rollback refuses exact post drift; no collateral change.
         run(sql="ALTER FUNCTION public.guard_financial_document_integrity() SET search_path='public';")
