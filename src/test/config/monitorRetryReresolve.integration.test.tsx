@@ -72,6 +72,7 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     expect(s.roleReads).toBeGreaterThan(before); // fresh read, not cached roles
     paused();
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    expect(screen.getByText(/Suas permissões foram alteradas/)).toBeTruthy();
   });
   it.each([[['consultor_tecnico']], [['gestor', 'consultor_tecnico', 'financeiro']], [[]], [['papel_desconhecido']]])('roles %j remain paused', async (next) => {
     await mount();
