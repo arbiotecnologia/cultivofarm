@@ -136,4 +136,19 @@ describe("DocumentosPanel existing upload/metadata/soft-delete flow with real sc
     const ui = setup(); send(ui, "../bad.txt"); await waitFor(() => expect(fake.error).toHaveBeenCalled());
     expect(fake.upload).not.toHaveBeenCalled(); expect(fake.insert).not.toHaveBeenCalled(); noPublication(ui);
   });
+  it("tenant A→B→A cannot publish the first tenant response", async () => {
+    const late = deferred(); fake.upload.mockReturnValue(late.promise); const ui = setup(); send(ui);
+    await waitFor(() => expect(fake.upload).toHaveBeenCalled());
+    const original = fake.tenant; fake.tenant = "tenant-B"; ui.rerenderContext(); fake.tenant = original; ui.rerenderContext();
+    await act(async () => { late.resolve({ error: null }); await new Promise(r => setTimeout(r, 10)); });
+    expect(fake.insert).not.toHaveBeenCalled(); noPublication(ui);
+  });
+  it("lease crossing between mutation completion and onSuccess suppresses all publication", async () => {
+    const ui = setup(); let completed = false; let afterCompletionChecks = 0;
+    fake.check = () => !completed || ++afterCompletionChecks === 1;
+    fake.insert.mockImplementation(async () => { completed = true; return { error: null }; });
+    send(ui); await waitFor(() => expect(fake.insert).toHaveBeenCalled());
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+    expect(afterCompletionChecks).toBeGreaterThanOrEqual(2); noPublication(ui);
+  });
 });
