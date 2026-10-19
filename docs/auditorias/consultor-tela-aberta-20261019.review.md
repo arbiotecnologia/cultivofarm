@@ -45,3 +45,29 @@ Staging somente produz diretório de revisão externo vazio: `python3 stage.py c
 ## Gates pendentes
 
 Revisão independente, preflight integral no ref `swzpzcwiasxmjutrmvkm`, eventual ativação autorizada e login real consultor/revoke/restore aguardam o proprietário. Sem banco, DDL/DML, Edge deploy ou publicação pelo agente. Não comprova revogação de vínculos técnicos específicos, entitlements, snapshot atômico, ABA/transientes entre polls, contratos, idempotência global ou v6 global. URLs/bytes já emitidos continuam sujeitos aos limites anteriores.
+
+## Adendo — ativação limitada autorizada, 19/10 01:15 UTC
+
+Seções anteriores e manifest são provas **OFF pré-ativação**, preservadas sem rehash. Proprietário informou revisão independente da candidata terminal `d509430a94fa42bcef84a3504ce3535d3133f1dd`: diff dos cinco arquivos runtime correto, 76 hashes fonte/artefatos PASS, staging6/6 Windows sem adaptação e probes fontes reais/transporte fake 12 consultor + 12 admin + 9 financeiro PASS. Informou execução **integral** de `preflight-readonly.sql.review` no conector produção `swzpzcwiasxmjutrmvkm`, `isError=false`, guards marker/5 MD5/ACL/RLS PASS. São evidências fornecidas pelo auditor/proprietário, não nova execução pelo agente.
+
+Autorização aplicada: **somente** `CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = false` → `true`, mantendo byte a byte todo o restante do runtime/flags, inclusive comentários anteriores. Assertion real de `consultantGate.test.ts` agora exige true. Foundation/B2B/produtor/financeiro/admin seguem true, Blob false e global v6 fechado. Nenhuma alteração de monitor/probe/guard/anexos/contratos/banco/Edge.
+
+### Staging ativo isolado
+
+Novos `stage-active.py`, `test_stage_active.py` e `SHA256SUMS-active`; não substituem `stage.py`, `manifest.json`, `SHA256SUMS`, candidate/rollback OFF nem seus hashes.
+
+O script fixa o SHA256 original do manifest `ed49a8d6f7814edf98ac713d209f4c50ecf1c318701cbf3ef0d39069519c1bac`, verifica seus 25 artefatos e 51 fontes/protegidos. Só admite gate ativo exatamente derivado da troca única false→true e assertion ativa exatamente derivada da troca explícita; diferenças adicionais recusam saída antes de escrever.
+
+- `activation`: emite somente arquivo de gate ativo.
+- `deactivation`: emite somente gate OFF pré-ativação; nenhuma outra flag/teste/runtime muda. Depois de desativar, assertion ativa exige ajuste consciente pelo operador; script não mascara drift alterando testes.
+- `rollback`: emite bytes do rollback original (baseline anterior à candidata) e lista original dos dois testes novos para remoção manual. Não instala automaticamente.
+- Cada modo exige fontes ativas exatas e diretório externo vazio; após desativação ou evolução das fontes, recusa nova operação até revisão específica.
+- `stage.py` OFF original agora recusa fonte ativa: esperado, sem rehash para passar.
+
+### Validação e limites
+
+**5/5** testes staging ativo PASS: ativação/desativação byte-exatas/flags preservadas, rollback original, drift fonte/gate/assertion, drift manifest/artefatos, modos/destinos inválidos. **364/364** testes relevantes em 16 arquivos PASS (monitor/consultor/admin/financeiro/produtor/B2B/guards/gates/anexos/comprovante).
+
+Suíte completa não repetida: só flag/assertion e artefatos isolados; seis falhas históricas permanecem documentadas. Build automático **OK em `2026-10-19T01:16:25Z`**. Busca em `/tmp/observability` e scripts disponíveis não encontrou recibo independente de typecheck: **typecheck não certificado**, sem execução manual pois o harness gerencia essa validação; lint indisponível.
+
+Proprietário informou sessões reais consultor e admin B abertas, consultor ativo restaurado `00:56:57.928488Z`. Nenhum perfil/dado modificado neste turno. Testes fake não homologam login/revogação pós-ativação. Publicação pelo conector e homologação real dependem do proprietário; sem DDL/DML/Edge/publicação pelo agente. Não ampliar conclusões a vínculos específicos, snapshot/ABA, contratos, idempotência global ou global v6.

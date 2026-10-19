@@ -5,7 +5,9 @@
 - [x] Executar 56 testes consultor, 258 regressões monitor/gates e 106 anexos; suíte ampla tem mesmas 6 falhas da base (8101 vs 8045 PASS), sem falha nova observada.
 - [x] Entregar preflight read-only não executado, hashes fixos e staging/rollback6/6; relatório consultor-tela-aberta-20261019.review.md; sem banco/Edge/publicação.
 - [ ] Typecheck com recibo separado depende do harness; build automático OK, não presumir typecheck independente.
-- [ ] Revisão independente, ativação e homologação real consultor aguardam o proprietário.
+- [x] Auditor informou revisão d509430a/76hashes/staging6/6/probes12+12+9 e preflight integral canônico PASS; ativar somente consultor true, provas OFF intactas.
+- [x] Ativação: 364/364 regressões e staging-active5/5 PASS; demais runtime byte-exatos, sem repetir suíte ampla/banco/Edge/publicação.
+- [ ] Publicação conector e homologação real consultor aguardam o proprietário; sessões abertas não comprovam pós-ativação.
 
 ## 19/10 00:36 — administrador de empresa em tela aberta
 - [x] Ativar somente admin com bytes revisados 62ddc9bc; 275 testes + staging-active4/4 PASS, typecheck/build automático OK; provas false preservadas, sem publicação.
