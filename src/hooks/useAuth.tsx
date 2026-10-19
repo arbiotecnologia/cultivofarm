@@ -690,8 +690,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  const revalidateAuthz = () => {
-    cancelAutoRecovery();
+    // roles entram via isExternalUser (booleano estável); loading/profile
+    // entram via authzMonitorGateRef — refresh() não recria o monitor.
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
   }, [initializedPrincipal, principalScope, queryClient]);
 
@@ -726,6 +726,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // not cached roles), single-flight and generation-fenced. Same scope then
   // re-polls the same monitor; a different scope recreates or stays paused.
   const revalidateAuthz = () => {
+    cancelAutoRecovery();
     const uid = user?.id;
     const current = monitoredLatchRef.current;
     if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
