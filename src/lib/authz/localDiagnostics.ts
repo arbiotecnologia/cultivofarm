@@ -23,7 +23,9 @@ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
   if (records.length > 80) records.shift();
   // Only real allowlisted expiry events; telemetry remains local and cannot affect authority.
   if (sample.event === "expire") {
-    try { console.warn("cultivo-authz-expire", { ...record }); } catch { /* observer failure must not affect expiry */ }
+    try { console.warn("cultivo-authz-expire", JSON.stringify(record)); } catch { /* observer failure must not affect expiry */ }
+  } else if (sample.event === "auth_refresh" || sample.event === "auth_reconfirmed") {
+    try { console.info("cultivo-authz-renewal", JSON.stringify(record)); } catch { /* observer failure must not affect reconfirmation */ }
   }
 }
 export const readAuthzDiagnostics = (): AuthzDiagnostic[] => records.map(record => ({ ...record }));

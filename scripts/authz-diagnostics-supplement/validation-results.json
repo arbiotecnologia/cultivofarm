@@ -1,0 +1,12 @@
+{
+  "diagnostic_tests": 27,
+  "programming_and_authprovider_tests": 95,
+  "programming_disposable_pg_checks": 40,
+  "programming_candidate_md5": "e374f0ba1698b37523b890dc91682eaf",
+  "historical_package_unchanged": true,
+  "typecheck": "not manually executed; independent checker pending",
+  "browser_renewal_with_draft": "UNVERIFIED",
+  "hosted_pre_post": "UNVERIFIED",
+  "hosted_writes": false,
+  "published": false
+}
