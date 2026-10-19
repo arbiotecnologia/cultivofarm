@@ -132,16 +132,16 @@ export default function RecibosList() {
       try {
         if (!valid()) return;
         let q = supabase
-      .from("financial_receipts" as any)
-      .select("*, customer:customer_id(nome, razao_social), method:payment_method_id(name)")
-      .eq("organization_id", tenant)
-      .order("issued_at", { ascending: false })
-      .limit(500);
-    if (from) q = q.gte("payment_date", from);
-    if (to) q = q.lte("payment_date", to);
-    if (statusFilter) q = q.eq("status", statusFilter);
-    if (numberFilter) q = q.ilike("receipt_number", `%${numberFilter}%`);
-    if (customerFilter) q = q.eq("customer_id", customerFilter);
+          .from("financial_receipts" as any)
+          .select("*, customer:customer_id(nome, razao_social), method:payment_method_id(name)")
+          .eq("organization_id", tenant)
+          .order("issued_at", { ascending: false })
+          .limit(500);
+        if (from) q = q.gte("payment_date", from);
+        if (to) q = q.lte("payment_date", to);
+        if (statusFilter) q = q.eq("status", statusFilter);
+        if (numberFilter) q = q.ilike("receipt_number", `%${numberFilter}%`);
+        if (customerFilter) q = q.eq("customer_id", customerFilter);
         if (!valid()) return;
         const { data, error } = await q.abortSignal(controller.signal);
         if (!valid()) return;

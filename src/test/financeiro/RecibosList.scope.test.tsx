@@ -31,7 +31,7 @@ function deferred() { let resolve: (value: any) => void = () => {}; const promis
 function setup() { const tree = () => <MemoryRouter><RecibosList /></MemoryRouter>; const ui = render(tree()); return { ...ui, context: () => ui.rerender(tree()) }; }
 async function settle(late: ReturnType<typeof deferred>, value: any) { await act(async () => { late.resolve(value); await Promise.resolve(); }); }
 async function submit(ui: ReturnType<typeof setup>) {
-  fireEvent.click(await ui.findByRole("button", { name: "Cancelar", exact: true }));
+  fireEvent.click(await ui.findByRole("button", { name: /^Cancelar$/ }));
   fireEvent.change(ui.getByPlaceholderText("Informe o motivo (mín. 5 caracteres)"), { target: { value: "Motivo seguro" } });
   fireEvent.click(ui.getByRole("button", { name: "Confirmar cancelamento" }));
 }
@@ -111,7 +111,7 @@ describe("existing receipt list and cancellation with real scope", () => {
       now: () => clock, setTimeoutFn: () => 1, clearTimeoutFn: () => {}, onEpochChange: () => {}, onExpire: () => {}, isOnline: () => true, isVisible: () => true });
     monitor.start(); await act(async () => { await Promise.resolve(); }); fake.check = monitor.checkAccess;
     const ui = setup(); await ui.findByRole("button", { name: "Preparar PDF" }); clock = 15_000;
-    fireEvent.click(ui.getByRole("button", { name: "Preparar PDF" })); fireEvent.click(ui.getByRole("button", { name: "Cancelar", exact: true }));
+    fireEvent.click(ui.getByRole("button", { name: "Preparar PDF" })); fireEvent.click(ui.getByRole("button", { name: /^Cancelar$/ }));
     expect(fake.download).not.toHaveBeenCalled(); expect(fake.rpc).not.toHaveBeenCalled(); monitor.stop();
   });
 });
