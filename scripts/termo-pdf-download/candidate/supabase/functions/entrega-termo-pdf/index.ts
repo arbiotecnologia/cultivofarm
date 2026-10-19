@@ -324,11 +324,11 @@ Deno.serve(async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     if (action === "download") return await servirPdf(d, userClient, admin, userId, termoId);
 
-    const { data: termo, error: termoErr } = await admin
+    const { data: termo, error: termoErr } = await d.run(admin
       .from("entrega_termos")
       .select("*")
       .eq("id", termoId)
-      .maybeSingle();
+      .maybeSingle());
     if (termoErr || !termo) return json({ error: "termo_nao_encontrado" }, 404);
     // generate le/grava com servico e publica evento: mesmo tenant explicito exigido.
     if (!(await provarTenant(d, userClient, admin, userId, termo.entrega_id))) return json({ error: "acesso_negado" }, 403);
