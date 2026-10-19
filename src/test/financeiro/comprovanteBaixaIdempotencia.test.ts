@@ -1,115 +1,78 @@
-import { describe, it, expect } from "vitest";
-import {
-  anexarComprovanteBaixa,
-  comprovanteStoragePath,
-  sanitizeFileName,
-} from "@/lib/financial/anexarComprovanteBaixa";
-
-type Doc = { id: string; owner_type: string; owner_id: string; storage_path: string; deleted_at: string | null };
-
-/** Cliente fake mínimo: tabela em memória + storage em memória. */
-function makeClient(opts: { failInsert?: boolean } = {}) {
-  const docs: Doc[] = [];
-  const uploads: string[] = [];
-  let seq = 0;
-  const client = {
-    docs,
-    uploads,
-    from() {
-      const filtros: Record<string, unknown> = {};
-      const api: any = {
-        select: () => api,
-        eq: (col: string, val: unknown) => { filtros[col] = val; return api; },
-        is: (col: string, val: unknown) => { filtros[col] = val; return api; },
-        maybeSingle: async () => {
-          const found = docs.find((d) =>
-            d.owner_type === filtros.owner_type &&
-            d.owner_id === filtros.owner_id &&
-            d.storage_path === filtros.storage_path &&
-            d.deleted_at === null);
-          return { data: found ?? null, error: null };
-        },
-        insert: async (row: any) => {
-          if (opts.failInsert) return { error: { message: "rls", code: "42501" } };
-          if (docs.some((d) => d.storage_path === row.storage_path && d.deleted_at === null)) {
-            return { error: { message: "duplicate", code: "23505" } };
-          }
-          docs.push({ id: `doc-${++seq}`, deleted_at: null, ...row });
-          return { error: null };
-        },
-      };
-      return api;
-    },
-    storage: {
-      from: () => ({
-        upload: async (path: string) => { uploads.push(path); return { error: null }; },
-      }),
-    },
-  };
-  return client;
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { anexarComprovanteBaixa, comprovanteStoragePath, sanitizeFileName } from "@/lib/financial/anexarComprovanteBaixa";
+const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const PID = "00000000-0000-4000-8000-000000000001";
+const base = { ownerType: "PAYMENT_RECEIVABLE" as const, paymentId: PID, idempotencyKey: "idem-abc", file: { name: "Comprovante Pix 18/08.pdf", type: "application/pdf", size: 1234 }, uploadedBy: A, organizationId: A, isCurrent: () => true };
+type Doc = Record<string, any>;
+/** Fake transport models the installed owner/org/path/author contract, not JWT/RLS certification. */
+function makeClient() {
+  const docs: Doc[] = []; const objects = new Set<string>(); const uploads: string[] = [];
+  const opts = { insertError: null as any, authId: A, parentOrg: A, afterUpload: () => {}, afterLookup: () => {}, afterInsert: () => {}, insertWait: null as Promise<void> | null, uploadWait: null as Promise<void> | null, race: false };
+  const upload = vi.fn(async (path: string, _file: unknown, options: any) => {
+    if (opts.uploadWait) await opts.uploadWait;
+    uploads.push(path); objects.add(path); expect(options.upsert).toBe(true); opts.afterUpload(); return { error: null };
+  });
+  const auth = { getUser: vi.fn(async () => ({ data: { user: { id: opts.authId } }, error: null })) };
+  const insert = vi.fn(async (row: Doc) => {
+    if (opts.insertWait) await opts.insertWait;
+    if (opts.insertError) return { error: opts.insertError };
+    if (opts.parentOrg !== A || row.uploaded_by !== opts.authId || row.storage_path !== comprovanteStoragePath({ ...base, ownerType: row.owner_type, paymentId: row.owner_id, fileName: base.file.name })) return { error: { code: "42501" } };
+    if (opts.race) { docs.push({ ...row, id: "race", organization_id: A, deleted_at: null }); return { error: { code: "23505" } }; }
+    docs.push({ ...row, id: `doc-${docs.length}`, organization_id: A, deleted_at: null }); opts.afterInsert(); return { error: null };
+  });
+  return { docs, objects, uploads, opts, auth, insert, storage: { from: () => ({ upload }) }, from: () => {
+    const filters: Doc = {}; const api: any = { select: () => api, eq: (k: string, v: unknown) => { filters[k] = v; return api; }, is: (k: string, v: unknown) => { filters[k] = v; return api; }, maybeSingle: async () => { const found = docs.find(d => Object.entries(filters).every(([k,v]) => d[k] === v)); opts.afterLookup(); return { data: found ?? null, error: null }; }, insert };
+    return api;
+  } };
 }
-
-const file = { name: "Comprovante Pix 18/08.pdf", type: "application/pdf", size: 1234 };
-const base = {
-  ownerType: "PAYMENT_RECEIVABLE" as const,
-  paymentId: "pay-1",
-  idempotencyKey: "idem-abc",
-  file,
-  uploadedBy: "user-1",
-  organizationId: "org-1",
-};
-
-describe("H6c-004 — comprovante de baixa idempotente", () => {
-  it("caminho é determinístico e sanitizado (sem Date.now)", () => {
-    const p1 = comprovanteStoragePath({ ...base, fileName: file.name });
-    const p2 = comprovanteStoragePath({ ...base, fileName: file.name });
-    expect(p1).toBe(p2);
-    expect(p1).toBe("org-1/PAYMENT_RECEIVABLE/pay-1/idem-abc-Comprovante-Pix-18-08.pdf");
+afterEach(() => vi.useRealTimers());
+describe("comprovante no fluxo existente / contrato owner-first", () => {
+  it.each(["PAYMENT_RECEIVABLE", "PAYMENT_PAYABLE"] as const)("%s determinístico sem prefixo org", ownerType => {
+    const input = { ...base, ownerType, fileName: base.file.name };
+    expect(comprovanteStoragePath(input)).toBe(`${ownerType}/${PID}/idem-abc-Comprovante-Pix-18-08.pdf`);
+    expect(comprovanteStoragePath(input)).toBe(comprovanteStoragePath({ ...input, organizationId: B }));
     expect(sanitizeFileName("nota fiscal ção.pdf")).toBe("nota-fiscal-cao.pdf");
   });
-
-  it("primeiro anexo cria documento único", async () => {
-    const c = makeClient();
-    await expect(anexarComprovanteBaixa(c, base)).resolves.toBe("created");
-    expect(c.docs).toHaveLength(1);
-    expect(c.uploads).toHaveLength(1);
+  it.each([{ paymentId: "pay-1" }, { ownerType: "DELIVERY" }, { idempotencyKey: "../key" }, { fileName: "../foo" }, { fileName: "a%2fb" }, { fileName: "a\\b" }, { fileName: "" }])("nega path inválido %j", bad => {
+    expect(() => comprovanteStoragePath({ ...base, fileName: base.file.name, ...bad } as any)).toThrow();
   });
-
-  it("retry da mesma tentativa lógica não duplica documento nem arquivo", async () => {
-    const c = makeClient();
-    await anexarComprovanteBaixa(c, base);
-    const r = await anexarComprovanteBaixa(c, base);
-    expect(r).toBe("reused");
-    expect(c.docs).toHaveLength(1);
-    expect(c.uploads).toHaveLength(1); // nem sequer reenvia o arquivo
+  it("cria e retry não reenvia nem duplica", async () => {
+    const c = makeClient(); expect(await anexarComprovanteBaixa(c, base)).toBe("created"); expect(await anexarComprovanteBaixa(c, base)).toBe("reused");
+    expect(c.docs).toHaveLength(1); expect(c.uploads).toHaveLength(1); expect(c.insert.mock.calls[0][0]).not.toHaveProperty("organization_id");
   });
-
-  it("falha parcial (upload ok / insert falha) e retry resulta em um único documento", async () => {
-    const falho = makeClient({ failInsert: true });
-    await expect(anexarComprovanteBaixa(falho, base)).rejects.toBeTruthy();
-    expect(falho.docs).toHaveLength(0);
-    expect(falho.uploads).toHaveLength(1);
-
-    // retry com o cliente saudável, mesma chave lógica => 1 documento, mesmo path
-    const ok = makeClient();
-    ok.uploads.push(...falho.uploads);
-    await expect(anexarComprovanteBaixa(ok, base)).resolves.toBe("created");
-    expect(ok.docs).toHaveLength(1);
-    expect(new Set(ok.uploads).size).toBe(1);
+  it("upload aceito/metadata negada deixa órfão; retry mesma chave usa mesmo objeto", async () => {
+    const c = makeClient(); c.opts.insertError = { code: "42501" }; await expect(anexarComprovanteBaixa(c, base)).rejects.toMatchObject({ code: "42501" });
+    expect(c.objects.size).toBe(1); expect(c.docs).toHaveLength(0); c.opts.insertError = null;
+    await expect(anexarComprovanteBaixa(c, base)).resolves.toBe("created"); expect(c.objects.size).toBe(1); expect(c.docs).toHaveLength(1);
   });
-
-  it("corrida no mesmo path é tratada como reuso (unique violation)", async () => {
-    const c = makeClient();
-    const path = comprovanteStoragePath({ ...base, fileName: file.name });
-    c.docs.push({ id: "pre", owner_type: "PAYMENT_PAYABLE", owner_id: "outro", storage_path: path, deleted_at: null });
-    await expect(anexarComprovanteBaixa(c, base)).resolves.toBe("reused");
-    expect(c.docs).toHaveLength(1);
+  it("23505 não é sucesso genérico; só reusa row exata reconsultada", async () => {
+    const c = makeClient(); c.opts.insertError = { code: "23505" }; await expect(anexarComprovanteBaixa(c, base)).rejects.toMatchObject({ code: "23505" });
+    c.opts.insertError = null; c.opts.race = true; await expect(anexarComprovanteBaixa(c, base)).resolves.toBe("reused");
   });
-
-  it("tentativa lógica diferente (nova chave) gera documento próprio", async () => {
-    const c = makeClient();
-    await anexarComprovanteBaixa(c, base);
-    await anexarComprovanteBaixa(c, { ...base, idempotencyKey: "idem-xyz" });
-    expect(c.docs).toHaveLength(2);
+  it("SDK auth de outro UID nega antes de storage", async () => {
+    const c = makeClient(); c.opts.authId = B; await expect(anexarComprovanteBaixa(c, base)).rejects.toThrow("Sessão"); expect(c.uploads).toHaveLength(0);
+  });
+  it("owner estrangeiro negado pelo contrato metadata não mostra sucesso", async () => {
+    const c = makeClient(); c.opts.parentOrg = B; await expect(anexarComprovanteBaixa(c, base)).rejects.toMatchObject({ code: "42501" }); expect(c.docs).toHaveLength(0);
+  });
+  it.each(["start", "lookup", "upload", "insert"])("revogação %s impede sucesso/tardio", async stage => {
+    const c = makeClient(); let active = stage !== "start";
+    if (stage === "lookup") c.opts.afterLookup = () => { active = false; };
+    if (stage === "upload") c.opts.afterUpload = () => { active = false; };
+    if (stage === "insert") c.opts.afterInsert = () => { active = false; };
+    await expect(anexarComprovanteBaixa(c, { ...base, isCurrent: () => active })).rejects.toThrow("expirado");
+    expect(c.docs).toHaveLength(stage === "insert" ? 1 : 0); expect(c.uploads).toHaveLength(["upload", "insert"].includes(stage) ? 1 : 0);
+  });
+  it("auth muda após upload: sem metadata e objeto preservado", async () => {
+    const c = makeClient(); c.opts.afterUpload = () => { c.opts.authId = B; }; await expect(anexarComprovanteBaixa(c, base)).rejects.toThrow("Sessão"); expect(c.objects.size).toBe(1); expect(c.docs).toHaveLength(0);
+  });
+  it.each(["upload", "insert"])("timeout %s: efeito parcial possível, sem conclusão tardia", async stage => {
+    vi.useFakeTimers(); const c = makeClient(); let release: (() => void) | undefined;
+    const wait = new Promise<void>(resolve => { release = resolve; }); if (stage === "upload") c.opts.uploadWait = wait; else c.opts.insertWait = wait;
+    const result = anexarComprovanteBaixa(c, base); const failure = expect(result).rejects.toThrow("Prazo");
+    await vi.advanceTimersByTimeAsync(15_000); await failure; release?.(); await vi.advanceTimersByTimeAsync(1);
+    expect(c.docs).toHaveLength(stage === "insert" ? 1 : 0); expect(c.objects.size).toBe(1);
+    c.opts.uploadWait = null; c.opts.insertWait = null; await expect(anexarComprovanteBaixa(c, base)).resolves.toBe(stage === "insert" ? "reused" : "created"); expect(c.docs).toHaveLength(1);
   });
 });
