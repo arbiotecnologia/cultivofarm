@@ -40,7 +40,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
       const ctx = state.context as Record<string, unknown> | null;
       return { data: ctx ? { id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, papel: ctx.papel, mode: ctx.mode } : null };
     }
-    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true } };
+    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true, has_technical_access: false } };
     if (name === "get_partner_catalog_secure") return state.catalog();
     if (name === "b2b_read_simulations") return state.simulations();
     throw new Error(`unexpected RPC: ${name}`);
