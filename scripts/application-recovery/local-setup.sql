@@ -8,6 +8,8 @@ CREATE TABLE public.lotes(id uuid PRIMARY KEY,produto_id uuid,organization_id uu
 GRANT SELECT ON public.lotes TO authenticated;
 ALTER TABLE public.ordens_servico ADD COLUMN produto_id uuid;
 ALTER TABLE public.ordens_servico_onfarm ADD COLUMN produto_id uuid;
+ALTER TABLE public.ordens_servico ADD COLUMN status text DEFAULT 'entregue';
+ALTER TABLE public.ordens_servico_onfarm ADD COLUMN status text DEFAULT 'entregue';
 ALTER TABLE public.aplicacoes ADD COLUMN data_aplicacao date;
 ALTER TABLE public.aplicacoes ADD COLUMN hora_inicio timestamptz;
 ALTER TABLE public.aplicacoes ADD COLUMN hora_fim timestamptz;

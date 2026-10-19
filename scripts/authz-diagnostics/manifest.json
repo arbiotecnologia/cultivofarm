@@ -1,0 +1,57 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "scope": "admin-exclusive diagnostics only; no lease/gate changes",
+  "files": [
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "post": "77a78df03e525ff260f7086660349fbba6c4067ea639b9231c41c43ebcc4e583",
+      "pre": "39bab659c1491eeaab800e0a09ef2e4ba8f6bfc214793a0011ce4c2dfc6fcc76",
+      "rollback": "rollback/src/hooks/useAuth.tsx"
+    },
+    {
+      "path": "src/lib/authz/authzEpochMonitor.ts",
+      "post": "5d53239663f65556e5581ba5d8cc7188721c08dc6e020d01a62d941810888a31",
+      "pre": "45622480f70e0242e1b1a5cbf182854ff105a9b9dc0d334e41b36cf89ebb1943",
+      "rollback": "rollback/src/lib/authz/authzEpochMonitor.ts"
+    },
+    {
+      "path": "src/lib/authz/localDiagnostics.ts",
+      "post": "e83f3ad5e90ff7481861942ec1ad733f8cca72c198714dd67b7cd712d76318d4",
+      "pre": null,
+      "rollback": null
+    },
+    {
+      "path": "src/test/config/authzDiagnostics.test.ts",
+      "post": "5a0863c3a8c7ecd78337e611377ca30fde869870322da11aaaa60071fe6931fe",
+      "pre": null,
+      "rollback": null
+    }
+  ],
+  "protected": {
+    "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+    "src/hooks/useAuthenticatedAttachmentOpener.ts": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421",
+    "src/hooks/useAuthenticatedBlobUrls.ts": "8ef20f33a63dcd070db9f7da71f8dc56db09d1c9c86948a38ee20ef5344641b4",
+    "src/hooks/useSignedUrls.ts": "728bc5b6e6d2e3a1b4dedbe880bc4a89011aa4d750f51383e1b47b098b91b4ea",
+    "src/lib/authz/authenticatedAttachment.ts": "99331e08889a25782400914e4a113e36fc6dc1155539932eccef3d5f2e4ca098",
+    "src/lib/authz/authzEpochGate.ts": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7",
+    "src/lib/authz/internalContextProbe.ts": "691c9707acfa5717262090ed57fae7496fd6404181dc7802a2e12b44fe066470",
+    "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
+    "src/pages/financeiro/RecibosList.tsx": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed",
+    "src/lib/financeiro/receiptStorageLocator.ts": "aee75517faff16a462c2b5fc40147d5f985b152fb9c6731d71358a627619c6b3",
+    "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
+    "src/lib/aplicacoes/evidencias.ts": "2bf460148dd9826dd522669894f57d6b28e723cfb8b857a9f8878edf4ba0df55",
+    "src/pages/Aplicacoes.tsx": "d1ee1226a8788c8f92238709333c32065ddf97471ef25d0b0524713459a2ccbf",
+    "src/pages/portal/PortalAplicacoes.tsx": "64b42f075a73ed0d5f3f84ca6e07dfad3f604469fe9c737fb9583574ba78286d",
+    "src/components/aplicacao/EvidenciasUploader.tsx": "5daa1a512dbce02636f04f72b99e2c81b2a28b1acaa56c47464197707f9313f4",
+    "supabase/functions/enviar-pdf-aplicacao/index.ts": "cead240d70ccc759219b853ee1cae4fc50796a15faec0f5d3eddf952f12647d5",
+    "supabase/functions/entrega-termo-pdf/index.ts": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
+    "src/lib/pdfAplicacao.ts": "3a936385f1f5618483f4ad83e3aefe35745c30eef64b5e5023ec7e4fb686e756",
+    "src/components/aplicacao/AplicacaoCard.tsx": "182a3bdaf6fe5fa1d3114c3e1e022112e9a0bfc3a3eb60245c831b8ed8a3e3e1",
+    "src/test/equipe-tecnica/pdfAplicacao.scope.test.tsx": "3a1aa5ef7f593392c94d7503c13546d6b609a27a52ef9ec9278f7b59dfc33803"
+  },
+  "artifacts": {
+    "README.md": "16f5893f4ec07b1d001815a73fdab04b8800dd0c6b2407c5f9ad37681f74d052",
+    "stage.py": "5ed134d62df69518a185c77a504e719bb19981a43879bdeb36ba47d06c0ec3d0",
+    "test_stage.py": "5b724aaa11f65932fb56a9b044ec8ffae24c448653ed2ad756eeed9d8abca436"
+  }
+}

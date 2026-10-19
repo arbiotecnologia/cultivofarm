@@ -1,6 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 13:01 — recuperação canônica de aplicações
+- [x] Revisão13:25: paridade carteira mixed-role/responsável/status OS, mobile coerente e diagnóstico admin ring80 sem PII/lease alterada; PG104/104 e Vitest194/194. Pai B real preservado; avanço canônico fechado é blocker positivo, sem bypass. Recibo externo tsc app EXIT0/119 independentes válido só no snapshot anterior1668.
+- [x] Recibo final revisão13:25 em docs/auditorias/aplicacao-recuperacao-revisao-1325-receipt.md: staging recuperação4/4+diagnóstico4/4, snapshot novo1670/26 partes byte-exato. Checker novo aguarda auditor; build automático não é typecheck.
+- [ ] Revisão/implantação própria do diagnóstico e captura reason/visibility/RTT/deltas nas pausas reais; causa admin B ainda desconhecida, sem publicação pelo agente.
 - [x] Complemento13:17: exportação atual1668 arquivos (inclui imports transitivos fora src) em26 partes UTF-8 ≤200KB; manifesto a44fe574cc7893540b5449c2d6b0a9cca749101f3398e89048e23b0dff5dbbd8, materialização integral byte-exata e7/7 testes. GitHub antigo não usado; checker app não executado/runtime preservado. Instruções tsc -p app + install --ignore-scripts no pacote.
 - [x] Auditar RPC fechada, unidades, referências, triggers/RLS/Storage reais; preparar manifest privado pelo mesmo RPC antes de upload, sem aplicação parcial/bucket aberto.
 - [x] Candidata SQL guardada16 funções/schema/rollback fechado, desktop/mobile cercados, PostgreSQL local62/62 e Vitest119/119; roteiro fixtures A/B. Não é seed hosted completo nem homologação de SDK/JWT/trigger completo; riscos/writers/Storage legacy explicitados no relatório.

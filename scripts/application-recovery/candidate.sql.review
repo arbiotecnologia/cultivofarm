@@ -36,7 +36,7 @@ CREATE OR REPLACE FUNCTION public.rpc_salvar_aplicacao_v1(p_aplicacao_id uuid, p
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $function$
 DECLARE
  u uuid:=auth.uid(); org uuid; client uuid; product uuid; os_org uuid;
- osid uuid; onid uuid; lot uuid; responsible uuid; phase text; canonical jsonb;
+ osid uuid; onid uuid; lot uuid; responsible uuid; phase text; canonical jsonb; os_status text;
  r platform_private.application_save_preparations%ROWTYPE;
  original public.aplicacoes%ROWTYPE; a public.aplicacoes%ROWTYPE;
  ev jsonb; e public.aplicacao_evidencias%ROWTYPE; obj storage.objects%ROWTYPE;
@@ -73,12 +73,15 @@ BEGIN
  -- Lock every persisted authority before receipt lookup. Locks prevent UPDATE/DELETE races;
  -- they do not invent membership, roles or a tenant for NULL legacy rows.
  IF osid IS NOT NULL THEN
- SELECT cliente_id,produto_id,organization_id INTO client,product,os_org FROM public.ordens_servico WHERE id=osid FOR SHARE;
+ SELECT cliente_id,produto_id,organization_id,status::text INTO client,product,os_org,os_status FROM public.ordens_servico WHERE id=osid FOR SHARE;
  ELSE
- SELECT cliente_id,produto_id INTO client,product FROM public.ordens_servico_onfarm WHERE id=onid FOR SHARE;
+ SELECT cliente_id,produto_id,status::text INTO client,product,os_status FROM public.ordens_servico_onfarm WHERE id=onid FOR SHARE;
  SELECT organization_id INTO os_org FROM public.clientes WHERE id=client;
  END IF;
  IF client IS NULL OR os_org IS DISTINCT FROM org OR product IS NULL THEN RAISE EXCEPTION 'application_origin_denied' USING ERRCODE='42501'; END IF;
+ -- Same lifecycle as the canonical desktop form. Replay is reauthorized too.
+ IF os_status IS NULL OR NOT (os_status IN ('entregue','pronto_entrega','envase')
+ OR (p_rectify_id IS NOT NULL AND os_status='finalizada')) THEN RAISE EXCEPTION 'application_os_status_denied' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.clientes WHERE id=client AND organization_id=org FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'application_client_denied' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.user_clientes WHERE user_id=u AND cliente_id=client ORDER BY id FOR SHARE;
@@ -214,7 +217,7 @@ $function$;-- Existing Storage1 resolver: insert accepts only a live actor-owned
 CREATE OR REPLACE FUNCTION platform_private.storage1_application_allowed(p_name text,p_action text)
 RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $function$
 DECLARE org uuid; r platform_private.application_save_preparations%ROWTYPE; a public.aplicacoes%ROWTYPE;
- client uuid; os_org uuid; product uuid; staff boolean;
+ client uuid; os_org uuid; product uuid; staff boolean; u uuid:=auth.uid(); responsible uuid; own_role boolean; os_status text; lot uuid;
 BEGIN
  IF auth.uid() IS NULL OR public.storage1_path_strict(p_name) IS DISTINCT FROM true OR p_action IS NULL
  OR p_action NOT IN ('select','insert','update','delete') OR p_name !~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/[A-Za-z0-9_.-]+$' THEN RETURN false; END IF;
@@ -225,14 +228,30 @@ BEGIN
  OR r.expires_at<=clock_timestamp() OR r.client_id::text IS DISTINCT FROM split_part(p_name,'/',1)
  OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(r.manifest) ev WHERE ev->>'storage_path'=p_name)
  OR public.can_user_create_aplicacao_for_cliente(r.client_id) IS DISTINCT FROM true THEN RETURN false; END IF;
+ -- Exact current RPC membership branch: a broad operator/applicator role must
+ -- not rescue a revoked consultant/technical/producer portfolio.
+ IF (public.has_role(u,'cliente_produtor') OR public.has_role(u,'consultor_tecnico') OR public.has_role(u,'tecnico_agronomo'))
+ AND NOT (public.has_role(u,'administrador') OR public.has_role(u,'gestor') OR public.has_role(u,'administrativo'))
+ AND NOT r.client_id=ANY(public.get_cliente_ids_for_user(u)) THEN RETURN false; END IF;
+ responsible:=nullif(r.payload->>'responsavel_id','')::uuid;
+ IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=responsible AND organization_id=org AND ativo IS TRUE AND senha_provisoria IS FALSE)
+ OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=responsible AND role::text IN
+ ('administrador','gestor','administrativo','consultor_tecnico','tecnico_agronomo','aplicador','operador_onfarm','cliente_produtor'))
+ OR platform_private.platform_actor_access_ready(responsible) IS DISTINCT FROM true THEN RETURN false; END IF;
+ own_role:=public.has_role(u,'administrador') OR public.has_role(u,'gestor') OR public.has_role(u,'administrativo') OR public.has_role(u,'consultor_tecnico');
+ IF NOT own_role AND responsible IS DISTINCT FROM u THEN RETURN false; END IF;
+ lot:=nullif(r.payload->>'lote_usado_id','')::uuid;
  IF r.payload->>'ordem_servico_id' IS NOT NULL THEN
- SELECT cliente_id,organization_id,produto_id INTO client,os_org,product FROM public.ordens_servico WHERE id=(r.payload->>'ordem_servico_id')::uuid;
- ELSE SELECT os.cliente_id,c.organization_id,os.produto_id INTO client,os_org,product FROM public.ordens_servico_onfarm os JOIN public.clientes c ON c.id=os.cliente_id WHERE os.id=(r.payload->>'ordem_servico_onfarm_id')::uuid; END IF;
+ SELECT cliente_id,organization_id,produto_id,status::text INTO client,os_org,product,os_status FROM public.ordens_servico WHERE id=(r.payload->>'ordem_servico_id')::uuid;
+ ELSE SELECT os.cliente_id,c.organization_id,os.produto_id,os.status::text INTO client,os_org,product,os_status FROM public.ordens_servico_onfarm os JOIN public.clientes c ON c.id=os.cliente_id WHERE os.id=(r.payload->>'ordem_servico_onfarm_id')::uuid; END IF;
  RETURN client=r.client_id AND os_org=org AND product::text=r.payload->>'produto_usado_id'
+ AND (os_status IN ('entregue','pronto_entrega','envase') OR (r.rectify_id IS NOT NULL AND os_status='finalizada'))
+ AND (lot IS NULL OR EXISTS(SELECT 1 FROM public.lotes WHERE id=lot AND produto_id=product AND organization_id=org AND status='aprovado'))
  AND EXISTS(SELECT 1 FROM public.clientes WHERE id=client AND organization_id=org)
  AND EXISTS(SELECT 1 FROM public.produtos WHERE id=product AND ativo IS TRUE)
  AND (r.rectify_id IS NULL OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE id=r.rectify_id AND organization_id=org AND is_latest IS TRUE)
- AND public.can_user_manage_aplicacao(r.rectify_id) AND public.can_user_access_aplicacao(r.rectify_id));
+ AND public.can_user_manage_aplicacao(r.rectify_id) AND public.can_user_access_aplicacao(r.rectify_id))
+ AND public.h15_actor_organization()=org;
  END IF;
  SELECT * INTO a FROM public.aplicacoes WHERE id=split_part(p_name,'/',2)::uuid;
  IF NOT FOUND OR a.organization_id IS DISTINCT FROM org OR (a.ordem_servico_id IS NULL)=(a.ordem_servico_onfarm_id IS NULL) THEN RETURN false; END IF;
@@ -259,7 +278,7 @@ SELECT 'column:'||table_schema||'.'||table_name||':'||column_name||':'||data_typ
 UNION ALL SELECT 'constraint:'||conrelid::regclass::text||':'||conname||':'||pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid IN ('public.aplicacoes'::regclass,'public.aplicacao_evidencias'::regclass,'public.aplicacao_evidencias_vinculos'::regclass)
 UNION ALL SELECT 'policy:'||schemaname||'.'||tablename||':'||policyname||':'||permissive||':'||roles::text||':'||cmd||':'||coalesce(qual,'')||':'||coalesce(with_check,'') FROM pg_policies WHERE (schemaname='public' AND tablename IN ('aplicacoes','aplicacao_evidencias','aplicacao_evidencias_vinculos')) OR (schemaname='storage' AND (policyname LIKE 'storage1%' OR policyname LIKE 'aplicacao%'))
 UNION ALL SELECT 'trigger:'||t.tgrelid::regclass::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)) FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.aplicacoes'::regclass,'public.aplicacao_evidencias'::regclass,'public.aplicacao_evidencias_vinculos'::regclass)) catalog) IS DISTINCT FROM 'ab90301d6806c9777da6ecceb7b953f8' THEN RAISE EXCEPTION 'application_schema_policy_trigger_drift'; END IF;
-FOR c IN SELECT * FROM (VALUES ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])','990fb351076582f099a49663e2146ddd',true,'v','search_path=""',false),('platform_private.storage1_application_allowed(text,text)','4265fe941e813c01bbcb11aa950c4fc6',true,'s','search_path=""',false),('public.can_user_access_aplicacao(uuid)','04067ba43cea3eed845a1fd3735061e0',true,'s','search_path=public',false),('public.can_user_manage_aplicacao(uuid)','b8f4c49dd9b13d4aeecef0e6c76c105a',true,'s','search_path=public',false),('public.can_user_create_aplicacao_for_cliente(uuid)','b83a0bc8906b5e9f68ac6b7c9338d703',true,'s','search_path=public, pg_temp',false),('public.can_user_access_cliente(uuid)','4c2eaf7ab10e204e7ad57d41cb418554',true,'s','search_path=public',false),('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c',true,'v','search_path=public',false),('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c',false,'s','search_path=""',false),('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881',true,'s','search_path=""',false),('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84',true,'s','search_path=""',false),('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f',false,'s','search_path=""',false),('platform_private.has_role(uuid,public.app_role)','c5af5b55de6d79da9b73a33948746ae2',true,'s','search_path=""',false),('public.aplicacao_storage_path_permitido(text,text)','f5bebda2f411b7161f37a6c9c2bbf3f4',false,'s','search_path=""',false),('public.storage1_path_strict(text)','94164fa3b90088b0a1f16ac465a635d4',false,'i','search_path=""',false),('public.has_active_user_cliente_access(uuid,uuid,text[])','e099f51d128620e5a68cc3e9001dd976',true,'s','search_path=public',false),('platform_private.storage2_salvar_aplicacao_legacy_closed(uuid,jsonb,uuid,jsonb,uuid[])','bd546d19ae6598ba0db5837b83ef398d',true,'v','search_path=public, pg_temp',true)) v(sig,hash,sec,vol,config,closed) LOOP
+FOR c IN SELECT * FROM (VALUES ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])','f8bc9d5f000abef7f13e6ca340988734',true,'v','search_path=""',false),('platform_private.storage1_application_allowed(text,text)','daefb183522e2ee7f730e0db243f4823',true,'s','search_path=""',false),('public.can_user_access_aplicacao(uuid)','04067ba43cea3eed845a1fd3735061e0',true,'s','search_path=public',false),('public.can_user_manage_aplicacao(uuid)','b8f4c49dd9b13d4aeecef0e6c76c105a',true,'s','search_path=public',false),('public.can_user_create_aplicacao_for_cliente(uuid)','b83a0bc8906b5e9f68ac6b7c9338d703',true,'s','search_path=public, pg_temp',false),('public.can_user_access_cliente(uuid)','4c2eaf7ab10e204e7ad57d41cb418554',true,'s','search_path=public',false),('public.get_cliente_ids_for_user(uuid)','c80d5900692d960f649d0a9f7850fe2c',true,'v','search_path=public',false),('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c',false,'s','search_path=""',false),('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881',true,'s','search_path=""',false),('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84',true,'s','search_path=""',false),('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f',false,'s','search_path=""',false),('platform_private.has_role(uuid,public.app_role)','c5af5b55de6d79da9b73a33948746ae2',true,'s','search_path=""',false),('public.aplicacao_storage_path_permitido(text,text)','f5bebda2f411b7161f37a6c9c2bbf3f4',false,'s','search_path=""',false),('public.storage1_path_strict(text)','94164fa3b90088b0a1f16ac465a635d4',false,'i','search_path=""',false),('public.has_active_user_cliente_access(uuid,uuid,text[])','e099f51d128620e5a68cc3e9001dd976',true,'s','search_path=public',false),('platform_private.storage2_salvar_aplicacao_legacy_closed(uuid,jsonb,uuid,jsonb,uuid[])','bd546d19ae6598ba0db5837b83ef398d',true,'v','search_path=public, pg_temp',true)) v(sig,hash,sec,vol,config,closed) LOOP
  SELECT * INTO p FROM pg_proc WHERE oid=to_regprocedure(c.sig);
  IF NOT FOUND THEN RAISE EXCEPTION 'application_dependency_missing: %',c.sig; END IF;
  IF md5(pg_get_functiondef(p.oid)) IS DISTINCT FROM c.hash OR pg_get_userbyid(p.proowner) IS DISTINCT FROM 'postgres'

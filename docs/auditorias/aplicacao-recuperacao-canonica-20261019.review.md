@@ -1,5 +1,14 @@
 # Recuperação canônica de aplicações — 19/10
 
+## Revisão13:25 — substitui hashes e pendências da candidata inicial abaixo
+- Paridade atual RPC/Storage para carteira produtor/consultor/técnico mesmo com papel broad operador/aplicador; responsável precisa perfil/roles/readiness atual, produto/lote/OS/tenant coerentes. Local104/104 inclui seis combinações mixed-role revogadas entre prepare/upload/finalize e responsável inativo/sem role.
+- Status canônico: novas entregue/pronto_entrega/envase; retificações podem também finalizada com predecessor autorizado. Manual/onfarm aberta/cancelada negadas; regressão status entre fases nega upload/finalize. Mobile antes só excluía finalizada: corrigido para mesma allowlist desktop/server. Retificação não exige finalizar OS.
+- Monitor conserva scheduling/lease15s/fail-closed; observer local admin exclusivo coleta reason/visibility/online/RTT/deltas em ring80 sem PII/tokens/URLs/fingerprint/network/persistência. Pausas reais admin B13:15/13:19 não atribuídas: diagnóstico futuro não reconstrói passado. Instruções em scripts/authz-diagnostics/README.md.
+- Vitest194/194 dirigidos PASS, incluindo3s90s financeiro/admin,3s120s monitor, suspensão fake/retorno/stale. Não é login/telemetria real. Observer que lança erro não muda autoridade.
+- Auditor informou exportação1668 materializada e **tsc -p tsconfig.app.json --noEmit EXIT0**,119/119 independentes. Recibo limitado ao snapshot a44fe574... anterior; versão/log ainda não recebidos e novo snapshot não está certificado por esse EXIT0.
+- Pai B real informado preservado em fixtures-ab.review.md. Trigger INSERT exige OS aberta, approval/advance RPCs fechadas: positivo aplicação/PDF depende de revisão separada do avanço canônico ou OS sintética prévia elegível comprovada. Não criar OS avançada artificial nem abrir guards/grants. Plano executable é gated, não promessa de positivo disponível agora.
+- RPC POST local revisada f8bc9d5f000abef7f13e6ca340988734; Storage daefb183522e2ee7f730e0db243f4823; helper leitura04067 preservado. Preflight guarda16/schema permanece fail-closed. Sem hosted DDL/DML/deploy/publicação/contratos/v6.
+
 ## Entregue, sem operações de produção
 Candidata concreta em `scripts/application-recovery/candidate.sql.review`; reimplementa apenas RPC existente com prepare/finalize e Storage1 existente com manifest privado exato. Preserva assinatura, helper leitura implantado POST04067ba43cea3eed845a1fd3735061e0 e pacotes anteriores SQL/PDF. Não concede EXECUTE ao legacy_closed.
 

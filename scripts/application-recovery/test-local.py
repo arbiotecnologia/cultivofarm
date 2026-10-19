@@ -31,7 +31,7 @@ def main():
   run(file=BASE/'local-setup.sql');run(file=BASE/'dependencies.sql.review');run(file=HERE/'local-setup.sql');run(file=BASE/'function.sql.review')
   run(file=HERE/'setup.sql.review');run(file=HERE/'function.sql.review');run(file=HERE/'storage.sql.review')
   run(sql="DO $$DECLARE r record; BEGIN FOR r IN SELECT oid::regprocedure f FROM pg_proc WHERE pronamespace IN ('public'::regnamespace,'platform_private'::regnamespace) LOOP EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anon',r.f); EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated,service_role',r.f); END LOOP; END$$; CREATE FUNCTION public.aplicacao_storage_path_permitido(n text,a text) RETURNS boolean LANGUAGE sql SET search_path='' AS $$ SELECT platform_private.storage1_application_allowed(n,a); $$; GRANT EXECUTE ON FUNCTION public.aplicacao_storage_path_permitido(text,text) TO authenticated; CREATE POLICY application_select ON public.aplicacoes FOR SELECT TO authenticated USING(public.can_user_access_aplicacao(id)); CREATE POLICY evidence_select ON public.aplicacao_evidencias FOR SELECT TO authenticated USING(public.can_user_access_aplicacao(aplicacao_id)); CREATE POLICY links_select ON public.aplicacao_evidencias_vinculos FOR SELECT TO authenticated USING(public.can_user_access_aplicacao(aplicacao_id)); CREATE POLICY storage_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='aplicacao-evidencias' AND public.aplicacao_storage_path_permitido(name,'insert')); CREATE POLICY storage_read ON storage.objects FOR SELECT TO authenticated USING(bucket_id='aplicacao-evidencias' AND public.aplicacao_storage_path_permitido(name,'select')); CREATE POLICY storage1_insert ON storage.objects AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK(platform_private.storage1_application_allowed(name,'insert')); CREATE POLICY storage1_read ON storage.objects AS RESTRICTIVE FOR SELECT TO authenticated USING(platform_private.storage1_application_allowed(name,'select'));")
-  run(sql=f"INSERT INTO organizations VALUES('{A}',true),('{B}',true); INSERT INTO profiles(user_id,organization_id) VALUES('{U}','{A}'),('{V}','{B}'); INSERT INTO user_roles VALUES('{U}','administrador'),('{V}','administrador'); INSERT INTO clientes VALUES('{C}','{A}'),('{D}','{B}'); INSERT INTO produtos VALUES('{P}',true); INSERT INTO ordens_servico VALUES('{O}','{A}','{C}','{P}'),('{OB}','{B}','{D}','{P}'); INSERT INTO user_clientes(user_id,cliente_id) VALUES('{U}','{C}');")
+  run(sql=f"INSERT INTO organizations VALUES('{A}',true),('{B}',true); INSERT INTO profiles(user_id,organization_id) VALUES('{U}','{A}'),('{V}','{B}'); INSERT INTO user_roles VALUES('{U}','administrador'),('{V}','administrador'); INSERT INTO clientes VALUES('{C}','{A}'),('{D}','{B}'); INSERT INTO produtos VALUES('{P}',true); INSERT INTO ordens_servico(id,organization_id,cliente_id,produto_id) VALUES('{O}','{A}','{C}','{P}'),('{OB}','{B}','{D}','{P}'); INSERT INTO user_clientes(user_id,cliente_id) VALUES('{U}','{C}');")
   hashes=run(sql="SELECT json_object_agg(oid::regprocedure::text,md5(pg_get_functiondef(oid))) FROM pg_proc WHERE oid IN ('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])'::regprocedure,'platform_private.storage1_application_allowed(text,text)'::regprocedure,'public.can_user_access_aplicacao(uuid)'::regprocedure);")
   (HERE/'post-hashes.local.json').write_text(hashes+'\n')
   id=str(uuid.uuid4());p=payload();path=f'{C}/{id}/{uuid.uuid4()}.png';ev=[dict(tipo='foto',storage_path=path,mime='image/png',tamanho_bytes=3,legenda=None)]
@@ -61,10 +61,51 @@ def main():
   run(sql="UPDATE user_clientes SET revoked_at=NULL;");rpc(id,p,'finalize',ev);passed.append('restored replay allowed')
   run(sql=f"UPDATE profiles SET ativo=false WHERE user_id='{U}';");rpc(id,p,'prepare',ev,ok=False);passed.append('inactive replay denied')
   run(sql=f"UPDATE profiles SET ativo=true WHERE user_id='{U}'; UPDATE user_roles SET role='administrador' WHERE user_id='{U}';")
+  # Exact RPC/Storage parity against a broad mixed role. No hosted writes.
+  for primary in ['consultor_tecnico','tecnico_agronomo','cliente_produtor']:
+   for broad in ['operador_onfarm','aplicador']:
+    run(sql=f"DELETE FROM user_roles WHERE user_id='{U}'; INSERT INTO user_roles VALUES('{U}','{primary}'),('{U}','{broad}');")
+    mixed=str(uuid.uuid4());mpath=f'{C}/{mixed}/{uuid.uuid4()}.png';me=[dict(ev[0],storage_path=mpath)]
+    rpc(mixed,p,ev=me);obj(path=mpath);passed.append('mixed active upload '+primary+'+'+broad)
+    pending=str(uuid.uuid4());ppath=f'{C}/{pending}/{uuid.uuid4()}.png';pe=[dict(ev[0],storage_path=ppath)]
+    rpc(pending,p,ev=pe)
+    run(sql="UPDATE user_clientes SET revoked_at=clock_timestamp();")
+    obj(path=ppath,ok=False);passed.append('mixed revoked upload denied '+primary+'+'+broad)
+    rpc(mixed,p,'finalize',me,ok=False);passed.append('mixed revoked finalize denied '+primary+'+'+broad)
+    rpc(pending,p,ev=pe,ok=False);passed.append('mixed revoked prepare replay denied '+primary+'+'+broad)
+    run(sql="UPDATE user_clientes SET revoked_at=NULL;")
+  run(sql=f"DELETE FROM user_roles WHERE user_id='{U}'; INSERT INTO user_roles VALUES('{U}','administrador');")
+  R='99999999-9999-4999-8999-999999999999'
+  run(sql=f"INSERT INTO profiles(user_id,organization_id) VALUES('{R}','{A}'); INSERT INTO user_roles VALUES('{R}','aplicador');")
+  resp=str(uuid.uuid4());resp_path=f'{C}/{resp}/{uuid.uuid4()}.png';resp_ev=[dict(ev[0],storage_path=resp_path)];resp_p=dict(p,responsavel_id=R)
+  rpc(resp,resp_p,ev=resp_ev)
+  run(sql=f"UPDATE profiles SET ativo=false WHERE user_id='{R}';")
+  obj(path=resp_path,ok=False);rpc(resp,resp_p,'finalize',resp_ev,ok=False);passed.append('responsible revoked between prepare upload finalize denied')
+  run(sql=f"UPDATE profiles SET ativo=true WHERE user_id='{R}'; DELETE FROM user_roles WHERE user_id='{R}';")
+  obj(path=resp_path,ok=False);rpc(resp,resp_p,'finalize',resp_ev,ok=False);passed.append('responsible role removed upload finalize denied')
+  for status in ['aberta','aprovada','programada','em_producao','em_cq','aguardando_reserva','finalizada','cancelada']:
+   run(sql=f"UPDATE ordens_servico SET status='{status}' WHERE id='{O}';")
+   denied('new OS status denied '+status)
+  for status in ['entregue','pronto_entrega','envase']:
+   run(sql=f"UPDATE ordens_servico SET status='{status}' WHERE id='{O}';")
+   rpc(str(uuid.uuid4()),p);passed.append('new OS status positive '+status)
+  ON='88888888-8888-4888-8888-888888888888'
+  run(sql=f"INSERT INTO ordens_servico_onfarm(id,cliente_id,produto_id,status) VALUES('{ON}','{C}','{P}','entregue');")
+  onp=dict(p,ordem_servico_id=None,ordem_servico_onfarm_id=ON)
+  rpc(str(uuid.uuid4()),onp);passed.append('onfarm delivered positive')
+  for status in ['aberta','cancelada','finalizada']:
+   run(sql=f"UPDATE ordens_servico_onfarm SET status='{status}' WHERE id='{ON}';")
+   denied('onfarm new status denied '+status,onp)
+  pending_status=str(uuid.uuid4());spath=f'{C}/{pending_status}/{uuid.uuid4()}.png';se=[dict(ev[0],storage_path=spath)]
+  rpc(pending_status,p,ev=se);run(sql=f"UPDATE ordens_servico SET status='aberta' WHERE id='{O}';")
+  obj(path=spath,ok=False);rpc(pending_status,p,'finalize',se,ok=False);passed.append('OS status regressed upload finalize denied')
+  run(sql=f"UPDATE ordens_servico SET status='finalizada' WHERE id='{O}';")
+  # A finalized OS may rectify only a real authorized predecessor, never create new.
   eid=run(sql='SELECT id FROM aplicacao_evidencias;');rect=str(uuid.uuid4());rp=dict(p,motivo_retificacao='Correção sintética')
   rpc(rect,rp,rect=id,keep=[eid]);rpc(rect,rp,'finalize',rect=id,keep=[eid]);check('inheritance keeps original locator',f"(SELECT count(*) FROM aplicacao_evidencias)=1 AND (SELECT count(*) FROM aplicacao_evidencias_vinculos)=2 AND (SELECT storage_path FROM aplicacao_evidencias)='{path}' AND (SELECT is_latest FROM aplicacoes WHERE id='{id}')=false")
   rpc(rect,rp,'finalize',rect=id,keep=[eid]);passed.append('rectification replay allowed after predecessor closed')
   denied('stale rectification denied',rp,rect=id,keep=[eid])
+  run(sql=f"UPDATE ordens_servico SET status='entregue' WHERE id='{O}';")
   shared=str(uuid.uuid4());rpc(shared,p)
   with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool: list(pool.map(lambda _:rpc(shared,p,'finalize'),range(2)))
   check('concurrent replay exactly once',f"(SELECT count(*) FROM aplicacoes WHERE id='{shared}')=1")

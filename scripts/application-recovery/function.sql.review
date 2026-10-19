@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION public.rpc_salvar_aplicacao_v1(p_aplicacao_id uuid, p
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $function$
 DECLARE
  u uuid:=auth.uid(); org uuid; client uuid; product uuid; os_org uuid;
- osid uuid; onid uuid; lot uuid; responsible uuid; phase text; canonical jsonb;
+ osid uuid; onid uuid; lot uuid; responsible uuid; phase text; canonical jsonb; os_status text;
  r platform_private.application_save_preparations%ROWTYPE;
  original public.aplicacoes%ROWTYPE; a public.aplicacoes%ROWTYPE;
  ev jsonb; e public.aplicacao_evidencias%ROWTYPE; obj storage.objects%ROWTYPE;
@@ -40,12 +40,15 @@ BEGIN
  -- Lock every persisted authority before receipt lookup. Locks prevent UPDATE/DELETE races;
  -- they do not invent membership, roles or a tenant for NULL legacy rows.
  IF osid IS NOT NULL THEN
- SELECT cliente_id,produto_id,organization_id INTO client,product,os_org FROM public.ordens_servico WHERE id=osid FOR SHARE;
+ SELECT cliente_id,produto_id,organization_id,status::text INTO client,product,os_org,os_status FROM public.ordens_servico WHERE id=osid FOR SHARE;
  ELSE
- SELECT cliente_id,produto_id INTO client,product FROM public.ordens_servico_onfarm WHERE id=onid FOR SHARE;
+ SELECT cliente_id,produto_id,status::text INTO client,product,os_status FROM public.ordens_servico_onfarm WHERE id=onid FOR SHARE;
  SELECT organization_id INTO os_org FROM public.clientes WHERE id=client;
  END IF;
  IF client IS NULL OR os_org IS DISTINCT FROM org OR product IS NULL THEN RAISE EXCEPTION 'application_origin_denied' USING ERRCODE='42501'; END IF;
+ -- Same lifecycle as the canonical desktop form. Replay is reauthorized too.
+ IF os_status IS NULL OR NOT (os_status IN ('entregue','pronto_entrega','envase')
+ OR (p_rectify_id IS NOT NULL AND os_status='finalizada')) THEN RAISE EXCEPTION 'application_os_status_denied' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.clientes WHERE id=client AND organization_id=org FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'application_client_denied' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.user_clientes WHERE user_id=u AND cliente_id=client ORDER BY id FOR SHARE;
