@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { formatOS } from "@/lib/osLabel";
 import { getClienteLabel } from "@/lib/clienteLabel";
 import { useAuth } from "@/hooks/useAuth";
-import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS, produtoFabricavelOS } from "@/lib/ordens-servico/validacao";
+import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS, lerProdutosFabricaveisOS } from "@/lib/ordens-servico/validacao";
 import { OSDetalhesDialog } from "@/components/ordens-servico/OSDetalhesDialog";
 
 const getPartnerFromOS = (o: any) => {
@@ -176,7 +176,8 @@ export default function OrdensServico() {
         supabase.from("clientes").select("id, nome, codigo_cliente").order("nome"),
         supabase.from("fazendas").select("id, nome, cliente_id").order("nome"),
         supabase.from("talhoes").select("id, nome, fazenda_id, area_hectares").order("nome"),
-        supabase.from("produtos").select("id, nome, dose_ml_ha, familia_catalogo").eq("familia_catalogo", "biologico").gt("dose_ml_ha", 0).order("nome"),
+        // Live column absent from generated SDK types; response decoded fail-closed below.
+        supabase.from("produtos").select("id, nome, dose_ml_ha, familia_catalogo").filter("familia_catalogo", "eq", "biologico").filter("dose_ml_ha", "gt", 0).order("nome"),
         supabase.from("microrganismos").select("id, nome, nome_cientifico, dose_ml_ha").order("nome"),
       ]);
 
@@ -192,7 +193,7 @@ export default function OrdensServico() {
       if (c) setClientes(c);
       if (f) setFazendas(f as Fazenda[]);
       if (t) setTalhoes(t as Talhao[]);
-      if (p) setProdutos((p as Produto[]).filter(produtoFabricavelOS));
+      if (p) setProdutos(lerProdutosFabricaveisOS(p));
       if (m) setMicrorganismos(m as Microrganismo[]);
     } catch (error) {
       if (version === loadVersion.current) setLoadError(true);

@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS, produtoFabricavelOS } from '@/lib/ordens-servico/validacao';
+import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS, produtoFabricavelOS, lerProdutosFabricaveisOS } from '@/lib/ordens-servico/validacao';
 import { readFileSync } from 'node:fs';
 const id = '00000000-0000-4000-8000-000000000001';
 const form = { cliente_id:id, fazenda_id:id, talhao_id:id, produto_id:id, microrganismo_id:'', tipo_item:'produto', modo_aplicacao:'foliar', area_hectares:'1', data_programada:'2026-09-13', prioridade:'media' };
 const refs = { clientes:[{id}], fazendas:[{id,cliente_id:id}], talhoes:[{id,fazenda_id:id}], produtos:[{id,dose_ml_ha:10,familia_catalogo:'biologico'}], microrganismos:[] };
 describe('Ordens de serviço seguras', () => {
+ it('decoder nega coluna ausente e não adota família inferida', () => {
+   expect(() => lerProdutosFabricaveisOS([{id,nome:'item',dose_ml_ha:100}])).toThrow('invalid_product_catalog');
+   expect(lerProdutosFabricaveisOS([{id,nome:'item',dose_ml_ha:100,familia_catalogo:null}])).toEqual([]);
+   expect(lerProdutosFabricaveisOS([{id,nome:'item',dose_ml_ha:100,familia_catalogo:'biologico'}])).toEqual([{id,nome:'item',dose_ml_ha:100,familia_catalogo:'biologico'}]);
+ });
  it('não confunde consulta alfabética com código vazio', () => expect(buscaOS('inexistente',['123','Cliente'])).toBe(false));
  it('normaliza acentos e espaços', () => expect(buscaOS(' joao ',['João'])).toBe(true));
  it('busca vazia inclui registros sem rótulos', () => expect(buscaOS('',[null])).toBe(true));

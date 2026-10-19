@@ -36,6 +36,17 @@ export const schemaOS = z.object({
 export function produtoFabricavelOS(produto: { familia_catalogo?: string | null; dose_ml_ha: number | null }): boolean {
   return produto.familia_catalogo === 'biologico' && typeof produto.dose_ml_ha === 'number' && Number.isFinite(produto.dose_ml_ha) && produto.dose_ml_ha > 0;
 }
+/** Generated SDK catalog types lack the live family column; validate the actual response. */
+export function lerProdutosFabricaveisOS(raw: unknown): { id: string; nome: string; dose_ml_ha: number; familia_catalogo: string }[] {
+  if (!Array.isArray(raw)) throw new Error('invalid_product_catalog');
+  return raw.flatMap(row => {
+    if (!row || typeof row !== 'object' || typeof row.id !== 'string' || typeof row.nome !== 'string' ||
+      !(row.familia_catalogo === null || typeof row.familia_catalogo === 'string') ||
+      !(row.dose_ml_ha === null || typeof row.dose_ml_ha === 'number')) throw new Error('invalid_product_catalog');
+    return row.familia_catalogo === 'biologico' && typeof row.dose_ml_ha === 'number' && produtoFabricavelOS(row)
+      ? [{ id: row.id, nome: row.nome, familia_catalogo: row.familia_catalogo, dose_ml_ha: row.dose_ml_ha }] : [];
+  });
+}
 export function validarOS(form: unknown, refs: {
   clientes: {id: string}[]; fazendas: {id: string; cliente_id: string}[];
   talhoes: {id: string; fazenda_id: string}[];
