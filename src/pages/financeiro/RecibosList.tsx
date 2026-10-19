@@ -75,6 +75,8 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
         if (error || data?.path !== path || data?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
       }
       if (!valid()) return;
+      // The canonical opener owns download timeout/abort; this timer covers Edge only.
+      clearTimeout(timeout);
       await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
       if (!valid()) return;
     } catch {

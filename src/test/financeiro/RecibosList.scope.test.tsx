@@ -32,7 +32,7 @@ function setup() { const tree = () => <MemoryRouter><RecibosList /></MemoryRoute
 async function settle(late: ReturnType<typeof deferred>, value: any) { await act(async () => { late.resolve(value); await Promise.resolve(); }); }
 async function submit(ui: ReturnType<typeof setup>) {
   fireEvent.click(await ui.findByRole("button", { name: "Cancelar", exact: true }));
-  fireEvent.change(ui.getByRole("textbox", { name: "" }).closest("[role=dialog]")?.querySelector("textarea") ?? ui.getByPlaceholderText("Informe o motivo (mín. 5 caracteres)"), { target: { value: "Motivo seguro" } });
+  fireEvent.change(ui.getByPlaceholderText("Informe o motivo (mín. 5 caracteres)"), { target: { value: "Motivo seguro" } });
   fireEvent.click(ui.getByRole("button", { name: "Confirmar cancelamento" }));
 }
 beforeEach(() => {
@@ -108,7 +108,7 @@ describe("existing receipt list and cancellation with real scope", () => {
   }
   it("blocks new cancellation and downloads exactly at monotonic deadline without rerender", async () => {
     let clock = 0; const monitor = createAuthzEpochMonitor({ fetcher: async () => ({ eligible: true, fingerprint: "same" }),
-      now: () => clock, setTimeoutFn: () => 1, clearTimeoutFn: () => {}, onEpochChange: () => {}, onExpire: () => {} });
+      now: () => clock, setTimeoutFn: () => 1, clearTimeoutFn: () => {}, onEpochChange: () => {}, onExpire: () => {}, isOnline: () => true, isVisible: () => true });
     monitor.start(); await act(async () => { await Promise.resolve(); }); fake.check = monitor.checkAccess;
     const ui = setup(); await ui.findByRole("button", { name: "Preparar PDF" }); clock = 15_000;
     fireEvent.click(ui.getByRole("button", { name: "Preparar PDF" })); fireEvent.click(ui.getByRole("button", { name: "Cancelar", exact: true }));
