@@ -1,5 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 13:35 — P0 sintaxe da guarda SQL
+- [ ] Corrigir CASE ACL compartilhado; reproduzir42601 e executar arquivos integrais byte-exatos localmente sem substituir guarda; distinguir recusa por drift de execução positiva em catálogo equivalente. Sem produção/publicação.
+
 ## 19/10 13:32 — seleção de fazenda na Nova OS
 - [x] Removida validação circular somente no combo Fazenda: saving/papel/cliente presente nas referências/carregamento/erro. Progressão no formulário e Radix reais com transporte fake; submit incompleto segue negado;25/25 testes dirigidos. Sem criar OS/publicar/DDL; pais B informados preservados.
 - [ ] Proprietário conferir seleção na sessão real após implantação própria; sem publicação pelo agente. Checker informado vale para snapshot estável anterior, não certifica esta alteração.
