@@ -2,8 +2,8 @@
 
 ## Entrega revisável, não implantação
 
-- SQL: `scripts/application-recovery/candidate.sql.review` SHA256 `54b9ad6cd32368149c3956de58c6affb314e39a60e5af7789bda0c7a6bd72fe1`.
-- Manifesto recuperação: `a66937015bddf5d74b8d4e953be7deed4c2f5d24c290837697d76e3df742ff1b`.
+- SQL: `scripts/application-recovery/candidate.sql.review` SHA256 `dbb947cd26eb33403f07c5fcf515fe5068e69b20eaa9103d73947355ef20341a`.
+- Manifesto recuperação: `d81c9d8799c1a559f7d98457d9367a0608bfbac11e01c75a9330b6ffdaddb6b6`.
 - Manifesto diagnóstico isolado: `scripts/authz-diagnostics/manifest.json`, SHA256 `866d6ed19a2d02969110f8b6313c372d13e3d194af073c773f6cccfdc7ecec3d`.
 - POST RPC `f8bc9d5f000abef7f13e6ca340988734`, Storage1 `daefb183522e2ee7f730e0db243f4823`. Helper leitura implantado `04067ba43cea3eed845a1fd3735061e0` preservado.
 - Preflight READ ONLY e rollback SQL integral em `scripts/application-recovery`; sem execução hosted pelo agente. Guardas16 funções/ACL/owner/search_path/schema. Rollback restaura writer fechado e Storage baseline, preserva dados/recibos; reaplicação não apaga destino ocupado.
@@ -17,7 +17,7 @@ Auditor executou preflight REAL READ ONLY canônico e recebeu42601 no CASE da co
 
 - PostgreSQL local atualizado: **107/107**. Mutação removendo os parênteses reproduz42601; quatro arquivos completos passados diretamente a psql, bytes/hashes conferidos antes/depois, nenhuma substituição de guarda nessa prova, compilaram e recusaram catálogo reduzido comP0001 `application_schema_policy_trigger_drift`, atomicamente. Recibo `scripts/application-recovery/results.byte-exact.json`.
 - **Limite aberto:** não há reprodução local integral equivalente do catálogo de produção; esses quatro resultados não são PASS da guarda integral nem implantação positiva byte-exata. Instalação/rollback positivos anteriores continuam usando substituições explicitamente locais e NÃO validam essa guarda. Auditor informou às13:37 PASS integral hosted READ ONLY das16 funções/corpos/ACL/search_path/owner e schema/triggers/policies, applications0/evidence0/receipt_destination_free=true, após as duas correções. Evidência indicada pelo auditor: `recovery-preflight-corrected2-readonly.json` (não executada nem inspecionada pelo agente). Nenhum DDL/DML; RPC permanece fechada. Esse PASS de preflight não certifica implantação/rollback positivos nem homologação de cadastro/anexo.
-- Preflight SHA256 `b9f4b47eb393b4b9fcb446a66110f7add3677b51be11b7b5b2d2f3a6706a3031`; rollback `f2a620ef1ee1a7fcc153504499a1069dc703d8a0fe575428e98ca6a45a907701`; postflight `98356def053352ba0bc17e027777095ff6fc9e4b6d4d714abe009c29d8867339`. Manifesto/SHA256SUMS atualizados; hashes POST dos corpos inalterados.
+- Preflight SHA256 `669701e36e8e0bc9d567014da285fef80dfbe03ffeac419c0798509fcf735f46`; rollback `2057081a6c8f09c1ee60fe54e86e58fea6d7171fa1e40dbd6169df3aa476b60c`; postflight `0498ea819da11e76517d17961fc758e7ce0f6cd82f1b030609292b66b1ac8393`. Manifesto/SHA256SUMS atualizados; hashes POST dos corpos inalterados.
 
 - PostgreSQL descartável: **104/104**, claims/RLS/schema reduzidos. Casos mixed-role ativo/revogado entre fases, responsável inativo/sem role, status manual/onfarm, replay/concorrência/retificação/rollback. Não é JWT real nem Storage bytes/SDK hosted; cópias integrais locais substituem explicitamente guardas do catálogo reduzido, candidata real recusa esse catálogo.
 - Vitest dirigido: **194/194**,12 arquivos, inclui aplicações/PDF44/monitores/diagnóstico. RTT3s90s financeiro/admin e suspensão fake não certificam a causa das pausas reais.
