@@ -2,7 +2,7 @@
 
 ## 19/10 13:35 — P0 sintaxe da guarda SQL
 - [x] CASE parentetizado e variável ACL renomeada para evitar42702, expectativas intactas; mutação reproduziu42601. Quatro SQL completos byte-exatos sem substituir guarda recusam schema reduzido comP0001; PG107/107, hashes atualizados. Sem produção/publicação.
-- [ ] PASS integral em catálogo equivalente não certificado: laboratório tem schema reduzido; guardas positivas localizadas não o substituem. Auditor repetirá preflight READ ONLY produção; RPC continua fechada.
+- [x] Auditor informou13:37 preflight hosted READ ONLY integral PASS16 funções/ACL/search_path/owner/schema/triggers/policies; applications0/evidence0/receipt_destination_free=true. CASE e v_executor_roles propagados, fingerprint intacto; RPC fechada, sem DDL/DML. Evidência auditor recovery-preflight-corrected2-readonly.json; não é implantação/homologação positiva nem catálogo equivalente local.
 
 ## 19/10 13:32 — seleção de fazenda na Nova OS
 - [x] Removida validação circular somente no combo Fazenda: saving/papel/cliente presente nas referências/carregamento/erro. Progressão no formulário e Radix reais com transporte fake; submit incompleto segue negado;25/25 testes dirigidos. Sem criar OS/publicar/DDL; pais B informados preservados.
