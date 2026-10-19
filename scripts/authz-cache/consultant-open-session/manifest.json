@@ -194,7 +194,7 @@
     "rollback/src/test/config/companyAdminOpenSession.integration.test.tsx": "c7ac7f6363e49cb4a3f15ed732c880199170091e0a3dc3942798384356ade39f",
     "rollback/src/test/config/financialOpenSession.integration.test.tsx": "9cbe9b55b68df3b001dc97bf9afc9dcdfdbb3b422698bdc66d0dcaeae23fbab1",
     "rollback/src/test/config/producerOpenSession.integration.test.tsx": "4dca51ed638583e12aa1436198f4f2943234f94c9d5bf93b7a51801b68685f0c",
-    "stage.py": "9690c8d71e342e0d2e5c7ad5031ee8a6009a904b8a89c8cb72bd7ac38592828d",
-    "test_stage.py": "a9fe7ffdf5c9c3f62e1f9a7c467c54e36c9278bac725fb6c4728c583c33a9148"
+    "stage.py": "1d1d5e8868c3eb75a8d54a9c00c6729a87b3f974214cf589b427872009a4cfe5",
+    "test_stage.py": "678aca09fbe72a0378eb14b423eaf0ad1e8dd93c5b008451f225cc85ff34a6cf"
   }
 }
