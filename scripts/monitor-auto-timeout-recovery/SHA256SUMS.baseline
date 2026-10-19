@@ -1,0 +1,4 @@
+c8f929fef71ced032a133d12e05b868f1f2512433f2fedd62f4a353453429980  src/hooks/useAuth.tsx
+bbb9b4130925c3e597b2511d5affe0215e2e481de80ffeeb160abad5a6ae97d4  src/lib/authz/localDiagnostics.ts
+b7b4a54dcad7702d3942bbdd7c9f7367aa2ccf5b6b3ec7e4dfeec2ee4fac33f9  src/test/config/financialOpenSession.integration.test.tsx
+21a41e0ae29b94dbf7d3f2811017da33cfdac76545733d3d5df53555fba74901  src/test/config/companyAdminOpenSession.integration.test.tsx
