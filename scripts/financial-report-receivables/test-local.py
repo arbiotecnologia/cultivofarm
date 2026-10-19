@@ -2,12 +2,13 @@
 """Disposable local PostgreSQL. Synthetic auth/roles; NOT JWT/RLS homologation."""
 import subprocess, tempfile, pathlib, hashlib, re, sys, os, shutil
 H = pathlib.Path(__file__).parent
-d = tempfile.mkdtemp(); data = f"{d}/data"; sock = d
-run = lambda *a: subprocess.run(a, check=True, capture_output=True, text=True)
+d = tempfile.mkdtemp(prefix="arrep-", dir="/tmp"); os.chmod(d, 0o777); data = f"{d}/data"; sock = d
+PRE = ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"] if os.getuid() == 0 else []
+run = lambda *a: subprocess.run(PRE + list(a), check=True, capture_output=True, text=True)
 run("initdb", "-D", data, "-U", "postgres", "--auth=trust")
-run("pg_ctl", "-D", data, "-o", f"-k {sock} -c listen_addresses=''", "-w", "start")
+run("pg_ctl", "-D", data, "-l", f"{d}/log", "-o", f"-k {sock} -h \"\" -p 55499", "-w", "start")
 def psql(sql, user="postgres", ok=True):
-    p = subprocess.run(["psql", "-h", sock, "-U", user, "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-qAtX"],
+    p = subprocess.run(["psql", "-h", sock, "-p", "55499", "-U", user, "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-qAtX"],
                        input=sql, capture_output=True, text=True)
     if ok and p.returncode: raise SystemExit(p.stderr)
     return p
@@ -119,6 +120,6 @@ INSERT INTO public.accounts_receivable_installments VALUES
     check(f"rollback restores exact baseline md5+ACL", m == "970a18caa86f578cd31de2a56f002f6f {postgres=X/postgres,service_role=X/postgres}")
     check("preflight PASS after rollback", psql(local((H/"preflight-readonly.sql").read_text()), ok=False).returncode == 0)
 finally:
-    subprocess.run(["pg_ctl", "-D", data, "-m", "immediate", "stop"], capture_output=True); shutil.rmtree(d, True)
+    subprocess.run(PRE + ["pg_ctl", "-D", data, "-m", "immediate", "stop"], capture_output=True); shutil.rmtree(d, True)
 bad = [n for n, ok in results if not ok]
 print(f"{len(results)-len(bad)}/{len(results)} PASS"); sys.exit(1 if bad else 0)
