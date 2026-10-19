@@ -1,0 +1,38 @@
+-- Changes only the existing helper, preserving its role/membership branch.
+CREATE OR REPLACE FUNCTION public.can_user_access_aplicacao(_aplicacao_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT COALESCE(
+    _aplicacao_id IS NOT NULL
+    AND auth.uid() IS NOT NULL
+    AND EXISTS (
+      SELECT 1
+      FROM public.aplicacoes a
+      LEFT JOIN public.ordens_servico os ON os.id = a.ordem_servico_id
+      LEFT JOIN public.clientes c ON c.id = os.cliente_id
+      LEFT JOIN public.ordens_servico_onfarm oso ON oso.id = a.ordem_servico_onfarm_id
+      LEFT JOIN public.clientes co ON co.id = oso.cliente_id
+      WHERE a.id = _aplicacao_id
+        AND a.organization_id = public.h15_actor_organization()
+        -- Every present parent must exist and remain in the application's tenant.
+        AND (a.ordem_servico_id IS NULL OR (
+          os.id IS NOT NULL AND os.organization_id = a.organization_id
+          AND c.id IS NOT NULL AND c.organization_id = a.organization_id
+        ))
+        -- On-farm has no organization_id: its persisted client is the tenant origin.
+        AND (a.ordem_servico_onfarm_id IS NULL OR (
+          oso.id IS NOT NULL AND co.id IS NOT NULL
+          AND co.organization_id = a.organization_id
+        ))
+        AND (
+          public.is_operational_staff(auth.uid())
+          OR public.has_role(auth.uid(), 'financeiro'::app_role)
+          OR os.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))
+          OR oso.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))
+        )
+    ), false
+  );
+$function$;

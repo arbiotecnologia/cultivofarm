@@ -1,0 +1,77 @@
+-- Exact logical source captured read-only; public wrappers/private cores are unchanged.
+CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)
+ AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()
+ RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+ SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.has_role(_user_id uuid, _role public.app_role)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.user_id=r.user_id WHERE r.user_id=_user_id AND r.role=_role AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id));
+$function$;
+CREATE OR REPLACE FUNCTION public.h15_actor_organization()
+ RETURNS uuid LANGUAGE sql STABLE SET search_path TO ''
+AS $function$ SELECT platform_private.h15_actor_organization(); $function$;
+CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
+ RETURNS boolean LANGUAGE sql STABLE SET search_path TO ''
+AS $function$ SELECT platform_private.has_role(_user_id,_role); $function$;
+CREATE OR REPLACE FUNCTION public.fn_authz_uid_scope_ok(_uid uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public', 'pg_temp'
+AS $function$
+  SELECT auth.uid() IS NULL
+      OR (_uid IS NOT NULL AND _uid = auth.uid())
+      OR public.has_role(auth.uid(), 'administrador'::app_role);
+$function$;
+CREATE OR REPLACE FUNCTION public.is_operational_staff(_uid uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+  SELECT COALESCE(_uid IS NOT NULL AND (
+        public.has_role(_uid, 'administrador'::app_role)
+    OR public.has_role(_uid, 'gestor'::app_role)
+    OR public.has_role(_uid, 'administrativo'::app_role)
+    OR public.has_role(_uid, 'consultor_tecnico'::app_role)
+    OR public.has_role(_uid, 'tecnico_agronomo'::app_role)
+    OR public.has_role(_uid, 'aplicador'::app_role)
+    OR public.has_role(_uid, 'producao'::app_role)
+    OR public.has_role(_uid, 'operador_onfarm'::app_role)
+  ), false);
+$function$;
+CREATE OR REPLACE FUNCTION public.get_cliente_ids_for_user(_user_id uuid)
+ RETURNS uuid[] LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+  SELECT CASE WHEN public.fn_authz_uid_scope_ok(_user_id) THEN ARRAY(
+    SELECT uc.cliente_id
+      FROM public.user_clientes uc
+     WHERE uc.user_id = _user_id
+       AND uc.is_active = true
+       AND uc.revoked_at IS NULL
+       AND (uc.valid_from IS NULL OR uc.valid_from <= now())
+       AND (uc.valid_until IS NULL OR uc.valid_until >= now())
+    UNION
+    SELECT pr.cliente_id
+      FROM public.profiles pr
+     WHERE pr.user_id = _user_id
+       AND pr.cliente_id IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM public.user_clientes uc2
+          WHERE uc2.user_id = pr.user_id
+            AND uc2.cliente_id = pr.cliente_id
+            AND uc2.is_active = true
+            AND uc2.revoked_at IS NULL
+            AND (uc2.valid_from IS NULL OR uc2.valid_from <= now())
+            AND (uc2.valid_until IS NULL OR uc2.valid_until >= now())
+       )
+  ) ELSE ARRAY[]::uuid[] END;
+$function$;
+CREATE OR REPLACE FUNCTION public.rpc_salvar_aplicacao_v1(p_aplicacao_id uuid, p_payload jsonb, p_rectify_id uuid DEFAULT NULL::uuid, p_evidencias jsonb DEFAULT '[]'::jsonb, p_evidencias_manter uuid[] DEFAULT '{}'::uuid[])
+ RETURNS jsonb LANGUAGE plpgsql SET search_path TO ''
+AS $function$
+BEGIN
+ RAISE EXCEPTION 'STORAGE2_APPLICATION_CONTRACT_UNAVAILABLE' USING ERRCODE='42501';
+END $function$;

@@ -1,0 +1,25 @@
+-- Captured SELECT-only from canonical production 2026-10-19; never auto-install.
+CREATE OR REPLACE FUNCTION public.can_user_access_aplicacao(_aplicacao_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT _aplicacao_id IS NOT NULL
+     AND auth.uid() IS NOT NULL
+     AND (
+       public.is_operational_staff(auth.uid())
+       OR public.has_role(auth.uid(), 'financeiro'::app_role)
+       OR EXISTS (
+            SELECT 1
+            FROM public.aplicacoes a
+            LEFT JOIN public.ordens_servico os ON os.id = a.ordem_servico_id
+            LEFT JOIN public.ordens_servico_onfarm oso ON oso.id = a.ordem_servico_onfarm_id
+            WHERE a.id = _aplicacao_id
+              AND (
+                os.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))
+                OR oso.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))
+              )
+          )
+     );
+$function$;
