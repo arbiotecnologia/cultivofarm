@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 02:20 — renovação antecipada RTT multipapel
+- [x] Agendar renovação antes do deadline confirmado só no par exato (RTT/margem/jitter/piso 1s), sem estender lease nem aceitar resposta tardia.
+- [x] Testes RTT3s contínuo, variável, alto, orçamento curto, tardia, erros/role/offline, clock suspenso, coalescência; mutação prova falha sem a opção; staging5/5, manifest 76/8.
+- [ ] Revisão externa e publicação dependem do proprietário; não recarregar abas.
+
 ## 19/10 02:07 — pausas ambientais multipapel
 - [x] Corrigir foco/visibility e polling hidden somente no recorte exato, preservando deadline15s/fail-closed e B2B.
 - [x] Relógio fake/drafts/layouts/timeout/offline/perda de papel/tardios:399/399 PASS; candidata/rollback da base exatos, manifest separado75fontes/7artefatos e staging5/5 PASS; build automático OK, typecheck não certificado.
