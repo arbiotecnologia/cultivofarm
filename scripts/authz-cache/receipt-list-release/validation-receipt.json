@@ -1,0 +1,23 @@
+{
+  "baseline": "71decc2d2b6b2028b9ca2170e8f1344bee9d0b48",
+  "targeted": {
+    "files": 8,
+    "passed": 231,
+    "failed": 0,
+    "log_sha256": "3573dfcdb008d184e28e212221c2219b14ea7a6ed40329f008869804671e083e"
+  },
+  "staging": {
+    "passed": 5,
+    "failed": 0
+  },
+  "automatic_build": {
+    "observed": "build OK",
+    "timestamp_utc": "2026-10-19T02:51:04Z"
+  },
+  "independent_final_typecheck": "NOT_CERTIFIED; initial receipt failed on corrected test typing; final separate run unavailable",
+  "hosted_preflight": "NOT_EXECUTED",
+  "authenticated_browser": "NOT_VERIFIED; external_unmanaged",
+  "historical_broad_failures": 6,
+  "broad_suite": "NOT_RERUN",
+  "publication": "NOT_EXECUTED"
+}
