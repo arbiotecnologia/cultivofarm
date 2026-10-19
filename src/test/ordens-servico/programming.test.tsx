@@ -68,4 +68,31 @@ describe("programação inicial existente — transporte fake, não homologaçã
     expect(screen.getByLabelText("Data programada")).toHaveValue("");
     expect(f.success).not.toHaveBeenCalled(); expect(f.error).not.toHaveBeenCalled();
   });
+  it("atualiza a lista existente só após sucesso confirmado e escopo vigente", async () => {
+    const onChanged = vi.fn();
+    render(<OSDetalhesDialog {...props} onChanged={onChanged} />);
+    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Programar OS" })); });
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    ["erro", { data: null, error: { code: "42501" } }],
+    ["status divergente", { data: { success: true, status: "aprovada" }, error: null }],
+  ])("não atualiza lista em %s", async (_n, response) => {
+    const onChanged = vi.fn(); f.rpc.mockResolvedValue(response);
+    render(<OSDetalhesDialog {...props} onChanged={onChanged} />);
+    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Programar OS" })); });
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+  it("resposta tardia após troca de escopo não atualiza lista", async () => {
+    const onChanged = vi.fn(); let finish: (v: unknown) => void = () => {};
+    f.rpc.mockImplementation(() => new Promise((r) => { finish = r; }));
+    render(<OSDetalhesDialog {...props} onChanged={onChanged} />);
+    fireEvent.change(screen.getByLabelText("Data programada"), { target: { value: "2026-10-20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Programar OS" }));
+    f.epoch += 1;
+    await act(async () => finish({ data: { success: true, status: "programada" }, error: null }));
+    expect(onChanged).not.toHaveBeenCalled();
+  });
 });
