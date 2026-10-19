@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 14:22 — correção funcional monitor/Cockpit
+- [ ] Corrigir status aberta/aprovada no reader canônico com candidata isolada, PRE/POST/rollback e hashes; quatro SQL approval e dados reais intocados.
+- [ ] Implementar reconfirmação TOKEN_REFRESHED com fence e continuidade somente de enums não sensíveis/modal Nova OS; descartar IDs, texto livre, arquivos/cache/respostas antigas.
+- [ ] Testar AuthProvider real/transporte fake RTT3s e mudanças de identidade/roles/tenant/revogação/tardios; registrar limites sem PASS hosted.
+
 ## 19/10 14:18 — P0 alias e rollback approval
 - [x] Alias class_row corrigido assembler/PRE/candidate/rollback/POST; corpos/expectativas intactos.
 - [x] Rollback ff80ad SHA9c20bd... recuperado byte-exato; manifest/pre≠post/stage fixados e8/8 negativos/comparação Git PASS.

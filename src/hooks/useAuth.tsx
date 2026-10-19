@@ -10,6 +10,7 @@ import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CON
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 import { producerContextProbe } from "@/lib/authz/producerContextProbe";
 import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
+import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSRenewalDraft";
 import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
 import {
   createAuthzEpochMonitor,
@@ -70,6 +71,8 @@ interface AuthContextType {
   checkAuthzAccess: () => boolean;
   /** Revalidação manual (botão "Tentar novamente"). */
   revalidateAuthz: () => void;
+  setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
+  takeSafeOSDraft: () => SafeOSRenewalDraft | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -88,6 +91,8 @@ const AuthContext = createContext<AuthContextType>({
   authzState: "idle",
   checkAuthzAccess: () => true,
   revalidateAuthz: () => {},
+  setSafeOSDraft: () => {},
+  takeSafeOSDraft: () => null,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -112,6 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Último usuário cujo carregamento já foi iniciado com sucesso — evita
   // tempestade de cargas em SIGNED_IN/INITIAL_SESSION repetidos.
   const loadedUserIdRef = useRef<string | null>(null);
+  const safeDraftRef = useRef<SafeOSRenewalDraft | null>(null);
+  const renewalRef = useRef<{ draft: SafeOSRenewalDraft; scope: string; fingerprint: string; confirmed: boolean } | null>(null);
+  const resolvedScopeRef = useRef("");
+  const setSafeOSDraft = (draft: SafeOSRenewalDraft | null) => { safeDraftRef.current = draft ? safeOSRenewalDraft(draft) : null; };
+  const takeSafeOSDraft = () => {
+    const receipt = renewalRef.current;
+    renewalRef.current = null;
+    return receipt?.confirmed && receipt.scope === resolvedScopeRef.current && authzMonitorRef.current?.checkAccess()
+      ? { ...receipt.draft } : null;
+  };
 
   const clearIdentityState = () => {
     setProfile(null);
@@ -135,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = profileData as Profile | null;
       
       if (!profile) {
+        renewalRef.current = null;
         loadedUserIdRef.current = null;
         clearIdentityState();
         setError("Seu perfil não foi encontrado. Por favor, entre em contato com o suporte.");
@@ -144,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (profile.ativo === false) {
+        renewalRef.current = null;
         loadedUserIdRef.current = null;
         setError("Sua conta está inativa.");
         clearIdentityState();
@@ -171,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const primary = pickPrimaryRole(userRoles);
 
       if (userRoles.length === 0) {
+        renewalRef.current = null;
         console.warn("No role found for user:", userId);
         setError("Seu usuário ainda não possui uma função atribuída no sistema.");
       } else if (
@@ -195,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Falha de autorização/carregamento limpa papéis antigos e libera nova
       // tentativa (não marca o usuário como já carregado).
       loadedUserIdRef.current = null;
+      renewalRef.current = null;
       clearIdentityState();
       setError("Falha ao carregar dados do usuário. Verifique sua conexão.");
       setLoading(false);
@@ -203,6 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = async () => {
     if (user) {
+      renewalRef.current = null;
+      safeDraftRef.current = null;
       setLoading(true);
       const gen = ++generationRef.current;
       loadedUserIdRef.current = user.id;
@@ -243,13 +264,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Efeito descartado (StrictMode/unmount) nunca aplica estado.
         if (effectCancelled) return;
         handledAuthEvent = true;
-        console.log("Auth event:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
 
         const nextUserId = session?.user?.id ?? null;
         const identityChanged = !!(lastUserId && lastUserId !== nextUserId);
         const authorizationChanged = event === "TOKEN_REFRESHED" || event === "USER_UPDATED";
+        if (identityChanged || authorizationChanged || !nextUserId) {
+          const monitor = authzMonitorRef.current;
+          const fingerprint = monitor?.currentFingerprint();
+          renewalRef.current = event === "TOKEN_REFRESHED" && !identityChanged && nextUserId &&
+            safeDraftRef.current && monitor?.checkAccess() && fingerprint
+            ? { draft: { ...safeDraftRef.current }, scope: resolvedScopeRef.current, fingerprint, confirmed: false } : null;
+          safeDraftRef.current = null;
+          // Synchronous fence before React/unmount or asynchronous SDK work.
+          monitor?.stop();
+          setAuthzEpoch(e => e + 1);
+          void queryClient.cancelQueries();
+          recordAuthzDiagnostic({ event: "auth_refresh", state: "pending", reason: null,
+            visible: document.visibilityState === "visible", online: navigator.onLine,
+            rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+        }
         if (identityChanged || authorizationChanged || !nextUserId) {
           clearActivePortalContext();
           queryClient.clear();
@@ -314,6 +349,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mountedRef.current = false;
+      renewalRef.current = null;
+      safeDraftRef.current = null;
       effectCancelled = true;
       generationRef.current += 1;
       loadedUserIdRef.current = null;
@@ -393,6 +430,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   authzMonitorGateRef.current =
     AUTHZ_CACHE_FOUNDATION_ENABLED && !loading && principalReady && isExternalUser;
   const principalScope = JSON.stringify([user?.id, profile?.organization_id, principalReady, [...roles].sort(), isExternalUser]);
+  resolvedScopeRef.current = principalScope;
   const [initializedPrincipal, setInitializedPrincipal] = useState("");
   useEffect(() => {
     // Initial profile and roles can arrive in different renders. Latch only
@@ -461,6 +499,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // No claim of detecting an unobserved transient ABA between polls.
       refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly,
       onStateChange: (next) => {
+        if (next === "valid" && renewalRef.current) {
+          const receipt = renewalRef.current;
+          if (receipt.scope === principalScope && receipt.fingerprint === monitor.currentFingerprint() && monitor.checkAccess()) {
+            receipt.confirmed = true;
+          } else renewalRef.current = null;
+          recordAuthzDiagnostic({ event: "auth_reconfirmed", state: next, reason: null,
+            visible: document.visibilityState === "visible", online: navigator.onLine,
+            rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+        }
+        if (next === "expired") renewalRef.current = null;
         if (next === "pending" || next === "expired") {
           void queryClient.cancelQueries();
           queryClient.clear();
@@ -469,6 +517,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthzState(next);
       },
       onEpochChange: () => {
+        renewalRef.current = null;
         // Nova época (fingerprint mudou): geração++, cancela/limpa consultas,
         // limpa seleção de portal e preferências compartilhadas, incrementa a
         // época reativa (consumidores remontam conteúdo sensível e descartam
@@ -485,6 +534,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void refresh();
       },
       onExpire: () => {
+        renewalRef.current = null;
         // Erro/offline/timeout/ineligible: geração++ (respostas em voo não
         // reabrem), cancela consultas e limpa seleção. O ESTADO reativo
         // (authzState="expired" via onStateChange) é o que ESCONDE os dados —
@@ -539,6 +589,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const revalidateAuthz = () => authzMonitorRef.current?.revalidate();
 
   const signOut = async () => {
+    renewalRef.current = null;
+    safeDraftRef.current = null;
     // Gate-off remains a no-op. Fence requests before asynchronous logout.
     authzMonitorRef.current?.stop();
     try {
@@ -575,6 +627,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authzState,
         checkAuthzAccess,
         revalidateAuthz,
+        setSafeOSDraft,
+        takeSafeOSDraft,
       }}
     >
       {children}

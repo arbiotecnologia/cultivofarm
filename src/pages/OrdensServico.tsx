@@ -120,7 +120,8 @@ interface Microrganismo extends SimpleRef { nome_cientifico: string | null; dose
 
 export default function OrdensServico() {
   const navigate = useNavigate();
-  const { roles } = useAuth();
+  const { roles, setSafeOSDraft, takeSafeOSDraft } = useAuth();
+  const [renewedDraft] = useState(() => takeSafeOSDraft?.() ?? null);
   const canCreate = roles.some(r => ["administrador", "gestor"].includes(r));
   const [loadError, setLoadError] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -149,18 +150,27 @@ export default function OrdensServico() {
   const [partnerFilter, setPartnerFilter] = useState<string>("all");
   const [origemFilter, setOrigemFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"date" | "status">("date");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(renewedDraft?.open ?? false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedOS, setSelectedOS] = useState<OS | null>(null);
 
 
   const [form, setForm] = useState({
     cliente_id: "", fazenda_id: "", talhao_id: "",
-    tipo_item: "produto" as "produto" | "microrganismo",
+    tipo_item: renewedDraft?.tipo_item ?? "produto" as "produto" | "microrganismo",
     produto_id: "", microrganismo_id: "",
-    modo_aplicacao: "foliar",
-    area_hectares: "", data_programada: "", prioridade: "media",
+    modo_aplicacao: (renewedDraft?.modo_aplicacao ?? "foliar") as string,
+    area_hectares: "", data_programada: "", prioridade: (renewedDraft?.prioridade ?? "media") as string,
   });
+
+  useEffect(() => {
+    setSafeOSDraft?.(!saving && open ? {
+      open, tipo_item: form.tipo_item,
+      modo_aplicacao: form.modo_aplicacao as "foliar" | "solo" | "fertirrigacao" | "tratamento_semente",
+      prioridade: form.prioridade as "baixa" | "media" | "alta",
+    } : null);
+    return () => setSafeOSDraft?.(null);
+  }, [open, saving, form.tipo_item, form.modo_aplicacao, form.prioridade]);
 
   const [volumeCalc, setVolumeCalc] = useState<number>(0);
 

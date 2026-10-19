@@ -3,13 +3,14 @@ import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { COCKPIT_LIST_RPC, useCockpitQuery } from "@/hooks/useCockpitQuery";
 import { COCKPIT_STAGES } from "@/lib/cockpit/stage";
+import { cockpitReaderStatus } from "@/lib/cockpit/readerStatus";
 import { PageHeader } from "@/components/ResponsiveHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-interface ListItem { os_id: string; origem_os: string; numero_os?: string | null; produto_nome?: string | null; microrganismo_nome?: string | null; cliente_nome?: string | null; titular_nome?: string | null; fazenda_nome?: string | null; talhao_nome?: string | null; responsavel_nome?: string | null; status_esteira_oficial?: string | null; volume_solicitado_l?: number | null }
+interface ListItem { os_id: string; origem_os: string; numero_os?: string | null; produto_nome?: string | null; microrganismo_nome?: string | null; cliente_nome?: string | null; titular_nome?: string | null; fazenda_nome?: string | null; talhao_nome?: string | null; responsavel_nome?: string | null; status_os?: string | null; status_esteira_oficial?: string | null; volume_solicitado_l?: number | null }
 interface ListResponse { items: ListItem[]; total_count: number }
 const PAGE_SIZE = 50;
 const label = (value: string) => value.replace(/_/g, " ");
@@ -29,7 +30,7 @@ export function CockpitConsulta() {
       if (error) throw error;
       const result = data as unknown as ListResponse | null;
       if (!result || !Array.isArray(result.items) || !Number.isSafeInteger(result.total_count) || result.total_count < 0) throw new Error("cockpit_list_invalid_response");
-      return result;
+      return { ...result, items: result.items.map(item => ({ ...item, status_esteira_oficial: cockpitReaderStatus(item.status_os, item.status_esteira_oficial) })) };
     }, refetchInterval: false,
   });
   const data = query.available && !query.isError ? query.data : undefined;
