@@ -1,0 +1,78 @@
+{
+  "baseline": "50d72d6b94aa5333ef25fe1d29d58163c578b5e6",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "scope": "environmental scheduling only; finance/company-admin exclusive; existing pair unchanged; no apply",
+  "files": [
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "candidate": "candidate/src/hooks/useAuth.tsx",
+      "rollback": "rollback/src/hooks/useAuth.tsx",
+      "pre_sha256": "646b115144c37e0201310b93269f31a551c803752afb268503773fbd95c64a43",
+      "post_sha256": "39bab659c1491eeaab800e0a09ef2e4ba8f6bfc214793a0011ce4c2dfc6fcc76"
+    },
+    {
+      "path": "src/test/config/financialOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/financialOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/financialOpenSession.integration.test.tsx",
+      "pre_sha256": "1f262387e5273db283d31c245792fa6fad777b55549c295a75ab1b3c73714004",
+      "post_sha256": "2974b97d24c3fc0ca59cad5765739a647e4809578e0f4d9b943b9ac7f386c4b6"
+    },
+    {
+      "path": "src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "candidate": "candidate/src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "rollback": "rollback/src/test/config/companyAdminOpenSession.integration.test.tsx",
+      "pre_sha256": "b700090f46eb88a935e01593ce07085f1d2a72bdb7ad1a982f4251c48d0b0b69",
+      "post_sha256": "01361a8f8fe9672ebcba3abf35cfc108162979b21353c30a61bab722b4508bc6"
+    },
+    {
+      "path": "src/test/config/financialAdminEnvironment.integration.test.tsx",
+      "candidate": "candidate/src/test/config/financialAdminEnvironment.integration.test.tsx",
+      "rollback": null,
+      "pre_sha256": null,
+      "post_sha256": "ba5fa0ef68dd47094c35994a66f7dcfaa33d6ffdda5ab45f81aea9b97debf0ca"
+    }
+  ],
+  "protected": [
+    {
+      "path": "src/lib/authz/authzEpochMonitor.ts",
+      "sha256": "45622480f70e0242e1b1a5cbf182854ff105a9b9dc0d334e41b36cf89ebb1943"
+    },
+    {
+      "path": "src/lib/authz/internalContextProbe.ts",
+      "sha256": "691c9707acfa5717262090ed57fae7496fd6404181dc7802a2e12b44fe066470"
+    },
+    {
+      "path": "src/lib/authz/authzEpochGate.ts",
+      "sha256": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7"
+    },
+    {
+      "path": "src/lib/authz/attachmentBlobGate.ts",
+      "sha256": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2"
+    },
+    {
+      "path": "src/hooks/useStorageAccessScope.ts",
+      "sha256": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b"
+    },
+    {
+      "path": "src/hooks/useAuthenticatedAttachmentOpener.ts",
+      "sha256": "dfa33d6cacbeac65c16a8e507deabbb8d488ab5cefa6cc6ef057b6fc621a4421"
+    },
+    {
+      "path": "src/pages/financeiro/RecibosList.tsx",
+      "sha256": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed"
+    },
+    {
+      "path": "src/lib/financeiro/receiptStorageLocator.ts",
+      "sha256": "aee75517faff16a462c2b5fc40147d5f985b152fb9c6731d71358a627619c6b3"
+    },
+    {
+      "path": "supabase/functions/generate-financial-receipt/index.ts",
+      "sha256": "45913bfbc8aefe59c27868806a947f0e5b8c94e39f57212b27694e1536f9b4a0"
+    },
+    {
+      "path": "src/integrations/supabase/client.ts",
+      "sha256": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454"
+    }
+  ],
+  "preflight_sha256": "a96142a405b6670bd394066bb2caa7e4c657f746a3cfdda6d3d464e1327c9fc7"
+}
