@@ -44,6 +44,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 async function toResidual(remaining: 'gestor' | 'consultor_tecnico') {
   render(<QueryClientProvider client={new QueryClient()}><AuthProvider><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
   await adv(2000);
+  if (process.env.DBG) console.log('BODY', document.body.textContent);
   expect(screen.getByText(/\[ok\] gestor\+consultor_tecnico|\[ok\] consultor_tecnico\+gestor/)).toBeTruthy();
   s.roles = [remaining];
   await adv(15_000); // next background poll observes the loss
