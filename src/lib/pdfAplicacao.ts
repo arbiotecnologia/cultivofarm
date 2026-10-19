@@ -64,9 +64,11 @@ export async function generateAplicacaoPdf(data: AplicacaoPdfData, access: Aplic
   if (data.aplicacao.id !== access.applicationId) throw new Error("PDF indisponível");
   // Prove access to the application now, not just possession of a UI snapshot.
   const application = await awaitAplicacaoPdf(access, () => supabase.from("aplicacoes")
-    .select("id, organization_id").eq("id", access.applicationId).eq("organization_id", access.tenantId)
+    .select("*").eq("id", access.applicationId).filter("organization_id", "eq", access.tenantId)
     .abortSignal(access.signal).maybeSingle());
-  if (application.error || application.data?.id !== access.applicationId || application.data.organization_id !== access.tenantId) throw new Error("PDF indisponível");
+  // Generated types predate the tenant column; validate the real row, do not regenerate bindings.
+  const row = application.data as unknown as { id?: string; organization_id?: string } | null;
+  if (application.error || row?.id !== access.applicationId || row.organization_id !== access.tenantId) throw new Error("PDF indisponível");
   let totalBytes = 0;
   const imageData = async (bucket: string, path: string) => {
     const blob = await awaitAplicacaoPdf(access, () => downloadAuthenticatedAttachment(bucket, path, access.signal));

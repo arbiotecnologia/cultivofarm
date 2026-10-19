@@ -2,12 +2,18 @@ import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fake = vi.hoisted(() => ({ uid: "actor", tenant: "007bb519-cba0-4704-be2c-cb93ad010048", epoch: 0, roles: ["administrador"], ready: true,
-  check: () => true, query: vi.fn(), download: vi.fn(), edge: vi.fn(), success: vi.fn(), error: vi.fn(), saves: vi.fn(), signals: [] as AbortSignal[] }));
+  check: (): boolean => true, query: vi.fn(), download: vi.fn(), edge: vi.fn(), success: vi.fn(), error: vi.fn(), saves: vi.fn(), signals: [] as AbortSignal[] }));
+vi.mock("jspdf", async original => {
+  const actual = await original<typeof import("jspdf")>();
+  return { ...actual, default: function (...args: ConstructorParameters<typeof actual.default>) {
+    const doc = new actual.default(...args); doc.save = fake.saves; return doc;
+  } };
+});
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: "admin", user: { id: fake.uid }, profile: { user_id: fake.uid, organization_id: fake.tenant, ativo: true }, roles: fake.roles,
   loading: false, authzReady: fake.ready, authzEpoch: fake.epoch, checkAuthzAccess: () => fake.check() }) }));
 vi.mock("@/integrations/supabase/client", () => ({ SUPABASE_URL: "https://swzpzcwiasxmjutrmvkm.supabase.co", supabase: {
   from: (table: string) => { const q: any = { then: (resolve: any, reject: any) => fake.query(table).then(resolve, reject) };
-    for (const m of ["select", "eq", "order", "limit"]) q[m] = () => q;
+    for (const m of ["select", "eq", "filter", "order", "limit"]) q[m] = () => q;
     q.abortSignal = (signal: AbortSignal) => { fake.signals.push(signal); return q; };
     q.maybeSingle = () => fake.query(table); return q; },
   functions: { invoke: (...args: any[]) => fake.edge(...args) },
@@ -17,7 +23,6 @@ vi.mock("sonner", () => ({ toast: { success: fake.success, error: fake.error } }
 vi.mock("@/components/aplicacao/AplicacaoFormDialog", () => ({ AplicacaoFormDialog: () => null }));
 vi.mock("@/components/aplicacao/EvidenciasGallery", () => ({ EvidenciasGallery: () => null }));
 
-import jsPDF from "jspdf";
 import { AplicacaoCard } from "@/components/aplicacao/AplicacaoCard";
 import { aplicacaoEvidencePath, aplicacaoLogoPath, generateAplicacaoPdf, awaitAplicacaoPdf, type AplicacaoPdfAccess } from "@/lib/pdfAplicacao";
 const APP = "00000000-0000-4000-8000-000000000001";
@@ -33,7 +38,6 @@ beforeEach(() => {
   for (const m of [fake.query, fake.download, fake.edge, fake.success, fake.error, fake.saves]) m.mockReset();
   fake.query.mockImplementation(async table => table === "aplicacoes" ? { data: { id: APP, organization_id: fake.tenant }, error: null } : table === "configuracoes_sistema" ? { data: { nome_empresa: "Cultivo Farm" }, error: null } : { data: [], error: null });
   fake.download.mockResolvedValue(new Blob([png], { type: "image/png" })); fake.edge.mockResolvedValue({ data: { emailSent: false }, error: null });
-  vi.spyOn(jsPDF.API, "save").mockImplementation(fake.saves);
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 describe("application PDF authenticated assets", () => {
