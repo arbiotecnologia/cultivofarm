@@ -46,7 +46,8 @@ export function useAvailableContexts() {
   }, []);
   useEffect(() => {
     // Previous identities/tenants/roles must not retain selectable context data.
-    const predicate = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === "available-portal-contexts" && q.queryKey[1] !== scope;
+    const predicate = (q: { queryKey: readonly unknown[] }) =>
+      (q.queryKey[0] === "available-portal-contexts" || q.queryKey[0] === "operator-login-home") && q.queryKey[1] !== scope;
     void queryClient.cancelQueries({ predicate });
     queryClient.removeQueries({ predicate });
   }, [scope, queryClient]);
