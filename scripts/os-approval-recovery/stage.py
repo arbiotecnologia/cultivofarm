@@ -3,6 +3,9 @@ from pathlib import Path
 import hashlib,json,sys
 H=Path(__file__).resolve().parent
 ROOT=H.parents[1]
+BASELINE_COMMIT='ff80adabd0d70eebd7d7da641831f7d020647814'
+BASELINE_DIALOG='9c20bd608f1cd8109df806ea4cc5db829ce3a9aaadd20e652e856d024cc0bc37'
+BASELINE_PATH='src/components/ordens-servico/OSDetalhesDialog.tsx'
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def stage(destination,rollback=False):
  dest=Path(destination).resolve()
@@ -11,6 +14,9 @@ def stage(destination,rollback=False):
  if sha(H/'manifest.json')!=(H/'manifest.sha256').read_text().strip():raise ValueError('manifest_drift')
  m=json.loads((H/'manifest.json').read_bytes())
  if m['canonical_ref']!='swzpzcwiasxmjutrmvkm':raise ValueError('wrong_binding')
+ if m.get('baseline_commit')!=BASELINE_COMMIT:raise ValueError('baseline_commit_drift')
+ if len(m['files'])!=1 or m['files'][0]['path']!=BASELINE_PATH:raise ValueError('scope_drift')
+ if m['files'][0]['pre']!=BASELINE_DIALOG or m['files'][0]['pre']==m['files'][0]['post']:raise ValueError('baseline_hash_drift')
  for p,d in m['protected'].items():
   if sha(ROOT/p)!=d:raise ValueError('protected_drift:'+p)
  for p,d in m['artifacts'].items():

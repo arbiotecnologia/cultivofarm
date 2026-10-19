@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 14:18 — P0 alias e rollback approval
+- [x] Alias class_row corrigido assembler/PRE/candidate/rollback/POST; corpos/expectativas intactos.
+- [x] Rollback ff80ad SHA9c20bd... recuperado byte-exato; manifest/pre≠post/stage fixados e8/8 negativos/comparação Git PASS.
+- [x] PG138/138: SQL completos recusam drift;6 IF exatos alcançam table ACL e mutações reproduzem42703;42/42 Vitest. PRE20 integral externo registrado, rollback UI antigo invalidado; sem hosted/publicação.
+
 ## 19/10 14:13 — complemento real OS/lifecycle
 - [x] OS B real/bundle registrados; SELECT canônico confirma aberta/1 programação aguardando/0 lotes. NÃO duplicar OS/seed.
 - [x] Badge deriva da presença do filho na view, não status OS; hashes live registrados, consulta-only/ações fechadas preservadas.

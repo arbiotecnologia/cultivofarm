@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "src/components/ordens-servico/OSDetalhesDialog.tsx",
-      "pre": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
+      "pre": "9c20bd608f1cd8109df806ea4cc5db829ce3a9aaadd20e652e856d024cc0bc37",
       "post": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
       "rollback": "rollback/OSDetalhesDialog.tsx"
     }
@@ -17,20 +17,21 @@
     "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454"
   },
   "artifacts": {
-    "scripts/os-approval-recovery/assemble.py": "ce0f2986d962aa708054216a40f39395f5d64a89fde1e3dd855e6ee7b8e2125e",
-    "scripts/os-approval-recovery/candidate.sql.review": "2c3d28f33e0199ceadfd6706d1574e390ae5cd1f747e1afce9a7870c08fbedb8",
+    "scripts/os-approval-recovery/assemble.py": "e9ef43363cc3448c99a34181976334a1feb8d1c89bd76f5999b6e8de01b9c8ad",
+    "scripts/os-approval-recovery/candidate.sql.review": "e90775f3f6f26194d7e3b3cf53eab1c92b9447cc54bbd122371c7233ff6b1d8e",
     "scripts/os-approval-recovery/post-hashes.json": "dc87aa3bca37ebf7557d04f23d3335a678ad57a4940287b06b191c1f2883d054",
-    "scripts/os-approval-recovery/postflight-readonly.sql": "6ae5413fe435be05a78812fa99007dec472ab3bcbcc104eee6f67f09e8121728",
-    "scripts/os-approval-recovery/preflight-readonly.sql": "ab026d8d859101e83c7b4197ab94e0b060a38a8230cb1f0a558a28d55d83521f",
-    "scripts/os-approval-recovery/rollback/OSDetalhesDialog.tsx": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
+    "scripts/os-approval-recovery/postflight-readonly.sql": "048d4c72b522b6f91a9cd3a956e1df83bbc0034ab1eca5b23fcea7cd8019ceb1",
+    "scripts/os-approval-recovery/preflight-readonly.sql": "4395b9f5f6c34b66f29145bec56921131f9ec78e01528c57ed8aefac15ca1cf4",
+    "scripts/os-approval-recovery/rollback/OSDetalhesDialog.tsx": "9c20bd608f1cd8109df806ea4cc5db829ce3a9aaadd20e652e856d024cc0bc37",
     "scripts/os-approval-recovery/rollback/rpc.sql.review": "82a35f3a786136a32b98321b229572c0cfe59d896602d68d3d52571f223fdeec",
     "scripts/os-approval-recovery/rollback/scope.sql.review": "d2eaccabec3af755439f9b0f7281a7d31321bba680cd78b39d8f172e6b98effe",
-    "scripts/os-approval-recovery/rollback.sql.review": "ccb3cb8ff9f6b1b7a6d2851c151d1a88fd74730666ce002035aee2114821c7c5",
+    "scripts/os-approval-recovery/rollback.sql.review": "d079910091f81e9cad72150df789d1cbeec76b16758481177c1d8797e7ec6b1d",
     "scripts/os-approval-recovery/rpc.sql.review": "16102d8211b7a3db846372def89b4762608a8a3c23d49dc26a4afc7eb419bdcc",
     "scripts/os-approval-recovery/scope.sql.review": "5e43d14cd307194b75838604fd844d1ee32cca61aebfd7c26a0f0d062b89e459",
-    "scripts/os-approval-recovery/stage.py": "502abecc6f1a6365e9c4c99fd73d9a1ffc5560681c6ae9d2926b43e15bef23f2",
-    "scripts/os-approval-recovery/test-local.py": "3ab7ebdd61d8dbe3aa63ca6f6dc9dd8d5db004f55268f2d993db654dd82a7fcc",
-    "scripts/os-approval-recovery/test_stage.py": "81097961a9f02c85d96a53a7a24e92029aca2b907af708227e6a6356307380f6",
-    "docs/auditorias/os-aprovacao-recuperacao-20261019.review.md": "1029946d166d686e76e20c470e3cf1ed5c417a1e6ae2e486ae64960b4daddc84"
-  }
+    "scripts/os-approval-recovery/stage.py": "6cb45395fecfdc997c4c170978159a2ac66892488069dfcebcb0e3bb6c5b3325",
+    "scripts/os-approval-recovery/test-local.py": "b2896d117fd30a487f7061f4a00bd12e247e06b2a86f982d7b35b6e74eb94118",
+    "scripts/os-approval-recovery/test_stage.py": "374f93f81181a361e9e4c8383b84404f088ea13548a881bddb68daa6d7884168",
+    "docs/auditorias/os-aprovacao-recuperacao-20261019.review.md": "fea5b838a3a4bb822f06373fcb491acca273802fb8407fb662b76cafabac705c"
+  },
+  "baseline_commit": "ff80adabd0d70eebd7d7da641831f7d020647814"
 }

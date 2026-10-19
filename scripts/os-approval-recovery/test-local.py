@@ -180,6 +180,23 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
         # The COMPLETE immutable files parse and fail closed against reduced catalog.
         # This is explicitly not a full equivalent-schema pre/postflight PASS.
         run("CREATE TABLE public.fiscal_environment_marker(project_ref text); INSERT INTO public.fiscal_environment_marker VALUES('swzpzcwiasxmjutrmvkm');")
+        # Reach the exact table ACL expression with the colliding record alive.
+        # Full reduced-catalog files stop at BODY_DRIFT earlier; this additional
+        # regression executes the unmodified emitted IF in every guard.
+        for name in ['preflight-readonly.sql','candidate.sql.review','rollback.sql.review','postflight-readonly.sql']:
+            contents=(ROOT/'scripts/os-approval-recovery'/name).read_text()
+            checks=re.findall(r"^IF \(SELECT md5\(string_agg\(class_row\.relname.*?END IF;",contents,re.M)
+            assert len(checks)==(2 if name in ['candidate.sql.review','rollback.sql.review'] else 1),name
+            for index,check_sql in enumerate(checks):
+                test_sql="BEGIN READ ONLY; DO $t$ DECLARE c record; BEGIN SELECT 'unrelated'::text AS sig INTO c; "+check_sql+" END $t$; ROLLBACK;"
+                exact=tmp/(name+str(index)+'.sql');exact.write_text(test_sql)
+                result=run(file=exact,ok=False)
+                assert 'OS_APPROVAL_table_acl_rls_DRIFT' in result.stderr,result.stderr
+                labels.append('exact emitted table ACL expression '+name+str(index)+' reaches drift with c record')
+                broken=test_sql.replace('class_row','c')
+                result=run(broken,ok=False)
+                assert 'record "c" has no field "relowner"' in result.stderr,result.stderr
+                labels.append('prior alias collision reproduced '+name+str(index))
         for name in ['preflight-readonly.sql','candidate.sql.review','rollback.sql.review','postflight-readonly.sql']:
             before=run("SELECT md5(pg_get_functiondef('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure))||':'||proacl::text FROM pg_proc WHERE oid='public.rpc_aprovar_os_v1(uuid,text)'::regprocedure;").stdout
             result=run(file=ROOT/'scripts/os-approval-recovery'/name,ok=False)
