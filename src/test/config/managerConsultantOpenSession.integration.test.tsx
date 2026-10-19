@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
 const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002';
-const s=vi.hoisted(()=>({uid:'00000000-0000-4000-8000-000000000001',authListener:undefined as undefined|((event:string,session:{user:{id:string}})=>void),gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['gestor','consultor_tecnico'],org:'00000000-0000-4000-8000-000000000002' as string|null,finalOrg:undefined as string|undefined,h15:0,error:false,fail:'',hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined, roleCalls:[] as unknown[], deniedRole:'', preferenceHold:undefined as undefined|(()=>Promise<unknown>)}));
+const s=vi.hoisted(()=>({uid:'00000000-0000-4000-8000-000000000001',authListener:undefined as undefined|((event:string,session:{user:{id:string}})=>void),gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['gestor','consultor_tecnico'],org:'00000000-0000-4000-8000-000000000002' as string|null,finalOrg:undefined as string|undefined,h15:0,error:false,fail:'',hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined, roleCalls:[] as unknown[], deniedRole:'', preferenceHold:undefined as undefined|(()=>Promise<unknown>), rtt:0}));
 function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
 vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, get MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED(){return s.gate;}, AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',PRODUCER_CONTEXT_MONITOR_ENABLED:false,CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED:false}));
 vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
@@ -27,7 +27,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
   if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['admin','technical'],has_technical_access:true,is_admin:false,must_select_context:true},error:null};
   if(name==='set_my_context_preference')return {data:s.preferenceHold?await s.preferenceHold():{ok:true},error:null};
   if(name==='has_role'){s.roleCalls.push(args);return {data:(args as {_role:string})._role===s.deniedRole?false:s.roleAllowed,error:s.fail==='has_role'?{}:null};}
-  if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
+  if(name==='h15_actor_organization'){s.h15++;if(s.rtt)await new Promise(r=>setTimeout(r,s.rtt));const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error||(s.fail==='final_h15'&&s.h15%2===0)?{}:null};}
   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
   if(name==='get_top_financial_rankings')return {data:{},error:null};
   throw new Error('unexpected '+name);
@@ -69,7 +69,7 @@ function paused(qc:QueryClient, path='/financeiro/receber'){
  expect(screen.getByTestId('url').textContent).toBe(path);
  expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);
 }
-beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
+beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;s.rtt=0;localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
 afterEach(()=>{cleanup();vi.useRealTimers();});
 describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()=>{
  it.each([['gestor','consultor_tecnico'],['consultor_tecnico','gestor']])('ordered fingerprint and both canonical has_role: %j',async (...roles)=>{
@@ -129,6 +129,13 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
    act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await tick();paused(qc);
    fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
    s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
+ });
+ it.each(['/financeiro/receber','/app/registrar'])('%s constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses',async path=>{
+   s.rtt=1500;const qc=setup(path);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+   const before=s.h15;
+   for(let i=0;i<600;i++){await act(async()=>{await vi.advanceTimersByTimeAsync(100);});expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();}
+   expect(s.h15).toBeGreaterThanOrEqual(before+12);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho rtt3');expect(screen.getByRole('dialog')).toBeTruthy();
+   s.active=false;await tick(12000);paused(qc,path);
  });
  it('explicit revalidate still retires a draft under a valid lease',async()=>{
    function Explicit(){const {revalidateAuthz}=useAuth();return <button onClick={revalidateAuthz}>Revalidar explicitamente</button>;}
