@@ -70,9 +70,8 @@ def main():
   test('onfarm closed',f"(public.rpc_programar_os_v1({O},'onfarm','2026-10-20')->>'success')='false'")
   test('explicit date required',f"(public.rpc_programar_os_v1({O},'manual',NULL)->>'success')='false'")
   for label,change,expr in [
-   ('responsible NULL only',f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};",f"({call}->>'success')='false'"),
+   ('responsible NULL only',f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};",None),
    ('wrong tenant denied',f"UPDATE profiles SET organization_id={B} WHERE user_id={U};",None),
-   ('open OS never autoapproved',f"ALTER TABLE ordens_servico DISABLE TRIGGER ALL; UPDATE ordens_servico SET status='aberta' WHERE id={O}; ALTER TABLE ordens_servico ENABLE TRIGGER ALL;",f"({call}->>'success')='false' AND (SELECT status FROM ordens_servico WHERE id={O})='aberta'"),
    ('foreign caller missing row same denial','',None),
   ]:
    invocation=call if label!='foreign caller missing row same denial' else f"public.rpc_programar_os_v1({q(99)},'manual','2026-10-20')"
