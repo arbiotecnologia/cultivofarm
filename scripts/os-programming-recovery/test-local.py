@@ -90,7 +90,7 @@ CREATE TRIGGER trg_sync_os_onfarm_downstream AFTER UPDATE OF status ON ordens_se
     downstream=json.loads((ROOT/'scripts/rbac-audit/cockpit-approval-baseline-20261015.json').read_text())
     classical=next(f for f in downstream['functions'] if f['name']=='fn_sync_os_classica_downstream')
     assert hashlib.md5(classical['definition'].encode()).hexdigest()==classical['md5']
-    sql+=classical['definition']+"CREATE TRIGGER classic_downstream AFTER UPDATE OF status ON ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_sync_os_classica_downstream();\n"
+    sql+=classical['definition']+";\nCREATE TRIGGER classic_downstream AFTER UPDATE OF status ON ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_sync_os_classica_downstream();\n"
     q = fixture.q
     A,B,U,CA,CB,P,O,F,PP,PF,M = [q(i) for i in [1,2,41,11,12,21,31,33,51,53,22]]
     sql += f'''
