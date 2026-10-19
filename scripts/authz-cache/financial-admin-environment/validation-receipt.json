@@ -1,0 +1,28 @@
+{
+  "baseline": "50d72d6b94aa5333ef25fe1d29d58163c578b5e6",
+  "targeted": {
+    "files": 9,
+    "passed": 312,
+    "failed": 0,
+    "log_sha256": "7e43f4d90f94b3da1561ac744e7b86ea47f87bb3a2ea92fc72d6f58ab87472e4"
+  },
+  "stage": {
+    "passed": 5,
+    "failed": 0
+  },
+  "typecheck": {
+    "command": "tsgo -p tsconfig.app.json --noEmit",
+    "exit": 0,
+    "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "build": {
+    "source": "automatic observability",
+    "status": "build OK",
+    "observed_utc": "2026-10-19T03:03:08Z"
+  },
+  "broad_suite": "NOT_RERUN; six historical failures unrecertified",
+  "hosted_preflight": "NOT_EXECUTED",
+  "real_homologation": "PENDING; receipt real test reported failed before this correction",
+  "publication": "NOT_EXECUTED",
+  "sessions": "not modified or reloaded"
+}
