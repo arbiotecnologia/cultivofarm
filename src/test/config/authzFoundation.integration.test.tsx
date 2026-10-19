@@ -78,7 +78,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("@/lib/authz/authzEpochGate", () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, AUTHZ_CACHE_ROLLOUT_SCOPE: "external-fingerprint", PRODUCER_CONTEXT_MONITOR_ENABLED: false, FINANCIAL_CONTEXT_MONITOR_ENABLED: false }));
+vi.mock("@/lib/authz/authzEpochGate", () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, AUTHZ_CACHE_ROLLOUT_SCOPE: "external-fingerprint", PRODUCER_CONTEXT_MONITOR_ENABLED: false, FINANCIAL_CONTEXT_MONITOR_ENABLED: false }));
 vi.mock("@/lib/portalBroadcast", () => ({
   subscribePortalEvents: () => () => {},
   broadcastPortalEvent: () => {},
