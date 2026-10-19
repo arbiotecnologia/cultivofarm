@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS } from '@/lib/ordens-servico/validacao';
+import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS, produtoFabricavelOS } from '@/lib/ordens-servico/validacao';
 import { readFileSync } from 'node:fs';
 const id = '00000000-0000-4000-8000-000000000001';
 const form = { cliente_id:id, fazenda_id:id, talhao_id:id, produto_id:id, microrganismo_id:'', tipo_item:'produto', modo_aplicacao:'foliar', area_hectares:'1', data_programada:'2026-09-13', prioridade:'media' };
-const refs = { clientes:[{id}], fazendas:[{id,cliente_id:id}], talhoes:[{id,fazenda_id:id}], produtos:[{id,dose_ml_ha:10}], microrganismos:[] };
+const refs = { clientes:[{id}], fazendas:[{id,cliente_id:id}], talhoes:[{id,fazenda_id:id}], produtos:[{id,dose_ml_ha:10,familia_catalogo:'biologico'}], microrganismos:[] };
 describe('Ordens de serviço seguras', () => {
  it('não confunde consulta alfabética com código vazio', () => expect(buscaOS('inexistente',['123','Cliente'])).toBe(false));
  it('normaliza acentos e espaços', () => expect(buscaOS(' joao ',['João'])).toBe(true));
@@ -15,6 +15,16 @@ describe('Ordens de serviço seguras', () => {
  it('preserva volume pequeno', () => expect(volumeOS(1)).toBe('0,001 L'));
  it('deduplica sem mesclar origens', () => expect(unificarOS([{id,origem:'manual'},{id,origem:'manual'},{id,origem:'onfarm'}])).toHaveLength(2));
  it('aceita formulário coerente', () => expect(validarOS(form,refs)).toBeNull());
+ it.each([null,undefined,'quimico','fertilizante'])('nega família não biológica %s mesmo com dose100', family => {
+   const produto = { id, dose_ml_ha:100, familia_catalogo:family };
+   expect(produtoFabricavelOS(produto)).toBe(false);
+   expect(validarOS(form,{...refs,produtos:[produto]})).not.toBeNull();
+ });
+ it.each([null,0,-1,NaN,Infinity])('nega dose não finita/positiva de biológico %s', dose => expect(produtoFabricavelOS({familia_catalogo:'biologico',dose_ml_ha:dose})).toBe(false));
+ it('aceita família biológico com dose100 e não infere família pelo tipo legado', () => {
+   expect(produtoFabricavelOS({familia_catalogo:'biologico',dose_ml_ha:100})).toBe(true);
+   expect(produtoFabricavelOS({dose_ml_ha:100})).toBe(false);
+ });
  it.each(['0','-1','Infinity',''])('rejeita área %s', area => expect(validarOS({...form,area_hectares:area},refs)).not.toBeNull());
  it('rejeita vínculos divergentes', () => expect(validarOS(form,{...refs,talhoes:[]})).not.toBeNull());
  it('rejeita dose ausente', () => expect(validarOS(form,{...refs,produtos:[{id,dose_ml_ha:null}]})).not.toBeNull());

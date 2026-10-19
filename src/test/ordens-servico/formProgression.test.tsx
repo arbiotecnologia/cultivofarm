@@ -19,7 +19,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
       : table === "fazendas" ? [{ id: fixture.farm, nome: "Fazenda B", cliente_id: fixture.client }]
       : table === "talhoes" ? [{ id: fixture.field, nome: "Talhão B", fazenda_id: fixture.farm, area_hectares: 12 }]
       : [];
-    const query = { select: () => query, gte: () => query, order: () => query, limit: () => query,
+    const query = { select: () => query, gte: () => query, eq: () => query, gt: () => query, order: () => query, limit: () => query,
       then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve),
       insert: fixture.insert };
     return query;

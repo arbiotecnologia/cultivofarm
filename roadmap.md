@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 13:46 — pré-requisito produto fabricável e diagnóstico
+- [ ] Registrar implantação/publicação e recibos independentes informados, com findings e limites reais.
+- [ ] Seleção/validação biológico + dose finita positiva e erro23514 específico; testes no formulário existente.
+- [ ] Preparar fixture sintética via cadastro autorizado e plano dependente de aprovação/avanço ainda fechados, sem status artificial/produção.
+- [ ] Emitir somente expire sanitizado em console local, sem mudar lease/escopo; testes e rollback/hash revisáveis. Sem hosted DDL/DML/publicação/contratos/v6.
+
 ## 19/10 13:35 — P0 sintaxe da guarda SQL
 - [x] CASE parentetizado e variável ACL renomeada para evitar42702, expectativas intactas; mutação reproduziu42601. Quatro SQL completos byte-exatos sem substituir guarda recusam schema reduzido comP0001; PG107/107, hashes atualizados. Sem produção/publicação.
 - [x] Auditor informou13:37 preflight hosted READ ONLY integral PASS16 funções/ACL/search_path/owner/schema/triggers/policies; applications0/evidence0/receipt_destination_free=true. CASE e v_executor_roles propagados, fingerprint intacto; RPC fechada, sem DDL/DML. Evidência auditor recovery-preflight-corrected2-readonly.json; não é implantação/homologação positiva nem catálogo equivalente local.
