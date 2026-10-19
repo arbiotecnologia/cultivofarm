@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import OrdensServico from "@/pages/OrdensServico";
@@ -28,7 +28,12 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   removeChannel: vi.fn(),
 } }));
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  // JSDOM lacks browser scrolling; keep the real Radix controls and keyboard flow.
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+});
+afterEach(() => { Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView"); });
 describe("Nova OS — progressão do formulário real com transporte fake, sem escrita hosted", () => {
   it("permite escolher fazenda e talhão antes de completar o submit", async () => {
     render(<MemoryRouter><OrdensServico /></MemoryRouter>);
@@ -38,14 +43,14 @@ describe("Nova OS — progressão do formulário real com transporte fake, sem e
     const dialog = screen.getByRole("dialog");
     const combos = within(dialog).getAllByRole("combobox");
     expect(combos[1]).toBeDisabled();
-    fireEvent.pointerDown(combos[0], { button: 0, ctrlKey: false, pointerType: "mouse" });
+    fireEvent.keyDown(combos[0], { key: "ArrowDown" });
     fireEvent.click(await screen.findByRole("option", { name: "Cliente B" }));
     await waitFor(() => expect(combos[1]).toBeEnabled());
     expect(combos[2]).toBeDisabled();
-    fireEvent.pointerDown(combos[1], { button: 0, ctrlKey: false, pointerType: "mouse" });
+    fireEvent.keyDown(combos[1], { key: "ArrowDown" });
     fireEvent.click(await screen.findByRole("option", { name: "Fazenda B" }));
     await waitFor(() => expect(combos[2]).toBeEnabled());
-    fireEvent.pointerDown(combos[2], { button: 0, ctrlKey: false, pointerType: "mouse" });
+    fireEvent.keyDown(combos[2], { key: "ArrowDown" });
     fireEvent.click(await screen.findByRole("option", { name: "Talhão B" }));
     await waitFor(() => expect(within(dialog).getByDisplayValue("12")).toBeTruthy());
     expect(dialog.querySelector('button[type="submit"]')).toBeDisabled();
