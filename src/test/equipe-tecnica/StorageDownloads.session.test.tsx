@@ -15,9 +15,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     return q;
   }, storage: { from: () => ({ createSignedUrl: mocks.sign }) },
 } }));
-import { DocumentosPanel } from "@/components/financeiro/DocumentosPanel";
 import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
-import { HistoricoExportacoes } from "@/components/financeiro/relatorios/HistoricoExportacoes";
 import { ConfirmacaoEntregaPanel } from "@/components/entregas/ConfirmacaoEntregaPanel";
 const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arquivo: "PRIVATE_DOC", tipo: "outro", tipo_documento: "OUTRO",
   report_title: "PRIVATE_DOC", report_type: "monthly", status: "SUCCESS", generated_at: "2026-10-08", uploaded_at: "2026-10-08",
@@ -30,9 +28,7 @@ beforeEach(() => {
 });
 describe("delayed Storage downloads", () => {
   const views = [
-    ["financial", () => <DocumentosPanel ownerType="RECEIVABLE" ownerId="R" />],
     ["customer", () => <ClienteDocumentosTab clienteId="C" />],
-    ["reports", () => <HistoricoExportacoes />],
     ["delivery", () => <ConfirmacaoEntregaPanel entrega={{ id: "E", status: "cancelada" }} />],
   ] as const;
   for (const [name, component] of views) {

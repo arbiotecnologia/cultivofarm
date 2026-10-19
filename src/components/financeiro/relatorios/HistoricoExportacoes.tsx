@@ -1,5 +1,5 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 
 interface ExportRow {
   id: string;
@@ -62,24 +63,6 @@ export function HistoricoExportacoes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, format, from, to, access.scope]);
 
-  const download = async (r: ExportRow) => {
-    if (!access.ready) return;
-    const current = access.capture();
-    if (!r.storage_path) {
-      toast.error("Arquivo não disponível");
-      return;
-    }
-    const { data, error } = await supabase.storage
-      .from(r.storage_bucket ?? "financial-reports")
-      .createSignedUrl(r.storage_path, 3600);
-    if (!current()) return;
-    if (error || !data?.signedUrl) {
-      toast.error(error?.message ?? "Falha ao gerar URL");
-      return;
-    }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div className="space-y-4">
       <Card>
@@ -123,9 +106,7 @@ export function HistoricoExportacoes() {
                     </TableCell>
                     <TableCell className="text-xs">{formatDateTimeDisplay(r.generated_at)}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="outline" disabled={!r.storage_path} onClick={() => download(r)}>
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <ExportDownload row={r} listScope={access.scope} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -138,5 +119,52 @@ export function HistoricoExportacoes() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+const EXPORT_BUCKET = "financial-reports";
+
+/**
+ * Explicit two-step download via the canonical authenticated opener
+ * (Storage RLS financial_storage_object_permitted). No signed/public URLs;
+ * other buckets fail closed. The row snapshot is part of the scope.
+ */
+function ExportDownload({ row, listScope }: { row: ExportRow; listScope: string }) {
+  const snapshot = { id: row.id, storage_bucket: row.storage_bucket ?? null, storage_path: row.storage_path ?? null, status: row.status };
+  const resource = JSON.stringify(["financial-export", listScope, snapshot]);
+  const access = useStorageAccessScope(resource);
+  const opener = useAuthenticatedAttachmentOpener(resource, EXPORT_BUCKET);
+  const [busy, setBusy] = useState(false);
+  const pending = useRef<(() => boolean) | null>(null);
+  useLayoutEffect(() => {
+    setBusy(false);
+    return () => { pending.current = null; };
+  }, [access.scope]);
+  const path = snapshot.storage_path;
+  const eligible = typeof path === "string" && path.length > 0 && (snapshot.storage_bucket ?? EXPORT_BUCKET) === EXPORT_BUCKET;
+  const prepared = eligible && !!path && !!opener.urls[path];
+  const loading = eligible && !!path && opener.loadingPaths.includes(path);
+  const ext = (row.file_format ?? row.format ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const fileName = `${(row.report_type || "relatorio").replace(/[^a-zA-Z0-9_-]/g, "_")}${ext ? `.${ext}` : ""}`;
+  const onClick = async () => {
+    const current = access.capture();
+    if (!current() || !eligible || !path || pending.current) return;
+    if (opener.urls[path]) { opener.download(path, fileName); return; }
+    pending.current = current;
+    setBusy(true);
+    try {
+      await opener.open(path, () => { if (current() && pending.current === current) toast.error("Arquivo indisponível"); });
+    } finally {
+      if (pending.current === current) {
+        pending.current = null;
+        if (current()) setBusy(false);
+      }
+    }
+  };
+  const label = prepared ? "Baixar exportação" : "Preparar exportação";
+  return (
+    <Button size="sm" variant="outline" disabled={!access.ready || !eligible || busy || loading} onClick={onClick} aria-label={label} title={label}>
+      {busy || loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+    </Button>
   );
 }

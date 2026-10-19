@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createAuthzEpochMonitor,
+  EARLY_RENEWAL_FLOOR_MARGIN_MS,
   EARLY_RENEWAL_MIN_DELAY_MS,
   type AuthzFingerprintResult,
 } from '@/lib/authz/authzEpochMonitor';
@@ -83,10 +84,10 @@ describe('paired early renewal before confirmed deadline', () => {
     expect(s.onEpochChange).not.toHaveBeenCalled();
     expect(s.onExpire).not.toHaveBeenCalled();
     expect(s.maxInFlight()).toBe(1);
-    // response t3 => deadline t15; next request t9 (margin 2*RTT=6s), steady 9s cadence.
-    expect(s.starts.slice(0, 4)).toEqual([0, 9000, 18000, 27000]);
+    // response t3 => deadline t15; next request t7.5 (floor margin 7.5s > 2*RTT=6s), steady 7.5s cadence.
+    expect(s.starts.slice(0, 4)).toEqual([0, 7500, 15000, 22500]);
     for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 3000);
-    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(15);
+    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(18);
   });
 
   it('variable RTT 0.1–4.5s with jitter for 120s keeps access, single flight and gap >= MIN_DELAY after each answer', async () => {
@@ -123,10 +124,10 @@ describe('paired early renewal before confirmed deadline', () => {
   it('response landing exactly at the confirmed deadline is rejected and cannot reopen', async () => {
     const s = setup();
     s.monitor.start();
-    await vi.advanceTimersByTimeAsync(3000); // deadline 15000, next request at 9000
-    s.setRtt(() => 6000); s.setRespond(() => valid('late'));
+    await vi.advanceTimersByTimeAsync(3000); // deadline 15000, next request at 7500
+    s.setRtt(() => 7500); s.setRespond(() => valid('late'));
     await vi.advanceTimersByTimeAsync(12000);
-    expect(s.starts).toEqual([0, 9000]);
+    expect(s.starts).toEqual([0, 7500]);
     expect(s.monitor.state()).toBe('expired');
     expect(s.monitor.currentFingerprint()).toBe('same');
     expect(s.onEpochChange).not.toHaveBeenCalled();
@@ -204,7 +205,7 @@ describe('paired early renewal before confirmed deadline', () => {
     const s = setup();
     s.monitor.start();
     await vi.advanceTimersByTimeAsync(3000);
-    await vi.advanceTimersByTimeAsync(6000); // request #2 starts at t9
+    await vi.advanceTimersByTimeAsync(4500); // request #2 starts at t7.5
     expect(s.fetcher).toHaveBeenCalledTimes(2);
     s.monitor.revalidateEnvironment(); s.monitor.revalidateEnvironment(); s.monitor.revalidateEnvironment();
     expect(s.fetcher).toHaveBeenCalledTimes(2);
@@ -216,5 +217,76 @@ describe('paired early renewal before confirmed deadline', () => {
     await holdsAccessFor(s, 30000);
     expect(s.maxInFlight()).toBe(1);
     expect(s.states()).toEqual(['pending', 'valid']);
+  });
+});
+
+describe('real homologation variation: fast RTT followed by a single 5.1–6s spike', () => {
+  it('reserves at least the 7.5s floor before the confirmed deadline at every request', () => {
+    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBe(7500);
+  });
+
+  it('old 5s floor reproduction (arithmetic of the real expire): 5094ms spike started 5087ms before deadline lands 7ms late', () => {
+    // Observed: leaseRemainingMs -7 with rttMs 5094 => request started 5087ms before deadline.
+    const headroomOld = 5000 + 87; // floor + jitter consumed earlier
+    expect(5094 - headroomOld).toBe(7);
+    expect(headroomOld).toBeLessThan(5094);
+    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBeGreaterThan(5094);
+  });
+
+  it.each([5100, 5500, 6000, 7000])('fast 200ms samples then one %ims spike keeps access with single flight and no pending', async (spike) => {
+    let n = 0;
+    const s = setup({ rtt: () => (++n === 6 ? spike : 200), random: () => 0.999 });
+    s.monitor.start();
+    await vi.advanceTimersByTimeAsync(200);
+    await holdsAccessFor(s, 90000);
+    expect(s.states()).toEqual(['pending', 'valid']);
+    expect(s.onExpire).not.toHaveBeenCalled();
+    expect(s.onEpochChange).not.toHaveBeenCalled();
+    expect(s.maxInFlight()).toBe(1);
+    // bounded cadence: never more than one request per MIN_DELAY + RTT, and far below 1/s
+    for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 200);
+    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(14);
+  });
+
+  it('every scheduled request starts with >= floor - jitter headroom before the confirmed deadline', async () => {
+    const s = setup({ rtt: () => 200, random: () => 0.999 });
+    s.monitor.start();
+    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(60000);
+    for (let i = 1; i < s.starts.length; i++) {
+      const deadline = s.starts[i - 1] + 15000;
+      expect(deadline - s.starts[i]).toBeGreaterThanOrEqual(EARLY_RENEWAL_FLOOR_MARGIN_MS);
+    }
+  });
+
+  it('spike above the floor (8s) after fast samples still fails closed at the 15s deadline and late answer cannot reopen', async () => {
+    let n = 0;
+    const s = setup({ rtt: () => (++n === 3 ? 8000 : 200) });
+    s.monitor.start();
+    await vi.advanceTimersByTimeAsync(200);
+    while (s.fetcher.mock.calls.length < 3) await vi.advanceTimersByTimeAsync(100);
+    const confirmedStart = s.starts[1];
+    await vi.advanceTimersByTimeAsync(confirmedStart + 15000 - 1 - Date.now());
+    expect(s.monitor.checkAccess()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(s.monitor.checkAccess()).toBe(false);
+    expect(s.onExpire).toHaveBeenCalledWith('timeout');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(s.monitor.checkAccess()).toBe(false);
+    expect(s.monitor.state()).toBe('expired');
+  });
+
+  it('revocation (ineligible) during the 6s spike expires and does not reopen', async () => {
+    let n = 0;
+    const s = setup({ rtt: () => (++n === 3 ? 6000 : 200) });
+    s.monitor.start();
+    await vi.advanceTimersByTimeAsync(200);
+    while (s.fetcher.mock.calls.length < 3) await vi.advanceTimersByTimeAsync(100);
+    s.setRespond(() => ({ eligible: false, fingerprint: null }));
+    await vi.advanceTimersByTimeAsync(6100);
+    expect(s.onExpire).toHaveBeenCalledWith('ineligible');
+    s.setRespond(() => valid());
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(s.monitor.checkAccess()).toBe(false);
   });
 });
