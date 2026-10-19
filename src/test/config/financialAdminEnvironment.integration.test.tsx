@@ -110,3 +110,13 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
   s.hold=()=>new Promise(()=>{});await tick(15001);paused(qc);resolve?.(new Blob(['late']));await tick();expect(URL.createObjectURL).not.toHaveBeenCalled();paused(qc);
  });
 });
+describe('suspended monotonic clock, exclusive scopes',()=>{
+ it.each(['financeiro','administrador'])('%s cannot keep prepared bytes past deadline with suspended timers',async role=>{
+  s.roles=[role];const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'suspenso'}});fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
+  const clock=performance.now();const now=vi.spyOn(performance,'now').mockReturnValue(clock+16000);
+  // No timer executed: synchronous access guard must deny a new download.
+  fireEvent.click(screen.getByRole('button',{name:'Baixar PDF'}));expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+  s.hold=()=>new Promise(()=>{});act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await act(async()=>{await Promise.resolve();});
+  expect(screen.queryByRole('textbox')).toBeNull();expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);now.mockRestore();
+ });
+});
