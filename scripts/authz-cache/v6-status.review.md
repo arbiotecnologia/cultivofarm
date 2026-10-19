@@ -22,7 +22,7 @@ autorização externa; não incluir consultor ou reimplementar seleção de cont
 
 - Recebidos em 12:49: 13 funções com corpos/hash/ACL, 55 triggers com tgfoid/tgtype/qual/corpos e 287 colunas/nullable/defaults. Não listar esses contratos novamente como ausentes; reconciliação em `v6-contracts-1249.review.md`.
 - Recebidos em 12:52: 144 constraints relacionadas e 33 índices das tabelas selecionadas. Não mais pedir esse pacote; faltam catálogos completos das filhas de audit/recalc/default financeiro, tickets privados e índices das demais dependências não incluídas no recorte.
-- Corpos live completos dos callers/writers enumerados por assinatura na consulta canônica read-only de 12:50: `v6-writers-catalog.review.md`. Assinaturas não são prova da ordem interna; filtro textual não cobre todos writers/dynamic SQL/grants diretos.
+- Atualização auditor19/10 12:38 UTC: corpos/MD5/ACL das44 assinaturas de `v6-writers-catalog.review.md` coletados hoje, todos presentes; evidência local informada `v6-writer-bodies-20261019.json`. Não repetir pedido desses corpos como ausentes. Presença dos corpos não certifica ordem interna/locks/tempo/ABA; filtro textual não cobre todos writers/dynamic SQL/grants diretos.
 - Recebido manifest 33 policies + 11 buckets + RLS enabled/forced=false. `storage.operation()`, ACL/grants efetivos, corpos dos helpers Storage e provas de operação HTTP seguem pendentes. order-attachments/entrega-termos ausentes: preflight permanece rejeitando, sem criar/remapear.
 - Fixture reduzido anterior contém stub has_ticket: continua inválido para certificação. Corpo real agora conhecido, sem substituição por stub nem novo harness PASS alegado.
 
@@ -34,8 +34,9 @@ Adendo 12:52: corpos recebidos de transition_subscription_core, admin_edit_user_
 Ledger por entidade AFTER STATEMENT pode criar ciclo se writer que segura
 revisão de org passa a obter row de partner que outro writer segura antes de
 obter revisão de org. Sorted keys dentro de um statement não resolve transações
-multi-statement/nested/cascades. Sem corpos de writers não há prova de ordem
-compatível, mesmo sem profiles/fanout. Não produzir instalação v6 fingindo isso.
+multi-statement/nested/cascades. Os44 corpos agora fornecidos ainda exigem análise
+e provas de ordem compatível, mesmo sem profiles/fanout; presença não é certificação.
+Não produzir instalação v6 fingindo isso.
 Não tocar auth.users/gates gerenciados nem expandir escopo Auth para fechar teste.
 
 ## Snapshot/tempo não fechados para gate

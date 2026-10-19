@@ -3,7 +3,11 @@
 ## 19/10 12:27 — existência/tenant no helper de aplicações
 - [x] Candidata/rollback guardados no helper existente, origem OS/cliente auditada; PostgreSQL local71/71, regressão PDF44/44, staging7/7; sem produção/fixtures/contratos.
 - [x] Build Vite/SWC não certifica types; esclarecimento e fontes/config/lock com hashes em application-access-integrity/typecheck-independent.md e independent-inputs.json. Pacote PDF byte-exato preservado.
-- [ ] Revisão/aplicação independente aguardam auditor; RPC salvar e v6 continuam fechados, aplicações/evidências produção vazias conforme auditor.
+- [x] Auditor informou aplicação de application_access_tenant_integrity_20261019/ee29d35e no ref canônico: guarda10 funções/ACL/schema e postflight integral PASS, POST04067ba43cea3eed845a1fd3735061e0; SQL claims A/B inexistente/NULL false e leitura0, não JWT real.
+- [x] Pós-implantação12:38 registrado: browser real A/B somente smoke Ver Histórico/leitura vazia sem erros/reload/logout/troca de sessão; advisors mesmos INFO36/WARN2anon+336auth+1password. SQL/PDF byte-exatos, frontend PDF não publicado, app typecheck não certificado.
+- [x] Auditor coletou corpos/MD5/ACL das44 assinaturas v6, todas presentes (v6-writer-bodies-20261019.json informado); não pedir corpos como ausentes. Locks/tempo/ABA não certificados, v6 OFF, contratos sem avanço.
+- [ ] Homologação positiva PDF/anexo/revogação bloqueada por aplicações/evidências0 e RPC salvar fechada; sem fixtures/inserts/novo fluxo nesta entrega.
+- [ ] Recuperação futura legacy_closed exige revisão específica de replay antes de reautorização/referências/metadados; não reabrir nem conceder EXECUTE.
 - [x] Complemento auditor12:35: 30 hashes/staging7/7/13 casos PDF e seis MD5 LIVE registrados; recibo explicita tsconfig.app.json não executado, sem certificação app.
 - [ ] Helper manage sem tenant: aguarda revisão específica autorizada de callers; Storage1 atual impõe tenant/pai, sem ampliar candidata de leitura.
 

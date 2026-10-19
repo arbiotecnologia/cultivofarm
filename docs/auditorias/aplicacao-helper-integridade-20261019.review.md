@@ -1,5 +1,17 @@
 # Aplicações — existência e tenant antes da autorização
 
+## Pós-implantação informado pelo auditor — 19/10 12:38 UTC
+- Destino confirmado pelo auditor: `swzpzcwiasxmjutrmvkm`. Migration `application_access_tenant_integrity_20261019` aplicada pelo auditor via apply_migration, `success=true`, usando `candidate.sql.review` de `ee29d35e`, SHA256 `01f4bcaffaa57e28d9829f55a40b9a6d1251499a53bf0fe4b77c5172e8514d9d`.
+- Preflight READ ONLY executou guarda integral de10 funções/ACL/schema; aplicações0/evidências0. Postflight integral PASS, MD5 POST `04067ba43cea3eed845a1fd3735061e0`. Não reaplicar candidata; rollback continua guardado e nunca automático.
+- SQL com claims financeiroA/adminB: h15 correto, UUID inexistente e NULL retornaram false em ambos; linhas visíveis0. **SQL claims, NÃO JWT real**; não prova positivo de aplicação/anexo.
+- Browser real A/B informado: Ver Histórico alterou queryKey, mostrou Carregando e depois Nenhuma aplicação registrada em ambos, sem erros/reload/logout/troca de sessão. **Somente smoke de leitura vazia**, não homologação positiva de PDF/anexo/revogação.
+- Advisors antes/depois com mesmos counts: INFO36; WARN2anon+336auth+1password. Findings permanecem; não declarar projeto sem findings nem auditoria global concluída.
+- RPC salvar permanece fechada, aplicações/evidências0; PDF frontend **NÃO publicado**, typecheck app **NÃO certificado**. Pacotes SQL/PDF preservados byte-exatos. Nenhuma nova execução hosted/runtime/DDL/deploy/publicação nesta entrega; resultados acima são informados pelo auditor.
+- Auditor leu `legacy_closed`: não reabrir nem conceder EXECUTE. Replay antes da reautorização, referências e metadados exigem revisão própria antes de futura recuperação do fluxo canônico; não contornar com INSERT/novo fluxo.
+- V6: auditor coletou hoje corpos/MD5/ACL das44 assinaturas de v6-writers-catalog, todas presentes, com evidência local informada `v6-writer-bodies-20261019.json`. Não pedir esses corpos como ausentes. Locks/tempo/ABA ainda não certificados; v6 não ativado, contratos não avançados.
+
+As seções seguintes preservam o histórico de preparação pré-implantação; seu estado pendente de aplicação foi superado somente pelo resultado informado acima.
+
 ## Evidência e alteração mínima
 Auditor informou preflight READ ONLY financeiro A/iat atual: helper permitia UUID inexistente. SELECT-only nesta execução confirmou MD5 PRE `b05590fbbc62efb107ed8b551cd08b3f`, postgres, STABLE SECURITY DEFINER, search_path public, ACL postgres/service_role/authenticated sem PUBLIC/anon. Conexão externa/config/cliente canônicos `swzpzcwiasxmjutrmvkm`; nenhuma operação hosted de escrita, fixture ou dado comercial lido. Claims SQL não são login real.
 
