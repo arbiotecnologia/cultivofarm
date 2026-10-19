@@ -187,12 +187,15 @@ describe('company admin latency: 3 s probes stay valid; 8 s probe is the expecte
     expect(screen.getByText('Contas a receber')).toBeTruthy();
     for (let i = 0; i < 18; i++) { await tick(10000); expect(screen.queryByText('Sessão de acesso pausada')).toBeNull(); }
     expect(screen.getByText('Contas a receber')).toBeTruthy();
+    expect(readAuthzDiagnostics().some(d => d.event === 'expire')).toBe(false); // ~3 s probes: no undue pause
+    clearAuthzDiagnostics();
     s.lat = 4000; await tick(40000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
     const exp = readAuthzDiagnostics().filter(d => d.event === 'expire').at(-1)!;
     expect(exp.reason).toBe('timeout');
-    // In-flight request outlived the whole pre-reserved margin (>= 7.5 s floor): expected safe failure.
-    expect(exp.rttMs! + (exp.leaseRemainingMs ?? 0)).toBeGreaterThanOrEqual(7500);
+    // Expected safe failure: a probe round-trip >= lease/2 (7.5 s) was observed, so no
+    // renewal can be answered inside a 15 s lease measured from request start.
+    expect(readAuthzDiagnostics().some(d => (d.event === 'response' || d.event === 'expire') && (d.rttMs ?? 0) >= 7500)).toBe(true);
     expect(JSON.stringify(readAuthzDiagnostics())).not.toMatch(/0000-4000|administrador/);
     s.lat = 500; retry(); await tick(8000);
     expect(loadingText()).toBeNull();
