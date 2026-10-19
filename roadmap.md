@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 14:54 — programação inicial canônica
+- [x] Registrar recibos externos de implantação aprovação/reader, publicação e6a67/c30af e inativação/retry A/B; roles intactas, sem homologação TOKEN_REFRESHED/anexos.
+- [ ] Recuperar RPC existente sem autoaprovação/reprogramação, com guardas, travas e replay; UI detalhes existente, pacotes aprovados preservados.
+- [ ] Preparar fonte fixa e6a67/c30af, PRE/POST/rollback, testes negativos/revogação/concorrência e snapshot checker.
+- [ ] Auditor: revisão/implantação e homologação real programação; fabricação/CQ/estoque/anexos/v6/contratos não liberados. Sem hosted/publicação pelo agente.
+
 ## 19/10 14:22 — correção funcional monitor/Cockpit
 - [x] Status fiel na lista do reader canônico; candidata isolada alinha filtro SQL, PRE/POST/rollback/hashes; quatro SQL approval/dados reais intocados.
 - [x] Reconfirmação TOKEN_REFRESHED com fence e continuidade somente de enums não sensíveis/modal Nova OS; IDs/texto/área/data/arquivos/cache/respostas antigas descartados.
