@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 02:07 — pausas ambientais multipapel
-- [ ] Corrigir foco/visibility e polling hidden somente no recorte exato, preservando deadline15s/fail-closed e B2B.
-- [ ] Testar relógio fake, drafts/layouts, timeout/offline/perda de papel/respostas antigas; entregar candidata, hashes e staging isolados.
+- [x] Corrigir foco/visibility e polling hidden somente no recorte exato, preservando deadline15s/fail-closed e B2B.
+- [x] Relógio fake/drafts/layouts/timeout/offline/perda de papel/tardios:399/399 PASS; candidata/rollback da base exatos, manifest separado75fontes/7artefatos e staging5/5 PASS; build automático OK, typecheck não certificado.
 - [ ] Revisão independente e publicação/homologação da correção dependem do proprietário; não recarregar sessões reais.
 
 ## 19/10 01:47 — gestor + consultor exatos
