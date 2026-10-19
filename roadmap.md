@@ -1,7 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 13:32 — seleção de fazenda na Nova OS
-- [ ] Remover validação circular somente no combo Fazenda; testar progressão cliente→fazenda→talhão e submit ainda bloqueado quando incompleto. Sem criar OS/publicar/DDL; pais B informados preservados.
+- [x] Removida validação circular somente no combo Fazenda: saving/papel/cliente presente nas referências/carregamento/erro. Progressão no formulário e Radix reais com transporte fake; submit incompleto segue negado;25/25 testes dirigidos. Sem criar OS/publicar/DDL; pais B informados preservados.
+- [ ] Proprietário conferir seleção na sessão real após implantação própria; sem publicação pelo agente. Checker informado vale para snapshot estável anterior, não certifica esta alteração.
 - [x] Auditor informou checker repetido no snapshot estável EXIT0 e monitor105/105 independente; não é homologação real nem valida alterações posteriores.
 
 ## 19/10 13:01 — recuperação canônica de aplicações
