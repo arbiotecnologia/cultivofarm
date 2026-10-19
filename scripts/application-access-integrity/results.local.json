@@ -1,0 +1,8 @@
+{
+  "passed": 71,
+  "failed": 0,
+  "postgres": "17 local unix socket",
+  "limitations": "reduced schema/policy; auth claims emulators, not JWT/login/hosted",
+  "pdf_staging_passed": 7,
+  "typecheck": "NOT certified"
+}
