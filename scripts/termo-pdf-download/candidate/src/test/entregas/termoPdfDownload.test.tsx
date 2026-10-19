@@ -8,9 +8,9 @@ const auth = vi.hoisted(() => ({
   user: { id: "A" } as { id: string } | null,
   profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false },
   roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: 0,
-  checkAuthzAccess: (): boolean => true,
+  checkAuthzAccess: (): boolean => m.lease,
 }));
-const m = vi.hoisted(() => ({ invoke: vi.fn(), sign: vi.fn(), toast: vi.fn(), termo: {} as Record<string, unknown> }));
+const m = vi.hoisted(() => ({ lease: true, invoke: vi.fn(), sign: vi.fn(), toast: vi.fn(), termo: {} as Record<string, unknown> }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
 vi.mock("@/hooks/use-toast", () => ({ toast: m.toast, useToast: () => ({ toast: m.toast }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
@@ -32,9 +32,14 @@ const pdf = () => new Blob(["%PDF-1.7 ok"], { type: "application/pdf" });
 const termo = (o: Record<string, unknown> = {}) => ({ id: T, versao: 2, status: "assinado", cobertura: "total", snapshot_hash: "s",
   assinado_em: "2026-10-19T00:00:00Z", recebedor_nome: "R", pdf_path: "E/T/v2/x.pdf", pdf_hash: "h", ...o });
 let n = 0;
+if (!Blob.prototype.arrayBuffer) {
+  Blob.prototype.arrayBuffer = function (this: Blob) {
+    return new Promise<ArrayBuffer>((ok) => { const r = new FileReader(); r.onload = () => ok(r.result as ArrayBuffer); r.readAsArrayBuffer(this); });
+  };
+}
 let qc: QueryClient;
 beforeEach(() => {
-  Object.assign(auth, { user: { id: "A" }, roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true });
+  Object.assign(auth, { user: { id: "A" }, roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => m.lease }); m.lease = true;
   auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
   m.invoke.mockReset().mockResolvedValue({ data: pdf(), error: null }); m.sign.mockReset(); m.toast.mockReset();
   m.termo = termo(); n = 0;
@@ -97,14 +102,14 @@ describe("TermoEntregaPanel: PDF binário autenticado em duas etapas", () => {
   it("lease vencida após preparo: clique antigo não baixa", async () => {
     const h = mount(); const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     await preparar(); const baixar = await screen.findByRole("button", { name: /Baixar termo assinado/ });
-    auth.checkAuthzAccess = () => false;
+    m.lease = false;
     fireEvent.click(baixar); expect(click).not.toHaveBeenCalled();
     h.rerender(); expect(screen.queryByRole("button", { name: /Baixar termo/ })).toBeNull();
     click.mockRestore();
   });
   it("lease vencida antes do clique de preparo: nenhuma requisição", async () => {
     mount(); await screen.findByRole("button", { name: /Preparar termo assinado/ });
-    auth.checkAuthzAccess = () => false; await preparar();
+    m.lease = false; await preparar();
     expect(m.invoke).not.toHaveBeenCalled();
   });
   it("papel retirado após preparo revoga o Blob", async () => {
