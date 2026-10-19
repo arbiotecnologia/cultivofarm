@@ -19,9 +19,9 @@ import {
 } from "@/lib/authz/authzEpochMonitor";
 
 /** Profile/roles loader bound: unrelated to the 15 s authorization lease. */
-export const AUTH_LOAD_TIMEOUT_MS = 20_000;
+const AUTH_LOAD_TIMEOUT_MS = 20_000;
 /** Fresh re-reads after a non-loader fence before an explicit error. */
-export const AUTH_LOAD_MAX_RESTARTS = 3;
+const AUTH_LOAD_MAX_RESTARTS = 3;
 
 /** Papéis EXTERNOS monitorados pela foundation de cache (mesma identidade). */
 const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
