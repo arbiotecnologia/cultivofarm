@@ -3,7 +3,7 @@ import { anexarComprovanteBaixa, comprovanteStoragePath, sanitizeFileName } from
 const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const PID = "00000000-0000-4000-8000-000000000001";
-const base = { ownerType: "PAYMENT_RECEIVABLE" as const, paymentId: PID, idempotencyKey: "idem-abc", file: { name: "Comprovante Pix 18/08.pdf", type: "application/pdf", size: 1234 }, uploadedBy: A, organizationId: A, isCurrent: () => true };
+const base = { ownerType: "PAYMENT_RECEIVABLE" as const, paymentId: PID, idempotencyKey: "idem-abc", file: { name: "Comprovante Pix 18-08.pdf", type: "application/pdf", size: 1234 }, uploadedBy: A, organizationId: A, isCurrent: () => true };
 type Doc = Record<string, any>;
 /** Fake transport models the installed owner/org/path/author contract, not JWT/RLS certification. */
 function makeClient() {
@@ -34,7 +34,7 @@ describe("comprovante no fluxo existente / contrato owner-first", () => {
     expect(comprovanteStoragePath(input)).toBe(comprovanteStoragePath({ ...input, organizationId: B }));
     expect(sanitizeFileName("nota fiscal ção.pdf")).toBe("nota-fiscal-cao.pdf");
   });
-  it.each([{ paymentId: "pay-1" }, { ownerType: "DELIVERY" }, { idempotencyKey: "../key" }, { fileName: "../foo" }, { fileName: "a%2fb" }, { fileName: "a\\b" }, { fileName: "" }])("nega path inválido %j", bad => {
+  it.each([{ paymentId: "pay-1" }, { ownerType: "DELIVERY" }, { idempotencyKey: "../key" }, { fileName: "../foo" }, { fileName: "a/b" }, { fileName: "a%2fb" }, { fileName: "a\\b" }, { fileName: "" }])("nega path inválido %j", bad => {
     expect(() => comprovanteStoragePath({ ...base, fileName: base.file.name, ...bad } as any)).toThrow();
   });
   it("cria e retry não reenvia nem duplica", async () => {

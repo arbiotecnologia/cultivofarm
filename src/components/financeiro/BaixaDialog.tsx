@@ -154,7 +154,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     retry: false,
     mutationFn: async (vars?: { repetir?: boolean; token?: number; isCurrent?: () => boolean }) => {
       const isCurrent = vars?.isCurrent ?? (() => false);
-      if (!isCurrent()) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
+      if ((pendente || file) && !isCurrent()) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
       const repetir = !receber && !!vars?.repetir;
 
@@ -323,9 +323,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       return { ok: true as const };
     },
     onSuccess: (r: any, vars) => {
-      if (!vars?.isCurrent?.()) return;
       if (r?.ignorado) return;
-      invalidarTudo();
       if (!receber && !r?.reenvio) {
         // Resultado definitivamente confirmado: só aqui o journal é removido.
         // Falha de limpeza NÃO transforma o pagamento confirmado em falha e
@@ -333,6 +331,12 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         // apenas porque o pagamento foi confirmado pelo servidor.
         limparTentativaIncerta(user?.id, installment?.id);
         tentativaRef.current = null;
+      }
+      // A confirmed payment stays confirmed even if the attachment lease ended.
+      // No view/cache/callback outcome may escape into another context.
+      if (!vars?.isCurrent?.()) return;
+      invalidarTudo();
+      if (!receber && !r?.reenvio) {
         setExigeConferencia(false);
       }
 
@@ -357,12 +361,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
     },
     onError: (e: unknown, vars) => {
-      if (!vars?.isCurrent?.()) return;
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
-      if (pendente) invalidarTudo();
+      if (pendente && vars?.isCurrent?.()) invalidarTudo();
       if (receber) {
         // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
-        toast.error(mapearErroBaixaRecebimento(e));
+        if (vars?.isCurrent?.()) toast.error(mapearErroBaixaRecebimento(e));
         return;
       }
       // Classificação única ponta a ponta: incerto trava novo envio até conferência.
@@ -370,7 +373,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       const falhaJournal =
         c.mensagem === MSG_JOURNAL_INDISPONIVEL || c.mensagem === MSG_JOURNAL_CORROMPIDO;
       if (c.exigeConferencia) {
-        setExigeConferencia(true);
+        if (vars?.isCurrent?.()) setExigeConferencia(true);
         // Preserva chave + payload da tentativa para repetição idempotente após
         // fechar/reabrir ou remontar (nada de arquivo, token ou credencial).
         if (tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
@@ -380,7 +383,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         limparTentativaIncerta(user?.id, installment?.id);
         tentativaRef.current = null;
       }
-      toast.error(c.mensagem);
+      if (vars?.isCurrent?.()) toast.error(c.mensagem);
     },
 
   });

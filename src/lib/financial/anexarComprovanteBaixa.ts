@@ -52,7 +52,7 @@ export function comprovanteStoragePath(input: {
   if (!supportsFinancialDocumentOwner(input.ownerType, input.paymentId)
     || !["PAYMENT_RECEIVABLE", "PAYMENT_PAYABLE"].includes(input.ownerType)
     || !/^[a-zA-Z0-9_-]{1,100}$/.test(input.idempotencyKey)
-    || !input.fileName.trim() || /\.\.|%|[\\\x00-\x1f\x7f]/.test(input.fileName)) {
+    || !input.fileName.trim() || /\.\.|%|[\/\\\x00-\x1f\x7f]/.test(input.fileName)) {
     throw new Error("Origem do comprovante inválida");
   }
   return `${input.ownerType}/${input.paymentId}/${input.idempotencyKey}-${sanitizeFileName(input.fileName)}`;
