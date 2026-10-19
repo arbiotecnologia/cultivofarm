@@ -1,7 +1,7 @@
 # Hotfix frontend isolado — monitor (variação >5 s) + downloads financeiros autenticados
 
-Baseline publicada: `3eeb3212bcb42d606e924ba8b2cc21399d93d5f6`. Delta apenas frontend: `hotfix.patch`
-(aplicável com `patch -p1` sobre a árvore 3eeb). Não inclui o candidato de Gerar Lote (permanece só em docs/árvore, não aplicado).
+Baseline publicada: `3eeb3212bcb42d606e924ba8b2cc21399d93d5f6`. O HEAD é publicável: o delta de runtime contra 3eeb é só estes 6 arquivos (`git diff --stat 3eeb3212 -- . ':!scripts' ':!docs' ':!roadmap.md' ':!AGENTS.md' ':!.lovable'`).
+Os 4 runtimes de lote e seus testes voltaram aos bytes de 3eeb; o candidato de lote ficou como `.review` em `scripts/lot-generation-recovery/frontend-candidate/`. `hotfix.patch` é o mesmo delta.
 Sem SQL, sem publicação, sem mutação de papéis/dados. Contratos e v6 global seguem bloqueados.
 
 ## 1. Monitor — margem de renovação
@@ -28,3 +28,16 @@ Sem SQL, sem publicação, sem mutação de papéis/dados. Contratos e v6 global
 
 ## Rollback
 `scripts/monitor-attachments-hotfix/rollback.sh` restaura bytes exatos 3eeb (`baseline.SHA256SUMS`) e remove o teste novo.
+
+## Falhas preexistentes (não silenciadas)
+`canonicalTypesGuard` e `cultivofarm-runtime.static` falham igualmente na árvore 3eeb pura (reproduzido em /tmp, 2 failed/2 passed):
+5 arquivos fora deste delta importam `@/integrations/supabase/types` legado — ClienteDocumentosTab, EstornoDialog,
+AprovacaoCard, WizardAnexosStep, Categorias. Correção fica para pacote próprio.
+
+## Pendência documentada (não alterada aqui)
+ReportShell + Edge `generate-financial-report` (v89) ainda devolve e abre signed URL de 1 h. Próximo pacote: caminho
+autenticado pelo abridor canônico e remoção da assinatura na Edge.
+
+## Recibo real externo
+Revogação de papel administrador B: PASS (perfil ativo, roles nulos → UI pausada/retry negado; mesma linha restaurada, UI recuperada sem reload).
+Anexos reais e renovação natural estável seguem pendentes.
