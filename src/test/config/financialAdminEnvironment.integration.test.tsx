@@ -76,6 +76,51 @@ function paused(qc:QueryClient, path='/financeiro/receber'){
 beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;s.rtt=0;bytes.download.mockReset();bytes.download.mockResolvedValue(new Blob(['pdf']));Object.defineProperty(URL,'createObjectURL',{configurable:true,value:vi.fn(()=> 'blob:prepared')});Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:vi.fn()});vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>{});localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();});
 for(const role of ['financeiro','administrador']) describe(role+' exclusive environment, fake transport not hosted',()=>{
+ it('TOKEN_REFRESHED identical principal currently retires modal/draft/cache/bytes without lease expiry; SIGNED_IN cannot restore them',async()=>{
+  s.roles=[role];const qc=setup();await tick();
+  fireEvent.change(screen.getByRole('textbox'),{target:{value:'draft before refresh'}});
+  fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+  fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
+  expect(screen.getByRole('button',{name:'Baixar PDF'})).toBeTruthy();
+  const warnings=vi.spyOn(console,'warn').mockImplementation(()=>{});
+  act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));
+  expect(screen.queryByRole('textbox')).toBeNull();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:prepared');
+  expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);
+  await tick();act(()=>s.authListener?.('SIGNED_IN',{user:{id:s.uid}}));await tick();
+  expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
+  expect(warnings.mock.calls.some(call=>call[0]==='cultivo-authz-expire')).toBe(false);
+ });
+ it('TOKEN_REFRESHED discards late old-scope attachment while same-scope reauthorization awaits3s',async()=>{
+  s.roles=[role];setup();await tick();let answer:((value:Blob)=>void)|undefined;
+  bytes.download.mockImplementation(()=>new Promise(resolve=>answer=resolve));
+  fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));s.rtt=1500;
+  act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));await tick();
+  expect(screen.getByText('Verificando seu acesso')).toBeTruthy();
+  answer?.(new Blob(['previous authority']));await tick();
+  expect(URL.createObjectURL).not.toHaveBeenCalled();
+  expect(screen.queryByRole('textbox')).toBeNull();
+  await tick(3100);expect(screen.getByRole('textbox')).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
+ });
+ it.each(['role','tenant','revoked'])('TOKEN_REFRESHED %s change never revives previous draft or prepared bytes',async reason=>{
+  s.roles=[role];const qc=setup();await tick();
+  fireEvent.change(screen.getByRole('textbox'),{target:{value:'old scope'}});
+  fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
+  if(reason==='role')s.roles=[];else if(reason==='tenant')s.org=U;else s.roleAllowed=false;
+  act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));
+  expect(screen.queryByRole('textbox')).toBeNull();
+  expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);
+  await tick();expect(screen.queryByRole('button',{name:'Baixar PDF'})).toBeNull();
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:prepared');
+  if(reason==='revoked')paused(qc);
+  if(reason==='tenant')expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');
+  if(reason==='role')expect(screen.queryByRole('textbox')).toBeNull();
+ });
  it('RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch',async()=>{
   s.roles=[role];s.rtt=1500;setup();await tick(3000);await tick(3000);
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho preservado'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
