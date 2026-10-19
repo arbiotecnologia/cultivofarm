@@ -7,7 +7,8 @@ import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { OfflineIndicator } from "@/components/app/OfflineIndicator";
 import { PendingMediaRecovery } from "@/components/app/PendingMediaRecovery";
 
-import { PortalContextFreshnessProvider, useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { PortalContextFreshnessProvider } from "@/lib/portalContextFreshness";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
 import { itemsForPlatform } from "@/config/navigation";

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
+import { PortalContextFreshness } from "@/lib/portalContextFreshness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
@@ -12,8 +13,6 @@ export type PortalContext = "b2b" | "technical" | "admin";
 
 // Technical guards own freshness. Descendant readers (including switch/menu
 // hooks) inherit their policy without changing default readers in other portals.
-const PortalContextFreshness = createContext(false);
-export const PortalContextFreshnessProvider = PortalContextFreshness.Provider;
 
 export interface AvailableContexts {
   available_contexts: PortalContext[];
