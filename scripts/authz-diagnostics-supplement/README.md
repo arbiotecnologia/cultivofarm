@@ -1,0 +1,11 @@
+# Suplemento local do diagnóstico — 19/10 15:29
+
+Somente `localDiagnostics.ts` e seu teste; baseline fixo `c30af10c472255c919d167bc555c4f757eedaff0`. `candidate/`, `rollback/`, `manifest.json` e `delta.patch` permitem revisão e rollback byte-exato. `python3 scripts/authz-diagnostics-supplement/verify.py` verifica bytes e preservação da programação. Sem SQL, publicação ou alteração de autoridade.
+
+Expiry usa `console.warn('cultivo-authz-expire', JSON.stringify(record))`; auth_refresh/auth_reconfirmed usam console.info com JSON da mesma allowlist. Exceções do console não interrompem expiração/reconfirmação. Ring80, cópias defensivas, lease e fences inalterados; sem identidade/token/fingerprint/URL, rede ou persistência.
+
+O pacote de programação anterior continua congelado: seu stager no checkout atual **recusa** o diagnóstico alterado, conforme projetado. Não modificar seus hashes para contornar isso. A verificação separada valida candidata/rollback daquele pacote numa árvore descartável com o diagnóstico baseline original, e valida este suplemento independentemente. Aplicação externa deve tratar os dois deltas separadamente; o rollback deste suplemento não altera programação, AuthProvider ou dados.
+
+Recibo informado pelo auditor: expire real B/c30af às 15:09:12.113 UTC expôs somente Object; motivo não auditável, **não atribuir timeout**. TOKEN_REFRESHED na aba antiga às 15:10:25 não tinha rascunho; observação posterior estável não homologa renovação. 25 testes independentes informados não são evidência de browser com rascunho. Nesta entrega: 27 testes locais diagnósticos/earlyRenewal/safeDraft PASS, incluindo falha de console.info e reconfirmação com lease15s. Histórico/anexos/renovação real/v6/contratos não recebem PASS.
+
+Programação permanece candidata revisável, não aplicada: rollback autocontido a42d6/ACL original e catálogo transitivo existentes preservados; PRE/POST integral hosted, carga/writers externos e JWT/browser real aguardam auditor. Nenhuma nova fixture, escrita hosted ou ação na OS real.
