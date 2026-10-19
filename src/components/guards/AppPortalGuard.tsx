@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 
 /**
  * AppPortalGuard — protege a árvore `/app/*`.
@@ -19,14 +20,17 @@ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
  * A autorização NUNCA depende de `primaryRole` nem de `isMobileProfile`.
  */
 export function AppPortalGuard({ children }: { children?: ReactNode }) {
-  const { user, roles, loading, authzReady = true } = useAuth();
+  const { user, profile, roles, loading, authzReady = true } = useAuth();
   const location = useLocation();
   const { data, isLoading, isError } = useAvailableContexts();
 
   const isAdmin = roles.includes("administrador") || !!data?.is_admin;
   const isProducer = roles.includes("cliente_produtor");
+  const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
+    typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const denied =
     !loading &&
+    (!isMonitoredConsultant || authzReady) &&
     !!user &&
     !isLoading &&
     !isAdmin &&
@@ -40,7 +44,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   }, [denied, location.pathname]);
 
   // Pause before readers depending on authzReady; retry stays on this URL.
-  if (!loading && user && isProducer && !authzReady) {
+  if (!loading && user && (isProducer || isMonitoredConsultant) && !authzReady) {
     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
   }
 
@@ -76,7 +80,9 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     );
   }
 
-  return <>{children ?? <Outlet />}</>;
+  return isMonitoredConsultant
+    ? <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>
+    : <>{children ?? <Outlet />}</>;
 }
 
 export default AppPortalGuard;
