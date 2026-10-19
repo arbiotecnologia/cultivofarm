@@ -62,9 +62,9 @@ def main():
   assert run(sql=read(ids(101))).strip().endswith('f');passed+=1
   run(sql="UPDATE user_clientes SET valid_until=NULL,valid_from=now()+interval '1 minute';")
   assert run(sql=read(ids(101))).strip().endswith('f');passed+=1
-  run(sql="UPDATE user_clientes SET valid_from=NULL; UPDATE user_roles SET role='financeiro';")
+  run(sql="UPDATE user_clientes SET valid_from=NULL,revoked_at=now(); UPDATE user_roles SET role='financeiro';")
   for mutation,undo in [("UPDATE profiles SET ativo=false","UPDATE profiles SET ativo=true"),("UPDATE profiles SET senha_provisoria=true","UPDATE profiles SET senha_provisoria=false"),("UPDATE profiles SET organization_id=NULL",f"UPDATE profiles SET organization_id='{A}'"),(f"UPDATE organizations SET ativo=false WHERE id='{A}'",f"UPDATE organizations SET ativo=true WHERE id='{A}'"),("DELETE FROM user_roles",f"INSERT INTO user_roles VALUES('{U}','financeiro')")]:
-   run(sql=mutation);assert run(sql=read(ids(101))).strip().endswith('f');passed+=1;run(sql=undo);assert run(sql=read(ids(101))).strip().endswith('t');passed+=1
+   run(sql=mutation);assert run(sql=read(ids(101))).strip().endswith('f'),mutation;passed+=1;run(sql=undo);assert run(sql=read(ids(101))).strip().endswith('t'),undo;passed+=1
   run(sql=f"INSERT INTO platform_org_admin_invites VALUES('{U}','processing',NULL);")
   assert run(sql=read(ids(101))).strip().endswith('f');passed+=1
   run(sql="UPDATE platform_org_admin_invites SET access_operation_status='done',access_valid_after=now()-interval '1 minute';")
