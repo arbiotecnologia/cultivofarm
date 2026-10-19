@@ -1,4 +1,4 @@
-// Real AuthProvider/monitor/ProtectedRoutes/AppLayout/financial dashboard/cache.
+// Real AuthProvider/monitor/ProtectedRoutes/AppLayout/cache; admin page stub.
 // Only transports/session and unrelated shell widgets are fake: not JWT/RLS.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -15,7 +15,6 @@ vi.mock('@/hooks/useOrgOnboarding',()=>({useOnboardingState:()=>({data:{required
 vi.mock('@/components/AppSidebar',()=>({AppSidebar:()=> <nav>Menu administrador</nav>}));
 vi.mock('@/components/portal/PortalTopBar',()=>({PortalTopBar:()=>null}));
 vi.mock('@/components/ui/sidebar',()=>({SidebarProvider:({children}:{children:React.ReactNode})=><>{children}</>,SidebarTrigger:()=>null}));
-vi.mock('@/components/administrador/bi/AlertasGestor',()=>({AlertasGestor:()=>null}));
 vi.mock('@/integrations/supabase/client',()=>({supabase:{
  auth:{getSession:async()=>({data:{session:{user:{id:s.uid}}}}),onAuthStateChange:(listener:typeof s.authListener)=>{s.authListener=listener;return {data:{subscription:{unsubscribe(){s.authListener=undefined;}}}};},signOut:async()=>{}},
  from:(t:string)=>chain(()=>t==='profiles'?{data:{user_id:s.rowUid??s.uid,organization_id:s.org,ativo:s.active,senha_provisoria:s.password,nome:'Financeiro'}}:t==='user_roles'?{data:s.roles.map(role=>({role}))}:{data:[]}),
