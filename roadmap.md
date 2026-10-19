@@ -298,3 +298,4 @@
 - [x] Entregar matriz verificável e preflight SELECT-only/guardas, manifest fixo e staging candidato/rollback fora do runtime, receipt de liberação obrigatório e rollback com hash POST exato+drenagem: docs/auditorias/b2b-tela-aberta-20261018.review.md. v6 amplo segue NO-GO; sem goldens inventados nem SQL hosted.
 - [x] Prova real do gestor sem reload e publicação autorizada realizadas pelo auditor; registro no relatório existente, sem alegar auditoria global concluída.
 - [ ] Ampliação além do aceite gestor: técnico/produtor/offline/suspensão/ABA transitório/downloadURLs não homologados em login real nesta rodada; dependem de autorização e provas próprias do auditor, fora desta entrega documental. Contratos amplos/v6 continuam fechados.
+- [x] Detalhe OS: refresh da lista pós-programação e rastreabilidade via leitor canônico (scripts/os-detail-refresh-trace); pendente homologação browser real.
