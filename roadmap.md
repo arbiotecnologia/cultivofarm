@@ -332,3 +332,7 @@
 - [ ] Testes do Edge generate-financial-report (8) ainda esperam assinatura v89; runtime já é v90 — atualizar expectativas em revisão própria.
 - [x] Achado 17:00 (timeout rtt 7740 após renovação): probe reduzida de 4+N para 2 idas sequenciais, sem lease/piso/grants novos; 12 testes de latência/negativos.
 - [ ] Homologação real: estabilidade pós-renovação; retirada só gestor e só consultor; anexos; draft integral não coberto (área zera por contrato).
+
+## 19/10 17:20 — revogação parcial + latência (pacote scripts/monitor-partial-revocation, baseline 1c2f29e)
+- [x] Escopo residual monitorado gestor/consultor após par; Retry fecha readiness antes de await; 1390/1392 (2 preexistentes); rollback byte-exato.
+- [ ] Homologação real B sem reload: retirar consultor→gestor; retirar gestor→consultor; estabilidade pós-renovação.
