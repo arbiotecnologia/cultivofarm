@@ -14,6 +14,8 @@ Base fixa: `2f95d5be6dd27834e69bfc9155540a04b0a6e914`. Apenas frontend/testes; n
 - 302/302 Vitest, 12 arquivos: AuthProvider/monitor/probe/guardas/query reais com transporte fake, timeout/renovação, contexts pending→valid/erro→valid/negativo, ambos os subsets, late epoch, zero/malformed payload, deadline sem rerender, isolamento de tenant/identidade nos testes de escopo existentes.
 - São testes sintéticos, não homologação JWT/RLS real. Fonte de monitor/probe/gates inalterada em relação à base.
 - Build automático registrado OK. Typechecks app/node não executados manualmente neste ambiente (harness automático); revisão independente deve executar `tsgo -p tsconfig.app.json --noEmit` e `tsgo -p tsconfig.node.json --noEmit` e registrar recibos.
+- O harness detectou inferência literal `true` no novo mock; assinatura explícita `boolean` corrigida, build subsequente OK e 21/21 testes focais reexecutados. Não confundir build OK com recibos separados app/node.
+- Smoke público Playwright: `/app` permaneceu em tela vazia após 2,5 s, sem pageerror; não confirmou login nem fluxo autenticado. Não apresentado como validação funcional real.
 
 ## Revisão e rollback
 1. `python3 scripts/monitor-context-recovery/rollback.py` verifica todos os hashes, sem alterar arquivos.
