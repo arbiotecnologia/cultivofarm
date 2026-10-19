@@ -25,7 +25,7 @@ vi.mock("@/components/aplicacao/AplicacaoFormDialog", () => ({ AplicacaoFormDial
 vi.mock("@/components/aplicacao/EvidenciasGallery", () => ({ EvidenciasGallery: () => null }));
 
 import { AplicacaoCard } from "@/components/aplicacao/AplicacaoCard";
-import { aplicacaoEvidencePath, aplicacaoLogoPath, generateAplicacaoPdf, awaitAplicacaoPdf, type AplicacaoPdfAccess } from "@/lib/pdfAplicacao";
+import { aplicacaoEvidencePath, aplicacaoLogoPath, generateAplicacaoPdf, saveAplicacaoPdf, awaitAplicacaoPdf, type AplicacaoPdfAccess } from "@/lib/pdfAplicacao";
 const APP = "00000000-0000-4000-8000-000000000001";
 const ORIGIN = "00000000-0000-4000-8000-000000000002";
 const CLIENT = "00000000-0000-4000-8000-000000000003";
@@ -39,6 +39,9 @@ beforeEach(() => {
   for (const m of [fake.query, fake.download, fake.edge, fake.success, fake.error, fake.saves]) m.mockReset();
   fake.query.mockImplementation(async table => table === "aplicacoes" ? { data: { id: APP, organization_id: fake.tenant }, error: null } : table === "configuracoes_sistema" ? { data: { nome_empresa: "Cultivo Farm" }, error: null } : { data: [], error: null });
   fake.download.mockResolvedValue(new Blob([png], { type: "image/png" })); fake.edge.mockResolvedValue({ data: { emailSent: false }, error: null });
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: vi.fn(() => "blob:application-pdf") });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, writable: true, value: vi.fn() });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(fake.saves);
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 describe("application PDF authenticated assets", () => {
@@ -83,6 +86,12 @@ describe("application PDF authenticated assets", () => {
     const late = deferred(); const controller = new AbortController();
     const result = awaitAplicacaoPdf({ ...fence(), signal: controller.signal }, () => late.promise);
     const rejected = expect(result).rejects.toThrow(); controller.abort(); await rejected; late.resolve("late");
+  });
+  it("rechecks immediately before synchronous download and revokes its local URL", async () => {
+    const doc = await generateAplicacaoPdf({ aplicacao: app, empresa: { nome: "Farm" } }, fence());
+    vi.mocked(URL.createObjectURL).mockImplementationOnce(() => { fake.check = () => false; return "blob:stale"; });
+    expect(() => saveAplicacaoPdf(doc, "application.pdf", fence())).toThrow();
+    expect(fake.saves).not.toHaveBeenCalled(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:stale");
   });
 });
 describe("both existing application PDF callers use real scope", () => {

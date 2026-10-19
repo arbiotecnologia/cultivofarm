@@ -9,7 +9,7 @@ import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AplicacaoFormDialog } from "./AplicacaoFormDialog";
 import { useAuth } from "@/hooks/useAuth";
-import { generateAplicacaoPdf, assertAplicacaoPdfAccess, awaitAplicacaoPdf, type AplicacaoPdfAccess } from "@/lib/pdfAplicacao";
+import { generateAplicacaoPdf, saveAplicacaoPdf, assertAplicacaoPdfAccess, awaitAplicacaoPdf, type AplicacaoPdfAccess } from "@/lib/pdfAplicacao";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { ATTACHMENT_LIMITS } from "@/lib/authz/authenticatedAttachment";
 import { supabase } from "@/integrations/supabase/client";
@@ -199,7 +199,7 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
 
       const filename = `aplicacao_${a.os?.fazendas?.nome}_${a.os?.talhoes?.nome}_${a.data_aplicacao}.pdf`.replace(/\s+/g, "_");
       assertAplicacaoPdfAccess(fence);
-      doc.save(filename);
+      saveAplicacaoPdf(doc, filename, fence);
       assertAplicacaoPdfAccess(fence);
       toast.success("PDF gerado com sucesso!");
     } catch (error) {

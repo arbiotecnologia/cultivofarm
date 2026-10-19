@@ -23,6 +23,24 @@ export function assertAplicacaoPdfAccess(access: AplicacaoPdfAccess) {
   if (access.signal.aborted || !access.current()) throw new Error("PDF indisponível");
 }
 
+/** jsPDF.save schedules an unfenced click; keep the existing download synchronous. */
+export function saveAplicacaoPdf(doc: jsPDF, filename: string, access: AplicacaoPdfAccess) {
+  assertAplicacaoPdfAccess(access);
+  const blob = doc.output("blob");
+  assertAplicacaoPdfAccess(access);
+  if (!blob.size || blob.size > ATTACHMENT_LIMITS.totalBytes) throw new Error("PDF indisponível");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  try {
+    link.href = url;
+    link.download = filename.replace(/[\\/\x00-\x1f\x7f]/g, "_");
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    assertAplicacaoPdfAccess(access);
+    link.click();
+  } finally { link.remove(); URL.revokeObjectURL(url); }
+}
+
 /** Fence even transports which settle after abort; never publish their late result. */
 export async function awaitAplicacaoPdf<T>(access: AplicacaoPdfAccess, run: () => PromiseLike<T>): Promise<T> {
   assertAplicacaoPdfAccess(access);
