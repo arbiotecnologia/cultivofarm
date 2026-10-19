@@ -15,7 +15,10 @@ def stage(destination, mode):
         raise ValueError('invalid_mode')
     if destination.exists() and any(destination.iterdir()):
         raise ValueError('empty_destination_required')
-    m = json.loads((HERE / 'manifest.json').read_bytes().decode('utf-8'))
+    raw_manifest = (HERE / 'manifest.json').read_bytes()
+    if sha(raw_manifest) != 'f3cd82b140b62de0d1adec2b632cf3d1b8b023e297d6d0efc0424579f8e28101':
+        raise ValueError('manifest_drift')
+    m = json.loads(raw_manifest.decode('utf-8'))
     if m['canonical_ref'] != 'swzpzcwiasxmjutrmvkm':
         raise ValueError('canonical_ref_required')
     # Check everything before any writes. Rollback must not erase later scopes.
