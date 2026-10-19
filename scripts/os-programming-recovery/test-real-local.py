@@ -2,7 +2,7 @@
 Auth UID/JWT transport is synthetic; not hosted JWT/RLS certification.
 """
 from pathlib import Path
-import json,subprocess,tempfile,os,shutil,re,time,hashlib
+import json,subprocess,tempfile,os,shutil,re,time,hashlib,importlib.util
 H=Path(__file__).resolve().parent
 q=lambda n:"'00000000-0000-4000-8000-%012d'"%n
 A,B,U,C,P,O,PP,V,F,M,PLAN,SUB=[q(n) for n in range(1,13)]
@@ -86,6 +86,21 @@ def main():
   test('different date denied',f"(public.rpc_programar_os_v1({O},'manual','2026-10-21')->>'success')='false'")
   hash=run("SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure));").stdout.strip()
   (H/'post-hashes.json').write_text(json.dumps({'public.rpc_programar_os_v1(uuid,text,date)':hash},indent=2)+'\n')
+  # Compile/evaluate every supplemental catalog SELECT against the real local schema.
+  # Missing fingerprints are expected in this partial clone; SQL errors are not.
+  spec=importlib.util.spec_from_file_location('program_assemble',H/'assemble.py')
+  assembler=importlib.util.module_from_spec(spec);spec.loader.exec_module(assembler);assembler.main()
+  checks=assembler.supplemental(True).splitlines()[2:-1]
+  for line in checks:
+   expression=line.removeprefix('IF ').split(' THEN RAISE EXCEPTION')[0]
+   run('SELECT '+expression+';')
+  results.append('every supplemental catalog predicate compiles and evaluates')
+  for name in ['preflight-readonly.sql','candidate.sql.review','postflight-readonly.sql','rollback.sql.review']:
+   before=run("SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure)),proacl::text FROM pg_proc WHERE oid='public.rpc_programar_os_v1(uuid,text,date)'::regprocedure;").stdout
+   rejected=run((H/name).read_text(),False)
+   assert rejected.returncode and ('DRIFT' in rejected.stderr or 'WRONG_PROJECT' in rejected.stderr),rejected.stderr
+   assert run("SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure)),proacl::text FROM pg_proc WHERE oid='public.rpc_programar_os_v1(uuid,text,date)'::regprocedure;").stdout==before
+   results.append('intact '+name+' rejects incomplete clone without definition/ACL changes')
   # Independent rollback connection, no TEMP table/capture.
   run((H/'rollback/rpc.sql.review').read_text()+"REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO service_role;")
   assert run("SELECT md5(pg_get_functiondef('public.rpc_programar_os_v1(uuid,text,date)'::regprocedure));").stdout.strip()=='a42d6b07f51e6dacf41096f6cefb8163'
@@ -157,7 +172,9 @@ def main():
   results.append('real global MV contention timeout rolls back whole operation')
   reset()
   # Canonical RPC with SQL role authenticated; synthetic claims, NOT a hosted JWT.
-  run("GRANT USAGE ON SCHEMA public TO authenticated; GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO authenticated;")
+  run("GRANT USAGE ON SCHEMA public TO authenticated; REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM PUBLIC,anon,service_role; GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO authenticated;")
+  assert run("SELECT proacl::text FROM pg_proc WHERE oid='public.rpc_programar_os_v1(uuid,text,date)'::regprocedure;").stdout.strip()=='{postgres=X/postgres,authenticated=X/postgres}'
+  results.append('candidate exact postgres/authenticated ACL no service role grant')
   out=run(actor+'SET ROLE authenticated;SELECT '+call+';')
   assert '"success": true' in out.stdout,out
   results.append('local authenticated SQL role canonical RPC after minimal grant')

@@ -25,7 +25,7 @@ def guard(post=False):
   if sig in posts: digest=posts[sig]
   if sig=='public.rpc_aprovar_os_v1(uuid,text)': roles=['authenticated','postgres']
   if sig=='public.rpc_programar_os_v1(uuid,text,date)' and post:
-   digest=new_hash;config='search_path=""';roles=['authenticated','postgres','service_role']
+   digest=new_hash;config='search_path=""';roles=['authenticated','postgres']
   rewritten.append((sig,digest,vol,sec,config,roles))
  m.CONTRACTS=rewritten
  result=m.guard(False).replace('OS_APPROVAL_','OS_PROGRAMMING_')
@@ -44,7 +44,7 @@ def supplemental(post=False):
   digest=f['hash'];acl=f['acl']
   if sig=='rpc_programar_os_v1(uuid,text,date)' and post:
    digest=json.loads((H/'post-hashes.json').read_text())['public.rpc_programar_os_v1(uuid,text,date)']
-   acl='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'
+   acl='{postgres=X/postgres,authenticated=X/postgres}'
   sig=sig if '.' in sig.split('(')[0] else 'public.'+sig
   sig=sig.replace("'","''");acl=acl.replace("'","''") if acl else None
   acl_expr="NULL" if acl is None else "'"+acl+"'"
@@ -74,10 +74,8 @@ def supplemental(post=False):
   data='\n'.join(x['name']+':'+x['type']+':'+str(x['notnull']).lower()+':'+(x['default'] or '')+':'+x['identity']+':'+x['generated'] for x in cols)
   digest=hashlib.md5(data.encode()).hexdigest()
   lines.append(f"IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),'')||':'||a.attidentity||':'||a.attgenerated,E'\\n' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.{table}'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '{digest}' THEN RAISE EXCEPTION 'SUPPLEMENTAL_SCHEMA_DRIFT'; END IF;")
- # Captured target policy expressions, with OID-free role labels in original baseline guard.
- for x in t['policies']:
-  digest=hashlib.md5(x['definition'].encode()).hexdigest()
-  lines.append(f"IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='{x['table']}'::regclass AND polname='{x['name']}' AND md5(concat(polcmd,':',polpermissive,':',polroles,':',pg_get_expr(polqual,polrelid),':',pg_get_expr(polwithcheck,polrelid)))='{digest}') THEN RAISE EXCEPTION 'POLICY_DRIFT'; END IF;")
+ # Policy expressions/role names are checked by the unchanged aggregate baseline guard.
+ # Do not fingerprint polroles OIDs: role OIDs are installation-local, not portable.
  lines.append('END $supplement$;')
  return '\n'.join(lines)+'\n'
 def main():
@@ -87,10 +85,10 @@ def main():
  (H/'preflight-readonly.sql').write_text('BEGIN READ ONLY;\n'+pre+"SELECT 'PRE PASS' result;\nROLLBACK;\n")
  (H/'postflight-readonly.sql').write_text('BEGIN READ ONLY;\n'+post+"SELECT 'POST PASS' result;\nROLLBACK;\n")
  # Grants occur only after exact PRE and post-definition validation in one transaction.
- acl="REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM PUBLIC,anon,authenticated;\nGRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO service_role;\n"
+ acl="REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM PUBLIC,anon,authenticated,service_role;\n"
  (H/'candidate.sql.review').write_text(header+pre+(H/'rpc.sql.review').read_text()+acl+"GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO authenticated;\n"+post+'COMMIT;\n')
- (H/'rollback.sql.review').write_text(header+post+(H/'rollback/rpc.sql.review').read_text()+acl+pre+'COMMIT;\n')
- artifact_paths=[p for p in H.rglob('*') if p.is_file() and '__pycache__' not in p.parts and 'snapshot' not in p.parts and p.name not in ['manifest.json','SHA256SUMS']]
+ (H/'rollback.sql.review').write_text(header+post+(H/'rollback/rpc.sql.review').read_text()+acl+"GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO service_role;\n"+pre+'COMMIT;\n')
+ artifact_paths=[p for p in H.rglob('*') if p.is_file() and '__pycache__' not in p.parts and not any(part.startswith('snapshot') for part in p.parts) and p.name not in ['manifest.json','SHA256SUMS']]
  manifest={'canonical_ref':'swzpzcwiasxmjutrmvkm','baseline_commit':BASELINE,'approval_commit':APPROVAL,'hosted_executed':False,'release_gate':'AUDITOR REVIEW REQUIRED: executable reviewed delta; hosted PRE/POST, full unrelated schema and authenticated browser UNVERIFIED; retained global catalog/invite/MV locks','runtime':{'path':UI,'pre':UI_PRE,'post':sha(ROOT/UI),'rollback':'rollback/OSDetalhesDialog.tsx'},'protected':json.loads((H/'protected.json').read_text()),'artifacts':{p.relative_to(H).as_posix():sha(p) for p in sorted(artifact_paths)}}
  (H/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
  (H/'SHA256SUMS').write_text(''.join(sha(p)+'  '+p.relative_to(H).as_posix()+'\n' for p in sorted(artifact_paths))+sha(H/'manifest.json')+'  manifest.json\n')

@@ -4,6 +4,15 @@ from unittest.mock import patch
 H=Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location('program_stage',H/'stage.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class StageTests(unittest.TestCase):
+ def test_self_contained_rollback_and_distinct_guards(self):
+  rollback=(H/'rollback.sql.review').read_text();candidate=(H/'candidate.sql.review').read_text()
+  self.assertNotIn('TEMP',rollback)
+  self.assertIn((H/'rollback/rpc.sql.review').read_text(),rollback)
+  self.assertIn('a42d6b07f51e6dacf41096f6cefb8163',(H/'preflight-readonly.sql').read_text())
+  self.assertNotEqual((H/'preflight-readonly.sql').read_bytes(),(H/'postflight-readonly.sql').read_bytes())
+  self.assertIn('TO authenticated;',candidate)
+  self.assertNotIn('TO service_role;',candidate)
+  self.assertIn('TO service_role;',rollback)
  def test_candidate_bytes(self):
   with tempfile.TemporaryDirectory() as d:
    m.stage(d);f=json.loads((H/'manifest.json').read_text())['runtime']
