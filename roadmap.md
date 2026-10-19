@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 15:29 — suplemento diagnóstico separado
-- [ ] Serializar motivos/renovações allowlist em console local; ring80 e autoridade intactos; testes e artefato isolado baseline c30af/rollback exato.
-- [ ] Revalidar pacote programação sem modificar seus artefatos históricos; registrar limite da sobreposição diagnóstica.
+- [x] Serializar motivos/renovações allowlist em console local; ring80 e autoridade intactos; 27 testes PASS e artefato isolado baseline c30af/rollback exato em scripts/authz-diagnostics-supplement.
+- [x] Revalidar programação sem modificar históricos: 40 checks PostgreSQL descartável, 95 testes OS/AuthProvider e staging candidata/rollback PASS com baseline original em árvore temporária. Stager histórico recusa diagnóstico novo; deltas separados, sem atualizar hashes protegidos. Build automático OK; typecheck externo pendente.
 - [ ] Renovação real/anexos: aguardam observação com rascunho e homologação externa; evento 15:09:12 sem motivo legível não comprova timeout.
 
 ## 19/10 15:28 — evidência complementar independente
