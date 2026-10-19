@@ -376,6 +376,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const managerConsultantContextOnly = b2bContextOnly && MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED &&
     isManagerConsultantScope(roles, profile?.organization_id);
+  // Reuse the reviewed environmental policy only for these monitored scopes.
+  // This selects scheduling, never grants authority or changes probe contracts.
+  const environmentalContextOnly = managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly;
   const isExternalUser = b2bContextOnly
     ? managerConsultantContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
@@ -443,12 +446,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeoutFn: (h) => window.clearTimeout(h as number),
       isVisible: () => document.visibilityState === "visible",
       isOnline: () => navigator.onLine,
-      // Limited paired scope: hidden polling is best effort; suspension still
+      // Limited reviewed scopes: hidden polling is best effort; suspension still
       // expires the monotonic lease. Other scopes retain published behavior.
-      pollWhenHidden: managerConsultantContextOnly,
-      // Paired scope only: renew before the confirmed deadline using observed
+      pollWhenHidden: environmentalContextOnly,
+      // Reviewed scopes only: renew before the confirmed deadline using observed
       // RTT (no lease extension; late answers still fail closed).
-      renewBeforeDeadline: managerConsultantContextOnly,
+      renewBeforeDeadline: environmentalContextOnly,
       // Preserve published B2B confirmation refresh. Producer/financial renew
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.
@@ -490,7 +493,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     authzMonitorRef.current = monitor;
-    const onEnvironment = () => managerConsultantContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
+    const onEnvironment = () => environmentalContextOnly ? monitor.revalidateEnvironment() : monitor.revalidate();
     const onFocus = onEnvironment;
     const onVisibility = () => { if (document.visibilityState === "visible") onEnvironment(); };
     const onOnline = onEnvironment;

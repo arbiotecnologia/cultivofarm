@@ -1,9 +1,14 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 02:57 — ambiente financeiro/admin exclusivo
+- [x] Reutilizar somente as opções ambientais revisadas no financeiro/admin empresa exclusivos; preservar monitor/probes, produtor/B2B/outros gates e recibos/Edges.
+- [x] Testar drafts/opener com alternância ambiental e RTT3s >=90s, negação/tardios/offline/timeout/restore:312/312; candidata/rollback/preflight não executado/staging5/5; typecheck exit0/build automático OK.
+- [ ] Revisão independente e homologação real aguardam proprietário; A/B autenticados preservados, sem login/reload/publicação automática.
+
 ## 19/10 02:43 — anexos de RecibosList
 - [x] Cercar listagem, cancelamento e download existentes por ator/tenant/roles/epoch/recurso; usar locator canônico e opener autenticado, sem URL arbitrária.
 - [x] Testar races, expiração, identidade, geração/existente e duplicação: 231/231; preflight SELECT-only não executado, staging5/5, rollback/hashes e relatório; build automático OK, typecheck independente final exit0.
-- [ ] Revisão independente e homologação financeiro A/admin B aguardam proprietário; não publicar/recarregar/criar recibos ou pagamentos.
+- [x] Proprietário informou recibos50d72d6 revisado (15hashes/stage5/5/13locator+3invariantes/Edgev88/preflight) e publicado deployment6a525e60-08c6-4abf-9561-dcfd0c16c63b/bundleDBAYuiaw; homologação real NÃO PASSOU: pausa ambiental antes de inativação, tratada na fase02:57.
 - [x] Inventário somente registrado: global v6, pdfAplicacao signer600/sem fence e guard final entrega-termo-pdf seguem fora desta correção.
 
 ## 19/10 02:20 — renovação antecipada RTT multipapel
