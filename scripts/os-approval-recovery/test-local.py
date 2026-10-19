@@ -147,7 +147,7 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
     extra_sql,extra_labels=compat.extend(f.q); sql+=extra_sql; labels+=extra_labels
     sql+="SELECT oid::regprocedure,md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid IN ('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure,'private.assert_os_approval_scope(uuid,text)'::regprocedure);"
     # Positive B uses synthetic local identifiers, never hosted fixtures.
-    sql+=f"SELECT set_config('t.org',{B},false); INSERT INTO clientes VALUES({f.q(12)},{B},'Synthetic B'); INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(70)},{f.q(12)},{P},{B}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({f.q(71)},{B},{f.q(70)},{P});"
+    sql+=f"SELECT set_config('t.org',{B},false); INSERT INTO clientes VALUES({f.q(12)},{B},'Synthetic B'); INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(70)},{f.q(12)},{P},{B}); UPDATE programacao_producao SET organization_id={B} WHERE ordem_servico_id={f.q(70)};"
     check('B approves own',f"(SELECT status FROM ordens_servico WHERE id={f.q(70)})='aprovada'",f"SELECT public.rpc_aprovar_os_v1({f.q(70)},'manual');")
     deny('B approved replay denied after readiness revoke',f"PERFORM public.rpc_aprovar_os_v1({f.q(70)},'manual')","SELECT set_config('t.ready','false',false);","SELECT set_config('t.ready','true',false);")
     deny('B2B alias denied on ordinary B',f"PERFORM public.rpc_aprovar_os_v1({f.q(70)},'b2b')")
@@ -185,7 +185,7 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
         run(f"CREATE OR REPLACE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $b$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $b$; INSERT INTO user_roles VALUES({U},'administrador');")
         actor=f"SELECT set_config('t.uid',{U},false),set_config('t.org',{B},false),set_config('t.ready','true',false),set_config('t.feature','true',false);"
         for i in [80,82]:
-            run(actor+f"INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(i)},{f.q(12)},{P},{B}); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id) VALUES({f.q(i+1)},{B},{f.q(i)},{P});")
+            run(actor+f"INSERT INTO ordens_servico(id,cliente_id,produto_id,organization_id) VALUES({f.q(i)},{f.q(12)},{P},{B}); UPDATE programacao_producao SET organization_id={B} WHERE ordem_servico_id={f.q(i)};")
         def approve(i): return run(actor+f"SET ROLE authenticated; SELECT public.rpc_aprovar_os_v1({f.q(i)},'manual');").stdout
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
             outcomes=list(pool.map(approve,[80,80]))
