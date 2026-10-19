@@ -17,7 +17,8 @@ export async function internalContextProbe(userId: string, organizationId: strin
   const deny = () => ({ eligible: false, fingerprint: null });
   // Copy before any await; caller mutation cannot change the expected authority.
   const expected = typeof expectedRole === "string" ? [expectedRole] : Array.isArray(expectedRole) ? [...expectedRole] : [];
-  const allowed = expected.length === 1
+  // A single role is accepted only as a string; one-element arrays fail.
+  const allowed = typeof expectedRole === "string"
     ? ["financeiro", "administrador", "consultor_tecnico", "operador_onfarm", "gestor"].includes(expected[0])
     : isManagerConsultantScope(expected, organizationId);
   const sortedExpected = Object.freeze([...expected].sort());

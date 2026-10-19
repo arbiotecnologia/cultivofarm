@@ -105,7 +105,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
  });
  it.each(['manager_loss','consultant_loss','duplicate','additional','superadmin','external','tenant','null','provisional','error','manager_denied','consultant_denied'])('%s pauses without silently adopting cached authority',async reason=>{
    const qc=setup();await tick();if(reason==='manager_loss')s.roles=['consultor_tecnico'];if(reason==='consultant_loss')s.roles=['gestor'];if(reason==='duplicate')s.roles=['gestor','gestor'];if(reason==='additional')s.roles.push('administrador');if(reason==='superadmin')s.roles.push('superadmin');if(reason==='external')s.roles.push('parceiro_b2b');if(reason==='tenant')s.org=U;if(reason==='null')s.org=null;if(reason==='provisional')s.password=true;if(reason==='error')s.error=true;if(reason==='manager_denied')s.deniedRole='gestor';if(reason==='consultant_denied')s.deniedRole='consultor_tecnico';
-   await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
+   await tick(10000);paused(qc);fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();
+   // Owner 19/10 17:20: pair→single remaining role is re-resolved and monitored (residual scope); cache never survives.
+   if(reason==='manager_loss'||reason==='consultant_loss'){expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(qc.getQueryCache().getAll().some(q=>q.queryKey[0]==='operator-fixture'&&q.state.dataUpdatedAt<0)).toBe(false);return;}
+   paused(qc);
    s.roles=['gestor','consultor_tecnico'];s.org=O;s.password=false;s.error=false;s.deniedRole='';fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect(screen.getByText('Menu desktop')).toBeTruthy();
  });
  it.each(['/financeiro/receber','/app/registrar','/selecionar-portal'])('%s environmental check keeps confirmed view only until deadline; late response cannot reopen',async path=>{
@@ -127,7 +130,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
    const qc=setup();await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'não recuperar'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
    if(reason==='error')s.error=true;else if(reason==='offline')Object.defineProperty(navigator,'onLine',{value:false});else s.roles=s.roles.filter(r=>r!==reason);
    act(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await tick();paused(qc);
-   fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();paused(qc);
+   fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();
+   // Residual remaining role recovers via validated re-resolution; previous draft/modal never revive.
+   if(reason==='gestor'||reason==='consultor_tecnico'){expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByRole('dialog')).toBeNull();const box=screen.queryByRole('textbox') as HTMLInputElement|null;if(box)expect(box.value).toBe('');return;}
+   paused(qc);
    s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
  });
  it.each(['/financeiro/receber','/app/registrar'])('%s constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses',async path=>{
