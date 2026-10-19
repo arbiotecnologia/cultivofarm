@@ -40,7 +40,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
   const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
     ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
   useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); }, [os?.id, open, access.scope]);
-  const canProgram = !!os && open && access.ready && programOrigin !== null &&
+  const canProgram = !!os && open && access.ready && programOrigin === "manual" &&
     !os.partner_order_id && !os.partner_order_item_id && programmedId !== os.id &&
     (os.status === "aprovada" || approvedId === os.id) &&
     roles.some((role) => role === "administrador" || role === "gestor" || role === "producao");
