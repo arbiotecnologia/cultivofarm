@@ -77,7 +77,7 @@ beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();});
 for(const role of ['financeiro','administrador']) describe(role+' exclusive environment, fake transport not hosted',()=>{
  it('RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch',async()=>{
-  s.roles=[role];s.rtt=1500;setup();await tick(6100);
+  s.roles=[role];s.rtt=1500;setup();await tick(3000);await tick(3000);
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho preservado'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
   const epoch=screen.getByTestId('epoch').textContent;const before=s.h15;
   for(let i=0;i<900;i++){
