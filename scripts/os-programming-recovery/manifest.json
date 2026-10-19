@@ -7,7 +7,7 @@
   "runtime": {
     "path": "src/components/ordens-servico/OSDetalhesDialog.tsx",
     "pre": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
-    "post": "aaeede8f17b63717395310bf5dd066db352f590543cfbdf594c27980d9707bc3",
+    "post": "4f65da468e14fe0f08456e32344ba38051364536ca387a0b9405a8ad72c04c1e",
     "rollback": "rollback/OSDetalhesDialog.tsx"
   },
   "protected": {
@@ -84,17 +84,19 @@
     "src/pages/OrdensServico.tsx": "bf21df73f8f4ab5e25d928990d50c14c8f40a5b794205cf8a7aac988b0b5f5e6"
   },
   "artifacts": {
-    "assemble.py": "64b95b7ce1a7ffef6a56ced3b1fe7726cb06ba1a61a1b1dbe9da16ea83115888",
-    "candidate.sql.review": "5321587fca466965b7cf7ebc8d3dd93280476f6cd34f00dd42f724c9e66701d7",
+    "README.md": "a0ed0fbd9399b222f2b49aa895d4383fe13ac6a1dc417b4d9025e65611926715",
+    "assemble.py": "0a99aa1f5135a38fe00282e91af2130292ce27ea19ec4e5ae53f89dd1e291787",
+    "candidate.sql.review": "c8cc1ae4a6689d21715a1d7a0727d78ce27a8687d2d53c6da40804ea46666816",
     "post-hashes.json": "9d7a69cdc0f474c067f94903439d9e7fd4d8ba752a462bbc86503f155f22a5bb",
-    "postflight-readonly.sql": "1b5690df0bf4dc25553196ba3755ebd1d644e220825b0da18550d0c4ad482278",
-    "preflight-readonly.sql": "07730260600d1745b0babc86398a6bb59ad69452025bf7f4e6e9b2196fbe8b40",
+    "postflight-readonly.sql": "b6736edaf2c908d5cbcb8ba77589c7f3c3ee53e9c4480c87417ef97321b5de0f",
+    "preflight-readonly.sql": "f5e1c6349d94e58c5953dfebed7433b940177bf80e5f353267a2caf3c3ea3486",
     "protected.json": "3cd7baf86e2bd9d54e3d451500d70d650f25b763b6fa739fe66dfc72392b2016",
     "rollback/OSDetalhesDialog.tsx": "d181e5b904cb8b4b5ad8a42a0f398173909d73da9b63e54cb06479c0a7b8a73f",
     "rollback/rpc.sql.review": "d906d73f4eb54ccb2e023a0d6e0a6749bca62a5c081f22d1f451ad0107411f49",
-    "rollback.sql.review": "12063984cf096796909b48d07e0198df0e7afe03db0778e76d7d40e1fbaa2e7a",
+    "rollback.sql.review": "49cc8d8878b2728b5f7732c2e26dfe6dbbb7734b7701afe2b2b66992118a9fd4",
     "rpc.sql.review": "f548165e7db2e848314818737ea811a9af893c39467caa4b750acdf1084ddc59",
     "stage.py": "491c8923dbd0e8cf688161604a6f1e5fe7a9288dc1e234b56f72b0e108e19e92",
-    "test-local.py": "57dc550cea180a0f96d71efacb9375d20cfc5f6259f21a795cb549327c623273"
+    "test-local.py": "57dc550cea180a0f96d71efacb9375d20cfc5f6259f21a795cb549327c623273",
+    "test_stage.py": "8876a8f0e467a32989c0e807e93e4a5fa4ce48ea08e849bc0efafc7bd58e91c6"
   }
 }
