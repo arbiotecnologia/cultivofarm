@@ -3,7 +3,7 @@
   "modified": {
     "supabase/functions/entrega-termo-pdf/index.ts": {
       "pre": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
-      "post": "ee20aa6ad761ba4560f0dbe218a3924ab037cceb61b31b8b6bb62ea20c262e26"
+      "post": "9d7df9dad65c24aeced4690c58fbd92dfba911089131825043e443632708fed0"
     },
     "src/components/entregas/TermoEntregaPanel.tsx": {
       "pre": "358ca74162031acbe51218fc685e67b0233a9b07dc3fca6129f986285fd8b910",
@@ -15,9 +15,9 @@
     }
   },
   "added": {
-    "src/lib/entregas/termoPdfDownload.ts": "c1ac9f4eb600867c38757792b6fbc1fa72ab09da6ac2ed5bc726cac28eb6f45f",
-    "src/test/entregas/termoPdfDownload.test.tsx": "610c2fc1e40326f0cab6afeb47d2b016d6856a37dce910ed720305c0ad040b72",
-    "src/test/entregas/termoPdfEdge.test.ts": "7dc083005dd6a88c39cec209552b4f64796486977554ab1b4cfa50616b4bb10d"
+    "src/lib/entregas/termoPdfDownload.ts": "6dbe058ac7a28dd381f6df7f1256c783f06d117451c7cb202ddd88f2d8d72278",
+    "src/test/entregas/termoPdfDownload.test.tsx": "ae2b41ed4a1e1daee96b24159055b6696fc70c56c2ce91dc477de12492d06b32",
+    "src/test/entregas/termoPdfEdge.test.ts": "50cdc716c7d139a74d2d4cc7684e402008113a8bfd7ff58fe46a1686c91e22f1"
   },
   "untouched_runtime": [
     "src/hooks/useStorageAccessScope.ts",
@@ -31,6 +31,12 @@
   "deploy": false,
   "publish": false,
   "open_defects": [
-    "RLS-DEFECT-entrega_termos.md"
-  ]
+    "RLS-DEFECT-entrega_termos.md -> candidata SQL em scripts/entrega-termos-tenant/ (n\u00e3o aplicada)"
+  ],
+  "real_limits": {
+    "edge_deadline_ms": 15000,
+    "edge_transport": "fetch abort\u00e1vel Storage authenticated + espera limitada + stream com teto",
+    "frontend_transport": "fetch abort\u00e1vel Functions + espera limitada + stream com teto",
+    "max_bytes": 15728640
+  }
 }

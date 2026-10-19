@@ -16,7 +16,7 @@ frontend ou publicação foi implantado. Arquivos em `candidate/` espelham os ca
   depois de provar: perfil próprio ativo, sem senha provisória e com tenant (token do usuário); termo visível sob RLS;
   termo assinado, não cancelado, não substituído, com `pdf_path` e `pdf_hash`. Os bytes são lidos pelo serviço
   **somente depois** dessa prova. O hash SHA-256 precisa bater, e a prova completa é **refeita antes da resposta**
-  (com path e hash iguais aos iniciais). Há prazo de 15 s, limite de 15 MiB, nenhum evento de comunicação e nenhuma URL.
+  (com path e hash iguais aos iniciais). Prazo real de 15 s para Auth, provas e bytes: o sinal é repassado ao transporte (PostgREST `abortSignal`, `fetch` do Storage autenticado) e toda espera é limitada por corrida com o sinal, então consulta/transporte pendurado não segura a resposta (504). Bytes lidos em stream com teto de 15 MiB (Content-Length acima → 413 sem ler; excedeu no meio → cancela). `pdf_path` precisa ser `<entrega>/<termo>/vN/termo-<uuid>.pdf` do próprio termo. Nenhum evento de comunicação e nenhuma URL.
 - **Tenant explícito** (`provarTenant`, em toda prova e também no `generate`): o perfil ativo e o tenant canônico
   `h15_actor_organization()` (lido com o token do usuário) precisam coincidir. Além disso, a `entregas.organization_id`
   e o `clientes.organization_id` do termo precisam ser desse tenant, e a entrega tem de ter cliente. Isso é checado
@@ -63,3 +63,12 @@ existe, então seria replay sem evento e o frontend novo falharia fechado (não 
 ## Rollback
 `python3 rollback.py [raiz]` (preflight) / `--apply`. Restaura os bytes de 6493e1 e remove os arquivos novos. Isso
 reintroduz `signed_url` 120 s e o `getClaims` incompatível. Para a Edge, reimplantar a fonte `baseline/`.
+
+## Revisão 2 (prazo/stream reais)
+- Edge: `deadline()` + `lerPdfLimitado()`; `admin.storage.download` (sem sinal) não é mais usado no download.
+- Frontend `downloadTermoPdf`: `fetch` direto da Edge com token da sessão, sinal combinado (externo + 15 s),
+  espera limitada em getSession/fetch/`reader.read`, teto no stream e `%PDF-`; sem `functions.invoke` (que lia o Blob inteiro).
+- Testes: Edge 33/33 (Auth, consulta, Storage e stream pendurados que ignoram abort → 504; Content-Length/stream acima do teto
+  → 413 com cancelamento; path de outro termo → 409). Frontend 17/17 (Edge que nunca responde, stream parado, tetos, abort externo).
+  Suítes entregas+equipe-técnica+clientes 29 arquivos 420/420; tsgo app/node 0; `deno check` OK.
+- Isolamento REST/RPC: candidata SQL separada em `scripts/entrega-termos-tenant/` (não aplicada).

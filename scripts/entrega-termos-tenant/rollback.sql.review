@@ -1,0 +1,308 @@
+-- ROLLBACK: restaura definições/ACL baseline EXATAS. ATENÇÃO: reabre a exposição entre empresas.
+DO $chk$
+BEGIN
+  IF current_database() <> 'postgres' THEN RAISE EXCEPTION 'ROLLBACK-PRE: banco inesperado'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_gerar_termo_v1(uuid,text)'::regprocedure)) <> '5cae3ef77dbb9a84bbc60b1bb78b465b' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.rpc_entrega_gerar_termo_v1(uuid,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'::regprocedure)) <> '22aac68dad25313ef85fd0a86c8538be' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_cancelar_termo_v1(uuid,text)'::regprocedure)) <> 'ae8bbae2a6f509da287f48883104bbf7' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.rpc_entrega_cancelar_termo_v1(uuid,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure)) <> 'bba1d160952c3ff34b5c36e720384698' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
+  IF md5(pg_get_functiondef('public.fn_entrega_build_snapshot_v1(uuid)'::regprocedure)) <> '8894facf7a2ccb32ceebb79f3d4a29be' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.fn_entrega_build_snapshot_v1(uuid)'; END IF;
+  IF md5(pg_get_functiondef('public.fn_entrega_cobertura_v1(uuid)'::regprocedure)) <> '7a9c3bb2c9bde5e4556af89818ef8534' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.fn_entrega_cobertura_v1(uuid)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) <> '64e10608403238a41a9baf92857ca881' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em platform_private.h15_actor_organization()'; END IF;
+  IF md5(pg_get_functiondef('public.is_delivery_staff(uuid)'::regprocedure)) <> 'aa500abecc84ca8c901753c519f36fa1' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em public.is_delivery_staff(uuid)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure)) <> '8ef541cf6a657757a1a615df54f12aa5' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: drift em platform_private.entrega_termo_tenant_ok(uuid)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_gerar_termo_v1(uuid,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL inesperada em public.rpc_entrega_gerar_termo_v1(uuid,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL inesperada em public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_cancelar_termo_v1(uuid,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL inesperada em public.rpc_entrega_cancelar_termo_v1(uuid,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL inesperada em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_build_snapshot_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL inesperada em public.fn_entrega_build_snapshot_v1(uuid)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_cobertura_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL inesperada em public.fn_entrega_cobertura_v1(uuid)'; END IF;
+  IF coalesce(array_to_string((SELECT relacl FROM pg_class WHERE oid = 'public.entrega_termos'::regclass), ','), '') <> 'postgres=arwdDxtm/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL da tabela inesperada'; END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.entrega_termos'::regclass) THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: RLS desligada'; END IF;
+  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos' AND policyname='entrega_termos_select'
+      AND cmd='SELECT' AND permissive='PERMISSIVE' AND qual = $q$(is_delivery_staff(( SELECT auth.uid() AS uid)) OR is_financial_staff(( SELECT auth.uid() AS uid)) OR (EXISTS ( SELECT 1
+   FROM entregas e
+  WHERE ((e.id = entrega_termos.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))))))$q$) <> 1 THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: policy entrega_termos_select divergente'; END IF;
+  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> 2 THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: conjunto de policies inesperado'; END IF;
+  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos'
+      AND policyname='entrega_termos_tenant_isolation' AND permissive='RESTRICTIVE' AND cmd='ALL'
+      AND roles = '{authenticated}'::name[]) <> 1 THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: policy restritiva ausente'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: ACL do helper inesperada'; END IF;
+  IF (SELECT prosecdef FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) IS NOT TRUE
+     OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) <> 'postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-PRE: helper inesperado'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_gerar_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-PRE: rpc_entrega_gerar_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_assinar_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-PRE: rpc_entrega_assinar_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_cancelar_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-PRE: rpc_entrega_cancelar_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_registrar_pdf_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-PRE: rpc_entrega_registrar_pdf_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='fn_entrega_build_snapshot_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-PRE: fn_entrega_build_snapshot_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='fn_entrega_cobertura_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-PRE: fn_entrega_cobertura_v1 sobrecarga/dono/definer'; END IF;
+END $chk$;
+DROP POLICY entrega_termos_tenant_isolation ON public.entrega_termos;
+CREATE OR REPLACE FUNCTION public.rpc_entrega_gerar_termo_v1(p_entrega_id uuid, p_template_versao text DEFAULT 'termo-entrega-v1'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_snap jsonb;
+  v_hash text;
+  v_cob text;
+  v_id uuid;
+  v_versao integer;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'sem_permissao'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || p_entrega_id::text, 0));
+
+  IF EXISTS (SELECT 1 FROM public.entrega_termos WHERE entrega_id = p_entrega_id AND status = 'assinado') THEN
+    RAISE EXCEPTION 'termo_ja_assinado';
+  END IF;
+
+  v_snap := public.fn_entrega_build_snapshot_v1(p_entrega_id);
+  v_cob := public.fn_entrega_cobertura_v1(p_entrega_id);
+  v_hash := encode(extensions.digest(p_template_versao || '|' || v_snap::text, 'sha256'), 'hex');
+
+  SELECT id INTO v_id FROM public.entrega_termos
+   WHERE entrega_id = p_entrega_id AND status = 'rascunho' LIMIT 1;
+
+  IF v_id IS NOT NULL THEN
+    UPDATE public.entrega_termos
+       SET snapshot = v_snap, snapshot_hash = v_hash, cobertura = v_cob,
+           template_versao = p_template_versao, comprovante_id = (SELECT comprovante_id FROM public.entregas WHERE id = p_entrega_id)
+     WHERE id = v_id
+     RETURNING versao INTO v_versao;
+  ELSE
+    SELECT coalesce(max(versao), 0) + 1 INTO v_versao
+      FROM public.entrega_termos WHERE entrega_id = p_entrega_id;
+    INSERT INTO public.entrega_termos
+      (entrega_id, comprovante_id, versao, template_versao, status, snapshot, snapshot_hash, cobertura, created_by,
+       substitui_termo_id)
+    VALUES (p_entrega_id, (SELECT comprovante_id FROM public.entregas WHERE id = p_entrega_id),
+            v_versao, p_template_versao, 'rascunho', v_snap, v_hash, v_cob, v_uid,
+            (SELECT id FROM public.entrega_termos WHERE entrega_id = p_entrega_id
+              AND status IN ('cancelado','substituido') ORDER BY versao DESC LIMIT 1))
+    RETURNING id INTO v_id;
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'termo_id', v_id, 'versao', v_versao,
+                            'snapshot_hash', v_hash, 'cobertura', v_cob);
+END $function$;
+CREATE OR REPLACE FUNCTION public.rpc_entrega_assinar_termo_v1(p_termo_id uuid, p_payload jsonb, p_idempotency_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_t public.entrega_termos%ROWTYPE;
+  v_fp text;
+  v_rec text := nullif(trim(coalesce(p_payload->>'recebedor_nome','')), '');
+  v_tipo text := coalesce(nullif(p_payload->>'assinatura_tipo',''), 'digital_tela');
+  v_ahash text := nullif(p_payload->>'assinatura_hash','');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'sem_permissao'; END IF;
+  IF coalesce(trim(p_idempotency_key),'') = '' THEN RAISE EXCEPTION 'idempotency_key_obrigatoria'; END IF;
+  IF v_rec IS NULL THEN RAISE EXCEPTION 'recebedor_nome_obrigatorio'; END IF;
+  IF v_tipo <> 'dispensada' AND v_ahash IS NULL THEN RAISE EXCEPTION 'assinatura_hash_obrigatoria'; END IF;
+
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || v_t.entrega_id::text, 0));
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id FOR UPDATE;
+
+  v_fp := encode(extensions.digest(
+    v_t.snapshot_hash || '|' || v_rec || '|' || coalesce(v_ahash,'') || '|' || v_tipo, 'sha256'), 'hex');
+
+  -- Replay
+  IF v_t.status = 'assinado' THEN
+    IF v_t.idempotency_key = p_idempotency_key THEN
+      IF v_t.request_fingerprint IS DISTINCT FROM v_fp THEN
+        RAISE EXCEPTION 'idempotency_payload_mismatch';
+      END IF;
+      RETURN jsonb_build_object('success', true, 'replay', true, 'termo_id', v_t.id,
+                                'versao', v_t.versao, 'snapshot_hash', v_t.snapshot_hash);
+    END IF;
+    RAISE EXCEPTION 'termo_ja_assinado';
+  END IF;
+
+  IF v_t.status <> 'rascunho' THEN RAISE EXCEPTION 'termo_estado_invalido: %', v_t.status; END IF;
+
+  IF EXISTS (SELECT 1 FROM public.entrega_termos
+             WHERE entrega_id = v_t.entrega_id AND idempotency_key = p_idempotency_key AND id <> v_t.id) THEN
+    RAISE EXCEPTION 'idempotency_key_reutilizada';
+  END IF;
+
+  -- O rascunho deve representar os dados atuais, exceto a hora de geração.
+  -- O replay acima permanece imutável e não refaz a assinatura.
+  PERFORM 1 FROM public.entregas
+   WHERE id = v_t.entrega_id AND status <> 'cancelada'
+   FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'entrega_invalida'; END IF;
+
+  IF (v_t.snapshot - 'gerado_em') IS DISTINCT FROM
+     (public.fn_entrega_build_snapshot_v1(v_t.entrega_id) - 'gerado_em')
+     OR v_t.cobertura IS DISTINCT FROM public.fn_entrega_cobertura_v1(v_t.entrega_id) THEN
+    RAISE EXCEPTION 'termo_desatualizado: atualize o rascunho antes de assinar';
+  END IF;
+  IF v_t.snapshot_hash IS DISTINCT FROM
+     encode(extensions.digest(v_t.template_versao || '|' || v_t.snapshot::text, 'sha256'), 'hex') THEN
+    RAISE EXCEPTION 'termo_integridade_invalida';
+  END IF;
+
+  IF v_t.cobertura = 'pendente' AND coalesce((p_payload->>'permitir_pendencia')::boolean, false) IS FALSE THEN
+    RAISE EXCEPTION 'cobertura_pendente: conferir todos os itens antes de assinar';
+  END IF;
+
+  UPDATE public.entrega_termos SET
+    status = 'assinado',
+    recebedor_nome = v_rec,
+    recebedor_documento = nullif(p_payload->>'recebedor_documento',''),
+    recebedor_cargo = nullif(p_payload->>'recebedor_cargo',''),
+    recebedor_telefone = nullif(p_payload->>'recebedor_telefone',''),
+    assinatura_hash = v_ahash,
+    assinatura_tipo = v_tipo,
+    assinatura_origem = nullif(p_payload->>'origem',''),
+    assinado_em = now(),
+    assinado_por = v_uid,
+    idempotency_key = p_idempotency_key,
+    request_fingerprint = v_fp
+  WHERE id = p_termo_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', v_t.entrega_id, 'DELIVERY_TERM_SIGNED',
+          jsonb_build_object('termo_id', p_termo_id, 'versao', v_t.versao,
+                             'snapshot_hash', v_t.snapshot_hash, 'cobertura', v_t.cobertura), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'termo_id', p_termo_id,
+                            'versao', v_t.versao, 'snapshot_hash', v_t.snapshot_hash,
+                            'cobertura', v_t.cobertura);
+END $function$;
+CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_termo_v1(p_termo_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_t public.entrega_termos%ROWTYPE;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador'::public.app_role)
+          OR public.has_role(v_uid,'gestor'::public.app_role)
+          OR public.has_role(v_uid,'administrativo'::public.app_role)) THEN
+    RAISE EXCEPTION 'sem_permissao';
+  END IF;
+  IF length(coalesce(trim(p_motivo),'')) < 5 THEN RAISE EXCEPTION 'motivo_obrigatorio'; END IF;
+
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+  IF v_t.status NOT IN ('rascunho','assinado') THEN RAISE EXCEPTION 'termo_estado_invalido: %', v_t.status; END IF;
+
+  UPDATE public.entrega_termos
+     SET status = 'cancelado', cancelado_em = now(), cancelado_por = v_uid,
+         motivo_cancelamento = trim(p_motivo)
+   WHERE id = p_termo_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', v_t.entrega_id, 'DELIVERY_TERM_CANCELLED',
+          jsonb_build_object('termo_id', p_termo_id, 'versao', v_t.versao, 'motivo', trim(p_motivo)), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'termo_id', p_termo_id, 'status', 'cancelado');
+END $function$;
+DROP FUNCTION platform_private.entrega_termo_tenant_ok(uuid);
+GRANT EXECUTE ON FUNCTION public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_entrega_build_snapshot_v1(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_entrega_cobertura_v1(uuid) TO authenticated;
+GRANT TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos TO authenticated;
+DO $chk$
+BEGIN
+  IF current_database() <> 'postgres' THEN RAISE EXCEPTION 'ROLLBACK-POST: banco inesperado'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_gerar_termo_v1(uuid,text)'::regprocedure)) <> '90d3bd16e7629970a8733ee77da71e2f' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.rpc_entrega_gerar_termo_v1(uuid,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'::regprocedure)) <> '01c59220d0c975addcde29d5945a7ae0' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_cancelar_termo_v1(uuid,text)'::regprocedure)) <> 'ee9f7c2c46e07fcba5e8c516d3934700' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.rpc_entrega_cancelar_termo_v1(uuid,text)'; END IF;
+  IF md5(pg_get_functiondef('public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure)) <> 'bba1d160952c3ff34b5c36e720384698' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
+  IF md5(pg_get_functiondef('public.fn_entrega_build_snapshot_v1(uuid)'::regprocedure)) <> '8894facf7a2ccb32ceebb79f3d4a29be' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.fn_entrega_build_snapshot_v1(uuid)'; END IF;
+  IF md5(pg_get_functiondef('public.fn_entrega_cobertura_v1(uuid)'::regprocedure)) <> '7a9c3bb2c9bde5e4556af89818ef8534' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.fn_entrega_cobertura_v1(uuid)'; END IF;
+  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) <> '64e10608403238a41a9baf92857ca881' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em platform_private.h15_actor_organization()'; END IF;
+  IF md5(pg_get_functiondef('public.is_delivery_staff(uuid)'::regprocedure)) <> 'aa500abecc84ca8c901753c519f36fa1' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: drift em public.is_delivery_staff(uuid)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_gerar_termo_v1(uuid,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_gerar_termo_v1(uuid,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_cancelar_termo_v1(uuid,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_cancelar_termo_v1(uuid,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_build_snapshot_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.fn_entrega_build_snapshot_v1(uuid)'; END IF;
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_cobertura_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.fn_entrega_cobertura_v1(uuid)'; END IF;
+  IF coalesce(array_to_string((SELECT relacl FROM pg_class WHERE oid = 'public.entrega_termos'::regclass), ','), '') <> 'postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL da tabela inesperada'; END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.entrega_termos'::regclass) THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: RLS desligada'; END IF;
+  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos' AND policyname='entrega_termos_select'
+      AND cmd='SELECT' AND permissive='PERMISSIVE' AND qual = $q$(is_delivery_staff(( SELECT auth.uid() AS uid)) OR is_financial_staff(( SELECT auth.uid() AS uid)) OR (EXISTS ( SELECT 1
+   FROM entregas e
+  WHERE ((e.id = entrega_termos.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))))))$q$) <> 1 THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: policy entrega_termos_select divergente'; END IF;
+  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> 1 THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: conjunto de policies inesperado'; END IF;
+  IF to_regprocedure('platform_private.entrega_termo_tenant_ok(uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: helper já existe'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_gerar_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-POST: rpc_entrega_gerar_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_assinar_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-POST: rpc_entrega_assinar_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_cancelar_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-POST: rpc_entrega_cancelar_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_registrar_pdf_termo_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-POST: rpc_entrega_registrar_pdf_termo_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='fn_entrega_build_snapshot_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-POST: fn_entrega_build_snapshot_v1 sobrecarga/dono/definer'; END IF;
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='fn_entrega_cobertura_v1'
+      AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') <> 1 THEN RAISE EXCEPTION 'ROLLBACK-POST: fn_entrega_cobertura_v1 sobrecarga/dono/definer'; END IF;
+END $chk$;

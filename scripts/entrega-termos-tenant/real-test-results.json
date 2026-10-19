@@ -1,0 +1,250 @@
+{
+ "kind": "local-synthetic-postgres17",
+ "not": "JWT/RLS hosted homologation",
+ "results": [
+  {
+   "name": "baseline local == LIVE md5 public.rpc_entrega_gerar_termo_v1(uuid,text)",
+   "pass": true
+  },
+  {
+   "name": "baseline local == LIVE md5 public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)",
+   "pass": true
+  },
+  {
+   "name": "baseline local == LIVE md5 public.rpc_entrega_cancelar_termo_v1(uuid,text)",
+   "pass": true
+  },
+  {
+   "name": "baseline local == LIVE md5 public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)",
+   "pass": true
+  },
+  {
+   "name": "baseline local == LIVE md5 platform_private.h15_actor_organization()",
+   "pass": true
+  },
+  {
+   "name": "baseline local == LIVE md5 public.is_delivery_staff(uuid)",
+   "pass": true
+  },
+  {
+   "name": "deparse local da policy == LIVE",
+   "pass": true
+  },
+  {
+   "name": "preflight PASS na baseline",
+   "pass": true
+  },
+  {
+   "name": "BASE: staff A lê termo de B via REST",
+   "pass": true
+  },
+  {
+   "name": "BASE: staff A gera termo da entrega B",
+   "pass": true
+  },
+  {
+   "name": "BASE: gestor B cancela termo de A",
+   "pass": true
+  },
+  {
+   "name": "BASE: authenticated registra PDF em termo (não service-only)",
+   "pass": true
+  },
+  {
+   "name": "BASE: authenticated TRUNCATE bypassa RLS",
+   "pass": true
+  },
+  {
+   "name": "BASE: snapshot direto cross-tenant",
+   "pass": true
+  },
+  {
+   "name": "postflight PASS após candidata",
+   "pass": true
+  },
+  {
+   "name": "preflight agora FALHA (não reaplicável)",
+   "pass": true
+  },
+  {
+   "name": "candidata reaplicada FALHA fechado no preflight",
+   "pass": true
+  },
+  {
+   "name": "REST: staff A NÃO lê termo de B",
+   "pass": true
+  },
+  {
+   "name": "REST: staff A lê termo de A",
+   "pass": true
+  },
+  {
+   "name": "REST: financeiro A lê A e não B",
+   "pass": true
+  },
+  {
+   "name": "REST: cliente/produtor A vinculado lê termo do seu cliente",
+   "pass": true
+  },
+  {
+   "name": "REST: admin B (escopo admin) não lê termo de A",
+   "pass": true
+  },
+  {
+   "name": "REST: perfil inativo não lê nada",
+   "pass": true
+  },
+  {
+   "name": "REST: anon sem acesso",
+   "pass": true
+  },
+  {
+   "name": "TRUNCATE authenticated negado",
+   "pass": true
+  },
+  {
+   "name": "INSERT direto authenticated negado por RLS",
+   "pass": true
+  },
+  {
+   "name": "UPDATE direto authenticated não altera linhas",
+   "pass": true
+  },
+  {
+   "name": "gerar: A em entrega B → sem_permissao",
+   "pass": true
+  },
+  {
+   "name": "gerar: entrega A com cliente de B → sem_permissao",
+   "pass": true
+  },
+  {
+   "name": "gerar: entrega inexistente → sem_permissao (sem oráculo)",
+   "pass": true
+  },
+  {
+   "name": "gerar: perfil inativo → sem_permissao",
+   "pass": true
+  },
+  {
+   "name": "gerar: empresa inativa → sem_permissao",
+   "pass": true
+  },
+  {
+   "name": "gerar: A em entrega A atualiza o MESMO rascunho (idempotente)",
+   "pass": true
+  },
+  {
+   "name": "gerar: nova entrega A cria v1",
+   "pass": true
+  },
+  {
+   "name": "gerar: financeiro (não staff entrega) → sem_permissao",
+   "pass": true
+  },
+  {
+   "name": "assinar: A em termo B → termo_nao_encontrado",
+   "pass": true
+  },
+  {
+   "name": "assinar: A em termo A assina e replay idêntico",
+   "pass": true
+  },
+  {
+   "name": "assinar: replay divergente → idempotency_payload_mismatch",
+   "pass": true
+  },
+  {
+   "name": "assinar: segunda chave → termo_ja_assinado",
+   "pass": true
+  },
+  {
+   "name": "assinar: auditoria registrada uma vez",
+   "pass": true
+  },
+  {
+   "name": "assinar: perfil inativo → termo_nao_encontrado",
+   "pass": true
+  },
+  {
+   "name": "cancelar: gestor B em termo A → termo_nao_encontrado",
+   "pass": true
+  },
+  {
+   "name": "cancelar: administrador B em termo A → negado",
+   "pass": true
+  },
+  {
+   "name": "cancelar: administrador B em termo B → cancelado",
+   "pass": true
+  },
+  {
+   "name": "cancelar: produção sem papel → sem_permissao (regra preservada)",
+   "pass": true
+  },
+  {
+   "name": "registrar PDF: authenticated → permission denied",
+   "pass": true
+  },
+  {
+   "name": "snapshot direto: authenticated → permission denied",
+   "pass": true
+  },
+  {
+   "name": "cobertura direta: authenticated → permission denied",
+   "pass": true
+  },
+  {
+   "name": "helper privado: authenticated → permission denied",
+   "pass": true
+  },
+  {
+   "name": "registrar PDF: service_role continua funcionando",
+   "pass": true
+  },
+  {
+   "name": "rollback PASS (pré/pós internos)",
+   "pass": true
+  },
+  {
+   "name": "rollback restaura md5 LIVE public.rpc_entrega_gerar_termo_v1(uuid,text)",
+   "pass": true
+  },
+  {
+   "name": "rollback restaura md5 LIVE public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)",
+   "pass": true
+  },
+  {
+   "name": "rollback restaura md5 LIVE public.rpc_entrega_cancelar_termo_v1(uuid,text)",
+   "pass": true
+  },
+  {
+   "name": "rollback restaura md5 LIVE public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)",
+   "pass": true
+  },
+  {
+   "name": "rollback restaura md5 LIVE platform_private.h15_actor_organization()",
+   "pass": true
+  },
+  {
+   "name": "rollback restaura md5 LIVE public.is_delivery_staff(uuid)",
+   "pass": true
+  },
+  {
+   "name": "após rollback, preflight volta a PASS",
+   "pass": true
+  },
+  {
+   "name": "após rollback, exposição baseline volta (reversível)",
+   "pass": true
+  },
+  {
+   "name": "rollback repetido FALHA fechado",
+   "pass": true
+  },
+  {
+   "name": "reaplicação após rollback PASS",
+   "pass": true
+  }
+ ]
+}
