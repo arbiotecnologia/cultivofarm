@@ -131,7 +131,7 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
    s.roles=['gestor','consultor_tecnico'];s.error=false;Object.defineProperty(navigator,'onLine',{value:true});fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await tick();expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');expect(screen.queryByRole('dialog')).toBeNull();
  });
  it.each(['/financeiro/receber','/app/registrar'])('%s constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses',async path=>{
-   s.rtt=1500;const qc=setup(path);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
+   s.rtt=1500;const qc=setup(path);await tick(3000);await tick(3000);fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho rtt3'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
    const before=s.h15;
    for(let i=0;i<600;i++){await act(async()=>{await vi.advanceTimersByTimeAsync(100);});expect(screen.queryByText('Sessão de acesso pausada')).toBeNull();expect(screen.queryByText('Verificando seu acesso')).toBeNull();}
    expect(s.h15).toBeGreaterThanOrEqual(before+12);expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('rascunho rtt3');expect(screen.getByRole('dialog')).toBeTruthy();
