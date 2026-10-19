@@ -19,7 +19,7 @@ import { Loader2, ShieldAlert } from "lucide-react";
  *   rascunhos, seleções e objectURLs via cleanup de unmount dos consumidores.
  */
 export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
-  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked } = useAuth();
+  const { authzReady, authzEpoch, authzState, revalidateAuthz } = useAuth();
 
   if (!AUTHZ_CACHE_FOUNDATION_ENABLED) return <>{children}</>;
 
@@ -40,8 +40,6 @@ export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
             <CardDescription>
               {checking
                 ? "Estamos confirmando suas permissões. Isso leva apenas alguns segundos."
-                : authzLatchBlocked
-                ? "Suas permissões foram alteradas. Saia e entre novamente para continuar com o novo acesso."
                 : "Não foi possível confirmar suas permissões no momento. Verifique sua conexão e tente novamente."}
             </CardDescription>
           </CardHeader>

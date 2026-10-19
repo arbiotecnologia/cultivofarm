@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Restaura bytes exatos da baseline (HEAD d767eb23) dos 5 arquivos de runtime e remove o teste novo.
+# Restaura bytes exatos da baseline (commit d767eb23) dos 5 arquivos de runtime e remove o teste novo.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 B=scripts/monitor-retry-reresolve/baseline

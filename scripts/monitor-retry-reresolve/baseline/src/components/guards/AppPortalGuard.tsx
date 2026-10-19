@@ -22,7 +22,7 @@ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
  * A autorização NUNCA depende de `primaryRole` nem de `isMobileProfile`.
  */
 export function AppPortalGuard({ children }: { children?: ReactNode }) {
-  const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false } = useAuth();
+  const { user, profile, roles, loading, authzReady = true } = useAuth();
   const location = useLocation();
   const { data, isLoading, isError } = useAvailableContexts();
 
@@ -48,7 +48,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   }, [denied, location.pathname]);
 
   // Pause before readers depending on authzReady; retry stays on this URL.
-  if (!loading && user && (isProducer || monitoredTechnical || authzLatchBlocked) && !authzReady) {
+  if (!loading && user && (isProducer || monitoredTechnical) && !authzReady) {
     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
   }
 
