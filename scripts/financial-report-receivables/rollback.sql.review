@@ -1,0 +1,89 @@
+-- REVIEW ONLY. Not a migration; never auto-applied. Target ref swzpzcwiasxmjutrmvkm.
+BEGIN;
+DO $guard$
+DECLARE r record; n int;
+BEGIN
+  IF current_setting('server_version_num')::int < 140000 THEN RAISE EXCEPTION 'rollback-pre: pg version'; END IF;
+  SELECT count(*) INTO n FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+   WHERE s.nspname='public' AND p.proname='get_report_receivables';
+  IF n <> 1 THEN RAISE EXCEPTION 'rollback-pre: overloads %', n; END IF;
+  SELECT md5(pg_get_functiondef(p.oid)) AS m, coalesce(p.proacl::text,'') AS a INTO r
+    FROM pg_proc p WHERE p.oid = 'public.get_report_receivables(jsonb)'::regprocedure;
+  IF r.m <> '25148f33683e1120e5f2484ba06546ac' THEN RAISE EXCEPTION 'rollback-pre: function md5 %', r.m; END IF;
+  IF r.a <> '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'rollback-pre: acl %', r.a; END IF;
+  -- helpers the candidate depends on (exact live fingerprints, read-only 2026-10-19)
+  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) <> '64e10608403238a41a9baf92857ca881'
+  OR md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  OR md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure)) <> '048249c0c2106c3761e26eacb8d0de84'
+  THEN RAISE EXCEPTION 'rollback-pre: helper drift'; END IF;
+  -- schema used by the body (no invented columns)
+  SELECT count(*) INTO n FROM information_schema.columns WHERE table_schema='public' AND (table_name, column_name) IN (
+    ('accounts_receivable','organization_id'),('accounts_receivable','customer_id'),('accounts_receivable','category_id'),
+    ('accounts_receivable','status'),('accounts_receivable','description'),
+    ('accounts_receivable_installments','organization_id'),('accounts_receivable_installments','receivable_id'),
+    ('accounts_receivable_installments','due_date'),('accounts_receivable_installments','original_amount'),
+    ('accounts_receivable_installments','received_amount'),('accounts_receivable_installments','discount_amount'),
+    ('accounts_receivable_installments','status'),('clientes','organization_id'),('clientes','nome'),
+    ('clientes','razao_social'),('financial_categories','name'));
+  IF n <> 16 THEN RAISE EXCEPTION 'rollback-pre: schema columns %', n; END IF;
+END $guard$;
+CREATE OR REPLACE FUNCTION public.get_report_receivables(_filters jsonb DEFAULT '{}'::jsonb)
+ RETURNS TABLE(installment_id uuid, receivable_id uuid, customer_name text, description text, category text, due_date date, amount numeric, paid numeric, balance numeric, status text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE _from date := (_filters->>'from')::date;
+        _to date := (_filters->>'to')::date;
+        _status text := _filters->>'status';
+        _customer uuid := NULLIF(_filters->>'customer_id','')::uuid;
+BEGIN
+  IF NOT is_financial_staff(auth.uid()) THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+  RETURN QUERY
+  SELECT i.id, ar.id, COALESCE(c.nome, c.razao_social, '—'), ar.description, fc.name,
+         i.due_date, i.original_amount,
+         COALESCE(i.received_amount,0),
+         i.original_amount - COALESCE(i.received_amount,0) - COALESCE(i.discount_amount,0),
+         i.status
+  FROM accounts_receivable_installments i
+  JOIN accounts_receivable ar ON ar.id = i.receivable_id
+  JOIN clientes c ON c.id = ar.customer_id
+  LEFT JOIN financial_categories fc ON fc.id = ar.category_id
+  WHERE (_from IS NULL OR i.due_date >= _from)
+    AND (_to IS NULL OR i.due_date <= _to)
+    AND (_status IS NULL OR i.status = _status)
+    AND (_customer IS NULL OR ar.customer_id = _customer)
+    AND ar.status <> 'CANCELED'
+  ORDER BY i.due_date;
+END;$function$
+;
+REVOKE ALL ON FUNCTION public.get_report_receivables(jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_report_receivables(jsonb) TO service_role;
+DO $guard$
+DECLARE r record; n int;
+BEGIN
+  IF current_setting('server_version_num')::int < 140000 THEN RAISE EXCEPTION 'rollback-post: pg version'; END IF;
+  SELECT count(*) INTO n FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+   WHERE s.nspname='public' AND p.proname='get_report_receivables';
+  IF n <> 1 THEN RAISE EXCEPTION 'rollback-post: overloads %', n; END IF;
+  SELECT md5(pg_get_functiondef(p.oid)) AS m, coalesce(p.proacl::text,'') AS a INTO r
+    FROM pg_proc p WHERE p.oid = 'public.get_report_receivables(jsonb)'::regprocedure;
+  IF r.m <> '970a18caa86f578cd31de2a56f002f6f' THEN RAISE EXCEPTION 'rollback-post: function md5 %', r.m; END IF;
+  IF r.a <> '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'rollback-post: acl %', r.a; END IF;
+  -- helpers the candidate depends on (exact live fingerprints, read-only 2026-10-19)
+  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) <> '64e10608403238a41a9baf92857ca881'
+  OR md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  OR md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure)) <> '048249c0c2106c3761e26eacb8d0de84'
+  THEN RAISE EXCEPTION 'rollback-post: helper drift'; END IF;
+  -- schema used by the body (no invented columns)
+  SELECT count(*) INTO n FROM information_schema.columns WHERE table_schema='public' AND (table_name, column_name) IN (
+    ('accounts_receivable','organization_id'),('accounts_receivable','customer_id'),('accounts_receivable','category_id'),
+    ('accounts_receivable','status'),('accounts_receivable','description'),
+    ('accounts_receivable_installments','organization_id'),('accounts_receivable_installments','receivable_id'),
+    ('accounts_receivable_installments','due_date'),('accounts_receivable_installments','original_amount'),
+    ('accounts_receivable_installments','received_amount'),('accounts_receivable_installments','discount_amount'),
+    ('accounts_receivable_installments','status'),('clientes','organization_id'),('clientes','nome'),
+    ('clientes','razao_social'),('financial_categories','name'));
+  IF n <> 16 THEN RAISE EXCEPTION 'rollback-post: schema columns %', n; END IF;
+END $guard$;
+COMMIT;

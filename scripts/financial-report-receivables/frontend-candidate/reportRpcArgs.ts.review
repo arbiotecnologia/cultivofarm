@@ -1,0 +1,28 @@
+/**
+ * RPC argument shape per report. Only `receivables` has a reviewed server
+ * contract (`get_report_receivables(_filters jsonb)`); its filters are
+ * encapsulated and allowlisted. Other reports keep their current call shape
+ * and remain denied server-side (closed ACL) — no fallback.
+ * Tenant is never sent: the server derives it from the live actor.
+ */
+const RECEIVABLES_KEYS = ["from", "to", "status", "customer_id"] as const;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function receivablesFilters(filters: Record<string, unknown>): Record<string, string> | null {
+  if (!filters || typeof filters !== "object" || Array.isArray(filters)) return null;
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(filters)) {
+    if (!(RECEIVABLES_KEYS as readonly string[]).includes(key)) return null;
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value !== "string") return null;
+    out[key] = value;
+  }
+  if (!out.from || !out.to || !DATE.test(out.from) || !DATE.test(out.to) || out.to < out.from) return null;
+  return out;
+}
+
+export function reportRpcArgs(reportType: string, filters: Record<string, unknown>): Record<string, unknown> | null {
+  if (reportType !== "receivables") return filters;
+  const f = receivablesFilters(filters);
+  return f ? { _filters: f } : null;
+}

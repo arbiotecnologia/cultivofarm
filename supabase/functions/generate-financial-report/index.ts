@@ -206,13 +206,9 @@ Deno.serve(async (req) => {
     const { data: uploaded, error: upErr } = await supabase.storage.from("financial-reports").upload(path, fileBytes, { contentType, upsert: true });
     if (upErr || uploaded?.path !== path) throw new Error("financial_report_unavailable");
 
-    // Keep the signed URL private in memory until the history write is confirmed.
-    // Failure may leave a private orphan; never delete automatically or relax grants.
-    const { data: signed, error: signError } = await supabase.storage.from("financial-reports").createSignedUrl(path, 60 * 60);
-    if (signError || typeof signed?.signedUrl !== "string" || !signed.signedUrl.trim()) {
-      throw new Error("financial_report_unavailable");
-    }
-
+    // No signed/public URL: the caller downloads the private object with its own
+    // session (Storage RLS financial_storage_object_permitted). Failure may leave
+    // a private orphan; never delete automatically or relax grants.
     const { data: exportId, error: registerError } = await supabase.rpc("register_financial_report_export", {
       p_report_type: body.report_type,
       p_report_title: title,
@@ -226,7 +222,7 @@ Deno.serve(async (req) => {
       throw new Error("financial_report_unavailable");
     }
 
-    return new Response(JSON.stringify({ url: signed?.signedUrl, path, row_count: rows.length }), {
+    return new Response(JSON.stringify({ bucket: "financial-reports", path, export_id: exportId, row_count: rows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch {

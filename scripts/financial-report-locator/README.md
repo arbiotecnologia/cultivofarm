@@ -14,11 +14,12 @@ Baseline publicada: `5ad97d6c` (deployment 959d3749, bundle index-CZMhBo9B). Sem
    Auth/getUser/h15/RPC/renderizadores/CSV/XLSX/PDF/registro inalterados (teste prova delta byte-exato: só o bloco de
    assinatura, substituído por comentário, e a linha de resposta). Implantar só depois do frontend publicado.
 
-## Divergência de fonte (não ignorada)
-LIVE v89 informado: sha256 `ab4d5682…20f5ec60`. Repo HEAD `supabase/functions/generate-financial-report/index.ts`:
-`9eb9e19f…` (nenhum commit recente bate). A candidata foi derivada do repo; antes de implantar o auditor deve capturar
-os bytes LIVE em `edge/live-v89.index.ts`, rodar `edge/verify-live-baseline.sh` (fail-closed) e confirmar que o delta
-LIVE→candidata é o mesmo de `edge/candidate.diff`. Rollback Edge = reimplantar esses bytes LIVE verificados.
+## Fonte LIVE (corrigido 2026-10-19)
+O valor `ab4d5682…20f5ec60` informado antes era o `ezbr_sha256` do PACOTE implantado, não hash do arquivo. Recibo do
+auditor: a fonte LIVE v89 é byte-idêntica a `edge/repo-baseline.index.ts` (11.638 caracteres; sha256 de arquivo
+`9eb9e19f…`). Não havia divergência de fonte. Edge v90 = `edge/candidate.index.ts` exato, implantada pelo auditor;
+`supabase/functions/generate-financial-report/index.ts` foi sincronizado byte a byte com ela (sha256 `ca9d52a2…`).
+Rollback Edge = reimplantar `edge/repo-baseline.index.ts`. Frontend publicado: commit `1c2f29e`.
 
 ## Rollback frontend
 `rollback-frontend.sh` restaura bytes de 5ad97d6c (`frontend-baseline.SHA256SUMS`) e remove arquivos novos.
@@ -28,5 +29,5 @@ tsgo app/node EXIT 0; 21 arquivos / 444 testes PASS (ReportShell sessão+exporta
 authzV6.edges, d51-5 storage, downloads financeiros, anexos equipe técnica).
 
 ## Pendências
-Download real A/B da exportação e negação entre tenants; implantação da Edge candidata; 5 imports legados de `types.ts`
+Relatório receivables: ver `scripts/financial-report-receivables/` (RPC fechada; candidata revisável). Download real A/B da exportação e negação entre tenants; implantação da Edge candidata; 5 imports legados de `types.ts`
 (2 testes de guarda falham também na baseline); renovação natural estável. Contratos bloqueados.

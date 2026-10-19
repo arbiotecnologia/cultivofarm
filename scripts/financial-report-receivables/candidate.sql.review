@@ -1,0 +1,140 @@
+-- REVIEW ONLY. Not a migration; never auto-applied. Target ref swzpzcwiasxmjutrmvkm.
+BEGIN;
+DO $guard$
+DECLARE r record; n int;
+BEGIN
+  IF current_setting('server_version_num')::int < 140000 THEN RAISE EXCEPTION 'pre: pg version'; END IF;
+  SELECT count(*) INTO n FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+   WHERE s.nspname='public' AND p.proname='get_report_receivables';
+  IF n <> 1 THEN RAISE EXCEPTION 'pre: overloads %', n; END IF;
+  SELECT md5(pg_get_functiondef(p.oid)) AS m, coalesce(p.proacl::text,'') AS a INTO r
+    FROM pg_proc p WHERE p.oid = 'public.get_report_receivables(jsonb)'::regprocedure;
+  IF r.m <> '970a18caa86f578cd31de2a56f002f6f' THEN RAISE EXCEPTION 'pre: function md5 %', r.m; END IF;
+  IF r.a <> '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'pre: acl %', r.a; END IF;
+  -- helpers the candidate depends on (exact live fingerprints, read-only 2026-10-19)
+  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) <> '64e10608403238a41a9baf92857ca881'
+  OR md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  OR md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure)) <> '048249c0c2106c3761e26eacb8d0de84'
+  THEN RAISE EXCEPTION 'pre: helper drift'; END IF;
+  -- schema used by the body (no invented columns)
+  SELECT count(*) INTO n FROM information_schema.columns WHERE table_schema='public' AND (table_name, column_name) IN (
+    ('accounts_receivable','organization_id'),('accounts_receivable','customer_id'),('accounts_receivable','category_id'),
+    ('accounts_receivable','status'),('accounts_receivable','description'),
+    ('accounts_receivable_installments','organization_id'),('accounts_receivable_installments','receivable_id'),
+    ('accounts_receivable_installments','due_date'),('accounts_receivable_installments','original_amount'),
+    ('accounts_receivable_installments','received_amount'),('accounts_receivable_installments','discount_amount'),
+    ('accounts_receivable_installments','status'),('clientes','organization_id'),('clientes','nome'),
+    ('clientes','razao_social'),('financial_categories','name'));
+  IF n <> 16 THEN RAISE EXCEPTION 'pre: schema columns %', n; END IF;
+END $guard$;
+CREATE OR REPLACE FUNCTION public.get_report_receivables(_filters jsonb DEFAULT '{}'::jsonb)
+ RETURNS TABLE(installment_id uuid, receivable_id uuid, customer_name text, description text, category text, due_date date, amount numeric, paid numeric, balance numeric, status text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  _uid uuid := auth.uid();
+  _org uuid;
+  _from date;
+  _to date;
+  _status text;
+  _customer uuid;
+  _key text;
+BEGIN
+  -- Live actor (no JWT claims for role/tenant): profile/org/readiness and
+  -- user_roles are read from the database on every call.
+  IF _uid IS NULL THEN RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501'; END IF;
+  _org := platform_private.h15_actor_organization();
+  IF _org IS NULL THEN RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501'; END IF;
+  IF NOT (platform_private.has_role(_uid, 'administrador'::public.app_role)
+       OR platform_private.has_role(_uid, 'gestor'::public.app_role)
+       OR platform_private.has_role(_uid, 'financeiro'::public.app_role)) THEN
+    RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501';
+  END IF;
+
+  IF _filters IS NULL OR jsonb_typeof(_filters) <> 'object' THEN
+    RAISE EXCEPTION 'Filtros inválidos' USING ERRCODE = '22023';
+  END IF;
+  FOR _key IN SELECT jsonb_object_keys(_filters) LOOP
+    IF _key NOT IN ('from', 'to', 'status', 'customer_id') THEN
+      RAISE EXCEPTION 'Filtros inválidos' USING ERRCODE = '22023';
+    END IF;
+  END LOOP;
+  IF jsonb_typeof(_filters->'from') IS DISTINCT FROM 'string'
+     OR jsonb_typeof(_filters->'to') IS DISTINCT FROM 'string'
+     OR (_filters ? 'status' AND jsonb_typeof(_filters->'status') NOT IN ('string', 'null'))
+     OR (_filters ? 'customer_id' AND jsonb_typeof(_filters->'customer_id') NOT IN ('string', 'null'))
+     OR (_filters->>'from') !~ '^\d{4}-\d{2}-\d{2}$'
+     OR (_filters->>'to') !~ '^\d{4}-\d{2}-\d{2}$' THEN
+    RAISE EXCEPTION 'Filtros inválidos' USING ERRCODE = '22023';
+  END IF;
+  BEGIN
+    _from := (_filters->>'from')::date;
+    _to := (_filters->>'to')::date;
+    _customer := NULLIF(_filters->>'customer_id', '')::uuid;
+  EXCEPTION WHEN others THEN
+    RAISE EXCEPTION 'Filtros inválidos' USING ERRCODE = '22023';
+  END;
+  _status := NULLIF(_filters->>'status', '');
+  IF _to < _from OR (_status IS NOT NULL AND _status NOT IN ('OPEN', 'PARTIAL', 'OVERDUE', 'PAID', 'CANCELED')) THEN
+    RAISE EXCEPTION 'Filtros inválidos' USING ERRCODE = '22023';
+  END IF;
+  -- A customer from another tenant is denied, never silently empty.
+  IF _customer IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.clientes c WHERE c.id = _customer AND c.organization_id = _org
+  ) THEN
+    RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN QUERY
+  SELECT i.id, ar.id, COALESCE(c.nome, c.razao_social, '—'), ar.description, fc.name,
+         i.due_date, i.original_amount,
+         COALESCE(i.received_amount,0),
+         i.original_amount - COALESCE(i.received_amount,0) - COALESCE(i.discount_amount,0),
+         i.status
+  FROM public.accounts_receivable_installments i
+  JOIN public.accounts_receivable ar ON ar.id = i.receivable_id
+  JOIN public.clientes c ON c.id = ar.customer_id
+  LEFT JOIN public.financial_categories fc ON fc.id = ar.category_id
+  WHERE ar.organization_id = _org
+    AND i.organization_id = _org
+    AND c.organization_id = _org
+    AND i.due_date >= _from
+    AND i.due_date <= _to
+    AND (_status IS NULL OR i.status = _status)
+    AND (_customer IS NULL OR ar.customer_id = _customer)
+    AND ar.status <> 'CANCELED'
+  ORDER BY i.due_date, i.id;
+END;$function$
+;
+REVOKE ALL ON FUNCTION public.get_report_receivables(jsonb) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.get_report_receivables(jsonb) TO authenticated;
+DO $guard$
+DECLARE r record; n int;
+BEGIN
+  IF current_setting('server_version_num')::int < 140000 THEN RAISE EXCEPTION 'post: pg version'; END IF;
+  SELECT count(*) INTO n FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+   WHERE s.nspname='public' AND p.proname='get_report_receivables';
+  IF n <> 1 THEN RAISE EXCEPTION 'post: overloads %', n; END IF;
+  SELECT md5(pg_get_functiondef(p.oid)) AS m, coalesce(p.proacl::text,'') AS a INTO r
+    FROM pg_proc p WHERE p.oid = 'public.get_report_receivables(jsonb)'::regprocedure;
+  IF r.m <> '25148f33683e1120e5f2484ba06546ac' THEN RAISE EXCEPTION 'post: function md5 %', r.m; END IF;
+  IF r.a <> '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'post: acl %', r.a; END IF;
+  -- helpers the candidate depends on (exact live fingerprints, read-only 2026-10-19)
+  IF md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) <> '64e10608403238a41a9baf92857ca881'
+  OR md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  OR md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure)) <> '048249c0c2106c3761e26eacb8d0de84'
+  THEN RAISE EXCEPTION 'post: helper drift'; END IF;
+  -- schema used by the body (no invented columns)
+  SELECT count(*) INTO n FROM information_schema.columns WHERE table_schema='public' AND (table_name, column_name) IN (
+    ('accounts_receivable','organization_id'),('accounts_receivable','customer_id'),('accounts_receivable','category_id'),
+    ('accounts_receivable','status'),('accounts_receivable','description'),
+    ('accounts_receivable_installments','organization_id'),('accounts_receivable_installments','receivable_id'),
+    ('accounts_receivable_installments','due_date'),('accounts_receivable_installments','original_amount'),
+    ('accounts_receivable_installments','received_amount'),('accounts_receivable_installments','discount_amount'),
+    ('accounts_receivable_installments','status'),('clientes','organization_id'),('clientes','nome'),
+    ('clientes','razao_social'),('financial_categories','name'));
+  IF n <> 16 THEN RAISE EXCEPTION 'post: schema columns %', n; END IF;
+END $guard$;
+COMMIT;

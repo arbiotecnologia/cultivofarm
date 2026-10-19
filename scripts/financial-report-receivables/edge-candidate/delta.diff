@@ -1,0 +1,42 @@
+--- edge-candidate/live-v90.index.ts	2026-10-19 16:57:39.299809517 +0000
++++ edge-candidate/index.ts.review	2026-10-19 16:57:39.334577084 +0000
+@@ -44,6 +44,21 @@
+   return false;
+ }
+ 
++const RECEIVABLES_KEYS = ["from", "to", "status", "customer_id"];
++const DATE = /^\d{4}-\d{2}-\d{2}$/;
++
++export function receivablesFilters(filters: Record<string, unknown>): Record<string, string> | null {
++  const out: Record<string, string> = {};
++  for (const [key, value] of Object.entries(filters)) {
++    if (!RECEIVABLES_KEYS.includes(key)) return null;
++    if (value === undefined || value === null || value === "") continue;
++    if (typeof value !== "string") return null;
++    out[key] = value;
++  }
++  if (!out.from || !out.to || !DATE.test(out.from) || !DATE.test(out.to) || out.to < out.from) return null;
++  return out;
++}
++
+ function isBody(value: unknown): value is Body {
+   return isObject(value) && !Object.prototype.hasOwnProperty.call(value, "organization_id") &&
+     !Object.prototype.hasOwnProperty.call(value, "tenant_id") &&
+@@ -92,8 +107,15 @@
+ 
+     const rpcName = RPC_MAP[body.report_type];
+ 
+-    // Call the RPC with filters as params
+-    const { data, error } = await supabase.rpc(rpcName, body.filters as never);
++    // Only `receivables` has a reviewed server contract: encapsulate allowlisted
++    // filters in `_filters`. Other reports keep their call and stay denied by ACL.
++    let rpcArgs: Record<string, unknown> = body.filters;
++    if (body.report_type === "receivables") {
++      const filters = receivablesFilters(body.filters);
++      if (!filters) return respond({ error: "invalid_request" }, 400);
++      rpcArgs = { _filters: filters };
++    }
++    const { data, error } = await supabase.rpc(rpcName, rpcArgs as never);
+     if (error) throw error;
+ 
+     const rows: unknown[] = Array.isArray(data)
