@@ -1,0 +1,584 @@
+diff --git a/src/components/financeiro/DocumentosPanel.tsx b/src/components/financeiro/DocumentosPanel.tsx
+index 63e26453..1cc5ed3f 100644
+--- a/src/components/financeiro/DocumentosPanel.tsx
++++ b/src/components/financeiro/DocumentosPanel.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useRef } from "react";
++import { useState, useRef, useLayoutEffect } from "react";
+ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/hooks/useAuth";
+@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
+ import { toast } from "sonner";
+ import { FileText, Download, Trash2, Upload } from "lucide-react";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ import { financialDocumentStoragePath, supportsFinancialDocumentOwner } from "@/lib/financeiro/documentStoragePath";
+ 
+ export type DocOwnerType =
+@@ -125,15 +126,6 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
+     onError: (e: Error, { current }) => { if (current()) toast.error(e.message); },
+   });
+ 
+-  const download = async (doc: any) => {
+-    if (!access.ready) return;
+-    const current = access.capture();
+-    const { data, error } = await supabase.storage.from("financial-docs").createSignedUrl(doc.storage_path, 60 * 5);
+-    if (!current()) return;
+-    if (error || !data) { toast.error("Falha ao baixar"); return; }
+-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+-  };
+-
+   const isStaff = role === "administrador" || role === "gestor" || role === "administrativo" || role === "financeiro";
+   const canDeleteFinal = canDelete && (role === "administrador" || role === "gestor");
+   const podeArquivo = role === "administrador" || role === "gestor" || role === "financeiro";
+@@ -181,7 +173,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
+             </div>
+             <div className="flex gap-1">
+               {podeArquivo && (
+-                <Button size="sm" variant="ghost" disabled={!access.ready} onClick={() => download(d)} aria-label="Baixar documento"><Download className="h-3 w-3" /></Button>
++                <DocumentoDownload doc={d} ownerType={ownerType} ownerId={ownerId} listScope={access.scope} supported={supportedOwner} />
+               )}
+               {canDeleteFinal && (
+                 <Button size="sm" variant="ghost" disabled={!access.ready || !supportedOwner || remove.isPending} onClick={() => {
+@@ -196,3 +188,52 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
+     </div>
+   );
+ }
++
++interface FinancialDocSnapshot { id: string; storage_path: string | null; deleted_at: string | null; file_name: string | null }
++
++/**
++ * Explicit two-step download through the canonical authenticated opener.
++ * "Preparar documento" fetches bytes with the actor session (Storage RLS);
++ * "Baixar documento" only hands a local Blob over on a new, explicit click.
++ * Never signs or opens public/signed URLs. The resource snapshot (id, path,
++ * deleted_at) is part of the scope: any change revokes prepared bytes.
++ */
++function DocumentoDownload({ doc, ownerType, ownerId, listScope, supported }: {
++  doc: FinancialDocSnapshot; ownerType: DocOwnerType; ownerId: string | null | undefined; listScope: string; supported: boolean;
++}) {
++  const snapshot = { id: doc.id, storage_path: doc.storage_path ?? null, deleted_at: doc.deleted_at ?? null };
++  const resource = JSON.stringify(["financial-doc", listScope, ownerType, ownerId ?? null, snapshot]);
++  const access = useStorageAccessScope(resource);
++  const opener = useAuthenticatedAttachmentOpener(resource, "financial-docs");
++  const [busy, setBusy] = useState(false);
++  const pending = useRef<(() => boolean) | null>(null);
++  useLayoutEffect(() => {
++    setBusy(false);
++    return () => { pending.current = null; };
++  }, [access.scope]);
++  const path = snapshot.storage_path;
++  // Path contract mirrors Storage RLS (owner_type/owner_id/...); RLS stays authoritative.
++  const eligible = supported && !!ownerId && snapshot.deleted_at === null && typeof path === "string" &&
++    path.startsWith(`${ownerType}/${ownerId}/`) && path.split("/").length === 3;
++  const prepared = eligible && !!path && !!opener.urls[path];
++  const loading = eligible && !!path && opener.loadingPaths.includes(path);
++  const onClick = async () => {
++    const current = access.capture();
++    if (!current() || !eligible || !path || pending.current) return;
++    if (opener.urls[path]) { opener.download(path, doc.file_name || "documento"); return; }
++    pending.current = current;
++    setBusy(true);
++    try {
++      await opener.open(path, () => { if (current() && pending.current === current) toast.error("Documento indisponível"); });
++    } finally {
++      if (pending.current === current) {
++        pending.current = null;
++        if (current()) setBusy(false);
++      }
++    }
++  };
++  const label = prepared ? "Baixar documento" : "Preparar documento";
++  return <Button size="sm" variant="ghost" disabled={!access.ready || !eligible || busy || loading} onClick={onClick} aria-label={label} title={label}>
++    <Download className="h-3 w-3" />
++  </Button>;
++}
+diff --git a/src/components/financeiro/relatorios/HistoricoExportacoes.tsx b/src/components/financeiro/relatorios/HistoricoExportacoes.tsx
+index ed0214c1..58384b7a 100644
+--- a/src/components/financeiro/relatorios/HistoricoExportacoes.tsx
++++ b/src/components/financeiro/relatorios/HistoricoExportacoes.tsx
+@@ -1,5 +1,5 @@
+ import { formatDateTimeDisplay } from "@/lib/date-utils";
+-import { useEffect, useState } from "react";
++import { useEffect, useLayoutEffect, useRef, useState } from "react";
+ import { supabase } from "@/integrations/supabase/client";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
+ import { Download, Loader2 } from "lucide-react";
+ import { toast } from "sonner";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ 
+ interface ExportRow {
+   id: string;
+@@ -62,24 +63,6 @@ export function HistoricoExportacoes() {
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [type, format, from, to, access.scope]);
+ 
+-  const download = async (r: ExportRow) => {
+-    if (!access.ready) return;
+-    const current = access.capture();
+-    if (!r.storage_path) {
+-      toast.error("Arquivo não disponível");
+-      return;
+-    }
+-    const { data, error } = await supabase.storage
+-      .from(r.storage_bucket ?? "financial-reports")
+-      .createSignedUrl(r.storage_path, 3600);
+-    if (!current()) return;
+-    if (error || !data?.signedUrl) {
+-      toast.error(error?.message ?? "Falha ao gerar URL");
+-      return;
+-    }
+-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+-  };
+-
+   return (
+     <div className="space-y-4">
+       <Card>
+@@ -123,9 +106,7 @@ export function HistoricoExportacoes() {
+                     </TableCell>
+                     <TableCell className="text-xs">{formatDateTimeDisplay(r.generated_at)}</TableCell>
+                     <TableCell className="text-right">
+-                      <Button size="sm" variant="outline" disabled={!r.storage_path} onClick={() => download(r)}>
+-                        <Download className="w-4 h-4" />
+-                      </Button>
++                      <ExportDownload row={r} listScope={access.scope} />
+                     </TableCell>
+                   </TableRow>
+                 ))}
+@@ -140,3 +121,50 @@ export function HistoricoExportacoes() {
+     </div>
+   );
+ }
++
++const EXPORT_BUCKET = "financial-reports";
++
++/**
++ * Explicit two-step download via the canonical authenticated opener
++ * (Storage RLS financial_storage_object_permitted). No signed/public URLs;
++ * other buckets fail closed. The row snapshot is part of the scope.
++ */
++function ExportDownload({ row, listScope }: { row: ExportRow; listScope: string }) {
++  const snapshot = { id: row.id, storage_bucket: row.storage_bucket ?? null, storage_path: row.storage_path ?? null, status: row.status };
++  const resource = JSON.stringify(["financial-export", listScope, snapshot]);
++  const access = useStorageAccessScope(resource);
++  const opener = useAuthenticatedAttachmentOpener(resource, EXPORT_BUCKET);
++  const [busy, setBusy] = useState(false);
++  const pending = useRef<(() => boolean) | null>(null);
++  useLayoutEffect(() => {
++    setBusy(false);
++    return () => { pending.current = null; };
++  }, [access.scope]);
++  const path = snapshot.storage_path;
++  const eligible = typeof path === "string" && path.length > 0 && (snapshot.storage_bucket ?? EXPORT_BUCKET) === EXPORT_BUCKET;
++  const prepared = eligible && !!path && !!opener.urls[path];
++  const loading = eligible && !!path && opener.loadingPaths.includes(path);
++  const ext = (row.file_format ?? row.format ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
++  const fileName = `${(row.report_type || "relatorio").replace(/[^a-zA-Z0-9_-]/g, "_")}${ext ? `.${ext}` : ""}`;
++  const onClick = async () => {
++    const current = access.capture();
++    if (!current() || !eligible || !path || pending.current) return;
++    if (opener.urls[path]) { opener.download(path, fileName); return; }
++    pending.current = current;
++    setBusy(true);
++    try {
++      await opener.open(path, () => { if (current() && pending.current === current) toast.error("Arquivo indisponível"); });
++    } finally {
++      if (pending.current === current) {
++        pending.current = null;
++        if (current()) setBusy(false);
++      }
++    }
++  };
++  const label = prepared ? "Baixar exportação" : "Preparar exportação";
++  return (
++    <Button size="sm" variant="outline" disabled={!access.ready || !eligible || busy || loading} onClick={onClick} aria-label={label} title={label}>
++      {busy || loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
++    </Button>
++  );
++}
+diff --git a/src/lib/authz/authzEpochMonitor.ts b/src/lib/authz/authzEpochMonitor.ts
+index 39037977..387e5c7a 100644
+--- a/src/lib/authz/authzEpochMonitor.ts
++++ b/src/lib/authz/authzEpochMonitor.ts
+@@ -72,10 +72,14 @@ export interface AuthzEpochMonitorDeps {
+ // MIN_DELAY: hard floor between a confirmation and the next request (no busy
+ // loop: at most one request per ~second even with tiny server budgets).
+ // FLOOR_MARGIN: minimum headroom reserved before the deadline for the next
+-// round-trip. Margin = max(FLOOR_MARGIN, 2 x RTT estimate).
++// round-trip. Margin = max(FLOOR_MARGIN, 2 x RTT estimate). Real homologation
++// observed a 5.094s round-trip right after ~3s samples (old 5s floor expired
++// 7ms short), so the floor covers single spikes up to ~7.5s. It only moves the
++// request EARLIER; lease (15s from request start), late-response rejection and
++// fail-closed expiry are unchanged. RTT above the floor still fails closed.
+ // JITTER: up to this much earlier, never later than the computed time.
+ export const EARLY_RENEWAL_MIN_DELAY_MS = 1_000;
+-export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 5_000;
++export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 7_500;
+ export const EARLY_RENEWAL_MAX_JITTER_MS = 500;
+ 
+ export interface AuthzEpochMonitor {
+diff --git a/src/test/config/authzEarlyRenewal.test.ts b/src/test/config/authzEarlyRenewal.test.ts
+index f803fd32..6cc15529 100644
+--- a/src/test/config/authzEarlyRenewal.test.ts
++++ b/src/test/config/authzEarlyRenewal.test.ts
+@@ -3,6 +3,7 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ import {
+   createAuthzEpochMonitor,
++  EARLY_RENEWAL_FLOOR_MARGIN_MS,
+   EARLY_RENEWAL_MIN_DELAY_MS,
+   type AuthzFingerprintResult,
+ } from '@/lib/authz/authzEpochMonitor';
+@@ -83,10 +84,10 @@ describe('paired early renewal before confirmed deadline', () => {
+     expect(s.onEpochChange).not.toHaveBeenCalled();
+     expect(s.onExpire).not.toHaveBeenCalled();
+     expect(s.maxInFlight()).toBe(1);
+-    // response t3 => deadline t15; next request t9 (margin 2*RTT=6s), steady 9s cadence.
+-    expect(s.starts.slice(0, 4)).toEqual([0, 9000, 18000, 27000]);
++    // response t3 => deadline t15; next request t7.5 (floor margin 7.5s > 2*RTT=6s), steady 7.5s cadence.
++    expect(s.starts.slice(0, 4)).toEqual([0, 7500, 15000, 22500]);
+     for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 3000);
+-    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(15);
++    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(18);
+   });
+ 
+   it('variable RTT 0.1–4.5s with jitter for 120s keeps access, single flight and gap >= MIN_DELAY after each answer', async () => {
+@@ -123,10 +124,10 @@ describe('paired early renewal before confirmed deadline', () => {
+   it('response landing exactly at the confirmed deadline is rejected and cannot reopen', async () => {
+     const s = setup();
+     s.monitor.start();
+-    await vi.advanceTimersByTimeAsync(3000); // deadline 15000, next request at 9000
+-    s.setRtt(() => 6000); s.setRespond(() => valid('late'));
++    await vi.advanceTimersByTimeAsync(3000); // deadline 15000, next request at 7500
++    s.setRtt(() => 7500); s.setRespond(() => valid('late'));
+     await vi.advanceTimersByTimeAsync(12000);
+-    expect(s.starts).toEqual([0, 9000]);
++    expect(s.starts).toEqual([0, 7500]);
+     expect(s.monitor.state()).toBe('expired');
+     expect(s.monitor.currentFingerprint()).toBe('same');
+     expect(s.onEpochChange).not.toHaveBeenCalled();
+@@ -204,7 +205,7 @@ describe('paired early renewal before confirmed deadline', () => {
+     const s = setup();
+     s.monitor.start();
+     await vi.advanceTimersByTimeAsync(3000);
+-    await vi.advanceTimersByTimeAsync(6000); // request #2 starts at t9
++    await vi.advanceTimersByTimeAsync(4500); // request #2 starts at t7.5
+     expect(s.fetcher).toHaveBeenCalledTimes(2);
+     s.monitor.revalidateEnvironment(); s.monitor.revalidateEnvironment(); s.monitor.revalidateEnvironment();
+     expect(s.fetcher).toHaveBeenCalledTimes(2);
+@@ -218,3 +219,74 @@ describe('paired early renewal before confirmed deadline', () => {
+     expect(s.states()).toEqual(['pending', 'valid']);
+   });
+ });
++
++describe('real homologation variation: fast RTT followed by a single 5.1–6s spike', () => {
++  it('reserves at least the 7.5s floor before the confirmed deadline at every request', () => {
++    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBe(7500);
++  });
++
++  it('old 5s floor reproduction (arithmetic of the real expire): 5094ms spike started 5087ms before deadline lands 7ms late', () => {
++    // Observed: leaseRemainingMs -7 with rttMs 5094 => request started 5087ms before deadline.
++    const headroomOld = 5000 + 87; // floor + jitter consumed earlier
++    expect(5094 - headroomOld).toBe(7);
++    expect(headroomOld).toBeLessThan(5094);
++    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBeGreaterThan(5094);
++  });
++
++  it.each([5100, 5500, 6000, 7000])('fast 200ms samples then one %ims spike keeps access with single flight and no pending', async (spike) => {
++    let n = 0;
++    const s = setup({ rtt: () => (++n === 6 ? spike : 200), random: () => 0.999 });
++    s.monitor.start();
++    await vi.advanceTimersByTimeAsync(200);
++    await holdsAccessFor(s, 90000);
++    expect(s.states()).toEqual(['pending', 'valid']);
++    expect(s.onExpire).not.toHaveBeenCalled();
++    expect(s.onEpochChange).not.toHaveBeenCalled();
++    expect(s.maxInFlight()).toBe(1);
++    // bounded cadence: never more than one request per MIN_DELAY + RTT, and far below 1/s
++    for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 200);
++    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(14);
++  });
++
++  it('every scheduled request starts with >= floor - jitter headroom before the confirmed deadline', async () => {
++    const s = setup({ rtt: () => 200, random: () => 0.999 });
++    s.monitor.start();
++    await vi.advanceTimersByTimeAsync(200);
++    await vi.advanceTimersByTimeAsync(60000);
++    for (let i = 1; i < s.starts.length; i++) {
++      const deadline = s.starts[i - 1] + 15000;
++      expect(deadline - s.starts[i]).toBeGreaterThanOrEqual(EARLY_RENEWAL_FLOOR_MARGIN_MS);
++    }
++  });
++
++  it('spike above the floor (8s) after fast samples still fails closed at the 15s deadline and late answer cannot reopen', async () => {
++    let n = 0;
++    const s = setup({ rtt: () => (++n === 3 ? 8000 : 200) });
++    s.monitor.start();
++    await vi.advanceTimersByTimeAsync(200);
++    while (s.fetcher.mock.calls.length < 3) await vi.advanceTimersByTimeAsync(100);
++    const confirmedStart = s.starts[1];
++    await vi.advanceTimersByTimeAsync(confirmedStart + 15000 - 1 - Date.now());
++    expect(s.monitor.checkAccess()).toBe(true);
++    await vi.advanceTimersByTimeAsync(1);
++    expect(s.monitor.checkAccess()).toBe(false);
++    expect(s.onExpire).toHaveBeenCalledWith('timeout');
++    await vi.advanceTimersByTimeAsync(10000);
++    expect(s.monitor.checkAccess()).toBe(false);
++    expect(s.monitor.state()).toBe('expired');
++  });
++
++  it('revocation (ineligible) during the 6s spike expires and does not reopen', async () => {
++    let n = 0;
++    const s = setup({ rtt: () => (++n === 3 ? 6000 : 200) });
++    s.monitor.start();
++    await vi.advanceTimersByTimeAsync(200);
++    while (s.fetcher.mock.calls.length < 3) await vi.advanceTimersByTimeAsync(100);
++    s.setRespond(() => ({ eligible: false, fingerprint: null }));
++    await vi.advanceTimersByTimeAsync(6100);
++    expect(s.onExpire).toHaveBeenCalledWith('ineligible');
++    s.setRespond(() => valid());
++    await vi.advanceTimersByTimeAsync(30000);
++    expect(s.monitor.checkAccess()).toBe(false);
++  });
++});
+diff --git a/src/test/equipe-tecnica/StorageDownloads.session.test.tsx b/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
+index dad6c83f..a0f7483d 100644
+--- a/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
++++ b/src/test/equipe-tecnica/StorageDownloads.session.test.tsx
+@@ -15,9 +15,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+     return q;
+   }, storage: { from: () => ({ createSignedUrl: mocks.sign }) },
+ } }));
+-import { DocumentosPanel } from "@/components/financeiro/DocumentosPanel";
+ import { ClienteDocumentosTab } from "@/components/clientes/ClienteDocumentosTab";
+-import { HistoricoExportacoes } from "@/components/financeiro/relatorios/HistoricoExportacoes";
+ import { ConfirmacaoEntregaPanel } from "@/components/entregas/ConfirmacaoEntregaPanel";
+ const doc = { id: "D", file_name: "PRIVATE_DOC", nome: "PRIVATE_DOC", nome_arquivo: "PRIVATE_DOC", tipo: "outro", tipo_documento: "OUTRO",
+   report_title: "PRIVATE_DOC", report_type: "monthly", status: "SUCCESS", generated_at: "2026-10-08", uploaded_at: "2026-10-08",
+@@ -30,9 +28,7 @@ beforeEach(() => {
+ });
+ describe("delayed Storage downloads", () => {
+   const views = [
+-    ["financial", () => <DocumentosPanel ownerType="RECEIVABLE" ownerId="R" />],
+     ["customer", () => <ClienteDocumentosTab clienteId="C" />],
+-    ["reports", () => <HistoricoExportacoes />],
+     ["delivery", () => <ConfirmacaoEntregaPanel entrega={{ id: "E", status: "cancelada" }} />],
+   ] as const;
+   for (const [name, component] of views) {
+diff --git a/src/test/financeiro/FinancialAuthenticatedDownloads.test.tsx b/src/test/financeiro/FinancialAuthenticatedDownloads.test.tsx
+new file mode 100644
+index 00000000..8deee54e
+--- /dev/null
++++ b/src/test/financeiro/FinancialAuthenticatedDownloads.test.tsx
+@@ -0,0 +1,207 @@
++// DocumentosPanel / HistoricoExportacoes: canonical authenticated opener only.
++// Fake Auth/transport; not a hosted JWT/RLS or browser homologation proof.
++import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { createAuthzEpochMonitor } from "@/lib/authz/authzEpochMonitor";
++
++const OWNER = "00000000-0000-4000-8000-000000000001";
++const DOC_PATH = `RECEIVABLE/${OWNER}/11111111-1111-4111-8111-111111111111-nota.pdf`;
++const REPORT_PATH = "OA/exports/monthly.pdf";
++const auth = vi.hoisted(() => ({
++  user: { id: "A" } as { id: string } | null, role: "financeiro", roles: ["financeiro"], loading: false, authzReady: true, authzEpoch: 0,
++  profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, checkAuthzAccess: (): boolean => true,
++}));
++const m = vi.hoisted(() => ({ rows: [] as unknown[], sign: vi.fn(), download: vi.fn(), error: vi.fn(), success: vi.fn() }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
++vi.mock("sonner", () => ({ toast: { success: m.success, error: m.error } }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: {
++  from: () => {
++    const q: Record<string, unknown> = {};
++    for (const name of ["select", "eq", "is", "order", "limit", "gte", "lte"]) q[name] = () => q;
++    q.then = (resolve: (v: unknown) => unknown) => Promise.resolve({ data: m.rows, error: null }).then(resolve);
++    return q;
++  },
++  storage: { from: () => ({ createSignedUrl: m.sign, createSignedUrls: m.sign, getPublicUrl: m.sign }) },
++  rpc: vi.fn(),
++} }));
++vi.mock("@/lib/authz/authenticatedAttachment", async (orig) => ({
++  ...await orig<typeof import("@/lib/authz/authenticatedAttachment")>(),
++  downloadAuthenticatedAttachment: (...a: unknown[]) => m.download(...a),
++}));
++import { DocumentosPanel } from "@/components/financeiro/DocumentosPanel";
++import { HistoricoExportacoes } from "@/components/financeiro/relatorios/HistoricoExportacoes";
++
++const docRow = (over: Record<string, unknown> = {}) => ({ id: "D1", file_name: "nota.pdf", document_type: "INVOICE", storage_path: DOC_PATH, deleted_at: null, ...over });
++const reportRow = (over: Record<string, unknown> = {}) => ({ id: "X1", report_type: "monthly", report_title: "Mensal", file_format: "PDF", format: "PDF",
++  status: "SUCCESS", storage_bucket: "financial-reports", storage_path: REPORT_PATH, generated_by: "A", generated_at: "2026-10-19", row_count: 1, ...over });
++
++type Kind = "docs" | "reports";
++const cfg = {
++  docs: { bucket: "financial-docs", path: DOC_PATH, prepare: "Preparar documento", get: "Baixar documento", row: docRow, deny: "Documento indisponível",
++    ui: () => <DocumentosPanel ownerType="RECEIVABLE" ownerId={OWNER} /> },
++  reports: { bucket: "financial-reports", path: REPORT_PATH, prepare: "Preparar exportação", get: "Baixar exportação", row: reportRow, deny: "Arquivo indisponível",
++    ui: () => <HistoricoExportacoes /> },
++} as const;
++
++let create: ReturnType<typeof vi.fn>, revoke: ReturnType<typeof vi.fn>, anchorClick: ReturnType<typeof vi.spyOn>, winOpen: ReturnType<typeof vi.spyOn>;
++beforeEach(() => {
++  Object.assign(auth, { user: { id: "A" }, role: "financeiro", roles: ["financeiro"], loading: false, authzReady: true, authzEpoch: 0,
++    checkAuthzAccess: () => true });
++  auth.profile = { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false };
++  for (const f of [m.sign, m.download, m.error, m.success]) f.mockReset();
++  let n = 0;
++  create = vi.fn(() => `blob:local/${++n}`); revoke = vi.fn();
++  vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke }));
++  anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
++  winOpen = vi.spyOn(window, "open").mockImplementation(() => null);
++});
++afterEach(() => { cleanup(); anchorClick.mockRestore(); winOpen.mockRestore(); });
++
++function mount(kind: Kind, rows: unknown[] = [cfg[kind].row()]) {
++  m.rows = rows;
++  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  const tree = () => <QueryClientProvider client={qc}>{cfg[kind].ui()}</QueryClientProvider>;
++  const ui = render(tree());
++  return { ...ui, rerenderTree: () => ui.rerender(tree()) };
++}
++function deferredBlob() {
++  let resolve: (b: Blob) => void = () => {}; let reject: (e: unknown) => void = () => {};
++  const promise = new Promise<Blob>((r, j) => { resolve = r; reject = j; });
++  return { promise, resolve, reject };
++}
++const noRemoteUrl = () => { expect(m.sign).not.toHaveBeenCalled(); expect(winOpen).not.toHaveBeenCalled(); };
++
++describe.each(["docs", "reports"] as const)("%s: authenticated two-step download", (kind) => {
++  const c = cfg[kind];
++  it("prepare fetches bytes via actor session; download happens only on a second explicit click; never signed/public URLs", async () => {
++    m.download.mockResolvedValue(new Blob(["bytes"]));
++    mount(kind);
++    fireEvent.click(await screen.findByRole("button", { name: c.prepare }));
++    await screen.findByRole("button", { name: c.get });
++    expect(m.download).toHaveBeenCalledTimes(1);
++    expect(m.download.mock.calls[0][0]).toBe(c.bucket);
++    expect(m.download.mock.calls[0][1]).toBe(c.path);
++    expect(m.download.mock.calls[0][2]).toBeInstanceOf(AbortSignal);
++    expect(anchorClick).not.toHaveBeenCalled(); // no automatic download after preparation
++    fireEvent.click(screen.getByRole("button", { name: c.get }));
++    expect(anchorClick).toHaveBeenCalledTimes(1);
++    expect(m.download).toHaveBeenCalledTimes(1);
++    noRemoteUrl();
++  });
++
++  it("late bytes after the 15s lease deadline (no Auth rerender) never become a Blob URL", async () => {
++    let clock = 0;
++    const monitor = createAuthzEpochMonitor({ fetcher: async () => ({ eligible: true, fingerprint: "same" }), now: () => clock,
++      setTimeoutFn: () => 1, clearTimeoutFn: () => {}, isVisible: () => true, isOnline: () => true, onEpochChange: () => {}, onExpire: () => {} });
++    monitor.start(); await act(async () => { await Promise.resolve(); });
++    auth.checkAuthzAccess = monitor.checkAccess;
++    const late = deferredBlob(); m.download.mockReturnValue(late.promise);
++    mount(kind);
++    fireEvent.click(await screen.findByRole("button", { name: c.prepare }));
++    await waitFor(() => expect(m.download).toHaveBeenCalledTimes(1));
++    clock = 15_000;
++    await act(async () => { late.resolve(new Blob(["late"])); await new Promise(r => setTimeout(r, 5)); });
++    expect(create).not.toHaveBeenCalled(); expect(anchorClick).not.toHaveBeenCalled(); expect(m.error).not.toHaveBeenCalled();
++    noRemoteUrl(); monitor.stop();
++  });
++
++  it("prepared Blob is not handed over after lease expiry without rerender", async () => {
++    let valid = true; auth.checkAuthzAccess = () => valid;
++    m.download.mockResolvedValue(new Blob(["bytes"]));
++    mount(kind);
++    fireEvent.click(await screen.findByRole("button", { name: c.prepare }));
++    const get = await screen.findByRole("button", { name: c.get });
++    valid = false;
++    fireEvent.click(get);
++    expect(anchorClick).not.toHaveBeenCalled();
++  });
++
++  it.each(["tenant", "roles", "epoch", "logout", "unmount"])("in-flight request aborts and late bytes are discarded on %s", async (change) => {
++    const late = deferredBlob(); m.download.mockReturnValue(late.promise);
++    const ui = mount(kind);
++    fireEvent.click(await screen.findByRole("button", { name: c.prepare }));
++    await waitFor(() => expect(m.download).toHaveBeenCalledTimes(1));
++    const signal = m.download.mock.calls[0][2] as AbortSignal;
++    if (change === "tenant") auth.profile = { ...auth.profile, organization_id: "OB" };
++    if (change === "roles") auth.roles = ["gestor"];
++    if (change === "epoch") auth.authzEpoch++;
++    if (change === "logout") auth.user = null;
++    if (change === "unmount") ui.unmount(); else ui.rerenderTree();
++    expect(signal.aborted).toBe(true);
++    await act(async () => { late.resolve(new Blob(["late"])); await new Promise(r => setTimeout(r, 5)); });
++    expect(create).not.toHaveBeenCalled(); expect(anchorClick).not.toHaveBeenCalled(); expect(m.error).not.toHaveBeenCalled();
++    noRemoteUrl();
++  });
++
++  it.each(["tenant", "epoch", "unmount"])("prepared Blob URL is revoked on %s", async (change) => {
++    m.download.mockResolvedValue(new Blob(["bytes"]));
++    const ui = mount(kind);
++    fireEvent.click(await screen.findByRole("button", { name: c.prepare }));
++    await screen.findByRole("button", { name: c.get });
++    expect(revoke).not.toHaveBeenCalled();
++    if (change === "tenant") auth.profile = { ...auth.profile, organization_id: "OB" };
++    if (change === "epoch") auth.authzEpoch++;
++    if (change === "unmount") ui.unmount(); else ui.rerenderTree();
++    expect(revoke).toHaveBeenCalledWith("blob:local/1");
++    expect(screen.queryByRole("button", { name: c.get })).toBeNull();
++  });
++
++  it("server denial reports neutral unavailability, keeps prepare state and creates nothing", async () => {
++    m.download.mockRejectedValue(new Error("Anexo indisponível"));
++    mount(kind);
++    fireEvent.click(await screen.findByRole("button", { name: c.prepare }));
++    await waitFor(() => expect(m.error).toHaveBeenCalledWith(c.deny));
++    expect(create).not.toHaveBeenCalled();
++    expect(screen.getByRole("button", { name: c.prepare })).toBeEnabled();
++    noRemoteUrl();
++  });
++
++  it("does not start a request when the lease expired before click (no rerender)", async () => {
++    let valid = true; auth.checkAuthzAccess = () => valid;
++    mount(kind);
++    const prepare = await screen.findByRole("button", { name: c.prepare });
++    valid = false; fireEvent.click(prepare);
++    expect(m.download).not.toHaveBeenCalled(); noRemoteUrl();
++  });
++});
++
++describe("resource snapshot and fail-closed eligibility", () => {
++  it("docs: snapshot change (same id, new storage_path) revokes prepared bytes", async () => {
++    m.download.mockResolvedValue(new Blob(["bytes"]));
++    const ui = mount("docs");
++    fireEvent.click(await screen.findByRole("button", { name: "Preparar documento" }));
++    await screen.findByRole("button", { name: "Baixar documento" });
++    m.rows = [docRow({ storage_path: `RECEIVABLE/${OWNER}/22222222-2222-4222-8222-222222222222-nova.pdf` })];
++    ui.unmount(); // new list snapshot rendered by a fresh mount mirrors refetch
++    expect(revoke).toHaveBeenCalledWith("blob:local/1");
++  });
++  it.each([
++    ["deleted", docRow({ deleted_at: "2026-10-19T00:00:00Z" })],
++    ["foreign owner path", docRow({ storage_path: `RECEIVABLE/00000000-0000-4000-8000-000000000009/x.pdf` })],
++    ["missing path", docRow({ storage_path: null })],
++    ["nested path", docRow({ storage_path: `RECEIVABLE/${OWNER}/a/b.pdf` })],
++  ])("docs: %s stays disabled and never fetches", async (_n, row) => {
++    mount("docs", [row]);
++    const b = await screen.findByRole("button", { name: "Preparar documento" });
++    expect(b).toBeDisabled(); fireEvent.click(b); expect(m.download).not.toHaveBeenCalled(); noRemoteUrl();
++  });
++  it("docs: DELIVERY owner (denied by Storage RLS) stays disabled", async () => {
++    m.rows = [docRow({ storage_path: `DELIVERY/${OWNER}/x.pdf` })];
++    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++    render(<QueryClientProvider client={qc}><DocumentosPanel ownerType="DELIVERY" ownerId={OWNER} /></QueryClientProvider>);
++    expect(await screen.findByRole("button", { name: "Preparar documento" })).toBeDisabled();
++  });
++  it.each([["other bucket", reportRow({ storage_bucket: "financial-docs" })], ["missing path", reportRow({ storage_path: null })]])(
++    "reports: %s stays disabled and never fetches", async (_n, row) => {
++      mount("reports", [row]);
++      const b = await screen.findByRole("button", { name: "Preparar exportação" });
++      expect(b).toBeDisabled(); fireEvent.click(b); expect(m.download).not.toHaveBeenCalled(); noRemoteUrl();
++    });
++  it("reports: null bucket defaults to financial-reports", async () => {
++    m.download.mockResolvedValue(new Blob(["bytes"]));
++    mount("reports", [reportRow({ storage_bucket: null })]);
++    fireEvent.click(await screen.findByRole("button", { name: "Preparar exportação" }));
++    await waitFor(() => expect(m.download).toHaveBeenCalledWith("financial-reports", REPORT_PATH, expect.any(AbortSignal)));
++  });
++});

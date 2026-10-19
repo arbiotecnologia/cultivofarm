@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { FileText, Download, Trash2, Upload } from "lucide-react";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { financialDocumentStoragePath, supportsFinancialDocumentOwner } from "@/lib/financeiro/documentStoragePath";
 
 export type DocOwnerType =
@@ -125,15 +126,6 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
     onError: (e: Error, { current }) => { if (current()) toast.error(e.message); },
   });
 
-  const download = async (doc: any) => {
-    if (!access.ready) return;
-    const current = access.capture();
-    const { data, error } = await supabase.storage.from("financial-docs").createSignedUrl(doc.storage_path, 60 * 5);
-    if (!current()) return;
-    if (error || !data) { toast.error("Falha ao baixar"); return; }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-  };
-
   const isStaff = role === "administrador" || role === "gestor" || role === "administrativo" || role === "financeiro";
   const canDeleteFinal = canDelete && (role === "administrador" || role === "gestor");
   const podeArquivo = role === "administrador" || role === "gestor" || role === "financeiro";
@@ -181,7 +173,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
             </div>
             <div className="flex gap-1">
               {podeArquivo && (
-                <Button size="sm" variant="ghost" disabled={!access.ready} onClick={() => download(d)} aria-label="Baixar documento"><Download className="h-3 w-3" /></Button>
+                <DocumentoDownload doc={d} ownerType={ownerType} ownerId={ownerId} listScope={access.scope} supported={supportedOwner} />
               )}
               {canDeleteFinal && (
                 <Button size="sm" variant="ghost" disabled={!access.ready || !supportedOwner || remove.isPending} onClick={() => {
@@ -195,4 +187,53 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
       </div>
     </div>
   );
+}
+
+interface FinancialDocSnapshot { id: string; storage_path: string | null; deleted_at: string | null; file_name: string | null }
+
+/**
+ * Explicit two-step download through the canonical authenticated opener.
+ * "Preparar documento" fetches bytes with the actor session (Storage RLS);
+ * "Baixar documento" only hands a local Blob over on a new, explicit click.
+ * Never signs or opens public/signed URLs. The resource snapshot (id, path,
+ * deleted_at) is part of the scope: any change revokes prepared bytes.
+ */
+function DocumentoDownload({ doc, ownerType, ownerId, listScope, supported }: {
+  doc: FinancialDocSnapshot; ownerType: DocOwnerType; ownerId: string | null | undefined; listScope: string; supported: boolean;
+}) {
+  const snapshot = { id: doc.id, storage_path: doc.storage_path ?? null, deleted_at: doc.deleted_at ?? null };
+  const resource = JSON.stringify(["financial-doc", listScope, ownerType, ownerId ?? null, snapshot]);
+  const access = useStorageAccessScope(resource);
+  const opener = useAuthenticatedAttachmentOpener(resource, "financial-docs");
+  const [busy, setBusy] = useState(false);
+  const pending = useRef<(() => boolean) | null>(null);
+  useLayoutEffect(() => {
+    setBusy(false);
+    return () => { pending.current = null; };
+  }, [access.scope]);
+  const path = snapshot.storage_path;
+  // Path contract mirrors Storage RLS (owner_type/owner_id/...); RLS stays authoritative.
+  const eligible = supported && !!ownerId && snapshot.deleted_at === null && typeof path === "string" &&
+    path.startsWith(`${ownerType}/${ownerId}/`) && path.split("/").length === 3;
+  const prepared = eligible && !!path && !!opener.urls[path];
+  const loading = eligible && !!path && opener.loadingPaths.includes(path);
+  const onClick = async () => {
+    const current = access.capture();
+    if (!current() || !eligible || !path || pending.current) return;
+    if (opener.urls[path]) { opener.download(path, doc.file_name || "documento"); return; }
+    pending.current = current;
+    setBusy(true);
+    try {
+      await opener.open(path, () => { if (current() && pending.current === current) toast.error("Documento indisponível"); });
+    } finally {
+      if (pending.current === current) {
+        pending.current = null;
+        if (current()) setBusy(false);
+      }
+    }
+  };
+  const label = prepared ? "Baixar documento" : "Preparar documento";
+  return <Button size="sm" variant="ghost" disabled={!access.ready || !eligible || busy || loading} onClick={onClick} aria-label={label} title={label}>
+    <Download className="h-3 w-3" />
+  </Button>;
 }

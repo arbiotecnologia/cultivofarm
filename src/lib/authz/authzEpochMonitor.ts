@@ -72,10 +72,14 @@ export interface AuthzEpochMonitorDeps {
 // MIN_DELAY: hard floor between a confirmation and the next request (no busy
 // loop: at most one request per ~second even with tiny server budgets).
 // FLOOR_MARGIN: minimum headroom reserved before the deadline for the next
-// round-trip. Margin = max(FLOOR_MARGIN, 2 x RTT estimate).
+// round-trip. Margin = max(FLOOR_MARGIN, 2 x RTT estimate). Real homologation
+// observed a 5.094s round-trip right after ~3s samples (old 5s floor expired
+// 7ms short), so the floor covers single spikes up to ~7.5s. It only moves the
+// request EARLIER; lease (15s from request start), late-response rejection and
+// fail-closed expiry are unchanged. RTT above the floor still fails closed.
 // JITTER: up to this much earlier, never later than the computed time.
 export const EARLY_RENEWAL_MIN_DELAY_MS = 1_000;
-export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 5_000;
+export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 7_500;
 export const EARLY_RENEWAL_MAX_JITTER_MS = 500;
 
 export interface AuthzEpochMonitor {
