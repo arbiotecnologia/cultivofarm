@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 12:13 — PDF de aplicações
+- [ ] Proteger PDF e ambos callers existentes por escopo, transporte autenticado, abort/timeout/limites, sem URLs assinadas/arbitrárias.
+- [ ] Testes focados, pacote candidato/rollback/preflight read-only, inventário v6 e recibos de validação; sem publicação/banco/reload.
+- [x] Auditor informou base f91728b publicada e homologação real limitada recibos/financeiro/admin: PDF A renderizado, busca B vazia, inativação/retry/restore e estabilidade96s; sem prova JWT direto/global.
+
 ## 19/10 02:57 — ambiente financeiro/admin exclusivo
 - [x] Reutilizar somente as opções ambientais revisadas no financeiro/admin empresa exclusivos; preservar monitor/probes, produtor/B2B/outros gates e recibos/Edges.
 - [x] Testar drafts/opener com alternância ambiental e RTT3s >=90s, negação/tardios/offline/timeout/restore:312/312; candidata/rollback/preflight não executado/staging5/5; typecheck exit0/build automático OK.
