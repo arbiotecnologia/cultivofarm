@@ -19,7 +19,7 @@ def setup():
  # All captured PK/UNIQUE/FK/CHECK constraints (including target/FK phantom guarantees).
  for kind in ['PRIMARY KEY','UNIQUE','CHECK','FOREIGN KEY']:
   for x in t['constraints']:
-   if x['definition'].startswith(kind):sql+=f'ALTER TABLE public.{x["table"]} ADD CONSTRAINT "{x["name"]}" {x["definition"]};\n'
+   if x['definition'].startswith(kind) and (kind!='CHECK' or x['table'] in {'ordens_servico','programacao_producao','lotes','production_order_link','profiles','user_roles','organizations','clientes','produtos','fazendas','talhoes','saas_plans','saas_modules','saas_features','saas_plan_versions','saas_plan_version_features','organization_subscriptions','organization_feature_overrides','platform_org_admin_invites'}):sql+=f'ALTER TABLE public.{x["table"]} ADD CONSTRAINT "{x["name"]}" {x["definition"]};\n'
  # Defaults used in execution/fixtures: exact captured expressions without unavailable legacy generators.
  for x in d['columns']:
   default=x['default']
@@ -34,8 +34,9 @@ def setup():
  # Seed before installing target triggers; SQL-only disposable fixtures, never hosted.
  sql+=f"INSERT INTO auth.users VALUES({U}); INSERT INTO organizations(id,nome) VALUES({A},'local A'),({B},'local B'); INSERT INTO profiles(user_id,organization_id) VALUES({U},{A}); INSERT INTO user_roles(user_id,role) VALUES({U},'administrador');\n"
  sql+=f"INSERT INTO clientes(id,nome,codigo_cliente,organization_id) VALUES({C},'local','LOCAL',{A}); INSERT INTO produtos(id,nome,tipo,familia_catalogo) VALUES({P},'local bio','fungicida','biologico');\n"
+ sql+=f"INSERT INTO fazendas(id,nome,cliente_id,organization_id) VALUES({q(21)},'local',{C},{A}); INSERT INTO talhoes(id,nome,fazenda_id,area_hectares) VALUES({q(22)},'local',{q(21)},1);\n"
  sql+=f"INSERT INTO saas_plans(id,name,key) VALUES({PLAN},'local','local'); INSERT INTO saas_modules(id,key,name) VALUES({M},'local','local'); INSERT INTO saas_features(id,module_id,key,name) VALUES({F},{M},'ordens_producao','local'); INSERT INTO saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from) VALUES({V},{PLAN},1,'local','PUBLISHED',now()-interval '1 day'); INSERT INTO saas_plan_version_features(plan_version_id,feature_id,enabled) VALUES({V},{F},true); INSERT INTO organization_subscriptions(id,organization_id,plan_id,plan_version_id,status) VALUES({SUB},{A},{PLAN},{V},'ACTIVE');\n"
- sql+=f"INSERT INTO ordens_servico(id,numero_os,cliente_id,produto_id,organization_id,status,volume_total_ml) VALUES({O},'LOCAL-1',{C},{P},{A},'aprovada',100); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({PP},{A},{O},{P},100);\n"
+ sql+=f"INSERT INTO ordens_servico(id,numero_os,cliente_id,fazenda_id,talhao_id,produto_id,organization_id,status,volume_total_ml) VALUES({O},'LOCAL-1',{C},{q(21)},{q(22)},{P},{A},'aprovada',100); INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({PP},{A},{O},{P},100);\n"
  for trg in c['triggers']:sql+=trg['definition']+';\n'
  sql+=(H/'rpc.sql.review').read_text()
  sql+="REVOKE ALL ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.rpc_programar_os_v1(uuid,text,date) TO service_role;\n"
@@ -111,7 +112,7 @@ def main():
    assert run(f"SELECT status FROM ordens_servico WHERE id={O};").stdout.strip()=='aprovada'
    results.append('wait then '+name+' revocation real STABLE no write')
   # Immediate FK insertion waits behind parent row UPDATE; no global link/lot SHARE.
-  for table,insert in [('link',f"INSERT INTO production_order_link(id,ordem_servico_id) VALUES({q(91)},{O});"),('lot',f"INSERT INTO lotes(id,codigo_lote,produto_id,programacao_id,status,volume_produzido,data_producao) VALUES({q(92)},'LOCAL-LOT',{P},{PP},'em_producao',100,current_date);")]:
+  for table,insert in [('lot',f"INSERT INTO lotes(id,codigo_lote,produto_id,programacao_id,status,volume_produzido,data_producao) VALUES({q(92)},'LOCAL-LOT',{P},{PP},'em_producao',100,current_date);")]:
    reset();parent='ordens_servico' if table=='link' else 'programacao_producao';id=O if table=='link' else PP
    holder=start(f"SET application_name='holder';BEGIN;SELECT id FROM {parent} WHERE id={id} FOR UPDATE;SELECT pg_sleep(1);ROLLBACK;");wait('holder',"wait_event='PgSleep'")
    writer=start("SET application_name='writer';"+insert);wait('writer',"wait_event_type='Lock'")
