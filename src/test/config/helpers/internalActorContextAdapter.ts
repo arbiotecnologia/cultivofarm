@@ -1,8 +1,7 @@
 // Test-only fake of the server RPC `internal_actor_context_v1()` built from a
 // test file's existing fake transport (h15_actor_organization, profiles,
-// user_roles, has_role). It models ONE round trip: every inner fake call is
-// issued so the per-call fake latency models one PostgREST request (see below). The real SQL (single STABLE statement, own
-// auth.uid() only) is tested in scripts/monitor-single-rtt-probe/test-local.py.
+// user_roles, has_role). The real SQL (single STABLE statement, own auth.uid()
+// only) is tested in scripts/monitor-single-rtt-probe/test-local.py.
 // Any inner error => the RPC errors (client fails closed). Not JWT/RLS proof.
 type Res = { data?: unknown; error?: unknown } | null | undefined;
 type Sb = { from: (t: string) => unknown; rpc: (name: string, args?: unknown) => unknown };
