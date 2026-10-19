@@ -1,4 +1,21 @@
-# Operador onfarm exclusivo — candidata OFF
+# Operador onfarm exclusivo — candidata OFF preservada e ativação limitada
+
+## 19/10 01:34 — ativação autorizada após revisão independente
+
+Proprietário informou revisão terminal `423afc908ef4c3cace548c5448e1a0ab850fe774`: diff runtime apropriado, **89 hashes exatos PASS**, staging **6/6 independente PASS**, probes independentes **45/45** (12 operador, 12 consultor, 12 administrador, 9 financeiro; fontes reais/transporte fake) e preflight integral executado em **`swzpzcwiasxmjutrmvkm` PASS**. Evidência externa fornecida, não execução hosted pelo agente nem login real dos probes. Perfil operador restaurado ativo às **`2026-10-19T01:25:21.070143Z`**; administrador B ativo. Nenhum perfil/dado/sessão foi alterado nesta rodada.
+
+Ativado **APENAS `OPERATOR_CONTEXT_MONITOR_ENABLED=false→true`**, sem mudar sequer o comentário adjacente. Assertion real em `src/test/config/operatorGate.test.ts` agora exige true. Comparação binária de todas as fontes `src/` com a terminal revisada confirmou somente esses dois arquivos alterados; o gate é exatamente uma substituição. B2B/produtor/financeiro/admin/consultor true, Blob false, global v6 fechado; redirecionamento, cockpit e anexos byte-exatos.
+
+Manifest OFF de hash `f3cd82b140b62de0d1adec2b632cf3d1b8b023e297d6d0efc0424579f8e28101` e seus **29 artefatos** intactos, sem rehash das provas candidatas; os 60 hashes fonte OFF permanecem históricos, não são reapresentados como estado ativo. `stage.py candidate` recusa o estado ativo com `source_drift`, sem saída parcial.
+
+Novo staging isolado em `scripts/authz-cache/operator-open-session/stage-active.py`, `test_stage_active.py` e `SHA256SUMS-active`. Comando: `python3 scripts/authz-cache/operator-open-session/stage-active.py activation|deactivation|rollback <diretório externo vazio>`. Valida manifest fixo, todos os artefatos e fontes exatas; gate/assertion ativos derivados da prova OFF por substituições únicas. Falha antes de escrever em qualquer drift. `activation` emite apenas o gate true; **`deactivation` emite apenas o mesmo arquivo com a flag operador false**, preservando as outras flags e todos os outros bytes. `rollback` emite os bytes originais e a lista de remoção dos dois testes novos conforme manifest OFF, nunca autoinstala; é rollback completo original da candidata, distinto da desativação isolada. Hashes ativos são recibo separado, não atualização do manifest OFF.
+
+Validações desta ativação:
+- **397/397** testes pertinentes em 16 arquivos: 304 sessão/gates/seleção/guards e 93 monitor/cockpit/cache/comprovante de baixa/gates publicados. Sem falha nova; avisos React Router e rotas de negação sem fixture não são falhas. Transporte/Auth simulados, componentes reais: não homologação hosted.
+- **5/5** staging ativo: ativação/desativação flag-only, rollback original, drift de gate/assertion/fonte/manifest/artefatos recusado atomicamente, destino e modo inválidos recusados.
+- Build automático observado **`build OK` às `2026-10-19T01:35:15Z`**. Diretório de observabilidade disponível contém apenas README/build; **sem recibo independente typecheck, não certificado**. Não foi repetida suíte ampla nem inventado PASS; seis falhas históricas continuam registradas abaixo, não reexecutadas nesta rodada.
+
+Publicação, conferência da HEAD e homologação **login/redirecionamento real do operador e cockpit somente consulta** ficam com o proprietário. Não foi feita publicação, ativação hosted, DDL/DML, Edge deploy, mudança de permissões/contratos ou uso de subagentes. Não afirmar snapshot/ABA, revogação de vínculos, HTTP signer ou idempotência global concorrente. As seções seguintes preservam a descrição e os resultados históricos da candidata OFF; a autorização acima substitui apenas sua pendência de revisão/preflight/ativação.
 
 ## Evidência fornecida e escopo
 

@@ -1,7 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 01:25 — operador onfarm exclusivo
-- [ ] Ativação autorizada 01:34: somente gate operador true, assertion real e staging ativo isolado; preservar provas OFF e executar regressões pertinentes.
+- [x] Ativação autorizada 01:34: somente gate operador true/assertion real, demais fontes src byte-exatas; provas OFF intactas, staging ativo5/5 e regressões397/397 PASS; build OK/typecheck sem recibo.
 - [x] Estender somente monitor/probe/ProtectedRoutes existentes, gate operador OFF e recortes publicados preservados.
 - [x] Corrigir seleção/acesso pendente para home canônica somente após readiness self/h15/role exclusivo, sem criar contexto técnico.
 - [x] Testar drafts/revogação/restore/tardios/foco/guards/login: 446/446 finais; 8 falhas novas de cache corrigidas; seis históricas não reexecutadas globalmente.
