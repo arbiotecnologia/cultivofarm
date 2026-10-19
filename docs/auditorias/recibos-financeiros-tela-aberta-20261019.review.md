@@ -24,7 +24,7 @@ Signed URL já emitida pode continuar válida até seu TTL; bytes já baixados n
 - **231/231**, oito arquivos dirigidos: recibos 51; SDK 1; documentos financeiros 49; regressões lease/signedURL/Blob/monitor/multipapel restantes. Transporte, RPC, download e relógio controlados: **não é login real/JWT/RLS hosted**.
 - Testes positivos/negados, locator/traversal/tenant/bucket, filtros fora de ordem, uid/tenant/roles/epoch/unmount/lease, cancelamento duplicado, geração existente/nova, timeout Edge, bytes preparados após expiração, snapshot de recibo e revogação Blob.
 - Staging **5/5**: bytes candidata/rollback, remoção explícita da dependência nova, recusa de destino projeto e drift atômico de fonte/artefato; dados UTF-8/CRLF usados na prova de drift.
-- Build automático: `build OK` em 19/10 02:49:51Z e posteriores conforme recibo local. Tentativa inicial de typecheck separado apontou erros nos testes, corrigidos; **typecheck independente final ainda não certificado**. Não converter build em recibo de typecheck separado.
+- Build automático: `build OK` em 19/10 02:49:51Z e posteriores conforme recibo local. Tentativa inicial de typecheck separado apontou erros nos testes, corrigidos; **typecheck independente final PASS**, `tsgo -p tsconfig.app.json --noEmit`, exit 0; recibo separado registrado.
 - Suíte ampla não repetida. As **seis falhas históricas** documentadas nas fases anteriores permanecem pendências; não foram ocultadas nem recertificadas aqui.
 
 ## Pacote e rollback

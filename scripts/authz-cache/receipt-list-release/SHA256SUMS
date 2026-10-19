@@ -1,4 +1,4 @@
-7b239abd58918e1ae8f5b6786c0e9b25271d8cfff1651142592225f1153a5b93  docs/auditorias/recibos-financeiros-tela-aberta-20261019.review.md
+6bcbbf2e7d5ba475f362beade210efcb82c4dff935e8ebb189a8c40b8553d771  docs/auditorias/recibos-financeiros-tela-aberta-20261019.review.md
 eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed  scripts/authz-cache/receipt-list-release/RecibosList.tsx.candidate.review
 8b2791244f32173dcbcb82a5baa25ad531a9edfc31e6a839509da89f140fba4b  scripts/authz-cache/receipt-list-release/RecibosList.tsx.rollback.review
 6e53eda4fbddaaaa6707b3674b6df8db5d65c25080d6eba947c8595c44fdc2e7  scripts/authz-cache/receipt-list-release/manifest.json
@@ -6,6 +6,6 @@ eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed  scripts/authz-
 aee75517faff16a462c2b5fc40147d5f985b152fb9c6731d71358a627619c6b3  scripts/authz-cache/receipt-list-release/receiptStorageLocator.ts.candidate.review
 4a7e727cc8dca5f5ebbc18a76e7738ae6943779d279ab7dea7bff9861cf03f33  scripts/authz-cache/receipt-list-release/stage.py
 dd23403a2fc966e5e0b94581449b8bf55a0ffe982562f0150d860ff57203839d  scripts/authz-cache/receipt-list-release/test_stage.py
-fb0a02e6f7151dc716c2b4ad255c40d55a7c8ea3c27ac35f30380c81b31d7f12  scripts/authz-cache/receipt-list-release/validation-receipt.json
+f5f2eec0e3c9243f9ea76d9dc3d68cfbb4611b2762c91b886287bdd3f06be039  scripts/authz-cache/receipt-list-release/validation-receipt.json
 9cb9d4832ee4094d39d9bc655ce2ac0a4ef61ed39d38c282478241dd53de25a0  src/test/financeiro/RecibosList.scope.test.tsx
 e794c16efc88270b7cdac148e33692979e991b6b75a25ffecb4bd46fe33e8bb5  src/test/financeiro/receiptAuthenticatedSdk.test.ts

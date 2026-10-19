@@ -14,7 +14,11 @@
     "observed": "build OK",
     "timestamp_utc": "2026-10-19T02:51:04Z"
   },
-  "independent_final_typecheck": "NOT_CERTIFIED; initial receipt failed on corrected test typing; final separate run unavailable",
+  "independent_final_typecheck": {
+    "command": "tsgo -p tsconfig.app.json --noEmit",
+    "exit": 0,
+    "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
   "hosted_preflight": "NOT_EXECUTED",
   "authenticated_browser": "NOT_VERIFIED; external_unmanaged",
   "historical_broad_failures": 6,

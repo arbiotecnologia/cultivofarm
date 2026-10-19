@@ -2,7 +2,7 @@
 
 ## 19/10 02:43 — anexos de RecibosList
 - [x] Cercar listagem, cancelamento e download existentes por ator/tenant/roles/epoch/recurso; usar locator canônico e opener autenticado, sem URL arbitrária.
-- [x] Testar races, expiração, identidade, geração/existente e duplicação: 231/231; preflight SELECT-only não executado, staging5/5, rollback/hashes e relatório; build automático OK, typecheck independente final não certificado.
+- [x] Testar races, expiração, identidade, geração/existente e duplicação: 231/231; preflight SELECT-only não executado, staging5/5, rollback/hashes e relatório; build automático OK, typecheck independente final exit0.
 - [ ] Revisão independente e homologação financeiro A/admin B aguardam proprietário; não publicar/recarregar/criar recibos ou pagamentos.
 - [x] Inventário somente registrado: global v6, pdfAplicacao signer600/sem fence e guard final entrega-termo-pdf seguem fora desta correção.
 
