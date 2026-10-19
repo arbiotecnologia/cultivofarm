@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 00:11 — integridade server-side financial_documents
+- [x] Inventariar oito owner_types/callers e capturar contratos live; contagens sem expor linhas.
+- [x] Preparar candidata/preflight/postflight/rollback integrais em scripts/financial-documents-integrity, sem aplicar hosted.
+- [x] Testar PG local RLS/claims iat atual: 252 checks, oito owners e atomicidade; regressões 159/159. Relatório SERVER com limites/aceite independente.
+- [ ] Homologação/login B e aplicação dependem do proprietário/auditor, não autorizadas ao agente.
+
 ## 18/10 23:59 — anexos financeiros no fluxo existente
 - [x] Corrigir path/basename e fences upload/remove/metadados; contrato/trigger atual confirmado SELECT-only canônico, servidor e monitores inalterados.
 - [x] Regressões 186/186 (49 casos anexos) + staging4/4 e a905 2/2; rollback apenas painel, monitores preservados.

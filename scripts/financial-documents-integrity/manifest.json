@@ -1,0 +1,140 @@
+{
+  "baseline": "cc62c3dceb61d799722813f620fbe42f994c180e",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "function_post_md5": "62452456944c53935fde9f15da7bac8e",
+  "function_pre": "absent",
+  "policy_pre_post_md5": "2f1f0ad0472b8ec17b2841767f8416c7",
+  "existing_triggers_pre_post_md5": "364a1ac7fc3c82f25e595afeef9059ae",
+  "contracts": [
+    {
+      "signature": "financial_storage_object_permitted(text,text)",
+      "md5": "d03da0efc828ed0f99259c75390c6d13",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "fn_audit_financial_documents()",
+      "md5": "5f9283679efe1b6503ece3ebb3f748b8",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_authz_uid_scope_ok(uuid)",
+      "md5": "00a9a4d4a075d756d312d69778493b39",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "fn_financial_audit()",
+      "md5": "46f777c2020ff9a059a80ae6dab4bd12",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "guard_tenant_organization_id()",
+      "md5": "d01a740c1e3e02407131d2b9228bf658",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "h15_actor_organization()",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "has_role(uuid,app_role)",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "is_financial_staff(uuid)",
+      "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "platform_private.h15_actor_organization()",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.has_role(uuid,app_role)",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.platform_actor_access_ready(uuid)",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "rpc_financial_document_soft_delete(uuid,text)",
+      "md5": "bfce59fb3e68309d6d306a9c712fd1f3",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "storage1_path_strict(text)",
+      "md5": "94164fa3b90088b0a1f16ac465a635d4",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ]
+    }
+  ],
+  "sha256": {
+    "baseline-functions.sql": "44e32c9dff4992783e1e76316b060d399655e6ea3d00fb0d6193458ce26e7cb9",
+    "callers.md": "d908990c5797c7969616bced2f1ebf5ccb7e75c7cd78a42a6752bb6cffc3d388",
+    "candidate.sql.review": "694d7b4928bd7dc74d6868a3e87c277383f3c0eeb9dd1511fbe2fdb69b2fab16",
+    "contracts-guard.sql.review": "d28fd51a02f4a10c9594cd0441c5c7a8529caff5bab6005af0214798a4b0bfa3",
+    "guard.function.sql.review": "176a19379aa5623f78320ccb96eb4100c9912dbd90c87ef5b2becda0bfdf6f25",
+    "local-baseline.sql": "17bad32760252cbc65c3f369b844db838ab6a9fdf3ff3ae836c22fae55493e65",
+    "local-setup.sql": "ac411142f00f32f211249af44426ee7f00e975056c831d03dccf746d94b853a6",
+    "postflight.sql.review": "f466f1c9f2c6536dd0b7f2240b44f1fa924b387385eb4b5d66da62831a5eb312",
+    "preflight.sql.review": "7e468c3c3b36b07690cccc5408678dd1d57fe52a9c4fb19c518de21804ebac9e",
+    "rollback.sql.review": "6c9cc9496dcedf3e817353e96506a8a734f1263016aa97cd79a05f9fb3c2f649",
+    "test-local.py": "c6c118fe2077f392c6cf5c6f211533de411a2acc73f01268d22a0ad5e2e5475f"
+  }
+}

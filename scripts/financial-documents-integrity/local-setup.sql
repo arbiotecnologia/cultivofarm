@@ -1,0 +1,27 @@
+-- Disposable local schema only. Auth helpers are stubs; financial guards/readiness bodies exact live.
+CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+CREATE SCHEMA auth; CREATE SCHEMA platform_private; CREATE SCHEMA storage;
+GRANT USAGE ON SCHEMA auth,platform_private,storage TO authenticated,anon,service_role;
+CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(auth.jwt()->>'sub','')::uuid $$;
+CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$ SELECT (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1] $$;
+CREATE TYPE public.app_role AS ENUM ('administrador','gestor','financeiro','administrativo','cliente_produtor','parceiro_b2b');
+CREATE TABLE public.organizations(id uuid PRIMARY KEY,ativo boolean DEFAULT true);
+CREATE TABLE public.profiles(user_id uuid PRIMARY KEY,organization_id uuid,ativo boolean DEFAULT true,senha_provisoria boolean DEFAULT false);
+CREATE TABLE public.user_roles(user_id uuid,role public.app_role);
+CREATE TABLE public.platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
+CREATE TABLE public.fiscal_environment_marker(project_ref text);
+INSERT INTO public.fiscal_environment_marker VALUES('swzpzcwiasxmjutrmvkm');
+CREATE TABLE public.financial_documents(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),owner_type text NOT NULL,owner_id uuid NOT NULL,organization_id uuid,document_type text NOT NULL,file_name text NOT NULL,storage_path text NOT NULL,uploaded_by uuid NOT NULL,deleted_at timestamptz,deleted_by uuid,delete_reason text,fiscal_invoice_id uuid,fiscal_event_id uuid);
+GRANT ALL ON public.financial_documents TO anon,authenticated,service_role;
+ALTER TABLE public.financial_documents ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.financial_audit_log(entity_type text,entity_id uuid,action text,old_data jsonb,new_data jsonb,performed_by uuid);
+CREATE TABLE public.accounts_receivable(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.accounts_receivable TO authenticated; GRANT ALL ON public.accounts_receivable TO service_role; ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.accounts_payable(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.accounts_payable TO authenticated; GRANT ALL ON public.accounts_payable TO service_role; ALTER TABLE public.accounts_payable ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.entregas(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.entregas TO authenticated; GRANT ALL ON public.entregas TO service_role; ALTER TABLE public.entregas ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.fiscal_invoices(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.fiscal_invoices TO authenticated; GRANT ALL ON public.fiscal_invoices TO service_role; ALTER TABLE public.fiscal_invoices ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.receivable_payments(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.receivable_payments TO authenticated; GRANT ALL ON public.receivable_payments TO service_role; ALTER TABLE public.receivable_payments ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.payable_payments(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.payable_payments TO authenticated; GRANT ALL ON public.payable_payments TO service_role; ALTER TABLE public.payable_payments ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.financial_receipts(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.financial_receipts TO authenticated; GRANT ALL ON public.financial_receipts TO service_role; ALTER TABLE public.financial_receipts ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.financial_report_exports(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.financial_report_exports TO authenticated; GRANT ALL ON public.financial_report_exports TO service_role; ALTER TABLE public.financial_report_exports ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.fiscal_events(id uuid PRIMARY KEY,organization_id uuid,storage_bucket text,storage_path text); GRANT SELECT,INSERT,UPDATE,DELETE ON public.fiscal_events TO authenticated; GRANT ALL ON public.fiscal_events TO service_role; ALTER TABLE public.fiscal_events ENABLE ROW LEVEL SECURITY;

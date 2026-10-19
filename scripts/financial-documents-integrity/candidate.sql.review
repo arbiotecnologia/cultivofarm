@@ -1,0 +1,122 @@
+-- REVIEW ONLY: auditor application required; never automatically installed.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+SET LOCAL statement_timeout='30s';
+DO $guard$ DECLARE r record; v record; BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'canonical_ref_required'; END IF;
+ FOR r IN SELECT * FROM jsonb_to_recordset($json$[{"signature": "financial_storage_object_permitted(text,text)", "md5": "d03da0efc828ed0f99259c75390c6d13", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "fn_audit_financial_documents()", "md5": "5f9283679efe1b6503ece3ebb3f748b8", "acl": "{postgres=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=public"]}, {"signature": "fn_authz_uid_scope_ok(uuid)", "md5": "00a9a4d4a075d756d312d69778493b39", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=public, pg_temp"]}, {"signature": "fn_financial_audit()", "md5": "46f777c2020ff9a059a80ae6dab4bd12", "acl": "{postgres=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=public"]}, {"signature": "guard_tenant_organization_id()", "md5": "d01a740c1e3e02407131d2b9228bf658", "acl": "{postgres=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "h15_actor_organization()", "md5": "55edafec08bcc84a00f1526c14334a2c", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "has_role(uuid,app_role)", "md5": "4d90e93d521a4819d9085f28d742030f", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "is_financial_staff(uuid)", "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=public, pg_temp"]}, {"signature": "platform_private.h15_actor_organization()", "md5": "64e10608403238a41a9baf92857ca881", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "platform_private.has_role(uuid,app_role)", "md5": "c5af5b55de6d79da9b73a33948746ae2", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "platform_private.platform_actor_access_ready(uuid)", "md5": "048249c0c2106c3761e26eacb8d0de84", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "rpc_financial_document_soft_delete(uuid,text)", "md5": "bfce59fb3e68309d6d306a9c712fd1f3", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=public, pg_temp"]}, {"signature": "storage1_path_strict(text)", "md5": "94164fa3b90088b0a1f16ac465a635d4", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}]$json$::jsonb) AS x(signature text,md5 text,acl text,owner text,config text[]) LOOP
+ SELECT md5(pg_get_functiondef(oid)) hash,proacl::text acl,pg_get_userbyid(proowner) owner,proconfig config INTO v FROM pg_proc WHERE oid=to_regprocedure(r.signature);
+ IF NOT FOUND OR v.hash IS DISTINCT FROM r.md5 OR v.acl IS DISTINCT FROM r.acl OR v.owner IS DISTINCT FROM r.owner OR v.config IS DISTINCT FROM r.config THEN RAISE EXCEPTION 'contract_drift: %',r.signature; END IF;
+ END LOOP;
+ IF (SELECT relacl::text FROM pg_class WHERE oid='public.financial_documents'::regclass) IS DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' OR (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.financial_documents'::regclass) <> 'postgres' OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.financial_documents'::regclass) THEN RAISE EXCEPTION 'table_acl_owner_rls_drift'; END IF;
+ IF (SELECT md5(string_agg(policyname||'|'||cmd||'|'||permissive||'|'||roles::text||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''),E'\n' ORDER BY policyname)) FROM pg_policies WHERE schemaname='public' AND tablename='financial_documents') IS DISTINCT FROM '2f1f0ad0472b8ec17b2841767f8416c7' THEN RAISE EXCEPTION 'policy_drift'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.financial_documents'::regclass AND NOT tgisinternal AND tgenabled <> 'O') THEN RAISE EXCEPTION 'trigger_enabled_drift'; END IF;
+ IF (SELECT md5(string_agg(pg_get_triggerdef(oid),E'\n' ORDER BY tgname)) FROM pg_trigger WHERE tgrelid='public.financial_documents'::regclass AND NOT tgisinternal AND tgname<>'zz_financial_document_integrity') IS DISTINCT FROM '364a1ac7fc3c82f25e595afeef9059ae' THEN RAISE EXCEPTION 'trigger_drift'; END IF;
+END $guard$;
+LOCK TABLE public.financial_documents IN SHARE ROW EXCLUSIVE MODE;
+DO $guard$ BEGIN
+ IF to_regprocedure('public.guard_financial_document_integrity()') IS NOT NULL OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.financial_documents'::regclass AND tgname='zz_financial_document_integrity') THEN RAISE EXCEPTION 'candidate_already_present_or_drift'; END IF;
+END $guard$;
+CREATE OR REPLACE FUNCTION public.guard_financial_document_integrity()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $function$
+DECLARE
+  v_org uuid; v_parent_org uuid; v_uid uuid := auth.uid();
+  v_path text; v_bucket text; v_parts text[]; v_soft_delete boolean := false;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.organization_id IS DISTINCT FROM OLD.organization_id
+      OR NEW.owner_type IS DISTINCT FROM OLD.owner_type
+      OR NEW.owner_id IS DISTINCT FROM OLD.owner_id
+      OR NEW.uploaded_by IS DISTINCT FROM OLD.uploaded_by THEN
+      RAISE EXCEPTION 'financial_document_identity_immutable' USING ERRCODE = '42501';
+    END IF;
+    v_soft_delete := OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL
+      AND (to_jsonb(NEW) - ARRAY['deleted_at','deleted_by','delete_reason'])
+        = (to_jsonb(OLD) - ARRAY['deleted_at','deleted_by','delete_reason']);
+    IF (NEW.deleted_at IS DISTINCT FROM OLD.deleted_at
+      OR NEW.deleted_by IS DISTINCT FROM OLD.deleted_by
+      OR NEW.delete_reason IS DISTINCT FROM OLD.delete_reason) AND NOT v_soft_delete THEN
+      RAISE EXCEPTION 'financial_document_tombstone_immutable' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'financial_document_tenant_required' USING ERRCODE = '42501';
+  END IF;
+  IF v_uid IS NOT NULL THEN
+    v_org := public.h15_actor_organization();
+    IF v_org IS NULL OR v_org <> NEW.organization_id OR NOT public.is_financial_staff(v_uid) THEN
+      RAISE EXCEPTION 'financial_document_actor_denied' USING ERRCODE = '42501';
+    END IF;
+    IF TG_OP = 'INSERT' AND NEW.uploaded_by IS DISTINCT FROM v_uid THEN
+      RAISE EXCEPTION 'financial_document_author_denied' USING ERRCODE = '42501';
+    END IF;
+    IF v_soft_delete AND (NEW.deleted_by IS DISTINCT FROM v_uid
+      OR length(btrim(coalesce(NEW.delete_reason, ''))) NOT BETWEEN 1 AND 500) THEN
+      RAISE EXCEPTION 'financial_document_tombstone_denied' USING ERRCODE = '42501';
+    END IF;
+  ELSIF NOT (current_setting('role', true) = 'service_role'
+    OR (current_setting('role', true) = 'none' AND session_user = 'postgres')) THEN
+    RAISE EXCEPTION 'financial_document_actor_required' USING ERRCODE = '42501';
+  END IF;
+  CASE NEW.owner_type
+    WHEN 'RECEIVABLE' THEN SELECT organization_id INTO v_parent_org FROM public.accounts_receivable WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'PAYABLE' THEN SELECT organization_id INTO v_parent_org FROM public.accounts_payable WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'DELIVERY' THEN SELECT organization_id INTO v_parent_org FROM public.entregas WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'FISCAL_INVOICE' THEN SELECT organization_id INTO v_parent_org FROM public.fiscal_invoices WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'PAYMENT_RECEIVABLE' THEN SELECT organization_id INTO v_parent_org FROM public.receivable_payments WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'PAYMENT_PAYABLE' THEN SELECT organization_id INTO v_parent_org FROM public.payable_payments WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'FINANCIAL_RECEIPT' THEN SELECT organization_id, storage_path, storage_bucket INTO v_parent_org, v_path, v_bucket FROM public.financial_receipts WHERE id = NEW.owner_id FOR SHARE;
+    WHEN 'REPORT_EXPORT' THEN SELECT organization_id, storage_path, storage_bucket INTO v_parent_org, v_path, v_bucket FROM public.financial_report_exports WHERE id = NEW.owner_id FOR SHARE;
+    ELSE RAISE EXCEPTION 'financial_document_owner_denied' USING ERRCODE = '42501';
+  END CASE;
+  IF v_parent_org IS NULL OR v_parent_org <> NEW.organization_id THEN
+    RAISE EXCEPTION 'financial_document_owner_denied' USING ERRCODE = '42501';
+  END IF;
+  IF NEW.fiscal_invoice_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.fiscal_invoices WHERE id = NEW.fiscal_invoice_id AND organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'financial_document_fiscal_reference_denied' USING ERRCODE = '42501'; END IF;
+  IF NEW.fiscal_event_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.fiscal_events WHERE id = NEW.fiscal_event_id AND organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'financial_document_fiscal_reference_denied' USING ERRCODE = '42501'; END IF;
+  -- Preserve canonical tombstoning of an unchanged legacy locator. Owner/tenant
+  -- and identity still must be valid; NULL-tenant legacy never passes.
+  IF v_soft_delete THEN RETURN NEW; END IF;
+  IF NOT coalesce(public.storage1_path_strict(NEW.storage_path), false) THEN
+    RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
+  END IF;
+  v_parts := string_to_array(NEW.storage_path, '/');
+  IF NEW.owner_type IN ('FINANCIAL_RECEIPT','REPORT_EXPORT') THEN
+    IF v_path IS NULL OR NEW.storage_path IS DISTINCT FROM v_path
+      OR v_parts[1] <> NEW.organization_id::text
+      OR v_bucket IS DISTINCT FROM (CASE WHEN NEW.owner_type = 'FINANCIAL_RECEIPT' THEN 'financial-receipts' ELSE 'financial-reports' END) THEN
+      RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
+    END IF;
+  ELSIF array_length(v_parts, 1) <> 3 OR v_parts[1] <> NEW.owner_type
+    OR v_parts[2] <> NEW.owner_id::text OR length(v_parts[3]) = 0 THEN
+    RAISE EXCEPTION 'financial_document_path_denied' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+ALTER FUNCTION public.guard_financial_document_integrity() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.guard_financial_document_integrity() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.guard_financial_document_integrity() TO service_role;
+CREATE TRIGGER zz_financial_document_integrity BEFORE INSERT OR UPDATE ON public.financial_documents FOR EACH ROW EXECUTE FUNCTION public.guard_financial_document_integrity();
+DO $guard$ DECLARE r record; v record; BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref='swzpzcwiasxmjutrmvkm') OR EXISTS(SELECT 1 FROM public.fiscal_environment_marker WHERE project_ref IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm') THEN RAISE EXCEPTION 'canonical_ref_required'; END IF;
+ FOR r IN SELECT * FROM jsonb_to_recordset($json$[{"signature": "financial_storage_object_permitted(text,text)", "md5": "d03da0efc828ed0f99259c75390c6d13", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "fn_audit_financial_documents()", "md5": "5f9283679efe1b6503ece3ebb3f748b8", "acl": "{postgres=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=public"]}, {"signature": "fn_authz_uid_scope_ok(uuid)", "md5": "00a9a4d4a075d756d312d69778493b39", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=public, pg_temp"]}, {"signature": "fn_financial_audit()", "md5": "46f777c2020ff9a059a80ae6dab4bd12", "acl": "{postgres=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=public"]}, {"signature": "guard_tenant_organization_id()", "md5": "d01a740c1e3e02407131d2b9228bf658", "acl": "{postgres=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "h15_actor_organization()", "md5": "55edafec08bcc84a00f1526c14334a2c", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "has_role(uuid,app_role)", "md5": "4d90e93d521a4819d9085f28d742030f", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "is_financial_staff(uuid)", "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=public, pg_temp"]}, {"signature": "platform_private.h15_actor_organization()", "md5": "64e10608403238a41a9baf92857ca881", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "platform_private.has_role(uuid,app_role)", "md5": "c5af5b55de6d79da9b73a33948746ae2", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "platform_private.platform_actor_access_ready(uuid)", "md5": "048249c0c2106c3761e26eacb8d0de84", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}, {"signature": "rpc_financial_document_soft_delete(uuid,text)", "md5": "bfce59fb3e68309d6d306a9c712fd1f3", "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}", "owner": "postgres", "config": ["search_path=public, pg_temp"]}, {"signature": "storage1_path_strict(text)", "md5": "94164fa3b90088b0a1f16ac465a635d4", "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}", "owner": "postgres", "config": ["search_path=\"\""]}]$json$::jsonb) AS x(signature text,md5 text,acl text,owner text,config text[]) LOOP
+ SELECT md5(pg_get_functiondef(oid)) hash,proacl::text acl,pg_get_userbyid(proowner) owner,proconfig config INTO v FROM pg_proc WHERE oid=to_regprocedure(r.signature);
+ IF NOT FOUND OR v.hash IS DISTINCT FROM r.md5 OR v.acl IS DISTINCT FROM r.acl OR v.owner IS DISTINCT FROM r.owner OR v.config IS DISTINCT FROM r.config THEN RAISE EXCEPTION 'contract_drift: %',r.signature; END IF;
+ END LOOP;
+ IF (SELECT relacl::text FROM pg_class WHERE oid='public.financial_documents'::regclass) IS DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' OR (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.financial_documents'::regclass) <> 'postgres' OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.financial_documents'::regclass) THEN RAISE EXCEPTION 'table_acl_owner_rls_drift'; END IF;
+ IF (SELECT md5(string_agg(policyname||'|'||cmd||'|'||permissive||'|'||roles::text||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''),E'\n' ORDER BY policyname)) FROM pg_policies WHERE schemaname='public' AND tablename='financial_documents') IS DISTINCT FROM '2f1f0ad0472b8ec17b2841767f8416c7' THEN RAISE EXCEPTION 'policy_drift'; END IF;
+ IF (SELECT md5(string_agg(pg_get_triggerdef(oid),E'\n' ORDER BY tgname)) FROM pg_trigger WHERE tgrelid='public.financial_documents'::regclass AND NOT tgisinternal AND tgname<>'zz_financial_document_integrity') IS DISTINCT FROM '364a1ac7fc3c82f25e595afeef9059ae' THEN RAISE EXCEPTION 'trigger_drift'; END IF;
+END $guard$;
+DO $guard$ DECLARE v record; BEGIN
+ SELECT md5(pg_get_functiondef(oid)) hash,proacl::text acl,pg_get_userbyid(proowner) owner,proconfig config INTO v FROM pg_proc WHERE oid=to_regprocedure('public.guard_financial_document_integrity()');
+ IF NOT FOUND OR v.hash IS DISTINCT FROM '62452456944c53935fde9f15da7bac8e' OR v.acl IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' OR v.owner IS DISTINCT FROM 'postgres' OR v.config IS DISTINCT FROM ARRAY['search_path=""'] THEN RAISE EXCEPTION 'integrity_post_drift'; END IF;
+ IF (SELECT pg_get_triggerdef(oid) FROM pg_trigger WHERE tgrelid='public.financial_documents'::regclass AND tgname='zz_financial_document_integrity') IS DISTINCT FROM 'CREATE TRIGGER zz_financial_document_integrity BEFORE INSERT OR UPDATE ON public.financial_documents FOR EACH ROW EXECUTE FUNCTION guard_financial_document_integrity()' THEN RAISE EXCEPTION 'integrity_trigger_drift'; END IF;
+END $guard$;
+COMMIT;
