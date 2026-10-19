@@ -1,0 +1,20 @@
+{
+  "baseline_commit": "0fce0ce1a03e859b80da36e9e40ae937e50bf056",
+  "scope": "Only proof helper and payment dialog. No server or monitor rollback.",
+  "files": [
+    {
+      "path": "src/lib/financial/anexarComprovanteBaixa.ts",
+      "candidate": "anexarComprovanteBaixa.ts.candidate.review",
+      "rollback": "anexarComprovanteBaixa.ts.rollback.review",
+      "baseline_sha256": "ef413cf38040e9c064f256760f8990a8d1ceae5750ef8597dc83d2041073b1ad",
+      "candidate_sha256": "e5ff09f134e47da302d28eb16bec8eac0ae13bf0fb90a2115c3325445035a584"
+    },
+    {
+      "path": "src/components/financeiro/BaixaDialog.tsx",
+      "candidate": "BaixaDialog.tsx.candidate.review",
+      "rollback": "BaixaDialog.tsx.rollback.review",
+      "baseline_sha256": "7311a8bbe7597a6966cb7f3d01971e93f7a3ef13ffbdc269c299cb338bbf0ba3",
+      "candidate_sha256": "07c639c37046171456846378d0f264f06febb550b628d6df78f2df53fbe4c29b"
+    }
+  ]
+}
