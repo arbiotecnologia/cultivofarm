@@ -18,7 +18,7 @@ Sem SQL/ACL/RLS, publicação, monitor/lease, assinatura digital, confirmação,
 - Testes usam Auth/transporte simulados; não são homologação JWT/RLS real.
 
 ## Verificação local
-- 26 testes novos (`comprovanteDownloadAutenticado`): locator, happy path, erro, caminho inválido, sem arquivo,
+- 25 testes novos (`comprovanteDownloadAutenticado`): locator, happy path, erro, caminho inválido, sem arquivo,
   tenant/roles/época/lease durante e após preparo, nenhuma `createSignedUrl`/`window.open`.
 - Suítes entregas + StorageDownloads + AttachmentOpener: 190/190. tsgo app/node EXIT 0.
 - `StorageDownloads.session` deixou de cobrir a entrega (fluxo de URL assinada removido); cobertura migrou para o teste novo.
