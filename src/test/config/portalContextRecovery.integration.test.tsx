@@ -51,8 +51,8 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     const p = later(() => {
       if (name === 'get_my_available_portal_contexts') {
         if (s.contextsMode === 'error') return { data: null, error: { code: 'fetch_failed' } };
-        const tech = s.contextsMode !== 'denied' && s.roles.includes('consultor_tecnico'); const adm = s.roles.includes('gestor');
-        return { data: { available_contexts: [...(adm ? ['admin'] : []), ...(tech ? ['technical'] : [])], has_technical_access: tech, is_admin: false, must_select_context: adm && tech }, error: null };
+        const tech = s.contextsMode !== 'denied' && s.roles.some(r => ['tecnico_agronomo', 'consultor_tecnico', 'aplicador'].includes(r)); const adm = s.roles.some(r => ['gestor', 'administrador'].includes(r));
+        return { data: { available_contexts: [...(adm ? ['admin'] : []), ...(tech ? ['technical'] : [])], has_technical_access: adm || tech, is_admin: adm, has_b2b_access: adm, must_select_context: adm && tech }, error: null };
       }
       if (name === 'has_role') return { data: s.roles.includes(args?._role ?? ''), error: null };
       if (name === 'h15_actor_organization') { s.h15++; return { data: s.org, error: null }; }
@@ -76,7 +76,7 @@ import { readAuthzDiagnostics, clearAuthzDiagnostics } from '@/lib/authz/localDi
 function Url() { return <output data-testid="url">{useLocation().pathname}</output>; }
 function NestedContextReader() {
   const { data } = useAvailableContexts();
-  return data?.has_technical_access ? <span>Técnico campo</span> : null;
+  return data?.available_contexts.includes('technical') ? <span>Técnico campo</span> : null;
 }
 function setup(path = '/financeiro/receber', child: React.ReactNode = <span>Técnico campo</span>) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -84,7 +84,7 @@ function setup(path = '/financeiro/receber', child: React.ReactNode = <span>Téc
     <Route element={<ProtectedRoutes />}>
       <Route path="/financeiro/receber" element={<RoleGuard><span>Contas a receber</span></RoleGuard>} />
     </Route>
-    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={child} /></Route></Route>
+    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={child} /><Route path="/app/perfil" element={<MobilePerfil />} /></Route></Route>
     <Route path="/sem-permissao" element={<Link to="/app">Ir ao técnico</Link>} />
   </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
   return qc;
@@ -121,6 +121,24 @@ afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.useRealTimer
 
 
 describe('real provider + contexts query + app guard + mobile: uncertainty is not denial', () => {
+  it.each([['gestor'], ['gestor', 'consultor_tecnico'], ['consultor_tecnico'], ['administrador']])('real RPC semantics with roles %j at Perfil', async (...roles) => {
+    s.roles = roles; setup('/app/perfil'); await tick(4000);
+    const allowed = roles.includes('consultor_tecnico') || roles.includes('administrador');
+    expect(screen.getByTestId('url').textContent).toBe(allowed ? '/app/perfil' : '/sem-permissao');
+    expect(!!screen.queryByText('Meu Perfil')).toBe(allowed);
+  });
+  it.each(['consultor_tecnico', 'gestor'])('Perfil real: remove %s, pause, Retry and remaining role only', async removed => {
+    setup('/app/perfil'); await tick(4000); expect(screen.getByText('Meu Perfil')).toBeTruthy();
+    s.roles = s.roles.filter(r => r !== removed); focus(); await tick(3000);
+    expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+    expect(screen.queryByText('Meu Perfil')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Registrar Ocorrência' })).toBeNull();
+    retry(); await tick(8000);
+    const allowed = removed === 'gestor';
+    expect(screen.getByTestId('url').textContent).toBe(allowed ? '/app/perfil' : '/sem-permissao');
+    expect(!!screen.queryByText('Meu Perfil')).toBe(allowed);
+    expect(!!screen.queryByRole('button', { name: 'Registrar Ocorrência' })).toBe(allowed);
+  });
   it.each(['default-reader', 'mobile-perfil'])('%s stabilizes after load, focus and epoch without mount-refetch loop', async kind => {
     const label = kind === 'mobile-perfil' ? 'Meu Perfil' : 'Técnico campo';
     const qc = setup('/app', kind === 'mobile-perfil' ? <MobilePerfil /> : <NestedContextReader />);

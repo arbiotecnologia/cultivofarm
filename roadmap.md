@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## Revogação técnica efetiva — baseline db1eee, 22:12
+- [ ] Reproduzir payload real gestor/dupla/consultor e revogação em Perfil real; corrigir quatro leitores técnicos sem flags legadas, pacote/rollback contra db1eee, suíte pertinente.
+- [ ] Homologação real pós-correção: aguarda revisão/publicação externa; 82 testes + tsc anteriores não provaram semântica da RPC nem revogação parcial real (falhou 22:11).
+
 ## Contextos técnicos indisponíveis — baseline 2f95d5be
 - [x] Revisão bloqueante 22:02: ciclo reproduzido 11 chamadas/12 s com MobilePerfil e filho default reais; política herdada técnica estabiliza carga/foco/epoch (<5), mantém conteúdo oculto na incerteza e defaults externos. 324/324 em 12 arquivos; pacote/manifest/rollback atualizados. Sem banco/monitor/publicação; types independentes e homologação real aguardam auditor.
 - [x] Corrigir falsa negativa em /app durante limpeza por época, consulta pendente/erro; conteúdo oculto e Retry canônico, guardas técnicas filhas coerentes.
