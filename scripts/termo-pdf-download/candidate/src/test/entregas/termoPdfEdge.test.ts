@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -37,7 +36,7 @@ function client(kind: "user" | "admin") {
     },
     rpc: async (...a: unknown[]) => { calls.rpc(...a); return { data: null, error: null }; },
     storage: { from: () => ({
-      download: async (p: string) => { calls.download(p); st.onDownload?.(); return { data: new Blob([st.bytes]), error: null }; },
+      download: async (p: string) => { calls.download(p); st.onDownload?.(); const b = st.bytes; return { data: { size: b.byteLength, arrayBuffer: async () => b.slice().buffer }, error: null }; },
       createSignedUrl: calls.sign, upload: calls.upload, remove: vi.fn(),
     }) },
   };
