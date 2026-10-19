@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
   roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
-  hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, release: undefined as undefined | (() => void),
+  hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, auth: undefined as undefined | { authzReady: boolean; revalidateAuthz: () => void }, release: undefined as undefined | (() => void),
 }));
 const later = <T,>(v: () => T, tag: string) => {
   if (s.hangNext === tag) { if (s.hangSkip > 0) s.hangSkip--; else { s.hangNext = ''; return new Promise<T>(() => {}); } }
@@ -54,7 +54,8 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     return Object.assign(p, { abortSignal: () => p });
   },
 } }));
-import { AuthProvider } from '@/hooks/useAuth';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
+function AuthSpy() { s.auth = useAuth(); return null; }
 import { ProtectedRoutes, RoleGuard } from '@/App';
 import MobileLayout from '@/pages/app/MobileLayout';
 import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
@@ -63,7 +64,7 @@ import { readAuthzDiagnostics, clearAuthzDiagnostics } from '@/lib/authz/localDi
 function Url() { return <output data-testid="url">{useLocation().pathname}</output>; }
 function setup(path = '/financeiro/receber') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><Url /><Routes>
+  render(<QueryClientProvider client={qc}><AuthProvider><AuthSpy /><MemoryRouter initialEntries={[path]}><Url /><Routes>
     <Route element={<ProtectedRoutes />}>
       <Route path="/financeiro/receber" element={<RoleGuard><span>Contas a receber</span></RoleGuard>} />
     </Route>
@@ -220,10 +221,9 @@ describe('independent review 1875eb: Retry loader select(*) never resolves', () 
     expect(s.hangStar).toBe(false);
     expect(loadingText()).toBeNull();
     expect(screen.queryByText('Contas a receber')).toBeNull();
-    // Transport is back: a new Retry is not swallowed by a stuck single-flight.
-    const btn = screen.queryByRole('button', { name: 'Tentar novamente' });
-    if (btn) retry(); else fireEvent.click(screen.getByRole('button', { name: /tentar/i }));
-    await tick(8000);
+    // Transport is back: revalidateAuthz (Retry) is not swallowed by a stuck single-flight.
+    act(() => s.auth!.revalidateAuthz()); await tick(4000);
+    expect(s.auth!.authzReady).toBe(true);
     expect(loadingText()).toBeNull();
     expect(screen.getByText('Contas a receber')).toBeTruthy();
   });
