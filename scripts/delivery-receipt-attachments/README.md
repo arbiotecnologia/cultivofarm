@@ -29,3 +29,18 @@ Revisão independente; homologação real A/B (download, negação cross-tenant,
 ## Rollback
 `python3 rollback.py` (preflight) / `--apply [raiz]` restaura bytes de 0b964 e remove os arquivos novos —
 reintroduz as URLs assinadas. Testado byte-exato em cópia isolada.
+
+## Extensão (base 489d70016d, mesmo pacote contra 0b964): ClienteDocumentosTab
+- Falha real: o gate global `AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED=false` mantinha o branch legado, e um clique em A
+  gerou `POST /storage/v1/object/sign/clientes-docs/...` (HTTP 200). O gate global **não** foi alterado.
+- Agora o componente usa sempre `useAuthenticatedAttachmentOpener` (bucket `clientes-docs`); foram removidos
+  `createSignedUrl`/`window.open`. A UI tem "Preparar"/"Baixar", ambos `type="button"`, e o erro é neutro. O recurso é um snapshot da lista exibida.
+- Locator: o caminho precisa começar por `<org do ator>/clientes/<clienteId>/` (formato do upload atual) e não pode ter segmentos vazios, `.` ou `..`.
+  Fora disso, falha fechado sem requisição. Tenant/papel continuam na Storage RLS.
+- Upload, exclusão, formulário, cadastro, monitor e SQL ficaram intocados.
+- `StorageDownloads.session.test.tsx` foi removido: só cobria os fluxos de URL assinada eliminados. A cobertura equivalente (lease
+  tardia, tenant, papéis, revogação) está em `ClienteDocumentosTab.authenticatedDownload`, `PortalAttachmentConsumers.blob`
+  e `comprovanteDownloadAutenticado`.
+- Verificação: clientes + equipe-tecnica + entregas 363/363; tsgo app/node EXIT 0; rollback isolado byte-exato.
+- Homologação real pendente: documento cadastral A (1751 bytes), após a revisão. Para entregas, não há registros em A/B,
+  então a homologação continua pendente e nenhuma fixture foi criada.
