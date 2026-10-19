@@ -132,7 +132,7 @@ DECLARE
   v_old jsonb; v_new jsonb;
 BEGIN
   IF TG_OP = 'INSERT' THEN v_new := to_jsonb(NEW);
-  ELSIF TG_OP = 'UPDATE' THEN v_old := to_jsonb(OLD);
+  ELSIF TG_OP = 'UPDATE' THEN v_old := to_jsonb(OLD); v_new := to_jsonb(NEW);
   ELSIF TG_OP = 'DELETE' THEN v_old := to_jsonb(OLD);
   END IF;
 
