@@ -1,10 +1,16 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 15:09 — revisão programação 622048
+- [x] Substituir TEMP rollback por baseline byte-exato/autocontido a42d6 e ACL postgres/service_role; preservar pacotes c30af/e6a67.
+- [x] Fechar catálogo transitivo real SaaS/invites/refresh, reduzir SHARE com FK/row locks e restringir primeiro recorte manual/responsável NULL.
+- [x] Testar corpos STABLE/triggers alvo reais, concorrência e rollback definição/ACL; preparar PRE/POST integral para auditor, SQL executável e snapshot/delta, sem aplicar/publicar.
+- [ ] Auditor: executar PRE/POST integral no schema hosted e checker app/node; homologar programação com JWT/browser real e avaliar carga/deadlocks do refresh global. Bloqueio: revisão/aplicação externa e sessão real, não disponíveis ao agente.
+
 ## 19/10 14:54 — programação inicial canônica
 - [x] Registrar recibos externos de implantação aprovação/reader, publicação e6a67/c30af e inativação/retry A/B; roles intactas, sem homologação TOKEN_REFRESHED/anexos.
 - [x] Recuperar candidata RPC existente sem autoaprovação/reprogramação; UI detalhes, guarda/fence/replay e pacotes aprovados preservados. EXECUTE ainda fechado.
 - [x] Preparar fonte fixa e6a67/c30af, PRE/POST/rollback exato de sessão, testes locais negativos/revogação/concorrência e exportação checker.
-- [ ] Auditor: fechar catálogo transitivo SaaS/refresh e concorrência full-schema/locks globais; candidata recusa execução por exceção incondicional até revisão específica.
+- [x] Catálogo SaaS/refresh congelado na revisão 15:09; removida exceção incondicional, reduzidas SHARE e teste de triggers reais; carga/writers externos e schema integral hosted permanecem revisão do auditor.
 - [ ] Auditor: revisão/implantação e homologação real programação; fabricação/CQ/estoque/anexos/v6/contratos não liberados. Sem hosted/publicação pelo agente.
 
 ## 19/10 14:22 — correção funcional monitor/Cockpit
