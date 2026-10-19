@@ -7,7 +7,7 @@ const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
   roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
 }));
-const later = <T,>(v: () => T) => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
+const later = <T,>(v: () => T, tag = '') => { if (process.env.DBG) console.log('CALL', tag, Date.now()); return new Promise<T>(r => setTimeout(() => { if (process.env.DBG) console.log('DONE', tag, Date.now()); r(v()); }, s.perCall)); };
 vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
 vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {
@@ -17,13 +17,13 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
     const run = () => later(() => t === 'profiles'
       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
-      : { data: s.roles.map(role => ({ role })), error: null });
+      : { data: s.roles.map(role => ({ role })), error: null }, t);
     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
     return q;
   },
   rpc: (name: string, args?: { _role: string }) => {
     if (name === 'h15_actor_organization') s.probes++;
-    return later(() => name === 'has_role' ? { data: s.roles.includes(args!._role), error: null } : { data: s.org, error: null });
+    return later(() => name === 'has_role' ? { data: s.roles.includes(args!._role), error: null } : { data: s.org, error: null }, name);
   },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
