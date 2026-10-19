@@ -10,7 +10,7 @@ O mesmo contador `generationRef` servia de fence de respostas E de dono do `load
    continuava pausada em /financeiro/receber ("Retry não recuperou consultor");
 2. órfãos: o carregador em voo descartava a resposta e retornava SEM `setLoading(false)` → "Carregando..." para sempre;
 3. requisição travada não tinha prazo → "Carregando..." para sempre.
-Baseline 84edf6c: 4/12 cenários do teste novo falham (1, 2, travada, resposta tardia após prazo). Candidato: 12/12.
+Baseline 84edf6c: 7/15 cenários do teste novo falham (1, 2, travada, resposta tardia, e os 3 never-resolve de 60 s). Candidato: 15/15.
 
 ## Correção (src/hooks/useAuth.tsx, src/lib/authz/localDiagnostics.ts)
 - Dono do carregamento separado (`loaderSeqRef`) do fence de resultados. Resposta cercada nunca é adotada; se não há carregador
@@ -43,3 +43,10 @@ Suíte config+lib+hooks+guards+authz 1094/1096; restante src/test 7423/7435 — 
 ## Pendente (homologação real, sem reload)
 Retirar só gestor em /financeiro/receber → Retry → financeiro negado e técnico recuperado; renovação natural sem travar;
 restauração. Não marcar homologado sem esse recibo.
+
+## Adendo 18:20 — evidência independente never-resolve
+- TOKEN_REFRESHED com profiles que nunca responde: após 60 s sem spinner, readiness fechada, erro recuperável (prazo 20 s do carregador).
+- Retry com leitura fresca que nunca responde: prazo 20 s libera o single-flight; com transporte de volta, novo Retry recupera o consultor.
+- Retry cujo carregador nunca responde: o Retry não espera mais o carregador (loading mantém readiness fechada; o carregador tem
+  prazo próprio), então `retryInFlightRef` é liberado; erro explícito, sem autoridade antiga; respostas tardias descartadas.
+- AdminB real: pending timeout 15005 ms (17:55:37 e 17:56:26) = rede acima do lease de 15 s → bloqueio seguro esperado; lease não estendido.

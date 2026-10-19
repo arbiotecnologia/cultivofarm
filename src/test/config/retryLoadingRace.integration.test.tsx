@@ -197,7 +197,7 @@ describe('never-resolving transport (independent evidence 18:14): deadlines and 
     retry(); await tick(8000);
     await expectConsultorRecovered();
   });
-  it('Retry loader never resolving: single-flight released, no old authority, new Retry recovers', async () => {
+  it('Retry loader never resolving: deadline ends loading with explicit error, no old authority', async () => {
     await pairThenLoseGestor();
     s.hangNext = 'profiles'; s.hangSkip = 1; // Retry fresh read passes, its loader's profile read hangs
     retry(); await tick(60000);
