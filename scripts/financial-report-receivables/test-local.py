@@ -69,7 +69,7 @@ INSERT INTO public.accounts_receivable_installments VALUES
  ('ef000000-0000-0000-0000-000000000000','bbbbbbbb-0000-0000-0000-000000000000','db000000-0000-0000-0000-000000000000','2026-12-01',600,0,0,'OPEN');
 """)
     base = (H/"baseline.function.sql").read_text()
-    psql(base + "\nREVOKE ALL ON FUNCTION public.get_report_receivables(jsonb) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.get_report_receivables(jsonb) TO service_role;")
+    psql(base + ";\nREVOKE ALL ON FUNCTION public.get_report_receivables(jsonb) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.get_report_receivables(jsonb) TO service_role;")
     live_md5 = psql("SELECT md5(pg_get_functiondef('public.get_report_receivables(jsonb)'::regprocedure))").stdout.strip()
     check("baseline pg_get_functiondef md5 == live 970a18…", live_md5 == "970a18caa86f578cd31de2a56f002f6f")
     # Helper fingerprints are local stubs: substitute only those three literals.

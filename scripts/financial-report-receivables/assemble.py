@@ -44,10 +44,10 @@ END $guard$;
 hdr = "-- REVIEW ONLY. Not a migration; never auto-applied. Target ref swzpzcwiasxmjutrmvkm.\n"
 (H/"preflight-readonly.sql").write_text(hdr + guard("preflight", BASE_MD5, BASE_ACL))
 (H/"postflight-readonly.sql").write_text(hdr + guard("postflight", CAND_MD5, CAND_ACL))
-(H/"candidate.sql.review").write_text(hdr + "BEGIN;\n" + guard("pre", BASE_MD5, BASE_ACL) + cand + "\n"
+(H/"candidate.sql.review").write_text(hdr + "BEGIN;\n" + guard("pre", BASE_MD5, BASE_ACL) + cand + ";\n"
   f"REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC, anon, service_role;\n"
   f"GRANT EXECUTE ON FUNCTION {SIG} TO authenticated;\n" + guard("post", CAND_MD5, CAND_ACL) + "COMMIT;\n")
-(H/"rollback.sql.review").write_text(hdr + "BEGIN;\n" + guard("rollback-pre", CAND_MD5, CAND_ACL) + base + "\n"
+(H/"rollback.sql.review").write_text(hdr + "BEGIN;\n" + guard("rollback-pre", CAND_MD5, CAND_ACL) + base + ";\n"
   f"REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC, anon, authenticated;\n"
   f"GRANT EXECUTE ON FUNCTION {SIG} TO service_role;\n" + guard("rollback-post", BASE_MD5, BASE_ACL) + "COMMIT;\n")
 print("candidate md5", CAND_MD5)

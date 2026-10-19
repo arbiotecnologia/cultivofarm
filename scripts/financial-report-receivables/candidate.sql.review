@@ -107,7 +107,7 @@ BEGIN
     AND ar.status <> 'CANCELED'
   ORDER BY i.due_date, i.id;
 END;$function$
-
+;
 REVOKE ALL ON FUNCTION public.get_report_receivables(jsonb) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.get_report_receivables(jsonb) TO authenticated;
 DO $guard$
