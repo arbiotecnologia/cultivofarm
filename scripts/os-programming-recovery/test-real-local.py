@@ -77,6 +77,8 @@ def main():
    invocation=call if label!='foreign caller missing row same denial' else f"public.rpc_programar_os_v1({q(99)},'manual','2026-10-20')"
    code=f"IF ({expr}) IS NOT TRUE THEN RAISE EXCEPTION 'BAD'; END IF;" if expr else f"BEGIN PERFORM {invocation}; RAISE EXCEPTION 'BAD'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;"
    run(actor+'BEGIN;'+change+f'DO $$BEGIN {code} END$$;ROLLBACK;');results.append(label)
+  # Local setup can install an already-open synthetic OS without forcing a runtime transition.
+  # Concrete state tests performed in a fresh fixture with the installed real triggers.
   test('manual approved programs',f"({call}->>'success')='true'")
   test('actual downstream no lot or extra child',f"(SELECT count(*) FROM programacao_producao)=1 AND NOT EXISTS(SELECT 1 FROM lotes) AND (SELECT volume_total_ml FROM ordens_servico WHERE id={O})=100 AND (SELECT volume_necessario FROM programacao_producao WHERE id={PP})=100")
   test('actual MV refresh reflects programmed',f"EXISTS(SELECT 1 FROM mv_esteira_laboratorio WHERE os_id={O} AND status_os='programada' AND data_programada='2026-10-20')")
@@ -120,6 +122,24 @@ def main():
    assert holder.returncode==0 and waiting.returncode!=0 and 'PROGRAMAR_SCOPE_DENIED' in b[1],(a,b)
    assert run(f"SELECT status FROM ordens_servico WHERE id={O};").stdout.strip()=='aprovada'
    results.append('wait then '+name+' revocation real STABLE no write')
+  # B2B link present is rejected, without calling commercial recalculation.
+  reset()
+  run(f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(91)},{O},{q(82)},{q(83)},{q(84)});")
+  test('existing B2B production link denied',f"({call}->>'success')='false'")
+  reset()
+  # Four callers: current role table, not caller-supplied role flags.
+  for role in ['administrativo','financeiro','consultor_tecnico','superadmin']:
+   run(f"UPDATE user_roles SET role='{role}' WHERE user_id={U};")
+   out=run(actor+'SELECT '+call+';',False);assert out.returncode and 'PROGRAMAR_SCOPE_DENIED' in out.stderr
+   results.append('role '+role+' denied')
+  reset()
+  for role in ['gestor','producao']:
+   run(f"UPDATE user_roles SET role='{role}' WHERE user_id={U};")
+   test(role+' programs approved manual',f"({call}->>'success')='true'")
+   reset()
+  # Open fixture installed before triggers; no disabled runtime trigger or artificial transition.
+  run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;'+setup().replace("'aprovada',100); INSERT INTO programacao", "'aberta',100); INSERT INTO programacao"))
+  test('open OS no autoapproval',f"({call}->>'success')='false' AND (SELECT status FROM ordens_servico WHERE id={O})='aberta'")
   # Immediate FK insertion waits behind parent row UPDATE; no global link/lot SHARE.
   for table,insert in [('link',f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(91)},{O},{q(82)},{q(83)},{q(84)});"),('lot',f"INSERT INTO lotes(id,codigo_lote,produto_id,programacao_id,status,volume_produzido,data_producao) VALUES({q(92)},'LOCAL-LOT',{P},{PP},'em_producao',100,current_date);")]:
    reset();parent='ordens_servico' if table=='link' else 'programacao_producao';id=O if table=='link' else PP
