@@ -1,0 +1,41 @@
+BEGIN READ ONLY;
+SET LOCAL statement_timeout='15s';
+DO $guard$
+DECLARE c record; p record; v_executor_roles text[];
+BEGIN
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+ FOR c IN SELECT * FROM (VALUES
+('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','s',false,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.rpc_aprovar_os_v1(uuid,text)','1023b9d5210534bee16147e2ce29ee12','v',true,'search_path=""',ARRAY['authenticated','postgres']::text[]),
+('private.assert_os_approval_scope(uuid,text)','f478fba6b5ecc18f4355bcfcfb0c3def','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.guard_os_separate_approval()','f00397fe862e611fbfa0eba3911d95c6','v',true,'search_path=""',ARRAY['postgres']::text[]),
+('private.h7n_esteira_laboratorio()','bad38b5200629cc887767e62b7a46e40','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public.technical_actor_ready(uuid)','b5d0994b6eb976b14122cd2a1ec798cf','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84','s',true,'search_path=""',ARRAY['authenticated','postgres','service_role']::text[]),
+('public._saas_user_has_feature(uuid,text)','501dd958e117d2df8a4d38f6bcbeed04','s',true,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('platform_private.lab_item_is_manufacturable(uuid,uuid)','853595394240e8f2a61ac2d621118271','s',true,'search_path=""',ARRAY['postgres']::text[]),
+('public.fn_cockpit_norm_origem(text)','701ba8da92fc3df9ea0e5270ab5e74b2','i',false,'search_path=public, pg_temp',ARRAY['PUBLIC','anon','authenticated','postgres','service_role']::text[]),
+('public.fn_sync_os_classica_downstream()','06e64b76968f91e19f03b24363ac610a','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public.check_os_status_transition()','496a214d87fc831a53b2f16d3524ddea','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.rpc_programar_os_v1(uuid,text,date)','a42d6b07f51e6dacf41096f6cefb8163','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.fn_avancar_etapa_esteira(text,uuid,uuid,text,uuid)','7ed490f667efcd6e50eb7a2a061899b6','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public._avancar_os_status(text,uuid,text)','3da8242d67462c916a2d971f5ea7bb97','v',true,'search_path=public, pg_temp',ARRAY['postgres','service_role']::text[]),
+('public.fn_create_programacao_on_os_classica_insert()','27b31332cebda532e2d99d9547f9b67c','v',true,'search_path=public',ARRAY['postgres','service_role']::text[]),
+('public.guard_tenant_organization_id()','d01a740c1e3e02407131d2b9228bf658','v',false,'search_path=""',ARRAY['postgres','service_role']::text[]),
+('public.can_user_access_aplicacao(uuid)','04067ba43cea3eed845a1fd3735061e0','s',true,'search_path=public',ARRAY['authenticated','postgres','service_role']::text[])
+ ) x(sig,hash,vol,sec,config,acl) LOOP
+ SELECT *,pg_get_functiondef(oid) definition INTO p FROM pg_proc WHERE oid=to_regprocedure(c.sig);
+ IF p.oid IS NULL OR md5(p.definition) IS DISTINCT FROM c.hash OR p.provolatile::text IS DISTINCT FROM c.vol OR p.prosecdef IS DISTINCT FROM c.sec OR p.proconfig IS DISTINCT FROM ARRAY[c.config] OR (SELECT rolname FROM pg_roles WHERE oid=p.proowner) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'OS_APPROVAL_BODY_DRIFT:%',c.sig; END IF;
+ SELECT array_agg(CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE r.rolname END ORDER BY CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE r.rolname END) INTO v_executor_roles FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a LEFT JOIN pg_roles r ON r.oid=a.grantee WHERE a.privilege_type='EXECUTE';
+ IF v_executor_roles IS DISTINCT FROM c.acl OR EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantor<>p.proowner OR a.is_grantable) THEN RAISE EXCEPTION 'OS_APPROVAL_ACL_DRIFT:%',c.sig; END IF;
+ END LOOP;
+IF (SELECT md5(string_agg(table_name||':'||column_name||':'||udt_name||':'||is_nullable||':'||coalesce(column_default,''),E'\n' ORDER BY table_name,ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos','profiles','user_roles','organizations','clientes','fazendas','talhoes','lotes','produtos','microrganismos','production_order_link')) IS DISTINCT FROM '437b65caa297b4b7bb89500d9898d76f' THEN RAISE EXCEPTION 'OS_APPROVAL_schema_DRIFT'; END IF;
+IF (SELECT md5(string_agg(t.tgrelid::regclass::text||':'||t.tgname||':'||t.tgenabled::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgrelid::regclass::text,t.tgname)) FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.ordens_servico'::regclass,'public.ordens_servico_onfarm'::regclass,'public.programacao_producao'::regclass)) IS DISTINCT FROM '393b62456231e126a9cf166a75ac8292' THEN RAISE EXCEPTION 'OS_APPROVAL_triggers_DRIFT'; END IF;
+IF (SELECT md5(string_agg(tablename||':'||policyname||':'||permissive||':'||roles::text||':'||cmd||':'||coalesce(qual,'')||':'||coalesce(with_check,''),E'\n' ORDER BY tablename,policyname)) FROM pg_policies WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos')) IS DISTINCT FROM '46dd55536a5e91359cdcd6a9baa11647' THEN RAISE EXCEPTION 'OS_APPROVAL_policies_DRIFT'; END IF;
+IF (SELECT md5(string_agg(tablename||':'||indexname||':'||indexdef,E'\n' ORDER BY tablename,indexname)) FROM pg_indexes WHERE schemaname='public' AND tablename IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','profiles','user_roles')) IS DISTINCT FROM '1f6dc84fe58153f1cc210d9b47b6ebb8' THEN RAISE EXCEPTION 'OS_APPROVAL_indexes_DRIFT'; END IF;
+IF (SELECT md5(string_agg(c.relname||':'||c.relrowsecurity||':'||c.relforcerowsecurity||':'||coalesce(c.relacl::text,'')||':'||r.rolname,E'\n' ORDER BY c.relname)) FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner WHERE c.relnamespace='public'::regnamespace AND c.relname IN ('ordens_servico','ordens_servico_onfarm','programacao_producao','laboratorio_esteira_eventos','profiles','user_roles','organizations','clientes','fazendas','talhoes','lotes')) IS DISTINCT FROM '5a50a214ad6ffb8d758a239c175e951d' THEN RAISE EXCEPTION 'OS_APPROVAL_table_acl_rls_DRIFT'; END IF;
+END $guard$;
+SELECT 'POST PASS' result;
+ROLLBACK;

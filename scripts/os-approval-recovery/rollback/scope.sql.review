@@ -1,0 +1,47 @@
+CREATE OR REPLACE FUNCTION private.assert_os_approval_scope(p_os_id uuid,p_origin text)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE
+ v_uid uuid:=auth.uid(); v_org uuid; v_os record; v_pp public.programacao_producao%ROWTYPE;
+BEGIN
+ v_org:=platform_private.h15_actor_organization();
+ -- Alçada antes de lookup/status/replay. NULL não é permissão.
+ IF v_uid IS NULL OR v_org IS NULL OR public.technical_actor_ready(v_uid) IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor')) IS NOT TRUE
+ OR p_os_id IS NULL OR p_origin NOT IN ('manual','onfarm') OR p_origin IS NULL THEN
+ RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=p_origin) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Mesmo ordenamento do caminho direto: lock da OS antes dos filhos, sem advisory invertido.
+ IF p_origin='manual' THEN
+ SELECT o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.origem,o.partner_order_id,o.partner_order_item_id INTO v_os FROM public.ordens_servico o WHERE id=p_os_id FOR UPDATE;
+ ELSE
+ SELECT o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,'onfarm'::text origem,NULL::uuid partner_order_id,NULL::uuid partner_order_item_id INTO v_os FROM public.ordens_servico_onfarm o WHERE id=p_os_id FOR UPDATE;
+ END IF;
+ IF v_os.id IS NULL THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=v_uid FOR SHARE;
+ PERFORM 1 FROM public.organizations WHERE id=v_org FOR SHARE;
+ PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id FOR SHARE;
+ PERFORM 1 FROM public.fazendas WHERE id=v_os.fazenda_id FOR SHARE;
+ PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;
+ PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;
+ PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;
+ PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
+ IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org OR public.technical_actor_ready(v_uid) IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=p_origin) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Efeitos comerciais/planejamento ainda não homologados: não autorizar por alias.
+ IF v_os.origem='b2b' OR v_os.partner_order_id IS NOT NULL OR v_os.partner_order_item_id IS NOT NULL
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id)
+ OR platform_private.lab_item_is_manufacturable(v_os.produto_id,v_os.microrganismo_id) IS NOT TRUE THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ -- Aprovação não cria programação nem inventa data. Ausência exige revisão do fluxo atual.
+ IF (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id)<>1 THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;
+ IF v_pp.organization_id IS DISTINCT FROM v_org OR v_pp.status::text IS DISTINCT FROM 'aguardando'
+ OR v_pp.produto_id IS DISTINCT FROM v_os.produto_id OR v_pp.microrganismo_id IS DISTINCT FROM v_os.microrganismo_id
+ OR NOT (((p_origin='manual' AND v_pp.ordem_servico_id=p_os_id AND v_pp.ordem_servico_onfarm_id IS NULL)
+ OR (p_origin='onfarm' AND v_pp.ordem_servico_onfarm_id=p_os_id AND v_pp.ordem_servico_id IS NULL)) IS TRUE)
+ OR (v_pp.responsavel_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.profiles pr WHERE pr.id=v_pp.responsavel_id AND pr.organization_id=v_org AND pr.ativo IS TRUE))
+ OR EXISTS(SELECT 1 FROM public.lotes WHERE programacao_id=v_pp.id) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN v_org;
+END $function$;

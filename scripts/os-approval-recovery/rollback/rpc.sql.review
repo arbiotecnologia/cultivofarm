@@ -1,0 +1,17 @@
+CREATE OR REPLACE FUNCTION public.rpc_aprovar_os_v1(p_os_id uuid,p_origem text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE v_origin text; v_status text; v_org uuid;
+BEGIN
+ -- Normalização não consulta dados. Alias inválido/inexistente negado igualmente.
+ BEGIN v_origin:=public.fn_cockpit_norm_origem(p_origem); EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END;
+ IF v_origin='b2b' THEN v_origin:='manual'; END IF;
+ v_org:=private.assert_os_approval_scope(p_os_id,v_origin);
+ IF v_origin='manual' THEN SELECT status::text INTO v_status FROM public.ordens_servico WHERE id=p_os_id;
+ ELSE SELECT status::text INTO v_status FROM public.ordens_servico_onfarm WHERE id=p_os_id; END IF;
+ IF v_status='aprovada' THEN RETURN jsonb_build_object('success',true,'replay',true,'status','aprovada'); END IF;
+ IF v_status IS DISTINCT FROM 'aberta' THEN RETURN jsonb_build_object('success',false,'message','Somente OS aberta pode ser aprovada separadamente.'); END IF;
+ IF v_origin='manual' THEN UPDATE public.ordens_servico SET status='aprovada' WHERE id=p_os_id;
+ ELSE UPDATE public.ordens_servico_onfarm SET status='aprovada' WHERE id=p_os_id; END IF;
+ PERFORM private.assert_os_approval_scope(p_os_id,v_origin);
+ RETURN jsonb_build_object('success',true,'replay',false,'status','aprovada','message','OS aprovada; programação e fabricação não iniciadas.');
+END $function$;

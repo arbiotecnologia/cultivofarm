@@ -1,10 +1,17 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 14:01 — recuperação focal aprovação OS
+- [x] Recibos1671/tscapp+node/93 e seed implantado externo registrados; Storage4823 corrigido sem reaplicar.
+- [x] Catálogo READ ONLY canônico auditado; candidata aprovação existente/helper com locks e alias/tenant, PRE/POST20 contratos e rollback fechado; programação/avanço não abertos.
+- [x] PG126/126 local reduzido, Vitest48/48, staging4/4; completas guardas SQL recusam catálogo reduzido atomicamente, não equivalência integral. UI detalhes existente; programação/lote/CQ/avanço fechados.
+- [x] Relatório os-aprovacao-recuperacao-20261019.review.md, hashes e snapshot1672/26 partes; sem hosted DDL/DML/publicação/mudanças de sessão/role/monitor/v6/contratos.
+- [ ] Auditor: PRE/implantação/POST completos, checker app/node do snapshot novo e homologação aprovação A/B; avanço depende de reautorização/locks/cadeia lote/CQ ainda fechados.
+
 ## 19/10 13:46 — pré-requisito produto fabricável e diagnóstico
 - [x] Registrar implantação/publicação e recibos independentes informados, com findings e limites reais; relatório aplicacao-prerequisito-produto-1346.review.md.
 - [x] Seleção/validação biológico + dose finita positiva/decoder fail-closed e erro23514;93/93 testes dirigidos, build automático OK. Checker novo aguarda auditor, snapshot1671/26 partes materializado byte-exato.
 - [x] Preparar seed sintético novo revisável/default ROLLBACK e plano dependente de aprovação/avanço fechados, sem reclassificar reais/status artificial/produção.
-- [ ] Ensaio de seed em catálogo equivalente e persistência/homologação própria: depende do auditor e recuperação canônica aprovação/avanço; NÃO certificados.
+- [x] Auditor informou seed ROLLBACK+COMMIT/pós-consulta PASS; NÃO reaplicar. Homologação OS/aplicação depende da recuperação canônica, ainda não certificada.
 - [x] Emitir somente expire sanitizado em console local sem mudar lease/escopo; staging4/4+export7/7, rollback/hash dedicado. Sem hosted DDL/DML/publicação/contratos/v6.
 
 ## 19/10 13:35 — P0 sintaxe da guarda SQL
