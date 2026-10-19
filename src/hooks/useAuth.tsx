@@ -18,6 +18,11 @@ import {
   type AuthzMonitorState,
 } from "@/lib/authz/authzEpochMonitor";
 
+/** Profile/roles loader bound: unrelated to the 15 s authorization lease. */
+export const AUTH_LOAD_TIMEOUT_MS = 20_000;
+/** Fresh re-reads after a non-loader fence before an explicit error. */
+export const AUTH_LOAD_MAX_RESTARTS = 3;
+
 /** Papéis EXTERNOS monitorados pela foundation de cache (mesma identidade). */
 const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
   "cliente_produtor",
@@ -562,8 +567,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Reviewed scopes only: renew before the confirmed deadline using observed
       // RTT (no lease extension; late answers still fail closed).
       renewBeforeDeadline: environmentalContextOnly,
-      // Company-admin only, local numeric/boolean allowlist; no identity or transport data.
-      onDiagnostic: companyAdminContextOnly ? recordAuthzDiagnostic : undefined,
+      // Reviewed environmental scopes, local numeric/boolean allowlist; no identity or transport data.
+      onDiagnostic: environmentalContextOnly ? recordAuthzDiagnostic : undefined,
       // Preserve published B2B confirmation refresh. Producer/financial renew
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.
@@ -645,6 +650,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // roles entram via isExternalUser (booleano estável); loading/profile
     // entram via authzMonitorGateRef — refresh() não recria o monitor.
   }, [initializedPrincipal, principalScope, queryClient]);
+
+  // Retry re-resolution settled: an unchanged scope re-polls its existing
+  // expired monitor; a changed scope already started its own monitor above.
+  useEffect(() => {
+    if (loading || !retryRevalidateRef.current) return;
+    retryRevalidateRef.current = false;
+    const monitor = authzMonitorRef.current;
+    if (monitor && monitor.state() === "expired") monitor.revalidate();
+  }, [loading, principalScope, initializedPrincipal]);
 
   // Readiness derivada: gate fechado → sempre pronto. Com gate aberto e
   // usuário autenticado: enquanto perfil/roles carregam (loading) NÃO há
