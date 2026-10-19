@@ -152,7 +152,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     retry: false,
-    mutationFn: async (vars?: { repetir?: boolean; token?: number; isCurrent?: () => boolean }) => {
+    mutationFn: async (vars?: { repetir?: boolean; token?: number; isCurrent?: () => boolean; journalUser?: string; journalInstallment?: string }) => {
       const isCurrent = vars?.isCurrent ?? (() => false);
       if ((pendente || file) && !isCurrent()) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
@@ -329,8 +329,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         // Falha de limpeza NÃO transforma o pagamento confirmado em falha e
         // também não libera novo envio — o bloqueio em memória é desfeito
         // apenas porque o pagamento foi confirmado pelo servidor.
-        limparTentativaIncerta(user?.id, installment?.id);
-        tentativaRef.current = null;
+        limparTentativaIncerta(vars?.journalUser, vars?.journalInstallment);
+        if (vars?.isCurrent?.()) tentativaRef.current = null;
       }
       // A confirmed payment stays confirmed even if the attachment lease ended.
       // No view/cache/callback outcome may escape into another context.
@@ -376,12 +376,12 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         if (vars?.isCurrent?.()) setExigeConferencia(true);
         // Preserva chave + payload da tentativa para repetição idempotente após
         // fechar/reabrir ou remontar (nada de arquivo, token ou credencial).
-        if (tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
+        if (vars?.isCurrent?.() && tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
       } else if (!pendente && !exigeConferencia && !falhaJournal) {
         // Recusa comprovada antes de qualquer tentativa incerta: nada a preservar.
         // Falha/corrupção do journal nunca apaga o registro local.
-        limparTentativaIncerta(user?.id, installment?.id);
-        tentativaRef.current = null;
+        limparTentativaIncerta(vars?.journalUser, vars?.journalInstallment);
+        if (vars?.isCurrent?.()) tentativaRef.current = null;
       }
       if (vars?.isCurrent?.()) toast.error(c.mensagem);
     },
@@ -414,7 +414,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     enviandoRef.current = true;
     const token = donoRef.current + 1;
     donoRef.current = token;
-    save.mutate({ ...vars, token, isCurrent: storageAccess.capture() });
+    save.mutate({ ...vars, token, isCurrent: storageAccess.capture(), journalUser: user?.id, journalInstallment: installment?.id });
   }
 
   /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
