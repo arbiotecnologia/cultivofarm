@@ -32,11 +32,12 @@ import { createAuthzEpochMonitor } from '@/lib/authz/authzEpochMonitor';
 import { internalContextProbe } from '@/lib/authz/internalContextProbe';
 
 function Probe() { const { roles, checkAuthzAccess } = useAuth(); return <span>Conteúdo sensível [{checkAuthzAccess() ? 'ok' : 'no'}] {roles.join('+')}</span>; }
-const adv = async (ms: number) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
+// Small act() steps so React effects (monitor creation/state) flush between timer slices.
+const adv = async (ms: number) => { for (let t = 0; t < ms; t += 250) await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(250, ms - t)); }); };
 const pausedText = () => screen.queryByText('Sessão de acesso pausada');
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
   s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
