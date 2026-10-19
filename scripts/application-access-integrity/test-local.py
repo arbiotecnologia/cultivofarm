@@ -70,6 +70,12 @@ def main():
   run(sql="UPDATE platform_org_admin_invites SET access_operation_status='done',access_valid_after=now()-interval '1 minute';")
   assert run(sql=actor(iat='0')+f"SELECT public.can_user_access_aplicacao('{ids(101)}');").strip().endswith('f');passed+=1
   assert run(sql=read(ids(101))).strip().endswith('t');passed+=1
+  out=run(sql=actor()+"BEGIN; RESET ROLE; UPDATE profiles SET ativo=false; SET ROLE authenticated; SELECT public.can_user_access_aplicacao('"+ids(101)+"'); RESET ROLE; UPDATE profiles SET ativo=true; SET ROLE authenticated; SELECT public.can_user_access_aplicacao('"+ids(101)+"'); ROLLBACK;")
+  assert '\nf\n' in out and '\nt\n' in out;passed+=1
+  run(sql=f"UPDATE profiles SET organization_id='{B}';")
+  assert run(sql=read(ids(101))).strip().endswith('f');passed+=1
+  assert run(sql=read(ids(102))).strip().endswith('t');passed+=1
+  run(sql=f"UPDATE profiles SET organization_id='{A}';")
   assert run(sql="SELECT set_config('request.jwt.claims','{}',false); SET ROLE authenticated; SELECT public.can_user_access_aplicacao('"+ids(101)+"');").strip().endswith('f');passed+=1
   run(sql="SET ROLE anon; SELECT public.can_user_access_aplicacao(NULL);",ok=False);passed+=1
   run(sql=actor()+"SELECT public.rpc_salvar_aplicacao_v1(NULL,'{}');",ok=False);passed+=1
@@ -83,7 +89,10 @@ def main():
   run(sql="ALTER FUNCTION public.h15_actor_organization() STABLE;");assert snap()==baseline
   original=(HERE/'candidate.sql.review').read_text();bad=t/'bad.sql';bad.write_text(original.replace('-- POSTCHECK','DO $$BEGIN RAISE EXCEPTION \'forced_post_failure\'; END$$;\n-- POSTCHECK'))
   run(file=bad,ok=False);assert snap()==baseline;passed+=1
-  run(file=HERE/'candidate.sql.review');run(file=HERE/'rollback.sql.review');assert snap()==baseline;passed+=1
+  run(file=HERE/'candidate.sql.review');installed=snap()
+  original=(HERE/'rollback.sql.review').read_text();bad.write_text(original.replace('-- POSTCHECK','DO $$BEGIN RAISE EXCEPTION \'forced_rollback_post_failure\'; END$$;\n-- POSTCHECK'))
+  run(file=bad,ok=False);assert snap()==installed;passed+=1
+  run(file=HERE/'rollback.sql.review');assert snap()==baseline;passed+=1
   print(json.dumps({'passed':passed,'failed':0,'postgres':'17 local unix socket','limitations':'reduced schema/policy; auth claims emulators, not JWT/login/hosted','temporary_log':str(t/'server.log')},indent=2))
  finally:
   subprocess.run(prefix+['pg_ctl','-D',str(t/'data'),'stop','-m','immediate'],capture_output=True)
