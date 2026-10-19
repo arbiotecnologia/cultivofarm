@@ -87,8 +87,12 @@ const candidate = readFileSync("scripts/financial-report-locator/edge/candidate.
 describe("generate-financial-report CANDIDATE — no signature, private locator", () => {
   it("source delta vs repo baseline is only the signing block and the response", () => {
     expect(candidate).not.toMatch(/createSignedUrl|signedUrl|getPublicUrl/);
-    const strip = (t: string) => t.split("\n").filter((l) => !/signed|signError|No signed\/public URL|caller downloads the private|session \(Storage RLS|a private orphan|Keep the signed URL|return new Response\(JSON\.stringify\(\{ (url|bucket)/.test(l) && l.trim() !== "}" ).join("\n");
-    expect(strip(candidate)).toBe(strip(live));
+    const signStart = live.indexOf("    // Keep the signed URL private in memory");
+    const signEnd = live.indexOf("    const { data: exportId");
+    expect(signStart).toBeGreaterThan(0); expect(signEnd).toBeGreaterThan(signStart);
+    const expected = (live.slice(0, signStart) + candidate.slice(signStart, candidate.indexOf("    const { data: exportId")) + live.slice(signEnd))
+      .replace("JSON.stringify({ url: signed?.signedUrl, path, row_count: rows.length })", 'JSON.stringify({ bucket: "financial-reports", path, export_id: exportId, row_count: rows.length })');
+    expect(candidate).toBe(expected);
   });
   it.each(["PDF", "XLSX", "CSV"])("%s success returns {bucket,path,export_id,row_count} after upload+audit, never signs", async (format) => {
     const s = setup(); const response = await s.invoke({ ...valid, format }); expect(response.status).toBe(200);
