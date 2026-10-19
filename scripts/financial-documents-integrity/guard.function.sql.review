@@ -16,6 +16,11 @@ BEGIN
     v_soft_delete := OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL
       AND (to_jsonb(NEW) - ARRAY['deleted_at','deleted_by','delete_reason'])
         = (to_jsonb(OLD) - ARRAY['deleted_at','deleted_by','delete_reason']);
+    IF (NEW.deleted_at IS DISTINCT FROM OLD.deleted_at
+      OR NEW.deleted_by IS DISTINCT FROM OLD.deleted_by
+      OR NEW.delete_reason IS DISTINCT FROM OLD.delete_reason) AND NOT v_soft_delete THEN
+      RAISE EXCEPTION 'financial_document_tombstone_immutable' USING ERRCODE = '42501';
+    END IF;
   END IF;
   IF NEW.organization_id IS NULL THEN
     RAISE EXCEPTION 'financial_document_tenant_required' USING ERRCODE = '42501';
@@ -27,6 +32,10 @@ BEGIN
     END IF;
     IF TG_OP = 'INSERT' AND NEW.uploaded_by IS DISTINCT FROM v_uid THEN
       RAISE EXCEPTION 'financial_document_author_denied' USING ERRCODE = '42501';
+    END IF;
+    IF v_soft_delete AND (NEW.deleted_by IS DISTINCT FROM v_uid
+      OR length(btrim(coalesce(NEW.delete_reason, ''))) NOT BETWEEN 1 AND 500) THEN
+      RAISE EXCEPTION 'financial_document_tombstone_denied' USING ERRCODE = '42501';
     END IF;
   ELSIF NOT (current_setting('role', true) = 'service_role'
     OR (current_setting('role', true) = 'none' AND session_user = 'postgres')) THEN
