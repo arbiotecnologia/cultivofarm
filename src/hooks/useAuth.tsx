@@ -177,7 +177,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let timedOut = false;
     // Watchdog: a hung transport ends in an explicit, recoverable error. The
     // loader is retired first, so a late answer is never adopted.
+    // The returned promise ALWAYS settles by the deadline (owned-loader
+    // contract): awaiting callers such as Retry release their single-flight
+    // even when the transport never answers.
+    let settle!: () => void;
+    const settled = new Promise<void>(resolve => { settle = resolve; });
     const watchdog = setTimeout(() => {
+      settle();
       if (!mountedRef.current || seq !== loaderSeqRef.current) return;
       timedOut = true;
       loaderSeqRef.current++;
@@ -194,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadDiagnostic("load_restart", startedAt);
       void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
     };
-    try {
+    const body = (async () => { try {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
