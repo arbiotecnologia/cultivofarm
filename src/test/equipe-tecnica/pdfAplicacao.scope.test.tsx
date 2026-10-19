@@ -75,6 +75,23 @@ describe("application PDF authenticated assets", () => {
     fake.query.mockImplementation(async table => table === "aplicacoes" ? { data: { id: APP, organization_id: fake.tenant } } : { data: Array.from({ length: 25 }, () => ({ evidencia: evidence })) });
     await expect(generateAplicacaoPdf({ aplicacao: app, empresa: { nome: "Farm" } }, fence())).rejects.toThrow(); expect(fake.download).not.toHaveBeenCalled();
   });
+  it.each(["offline", "oversized"])("rejects authenticated image failure: %s", async reason => {
+    fake.query.mockImplementation(async table => table === "aplicacoes" ? { data: { id: APP, organization_id: fake.tenant } } : { data: [{ evidencia: evidence }] });
+    if (reason === "offline") fake.download.mockRejectedValue(new Error("offline"));
+    else fake.download.mockResolvedValue(new Blob([new Uint8Array(20 * 1024 * 1024 + 1)]));
+    await expect(generateAplicacaoPdf({ aplicacao: app, empresa: { nome: "Farm" } }, fence())).rejects.toThrow(); expect(fake.saves).not.toHaveBeenCalled();
+  });
+  it("blocks a new application query at expired lease", async () => {
+    fake.check = () => false;
+    await expect(generateAplicacaoPdf({ aplicacao: app, empresa: { nome: "Farm" } }, fence())).rejects.toThrow(); expect(fake.query).not.toHaveBeenCalled();
+  });
+  it.each(["aplicacoes", "aplicacao_evidencias_vinculos"])("discards late server read on expired lease: %s", async table => {
+    const late = deferred(); fake.query.mockImplementation(async name => name === table ? late.promise : { data: { id: APP, organization_id: fake.tenant } });
+    const result = generateAplicacaoPdf({ aplicacao: app, empresa: { nome: "Farm" } }, fence()); const rejected = expect(result).rejects.toThrow();
+    await waitFor(() => expect(fake.query).toHaveBeenCalledWith(table)); fake.check = () => false;
+    late.resolve(table === "aplicacoes" ? { data: { id: APP, organization_id: fake.tenant } } : { data: [{ evidencia: evidence }] }); await rejected;
+    expect(fake.download).not.toHaveBeenCalled();
+  });
   it("fences downloaded bytes after lease expiration", async () => {
     fake.query.mockImplementation(async table => table === "aplicacoes" ? { data: { id: APP, organization_id: fake.tenant } } : { data: [{ evidencia: evidence }] });
     const late = deferred(); fake.download.mockReturnValue(late.promise);
