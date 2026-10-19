@@ -1,0 +1,537 @@
+diff --git a/src/components/guards/AppPortalGuard.tsx b/src/components/guards/AppPortalGuard.tsx
+index 9bfd8948..dbcc4957 100644
+--- a/src/components/guards/AppPortalGuard.tsx
++++ b/src/components/guards/AppPortalGuard.tsx
+@@ -8,6 +8,7 @@ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+ import { CONSULTANT_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+ 
+ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
++import { PortalContextUnavailable } from "./PortalContextUnavailable";
+ 
+ /**
+  * AppPortalGuard — protege a árvore `/app/*`.
+@@ -24,7 +25,7 @@ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
+ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+   const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
+   const location = useLocation();
+-  const { data, isLoading, isError } = useAvailableContexts();
++  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
+ 
+   const isAdmin = roles.includes("administrador") || !!data?.is_admin;
+   const isProducer = roles.includes("cliente_produtor");
+@@ -37,9 +38,11 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+     (!monitoredTechnical || authzReady) &&
+     !!user &&
+     !isLoading &&
++    !isFetching &&
++    !isError &&
+     !isAdmin &&
+     !isProducer &&
+-    (isError || !data?.has_technical_access);
++    data?.has_technical_access === false;
+ 
+   useEffect(() => {
+     if (denied) {
+@@ -52,7 +55,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+   }
+ 
+-  if (loading || (user && isLoading)) {
++  if (loading || (user && (isLoading || isFetching))) {
+     return (
+       <div
+         className="min-h-dvh flex items-center justify-center bg-background"
+@@ -70,8 +73,8 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
+ 
+   if (isAdmin || isProducer) return <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>;
+ 
+-  if (isError) {
+-    return <Navigate to="/sem-permissao" replace />;
++  if (isError || !data) {
++    return <PortalContextUnavailable refetch={refetch} />;
+   }
+ 
+   if (!data?.has_technical_access) {
+diff --git a/src/components/guards/PortalContextUnavailable.tsx b/src/components/guards/PortalContextUnavailable.tsx
+new file mode 100644
+index 00000000..0aa9802e
+--- /dev/null
++++ b/src/components/guards/PortalContextUnavailable.tsx
+@@ -0,0 +1,16 @@
++import { ErrorRecovery } from "@/components/ErrorRecovery";
++import { useAuth } from "@/hooks/useAuth";
++
++/** Unavailable is not denied. The reviewed monitor's Retry re-resolves authority. */
++export function PortalContextUnavailable({ refetch }: { refetch: () => unknown }) {
++  const { revalidateAuthz, authzEpoch = 0 } = useAuth();
++  return <ErrorRecovery
++    title="Não foi possível confirmar este acesso"
++    message="A consulta de acesso está indisponível no momento. Tente novamente."
++    onRetry={() => {
++      revalidateAuthz();
++      // Gate-off/legacy scope has no monitored epoch transition to restart its query.
++      if (authzEpoch === 0) void refetch();
++    }}
++  />;
++}
+\ No newline at end of file
+diff --git a/src/components/guards/TechnicalFeatureGuard.tsx b/src/components/guards/TechnicalFeatureGuard.tsx
+index d898238c..887935e9 100644
+--- a/src/components/guards/TechnicalFeatureGuard.tsx
++++ b/src/components/guards/TechnicalFeatureGuard.tsx
+@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
++import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
++import { PortalContextUnavailable } from "./PortalContextUnavailable";
+ 
+ /**
+  * TechnicalFeatureGuard — protege rotas exclusivas do Portal Técnico
+@@ -11,13 +13,13 @@ import { logAccessDeniedOnce, routeGroupFromPath } from "@/lib/accessAuditLog";
+  * retornado pela RPC segura; admin mantém acesso legado.
+  */
+ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
+-  const { user, roles, loading } = useAuth();
++  const { user, roles, loading, authzReady = true } = useAuth();
+   const location = useLocation();
+-  const { data, isLoading, isError } = useAvailableContexts();
++  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
+ 
+   const isAdmin = roles.includes("administrador");
+   const hasTechnical = !!data?.has_technical_access;
+-  const denied = !loading && !!user && !isLoading && !isAdmin && (isError || !hasTechnical);
++  const denied = !loading && authzReady && !!user && !isLoading && !isFetching && !isError && !isAdmin && data?.has_technical_access === false;
+ 
+   useEffect(() => {
+     if (denied) {
+@@ -25,7 +27,9 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
+     }
+   }, [denied, location.pathname]);
+ 
+-  if (loading || (user && isLoading)) {
++  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
++
++  if (loading || (user && (isLoading || isFetching))) {
+     return (
+       <div className="min-h-dvh flex items-center justify-center bg-background" role="status" aria-live="polite">
+         <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+@@ -37,7 +41,9 @@ export function TechnicalFeatureGuard({ children }: { children?: ReactNode }) {
+ 
+   if (isAdmin) return <>{children ?? <Outlet />}</>;
+ 
+-  if (!hasTechnical || isError) {
++  if (isError || !data) return <PortalContextUnavailable refetch={refetch} />;
++
++  if (!hasTechnical) {
+     return (
+       <Navigate
+         to="/sem-permissao"
+diff --git a/src/components/guards/TechnicalRouteGuard.tsx b/src/components/guards/TechnicalRouteGuard.tsx
+index 9690d2b9..64c22c04 100644
+--- a/src/components/guards/TechnicalRouteGuard.tsx
++++ b/src/components/guards/TechnicalRouteGuard.tsx
+@@ -3,6 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
+ import { Loader2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
++import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
++import { PortalContextUnavailable } from "./PortalContextUnavailable";
+ 
+ /**
+  * TechnicalRouteGuard — protege rotas do Portal Técnico.
+@@ -11,11 +13,13 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+  * Nunca considera "todo admin como técnico"; admin acessa pelo fluxo legado.
+  */
+ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
+-  const { user, roles, loading } = useAuth();
++  const { user, roles, loading, authzReady = true } = useAuth();
+   const location = useLocation();
+-  const { data, isLoading, isError } = useAvailableContexts();
++  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
+ 
+-  if (loading || (user && isLoading)) {
++  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
++
++  if (loading || (user && (isLoading || isFetching))) {
+     return (
+       <div
+         className="min-h-dvh flex items-center justify-center bg-background"
+@@ -37,8 +41,8 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
+     return <>{children}</>;
+   }
+ 
+-  if (isError) {
+-    return <Navigate to="/sem-permissao" replace />;
++  if (isError || !data) {
++    return <PortalContextUnavailable refetch={refetch} />;
+   }
+ 
+   if (!data?.has_technical_access) {
+diff --git a/src/hooks/useAvailableContexts.ts b/src/hooks/useAvailableContexts.ts
+index a80bafff..6532b56a 100644
+--- a/src/hooks/useAvailableContexts.ts
++++ b/src/hooks/useAvailableContexts.ts
+@@ -26,12 +26,12 @@ export interface AvailableContexts {
+  * A decisão de portal nunca depende de localStorage nem do frontend —
+  * quem determina é `public.get_my_available_portal_contexts()`.
+  */
+-export function useAvailableContexts() {
++export function useAvailableContexts({ requireFresh = false }: { requireFresh?: boolean } = {}) {
+   const { user, profile, roles, loading, authzReady = true, authzEpoch = 0, checkAuthzAccess } = useAuth();
+   const queryClient = useQueryClient();
+   const ready = !loading && !!user?.id && profile?.user_id === user.id &&
+     profile.ativo === true && profile.senha_provisoria === false &&
+-    !!profile.organization_id && roles.length > 0 && authzReady;
++    !!profile.organization_id && roles.length > 0 && authzReady && (checkAuthzAccess?.() ?? true);
+   const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort(), authzEpoch]);
+   const current = useRef({ scope, mounted: true, epoch: 0 });
+   if (current.current.scope !== scope) {
+@@ -57,14 +57,36 @@ export function useAvailableContexts() {
+     staleTime: 0,
+     gcTime: 2 * 60_000,
+     retry: 1,
++    // Parent guard owns the query; mounting its child must not start another
++    // stale refetch/unmount cycle. Focus/invalidation still refresh normally.
++    refetchOnMount: requireFresh ? false : true,
+     refetchOnWindowFocus: true,
+     queryFn: async ({ signal }): Promise<AvailableContexts> => {
+       if (!ready) throw new Error("portal_context_not_ready");
+       const epoch = current.current.epoch;
+-      const { data, error } = await supabase.rpc("get_my_available_portal_contexts").abortSignal(signal);
+-      if (signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch) throw new Error("portal_context_changed");
++      const controller = new AbortController();
++      const abort = () => controller.abort();
++      signal.addEventListener("abort", abort, { once: true });
++      let deadline: ReturnType<typeof setTimeout> | undefined;
++      let response;
++      try {
++        response = await Promise.race([
++          supabase.rpc("get_my_available_portal_contexts").abortSignal(controller.signal),
++          new Promise<never>((_, reject) => {
++            deadline = setTimeout(() => { controller.abort(); reject(new Error("portal_context_timeout")); }, 15_000);
++          }),
++        ]);
++      } finally {
++        clearTimeout(deadline);
++        signal.removeEventListener("abort", abort);
++      }
++      const { data, error } = response;
++      if (signal.aborted || controller.signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch || !(checkAuthzAccess?.() ?? true)) throw new Error("portal_context_changed");
+       if (error) throw new Error("portal_context_unavailable");
++      // Absent/malformed payload is unavailable, never an explicit denial.
++      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("portal_context_unavailable");
+       const raw = (data ?? {}) as unknown as Partial<AvailableContexts>;
++      if (!Array.isArray(raw.available_contexts) || typeof raw.has_technical_access !== "boolean") throw new Error("portal_context_unavailable");
+       const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";
+       const contexts = Array.isArray(raw.available_contexts) ? raw.available_contexts.filter(valid) : [];
+       return {
+@@ -97,7 +119,8 @@ export function useAvailableContexts() {
+     isError: result.isError || (exclusiveOperator && operatorHomeQuery.isError),
+     isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
+     refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
+-    data: ready ? result.data : undefined, ready, scope,
++    // Do not expose a previous successful grant during a refetch or after error.
++    data: ready && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
+     isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
+ 
+ }
+diff --git a/src/pages/app/MobileLayout.tsx b/src/pages/app/MobileLayout.tsx
+index f35bb6a4..89ad0b12 100644
+--- a/src/pages/app/MobileLayout.tsx
++++ b/src/pages/app/MobileLayout.tsx
+@@ -16,6 +16,8 @@ import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
+ import { useSystemConfig } from "@/hooks/useSystemConfig";
+ import { useEntitlements } from "@/hooks/useEntitlements";
+ import { isPathEntitled } from "@/lib/saas/featureRouteMap";
++import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
++import { PortalContextUnavailable } from "@/components/guards/PortalContextUnavailable";
+ 
+ // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
+ // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
+@@ -32,12 +34,12 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
+ }));
+ 
+ export default function MobileLayout() {
+-  const { user, primaryRole, roles, loading } = useAuth();
++  const { user, primaryRole, roles, loading, authzReady = true } = useAuth();
+   const entitlements = useEntitlements();
+   const location = useLocation();
+   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
+   const navigate = useNavigate();
+-  const { data: contexts } = useAvailableContexts();
++  const { data: contexts, isLoading: contextsLoading, isFetching, isError, refetch } = useAvailableContexts({ requireFresh: true });
+   const { config, defaults } = useSystemConfig();
+   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
+ 
+@@ -54,14 +56,16 @@ export default function MobileLayout() {
+ 
+   // Semeia contexto visual quando ausente (fluxos legados sem passar pelo seletor).
+   useEffect(() => {
+-    if (activeCtx) return;
++    if (activeCtx || !authzReady || contextsLoading || isFetching || isError) return;
+     if (!user) return;
+     if (isTechnicalMode) setActivePortalContext("technical");
+     else if (isProducerMode) setActivePortalContext("producer");
+     else if (isAdmin) setActivePortalContext("admin");
+-  }, [activeCtx, user, isTechnicalMode, isProducerMode, isAdmin]);
++  }, [activeCtx, user, isTechnicalMode, isProducerMode, isAdmin, authzReady, contextsLoading, isFetching, isError]);
+ 
+-  if (loading) {
++  if (user && !loading && !authzReady) return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
++
++  if (loading || (user && (contextsLoading || isFetching))) {
+     return (
+       <div className="min-h-screen flex items-center justify-center bg-background">
+         <div className="animate-pulse text-muted-foreground text-lg">Carregando...</div>
+@@ -71,6 +75,8 @@ export default function MobileLayout() {
+ 
+   if (!user) return <Navigate to="/app/login" replace />;
+ 
++  if (!isProdutor && !isAdmin && (isError || !contexts)) return <PortalContextUnavailable refetch={refetch} />;
++
+   // Sem produtor e sem acesso técnico e sem admin → não deveria estar aqui.
+   if (!isProdutor && !hasTechnical && !isAdmin) {
+     return <Navigate to="/sem-permissao" replace />;
+diff --git a/src/test/config/portalContextRecovery.integration.test.tsx b/src/test/config/portalContextRecovery.integration.test.tsx
+new file mode 100644
+index 00000000..86fe6d68
+--- /dev/null
++++ b/src/test/config/portalContextRecovery.integration.test.tsx
+@@ -0,0 +1,170 @@
++// Real AuthProvider/monitor/probe/ProtectedRoutes/RoleGuard/AppPortalGuard/AppLayout/MobileLayout.
++// Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
++import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++const s = vi.hoisted(() => ({
++  uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
++  roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
++  contextsMode: 'valid' as 'valid' | 'error' | 'denied' | 'hold' | 'never', contextRelease: undefined as undefined | (() => void), contextsCalls: 0, hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, auth: undefined as undefined | { authzReady: boolean; revalidateAuthz: () => void }, release: undefined as undefined | (() => void),
++}));
++const later = <T,>(v: () => T, tag: string) => {
++  if (s.hangNext === tag) { if (s.hangSkip > 0) s.hangSkip--; else { s.hangNext = ''; return new Promise<T>(() => {}); } }
++  if (s.holdNext === tag) { s.holdNext = ''; return new Promise<T>(r => { s.release = () => r(v()); }); }
++  return s.lat ? new Promise<T>(r => setTimeout(() => r(v()), s.lat)) : Promise.resolve(v());
++};
++function chain(t: string) {
++  const q: Record<string, unknown> = {};
++  let cols = '';
++  for (const n of ['eq', 'is', 'filter', 'in', 'not', 'neq', 'order', 'abortSignal']) q[n] = () => q;
++  q.select = (c: string) => { cols = c; return q; };
++  const run = () => (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
++    ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
++    : t === 'user_roles' ? { data: s.roles.map(role => ({ role })), error: null } : { data: [], error: null }, t);
++  q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
++  return q;
++}
++vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: true, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: true, PRODUCER_CONTEXT_MONITOR_ENABLED: true, CONSULTANT_CONTEXT_MONITOR_ENABLED: true, OPERATOR_CONTEXT_MONITOR_ENABLED: true }));
++vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
++vi.mock('@/hooks/useSystemConfig', () => ({ useSystemConfig: () => ({ defaults: { nome_empresa: 'Cultivo Farm' } }) }));
++vi.mock('@/hooks/useOrgOnboarding', () => ({ useOnboardingState: () => ({ data: { required: false } }) }));
++vi.mock('@/components/AppSidebar', () => ({ AppSidebar: () => <nav>Menu desktop</nav> }));
++vi.mock('@/components/portal/PortalTopBar', () => ({ PortalTopBar: ({ brandTitle }: { brandTitle: string }) => <header>{brandTitle}</header> }));
++vi.mock('@/lib/accessAuditLog', () => ({ logAccessDeniedOnce: () => {}, routeGroupFromPath: () => 'technical' }));
++vi.mock('@/hooks/useOfflineSync', () => ({ useOfflineSync: () => ({ isOnline: true, pendingCount: 0, syncing: false, syncAll: () => {} }) }));
++vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ status: 'ready', features: new Set(['ordens_producao', 'estoque_embalagens', 'contas_receber']) }) }));
++vi.mock('@/components/app/OfflineIndicator', () => ({ OfflineIndicator: () => null }));
++vi.mock('@/components/app/PendingMediaRecovery', () => ({ PendingMediaRecovery: () => null }));
++vi.mock('@/components/ui/sidebar', () => ({ SidebarProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>, SidebarTrigger: () => null }));
++vi.mock('@/integrations/supabase/client', () => ({ supabase: {
++  auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }),
++    onAuthStateChange: (l: typeof s.authListener) => { s.authListener = l; return { data: { subscription: { unsubscribe() { s.authListener = undefined; } } } }; }, signOut: async () => {} },
++  from: (t: string) => chain(t),
++  rpc: (name: string, args?: { _role: string }) => {
++    if (name === 'get_my_available_portal_contexts') {
++      s.contextsCalls++;
++      if (s.contextsMode === 'never') { const p = new Promise<never>(() => {}); return Object.assign(p, { abortSignal: () => p }); }
++      if (s.contextsMode === 'hold') { const p = new Promise<unknown>(resolve => { s.contextRelease = () => resolve({ data: { has_technical_access: true, available_contexts: ['technical'] }, error: null }); }); return Object.assign(p, { abortSignal: () => p }); }
++    }
++    const p = later(() => {
++      if (name === 'get_my_available_portal_contexts') {
++        if (s.contextsMode === 'error') return { data: null, error: { code: 'fetch_failed' } };
++        const tech = s.contextsMode !== 'denied' && s.roles.includes('consultor_tecnico'); const adm = s.roles.includes('gestor');
++        return { data: { available_contexts: [...(adm ? ['admin'] : []), ...(tech ? ['technical'] : [])], has_technical_access: tech, is_admin: false, must_select_context: adm && tech }, error: null };
++      }
++      if (name === 'has_role') return { data: s.roles.includes(args?._role ?? ''), error: null };
++      if (name === 'h15_actor_organization') { s.h15++; return { data: s.org, error: null }; }
++      return { data: null, error: null };
++    }, name);
++    return Object.assign(p, { abortSignal: () => p });
++  },
++} }));
++import { AuthProvider, useAuth } from '@/hooks/useAuth';
++import { supabase as fakeSupabaseClient } from '@/integrations/supabase/client';
++import { installInternalActorContextAdapter } from './helpers/internalActorContextAdapter';
++installInternalActorContextAdapter(fakeSupabaseClient, () => s.uid, (_uid, role) => s.roles.includes(role)); // one fake RTT per probe
++function AuthSpy() { s.auth = useAuth(); return null; }
++import { ProtectedRoutes, RoleGuard } from '@/App';
++import MobileLayout from '@/pages/app/MobileLayout';
++import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
++import { readAuthzDiagnostics, clearAuthzDiagnostics } from '@/lib/authz/localDiagnostics';
++
++function Url() { return <output data-testid="url">{useLocation().pathname}</output>; }
++function setup(path = '/financeiro/receber') {
++  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  render(<QueryClientProvider client={qc}><AuthProvider><AuthSpy /><MemoryRouter initialEntries={[path]}><Url /><Routes>
++    <Route element={<ProtectedRoutes />}>
++      <Route path="/financeiro/receber" element={<RoleGuard><span>Contas a receber</span></RoleGuard>} />
++    </Route>
++    <Route element={<AppPortalGuard />}><Route element={<MobileLayout />}><Route path="/app" element={<span>Técnico campo</span>} /></Route></Route>
++    <Route path="/sem-permissao" element={<Link to="/app">Ir ao técnico</Link>} />
++  </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
++  return qc;
++}
++const tick = async (ms = 0) => { for (let t = 0; t < ms; t += 100) await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(100, ms - t)); }); for (let i = 0; i < 10; i++) await act(async () => { await vi.advanceTimersByTimeAsync(1); }); };
++const retry = () => fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
++const loadingText = () => screen.queryByText(/^Carregando/);
++const focus = () => act(() => { window.dispatchEvent(new Event('focus')); });
++const tokenRefreshed = () => act(() => { s.authListener?.('TOKEN_REFRESHED', { user: { id: s.uid } }); });
++
++async function pairThenLoseGestor() {
++  setup(); await tick(3000);
++  expect(screen.getByText('Contas a receber')).toBeTruthy();
++  s.roles = ['consultor_tecnico']; focus(); await tick(3000);
++  expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
++}
++/** Terminal, observable states only: never an endless spinner. */
++async function expectConsultorRecovered() {
++  expect(loadingText()).toBeNull();
++  expect(screen.queryByText('Contas a receber')).toBeNull(); // financial denied for the remaining role
++  expect(screen.getByTestId('url').textContent).toBe('/sem-permissao');
++  fireEvent.click(screen.getByRole('link', { name: 'Ir ao técnico' })); await tick(4000);
++  expect(screen.getByText('Técnico campo')).toBeTruthy();
++}
++
++beforeEach(() => {
++  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
++  s.contextsMode = 'valid'; s.contextRelease = undefined; s.contextsCalls = 0; s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
++  vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
++  Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
++  Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
++});
++afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
++
++
++describe('real provider + contexts query + app guard + mobile: uncertainty is not denial', () => {
++  it('epoch cleanup pending → valid with context pending → valid keeps /app', async () => {
++    const qc = setup('/app'); await tick(3000);
++    expect(screen.getByText('Técnico campo')).toBeTruthy();
++    s.contextsMode = 'hold'; tokenRefreshed(); await tick(4000);
++    expect(screen.queryByText('Técnico campo')).toBeNull();
++    expect(screen.getByTestId('url').textContent).toBe('/app');
++    s.contextRelease?.(); s.contextsMode = 'valid'; await tick(3000);
++    expect(screen.getByText('Técnico campo')).toBeTruthy(); qc.clear();
++  });
++  it('invalidated query error hides cached grant; canonical retry recovers without navigation', async () => {
++    const qc = setup('/app'); await tick(3000);
++    s.contextsMode = 'error'; act(() => { void qc.invalidateQueries({ queryKey: ['available-portal-contexts'] }); }); await tick(4000);
++    expect(screen.queryByText('Técnico campo')).toBeNull();
++    expect(screen.getByTestId('url').textContent).toBe('/app');
++    s.contextsMode = 'valid'; retry(); await tick(4000);
++    expect(screen.getByText('Técnico campo')).toBeTruthy();
++  });
++  it('pending query → explicit negative remains a definitive technical denial', async () => {
++    s.contextsMode = 'error'; setup('/app'); await tick(5000);
++    expect(screen.getByTestId('url').textContent).toBe('/app');
++    s.contextsMode = 'denied'; retry(); await tick(3000);
++    expect(screen.getByTestId('url').textContent).toBe('/sem-permissao');
++    expect(screen.queryByText('Técnico campo')).toBeNull();
++  });
++  it('never-resolve contexts settles hidden and allows a fresh retry; old bytes never authorize', async () => {
++    s.contextsMode = 'never'; setup('/app'); await tick(40000);
++    expect(screen.getByTestId('url').textContent).toBe('/app');
++    expect(screen.queryByText('Técnico campo')).toBeNull();
++    s.contextsMode = 'valid'; retry(); await tick(4000);
++    expect(screen.getByText('Técnico campo')).toBeTruthy();
++  });
++  it.each(['gestor', 'consultor_tecnico'])('remove %s during timeout then Retry honors only fresh remaining access', async removed => {
++    setup('/app'); await tick(3000);
++    s.lat = 16000; focus(); await tick(40000);
++    expect(screen.queryByText('Técnico campo')).toBeNull();
++    s.roles = s.roles.filter(r => r !== removed); s.lat = 500;
++    // Let the bounded slow automatic Retry settle before the explicit Retry.
++    // Concurrent manual clicks intentionally coalesce into that existing flight.
++    await tick(22000);
++    act(() => s.auth?.revalidateAuthz()); await tick(8000);
++    expect(screen.getByTestId('url').textContent).toBe(removed === 'gestor' ? '/app' : '/sem-permissao');
++    expect(!!screen.queryByText('Técnico campo')).toBe(removed === 'gestor');
++  });
++  it('late old-epoch context grant after revoke cannot reopen technical content', async () => {
++    setup('/app'); await tick(3000);
++    s.contextsMode = 'hold'; tokenRefreshed(); await tick(4000);
++    const old = s.contextRelease;
++    s.roles = ['gestor']; s.contextsMode = 'valid'; focus(); await tick(3000);
++    act(() => s.auth?.revalidateAuthz()); await tick(8000);
++    old?.(); await tick(3000);
++    expect(screen.queryByText('Técnico campo')).toBeNull();
++    expect(screen.getByTestId('url').textContent).toBe('/sem-permissao');
++  });
++});
+diff --git a/src/test/multiportal.contexts.session.test.tsx b/src/test/multiportal.contexts.session.test.tsx
+index a6993ef2..86ffc4e8 100644
+--- a/src/test/multiportal.contexts.session.test.tsx
++++ b/src/test/multiportal.contexts.session.test.tsx
+@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
+ import { act, renderHook, waitFor } from "@testing-library/react";
+ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import { StrictMode, type ReactNode } from "react";
+-const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["gestor", "consultor_tecnico"], loading: false }));
++const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["gestor", "consultor_tecnico"], loading: false, checkAuthzAccess: () => true }));
+ const rpc = vi.hoisted(() => vi.fn());
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc } }));
+@@ -11,6 +11,7 @@ const response = { data: { available_contexts: ["admin", "technical"], has_techn
+ beforeEach(() => {
+   auth.user = { id: "A" }; Object.assign(auth.profile, { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false });
+   auth.roles = ["gestor", "consultor_tecnico"]; auth.loading = false; rpc.mockReset();
++  auth.checkAuthzAccess = () => true;
+   rpc.mockImplementation(() => ({ abortSignal: () => Promise.resolve(response) }));
+ });
+ function setup() {
+@@ -56,4 +57,23 @@ describe("contextos com QueryClient real", () => {
+     expect(rpc).not.toHaveBeenCalled(); expect(h.result.current.ready).toBe(false);
+     h.unmount(); client.clear();
+   });
++  it("lease vencida sem rerender rejeita resposta antes de adotar contextos", async () => {
++    let valid = true;
++    auth.checkAuthzAccess = () => valid;
++    let resolve: ((value: typeof response) => void) | undefined;
++    rpc.mockImplementation(() => ({ abortSignal: () => new Promise(r => { resolve = r; }) }));
++    const { h, client } = setup();
++    valid = false;
++    await act(async () => { resolve?.(response); });
++    expect(h.result.current.data).toBeUndefined();
++    expect(client.getQueryCache().getAll().some(q => q.state.data !== undefined)).toBe(false);
++    h.unmount(); client.clear();
++  });
++  it.each([null, {}, { available_contexts: [], has_technical_access: "false" }])("payload inválido %j não se torna negativa explícita", async data => {
++    rpc.mockImplementation(() => ({ abortSignal: () => Promise.resolve({ data, error: null }) }));
++    const { h, client } = setup();
++    await waitFor(() => expect(h.result.current.isError).toBe(true), { timeout: 3000 });
++    expect(h.result.current.data).toBeUndefined();
++    h.unmount(); client.clear();
++  });
+ });
+diff --git a/src/test/multiportal.featureGuards.test.tsx b/src/test/multiportal.featureGuards.test.tsx
+index 8541d9ed..9f7dbf49 100644
+--- a/src/test/multiportal.featureGuards.test.tsx
++++ b/src/test/multiportal.featureGuards.test.tsx
+@@ -181,12 +181,14 @@ describe("TechnicalFeatureGuard", () => {
+     expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+   });
+ 
+-  it("bloqueia quando a RPC retorna erro", () => {
++  it("oculta conteúdo sem negação definitiva quando a RPC retorna erro", () => {
+     authState.roles = ["consultor_tecnico"];
+     contextsState.isError = true;
+     contextsState.data = undefined;
+     renderGuard(TechnicalFeatureGuard, "/app/registrar");
+-    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
++    expect(screen.queryByText("SEM_PERMISSAO")).not.toBeInTheDocument();
++    expect(screen.queryByText("CONTENT_OK")).not.toBeInTheDocument();
++    expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+   });
+ 
+   it("transição loading → autorizado mantém ordem dos hooks", () => {

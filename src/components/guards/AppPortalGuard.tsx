@@ -8,6 +8,7 @@ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { CONSULTANT_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 
 import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
+import { PortalContextUnavailable } from "./PortalContextUnavailable";
 
 /**
  * AppPortalGuard — protege a árvore `/app/*`.
@@ -24,7 +25,7 @@ import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
 export function AppPortalGuard({ children }: { children?: ReactNode }) {
   const { user, profile, roles, loading, authzReady = true, authzLatchBlocked = false, authzResidualScope = false } = useAuth();
   const location = useLocation();
-  const { data, isLoading, isError } = useAvailableContexts();
+  const { data, isLoading, isError, isFetching, refetch } = useAvailableContexts({ requireFresh: true });
 
   const isAdmin = roles.includes("administrador") || !!data?.is_admin;
   const isProducer = roles.includes("cliente_produtor");
@@ -37,9 +38,11 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     (!monitoredTechnical || authzReady) &&
     !!user &&
     !isLoading &&
+    !isFetching &&
+    !isError &&
     !isAdmin &&
     !isProducer &&
-    (isError || !data?.has_technical_access);
+    data?.has_technical_access === false;
 
   useEffect(() => {
     if (denied) {
@@ -52,7 +55,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
   }
 
-  if (loading || (user && isLoading)) {
+  if (loading || (user && (isLoading || isFetching))) {
     return (
       <div
         className="min-h-dvh flex items-center justify-center bg-background"
@@ -70,8 +73,8 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
 
   if (isAdmin || isProducer) return <AuthzEpochBoundary>{children ?? <Outlet />}</AuthzEpochBoundary>;
 
-  if (isError) {
-    return <Navigate to="/sem-permissao" replace />;
+  if (isError || !data) {
+    return <PortalContextUnavailable refetch={refetch} />;
   }
 
   if (!data?.has_technical_access) {

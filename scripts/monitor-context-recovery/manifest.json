@@ -1,0 +1,50 @@
+{
+  "baseline": "2f95d5be6dd27834e69bfc9155540a04b0a6e914",
+  "files": [
+    {
+      "path": "src/hooks/useAvailableContexts.ts",
+      "pre_sha256": "dd35fbd84a132e67656b00c1ab6ebb9536fc83d09d654ee68aac70552bc09238",
+      "post_sha256": "746e840c7ca09a0ef8854ce6039deb9fa4fe630520d0280425fbeda901843a11"
+    },
+    {
+      "path": "src/components/guards/AppPortalGuard.tsx",
+      "pre_sha256": "1331c258e77fb7ae3564adec1d87371072ba92c1057d4f582e2444449a9ce2c5",
+      "post_sha256": "1bf7bd5d28e2fb95cdba2d8bdba9fde78c9a7d0bcf2621ab5583b26ec02e0363"
+    },
+    {
+      "path": "src/components/guards/TechnicalRouteGuard.tsx",
+      "pre_sha256": "758207818078f08c4f4fc2df04f7ff56cda290a6d2f271181d8d3175860c5c34",
+      "post_sha256": "ff36131d9ea28472f9670b8de2b7e65c2833e34675e2289e88133f2d472ac984"
+    },
+    {
+      "path": "src/components/guards/TechnicalFeatureGuard.tsx",
+      "pre_sha256": "b0b4172301527d03a6a9d4081614b09897c10fe5d6207d716947ba5bdc2e4342",
+      "post_sha256": "2d596ace4a925b521e9fcf3d1beebf08124899c8d5f6e739c39572f5867bee5a"
+    },
+    {
+      "path": "src/pages/app/MobileLayout.tsx",
+      "pre_sha256": "8aad4a0525a067758f4124eea3424b7a1cf20e946bb87243d7c56765d55c62dd",
+      "post_sha256": "3ef99d80108c4153c584d7dd185b9fe227807c31b111a7dfc1215ace59e91109"
+    },
+    {
+      "path": "src/components/guards/PortalContextUnavailable.tsx",
+      "pre_sha256": null,
+      "post_sha256": "15558deaa0a8034105ae2dba45080d3fd1f532b1a051569370ff30949f3ba868"
+    },
+    {
+      "path": "src/test/config/portalContextRecovery.integration.test.tsx",
+      "pre_sha256": null,
+      "post_sha256": "e4fdba48ee52108df401fde1ed3f645fc9c0ebdecb8c02b0049f6d1c7c6f9903"
+    },
+    {
+      "path": "src/test/multiportal.contexts.session.test.tsx",
+      "pre_sha256": "ea9c7bed4fad2efcb1aea0fe054a72b3f74dec1f03700794f3e22b7864e93780",
+      "post_sha256": "3f4ece5aee3f3ffd0f4ca593ac627a4d1d35ff192cabab2937b5469dd3c503e8"
+    },
+    {
+      "path": "src/test/multiportal.featureGuards.test.tsx",
+      "pre_sha256": "514f64dc84eb23d01d48ef0b94baca96291ebcaa3e18cdb436a1fb68e03ff56c",
+      "post_sha256": "ea66d941e02420071423432ad0d57f547fa06b2a271c136e5f98a080a8dec563"
+    }
+  ]
+}
