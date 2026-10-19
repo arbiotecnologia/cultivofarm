@@ -121,6 +121,13 @@ for(const role of ['financeiro','administrador']) describe(role+' exclusive envi
   if(reason==='tenant')expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('');
   if(reason==='role')expect(screen.queryByRole('textbox')).toBeNull();
  });
+ it('old in-flight h15 positive cannot restore authority after TOKEN_REFRESHED and current role revocation',async()=>{
+  s.roles=[role];const qc=setup();await tick();let answer:((value:unknown)=>void)|undefined;
+  s.hold=()=>new Promise(resolve=>answer=resolve);
+  act(()=>window.dispatchEvent(new Event('focus')));await tick();
+  s.roleAllowed=false;act(()=>s.authListener?.('TOKEN_REFRESHED',{user:{id:s.uid}}));await tick();
+  paused(qc);answer?.(O);await tick();paused(qc);
+ });
  it('RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch',async()=>{
   s.roles=[role];s.rtt=1500;setup();await tick(3000);await tick(3000);
   fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho preservado'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));fireEvent.click(screen.getByRole('button',{name:'Preparar PDF'}));await tick();
