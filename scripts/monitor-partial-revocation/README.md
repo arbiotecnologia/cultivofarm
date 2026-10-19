@@ -37,3 +37,15 @@ Substitui para publicação os pacotes `monitor-retry-reresolve/` (histórico, b
   (sincronizado antes). Não reverter: voltaria a assinatura v89. Receivables e lote seguem só em `scripts/` (.review), fora do runtime.
 - 8 testes do relatório financeiro ainda esperam v89.
 - Homologação real pendente: retirada só consultor (deve recuperar gestor), só gestor (deve recuperar consultor), estabilidade pós-renovação.
+
+## Adendo 17:26 — estabilidade do papel restante (achado independente)
+Risco confirmado por teste: sem renovação antecipada, o papel restante com probe de 3 s e poll de 10 s leva ~16 s por ciclo
+e vence o lease de 15 s. O pacote já inclui `residualContextOnly` em `environmentalContextOnly` (renovação antecipada já
+revisada, pollWhenHidden, revalidação ambiental) para gestor E consultor restantes, só no escopo residual exato. Lease 15 s,
+folga 7,5 s, gates, grants e demais escopos inalterados; consultor de login novo (gate CONSULTANT) e operador não foram tocados.
+
+`residualScopeStability.integration.test.tsx` (AuthProvider/monitor/probe reais; transporte fake por chamada; relógio fake
+incluindo performance): par→gestor e par→consultor, rápido→lento 1,5 s/chamada (3 s/probe) por 10 min, lento desde o
+início, 4 s/chamada (8 s/probe) ainda pausa; controle sem renovação antecipada expira para os dois papéis.
+Prova de que o teste discrimina: retirando `residualContextOnly` de `environmentalContextOnly`, 4/8 falham (arquivo restaurado byte-igual).
+Suíte config+lib+multiportal+portalGuard: 1398/1400 (2 preexistentes). tsgo app/node sem erros. Rollback 1c2f29e byte-exato.
