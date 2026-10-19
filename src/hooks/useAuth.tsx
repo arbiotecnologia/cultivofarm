@@ -446,6 +446,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Limited paired scope: hidden polling is best effort; suspension still
       // expires the monotonic lease. Other scopes retain published behavior.
       pollWhenHidden: managerConsultantContextOnly,
+      // Paired scope only: renew before the confirmed deadline using observed
+      // RTT (no lease extension; late answers still fail closed).
+      renewBeforeDeadline: managerConsultantContextOnly,
       // Preserve published B2B confirmation refresh. Producer/financial renew
       // the lease without remount on identical observed context; real changes,
       // explicit revalidation, expiry and identity still retire the view.

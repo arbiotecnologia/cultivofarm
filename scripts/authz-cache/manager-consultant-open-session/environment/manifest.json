@@ -1,7 +1,7 @@
 {
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "baseline_commit": "d74fede7e37f8ccd51481f0cc4621449703fcd7a",
-  "scope": "paired-environment-only; no database or deployment; prior OFF proofs immutable",
+  "scope": "paired-environment-and-early-renewal-only; no database or deployment; prior OFF proofs immutable",
   "files": [
     {
       "path": "src/lib/authz/authzEpochMonitor.ts",
@@ -22,12 +22,17 @@
       "path": "src/test/config/authzEnvironment.test.ts",
       "candidate": "candidate/src/test/config/authzEnvironment.test.ts",
       "rollback": null
+    },
+    {
+      "path": "src/test/config/authzEarlyRenewal.test.ts",
+      "candidate": "candidate/src/test/config/authzEarlyRenewal.test.ts",
+      "rollback": null
     }
   ],
   "source_sha256": {
     "src/lib/authz/authzEpochGate.ts": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7",
     "src/lib/authz/internalContextProbe.ts": "691c9707acfa5717262090ed57fae7496fd6404181dc7802a2e12b44fe066470",
-    "src/hooks/useAuth.tsx": "24fc7df51843d49ee6ffd9a08aa8eac4ae38108e9b91e0e247d6536f1f33e728",
+    "src/hooks/useAuth.tsx": "646b115144c37e0201310b93269f31a551c803752afb268503773fbd95c64a43",
     "src/App.tsx": "594d90d14b70779d6ee5a4fbb0e3b789e86cfe351a6131c32a27d872c621e787",
     "src/components/guards/AppPortalGuard.tsx": "f8f1f2a18238d0a9a3b2351315de9d714198ffed82ea30b22d62d7b27c35e371",
     "src/pages/SelecionarPortal.tsx": "75edb414f24a4c7612f7e4455ea574d0e2fecf77668a9c84bd7b6e7ad2835351",
@@ -39,8 +44,8 @@
     "src/test/config/producerOpenSession.integration.test.tsx": "0c358d029b3f33b3d97e570c4f6ffb3237f69b97a2c83d0143976d07b84eb3bf",
     "src/test/config/operatorOpenSession.integration.test.tsx": "59bbcd21d07617614c87945614605f5537cd5312b077864ab91e54d76b465f19",
     "src/test/config/managerConsultantGate.test.ts": "9b7f840b1e887bb11e7d147e619cc4d384104b072534490123ee9e91c00046ae",
-    "src/test/config/managerConsultantOpenSession.integration.test.tsx": "81e581743af0f8fb835d2bbc3d6e183af6b2a5c39d40e6b43d4848da26ee6430",
-    "src/lib/authz/authzEpochMonitor.ts": "ff7cedd841248e995e9897805c09b0941b4e0a1cc08e11cf019b0d9372cfafcb",
+    "src/test/config/managerConsultantOpenSession.integration.test.tsx": "195970e03514db56ddf12bf1ea2673f279a0101ff65253e80b6f99494667e320",
+    "src/lib/authz/authzEpochMonitor.ts": "45622480f70e0242e1b1a5cbf182854ff105a9b9dc0d334e41b36cf89ebb1943",
     "src/lib/authz/b2bContextProbe.ts": "171a8ed48d1bdfefcb5600f02ce574e1dff558f2c1c0dad04c75fb0303751d61",
     "src/lib/authz/producerContextProbe.ts": "45ca35467c461f6431aae0943f55cc5d6ffda922f2cf7c10d7d1fffdda279bc7",
     "src/lib/authz/attachmentBlobGate.ts": "2028f1c7ec5dca128bf5f06b429f9f57cfad284ac126d4adde08d27f61830db2",
@@ -99,13 +104,15 @@
     "scripts/authz-cache/manager-consultant-open-session/candidate/src/test/config/managerConsultantOpenSession.integration.test.tsx": "f8a4af91cf82637eb0a2f381082ba61a8df8df8c3dc5602deb84d978e53fee61",
     "scripts/authz-cache/manager-consultant-open-session/candidate/src/components/guards/AppPortalGuard.tsx": "f8f1f2a18238d0a9a3b2351315de9d714198ffed82ea30b22d62d7b27c35e371",
     "scripts/authz-cache/manager-consultant-open-session/candidate/src/lib/authz/authzEpochGate.ts": "df32b53015ec1f1aa29b7bbe7681f5832a0c4ae1dd2ff459441776626db4cd76",
-    "scripts/authz-cache/manager-consultant-open-session/candidate/src/lib/authz/internalContextProbe.ts": "691c9707acfa5717262090ed57fae7496fd6404181dc7802a2e12b44fe066470"
+    "scripts/authz-cache/manager-consultant-open-session/candidate/src/lib/authz/internalContextProbe.ts": "691c9707acfa5717262090ed57fae7496fd6404181dc7802a2e12b44fe066470",
+    "src/test/config/authzEarlyRenewal.test.ts": "5ae88cf4c1a8621fe7a1f84c07ea5dd15852b3a700944c59252a656788ffd857"
   },
   "artifact_sha256": {
-    "candidate/src/hooks/useAuth.tsx": "24fc7df51843d49ee6ffd9a08aa8eac4ae38108e9b91e0e247d6536f1f33e728",
-    "candidate/src/lib/authz/authzEpochMonitor.ts": "ff7cedd841248e995e9897805c09b0941b4e0a1cc08e11cf019b0d9372cfafcb",
+    "candidate/src/hooks/useAuth.tsx": "646b115144c37e0201310b93269f31a551c803752afb268503773fbd95c64a43",
+    "candidate/src/lib/authz/authzEpochMonitor.ts": "45622480f70e0242e1b1a5cbf182854ff105a9b9dc0d334e41b36cf89ebb1943",
+    "candidate/src/test/config/authzEarlyRenewal.test.ts": "5ae88cf4c1a8621fe7a1f84c07ea5dd15852b3a700944c59252a656788ffd857",
     "candidate/src/test/config/authzEnvironment.test.ts": "b1503f9072be5bfb9d75ef4697613a51c71612a00d4706a8048fea9ec1e56f44",
-    "candidate/src/test/config/managerConsultantOpenSession.integration.test.tsx": "81e581743af0f8fb835d2bbc3d6e183af6b2a5c39d40e6b43d4848da26ee6430",
+    "candidate/src/test/config/managerConsultantOpenSession.integration.test.tsx": "195970e03514db56ddf12bf1ea2673f279a0101ff65253e80b6f99494667e320",
     "rollback/src/hooks/useAuth.tsx": "16c68ef7e48731fbdc24995b92daa5a05fefe756ef50def2c44b7f7449724ad6",
     "rollback/src/lib/authz/authzEpochMonitor.ts": "715f4111531fe80e1a00219cae317650cb14233d872d007290f57401122b2a57",
     "rollback/src/test/config/managerConsultantOpenSession.integration.test.tsx": "f8a4af91cf82637eb0a2f381082ba61a8df8df8c3dc5602deb84d978e53fee61"

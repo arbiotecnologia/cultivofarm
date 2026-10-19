@@ -53,7 +53,26 @@ export interface AuthzEpochMonitorDeps {
   refreshOnConfirmation?: boolean;
   /** Reviewed scope only: attempt polling in hidden tabs, never extend a lease without confirmation. */
   pollWhenHidden?: boolean;
+  /**
+   * Reviewed paired scope only: schedule the next background confirmation
+   * BEFORE the confirmed deadline, using a conservative observed RTT
+   * estimate. Never extends a lease; the request still has to be answered
+   * before the previously confirmed deadline, otherwise access fails closed.
+   */
+  renewBeforeDeadline?: boolean;
+  /** Jitter source in [0,1); injected by tests. Jitter only renews EARLIER. */
+  random?: () => number;
 }
+
+// Early-renewal bounds (renewBeforeDeadline only).
+// MIN_DELAY: hard floor between a confirmation and the next request (no busy
+// loop: at most one request per ~second even with tiny server budgets).
+// FLOOR_MARGIN: minimum headroom reserved before the deadline for the next
+// round-trip. Margin = max(FLOOR_MARGIN, 2 x RTT estimate).
+// JITTER: up to this much earlier, never later than the computed time.
+export const EARLY_RENEWAL_MIN_DELAY_MS = 1_000;
+export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 5_000;
+export const EARLY_RENEWAL_MAX_JITTER_MS = 500;
 
 export interface AuthzEpochMonitor {
   start: () => void;
@@ -82,6 +101,8 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   let leaseTimer: unknown = null;
   let requestTimer: unknown = null;
   let inFlightGeneration: number | null = null;
+  // Conservative RTT estimate: never below the latest sample, decays slowly.
+  let rttEstimate: number | null = null;
 
   const setState = (next: AuthzMonitorState) => {
     if (state === next) return;
@@ -119,7 +140,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
     }, remaining);
   };
 
-  const schedulePoll = () => {
+  const schedulePoll = (delayMs: number = pollMs) => {
     if (state === "stopped") return;
     if (pollTimer !== null) deps.clearTimeoutFn(pollTimer);
     pollTimer = deps.setTimeoutFn(() => {
@@ -132,7 +153,22 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       } else {
         schedulePoll();
       }
-    }, pollMs);
+    }, delayMs);
+  };
+
+  // Next background request time measured from the confirmation instant.
+  // Bounded to [MIN_DELAY, pollMs]; it can only move the request earlier
+  // than the published cadence, never later, and never touches leaseUntil.
+  const nextPollDelay = (rttSample: number): number => {
+    if (!deps.renewBeforeDeadline) return pollMs;
+    const sample = Number.isFinite(rttSample) && rttSample > 0 ? rttSample : 0;
+    rttEstimate = rttEstimate === null ? sample : Math.max(sample, 0.75 * rttEstimate + 0.25 * sample);
+    const margin = Math.max(EARLY_RENEWAL_FLOOR_MARGIN_MS, 2 * rttEstimate);
+    const r = deps.random ? deps.random() : Math.random();
+    const jitter = EARLY_RENEWAL_MAX_JITTER_MS * (Number.isFinite(r) ? Math.min(Math.max(r, 0), 1) : 0);
+    const untilDeadline = leaseUntil - deps.now();
+    const delay = Math.min(pollMs, untilDeadline - margin - jitter);
+    return Math.max(EARLY_RENEWAL_MIN_DELAY_MS, delay);
   };
 
   const poll = async (explicit: boolean) => {
@@ -201,7 +237,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       if (state !== "valid" || generation !== myGen) return;
       if (changed) deps.onEpochChange(result);
       if (state !== "valid" || generation !== myGen) return;
-      schedulePoll();
+      schedulePoll(nextPollDelay(deps.now() - requestStart));
     } catch {
       if ((state as AuthzMonitorState) === "stopped" || generation !== myGen) return;
       expire("error");

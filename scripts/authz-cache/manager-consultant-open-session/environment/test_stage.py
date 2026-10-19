@@ -23,7 +23,7 @@ class EnvironmentStageTests(unittest.TestCase):
                         self.assertEqual((out/item['path']).read_bytes(), (HERE/item[mode]).read_bytes())
                 self.assertFalse((out/module.GATE).exists())
                 if mode == 'rollback':
-                    self.assertEqual(json.loads((out/'REMOVE-NEW-FILES.review.json').read_bytes()), ['src/test/config/authzEnvironment.test.ts'])
+                    self.assertEqual(json.loads((out/'REMOVE-NEW-FILES.review.json').read_bytes()), ['src/test/config/authzEnvironment.test.ts', 'src/test/config/authzEarlyRenewal.test.ts'])
 
     def test_deactivation_only_changes_paired_flag(self):
         with tempfile.TemporaryDirectory() as tmp:
