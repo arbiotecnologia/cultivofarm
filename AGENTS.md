@@ -41,3 +41,4 @@
 - OS approval and generator open INSERT guards stay atomic; preserve links/snapshots, deny unresolved B2B approval — prevents bypass.
 - External users reuse receipts/provisioner, ACL closed — no fork.
 - External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
+- Lot generation reuses only rpc_cockpit_gerar_lote_v1 via the existing GerarLoteDialog with session fences before/after await; server revalidates full actor/tenant/SaaS chain after locks — prevents stale/revoked writes.
