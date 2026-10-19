@@ -12,6 +12,8 @@ Achado real informado pelo proprietário13:32: cliente selecionado, porém Fazen
 
 25/25 Vitest dirigidos PASS:24 validação existente +1 teste novo em `src/test/ordens-servico/formProgression.test.tsx`. O novo teste monta a página e os controles Radix reais, abre Nova OS, seleciona cliente→fazenda→talhão, confirma área herdada e submit incompleto bloqueado; tentativa direta de submit não chama insert. Transporte/roles são fake explícitos; não é login/browser hosted ou homologação real.
 
+Compilação automática `build OK`13:34:25Z; não é checker app. SHA256 página `ea6d7f220d83b9034fe6f9cce0c217b8af3799ee26ed710bc2b412e6da4861d6`; teste `336be942d743dbcccd248da9fc8a51b2c88060aba16f9fe37f4bef390f71fa27`.
+
 Primeira tentativa do teste encontrou limitação JSDOM de pointer capture, não falha de runtime; versão final usa interação de teclado real do Select e shim de scroll somente no teste. Avisos React Router e descrição do diálogo preexistente, sem erro não tratado no teste final.
 
 ## Fixture informada — preservar, não duplicar
