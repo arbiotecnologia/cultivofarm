@@ -1,10 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 13:01 — recuperação canônica de aplicações
-- [ ] Auditar RPC fechada, unidades, referências, triggers/RLS/Storage reais e preparação de pai antes do upload.
-- [ ] Preparar candidata SQL guardada/rollback fechado e correções mínimas no fluxo existente, testes PostgreSQL adversariais/concorrência e fixtures sintéticas A/B revisáveis.
-- [ ] Disponibilizar checkout recuperável/config/lock para checker efetivo app independente (execução manual proibida no ambiente); hashes e limites explícitos.
+- [x] Auditar RPC fechada, unidades, referências, triggers/RLS/Storage reais; preparar manifest privado pelo mesmo RPC antes de upload, sem aplicação parcial/bucket aberto.
+- [x] Candidata SQL guardada16 funções/schema/rollback fechado, desktop/mobile cercados, PostgreSQL local62/62 e Vitest119/119; roteiro fixtures A/B. Não é seed hosted completo nem homologação de SDK/JWT/trigger completo; riscos/writers/Storage legacy explicitados no relatório.
+- [x] Checkout completo recuperável/config/lock e inventário SHA disponibilizados pelo export-checkout.py; checker app não executado (proibição do ambiente), types NÃO CERTIFICADOS.
 - [ ] Revisão/implantação/homologação A/B pelo auditor; nenhuma escrita produção/publicação pelo agente, sem contratos B2B/v6.
+- [ ] Seed hosted de pais sintéticos e provas JWT/Storage bytes reais dependem da revisão/implantação do auditor; não presumir papel técnico do financeiro A.
 
 ## 19/10 12:27 — existência/tenant no helper de aplicações
 - [x] Candidata/rollback guardados no helper existente, origem OS/cliente auditada; PostgreSQL local71/71, regressão PDF44/44, staging7/7; sem produção/fixtures/contratos.
