@@ -29,7 +29,8 @@ import PlataformaHome from "@/pages/plataforma/PlataformaHome";
 import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
-import { FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
@@ -288,7 +289,8 @@ export function ProtectedRoutes() {
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const operatorBoundary = OPERATOR_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "operador_onfarm" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
-  return (FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro") || companyAdminBoundary || consultantBoundary || operatorBoundary
+  return (FINANCIAL_CONTEXT_MONITOR_ENABLED && role === "financeiro") || companyAdminBoundary || consultantBoundary || operatorBoundary ||
+    (MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id))
     ? <AuthzEpochBoundary><AppLayout /></AuthzEpochBoundary>
     : <AppLayout />;
 }

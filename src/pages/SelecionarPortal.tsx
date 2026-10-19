@@ -14,6 +14,9 @@ import {
 import { PORTAL_CONTEXT_HOME, automaticPortalContext } from "@/lib/portalContext";
 import { setActivePortalContext } from "@/lib/activePortalContext";
 import { toast } from "sonner";
+import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
+import { MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
 
 function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: string | null } | null): string {
   if (!user) return "";
@@ -28,6 +31,13 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
 }
 
 export default function SelecionarPortal() {
+  const { roles, profile } = useAuth();
+  return MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
+    ? <AuthzEpochBoundary><SelecionarPortalContent /></AuthzEpochBoundary>
+    : <SelecionarPortalContent />;
+}
+
+function SelecionarPortalContent() {
   const navigate = useNavigate();
   const { signOut, user, profile } = useAuth();
   const [params] = useSearchParams();

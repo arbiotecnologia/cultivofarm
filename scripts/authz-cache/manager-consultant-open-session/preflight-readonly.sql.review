@@ -1,0 +1,43 @@
+-- MANAGER + CONSULTANT: fixed dependency expectations inherited from auditor-approved admin preflight.
+-- This new preflight has NOT been executed hosted; drift means STOP, never regenerate hashes to pass.
+-- Auditor: confirm connector ref swzpzcwiasxmjutrmvkm BEFORE execution.
+-- Execute intact with ON_ERROR_STOP. SELECT-only; no DDL/DML installation.
+BEGIN TRANSACTION READ ONLY;
+SET LOCAL statement_timeout='15s';
+SET LOCAL lock_timeout='3s';
+-- Project marker, checked before contract inspection. No data repair/installation.
+SELECT 1/CASE WHEN count(*)>0 AND bool_and(coalesce(project_ref='swzpzcwiasxmjutrmvkm',false)) THEN 1 ELSE 0 END AS canonical_ref_guard
+FROM public.fiscal_environment_marker;
+WITH expected(signature,hash,definer) AS (VALUES
+ ('public.h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c',false),
+ ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881',true),
+ ('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84',true),
+ ('public.has_role(uuid,public.app_role)','4d90e93d521a4819d9085f28d742030f',false),
+ ('platform_private.has_role(uuid,public.app_role)','c5af5b55de6d79da9b73a33948746ae2',true))
+SELECT 1/CASE WHEN count(*)=5 AND bool_and(coalesce(
+ md5(pg_get_functiondef(p.oid))=e.hash AND p.proowner='postgres'::regrole AND
+ p.prosecdef=e.definer AND p.provolatile='s' AND array_to_string(p.proconfig,',')='search_path=""' AND
+ (SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(p.proacl) a)='authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres',false)) THEN 1 ELSE 0 END AS contracts_guard
+FROM expected e LEFT JOIN pg_proc p ON p.oid=to_regprocedure(e.signature);
+WITH expected(tablename,checksum) AS (VALUES
+ ('profiles','a992e27bcd16e5a9c2b0f15e7d7a1288'),('user_roles','58efe4cf56b157356aab320802a5219e'))
+SELECT 1/CASE WHEN count(*)=2 AND bool_and(coalesce(x.checksum=e.checksum,false)) THEN 1 ELSE 0 END AS policies_guard
+FROM expected e LEFT JOIN (
+ SELECT tablename,md5(string_agg(concat_ws('|',policyname,permissive,array_to_string(roles,','),cmd,qual,with_check),E'\n' ORDER BY policyname)) checksum
+ FROM pg_policies WHERE schemaname='public' GROUP BY tablename) x USING(tablename);
+SELECT 1/CASE WHEN count(*)=2 AND bool_and(relrowsecurity AND has_table_privilege('authenticated',oid,'SELECT')) THEN 1 ELSE 0 END AS self_reads_guard
+FROM pg_class WHERE oid IN (to_regclass('public.profiles'),to_regclass('public.user_roles'));
+SELECT c.oid::regclass AS source,c.relowner::regrole AS owner,c.relrowsecurity,c.relforcerowsecurity,
+ c.relacl::text AS acl,md5(coalesce(c.relacl::text,'')) AS acl_checksum
+FROM pg_class c WHERE c.oid IN ('public.profiles'::regclass,'public.user_roles'::regclass) ORDER BY 1;
+-- Aggregate-only readiness inventory; never emit user IDs/emails/tenant rows.
+SELECT count(*) FILTER (WHERE p.organization_id IS NULL) AS paired_org_null,
+ count(*) FILTER (WHERE p.ativo IS DISTINCT FROM true) AS inactive_paired,
+ count(*) FILTER (WHERE p.organization_id IS NOT NULL AND p.ativo=true AND p.senha_provisoria=false
+ AND (SELECT count(*) FROM public.user_roles r2 WHERE r2.user_id=p.user_id)=2) AS exact_ready_paired
+FROM public.profiles p
+WHERE EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=p.user_id AND r.role='gestor')
+ AND EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=p.user_id AND r.role='consultor_tecnico');
+SELECT t.tgrelid::regclass,t.tgname,t.tgenabled,t.tgfoid::regprocedure,md5(pg_get_functiondef(t.tgfoid))
+FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.organizations'::regclass) ORDER BY 1,2;
+ROLLBACK;

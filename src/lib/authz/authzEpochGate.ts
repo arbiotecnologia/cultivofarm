@@ -21,3 +21,6 @@ export const CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = true;
 
 // Exclusive tenant operator candidate; independent review required before ON.
 export const OPERATOR_CONTEXT_MONITOR_ENABLED: boolean = true;
+
+// Exact tenant gestor + consultor_tecnico candidate; independent review before ON.
+export const MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: boolean = false;
