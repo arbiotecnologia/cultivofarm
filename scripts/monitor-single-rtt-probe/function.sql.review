@@ -1,0 +1,16 @@
+CREATE FUNCTION public.internal_actor_context_v1()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+ SELECT CASE WHEN auth.uid() IS NULL THEN NULL::jsonb ELSE jsonb_build_object(
+   'v', 1,
+   'user_id', auth.uid(),
+   'organization_id', public.h15_actor_organization(),
+   'profile', (SELECT jsonb_build_object('user_id', p.user_id, 'organization_id', p.organization_id, 'ativo', p.ativo, 'senha_provisoria', p.senha_provisoria)
+     FROM public.profiles p WHERE p.user_id = auth.uid()),
+   'roles', COALESCE((SELECT jsonb_agg(r.role::text ORDER BY r.role::text) FROM public.user_roles r WHERE r.user_id = auth.uid()), '[]'::jsonb),
+   'roles_confirmed', COALESCE((SELECT bool_and(public.has_role(auth.uid(), r.role)) FROM public.user_roles r WHERE r.user_id = auth.uid()), false)
+ ) END;
+$function$
