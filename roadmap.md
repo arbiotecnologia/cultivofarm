@@ -325,3 +325,9 @@
 - [x] Documentação: LIVE v89 byte-idêntica ao repo-baseline; hash anterior era do pacote. Fonte da Edge sincronizada com v90.
 - [x] Pacote `scripts/financial-report-receivables/`: preflight/candidata/rollback/postflight, Edge e telas `.review`; 27/27 SQL local + 6/6 helpers.
 - [ ] Auditor: revisão independente, aplicar SQL, implantar Edge, integrar telas, typecheck e homologação real A/B. Demais 9 relatórios seguem fechados.
+
+## 19/10 17:00 — receivables concluído + Retry gestor+consultor
+- [x] Receivables: typecheck app/node dos 3 candidatos .review sobre cópia temporária EXIT 0; nada aplicado/publicado.
+- [x] Monitor: Retry com leitura fresca, single-flight/fences, trava de sessão monitorada contra gestor-only/0/desconhecidos/superset; pacote scripts/monitor-retry-reresolve/ com rollback byte-exato (d767eb23). 10/10 novos, config 979/981 (2 preexistentes).
+- [ ] Testes do Edge generate-financial-report (8) ainda esperam assinatura v89; runtime já é v90 — atualizar expectativas em revisão própria.
+- [ ] Homologação real: retirada só gestor e só consultor; anexos; renovação natural com draft integral (área zera por contrato).
