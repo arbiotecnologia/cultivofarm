@@ -20,6 +20,8 @@ def setup():
  for kind in ['PRIMARY KEY','UNIQUE','CHECK','FOREIGN KEY']:
   for x in t['constraints']:
    if x['definition'].startswith(kind) and (kind!='CHECK' or x['table'] in {'ordens_servico','programacao_producao','lotes','production_order_link','profiles','user_roles','organizations','clientes','produtos','fazendas','talhoes','saas_plans','saas_modules','saas_features','saas_plan_versions','saas_plan_version_features','organization_subscriptions','organization_feature_overrides','platform_org_admin_invites'}):sql+=f'ALTER TABLE public.{x["table"]} ADD CONSTRAINT "{x["name"]}" {x["definition"]};\n'
+ # Real view chain in dependency order. No mocked/empty refresh function.
+ for view in reversed(r['views']):sql+=f'CREATE {"MATERIALIZED " if view["kind"]=="m" else ""}VIEW public.{view["name"]} AS '+view['definition']+';\n'
  funcs={}
  for f in t['functions']+d['functions']+c['functions']: funcs[f['sig']]=f['definition']
  for trg in c['triggers']: funcs[trg['body'].split('\n')[0]]=trg['body']
@@ -29,8 +31,6 @@ def setup():
   default=x['default']
   if default and not x['generated'] and not x['identity'] and not re.search(r'nextval|public\.|generate|gerar',default):
    sql+=f'ALTER TABLE public.{x["table"]} ALTER COLUMN "{x["name"]}" SET DEFAULT {default};\n'
- # Real view chain in dependency order. No mocked/empty refresh function.
- for view in reversed(r['views']):sql+=f'CREATE {"MATERIALIZED " if view["kind"]=="m" else ""}VIEW public.{view["name"]} AS '+view['definition']+';\n'
  # Seed before installing target triggers; SQL-only disposable fixtures, never hosted.
  sql+=f"INSERT INTO auth.users VALUES({U}); INSERT INTO organizations(id,nome) VALUES({A},'local A'),({B},'local B'); INSERT INTO profiles(user_id,organization_id) VALUES({U},{A}); INSERT INTO user_roles(user_id,role) VALUES({U},'administrador');\n"
  sql+=f"INSERT INTO clientes(id,nome,codigo_cliente,organization_id) VALUES({C},'local','LOCAL',{A}); INSERT INTO produtos(id,nome,tipo,familia_catalogo) VALUES({P},'local bio','fungicida','biologico');\n"
