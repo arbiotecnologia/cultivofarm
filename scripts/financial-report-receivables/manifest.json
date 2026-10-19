@@ -1,0 +1,29 @@
+{
+ "package": "financial-report-receivables",
+ "target_ref": "swzpzcwiasxmjutrmvkm",
+ "baseline_md5": "970a18caa86f578cd31de2a56f002f6f",
+ "baseline_acl": "{postgres=X/postgres,service_role=X/postgres}",
+ "candidate_md5": "25148f33683e1120e5f2484ba06546ac",
+ "candidate_acl": "{postgres=X/postgres,authenticated=X/postgres}",
+ "edge_live_v90_sha256": "ca9d52a2e851781e5151cee1b950624d0b1b56b5a4fea90207707554a12b60c4",
+ "applied_hosted": false,
+ "published": false,
+ "files": [
+  "README.md",
+  "assemble.py",
+  "baseline.function.sql",
+  "candidate.function.sql",
+  "candidate.sql.review",
+  "edge-candidate/delta.diff",
+  "edge-candidate/index.ts.review",
+  "edge-candidate/live-v90.index.ts",
+  "frontend-candidate/RelatorioContasReceber.tsx.review",
+  "frontend-candidate/ReportShell.tsx.review",
+  "frontend-candidate/reportRpcArgs.ts.review",
+  "helpers.test.ts",
+  "postflight-readonly.sql",
+  "preflight-readonly.sql",
+  "rollback.sql.review",
+  "test-local.py"
+ ]
+}
