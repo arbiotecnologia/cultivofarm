@@ -299,3 +299,10 @@
 - [x] Prova real do gestor sem reload e publicação autorizada realizadas pelo auditor; registro no relatório existente, sem alegar auditoria global concluída.
 - [ ] Ampliação além do aceite gestor: técnico/produtor/offline/suspensão/ABA transitório/downloadURLs não homologados em login real nesta rodada; dependem de autorização e provas próprias do auditor, fora desta entrega documental. Contratos amplos/v6 continuam fechados.
 - [x] Detalhe OS: refresh da lista pós-programação e rastreabilidade via leitor canônico (scripts/os-detail-refresh-trace); pendente homologação browser real.
+
+## Gerar Lote — recuperação mínima 2026-10-19 (pré-contratos)
+- [x] Pacote revisável `scripts/lot-generation-recovery/`: candidata com cadeia viva antes/depois dos locks, manual-only, payload fechado, replay idêntico; preflight/postflight; rollback autocontido (baseline d37a0e47 + ACL exata); PG local real 48/48; Vitest 224/224; tsgo app/node 0.
+- [x] Frontend: botão Gerar lote no detalhe da OS programada (formulário existente), cercas de sessão/época antes e depois do await, L→mL.
+- [ ] Aplicação hosted + publicação: aguarda auditor (não executado pelo agente).
+- [ ] Homologação real no navegador com admin B (OS 18ea0531): aguarda aplicação.
+- [ ] Revisar escrita direta em `lotes` por policies RLS fora do RPC (bypass conhecido).
