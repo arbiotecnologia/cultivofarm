@@ -13,10 +13,11 @@ type Handler = (req: Request) => Promise<Response>;
 
 let st: {
   user: string | null; perfil: Row[]; visivel: Row[]; termo: Row[]; sucessor: Row[];
+  actorOrg: (string | null)[]; entrega: Row[]; cliente: Row[];
   bytes: Uint8Array; onDownload?: () => void;
 };
 const calls = { download: vi.fn(), sign: vi.fn(), rpc: vi.fn(), upload: vi.fn() };
-const next = (q: Row[]) => (q.length > 1 ? q.shift()! : q[0]);
+const next = <V,>(q: V[]): V => (q.length > 1 ? q.shift()! : q[0]);
 
 function client(kind: "user" | "admin") {
   return {
@@ -28,13 +29,18 @@ function client(kind: "user" | "admin") {
       q.eq = (c: string, v: unknown) => { f[c] = v; return q; };
       q.maybeSingle = async () => {
         if (table === "profiles") return { data: next(st.perfil), error: null };
+        if (table === "entregas") return { data: next(st.entrega), error: null };
+        if (table === "clientes") return { data: next(st.cliente), error: null };
         if (kind === "user") return { data: next(st.visivel), error: null };
         if ("substitui_termo_id" in f) return { data: next(st.sucessor), error: null };
         return { data: next(st.termo), error: null };
       };
       return q;
     },
-    rpc: async (...a: unknown[]) => { calls.rpc(...a); return { data: null, error: null }; },
+    rpc: async (...a: unknown[]) => {
+      if (kind === "user" && a[0] === "h15_actor_organization") return { data: next(st.actorOrg), error: null };
+      calls.rpc(...a); return { data: null, error: null };
+    },
     storage: { from: () => ({
       download: async (p: string) => { calls.download(p); st.onDownload?.(); const b = st.bytes; return { data: { size: b.byteLength, arrayBuffer: async () => b.slice().buffer }, error: null }; },
       createSignedUrl: calls.sign, upload: calls.upload, remove: vi.fn(),
@@ -59,7 +65,8 @@ const termoOk = () => ({ id: TERMO, entrega_id: "E", versao: 2, status: "assinad
 beforeEach(() => {
   Object.values(calls).forEach((c) => c.mockReset());
   st = { user: "U", perfil: [{ user_id: "U", ativo: true, senha_provisoria: false, organization_id: "OA" }],
-    visivel: [{ id: TERMO }], termo: [termoOk()], sucessor: [null], bytes: BYTES };
+    visivel: [{ id: TERMO }], termo: [termoOk()], sucessor: [null], bytes: BYTES,
+    actorOrg: ["OA"], entrega: [{ id: "E", organization_id: "OA", cliente_id: "C" }], cliente: [{ id: "C", organization_id: "OA" }] };
 });
 
 describe("entrega-termo-pdf candidata: download binário autenticado", () => {
@@ -133,6 +140,36 @@ describe("entrega-termo-pdf candidata: download binário autenticado", () => {
     st.termo = [termoOk(), { ...termoOk(), pdf_path: "E/T/v2/outro.pdf" }];
     const r = await call({ termo_id: TERMO, action: "download" });
     expect(r.status).toBe(409); expect((await r.json()).error).toBe("termo_alterado");
+  });
+  it.each([
+    ["entrega de B", () => { st.entrega = [{ id: "E", organization_id: "OB", cliente_id: "C" }]; }],
+    ["cliente de B", () => { st.cliente = [{ id: "C", organization_id: "OB" }]; }],
+    ["entrega sem cliente", () => { st.entrega = [{ id: "E", organization_id: "OA", cliente_id: null }]; }],
+    ["entrega inexistente", () => { st.entrega = [null]; }],
+    ["tenant canônico ≠ perfil", () => { st.actorOrg = ["OB"]; }],
+    ["tenant canônico ausente", () => { st.actorOrg = [null]; }],
+  ])("staff A visível sob RLS contra termo de B (%s): 403 antes do Storage", async (_n, set) => {
+    set();
+    const r = await call({ termo_id: TERMO, action: "download" });
+    expect(r.status).toBe(403); expect((await r.json()).error).toBe("acesso_negado");
+    expect(calls.download).not.toHaveBeenCalled(); expect(calls.sign).not.toHaveBeenCalled();
+  });
+  it("termo cancelado de B responde 403, sem revelar status", async () => {
+    st.entrega = [{ id: "E", organization_id: "OB", cliente_id: "C" }];
+    st.termo = [{ ...termoOk(), status: "cancelado", cancelado_em: "x" }];
+    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
+  });
+  it("tenant muda durante o download: re-prova nega os bytes", async () => {
+    st.actorOrg = ["OA", "OB"];
+    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
+    st.actorOrg = ["OA"]; st.entrega = [{ id: "E", organization_id: "OA", cliente_id: "C" }, { id: "E", organization_id: "OB", cliente_id: "C" }];
+    expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(403);
+  });
+  it("generate de termo de B: 403 sem upload, registro ou evento", async () => {
+    st.termo = [{ ...termoOk(), pdf_path: null, snapshot: {} }];
+    st.entrega = [{ id: "E", organization_id: "OB", cliente_id: "C" }];
+    expect((await call({ termo_id: TERMO, action: "generate" })).status).toBe(403);
+    expect(calls.upload).not.toHaveBeenCalled(); expect(calls.rpc).not.toHaveBeenCalled(); expect(calls.download).not.toHaveBeenCalled();
   });
   it("generate replay idempotente preservado, sem evento", async () => {
     st.termo = [{ ...termoOk(), snapshot: {} }];

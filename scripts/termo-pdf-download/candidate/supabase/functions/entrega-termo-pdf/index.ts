@@ -147,7 +147,31 @@ async function renderPdf(termo: Record<string, any>): Promise<Uint8Array> {
 // Cliente sem tipos gerados de banco (mesmo padrao das demais Edges).
 // deno-lint-ignore no-explicit-any
 type Sdk = any;
-type Vigente = { id: string; entrega_id: string; versao: number; pdf_path: string; pdf_hash: string };
+type Vigente = { id: string; entrega_id: string; versao: number; pdf_path: string; pdf_hash: string; organization_id: string };
+
+/**
+ * Tenant explicito. A policy entrega_termos_select aceita staff de entrega/financeiro
+ * sem comparar organizacao; visibilidade RLS sozinha NAO prova isolamento A/B.
+ * Exige: tenant canonico do ator (h15_actor_organization, token do usuario) igual ao
+ * perfil ativo, e entrega + cliente do termo pertencentes a esse mesmo tenant.
+ */
+async function provarTenant(userClient: Sdk, admin: Sdk, userId: string, entregaId: unknown): Promise<string | null> {
+  if (typeof entregaId !== "string" || !entregaId) return null;
+  const { data: perfil, error: perfilErr } = await userClient
+    .from("profiles").select("user_id, ativo, senha_provisoria, organization_id")
+    .eq("user_id", userId).maybeSingle();
+  if (perfilErr || !perfil || perfil.user_id !== userId || perfil.ativo !== true ||
+    perfil.senha_provisoria === true || !perfil.organization_id) return null;
+  const { data: actorOrg, error: orgErr } = await userClient.rpc("h15_actor_organization");
+  if (orgErr || typeof actorOrg !== "string" || actorOrg !== perfil.organization_id) return null;
+  const { data: entrega, error: entErr } = await admin
+    .from("entregas").select("id, organization_id, cliente_id").eq("id", entregaId).maybeSingle();
+  if (entErr || !entrega || entrega.organization_id !== actorOrg || !entrega.cliente_id) return null;
+  const { data: cliente, error: cliErr } = await admin
+    .from("clientes").select("id, organization_id").eq("id", entrega.cliente_id).maybeSingle();
+  if (cliErr || !cliente || cliente.organization_id !== actorOrg) return null;
+  return actorOrg;
+}
 
 /**
  * Prova completa e fresca: usuario vivo e perfil ativo (token do proprio usuario),
@@ -156,11 +180,6 @@ type Vigente = { id: string; entrega_id: string; versao: number; pdf_path: strin
  */
 async function provarAcesso(userClient: Sdk, admin: Sdk, userId: string, termoId: string):
   Promise<{ ok: true; termo: Vigente } | { ok: false; status: number; error: string }> {
-  const { data: perfil, error: perfilErr } = await userClient
-    .from("profiles").select("user_id, ativo, senha_provisoria, organization_id")
-    .eq("user_id", userId).maybeSingle();
-  if (perfilErr || !perfil || perfil.ativo !== true || perfil.senha_provisoria === true || !perfil.organization_id)
-    return { ok: false, status: 403, error: "acesso_negado" };
   const { data: visivel, error: visErr } = await userClient
     .from("entrega_termos").select("id").eq("id", termoId).maybeSingle();
   if (visErr || !visivel) return { ok: false, status: 403, error: "acesso_negado" };
@@ -169,6 +188,9 @@ async function provarAcesso(userClient: Sdk, admin: Sdk, userId: string, termoId
     .select("id, entrega_id, versao, status, cancelado_em, assinado_em, pdf_path, pdf_hash")
     .eq("id", termoId).maybeSingle();
   if (termoErr || !termo) return { ok: false, status: 404, error: "termo_nao_encontrado" };
+  // Tenant antes de qualquer status: outro tenant nunca aprende cancelado/substituido.
+  const org = await provarTenant(userClient, admin, userId, termo.entrega_id);
+  if (!org) return { ok: false, status: 403, error: "acesso_negado" };
   if (termo.status === "cancelado" || termo.cancelado_em) return { ok: false, status: 409, error: "termo_cancelado" };
   const { data: sucessor, error: sucErr } = await admin
     .from("entrega_termos").select("id").eq("substitui_termo_id", termoId).limit(1).maybeSingle();
@@ -177,7 +199,7 @@ async function provarAcesso(userClient: Sdk, admin: Sdk, userId: string, termoId
   if (termo.status !== "assinado" || !termo.assinado_em) return { ok: false, status: 409, error: "termo_nao_assinado" };
   if (!termo.pdf_path) return { ok: false, status: 409, error: "pdf_nao_gerado" };
   if (!termo.pdf_hash) return { ok: false, status: 409, error: "pdf_integridade_indisponivel" };
-  return { ok: true, termo: termo as Vigente };
+  return { ok: true, termo: { ...(termo as Omit<Vigente, "organization_id">), organization_id: org } };
 }
 
 /** Download binario: sem URL portadora, sem assinatura e sem evento de comunicacao. */
@@ -203,6 +225,7 @@ async function servirPdf(req: Request, userClient: Sdk, admin: Sdk, userId: stri
     if (await sha256Hex(bytes) !== antes.termo.pdf_hash) return fail(409, "pdf_hash_divergente");
     const depois = await provarAcesso(userClient, admin, userId, termoId);
     if (!depois.ok) return fail(depois.status, depois.error);
+    if (depois.termo.organization_id !== antes.termo.organization_id) return fail(403, "acesso_negado");
     if (depois.termo.pdf_path !== antes.termo.pdf_path || depois.termo.pdf_hash !== antes.termo.pdf_hash)
       return fail(409, "termo_alterado");
     if (controller.signal.aborted) return fail(504, "download_indisponivel");
@@ -262,6 +285,8 @@ Deno.serve(async (req) => {
       .eq("id", termoId)
       .maybeSingle();
     if (termoErr || !termo) return json({ error: "termo_nao_encontrado" }, 404);
+    // generate le/grava com servico e publica evento: mesmo tenant explicito exigido.
+    if (!(await provarTenant(userClient, admin, userId, termo.entrega_id))) return json({ error: "acesso_negado" }, 403);
 
     // Documento cancelado nunca e servido como vigente.
     if (termo.status === "cancelado" || termo.cancelado_em) return json({ error: "termo_cancelado" }, 409);
