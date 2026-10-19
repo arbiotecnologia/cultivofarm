@@ -126,3 +126,10 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
  });
  it('gate OFF keeps candidate inactive',async()=>{s.gate=false;setup();await tick(30000);expect(s.h15).toBe(0);expect(screen.getByText('Menu desktop')).toBeTruthy();});
 });
+describe('paired scope initial boundaries fail closed',()=>{
+ it.each(['gestor','consultor_tecnico'])('loss %s observed before first confirmation never mounts desktop',async role=>{
+   let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);const qc=setup();await tick();expect(screen.getByText('Verificando seu acesso')).toBeTruthy();s.roles=s.roles.filter(r=>r!==role);resolve?.(O);await tick();paused(qc);
+ });
+ it.each([['gestor'],['gestor','consultor_tecnico','administrador'],['gestor','consultor_tecnico','superadmin'],['gestor','parceiro_b2b']])('non-allowlisted login %j does not create paired monitor',async (...roles)=>{s.roles=roles;setup();await tick(30000);expect(s.h15).toBe(0);});
+ it('duplicate pair at login is denied by raw server roles, despite legacy normalization',async()=>{s.roles=['gestor','consultor_tecnico','gestor'];const qc=setup();await tick();paused(qc);});
+});
