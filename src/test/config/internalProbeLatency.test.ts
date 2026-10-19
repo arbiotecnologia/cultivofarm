@@ -56,7 +56,7 @@ function run(probe: Probe, expected: Parameters<Probe>[2] = MANAGER_CONSULTANT_R
   monitor.start();
   return { monitor, onExpire, fetcher };
 }
-async function settle<T>(p: Promise<T>, ms = 60_000) { const r = p.then(v => ({ v }), e => ({ e })); await vi.advanceTimersByTimeAsync(ms); return r; }
+async function settle<T>(p: Promise<T>, ms = 60_000): Promise<{ v?: T; e?: unknown }> { const r = p.then(v => ({ v }), (e: unknown) => ({ e })); await vi.advanceTimersByTimeAsync(ms); return r; }
 beforeEach(() => {
   vi.useFakeTimers();
   Object.assign(s, { perCall: 100, roles: ['gestor', 'consultor_tecnico'], org: O, profileOrg: undefined, active: true, provisional: false, confirmed: true, uidSeen: U, rpcMissing: false, payload: undefined, calls: [] });
@@ -81,7 +81,7 @@ describe('single round trip', () => {
   it('RPC not installed (PGRST202) fails closed as unavailable, with NO fallback to the old reads', async () => {
     s.rpcMissing = true;
     const r = await settle(internalContextProbe(U, O, MANAGER_CONSULTANT_ROLES));
-    expect(String((r as { e: unknown }).e)).toContain('internal_probe_unavailable');
+    expect(String(r.e)).toContain('internal_probe_unavailable');
     expect(s.calls).toEqual([INTERNAL_ACTOR_CONTEXT_RPC]);
   });
   it('RPC not installed: monitor expires with error and never renews', async () => {
