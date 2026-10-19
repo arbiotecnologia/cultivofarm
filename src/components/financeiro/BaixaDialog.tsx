@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { anexarComprovanteBaixa } from "@/lib/financial/anexarComprovanteBaixa";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Upload, FileText, X } from "lucide-react";
 import { hojeSaoPaulo } from "@/lib/financeiro/contasReceber";
@@ -59,6 +60,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   // H6-002: chave de idempotencia por tentativa de baixa (evita baixa duplicada em duplo clique/retry)
   const idempotencyRef = useRef<string>(crypto.randomUUID());
   const receber = kind === "receivable";
+  const storageAccess = useStorageAccessScope(`baixa:${kind}:${installment?.id}:${open}`);
 
   const today = hojeSaoPaulo();
   const empty: any = { payment_date: today, amount: 0, payment_method_id: "", bank_account_id: "", discount_amount: 0, interest_amount: 0, penalty_amount: 0, notes: "" };
@@ -150,7 +152,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     retry: false,
-    mutationFn: async (vars?: { repetir?: boolean; token?: number }) => {
+    mutationFn: async (vars?: { repetir?: boolean; token?: number; isCurrent?: () => boolean; journalUser?: string; journalInstallment?: string }) => {
+      const isCurrent = vars?.isCurrent ?? (() => false);
+      if ((pendente || file) && !isCurrent()) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
       const repetir = !receber && !!vars?.repetir;
 
@@ -173,6 +177,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             file,
             uploadedBy: user.id,
             organizationId: profile.organization_id,
+            isCurrent,
           });
         } catch {
           throw erroAnexo(
@@ -293,16 +298,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
 
       if (file) {
-        if (!profile?.organization_id) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
         try {
+          if (!user || !profile?.organization_id || !isCurrent()) throw new Error("Contexto expirado");
           await anexarComprovanteBaixa(supabase, {
             ownerType,
             paymentId: paymentId as unknown as string,
             idempotencyKey: idempotencyRef.current,
             file,
-            uploadedBy: user!.id,
+            uploadedBy: user.id,
             organizationId: profile.organization_id,
+            isCurrent,
           });
         } catch {
           // Baixa persistida, comprovante não: estado explícito de falha parcial.
@@ -316,16 +322,21 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
       return { ok: true as const };
     },
-    onSuccess: (r: any) => {
+    onSuccess: (r: any, vars) => {
       if (r?.ignorado) return;
-      invalidarTudo();
       if (!receber && !r?.reenvio) {
         // Resultado definitivamente confirmado: só aqui o journal é removido.
         // Falha de limpeza NÃO transforma o pagamento confirmado em falha e
         // também não libera novo envio — o bloqueio em memória é desfeito
         // apenas porque o pagamento foi confirmado pelo servidor.
-        limparTentativaIncerta(user?.id, installment?.id);
-        tentativaRef.current = null;
+        limparTentativaIncerta(vars?.journalUser, vars?.journalInstallment);
+        if (vars?.isCurrent?.()) tentativaRef.current = null;
+      }
+      // A confirmed payment stays confirmed even if the attachment lease ended.
+      // No view/cache/callback outcome may escape into another context.
+      if (!vars?.isCurrent?.()) return;
+      invalidarTudo();
+      if (!receber && !r?.reenvio) {
         setExigeConferencia(false);
       }
 
@@ -349,12 +360,12 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         enviandoRef.current = false;
       }
     },
-    onError: (e: unknown) => {
+    onError: (e: unknown, vars) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
-      if (pendente) invalidarTudo();
+      if (pendente && vars?.isCurrent?.()) invalidarTudo();
       if (receber) {
         // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
-        toast.error(mapearErroBaixaRecebimento(e));
+        if (vars?.isCurrent?.()) toast.error(mapearErroBaixaRecebimento(e));
         return;
       }
       // Classificação única ponta a ponta: incerto trava novo envio até conferência.
@@ -362,17 +373,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       const falhaJournal =
         c.mensagem === MSG_JOURNAL_INDISPONIVEL || c.mensagem === MSG_JOURNAL_CORROMPIDO;
       if (c.exigeConferencia) {
-        setExigeConferencia(true);
+        if (vars?.isCurrent?.()) setExigeConferencia(true);
         // Preserva chave + payload da tentativa para repetição idempotente após
         // fechar/reabrir ou remontar (nada de arquivo, token ou credencial).
-        if (tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
+        if (vars?.isCurrent?.() && tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
       } else if (!pendente && !exigeConferencia && !falhaJournal) {
         // Recusa comprovada antes de qualquer tentativa incerta: nada a preservar.
         // Falha/corrupção do journal nunca apaga o registro local.
-        limparTentativaIncerta(user?.id, installment?.id);
-        tentativaRef.current = null;
+        limparTentativaIncerta(vars?.journalUser, vars?.journalInstallment);
+        if (vars?.isCurrent?.()) tentativaRef.current = null;
       }
-      toast.error(c.mensagem);
+      if (vars?.isCurrent?.()) toast.error(c.mensagem);
     },
 
   });
@@ -403,7 +414,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     enviandoRef.current = true;
     const token = donoRef.current + 1;
     donoRef.current = token;
-    save.mutate({ ...vars, token });
+    save.mutate({ ...vars, token, isCurrent: storageAccess.capture(), journalUser: user?.id, journalInstallment: installment?.id });
   }
 
   /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */

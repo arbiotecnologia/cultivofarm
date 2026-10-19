@@ -31,7 +31,7 @@ const { rpcMock, fromMock, anexarMock, toastErro } = vi.hoisted(() => ({
   toastErro: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" }, profile: { user_id: "u1", organization_id: "org-1", ativo: true }, roles: ["financeiro"], loading: false }) }));
 vi.mock("@/lib/financial/anexarComprovanteBaixa", () => ({ anexarComprovanteBaixa: anexarMock }));
 vi.mock("sonner", () => ({ toast: { error: toastErro, success: vi.fn() } }));
 

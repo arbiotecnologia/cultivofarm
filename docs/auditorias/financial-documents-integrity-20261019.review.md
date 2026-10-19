@@ -1,4 +1,14 @@
-# Integridade SERVER de financial_documents — candidata NÃO instalada
+# Integridade SERVER de financial_documents — implantação externa informada
+
+## Implantação pelo auditor (evidência fornecida, não reaplicada pelo agente)
+
+Auditor revisou `cb878255f639fe03ca5d357e77a0659073792d0e` e aplicou em `swzpzcwiasxmjutrmvkm` a migration `financial_document_owner_integrity_20261019`, após preflight integral e 11 hashes PASS; postflight integral PASS.
+
+Probes hosted com claims authenticated e **iat atual**, todos sob rollback: owner cross-tenant negado (`financial_document_owner_denied`), spoof de uploaded_by negado (author), path errado negado (path), reparent UPDATE negado (identity); INSERT válido A permitido. Nenhuma persistência nesses probes. Isso comprova os probes SQL reportados, **não login real** nem HTTP direto do signer.
+
+Login B real informado: `/financeiro/receber` com zero contas, sem registro/anexo A. Não é teste HTTP direto do signer. Upload real financeiro A após migration permanece pendente de sessão/revisão do proprietário; não executar pagamento/cobrança real para validar. A correção frontend do comprovante está descrita em `comprovante-baixa-20261019.review.md`. Não houve reaplicação de DDL, deploy ou publicação pelo agente.
+
+O restante deste relatório conserva o registro histórico da candidata e dos testes anteriores à aplicação.
 
 ## Evidência e escopo
 
@@ -42,12 +52,12 @@ Regressões frontend **9 arquivos / 159 testes PASS**: painel, Storage d51-5, so
 ## Riscos e gates de revisão
 
 - Preflight novo antes da instalação; revisão dos oito contratos, writers externos/service e PG compatível. Sem afirmar equivalência global de RLS dos parents reduzidos.
-- Locator legado inconsistente pode perder UPDATE não-delete; não é migrado/apagado. Tombstone só se owner/tenant válidos. `anexarComprovanteBaixa` usa prefixo org incompatível com Storage owner-first: falha preexistente inventariada, sem editar frontend/ampliar contrato nesta candidata.
+- Locator legado inconsistente pode perder UPDATE não-delete; não é migrado/apagado. Tombstone só se owner/tenant válidos. Prefixo org incompatível em `anexarComprovanteBaixa` foi inventariado nesta candidata SERVER e corrigido posteriormente na candidata frontend separada indicada acima.
 - FOR SHARE pode competir/deadlock com writers parent→documento; nenhum certificado global de lock order/ABA. Referências fiscais secundárias são leitura no statement, não promessa universal de serialização.
 - Perfil/roles/parent podem mudar entre operações; não há snapshot global. Storage/metadata não formam transação única; órfãos possíveis sem cleanup destrutivo. URLs já emitidas/bytes baixados não são revogados por esta guarda.
-- Aplicação/homologação dependem do auditor/proprietário: login B real solicitado, testes upload/abertura/revoke/restore A/B com dados autorizados. SQL local não é hosted/JWT/browser. Sem auditoria global/contratos concluídos; Blob/global v6 fechados e monitores publicados preservados.
+- Aplicação e login B foram posteriormente informados pelo auditor conforme adendo inicial; upload A pós-migration/HTTP signer independente ainda não certificados. SQL local não é hosted/JWT/browser. Sem auditoria global/contratos concluídos; Blob/global v6 fechados e monitores publicados preservados.
 ## Conclusão local desta candidata
 
 - PostgreSQL local: **252/252 checks PASS**, reprodução baseline seguida de negativa admin B/owner A; candidata, postflight e rollback integrais PASS; preflight executado no baseline vazio e após rollback com dados sintéticos inconsistentes, somente contagens. Atomicidade e hashes fixos preservados. Legado orgNULL por ID explícito falha 42501 na guarda canônica; não é atribuído tenant.
 - Vitest **159/159**, staging frontend publicado **4/4**, staging a905 **2/2**, diff whitespace PASS. Builds automáticos mais recentes sem erro; sem comandos manuais de build/typecheck.
-- Candidate/rollback nunca executados em produção, sem deploy Edge/publicação. Testes não usam login real ou JWT assinado. Login B/homologação independente e implantação aguardam proprietário/auditor.
+- Na etapa local, candidate/rollback não foram executados pelo agente em produção, sem deploy Edge/publicação. Aplicação externa posterior registrada no início; testes locais não usam login real ou JWT assinado.
