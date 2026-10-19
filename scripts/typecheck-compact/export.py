@@ -1,6 +1,6 @@
 """Offline compact source export. No GitHub, environment reads or database operations."""
 from pathlib import Path
-import base64, gzip, hashlib, json, subprocess
+import base64, gzip, hashlib, json, subprocess, re
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -16,6 +16,29 @@ def digest(data):
 def collect(root):
     files, binary, hashes = {}, [], {}
     candidates = list((root / 'src').rglob('*')) + [root / p for p in CONFIGS]
+    # App tests import pure modules outside src. Include their transitive relative imports,
+    # without exporting the whole database/Edge tree or unrelated migrations.
+    pending = [p for p in candidates if p.is_file() and p.suffix in ('.ts', '.tsx', '.js', '.jsx')]
+    scanned = set()
+    while pending:
+        source = pending.pop()
+        if source in scanned:
+            continue
+        scanned.add(source)
+        text = source.read_text(encoding='utf-8')
+        for ref in re.findall(r'(?:from\s*|import\s*\(\s*|import\s*|require\s*\(\s*)[\'"]([^\'"]+)[\'"]', text):
+            if not ref.startswith('.'):
+                continue
+            target = (source.parent / ref).resolve()
+            if root.resolve() not in target.parents:
+                raise ValueError('external_relative_import:' + source.relative_to(root).as_posix())
+            options = [target] + [Path(str(target) + ext) for ext in ('.ts', '.tsx', '.js', '.jsx', '.json')]
+            options += [target / ('index' + ext) for ext in ('.ts', '.tsx', '.js')]
+            found = next((p for p in options if p.is_file()), None)
+            if found is not None and found not in candidates:
+                candidates.append(found)
+                if found.suffix in ('.ts', '.tsx', '.js', '.jsx'):
+                    pending.append(found)
     for path in sorted(set(candidates)):
         rel = path.relative_to(root).as_posix()
         if path.is_symlink():
@@ -23,8 +46,13 @@ def collect(root):
         if not path.is_file() or any(p in FORBIDDEN or p.startswith('.env') for p in Path(rel).parts):
             continue
         data = path.read_bytes()
-        if b'-----BEGIN PRIVATE KEY-----' in data or b'-----BEGIN RSA PRIVATE KEY-----' in data:
-            raise ValueError('private_key_forbidden:' + rel)
+        # Test sources contain explicitly invalid QUJD PEM placeholders. Preserve tests,
+        # but refuse non-placeholder complete private-key material without printing it.
+        for match in re.finditer(rb'-----BEGIN (?:RSA |ENCRYPTED )?PRIVATE KEY-----([\s\S]*?)-----END (?:RSA |ENCRYPTED )?PRIVATE KEY-----', data):
+            body = match.group(1).replace(b'\\n', b'').replace(b'\\r', b'')
+            body = re.sub(rb'\s+', b'', body)
+            if body != b'QUJD':
+                raise ValueError('private_key_forbidden:' + rel)
         hashes[rel] = digest(data)
         try:
             files[rel] = data.decode('utf-8')

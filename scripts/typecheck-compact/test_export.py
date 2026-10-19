@@ -38,7 +38,20 @@ class CompactTests(unittest.TestCase):
         with self.assertRaises(ValueError): export(root, Path(tempfile.mkdtemp()) / 'out', 'test')
 
     def test_private_key_fails_closed(self):
-        root = self.fixture(); (root / 'src/key.ts').write_text('-----BEGIN PRIVATE KEY-----')
+        root = self.fixture(); (root / 'src/key.ts').write_text('-----BEGIN PRIVATE KEY-----\nNOT_A_PLACEHOLDER\n-----END PRIVATE KEY-----')
         with self.assertRaises(ValueError): export(root, Path(tempfile.mkdtemp()) / 'out', 'test')
+
+    def test_invalid_pem_placeholder_is_source_not_secret(self):
+        root = self.fixture(); (root / 'src/placeholder.test.ts').write_text('const pem="-----BEGIN PRIVATE KEY-----\\nQUJD\\n-----END PRIVATE KEY-----";')
+        out = Path(tempfile.mkdtemp()) / 'snapshot'; m = export(root, out, 'test')
+        self.assertIn('src/placeholder.test.ts', m['files_sha256'])
+
+    def test_transitive_relative_imports_outside_src(self):
+        root = self.fixture(); (root / 'shared').mkdir()
+        (root / 'src/main.ts').write_text('import { x } from "../shared/first";')
+        (root / 'shared/first.ts').write_text('export { x } from "./second";')
+        (root / 'shared/second.ts').write_text('export const x = 1;')
+        out = Path(tempfile.mkdtemp()) / 'snapshot'; m = export(root, out, 'test')
+        self.assertIn('shared/first.ts', m['files_sha256']); self.assertIn('shared/second.ts', m['files_sha256'])
 
 if __name__ == '__main__': unittest.main()
