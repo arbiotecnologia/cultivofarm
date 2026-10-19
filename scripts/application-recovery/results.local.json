@@ -1,5 +1,5 @@
 {
-  "passed": 100,
+  "passed": 104,
   "failed": 0,
   "cases": [
     "unprepared Storage denied",
@@ -86,6 +86,10 @@
     "new OS status positive entregue",
     "new OS status positive pronto_entrega",
     "new OS status positive envase",
+    "onfarm delivered positive",
+    "onfarm new status denied aberta",
+    "onfarm new status denied cancelada",
+    "onfarm new status denied finalizada",
     "OS status regressed upload finalize denied",
     "inheritance keeps original locator",
     "rectification replay allowed after predecessor closed",
