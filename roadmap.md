@@ -1,10 +1,16 @@
 # F2-B — auditoria e preparação revisável
 
+## 19/10 00:24 — comprovante de baixa no fluxo existente
+- [ ] Registrar aplicação externa financial_document_owner_integrity_20261019, probes SQL versus login B real.
+- [ ] Corrigir path owner-first idempotente e fences upload/metadados/callback, preservando a baixa registrada.
+- [ ] Testar retry/efeitos parciais/revogação/timeout, regressões, rollback exato e riscos sem hosted DML.
+- [ ] Upload real financeiro A após migration aguarda sessão/revisão do proprietário; sem pagamento/cobrança real.
+
 ## 19/10 00:11 — integridade server-side financial_documents
 - [x] Inventariar oito owner_types/callers e capturar contratos live; contagens sem expor linhas.
 - [x] Preparar candidata/preflight/postflight/rollback integrais em scripts/financial-documents-integrity, sem aplicar hosted.
 - [x] Testar PG local RLS/claims iat atual: 252 checks, oito owners e atomicidade; regressões 159/159. Relatório SERVER com limites/aceite independente.
-- [ ] Homologação/login B e aplicação dependem do proprietário/auditor, não autorizadas ao agente.
+- [x] Auditor informou aplicação e pre/postflight PASS; login B real sem contas/anexos A, sem prova HTTP signer. Upload A pós-migration pendente (sessão do proprietário).
 
 ## 18/10 23:59 — anexos financeiros no fluxo existente
 - [x] Corrigir path/basename e fences upload/remove/metadados; contrato/trigger atual confirmado SELECT-only canônico, servidor e monitores inalterados.
