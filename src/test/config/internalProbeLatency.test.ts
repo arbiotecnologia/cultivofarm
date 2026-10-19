@@ -132,11 +132,11 @@ describe('server answer decision (exact set, own identity, tenant, readiness)', 
     arrange();
     expect((await settle(internalContextProbe(U, O, MANAGER_CONSULTANT_ROLES))).v).toEqual({ eligible: false, fingerprint: null });
   });
-  it('caller mutation of the expected array after the call cannot widen authority', async () => {
+  it('caller mutation of the expected array after the call cannot change the decided authority', async () => {
     const expected = ['gestor', 'consultor_tecnico'];
     const p = internalContextProbe(U, O, expected as never);
-    expected.push('administrador'); s.roles = ['administrador', 'consultor_tecnico', 'gestor'];
-    expect((await settle(p)).v).toEqual({ eligible: false, fingerprint: null });
+    expected.push('administrador');
+    expect((await settle(p)).v).toEqual({ eligible: true, fingerprint: JSON.stringify([U, O, ['consultor_tecnico', 'gestor']]) });
   });
   it('pure evaluator requires every field', () => {
     expect(evaluateInternalActorContext(null, U, O, ['financeiro'])).toBe(false);
