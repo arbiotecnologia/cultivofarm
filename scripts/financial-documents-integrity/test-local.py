@@ -91,6 +91,9 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
             sql += err(typ+' reparent',f"UPDATE public.financial_documents SET owner_id='{parent(i,2)}' WHERE owner_type='{typ}'")
             sql += err(typ+' author mutation',f"UPDATE public.financial_documents SET uploaded_by='{UID_B}' WHERE owner_type='{typ}'")
             sql += err(typ+' tenant mutation',f"UPDATE public.financial_documents SET organization_id='{ORG_B}' WHERE owner_type='{typ}'")
+            sql += err(typ+' path update',f"UPDATE public.financial_documents SET storage_path='wrong/owner/file.txt' WHERE owner_type='{typ}'")
+            sql += err(typ+' forged tombstone',f"UPDATE public.financial_documents SET deleted_at=now(),deleted_by='{UID_B}',delete_reason='spoof' WHERE owner_type='{typ}'")
+            sql += err(typ+' softdelete bundled reparent',f"UPDATE public.financial_documents SET deleted_at=now(),deleted_by='{UID_A}',delete_reason='spoof',owner_id='{parent(i,2)}' WHERE owner_type='{typ}'")
             sql += f"UPDATE public.financial_documents SET file_name='renamed.txt' WHERE owner_type='{typ}';"
             sql += ok(typ+' same owner update',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE owner_type='{typ}' AND file_name='renamed.txt')")
             sql += f"DELETE FROM public.financial_documents WHERE owner_type='{typ}';"
@@ -100,12 +103,34 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
             sql += f"SELECT public.rpc_financial_document_soft_delete((SELECT id FROM public.financial_documents WHERE owner_type='{typ}' LIMIT 1),'auditoria local');"
             sql += ok(typ+' tombstone not visible',f"NOT EXISTS(SELECT 1 FROM public.financial_documents WHERE owner_type='{typ}')")
             sql += "RESET ROLE;"+ok(typ+' canonical tombstone persisted',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE owner_type='{typ}' AND deleted_at IS NOT NULL AND deleted_by='{UID_A}')")+actor(UID_A)
+        for i,(typ,_) in enumerate(PARENTS):
+            sql += actor(UID_B)+insert(i,2,author=UID_B,path=(f'{ORG_B}/generated/file.pdf' if i>=6 else None))+';'
+            sql += ok(typ+' B own positive',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE owner_type='{typ}' AND organization_id='{ORG_B}')")
+            sql += err(typ+' B owner A denied',insert(i,author=UID_B))
+            sql += ok(typ+' B cannot read A',f"NOT EXISTS(SELECT 1 FROM public.financial_documents WHERE organization_id='{ORG_A}')")
+        sql += actor(UID_A)
+        for n,bad in enumerate([f'PAYABLE/{parent(0)}/file.txt',f'RECEIVABLE/{parent(0,2)}/file.txt',f'RECEIVABLE/{parent(0)}/a%2fb',f'RECEIVABLE/{parent(0)}/x/y',f'RECEIVABLE/{parent(0)}/']):
+            sql += err('strict path '+str(n),insert(0,path=bad))
+        sql += err('malformed owner UUID',insert(0).replace(parent(0),'invalid-uuid'),'22P02')
+        sql += insert(0)+';'
+        sql += f"UPDATE public.financial_documents SET fiscal_invoice_id='{parent(3)}' WHERE owner_type='RECEIVABLE' AND deleted_at IS NULL;"
+        sql += ok('same tenant fiscal reference positive',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE fiscal_invoice_id='{parent(3)}')")
+        sql += err('foreign fiscal reference',f"UPDATE public.financial_documents SET fiscal_invoice_id='{parent(3,2)}' WHERE owner_type='RECEIVABLE' AND deleted_at IS NULL")
+        sql += err('absent fiscal event',f"UPDATE public.financial_documents SET fiscal_event_id='{parent(3,4)}' WHERE owner_type='RECEIVABLE' AND deleted_at IS NULL")
+        sql += 'RESET ROLE;'+f"INSERT INTO public.fiscal_events(id,organization_id) VALUES('{parent(8)}','{ORG_A}'),('{parent(8,2)}','{ORG_B}');"+actor(UID_A)
+        sql += f"UPDATE public.financial_documents SET fiscal_event_id='{parent(8)}' WHERE owner_type='RECEIVABLE' AND deleted_at IS NULL;"
+        sql += ok('same tenant fiscal event positive',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE fiscal_event_id='{parent(8)}')")
+        sql += err('foreign fiscal event',f"UPDATE public.financial_documents SET fiscal_event_id='{parent(8,2)}' WHERE owner_type='RECEIVABLE' AND deleted_at IS NULL")
+        sql += 'RESET ROLE;'+f"UPDATE public.financial_receipts SET storage_bucket='wrong-bucket' WHERE id='{parent(6)}';"+actor(UID_A)+err('receipt wrong bucket',insert(6))
+        sql += 'RESET ROLE;'+f"UPDATE public.financial_receipts SET storage_bucket='financial-receipts' WHERE id='{parent(6)}'; UPDATE public.financial_report_exports SET storage_path=NULL WHERE id='{parent(7)}';"+actor(UID_A)+err('report no persisted locator',insert(7))
+        sql += 'RESET ROLE;'+f"UPDATE public.financial_report_exports SET storage_path='{ORG_A}/generated/file.pdf' WHERE id='{parent(7)}';"
         sql += actor(UID_B)+ok('admin B current iat ready',f"public.h15_actor_organization()='{ORG_B}'")+err('reported admin B foreign owner exploit',insert(0,author=UID_B))
         sql += "RESET ROLE; SELECT set_config('request.jwt.claims',jsonb_build_object('sub','"+UID_B+"','role','authenticated','iat',0)::text,false); SET ROLE authenticated;"+ok('iat0 fails readiness','public.h15_actor_organization() IS NULL')+err('iat0 denies insert',insert(0,2,author=UID_B))
         sql += actor(UID_A)+err('unsupported owner',"INSERT INTO public.financial_documents(owner_type,owner_id,document_type,file_name,storage_path,uploaded_by) VALUES('UNKNOWN','"+parent(0)+"','OTHER','file.txt','x/y/z','"+UID_A+"')")
         sql += 'RESET ROLE;'+f"UPDATE public.profiles SET ativo=false WHERE user_id='{UID_A}';"+actor(UID_A)+err('inactive actor denied',insert(0))
         sql += 'RESET ROLE;'+f"UPDATE public.profiles SET ativo=true WHERE user_id='{UID_A}'; DELETE FROM public.user_roles WHERE user_id='{UID_A}';"+actor(UID_A)+err('role removed denied',insert(0))
         sql += 'RESET ROLE;'+f"INSERT INTO public.user_roles VALUES('{UID_A}','financeiro');"
+        sql += actor(UID_A)+"SELECT set_config('request.jwt.claims',jsonb_build_object('sub','"+UID_A+"','role','service_role','iat',floor(extract(epoch FROM clock_timestamp())))::text,false);"+err('claim service cannot bypass author',insert(0,author=UID_B))
         # Service no-UID is DB role proof, not caller-supplied JWT role.
         sql += "SELECT set_config('request.jwt.claims','{}',false); SET ROLE service_role;"
         for i,(typ,_) in enumerate(PARENTS):
@@ -113,6 +138,11 @@ CREATE FUNCTION pg_temp.err(label text,q text,c text) RETURNS void LANGUAGE plpg
             sql += err(typ+' service foreign parent',insert(i,2,org=ORG_A))
             sql += err(typ+' service NULL tenant',insert(i))
             sql += err(typ+' service NULL parent',insert(i,3,org=ORG_A))
+            sql += f"UPDATE public.financial_documents SET file_name='service-update.txt' WHERE owner_type='{typ}' AND deleted_at IS NULL AND organization_id='{ORG_A}';"
+            sql += ok(typ+' service same owner update',f"EXISTS(SELECT 1 FROM public.financial_documents WHERE owner_type='{typ}' AND file_name='service-update.txt')")
+            sql += err(typ+' service cannot reparent',f"UPDATE public.financial_documents SET owner_id='{parent(i,2)}' WHERE owner_type='{typ}' AND deleted_at IS NULL AND organization_id='{ORG_A}'")
+        sql += "SELECT set_config('request.jwt.claims',jsonb_build_object('sub','"+UID_B+"','role','service_role','iat',floor(extract(epoch FROM clock_timestamp())))::text,false);"+err('service with UID foreign owner denied',insert(0,author=UID_B,org=ORG_B))
+        sql += "SELECT set_config('request.jwt.claims','{}',false);"+err('service canonical RPC requires actor',"SELECT public.rpc_financial_document_soft_delete((SELECT id FROM public.financial_documents LIMIT 1),'local')")
         sql += "RESET ROLE; SET ROLE anon;"+err('anon no UID denied',insert(0,org=ORG_A))+"RESET ROLE;"
         # Legacy path compatibility only for unchanged canonical tombstone, not new writes.
         sql += "DROP TRIGGER zz_financial_document_integrity ON public.financial_documents;"+insert(0,org=ORG_A,path=f'{ORG_A}/RECEIVABLE/{parent(0)}/legacy.txt')+';'
