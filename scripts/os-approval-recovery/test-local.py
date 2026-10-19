@@ -212,7 +212,8 @@ CREATE POLICY local_tenant ON ordens_servico AS RESTRICTIVE FOR ALL TO authentic
         assert count==run('SELECT count(*) FROM laboratorio_esteira_eventos;').stdout
         assert run("SELECT md5(pg_get_functiondef('public.rpc_aprovar_os_v1(uuid,text)'::regprocedure));").stdout.strip()=='d65be82dbf38ec429b7377bd6873ba47'
         assert run("SELECT md5(pg_get_functiondef('private.assert_os_approval_scope(uuid,text)'::regprocedure));").stdout.strip()=='8c3142a07b3f310082309ef50f8b32dd'
-        labels.append('rollback exact baseline body closed ACL preserves audit/history') print('Assertions:',len(labels),'PASS; candidate bodies/3 hash-matched triggers; complete guarded files refuse reduced catalog; Auth/schema SIMULATED, hosted fullpreflight/RLS NOT tested')
+        labels.append('rollback exact baseline body closed ACL preserves audit/history')
+        print('Assertions:',len(labels),'PASS; candidate bodies/3 hash-matched triggers; complete guarded files refuse reduced catalog; Auth/schema SIMULATED, hosted fullpreflight/RLS NOT tested')
     finally:
         if started: subprocess.run(pre+['pg_ctl','-D',str(tmp/'d'),'stop','-m','immediate'],capture_output=True)
         shutil.rmtree(tmp,ignore_errors=True)
