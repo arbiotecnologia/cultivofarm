@@ -315,3 +315,8 @@
 - [x] HEAD publicável: runtimes/testes de lote restaurados a 3eeb (candidato em `.review`); delta runtime = 6 arquivos do hotfix; 435/435 focados, tsgo app/node 0.
 - [ ] ReportShell/Edge generate-financial-report v89 ainda usa signed URL 1 h: próximo pacote.
 - [ ] Imports legados de types.ts em 5 arquivos (2 testes de guarda falham também em 3eeb).
+
+## Exportação de relatórios sem URL assinada 2026-10-19
+- [x] Frontend ReportShell: locator validado + abridor autenticado Preparar/Baixar (compatível com Edge v89); 444 testes focais, tsgo 0.
+- [x] Edge candidata sem assinatura em `scripts/financial-report-locator/edge/` (fora do deploy automático) + teste de delta exato.
+- [ ] Capturar bytes LIVE v89 (sha ab4d5682…) e implantar candidata após publicação do frontend: auditor.

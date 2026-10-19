@@ -66,18 +66,18 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
   for (const kind of ["identity", "tenant", "aba", "readiness", "authError", "reportType"]) {
     it(`exportação tardia não abre arquivo nem libera pedido novo em ${kind}`, async () => {
       const old = deferred(), next = deferred(); state.invoke.mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
-      const view = render(element()); fireEvent.click(screen.getByRole("button", { name: "PDF" }));
+      const view = render(element()); fireEvent.click(screen.getByRole("button", { name: "Preparar PDF" }));
       change(kind); view.rerender(element(kind === "reportType" ? "payables" : "monthly"));
       if (kind === "aba") { state.auth.profile.organization_id = "OA"; view.rerender(element()); }
       if (kind === "readiness") { state.auth.loading = false; view.rerender(element()); }
       if (kind === "authError") { state.auth.error = null; view.rerender(element()); }
-      fireEvent.click(screen.getByRole("button", { name: "Excel" }));
+      fireEvent.click(screen.getByRole("button", { name: "Preparar Excel" }));
       expect(state.invoke).toHaveBeenCalledTimes(2);
       await settle(old, { data: { url: "arquivo-ficticio" }, error: null });
       expect(window.open).not.toHaveBeenCalled();
-      expect(screen.getByRole("button", { name: "CSV" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Preparar CSV" })).toBeDisabled();
       await settle(next, { data: null, error: { message: "falha nova" } });
-      expect(screen.getByRole("button", { name: "CSV" })).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: "Preparar CSV" })).not.toBeDisabled();
     });
   }
   it("não aceita finally ou erro de geração antiga no pedido novo", async () => {
@@ -96,7 +96,7 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
     const label = screen.getByText(/Filtros aplicados:/); expect(label).toHaveTextContent("APLICADO"); expect(label).not.toHaveTextContent("EDITADO");
     expect(state.rpc.mock.calls[0][1].customer_id).toBe("APLICADO");
     fireEvent.click(screen.getByRole("button", { name: "Imprimir" })); expect(window.print).toHaveBeenCalledTimes(1);
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "CSV" })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Preparar CSV" })); });
     expect(state.invoke.mock.calls[0][1].body.filters.customer_id).toBe("EDITADO");
   });
   it("erro atual remove prévia/metadados anteriores e permite repetir", async () => {
@@ -126,7 +126,7 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
       if (loss === "tenant") state.auth.profile.organization_id = "";
       if (loss === "authError") state.auth.error = "erro auth com perfil anterior persistente";
       view.rerender(element());
-      for (const name of ["Gerar prévia", "PDF", "Excel", "CSV", "Imprimir"]) {
+      for (const name of ["Gerar prévia", "Preparar PDF", "Preparar Excel", "Preparar CSV", "Imprimir"]) {
         const button = screen.getByRole("button", { name }); expect(button).toBeDisabled(); fireEvent.click(button);
       }
       expect(state.rpc).toHaveBeenCalledTimes(1); expect(state.invoke).not.toHaveBeenCalled(); expect(window.print).not.toHaveBeenCalled();
@@ -135,11 +135,11 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
   it("lock síncrono impede geração e exportação duplicadas/cruzadas", async () => {
     const pending = deferred(); state.rpc.mockReturnValueOnce(pending.promise); render(element());
     const button = screen.getByRole("button", { name: "Gerar prévia" });
-    act(() => { fireEvent.click(button); fireEvent.click(button); fireEvent.click(screen.getByRole("button", { name: "PDF" })); });
+    act(() => { fireEvent.click(button); fireEvent.click(button); fireEvent.click(screen.getByRole("button", { name: "Preparar PDF" })); });
     expect(state.rpc).toHaveBeenCalledTimes(1); expect(state.invoke).not.toHaveBeenCalled();
     await settle(pending, { data: ["PREVIA-A"], error: null });
     const exp = deferred(); state.invoke.mockReturnValueOnce(exp.promise);
-    act(() => { fireEvent.click(screen.getByRole("button", { name: "CSV" })); fireEvent.click(screen.getByRole("button", { name: "PDF" })); fireEvent.click(button); });
+    act(() => { fireEvent.click(screen.getByRole("button", { name: "Preparar CSV" })); fireEvent.click(screen.getByRole("button", { name: "Preparar PDF" })); fireEvent.click(button); });
     expect(state.invoke).toHaveBeenCalledTimes(1); expect(state.rpc).toHaveBeenCalledTimes(1);
   });
   it("desmontagem descarta respostas de geração e exportação", async () => {
@@ -147,7 +147,7 @@ describe("ReportShell — sessão real do hook / RPC e Edge mockados", () => {
     const view = render(element()); await generate(); view.unmount();
     await settle(old, { data: ["ANTIGO"], error: null });
     const exp = deferred(); state.invoke.mockReturnValueOnce(exp.promise);
-    const next = render(element()); fireEvent.click(screen.getByRole("button", { name: "PDF" })); next.unmount();
+    const next = render(element()); fireEvent.click(screen.getByRole("button", { name: "Preparar PDF" })); next.unmount();
     await settle(exp, { data: { url: "arquivo-ficticio" }, error: null });
     expect(window.open).not.toHaveBeenCalled(); expect(state.success).not.toHaveBeenCalled();
   });
@@ -203,7 +203,7 @@ describe("RelatorioMensal concreto — datas civis e contrato RPC mockado", () =
     fireEvent.change(screen.getByLabelText("Até *"), { target: { value: "2026-09-28" } });
     await generate();
     expect(state.rpc).toHaveBeenCalledWith("get_report_monthly_financial", { _from: "2026-09-02", _to: "2026-09-28" });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "CSV" })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Preparar CSV" })); });
     expect(state.invoke.mock.calls[0][1].body.filters).toEqual({ _from: "2026-09-02", _to: "2026-09-28" });
   });
 });

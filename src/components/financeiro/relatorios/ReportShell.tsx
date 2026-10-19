@@ -9,6 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+import { FINANCIAL_REPORT_BUCKET, parseFinancialReportLocator } from "@/lib/financeiro/reportExportLocator";
+
+const FORMAT_LABEL = { PDF: "PDF", XLSX: "Excel", CSV: "CSV" } as const;
+const EXPORT_UNAVAILABLE = "Exportação indisponível. Verifique seu acesso e tente novamente.";
+const EXPORT_TIMEOUT_MS = 60_000;
 
 interface ReportShellProps<TData = unknown> {
   title: string;
@@ -37,8 +43,11 @@ function ScopedReportShell<TData = unknown>({
   renderPreview,
   requiresCustomer,
 }: ReportShellProps<TData>) {
-  const { user, error: authError } = useAuth();
+  const { user, profile, error: authError } = useAuth();
   const access = useStorageAccessScope(`report:${reportType}`);
+  // Same resource as the parent key: any scope change remounts and revokes Blobs.
+  const opener = useAuthenticatedAttachmentOpener(`report:${reportType}`, FINANCIAL_REPORT_BUCKET);
+  const [prepared, setPrepared] = useState<{ path: string; format: "PDF" | "XLSX" | "CSV"; filters: string } | null>(null);
   const ready = access.ready && !authError;
   const [filters, setFilters] = useState<Record<string, unknown>>(() => structuredClone(defaultFilters));
   const [data, setData] = useState<TData | null>(null);
@@ -122,27 +131,46 @@ function ScopedReportShell<TData = unknown>({
     const current = access.capture();
     const request = Symbol();
     operation.current = request;
-    const isCurrent = () => current() && operation.current === request;
+    const controller = new AbortController();
+    const isCurrent = () => current() && operation.current === request && !controller.signal.aborted;
     const snapshot = structuredClone(filters);
+    const filtersKey = JSON.stringify(snapshot);
+    const ctx = { organizationId: profile?.organization_id, actorId: user?.id, reportType, format };
+    const timeout = setTimeout(() => {
+      if (operation.current !== request) return;
+      controller.abort(); operation.current = null;
+      if (current()) { setExporting(null); toast.error(EXPORT_UNAVAILABLE); }
+    }, EXPORT_TIMEOUT_MS);
+    setPrepared(null);
     setExporting(format);
     try {
       const { data: res, error } = await supabase.functions.invoke("generate-financial-report", {
-        body: { report_type: reportType, filters: snapshot, format, title },
+        body: { report_type: reportType, filters: snapshot, format, title }, signal: controller.signal,
       });
       if (!isCurrent()) return;
-      if (error) throw error;
-      const url = (res as { url?: string } | null | undefined)?.url;
-      if (!url) throw new Error("Exportação indisponível");
-      if (url) {
-        window.open(url, "_blank", "noopener,noreferrer");
-        toast.success(`${format} gerado`);
-      }
-    } catch (e: unknown) {
+      // Remote URLs (signed/public) are never consumed; only the private locator.
+      const path = error ? null : parseFinancialReportLocator(res, ctx);
+      if (!path) throw new Error("unavailable");
+      clearTimeout(timeout); // the canonical opener owns download timeout/abort
+      let failed = false;
+      await opener.open(path, () => { failed = true; });
       if (!isCurrent()) return;
-      toast.error(e instanceof Error ? e.message : "Erro ao exportar");
+      if (failed) throw new Error("unavailable");
+      setPrepared({ path, format, filters: filtersKey });
+      toast.success(`${FORMAT_LABEL[format]} preparado. Clique em Baixar ${FORMAT_LABEL[format]}.`);
+    } catch {
+      if (!isCurrent()) return;
+      toast.error(EXPORT_UNAVAILABLE);
     } finally {
-      if (isCurrent()) { operation.current = null; setExporting(null); }
+      clearTimeout(timeout);
+      if (operation.current === request) { operation.current = null; if (current()) setExporting(null); }
     }
+  };
+  // Only a fresh explicit click hands over the prepared local Blob.
+  const preparedVisible = prepared && ready && !!opener.urls[prepared.path] && prepared.filters === JSON.stringify(filters) ? prepared : null;
+  const downloadPrepared = () => {
+    if (!preparedVisible || !access.capture()()) return;
+    opener.download(preparedVisible.path, preparedVisible.path.split("/").pop() || "relatorio");
   };
 
   const empty = data == null || (Array.isArray(data) && data.length === 0);
@@ -191,10 +219,13 @@ function ScopedReportShell<TData = unknown>({
           )}
           <div className="flex flex-wrap gap-2">
             <Button onClick={generate} disabled={!ready || busy}>{loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Gerar prévia</Button>
-            <Button variant="outline" onClick={() => exportFormat("PDF")} disabled={!ready || busy}><FileText className="w-4 h-4 mr-2" />PDF</Button>
-            <Button variant="outline" onClick={() => exportFormat("XLSX")} disabled={!ready || busy}><FileSpreadsheet className="w-4 h-4 mr-2" />Excel</Button>
-            <Button variant="outline" onClick={() => exportFormat("CSV")} disabled={!ready || busy}><FileDown className="w-4 h-4 mr-2" />CSV</Button>
+            <Button variant="outline" onClick={() => exportFormat("PDF")} disabled={!ready || busy}>{exporting === "PDF" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}Preparar PDF</Button>
+            <Button variant="outline" onClick={() => exportFormat("XLSX")} disabled={!ready || busy}>{exporting === "XLSX" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}Preparar Excel</Button>
+            <Button variant="outline" onClick={() => exportFormat("CSV")} disabled={!ready || busy}>{exporting === "CSV" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileDown className="w-4 h-4 mr-2" />}Preparar CSV</Button>
             <Button variant="outline" onClick={print} disabled={!ready || busy || empty}><Printer className="w-4 h-4 mr-2" />Imprimir</Button>
+            {preparedVisible && (
+              <Button onClick={downloadPrepared} disabled={!ready || busy}><FileDown className="w-4 h-4 mr-2" />Baixar {FORMAT_LABEL[preparedVisible.format]}</Button>
+            )}
           </div>
         </CardContent>
       </Card>
