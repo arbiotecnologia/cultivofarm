@@ -30,14 +30,14 @@ beforeEach(() => {
   mocks.download.mockReset().mockResolvedValue(new Blob(["private"]));
   mocks.sign.mockReset().mockResolvedValue({ data: { signedUrl: "https://legacy.invalid/file" } });
   mocks.toast.mockReset();
-  mocks.query.mockResolvedValue({ data: [{ id: "D", nome: "Documento", tipo: "cnh", arquivo_path: "private/a.pdf" }], error: null });
+  mocks.query.mockResolvedValue({ data: [{ id: "D", nome: "Documento", tipo: "cnh", arquivo_path: "OA/clientes/R1/cnh/a.pdf" }], error: null });
   Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:owned") });
   Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
   vi.spyOn(window, "open").mockImplementation(() => null);
 });
 for (const consumer of ["cliente", "pedido"] as const) {
   const component = (id: string) => consumer === "cliente" ? <ClienteDocumentosTab clienteId={id} /> : <OrderMessagesPanel orderId={id} authorType="parceiro" />;
-  const trigger = () => consumer === "cliente" ? screen.getByTitle(/^Baixar/) : screen.getByRole("button", { name: /Anexo pedido/ });
+  const trigger = () => consumer === "cliente" ? screen.getByRole("button", { name: /^(Preparar|Baixar) Documento/ }) : screen.getByRole("button", { name: /Anexo pedido/ });
   it(`${consumer}: prepara uma vez, download explícito sem popup e revoga ao desmontar`, async () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const h = render(component("R1"));
@@ -45,7 +45,7 @@ for (const consumer of ["cliente", "pedido"] as const) {
     fireEvent.click(trigger());
     await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(1));
     expect(window.open).not.toHaveBeenCalled(); expect(click).not.toHaveBeenCalled();
-    await waitFor(() => expect(trigger().textContent + trigger().getAttribute("title")).toMatch(/Baixar arquivo/));
+    await waitFor(() => expect(trigger().textContent + trigger().getAttribute("title") + trigger().getAttribute("aria-label")).toMatch(/Baixar/));
     fireEvent.click(trigger()); fireEvent.click(trigger());
     expect(click).toHaveBeenCalledTimes(2);
     expect(mocks.download).toHaveBeenCalledTimes(1); expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
