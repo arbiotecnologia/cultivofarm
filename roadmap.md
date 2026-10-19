@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 19/10 12:27 — existência/tenant no helper de aplicações
-- [ ] Preparar candidata/rollback guardados no helper existente; conferir origem OS/cliente e testar PostgreSQL local, sem produção/fixtures/contratos.
-- [ ] Documentar separadamente build versus typecheck e disponibilizar fontes/config/hashes para verificação independente; preservar pacote PDF.
+- [x] Candidata/rollback guardados no helper existente, origem OS/cliente auditada; PostgreSQL local71/71, regressão PDF44/44, staging7/7; sem produção/fixtures/contratos.
+- [x] Build Vite/SWC não certifica types; esclarecimento e fontes/config/lock com hashes em application-access-integrity/typecheck-independent.md e independent-inputs.json. Pacote PDF byte-exato preservado.
 - [ ] Revisão/aplicação independente aguardam auditor; RPC salvar e v6 continuam fechados, aplicações/evidências produção vazias conforme auditor.
 
 ## 19/10 12:13 — PDF de aplicações
