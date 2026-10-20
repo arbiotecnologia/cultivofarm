@@ -171,53 +171,56 @@ export function useEsteiraLaboratorio() {
    * banco). Substitui o insert direto, que permitia lotes duplicados quando a
    * ação era disparada duas vezes.
    */
-  const gerarLote = async (loteData: any, osId: string, origem: string) => {
-    if (!loteData?.programacao_id) {
+  const gerarLote = async (loteData: any, osId: string, origem: string, isCurrent: () => boolean, signal: AbortSignal) => {
+    if (!isCurrent() || signal.aborted) return null;
+    if (!loteData?.programacao_id || !osId) {
       toast.error("Programação não identificada para gerar o lote.");
       return null;
     }
 
-    const volume = Number(loteData?.volume_produzido);
+    // Volume em mL (unidade do banco). Arredondado a 3 casas para não enviar ruído binário.
+    const volume = Math.round(Number(loteData?.volume_produzido) * 1000) / 1000;
     if (!Number.isFinite(volume) || volume <= 0) {
       toast.error(COCKPIT_ERROS.COCKPIT_LOTE_VOLUME_INVALIDO);
       return null;
     }
+    const texto = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_gerar_lote_v1", {
         p_programacao_id: loteData.programacao_id,
         p_os_id: osId,
         p_origem: origem,
-        // codigo_lote NUNCA é enviado pelo navegador: o servidor é a única
-        // fonte do código canônico (LT-YYYY-NNNN).
-        // produto_id e microrganismo_id também não são enviados: o servidor os
-        // deriva exclusivamente da programação bloqueada.
+        // codigo_lote, produto, microrganismo, tenant, custo e data NUNCA são
+        // enviados: o servidor deriva tudo da programação bloqueada.
         p_lote: {
           volume_produzido: volume,
-          data_producao: loteData.data_producao ?? null,
-          responsavel_producao: loteData.responsavel_producao ?? null,
-          tanque: loteData.tanque ?? null,
-          observacoes_tecnicas: loteData.observacoes_tecnicas ?? null,
+          responsavel_producao: texto(loteData.responsavel_producao),
+          tanque: texto(loteData.tanque),
+          observacoes_tecnicas: texto(loteData.observacoes_tecnicas),
         },
-      });
+      }).abortSignal(signal);
+      if (!isCurrent() || signal.aborted) return null;
 
       if (error) {
-        toast.error(traduzErroCockpit(error.message));
+        toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
         return null;
       }
-
-
-      if (data?.replay) {
-        toast.error(data.message || "Já existe um lote para esta programação.");
-        invalidateAll();
+      const valido = !!data && typeof data === "object" && !Array.isArray(data);
+      if (!valido || data.success !== true) {
+        toast.error(valido && typeof data.message === "string" ? data.message : "Não foi possível gerar o lote.");
         return null;
       }
-
-      toast.success(data?.message || "Lote gerado com sucesso");
-      invalidateAll();
-      return { id: data?.lote_id, codigo_lote: data?.codigo_lote };
+      if (typeof data.lote_id !== "string" || typeof data.codigo_lote !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.lote_id) || !/^LT-\d{4}-\d{4,}$/.test(data.codigo_lote) || typeof data.replay !== "boolean") {
+        toast.error("Resposta do servidor não confirmou o lote. Consulte a OS antes de tentar novamente.");
+        return null;
+      }
+      if (data.replay) toast.info(`Lote ${data.codigo_lote} já registrado com os mesmos dados.`);
+      else toast.success(`Lote ${data.codigo_lote} gerado. Controle de qualidade não iniciado.`);
+      void qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
+      return { id: data.lote_id as string, codigo_lote: data.codigo_lote as string, replay: data.replay as boolean };
     } catch (error: any) {
-      toast.error(traduzErroCockpit(error?.message));
+      if (isCurrent() && !signal.aborted) toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
       return null;
     }
   };

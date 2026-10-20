@@ -363,4 +363,7 @@
 
 ## 20/10 01:36 — contenção administrativa e bypass manual de lotes
 - [x] Baseline ACL contida, guard privado INSERT/UPDATE manual e rollback sem reabrir privilégios; testes PG descartável para bypass/ACL e phantoms/FKs em duas sessões; impactos/limites em WRITE-CONCURRENCY-REVIEW.md. Não aplicado; avanço manual legado deliberadamente fechado, não certificado.
-- [ ] Implantação e homologação lote/PDF: dependem da revisão independente; nenhuma sessão/fixture alterada.
+- [x] 20/10: proprietário confirmou revisão 31700a e aplicação de `manual_lot_canonical_generation_reviewed`, PRE/POST hosted integrais PASS; não reaplicar. Nenhuma sessão/fixture alterada pelo agente.
+- [x] Runtime: somente quatro candidatas frontend aplicadas, Gerar Lote ON pelo diálogo canônico da OS, descrições acessíveis e dois testes novos. Manifesto/rollback em `scripts/lot-generation-canonical-20261020/runtime-activation/`; 248/248 testes em 12 arquivos, build automático OK. Monitor/bindings/outros gates/backend preservados; lote legado sem reparo.
+- [ ] Comparação independente e typechecks app/node: confirmação do harness ainda não disponível; execução manual vedada neste ambiente. Publicação não realizada; aguarda auditor.
+- [ ] Homologação real lote/PDF: exige revisão/publicação pelo proprietário e dados canônicos elegíveis; zero fixture criada nesta rodada. Não avançar CQ/envase/contratos.

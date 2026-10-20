@@ -1,10 +1,11 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RastreabilidadeProducaoTab } from "./RastreabilidadeProducaoTab";
+import { RastreabilidadeProducaoTab, type TraceItem } from "./RastreabilidadeProducaoTab";
+import { GerarLoteDialog, type GerarLoteTarget } from "@/components/cockpit/GerarLoteDialog";
 import { formatOS } from "@/lib/osLabel";
 import { Badge } from "@/components/ui/badge";
-import { CalendarCheck, Check, History } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { CalendarCheck, Check, FlaskConical, History } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
@@ -23,6 +24,8 @@ const programOSRPC = supabase.rpc.bind(supabase) as unknown as (
   name: "rpc_programar_os_v1", args: { p_os_id: string; p_origem: string; p_data_programada: string },
 ) => ReturnType<typeof supabase.rpc>;
 
+export const MANUAL_LOT_GENERATION_REVIEWED = true;
+
 interface Props {
   os: any;
   open: boolean;
@@ -40,9 +43,27 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
   const [programmedId, setProgrammedId] = useState<string | null>(null);
   const [programDate, setProgramDate] = useState("");
   const [traceRefresh, setTraceRefresh] = useState(0);
+  const [trace, setTrace] = useState<TraceItem | null>(null);
+  const [loteTarget, setLoteTarget] = useState<GerarLoteTarget | null>(null);
+  const onTrace = useCallback((item: TraceItem | null) => setTrace(item), []);
   const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
     ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
-  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); }, [os?.id, open, access.scope]);
+  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); setTrace(null); }, [os?.id, open, access.scope]);
+  // Gerar Lote: somente exibição; o servidor revalida tudo. Baseado na leitura canônica atual da OS.
+  const canGenerateLot = MANUAL_LOT_GENERATION_REVIEWED && !!os && open && access.ready && programOrigin === "manual" &&
+    !os.partner_order_id && !os.partner_order_item_id && !!trace && trace.os_id === os.id &&
+    trace.origem_os === "manual" && trace.status_os === "programada" && !trace.codigo_lote && !trace.lote_id && !!trace.data_programada &&
+    typeof trace.programacao_id === "string" && !!trace.programacao_id &&
+    roles.some((role) => role === "administrador" || role === "gestor" || role === "producao");
+  const openLot = () => {
+    if (!canGenerateLot || !trace?.programacao_id) return;
+    setLoteTarget({
+      programacao_id: trace.programacao_id, os_id: os.id, origem: "manual", numero_os: trace.numero_os ?? os.numero_os,
+      produto_id: os.produto_id ?? null, microrganismo_id: os.microrganismo_id ?? null,
+      produto_nome: (os.produtos as any)?.nome ?? (os.microrganismos as any)?.nome,
+      volume_solicitado: typeof trace.volume_solicitado_l === "number" && Number.isFinite(trace.volume_solicitado_l) ? trace.volume_solicitado_l : undefined,
+    });
+  };
   const canProgram = !!os && open && access.ready && programOrigin === "manual" &&
     !os.partner_order_id && !os.partner_order_item_id && programmedId !== os.id &&
     (os.status === "aprovada" || approvedId === os.id) &&
@@ -130,11 +151,11 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
               <DialogTitle className="text-xl font-bold flex flex-wrap items-center gap-2">
                 Ordem de Serviço: <span className="font-mono text-primary">{formatOS(os)}</span>
               </DialogTitle>
-              <p className="text-sm text-muted-foreground">
+              <DialogDescription className="text-sm text-muted-foreground">
                 {isB2B
                   ? `Parceiro B2B: ${partnerNome}${partnerNumero ? ` · Pedido ${partnerNumero}` : ""}`
                   : `${clienteNome || "—"} · ${fazenda || "—"} / ${talhao || "—"}`}
-              </p>
+              </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="h-6">
@@ -166,6 +187,15 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
           </div>
         )}
 
+        {canGenerateLot && (
+          <div className="flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3 border-b">
+            <Button onClick={openLot} disabled={saving}>
+              <FlaskConical className="h-4 w-4 mr-2" />Gerar lote
+            </Button>
+            <p className="text-xs text-muted-foreground">Registra o lote de produção; não inicia controle de qualidade, envase nem estoque.</p>
+          </div>
+        )}
+
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="rastreabilidade" className="h-full flex flex-col">
             <div className="px-4 sm:px-6 border-b bg-muted/20">
@@ -188,12 +218,18 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 py-4">
               <TabsContent value="rastreabilidade" className="mt-0 h-full">
-                <RastreabilidadeProducaoTab osId={os.id} osTipo={os.origem} numeroOS={os.numero_os} refreshKey={traceRefresh} />
+                <RastreabilidadeProducaoTab osId={os.id} osTipo={os.origem} numeroOS={os.numero_os} refreshKey={traceRefresh} onItem={onTrace} />
               </TabsContent>
             </div>
           </Tabs>
         </div>
       </DialogContent>
+      {loteTarget && canGenerateLot && <GerarLoteDialog
+        open
+        onOpenChange={(value) => { if (!value) setLoteTarget(null); }}
+        target={loteTarget}
+        onCreated={() => { setTraceRefresh((value) => value + 1); onChanged?.(); }}
+      />}
     </Dialog>
   );
 }

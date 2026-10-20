@@ -24,10 +24,7 @@ describe('Geração canônica de código de lote — frontend', () => {
     expect(dialog).toContain('gerado automaticamente pelo sistema');
     expect(dialog).toContain('LT-AAAA-0000');
   });
-  it('mantém trava contra clique duplo', () => {
-    expect(dialog).toContain('if (saving) return;');
-    expect(dialog).toContain('disabled={saving}');
-  });
+  // Clique duplo é exercitado com o formulário real em gerar-lote-fences.test.tsx.
   it('a RPC é chamada sem codigo_lote, produto_id e microrganismo_id', () => {
     expect(chamada).not.toMatch(/codigo_lote:/);
     expect(chamada).not.toMatch(/produto_id:/);
@@ -37,9 +34,7 @@ describe('Geração canônica de código de lote — frontend', () => {
   it('valida volume antes de chamar o servidor', () => {
     expect(hook).toContain('!Number.isFinite(volume) || volume <= 0');
   });
-  it('usa exclusivamente o código devolvido pelo servidor', () => {
-    expect(hook).toContain("codigo_lote: data?.codigo_lote");
-  });
+  // Código retornado é exercitado pela resposta real do hook no teste de componente.
   it('idempotência: replay não é tratado como novo lote', () => {
     expect(hook).toContain('if (data?.replay)');
   });
