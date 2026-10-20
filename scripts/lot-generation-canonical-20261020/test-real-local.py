@@ -278,6 +278,10 @@ def main():
             out=run(actor()+'SET ROLE authenticated;'+sql,False)
             assert out.returncode and '42501' in out.stderr and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('candidate real staff RLS '+label+' INSERT blocked')
         reset();install_staff_rls();run(asm.CAND_ACL)
+        run('GRANT ALL ON lotes TO service_role;')
+        contained_acl='{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}'
+        assert run("SELECT relacl::text FROM pg_class WHERE oid='lotes'::regclass;").stdout.strip()==contained_acl
+        results.append('local table ACL matches administrative containment exactly')
         out=run(actor()+'SET ROLE authenticated;SELECT '+call()+';');assert '"success": true' in out.stdout
         lotid=run('SELECT id FROM lotes;').stdout.strip()
         assert run(actor()+"SET ROLE authenticated;SELECT count(*) FROM lotes;").stdout.strip().endswith('1');results.append('same-tenant SELECT preserved with all staff policy expressions')
@@ -299,6 +303,8 @@ def main():
         run((H/'rollback/rpc.sql.review').read_text()+asm.ROLL_ACL)
         out=run(actor()+'SET ROLE authenticated;'+direct,False);assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr
         assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1';results.append('rollback retains manual fence and history, direct bypass stays denied')
+        assert run("SELECT relacl::text FROM pg_class WHERE oid='lotes'::regclass;").stdout.strip()==contained_acl
+        results.append('rollback preserves contained table ACL exactly, no administrative privileges restored')
         # FK phantom proof: two sessions, real captured immediate validated FKs and candidate locks.
         def wait_lock(name):
             end=time.monotonic()+3

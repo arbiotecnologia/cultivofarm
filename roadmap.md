@@ -362,5 +362,5 @@
 - [ ] Revisão/implantação e homologação real: dependem do auditor; zero lotes/entregas/termos, sem dados criados pelo agente. Riscos: DML direto lotes, refresh global/locks e timeout hospedado; sem abertura dos demais gates.
 
 ## 20/10 01:36 — contenção administrativa e bypass manual de lotes
-- [ ] Atualizar baseline ACL contida, cercas INSERT/UPDATE manual e rollback sem reabrir privilégios; testar phantoms/FKs e impactos de callers.
+- [x] Baseline ACL contida, guard privado INSERT/UPDATE manual e rollback sem reabrir privilégios; testes PG descartável para bypass/ACL e phantoms/FKs em duas sessões; impactos/limites em WRITE-CONCURRENCY-REVIEW.md. Não aplicado; avanço manual legado deliberadamente fechado, não certificado.
 - [ ] Implantação e homologação lote/PDF: dependem da revisão independente; nenhuma sessão/fixture alterada.
