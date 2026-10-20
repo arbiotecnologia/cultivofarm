@@ -29,12 +29,28 @@ def main():
   assert run("SELECT md5(pg_get_functiondef('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)'::regprocedure));").stdout.strip()=="c159638f8e2b7bcb4c8c04fd457592cb";checks.append("exact current closed wrapper rollback")
   for sig,digest in [('fn_cq_autoria_servidor()','33f665a1fbc3377b1f909effb5ef5a43'),('fn_cq_resultado_imutavel()','f7bc6980729dbef8f06aaf9d412ae291'),('fn_cq_aprovado_avanca_os()','a5ea5580e8ceb0616e1d83c9c6f11e28'),('check_os_status_transition()','496a214d87fc831a53b2f16d3524ddea')]:
    got=run(f"SELECT md5(pg_get_functiondef('public.{sig}'::regprocedure));").stdout.strip();assert got==digest,(sig,got);checks.append('exact LIVE baseline '+sig)
+  # Isolate the two real DEFINER triggers: no manual guard can mask their escape.
+  run("CREATE TABLE public._cq_trigger_probe (LIKE public.controle_qualidade INCLUDING DEFAULTS INCLUDING IDENTITY); GRANT SELECT,INSERT,UPDATE,DELETE ON public._cq_trigger_probe TO authenticated; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated; ALTER TABLE public._cq_trigger_probe ENABLE ROW LEVEL SECURITY; CREATE POLICY probe_tenant ON public._cq_trigger_probe TO authenticated USING (organization_id=platform_private.h15_actor_organization()) WITH CHECK (organization_id=platform_private.h15_actor_organization()); CREATE TRIGGER probe_author BEFORE INSERT OR UPDATE ON public._cq_trigger_probe FOR EACH ROW EXECUTE FUNCTION public.fn_cq_autoria_servidor(); CREATE TRIGGER probe_immutable BEFORE UPDATE OR DELETE ON public._cq_trigger_probe FOR EACH ROW EXECUTE FUNCTION public.fn_cq_resultado_imutavel();")
+  probe=q(81);foreign_profile=run(f'SELECT id FROM profiles WHERE user_id={U2};').stdout.strip()
+  forged=actor()+"SET ROLE authenticated; SELECT set_config('app.cq_purge_fixture','on',false);"
+  probe_insert=f"INSERT INTO public._cq_trigger_probe(id,lote_id,organization_id,result ado,responsavel_id,ph) VALUES({probe},{q(82)},{A},'reprovado','{foreign_profile}',7);".replace('result ado','resultado')
+  r=run('BEGIN;'+forged+probe_insert+f"UPDATE public._cq_trigger_probe SET ph=8 WHERE id={probe};SELECT ph FROM public._cq_trigger_probe WHERE id={probe};DELETE FROM public._cq_trigger_probe WHERE id={probe};SELECT count(*) FROM public._cq_trigger_probe;ROLLBACK;")
+  assert '\n8\n' in r.stdout and '\n0\n' in r.stdout;checks.append('baseline DEFINER GUC forged authenticated bypasses author update delete (isolated triggers)')
+  run((H/'cq-integrity.sql.review').read_text())
+  def trigger_deny(label,sql,code):
+   r=run(forged+sql,False);assert r.returncode and code in r.stderr,(label,r.stderr);checks.append(label)
+  trigger_deny('forged GUC authenticated cannot forge author',probe_insert,'CQ_AUTORIA_FORJADA')
+  run(actor()+f"SET ROLE authenticated; INSERT INTO public._cq_trigger_probe(id,lote_id,organization_id,resultado,ph) VALUES({probe},{q(82)},{A},'reprovado',7);")
+  trigger_deny('forged GUC authenticated cannot change finalized ph',f'UPDATE public._cq_trigger_probe SET ph=8 WHERE id={probe};','CQ_RESULTADO_FINAL_IMUTAVEL')
+  trigger_deny('forged GUC authenticated cannot delete finalized result',f'DELETE FROM public._cq_trigger_probe WHERE id={probe};','CQ_RESULTADO_FINAL_IMUTAVEL')
+  trigger_deny('forged GUC authenticated cannot change author',f"UPDATE public._cq_trigger_probe SET responsavel_id='{foreign_profile}' WHERE id={probe};",'CQ_AUTORIA_IMUTAVEL')
+  yes('isolated trigger history preserved',f"EXISTS(SELECT 1 FROM public._cq_trigger_probe c JOIN profiles p ON p.id=c.responsavel_id WHERE c.id={probe} AND c.ph=7 AND p.user_id={U})")
   run((H.parent/'lot-generation-canonical-20261020/manual-write-guard.sql.review').read_text()+(H.parent/'lot-generation-canonical-20261020/rpc.sql.review').read_text())
   run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-20'); SELECT public.rpc_cockpit_gerar_lote_v1({PP},{O},'manual','{{\"volume_produzido\":100}}');")
   lid=run('SELECT id FROM lotes;').stdout.strip(); L="'"+lid+"'"
   # Reproduce existing downstream failure: baseline cannot send a programmed OS directly to CQ.
   deny('baseline rejects programada->em_cq',actor()+f"BEGIN; UPDATE ordens_servico SET status='em_cq' WHERE id={O};ROLLBACK;")
-  for f in ['lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review']:
+  for f in ['cq-integrity.sql.review','lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review']:
    run((H/f).read_text())
   run('REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO authenticated;REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) TO authenticated;')
   send=f"public.rpc_avancar_esteira_laboratorio({O},'manual','enviar_cq',{PP})"
@@ -57,6 +73,15 @@ def main():
    d={**data,k:v};deny('payload denied '+k+'='+str(v),actor()+f'SELECT {call(d)};')
   for mutation in [f"UPDATE lotes SET status='aprovado' WHERE id={L};",f"UPDATE programacao_producao SET status='aprovado' WHERE id={PP};",f"UPDATE ordens_servico SET status='envase' WHERE id={O};",f"INSERT INTO controle_qualidade(lote_id,resultado,organization_id) VALUES({L},'aprovado',{A});"]:
    deny('direct manual write fenced',actor()+"SELECT set_config('app.cq_purge_fixture','on',false);"+mutation)
+  deny('canonical product without micro/reference cannot be approved',actor()+f'SET ROLE authenticated;SELECT {call()};')
+  no_ref_rejected={**data,'resultado':'reprovado'}
+  run(actor()+f'BEGIN;SET LOCAL ROLE authenticated;SELECT {call(no_ref_rejected)};ROLLBACK;');checks.append('no-reference synthetic rejection records data but never conformity')
+  # Explicit synthetic reference for a different local test scenario, NOT a product/micro association.
+  refid=q(91); data['referencia_id']=refid.strip("'")
+  run(f"INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,ativo) VALUES({refid},{q(92)},{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente',true);")
+  yes('product remains without direct microorganism',f'(SELECT microrganismo_id IS NULL FROM ordens_servico WHERE id={O}) AND (SELECT microrganismo_id IS NULL FROM programacao_producao WHERE id={PP})')
+  for label,change in [('inactive reference',f'UPDATE cq_parametros_referencia SET ativo=false WHERE id={refid};'),('foreign item reference',f'UPDATE cq_parametros_referencia SET produto_id={q(93)} WHERE id={refid};'),('incomplete reference',f'UPDATE cq_parametros_referencia SET ph_min=NULL WHERE id={refid};'),('out of specification',f'UPDATE cq_parametros_referencia SET ph_min=8 WHERE id={refid};')]:
+   deny('approval denied '+label,actor()+f'BEGIN;{change}SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;')
   for role in ['gestor','producao']:
    r=run(actor()+f"BEGIN;UPDATE user_roles SET role='{role}' WHERE user_id={U};SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;");assert '"success": true' in r.stdout;checks.append('record positive current '+role)
   for label,change in [('inactive',f'UPDATE profiles SET ativo=false WHERE user_id={U};'),('revoked',f'DELETE FROM user_roles WHERE user_id={U};'),('foreign-client',f'UPDATE clientes SET organization_id={B} WHERE id={lot.C};')]:
@@ -82,12 +107,13 @@ def main():
   deny('GUC cannot rewrite finalized CQ',actor()+"SELECT set_config('app.cq_purge_fixture','on',false);UPDATE controle_qualidade SET ph=8;")
   deny('GUC cannot delete finalized CQ',actor()+"SELECT set_config('app.cq_purge_fixture','on',false);DELETE FROM controle_qualidade;")
   yes('canonical reader preserves CQ profile-id ownership',f"EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() WHERE os_id={O})")
-  hashes=json.loads(run("SELECT json_object_agg(p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE (n.nspname='platform_private' AND p.proname IN ('manual_cq_v1','guard_manual_lot_write_v1','guard_manual_cq_write_v1','guard_manual_cq_parent_v1')) OR (n.nspname='private' AND p.proname='h7n_esteira_laboratorio') OR (n.nspname='public' AND p.proname IN ('rpc_avancar_esteira_laboratorio','check_os_status_transition','fn_cq_aprovado_avanca_os')); ").stdout.strip());(H/'post-hashes.json').write_text(json.dumps(hashes,indent=2)+'\n')
+  hashes=json.loads(run("SELECT json_object_agg(p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE (n.nspname='platform_private' AND p.proname IN ('manual_cq_v1','guard_manual_lot_write_v1','guard_manual_cq_write_v1','guard_manual_cq_parent_v1')) OR (n.nspname='private' AND p.proname='h7n_esteira_laboratorio') OR (n.nspname='public' AND p.proname IN ('rpc_avancar_esteira_laboratorio','check_os_status_transition','fn_cq_aprovado_avanca_os','fn_cq_autoria_servidor','fn_cq_resultado_imutavel')); ").stdout.strip());(H/'post-hashes.json').write_text(json.dumps(hashes,indent=2)+'\n')
   triggers=json.loads(run("SELECT json_object_agg(c.relname,hash) FROM (SELECT tgrelid,md5(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname)) hash FROM pg_trigger WHERE NOT tgisinternal AND tgrelid IN ('controle_qualidade'::regclass,'ordens_servico'::regclass,'programacao_producao'::regclass) GROUP BY tgrelid) t JOIN pg_class c ON c.oid=t.tgrelid;").stdout.strip());(H/'post-triggers.json').write_text(json.dumps(triggers,indent=2)+'\n')
   run((H/'rollback/advance-rpc.sql.review').read_text()+"REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO service_role; REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;"+(H/'rollback/manual-write-guard.sql.review').read_text().split('CREATE TRIGGER')[0].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)+(H/'rollback/check_os_status_transition.sql.review').read_text())
   deny('rollback closes send without deleting CQ history',actor()+f'SET ROLE authenticated;SELECT {send};')
   deny('rollback closes record without deleting CQ history',actor()+f'SET ROLE authenticated;SELECT {call()};')
   yes('rollback retains completed CQ and no filling',"(SELECT count(*) FROM controle_qualidade)=1 AND (SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='registrar_cq')=1 AND NOT EXISTS(SELECT 1 FROM envase)")
+  trigger_deny('rollback never restores GUC purge escape',f'DELETE FROM public._cq_trigger_probe WHERE id={probe};','CQ_RESULTADO_FINAL_IMUTAVEL')
   report={'passed':checks,'count':len(checks),'hosted':False,'auth':'synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification','limits':['partial schema clone; full PRE/POST require independent canonical hosted read','no production/user sessions touched']};(H/'test-results.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
  finally:
   if started:subprocess.run(pre+['pg_ctl','-D',str(tmp/'data'),'stop','-m','immediate'],capture_output=True)
