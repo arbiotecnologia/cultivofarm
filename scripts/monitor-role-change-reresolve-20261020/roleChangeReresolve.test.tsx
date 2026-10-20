@@ -5,13 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002', profileOrg: '00000000-0000-4000-8000-000000000002',
-  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, reads: 0, readError: null as null | { status: number; message: string }, signOuts: 0,
+  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, reads: 0, readError: null as null | { status: number; message: string }, signOuts: 0, signedOut: false, cb: null as null | ((e: string, sess: unknown) => void),
 }));
 const later = <T,>(v: () => T) => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
 vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
 vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {
-  auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => { s.signOuts++; } },
+  auth: { getSession: async () => ({ data: { session: s.signedOut ? null : { user: { id: s.uid } } }, error: null }), onAuthStateChange: (cb: (e: string, sess: unknown) => void) => { s.cb = cb; return { data: { subscription: { unsubscribe() { s.cb = null; } } } }; }, signOut: async () => { s.signOuts++; s.signedOut = true; s.cb?.('SIGNED_OUT', null); } },
   from: (t: string) => {
     const q: Record<string, unknown> = {};
     for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
@@ -41,7 +41,7 @@ const mount = async () => {
 };
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.reads = 0; s.readError = null; s.signOuts = 0; s.profileOrg = s.org;
+  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.reads = 0; s.readError = null; s.signOuts = 0; s.signedOut = false; s.profileOrg = s.org;
   Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -62,11 +62,15 @@ describe.each(['gestor', 'consultor_tecnico'] as const)('remoção isolada → r
   });
   it('papel removido nunca é restaurado; conteúdo nunca exibe o par durante a releitura', async () => {
     await mount();
-    s.roles = [remaining];
-    for (let i = 0; i < 80; i++) {
+    s.roles = [remaining]; s.perCall = 1500;
+    let seenPause = false;
+    for (let i = 0; i < 160; i++) {
       await adv(250);
-      expect(screen.queryByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeNull();
+      if (paused()) seenPause = true;
+      // Before the next poll the previously confirmed lease legitimately holds; after the pause the pair never returns.
+      if (seenPause) expect(screen.queryByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeNull();
     }
+    expect(seenPause).toBe(true);
     if (BASELINE) return;
     expect(screen.queryByText(/gestor\+|\+gestor|consultor_tecnico\+|\+consultor_tecnico/)).toBeNull();
   });
@@ -97,15 +101,13 @@ describe('negativos', () => {
     await adv(60_000);
     expect(paused()).toBeTruthy(); expect(s.reads).toBe(r0);
   });
-  it('logout (signOut canônico) cancela a releitura agendada: nenhuma leitura no tick seguinte', async () => {
-    await mount(); s.roles = ['gestor'];
-    // Advance only until the poll observes the loss (ineligible -> timer 0 pending).
-    let r0 = s.reads;
-    for (let i = 0; i < 60 && !paused(); i++) await adv(250);
+  it('logout (signOut canônico + SIGNED_OUT) durante releitura lenta: resposta antiga não reabre', async () => {
+    await mount(); s.roles = ['gestor']; s.perCall = 3000;
+    for (let i = 0; i < 120 && !paused(); i++) await adv(250);
     expect(paused()).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'sair-externo' }));
-    r0 = s.reads; await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-    expect(s.signOuts).toBe(1); expect(s.reads).toBe(r0);
+    await adv(60_000);
+    expect(screen.queryByText(/\[ok\]/)).toBeNull(); expect(s.signOuts).toBe(1);
   });
   it('desmontagem com releitura lenta em voo: resposta antiga não reabre nem agenda nova', async () => {
     const view = { u: () => {} };
