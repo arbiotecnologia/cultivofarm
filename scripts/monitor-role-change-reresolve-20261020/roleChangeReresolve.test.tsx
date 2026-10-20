@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002', profileOrg: '00000000-0000-4000-8000-000000000002',
-  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, reads: 0, readError: null as null | { status: number; message: string }, signOuts: 0, signedOut: false, probeDeny: false, cb: null as null | ((e: string, sess: unknown) => void),
+  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, reads: 0, readError: null as null | { status: number; message: string }, signOuts: 0, signedOut: false, probeDeny: false, probes: 0, profileMode: 'ok' as 'ok' | 'inactive' | 'absent', cb: null as null | ((e: string, sess: unknown) => void),
 }));
 const later = <T,>(v: () => T) => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
 vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
@@ -16,122 +16,153 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     const q: Record<string, unknown> = {};
     for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
     const run = () => { s.reads++; return later(() => s.readError ? { data: null, error: s.readError } : t === 'profiles'
-      ? { data: { user_id: s.uid, organization_id: s.profileOrg, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
+      ? { data: s.profileMode === 'absent' ? null : { user_id: s.uid, organization_id: s.profileOrg, ativo: s.profileMode === 'ok', senha_provisoria: false, nome: 'B' }, error: null }
       : { data: s.roles.map(role => ({ role })), error: null }); };
     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
     return q;
   },
-  rpc: (name: string, args?: { _role: string }) => later(() => name === 'has_role' ? { data: !s.probeDeny && s.roles.includes(args!._role), error: null } : { data: s.org, error: null }),
+  rpc: (name: string, args?: { _role: string }) => { s.probes++; return later(() => name === 'has_role' ? { data: !s.probeDeny && s.roles.includes(args!._role), error: null } : { data: s.org, error: null }); },
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { supabase as fake } from '@/integrations/supabase/client';
 import { installInternalActorContextAdapter } from '@/test/config/helpers/internalActorContextAdapter';
-installInternalActorContextAdapter(fake, () => s.uid, (_uid, role) => !s.probeDeny && s.roles.includes(role));
+installInternalActorContextAdapter(fake, () => s.uid, (_uid, role) => { s.probes++; return !s.probeDeny && s.roles.includes(role); });
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
+import { useState } from 'react';
+let qcRef: QueryClient;
 
-const BASELINE = process.env.MONITOR_TARGET === 'baseline';
-function Probe() { const { roles, checkAuthzAccess, signOut } = useAuth(); return <span>Conteúdo sensível [{checkAuthzAccess() ? 'ok' : 'no'}] {roles.join('+')}<button onClick={() => void signOut()}>sair</button></span>; }
+function Draft() { const [v, setV] = useState(''); const [m, setM] = useState(false); return <><input aria-label="rascunho" value={v} onChange={e => setV(e.target.value)} /><button onClick={() => setM(true)}>abrir</button>{m && <div role="dialog">modal</div>}</>; }
+function Probe() { const { roles, checkAuthzAccess, signOut } = useAuth(); return <><Draft /><span>Conteúdo sensível [{checkAuthzAccess() ? 'ok' : 'no'}] {roles.join('+')}<button onClick={() => void signOut()}>sair</button></span></>; }
 function Outside() { const { signOut } = useAuth(); return <button onClick={() => void signOut()}>sair-externo</button>; }
 const adv = async (ms: number) => { for (let t = 0; t < ms; t += 250) await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(250, ms - t)); }); };
 const paused = () => screen.queryByText('Sessão de acesso pausada');
 const mount = async () => {
-  render(<QueryClientProvider client={new QueryClient()}><AuthProvider><Outside /><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
+  qcRef = new QueryClient(); qcRef.setQueryData(['cache-sensivel'], 'x');
+  render(<QueryClientProvider client={qcRef}><AuthProvider><Outside /><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
   await adv(10_000);
   expect(screen.getByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeTruthy();
 };
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.reads = 0; s.readError = null; s.signOuts = 0; s.signedOut = false; s.probeDeny = false; s.profileOrg = s.org;
+  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.reads = 0; s.readError = null; s.signOuts = 0; s.signedOut = false; s.probeDeny = false; s.probes = 0; s.profileMode = 'ok'; s.profileOrg = s.org;
   Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
-describe.each(['gestor', 'consultor_tecnico'] as const)('remoção isolada → residual %s', remaining => {
-  it(BASELINE ? 'baseline reproduz: fica pausado até Tentar novamente manual' : 'candidato: uma releitura canônica e nova confirmação, sem clique', async () => {
+
+const pairText = /\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/;
+const sensitive = () => screen.queryByText(/Conteúdo sensível/);
+/** Steps until the poll observes the loss; returns once the pause is on screen. */
+async function untilPaused() { for (let i = 0; i < 400 && !paused(); i++) await adv(50); expect(paused()).toBeTruthy(); }
+/** Watches every 50 ms after the pause: nothing sensitive may render before a fresh read+probe. */
+async function watchUntilContent(ms: number) {
+  const r0 = s.reads, p0 = s.probes; let shownAt: { reads: number; probes: number } | null = null;
+  for (let t = 0; t < ms && !shownAt; t += 50) {
+    await adv(50);
+    if (sensitive()) shownAt = { reads: s.reads - r0, probes: s.probes - p0 };
+  }
+  return shownAt;
+}
+
+// Decisive integration: real AuthProvider/monitor/probe/boundary; FAILS on baseline 0feac450 (manual Retry needed).
+describe.each([['gestor', 'consultor_tecnico'], ['consultor_tecnico', 'gestor']] as const)('retirada %s → residual %s', (removed, remaining) => {
+  it('bloqueia imediatamente e só reabre após leitura fresca perfil+roles e probe válido, sem clique', async () => {
     await mount();
-    s.roles = [remaining];
-    await adv(15_000);
-    await adv(5_000);
-    if (BASELINE) {
-      expect(paused()).toBeTruthy();
-      fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
-      await adv(5_000);
-    }
+    s.roles = [remaining]; s.perCall = 300;
+    await untilPaused();
+    expect(sensitive()).toBeNull();
+    const shown = await watchUntilContent(20_000);
+    expect(shown).not.toBeNull();                       // baseline: stays paused → fails here
+    expect(shown!.reads).toBeGreaterThanOrEqual(2);      // fresh profiles + user_roles
+    expect(shown!.probes).toBeGreaterThanOrEqual(1);     // residual probe confirmed
     expect(screen.getByText(new RegExp(`\\[ok\\] ${remaining}$`))).toBeTruthy();
+    expect(screen.queryByText(new RegExp(removed))).toBeNull(); // removed role never restored
+    expect(screen.queryByText(pairText)).toBeNull();
     expect(s.signOuts).toBe(0);
   });
-  it('papel removido nunca é restaurado; conteúdo nunca exibe o par durante a releitura', async () => {
+  it('rascunho, modal e cache da época anterior são descartados e não voltam após a confirmação automática', async () => {
     await mount();
-    s.roles = [remaining]; s.perCall = 1500;
-    let seenPause = false;
-    for (let i = 0; i < 160; i++) {
-      await adv(250);
-      if (paused()) seenPause = true;
-      // Before the next poll the previously confirmed lease legitimately holds; after the pause the pair never returns.
-      if (seenPause) expect(screen.queryByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeNull();
-    }
-    expect(seenPause).toBe(true);
-    if (BASELINE) return;
-    expect(screen.queryByText(/gestor\+|\+gestor|consultor_tecnico\+|\+consultor_tecnico/)).toBeNull();
+    fireEvent.change(screen.getByLabelText('rascunho'), { target: { value: 'texto sensível' } });
+    fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    s.roles = [remaining]; s.perCall = 300;
+    await untilPaused();
+    expect(screen.queryByRole('textbox')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull();
+    expect(qcRef.getQueryData(['cache-sensivel'])).toBeUndefined();
+    expect(await watchUntilContent(20_000)).not.toBeNull();
+    expect((screen.getByLabelText('rascunho') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(qcRef.getQueryData(['cache-sensivel'])).toBeUndefined();
   });
 });
 
-describe('negativos', () => {
-  it('revogação total: permanece pausado, sem loop (leituras limitadas), sem signOut', async () => {
-    await mount(); s.roles = [];
-    await adv(15_000); const r0 = s.reads; await adv(120_000);
-    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
+describe('negativos (candidato e baseline devem permanecer pausados)', () => {
+  const stays = async (ms = 120_000) => { await adv(ms); expect(paused()).toBeTruthy(); expect(sensitive()).toBeNull(); };
+  it.each([401, 403, 500])('leitura %s: pausado, ≤1 tentativa automática, sem signOut', async status => {
+    await mount(); s.roles = ['gestor']; s.readError = { status, message: 'x' };
+    await untilPaused(); const r0 = s.reads; await stays();
     expect(s.reads - r0).toBeLessThanOrEqual(2); expect(s.signOuts).toBe(0);
   });
-  it('papel remanescente negado pelo probe (inativo): pausado, uma única releitura, sem loop', async () => {
-    await mount(); s.roles = ['gestor']; s.probeDeny = true;
-    await adv(15_000); const r0 = s.reads; await adv(120_000);
-    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
-    expect(s.reads - r0).toBeLessThanOrEqual(4); expect(s.signOuts).toBe(0);
+  it.each(['inactive', 'absent'] as const)('perfil %s: pausado, sem nova saída automática', async mode => {
+    await mount(); s.roles = ['gestor']; s.profileMode = mode;
+    await untilPaused(); const r0 = s.reads; await stays();
+    expect(s.reads - r0).toBeLessThanOrEqual(2); expect(s.signOuts).toBe(0);
   });
-  it('corrida: papel remanescente removido durante a releitura automática permanece pausado', async () => {
-    await mount(); s.roles = ['gestor']; s.perCall = 3000;
-    for (let i = 0; i < 120 && !paused(); i++) await adv(250);
-    s.roles = []; await adv(120_000);
-    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
-  });
-  it('troca de tenant não é adotada: permanece pausado', async () => {
+  it('tenant mudado: não adotado', async () => {
     await mount(); s.roles = ['gestor']; s.profileOrg = '00000000-0000-4000-8000-0000000000ff';
-    await adv(60_000);
-    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
+    await untilPaused(); await stays();
   });
-  it.each([401, 403])('leitura %s: permanece pausado, sem loop e sem signOut', async status => {
-    await mount(); s.roles = ['gestor']; s.readError = { status, message: 'denied' };
-    await adv(15_000); const r0 = s.reads; await adv(120_000);
-    expect(paused()).toBeTruthy(); expect(s.reads - r0).toBeLessThanOrEqual(2); expect(s.signOuts).toBe(0);
-  });
-  it('offline na expiração: nenhuma releitura automática', async () => {
+  it('offline na expiração: nenhuma leitura automática', async () => {
     await mount();
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
-    s.roles = ['gestor']; const r0 = s.reads;
+    const r0 = s.reads;
     await act(async () => { window.dispatchEvent(new Event('offline')); });
-    await adv(60_000);
-    expect(paused()).toBeTruthy(); expect(s.reads).toBe(r0);
+    await stays(60_000); expect(s.reads).toBe(r0);
   });
-  it('logout (signOut canônico + SIGNED_OUT) durante releitura lenta: resposta antiga não reabre', async () => {
+  it('logout (SIGNED_OUT) com releitura em voo: resposta antiga não reabre', async () => {
     await mount(); s.roles = ['gestor']; s.perCall = 3000;
-    for (let i = 0; i < 120 && !paused(); i++) await adv(250);
-    expect(paused()).toBeTruthy();
+    await untilPaused();
     fireEvent.click(screen.getByRole('button', { name: 'sair-externo' }));
-    await adv(60_000);
-    expect(screen.queryByText(/\[ok\]/)).toBeNull(); expect(s.signOuts).toBe(1);
+    await adv(60_000); expect(screen.queryByText(/\[ok\]/)).toBeNull(); expect(s.signOuts).toBe(1);
   });
-  it('desmontagem com releitura lenta em voo: resposta antiga não reabre nem agenda nova', async () => {
-    const view = { u: () => {} };
+  it('desmontagem com releitura em voo: nada reabre e nenhuma leitura nova', async () => {
     await mount(); s.roles = ['gestor']; s.perCall = 3000;
-    await adv(16_000);
+    await untilPaused(); await adv(500);
     cleanup(); const r0 = s.reads; await adv(60_000);
-    expect(screen.queryByText(/Conteúdo sensível/)).toBeNull(); expect(s.reads).toBe(r0); void view;
+    expect(sensitive()).toBeNull(); expect(s.reads - r0).toBeLessThanOrEqual(2);
   });
-  it('RTT 8 s sustentado no residual continua pausando (lease 15 s, sem resposta tardia)', async () => {
-    await mount(); s.roles = ['gestor']; await adv(25_000);
-    if (!BASELINE) expect(screen.getByText(/\[ok\] gestor$/)).toBeTruthy();
+  it('papel remanescente removido durante a releitura: pausado', async () => {
+    await mount(); s.roles = ['gestor']; s.perCall = 3000;
+    await untilPaused(); s.roles = []; await stays();
+  });
+  it('RTT 8 s sustentado no residual: conteúdo some (lease 15 s, sem resposta tardia)', async () => {
+    await mount(); s.roles = ['gestor']; await untilPaused(); await adv(5_000);
     s.perCall = 8000; await adv(60_000);
-    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
+    expect(sensitive()).toBeNull();
+  });
+});
+
+describe('orçamento', () => {
+  it('restauração do par pelo servidor no residual: probe residual rejeita superconjunto, uma releitura confirma o par', async () => {
+    await mount(); s.roles = ['gestor']; await untilPaused(); await adv(5_000);
+    expect(screen.getByText(/\[ok\] gestor$/)).toBeTruthy();
+    s.roles = ['gestor', 'consultor_tecnico']; await untilPaused();
+    expect(await watchUntilContent(20_000)).not.toBeNull();
+    expect(screen.getByText(pairText)).toBeTruthy();
+  });
+  it('ineligible persistente: exatamente uma tentativa automática; valid posterior rearma uma nova', async () => {
+    await mount(); s.roles = ['gestor'];
+    await untilPaused(); await adv(5_000);
+    expect(screen.getByText(/\[ok\] gestor$/)).toBeTruthy(); // first attempt used + valid rearms
+    s.probeDeny = true;
+    await untilPaused();
+    const r0 = s.reads; await adv(120_000);
+    expect(paused()).toBeTruthy(); expect(s.reads - r0).toBe(2);   // one fresh read, no loop
+    s.probeDeny = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+    await adv(5_000); expect(screen.getByText(/\[ok\] gestor$/)).toBeTruthy(); // valid → rearmed
+    s.probeDeny = true; await untilPaused();
+    const r1 = s.reads; await adv(120_000);
+    expect(s.reads - r1).toBe(2);                                  // exactly one new attempt
   });
 });

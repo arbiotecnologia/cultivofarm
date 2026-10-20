@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 export interface CQReferencia {
   id: string;
-  microrganismo_id: string;
+  /** NULL em referência produto-only (schema canônico: CHECK exige produto ou micro). */
+  microrganismo_id: string | null;
   produto_id: string | null;
   ph_min: number | null;
   ph_max: number | null;

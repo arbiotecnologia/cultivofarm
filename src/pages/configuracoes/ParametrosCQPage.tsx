@@ -20,7 +20,8 @@ import { formatConcentracaoDisplay, parseConcentracao, formatConcentracaoValue }
 
 interface Row {
   id: string;
-  microrganismo_id: string;
+  /** NULL em referência produto-only. */
+  microrganismo_id: string | null;
   produto_id: string | null;
   ph_min: number | null;
   ph_max: number | null;
@@ -48,6 +49,14 @@ const EMPTY = {
   observacoes: "",
   ativo: true,
 };
+
+/** Normalização segura dos vínculos (espelha o CHECK do banco): vazio vira NULL; ambos vazios falha. */
+export function normalizeCQReferenceIds(form: { microrganismo_id: string; produto_id: string }) {
+  const microrganismo_id = form.microrganismo_id.trim() || null;
+  const produto_id = form.produto_id.trim() || null;
+  if (!microrganismo_id && !produto_id) throw new Error("Selecione o microrganismo ou o produto");
+  return { microrganismo_id, produto_id };
+}
 
 export default function ParametrosCQPage() {
   const { role } = useAuth();
@@ -99,10 +108,10 @@ export default function ParametrosCQPage() {
   const upsert = useMutation({
     mutationFn: async () => {
       assertGlobalCatalogWriteBlocked();
-      if (!form.microrganismo_id) throw new Error("Selecione o microrganismo");
+      const ids = normalizeCQReferenceIds(form);
       const payload = {
-        microrganismo_id: form.microrganismo_id,
-        produto_id: form.produto_id || null,
+        microrganismo_id: ids.microrganismo_id,
+        produto_id: ids.produto_id,
         ph_min: form.ph_min ? Number(form.ph_min.replace(",", ".")) : null,
         ph_max: form.ph_max ? Number(form.ph_max.replace(",", ".")) : null,
         concentracao_min_ufc_ml: formatConcentracaoValue(form.conc_mantissa, form.conc_expoente),
@@ -148,7 +157,7 @@ export default function ParametrosCQPage() {
     const conc = parseConcentracao(r.concentracao_min_ufc_ml);
     setForm({
       id: r.id,
-      microrganismo_id: r.microrganismo_id,
+      microrganismo_id: r.microrganismo_id ?? "",
       produto_id: r.produto_id ?? "",
       ph_min: r.ph_min !== null ? String(r.ph_min).replace(".", ",") : "",
       ph_max: r.ph_max !== null ? String(r.ph_max).replace(".", ",") : "",
