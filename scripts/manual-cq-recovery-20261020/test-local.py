@@ -148,6 +148,8 @@ def main():
   deny('rollback closes send without deleting CQ history',actor()+f'SET ROLE authenticated;SELECT {send};')
   deny('rollback closes record without deleting CQ history',actor()+f'SET ROLE authenticated;SELECT {call()};')
   yes('rollback retains completed CQ and no filling',"(SELECT count(*) FROM controle_qualidade)=1 AND (SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='registrar_cq')=1 AND NOT EXISTS(SELECT 1 FROM envase)")
+  for mutation in [f"UPDATE programacao_producao SET ordem_servico_id=NULL WHERE id={PP};",f"UPDATE ordens_servico SET volume_total_ml=101 WHERE id={O};"]:
+   r=run(actor()+mutation,False);assert r.returncode and 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' in r.stderr,r.stderr;checks.append('rollback retains parent identity and same-status OS fence')
   trigger_deny('rollback never restores GUC purge escape',f'DELETE FROM public._cq_trigger_probe WHERE id={probe};','CQ_RESULTADO_FINAL_IMUTAVEL')
   report={'passed':checks,'count':len(checks),'hosted':False,'auth':'synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification','limits':['partial schema clone; full PRE/POST require independent canonical hosted read','no production/user sessions touched']};(H/'test-results.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
  finally:

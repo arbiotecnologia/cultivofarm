@@ -87,9 +87,11 @@
     "rollback closes send without deleting CQ history",
     "rollback closes record without deleting CQ history",
     "rollback retains completed CQ and no filling",
+    "rollback retains parent identity and same-status OS fence",
+    "rollback retains parent identity and same-status OS fence",
     "rollback never restores GUC purge escape"
   ],
-  "count": 88,
+  "count": 90,
   "hosted": false,
   "auth": "synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification",
   "limits": [
