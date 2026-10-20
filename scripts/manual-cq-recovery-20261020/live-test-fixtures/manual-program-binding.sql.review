@@ -1,0 +1,18 @@
+-- Captured LIVE dependency, disposable tests only; NEVER deployment assembly.
+CREATE OR REPLACE FUNCTION platform_private.guard_manual_program_binding_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF OLD.ordem_servico_id IS NOT NULL
+ AND ROW(NEW.id,NEW.ordem_servico_id,NEW.ordem_servico_onfarm_id,NEW.organization_id,NEW.produto_id,NEW.microrganismo_id)
+ IS DISTINCT FROM ROW(OLD.id,OLD.ordem_servico_id,OLD.ordem_servico_onfarm_id,OLD.organization_id,OLD.produto_id,OLD.microrganismo_id)
+ AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id)
+ THEN RAISE EXCEPTION 'MANUAL_PROGRAM_BINDING_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $function$
+;
+REVOKE ALL ON FUNCTION platform_private.guard_manual_program_binding_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER aa_manual_program_binding_v1 BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_program_binding_v1();
