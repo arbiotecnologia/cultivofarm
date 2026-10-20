@@ -29,8 +29,8 @@ describe("D51.5 P0-D — frontend alinhado ao ACCESS_MAP", () => {
   });
 
   it("bloqueia lançamento de CQ fora dos papéis autorizados", () => {
-    expect(cq).toContain('!access.ready || !canEditRef) return null;');
-    expect(cq).toContain('disabled={!canEditRef || saving || !synthetic');
+    expect(cq).toContain('if (!canEditRef)');
+    expect(cq).toContain('disabled={!canEditRef || saving || !form.resultado}');
   });
 
   it("não oferece envase complementar a perfil somente leitura", () => {

@@ -1,0 +1,548 @@
+--- a/src/components/cockpit/CQComparativoTable.tsx
++++ b/src/components/cockpit/CQComparativoTable.tsx
+@@ -1,12 +1,11 @@
+-import { CheckCircle2, AlertTriangle, XCircle, MinusCircle, Info } from "lucide-react";
++import { CheckCircle2, XCircle, MinusCircle, Info } from "lucide-react";
+ import { Badge } from "@/components/ui/badge";
+ import { Link } from "react-router-dom";
+-import { formatConcentracaoValue } from "@/lib/cqFormat";
+ import type { CQReferencia } from "@/hooks/useCQReferencia";
+ 
+-type Status = "ok" | "warn" | "fail" | "empty";
++type Status = "ok" | "fail" | "empty";
+ 
+-interface MedidoInput {
++export interface MedidoInput {
+   ph: string;
+   aparencia: string;
+   odor: string;
+@@ -23,7 +22,7 @@
+ }
+ 
+ const norm = (s: string | null | undefined) =>
+-  (s ?? "").trim().toLowerCase();
++  (s ?? "").replace(/^ +| +$/g, "");
+ 
+ const fmtSci = (n: number | null): string => {
+   if (n === null || Number.isNaN(n)) return "—";
+@@ -40,7 +39,7 @@
+   max: number | null,
+ ): Status {
+   if (min === null && max === null) return "empty";
+-  if (medidoNum === null || Number.isNaN(medidoNum)) return "empty";
++  if (medidoNum === null || !Number.isFinite(medidoNum)) return "empty";
+   if (min !== null && medidoNum < min) return "fail";
+   if (max !== null && medidoNum > max) return "fail";
+   return "ok";
+@@ -48,20 +47,47 @@
+ 
+ function evalText(medido: string, esperado: string | null): Status {
+   if (!esperado) return "empty";
+-  if (!medido.trim()) return "empty";
+-  return norm(medido) === norm(esperado) ? "ok" : "warn";
++  if (!norm(medido)) return "empty";
++  return norm(medido) === norm(esperado) ? "ok" : "fail";
+ }
+ 
+ function StatusIcon({ s }: { s: Status }) {
+   if (s === "ok")
+     return <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-label="Dentro" />;
+-  if (s === "warn")
+-    return <AlertTriangle className="h-4 w-4 text-amber-500" aria-label="Atenção" />;
+   if (s === "fail")
+-    return <XCircle className="h-4 w-4 text-red-600" aria-label="Fora da faixa" />;
++    return <XCircle className="h-4 w-4 text-red-600" aria-label="Divergente" />;
+   return <MinusCircle className="h-4 w-4 text-muted-foreground" aria-label="Não avaliado" />;
+ }
+ 
++const finite = (n: number | null | undefined): n is number => typeof n === "number" && Number.isFinite(n);
++export function referenceComplete(r: CQReferencia): boolean {
++  return r.ativo === true && finite(r.ph_min) && finite(r.ph_max)
++    && r.ph_min >= 0 && r.ph_max <= 14 && r.ph_min <= r.ph_max
++    && finite(r.concentracao_min_ufc_ml) && r.concentracao_min_ufc_ml >= 0
++    && !!norm(r.aparencia_esperada) && !!norm(r.odor_esperado) && !!norm(r.contaminacao_esperada);
++}
++const numericInput = (s: string) => s.trim() ? Number(s.replace(",", ".")) : null;
++export function evaluateCQ(r: CQReferencia, m: MedidoInput) {
++  const ph = numericInput(m.ph);
++  const mantissa = numericInput(m.concentracao_mantissa);
++  const exponent = numericInput(m.concentracao_expoente);
++  const concentration = finite(mantissa) && finite(exponent) && Number.isInteger(exponent)
++    ? mantissa * Math.pow(10, exponent) : null;
++  const measuredComplete = finite(ph) && ph >= 0 && ph <= 14
++    && finite(concentration) && concentration >= 0 && concentration <= 1e30
++    && [m.aparencia, m.odor, m.contaminacao].every(t => norm(t).length >= 1 && norm(t).length <= 200);
++  const statuses: Status[] = [evalNumeric(ph, r.ph_min, r.ph_max),
++    evalNumeric(concentration, r.concentracao_min_ufc_ml, null),
++    evalText(m.aparencia, r.aparencia_esperada), evalText(m.odor, r.odor_esperado),
++    evalText(m.contaminacao, r.contaminacao_esperada)];
++  const failures = statuses.filter(s => s === "fail").length;
++  const complete = referenceComplete(r);
++  return { statuses, failures, approved: complete && measuredComplete && failures === 0,
++    suggestion: !complete ? "REFERÊNCIA INCOMPLETA OU INVÁLIDA" : !measuredComplete
++      ? "ANÁLISE INCOMPLETA OU INVÁLIDA" : failures > 0
++      ? `REPROVADO — ${failures} parâmetro(s) divergente(s)` : "APROVADO" };
++}
++
+ export function CQComparativoTable({ referencia, loading, medido, canEdit }: Props) {
+ 
+   if (loading) {
+@@ -77,7 +103,7 @@
+       <div className="rounded-md border border-dashed bg-muted/20 p-3 text-xs text-muted-foreground flex items-start gap-2">
+         <Info className="h-4 w-4 mt-0.5 shrink-0" />
+         <div>
+-          Sem referência técnica cadastrada para este microrganismo/produto — registre normalmente.
++          Sem referência técnica válida para este item — aprovação indisponível.
+           {canEdit && (
+             <>
+               {" "}
+@@ -95,8 +121,7 @@
+     );
+   }
+ 
+-  const phNum = medido.ph ? Number(medido.ph.replace(",", ".")) : null;
+-  const concNum = formatConcentracaoValue(medido.concentracao_mantissa, medido.concentracao_expoente);
++  const assessment = evaluateCQ(referencia, medido);
+ 
+ 
+   const rows: Array<{
+@@ -116,7 +141,7 @@
+           ? `≤ ${referencia.ph_max}`
+           : "—",
+       medido: medido.ph ? medido.ph : "—",
+-      status: evalNumeric(phNum, referencia.ph_min, referencia.ph_max),
++      status: assessment.statuses[0],
+     },
+     {
+       label: "Concentração (UFC/mL)",
+@@ -128,30 +153,29 @@
+         medido.concentracao_mantissa && medido.concentracao_expoente
+           ? `${medido.concentracao_mantissa} × 10^${medido.concentracao_expoente}`
+           : "—",
+-      status: evalNumeric(concNum, referencia.concentracao_min_ufc_ml, null),
++      status: assessment.statuses[1],
+     },
+     {
+       label: "Aparência",
+       esperado: referencia.aparencia_esperada || "—",
+       medido: medido.aparencia || "—",
+-      status: evalText(medido.aparencia, referencia.aparencia_esperada),
++      status: assessment.statuses[2],
+     },
+     {
+       label: "Odor",
+       esperado: referencia.odor_esperado || "—",
+       medido: medido.odor || "—",
+-      status: evalText(medido.odor, referencia.odor_esperado),
++      status: assessment.statuses[3],
+     },
+     {
+       label: "Contaminação",
+       esperado: referencia.contaminacao_esperada || "—",
+       medido: medido.contaminacao || "—",
+-      status: evalText(medido.contaminacao, referencia.contaminacao_esperada),
++      status: assessment.statuses[4],
+     },
+   ];
+ 
+-  const fails = rows.filter((r) => r.status === "fail").length;
+-  const sugestao = fails === 0 ? "APROVADO" : `REPROVADO — ${fails} parâmetro(s) fora da faixa`;
++  const sugestao = assessment.suggestion;
+ 
+   return (
+     <div className="rounded-md border bg-muted/20">
+@@ -160,8 +184,7 @@
+           Referência técnica
+         </div>
+         <Badge
+-          variant={fails === 0 ? "default" : "destructive"}
+-          className={fails === 0 ? "bg-emerald-600 hover:bg-emerald-600" : ""}
++          variant={assessment.approved ? "default" : "destructive"}
+         >
+           Sugestão: {sugestao}
+         </Badge>
+--- a/src/components/cockpit/RegistrarCQDialog.tsx
++++ b/src/components/cockpit/RegistrarCQDialog.tsx
+@@ -1,4 +1,4 @@
+-import { useEffect, useState } from "react";
++import { useLayoutEffect, useRef, useState } from "react";
+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+@@ -7,8 +7,8 @@
+ import { Badge } from "@/components/ui/badge";
+ import { supabase } from "@/integrations/supabase/client";
+ import { toast } from "sonner";
+-import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
+-import { formatConcentracaoValue, parseConcentracao } from "@/lib/cqFormat";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { formatConcentracaoValue } from "@/lib/cqFormat";
+ import { useCQReferencia } from "@/hooks/useCQReferencia";
+ import { CQComparativoTable } from "@/components/cockpit/CQComparativoTable";
+ import { useAuth } from "@/hooks/useAuth";
+@@ -28,6 +28,8 @@
+   open: boolean;
+   onOpenChange: (open: boolean) => void;
+   target: RegistrarCQTarget | null;
++  phase?: "send" | "record";
++  onCompleted?: () => void;
+ }
+ 
+ const EMPTY = {
+@@ -41,65 +43,69 @@
+   resultado: "",
+ };
+ 
+-export function RegistrarCQDialog({ open, onOpenChange, target }: Props) {
+-  const { aprovarCQ, reprovarCQ } = useEsteiraLaboratorio();
+-  const { role } = useAuth();
+-  const canEditRef = role === "administrador" || role === "gestor" || role === "producao";
+-  const { data: referencia, isLoading: refLoading } = useCQReferencia(
+-    target?.microrganismo_id,
+-    target?.produto_id,
+-  );
++const advance = supabase.rpc.bind(supabase) as unknown as (
++  name: "rpc_avancar_esteira_laboratorio", args: { p_os_id: string; p_origem: string; p_etapa_destino: string; p_programacao_id: string; p_cq?: Record<string, string | number | boolean | null> },
++) => ReturnType<typeof supabase.rpc>;
++
++export function RegistrarCQDialog({ open, onOpenChange, target, phase = "record", onCompleted }: Props) {
++  const { roles = [] } = useAuth();
++  const access = useStorageAccessScope(JSON.stringify(["cq", target?.os_id, target?.programacao_id, target?.lote_id, phase, open]));
++  const canEditRef = roles.some((role) => ["administrador", "gestor", "producao"].includes(role));
++  const refQuery = useCQReferencia(open && access.ready && phase === "record" ? target?.microrganismo_id : null, open && access.ready && phase === "record" ? target?.produto_id : null);
++  const referencia = !refQuery.isFetching && !refQuery.isError ? refQuery.data : null;
++  const refLoading = refQuery.isFetching;
+   const [form, setForm] = useState(EMPTY);
++  const [synthetic, setSynthetic] = useState(false);
+   const [saving, setSaving] = useState(false);
+-
+-  useEffect(() => {
+-    if (open) setForm(EMPTY);
+-  }, [open]);
++  const pending = useRef<AbortController | null>(null);
++  useLayoutEffect(() => {
++    pending.current?.abort(); pending.current = null;
++    setForm(EMPTY); setSynthetic(false); setSaving(false);
++    return () => { pending.current?.abort(); };
++  }, [open, target, phase, access.scope]);
++  if (!open || !target || target.origem !== "manual" || !access.ready || !canEditRef) return null;
+ 
+   const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+-    if (!canEditRef) {
+-      toast.error("Seu perfil possui acesso somente para consulta nesta etapa.");
+-      return;
+-    }
+-    if (!target) return;
+-    if (!target.lote_id) {
+-      toast.error("Gere o lote antes de registrar o CQ.");
+-      return;
++    if (pending.current || !access.ready || !target.lote_id || !synthetic) return;
++    const ph = Number(form.ph);
++    const concentration = formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente);
++    if (phase === "record" && (refLoading || refQuery.isError || (form.resultado === "aprovado" && !referencia?.id) || !form.ph.trim() || !Number.isFinite(ph) || ph < 0 || ph > 14 ||
++      concentration === null || !Number.isFinite(concentration) || concentration < 0 || concentration > 1e30 ||
++      !["aprovado", "reprovado"].includes(form.resultado) || !form.aparencia.trim() || !form.odor.trim() || !form.contaminacao.trim())) {
++      toast.error("Confira os dados da análise antes de registrar."); return;
+     }
+-    if (!form.resultado) {
+-      toast.error("Selecione o resultado.");
+-      return;
+-    }
+-
++    const current = access.capture(); const controller = new AbortController(); pending.current = controller;
++    let timer: ReturnType<typeof setTimeout> | undefined;
++    const stopped = new Promise<null>((resolve) => {
++      controller.signal.addEventListener("abort", () => resolve(null), { once: true });
++      timer = setTimeout(() => controller.abort(), 12_000);
++    });
+     setSaving(true);
+     try {
+-      const { error: cqError } = await supabase.from("controle_qualidade").insert([{
+-        lote_id: target.lote_id,
+-        ph: form.ph ? Number(form.ph) : null,
+-        aparencia: form.aparencia || null,
+-        odor: form.odor || null,
+-        concentracao: formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente),
+-        contaminacao: form.contaminacao || null,
+-        responsavel: form.responsavel || null,
+-        resultado: form.resultado as any,
+-      }]);
+-
+-      if (cqError) {
+-        toast.error(cqError.message);
+-        return;
+-      }
+-
+-      const ok = form.resultado === "aprovado"
+-        ? await aprovarCQ(target.programacao_id, target.os_id, target.origem)
+-        : await reprovarCQ(target.programacao_id, target.os_id, target.origem);
+-
+-      if (ok) {
+-        toast.success(`Laudo registrado — ${form.resultado === "aprovado" ? "APROVADO" : "REPROVADO"}`);
+-        onOpenChange(false);
++      const response = await Promise.race([advance("rpc_avancar_esteira_laboratorio", {
++        p_os_id: target.os_id, p_origem: "manual", p_programacao_id: target.programacao_id,
++        p_etapa_destino: phase === "send" ? "enviar_cq" : "registrar_cq",
++        ...(phase === "record" ? { p_cq: {
++          lote_id: target.lote_id, resultado: form.resultado, ph, concentracao: concentration,
++          aparencia: form.aparencia.trim(), odor: form.odor.trim(), contaminacao: form.contaminacao.trim(),
++          referencia_id: referencia?.id ?? null, dados_sinteticos: true,
++        }} : {}),
++      }).abortSignal(controller.signal), stopped]);
++      if (!current()) return;
++      if (controller.signal.aborted || !response || response.error || !response.data || typeof response.data !== "object" ||
++        Array.isArray(response.data) || !("success" in response.data) || response.data.success !== true ||
++        !("lote_id" in response.data) || response.data.lote_id !== target.lote_id ||
++        !("status" in response.data) || response.data.status !== "em_cq") {
++        toast.error("CQ não confirmado. Consulte a OS antes de tentar novamente."); return;
+       }
++      setForm(EMPTY); setSynthetic(false); onOpenChange(false); onCompleted?.();
++      toast.success(phase === "send" ? "Lote enviado para CQ." : "Análise sintética registrada. Envase não iniciado.");
++    } catch {
++      if (current()) toast.error("CQ não confirmado. Consulte a OS antes de tentar novamente.");
+     } finally {
+-      setSaving(false);
++      clearTimeout(timer);
++      if (pending.current === controller) { pending.current = null; if (current()) setSaving(false); }
+     }
+   };
+ 
+@@ -107,16 +113,19 @@
+     <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+         <DialogHeader>
+-          <DialogTitle>Registrar resultado do CQ</DialogTitle>
+-          <DialogDescription className="flex items-center gap-2 flex-wrap">
++          <DialogTitle>{phase === "send" ? "Enviar lote para CQ" : "Registrar resultado do CQ"}</DialogTitle>
++          <DialogDescription asChild><div className="flex items-center gap-2 flex-wrap">
+             {target?.codigo_lote && (
+               <Badge variant="outline" className="font-mono">Lote {target.codigo_lote}</Badge>
+             )}
+             {target?.produto && <span className="text-xs text-muted-foreground">{target.produto}</span>}
+-          </DialogDescription>
++          </div></DialogDescription>
+         </DialogHeader>
+ 
+         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
++          <p className="text-sm font-semibold">DADOS FICTÍCIOS SEM VALOR COMERCIAL</p>
++          <Label className="flex items-start gap-2"><input type="checkbox" checked={synthetic} onChange={(e) => setSynthetic(e.target.checked)} disabled={saving} />Análise sintética; sem produção física, venda ou uso agrícola.</Label>
++          {phase === "record" && <>
+           <CQComparativoTable
+             referencia={referencia}
+             loading={refLoading}
+@@ -128,7 +137,7 @@
+               concentracao_mantissa: form.concentracao_mantissa,
+               concentracao_expoente: form.concentracao_expoente,
+             }}
+-            canEdit={canEditRef}
++            canEdit={false}
+           />
+ 
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+@@ -189,10 +198,6 @@
+             <Input value={form.contaminacao} onChange={(e) => setForm({ ...form, contaminacao: e.target.value })} placeholder="Ausente / Presente" />
+           </div>
+           <div className="space-y-1.5">
+-            <Label>Responsável</Label>
+-            <Input value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })} />
+-          </div>
+-          <div className="space-y-1.5">
+             <Label>Resultado *</Label>
+             <Select value={form.resultado} onValueChange={(v) => setForm({ ...form, resultado: v })}>
+               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+@@ -202,8 +207,9 @@
+               </SelectContent>
+             </Select>
+           </div>
+-          <Button type="submit" className="w-full font-bold" disabled={!canEditRef || saving || !form.resultado}>
+-            {saving ? "Registrando..." : "Registrar análise e avançar esteira"}
++          </>}
++          <Button type="submit" className="w-full font-bold" disabled={!canEditRef || saving || !synthetic || (phase === "record" && (!form.resultado || refLoading || refQuery.isError))}>
++            {saving ? "Registrando..." : phase === "send" ? "Enviar para CQ" : "Registrar análise sintética"}
+           </Button>
+         </form>
+       </DialogContent>
+--- a/src/components/ordens-servico/OSDetalhesDialog.tsx
++++ b/src/components/ordens-servico/OSDetalhesDialog.tsx
+@@ -2,6 +2,7 @@
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { RastreabilidadeProducaoTab, type TraceItem } from "./RastreabilidadeProducaoTab";
+ import { GerarLoteDialog, type GerarLoteTarget } from "@/components/cockpit/GerarLoteDialog";
++import { RegistrarCQDialog, type RegistrarCQTarget } from "../cockpit/RegistrarCQDialog";
+ import { formatOS } from "@/lib/osLabel";
+ import { Badge } from "@/components/ui/badge";
+ import { CalendarCheck, Check, FlaskConical, History } from "lucide-react";
+@@ -25,6 +26,7 @@
+ ) => ReturnType<typeof supabase.rpc>;
+ 
+ export const MANUAL_LOT_GENERATION_REVIEWED = true;
++export const MANUAL_CQ_REVIEWED = true;
+ 
+ interface Props {
+   os: any;
+@@ -45,10 +47,11 @@
+   const [traceRefresh, setTraceRefresh] = useState(0);
+   const [trace, setTrace] = useState<TraceItem | null>(null);
+   const [loteTarget, setLoteTarget] = useState<GerarLoteTarget | null>(null);
++  const [cqTarget, setCqTarget] = useState<RegistrarCQTarget | null>(null);
+   const onTrace = useCallback((item: TraceItem | null) => setTrace(item), []);
+   const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
+     ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
+-  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); setTrace(null); }, [os?.id, open, access.scope]);
++  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); setCqTarget(null); setTrace(null); }, [os?.id, open, access.scope]);
+   // Gerar Lote: somente exibição; o servidor revalida tudo. Baseado na leitura canônica atual da OS.
+   const canGenerateLot = MANUAL_LOT_GENERATION_REVIEWED && !!os && open && access.ready && programOrigin === "manual" &&
+     !os.partner_order_id && !os.partner_order_item_id && !!trace && trace.os_id === os.id &&
+@@ -64,6 +67,17 @@
+       volume_solicitado: typeof trace.volume_solicitado_l === "number" && Number.isFinite(trace.volume_solicitado_l) ? trace.volume_solicitado_l : undefined,
+     });
+   };
++  const cqPhase = trace?.status_os === "programada" ? "send" : "record";
++  const canCQ = MANUAL_CQ_REVIEWED && open && access.ready && programOrigin === "manual" &&
++    !os?.partner_order_id && !os?.partner_order_item_id && trace?.os_id === os?.id &&
++    trace?.origem_os === "manual" && !!trace?.programacao_id && !!trace?.lote_id &&
++    ["programada", "em_cq"].includes(trace?.status_os ?? "") &&
++    roles.some((role) => ["administrador", "gestor", "producao"].includes(role));
++  const openCQ = () => {
++    if (!canCQ || !trace?.programacao_id || !trace.lote_id) return;
++    setCqTarget({ os_id: os.id, programacao_id: trace.programacao_id, lote_id: trace.lote_id, origem: "manual",
++      codigo_lote: trace.codigo_lote, produto_id: os.produto_id, microrganismo_id: os.microrganismo_id });
++  };
+   const canProgram = !!os && open && access.ready && programOrigin === "manual" &&
+     !os.partner_order_id && !os.partner_order_item_id && programmedId !== os.id &&
+     (os.status === "aprovada" || approvedId === os.id) &&
+@@ -196,6 +210,9 @@
+           </div>
+         )}
+ 
++        {canCQ && <div className="px-4 sm:px-6 py-3 border-b"><Button onClick={openCQ} disabled={saving}>
++          <FlaskConical className="h-4 w-4 mr-2" />{cqPhase === "send" ? "Enviar para CQ" : "Registrar CQ"}
++        </Button></div>}
+         <div className="flex-1 overflow-hidden">
+           <Tabs defaultValue="rastreabilidade" className="h-full flex flex-col">
+             <div className="px-4 sm:px-6 border-b bg-muted/20">
+@@ -224,6 +241,9 @@
+           </Tabs>
+         </div>
+       </DialogContent>
++      {cqTarget && canCQ && <RegistrarCQDialog open target={cqTarget} phase={cqPhase}
++        onOpenChange={(value) => { if (!value) setCqTarget(null); }}
++        onCompleted={() => { setTraceRefresh((value) => value + 1); onChanged?.(); }} />}
+       {loteTarget && canGenerateLot && <GerarLoteDialog
+         open
+         onOpenChange={(value) => { if (!value) setLoteTarget(null); }}
+--- a/src/hooks/useCQReferencia.ts
++++ b/src/hooks/useCQReferencia.ts
+@@ -1,6 +1,7 @@
++import { useLayoutEffect, useRef } from "react";
+ import { useQuery } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+-
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ export interface CQReferencia {
+   id: string;
+   microrganismo_id: string;
+@@ -15,43 +16,51 @@
+   ativo: boolean;
+ }
+ 
+-/**
+- * Busca a referência CQ mais específica (produto → microrganismo).
+- * Retorna null quando não há referência cadastrada.
+- */
+-export function useCQReferencia(
+-  microrganismoId?: string | null,
+-  produtoId?: string | null,
+-) {
+-  return useQuery({
+-    queryKey: ["cq-referencia", microrganismoId, produtoId],
+-    enabled: !!microrganismoId,
+-    queryFn: async (): Promise<CQReferencia | null> => {
+-      if (!microrganismoId) return null;
+-
+-      // 1) tentativa mais específica: microrganismo + produto
+-      if (produtoId) {
+-        const { data, error } = await (supabase as any)
+-          .from("cq_parametros_referencia")
+-          .select("*")
+-          .eq("ativo", true)
+-          .eq("microrganismo_id", microrganismoId)
+-          .eq("produto_id", produtoId)
+-          .maybeSingle();
+-        if (error) throw error;
+-        if (data) return data as CQReferencia;
++/** Same canonical-item precedence as manual_cq_v1. Presentation is not authorization. */
++export function useCQReferencia(microrganismoId?: string | null, produtoId?: string | null) {
++  const access = useStorageAccessScope(JSON.stringify(["cq-referencia", produtoId, microrganismoId]));
++  const pending = useRef<AbortController | null>(null);
++  useLayoutEffect(() => {
++    pending.current?.abort();
++    pending.current = null;
++    return () => { pending.current?.abort(); };
++  }, [access.scope]);
++  const query = useQuery({
++    queryKey: ["cq-referencia", access.scope, produtoId, microrganismoId],
++    enabled: access.ready && !!(produtoId || microrganismoId),
++    gcTime: 0,
++    staleTime: 0,
++    retry: false,
++    queryFn: async ({ signal }): Promise<CQReferencia | null> => {
++      if (!access.ready || (!produtoId && !microrganismoId)) return null;
++      const current = access.capture();
++      const controller = new AbortController();
++      pending.current?.abort(); pending.current = controller;
++      const abort = () => controller.abort();
++      signal.addEventListener("abort", abort, { once: true });
++      if (signal.aborted) controller.abort();
++      let timer: ReturnType<typeof setTimeout> | undefined;
++      const stopped = new Promise<never>((_, reject) => {
++        controller.signal.addEventListener("abort", () => reject(new Error("CQ_REFERENCE_UNAVAILABLE")), { once: true });
++        if (controller.signal.aborted) reject(new Error("CQ_REFERENCE_UNAVAILABLE"));
++        timer = setTimeout(abort, 12_000);
++      });
++      try {
++        let request = supabase.from("cq_parametros_referencia").select("*").eq("ativo", true);
++        // Product is authoritative even when micro is absent/different. No micro fallback.
++        if (produtoId) request = request.eq("produto_id", produtoId);
++        else if (microrganismoId) request = request.is("produto_id", null).eq("microrganismo_id", microrganismoId);
++        const { data, error } = await Promise.race([request.limit(2).abortSignal(controller.signal), stopped]);
++        if (!current() || controller.signal.aborted || error || !data || data.length > 1) throw new Error("CQ_REFERENCE_UNAVAILABLE");
++        const ref = data[0];
++        if (!ref) return null;
++        if (ref.ativo !== true || (produtoId ? ref.produto_id !== produtoId : ref.produto_id !== null || ref.microrganismo_id !== microrganismoId)) throw new Error("CQ_REFERENCE_UNAVAILABLE");
++        return ref as CQReferencia;
++      } finally {
++        clearTimeout(timer); signal.removeEventListener("abort", abort);
++        if (pending.current === controller) pending.current = null;
+       }
+-
+-      // 2) fallback: apenas microrganismo (produto_id nulo)
+-      const { data, error } = await (supabase as any)
+-        .from("cq_parametros_referencia")
+-        .select("*")
+-        .eq("ativo", true)
+-        .eq("microrganismo_id", microrganismoId)
+-        .is("produto_id", null)
+-        .maybeSingle();
+-      if (error) throw error;
+-      return (data as any | null) ?? null;
+     },
+   });
+-}
++  return { ...query, data: access.ready && !query.isFetching && !query.isError ? query.data : undefined };
++}
+\ No newline at end of file
+--- a/t
++++ b/t
+@@ -29,8 +29,8 @@
+   });
+ 
+   it("bloqueia lançamento de CQ fora dos papéis autorizados", () => {
+-    expect(cq).toContain('if (!canEditRef)');
+-    expect(cq).toContain('disabled={!canEditRef || saving || !form.resultado}');
++    expect(cq).toContain('!access.ready || !canEditRef) return null;');
++    expect(cq).toContain('disabled={!canEditRef || saving || !synthetic');
+   });
+ 
+   it("não oferece envase complementar a perfil somente leitura", () => {
