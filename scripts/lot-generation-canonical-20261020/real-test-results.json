@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "scope": "local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof",
-  "passed": 95,
+  "passed": 97,
   "checks": [
     "captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly",
     "every guard predicate compiles and evaluates locally",
@@ -77,6 +77,7 @@
     "baseline real staff RLS permits artificial approved lot without CQ",
     "candidate real staff RLS direct manual INSERT blocked",
     "candidate real staff RLS foreign programming same actor tenant INSERT blocked",
+    "local table ACL matches administrative containment exactly",
     "same-tenant SELECT preserved with all staff policy expressions",
     "foreign tenant SELECT remains invisible",
     "manual UPDATE status denied, no artificial advancement",
@@ -90,6 +91,7 @@
     "GUC forged flag cannot authorize manual lot INSERT",
     "success/replay leave no reusable authorization tickets",
     "rollback retains manual fence and history, direct bypass stays denied",
+    "rollback preserves contained table ACL exactly, no administrative privileges restored",
     "immediate FK programming insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
     "immediate FK link insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
     "immediate FK delivery insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
