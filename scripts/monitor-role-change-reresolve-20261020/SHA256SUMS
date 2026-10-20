@@ -4,7 +4,7 @@
 b3a65696cad65ebe08e861d525c68e55982bf79a49b3e21b448ec09f18d0e63b  ./candidate/src/hooks/useAuth.tsx
 b6d7f4e42ec858b0be5105986ef2c110994849419d88a8a630805e7ec788ef8d  ./candidate/src/lib/authz/roleChangeReresolve.ts
 354208f96aa2fe0d5d2b8f0d5def524fc5acbda89b353be311aa44830c708194  ./frontend.patch
-792c820452afbd893a456076054a821912d60f74888b0a9168c44fe3386b3b7f  ./manifest.json
+f25e6c5e2dd3a709b74c01b4f0aed6d0a5f1d7143c1a1ad81495a2929fe789ce  ./manifest.json
 aaffd784e6e35faccdb59a6aaf86573c5322f07bb58bb498cf21b5bc9d99db54  ./original-config-baseline.log
 421fbb2afb41a7d2d51192f68d10abb82f57e785a3ef9bf913e51fd763f77152  ./original-config-candidate.log
 8b875ce77f8d8aaf153c9fb695ed6e0cbd6323ff27d1c07bc467332ff8a2e848  ./prior-monitor-candidate.log

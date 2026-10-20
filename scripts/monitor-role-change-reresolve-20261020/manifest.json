@@ -8,7 +8,6 @@
  "ddl_dml": false,
  "lease_ms": 15000,
  "preserved": {
-  "src/hooks/useAuth.tsx": "ace8f12d59a041f7ee5db03992198cb123f8efc04c11807c41559fed4f737dc4",
   "src/components/ordens-servico/OSDetalhesDialog.tsx": "7d844076c89a543bce0f22cd39e4e7bfb6bda421ff5ea683befc2d0ac6a9d32c",
   "src/components/cockpit/RegistrarCQDialog.tsx": "b57564bc4dc4de52b0b5f10418943b193face13a25b3612d889f20fa34120e0a",
   "src/components/cockpit/CQComparativoTable.tsx": "bdbd8d16bc34c175d9cb04fb85c2411e8371d63e90e7d8df04447ff3c4640cb5",
