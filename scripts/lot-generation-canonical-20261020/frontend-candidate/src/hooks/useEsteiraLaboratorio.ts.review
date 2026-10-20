@@ -220,7 +220,7 @@ export function useEsteiraLaboratorio() {
       void qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
       return { id: data.lote_id as string, codigo_lote: data.codigo_lote as string, replay: data.replay as boolean };
     } catch (error: any) {
-      if (isCurrent()) toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
+      if (isCurrent() && !signal.aborted) toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
       return null;
     }
   };

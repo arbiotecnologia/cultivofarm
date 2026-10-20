@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { FlaskConical, Package } from "lucide-react";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
@@ -79,7 +80,12 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
         tanque: form.tanque,
         observacoes_tecnicas: form.observacoes_tecnicas,
       }, target.os_id, target.origem, current, controller.signal), stopped]);
-      if (!current() || controller.signal.aborted || !result) return;
+      if (!current()) return;
+      if (controller.signal.aborted) {
+        toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
+        return;
+      }
+      if (!result) return;
       setForm(EMPTY);
       onOpenChange(false);
       onCreated?.();

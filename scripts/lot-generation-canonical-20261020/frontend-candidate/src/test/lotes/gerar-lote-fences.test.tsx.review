@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GerarLoteDialog, litrosParaMl } from "@/components/cockpit/GerarLoteDialog";
-import { OSDetalhesDialog } from "@/components/ordens-servico/OSDetalhesDialog";
+import { MANUAL_LOT_GENERATION_REVIEWED, OSDetalhesDialog } from "@/components/ordens-servico/OSDetalhesDialog";
 
 // Transporte e sessão FAKE: prova comportamento do cliente, não homologação JWT/RLS real.
 const f = vi.hoisted(() => ({ roles: ["administrador"], current: true, epoch: 0, rpc: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn(), invalidate: vi.fn(), trace: null as any }));
@@ -132,9 +132,10 @@ describe("prazo e cancelamento reais do formulário", () => {
 describe("OSDetalhesDialog — botão Gerar lote (somente exibição; servidor decide)", () => {
   const os = { id: OS, origem: "manual", status: "programada", numero_os: "OS-1" };
   const view = (extra: object = {}) => render(<OSDetalhesDialog os={{ ...os, ...extra }} open onOpenChange={() => {}} />);
-  it.each(["administrador", "gestor", "producao"])("%s vê o botão para OS manual programada sem lote", async (role) => {
+  it.each(["administrador", "gestor", "producao"])("%s respeita gate de liberação na OS manual programada sem lote", async (role) => {
     f.roles = [role]; view();
-    expect(await screen.findByRole("button", { name: "Gerar lote" })).toBeInTheDocument();
+    if (MANUAL_LOT_GENERATION_REVIEWED) expect(await screen.findByRole("button", { name: "Gerar lote" })).toBeInTheDocument();
+    else expect(screen.queryByRole("button", { name: "Gerar lote" })).toBeNull();
   });
   it.each(["financeiro", "operador_onfarm", "consultor_tecnico", "parceiro_b2b"])("%s não vê", (role) => {
     f.roles = [role]; view(); expect(screen.queryByRole("button", { name: "Gerar lote" })).toBeNull();
