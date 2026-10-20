@@ -20,13 +20,14 @@ Recibo do proprietário: lote LT-2026-0002 criado pelo diálogo REAL B, 100 mL; 
 2. Formulário atual faz INSERT CQ e aprovação separada. Candidata elimina essa escrita direta para este formulário.
 3. Trigger CQ aprovado autoavança envase. Candidata contém manual; OnFarm fora do recorte conserva corpo legado, sem certificação.
 4. Leitor `private.h7n_esteira_laboratorio` compara responsável CQ (profiles.id) com profiles.user_id. Correção candidata de um único predicado para profiles.id, mantendo tenant e ativo; sem novo reader ou ACL. Teste confirma OS consultável após CQ.
+5. `cq_remove_guc_definer_bypass` já implantada pelo proprietário em 20/10 02:45 UTC; **não reaplicar**. Leitura canônica confirmou autoria `329913a20fa9284bd794a034ca4cdfd0`, imutabilidade `1ffd8093e77aa56a8814ed6e292ef299`, owner postgres e ACL `{postgres=X/postgres,service_role=X/postgres}` em ambas. Recibo: teste authenticated transacional pós negou UPDATE finalizado mesmo GUC=on; rollback concluído, nenhum CQ fictício persistiu. Isso não homologa o fluxo CQ completo.
 
 ## Arquivos e ordem de revisão
 
 1. `preflight-readonly.sql`: catálogo, hashes/ACLs, tabelas/RLS/policies/triggers, dependências e FKs imediatas; ref exato obrigatório. Não executar em outro projeto.
 2. `candidate.sql.review`: PRE + corpos/guards/reader + ACL mínima dos dois wrappers + POST, em transação. **Não aplicada**; não está em migrations/autodeploy.
 3. `postflight-readonly.sql`: candidata exata, ACL contida preservada; sem dados operacionais.
-4. `rollback.sql.review` e `rollback-postflight-readonly.sql`: reversão autocontida; definição original da RPC e hash conferidos em PG. Fecha authenticated nos dois wrappers, mantém história, guard CQ/pai e contenção de autoenvase; restaura guard de lote/escada original. Mantém reader corrigido e ambos os triggers de autoria/imutabilidade SEM escape GUC. Fontes antigas em rollback são snapshots para PRE/reprodução, nunca executadas pela reversão. Não restaura grants administrativos de lotes.
+4. `rollback.sql.review` e `rollback-postflight-readonly.sql`: reversão autocontida; definição original da RPC e hash conferidos em PG. Fecha authenticated nos dois wrappers, mantém história, guard CQ/pai e contenção de autoenvase; restaura guard de lote/escada original. Mantém reader corrigido e ambos os triggers de autoria/imutabilidade SEM escape GUC. Snapshots destes dois triggers em rollback já são contidos; fontes vulneráveis ficam somente em `historical-test-fixtures/` para reprodução PG descartável. Nenhum destes dois triggers é reescrito pelo candidato/rollback. Não restaura grants administrativos de lotes.
 5. `frontend-candidate/` e `rollback/src/`: somente dois componentes; nunca copiar antes do SQL revisado e da comparação independente. Sem tocar monitor/anexos/PDF/bindings.
 6. `manifest.json`: SHA256 de cada artefato. `post-hashes.json`: hashes pg_get_functiondef produzidos no PG descartável.
 
@@ -39,7 +40,7 @@ bunx vitest run --config scripts/manual-cq-recovery-20261020/vitest.config.ts
 python3 scripts/manual-cq-recovery-20261020/assemble.py
 ```
 
-- PG local: **73 checks**, Auth sintético, corpos STABLE e gatilhos capturados. Reproduz escape real dos dois DEFINER sob SET ROLE authenticated em tabela-probe com RLS tenant, isolada dos guards manuais; depois nega autoria forjada, mudança/exclusão final e confirma histórico após rollback. Inclui referências ausentes/inativas/incompletas/item alheio/fora especificação, além dos testes anteriores de concorrência, ator e cadeia.
+- PG local: **75 checks**, Auth sintético, corpos STABLE e gatilhos capturados. Reproduz escape histórico dos dois DEFINER sob SET ROLE authenticated em tabela-probe com RLS tenant, isolada dos guards manuais; confere os dois hashes LIVE contidos, depois nega autoria forjada, mudança/exclusão final e confirma histórico após rollback. Inclui referências ausentes/inativas/incompletas/item alheio/fora especificação, além dos testes anteriores de concorrência, ator e cadeia.
 - Formulário candidato real/transportes fake: **10 testes**, incluindo aprovação sem referência negada antes da escrita.
 - Regressão Gerar Lote: **51 testes**. Runtime, monitor e cliente conferidos byte-idênticos à base publicada; build automático OK.
 - **Não executados nesta rodada:** typechecks manuais (harness da plataforma é responsável), PRE/POST integrais no catálogo hosted, migração, publicação, sessão real CQ A/B. Não contar clone parcial de schema como PRE integral nem PostgreSQL sintético como homologação real.
@@ -51,7 +52,7 @@ python3 scripts/manual-cq-recovery-20261020/assemble.py
 - SHARE em catálogos/SaaS/invites e refresh materialized global permanecem custo/risco de lock e latência; não foi aferida carga hosted nem causa de gateway.
 - FKs imediatas OS→programação/production_order_link/entrega/aplicação e parent locks sustentam ausência de filhos no caminho revisado. O pacote anterior contém prova de duas sessões dessas FKs; este pacote acrescenta corrida CQ/revogação. Escritores privilegiados, schema integral e filhos sem FK imediata exigem revisão: não afirmar cobertura global.
 - Aprovação EXIGE referência ativa completa válida do item canônico: produto_id exato para produto (sem inferir/forçar micro); item somente micro exige referência sem produto e micro exato. Ambiguidade fecha. Sem referência só é possível registro sintético reprovado, nunca conformidade/aprovação. Teste positivo usa referência criada SOMENTE em PG descartável, não é evidência de referência válida da fixture real. O leitor UI existente pode não resolver produto sem micro: aprovação permanece bloqueada; não inventar associação para homologar.
-- `cq-integrity.sql.review` remove integralmente app.cq_purge_fixture dos dois DEFINER sem substituto por papel/claim/GUC. Nenhum purge solicitado; rollback retém esse hardening global de imutabilidade/autoria.
+- `cq-integrity.sql.review` é snapshot LIVE contido para testes locais, não é montado no candidato/rollback. PRE/POST/rollback exigem os mesmos hashes e ACLs contidos: baseline antiga falha fechado. Nenhum purge solicitado; não restaurar escape por papel/claim/GUC.
 - Direct DML administrativo amplo em OS/programação e MAINTAIN de CQ/referências preexistem; não foram revogados globalmente sem inventário. Guards contêm o recorte manual revisado, não certificam todas as rotas administrativas.
 - Formulário candidato limita origem manual. Outros consumidores deste formulário (Cockpit) não são reativados; preservar seus gates. Qualquer efeito legado fora desse recorte deve ser revisado antes de expansão.
 - Resultado laboratório sintético não prova fabricação física nem autoriza uso agrícola. CQ não habilita envase/reserva/entrega/termos/contratos.
