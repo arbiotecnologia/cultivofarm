@@ -1,0 +1,66 @@
+CREATE OR REPLACE FUNCTION private.h7n_esteira_laboratorio()
+ RETURNS SETOF mv_esteira_laboratorio
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ WITH actor AS MATERIALIZED (
+ SELECT auth.uid() uid, platform_private.h15_actor_organization() org
+ WHERE public.technical_actor_ready(auth.uid()) IS TRUE
+ AND public._saas_user_has_feature(auth.uid(),'ordens_producao') IS TRUE
+ -- Intersection of the existing backend and route matrix; no new role, no SA bypass.
+ AND (public.has_role(auth.uid(),'administrador'::public.app_role)
+ OR public.has_role(auth.uid(),'gestor'::public.app_role)
+ OR public.has_role(auth.uid(),'administrativo'::public.app_role)
+ OR public.has_role(auth.uid(),'producao'::public.app_role))
+ ), os AS (
+ SELECT o.id, 'manual'::text origin,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,
+ o.partner_order_id,o.partner_order_item_id,NULL::uuid visit_id,o.organization_id org
+ FROM public.ordens_servico o
+ UNION ALL
+ SELECT o.id,'onfarm',o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,
+ NULL::uuid,NULL::uuid,o.registro_consultor_id,NULL::uuid FROM public.ordens_servico_onfarm o
+ ), safe_os AS (
+ SELECT o.*, a.org tenant FROM os o JOIN actor a ON a.org IS NOT NULL
+ JOIN public.clientes c ON c.id=o.cliente_id AND c.organization_id=a.org
+ WHERE ((o.produto_id IS NOT NULL)::int+(o.microrganismo_id IS NOT NULL)::int)=1
+ AND (SELECT count(*) FROM os x WHERE x.id=o.id)=1
+ AND (o.origin='onfarm' OR o.org=a.org)
+ AND (o.fazenda_id IS NULL OR EXISTS(SELECT 1 FROM public.fazendas f WHERE f.id=o.fazenda_id AND f.organization_id=a.org AND f.cliente_id=o.cliente_id AND f.ativo IS TRUE))
+ AND (o.talhao_id IS NULL OR EXISTS(SELECT 1 FROM public.talhoes t WHERE t.id=o.talhao_id AND t.organization_id=a.org AND t.fazenda_id=o.fazenda_id AND t.ativo IS TRUE))
+ AND (o.produto_id IS NULL OR EXISTS(SELECT 1 FROM public.produtos p WHERE p.id=o.produto_id AND to_jsonb(p)->>'owner_organization_id' IS NULL))
+ AND (o.microrganismo_id IS NULL OR EXISTS(SELECT 1 FROM public.microrganismos m WHERE m.id=o.microrganismo_id AND to_jsonb(m)->>'owner_organization_id' IS NULL))
+ AND (o.visit_id IS NULL OR EXISTS(SELECT 1 FROM public.registros_consultor v WHERE v.id=o.visit_id AND v.cliente_id=o.cliente_id AND v.fazenda_id IS NOT DISTINCT FROM o.fazenda_id AND v.talhao_id IS NOT DISTINCT FROM o.talhao_id))
+ AND ((o.partner_order_id IS NULL AND o.partner_order_item_id IS NULL) OR EXISTS(
+ SELECT 1 FROM public.partner_orders po JOIN public.partner_accounts pa ON pa.id=po.partner_id
+ JOIN public.clientes pc ON pc.id=pa.client_id AND pc.organization_id=a.org
+ JOIN public.partner_order_items pi ON pi.order_id=po.id AND pi.id=o.partner_order_item_id
+ WHERE po.id=o.partner_order_id AND po.cliente_id=o.cliente_id
+ AND pa.commercial_owner_organization_id=a.org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+ AND pi.product_id IS NOT DISTINCT FROM o.produto_id AND pi.microrganismo_id IS NOT DISTINCT FROM o.microrganismo_id))
+ ), validated AS (
+ SELECT o.* FROM safe_os o
+ WHERE NOT EXISTS (
+ SELECT 1 FROM public.programacao_producao pp
+ WHERE (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id)
+ AND NOT ((pp.organization_id=o.tenant
+ AND ((o.origin='manual' AND pp.ordem_servico_id=o.id AND pp.ordem_servico_onfarm_id IS NULL)
+ OR (o.origin='onfarm' AND pp.ordem_servico_onfarm_id=o.id AND pp.ordem_servico_id IS NULL))
+ AND pp.produto_id IS NOT DISTINCT FROM o.produto_id AND pp.microrganismo_id IS NOT DISTINCT FROM o.microrganismo_id
+ AND ((pp.responsavel_id IS NULL AND nullif(btrim(pp.responsavel),'') IS NULL)
+ OR EXISTS(SELECT 1 FROM public.profiles pr WHERE pr.user_id=pp.responsavel_id AND pr.organization_id=o.tenant AND pr.ativo IS TRUE))
+ ) IS TRUE))
+ AND NOT EXISTS(SELECT 1 FROM public.programacao_producao pp JOIN public.lotes l ON l.programacao_id=pp.id WHERE (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id) AND NOT ((l.organization_id=o.tenant AND l.produto_id IS NOT DISTINCT FROM o.produto_id AND l.microrganismo_id IS NOT DISTINCT FROM o.microrganismo_id) IS TRUE))
+ AND NOT EXISTS(SELECT 1 FROM public.programacao_producao pp JOIN public.lotes l ON l.programacao_id=pp.id JOIN public.controle_qualidade cq ON cq.lote_id=l.id WHERE (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id) AND NOT ((cq.organization_id=o.tenant AND (cq.responsavel_id IS NULL OR EXISTS(SELECT 1 FROM public.profiles pr WHERE pr.user_id=cq.responsavel_id AND pr.organization_id=o.tenant AND pr.ativo IS TRUE))) IS TRUE))
+ AND NOT EXISTS(SELECT 1 FROM public.programacao_producao pp JOIN public.lotes l ON l.programacao_id=pp.id JOIN public.envase ev ON ev.lote_id=l.id WHERE (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id) AND NOT ((ev.organization_id=o.tenant) IS TRUE))
+ AND NOT EXISTS(SELECT 1 FROM public.programacao_producao pp JOIN public.lotes l ON l.programacao_id=pp.id JOIN public.estoque_produto ep ON ep.lote_id=l.id WHERE (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id) AND NOT ((ep.produto_id IS NOT DISTINCT FROM o.produto_id AND ep.microrganismo_id IS NOT DISTINCT FROM o.microrganismo_id AND (ep.envase_id IS NULL OR EXISTS(SELECT 1 FROM public.envase ev WHERE ev.id=ep.envase_id AND ev.lote_id=l.id AND ev.organization_id=o.tenant)) AND (ep.reservado_para_os_id IS NULL OR (ep.reservado_para_os_id=o.id AND ep.reservado_para_os_tipo=o.origin AND ep.reservado_para_cliente_id=o.cliente_id)) AND (ep.reservado_para_cliente_id IS NULL OR ep.reservado_para_cliente_id=o.cliente_id) AND (ep.reservado_para_partner_order_id IS NULL OR ep.reservado_para_partner_order_id=o.partner_order_id) AND (ep.reservado_para_partner_id IS NULL OR EXISTS(SELECT 1 FROM public.partner_orders po WHERE po.id=o.partner_order_id AND po.partner_id=ep.reservado_para_partner_id))) IS TRUE))
+ AND NOT EXISTS(SELECT 1 FROM public.entregas e WHERE (e.ordem_servico_id=o.id OR e.ordem_servico_onfarm_id=o.id) AND NOT ((e.organization_id=o.tenant AND e.cliente_id=o.cliente_id AND ((o.origin='manual' AND e.ordem_servico_id=o.id AND e.ordem_servico_onfarm_id IS NULL) OR (o.origin='onfarm' AND e.ordem_servico_onfarm_id=o.id AND e.ordem_servico_id IS NULL)) AND (e.produto_id IS NULL OR e.produto_id=o.produto_id) AND (e.partner_order_id IS NULL OR e.partner_order_id=o.partner_order_id) AND (e.lote_id IS NULL OR EXISTS(SELECT 1 FROM public.lotes l JOIN public.programacao_producao pp ON pp.id=l.programacao_id WHERE l.id=e.lote_id AND l.organization_id=o.tenant AND (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id))) AND (e.estoque_produto_id IS NULL OR EXISTS(SELECT 1 FROM public.estoque_produto ep JOIN public.lotes l ON l.id=ep.lote_id JOIN public.programacao_producao pp ON pp.id=l.programacao_id WHERE ep.id=e.estoque_produto_id AND l.id=e.lote_id AND l.organization_id=o.tenant AND (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id)))) IS TRUE))
+ AND NOT EXISTS(SELECT 1 FROM public.aplicacoes ap WHERE (ap.ordem_servico_id=o.id OR ap.ordem_servico_onfarm_id=o.id) AND NOT ((ap.organization_id=o.tenant AND ((o.origin='manual' AND ap.ordem_servico_id=o.id AND ap.ordem_servico_onfarm_id IS NULL) OR (o.origin='onfarm' AND ap.ordem_servico_onfarm_id=o.id AND ap.ordem_servico_id IS NULL)) AND (ap.produto_usado_id IS NULL OR ap.produto_usado_id=o.produto_id) AND (ap.lote_usado_id IS NULL OR EXISTS(SELECT 1 FROM public.lotes l JOIN public.programacao_producao pp ON pp.id=l.programacao_id WHERE l.id=ap.lote_usado_id AND l.organization_id=o.tenant AND (pp.ordem_servico_id=o.id OR pp.ordem_servico_onfarm_id=o.id))) AND (ap.responsavel_id IS NULL OR EXISTS(SELECT 1 FROM public.profiles pr WHERE pr.user_id=ap.responsavel_id AND pr.organization_id=o.tenant AND pr.ativo IS TRUE)) AND (ap.parent_id IS NULL OR EXISTS(SELECT 1 FROM public.aplicacoes parent WHERE parent.id=ap.parent_id AND parent.organization_id=o.tenant AND parent.ordem_servico_id IS NOT DISTINCT FROM ap.ordem_servico_id AND parent.ordem_servico_onfarm_id IS NOT DISTINCT FROM ap.ordem_servico_onfarm_id))) IS TRUE))
+ )
+ SELECT (jsonb_populate_record(NULL::public.mv_esteira_laboratorio,to_jsonb(s))).*
+ FROM public._src_vw_esteira_laboratorio s JOIN validated o ON o.id=s.os_id AND o.origin=s.origem_os
+ AND s.cliente_id=o.cliente_id AND s.fazenda_id IS NOT DISTINCT FROM o.fazenda_id
+ AND s.talhao_id IS NOT DISTINCT FROM o.talhao_id AND s.produto_id IS NOT DISTINCT FROM o.produto_id
+ AND s.microrganismo_id IS NOT DISTINCT FROM o.microrganismo_id;
+$function$
+;

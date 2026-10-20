@@ -1,4 +1,5 @@
 {
+  "private.h7n_esteira_laboratorio()": "503f30a55dbd7e29b41c489391ce41cd",
   "platform_private.manual_cq_v1(uuid,uuid,jsonb)": "65c3b628a3632bc819705124e1d627b1",
   "rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)": "4cdb351466747580e4e8b0ec596ca3a5",
   "check_os_status_transition()": "8dc2c40052b006e51b1defc0284a09e6",

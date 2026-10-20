@@ -48,11 +48,12 @@
     "same replay foreign actor rejected",
     "GUC cannot rewrite finalized CQ",
     "GUC cannot delete finalized CQ",
+    "canonical reader preserves CQ profile-id ownership",
     "rollback closes send without deleting CQ history",
     "rollback closes record without deleting CQ history",
     "rollback retains completed CQ and no filling"
   ],
-  "count": 51,
+  "count": 52,
   "hosted": false,
   "auth": "synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification",
   "limits": [
