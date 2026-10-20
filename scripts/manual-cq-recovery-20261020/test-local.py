@@ -165,7 +165,7 @@ def main():
   deny('UPDATE cannot clear both canonical items',f'UPDATE cq_parametros_referencia SET produto_id=NULL WHERE id={refid};')
   run(f"INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ativo) VALUES({q(94)},NULL,{lot.P},false);");checks.append('inactive product-only history preserved beside active row')
   deny('reactivating duplicate history denied',f'UPDATE cq_parametros_referencia SET ativo=true WHERE id={q(94)};')
-  r=run(actor()+f"BEGIN;INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ativo) VALUES({q(95)},{q(92)},{lot.P},true);SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;",False)
+  r=run(actor()+f"BEGIN;UPDATE cq_parametros_referencia SET ativo=true WHERE id={q(97)};SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;",False)
   assert r.returncode and 'CQ_REFERENCE_INVALID' in r.stderr,r.stderr;checks.append('dual legacy and product-only active ambiguity still fails closed')
   # Record first result in transaction then rollback to test both outcomes against same canonical pending state.
   r=run(actor()+f"BEGIN; SELECT {call()};SELECT status FROM ordens_servico WHERE id={O};SELECT status FROM lotes WHERE id={L};SELECT responsavel FROM controle_qualidade;ROLLBACK;");assert 'em_cq' in r.stdout and 'DADOS FICTICIOS SEM VALOR COMERCIAL' in r.stdout;checks.append('approved full synthetic data stays em_cq; transaction rollback')

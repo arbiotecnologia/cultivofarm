@@ -61,6 +61,7 @@ def guard(mode):
   if mode!='pre' and table in ADDED:
    fn='platform_private.guard_manual_cq_write_v1()' if table=='controle_qualidade' else 'platform_private.guard_manual_cq_parent_v1()'
    lines.append(f"IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid={name}::regclass AND tgname={q(ADDED[table])} AND tgenabled='O' AND tgfoid={q(fn)}::regprocedure AND tgtype={31 if table=='controle_qualidade' else 19}) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;")
+ lines.append("IF NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('public.cq_param_ref_micro_prod_uidx') AND indisunique AND indisvalid AND pg_get_indexdef(indexrelid)='CREATE UNIQUE INDEX cq_param_ref_micro_prod_uidx ON public.cq_parametros_referencia USING btree (microrganismo_id, COALESCE(produto_id, ''00000000-0000-0000-0000-000000000000''::uuid))') THEN RAISE EXCEPTION 'LEGACY_REFERENCE_INDEX_DRIFT';END IF;")
  # All immutable dependency schema/constraints and auth/SaaS functions from prior independently reviewed package; targets overridden above.
  old=json.loads((H.parent/'lot-generation-canonical-20261020/catalog.json').read_text())
  for sig,h,a in old['functions']:
