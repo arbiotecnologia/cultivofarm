@@ -23,13 +23,13 @@ BEGIN
     RAISE EXCEPTION 'PREFLIGHT: ACL inesperada em public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'; END IF;
   IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_cancelar_termo_v1(uuid,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'PREFLIGHT: ACL inesperada em public.rpc_entrega_cancelar_termo_v1(uuid,text)'; END IF;
-  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
-    RAISE EXCEPTION 'PREFLIGHT: ACL inesperada em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
   IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_build_snapshot_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'PREFLIGHT: ACL inesperada em public.fn_entrega_build_snapshot_v1(uuid)'; END IF;
   IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_cobertura_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'PREFLIGHT: ACL inesperada em public.fn_entrega_cobertura_v1(uuid)'; END IF;
-  IF coalesce(array_to_string((SELECT relacl FROM pg_class WHERE oid = 'public.entrega_termos'::regclass), ','), '') <> 'postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres' THEN
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres' THEN
+    RAISE EXCEPTION 'PREFLIGHT: ACL inesperada em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
+  IF coalesce(array_to_string((SELECT relacl FROM pg_class WHERE oid = 'public.entrega_termos'::regclass), ','), '') <> 'postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres' THEN
     RAISE EXCEPTION 'PREFLIGHT: ACL da tabela inesperada'; END IF;
   IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.entrega_termos'::regclass) THEN
     RAISE EXCEPTION 'PREFLIGHT: RLS desligada'; END IF;

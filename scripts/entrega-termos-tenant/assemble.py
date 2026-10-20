@@ -20,7 +20,8 @@ LIVE = {
 }
 ACL_BASE = "postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres"
 ACL_SERVICE = "postgres=X/postgres,service_role=X/postgres"
-TABLE_ACL_BASE = "postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres"
+# Baseline contido: migration termo_pdf_registration_acl_containment (23:52 UTC 19/10) já revogou TRUNCATE e EXECUTE do registrar.
+TABLE_ACL_BASE = "postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres"
 TABLE_ACL_POST = "postgres=arwdDxtm/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres"
 BASE_POLICY_QUAL = ("(is_delivery_staff(( SELECT auth.uid() AS uid)) OR is_financial_staff(( SELECT auth.uid() AS uid)) OR (EXISTS ( SELECT 1\n"
                     "   FROM entregas e\n  WHERE ((e.id = entrega_termos.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))))))")
@@ -118,9 +119,10 @@ def state_checks(label, md5s, fn_acl, table_acl, candidate):
 def run(text): return text + ";\n"
 SIGS3 = ["public.rpc_entrega_gerar_termo_v1(uuid,text)", "public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)",
          "public.rpc_entrega_cancelar_termo_v1(uuid,text)"]
-SERVICE_ONLY = ["public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)", "public.fn_entrega_build_snapshot_v1(uuid)",
-                "public.fn_entrega_cobertura_v1(uuid)"]
-PRE_ACL = {s: ACL_BASE for s in SIGS3 + SERVICE_ONLY}
+REGISTRAR = "public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)"  # já service-only em produção; rollback NÃO regrava
+SERVICE_ONLY = [REGISTRAR, "public.fn_entrega_build_snapshot_v1(uuid)", "public.fn_entrega_cobertura_v1(uuid)"]
+REOPENABLE = [x for x in SERVICE_ONLY if x != REGISTRAR]
+PRE_ACL = {**{s: ACL_BASE for s in SIGS3 + REOPENABLE}, REGISTRAR: ACL_SERVICE}
 POST_ACL = {**{s: ACL_BASE for s in SIGS3}, **{s: ACL_SERVICE for s in SERVICE_ONLY}}
 
 def build(live_md5=LIVE, post_md5=None):
@@ -143,8 +145,9 @@ def build(live_md5=LIVE, post_md5=None):
           "DROP POLICY entrega_termos_tenant_isolation ON public.entrega_termos;\n" +
           run(B["rpc_entrega_gerar_termo_v1"]) + run(B["rpc_entrega_assinar_termo_v1"]) + run(B["rpc_entrega_cancelar_termo_v1"]) +
           "DROP FUNCTION platform_private.entrega_termo_tenant_ok(uuid);\n" +
-          "".join(f"GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n" for s in SERVICE_ONLY) +
-          "GRANT TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos TO authenticated;\n" +
+          "-- Não regrava EXECUTE do registrar nem TRUNCATE (contenção aplicada em produção antes desta candidata).\n" +
+          "".join(f"GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n" for s in REOPENABLE) +
+          "GRANT REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos TO authenticated;\n" +
           state_checks("ROLLBACK-POST", live_md5, PRE_ACL, TABLE_ACL_BASE, False))
     return pre, cand, post, rb
 
