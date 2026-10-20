@@ -1,20 +1,14 @@
 {
-  "baseline_reproduction_tests": 1,
-  "candidate_tests": 23,
-  "monitor_residual_regression_tests": 18,
-  "candidate_types": "PASS",
-  "runtime_build": "automatic harness build OK",
-  "hosted": false,
-  "browser_certified": false,
-  "runtime_changed": false,
-  "cq_changed": false,
-  "gateway_resolved": false,
-  "limits": [
-    "Real AuthProvider and monitor; synthetic SDK/session events and fake monotonic clock, not hosted JWT/RLS",
-    "Legacy regression mocks required abortSignal shape in review-only copies; real cancellation asserted only by new tests",
-    "Each loader attempt retains20s watchdog; one post-renewal transient recovery at1s gives41s terminal hung budget",
-    "Existing non-loader epoch fences may trigger up to3 bounded fresh restarts; never adopt old responses",
-    "Lease remains15s;8s probe may legitimately pause",
-    "Independent review and real A/B homologation remain pending; no publish/SQL/Edge/session changes"
-  ]
+ "candidate": "candidate-v2 (supersedes frontend-candidate 7277e3b7, kept for history)",
+ "original_suite_src_test_config": {
+  "baseline": "1077/1077 PASS",
+  "candidate_v1_7277e3b7": "76 FAIL / 15 files",
+  "candidate_v2_unadapted": "58 FAIL / 5 files, all caused by SDK doubles without .abortSignal() (TypeError in loader)",
+  "candidate_v2_5_files_one_token_mock_adapted": "68/68 PASS (baseline also 68/68 with the same adapted files)"
+ },
+ "new_loader_tests": "23/23 PASS",
+ "regression_copies": "18/18 PASS",
+ "baseline_reproduction": "1/1 PASS",
+ "typecheck": "tsgo app + node EXIT 0 on isolated /tmp copy with candidate",
+ "hosted": "none; synthetic Auth/SDK only, not JWT/RLS/browser"
 }

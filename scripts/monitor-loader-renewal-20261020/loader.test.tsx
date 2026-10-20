@@ -69,14 +69,16 @@ describe("parallel atomic renewal loader",()=>{
   it("parallel 11s reads finish before20s watchdog",async()=>{
     await start();s.pms=11000;s.rms=11000;emit();await tick(11200);expect(auth.loading).toBe(false);expect(auth.error).toBeNull();expect(auth.authzReady).toBe(true);
   });
-  it("20s deadline aborts both hung reads, one fresh recovery only, terminal by41s",async()=>{
+  it("20s deadline aborts both hung reads and ends in operable error (no auto-retry, no signout)",async()=>{
     await start();s.hang=true;emit();await tick(20100);
     expect(s.calls.slice(-2).every(c=>c.signal?.aborted)).toBe(true);expect(auth.authzReady).toBe(false);
-    await tick(22000);expect(auth.loading).toBe(false);expect(auth.error).toMatch(/Falha ao carregar/);
-    expect(s.calls.length).toBe(6);expect(s.signOut).not.toHaveBeenCalled();
+    expect(auth.loading).toBe(false);expect(auth.error).toMatch(/Falha ao carregar/);
+    await tick(22000);expect(s.calls.length).toBe(4);expect(s.signOut).not.toHaveBeenCalled();
   });
-  it("fresh recovery after hung renewal, never old answer",async()=>{
-    await start();s.hang=true;emit();await tick(20100);s.hang=false;await tick(1500);expect(auth.authzReady).toBe(true);expect(s.calls.length).toBe(6);
+  it("hung renewal: late answer never adopted; manual refresh re-reads fresh",async()=>{
+    await start();s.ignoreAbort=true;s.pms=30000;s.rms=30000;emit();await tick(20100);expect(auth.error).toMatch(/Falha ao carregar/);
+    await tick(11000);expect(auth.authzReady).toBe(false);expect(auth.error).toMatch(/Falha ao carregar/);
+    s.ignoreAbort=false;s.pms=0;s.rms=0;await act(async()=>{ void auth.refresh(); });await tick(200);expect(auth.authzReady).toBe(true);expect(s.calls.length).toBe(6);
   });
   it("503 has one recovery; 401 is terminal without retry/signout",async()=>{
     await start();s.fail={status:503};emit();await tick(100);s.fail=null;await tick(1500);expect(auth.authzReady).toBe(true);
@@ -99,9 +101,10 @@ describe("parallel atomic renewal loader",()=>{
     const a=s.calls.slice(-2);s.uid="00000000-0000-4000-8000-000000000009";s.org="00000000-0000-4000-8000-000000000010";s.pms=0;s.rms=0;emit("SIGNED_IN");await tick(9000);
     expect(a.every(c=>c.signal?.aborted)).toBe(true);expect(auth.profile?.user_id).toBe(s.uid);expect(auth.profile?.organization_id).toBe(s.org);
   });
-  it("inactivity and total role loss are terminal, no global logout/recovery",async()=>{
+  it("inactivity is terminal with the original signOut; total role loss is terminal without signout; no recovery",async()=>{
     await start();s.active=false;emit();await tick(3000);expect(auth.error).toBe("Sua conta está inativa.");expect(auth.authzReady).toBe(false);
-    s.active=true;s.roles=[];emit();await tick(3000);expect(auth.roles).toEqual([]);expect(auth.profile).toBeNull();expect(auth.authzReady).toBe(false);expect(s.signOut).not.toHaveBeenCalled();
+    expect(s.signOut).toHaveBeenCalledTimes(1);const n=s.calls.length;await tick(3000);expect(s.calls.length).toBe(n);
+    s.signOut.mockClear();s.active=true;s.roles=[];emit();await tick(3000);expect(auth.roles).toEqual([]);expect(auth.authzReady).toBe(false);expect(s.signOut).not.toHaveBeenCalled();
   });
   it("manual refresh recovers terminal error without automatic retry budget reset",async()=>{
     await start();s.fail={status:401};emit();await tick(100);expect(auth.authzReady).toBe(false);
