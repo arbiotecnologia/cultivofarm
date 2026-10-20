@@ -75,6 +75,10 @@
     "no-reference synthetic rejection records data but never conformity",
     "hosted NOT NULL shape rejects product-only before delta",
     "product-only schema delta idempotent in disposable PG",
+    "administrative proposal denied to authenticated caller",
+    "review administrative proposal inserts only complete synthetic test-product reference in rolled-back transaction",
+    "administrative proposal refuses existing reference",
+    "administrative proposal refuses changed product snapshot",
     "product-only delta preserves legacy micro-only and dual row snapshots",
     "product-only delta preserves reference policies",
     "authenticated writer stays closed after schema delta",
@@ -123,7 +127,7 @@
     "rollback retains LIVE binding hash ACL and trigger",
     "rollback never restores GUC purge escape"
   ],
-  "count": 122,
+  "count": 126,
   "hosted": false,
   "auth": "synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification",
   "limits": [
