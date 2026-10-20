@@ -84,14 +84,24 @@ BEGIN
  IF p_cq IS NOT NULL AND (p_cq->>'lote_id') IS DISTINCT FROM lot.id::text THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  PERFORM pg_advisory_xact_lock(hashtext('cq_lote:'||lot.id::text));
  PERFORM 1 FROM public.controle_qualidade WHERE lote_id=lot.id ORDER BY seq FOR UPDATE;
- -- Reference selection is server-owned: exact item first, then microorganism-only; ambiguity closes.
- IF pp.microrganismo_id IS NOT NULL THEN
+ -- Resolve the canonical item, never infer/create a product->microorganism link.
+ IF p_cq IS NOT NULL THEN
   LOCK TABLE public.cq_parametros_referencia IN SHARE MODE;
-  IF (SELECT count(*) FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id)>1 THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
-  SELECT * INTO ref FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id;
+  IF (SELECT count(*) FROM public.cq_parametros_referencia r WHERE r.ativo IS TRUE AND
+   ((pp.produto_id IS NOT NULL AND r.produto_id=pp.produto_id) OR
+    (pp.produto_id IS NULL AND pp.microrganismo_id IS NOT NULL AND r.produto_id IS NULL AND r.microrganismo_id=pp.microrganismo_id)))>1
+   THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+  SELECT r.* INTO ref FROM public.cq_parametros_referencia r WHERE r.ativo IS TRUE AND
+   ((pp.produto_id IS NOT NULL AND r.produto_id=pp.produto_id) OR
+    (pp.produto_id IS NULL AND pp.microrganismo_id IS NOT NULL AND r.produto_id IS NULL AND r.microrganismo_id=pp.microrganismo_id));
  END IF;
  IF p_cq IS NOT NULL AND refid IS DISTINCT FROM ref.id THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
- IF ref.id IS NOT NULL AND (ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')) THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+ IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NULL THEN RAISE EXCEPTION 'CQ_REFERENCE_REQUIRED'; END IF;
+ IF ref.id IS NOT NULL AND (ref.ph_min IS NULL OR ref.ph_max IS NULL OR ref.concentracao_min_ufc_ml IS NULL
+ OR ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')
+ OR ref.ph_min<0 OR ref.ph_max>14 OR ref.ph_min>ref.ph_max OR ref.concentracao_min_ufc_ml<0
+ OR nullif(btrim(ref.aparencia_esperada),'') IS NULL OR nullif(btrim(ref.odor_esperado),'') IS NULL OR nullif(btrim(ref.contaminacao_esperada),'') IS NULL)
+ THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
  IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NOT NULL AND
  ((ref.ph_min IS NOT NULL AND v_ph<ref.ph_min) OR (ref.ph_max IS NOT NULL AND v_ph>ref.ph_max)
  OR (ref.concentracao_min_ufc_ml IS NOT NULL AND concentration<ref.concentracao_min_ufc_ml)
