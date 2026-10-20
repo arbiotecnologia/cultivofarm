@@ -42,11 +42,16 @@ BEGIN
     RAISE EXCEPTION 'POSTFLIGHT: policy entrega_termos_select divergente'; END IF;
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> 2 THEN
     RAISE EXCEPTION 'POSTFLIGHT: conjunto de policies inesperado'; END IF;
+  IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN
+    RAISE EXCEPTION 'POSTFLIGHT: USAGE platform_private ausente'; END IF;
+  IF (SELECT qual FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos' AND policyname='entrega_termos_tenant_isolation')
+     IS DISTINCT FROM 'platform_private.entrega_termo_tenant_ok(entrega_id)' THEN
+    RAISE EXCEPTION 'POSTFLIGHT: predicado da policy restritiva divergente'; END IF;
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos'
       AND policyname='entrega_termos_tenant_isolation' AND permissive='RESTRICTIVE' AND cmd='ALL'
       AND roles = '{authenticated}'::name[]) <> 1 THEN
     RAISE EXCEPTION 'POSTFLIGHT: policy restritiva ausente'; END IF;
-  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres' THEN
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'POSTFLIGHT: ACL do helper inesperada'; END IF;
   IF (SELECT prosecdef FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) IS NOT TRUE
      OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) <> 'postgres' THEN

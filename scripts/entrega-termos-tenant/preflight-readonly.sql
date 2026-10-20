@@ -40,6 +40,8 @@ BEGIN
     RAISE EXCEPTION 'PREFLIGHT: policy entrega_termos_select divergente'; END IF;
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> 1 THEN
     RAISE EXCEPTION 'PREFLIGHT: conjunto de policies inesperado'; END IF;
+  IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN
+    RAISE EXCEPTION 'PREFLIGHT: USAGE platform_private ausente'; END IF;
   IF to_regprocedure('platform_private.entrega_termo_tenant_ok(uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'PREFLIGHT: helper já existe'; END IF;
   IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_gerar_termo_v1'
