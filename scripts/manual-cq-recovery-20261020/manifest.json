@@ -5,6 +5,8 @@
   "runtime_changed": false,
   "gate": "MANUAL_CQ_REVIEWED=false",
   "files": {
+    "AGENTS.md": "2e79ba88a6b682b892ae4940c0b1f1f344e34a158ec89ddb1c49251bf04772bd",
+    "README.md": "5b76a28b3bb75ab7e4a2fc25ed9e41e7d490f87e8738741f4b1eec1fe4de61d5",
     "assemble.py": "97998d690847ab6121e656dc4a80fcb3b186458f16f2803494ec04aae5330802",
     "candidate.sql.review": "a86fcab857b434622d16afcf718bf013fb13c3cdb54652b04fd7f521d0a74e8a",
     "core.sql.review": "fb3552d68af2315a44c505fbf826cd0aa85664dd8945ad9f2af24aadffef3c21",
