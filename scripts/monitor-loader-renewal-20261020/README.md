@@ -20,7 +20,7 @@ Baseline byte-exata capturada de `src/hooks/useAuth.tsx` reproduz em teste de Au
 
 ## Verificação e limites
 
-Testes reais do provider/monitor com SDK simulado: paralelismo/atomicidade3s e8s,11s abaixo do watchdog,20s/hung e orçamento terminal,503→recuperação,401 negado, resposta tardia ignorando abort, A→B e tenant, par e cada papel residual, inatividade/revogação total, offline/signout/unmount, refresh explícito, probe3s/8s. Regressões do monitor/residual executadas separadamente. Tipos da cópia isolada conferidos; runtime não é substituído para testes. Build runtime pertence ao harness; sem browser hosted/JWT/RLS/anexos da candidata, portanto **homologação real pendente**, gateway não PASS.
+Testes reais do provider/monitor com SDK simulado: paralelismo/atomicidade3s e8s,11s abaixo do watchdog,20s/hung e orçamento terminal,503→recuperação,401 negado, resposta tardia ignorando abort, A→B e tenant, par e cada papel residual, inatividade/revogação total, offline/signout/unmount, refresh explícito, probe3s/8s. **23 testes candidatos + 18 regressões + 1 reprodução da baseline PASS**; tipos da cópia isolada PASS. Cópias das regressões anteriores adicionam somente a forma SDK abortSignal e corrigem caminho do helper, preservando cenários/asserts; não alteram testes de runtime. Na primeira execução, mocks antigos sem abortSignal falharam; cópias compatíveis passaram. Cancelamento efetivo é assertado nos novos testes, não nos mocks anteriores que ignoram o sinal. Runtime não é substituído para testes. Build automático OK; sem browser hosted/JWT/RLS/anexos da candidata, portanto **homologação real pendente**, gateway não PASS.
 
 ```sh
 mkdir -p /tmp/monitor-loader-validation

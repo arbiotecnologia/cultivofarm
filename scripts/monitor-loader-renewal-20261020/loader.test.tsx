@@ -131,4 +131,13 @@ describe("parallel atomic renewal loader",()=>{
     Object.defineProperty(navigator,"onLine",{configurable:true,value:false});act(()=>window.dispatchEvent(new Event("offline")));
     await tick(30000);expect(s.calls.length).toBe(n);expect(s.calls.slice(-2).every(c=>c.signal?.aborted)).toBe(true);expect(auth.authzReady).toBe(false);
   });
+  it("superseding renewal cancels old recovery timer and never applies stale budget",async()=>{
+    await start();s.hang=true;emit();await tick(20100);s.hang=false;emit();await tick(1500);
+    expect(s.calls.length).toBe(6);expect(auth.authzReady).toBe(true);
+  });
+  it("user signOut cancels current hung reads before Auth signout settles",async()=>{
+    await start();s.hang=true;emit();await tick(100);const last=s.calls.slice(-2);
+    await act(async()=>{ await auth.signOut(); });await tick(25000);
+    expect(last.every(c=>c.signal?.aborted)).toBe(true);expect(s.calls.length).toBe(4);expect(s.signOut).toHaveBeenCalledTimes(1);
+  });
 });
