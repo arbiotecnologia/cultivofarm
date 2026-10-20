@@ -1,0 +1,83 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "application_baseline": "31700a7a4396afd1494e2cb42332ea3f638b7816",
+  "published_baseline": "793bc012ddb026a5075d11b698efe7a2c5adb9e8",
+  "runtime_commit_observed": "88bceb05c630854cde5d4ccedf407bd4d3726ded",
+  "hosted_receipt": {
+    "source": "owner report 2026-10-20 02:16 UTC; not reexecuted by agent",
+    "migration": "manual_lot_canonical_generation_reviewed",
+    "preflight": "reported integral PASS",
+    "postflight": "reported integral PASS"
+  },
+  "primary_six_files": [
+    "src/components/cockpit/GerarLoteDialog.tsx",
+    "src/components/ordens-servico/OSDetalhesDialog.tsx",
+    "src/components/ordens-servico/RastreabilidadeProducaoTab.tsx",
+    "src/hooks/useEsteiraLaboratorio.ts",
+    "src/test/lotes/gerar-lote-fences.test.tsx",
+    "src/test/lotes/gerar-lote-live-scope.test.tsx"
+  ],
+  "additional_existing_test_update": "src/test/lotes/geracao-codigo.test.ts: two brittle source assertions replaced by behavioral coverage in fences test",
+  "files": {
+    "src/components/cockpit/GerarLoteDialog.tsx": {
+      "pre_sha256": "d2e9f61f520e652c48b77e6484509378538b9279fb22a9c43be4e580028e41f4",
+      "post_sha256": "8ab734044d8b20dd052c3dcba7438d671f5b4e059e607f93d234d7974126e1df",
+      "rollback": "restore exact .review"
+    },
+    "src/components/ordens-servico/OSDetalhesDialog.tsx": {
+      "pre_sha256": "4ddecb39d747a62eb309d2f5474c4c9ea14ada665ad098f0a6cf6fda9ec74112",
+      "post_sha256": "3860b367d2b136b2239ad1b36dd99cb8f08f1098d8b8dcffc3ef9098e2eb46c2",
+      "rollback": "restore exact .review"
+    },
+    "src/components/ordens-servico/RastreabilidadeProducaoTab.tsx": {
+      "pre_sha256": "196f230d3d39298854367e664588b7a7b32a937a64a0fe3e2428a7eecbe17e8f",
+      "post_sha256": "b0b97a7d48537711aa40a4eb1b3ecabdacbdde90281cfd931889eb7cd2879842",
+      "rollback": "restore exact .review"
+    },
+    "src/hooks/useEsteiraLaboratorio.ts": {
+      "pre_sha256": "a82d5598c6aa5d7d400a2a99869c2368cea9d997b10a8df35b56d8b6167546b0",
+      "post_sha256": "6928a30c45d61c415b55cb5d2b8cf26216bd5b644e6f3c181ead982a3a9f4473",
+      "rollback": "restore exact .review"
+    },
+    "src/test/lotes/gerar-lote-fences.test.tsx": {
+      "pre_sha256": null,
+      "post_sha256": "db64ae587f1e8b7a014e9e4320feafff186c3dffc9749a2eab7e08795fd24130",
+      "rollback": "remove newly introduced test"
+    },
+    "src/test/lotes/gerar-lote-live-scope.test.tsx": {
+      "pre_sha256": null,
+      "post_sha256": "702c2f84e0bff7f38d36bf4cbb7a248bddd9b8c893d6c848fa9a62d4298ada74",
+      "rollback": "remove newly introduced test"
+    },
+    "src/test/lotes/geracao-codigo.test.ts": {
+      "pre_sha256": "79aba0be39d75d5bd729c58df9fbb5baafca1436bf50903bba0fc8ea4a253aa2",
+      "post_sha256": "c07217468870d1c8c10d4308d3f57e20695a6edca5174c17219655e26b6d5dd3",
+      "rollback": "restore exact .review"
+    }
+  },
+  "gate": {
+    "MANUAL_LOT_GENERATION_REVIEWED": true,
+    "other_gates_changed": false
+  },
+  "validation": {
+    "vitest_tests": 248,
+    "vitest_files": 12,
+    "focused_new_tests": 51,
+    "candidate_amendments_exact": true,
+    "protected_files_byte_identical": [
+      "src/hooks/useAuth.tsx",
+      "src/integrations/supabase/client.ts",
+      "src/integrations/supabase/bindingGuard.ts",
+      "src/config/featureFlags.ts",
+      "supabase/functions/entrega-termo-pdf/index.ts"
+    ],
+    "build": "automatic harness build OK 02:17:40 UTC",
+    "typechecks": "not manually run: platform harness owns builds/typechecks; independent confirmation pending",
+    "browser_homologation": "not run; no session reload or operational write"
+  },
+  "published_by_agent": false,
+  "edge_deploy_by_agent": false,
+  "hosted_sql_by_agent": false,
+  "fixture_created": false,
+  "legacy_lot": "cd49ce12-9d06-459c-b874-3c8d3a275423 preserved; no repair"
+}
