@@ -1,6 +1,11 @@
 # Termo de entrega — PDF binário autenticado (baseline 6493e1ee)
 
-Candidata **não aplicada**: o runtime do repositório (HEAD) continua idêntico a `6493e1ee`. Nada de Edge, SQL,
+**Atualização 20/10 00:55 UTC:** candidato final aplicado no runtime do repositório (sem deploy da Edge, sem publicação).
+Ajustes finais: `downloadTermoPdf` usa `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` do cliente canônico (não `import.meta.env`);
+a Edge cancela corpo/leitor sem aguardar (`soltar`), então `cancel()` pendurado não segura 404/413. SQL de isolamento já
+implantado: ver `docs/entrega-termos-migracoes-implantadas.md`.
+
+Histórico: candidata originalmente não aplicada sobre `6493e1ee`. Nada de Edge, SQL,
 frontend ou publicação foi implantado. Arquivos em `candidate/` espelham os caminhos finais.
 
 ## Preflight (achados)
