@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "scope": "local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof",
-  "passed": 70,
+  "passed": 97,
   "checks": [
     "captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly",
     "every guard predicate compiles and evaluates locally",
@@ -72,6 +72,33 @@
     "gestor positive manual category",
     "producao positive manual category",
     "3s lock timeout rolls back without lot/event",
-    "divergent concurrent replay writes only original lot"
+    "divergent concurrent replay writes only original lot",
+    "baseline real staff RLS permits direct manual INSERT with no RPC/audit",
+    "baseline real staff RLS permits artificial approved lot without CQ",
+    "candidate real staff RLS direct manual INSERT blocked",
+    "candidate real staff RLS foreign programming same actor tenant INSERT blocked",
+    "local table ACL matches administrative containment exactly",
+    "same-tenant SELECT preserved with all staff policy expressions",
+    "foreign tenant SELECT remains invisible",
+    "manual UPDATE status denied, no artificial advancement",
+    "manual UPDATE volume denied, no artificial advancement",
+    "manual UPDATE unlink denied, no artificial advancement",
+    "manual UPDATE tenant denied, no artificial advancement",
+    "manual UPDATE item denied, no artificial advancement",
+    "old manual UPDATE to nonmanual parent denied",
+    "authenticated cannot forge private ticket",
+    "trigger helper has no client EXECUTE",
+    "GUC forged flag cannot authorize manual lot INSERT",
+    "success/replay leave no reusable authorization tickets",
+    "rollback retains manual fence and history, direct bypass stays denied",
+    "rollback preserves contained table ACL exactly, no administrative privileges restored",
+    "immediate FK programming insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
+    "immediate FK link insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
+    "immediate FK delivery insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
+    "immediate FK application insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
+    "earlier programming commit observed after locks, no lot generated",
+    "earlier link commit observed after locks, no lot generated",
+    "earlier delivery commit observed after locks, no lot generated",
+    "earlier application commit observed after locks, no lot generated"
   ]
 }

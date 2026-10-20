@@ -41,6 +41,7 @@ def setup():
         s += d + ';\n'
     # Tenant B manual OS, programmed fixture child, plus a second user in B.
     s += f"INSERT INTO auth.users VALUES({U2}); INSERT INTO profiles(user_id,organization_id) VALUES({U2},{B}); INSERT INTO user_roles(user_id,role) VALUES({U2},'administrador');\n"
+    s += "CREATE TABLE platform_private.authz_tickets(txid bigint NOT NULL,scope text NOT NULL,target uuid NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(txid,scope,target)); ALTER TABLE platform_private.authz_tickets ENABLE ROW LEVEL SECURITY; REVOKE ALL ON platform_private.authz_tickets FROM PUBLIC,anon,authenticated,service_role; GRANT ALL ON platform_private.authz_tickets TO postgres;\n"
     s += (H / 'rollback/rpc.sql.review').read_text()
     return s
 
@@ -69,10 +70,11 @@ def main():
         build()
         assert md5().startswith('d37a0e478e01277ba61f70397b1d44f9'), md5()
         results.append('captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly')
+        run((H / 'manual-write-guard.sql.review').read_text())
         run((H / 'rpc.sql.review').read_text())
         post = md5().split('|')[0]
         if '--generate-hashes' in sys.argv:
-            (H / 'post-hashes.json').write_text(json.dumps({'public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)': post}, indent=2) + '\n')
+            (H / 'post-hashes.json').write_text(json.dumps({'public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)': post, 'manual_guard':run("SELECT md5(pg_get_functiondef('platform_private.guard_manual_lot_write_v1()'::regprocedure));").stdout.strip(), 'manual_trigger':run("SELECT md5(pg_get_triggerdef(oid)) FROM pg_trigger WHERE tgname='aa_manual_lot_write_fence_v1';").stdout.strip()}, indent=2) + '\n')
         else:
             assert json.loads((H / 'post-hashes.json').read_text())['public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)'] == post, 'POST_HASH_DRIFT'
         spec2 = importlib.util.spec_from_file_location('lot_assemble', H / 'assemble.py')
@@ -121,7 +123,7 @@ def main():
         denied('non-string tanque rejected', call('{"volume_produzido":100,"tanque":5}'))
         def closed(change):
             r = run(f"BEGIN; {change}" + actor() + f"SELECT ({call()})->>'success'; ROLLBACK;", False)
-            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'lab_assert_manufacturable' in r.stderr or 'check_os_status_transition' in r.stderr or 'OS_APPROVAL' in r.stderr or 'check_os_programacao_transition' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
+            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in r.stderr or 'lab_assert_manufacturable' in r.stderr or 'check_os_status_transition' in r.stderr or 'OS_APPROVAL' in r.stderr or 'check_os_programacao_transition' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
         closed(f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};")
         results.append('non-null responsible stays closed')
@@ -179,7 +181,7 @@ def main():
         # Concurrency on fresh fixtures, real triggers, two connections.
         def reset():
             run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;')
-            build(); run((H / 'rpc.sql.review').read_text())
+            build(); run((H / 'manual-write-guard.sql.review').read_text()); run((H / 'rpc.sql.review').read_text())
 
         def start(sql):
             p = subprocess.Popen(conn, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -225,7 +227,7 @@ def main():
         # Existing protected structural fields forbid rewriting live OS; new disposable fixture uses the setup before triggers.
         run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;')
         bsetup=setup().replace(f'VALUES({U},{A})',f'VALUES({U},{B})').replace(f"'LOCAL',{A}",f"'LOCAL',{B}").replace(f"'local',{C},{A}",f"'local',{C},{B}").replace(f"1,{A}",f"1,{B}").replace(f"{P},{A},'aprovada'",f"{P},{B},'aprovada'").replace(f"VALUES({PP},{A},{O}",f"VALUES({PP},{B},{O}").replace(f"VALUES({SUB},{A}",f"VALUES({SUB},{B}")
-        run(bsetup); run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-19');"); run((H/'rpc.sql.review').read_text())
+        run(bsetup); run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-19');"); run((H/'manual-write-guard.sql.review').read_text()); run((H/'rpc.sql.review').read_text())
         out=run(actor()+f'SELECT {call()};'); assert '"success": true' in out.stdout, out.stdout
         assert run(f"SELECT count(*)=1 AND min(volume_produzido)=100 AND bool_and(organization_id={B}) FROM lotes;").stdout.strip()=='t'
         assert run(f"SELECT p.organization_id={B} AND c.organization_id={B} AND o.organization_id={B} AND pp.organization_id={B} AND o.status::text='programada' AND pp.status::text='aguardando' FROM profiles p JOIN ordens_servico o ON o.id={O} JOIN clientes c ON c.id=o.cliente_id JOIN programacao_producao pp ON pp.ordem_servico_id=o.id WHERE p.user_id={U};").stdout.strip()=='t'
@@ -248,6 +250,99 @@ def main():
         time.sleep(.25); b=start(actor()+'SELECT '+call(body='{"volume_produzido":101}')+';')
         outs=[a.communicate(timeout=20),b.communicate(timeout=20)]
         assert a.returncode==b.returncode==0 and '"success": false' in outs[1][0]; assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1'; results.append('divergent concurrent replay writes only original lot')
+        # Real policy predicates for staff path; role OIDs are local, never asserted as hosted proof.
+        def install_staff_rls():
+            policies=json.loads((H/'catalog.json').read_text())['policy_definitions']
+            run("CREATE FUNCTION public.fn_onfarm_scope_lote(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT false$$; CREATE FUNCTION public.fn_onfarm_scope_cliente(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT false$$;")
+            # Onfarm is not the exercised actor here; these two unexercised helpers are deliberately
+            # false, not a claim of onfarm certification. All seven policy expressions are installed.
+            for policy in policies:
+                sql='CREATE POLICY '+asm.q(policy['name']).replace("'",'"')+' ON public.lotes '+('AS RESTRICTIVE ' if policy.get('restrictive') else '')+'FOR '+policy['cmd']+' TO authenticated'
+                if policy.get('qual'):sql+=' USING ('+policy['qual']+')'
+                if policy.get('check') or policy['cmd'] in ['ALL','UPDATE']:sql+=' WITH CHECK ('+(policy.get('check') or policy['qual'])+')'
+                run(sql+';')
+            run('ALTER TABLE public.lotes ENABLE ROW LEVEL SECURITY; GRANT USAGE ON SCHEMA public,platform_private,auth TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private,auth TO authenticated; REVOKE EXECUTE ON FUNCTION platform_private.guard_manual_lot_write_v1() FROM authenticated; GRANT SELECT,INSERT,UPDATE,DELETE ON lotes TO anon,authenticated; GRANT SELECT ON programacao_producao,ordens_servico,ordens_servico_onfarm TO authenticated;')
+        reset(); install_staff_rls()
+        direct=f"INSERT INTO lotes(id,codigo_lote,programacao_id,produto_id,organization_id,volume_produzido) VALUES({q(95)},'DIRECT',{PP},{P},{A},100);"
+        # Reproduce actual bypass without altering production: remove candidate trigger locally only.
+        run('DROP TRIGGER aa_manual_lot_write_fence_v1 ON lotes;')
+        out=run(actor()+'SET ROLE authenticated;'+direct)
+        assert out.returncode==0;results.append('baseline real staff RLS permits direct manual INSERT with no RPC/audit')
+        out=run(actor()+f"SET ROLE authenticated; UPDATE lotes SET status='aprovado' WHERE id={q(95)};")
+        assert out.returncode==0;assert run(f"SELECT status FROM lotes WHERE id={q(95)};").stdout.strip()=='aprovado';results.append('baseline real staff RLS permits artificial approved lot without CQ')
+        reset();install_staff_rls()
+        for label,sql in [('direct manual',direct),('foreign programming same actor tenant',direct.replace(f'VALUES({q(95)}',f'VALUES({q(96)}'))]:
+            if label.startswith('foreign'):
+                # Controlled incoherence in disposable DB only, before any lot.
+                run(f'UPDATE programacao_producao SET organization_id={B} WHERE id={PP};')
+            out=run(actor()+'SET ROLE authenticated;'+sql,False)
+            assert out.returncode and '42501' in out.stderr and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('candidate real staff RLS '+label+' INSERT blocked')
+        reset();install_staff_rls();run(asm.CAND_ACL)
+        run('GRANT ALL ON lotes TO service_role;')
+        contained_acl='{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}'
+        assert run("SELECT relacl::text FROM pg_class WHERE oid='lotes'::regclass;").stdout.strip()==contained_acl
+        results.append('local table ACL matches administrative containment exactly')
+        out=run(actor()+'SET ROLE authenticated;SELECT '+call()+';');assert '"success": true' in out.stdout
+        lotid=run('SELECT id FROM lotes;').stdout.strip()
+        assert run(actor()+"SET ROLE authenticated;SELECT count(*) FROM lotes;").stdout.strip().endswith('1');results.append('same-tenant SELECT preserved with all staff policy expressions')
+        assert run(actor(U2)+"SET ROLE authenticated;SELECT count(*) FROM lotes;").stdout.strip().endswith('0');results.append('foreign tenant SELECT remains invisible')
+        for label,change in [('status',"status='aprovado'"),('volume','volume_produzido=101'),('unlink','programacao_id=NULL'),('tenant',f'organization_id={B}'),('item','produto_id=NULL')]:
+            out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET {change} WHERE id='{lotid}';",False)
+            assert out.returncode and '42501' in out.stderr;results.append('manual UPDATE '+label+' denied, no artificial advancement')
+        # An old manual lot cannot escape via a valid onfarm parent either.
+        run(f"INSERT INTO programacao_producao(id,organization_id,produto_id) VALUES({q(93)},{A},{P});")
+        out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET programacao_id={q(93)} WHERE id='{lotid}';",False)
+        assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('old manual UPDATE to nonmanual parent denied')
+        out=run(actor()+"SET ROLE authenticated;INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_lot_insert_v1',gen_random_uuid());",False)
+        assert out.returncode and 'permission denied' in out.stderr;results.append('authenticated cannot forge private ticket')
+        out=run(actor()+"SET ROLE authenticated;SELECT platform_private.guard_manual_lot_write_v1();",False)
+        assert out.returncode and 'permission denied' in out.stderr;results.append('trigger helper has no client EXECUTE')
+        out=run(actor()+"SELECT set_config('cultivo.manual_lot_insert_v1','true',false); SET ROLE authenticated;"+direct,False)
+        assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr, out.stderr;results.append('GUC forged flag cannot authorize manual lot INSERT')
+        assert run('SELECT count(*) FROM platform_private.authz_tickets;').stdout.strip()=='0';results.append('success/replay leave no reusable authorization tickets')
+        run((H/'rollback/rpc.sql.review').read_text()+asm.ROLL_ACL)
+        out=run(actor()+'SET ROLE authenticated;'+direct,False);assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr
+        assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1';results.append('rollback retains manual fence and history, direct bypass stays denied')
+        assert run("SELECT relacl::text FROM pg_class WHERE oid='lotes'::regclass;").stdout.strip()==contained_acl
+        results.append('rollback preserves contained table ACL exactly, no administrative privileges restored')
+        # FK phantom proof: two sessions, real captured immediate validated FKs and candidate locks.
+        def wait_lock(name):
+            end=time.monotonic()+3
+            while time.monotonic()<end:
+                if run(f"SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock');").stdout.strip()=='t':return
+                time.sleep(.02)
+            raise AssertionError('writer never reached FK lock '+name)
+        inserts=[('programming',f"INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({q(97)},{A},{O},{P},100);"),('link',f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(98)},{O},{q(82)},{q(83)},{q(84)});"),('delivery',f"INSERT INTO entregas(id,ordem_servico_id,cliente_id,organization_id) VALUES({q(99)},{O},{C},{A});"),('application',f"INSERT INTO aplicacoes(id,ordem_servico_id,organization_id) VALUES({q(94)},{O},{A});")]
+        for label,insert in inserts:
+            reset()
+            holder=start("SET application_name='lot_rpc_holder';"+actor()+'BEGIN; SELECT '+call()+"; SELECT pg_sleep(2); COMMIT;")
+            end=time.monotonic()+3
+            while time.monotonic()<end:
+                if run("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='lot_rpc_holder' AND wait_event='PgSleep');").stdout.strip()=='t':break
+                time.sleep(.02)
+            else:raise AssertionError('RPC holder not ready')
+            writer=start("SET application_name='phantom_"+label+"';"+insert)
+            wait_lock('phantom_'+label)
+            ho=holder.communicate(timeout=10);wo=writer.communicate(timeout=10)
+            assert holder.returncode==0,ho
+            assert writer.returncode==0,wo
+            assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1'
+            results.append('immediate FK '+label+' insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden')
+        # Reverse ordering: writer commits while RPC waits; post-lock absence checks win.
+        for label,insert in inserts:
+            reset()
+            holder=start("SET application_name='before_"+label+"';"+actor()+f'BEGIN; SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE; '+insert+" SELECT pg_sleep(1); COMMIT;")
+            end=time.monotonic()+3
+            while time.monotonic()<end:
+                if run(f"SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='before_{label}' AND wait_event='PgSleep');").stdout.strip()=='t':break
+                time.sleep(.02)
+            else:raise AssertionError('earlier writer not ready')
+            request=start(actor()+'SELECT '+call()+';')
+            ho=holder.communicate(timeout=10);ro=request.communicate(timeout=10)
+            assert holder.returncode==0,ho
+            assert request.returncode==0 and '"success": false' in ro[0],ro
+            assert run('SELECT count(*) FROM lotes;').stdout.strip()=='0'
+            results.append('earlier '+label+' commit observed after locks, no lot generated')
         (H / 'real-test-results.json').write_text(json.dumps({'ref': 'swzpzcwiasxmjutrmvkm', 'scope': 'local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof', 'passed': len(results), 'checks': results}, indent=2, ensure_ascii=False) + '\n')
         print(len(results), 'PASS')
     finally:

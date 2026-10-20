@@ -106,10 +106,12 @@ BEGIN
  OR v_pp.volume_necessario IS DISTINCT FROM (SELECT volume_total_ml FROM public.ordens_servico WHERE id=p_os_id) THEN
  RETURN jsonb_build_object('success',false,'message','A OS deve estar programada e a programação aguardando; esta ação não programa nem avança etapas.'); END IF;
  LOOP
-  v_try:=v_try+1; v_codigo:=public.gerar_codigo_lote(EXTRACT(YEAR FROM now())::int);
+  v_try:=v_try+1; v_id:=pg_catalog.gen_random_uuid(); v_codigo:=public.gerar_codigo_lote(EXTRACT(YEAR FROM now())::int);
   BEGIN
-   INSERT INTO public.lotes(programacao_id,codigo_lote,produto_id,microrganismo_id,volume_produzido,data_producao,responsavel_producao,tanque,observacoes_tecnicas,organization_id)
-   VALUES(p_programacao_id,v_codigo,v_pp.produto_id,v_pp.microrganismo_id,v_volume,CURRENT_DATE,v_resp,v_tanque,v_obs,v_org) RETURNING id INTO v_id;
+   INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'manual_lot_insert_v1',v_id);
+   INSERT INTO public.lotes(id,programacao_id,codigo_lote,produto_id,microrganismo_id,volume_produzido,data_producao,responsavel_producao,tanque,observacoes_tecnicas,organization_id)
+   VALUES(v_id,p_programacao_id,v_codigo,v_pp.produto_id,v_pp.microrganismo_id,v_volume,CURRENT_DATE,v_resp,v_tanque,v_obs,v_org) RETURNING id INTO v_id;
+   DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope='manual_lot_insert_v1' AND target=v_id;
    EXIT;
   EXCEPTION WHEN unique_violation THEN
    GET STACKED DIAGNOSTICS v_constraint=CONSTRAINT_NAME;

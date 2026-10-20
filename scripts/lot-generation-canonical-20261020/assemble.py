@@ -11,7 +11,7 @@ def q(v):
     return "'" + v.replace("'", "''") + "'"
 
 
-def guard(post: bool) -> str:
+def guard(post: bool, retained: bool = False) -> str:
     c = json.loads((H / 'catalog.json').read_text())
     assert c['ref'] == REF
     t = c['target']
@@ -23,9 +23,19 @@ def guard(post: bool) -> str:
     for sig, h, a in c['functions']:
         L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure({q(sig)}) AND md5(pg_get_functiondef(oid))={q(h)} AND proowner='postgres'::regrole AND proacl::text={q(a)}) THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %', {q(sig)}; END IF;")
     names = sorted(x[0] for x in c['lot_triggers'])
+    if post or retained: names.append('aa_manual_lot_write_fence_v1'); names.sort()
     L.append(" IF (SELECT array_agg(tgname::text ORDER BY tgname) FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND NOT tgisinternal) IS DISTINCT FROM ARRAY[" + ','.join(q(n) for n in names) + "]::text[] THEN RAISE EXCEPTION 'TRIGGER_SET_DRIFT'; END IF;")
     for name, d, f, _ in c['lot_triggers']:
         L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND tgname={q(name)} AND tgenabled='O' AND md5(pg_get_triggerdef(oid))={q(d)} AND md5(pg_get_functiondef(tgfoid))={q(f)}) THEN RAISE EXCEPTION 'TRIGGER_DRIFT: %', {q(name)}; END IF;")
+    if post or retained:
+        hashes=json.loads((H/'post-hashes.json').read_text())
+        L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_lot_write_v1()') AND md5(pg_get_functiondef(oid))={q(hashes['manual_guard'])} AND proowner='postgres'::regrole AND prosecdef AND proacl::text='{{postgres=X/postgres}}') THEN RAISE EXCEPTION 'MANUAL_GUARD_DRIFT'; END IF;")
+        L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND tgname='aa_manual_lot_write_fence_v1' AND tgenabled='O' AND md5(pg_get_triggerdef(oid))={q(hashes['manual_trigger'])}) THEN RAISE EXCEPTION 'MANUAL_TRIGGER_DRIFT'; END IF;")
+    else:
+        L.append(" IF to_regprocedure('platform_private.guard_manual_lot_write_v1()') IS NOT NULL THEN RAISE EXCEPTION 'MANUAL_GUARD_ALREADY_EXISTS'; END IF;")
+    L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relowner='postgres'::regrole AND relacl::text='{{postgres=arwdDxtm/postgres}}' AND relrowsecurity) THEN RAISE EXCEPTION 'TICKET_ACL_DRIFT'; END IF;")
+    L.append(" IF EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='platform_private.authz_tickets'::regclass) OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='platform_private.authz_tickets'::regclass AND contype='p' AND convalidated AND pg_get_constraintdef(oid)='PRIMARY KEY (txid, scope, target)') THEN RAISE EXCEPTION 'TICKET_RULE_DRIFT'; END IF;")
+    L.append(f" IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='platform_private.authz_tickets'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM {q(c['ticket_schema_md5'])} THEN RAISE EXCEPTION 'TICKET_SCHEMA_DRIFT'; END IF;")
     for name, d in c['lot_indexes']:
         L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass({q('public.' + name)}) AND indisvalid AND indisready AND md5(pg_get_indexdef(indexrelid))={q(d)}) THEN RAISE EXCEPTION 'INDEX_DRIFT: %', {q(name)}; END IF;")
     pol = sorted(x[0] for x in c['lot_policies'])
@@ -42,6 +52,11 @@ def guard(post: bool) -> str:
     for table, digest in c.get('dependency_schema', []):
         name=q('public.'+table)
         L.append(f" IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=to_regclass({name}) AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM {q(digest)} THEN RAISE EXCEPTION 'DEPENDENCY_SCHEMA_DRIFT: %', {name}; END IF;")
+    # Captured immediate parent FKs underpin the two-session phantom proof.
+    for table in ['programacao_producao','production_order_link','entregas','aplicacoes']:
+        fk=table+'_ordem_servico_id_fkey'
+        definition='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)'+(' ON DELETE CASCADE' if table in ['programacao_producao','production_order_link'] else '')
+        L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid={q('public.'+table)}::regclass AND conname={q(fk)} AND contype='f' AND convalidated AND NOT condeferrable AND NOT condeferred AND pg_get_constraintdef(oid)={q(definition)}) THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT: %', {q(fk)}; END IF;")
     for name, digest in c.get('views', []):
         L.append(f" IF md5(pg_get_viewdef(to_regclass({q(name)}),true)) IS DISTINCT FROM {q(digest)} THEN RAISE EXCEPTION 'VIEW_DRIFT: %', {q(name)}; END IF;")
     L.append("END $guard$;")
@@ -60,8 +75,9 @@ def main():
     tx = "BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL statement_timeout='15s';\n"
     (H / 'preflight-readonly.sql').write_text(HEAD + "BEGIN READ ONLY;\n" + guard(False) + "ROLLBACK;\n")
     (H / 'postflight-readonly.sql').write_text(HEAD + "BEGIN READ ONLY;\n" + guard(True) + "ROLLBACK;\n")
-    (H / 'candidate.sql.review').write_text(HEAD + tx + guard(False) + rpc + CAND_ACL + guard(True) + "COMMIT;\n")
-    (H / 'rollback.sql.review').write_text(HEAD + tx + guard(True) + base + ROLL_ACL + guard(False) + "COMMIT;\n")
+    (H / 'candidate.sql.review').write_text(HEAD + tx + guard(False) + (H/'manual-write-guard.sql.review').read_text() + rpc + CAND_ACL + guard(True) + "COMMIT;\n")
+    (H / 'rollback-postflight-readonly.sql').write_text(HEAD + 'BEGIN READ ONLY;\n' + guard(False, retained=True) + 'ROLLBACK;\n')
+    (H / 'rollback.sql.review').write_text(HEAD + tx + guard(True) + base + ROLL_ACL + guard(False, retained=True) + "COMMIT;\n")
 
 
 if __name__ == '__main__':

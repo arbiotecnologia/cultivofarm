@@ -360,3 +360,7 @@
 ## 20/10 01:16 — geração canônica mínima, baseline 793bc012
 - [x] Fonte/ACL/schema reconfirmados somente leitura; pacote `scripts/lot-generation-canonical-20261020/` com RPC manual programada, PRE/POST, rollback fechado autocontido, UI .review OFF e hashes. 70 checks PG descartável/Auth sintético; Vitest 147/147; tipos app/node EXIT 0. Runtime 793bc012 preservado.
 - [ ] Revisão/implantação e homologação real: dependem do auditor; zero lotes/entregas/termos, sem dados criados pelo agente. Riscos: DML direto lotes, refresh global/locks e timeout hospedado; sem abertura dos demais gates.
+
+## 20/10 01:36 — contenção administrativa e bypass manual de lotes
+- [x] Baseline ACL contida, guard privado INSERT/UPDATE manual e rollback sem reabrir privilégios; testes PG descartável para bypass/ACL e phantoms/FKs em duas sessões; impactos/limites em WRITE-CONCURRENCY-REVIEW.md. Não aplicado; avanço manual legado deliberadamente fechado, não certificado.
+- [ ] Implantação e homologação lote/PDF: dependem da revisão independente; nenhuma sessão/fixture alterada.
