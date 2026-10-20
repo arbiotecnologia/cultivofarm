@@ -1,0 +1,57 @@
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_gerar_lote_v1(p_programacao_id uuid, p_os_id uuid, p_origem text, p_lote jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE v_uid uuid:=auth.uid(); v_origem text; v_prog record; v_existente record;
+ v_id uuid; v_codigo text; v_volume numeric; v_tentativa int:=0; v_constraint text; v_indexdef text;
+BEGIN
+ v_origem:=public.fn_cockpit_assert_operador_origem(p_origem);
+ IF p_programacao_id IS NULL OR p_os_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_PARAMS_INVALIDOS'; END IF;
+ IF p_lote IS NULL OR jsonb_typeof(p_lote)<>'object' THEN RAISE EXCEPTION 'COCKPIT_LOTE_PAYLOAD_INVALIDO'; END IF;
+ IF nullif(p_lote->>'codigo_lote','') IS NOT NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_CODIGO_NAO_ACEITO'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtext('cockpit_lote:'||p_programacao_id::text));
+ SELECT id,ordem_servico_id,ordem_servico_onfarm_id,produto_id,microrganismo_id INTO v_prog
+ FROM public.programacao_producao WHERE id=p_programacao_id FOR UPDATE;
+ IF v_prog.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_PROGRAMACAO_NAO_ENCONTRADA'; END IF;
+ IF v_prog.ordem_servico_id IS NOT NULL AND v_prog.ordem_servico_onfarm_id IS NOT NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_VINCULO_AMBIGUO'; END IF;
+ IF v_origem='onfarm' THEN
+  IF v_prog.ordem_servico_id IS NOT NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_VINCULO_AMBIGUO'; END IF;
+  IF v_prog.ordem_servico_onfarm_id IS DISTINCT FROM p_os_id THEN RAISE EXCEPTION 'COCKPIT_LOTE_VINCULO_INVALIDO'; END IF;
+ ELSE
+  IF v_prog.ordem_servico_onfarm_id IS NOT NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_VINCULO_AMBIGUO'; END IF;
+  IF v_prog.ordem_servico_id IS DISTINCT FROM p_os_id THEN RAISE EXCEPTION 'COCKPIT_LOTE_VINCULO_INVALIDO'; END IF;
+ END IF;
+ -- Replay histórico não fabrica de novo; referências e origem já foram validadas.
+ SELECT id,codigo_lote INTO v_existente FROM public.lotes WHERE programacao_id=p_programacao_id LIMIT 1;
+ IF v_existente.id IS NOT NULL THEN RETURN jsonb_build_object('success',true,'replay',true,'lote_id',v_existente.id,'codigo_lote',v_existente.codigo_lote,'message',format('Lote %s ja existe para esta programacao.',v_existente.codigo_lote)); END IF;
+ IF v_prog.produto_id IS NULL AND v_prog.microrganismo_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_ITEM_CANONICO_AUSENTE'; END IF;
+ PERFORM platform_private.lab_assert_manufacturable(v_prog.produto_id,v_prog.microrganismo_id);
+ BEGIN v_volume:=nullif(p_lote->>'volume_produzido','')::numeric;
+ EXCEPTION WHEN others THEN RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO'; END;
+ IF v_volume IS NULL OR NOT(v_volume>0) OR v_volume::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO'; END IF;
+ LOOP
+  v_tentativa:=v_tentativa+1; v_codigo:=public.gerar_codigo_lote(EXTRACT(YEAR FROM now())::int);
+  BEGIN
+   INSERT INTO public.lotes(programacao_id,codigo_lote,produto_id,microrganismo_id,volume_produzido,data_producao,responsavel_producao,tanque,observacoes_tecnicas)
+   VALUES(p_programacao_id,v_codigo,v_prog.produto_id,v_prog.microrganismo_id,v_volume,
+    coalesce(nullif(p_lote->>'data_producao','')::date,CURRENT_DATE),nullif(p_lote->>'responsavel_producao',''),nullif(p_lote->>'tanque',''),nullif(p_lote->>'observacoes_tecnicas','')) RETURNING id INTO v_id;
+   EXIT;
+  EXCEPTION WHEN unique_violation THEN
+   GET STACKED DIAGNOSTICS v_constraint=CONSTRAINT_NAME;
+   SELECT pg_get_indexdef(c.oid) INTO v_indexdef FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=v_constraint AND c.relkind='i';
+   IF v_indexdef IS NOT NULL AND v_indexdef LIKE '%(programacao_id)%' THEN
+    SELECT id,codigo_lote INTO v_existente FROM public.lotes WHERE programacao_id=p_programacao_id LIMIT 1;
+    IF v_existente.id IS NULL THEN RAISE; END IF;
+    RETURN jsonb_build_object('success',true,'replay',true,'lote_id',v_existente.id,'codigo_lote',v_existente.codigo_lote,'message',format('Lote %s ja existe para esta programacao.',v_existente.codigo_lote));
+   ELSIF v_indexdef IS NOT NULL AND v_indexdef LIKE '%(codigo_lote)%' THEN
+    IF v_tentativa>=3 THEN RAISE EXCEPTION 'COCKPIT_LOTE_CODIGO_CONFLITO'; END IF;
+   ELSE RAISE; END IF;
+  END;
+ END LOOP;
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,lote_id,etapa_nova,acao,usuario_id,observacao)
+ VALUES(p_os_id,v_origem,p_programacao_id,v_id,'lote_gerado','gerar_lote',v_uid,format('Lote %s gerado (codigo canonico do servidor).',v_codigo));
+ RETURN jsonb_build_object('success',true,'replay',false,'lote_id',v_id,'codigo_lote',v_codigo,'message',format('Lote %s gerado com sucesso.',v_codigo));
+END $function$
+;
