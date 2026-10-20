@@ -1,0 +1,27 @@
+-- REVIEW ONLY; scope already authorized, but DO NOT execute during package preparation.
+-- Existing canonical table, authorized database administrative channel; no new RPC/editor/grants.
+-- Run reference/CQ POST checks first. Administrative identity is the actual database operator,
+-- never a forged JWT, role assignment, OS/CQ status, or service token supplied by a frontend.
+BEGIN;
+SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';
+LOCK TABLE public.cq_parametros_referencia IN SHARE ROW EXCLUSIVE MODE;
+DO $guard$
+BEGIN
+ IF session_user <> 'postgres' OR current_user <> 'postgres' THEN RAISE EXCEPTION 'ADMIN_DATABASE_OPERATOR_REQUIRED'; END IF;
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+ PERFORM 1 FROM public.produtos WHERE id='1986af48-709f-4bf4-85b4-3c9ed8a61019' AND ativo IS TRUE AND familia_catalogo='biologico' AND nome='TESTE AUDITORIA BIOLOGICO APLICACAO 20261019' FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FICTIONAL_PRODUCT_SNAPSHOT_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_reference_item_required_v1' AND convalidated AND pg_get_constraintdef(oid)='CHECK (((microrganismo_id IS NOT NULL) OR (produto_id IS NOT NULL)))')
+ OR NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('public.cq_reference_product_only_active_uidx') AND indisunique AND indisvalid) THEN RAISE EXCEPTION 'REFERENCE_SCHEMA_NOT_REVIEWED'; END IF;
+ -- Never replace a real/legacy/inactive reference. Repeated execution refuses rather than mutates.
+ IF EXISTS(SELECT 1 FROM public.cq_parametros_referencia WHERE produto_id='1986af48-709f-4bf4-85b4-3c9ed8a61019') THEN RAISE EXCEPTION 'REFERENCE_ALREADY_EXISTS_REVIEW_RECEIPT'; END IF;
+END $guard$;
+INSERT INTO public.cq_parametros_referencia
+ (produto_id,microrganismo_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo)
+VALUES
+ ('1986af48-709f-4bf4-85b4-3c9ed8a61019',NULL,6,8,100000000,'Normal','Caracteristico','Ausente',
+ 'DADOS FICTICIOS SEM VALOR COMERCIAL; referencia exclusiva deste produto de teste, sem validade agronomica ou comercial; sem producao fisica, venda ou uso agricola.',true)
+RETURNING id,produto_id,microrganismo_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo,created_at;
+-- Preserve the returned immutable review receipt alongside the operator's database audit.
+-- No cleanup/delete rollback: references and any subsequent CQ history must be retained.
+COMMIT;
