@@ -122,10 +122,23 @@ def main():
   deny('canonical product without micro/reference cannot be approved',actor()+f'SET ROLE authenticated;SELECT {call()};')
   no_ref_rejected={**data,'resultado':'reprovado'}
   run(actor()+f'BEGIN;SET LOCAL ROLE authenticated;SELECT {call(no_ref_rejected)};ROLLBACK;');checks.append('no-reference synthetic rejection records data but never conformity')
-  # Explicit synthetic reference for a different local test scenario, NOT a product/micro association.
+  # New product-only contract, separate review SQL applied ONLY in this disposable PG.
+  before=run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout
+  deny('hosted NOT NULL shape rejects product-only before delta',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
+  run((H/'reference-product-only.sql.review').read_text())
+  run((H/'reference-product-only.sql.review').read_text());checks.append('product-only schema delta idempotent in disposable PG')
+  assert before==run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout;checks.append('product-only delta preserves table ACL and RLS')
+  deny('product-only neither item denied',"INSERT INTO cq_parametros_referencia DEFAULT VALUES;")
+  deny('product-only nonexistent product FK denied',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({q(99)});")
+  run((H/'reference-product-only-rollback.sql.review').read_text());checks.append('empty product-only rollback restores NOT NULL')
+  run((H/'reference-product-only.sql.review').read_text())
+  deny('product-only schema wrong ref fails closed',"BEGIN;UPDATE fiscal_environment_marker SET project_ref='invalid';"+(H/'reference-product-only.sql.review').read_text())
   refid=q(91); data['referencia_id']=refid.strip("'")
-  run(f"INSERT INTO microrganismos(id,nome,tipo) VALUES({q(92)},'LOCAL SYNTHETIC CQ REFERENCE ONLY','bacteria');")
-  run(f"INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,ativo) VALUES({refid},{q(92)},{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente',true);")
+  run(f"INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo) VALUES({refid},NULL,{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente','DADOS FICTICIOS SEM VALOR COMERCIAL',true);")
+  deny('rollback refuses product-only history without deletion',(H/'reference-product-only-rollback.sql.review').read_text())
+  deny('rollback refuses inactive product-only history',f"BEGIN;UPDATE cq_parametros_referencia SET ativo=false WHERE id={refid};"+(H/'reference-product-only-rollback.sql.review').read_text())
+  deny('existing FK still rejects invented microorganism',f"UPDATE cq_parametros_referencia SET microrganismo_id={q(99)} WHERE id={refid};")
+  yes('synthetic product-only row keeps micro NULL',f"EXISTS(SELECT 1 FROM cq_parametros_referencia WHERE id={refid} AND produto_id={lot.P} AND microrganismo_id IS NULL)")
   yes('product remains without direct microorganism',f'(SELECT microrganismo_id IS NULL FROM ordens_servico WHERE id={O}) AND (SELECT microrganismo_id IS NULL FROM programacao_producao WHERE id={PP})')
   for label,change in [('inactive reference',f'UPDATE cq_parametros_referencia SET ativo=false WHERE id={refid};'),('foreign item reference',f'UPDATE cq_parametros_referencia SET produto_id={q(93)} WHERE id={refid};'),('incomplete reference',f'UPDATE cq_parametros_referencia SET ph_min=NULL WHERE id={refid};'),('out of specification',f'UPDATE cq_parametros_referencia SET ph_min=8 WHERE id={refid};')]:
    deny('approval denied '+label,actor()+f'BEGIN;{change}SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;')
@@ -133,7 +146,7 @@ def main():
    r=run(actor()+f"BEGIN;UPDATE user_roles SET role='{role}' WHERE user_id={U};SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;");assert '"success": true' in r.stdout;checks.append('record positive current '+role)
   for label,change in [('inactive',f'UPDATE profiles SET ativo=false WHERE user_id={U};'),('revoked',f'DELETE FROM user_roles WHERE user_id={U};'),('foreign-client',f'UPDATE clientes SET organization_id={B} WHERE id={lot.C};')]:
    deny('record denied '+label,actor()+f'BEGIN;{change}SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;')
-  r=run(actor()+f"BEGIN; INSERT INTO microrganismos(id,nome,tipo) VALUES({q(94)},'LOCAL SYNTHETIC DUPLICATE ONLY','bacteria'); INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,ativo) VALUES({q(95)},{q(94)},{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente',true); SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;",False)
+  r=run(actor()+f"BEGIN; INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,ativo) VALUES({q(95)},NULL,{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente',true); SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;",False)
   assert r.returncode and 'CQ_REFERENCE_INVALID' in r.stderr,r.stderr;checks.append('duplicate active product references close recording')
   # Record first result in transaction then rollback to test both outcomes against same canonical pending state.
   r=run(actor()+f"BEGIN; SELECT {call()};SELECT status FROM ordens_servico WHERE id={O};SELECT status FROM lotes WHERE id={L};SELECT responsavel FROM controle_qualidade;ROLLBACK;");assert 'em_cq' in r.stdout and 'DADOS FICTICIOS SEM VALOR COMERCIAL' in r.stdout;checks.append('approved full synthetic data stays em_cq; transaction rollback')

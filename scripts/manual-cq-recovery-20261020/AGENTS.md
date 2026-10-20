@@ -11,3 +11,4 @@
 
 - The LIVE programming-binding containment is an immutable dependency in PRE/POST/rollback; assembly never defines, drops or replaces it, and its snapshot is for disposable tests only.
 - CQ comparison requires complete active references and valid measurements, with case-sensitive space-trim equality matching the core; it never authorizes mutation.
+- Product-only reference compatibility is a separate review-only schema gate on the existing table; retain both FKs/legacy dual rows and deny rollback with any null-micro history — avoids invented associations and data loss.

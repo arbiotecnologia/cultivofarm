@@ -1,0 +1,16 @@
+-- REVIEW ONLY. Refuses rollback if ANY product-only row exists, including inactive/history.
+-- Never deletes, repairs, reassigns a micro, or drops an FK/policy/ACL.
+BEGIN;
+SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';
+DO $pre$ BEGIN
+ IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+END $pre$;
+LOCK TABLE public.cq_parametros_referencia IN ACCESS EXCLUSIVE MODE;
+DO $guard$ BEGIN
+ IF EXISTS(SELECT 1 FROM public.cq_parametros_referencia WHERE microrganismo_id IS NULL) THEN
+  RAISE EXCEPTION 'CQ_REFERENCE_ROLLBACK_BLOCKED_HISTORY';
+ END IF;
+END $guard$;
+ALTER TABLE public.cq_parametros_referencia ALTER COLUMN microrganismo_id SET NOT NULL;
+-- Keep integrity trigger/function: harmless under NOT NULL and preserves containment.
+COMMIT;
