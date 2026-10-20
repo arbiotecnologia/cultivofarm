@@ -123,6 +123,7 @@ def main():
   no_ref_rejected={**data,'resultado':'reprovado'}
   run(actor()+f'BEGIN;SET LOCAL ROLE authenticated;SELECT {call(no_ref_rejected)};ROLLBACK;');checks.append('no-reference synthetic rejection records data but never conformity')
   # New product-only contract, separate review SQL applied ONLY in this disposable PG.
+  run("INSERT INTO fiscal_environment_marker(project_ref,environment_label) VALUES('swzpzcwiasxmjutrmvkm','DISPOSABLE SYNTHETIC ONLY');")
   before=run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout
   deny('hosted NOT NULL shape rejects product-only before delta',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
   run((H/'reference-product-only.sql.review').read_text())
