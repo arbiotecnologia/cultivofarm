@@ -84,6 +84,11 @@
     "authenticated writer stays closed after schema delta",
     "product-only delta preserves table ACL and RLS",
     "legacy unique index unchanged",
+    "assembled pre reference predicate compiles and passes",
+    "assembled post reference predicate compiles and passes",
+    "assembled post reference predicate compiles and passes",
+    "assembled rollback reference predicate compiles and passes",
+    "assembled rollback reference predicate compiles and passes",
     "both NULL constraint is validated CHECK",
     "product-only neither item denied",
     "product-only nonexistent product FK denied",
@@ -110,6 +115,7 @@
     "dual legacy and product-only active ambiguity still fails closed",
     "approved full synthetic data stays em_cq; transaction rollback",
     "rejected keeps program pending; full result transaction rollback",
+    "two sessions concurrent active product-only insert one success one unique denial",
     "revocation committed during OS wait denies after locks",
     "real OS lock timeout denies without result",
     "two PG sessions one CQ one replay",
@@ -127,7 +133,7 @@
     "rollback retains LIVE binding hash ACL and trigger",
     "rollback never restores GUC purge escape"
   ],
-  "count": 126,
+  "count": 132,
   "hosted": false,
   "auth": "synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification",
   "limits": [

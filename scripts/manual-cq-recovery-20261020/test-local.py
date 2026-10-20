@@ -186,8 +186,8 @@ def main():
   # Two real sessions serialize one complete result and one replay.
   def start(s):
    p=subprocess.Popen(conn,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True);p.stdin.write(s);p.stdin.close();p.stdin=None;return p
-  index_first=start(f"BEGIN;INSERT INTO cq_parametros_referencia(produto_id,ativo) VALUES({q(93)},true);SELECT pg_sleep(0.5);COMMIT;");time.sleep(.1)
-  index_second=start(f"INSERT INTO cq_parametros_referencia(produto_id,ativo) VALUES({q(93)},true);")
+  index_first=start(f"BEGIN;INSERT INTO cq_parametros_referencia(produto_id,ativo) VALUES('{test_product}',true);SELECT pg_sleep(0.5);COMMIT;");time.sleep(.1)
+  index_second=start(f"INSERT INTO cq_parametros_referencia(produto_id,ativo) VALUES('{test_product}',true);")
   ia=index_first.communicate(timeout=15);ib=index_second.communicate(timeout=15)
   assert index_first.returncode==0 and index_second.returncode!=0 and 'cq_reference_product_only_active_uidx' in ib[1],(ia,ib);checks.append('two sessions concurrent active product-only insert one success one unique denial')
   # Revocation commits while caller waits for OS lock: post-lock actor check must deny.
