@@ -1,0 +1,25 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "published_baseline_receipt": "afa2417fb2ac305636b9bc82786d62ae9af0a632",
+  "runtime_changed": false,
+  "applied": false,
+  "hosted": false,
+  "lease_changed": false,
+  "baseline_sha256": "165c628ebfa5af4e89f597971c0b88861fb831e12e012c1e7292ce154f2f1f9f",
+  "candidate_sha256": "7277e3b76cb1c3091795548a43d6ddb2153e485cac01978d1d75f13c740a4b9f",
+  "cq_manifest_sha256": "828ca545c9b2c8b49aea23c96766b0281e72d9e8cd696853232d8c8005a22062",
+  "files": {
+    "AGENTS.md": "eb7f8aaffe2723c2455d395c7dfc0809ebd843ba1a91e9b94a8230df4cdd7def",
+    "README.md": "8a01c213816e444583beb7289b7cf392f47f6c6821368b5f96c5783b8ad5af2a",
+    "autoTimeoutRecovery.regression.test.tsx": "dad21bd3917441c511abb97d5dc0208232e1f9b1fb790c8d59d0ba16acf80945",
+    "baseline-reproduction.test.tsx": "32eedcd321640f421d6cae49baabf35f88426c57e23a5523c9ef60b0125c0db3",
+    "frontend-candidate/src/hooks/useAuth.tsx": "7277e3b76cb1c3091795548a43d6ddb2153e485cac01978d1d75f13c740a4b9f",
+    "frontend.patch": "d44258b2a7d1d2e8ef11c42cb15256bd2631bb28e1a72203db55c765f5e421bb",
+    "loader.test.tsx": "53b7b48c8c8982e2fe9762efa8d4bdf6c7f1d32b8041baa326a6f37edc8299cb",
+    "prepare.py": "c4c6c626ff22e61dddb6be5b6c1a3f15585efa54720cfeb06a0a7233138bd235",
+    "residualScopeStability.regression.test.tsx": "cd96dc2ed95a5450399d460a5cc8a1e7427ee01592d0e6b7371db9d9f8b19bac",
+    "rollback/src/hooks/useAuth.tsx.review": "165c628ebfa5af4e89f597971c0b88861fb831e12e012c1e7292ce154f2f1f9f",
+    "rollback.py": "56f6bf9087ee8b3655eadafe56675f30d22f5e9d88b39ca788e0810c542e6b06",
+    "vitest.config.ts": "abf2696bbd4419060d43d9386c682e90ad7ebcdb38d8fe58abe33d9c60a21be9"
+  }
+}
