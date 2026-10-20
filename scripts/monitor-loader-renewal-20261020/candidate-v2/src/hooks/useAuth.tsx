@@ -268,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: rolesData, error: roleError } = rolesResult;
 
       if (!isCurrent()) return yieldStale();
-      if (profileError) throw Object.assign(new Error("profile_read_failed"), { status: profileResult.status, cause: profileError });
+      if (profileError) throw Object.assign(new Error("profile_read_failed"), { status: profileResult.status ?? (profileError as { status?: unknown }).status, cause: profileError });
 
       const profile = profileData as Profile | null;
       
@@ -294,7 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (roleError) {
         console.error("Error fetching roles:", roleError);
-        throw Object.assign(new Error("roles_read_failed"), { status: rolesResult.status, cause: roleError });
+        throw Object.assign(new Error("roles_read_failed"), { status: rolesResult.status ?? (roleError as { status?: unknown }).status, cause: roleError });
       }
 
       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
