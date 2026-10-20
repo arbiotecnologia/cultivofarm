@@ -375,3 +375,9 @@
 - [ ] Homologação futura CQ A/B e legado: depende de revisão/implantação pelo proprietário; sem envase/reserva/entrega/contratos e sem termo assinado pelo agente.
 - [x] Incorporar achado 02:42: eliminar escape GUC dos triggers DEFINER no candidato/rollback; reprodução isolada sob authenticated e RLS tenant; 73 checks PG sintéticos. Aprovação sem referência válida negada; referência positiva apenas em PG descartável, sem associação real.
 - [x] 02:45: proprietário implantou cq_remove_guc_definer_bypass; leitura canônica conferiu corpos/hashes/ACL. PRE/POST/rollback devem exigir contenção já aplicada, sem reescrever triggers; nenhum CQ fictício persistiu conforme recibo. Gates OFF, revisão integral ainda pendente.
+
+## 20/10 13:04 — revisão independente CQ 18fc97
+- [ ] Alinhar hook existente ao core (produto prioritário, sem fallback/associação inventada), monitor/cancelamento e testes do hook real; candidato/rollback/hashes/tipos.
+- [ ] Reproduzir escape por vínculos pais/edição OS em_cq e conter no candidato/rollback sem GUC.
+- [ ] Preparar referência exclusivamente fictícia completa por caminho canônico revisável; verificar edição fora do escopo.
+- [ ] Revalidar pacote e registrar limites; sem DDL/deploy e gate false.
