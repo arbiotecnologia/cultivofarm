@@ -29,6 +29,10 @@ DECLARE ticket text; org uuid; linked boolean;
 BEGIN
  IF TG_TABLE_NAME='ordens_servico' THEN
   linked:=EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id WHERE p.ordem_servico_id=OLD.id AND l.organization_id IS NOT NULL);
+  IF linked AND OLD.status::text='em_cq' AND
+   (to_jsonb(NEW)-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'updated_at') THEN
+   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';
+  END IF;
   IF linked AND (OLD.status::text='em_cq' OR NEW.status::text='em_cq') AND NEW.status IS DISTINCT FROM OLD.status THEN
    IF OLD.status::text IS DISTINCT FROM 'programada' OR NEW.status::text IS DISTINCT FROM 'em_cq'
     OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')
@@ -37,6 +41,12 @@ BEGIN
   END IF;
  ELSE
   linked:=OLD.ordem_servico_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id AND l.organization_id IS NOT NULL);
+  IF linked AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.ordem_servico_id IS DISTINCT FROM OLD.ordem_servico_id
+   OR NEW.ordem_servico_onfarm_id IS DISTINCT FROM OLD.ordem_servico_onfarm_id
+   OR NEW.organization_id IS DISTINCT FROM OLD.organization_id
+   OR NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id) THEN
+   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';
+  END IF;
   IF linked AND (OLD.status::text IN ('aguardando_cq','aprovado') OR NEW.status::text IN ('aguardando_cq','aprovado')) AND NEW IS DISTINCT FROM OLD THEN
    ticket:=CASE WHEN OLD.status::text='aguardando' AND NEW.status::text='aguardando_cq' THEN 'manual_cq_send_v1'
      WHEN OLD.status::text='aguardando_cq' AND NEW.status::text='aprovado' THEN 'manual_cq_aprovado_v1' END;
