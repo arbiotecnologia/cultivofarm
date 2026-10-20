@@ -70,7 +70,7 @@ export function RegistrarCQDialog({ open, onOpenChange, target, phase = "record"
     if (pending.current || !access.ready || !target.lote_id || !synthetic) return;
     const ph = Number(form.ph);
     const concentration = formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente);
-    if (phase === "record" && (refLoading || refQuery.isError || !form.ph.trim() || !Number.isFinite(ph) || ph < 0 || ph > 14 ||
+    if (phase === "record" && (refLoading || refQuery.isError || (form.resultado === "aprovado" && !referencia?.id) || !form.ph.trim() || !Number.isFinite(ph) || ph < 0 || ph > 14 ||
       concentration === null || !Number.isFinite(concentration) || concentration < 0 || concentration > 1e30 ||
       !["aprovado", "reprovado"].includes(form.resultado) || !form.aparencia.trim() || !form.odor.trim() || !form.contaminacao.trim())) {
       toast.error("Confira os dados da análise antes de registrar."); return;

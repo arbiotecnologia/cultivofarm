@@ -69,6 +69,94 @@ IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.entregas'::regc
 IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.aplicacoes'::regclass AND conname='aplicacoes_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relowner='postgres'::regrole AND relrowsecurity AND relacl::text='{postgres=arwdDxtm/postgres}') OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='platform_private.authz_tickets'::regclass) THEN RAISE EXCEPTION 'PRIVATE_TICKET_DRIFT';END IF;
 END $guard$;
+-- REVIEW ONLY: no purge requested; remove owner-based GUC escape without replacement.
+CREATE OR REPLACE FUNCTION public.fn_cq_autoria_servidor()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_profile uuid;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF v_uid IS NOT NULL THEN
+      SELECT id INTO v_profile FROM public.profiles WHERE user_id = v_uid LIMIT 1;
+      IF v_profile IS NOT NULL THEN
+        IF NEW.responsavel_id IS NOT NULL AND NEW.responsavel_id IS DISTINCT FROM v_profile THEN
+          RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: responsavel_id informado (%) difere do perfil do usuario autenticado.', NEW.responsavel_id
+            USING ERRCODE = 'check_violation';
+        END IF;
+        NEW.responsavel_id := v_profile;
+      ELSIF NEW.responsavel_id IS NOT NULL THEN
+        RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: usuario autenticado sem perfil nao pode informar responsavel_id.'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id THEN
+    RAISE EXCEPTION 'CQ_AUTORIA_IMUTAVEL: responsavel_id da analise % nao pode ser alterado.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.seq IS DISTINCT FROM OLD.seq
+     OR NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN
+    RAISE EXCEPTION 'CQ_TRILHA_IMUTAVEL: created_at/seq/lote_id da analise % nao podem ser alterados.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$fn$;
+
+CREATE OR REPLACE FUNCTION public.fn_cq_resultado_imutavel()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.resultado IS NOT NULL THEN
+      RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: análise % do lote % já possui resultado final (%) e não pode ser excluída. Registre uma nova análise (reanálise) para o mesmo lote.',
+        OLD.id, OLD.lote_id, OLD.resultado USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  -- transição inicial (pendente -> resultado final) continua permitida
+  IF OLD.resultado IS NULL THEN
+    IF NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN
+      RAISE EXCEPTION 'CQ_LOTE_IMUTAVEL: não é permitido mover a análise de CQ para outro lote.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.resultado      IS DISTINCT FROM OLD.resultado
+     OR NEW.lote_id        IS DISTINCT FROM OLD.lote_id
+     OR NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id
+     OR NEW.responsavel    IS DISTINCT FROM OLD.responsavel
+     OR NEW.data_analise   IS DISTINCT FROM OLD.data_analise
+     OR NEW.created_at     IS DISTINCT FROM OLD.created_at
+     OR NEW.seq            IS DISTINCT FROM OLD.seq
+     OR NEW.ph             IS DISTINCT FROM OLD.ph
+     OR NEW.aparencia      IS DISTINCT FROM OLD.aparencia
+     OR NEW.odor           IS DISTINCT FROM OLD.odor
+     OR NEW.concentracao   IS DISTINCT FROM OLD.concentracao
+     OR NEW.contaminacao   IS DISTINCT FROM OLD.contaminacao
+  THEN
+    RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: a análise % do lote % já foi finalizada (%). Registre uma NOVA análise (reanálise) para o mesmo lote em vez de sobrescrever o histórico.',
+      OLD.id, OLD.lote_id, OLD.resultado USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$fn$;
+
 -- REVIEW ONLY: no exposed helper endpoint; existing private ticket table only.
 CREATE OR REPLACE FUNCTION platform_private.guard_manual_lot_write_v1()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $guard$
@@ -474,14 +562,24 @@ BEGIN
  IF p_cq IS NOT NULL AND (p_cq->>'lote_id') IS DISTINCT FROM lot.id::text THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  PERFORM pg_advisory_xact_lock(hashtext('cq_lote:'||lot.id::text));
  PERFORM 1 FROM public.controle_qualidade WHERE lote_id=lot.id ORDER BY seq FOR UPDATE;
- -- Reference selection is server-owned: exact item first, then microorganism-only; ambiguity closes.
- IF pp.microrganismo_id IS NOT NULL THEN
+ -- Resolve the canonical item, never infer/create a product->microorganism link.
+ IF p_cq IS NOT NULL THEN
   LOCK TABLE public.cq_parametros_referencia IN SHARE MODE;
-  IF (SELECT count(*) FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id)>1 THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
-  SELECT * INTO ref FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id;
+  IF (SELECT count(*) FROM public.cq_parametros_referencia r WHERE r.ativo IS TRUE AND
+   ((pp.produto_id IS NOT NULL AND r.produto_id=pp.produto_id) OR
+    (pp.produto_id IS NULL AND pp.microrganismo_id IS NOT NULL AND r.produto_id IS NULL AND r.microrganismo_id=pp.microrganismo_id)))>1
+   THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+  SELECT r.* INTO ref FROM public.cq_parametros_referencia r WHERE r.ativo IS TRUE AND
+   ((pp.produto_id IS NOT NULL AND r.produto_id=pp.produto_id) OR
+    (pp.produto_id IS NULL AND pp.microrganismo_id IS NOT NULL AND r.produto_id IS NULL AND r.microrganismo_id=pp.microrganismo_id));
  END IF;
  IF p_cq IS NOT NULL AND refid IS DISTINCT FROM ref.id THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
- IF ref.id IS NOT NULL AND (ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')) THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+ IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NULL THEN RAISE EXCEPTION 'CQ_REFERENCE_REQUIRED'; END IF;
+ IF ref.id IS NOT NULL AND (ref.ph_min IS NULL OR ref.ph_max IS NULL OR ref.concentracao_min_ufc_ml IS NULL
+ OR ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')
+ OR ref.ph_min<0 OR ref.ph_max>14 OR ref.ph_min>ref.ph_max OR ref.concentracao_min_ufc_ml<0
+ OR nullif(btrim(ref.aparencia_esperada),'') IS NULL OR nullif(btrim(ref.odor_esperado),'') IS NULL OR nullif(btrim(ref.contaminacao_esperada),'') IS NULL)
+ THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
  IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NOT NULL AND
  ((ref.ph_min IS NOT NULL AND v_ph<ref.ph_min) OR (ref.ph_max IS NOT NULL AND v_ph>ref.ph_max)
  OR (ref.concentracao_min_ufc_ml IS NOT NULL AND concentration<ref.concentracao_min_ufc_ml)
@@ -554,8 +652,8 @@ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.check_os_status_transition()') AND md5(pg_get_functiondef(oid))='8dc2c40052b006e51b1defc0284a09e6' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.check_os_status_transition()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_aprovado_avanca_os()') AND md5(pg_get_functiondef(oid))='5b1905b8fc743e1181904db931b165f9' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_aprovado_avanca_os()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('private.h7n_esteira_laboratorio()') AND md5(pg_get_functiondef(oid))='503f30a55dbd7e29b41c489391ce41cd' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','private.h7n_esteira_laboratorio()';END IF;
-IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_autoria_servidor()') AND md5(pg_get_functiondef(oid))='33f665a1fbc3377b1f909effb5ef5a43' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_autoria_servidor()';END IF;
-IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_resultado_imutavel()') AND md5(pg_get_functiondef(oid))='f7bc6980729dbef8f06aaf9d412ae291' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_resultado_imutavel()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_autoria_servidor()') AND md5(pg_get_functiondef(oid))='bb6f78cfc857e6c83d620dd07e7cafba' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_autoria_servidor()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_resultado_imutavel()') AND md5(pg_get_functiondef(oid))='6e57efd4f3beb26fad1b0f7d39c0113f' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_resultado_imutavel()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_sync_os_classica_downstream()') AND md5(pg_get_functiondef(oid))='06e64b76968f91e19f03b24363ac610a' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_sync_os_classica_downstream()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._refresh_esteira_laboratorio_after_change()') AND md5(pg_get_functiondef(oid))='2f361c1fd9de578cf45796d82f3754e0' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public._refresh_esteira_laboratorio_after_change()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.refresh_esteira_laboratorio()') AND md5(pg_get_functiondef(oid))='bbb2e580bfc6ffddfa833f950c38e0f3' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.refresh_esteira_laboratorio()';END IF;
@@ -564,7 +662,7 @@ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.technical_actor_ready(uuid)') AND md5(pg_get_functiondef(oid))='b5d0994b6eb976b14122cd2a1ec798cf' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.technical_actor_ready(uuid)';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_user_has_feature(uuid,text)') AND md5(pg_get_functiondef(oid))='501dd958e117d2df8a4d38f6bcbeed04' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public._saas_user_has_feature(uuid,text)';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)') AND md5(pg_get_functiondef(oid))='04d54f538952afc9bfcd29991f55b724' AND proowner='postgres'::regrole) THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)';END IF;
-IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.manual_cq_v1(uuid,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='65c3b628a3632bc819705124e1d627b1' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.manual_cq_v1(uuid,uuid,jsonb)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.manual_cq_v1(uuid,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='6fc63204f7075ab9e25ef26dfae2adef' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.manual_cq_v1(uuid,uuid,jsonb)';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='4cdb351466747580e4e8b0ec596ca3a5' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_write_v1()') AND md5(pg_get_functiondef(oid))='4c9738cabaf11d8ac59a4ac0e58abfa4' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_write_v1()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_parent_v1()') AND md5(pg_get_functiondef(oid))='46be93ddb0fcfc615099369e50f74f70' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_parent_v1()';END IF;

@@ -1,0 +1,87 @@
+-- REVIEW ONLY: no purge requested; remove owner-based GUC escape without replacement.
+CREATE OR REPLACE FUNCTION public.fn_cq_autoria_servidor()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_profile uuid;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF v_uid IS NOT NULL THEN
+      SELECT id INTO v_profile FROM public.profiles WHERE user_id = v_uid LIMIT 1;
+      IF v_profile IS NOT NULL THEN
+        IF NEW.responsavel_id IS NOT NULL AND NEW.responsavel_id IS DISTINCT FROM v_profile THEN
+          RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: responsavel_id informado (%) difere do perfil do usuario autenticado.', NEW.responsavel_id
+            USING ERRCODE = 'check_violation';
+        END IF;
+        NEW.responsavel_id := v_profile;
+      ELSIF NEW.responsavel_id IS NOT NULL THEN
+        RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: usuario autenticado sem perfil nao pode informar responsavel_id.'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id THEN
+    RAISE EXCEPTION 'CQ_AUTORIA_IMUTAVEL: responsavel_id da analise % nao pode ser alterado.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.seq IS DISTINCT FROM OLD.seq
+     OR NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN
+    RAISE EXCEPTION 'CQ_TRILHA_IMUTAVEL: created_at/seq/lote_id da analise % nao podem ser alterados.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$fn$;
+
+CREATE OR REPLACE FUNCTION public.fn_cq_resultado_imutavel()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.resultado IS NOT NULL THEN
+      RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: análise % do lote % já possui resultado final (%) e não pode ser excluída. Registre uma nova análise (reanálise) para o mesmo lote.',
+        OLD.id, OLD.lote_id, OLD.resultado USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  -- transição inicial (pendente -> resultado final) continua permitida
+  IF OLD.resultado IS NULL THEN
+    IF NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN
+      RAISE EXCEPTION 'CQ_LOTE_IMUTAVEL: não é permitido mover a análise de CQ para outro lote.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.resultado      IS DISTINCT FROM OLD.resultado
+     OR NEW.lote_id        IS DISTINCT FROM OLD.lote_id
+     OR NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id
+     OR NEW.responsavel    IS DISTINCT FROM OLD.responsavel
+     OR NEW.data_analise   IS DISTINCT FROM OLD.data_analise
+     OR NEW.created_at     IS DISTINCT FROM OLD.created_at
+     OR NEW.seq            IS DISTINCT FROM OLD.seq
+     OR NEW.ph             IS DISTINCT FROM OLD.ph
+     OR NEW.aparencia      IS DISTINCT FROM OLD.aparencia
+     OR NEW.odor           IS DISTINCT FROM OLD.odor
+     OR NEW.concentracao   IS DISTINCT FROM OLD.concentracao
+     OR NEW.contaminacao   IS DISTINCT FROM OLD.contaminacao
+  THEN
+    RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: a análise % do lote % já foi finalizada (%). Registre uma NOVA análise (reanálise) para o mesmo lote em vez de sobrescrever o histórico.',
+      OLD.id, OLD.lote_id, OLD.resultado USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$fn$;
