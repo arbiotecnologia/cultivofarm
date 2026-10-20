@@ -1,0 +1,69 @@
+{
+ "package_final": "26509be763c2afadf9b05d149704ffc1a2faad08",
+ "gate": {
+  "MANUAL_CQ_REVIEWED": true,
+  "others_changed": false
+ },
+ "monitor_88a872_activated": false,
+ "published": false,
+ "hosted_sql_by_agent": false,
+ "files": {
+  "src/components/cockpit/CQComparativoTable.tsx": {
+   "group": "cq",
+   "pre_sha256": "e5b13716e1fee437bfebda58d15239d2b3cd72113ad852aad4c81780d2d1ac03",
+   "post_sha256": "bdbd8d16bc34c175d9cb04fb85c2411e8371d63e90e7d8df04447ff3c4640cb5"
+  },
+  "src/components/cockpit/RegistrarCQDialog.tsx": {
+   "group": "cq",
+   "pre_sha256": "feb8228fb7ebbfb5b9837e8f6dc651587f17a803e3a17243cdbf420b3da8f192",
+   "post_sha256": "b57564bc4dc4de52b0b5f10418943b193face13a25b3612d889f20fa34120e0a"
+  },
+  "src/components/ordens-servico/OSDetalhesDialog.tsx": {
+   "group": "cq",
+   "pre_sha256": "3860b367d2b136b2239ad1b36dd99cb8f08f1098d8b8dcffc3ef9098e2eb46c2",
+   "post_sha256": "1b98d1a184770c5d9bd9aa17811444f500c63e395e8d85d107a2a1c76c2a392d"
+  },
+  "src/hooks/useCQReferencia.ts": {
+   "group": "cq",
+   "pre_sha256": "d49770351f2f6faf6f1465b59474385d8146145b9eaa08a4a35f99b8dae1bdf9",
+   "post_sha256": "979286112f770c48614bcef8b49e9226fcb8a6294c7e92aedcbb59386f94ea40"
+  },
+  "src/test/security/d51-5-p0d-production-rbac.test.ts": {
+   "group": "cq-test",
+   "pre_sha256": "dc72c7689e22f28dffcccf6e9a8aa271218f43530715a0f832452e7be18be1df",
+   "post_sha256": "aa4ced5da8532d3a20fd6ab036d905932dc3de178ebc47a5872c16797015211f"
+  },
+  "src/integrations/supabase/types.ts": {
+   "group": "types",
+   "pre_sha256": "8c7994c205f1ac0f793ad0c9891414b91b95923b53f5e6c2d00bb908e12595b6",
+   "post_sha256": "af5c76704525a4d4be0c4c74342bb9b7d7e43d9213704da3e5fa7e066e862886",
+   "note": "regenerado pela plataforma 13:55:26 UTC (commit 9b7f54bc) ap\u00f3s DDL do operador: cq_parametros_referencia.microrganismo_id nullable e overload rpc_avancar_esteira_laboratorio(p_cq); n\u00e3o editado pelo agente"
+  },
+  "src/components/clientes/ClienteDocumentosTab.tsx": {
+   "group": "types-import",
+   "pre_sha256": "340c305a5ec3ed28f6b27696f794a24db086d56186a2d1772181ebf288da9176",
+   "post_sha256": "08b78ba72d00546d8a949b910dfeca0ad7ad72479f76e90de76da2488ea7458d"
+  },
+  "src/components/visita/AprovacaoCard.tsx": {
+   "group": "types-import",
+   "pre_sha256": "2fb8da25cd55e94a1e415ed3b4cd0c8ca4f4718299fb96bd86b731ba113ac930",
+   "post_sha256": "7c76b1f65ac71a9fc492b6095901fe1b71ad6539eda64827b11cba2d4f09d5c2"
+  },
+  "src/components/financeiro/EstornoDialog.tsx": {
+   "group": "types-import",
+   "pre_sha256": "d7df7349959ebc15659abe224712494e40ce767bfab8112409aaf6170d0a497d",
+   "post_sha256": "eaf0ac41e51bf321da7ceabeebac6959f46690b63047313aa457002834dc0ada"
+  },
+  "src/pages/financeiro/Categorias.tsx": {
+   "group": "types-import",
+   "pre_sha256": "737923b8131a82e774b9d059ae2d84f73582c03227400e68553aec32cb76540e",
+   "post_sha256": "d52b9bf3a14137334ccafefcdf0a12168ef3a7a133ab1dbb8a9cc17a22026c42"
+  },
+  "src/pages/app/wizard/WizardAnexosStep.tsx": {
+   "group": "types-import",
+   "pre_sha256": "9c5ca9a940bc315d665037aca6099c7794f117f92848f64f0f58f56a71d1ba64",
+   "post_sha256": "c2a68e80b94e8a09ac236538531bad7953a92fbdb50efd15f3e52ce953e49644"
+  }
+ },
+ "patch_sha256": "85d9de2e4039f5002b256e7417e59024b634f843130c51f11b6749ee0514f99c"
+}
