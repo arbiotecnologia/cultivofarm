@@ -65,7 +65,7 @@ describe.each(['gestor', 'consultor_tecnico'] as const)('remoção isolada → r
     s.roles = [remaining];
     for (let i = 0; i < 80; i++) {
       await adv(250);
-      expect(screen.queryByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeNull;
+      expect(screen.queryByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeNull();
     }
     if (BASELINE) return;
     expect(screen.queryByText(/gestor\+|\+gestor|consultor_tecnico\+|\+consultor_tecnico/)).toBeNull();
@@ -97,13 +97,22 @@ describe('negativos', () => {
     await adv(60_000);
     expect(paused()).toBeTruthy(); expect(s.reads).toBe(r0);
   });
-  it('logout durante a janela: resposta antiga não reabre e não há releitura após sair', async () => {
+  it('logout (signOut canônico) cancela a releitura agendada: nenhuma leitura no tick seguinte', async () => {
+    await mount(); s.roles = ['gestor'];
+    // Advance only until the poll observes the loss (ineligible -> timer 0 pending).
+    let r0 = s.reads;
+    for (let i = 0; i < 60 && !paused(); i++) await adv(250);
+    expect(paused()).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'sair-externo' }));
+    r0 = s.reads; await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(s.signOuts).toBe(1); expect(s.reads).toBe(r0);
+  });
+  it('desmontagem com releitura lenta em voo: resposta antiga não reabre nem agenda nova', async () => {
+    const view = { u: () => {} };
     await mount(); s.roles = ['gestor']; s.perCall = 3000;
     await adv(16_000);
-    fireEvent.click(screen.getByRole('button', { name: 'sair-externo' }));
-    const r0 = s.reads; await adv(60_000);
-    expect(screen.queryByText(/\[ok\]/)).toBeNull(); expect(s.signOuts).toBe(1);
-    expect(s.reads - r0).toBeLessThanOrEqual(2);
+    cleanup(); const r0 = s.reads; await adv(60_000);
+    expect(screen.queryByText(/Conteúdo sensível/)).toBeNull(); expect(s.reads).toBe(r0); void view;
   });
   it('RTT 8 s sustentado no residual continua pausando (lease 15 s, sem resposta tardia)', async () => {
     await mount(); s.roles = ['gestor']; await adv(25_000);
