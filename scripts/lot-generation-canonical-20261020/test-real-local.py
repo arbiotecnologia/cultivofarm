@@ -52,7 +52,7 @@ def main():
     try:
         subprocess.run(pre + ['initdb', '-D', str(tmp / 'data'), '-A', 'trust', '-U', 'postgres'], check=True, capture_output=True)
         subprocess.run(pre + ['pg_ctl', '-D', str(tmp / 'data'), '-l', str(tmp / 'log'), '-o', f'-k {tmp} -h "" -p 55497', 'start', '-w'], check=True, capture_output=True); started = True
-        conn = ['psql', '-X', '-h', str(tmp), '-p', '55497', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At']
+        conn = ['psql', '-X', '-h', str(tmp), '-p', '55497', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=verbose', '-At']
 
         def run(sql, ok=True):
             r = subprocess.run(conn, input=sql, capture_output=True, text=True)
@@ -83,9 +83,9 @@ def main():
         results.append('every guard predicate compiles and evaluates locally')
         call = lambda body='{"volume_produzido":100}', pp=PP, os_=O, origem='manual': f"public.rpc_cockpit_gerar_lote_v1({pp},{os_},'{origem}','{body}'::jsonb)"
 
-        def denied(label, expr, code='42501'):
+        def denied(label, expr, code=None):
             r = run(actor() + f"SELECT {expr};", False)
-            assert r.returncode and ('COCKPIT_LOTE' in r.stderr), (label, r.stderr[-500:])
+            assert r.returncode and ('COCKPIT_LOTE' in r.stderr) and (code in r.stderr if code else True), (label, r.stderr[-500:])
             results.append(label)
 
         def falsy(label, expr, u=U):
@@ -94,7 +94,7 @@ def main():
 
         def tx_deny(label, change):
             r = run(f"BEGIN;{change}" + actor() + f"SELECT {call()};ROLLBACK;", False)
-            assert r.returncode and 'COCKPIT_LOTE_SCOPE_DENIED' in r.stderr, (label, r.stderr[-500:])
+            assert r.returncode and '42501' in r.stderr and 'COCKPIT_LOTE_SCOPE_DENIED' in r.stderr, (label, r.stderr[-500:])
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'; results.append(label)
         tx_deny('revoked profile denied (no lot)', f"UPDATE profiles SET ativo=false WHERE user_id={U};")
         tx_deny('role removed denied', f"DELETE FROM user_roles WHERE user_id={U};")
@@ -121,7 +121,7 @@ def main():
         denied('non-string tanque rejected', call('{"volume_produzido":100,"tanque":5}'))
         def closed(change):
             r = run(f"BEGIN; {change}" + actor() + f"SELECT ({call()})->>'success'; ROLLBACK;", False)
-            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'lab_assert_manufacturable' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
+            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'lab_assert_manufacturable' in r.stderr or 'check_os_status_transition' in r.stderr or 'OS_APPROVAL' in r.stderr or 'check_os_programacao_transition' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
         closed(f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};")
         results.append('non-null responsible stays closed')
@@ -131,6 +131,9 @@ def main():
         results.append('programming tenant mismatch denied')
         closed(f"UPDATE programacao_producao SET volume_necessario=101 WHERE id={PP};")
         results.append('canonical programmed volume must match OS 100 mL')
+        for status in ['aprovada','aberta','em_producao','finalizada']:
+            closed(f"UPDATE ordens_servico SET status='{status}' WHERE id={O};")
+            results.append('advanced/unprogrammed OS '+status+' blocked by RPC or canonical transition trigger')
         closed(f"UPDATE programacao_producao SET produto_id=NULL WHERE id={PP};")
         results.append('canonical item mismatch denied')
         closed(f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(91)},{O},{q(82)},{q(83)},{q(84)});")
@@ -224,7 +227,10 @@ def main():
         bsetup=setup().replace(f'VALUES({U},{A})',f'VALUES({U},{B})').replace(f"'LOCAL',{A}",f"'LOCAL',{B}").replace(f"'local',{C},{A}",f"'local',{C},{B}").replace(f"1,{A}",f"1,{B}").replace(f"{P},{A},'aprovada'",f"{P},{B},'aprovada'").replace(f"VALUES({PP},{A},{O}",f"VALUES({PP},{B},{O}").replace(f"VALUES({SUB},{A}",f"VALUES({SUB},{B}")
         run(bsetup); run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-19');"); run((H/'rpc.sql.review').read_text())
         out=run(actor()+f'SELECT {call()};'); assert '"success": true' in out.stdout, out.stdout
-        assert run(f'SELECT organization_id={B} FROM lotes;').stdout.strip()=='t'; results.append('positive tenant B generates exactly 100 mL in B, local fixture only')
+        assert run(f"SELECT count(*)=1 AND min(volume_produzido)=100 AND bool_and(organization_id={B}) FROM lotes;").stdout.strip()=='t'
+        assert run(f"SELECT p.organization_id={B} AND c.organization_id={B} AND o.organization_id={B} AND pp.organization_id={B} AND o.status::text='programada' AND pp.status::text='aguardando' FROM profiles p JOIN ordens_servico o ON o.id={O} JOIN clientes c ON c.id=o.cliente_id JOIN programacao_producao pp ON pp.ordem_servico_id=o.id WHERE p.user_id={U};").stdout.strip()=='t'
+        assert run("SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='gerar_lote';").stdout.strip()=='1'
+        results.append('positive tenant B: actor/client/OS/programming/lot all B, exactly 100 mL and one audit, no advancement')
         for role in ['gestor','producao']:
             reset(); run(f"UPDATE user_roles SET role='{role}' WHERE user_id={U};")
             out=run(actor()+f'SELECT {call()};'); assert '"success": true' in out.stdout; results.append(role+' positive manual category')

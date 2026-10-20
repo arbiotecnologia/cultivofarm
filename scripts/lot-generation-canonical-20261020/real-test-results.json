@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "scope": "local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof",
-  "passed": 66,
+  "passed": 70,
   "checks": [
     "captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly",
     "every guard predicate compiles and evaluates locally",
@@ -35,6 +35,10 @@
     "delivery category client tenant mismatch rejected before lot",
     "programming tenant mismatch denied",
     "canonical programmed volume must match OS 100 mL",
+    "advanced/unprogrammed OS aprovada blocked by RPC or canonical transition trigger",
+    "advanced/unprogrammed OS aberta blocked by RPC or canonical transition trigger",
+    "advanced/unprogrammed OS em_producao blocked by RPC or canonical transition trigger",
+    "advanced/unprogrammed OS finalizada blocked by RPC or canonical transition trigger",
     "canonical item mismatch denied",
     "B2B production link stays closed",
     "non-manufacturable product closed",
@@ -64,7 +68,7 @@
     "real global MV refresh lock timeout rolls back lot and audit",
     "authenticated invokes DEFINER without auxiliary table grants (local synthetic Auth)",
     "anon has no executable RPC",
-    "positive tenant B generates exactly 100 mL in B, local fixture only",
+    "positive tenant B: actor/client/OS/programming/lot all B, exactly 100 mL and one audit, no advancement",
     "gestor positive manual category",
     "producao positive manual category",
     "3s lock timeout rolls back without lot/event",
