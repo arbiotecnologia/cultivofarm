@@ -23,6 +23,8 @@ import {
 const AUTH_LOAD_TIMEOUT_MS = 20_000;
 /** Fresh re-reads after a non-loader fence before an explicit error. */
 const AUTH_LOAD_MAX_RESTARTS = 3;
+// One fresh attempt only after a transient post-renewal loader failure.
+const AUTH_LOAD_RECOVERY_DELAY_MS = 1_000;
 
 /** Papéis EXTERNOS monitorados pela foundation de cache (mesma identidade). */
 const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
@@ -143,6 +145,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // expiry/epoch/Retry fence discards in-flight answers, but the latest loader
   // still has to end loading (fresh re-read, bounded, or explicit error).
   const loaderSeqRef = useRef(0);
+  const loaderAbortRef = useRef<AbortController | null>(null);
+  const retryReadAbortRef = useRef<AbortController | null>(null);
+  const loaderRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelLoader = () => {
+    if (loaderRecoveryTimerRef.current !== null) clearTimeout(loaderRecoveryTimerRef.current);
+    loaderRecoveryTimerRef.current = null;
+    loaderAbortRef.current?.abort();
+    loaderAbortRef.current = null;
+    retryReadAbortRef.current?.abort();
+    retryReadAbortRef.current = null;
+  };
   const activeUserIdRef = useRef<string | null>(null);
   const retryRevalidateRef = useRef(false);
   const revalidateAuthzRef = useRef<() => void>(() => {});
@@ -178,7 +191,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
-  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0): Promise<void> => {
+  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0, renewalRecovery = false, recoveryUsed = false): Promise<void> => {
+    cancelLoader();
+    const controller = new AbortController();
+    loaderAbortRef.current = controller;
     const gen = generation ?? generationRef.current;
     const seq = ++loaderSeqRef.current;
     const startedAt = performance.now();
@@ -188,79 +204,83 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The returned promise ALWAYS settles by the deadline (owned-loader
     // contract): awaiting callers such as Retry release their single-flight
     // even when the transport never answers.
-    let settle!: () => void;
+    let settle: () => void = () => {};
     const settled = new Promise<void>(resolve => { settle = resolve; });
+    const recoverTransient = () => {
+      if (!renewalRecovery || recoveryUsed || !navigator.onLine || !mountedRef.current ||
+        activeUserIdRef.current !== userId || gen !== generationRef.current) return false;
+      renewalRef.current = null;
+      safeDraftRef.current = null;
+      clearIdentityState();
+      setError(null);
+      setLoading(true);
+      loaderRecoveryTimerRef.current = setTimeout(() => {
+        loaderRecoveryTimerRef.current = null;
+        if (!mountedRef.current || !navigator.onLine || activeUserIdRef.current !== userId ||
+          gen !== generationRef.current || seq + 1 !== loaderSeqRef.current) return;
+        loadDiagnostic("load_restart", startedAt);
+        void fetchProfileAndRole(userId, gen, restarts, true, true);
+      }, AUTH_LOAD_RECOVERY_DELAY_MS);
+      return true;
+    };
     const watchdog = setTimeout(() => {
       settle();
       if (!mountedRef.current || seq !== loaderSeqRef.current) return;
       timedOut = true;
       loaderSeqRef.current++;
       loadDiagnostic("load_timeout", startedAt);
-      failLoad();
+      controller.abort();
+      if (!recoverTransient()) failLoad();
     }, AUTH_LOAD_TIMEOUT_MS);
     const isCurrent = () => mountedRef.current && !timedOut && seq === loaderSeqRef.current && gen === generationRef.current;
     // Fenced by a non-loader event (expiry/epoch/Retry) with no successor
     // loader scheduled: discard this answer, re-read freshly (bounded).
     const yieldStale = () => {
       if (!mountedRef.current || timedOut || seq !== loaderSeqRef.current || timerRef.current !== null ||
-        activeUserIdRef.current !== userId) return;
+        activeUserIdRef.current !== userId || !navigator.onLine || gen === generationRef.current) return;
       if (restarts >= AUTH_LOAD_MAX_RESTARTS) { loaderSeqRef.current++; failLoad(); return; }
       loadDiagnostic("load_restart", startedAt);
-      void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
+      void fetchProfileAndRole(userId, generationRef.current, restarts + 1, renewalRecovery, recoveryUsed);
     };
+    controller.signal.addEventListener("abort", () => {
+      clearTimeout(watchdog);
+      settle();
+      // SDK abort may never reject (test doubles / hung transport); ownership
+      // still re-reads after an epoch fence, outside the Auth callback stack.
+      queueMicrotask(yieldStale);
+    }, { once: true });
     const body = (async () => { try {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (!isCurrent()) return yieldStale();
-      if (profileError) throw profileError;
-
+      const [profileResult, roleResult] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).abortSignal(controller.signal).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).abortSignal(controller.signal),
+      ]);
+      const { data: profileData, error: profileError } = profileResult;
+      const { data: rolesData, error: roleError } = roleResult;
+      if (!isCurrent() || controller.signal.aborted) return yieldStale();
       const profile = profileData as Profile | null;
-      
-      if (!profile) {
+      // Explicit negative results are never a transient recovery or global logout.
+      if (!profileError && (!profile || profile.user_id !== userId || profile.ativo !== true)) {
         renewalRef.current = null;
         loadedUserIdRef.current = null;
         clearIdentityState();
-        setError("Seu perfil não foi encontrado. Por favor, entre em contato com o suporte.");
+        setError(profile?.ativo === false ? "Sua conta está inativa." : "Seu perfil não foi encontrado. Por favor, entre em contato com o suporte.");
         setLoading(false);
-        await supabase.auth.signOut();
         return;
       }
-
-      if (profile.ativo === false) {
-        renewalRef.current = null;
-        loadedUserIdRef.current = null;
-        setError("Sua conta está inativa.");
-        clearIdentityState();
-        setLoading(false);
-        await supabase.auth.signOut();
-        return;
+      if (profileError || roleError) {
+        const denied = [profileResult, roleResult].some(r => r.error && (r.status === 401 || r.status === 403));
+        const unavailable = [profileResult, roleResult].some(r => r.error && (r.status === 0 || r.status >= 500));
+        if (denied) throw { status: 403 };
+        if (unavailable) throw { status: 503 };
+        throw profileError ?? roleError;
       }
-
-      setProfile(profile);
-
-      // Fase Corretiva 1 — multipapel: NUNCA usar `.maybeSingle()` em user_roles.
-      const { data: rolesData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-
-      if (!isCurrent()) return yieldStale();
-
-      if (roleError) {
-        console.error("Error fetching roles:", roleError);
-        throw roleError;
-      }
-
+      if (!profile) throw new Error("invalid_profile_response");
+      if (!Array.isArray(rolesData)) throw new Error("invalid_roles_response");
       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
       const primary = pickPrimaryRole(userRoles);
 
       if (userRoles.length === 0) {
         renewalRef.current = null;
-        console.warn("No role found for user:", userId);
         setError("Seu usuário ainda não possui uma função atribuída no sistema.");
       } else if (
         userRoles.includes("cliente_produtor") &&
@@ -275,17 +295,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
       }
 
+      setProfile(userRoles.length > 0 ? profile : null);
       setRoles(userRoles);
       setPrimaryRole(primary);
       setLoading(false);
     } catch (err: unknown) {
-      console.error("Erro ao carregar perfil/função:", err);
-      if (!isCurrent()) return yieldStale();
+      if (!isCurrent() || controller.signal.aborted) return yieldStale();
+      const failure = err as { status?: unknown; code?: unknown; message?: unknown } | null;
+      const transient = err instanceof TypeError || failure?.status === 0 ||
+        (typeof failure?.status === "number" && failure.status >= 500) ||
+        (typeof failure?.message === "string" && /failed to fetch|networkerror|network request failed/i.test(failure.message));
+      loaderSeqRef.current++;
+      controller.abort();
+      if (transient && recoverTransient()) return;
       // Falha de autorização/carregamento limpa papéis antigos e libera nova
       // tentativa (não marca o usuário como já carregado).
       failLoad();
     } finally {
       clearTimeout(watchdog);
+      if (loaderAbortRef.current === controller) loaderAbortRef.current = null;
       settle();
     } })();
     // Late body completions after the deadline stay fenced by isCurrent().
@@ -293,17 +321,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refresh = async () => {
-    if (user) {
+    if (user && navigator.onLine) {
       renewalRef.current = null;
       safeDraftRef.current = null;
       setLoading(true);
       const gen = ++generationRef.current;
+      cancelLoader();
       loadedUserIdRef.current = user.id;
       await fetchProfileAndRole(user.id, gen);
     }
   };
 
   useEffect(() => {
+    const stopOffline = () => {
+      ++generationRef.current;
+      ++loaderSeqRef.current;
+      cancelLoader();
+      cancelAutoRecovery();
+      renewalRef.current = null;
+      safeDraftRef.current = null;
+      authzMonitorRef.current?.expireNow("offline");
+      failLoad();
+    };
+    window.addEventListener("offline", stopOffline);
     mountedRef.current = true;
     // StrictMode/remontagem: o efeito anterior pode ter deixado um usuário
     // marcado como carregado sem que o fetch tenha aplicado estado. Zerar aqui
@@ -319,8 +359,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // O carregamento NUNCA parte da pilha do callback de onAuthStateChange
     // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
     // como macrotask separada.
-    const scheduleLoad = (userId: string) => {
+    const scheduleLoad = (userId: string, renewalRecovery = false) => {
       ++generationRef.current;
+      cancelLoader();
       loadedUserIdRef.current = userId;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
@@ -329,7 +370,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // fences (expiry/Retry/epoch) are not loaders: still load, under the
         // CURRENT generation, so loading always ends.
         if (effectCancelled || !mountedRef.current || activeUserIdRef.current !== userId) return;
-        void fetchProfileAndRole(userId, generationRef.current);
+        if (!navigator.onLine) { failLoad(); return; }
+        void fetchProfileAndRole(userId, generationRef.current, 0, renewalRecovery);
       }, 0);
     };
 
@@ -375,10 +417,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (loadedUserIdRef.current === nextUserId && !authorizationChanged) return;
           setLoading(true);
           setError(null);
-          scheduleLoad(nextUserId);
+          scheduleLoad(nextUserId, event === "TOKEN_REFRESHED" && !identityChanged);
 
         } else {
           generationRef.current += 1;
+          cancelLoader();
           retryRevalidateRef.current = false;
           if (timerRef.current) {
             clearTimeout(timerRef.current);
@@ -432,6 +475,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       safeDraftRef.current = null;
       effectCancelled = true;
       generationRef.current += 1;
+      cancelLoader();
       loadedUserIdRef.current = null;
       activeUserIdRef.current = null;
       retryRevalidateRef.current = false;
@@ -439,6 +483,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      window.removeEventListener("offline", stopOffline);
       subscription.unsubscribe();
     };
 
@@ -623,6 +668,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // rascunhos/objectURLs no unmount) e recarrega identidade para que
         // perfil/roles voltem coerentes antes de exibir dados novamente.
         generationRef.current += 1;
+        if (loaderRecoveryTimerRef.current !== null) failLoad();
+        cancelLoader();
         void queryClient.cancelQueries();
         queryClient.clear();
         // Only an untrusted client preference survives producer context changes.
@@ -639,6 +686,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // (authzState="expired" via onStateChange) é o que ESCONDE os dados —
         // boundary e scopes derivam readiness dele.
         generationRef.current += 1;
+        if (loaderRecoveryTimerRef.current !== null) failLoad();
+        cancelLoader();
         void queryClient.cancelQueries();
         clearActivePortalContext();
         window.dispatchEvent(new Event("portal-client-preferences-cleared"));
@@ -653,7 +702,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const scopeAtExpire = principalScope;
           autoRecoveryTimerRef.current = window.setTimeout(() => {
             autoRecoveryTimerRef.current = null;
-            if (!mountedRef.current || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
+            if (!mountedRef.current || !navigator.onLine || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
               authzMonitorRef.current !== monitor || monitor.state() !== "expired" || retryInFlightRef.current) return;
             recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "timeout",
               visible: document.visibilityState === "visible", online: navigator.onLine,
@@ -714,18 +763,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
+    (!!user && !loading && !error && profile?.user_id === user.id && profile.ativo === true && !latchBlocked && !retryPending && (!isExternalUser ||
       (principalReady && initializedPrincipal === principalScope && authzState === "valid" &&
         (authzMonitorRef.current?.checkAccess() ?? false))));
   const checkAuthzAccess = () =>
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
-    (!latchBlocked && !isExternalUser) ||
+    (!loading && !error && profile?.user_id === user?.id && profile?.ativo === true && !latchBlocked && !isExternalUser) ||
     (!loading && !latchBlocked && !retryPending && principalReady && initializedPrincipal === principalScope && (authzMonitorRef.current?.checkAccess() ?? false));
   // Retry re-resolves profile/roles through the existing loader (fresh reads,
   // not cached roles), single-flight and generation-fenced. Same scope then
   // re-polls the same monitor; a different scope recreates or stays paused.
   const revalidateAuthz = () => {
     cancelAutoRecovery();
+    if (!navigator.onLine) return;
     const uid = user?.id;
     const current = monitoredLatchRef.current;
     if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
@@ -740,6 +790,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     safeDraftRef.current = null;
     // Fences in-flight loader answers (the latest loader re-reads freshly).
     ++generationRef.current;
+    cancelLoader();
     void queryClient.cancelQueries();
     queryClient.clear();
     clearActivePortalContext();
@@ -762,19 +813,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let freshOrg: unknown = null;
         let active = false;
         let deadline: ReturnType<typeof setTimeout> | undefined;
+        const readController = new AbortController();
+        retryReadAbortRef.current = readController;
         try {
           // Bounded: a hung read ends as "unavailable" (probe path), never an endless Retry.
-          const timeout = new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error("retry_read_timeout")), AUTH_LOAD_TIMEOUT_MS); });
+          const timeout = new Promise<never>((_, reject) => {
+            readController.signal.addEventListener("abort", () => reject(new Error("retry_read_aborted")), { once: true });
+            deadline = setTimeout(() => { readController.abort(); }, AUTH_LOAD_TIMEOUT_MS);
+          });
           const [{ data: p, error: pe }, { data: r, error: re }] = await Promise.race([Promise.all([
-            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle(),
-            supabase.from("user_roles").select("role").eq("user_id", uid),
+            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).abortSignal(readController.signal).maybeSingle(),
+            supabase.from("user_roles").select("role").eq("user_id", uid).abortSignal(readController.signal),
           ]), timeout]);
           if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
             active = (p as { ativo?: unknown }).ativo === true;
             freshOrg = (p as { organization_id?: unknown }).organization_id;
             fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
           }
-        } catch { fresh = null; } finally { clearTimeout(deadline); }
+        } catch { fresh = null; } finally {
+          clearTimeout(deadline);
+          if (retryReadAbortRef.current === readController) retryReadAbortRef.current = null;
+        }
+        if (readController.signal.aborted || !navigator.onLine) return;
         if (!isCurrent()) return;
         const same = fresh !== null && freshOrg === cachedOrg &&
           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
@@ -807,6 +867,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   revalidateAuthzRef.current = revalidateAuthz;
 
   const signOut = async () => {
+    ++generationRef.current;
+    ++loaderSeqRef.current;
+    cancelLoader();
     cancelAutoRecovery();
     autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
     renewalRef.current = null;
