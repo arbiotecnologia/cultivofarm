@@ -1,0 +1,168 @@
+--- scripts/manual-cq-recovery-20261020/runtime-cq-nullable-types/rollback/useCQReferencia.ts.review	2026-10-20 15:08:32.214757063 +0000
++++ src/hooks/useCQReferencia.ts	2026-10-20 15:06:43.501422877 +0000
+@@ -1,9 +1,11 @@
++import { useLayoutEffect, useRef } from "react";
+ import { useQuery } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+-
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ export interface CQReferencia {
+   id: string;
+-  microrganismo_id: string;
++  /** NULL em referência produto-only (schema canônico: CHECK exige produto ou micro). */
++  microrganismo_id: string | null;
+   produto_id: string | null;
+   ph_min: number | null;
+   ph_max: number | null;
+@@ -15,43 +17,51 @@
+   ativo: boolean;
+ }
+ 
+-/**
+- * Busca a referência CQ mais específica (produto → microrganismo).
+- * Retorna null quando não há referência cadastrada.
+- */
+-export function useCQReferencia(
+-  microrganismoId?: string | null,
+-  produtoId?: string | null,
+-) {
+-  return useQuery({
+-    queryKey: ["cq-referencia", microrganismoId, produtoId],
+-    enabled: !!microrganismoId,
+-    queryFn: async (): Promise<CQReferencia | null> => {
+-      if (!microrganismoId) return null;
+-
+-      // 1) tentativa mais específica: microrganismo + produto
+-      if (produtoId) {
+-        const { data, error } = await (supabase as any)
+-          .from("cq_parametros_referencia")
+-          .select("*")
+-          .eq("ativo", true)
+-          .eq("microrganismo_id", microrganismoId)
+-          .eq("produto_id", produtoId)
+-          .maybeSingle();
+-        if (error) throw error;
+-        if (data) return data as CQReferencia;
++/** Same canonical-item precedence as manual_cq_v1. Presentation is not authorization. */
++export function useCQReferencia(microrganismoId?: string | null, produtoId?: string | null) {
++  const access = useStorageAccessScope(JSON.stringify(["cq-referencia", produtoId, microrganismoId]));
++  const pending = useRef<AbortController | null>(null);
++  useLayoutEffect(() => {
++    pending.current?.abort();
++    pending.current = null;
++    return () => { pending.current?.abort(); };
++  }, [access.scope]);
++  const query = useQuery({
++    queryKey: ["cq-referencia", access.scope, produtoId, microrganismoId],
++    enabled: access.ready && !!(produtoId || microrganismoId),
++    gcTime: 0,
++    staleTime: 0,
++    retry: false,
++    queryFn: async ({ signal }): Promise<CQReferencia | null> => {
++      if (!access.ready || (!produtoId && !microrganismoId)) return null;
++      const current = access.capture();
++      const controller = new AbortController();
++      pending.current?.abort(); pending.current = controller;
++      const abort = () => controller.abort();
++      signal.addEventListener("abort", abort, { once: true });
++      if (signal.aborted) controller.abort();
++      let timer: ReturnType<typeof setTimeout> | undefined;
++      const stopped = new Promise<never>((_, reject) => {
++        controller.signal.addEventListener("abort", () => reject(new Error("CQ_REFERENCE_UNAVAILABLE")), { once: true });
++        if (controller.signal.aborted) reject(new Error("CQ_REFERENCE_UNAVAILABLE"));
++        timer = setTimeout(abort, 12_000);
++      });
++      try {
++        let request = supabase.from("cq_parametros_referencia").select("*").eq("ativo", true);
++        // Product is authoritative even when micro is absent/different. No micro fallback.
++        if (produtoId) request = request.eq("produto_id", produtoId);
++        else if (microrganismoId) request = request.is("produto_id", null).eq("microrganismo_id", microrganismoId);
++        const { data, error } = await Promise.race([request.limit(2).abortSignal(controller.signal), stopped]);
++        if (!current() || controller.signal.aborted || error || !data || data.length > 1) throw new Error("CQ_REFERENCE_UNAVAILABLE");
++        const ref = data[0];
++        if (!ref) return null;
++        if (ref.ativo !== true || (produtoId ? ref.produto_id !== produtoId : ref.produto_id !== null || ref.microrganismo_id !== microrganismoId)) throw new Error("CQ_REFERENCE_UNAVAILABLE");
++        return ref as CQReferencia;
++      } finally {
++        clearTimeout(timer); signal.removeEventListener("abort", abort);
++        if (pending.current === controller) pending.current = null;
+       }
+-
+-      // 2) fallback: apenas microrganismo (produto_id nulo)
+-      const { data, error } = await (supabase as any)
+-        .from("cq_parametros_referencia")
+-        .select("*")
+-        .eq("ativo", true)
+-        .eq("microrganismo_id", microrganismoId)
+-        .is("produto_id", null)
+-        .maybeSingle();
+-      if (error) throw error;
+-      return (data as any | null) ?? null;
+     },
+   });
+-}
++  return { ...query, data: access.ready && !query.isFetching && !query.isError ? query.data : undefined };
++}
+\ No newline at end of file
+--- scripts/manual-cq-recovery-20261020/runtime-cq-nullable-types/rollback/ParametrosCQPage.tsx.review	2026-10-20 15:08:32.228117407 +0000
++++ src/pages/configuracoes/ParametrosCQPage.tsx	2026-10-20 15:07:16.359287923 +0000
+@@ -20,7 +20,8 @@
+ 
+ interface Row {
+   id: string;
+-  microrganismo_id: string;
++  /** NULL em referência produto-only. */
++  microrganismo_id: string | null;
+   produto_id: string | null;
+   ph_min: number | null;
+   ph_max: number | null;
+@@ -49,6 +50,14 @@
+   ativo: true,
+ };
+ 
++/** Normalização segura dos vínculos (espelha o CHECK do banco): vazio vira NULL; ambos vazios falha. */
++export function normalizeCQReferenceIds(form: { microrganismo_id: string; produto_id: string }) {
++  const microrganismo_id = form.microrganismo_id.trim() || null;
++  const produto_id = form.produto_id.trim() || null;
++  if (!microrganismo_id && !produto_id) throw new Error("Selecione o microrganismo ou o produto");
++  return { microrganismo_id, produto_id };
++}
++
+ export default function ParametrosCQPage() {
+   const { role } = useAuth();
+   // Contenção global: parâmetros de CQ globais são somente consulta.
+@@ -99,10 +108,10 @@
+   const upsert = useMutation({
+     mutationFn: async () => {
+       assertGlobalCatalogWriteBlocked();
+-      if (!form.microrganismo_id) throw new Error("Selecione o microrganismo");
++      const ids = normalizeCQReferenceIds(form);
+       const payload = {
+-        microrganismo_id: form.microrganismo_id,
+-        produto_id: form.produto_id || null,
++        microrganismo_id: ids.microrganismo_id,
++        produto_id: ids.produto_id,
+         ph_min: form.ph_min ? Number(form.ph_min.replace(",", ".")) : null,
+         ph_max: form.ph_max ? Number(form.ph_max.replace(",", ".")) : null,
+         concentracao_min_ufc_ml: formatConcentracaoValue(form.conc_mantissa, form.conc_expoente),
+@@ -148,7 +157,7 @@
+     const conc = parseConcentracao(r.concentracao_min_ufc_ml);
+     setForm({
+       id: r.id,
+-      microrganismo_id: r.microrganismo_id,
++      microrganismo_id: r.microrganismo_id ?? "",
+       produto_id: r.produto_id ?? "",
+       ph_min: r.ph_min !== null ? String(r.ph_min).replace(".", ",") : "",
+       ph_max: r.ph_max !== null ? String(r.ph_max).replace(".", ",") : "",
+--- /dev/null	2026-10-20 14:45:53.149922564 +0000
++++ src/test/cq/parametros-cq-normalize.test.ts	2026-10-20 15:07:16.373291461 +0000
+@@ -0,0 +1,9 @@
++import { describe, expect, it } from "vitest";
++import { normalizeCQReferenceIds } from "@/pages/configuracoes/ParametrosCQPage";
++
++describe("normalizeCQReferenceIds (CHECK produto ou micro)", () => {
++  it("produto-only: micro vira NULL", () => expect(normalizeCQReferenceIds({ microrganismo_id: "", produto_id: "p" })).toEqual({ microrganismo_id: null, produto_id: "p" }));
++  it("micro-only legado: produto NULL", () => expect(normalizeCQReferenceIds({ microrganismo_id: "m", produto_id: "" })).toEqual({ microrganismo_id: "m", produto_id: null }));
++  it("ambos preservados", () => expect(normalizeCQReferenceIds({ microrganismo_id: "m", produto_id: "p" })).toEqual({ microrganismo_id: "m", produto_id: "p" }));
++  it.each([["", ""], ["  ", " "]])("ambos vazios falha (%j,%j)", (m, p) => expect(() => normalizeCQReferenceIds({ microrganismo_id: m, produto_id: p })).toThrow("Selecione o microrganismo ou o produto"));
++});
