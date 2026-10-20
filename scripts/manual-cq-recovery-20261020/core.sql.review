@@ -141,15 +141,15 @@ END $function$;
 REVOKE ALL ON FUNCTION platform_private.manual_cq_v1(uuid,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE OR REPLACE FUNCTION public.rpc_avancar_esteira_laboratorio(p_os_id uuid,p_origem text,p_etapa_destino text,p_programacao_id uuid DEFAULT NULL)
-RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path TO '' AS $function$
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
 BEGIN
  IF p_origem IS DISTINCT FROM 'manual' OR p_etapa_destino IS DISTINCT FROM 'enviar_cq' THEN RAISE EXCEPTION 'CQ_OPERATION_CLOSED' USING ERRCODE='42501'; END IF;
- RETURN platform_private.manual_cq_entry_v1(p_os_id,p_programacao_id,NULL);
+ RETURN platform_private.manual_cq_v1(p_os_id,p_programacao_id,NULL);
 END $function$;
 -- The only public writer overload uses the same reviewed core, never legacy approve/reprove status handlers.
 CREATE FUNCTION public.rpc_avancar_esteira_laboratorio(p_os_id uuid,p_origem text,p_etapa_destino text,p_programacao_id uuid,p_cq jsonb)
-RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path TO '' AS $function$
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
 BEGIN
  IF p_origem IS DISTINCT FROM 'manual' OR p_etapa_destino IS DISTINCT FROM 'registrar_cq' OR p_cq IS NULL THEN RAISE EXCEPTION 'CQ_OPERATION_CLOSED' USING ERRCODE='42501'; END IF;
- RETURN platform_private.manual_cq_entry_v1(p_os_id,p_programacao_id,p_cq);
+ RETURN platform_private.manual_cq_v1(p_os_id,p_programacao_id,p_cq);
 END $function$;
