@@ -1,0 +1,305 @@
+--- scripts/monitor-loader-renewal-20261020/runtime-activation-v2/rollback/useAuth.tsx.review	2026-10-20 14:31:24.501282373 +0000
++++ src/hooks/useAuth.tsx	2026-10-20 14:31:24.505046805 +0000
+@@ -23,6 +23,8 @@
+ const AUTH_LOAD_TIMEOUT_MS = 20_000;
+ /** Fresh re-reads after a non-loader fence before an explicit error. */
+ const AUTH_LOAD_MAX_RESTARTS = 3;
++/** One fresh attempt only after a transient post-renewal loader failure. */
++const AUTH_LOAD_RECOVERY_DELAY_MS = 1_000;
+ 
+ /** Papéis EXTERNOS monitorados pela foundation de cache (mesma identidade). */
+ const EXTERNAL_AUTHZ_ROLES: ReadonlyArray<AppRole> = [
+@@ -143,6 +145,19 @@
+   // expiry/epoch/Retry fence discards in-flight answers, but the latest loader
+   // still has to end loading (fresh re-read, bounded, or explicit error).
+   const loaderSeqRef = useRef(0);
++  // Transport of the latest loader / Retry read (aborted on deadline or fence)
++  // and the single post-renewal recovery timer.
++  const loaderAbortRef = useRef<AbortController | null>(null);
++  const retryReadAbortRef = useRef<AbortController | null>(null);
++  const loaderRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
++  const cancelLoader = () => {
++    if (loaderRecoveryTimerRef.current !== null) clearTimeout(loaderRecoveryTimerRef.current);
++    loaderRecoveryTimerRef.current = null;
++    loaderAbortRef.current?.abort();
++    loaderAbortRef.current = null;
++    retryReadAbortRef.current?.abort();
++    retryReadAbortRef.current = null;
++  };
+   const activeUserIdRef = useRef<string | null>(null);
+   const retryRevalidateRef = useRef(false);
+   const revalidateAuthzRef = useRef<() => void>(() => {});
+@@ -178,7 +193,13 @@
+     setLoading(false);
+   };
+ 
+-  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0): Promise<void> => {
++  const fetchProfileAndRole = async (userId: string, generation?: number, restarts = 0, renewal = false, recoveryUsed = false): Promise<void> => {
++    // A new loader supersedes the previous transport and any pending recovery.
++    if (loaderRecoveryTimerRef.current !== null) clearTimeout(loaderRecoveryTimerRef.current);
++    loaderRecoveryTimerRef.current = null;
++    loaderAbortRef.current?.abort();
++    const controller = new AbortController();
++    loaderAbortRef.current = controller;
+     const gen = generation ?? generationRef.current;
+     const seq = ++loaderSeqRef.current;
+     const startedAt = performance.now();
+@@ -190,12 +211,39 @@
+     // even when the transport never answers.
+     let settle!: () => void;
+     const settled = new Promise<void>(resolve => { settle = resolve; });
++    // Post-renewal transient failure (network/5xx answer, not a hung read) of the SAME identity:
++    // identity stays hidden (cleared, loading) and exactly one fresh canonical
++    // loader runs. Never reuses answers/credentials, never signs out; explicit
++    // denial/inactivity/missing roles never reach here. Caller has retired seq.
++    const recoverTransient = () => {
++      if (!renewal || recoveryUsed || !navigator.onLine || !mountedRef.current ||
++        activeUserIdRef.current !== userId || gen !== generationRef.current) return false;
++      renewalRef.current = null;
++      safeDraftRef.current = null;
++      clearIdentityState();
++      setError(null);
++      setLoading(true);
++      const seqAtSchedule = loaderSeqRef.current;
++      loaderRecoveryTimerRef.current = setTimeout(() => {
++        loaderRecoveryTimerRef.current = null;
++        if (!mountedRef.current || activeUserIdRef.current !== userId) return;
++        // Another loader (Retry/refresh/new event) owns loading now.
++        if (loaderSeqRef.current !== seqAtSchedule || timerRef.current !== null) return;
++        if (!navigator.onLine) { failLoad(); return; }
++        loadDiagnostic("load_restart", startedAt);
++        void fetchProfileAndRole(userId, generationRef.current, restarts, true, true);
++      }, AUTH_LOAD_RECOVERY_DELAY_MS);
++      return true;
++    };
+     const watchdog = setTimeout(() => {
+       settle();
+       if (!mountedRef.current || seq !== loaderSeqRef.current) return;
+       timedOut = true;
+       loaderSeqRef.current++;
+       loadDiagnostic("load_timeout", startedAt);
++      controller.abort();
++      // A hung read is never auto-retried: it ends in the explicit, operable
++      // error (Retry). Only fast transient failures below get one recovery.
+       failLoad();
+     }, AUTH_LOAD_TIMEOUT_MS);
+     const isCurrent = () => mountedRef.current && !timedOut && seq === loaderSeqRef.current && gen === generationRef.current;
+@@ -206,17 +254,21 @@
+         activeUserIdRef.current !== userId) return;
+       if (restarts >= AUTH_LOAD_MAX_RESTARTS) { loaderSeqRef.current++; failLoad(); return; }
+       loadDiagnostic("load_restart", startedAt);
+-      void fetchProfileAndRole(userId, generationRef.current, restarts + 1);
++      void fetchProfileAndRole(userId, generationRef.current, restarts + 1, renewal, recoveryUsed);
+     };
+     const body = (async () => { try {
+-      const { data: profileData, error: profileError } = await supabase
+-        .from("profiles")
+-        .select("*")
+-        .eq("user_id", userId)
+-        .maybeSingle();
++      // Independent reads in parallel; nothing is adopted until both answered
++      // and the loader is still current (no partial profile/roles adoption).
++      // Fase Corretiva 1 — multipapel: NUNCA usar `.maybeSingle()` em user_roles.
++      const [profileResult, rolesResult] = await Promise.all([
++        supabase.from("profiles").select("*").eq("user_id", userId).abortSignal(controller.signal).maybeSingle(),
++        supabase.from("user_roles").select("role").eq("user_id", userId).abortSignal(controller.signal),
++      ]);
++      const { data: profileData, error: profileError } = profileResult;
++      const { data: rolesData, error: roleError } = rolesResult;
+ 
+       if (!isCurrent()) return yieldStale();
+-      if (profileError) throw profileError;
++      if (profileError) throw Object.assign(new Error("profile_read_failed"), { status: profileResult.status ?? (profileError as { status?: unknown }).status, cause: profileError });
+ 
+       const profile = profileData as Profile | null;
+       
+@@ -240,19 +292,9 @@
+         return;
+       }
+ 
+-      setProfile(profile);
+-
+-      // Fase Corretiva 1 — multipapel: NUNCA usar `.maybeSingle()` em user_roles.
+-      const { data: rolesData, error: roleError } = await supabase
+-        .from("user_roles")
+-        .select("role")
+-        .eq("user_id", userId);
+-
+-      if (!isCurrent()) return yieldStale();
+-
+       if (roleError) {
+         console.error("Error fetching roles:", roleError);
+-        throw roleError;
++        throw Object.assign(new Error("roles_read_failed"), { status: rolesResult.status ?? (roleError as { status?: unknown }).status, cause: roleError });
+       }
+ 
+       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
+@@ -275,17 +317,28 @@
+         setError(null);
+       }
+ 
++      setProfile(profile);
+       setRoles(userRoles);
+       setPrimaryRole(primary);
+       setLoading(false);
+     } catch (err: unknown) {
+       console.error("Erro ao carregar perfil/função:", err);
+       if (!isCurrent()) return yieldStale();
++      const failure = err as { status?: unknown; message?: unknown } | null;
++      const transient = err instanceof TypeError || failure?.status === 0 ||
++        (typeof failure?.status === "number" && failure.status >= 500) ||
++        (typeof failure?.message === "string" && /failed to fetch|networkerror|network request failed/i.test(failure.message));
++      if (transient) {
++        loaderSeqRef.current++;
++        controller.abort();
++        if (recoverTransient()) return;
++      }
+       // Falha de autorização/carregamento limpa papéis antigos e libera nova
+       // tentativa (não marca o usuário como já carregado).
+       failLoad();
+     } finally {
+       clearTimeout(watchdog);
++      if (loaderAbortRef.current === controller) loaderAbortRef.current = null;
+       settle();
+     } })();
+     // Late body completions after the deadline stay fenced by isCurrent().
+@@ -298,6 +351,7 @@
+       safeDraftRef.current = null;
+       setLoading(true);
+       const gen = ++generationRef.current;
++      cancelLoader();
+       loadedUserIdRef.current = user.id;
+       await fetchProfileAndRole(user.id, gen);
+     }
+@@ -319,7 +373,7 @@
+     // O carregamento NUNCA parte da pilha do callback de onAuthStateChange
+     // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
+     // como macrotask separada.
+-    const scheduleLoad = (userId: string) => {
++    const scheduleLoad = (userId: string, renewal = false) => {
+       ++generationRef.current;
+       loadedUserIdRef.current = userId;
+       if (timerRef.current) clearTimeout(timerRef.current);
+@@ -329,7 +383,7 @@
+         // fences (expiry/Retry/epoch) are not loaders: still load, under the
+         // CURRENT generation, so loading always ends.
+         if (effectCancelled || !mountedRef.current || activeUserIdRef.current !== userId) return;
+-        void fetchProfileAndRole(userId, generationRef.current);
++        void fetchProfileAndRole(userId, generationRef.current, 0, renewal);
+       }, 0);
+     };
+ 
+@@ -375,10 +429,11 @@
+           if (loadedUserIdRef.current === nextUserId && !authorizationChanged) return;
+           setLoading(true);
+           setError(null);
+-          scheduleLoad(nextUserId);
++          scheduleLoad(nextUserId, event === "TOKEN_REFRESHED" && !identityChanged);
+ 
+         } else {
+           generationRef.current += 1;
++          cancelLoader();
+           retryRevalidateRef.current = false;
+           if (timerRef.current) {
+             clearTimeout(timerRef.current);
+@@ -432,6 +487,7 @@
+       safeDraftRef.current = null;
+       effectCancelled = true;
+       generationRef.current += 1;
++      cancelLoader();
+       loadedUserIdRef.current = null;
+       activeUserIdRef.current = null;
+       retryRevalidateRef.current = false;
+@@ -762,19 +818,27 @@
+         let freshOrg: unknown = null;
+         let active = false;
+         let deadline: ReturnType<typeof setTimeout> | undefined;
++        let retrySignal: AbortController | null = null;
+         try {
+           // Bounded: a hung read ends as "unavailable" (probe path), never an endless Retry.
+-          const timeout = new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error("retry_read_timeout")), AUTH_LOAD_TIMEOUT_MS); });
++          const readController = new AbortController();
++          retryReadAbortRef.current?.abort();
++          retryReadAbortRef.current = readController;
++          retrySignal = readController;
++          const timeout = new Promise<never>((_, reject) => { deadline = setTimeout(() => { readController.abort(); reject(new Error("retry_read_timeout")); }, AUTH_LOAD_TIMEOUT_MS); });
+           const [{ data: p, error: pe }, { data: r, error: re }] = await Promise.race([Promise.all([
+-            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle(),
+-            supabase.from("user_roles").select("role").eq("user_id", uid),
++            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).abortSignal(readController.signal).maybeSingle(),
++            supabase.from("user_roles").select("role").eq("user_id", uid).abortSignal(readController.signal),
+           ]), timeout]);
+           if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
+             active = (p as { ativo?: unknown }).ativo === true;
+             freshOrg = (p as { organization_id?: unknown }).organization_id;
+             fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
+           }
+-        } catch { fresh = null; } finally { clearTimeout(deadline); }
++        } catch { fresh = null; } finally {
++          clearTimeout(deadline);
++          if (retrySignal && retryReadAbortRef.current === retrySignal) retryReadAbortRef.current = null;
++        }
+         if (!isCurrent()) return;
+         const same = fresh !== null && freshOrg === cachedOrg &&
+           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);
+@@ -807,6 +871,7 @@
+   revalidateAuthzRef.current = revalidateAuthz;
+ 
+   const signOut = async () => {
++    cancelLoader();
+     cancelAutoRecovery();
+     autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
+     renewalRef.current = null;
+--- scripts/monitor-loader-renewal-20261020/runtime-activation-v2/rollback/src/test/config/authProviderCallback.test.tsx.review	2026-10-20 14:31:24.475613442 +0000
++++ src/test/config/authProviderCallback.test.tsx	2026-10-20 14:31:24.508974530 +0000
+@@ -44,6 +44,7 @@
+   const builder: any = {
+     select: () => builder,
+     eq: () => builder,
++    abortSignal: () => builder,
+     maybeSingle: async () => {
+       if (profileDelay) await new Promise((r) => setTimeout(r, profileDelay));
+       return result();
+--- scripts/monitor-loader-renewal-20261020/runtime-activation-v2/rollback/src/test/config/authzFoundation.integration.test.tsx.review	2026-10-20 14:31:24.482445440 +0000
++++ src/test/config/authzFoundation.integration.test.tsx	2026-10-20 14:31:24.509183297 +0000
+@@ -33,6 +33,7 @@
+ const chain = (result: unknown) => {
+   const o: Record<string, unknown> = {};
+   o.eq = () => o;
++  o.abortSignal = () => o;
+   o.maybeSingle = async () => result;
+   o.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
+     Promise.resolve(result).then(res, rej);
+--- scripts/monitor-loader-renewal-20261020/runtime-activation-v2/rollback/src/test/config/autoTimeoutRecovery.integration.test.tsx.review	2026-10-20 14:31:24.488661187 +0000
++++ src/test/config/autoTimeoutRecovery.integration.test.tsx	2026-10-20 14:31:24.516031855 +0000
+@@ -19,7 +19,7 @@
+   },
+   from: (t: string) => {
+     const q: Record<string, unknown> = {};
+-    for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
++    for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
+     const run = () => later(() => t === 'profiles'
+       ? { data: { user_id: s.uid, organization_id: s.org, ativo: s.active, senha_provisoria: false, nome: 'B' }, error: null }
+       : { data: s.roles.map(role => ({ role })), error: null });
+--- scripts/monitor-loader-renewal-20261020/runtime-activation-v2/rollback/src/test/config/monitorRetryReresolve.integration.test.tsx.review	2026-10-20 14:31:24.494019037 +0000
++++ src/test/config/monitorRetryReresolve.integration.test.tsx	2026-10-20 14:31:24.518966087 +0000
+@@ -22,7 +22,7 @@
+     return { data: [], error: null };
+   };
+   const q: Record<string, unknown> = {};
+-  for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
++  for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
+   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
+   return q;
+ }
+--- scripts/monitor-loader-renewal-20261020/runtime-activation-v2/rollback/src/test/config/residualScopeStability.integration.test.tsx.review	2026-10-20 14:31:24.497545983 +0000
++++ src/test/config/residualScopeStability.integration.test.tsx	2026-10-20 14:31:24.522759390 +0000
+@@ -14,7 +14,7 @@
+   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
+   from: (t: string) => {
+     const q: Record<string, unknown> = {};
+-    for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
++    for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
+     const run = () => later(() => t === 'profiles'
+       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
+       : { data: s.roles.map(role => ({ role })), error: null }, t);

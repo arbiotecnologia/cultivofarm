@@ -19,7 +19,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   },
   from: (t: string) => {
     const q: Record<string, unknown> = {};
-    for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
+    for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
     const run = () => later(() => t === 'profiles'
       ? { data: { user_id: s.uid, organization_id: s.org, ativo: s.active, senha_provisoria: false, nome: 'B' }, error: null }
       : { data: s.roles.map(role => ({ role })), error: null });

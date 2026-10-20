@@ -44,6 +44,7 @@ function tableBuilder(table: string) {
   const builder: any = {
     select: () => builder,
     eq: () => builder,
+    abortSignal: () => builder,
     maybeSingle: async () => {
       if (profileDelay) await new Promise((r) => setTimeout(r, profileDelay));
       return result();

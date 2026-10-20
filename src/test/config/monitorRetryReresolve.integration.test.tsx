@@ -22,7 +22,7 @@ function chain(table: string) {
     return { data: [], error: null };
   };
   const q: Record<string, unknown> = {};
-  for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
+  for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
   return q;
 }
