@@ -1,0 +1,26 @@
+[
+  {
+    "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+    "assertion_lines_preserved": 11
+  },
+  {
+    "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+    "assertion_lines_preserved": 38
+  },
+  {
+    "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+    "assertion_lines_preserved": 20
+  },
+  {
+    "file": "src/test/config/portalContextRecovery.integration.test.tsx",
+    "assertion_lines_preserved": 47
+  },
+  {
+    "file": "src/test/config/residualScopeStability.integration.test.tsx",
+    "assertion_lines_preserved": 11
+  },
+  {
+    "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+    "assertion_lines_preserved": 52
+  }
+]

@@ -1,3 +1,5 @@
+// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
+// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
 // Real AuthProvider/monitor/probe/ProtectedRoutes/RoleGuard/AppPortalGuard/AppLayout/MobileLayout.
 // Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -6,7 +8,7 @@ import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
-  roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
+  autoFreshFailures: 0, roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
   hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, auth: undefined as undefined | { authzReady: boolean; revalidateAuthz: () => void }, release: undefined as undefined | (() => void),
 }));
 const later = <T,>(v: () => T, tag: string) => {
@@ -19,7 +21,7 @@ function chain(t: string) {
   let cols = '';
   for (const n of ['eq', 'is', 'filter', 'in', 'not', 'neq', 'order', 'abortSignal']) q[n] = () => q;
   q.select = (c: string) => { cols = c; return q; };
-  const run = () => (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
+  const run = () => (t === 'profiles' && cols === 'user_id, organization_id, ativo' && s.autoFreshFailures++ === 0 ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : null) ?? (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
     ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
     : t === 'user_roles' ? { data: s.roles.map(role => ({ role })), error: null } : { data: [], error: null }, t);
   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
@@ -86,6 +88,7 @@ async function pairThenLoseGestor() {
   setup(); await tick(3000);
   expect(screen.getByText('Contas a receber')).toBeTruthy();
   s.roles = ['consultor_tecnico']; focus(); await tick(3000);
+  expect(s.autoFreshFailures).toBe(1); // one automatic fresh read exhausted, not neutralized
   expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
 }
 /** Terminal, observable states only: never an endless spinner. */
@@ -99,7 +102,7 @@ async function expectConsultorRecovered() {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
+  s.autoFreshFailures = 0; s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
   vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
@@ -154,6 +157,7 @@ describe('Retry / renewal generation conflicts never leave an endless loading (5
   it('restoring gestor afterwards: pause → Retry recovers the pair and financial again', async () => {
     await pairThenLoseGestor();
     retry(); await tick(8000); await expectConsultorRecovered();
+    s.autoFreshFailures = 0; // residual valid rearmed the one-attempt budget
     s.roles = ['gestor', 'consultor_tecnico']; focus(); await tick(4000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
     retry(); await tick(8000);

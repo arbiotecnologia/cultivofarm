@@ -13,6 +13,7 @@ import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localD
 import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSRenewalDraft";
 import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
 import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
+import { initialRoleChangeReresolve, onExpire as roleChangeOnExpire, onValid as roleChangeOnValid, type RoleChangeReresolveState } from "@/lib/authz/roleChangeReresolve";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -162,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const retryRevalidateRef = useRef(false);
   const revalidateAuthzRef = useRef<() => void>(() => {});
   const autoRecoveryRef = useRef<{ userId: string | null; s: AutoRecoveryState }>({ userId: null, s: initialAutoRecovery() });
+  const roleChangeRef = useRef<{ userId: string | null; s: RoleChangeReresolveState }>({ userId: null, s: initialRoleChangeReresolve() });
   const autoRecoveryTimerRef = useRef<number | null>(null);
   const cancelAutoRecovery = () => {
     if (autoRecoveryTimerRef.current !== null) window.clearTimeout(autoRecoveryTimerRef.current);
@@ -653,6 +655,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (next === "valid") {
           if (autoRecoveryRef.current.userId !== (user?.id ?? null)) autoRecoveryRef.current = { userId: user?.id ?? null, s: initialAutoRecovery() };
           autoRecoveryRef.current.s = autoRecoveryOnValid(autoRecoveryRef.current.s, performance.now());
+          roleChangeRef.current = { userId: user?.id ?? null, s: roleChangeOnValid(roleChangeRef.current.s) };
         }
         if (next === "valid" && renewalRef.current) {
           const receipt = renewalRef.current;
@@ -716,6 +719,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
             revalidateAuthzRef.current();
           }, decision.delayMs);
+        } else if (uid) {
+          // Role-change candidate: an "ineligible" pair/residual probe may run the
+          // SAME canonical Retry once (fresh profile+roles, fenced loader, new
+          // monitor confirmation). View stays hidden; budget re-arms only on valid.
+          if (roleChangeRef.current.userId !== uid) roleChangeRef.current = { userId: uid, s: initialRoleChangeReresolve() };
+          const rc = roleChangeOnExpire(roleChangeRef.current.s, reason, managerConsultantContextOnly || residualContextOnly, navigator.onLine);
+          roleChangeRef.current.s = rc.next;
+          if (rc.run) {
+            const scopeAtExpire = principalScope;
+            autoRecoveryTimerRef.current = window.setTimeout(() => {
+              autoRecoveryTimerRef.current = null;
+              if (!mountedRef.current || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
+                authzMonitorRef.current !== monitor || monitor.state() !== "expired" || retryInFlightRef.current || !navigator.onLine) return;
+              recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "ineligible",
+                visible: document.visibilityState === "visible", online: navigator.onLine,
+                rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+              revalidateAuthzRef.current();
+            }, 0);
+          }
         }
       },
     });
@@ -874,6 +896,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cancelLoader();
     cancelAutoRecovery();
     autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
+    roleChangeRef.current = { userId: null, s: initialRoleChangeReresolve() };
     renewalRef.current = null;
     safeDraftRef.current = null;
     monitoredLatchRef.current = null;

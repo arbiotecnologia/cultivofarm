@@ -1,3 +1,5 @@
+// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
+// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
 // Real AuthProvider + monitor + AuthzEpochBoundary; only Supabase transport is fake (not JWT/RLS).
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,12 +9,14 @@ const s = vi.hoisted(() => ({
   org: '00000000-0000-4000-8000-000000000002' as string | null,
   h15Org: undefined as string | undefined,
   roles: ['gestor', 'consultor_tecnico'] as string[],
-  offline: false, rtt: 0, roleReads: 0, profileReads: 0,
+  autoFreshFailures: 0, offline: false, rtt: 0, roleReads: 0, profileReads: 0,
   hold: undefined as undefined | Promise<void>, active: true, hasRoleCalls: [] as string[],
 }));
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 function chain(table: string) {
+  let fresh = false;
   const run = async () => {
+    if (fresh && table === 'profiles' && s.autoFreshFailures++ === 0) return { data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } };
     if (table === 'profiles') s.profileReads++;
     if (s.rtt && table === 'user_roles') await wait(s.rtt);
     if (s.hold && table === 'user_roles') await s.hold;
@@ -23,6 +27,7 @@ function chain(table: string) {
   };
   const q: Record<string, unknown> = {};
   for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
+  q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
   return q;
 }
@@ -62,11 +67,12 @@ async function mount() {
 async function changeRolesAndPoll(next: string[]) {
   s.roles = next;
   await act(async () => { window.dispatchEvent(new Event('focus')); await wait(40); });
+  if (next.length === 1 && !s.offline) expect(s.autoFreshFailures).toBeGreaterThanOrEqual(1); // automatic read actually ran before Retry
 }
 const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };
 const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
 
-beforeEach(() => { s.active = true; s.hasRoleCalls = []; s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
+beforeEach(() => { s.autoFreshFailures = 0; s.active = true; s.hasRoleCalls = []; s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
 afterEach(() => cleanup());
 
 describe('Retry re-resolves identity (gestor+consultor)', () => {
@@ -134,6 +140,7 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     await changeRolesAndPoll(['gestor']);
     await retry(120);
     expect(screen.getByText(/Conteúdo sensível/).textContent).not.toContain('/app/registrar');
+    s.autoFreshFailures = 0; // new valid scope rearmed the automatic budget; exhaust it again
     await changeRolesAndPoll(['gestor', 'consultor_tecnico']); // residual probe rejects superset of gestor
     paused();
     await retry(120);

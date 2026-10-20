@@ -12,11 +12,11 @@ export default defineConfig({
     if (source === "@/lib/authz/roleChangeReresolve") return path.resolve(`${P}/candidate/src/lib/authz/roleChangeReresolve.ts`);
     if (source.includes("useAuth") && !source.includes("useAuthz")) {
       const r = await this.resolve(source, importer, { ...opts, skipSelf: true });
-      if (r && r.id.split("?")[0] === runtime) return candidate;
+      if (r && path.normalize(r.id.split("?")[0]).replace(/\\/g, "/") === runtime.replace(/\\/g, "/")) return candidate;
     }
     return null;
   } }],
-  resolve: { alias: [{ find: "@/lib/authz/roleChangeReresolve", replacement: path.resolve(process.env.MONITOR_ROLECHANGE === "off" ? `${P}/audit/roleChangeReresolve.neutral.ts` : `${P}/candidate/src/lib/authz/roleChangeReresolve.ts`) }, { find: "@", replacement: path.resolve("src") }] },
+  resolve: { alias: [{ find: "@/lib/authz/roleChangeReresolve", replacement: path.resolve(`${P}/candidate/src/lib/authz/roleChangeReresolve.ts`) }, { find: "@", replacement: path.resolve("src") }] },
   test: { environment: "jsdom", globals: true, setupFiles: ["./src/test/setup.ts"],
     include: (process.env.MONITOR_INCLUDE ?? `${P}/*.test.{ts,tsx}`).split(";") },
 });

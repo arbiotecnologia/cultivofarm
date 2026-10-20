@@ -1,4 +1,6 @@
-# Relatório de equivalência — candidato role-change (NÃO ativado)
+# Relatório histórico de equivalência — candidato role-change
+
+Revisão vigente13a01: mudança aceita, scaffolding adaptado e fontes exatas ativadas localmente; relatório liberador com política ativa em `active-policy-validation/REPORT.md`. A neutralização abaixo foi apenas diagnóstico histórico, não fundamentou a liberação atual.
 
 Baseline = runtime publicado 0feac450 (`useAuth` ace8f12d). Originais preservados sem alteração; executados contra baseline, candidato e candidato com a política neutralizada (`audit/roleChangeReresolve.neutral.ts`).
 

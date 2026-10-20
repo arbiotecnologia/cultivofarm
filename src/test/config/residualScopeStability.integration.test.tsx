@@ -1,3 +1,5 @@
+// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
+// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
 // Real AuthProvider + real monitor + real internalContextProbe; fake per-call transport
 // latency and fake clock (timers, Date and performance). Not hosted JWT/RLS nor browser suspension.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -5,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
-  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
+  autoFreshFailures: 0, roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
 }));
 const later = <T,>(v: () => T, _tag = '') => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
 vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
@@ -14,8 +16,11 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
   from: (t: string) => {
     const q: Record<string, unknown> = {};
+    let fresh = false;
     for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
-    const run = () => later(() => t === 'profiles'
+    q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
+    const run = () => fresh && t === 'profiles' && s.autoFreshFailures++ === 0
+      ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : later(() => t === 'profiles'
       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
       : { data: s.roles.map(role => ({ role })), error: null }, t);
     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
@@ -41,7 +46,7 @@ const pausedText = () => screen.queryByText('Sessão de acesso pausada');
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
+  s.autoFreshFailures = 0; s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
