@@ -221,7 +221,7 @@
   ],
   "event_table_triggers": 0,
   "known_open_paths": [
-    "RLS 'Admin/Gestor/Producao access on lotes' (ALL) and 'OnFarm scoped insert lotes' still permit direct table writes outside this RPC; not changed here (out of scope, needs separate review)."
+    "Manual INSERT/UPDATE proposal fenced by private txid ticket. DELETE and nonmanual downstream outside this focused certification."
   ],
   "tables": [
     {
@@ -258,7 +258,7 @@
       "name": "lotes",
       "schema_md5": "9ec8b0348eaa6a1416e753d00a7f7216",
       "constraints_md5": "cc9012bc57a10a0a68451c6b64e80889",
-      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}"
     },
     {
       "name": "ordens_servico",
@@ -362,5 +362,50 @@
       "microrganismos",
       "2c7d22d5b3c2b8d3d3ae76ede3e8f8eb"
     ]
+  ],
+  "containment_receipt": {
+    "migration": "lotes_administrative_acl_containment",
+    "reported_by": "owner; PRE/POST success",
+    "verified_readonly": "2026-10-20",
+    "preserve_in_rollback": true
+  },
+  "ticket_schema_md5": "cb4c40d37bba14251a30346764cbff59",
+  "policy_definitions": [
+    {
+      "name": "Adm/Consultor read lotes",
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role))"
+    },
+    {
+      "name": "Admin/Gestor/Producao access on lotes",
+      "cmd": "ALL",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role))"
+    },
+    {
+      "name": "Financeiro read lotes",
+      "cmd": "SELECT",
+      "qual": "platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)"
+    },
+    {
+      "name": "OnFarm scoped select lotes",
+      "cmd": "SELECT",
+      "qual": "fn_onfarm_scope_lote(id)"
+    },
+    {
+      "name": "OnFarm scoped update lotes",
+      "cmd": "UPDATE",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role) AND fn_onfarm_scope_lote(id))"
+    },
+    {
+      "name": "OnFarm scoped insert lotes",
+      "cmd": "INSERT",
+      "check": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role) AND (EXISTS (SELECT 1 FROM public.programacao_producao pp LEFT JOIN public.ordens_servico os ON os.id=pp.ordem_servico_id LEFT JOIN public.ordens_servico_onfarm o2 ON o2.id=pp.ordem_servico_onfarm_id WHERE pp.id=lotes.programacao_id AND fn_onfarm_scope_cliente(COALESCE(os.cliente_id,o2.cliente_id)))))"
+    },
+    {
+      "name": "tenant_isolation_d51_5",
+      "cmd": "ALL",
+      "restrictive": true,
+      "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    }
   ]
 }
