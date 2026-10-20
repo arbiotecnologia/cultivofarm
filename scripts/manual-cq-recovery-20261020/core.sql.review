@@ -75,7 +75,7 @@ BEGIN
  OR lot.organization_id IS DISTINCT FROM org OR lot.produto_id IS DISTINCT FROM pp.produto_id OR lot.microrganismo_id IS DISTINCT FROM pp.microrganismo_id
  OR pp.produto_id IS DISTINCT FROM os.produto_id OR pp.microrganismo_id IS DISTINCT FROM os.microrganismo_id
  OR pp.data_programada IS NULL OR pp.volume_necessario IS DISTINCT FROM os.volume_total_ml
- OR lot.volume_produzido<=0 OR lot.volume_produzido::text IN ('NaN','Infinity','-Infinity')
+ OR lot.volume_produzido IS NULL OR lot.volume_produzido<=0 OR lot.volume_produzido::text IN ('NaN','Infinity','-Infinity')
  OR pp.responsavel_id IS NOT NULL OR nullif(btrim(pp.responsavel),'') IS NOT NULL
  OR platform_private.lab_item_is_manufacturable(pp.produto_id,pp.microrganismo_id) IS NOT TRUE
  OR EXISTS(SELECT 1 FROM public.envase WHERE lote_id=lot.id) OR EXISTS(SELECT 1 FROM public.estoque_produto WHERE lote_id=lot.id)
@@ -90,7 +90,7 @@ BEGIN
   IF (SELECT count(*) FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id)>1 THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
   SELECT * INTO ref FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id;
  END IF;
- IF refid IS DISTINCT FROM ref.id THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+ IF p_cq IS NOT NULL AND refid IS DISTINCT FROM ref.id THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
  IF ref.id IS NOT NULL AND (ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')) THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
  IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NOT NULL AND
  ((ref.ph_min IS NOT NULL AND v_ph<ref.ph_min) OR (ref.ph_max IS NOT NULL AND v_ph>ref.ph_max)
@@ -99,7 +99,7 @@ BEGIN
  OR (nullif(btrim(ref.odor_esperado),'') IS NOT NULL AND btrim(p_cq->>'odor')<>btrim(ref.odor_esperado))
  OR (nullif(btrim(ref.contaminacao_esperada),'') IS NOT NULL AND btrim(p_cq->>'contaminacao')<>btrim(ref.contaminacao_esperada))) THEN RAISE EXCEPTION 'CQ_REFERENCE_FAILED'; END IF;
  receipt_key:='manual_cq_v1:'||phase||':'||lot.id::text;
- payload:=payload||jsonb_build_object('os_id',os.id,'programacao_id',pp.id,'lote_id',lot.id,'referencia_snapshot',CASE WHEN ref.id IS NULL THEN NULL ELSE to_jsonb(ref) END);
+ payload:=payload||jsonb_build_object('os_id',os.id,'programacao_id',pp.id,'lote_id',lot.id,'referencia_snapshot',CASE WHEN p_cq IS NULL OR ref.id IS NULL THEN NULL ELSE to_jsonb(ref) END);
  digest:=md5(payload::text);
  SELECT * INTO receipt FROM public.cockpit_operacao_idempotencia WHERE idempotency_key=receipt_key FOR UPDATE;
  IF receipt.idempotency_key IS NOT NULL THEN
