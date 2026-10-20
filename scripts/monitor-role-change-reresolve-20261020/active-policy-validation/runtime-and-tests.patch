@@ -1,0 +1,333 @@
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -13,6 +13,7 @@
+ import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSRenewalDraft";
+ import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
+ import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
++import { initialRoleChangeReresolve, onExpire as roleChangeOnExpire, onValid as roleChangeOnValid, type RoleChangeReresolveState } from "@/lib/authz/roleChangeReresolve";
+ import {
+   createAuthzEpochMonitor,
+   type AuthzEpochMonitor,
+@@ -162,6 +163,7 @@
+   const retryRevalidateRef = useRef(false);
+   const revalidateAuthzRef = useRef<() => void>(() => {});
+   const autoRecoveryRef = useRef<{ userId: string | null; s: AutoRecoveryState }>({ userId: null, s: initialAutoRecovery() });
++  const roleChangeRef = useRef<{ userId: string | null; s: RoleChangeReresolveState }>({ userId: null, s: initialRoleChangeReresolve() });
+   const autoRecoveryTimerRef = useRef<number | null>(null);
+   const cancelAutoRecovery = () => {
+     if (autoRecoveryTimerRef.current !== null) window.clearTimeout(autoRecoveryTimerRef.current);
+@@ -653,6 +655,7 @@
+         if (next === "valid") {
+           if (autoRecoveryRef.current.userId !== (user?.id ?? null)) autoRecoveryRef.current = { userId: user?.id ?? null, s: initialAutoRecovery() };
+           autoRecoveryRef.current.s = autoRecoveryOnValid(autoRecoveryRef.current.s, performance.now());
++          roleChangeRef.current = { userId: user?.id ?? null, s: roleChangeOnValid(roleChangeRef.current.s) };
+         }
+         if (next === "valid" && renewalRef.current) {
+           const receipt = renewalRef.current;
+@@ -716,6 +719,25 @@
+               rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+             revalidateAuthzRef.current();
+           }, decision.delayMs);
++        } else if (uid) {
++          // Role-change candidate: an "ineligible" pair/residual probe may run the
++          // SAME canonical Retry once (fresh profile+roles, fenced loader, new
++          // monitor confirmation). View stays hidden; budget re-arms only on valid.
++          if (roleChangeRef.current.userId !== uid) roleChangeRef.current = { userId: uid, s: initialRoleChangeReresolve() };
++          const rc = roleChangeOnExpire(roleChangeRef.current.s, reason, managerConsultantContextOnly || residualContextOnly, navigator.onLine);
++          roleChangeRef.current.s = rc.next;
++          if (rc.run) {
++            const scopeAtExpire = principalScope;
++            autoRecoveryTimerRef.current = window.setTimeout(() => {
++              autoRecoveryTimerRef.current = null;
++              if (!mountedRef.current || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
++                authzMonitorRef.current !== monitor || monitor.state() !== "expired" || retryInFlightRef.current || !navigator.onLine) return;
++              recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "ineligible",
++                visible: document.visibilityState === "visible", online: navigator.onLine,
++                rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
++              revalidateAuthzRef.current();
++            }, 0);
++          }
+         }
+       },
+     });
+@@ -874,6 +896,7 @@
+     cancelLoader();
+     cancelAutoRecovery();
+     autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
++    roleChangeRef.current = { userId: null, s: initialRoleChangeReresolve() };
+     renewalRef.current = null;
+     safeDraftRef.current = null;
+     monitoredLatchRef.current = null;
+--- /dev/null
++++ b/src/lib/authz/roleChangeReresolve.ts
+@@ -0,0 +1,23 @@
++// One automatic canonical re-resolution after an "ineligible" probe in the
++// reviewed gestor/consultor pair/residual scopes. Pure policy: it only decides
++// WHETHER to call the same canonical revalidateAuthz used by Retry (fresh
++// profile+roles read, fenced loader, new monitor confirmation). It never grants
++// authority, never restores a removed role, never extends the lease and never
++// signs out. Budget: one attempt, re-armed only by a later valid confirmation.
++
++export interface RoleChangeReresolveState { armed: boolean }
++export const initialRoleChangeReresolve = (): RoleChangeReresolveState => ({ armed: true });
++
++export function onValid(_s: RoleChangeReresolveState): RoleChangeReresolveState {
++  return { armed: true };
++}
++
++export function onExpire(
++  s: RoleChangeReresolveState,
++  reason: "error" | "offline" | "timeout" | "ineligible",
++  eligibleScope: boolean,
++  online: boolean,
++): { next: RoleChangeReresolveState; run: boolean } {
++  if (reason !== "ineligible" || !eligibleScope || !online || !s.armed) return { next: s, run: false };
++  return { next: { armed: false }, run: true };
++}
+
+--- a/scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx
++++ b/scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx
+@@ -1,3 +1,5 @@
++// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
++// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
+ // Review-only harness copy: SDK abortSignal shape added (legacy mock ignored cancellation).
+ // Real AuthProvider + real monitor + real internalContextProbe; fake per-call transport
+ // latency and fake clock (timers, Date and performance). Not hosted JWT/RLS nor browser suspension.
+@@ -6,7 +8,7 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ const s = vi.hoisted(() => ({
+   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
+-  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
++  autoFreshFailures: 0, roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
+ }));
+ const later = <T,>(v: () => T, _tag = '') => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
+ vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
+@@ -15,8 +17,11 @@
+   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
+   from: (t: string) => {
+     const q: Record<string, unknown> = {};
++    let fresh = false;
+     for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
+-    const run = () => later(() => t === 'profiles'
++    q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
++    const run = () => fresh && t === 'profiles' && s.autoFreshFailures++ === 0
++      ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : later(() => t === 'profiles'
+       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
+       : { data: s.roles.map(role => ({ role })), error: null }, t);
+     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
+@@ -42,7 +47,7 @@
+ 
+ beforeEach(() => {
+   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
+-  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
++  s.autoFreshFailures = 0; s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
+ });
+ afterEach(() => { cleanup(); vi.useRealTimers(); });
+ 
+--- a/src/test/config/managerConsultantOpenSession.integration.test.tsx
++++ b/src/test/config/managerConsultantOpenSession.integration.test.tsx
+@@ -1,3 +1,5 @@
++// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
++// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
+ // Real AuthProvider/monitor/ProtectedRoutes/AppLayout/cache; cockpit page stub.
+ // Only transports/session and unrelated shell widgets are fake: not JWT/RLS.
+ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+@@ -6,8 +8,8 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ import { useState } from 'react';
+ const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002';
+-const s=vi.hoisted(()=>({uid:'00000000-0000-4000-8000-000000000001',authListener:undefined as undefined|((event:string,session:{user:{id:string}})=>void),gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['gestor','consultor_tecnico'],org:'00000000-0000-4000-8000-000000000002' as string|null,finalOrg:undefined as string|undefined,h15:0,error:false,fail:'',hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined, roleCalls:[] as unknown[], deniedRole:'', preferenceHold:undefined as undefined|(()=>Promise<unknown>), rtt:0}));
+-function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
++const s=vi.hoisted(()=>({uid:'00000000-0000-4000-8000-000000000001',authListener:undefined as undefined|((event:string,session:{user:{id:string}})=>void),gate:true,active:true as unknown,password:false as unknown,roleAllowed:true as unknown,roles:['gestor','consultor_tecnico'],org:'00000000-0000-4000-8000-000000000002' as string|null,finalOrg:undefined as string|undefined,h15:0,error:false,fail:'',hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),rowUid:undefined as string|undefined, roleCalls:[] as unknown[], deniedRole:'', preferenceHold:undefined as undefined|(()=>Promise<unknown>), rtt:0, autoFreshFailures:0}));
++function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;let fresh=false;q.select=(cols:string)=>{fresh=cols === 'user_id, organization_id, ativo';return q;};q.maybeSingle=async()=>{if(fresh&&s.autoFreshFailures++===0)return {data:null,error:{status:503,message:'controlled automatic fresh-read failure'}};return result();};q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
+ vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, get MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED(){return s.gate;}, AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',PRODUCER_CONTEXT_MONITOR_ENABLED:false,CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED:false}));
+ vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
+ vi.mock('@/hooks/useSystemConfig',()=>({useSystemConfig:()=>({defaults:{nome_empresa:'Cultivo Farm'}})}));
+@@ -72,7 +74,7 @@
+  expect(screen.getByTestId('url').textContent).toBe(path);
+  expect(qc.getQueryCache().getAll().some(q=>q.state.data!==undefined)).toBe(false);
+ }
+-beforeEach(()=>{vi.useFakeTimers();s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;s.rtt=0;localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
++beforeEach(()=>{vi.useFakeTimers();s.autoFreshFailures=0;s.uid=U;s.authListener=undefined;s.gate=true;s.active=true;s.password=false;s.roleAllowed=true;s.roles=['gestor','consultor_tecnico'];s.org=O;s.finalOrg=undefined;s.h15=0;s.hold=undefined;s.late=undefined;s.error=false;s.fail='';s.roleCalls=[];s.rowUid=undefined;s.deniedRole='';s.preferenceHold=undefined;s.rtt=0;localStorage.clear();Object.defineProperty(navigator,'onLine',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});});
+ afterEach(()=>{cleanup();vi.useRealTimers();});
+ describe('paired probe: real sources with fake transport, not hosted JWT/RLS',()=>{
+  it.each([['gestor','consultor_tecnico'],['consultor_tecnico','gestor']])('ordered fingerprint and both canonical has_role: %j',async (...roles)=>{
+--- a/src/test/config/monitorRetryReresolve.integration.test.tsx
++++ b/src/test/config/monitorRetryReresolve.integration.test.tsx
+@@ -1,3 +1,5 @@
++// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
++// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
+ // Real AuthProvider + monitor + AuthzEpochBoundary; only Supabase transport is fake (not JWT/RLS).
+ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+@@ -7,12 +9,14 @@
+   org: '00000000-0000-4000-8000-000000000002' as string | null,
+   h15Org: undefined as string | undefined,
+   roles: ['gestor', 'consultor_tecnico'] as string[],
+-  offline: false, rtt: 0, roleReads: 0, profileReads: 0,
++  autoFreshFailures: 0, offline: false, rtt: 0, roleReads: 0, profileReads: 0,
+   hold: undefined as undefined | Promise<void>, active: true, hasRoleCalls: [] as string[],
+ }));
+ const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+ function chain(table: string) {
++  let fresh = false;
+   const run = async () => {
++    if (fresh && table === 'profiles' && s.autoFreshFailures++ === 0) return { data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } };
+     if (table === 'profiles') s.profileReads++;
+     if (s.rtt && table === 'user_roles') await wait(s.rtt);
+     if (s.hold && table === 'user_roles') await s.hold;
+@@ -23,6 +27,7 @@
+   };
+   const q: Record<string, unknown> = {};
+   for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
++  q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
+   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
+   return q;
+ }
+@@ -62,11 +67,12 @@
+ async function changeRolesAndPoll(next: string[]) {
+   s.roles = next;
+   await act(async () => { window.dispatchEvent(new Event('focus')); await wait(40); });
++  if (next.length === 1 && !s.offline) expect(s.autoFreshFailures).toBeGreaterThanOrEqual(1); // automatic read actually ran before Retry
+ }
+ const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };
+ const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
+ 
+-beforeEach(() => { s.active = true; s.hasRoleCalls = []; s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
++beforeEach(() => { s.autoFreshFailures = 0; s.active = true; s.hasRoleCalls = []; s.roles = ['gestor', 'consultor_tecnico']; s.org = '00000000-0000-4000-8000-000000000002'; s.h15Org = undefined; s.offline = false; s.rtt = 0; s.roleReads = 0; s.hold = undefined; });
+ afterEach(() => cleanup());
+ 
+ describe('Retry re-resolves identity (gestor+consultor)', () => {
+@@ -134,6 +140,7 @@
+     await changeRolesAndPoll(['gestor']);
+     await retry(120);
+     expect(screen.getByText(/Conteúdo sensível/).textContent).not.toContain('/app/registrar');
++    s.autoFreshFailures = 0; // new valid scope rearmed the automatic budget; exhaust it again
+     await changeRolesAndPoll(['gestor', 'consultor_tecnico']); // residual probe rejects superset of gestor
+     paused();
+     await retry(120);
+--- a/src/test/config/portalContextRecovery.integration.test.tsx
++++ b/src/test/config/portalContextRecovery.integration.test.tsx
+@@ -1,3 +1,5 @@
++// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
++// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
+ // Real AuthProvider/monitor/probe/ProtectedRoutes/RoleGuard/AppPortalGuard/AppLayout/MobileLayout.
+ // Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
+ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+@@ -6,7 +8,7 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ const s = vi.hoisted(() => ({
+   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
+-  roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
++  autoFreshFailures: 0, roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
+   contextsMode: 'valid' as 'valid' | 'error' | 'denied' | 'hold' | 'never', contextRelease: undefined as undefined | (() => void), contextsCalls: 0, hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, auth: undefined as undefined | { authzReady: boolean; revalidateAuthz: () => void }, release: undefined as undefined | (() => void),
+ }));
+ const later = <T,>(v: () => T, tag: string) => {
+@@ -19,7 +21,7 @@
+   let cols = '';
+   for (const n of ['eq', 'is', 'filter', 'in', 'not', 'neq', 'order', 'abortSignal']) q[n] = () => q;
+   q.select = (c: string) => { cols = c; return q; };
+-  const run = () => (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
++  const run = () => (t === 'profiles' && cols === 'user_id, organization_id, ativo' && s.autoFreshFailures++ === 0 ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : null) ?? (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
+     ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
+     : t === 'user_roles' ? { data: s.roles.map(role => ({ role })), error: null } : { data: [], error: null }, t);
+   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
+@@ -112,7 +114,7 @@
+ 
+ beforeEach(() => {
+   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
+-  s.contextsMode = 'valid'; s.contextRelease = undefined; s.contextsCalls = 0; s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
++  s.autoFreshFailures = 0; s.contextsMode = 'valid'; s.contextRelease = undefined; s.contextsCalls = 0; s.autoFreshFailures = 0; s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
+   vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
+   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+--- a/src/test/config/residualScopeStability.integration.test.tsx
++++ b/src/test/config/residualScopeStability.integration.test.tsx
+@@ -1,3 +1,5 @@
++// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
++// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
+ // Real AuthProvider + real monitor + real internalContextProbe; fake per-call transport
+ // latency and fake clock (timers, Date and performance). Not hosted JWT/RLS nor browser suspension.
+ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+@@ -5,7 +7,7 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ const s = vi.hoisted(() => ({
+   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
+-  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
++  autoFreshFailures: 0, roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, probes: 0,
+ }));
+ const later = <T,>(v: () => T, _tag = '') => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
+ vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
+@@ -14,8 +16,11 @@
+   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
+   from: (t: string) => {
+     const q: Record<string, unknown> = {};
++    let fresh = false;
+     for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
+-    const run = () => later(() => t === 'profiles'
++    q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
++    const run = () => fresh && t === 'profiles' && s.autoFreshFailures++ === 0
++      ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : later(() => t === 'profiles'
+       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
+       : { data: s.roles.map(role => ({ role })), error: null }, t);
+     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
+@@ -41,7 +46,7 @@
+ 
+ beforeEach(() => {
+   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
+-  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
++  s.autoFreshFailures = 0; s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.probes = 0;
+ });
+ afterEach(() => { cleanup(); vi.useRealTimers(); });
+ 
+--- a/src/test/config/retryLoadingRace.integration.test.tsx
++++ b/src/test/config/retryLoadingRace.integration.test.tsx
+@@ -1,3 +1,5 @@
++// Active policy scaffolding: fail ONLY the first fresh profile transport (503), exhausting
++// the automatic attempt before manual Retry; all subsequent transport and security assertions are unchanged.
+ // Real AuthProvider/monitor/probe/ProtectedRoutes/RoleGuard/AppPortalGuard/AppLayout/MobileLayout.
+ // Only Supabase transport (per-call latency), session events and shell widgets are fake: not JWT/RLS.
+ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+@@ -6,7 +8,7 @@
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ const s = vi.hoisted(() => ({
+   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002',
+-  roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
++  autoFreshFailures: 0, roles: ['gestor', 'consultor_tecnico'] as string[], lat: 0, authListener: undefined as undefined | ((e: string, x: { user: { id: string } } | null) => void),
+   hangNext: '' as string, h15: 0, holdNext: '' as string, hangSkip: 0, hangStar: false, auth: undefined as undefined | { authzReady: boolean; revalidateAuthz: () => void }, release: undefined as undefined | (() => void),
+ }));
+ const later = <T,>(v: () => T, tag: string) => {
+@@ -19,7 +21,7 @@
+   let cols = '';
+   for (const n of ['eq', 'is', 'filter', 'in', 'not', 'neq', 'order', 'abortSignal']) q[n] = () => q;
+   q.select = (c: string) => { cols = c; return q; };
+-  const run = () => (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
++  const run = () => (t === 'profiles' && cols === 'user_id, organization_id, ativo' && s.autoFreshFailures++ === 0 ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : null) ?? (t === 'profiles' && cols === '*' && s.hangStar ? (s.hangStar = false, new Promise<never>(() => {})) : null) ?? later(() => t === 'profiles'
+     ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
+     : t === 'user_roles' ? { data: s.roles.map(role => ({ role })), error: null } : { data: [], error: null }, t);
+   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
+@@ -86,6 +88,7 @@
+   setup(); await tick(3000);
+   expect(screen.getByText('Contas a receber')).toBeTruthy();
+   s.roles = ['consultor_tecnico']; focus(); await tick(3000);
++  expect(s.autoFreshFailures).toBe(1); // one automatic fresh read exhausted, not neutralized
+   expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+ }
+ /** Terminal, observable states only: never an endless spinner. */
+@@ -99,7 +102,7 @@
+ 
+ beforeEach(() => {
+   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
+-  s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
++  s.autoFreshFailures = 0; s.roles = ['gestor', 'consultor_tecnico']; s.lat = 500; s.hangNext = ''; s.hangSkip = 0; s.hangStar = false; s.holdNext = ''; s.release = undefined; s.org = '00000000-0000-4000-8000-000000000002'; s.h15 = 0; s.authListener = undefined; localStorage.clear(); clearAuthzDiagnostics();
+   vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'info').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {});
+   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+@@ -154,6 +157,7 @@
+   it('restoring gestor afterwards: pause → Retry recovers the pair and financial again', async () => {
+     await pairThenLoseGestor();
+     retry(); await tick(8000); await expectConsultorRecovered();
++    s.autoFreshFailures = 0; // residual valid rearmed the one-attempt budget
+     s.roles = ['gestor', 'consultor_tecnico']; focus(); await tick(4000);
+     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
+     retry(); await tick(8000);

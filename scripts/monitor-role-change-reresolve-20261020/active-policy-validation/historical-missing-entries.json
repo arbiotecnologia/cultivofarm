@@ -1,0 +1,13 @@
+[
+  "./audit/admin-latency-flake.log",
+  "./audit/config-candidate-neutral.log",
+  "./audit/new-baseline.log",
+  "./audit/new-candidate.log",
+  "./audit/prior-baseline.log",
+  "./audit/prior-candidate-neutral.log",
+  "./baseline-new.log",
+  "./candidate-new.log",
+  "./original-config-baseline.log",
+  "./original-config-candidate.log",
+  "./prior-monitor-candidate.log"
+]
