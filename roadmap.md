@@ -388,3 +388,10 @@
 - [x] Bloquear montagem SQL até nova baseline de função/trigger; SQLs existentes marcados históricos, sem DDL.
 - [x] 13:13: baseline LIVE conferida read-only e incorporada em PRE/POST/rollback sem redefinir/remover; 102 checks PG descartável, 67 Vitest e tsgo candidato PASS. Pacote requer nova revisão independente; gate false.
 - [x] 62 Vitest e tsgo candidato PASS; comparação/rollback/hashes/relatório atualizados, runtime intocado.
+
+## 20/10 13:16 — produto-only e estabilidade separada
+- [x] Preparar contrato review-only na mesma tabela: micro opcional com item obrigatório, FKs/legado preservados, sem writer/grants/associação inventada; rollback bloqueia qualquer histórico produto-only.
+- [x] Testes SQL completos CQ passam com referência sintética produto-only realmente NULL; formulário/hook/comparação mantêm gate OFF.
+- [x] Registrar recibo independente: 10 testes formulário e typecheck app+candidatas18fc97 PASS, limitado àquele snapshot.
+- [ ] Revisão e autorização do delta de schema/writer fictício; PRE/POST CQ continuam fixados na baseline anterior e recusam schema alterado até recaptura/revisão explícita. Nenhuma escrita hosted autorizada.
+- [ ] Estabilidade monitor B afa241: auth_refresh 13:07:06.118 UTC → load_timeout 20.015s às 13:07:26.139; Falha ao carregar dados do usuário; Retry recuperou Clientes sem reload. Sessão criada19/10. Causa não determinada, estabilidade não PASS; correção depende de revisão separada, monitor intocado dentro CQ.

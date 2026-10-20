@@ -1,5 +1,15 @@
 # CQ manual — candidato para revisão, não implantado
 
+**Delta 20/10 13:16 — contrato produto-only preparado, NÃO instalado.** `reference-product-only.sql.review` altera somente a representação da referência na tabela existente: micro pode ser NULL se produto está presente; trigger INVOKER sem exceções exige ao menos um item. Conserva ambas as FKs, linhas micro-only e produto+micro legadas, políticas, ACL e escritores fechados. Não infere associação e não autoriza cadastro/CQ/envase. É um delta de desenho executável no laboratório, ainda exige PRE/POST integrais e inventário de consumidores/writers/índices antes de ser instalável.
+
+`reference-product-only-rollback.sql.review` restaura NOT NULL apenas sem qualquer linha micro NULL, inclusive inativa/histórica; com histórico recusa sem apagar/reparar/associar. Trigger de integridade permanece. Delta fora de `candidate.sql.review`: PRE/POST/rollback CQ continuam byte-fixados no schema anterior e **recusam** a mudança até recaptura e revisão explícitas. Hash atual schema `2e521a3b3c4e459e5ab9b5f8e52d06ee`; projeção read-only só de nullable `834a551c4d52b5a7d177ae98eb055dc3`.
+
+Leitura canônica desta rodada confirmou NOT NULL/FKs e índice `cq_param_ref_micro_prod_uidx`: chave micro+coalesce(produto). Com micro NULL não garante unicidade de produto-only; o delta não altera índices legados nem deduplica dados. Duplicatas ativas são recusadas pelo core/hook sob os locks existentes. Writer futuro deverá revalidar unicidade/concorrência server-side; nenhum writer foi aberto. Proposta fictícia permanece não insertável no hosted atual, sem referência criada.
+
+**Validação desta rodada:** 113 checks PostgreSQL descartável (referência positiva realmente produto-only/micro NULL, FKs, item obrigatório, rollback com histórico, idempotência, concorrência e CQ completo); 67 Vitest PASS. Não são JWT/RLS/browser hosted. Recibo independente do proprietário: 10 testes formulário e typecheck app+candidatas18fc97 PASS, válido somente naquele snapshot; não certifica este delta SQL.
+
+**Pendência separada monitor:** proprietário observou em B publicado afa241, sessão criada19/10, `auth_refresh` 13:07:06.118 UTC; `load_timeout` 20.015s às13:07:26.139 e “Falha ao carregar dados do usuário”. Retry de perfil recuperou Clientes sem reload. Recuperação pontual comprovada pelo recibo, estabilidade **não PASS**, causa desconhecida. Nenhuma alteração no monitor nesta revisão CQ; investigação/correção exige revisão própria.
+
 **20/10 13:13: baseline LIVE conferida read-only.** `manual_program_binding_containment` aplicada pelo proprietário; corpo/owner/ACL/trigger/hash agregado confirmados no Supabase canônico. Ver `BASELINE-manual-program-binding.md`. Montagem retomada somente para revisão: PRE/POST/rollback exigem a contenção sem defini-la/removê-la/substituí-la. Gate CQ false; nenhuma implantação autorizada.
 
 **Base publicada:** `afa2417fb2ac305636b9bc82786d62ae9af0a632`. Supabase único `swzpzcwiasxmjutrmvkm`.
