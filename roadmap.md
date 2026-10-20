@@ -393,5 +393,7 @@
 - [x] Preparar contrato review-only na mesma tabela: micro opcional com item obrigatório, FKs/legado preservados, sem writer/grants/associação inventada; rollback bloqueia qualquer histórico produto-only.
 - [x] Testes SQL completos CQ passam com referência sintética produto-only realmente NULL; formulário/hook/comparação mantêm gate OFF.
 - [x] Registrar recibo independente: 10 testes formulário e typecheck app+candidatas18fc97 PASS, limitado àquele snapshot.
-- [ ] 13:23: integrar menor delta produto-only com CHECK, índice parcial, PRE/POST/rollback e proposta administrativa fictícia; autorização de preparação/cadastro necessário já concedida, execução nesta rodada proibida. Não abrir writer/editor tenant nem pedir nova autorização.
+- [x] 13:23: integrar menor delta produto-only com CHECK, índice parcial, PRE/POST/rollback e proposta administrativa fictícia; autorização de preparação/cadastro necessário já concedida, execução nesta rodada proibida. Não abrir writer/editor tenant nem pedir nova autorização.
 - [ ] Estabilidade monitor B afa241: auth_refresh 13:07:06.118 UTC → load_timeout 20.015s às 13:07:26.139; Falha ao carregar dados do usuário; Retry recuperou Clientes sem reload. Sessão criada19/10. Causa não determinada, estabilidade não PASS; correção depende de revisão separada, monitor intocado dentro CQ.
+
+- [ ] Revisão independente do pacote integrado CQ/referência e PRE/POST hosted; execução/publicação proibidas nesta rodada, sem pedido de nova autorização de preparação. Monitor segue pendência separada.
