@@ -1,0 +1,15 @@
+-- Snapshot LIVE; somente PostgreSQL descartável, nunca montagem/deployment.
+CREATE OR REPLACE FUNCTION platform_private.guard_manual_lot_delete_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF EXISTS(SELECT 1 FROM public.programacao_producao p WHERE p.id=OLD.programacao_id AND p.ordem_servico_id IS NOT NULL)
+ OR EXISTS(SELECT 1 FROM public.laboratorio_esteira_eventos e WHERE e.lote_id=OLD.id AND e.origem_os='manual')
+ THEN RAISE EXCEPTION 'MANUAL_LOT_DELETE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ RETURN OLD;
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.guard_manual_lot_delete_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER aa_manual_lot_delete_v1 BEFORE DELETE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_lot_delete_v1();

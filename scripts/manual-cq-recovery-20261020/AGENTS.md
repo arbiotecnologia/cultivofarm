@@ -10,5 +10,6 @@
 - Manual parents with nonlegacy lots retain links/tenant/item identity before CQ, and em_cq OS fields are frozen; rollback retains these fences to prevent reclassification escapes.
 
 - The LIVE programming-binding containment is an immutable dependency in PRE/POST/rollback; assembly never defines, drops or replaces it, and its snapshot is for disposable tests only.
+- The LIVE manual-lot DELETE containment is likewise immutable in PRE/POST/rollback with exact body/ACL/trigger/aggregate checks; its snapshot is disposable-only and neither roles nor GUCs permit deletion — prevents delete/reinsert approval escapes.
 - CQ comparison requires complete active references and valid measurements, with case-sensitive space-trim equality matching the core; it never authorizes mutation.
 - Product-only compatibility is integrated into the review assembly on the existing table using CHECK and active-only partial uniqueness; preserve legacy indexes/FKs/ACL/RLS, fail closed on dual-row ambiguity, and refuse schema rollback with null-micro history — avoids invented associations and data loss.
