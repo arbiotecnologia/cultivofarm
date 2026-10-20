@@ -406,8 +406,8 @@
 - [ ] Revisão independente e homologação real A/B do candidato de loader; runtime intocado, ativação/publicação não autorizadas nesta rodada.
 
 ## 20/10 18:28 — revisão13a01, política automática ativa
-- [ ] Adaptar apenas scaffolding das 42 expectativas; esgotar tentativa automática antes de Retry, preservar asserts.
-- [ ] Validar config integral +41 anteriores +17 novos com política ativa, sem neutralização; registrar admin.
-- [ ] Se PASS, ativar fontes exatas b3a65696/b6d7f4 e fornecer manifesto/rollback preservando CQ nullable; sem publicação/banco/sessões.
+- [x] Adaptar apenas scaffolding das 42 expectativas; esgotar tentativa automática antes de Retry, preservar asserts.
+- [x] Validar config integral +41 anteriores +17 novos com política ativa, sem neutralização; registrar admin.
+- [x] Se PASS, ativar fontes exatas b3a65696/b6d7f4 e fornecer manifesto/rollback preservando CQ nullable; sem publicação/banco/sessões.
 
 - [x] Revisão13a01 concluída: scaffolding6 arquivos, asserts preservados; candidato1135/1135 e runtime1077+58 PASS sem neutralização. Types candidata/app/node0, build automáticoOK; fontes exatas ativadas, CQnullable/gates preservados. Manifesto/diff/rollback verificados em active-policy-validation. Admin intermitente também baseline, sem relaxar teste; estabilidade real permanece pendente do operador, nenhuma publicação/sessão/banco.

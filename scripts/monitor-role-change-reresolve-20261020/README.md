@@ -1,4 +1,7 @@
-# Candidato: releitura única após perda de papel (gestor/consultor) — NÃO ativado
+# Releitura única após perda de papel — ativada localmente, NÃO publicada
+
+## Revisão13a01 (vigente)
+Fontes exatas b3a65696/b6d7f4 ativadas após candidato1135/1135 e types0; runtime1077+58 PASS, build automáticoOK. Política ativa, sem skip/todo/exclusão/neutralização. Seis testes receberam somente preparação de transporte controlado, com 179 linhas de asserts originais preservadas. Relatório, diff, originais, resultados e rollback em `active-policy-validation/REPORT.md`. Instabilidade admin também reproduzida no baseline; estabilidade real não certificada. CQ nullable e gates intactos; sem publicação/banco/sessões/recarga. Os resultados abaixo são históricos e não são a evidência liberadora atual.
 
 ## Mudança (frontend.patch)
 - Novo `src/lib/authz/roleChangeReresolve.ts` (política pura) e 4 trechos em `useAuth.tsx`.
