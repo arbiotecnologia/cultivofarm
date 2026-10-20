@@ -9,5 +9,5 @@
 - The existing reference hook candidate uses product-first exact matching without micro fallback, scoped query generations and monitor completion fences; runtime stays unchanged until approved.
 - Manual parents with nonlegacy lots retain links/tenant/item identity before CQ, and em_cq OS fields are frozen; rollback retains these fences to prevent reclassification escapes.
 
-- Assembly is blocked while the owner-announced programming containment baseline is pending; PRE/POST/rollback must preserve its exact body, ACL and trigger after verification.
+- The LIVE programming-binding containment is an immutable dependency in PRE/POST/rollback; assembly never defines, drops or replaces it, and its snapshot is for disposable tests only.
 - CQ comparison requires complete active references and valid measurements, with case-sensitive space-trim equality matching the core; it never authorizes mutation.

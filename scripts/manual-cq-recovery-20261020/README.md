@@ -1,6 +1,6 @@
 # CQ manual — candidato para revisão, não implantado
 
-**20/10 13:11: MONTAGEM SQL BLOQUEADA.** Contenção de identidade da programação anunciada pelo proprietário, ainda sem recibo de sucesso/hashes. SQLs existentes são históricos e não devem ser aplicados. Ver `HOSTED-BASELINE-PENDING.md`; `assemble.py` encerra sem regenerar. PRE/POST/rollback só poderão ser atualizados após conferência da nova dependência LIVE, sem reescrevê-la ou removê-la.
+**20/10 13:13: baseline LIVE conferida read-only.** `manual_program_binding_containment` aplicada pelo proprietário; corpo/owner/ACL/trigger/hash agregado confirmados no Supabase canônico. Ver `BASELINE-manual-program-binding.md`. Montagem retomada somente para revisão: PRE/POST/rollback exigem a contenção sem defini-la/removê-la/substituí-la. Gate CQ false; nenhuma implantação autorizada.
 
 **Base publicada:** `afa2417fb2ac305636b9bc82786d62ae9af0a632`. Supabase único `swzpzcwiasxmjutrmvkm`.
 
@@ -73,7 +73,7 @@ Recibo do proprietário: **34 hashes PASS** na revisão anterior; não é certif
 
 ## Delta 13:11 — comparação e recibo de contenção
 
-- Recibo independente hosted: zerar vínculo OS da programação permitiu alterar lote para 101; transação revertida sem persistência. Não é prova executada pelo agente. Aplicação da contenção anunciada ainda aguarda confirmação; nenhuma consulta/escrita hosted nesta rodada.
+- Recibo independente hosted: zerar vínculo OS da programação permitiu alterar lote para 101; transação revertida sem persistência. Não é prova executada pelo agente. Bloqueio 13:11 foi resolvido pelo recibo 13:13 e leitura canônica descrita abaixo.
 - Tabela candidata exige referência ativa, ambos os limites pH finitos/ordenados no intervalo 0–14, concentração mínima finita não negativa e três textos não vazios. Referência incompleta/inválida é indicada explicitamente. Medidos ausentes, inválidos/não finitos, pH fora 0–14, concentração fora 0–1e30 e textos fora 1–200 impedem indicação APROVADO.
 - Igualdade textual usa comparação sensível a maiúsculas/minúsculas após remover somente espaços das extremidades, igual a `btrim` do core. Divergências contam como falha, não warning. Limites numéricos inclusivos. Nenhuma mutação ou autorização adicionada; `canEdit=false` permanece no diálogo candidato.
 - Rollback da tabela é cópia byte-exata do runtime, que continua intocado. Configuração temporária de testes/tipos aponta diálogo/hook/tabela aos candidatos, sem copiar para src.
